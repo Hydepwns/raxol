@@ -29,6 +29,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Output do
 
   @spec enqueue_control_sequence(t(), String.t()) :: t()
   def enqueue_control_sequence(%__MODULE__{} = state, sequence) do
-    %{state | control_sequences: state.control_sequences ++ [sequence]}
+    %{state | control_sequences: [sequence | state.control_sequences]}
   end
 end

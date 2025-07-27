@@ -17,6 +17,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     SequenceDispatcher,
     CommandDelegator
   }
+
   require Raxol.Core.Runtime.Log
   require Logger
 
@@ -116,6 +117,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
       {:error, :unknown_sequence, _sequence} ->
         # Ignore unknown sequences and return emulator unchanged
         emulator
+
       result ->
         result
     end

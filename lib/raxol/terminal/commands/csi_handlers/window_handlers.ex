@@ -125,7 +125,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.WindowHandlers do
     # Get icon name from window_state if available
     icon_name = Map.get(emulator.window_state, :icon_name, "")
 
-    case Raxol.Terminal.Commands.WindowHandlers.handle_t(emulator, [8, icon_name]) do
+    case Raxol.Terminal.Commands.WindowHandlers.handle_t(emulator, [
+           8,
+           icon_name
+         ]) do
       {:ok, updated_emulator} -> updated_emulator
       {:error, _, emulator} -> emulator
     end

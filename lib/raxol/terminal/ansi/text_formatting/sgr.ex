@@ -43,7 +43,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.SGR do
   @doc """
   Parses SGR (Select Graphic Rendition) parameters and applies them to the style.
   """
-  @spec parse_sgr_param(integer() | tuple(), Core.text_style()) :: Core.text_style()
+  @spec parse_sgr_param(integer() | tuple(), Core.text_style()) ::
+          Core.text_style()
   def parse_sgr_param(param, style) do
     case param do
       0 -> Core.new()
@@ -68,8 +69,40 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.SGR do
         handle_advanced_attribute(code, style)
 
       # Colors - delegate to Colors module
-      code in [30, 31, 32, 33, 34, 35, 36, 37, 90, 91, 92, 93, 94, 95, 96, 97,
-               40, 41, 42, 43, 44, 45, 46, 47, 100, 101, 102, 103, 104, 105, 106, 107] ->
+      code in [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107
+      ] ->
         Colors.handle_integer_color_param(code, style)
 
       true ->
@@ -80,7 +113,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.SGR do
   @doc """
   Handles basic SGR attributes.
   """
-  @spec handle_basic_attribute(integer(), Core.text_style()) :: Core.text_style()
+  @spec handle_basic_attribute(integer(), Core.text_style()) ::
+          Core.text_style()
   def handle_basic_attribute(code, style) do
     case code do
       1 -> %{style | bold: true}
@@ -97,7 +131,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.SGR do
   @doc """
   Handles advanced SGR attributes.
   """
-  @spec handle_advanced_attribute(integer(), Core.text_style()) :: Core.text_style()
+  @spec handle_advanced_attribute(integer(), Core.text_style()) ::
+          Core.text_style()
   def handle_advanced_attribute(code, style) do
     case code do
       51 -> %{style | framed: true}

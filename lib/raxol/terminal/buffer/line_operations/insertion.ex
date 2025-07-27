@@ -233,7 +233,10 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
   def insert_lines(buffer, lines, y, top, bottom) do
     if y >= top and y <= bottom and lines > 0 do
       # Debug output
-      IO.puts("DEBUG: insert_lines called with lines=#{lines}, y=#{y}, top=#{top}, bottom=#{bottom}")
+      IO.puts(
+        "DEBUG: insert_lines called with lines=#{lines}, y=#{y}, top=#{top}, bottom=#{bottom}"
+      )
+
       IO.puts("DEBUG: buffer height=#{length(buffer.cells)}")
 
       # Split the buffer into three parts:

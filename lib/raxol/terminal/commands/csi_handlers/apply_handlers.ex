@@ -3,7 +3,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.ApplyHandlers do
   Functions for applying specific CSI command handlers.
   """
 
-  alias Raxol.Terminal.Commands.CSIHandlers.{CursorMovement, ScreenHandlers, DeviceHandlers, TextHandlers, CharsetHandlers}
+  alias Raxol.Terminal.Commands.CSIHandlers.{
+    CursorMovement,
+    ScreenHandlers,
+    DeviceHandlers,
+    TextHandlers,
+    CharsetHandlers
+  }
 
   def apply_handler(emulator, :cursor_up, amount),
     do: CursorMovement.handle_cursor_up(emulator, amount)
@@ -41,7 +47,8 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.ApplyHandlers do
   def apply_handler(emulator, :save_restore_cursor, params),
     do: TextHandlers.handle_save_restore_cursor(emulator, params)
 
-  def apply_handler(emulator, :r, params), do: ScreenHandlers.handle_r(emulator, params)
+  def apply_handler(emulator, :r, params),
+    do: ScreenHandlers.handle_r(emulator, params)
 
   def apply_handler(emulator, :scroll_up, lines),
     do: ScreenHandlers.handle_scroll_up(emulator, lines)

@@ -246,7 +246,11 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Core do
   """
   @spec set_attributes(text_style(), list(atom())) :: text_style()
   def set_attributes(style, attributes) do
-    Enum.reduce(attributes, style, &Raxol.Terminal.ANSI.TextFormatting.Attributes.apply_attribute(&2, &1))
+    Enum.reduce(
+      attributes,
+      style,
+      &Raxol.Terminal.ANSI.TextFormatting.Attributes.apply_attribute(&2, &1)
+    )
   end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour

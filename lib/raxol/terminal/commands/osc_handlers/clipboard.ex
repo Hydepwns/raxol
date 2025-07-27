@@ -26,7 +26,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Clipboard do
         {:ok, %{emulator | output_buffer: response}}
 
       content ->
-        {:ok, new_clipboard} = Clipboard.set_content(emulator.clipboard, content)
+        {:ok, new_clipboard} =
+          Clipboard.set_content(emulator.clipboard, content)
+
         {:ok, %{emulator | clipboard: new_clipboard}}
     end
   end

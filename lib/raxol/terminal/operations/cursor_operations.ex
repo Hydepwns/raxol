@@ -99,4 +99,8 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
   def blinking?(emulator) do
     cursor_blinking?(emulator)
   end
+
+  def move_cursor(emulator, x, y) do
+    set_cursor_position(emulator, y, x)
+  end
 end

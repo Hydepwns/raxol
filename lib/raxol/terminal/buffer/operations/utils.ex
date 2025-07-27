@@ -100,7 +100,11 @@ defmodule Raxol.Terminal.Buffer.Operations.Utils do
       iex> Operations.Utils.get_cell(buffer, 0, 0)
       %Cell{char: "", style: %{}}
   """
-  @spec get_cell(Raxol.Terminal.ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+  @spec get_cell(
+          Raxol.Terminal.ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) ::
           Cell.t()
   def get_cell(buffer, x, y)
       when list?(buffer) and is_integer(x) and is_integer(y) do

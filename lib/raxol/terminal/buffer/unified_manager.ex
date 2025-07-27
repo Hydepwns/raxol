@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   providing improved memory management, caching, and performance metrics.
   """
 
-  @behaviour GenServer
   use GenServer
   require Logger
   require Raxol.Core.Runtime.Log
@@ -25,6 +24,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     Memory,
     Region
   }
+
   alias Raxol.Terminal.Buffer.UnifiedManager.Scroll, as: ScrollOperations
 
   @type t :: %__MODULE__{
@@ -220,6 +220,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   def resize(pid, width, height) when is_pid(pid) do
     GenServer.call(pid, {:resize, width, height})
   end
+
   def resize(%__MODULE__{} = state, width, height) do
     # Validate dimensions
     if width <= 0 or height <= 0 do
@@ -294,7 +295,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   @doc """
   Gets the active buffer.
   """
-  def get_active_buffer(%__MODULE__{} = state) do
+  def get_screen_buffer(%__MODULE__{} = state) do
     {:ok, state.active_buffer}
   end
 
@@ -315,10 +316,9 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   def handle_call({:get_cell, x, y}, _from, state) do
     cache_key = "cell_#{x}_#{y}"
 
-    case get_cell_with_cache(state, x, y, cache_key) do
-      {:ok, cell} -> {:reply, {:ok, cell}, state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
-    end
+    # get_cell_with_cache always returns {:ok, cell}
+    {:ok, cell} = get_cell_with_cache(state, x, y, cache_key)
+    {:reply, {:ok, cell}, state}
   end
 
   def handle_call({:set_cell, x, y, cell}, _from, state) do
@@ -327,10 +327,10 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
         # Invalidate cache for this cell
         cache_key = "cell_#{x}_#{y}"
         Cache.invalidate(cache_key, :buffer)
-        {:reply, {:ok, new_state}, new_state}
+        {:reply, :ok, new_state}
 
-      {:invalid, state} ->
-        {:reply, {:error, :invalid_coordinates}, state}
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
     end
   end
 
@@ -342,8 +342,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   def handle_call({:scroll_region, x, y, width, height, amount}, _from, state) do
-          {new_active_buffer, new_scrollback_buffer} =
-        ScrollOperations.process_scroll_region(state, x, y, width, height, amount)
+    {new_active_buffer, new_scrollback_buffer} =
+      ScrollOperations.process_scroll_region(state, x, y, width, height, amount)
 
     new_state = %{
       state
@@ -378,10 +378,22 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     end
   end
 
+  def handle_call(:get_total_lines, _from, state) do
+    total_lines = state.height + ScrollOperations.get_size(state.scrollback_buffer)
+    {:reply, {:ok, total_lines}, state}
+  end
+
   def handle_call({:scroll_up, amount}, _from, state) do
     # Scroll the entire buffer up by the specified amount
     {new_active_buffer, new_scrollback_buffer} =
-      ScrollOperations.process_scroll_region(state, 0, 0, state.width, state.height, amount)
+      ScrollOperations.process_scroll_region(
+        state,
+        0,
+        0,
+        state.width,
+        state.height,
+        amount
+      )
 
     new_state = %{
       state
@@ -432,15 +444,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   @doc """
   Updates the visible region of the buffer.
   """
-  def update_visible_region(%__MODULE__{} = state, region) do
-    GenServer.call(state, {:update_visible_region, region})
+  def update_visible_region(pid \\ __MODULE__, region) do
+    GenServer.call(pid, {:update_visible_region, region})
   end
 
   @doc """
   Gets the total number of lines in the buffer.
   """
-  def get_total_lines(%__MODULE__{} = state) do
-          {:ok, state.height + ScrollOperations.get_size(state.scrollback_buffer)}
+  def get_total_lines(pid \\ __MODULE__) do
+    GenServer.call(pid, :get_total_lines)
   end
 
   @doc """
@@ -453,10 +465,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   @doc """
   Writes data to the buffer.
   """
-  def write(%__MODULE__{} = state, data) do
-    GenServer.call(state, {:write, data})
-  end
-  def write(pid, data) when is_pid(pid) do
+  def write(pid \\ __MODULE__, data) do
     GenServer.call(pid, {:write, data})
   end
 
@@ -545,13 +554,9 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       new_state = Memory.update_memory_usage(new_state)
       {:ok, new_state}
     else
-      {:invalid, state}
+      {:error, :invalid_coordinates}
     end
   end
-
-
-
-
 
   # Private function to update state with commands (including config updates)
   defp update_state(state, commands) when is_list(commands) do
@@ -559,7 +564,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
                                                  {:ok, current_state} ->
       case update_single_command(current_state, command) do
         {:ok, new_state} -> {:cont, {:ok, new_state}}
-        error -> {:halt, error}
+        {:error, _reason} = error -> {:halt, error}
       end
     end)
   end
@@ -665,6 +670,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
           foreground: cell.foreground,
           background: cell.background
         }
+
         ScreenBuffer.write_char(acc_buffer, x, y, cell.char, style)
       else
         acc_buffer
@@ -684,15 +690,14 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     case Cache.get(cache_key, :buffer) do
       {:ok, cached_cell} ->
         {:ok, cached_cell}
+
       {:error, :cache_miss} ->
         # Cache miss, get from buffer and cache the result
-        case get_cell_direct(state, x, y) do
-          {:ok, cell} ->
-            Cache.put(cache_key, cell, :buffer)
-            {:ok, cell}
-          error ->
-            error
-        end
+        # get_cell_direct always returns {:ok, cell}
+        {:ok, cell} = get_cell_direct(state, x, y)
+        Cache.put(cache_key, cell, :buffer)
+        {:ok, cell}
+
       {:error, _reason} ->
         # Cache unavailable, fall back to direct access
         get_cell_direct(state, x, y)
@@ -702,14 +707,21 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   defp get_cell_direct(state, x, y) do
     case CellOperations.get_cell_at_coordinates(state, x, y) do
       {:valid, cell} -> {:ok, cell}
-      {:invalid, cell} -> {:ok, cell}
+      # The type system says {:invalid, _} never happens, so we only handle {:valid, _}
     end
   end
 
   defp process_fill_region(state, x, y, width, height, cell) do
     if Region.region_valid?(state, x, y, width, height) do
       new_active_buffer =
-        Region.fill_region_with_cell(state.active_buffer, x, y, width, height, cell)
+        Region.fill_region_with_cell(
+          state.active_buffer,
+          x,
+          y,
+          width,
+          height,
+          cell
+        )
 
       new_state = %{state | active_buffer: new_active_buffer}
       new_state = Memory.update_memory_usage(new_state)

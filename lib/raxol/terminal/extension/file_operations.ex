@@ -129,7 +129,13 @@ defmodule Raxol.Terminal.Extension.FileOperations do
       {:error, _reason} ->
         # Try to infer type from directory structure
         inferred_type = infer_extension_type(path)
-        {:ok, Raxol.Terminal.Extension.StateManager.load_extension_state(path, inferred_type, opts)}
+
+        {:ok,
+         Raxol.Terminal.Extension.StateManager.load_extension_state(
+           path,
+           inferred_type,
+           opts
+         )}
     end
   end
 
@@ -140,7 +146,13 @@ defmodule Raxol.Terminal.Extension.FileOperations do
         case Code.compile_file(path) do
           [{module, _}] ->
             inferred_type = infer_type_from_module(module)
-            {:ok, Raxol.Terminal.Extension.StateManager.load_extension_state(Path.dirname(path), inferred_type, opts)}
+
+            {:ok,
+             Raxol.Terminal.Extension.StateManager.load_extension_state(
+               Path.dirname(path),
+               inferred_type,
+               opts
+             )}
 
           _ ->
             {:error, :compilation_failed}
@@ -261,7 +273,12 @@ defmodule Raxol.Terminal.Extension.FileOperations do
       {:error, _reason} ->
         # Try to infer type
         inferred_type = infer_extension_type(path)
-        Raxol.Terminal.Extension.UnifiedExtension.load_extension(path, inferred_type, [])
+
+        Raxol.Terminal.Extension.UnifiedExtension.load_extension(
+          path,
+          inferred_type,
+          []
+        )
     end
   end
 
@@ -269,7 +286,12 @@ defmodule Raxol.Terminal.Extension.FileOperations do
     case Jason.decode(content) do
       {:ok, manifest} ->
         type = String.to_existing_atom(manifest["type"])
-        Raxol.Terminal.Extension.UnifiedExtension.load_extension(path, type, manifest_to_opts(manifest))
+
+        Raxol.Terminal.Extension.UnifiedExtension.load_extension(
+          path,
+          type,
+          manifest_to_opts(manifest)
+        )
 
       {:error, reason} ->
         Logger.error("Failed to parse manifest in #{path}: #{inspect(reason)}")
@@ -282,7 +304,12 @@ defmodule Raxol.Terminal.Extension.FileOperations do
         case Code.compile_file(path) do
           [{module, _}] ->
             inferred_type = infer_type_from_module(module)
-            Raxol.Terminal.Extension.UnifiedExtension.load_extension(Path.dirname(path), inferred_type, [])
+
+            Raxol.Terminal.Extension.UnifiedExtension.load_extension(
+              Path.dirname(path),
+              inferred_type,
+              []
+            )
 
           _ ->
             Logger.error("Failed to compile extension file: #{path}")

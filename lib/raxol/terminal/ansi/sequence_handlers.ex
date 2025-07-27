@@ -361,13 +361,15 @@ defmodule Raxol.Terminal.ANSI.SequenceHandlers do
   @doc """
   Parses mouse event sequences in the format ESC[M<button><x><y>.
   """
-  @spec parse_mouse_event(binary()) :: {:mouse_event, binary(), binary(), nil} | nil
+  @spec parse_mouse_event(binary()) ::
+          {:mouse_event, binary(), binary(), nil} | nil
   def parse_mouse_event(<<0x1B, ?[, ?M, rest::binary>>) do
     # Mouse event format: ESC[M<button><x><y>
     # where button, x, y are single bytes
     case rest do
       <<button, x, y, remaining::binary>> ->
         {:mouse_event, <<button, x, y>>, remaining, nil}
+
       _ ->
         nil
     end

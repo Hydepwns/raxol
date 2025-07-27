@@ -88,6 +88,7 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
     Raxol.Core.Runtime.Log.debug(
       "DCSEntryState: Found final byte #{byte}, transitioning to dcs_passthrough with rest=#{inspect(rest)}"
     )
+
     next_state = %{
       parser_state
       | state: :dcs_passthrough,

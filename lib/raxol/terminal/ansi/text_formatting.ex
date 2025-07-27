@@ -15,31 +15,47 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   @type t :: Core.t()
 
   defstruct [
-    :bold, :italic, :underline, :blink, :reverse, :foreground, :background,
-    :double_width, :double_height, :faint, :conceal, :strikethrough, :fraktur,
-    :double_underline, :framed, :encircled, :overlined, :hyperlink
+    :bold,
+    :italic,
+    :underline,
+    :blink,
+    :reverse,
+    :foreground,
+    :background,
+    :double_width,
+    :double_height,
+    :faint,
+    :conceal,
+    :strikethrough,
+    :fraktur,
+    :double_underline,
+    :framed,
+    :encircled,
+    :overlined,
+    :hyperlink
   ]
 
   # --- Core functionality delegation ---
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  def new, do: %__MODULE__{
-    bold: false,
-    italic: false,
-    underline: false,
-    strikethrough: false,
-    blink: false,
-    reverse: false,
-    faint: false,
-    conceal: false,
-    fraktur: false,
-    double_underline: false,
-    framed: false,
-    encircled: false,
-    overlined: false,
-    double_width: false,
-    double_height: :none
-  }
+  def new,
+    do: %__MODULE__{
+      bold: false,
+      italic: false,
+      underline: false,
+      strikethrough: false,
+      blink: false,
+      reverse: false,
+      faint: false,
+      conceal: false,
+      fraktur: false,
+      double_underline: false,
+      framed: false,
+      encircled: false,
+      overlined: false,
+      double_width: false,
+      double_height: :none
+    }
 
   def default_style, do: new()
 
@@ -76,7 +92,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   def reset_attributes(style), do: Core.reset_attributes(style)
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  def set_attributes(style, attributes), do: Core.set_attributes(style, attributes)
+  def set_attributes(style, attributes),
+    do: Core.set_attributes(style, attributes)
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
   def set_custom(style, key, value), do: Core.set_custom(style, key, value)
@@ -97,12 +114,14 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
   def get_hyperlink(style), do: Core.get_hyperlink(style)
 
-  def set_attribute(emulator, attribute), do: Core.set_attribute(emulator, attribute)
+  def set_attribute(emulator, attribute),
+    do: Core.set_attribute(emulator, attribute)
 
   # --- Attribute functionality delegation ---
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  def apply_attribute(style, attribute), do: Attributes.apply_attribute(style, attribute)
+  def apply_attribute(style, attribute),
+    do: Attributes.apply_attribute(style, attribute)
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
   def set_bold(style), do: Attributes.set_bold(style)
@@ -166,7 +185,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   def reset_background(style), do: Attributes.reset_background(style)
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  def reset_framed_encircled(style), do: Attributes.reset_framed_encircled(style)
+  def reset_framed_encircled(style),
+    do: Attributes.reset_framed_encircled(style)
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
   def reset_overlined(style), do: Attributes.reset_overlined(style)
@@ -177,7 +197,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
   def reset_fraktur(style), do: Attributes.reset_fraktur(style)
 
-  def reset_double_underline(style), do: Attributes.reset_double_underline(style)
+  def reset_double_underline(style),
+    do: Attributes.reset_double_underline(style)
 
   def reset_framed(style), do: Attributes.reset_framed(style)
 

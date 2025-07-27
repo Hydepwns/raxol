@@ -80,6 +80,7 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughState do
     Raxol.Core.Runtime.Log.debug(
       "DCSPassthroughState: Found ESC, transitioning to dcs_passthrough_maybe_st with rest_after_esc=#{inspect(rest_after_esc)}"
     )
+
     {:continue, emulator, %{parser_state | state: :dcs_passthrough_maybe_st},
      rest_after_esc}
   end

@@ -57,40 +57,40 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   end
 
   @doc "Handles Cursor Position (CUP - 'H') - alias for handle_cup"
-  @spec handle_H(Emulator.t(), list(integer())) ::
+  @spec handle_h_alias(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_H(emulator, params) do
+  def handle_h_alias(emulator, params) do
     handle_cup(emulator, params)
   end
 
   @doc "Handles Cursor Up (CUU - \'A\')"
-  @spec handle_A(Emulator.t(), list(integer())) ::
+  @spec handle_a_alias(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_A(emulator, params) do
+  def handle_a_alias(emulator, params) do
     amount = Enum.at(params, 0, 1)
     handle_cursor_movement(emulator, :up, amount)
   end
 
   @doc "Handles Cursor Down (CUD - \'B\') - alias for handle_B"
-  @spec handle_B(Emulator.t(), list(integer())) ::
+  @spec handle_b_alias(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_B(emulator, params) do
+  def handle_b_alias(emulator, params) do
     amount = Enum.at(params, 0, 1)
     handle_cursor_movement(emulator, :down, amount)
   end
 
   @doc "Handles Cursor Forward (CUF - \'C\') - alias for handle_C"
-  @spec handle_C(Emulator.t(), list(integer())) ::
+  @spec handle_c_alias(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_C(emulator, params) do
+  def handle_c_alias(emulator, params) do
     amount = Enum.at(params, 0, 1)
     handle_cursor_movement(emulator, :right, amount)
   end
 
   @doc "Handles Cursor Backward (CUB - \'D\') - alias for handle_D"
-  @spec handle_D(Emulator.t(), list(integer())) ::
+  @spec handle_d_alias(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_D(emulator, params) do
+  def handle_d_alias(emulator, params) do
     amount = Enum.at(params, 0, 1)
     handle_cursor_movement(emulator, :left, amount)
   end
@@ -98,9 +98,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @doc """
   Handles Cursor Next Line (CNL - 'E').
   """
-  @spec handle_E(Emulator.t(), list(integer())) ::
+  @spec handle_e_alias(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_E(emulator, params) do
+  def handle_e_alias(emulator, params) do
     amount = Enum.at(params, 0, 1)
     cursor = emulator.cursor
     {row, _col} = get_cursor_position(cursor)
@@ -134,9 +134,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @doc """
   Handles Cursor Previous Line (CPL - 'F') - alias for handle_f.
   """
-  @spec handle_F(Emulator.t(), list(integer())) ::
+  @spec handle_f_alias(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_F(emulator, params) do
+  def handle_f_alias(emulator, params) do
     handle_f(emulator, params)
   end
 
@@ -146,29 +146,20 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec handle_g(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_g(emulator, params) do
-    amount = Enum.at(params, 0, 1)
-    cursor = emulator.cursor
-    {row, col} = get_cursor_position(cursor)
-
-    {new_row, new_col} =
-      case amount do
-        :up -> {max(0, row - amount), col}
-        :down -> {min(emulator.height - 1, row + amount), col}
-        :left -> {row, max(0, col - amount)}
-        :right -> {row, min(emulator.width - 1, col + amount)}
-      end
-
-    updated_cursor = set_cursor_position(cursor, {new_row, new_col})
-    {:ok, %{emulator | cursor: updated_cursor}}
+    # handle_g is the same as handle_G (Cursor Horizontal Absolute)
+    handle_G(emulator, params)
   end
 
   @doc """
   Handles Cursor Horizontal Absolute (CHA - 'G') - alias for handle_g.
   """
-  @spec handle_G(Emulator.t(), list(integer())) ::
+  @spec handle_g_alias(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_G(emulator, params) do
-    IO.puts("DEBUG: handle_G called with params=#{inspect(params)}, cursor=#{inspect(emulator.cursor)}")
+  def handle_g_alias(emulator, params) do
+    IO.puts(
+      "DEBUG: handle_G called with params=#{inspect(params)}, cursor=#{inspect(emulator.cursor)}"
+    )
+
     column = Enum.at(params, 0, 1)
     # Convert to 0-based
     column_0 = column - 1
@@ -402,8 +393,10 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     case cursor do
       %{position: _} when is_map(cursor) ->
         %{cursor | position: {row, col}}
+
       %{row: _, col: _} when is_map(cursor) ->
         %{cursor | row: row, col: col, position: {row, col}}
+
       _ ->
         # If we can't handle it, return the cursor unchanged
         cursor
@@ -416,5 +409,45 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
 
   defp get_cursor_position(cursor) when is_map(cursor) do
     cursor.position
+  end
+
+  @doc """
+  Handles CSI A - Cursor Up (CUU)
+  """
+  def handle_A(emulator, params) do
+    count = get_valid_pos_param(params, 0, 1)
+    {:ok, move_cursor_up(emulator, count)}
+  end
+
+  @doc """
+  Handles CSI B - Cursor Down (CUD)
+  """
+  def handle_B(emulator, params) do
+    count = get_valid_pos_param(params, 0, 1)
+    {:ok, move_cursor_down(emulator, count)}
+  end
+
+  @doc """
+  Handles CSI C - Cursor Forward (CUF)
+  """
+  def handle_C(emulator, params) do
+    count = get_valid_pos_param(params, 0, 1)
+    {:ok, move_cursor_forward(emulator, count)}
+  end
+
+  @doc """
+  Handles CSI D - Cursor Back (CUB)
+  """
+  def handle_D(emulator, params) do
+    count = get_valid_pos_param(params, 0, 1)
+    {:ok, move_cursor_back(emulator, count)}
+  end
+
+  @doc """
+  Handles CSI G - Cursor Horizontal Absolute (CHA)
+  """
+  def handle_G(emulator, params) do
+    column = get_valid_pos_param(params, 0, 1) - 1  # Convert to 0-based
+    {:ok, move_cursor_to_column(emulator, column, emulator.width, emulator.height)}
   end
 end

@@ -12,7 +12,11 @@ defmodule Raxol.Terminal.Emulator.ScreenOperations do
   @doc """
   Clears from cursor to end of screen.
   """
-  @spec clear_from_cursor_to_end(emulator(), non_neg_integer(), non_neg_integer()) :: emulator()
+  @spec clear_from_cursor_to_end(
+          emulator(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: emulator()
   def clear_from_cursor_to_end(emulator, _x, _y) do
     ScreenOps.erase_from_cursor_to_end(emulator)
   end
@@ -20,7 +24,11 @@ defmodule Raxol.Terminal.Emulator.ScreenOperations do
   @doc """
   Clears from start of screen to cursor.
   """
-  @spec clear_from_start_to_cursor(emulator(), non_neg_integer(), non_neg_integer()) :: emulator()
+  @spec clear_from_start_to_cursor(
+          emulator(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: emulator()
   def clear_from_start_to_cursor(emulator, _x, _y) do
     ScreenOps.erase_from_start_to_cursor(emulator)
   end
@@ -36,7 +44,11 @@ defmodule Raxol.Terminal.Emulator.ScreenOperations do
   @doc """
   Clears from cursor to end of line.
   """
-  @spec clear_from_cursor_to_end_of_line(emulator(), non_neg_integer(), non_neg_integer()) :: emulator()
+  @spec clear_from_cursor_to_end_of_line(
+          emulator(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: emulator()
   def clear_from_cursor_to_end_of_line(emulator, _x, _y) do
     ScreenOps.clear_line(emulator, 0)
   end
@@ -44,7 +56,11 @@ defmodule Raxol.Terminal.Emulator.ScreenOperations do
   @doc """
   Clears from start of line to cursor.
   """
-  @spec clear_from_start_of_line_to_cursor(emulator(), non_neg_integer(), non_neg_integer()) :: emulator()
+  @spec clear_from_start_of_line_to_cursor(
+          emulator(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: emulator()
   def clear_from_start_of_line_to_cursor(emulator, _x, _y) do
     ScreenOps.clear_line(emulator, 1)
   end

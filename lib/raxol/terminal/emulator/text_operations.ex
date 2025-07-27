@@ -14,7 +14,13 @@ defmodule Raxol.Terminal.Emulator.TextOperations do
   Writes a string to the terminal with charset translation.
   Updates cursor position after writing.
   """
-  @spec write_string(emulator(), non_neg_integer(), non_neg_integer(), String.t(), map()) :: emulator()
+  @spec write_string(
+          emulator(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t(),
+          map()
+        ) :: emulator()
   def write_string(%Emulator{} = emulator, x, y, string, style \\ %{}) do
     translated =
       Raxol.Terminal.ANSI.CharacterSets.translate_string(
@@ -23,7 +29,7 @@ defmodule Raxol.Terminal.Emulator.TextOperations do
       )
 
     # Get the active buffer
-    buffer = BufferOperations.get_active_buffer(emulator)
+    buffer = BufferOperations.get_screen_buffer(emulator)
 
     # Write the string to the buffer
     updated_buffer =
@@ -55,7 +61,7 @@ defmodule Raxol.Terminal.Emulator.TextOperations do
   Sets an attribute on the emulator (placeholder implementation).
   """
   @spec set_attribute(emulator(), atom(), any()) :: emulator()
-  def set_attribute(emulator, attribute, _value) do
+  def set_attribute(emulator, _attribute, _value) do
     # Currently a no-op, but structured for future attribute handling
     # Could be extended to handle text styling attributes
     emulator

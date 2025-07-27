@@ -292,7 +292,6 @@ defmodule Raxol.Terminal.ModeManager do
     end
   end
 
-
   @doc """
   Creates a new mode manager with default values.
   """

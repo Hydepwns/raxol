@@ -9,9 +9,6 @@ defmodule Raxol.Terminal.Config.Profiles do
   """
 
   alias Raxol.Terminal.Config.{Persistence, Validation, Defaults}
-  # alias Raxol.Core.Config # Unused
-  # alias Raxol.UI.Theming.Theme # Unused
-  # alias Raxol.UI.Theming.Colors # Unused
 
   @profiles_dir "priv/config/profiles"
   @profile_ext ".json"

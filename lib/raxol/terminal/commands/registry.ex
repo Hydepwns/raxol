@@ -174,8 +174,4 @@ defmodule Raxol.Terminal.Commands.Registry do
   defp update_metrics(metrics, :completions) do
     update_in(metrics.completions, &(&1 + 1))
   end
-
-  defp update_metrics(metrics, :validations) do
-    update_in(metrics.validations, &(&1 + 1))
-  end
 end

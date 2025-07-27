@@ -65,7 +65,7 @@ defmodule Raxol.Terminal.EmulatorBehaviour do
             ) :: {:ok, t()} | {:error, any()}
 
   @doc "Returns the currently active screen buffer."
-  @callback get_active_buffer(emulator :: t()) :: ScreenBuffer.t()
+  @callback get_screen_buffer(emulator :: t()) :: ScreenBuffer.t()
 
   @doc "Updates the currently active screen buffer in the emulator state."
   @callback update_active_buffer(

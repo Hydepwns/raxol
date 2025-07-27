@@ -40,7 +40,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CharsetHandlers do
       end
 
     case field do
-      {:error, reason, emu} -> {:error, reason, emu}
+      {:error, reason, emu} ->
+        {:error, reason, emu}
+
       _ ->
         updated_charset_state = Map.put(emulator.charset_state, field, charset)
         %{emulator | charset_state: updated_charset_state}
@@ -93,11 +95,20 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CharsetHandlers do
 
   defp parse_charset_code(params) do
     case params do
-      "" -> ?B
+      "" ->
+        ?B
+
       # Special case: "16" maps to DEC Special Graphics (same as "0")
-      "16" -> ?0
-      <<code>> when code in ?0..?9 or code in ?A..?Z or code in ?a..?z or code in [?>, ?', ?R] -> code
-      _ -> ?B
+      "16" ->
+        ?0
+
+      <<code>>
+      when code in ?0..?9 or code in ?A..?Z or code in ?a..?z or
+             code in [?>, ?', ?R] ->
+        code
+
+      _ ->
+        ?B
     end
   end
 

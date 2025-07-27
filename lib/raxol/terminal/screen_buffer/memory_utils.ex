@@ -9,8 +9,13 @@ defmodule Raxol.Terminal.ScreenBuffer.MemoryUtils do
   @doc """
   Gets the estimated memory usage of the screen buffer.
   """
-  def get_memory_usage(%{cells: cells, scrollback: scrollback, selection: selection,
-                        scroll_region: scroll_region, damage_regions: damage_regions}) do
+  def get_memory_usage(%{
+        cells: cells,
+        scrollback: scrollback,
+        selection: selection,
+        scroll_region: scroll_region,
+        damage_regions: damage_regions
+      }) do
     # Calculate memory usage for main cells grid
     cells_usage = calculate_cells_memory_usage(cells)
 

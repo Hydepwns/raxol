@@ -12,14 +12,22 @@ defmodule Raxol.Terminal.Extension.LifecycleManager do
     Logger.info("Loading extension from path: #{path}, type: #{type}")
 
     extension_id = generate_extension_id()
-    extension_state = Raxol.Terminal.Extension.StateManager.load_extension_state(path, type, opts)
+
+    extension_state =
+      Raxol.Terminal.Extension.StateManager.load_extension_state(
+        path,
+        type,
+        opts
+      )
 
     case extension_state.module do
       {:error, reason} ->
         {:error, {:module_load_failed, reason}}
 
       _ ->
-        case Raxol.Terminal.Extension.Validator.validate_extension(extension_state) do
+        case Raxol.Terminal.Extension.Validator.validate_extension(
+               extension_state
+             ) do
           :ok ->
             new_state = put_in(state.extensions[extension_id], extension_state)
             {:ok, extension_id, new_state}

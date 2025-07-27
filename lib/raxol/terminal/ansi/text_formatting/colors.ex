@@ -81,7 +81,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Colors do
   @doc """
   Handles tuple color parameters for RGB and indexed colors.
   """
-  @spec handle_tuple_color_param(tuple(), Core.text_style()) :: Core.text_style()
+  @spec handle_tuple_color_param(tuple(), Core.text_style()) ::
+          Core.text_style()
   def handle_tuple_color_param({:fg_8bit, color_code}, style)
       when is_integer(color_code) do
     %{style | foreground: {:index, color_code}}
@@ -106,7 +107,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Colors do
   @doc """
   Handles integer color parameters for basic ANSI colors.
   """
-  @spec handle_integer_color_param(integer(), Core.text_style()) :: Core.text_style()
+  @spec handle_integer_color_param(integer(), Core.text_style()) ::
+          Core.text_style()
   def handle_integer_color_param(code, style) do
     cond do
       # Colors

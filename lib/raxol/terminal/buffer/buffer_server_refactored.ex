@@ -91,27 +91,8 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactored do
   """
   @spec start_link(keyword()) :: {:ok, pid()} | {:error, term()}
   def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name)
-    gen_server_opts = Keyword.delete(opts, :name)
-
-    # Ensure we have a valid name for GenServer
-    valid_name =
-      case name do
-        nil -> __MODULE__
-        # Don't use references as names
-        ref when is_reference(ref) -> nil
-        atom when is_atom(atom) -> atom
-        {:global, term} -> {:global, term}
-        {:via, module, term} -> {:via, module, term}
-        # Fallback to module name
-        _ -> __MODULE__
-      end
-
-    if valid_name do
-      GenServer.start_link(__MODULE__, gen_server_opts, name: valid_name)
-    else
-      GenServer.start_link(__MODULE__, gen_server_opts)
-    end
+    alias Raxol.Terminal.Buffer.GenServerHelpers
+    GenServerHelpers.start_link_with_name_validation(__MODULE__, opts)
   end
 
   @doc """
@@ -465,24 +446,55 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactored do
   def init(opts), do: Callbacks.init(opts)
 
   @impl GenServer
-  def handle_call({:get_cell, x, y}, from, state), do: Callbacks.handle_call({:get_cell, x, y}, from, state)
-  def handle_call(:flush, from, state), do: Callbacks.handle_call(:flush, from, state)
-  def handle_call(:get_dimensions, from, state), do: Callbacks.handle_call(:get_dimensions, from, state)
-  def handle_call(:get_buffer, from, state), do: Callbacks.handle_call(:get_buffer, from, state)
-  def handle_call({:atomic_operation, operation}, from, state), do: Callbacks.handle_call({:atomic_operation, operation}, from, state)
-  def handle_call({:set_cell_sync, x, y, cell}, from, state), do: Callbacks.handle_call({:set_cell_sync, x, y, cell}, from, state)
-  def handle_call(:get_metrics, from, state), do: Callbacks.handle_call(:get_metrics, from, state)
-  def handle_call(:get_memory_usage, from, state), do: Callbacks.handle_call(:get_memory_usage, from, state)
-  def handle_call(:get_damage_regions, from, state), do: Callbacks.handle_call(:get_damage_regions, from, state)
-  def handle_call(:clear_damage_regions, from, state), do: Callbacks.handle_call(:clear_damage_regions, from, state)
-  def handle_call(:get_content, from, state), do: Callbacks.handle_call(:get_content, from, state)
+  def handle_call({:get_cell, x, y}, from, state),
+    do: Callbacks.handle_call({:get_cell, x, y}, from, state)
+
+  def handle_call(:flush, from, state),
+    do: Callbacks.handle_call(:flush, from, state)
+
+  def handle_call(:get_dimensions, from, state),
+    do: Callbacks.handle_call(:get_dimensions, from, state)
+
+  def handle_call(:get_buffer, from, state),
+    do: Callbacks.handle_call(:get_buffer, from, state)
+
+  def handle_call({:atomic_operation, operation}, from, state),
+    do: Callbacks.handle_call({:atomic_operation, operation}, from, state)
+
+  def handle_call({:set_cell_sync, x, y, cell}, from, state),
+    do: Callbacks.handle_call({:set_cell_sync, x, y, cell}, from, state)
+
+  def handle_call(:get_metrics, from, state),
+    do: Callbacks.handle_call(:get_metrics, from, state)
+
+  def handle_call(:get_memory_usage, from, state),
+    do: Callbacks.handle_call(:get_memory_usage, from, state)
+
+  def handle_call(:get_damage_regions, from, state),
+    do: Callbacks.handle_call(:get_damage_regions, from, state)
+
+  def handle_call(:clear_damage_regions, from, state),
+    do: Callbacks.handle_call(:clear_damage_regions, from, state)
+
+  def handle_call(:get_content, from, state),
+    do: Callbacks.handle_call(:get_content, from, state)
 
   @impl GenServer
-  def handle_cast({:set_cell, x, y, cell}, state), do: Handlers.handle_cast({:set_cell, x, y, cell}, state)
-  def handle_cast({:write_string, x, y, string}, state), do: Handlers.handle_cast({:write_string, x, y, string}, state)
-  def handle_cast({:fill_region, x, y, width, height, cell}, state), do: Handlers.handle_cast({:fill_region, x, y, width, height, cell}, state)
-  def handle_cast({:scroll, lines}, state), do: Handlers.handle_cast({:scroll, lines}, state)
-  def handle_cast({:resize, width, height}, state), do: Handlers.handle_cast({:resize, width, height}, state)
-  def handle_cast({:batch_operations, operations}, state), do: Handlers.handle_cast({:batch_operations, operations}, state)
+  def handle_cast({:set_cell, x, y, cell}, state),
+    do: Handlers.handle_cast({:set_cell, x, y, cell}, state)
 
+  def handle_cast({:write_string, x, y, string}, state),
+    do: Handlers.handle_cast({:write_string, x, y, string}, state)
+
+  def handle_cast({:fill_region, x, y, width, height, cell}, state),
+    do: Handlers.handle_cast({:fill_region, x, y, width, height, cell}, state)
+
+  def handle_cast({:scroll, lines}, state),
+    do: Handlers.handle_cast({:scroll, lines}, state)
+
+  def handle_cast({:resize, width, height}, state),
+    do: Handlers.handle_cast({:resize, width, height}, state)
+
+  def handle_cast({:batch_operations, operations}, state),
+    do: Handlers.handle_cast({:batch_operations, operations}, state)
 end

@@ -89,10 +89,8 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
   def format_event(event) do
     case event do
       {:window_event, type, params} ->
-        case get_event_formatter(type) do
-          nil -> nil
-          formatter -> formatter.(params)
-        end
+        formatter = get_event_formatter(type)
+        formatter.(params)
 
       _ ->
         nil

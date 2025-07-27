@@ -630,7 +630,6 @@ defmodule Raxol.Terminal.Parser.State.Manager do
     %{manager | designating_gset: gset}
   end
 
-
   def process_input(emulator, state, input) do
     handler =
       Map.get(state_handlers_input(), state.state, &handle_default_state/3)

@@ -135,7 +135,6 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   # Client API
 
   # Helper function to get the process name
-  defp process_name(pid_or_name \\ __MODULE__)
   defp process_name(pid) when is_pid(pid), do: pid
   defp process_name(name) when is_atom(name), do: name
   defp process_name(_), do: __MODULE__

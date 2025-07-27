@@ -421,8 +421,12 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def clear(buffer, style),
     do: Raxol.Terminal.ScreenBuffer.Core.clear(buffer, style)
 
-  defdelegate erase_from_cursor_to_end(buffer, x, y, top, bottom), to: EraseOperations
-  defdelegate erase_from_start_to_cursor(buffer, x, y, top, bottom), to: EraseOperations
+  defdelegate erase_from_cursor_to_end(buffer, x, y, top, bottom),
+    to: EraseOperations
+
+  defdelegate erase_from_start_to_cursor(buffer, x, y, top, bottom),
+    to: EraseOperations
+
   @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate erase_all(buffer), to: EraseOperations
   defdelegate clear_region(buffer, x, y, width, height), to: EraseOperations
@@ -645,11 +649,19 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   # === Scroll Operations ===
 
-  defdelegate fill_region(buffer, x, y, width, height, cell), to: RegionOperations
+  defdelegate fill_region(buffer, x, y, width, height, cell),
+    to: RegionOperations
 
   def update(buffer, changes) do
     Raxol.Terminal.Buffer.Content.update(buffer, changes)
   end
 
-  defdelegate handle_single_line_replacement(lines_list, row, start_col, end_col, replacement), to: RegionOperations
+  defdelegate handle_single_line_replacement(
+                lines_list,
+                row,
+                start_col,
+                end_col,
+                replacement
+              ),
+              to: RegionOperations
 end

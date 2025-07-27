@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Buffer.LineOperations do
-  import Raxol.Guards
 
   @moduledoc """
   Provides line-level operations for the screen buffer.
@@ -16,19 +15,50 @@ defmodule Raxol.Terminal.Buffer.LineOperations do
 
   # Delegate insertion operations
   defdelegate insert_lines(buffer, count), to: Insertion
-  defdelegate insert_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom), to: Insertion
+
+  defdelegate insert_lines(
+                buffer,
+                count,
+                cursor_y,
+                cursor_x,
+                scroll_top,
+                scroll_bottom
+              ),
+              to: Insertion
+
   defdelegate do_insert_lines(buffer, cursor_y, count, bottom), to: Insertion
-  defdelegate do_insert_lines_with_style(buffer, cursor_y, count, bottom, style), to: Insertion
+
+  defdelegate do_insert_lines_with_style(
+                buffer,
+                cursor_y,
+                count,
+                bottom,
+                style
+              ),
+              to: Insertion
+
   defdelegate insert_lines(buffer, position, count), to: Insertion
   defdelegate insert_lines(buffer, position, count, style), to: Insertion
   defdelegate insert_lines(buffer, lines, y, top, bottom), to: Insertion
 
   # Delegate deletion operations
   defdelegate delete_lines(buffer, count), to: Deletion
-  defdelegate delete_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom), to: Deletion
+
+  defdelegate delete_lines(
+                buffer,
+                count,
+                cursor_y,
+                cursor_x,
+                scroll_top,
+                scroll_bottom
+              ),
+              to: Deletion
+
   defdelegate delete_lines(buffer, position, count), to: Deletion
   defdelegate delete_lines(buffer, y, count, style, region), to: Deletion
-  defdelegate delete_lines_in_region(buffer, lines, y, top, bottom), to: Deletion
+
+  defdelegate delete_lines_in_region(buffer, lines, y, top, bottom),
+    to: Deletion
 
   # Delegate management operations
   defdelegate prepend_lines(buffer, count), to: Management

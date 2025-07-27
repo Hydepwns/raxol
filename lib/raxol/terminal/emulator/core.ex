@@ -9,7 +9,6 @@ defmodule Raxol.Terminal.Emulator.Core do
   - Buffer management
   """
 
-  import Raxol.Guards
 
   alias Raxol.Terminal.{
     ScreenBuffer,
@@ -30,7 +29,8 @@ defmodule Raxol.Terminal.Emulator.Core do
 
   A tuple {updated_emulator, output}.
   """
-  @spec process_input(Raxol.Terminal.Emulator.t(), binary()) :: {Raxol.Terminal.Emulator.t(), binary()}
+  @spec process_input(Raxol.Terminal.Emulator.t(), binary()) ::
+          {Raxol.Terminal.Emulator.t(), binary()}
   def process_input(emulator, input) do
     IO.puts("DEBUG: process_input called with input: #{inspect(input)}")
 
@@ -94,7 +94,7 @@ defmodule Raxol.Terminal.Emulator.Core do
         "DEBUG: ensure_cursor_in_visible_region - cursor_handled_by_autowrap is false, checking cursor position"
       )
 
-      active_buffer = get_active_buffer(emulator)
+      active_buffer = get_screen_buffer(emulator)
       buffer_height = ScreenBuffer.get_height(active_buffer)
 
       {_, cursor_y} =
@@ -137,9 +137,9 @@ defmodule Raxol.Terminal.Emulator.Core do
   """
   @spec maybe_scroll(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def maybe_scroll(%Raxol.Terminal.Emulator{} = emulator) do
-    {_x, y} = Manager.get_position(emulator.cursor)
+    {x, y} = Manager.get_position(emulator.cursor)
 
-    log_scroll_debug(_x, y, emulator.height)
+    log_scroll_debug(x, y, emulator.height)
 
     if y >= emulator.height do
       perform_scroll(emulator)
@@ -160,8 +160,8 @@ defmodule Raxol.Terminal.Emulator.Core do
 
   The active screen buffer.
   """
-  @spec get_active_buffer(Raxol.Terminal.Emulator.t()) :: ScreenBuffer.t()
-  def get_active_buffer(%Raxol.Terminal.Emulator{} = emulator) do
+  @spec get_screen_buffer(Raxol.Terminal.Emulator.t()) :: ScreenBuffer.t()
+  def get_screen_buffer(%Raxol.Terminal.Emulator{} = emulator) do
     case emulator.active_buffer_type do
       :main -> emulator.main_screen_buffer
       :alternate -> emulator.alternate_screen_buffer
@@ -206,7 +206,11 @@ defmodule Raxol.Terminal.Emulator.Core do
 
   Updated emulator with new dimensions.
   """
-  @spec resize(Raxol.Terminal.Emulator.t(), non_neg_integer(), non_neg_integer()) :: Raxol.Terminal.Emulator.t()
+  @spec resize(
+          Raxol.Terminal.Emulator.t(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Raxol.Terminal.Emulator.t()
   def resize(%Raxol.Terminal.Emulator{} = emulator, width, height)
       when width > 0 and height > 0 do
     # Resize main screen buffer
@@ -250,7 +254,13 @@ defmodule Raxol.Terminal.Emulator.Core do
 
   Updated emulator.
   """
-  def write_string(%Raxol.Terminal.Emulator{} = emulator, x, y, string, style \\ %{}) do
+  def write_string(
+        %Raxol.Terminal.Emulator{} = emulator,
+        x,
+        y,
+        string,
+        style \\ %{}
+      ) do
     translated =
       Raxol.Terminal.ANSI.CharacterSets.translate_string(
         string,
@@ -258,7 +268,7 @@ defmodule Raxol.Terminal.Emulator.Core do
       )
 
     # Get the active buffer
-    buffer = get_active_buffer(emulator)
+    buffer = get_screen_buffer(emulator)
 
     # Write the string to the buffer
     updated_buffer =
@@ -308,7 +318,7 @@ defmodule Raxol.Terminal.Emulator.Core do
   defp perform_scroll(emulator) do
     Raxol.Core.Runtime.Log.debug("[maybe_scroll] Scrolling needed!")
 
-    active_buffer = get_active_buffer(emulator)
+    active_buffer = get_screen_buffer(emulator)
 
     {scrolled_buffer, scrolled_lines} =
       ScreenBuffer.scroll_up(active_buffer, 1)
@@ -377,19 +387,29 @@ defmodule Raxol.Terminal.Emulator.Core do
   defp has_meaningful_content?(line) do
     # Check if the line contains at least 3 non-whitespace characters
     case line do
-      [] -> false
+      [] ->
+        false
+
       cells when is_list(cells) ->
-        non_ws_count = Enum.count(cells, fn cell ->
-          case cell do
-            %{char: char} when is_binary(char) ->
-              char != " " and char != "\t" and char != "\n" and char != "\r"
-            %{char: char} when is_integer(char) ->
-              char > 32  # ASCII space is 32, so anything above that is meaningful
-            _ -> false
-          end
-        end)
+        non_ws_count =
+          Enum.count(cells, fn cell ->
+            case cell do
+              %{char: char} when is_binary(char) ->
+                char != " " and char != "\t" and char != "\n" and char != "\r"
+
+              %{char: char} when is_integer(char) ->
+                # ASCII space is 32, so anything above that is meaningful
+                char > 32
+
+              _ ->
+                false
+            end
+          end)
+
         non_ws_count >= 3
-      _ -> false
+
+      _ ->
+        false
     end
   end
 

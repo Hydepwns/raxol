@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
   Handles line deletion operations for the screen buffer.
   """
 
-  import Raxol.Guards
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
 

@@ -92,9 +92,11 @@ defmodule Raxol.Terminal.Integration do
       {:ok, output} when is_binary(output) ->
         State.render(state)
         output
+
       {:ok, _} ->
         State.render(state)
         ""
+
       _ ->
         State.render(state)
         ""
@@ -111,6 +113,7 @@ defmodule Raxol.Terminal.Integration do
       case state.buffer_manager do
         buffer_manager when is_pid(buffer_manager) ->
           Raxol.Terminal.Buffer.UnifiedManager.clear(buffer_manager)
+
         buffer_manager when is_map(buffer_manager) ->
           # For test mode, return a cleared buffer manager with get_visible_content/0
           %{
@@ -118,6 +121,7 @@ defmodule Raxol.Terminal.Integration do
             cursor: {0, 0},
             get_visible_content: fn -> [] end
           }
+
         _ ->
           state.buffer_manager
       end

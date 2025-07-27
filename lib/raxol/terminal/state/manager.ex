@@ -56,7 +56,11 @@ defmodule Raxol.Terminal.State.Manager do
   end
 
   def handle_call({:set_attribute, attribute, value}, _from, state) do
-    new_state = %{state | attributes: Map.put(state.attributes, attribute, value)}
+    new_state = %{
+      state
+      | attributes: Map.put(state.attributes, attribute, value)
+    }
+
     {:reply, new_state, new_state}
   end
 
@@ -70,6 +74,7 @@ defmodule Raxol.Terminal.State.Manager do
       [popped_state | rest] ->
         new_state = %{state | state_stack: rest}
         {:reply, popped_state, new_state}
+
       [] ->
         {:reply, nil, state}
     end
@@ -236,7 +241,9 @@ defmodule Raxol.Terminal.State.Manager do
               emulator
               | state: %{state | state_stack: rest}
             }
+
             {new_emulator, popped_state}
+
           [] ->
             {emulator, nil}
         end
@@ -302,7 +309,7 @@ defmodule Raxol.Terminal.State.Manager do
   @spec reset_state(Emulator.t()) :: Emulator.t()
   def reset_state(emulator) do
     case emulator do
-      %{state: _state} when is_map(_state) ->
+      %{state: state} when is_map(state) ->
         # Handle map-based emulator
         %{emulator | state: new()}
 

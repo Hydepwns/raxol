@@ -32,12 +32,12 @@ defmodule Raxol.Terminal.BufferManager do
   Gets the currently active buffer from the emulator.
   Returns the active buffer.
   """
-  @spec get_active_buffer(Emulator.t()) :: ScreenBuffer.t()
-  def get_active_buffer(%{active_buffer_type: :main} = emulator) do
+  @spec get_screen_buffer(Emulator.t()) :: ScreenBuffer.t()
+  def get_screen_buffer(%{active_buffer_type: :main} = emulator) do
     emulator.main_screen_buffer
   end
 
-  def get_active_buffer(%{active_buffer_type: :alternate} = emulator) do
+  def get_screen_buffer(%{active_buffer_type: :alternate} = emulator) do
     emulator.alternate_screen_buffer
   end
 
@@ -119,7 +119,7 @@ defmodule Raxol.Terminal.BufferManager do
   """
   @spec clear_active_buffer(Emulator.t()) :: Emulator.t()
   def clear_active_buffer(emulator) do
-    buffer = get_active_buffer(emulator)
+    buffer = get_screen_buffer(emulator)
     cleared_buffer = ScreenBuffer.clear(buffer)
     update_active_buffer(emulator, cleared_buffer)
   end
@@ -130,7 +130,7 @@ defmodule Raxol.Terminal.BufferManager do
   """
   @spec scroll_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def scroll_up(emulator, lines) do
-    buffer = get_active_buffer(emulator)
+    buffer = get_screen_buffer(emulator)
     new_buffer = Raxol.Terminal.Buffer.Scroller.scroll_up(buffer, lines)
     update_active_buffer(emulator, new_buffer)
   end
@@ -141,7 +141,7 @@ defmodule Raxol.Terminal.BufferManager do
   """
   @spec scroll_down(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def scroll_down(emulator, lines) do
-    buffer = get_active_buffer(emulator)
+    buffer = get_screen_buffer(emulator)
     new_buffer = Raxol.Terminal.Buffer.Scroller.scroll_down(buffer, lines)
     update_active_buffer(emulator, new_buffer)
   end

@@ -128,7 +128,14 @@ defmodule Raxol.Terminal.Buffer.Operations do
       when list?(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) and
              is_integer(scroll_top) and is_integer(scroll_bottom) do
-    Scrolling.insert_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom)
+    Scrolling.insert_lines(
+      buffer,
+      count,
+      cursor_y,
+      cursor_x,
+      scroll_top,
+      scroll_bottom
+    )
   end
 
   def insert_lines(buffer, y, count, style)
@@ -158,7 +165,14 @@ defmodule Raxol.Terminal.Buffer.Operations do
       when list?(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) and
              is_integer(scroll_top) and is_integer(scroll_bottom) do
-    Scrolling.delete_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom)
+    Scrolling.delete_lines(
+      buffer,
+      count,
+      cursor_y,
+      cursor_x,
+      scroll_top,
+      scroll_bottom
+    )
   end
 
   def delete_lines(buffer, y, count, style, {top, bottom})

@@ -155,7 +155,7 @@ defmodule Raxol.Terminal.Commands.Parser do
         {:error, "No final byte"}
 
       final_byte when final_byte in ?A..?Z or final_byte in ?a..?z ->
-        params_string = String.slice(rest, 0..-2)
+        params_string = String.slice(rest, 0..-2//1)
         params = parse_params(params_string)
         {:ok, params, final_byte}
 

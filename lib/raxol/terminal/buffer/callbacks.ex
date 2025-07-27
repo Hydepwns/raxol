@@ -69,9 +69,9 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
         new_state = %{state | metrics: new_metrics}
         {:reply, {:ok, cell}, new_state}
       catch
-        _kind, reason ->
+        kind, reason ->
           Logger.error("Failed to get cell at (#{x}, #{y}): #{inspect(reason)}")
-          {:reply, {:error, {_kind, reason}}, state}
+          {:reply, {:error, {kind, reason}}, state}
       end
     else
       {:reply, {:error, :invalid_coordinates}, state}
@@ -159,9 +159,9 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
 
       {:reply, {:ok, new_buffer}, new_state}
     catch
-      _kind, reason ->
+      kind, reason ->
         Logger.error("Failed to perform atomic operation: #{inspect(reason)}")
-        {:reply, {:error, {_kind, reason}}, state}
+        {:reply, {:error, {kind, reason}}, state}
     end
   end
 
@@ -187,9 +187,9 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
 
         {:reply, :ok, new_state}
       catch
-        _kind, reason ->
+        kind, reason ->
           Logger.error("Failed to set cell at (#{x}, #{y}): #{inspect(reason)}")
-          {:reply, {:error, {_kind, reason}}, state}
+          {:reply, {:error, {kind, reason}}, state}
       end
     else
       {:reply, {:error, :invalid_coordinates}, state}

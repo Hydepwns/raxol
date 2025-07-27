@@ -142,7 +142,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
 
   defp clear_screen_by_mode(emulator, mode) do
     {row, col} = CursorOperations.get_cursor_position(emulator)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
 
     case mode do
       # From cursor to end of screen
@@ -183,7 +183,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
 
   defp clear_line_by_mode(emulator, mode) do
     {row, col} = CursorOperations.get_cursor_position(emulator)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
 
     case mode do
       # From cursor to end of line

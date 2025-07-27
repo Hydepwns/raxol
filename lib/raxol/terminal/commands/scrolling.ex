@@ -156,15 +156,20 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     kept_bottom_part = Enum.take(bottom_part, lines_to_keep)
 
     # Add blank lines at the bottom of the scroll region if needed
-    remaining_lines = max_lines_in_region - lines_after_insertion - lines_to_keep
-    additional_blank_lines = if remaining_lines > 0 do
-      List.duplicate(blank_line, remaining_lines)
-    else
-      []
-    end
+    remaining_lines =
+      max_lines_in_region - lines_after_insertion - lines_to_keep
+
+    additional_blank_lines =
+      if remaining_lines > 0 do
+        List.duplicate(blank_line, remaining_lines)
+      else
+        []
+      end
 
     # Combine the parts
-    new_cells = top_part ++ blank_lines_to_insert ++ kept_bottom_part ++ additional_blank_lines
+    new_cells =
+      top_part ++
+        blank_lines_to_insert ++ kept_bottom_part ++ additional_blank_lines
 
     # Ensure we don't exceed the buffer height
     final_cells = Enum.take(new_cells, buffer.height)

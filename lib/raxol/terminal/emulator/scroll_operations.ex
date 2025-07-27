@@ -12,7 +12,8 @@ defmodule Raxol.Terminal.Emulator.ScrollOperations do
   @doc """
   Updates the scroll region with new top and bottom bounds.
   """
-  @spec update_scroll_region(emulator(), {non_neg_integer(), non_neg_integer()}) :: emulator()
+  @spec update_scroll_region(emulator(), {non_neg_integer(), non_neg_integer()}) ::
+          emulator()
   def update_scroll_region(emulator, {top, bottom}) do
     ScrollOps.set_scroll_region(emulator, {top, bottom})
   end
@@ -50,9 +51,26 @@ defmodule Raxol.Terminal.Emulator.ScrollOperations do
   @doc """
   Gets the scroll region from the emulator.
   """
-  @spec get_scroll_region(emulator()) :: {non_neg_integer(), non_neg_integer()} | nil
+  @spec get_scroll_region(emulator()) ::
+          {non_neg_integer(), non_neg_integer()} | nil
   def get_scroll_region(emulator) do
     emulator.scroll_region
+  end
+
+  @doc """
+  Scrolls the terminal up by the specified number of lines.
+  """
+  @spec scroll_up(emulator(), non_neg_integer()) :: emulator()
+  def scroll_up(emulator, lines) do
+    ScrollOps.scroll_up(emulator, lines)
+  end
+
+  @doc """
+  Scrolls the terminal down by the specified number of lines.
+  """
+  @spec scroll_down(emulator(), non_neg_integer()) :: emulator()
+  def scroll_down(emulator, lines) do
+    ScrollOps.scroll_down(emulator, lines)
   end
 
   @doc """
@@ -60,15 +78,14 @@ defmodule Raxol.Terminal.Emulator.ScrollOperations do
   """
   @spec maybe_scroll(emulator()) :: emulator()
   def maybe_scroll(%Emulator{} = emulator) do
-    cursor_position = Raxol.Terminal.Emulator.Helpers.get_cursor_position(emulator)
-    
+    cursor_position =
+      Raxol.Terminal.Emulator.Helpers.get_cursor_position(emulator)
+
     case cursor_position do
       {_x, y} when y >= emulator.height ->
         # Cursor is below the screen, scroll up
         ScrollOps.scroll_up(emulator, 1)
-      {_x, y} when y < 0 ->
-        # Cursor is above the screen, scroll down
-        ScrollOps.scroll_down(emulator, 1)
+
       _ ->
         # No scrolling needed
         emulator

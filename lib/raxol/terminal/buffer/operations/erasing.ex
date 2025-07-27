@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
   Handles erasing operations for terminal buffers including line and display erasing.
   """
 
-  import Raxol.Guards
   alias Raxol.Terminal.Buffer.Cell
 
   @doc """
@@ -115,7 +114,12 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
         ) :: Raxol.Terminal.ScreenBuffer.t()
   def erase_from_cursor_to_line_end(buffer, row, col)
       when is_struct(buffer, Raxol.Terminal.ScreenBuffer) do
-    Raxol.Terminal.Buffer.LineOperations.erase_chars(buffer, row, col, buffer.width - col)
+    Raxol.Terminal.Buffer.LineOperations.erase_chars(
+      buffer,
+      row,
+      col,
+      buffer.width - col
+    )
   end
 
   def erase_from_cursor_to_line_end(buffer, row, col) when is_list(buffer) do
@@ -205,7 +209,12 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
           Raxol.Terminal.ScreenBuffer.t()
   def erase_entire_line(buffer, row)
       when is_struct(buffer, Raxol.Terminal.ScreenBuffer) do
-    Raxol.Terminal.Buffer.LineOperations.erase_chars(buffer, row, 0, buffer.width)
+    Raxol.Terminal.Buffer.LineOperations.erase_chars(
+      buffer,
+      row,
+      0,
+      buffer.width
+    )
   end
 
   def erase_entire_line(buffer, row) when is_list(buffer) do
@@ -292,7 +301,8 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
       iex> Operations.Erasing.clear_scrollback(buffer)
       %{buffer | scrollback: []}
   """
-  @spec clear_scrollback(Raxol.Terminal.ScreenBuffer.t()) :: Raxol.Terminal.ScreenBuffer.t()
+  @spec clear_scrollback(Raxol.Terminal.ScreenBuffer.t()) ::
+          Raxol.Terminal.ScreenBuffer.t()
   def clear_scrollback(buffer) do
     %{buffer | scrollback: []}
   end

@@ -72,7 +72,11 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
     Raxol.Core.Runtime.Log.debug(
       "EscapeState: Found DCS final byte 'P', transitioning to dcs_entry with rest=#{inspect(rest)}"
     )
-    IO.puts("DEBUG: EscapeState - Found DCS final byte 'P', transitioning to dcs_entry with rest=#{inspect(rest)}")
+
+    IO.puts(
+      "DEBUG: EscapeState - Found DCS final byte 'P', transitioning to dcs_entry with rest=#{inspect(rest)}"
+    )
+
     next_parser_state = %{parser_state | state: :dcs_entry}
     {:continue, emulator, next_parser_state, rest}
   end
@@ -101,6 +105,19 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
   # Handle ESC O (SS3) - Single Shift 3
   defp dispatch_escape_input(<<"O", rest::binary>>, emulator, parser_state) do
     next_parser_state = %{parser_state | state: :ground, single_shift: :ss3}
+    {:continue, emulator, next_parser_state, rest}
+  end
+
+  # Handle ESC ( ) * + for character set designation
+  defp dispatch_escape_input(<<designator, rest::binary>>, emulator, parser_state)
+       when designator in [?(, ?), ?*, ?+] do
+    gset = case designator do
+      ?( -> :g0
+      ?) -> :g1
+      ?* -> :g2
+      ?+ -> :g3
+    end
+    next_parser_state = %{parser_state | state: :designate_charset, designating_gset: gset}
     {:continue, emulator, next_parser_state, rest}
   end
 
@@ -154,6 +171,16 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
   defp process_escape_byte(?O, emulator, state) do
     {:ok, emulator, %{state | state: :ground, single_shift: :ss3}}
+  end
+
+  defp process_escape_byte(byte, emulator, state) when byte in [?(, ?), ?*, ?+] do
+    gset = case byte do
+      ?( -> :g0
+      ?) -> :g1
+      ?* -> :g2
+      ?+ -> :g3
+    end
+    {:ok, emulator, %{state | state: :designate_charset, designating_gset: gset}}
   end
 
   defp process_escape_byte(byte, emulator, state) do

@@ -267,11 +267,13 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def set_custom_shape(shape, params),
     do: set_custom_shape(__MODULE__, shape, params)
 
-  def update_position(pid \\ __MODULE__, {row, col}) do
+  def update_position(pid \\ __MODULE__, position)
+  
+  def update_position(pid, {row, col}) when is_integer(row) and is_integer(col) do
     GenServer.call(pid, {:update_position, row, col})
   end
 
-  def update_position(pid, text) when is_pid(pid) and is_binary(text) do
+  def update_position(pid, text) when is_binary(text) do
     GenServer.call(pid, {:update_position_from_text, text})
   end
 
@@ -416,6 +418,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
     IO.puts("DEBUG: State module: #{inspect(State)}")
     GenServer.call(pid, {:set_state_atom, state_atom})
   end
+
   def set_state(%__MODULE__{} = state, state_atom) do
     IO.puts("DEBUG: Manager.set_state struct clause matched")
     IO.puts("DEBUG: State module: #{inspect(State)}")
@@ -486,7 +489,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl GenServer
   def handle_call({:set_custom_shape, shape, params}, _from, state) do
-    {result, new_state} = Callbacks.handle_set_custom_shape(state, shape, params)
+    {result, new_state} =
+      Callbacks.handle_set_custom_shape(state, shape, params)
+
     {:reply, result, new_state}
   end
 
@@ -504,7 +509,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl GenServer
   def handle_call({:update_position_from_text, text}, _from, state) do
-    {result, new_state} = Callbacks.handle_update_position_from_text(state, text)
+    {result, new_state} =
+      Callbacks.handle_update_position_from_text(state, text)
+
     {:reply, result, new_state}
   end
 
@@ -528,7 +535,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl GenServer
   def handle_call({:move_down, count, width, height}, _from, state) do
-    {result, new_state} = Callbacks.handle_move_down(state, count, width, height)
+    {result, new_state} =
+      Callbacks.handle_move_down(state, count, width, height)
+
     {:reply, result, new_state}
   end
 
@@ -540,7 +549,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl GenServer
   def handle_call({:move_right, cols, width, height}, _from, state) do
-    {result, new_state} = Callbacks.handle_move_right(state, cols, width, height)
+    {result, new_state} =
+      Callbacks.handle_move_right(state, cols, width, height)
+
     {:reply, result, new_state}
   end
 
@@ -564,19 +575,25 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @impl GenServer
   def handle_call({:move_to_column, column, width, height}, _from, state) do
-    {result, new_state} = Callbacks.handle_move_to_column_bounded(state, column, width, height)
+    {result, new_state} =
+      Callbacks.handle_move_to_column_bounded(state, column, width, height)
+
     {:reply, result, new_state}
   end
 
   @impl GenServer
   def handle_call({:move_to, row, col, width, height}, _from, state) do
-    {result, new_state} = Callbacks.handle_move_to_bounded(state, row, col, width, height)
+    {result, new_state} =
+      Callbacks.handle_move_to_bounded(state, row, col, width, height)
+
     {:reply, result, new_state}
   end
 
   @impl GenServer
   def handle_call({:move_to_bounded, row, col, width, height}, _from, state) do
-    {result, new_state} = Callbacks.handle_move_to_bounded_position(state, row, col, width, height)
+    {result, new_state} =
+      Callbacks.handle_move_to_bounded_position(state, row, col, width, height)
+
     {:reply, result, new_state}
   end
 

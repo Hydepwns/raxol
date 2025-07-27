@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.ControlCodes do
-  import Raxol.Guards
 
   @moduledoc """
   Handles C0 control codes and simple ESC sequences.
@@ -105,7 +104,7 @@ defmodule Raxol.Terminal.ControlCodes do
     {current_col, _} =
       Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
-    active_buffer = Emulator.get_active_buffer(emulator)
+    active_buffer = Emulator.get_screen_buffer(emulator)
     width = ScreenBuffer.get_width(active_buffer)
     # Placeholder: move to next multiple of 8 or end of line
     next_stop = min(width - 1, div(current_col, 8) * 8 + 8)
@@ -116,7 +115,7 @@ defmodule Raxol.Terminal.ControlCodes do
 
   @doc "Handle Line Feed (LF), New Line (NL), Vertical Tab (VT)"
   def handle_lf(%Emulator{} = emulator) do
-    active_buffer = Emulator.get_active_buffer(emulator)
+    active_buffer = Emulator.get_screen_buffer(emulator)
     buffer_height = ScreenBuffer.get_height(active_buffer)
 
     {_, current_row} =
@@ -137,7 +136,7 @@ defmodule Raxol.Terminal.ControlCodes do
   end
 
   defp move_cursor_down(emulator) do
-    active_buffer = Emulator.get_active_buffer(emulator)
+    active_buffer = Emulator.get_screen_buffer(emulator)
     {buffer_width, buffer_height} = ScreenBuffer.get_dimensions(active_buffer)
     cursor = emulator.cursor
 
@@ -339,7 +338,7 @@ defmodule Raxol.Terminal.ControlCodes do
   def handle_ris(emulator) do
     Raxol.Core.Runtime.Log.info("RIS (Reset to Initial State) received")
     # Re-initialize most state components, keeping buffer dimensions
-    active_buffer = Emulator.get_active_buffer(emulator)
+    active_buffer = Emulator.get_screen_buffer(emulator)
     width = ScreenBuffer.get_width(active_buffer)
     height = ScreenBuffer.get_height(active_buffer)
     scrollback_limit = active_buffer.scrollback_limit
@@ -382,7 +381,7 @@ defmodule Raxol.Terminal.ControlCodes do
   def handle_ri(%Emulator{} = emulator) do
     # Move cursor up one line. If at the top margin, scroll down.
     {_col, row} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
-    active_buffer = Emulator.get_active_buffer(emulator)
+    active_buffer = Emulator.get_screen_buffer(emulator)
 
     {top_margin, _} =
       case emulator.scroll_region do
@@ -503,6 +502,8 @@ defmodule Raxol.Terminal.ControlCodes do
     ?E => &Raxol.Terminal.ControlCodes.handle_nel/1,
     ?H => &Raxol.Terminal.ControlCodes.handle_hts/1,
     ?M => &Raxol.Terminal.ControlCodes.handle_ri/1,
+    ?n => &Raxol.Terminal.ControlCodes.handle_ls2/1,
+    ?o => &Raxol.Terminal.ControlCodes.handle_ls3/1,
     ?= => &Raxol.Terminal.Emulator.handle_esc_equals/1,
     ?> => &Raxol.Terminal.Emulator.handle_esc_greater/1
   }
@@ -523,5 +524,27 @@ defmodule Raxol.Terminal.ControlCodes do
       handler ->
         handler.(emulator)
     end
+  end
+
+  @doc """
+  Handle Locking Shift 2 (LS2) - ESC n
+  Invokes G2 character set into GL
+  """
+  def handle_ls2(%Emulator{} = emulator) do
+    %{
+      emulator
+      | charset_state: %{emulator.charset_state | gl: :g2}
+    }
+  end
+
+  @doc """
+  Handle Locking Shift 3 (LS3) - ESC o
+  Invokes G3 character set into GL
+  """
+  def handle_ls3(%Emulator{} = emulator) do
+    %{
+      emulator
+      | charset_state: %{emulator.charset_state | gl: :g3}
+    }
   end
 end

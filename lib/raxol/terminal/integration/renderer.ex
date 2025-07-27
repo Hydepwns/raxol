@@ -104,7 +104,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
   Returns :ok or {:error, reason}.
   """
   def render(%State{} = state) do
-    active_buffer = Manager.get_active_buffer(state.buffer_manager)
+    active_buffer = Manager.get_screen_buffer(state.buffer_manager)
 
     if active_buffer && active_buffer.cells do
       case Raxol.Terminal.Integration.CellRenderer.render(active_buffer.cells) do

@@ -11,7 +11,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
           {ScreenBuffer.t(), {integer(), integer()},
            Raxol.Terminal.ANSI.TextFormatting.text_style()}
   def get_buffer_state(emulator) do
-    active_buffer = Emulator.get_active_buffer(emulator)
+    active_buffer = Emulator.get_screen_buffer(emulator)
 
     cursor_pos =
       if is_map(emulator.cursor) and Map.has_key?(emulator.cursor, :position),
@@ -83,7 +83,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_j(emulator, params) do
     mode = get_valid_non_neg_param(params, 0, 0)
-    active_buffer = Emulator.get_active_buffer(emulator)
+    active_buffer = Emulator.get_screen_buffer(emulator)
 
     # Get cursor position from emulator
     cursor_pos = get_cursor_position(emulator.cursor)
@@ -100,7 +100,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_k(emulator, params) do
     mode = get_valid_non_neg_param(params, 0, 0)
-    active_buffer = Emulator.get_active_buffer(emulator)
+    active_buffer = Emulator.get_screen_buffer(emulator)
 
     # Get cursor position from emulator
     cursor_pos = get_cursor_position(emulator.cursor)
@@ -170,8 +170,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
     end
   end
 
-  def handle_J(emulator, params), do: handle_j(emulator, params)
-  def handle_K(emulator, params), do: handle_k(emulator, params)
+  def handle_j_alias(emulator, params), do: handle_j(emulator, params)
+  def handle_k_alias(emulator, params), do: handle_k(emulator, params)
 
   # Helper function to get cursor position from either PID or struct
   defp get_cursor_position(cursor) when is_pid(cursor) do

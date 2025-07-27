@@ -67,7 +67,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Selection do
     # Find the content in the buffer and set selection to cover it
     case find_text_in_buffer(emulator.screen_buffer, content) do
       {:ok, start_pos, end_pos} ->
-        buffer1 = Selection.start(emulator.screen_buffer, start_pos.x, start_pos.y)
+        buffer1 =
+          Selection.start(emulator.screen_buffer, start_pos.x, start_pos.y)
+
         buffer2 = Selection.update(buffer1, end_pos.x, end_pos.y)
         {:ok, %{emulator | screen_buffer: buffer2}}
 

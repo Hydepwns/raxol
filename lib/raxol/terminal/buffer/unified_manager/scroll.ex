@@ -12,7 +12,14 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
   @doc """
   Processes scrolling within a region.
   """
-  @spec process_scroll_region(map(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), integer()) :: {map(), ScrollBuffer.t()}
+  @spec process_scroll_region(
+          map(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          integer()
+        ) :: {map(), ScrollBuffer.t()}
   def process_scroll_region(state, x, y, width, height, amount) do
     # Validate region bounds
     if x < 0 or y < 0 or width <= 0 or height <= 0 or
@@ -46,17 +53,25 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
   @doc """
   Scrolls a region up within the buffer.
   """
-  @spec scroll_region_up(map(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: map()
+  @spec scroll_region_up(
+          map(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: map()
   def scroll_region_up(buffer, x, y, width, height, amount) do
     # Extract only the region content from each row
-    region_lines = Enum.map(y..(y + height - 1), fn row_y ->
-      if row_y < buffer.height do
-        row = Enum.at(buffer.cells, row_y, [])
-        Enum.slice(row, x, width)
-      else
-        List.duplicate(Cell.new(), width)
-      end
-    end)
+    region_lines =
+      Enum.map(y..(y + height - 1), fn row_y ->
+        if row_y < buffer.height do
+          row = Enum.at(buffer.cells, row_y, [])
+          Enum.slice(row, x, width)
+        else
+          List.duplicate(Cell.new(), width)
+        end
+      end)
 
     # Split the region into scroll_lines (lines that will be scrolled out) and remaining (lines that will stay)
     {_scroll_lines, remaining} = Enum.split(region_lines, amount)
@@ -75,17 +90,25 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
   @doc """
   Scrolls a region down within the buffer.
   """
-  @spec scroll_region_down(map(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: map()
+  @spec scroll_region_down(
+          map(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: map()
   def scroll_region_down(buffer, x, y, width, height, amount) do
     # Extract only the region content from each row
-    region_lines = Enum.map(y..(y + height - 1), fn row_y ->
-      if row_y < buffer.height do
-        row = Enum.at(buffer.cells, row_y, [])
-        Enum.slice(row, x, width)
-      else
-        List.duplicate(Cell.new(), width)
-      end
-    end)
+    region_lines =
+      Enum.map(y..(y + height - 1), fn row_y ->
+        if row_y < buffer.height do
+          row = Enum.at(buffer.cells, row_y, [])
+          Enum.slice(row, x, width)
+        else
+          List.duplicate(Cell.new(), width)
+        end
+      end)
 
     # Scroll the region content down: move lines starting from 0 down by 'amount' positions
     # Lines height-amount to height-1 are lost, lines 0 to height-amount-1 move down

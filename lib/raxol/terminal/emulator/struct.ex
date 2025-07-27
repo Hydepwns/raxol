@@ -122,8 +122,8 @@ defmodule Raxol.Terminal.Emulator.Struct do
   @doc """
   Gets the active buffer from the emulator.
   """
-  @spec get_active_buffer(t()) :: ScreenBuffer.t()
-  def get_active_buffer(emulator) do
+  @spec get_screen_buffer(t()) :: ScreenBuffer.t()
+  def get_screen_buffer(emulator) do
     case emulator.active_buffer_type do
       :main -> emulator.main_screen_buffer
       :alternate -> emulator.alternate_screen_buffer

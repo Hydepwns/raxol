@@ -10,37 +10,58 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Handler do
   """
   def handle_sequence(state, sequence) do
     case sequence do
-      # Designate G0 character set
-      [?/, code] -> designate_charset(state, 0, code)
-      # Designate G1 character set
-      [?), code] -> designate_charset(state, 1, code)
-      # Designate G2 character set
-      [?*, code] -> designate_charset(state, 2, code)
-      # Designate G3 character set
-      [?+, code] -> designate_charset(state, 3, code)
-      # Locking Shift G0
-      [?N] -> set_locking_shift(state, :g0)
-      # Locking Shift G1
-      [?O] -> set_locking_shift(state, :g1)
-      # Locking Shift G2
-      [?P] -> set_locking_shift(state, :g2)
-      # Locking Shift G3
-      [?Q] -> set_locking_shift(state, :g3)
-      # Single Shift G2
-      [?R] -> set_single_shift(state, :g2)
-      # Single Shift G3
-      [?S] -> set_single_shift(state, :g3)
-      # Invoke G0
-      [?T] -> invoke_charset(state, :g0)
-      # Invoke G1
-      [?U] -> invoke_charset(state, :g1)
-      # Invoke G2
-      [?V] -> invoke_charset(state, :g2)
-      # Invoke G3
-      [?W] -> invoke_charset(state, :g3)
+      # Designate G-sets
+      [?/, code] -> handle_designation(state, 0, code)
+      [?), code] -> handle_designation(state, 1, code)
+      [?*, code] -> handle_designation(state, 2, code)
+      [?+, code] -> handle_designation(state, 3, code)
+      # Locking shifts
+      [char] when char in [?N, ?O, ?P, ?Q] -> handle_locking_shift(state, char)
+      # Single shifts  
+      [char] when char in [?R, ?S] -> handle_single_shift(state, char)
+      # Invoke charsets
+      [char] when char in [?T, ?U, ?V, ?W] -> handle_invoke(state, char)
       # Unknown sequence
       _ -> state
     end
+  end
+
+  defp handle_designation(state, gset_index, code) do
+    designate_charset(state, gset_index, code)
+  end
+
+  defp handle_locking_shift(state, char) do
+    gset =
+      case char do
+        ?N -> :g0
+        ?O -> :g1
+        ?P -> :g2
+        ?Q -> :g3
+      end
+
+    set_locking_shift(state, gset)
+  end
+
+  defp handle_single_shift(state, char) do
+    gset =
+      case char do
+        ?R -> :g2
+        ?S -> :g3
+      end
+
+    set_single_shift(state, gset)
+  end
+
+  defp handle_invoke(state, char) do
+    gset =
+      case char do
+        ?T -> :g0
+        ?U -> :g1
+        ?V -> :g2
+        ?W -> :g3
+      end
+
+    invoke_charset(state, gset)
   end
 
   @doc """
@@ -52,9 +73,21 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Handler do
         state
 
       charset ->
-        case StateManager.index_to_gset(gset_index) do
+        # If gset_index is already an atom (g0, g1, g2, g3), use it directly
+        # If it's an integer, convert it
+        gset = case gset_index do
+          :g0 -> :g0
+          :g1 -> :g1
+          :g2 -> :g2
+          :g3 -> :g3
+          index when is_integer(index) ->
+            StateManager.index_to_gset(index)
+          _ -> nil
+        end
+        
+        case gset do
           nil -> state
-          gset -> StateManager.set_gset(state, gset, charset)
+          _ -> StateManager.set_gset(state, gset, charset)
         end
     end
   end

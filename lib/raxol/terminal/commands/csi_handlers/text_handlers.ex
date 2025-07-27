@@ -27,10 +27,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.TextHandlers do
   def handle_save_cursor(emulator, _params) do
     # Save cursor position
     case Basic.handle_command(
-      emulator,
-      [],
-      ?s
-    ) do
+           emulator,
+           [],
+           ?s
+         ) do
       {:ok, updated_emulator} -> updated_emulator
       {:error, _, _} -> emulator
       updated_emulator -> updated_emulator
@@ -43,10 +43,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.TextHandlers do
   def handle_restore_cursor(emulator, _params) do
     # Restore cursor position
     case Basic.handle_command(
-      emulator,
-      [],
-      ?u
-    ) do
+           emulator,
+           [],
+           ?u
+         ) do
       {:ok, updated_emulator} -> updated_emulator
       {:error, _, _} -> emulator
       updated_emulator -> updated_emulator
@@ -61,10 +61,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.TextHandlers do
     # We need to determine which command based on the context
     # For now, we'll use the Basic handler which should handle both cases
     case Basic.handle_command(
-      emulator,
-      params,
-      ?s
-    ) do
+           emulator,
+           params,
+           ?s
+         ) do
       {:ok, updated_emulator} -> updated_emulator
       {:error, _, _} -> emulator
       updated_emulator -> updated_emulator

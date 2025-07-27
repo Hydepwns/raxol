@@ -233,15 +233,24 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     empty_line = List.duplicate(Cell.new(), buffer.width)
 
     # Simple direct approach: move content up by lines
-    new_cells = do_simple_scroll_up(buffer.cells, scroll_start, scroll_end, lines, empty_line)
+    new_cells =
+      do_simple_scroll_up(
+        buffer.cells,
+        scroll_start,
+        scroll_end,
+        lines,
+        empty_line
+      )
 
     {%{buffer | cells: new_cells}, scrolled_lines}
   end
 
-    defp do_simple_scroll_up(cells, scroll_start, scroll_end, lines, empty_line) do
+  defp do_simple_scroll_up(cells, scroll_start, scroll_end, lines, empty_line) do
     # Split cells into before, region, and after_part
     {before, region_and_after} = Enum.split(cells, scroll_start)
-    {region, after_part} = Enum.split(region_and_after, scroll_end - scroll_start + 1)
+
+    {region, after_part} =
+      Enum.split(region_and_after, scroll_end - scroll_start + 1)
 
     # Move region content up by lines
     {_scrolled_out, remaining} = Enum.split(region, lines)

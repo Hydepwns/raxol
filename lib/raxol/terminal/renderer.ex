@@ -83,7 +83,12 @@ defmodule Raxol.Terminal.Renderer do
       iex> renderer.screen_buffer
       %ScreenBuffer{}
   """
-  def new(screen_buffer, theme \\ %{}, font_settings \\ %{}, style_batching \\ false) do
+  def new(
+        screen_buffer,
+        theme \\ %{},
+        font_settings \\ %{},
+        style_batching \\ false
+      ) do
     %__MODULE__{
       screen_buffer: screen_buffer,
       cursor: nil,
@@ -122,10 +127,9 @@ defmodule Raxol.Terminal.Renderer do
 
   defp get_styled_content(buffer, theme, style_batching) do
     buffer.cells
-    |> Enum.map(fn row ->
+    |> Enum.map_join("\n", fn row ->
       render_row_with_style_batching(row, theme, style_batching)
     end)
-    |> Enum.join("\n")
   end
 
   defp render_row_with_style_batching(row, theme, style_batching) do
@@ -412,7 +416,6 @@ defmodule Raxol.Terminal.Renderer do
       other -> {:ok, other}
     end
   end
-
 
   defp maybe_add_cursor(content, nil, _include_cursor), do: content
   defp maybe_add_cursor(content, cursor, true), do: {content, cursor}

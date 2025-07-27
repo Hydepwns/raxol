@@ -33,7 +33,6 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
   # Client API
 
   # Helper function to get the process name
-  defp process_name(pid_or_name \\ __MODULE__)
   defp process_name(pid) when is_pid(pid), do: pid
   defp process_name(name) when is_atom(name), do: name
   defp process_name(_), do: __MODULE__
@@ -261,8 +260,8 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
   end
 
   defp schedule_aggregation(interval) do
-    _timer_id = System.unique_integer([:positive])
-    Process.send_after(self(), {:aggregate_metrics, _timer_id}, interval)
+    timer_id = System.unique_integer([:positive])
+    Process.send_after(self(), {:aggregate_metrics, timer_id}, interval)
   end
 
   defp filter_metrics(metrics, opts) do

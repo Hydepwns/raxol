@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Emulator.ModeOperations do
   """
 
   require Logger
-  
+
   alias Raxol.Terminal.Emulator
 
   @type emulator :: Emulator.t()

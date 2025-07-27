@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.Commands.Screen do
 
   @spec clear_screen(Emulator.t(), integer()) :: Emulator.t()
   def clear_screen(emulator, mode) do
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     {x, y} = Emulator.get_cursor_position(emulator)
     scroll_region = ScreenBuffer.get_scroll_region(buffer)
 
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.Commands.Screen do
 
   @spec clear_line(Emulator.t(), integer()) :: Emulator.t()
   def clear_line(emulator, mode) do
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
 
     {cursor_x, cursor_y} =
       Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
@@ -86,7 +86,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   @spec insert_lines(Emulator.t(), integer()) :: Emulator.t()
   def insert_lines(emulator, count) do
     {_, cursor_y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
 
     # Apply scroll region constraints if active
     {top, bottom} =
@@ -111,7 +111,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   @spec delete_lines(Emulator.t(), integer()) :: Emulator.t()
   def delete_lines(emulator, count) do
     {_, cursor_y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
 
     # Apply scroll region constraints if active
     {top, bottom} =
@@ -168,7 +168,7 @@ defmodule Raxol.Terminal.Commands.Screen do
       "[Screen.scroll_down] CALLED with count: #{count}"
     )
 
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     {top, bottom} = ScreenBuffer.get_scroll_region_boundaries(buffer)
 
     # Use ScreenBuffer.scroll_down since we have a ScreenBuffer struct
@@ -182,7 +182,7 @@ defmodule Raxol.Terminal.Commands.Screen do
       "[Screen.scroll_up] CALLED with lines: #{lines}"
     )
 
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     {top, bottom} = ScreenBuffer.get_scroll_region_boundaries(buffer)
 
     # Use ScreenBuffer.scroll_up since we have a ScreenBuffer struct

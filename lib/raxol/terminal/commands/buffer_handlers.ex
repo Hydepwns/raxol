@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
   alias Raxol.Terminal.Commands.Editor
 
   def handle_l(emulator, count) do
-    active_buffer = Emulator.get_active_buffer(emulator)
+    active_buffer = Emulator.get_screen_buffer(emulator)
     {_x, y} = Emulator.get_cursor_position(emulator)
 
     style =
@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
   end
 
   def handle_m(emulator, count) do
-    active_buffer = Emulator.get_active_buffer(emulator)
+    active_buffer = Emulator.get_screen_buffer(emulator)
     {_x, y} = Emulator.get_cursor_position(emulator)
 
     style =
@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
   end
 
   def handle_x(emulator, count) do
-    active_buffer = Emulator.get_active_buffer(emulator)
+    active_buffer = Emulator.get_screen_buffer(emulator)
     {x, y} = Emulator.get_cursor_position(emulator)
 
     style =
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
     {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
   end
 
-  def handle_L(emulator, count) do
+  def handle_l_alias(emulator, count) do
     buffer = emulator.main_screen_buffer
     {_x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
@@ -74,7 +74,15 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
         )
 
         # Use scroll region-aware insertion
-        updated_buffer = insert_lines_within_scroll_region(buffer, y, n, style, scroll_top, scroll_bottom)
+        updated_buffer =
+          insert_lines_within_scroll_region(
+            buffer,
+            y,
+            n,
+            style,
+            scroll_top,
+            scroll_bottom
+          )
 
         Raxol.Core.Runtime.Log.debug(
           "handle_L: scroll region insert returned: #{inspect(updated_buffer)}"
@@ -86,24 +94,31 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
 
       _ ->
         # No scroll region or cursor outside scroll region, use normal insertion
-    Raxol.Core.Runtime.Log.debug(
-      "handle_L: calling Editor.insert_lines with buffer: #{inspect(buffer)}, y: #{y}, n: #{n}, style: #{inspect(style)}"
-    )
+        Raxol.Core.Runtime.Log.debug(
+          "handle_L: calling Editor.insert_lines with buffer: #{inspect(buffer)}, y: #{y}, n: #{n}, style: #{inspect(style)}"
+        )
 
-    updated_buffer = Editor.insert_lines(buffer, y, n, style)
+        updated_buffer = Editor.insert_lines(buffer, y, n, style)
 
-    Raxol.Core.Runtime.Log.debug(
-      "handle_L: Editor.insert_lines returned: #{inspect(updated_buffer)}"
-    )
+        Raxol.Core.Runtime.Log.debug(
+          "handle_L: Editor.insert_lines returned: #{inspect(updated_buffer)}"
+        )
 
-    result = {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
-    Raxol.Core.Runtime.Log.debug("handle_L: returning: #{inspect(result)}")
-    result
+        result = {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
+        Raxol.Core.Runtime.Log.debug("handle_L: returning: #{inspect(result)}")
+        result
     end
   end
 
   # Helper function to insert lines within a scroll region
-  defp insert_lines_within_scroll_region(buffer, y, count, style, scroll_top, scroll_bottom) do
+  defp insert_lines_within_scroll_region(
+         buffer,
+         y,
+         count,
+         style,
+         scroll_top,
+         scroll_bottom
+       ) do
     # Ensure y is within the scroll region
     y = max(scroll_top, min(y, scroll_bottom))
 
@@ -124,15 +139,20 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
     kept_bottom_part = Enum.take(bottom_part, lines_to_keep)
 
     # Add blank lines at the bottom of the scroll region if needed
-    remaining_lines = max_lines_in_region - lines_after_insertion - lines_to_keep
-    additional_blank_lines = if remaining_lines > 0 do
-      List.duplicate(blank_line, remaining_lines)
-    else
-      []
-    end
+    remaining_lines =
+      max_lines_in_region - lines_after_insertion - lines_to_keep
+
+    additional_blank_lines =
+      if remaining_lines > 0 do
+        List.duplicate(blank_line, remaining_lines)
+      else
+        []
+      end
 
     # Combine the parts
-    new_cells = top_part ++ blank_lines_to_insert ++ kept_bottom_part ++ additional_blank_lines
+    new_cells =
+      top_part ++
+        blank_lines_to_insert ++ kept_bottom_part ++ additional_blank_lines
 
     # Ensure we don't exceed the buffer height
     final_cells = Enum.take(new_cells, buffer.height)
@@ -140,7 +160,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
     %{buffer | cells: final_cells}
   end
 
-  def handle_M(emulator, count) do
+  def handle_m_alias(emulator, count) do
     buffer = emulator.main_screen_buffer
     {_x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
@@ -161,7 +181,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
     {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
   end
 
-  def handle_P(emulator, count) do
+  def handle_p_alias(emulator, count) do
     buffer = emulator.main_screen_buffer
     {x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
@@ -182,7 +202,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
     {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
   end
 
-  def handle_X(emulator, count) do
+  def handle_x_alias(emulator, count) do
     buffer = emulator.main_screen_buffer
     {x, y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 

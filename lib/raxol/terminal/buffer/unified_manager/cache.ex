@@ -9,7 +9,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Cache do
   @doc """
   Safely gets a value from the cache.
   """
-  @spec get(String.t(), atom()) :: {:ok, any()} | {:error, :cache_miss | :cache_unavailable | any()}
+  @spec get(String.t(), atom()) ::
+          {:ok, any()} | {:error, :cache_miss | :cache_unavailable | any()}
   def get(key, namespace) do
     case Raxol.Terminal.Cache.System.get(key, namespace: namespace) do
       {:ok, value} -> {:ok, value}
@@ -62,12 +63,19 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Cache do
   @doc """
   Invalidates all cells in a region.
   """
-  @spec invalidate_region(non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), atom()) :: :ok
+  @spec invalidate_region(
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          atom()
+        ) :: :ok
   def invalidate_region(x, y, width, height, namespace) do
     for cell_x <- x..(x + width - 1), cell_y <- y..(y + height - 1) do
       cache_key = "cell_#{cell_x}_#{cell_y}"
       invalidate(cache_key, namespace)
     end
+
     :ok
   end
 end

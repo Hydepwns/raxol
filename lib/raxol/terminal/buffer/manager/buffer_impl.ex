@@ -314,6 +314,13 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
 
   defp cell_key(x, y), do: y * 10_000 + x
 
+  @doc """
+  Writes content to the buffer (alias for add function).
+  """
+  def write(buffer, content) do
+    add(buffer, content)
+  end
+
   defp key_to_coords(key) do
     y = div(key, 10_000)
     x = rem(key, 10_000)

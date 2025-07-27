@@ -214,7 +214,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     mode = Enum.at(params, 0, 0)
     {x, y} = Emulator.get_cursor_position(emulator)
 
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
 
     new_buffer =
       case mode do
@@ -246,7 +246,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     mode = Enum.at(params, 0, 0)
     {x, y} = Emulator.get_cursor_position(emulator)
 
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
 
     new_buffer =
       case mode do
@@ -279,7 +279,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     {_col, row} = Emulator.get_cursor_position(emulator)
     {top, bottom} = get_scroll_region(emulator)
 
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
 
     new_buffer =
       Raxol.Terminal.ScreenBuffer.insert_lines(buffer, lines, row, top, bottom)
@@ -296,7 +296,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     {_col, row} = Emulator.get_cursor_position(emulator)
     {top, bottom} = get_scroll_region(emulator)
 
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
 
     new_buffer =
       Raxol.Terminal.ScreenBuffer.delete_lines_in_region(
@@ -318,7 +318,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     chars = Enum.at(params, 0, 1)
     {row, col} = Emulator.get_cursor_position(emulator)
 
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
 
     new_buffer =
       Raxol.Terminal.Buffer.LineOperations.delete_chars_at(
@@ -339,7 +339,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     chars = Enum.at(params, 0, 1)
     {row, col} = Emulator.get_cursor_position(emulator)
 
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
 
     new_buffer =
       Raxol.Terminal.Buffer.LineOperations.insert_chars_at(
@@ -360,7 +360,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     lines = Enum.at(params, 0, 1)
     {top, bottom} = get_scroll_region(emulator)
 
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
 
     new_buffer =
       Raxol.Terminal.ScreenBuffer.scroll_up(buffer, lines, top, bottom)
@@ -376,7 +376,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     lines = Enum.at(params, 0, 1)
     {top, bottom} = get_scroll_region(emulator)
 
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
 
     new_buffer =
       Raxol.Terminal.ScreenBuffer.scroll_down(buffer, lines, top, bottom)
@@ -392,7 +392,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     chars = Enum.at(params, 0, 1)
     {x, y} = Emulator.get_cursor_position(emulator)
 
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     new_buffer = Raxol.Terminal.ScreenBuffer.erase_chars(buffer, y, x, chars)
     {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
@@ -506,13 +506,22 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_decstbm(emulator, params) do
     scroll_region = parse_decstbm_params(params, emulator.height)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
+
     new_buffer =
       case scroll_region do
-        {top, bottom} -> Raxol.Terminal.ScreenBuffer.set_scroll_region(buffer, {top, bottom})
-        nil -> Raxol.Terminal.ScreenBuffer.reset_scroll_region(buffer)
+        {top, bottom} ->
+          Raxol.Terminal.ScreenBuffer.set_scroll_region(buffer, {top, bottom})
+
+        nil ->
+          Raxol.Terminal.ScreenBuffer.reset_scroll_region(buffer)
       end
-    {:ok, Raxol.Terminal.Emulator.update_active_buffer(%{emulator | scroll_region: scroll_region}, new_buffer)}
+
+    {:ok,
+     Raxol.Terminal.Emulator.update_active_buffer(
+       %{emulator | scroll_region: scroll_region},
+       new_buffer
+     )}
   end
 
   # Private helper to parse DECSTBM parameters

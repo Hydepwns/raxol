@@ -189,7 +189,7 @@ defmodule Raxol.Terminal.Cursor.Style do
       iex> cursor = Manager.new()
       iex> cursor = Style.blink(cursor)
       iex> {_cursor, visible} = Style.update_blink(cursor)
-      iex> boolean?(visible)
+      iex> is_boolean(visible)
       true
   """
   def update_blink(%Manager{} = cursor) do

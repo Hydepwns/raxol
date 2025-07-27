@@ -65,6 +65,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.SequenceDispatcher do
     cond do
       SequenceParser.parse_cursor_sequence(sequence) != :error ->
         SequenceParser.parse_cursor_sequence(sequence)
+
       true ->
         :error
     end

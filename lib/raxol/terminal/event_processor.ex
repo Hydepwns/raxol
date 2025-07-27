@@ -32,23 +32,36 @@ defmodule Raxol.Terminal.EventProcessor do
 
   # Event priority levels for processing order
   @event_priorities %{
-    keyboard: 1,    # Highest priority - user input
-    mouse: 1,       # Highest priority - user input
-    cursor: 2,      # High priority - visual feedback
-    scroll: 2,      # High priority - visual feedback
-    selection: 3,   # Medium priority
-    paste: 3,       # Medium priority
-    clipboard: 3,   # Medium priority
-    focus: 4,       # Low priority
-    window: 4,      # Low priority
-    mode: 5         # Lowest priority
+    # Highest priority - user input
+    keyboard: 1,
+    # Highest priority - user input
+    mouse: 1,
+    # High priority - visual feedback
+    cursor: 2,
+    # High priority - visual feedback
+    scroll: 2,
+    # Medium priority
+    selection: 3,
+    # Medium priority
+    paste: 3,
+    # Medium priority
+    clipboard: 3,
+    # Low priority
+    focus: 4,
+    # Low priority
+    window: 4,
+    # Lowest priority
+    mode: 5
   }
 
   # Debounce intervals (in milliseconds) for event types
   @debounce_intervals %{
-    scroll: 16,     # ~60fps for smooth scrolling
-    resize: 100,    # Avoid excessive redraws during window resize
-    mouse: 8        # ~120fps for responsive mouse tracking
+    # ~60fps for smooth scrolling
+    scroll: 16,
+    # Avoid excessive redraws during window resize
+    resize: 100,
+    # ~120fps for responsive mouse tracking
+    mouse: 8
   }
 
   @doc """
@@ -69,10 +82,10 @@ defmodule Raxol.Terminal.EventProcessor do
         start_time = System.monotonic_time(:microsecond)
         result = handler.(data, emulator)
         end_time = System.monotonic_time(:microsecond)
-        
+
         # Record performance metrics for monitoring
         record_event_processing_time(type, end_time - start_time)
-        
+
         result
 
       :error ->
@@ -90,23 +103,26 @@ defmodule Raxol.Terminal.EventProcessor do
   ## Returns
     * `{updated_emulator, outputs}` - The updated emulator state and list of outputs
   """
-  @spec process_events_batch([Event.t()], Emulator.t()) :: {Emulator.t(), [any()]}
+  @spec process_events_batch([Event.t()], Emulator.t()) ::
+          {Emulator.t(), [any()]}
   def process_events_batch([], emulator), do: {emulator, []}
-  
+
   def process_events_batch(events, emulator) when is_list(events) do
     # Sort events by priority for optimal processing order
     sorted_events = sort_events_by_priority(events)
-    
+
     # Filter out events that should be debounced
     filtered_events = apply_debouncing(sorted_events)
-    
+
     # Process events with accumulated state
-    {final_emulator, outputs} = 
-      Enum.reduce(filtered_events, {emulator, []}, fn event, {acc_emulator, acc_outputs} ->
+    {final_emulator, outputs} =
+      Enum.reduce(filtered_events, {emulator, []}, fn event,
+                                                      {acc_emulator,
+                                                       acc_outputs} ->
         {updated_emulator, output} = process_event(event, acc_emulator)
         {updated_emulator, [output | acc_outputs]}
       end)
-    
+
     {final_emulator, Enum.reverse(outputs)}
   end
 
@@ -123,11 +139,15 @@ defmodule Raxol.Terminal.EventProcessor do
     * `{:queued, emulator}` - Queued for later processing
   """
   @spec process_event_with_priority(Event.t(), Emulator.t(), keyword()) ::
-    {:immediate, Emulator.t(), any()} | {:queued, Emulator.t()}
-  def process_event_with_priority(%Event{type: type} = event, emulator, options \\ []) do
+          {:immediate, Emulator.t(), any()} | {:queued, Emulator.t()}
+  def process_event_with_priority(
+        %Event{type: type} = event,
+        emulator,
+        options \\ []
+      ) do
     priority = Map.get(@event_priorities, type, 5)
     immediate_threshold = Keyword.get(options, :immediate_threshold, 2)
-    
+
     if priority <= immediate_threshold do
       {updated_emulator, output} = process_event(event, emulator)
       {:immediate, updated_emulator, output}
@@ -147,8 +167,10 @@ defmodule Raxol.Terminal.EventProcessor do
     |> Enum.group_by(fn %Event{type: type} -> type end)
     |> Enum.flat_map(fn {type, type_events} ->
       case should_deduplicate_event_type(type) do
-        true -> [List.last(type_events)]  # Keep only the latest
-        false -> type_events  # Keep all events
+        # Keep only the latest
+        true -> [List.last(type_events)]
+        # Keep all events
+        false -> type_events
       end
     end)
     |> Enum.sort_by(fn %Event{timestamp: timestamp} -> timestamp end)
@@ -185,14 +207,16 @@ defmodule Raxol.Terminal.EventProcessor do
   end
 
   defp debounce_events_of_type(events) when length(events) <= 1, do: events
-  
+
   defp debounce_events_of_type(events) do
     # For demonstration - keep first and last event, drop middle ones
     case events do
       [first | rest] ->
         last = List.last(rest)
         if first == last, do: [first], else: [first, last]
-      [] -> []
+
+      [] ->
+        []
     end
   end
 
@@ -210,7 +234,9 @@ defmodule Raxol.Terminal.EventProcessor do
           %{duration: duration_microseconds},
           %{event_type: event_type}
         )
-      false -> :ok
+
+      false ->
+        :ok
     end
   end
 end

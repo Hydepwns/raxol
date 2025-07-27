@@ -90,13 +90,9 @@ defmodule Raxol.Terminal.PluginManager do
   @spec unload_plugin(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, String.t()}
   def unload_plugin(emulator, plugin_name) do
-    case Manager.unload_plugin(emulator.plugin_manager, plugin_name) do
-      {:ok, new_manager} ->
-        {:ok, update_manager(emulator, new_manager)}
-
-      {:error, reason} ->
-        {:error, "Failed to unload plugin #{plugin_name}: #{inspect(reason)}"}
-    end
+    # Manager.unload_plugin uses GenServer.cast and returns :ok
+    Manager.unload_plugin(emulator.plugin_manager, plugin_name)
+    {:ok, emulator}
   end
 
   @doc """
@@ -123,18 +119,9 @@ defmodule Raxol.Terminal.PluginManager do
   @spec update_plugin_config(Emulator.t(), String.t(), map()) ::
           {:ok, Emulator.t()} | {:error, String.t()}
   def update_plugin_config(emulator, plugin_name, config) do
-    case Manager.update_plugin_config(
-           emulator.plugin_manager,
-           plugin_name,
-           config
-         ) do
-      {:ok, new_manager} ->
-        {:ok, update_manager(emulator, new_manager)}
-
-      {:error, reason} ->
-        {:error,
-         "Failed to update config for plugin #{plugin_name}: #{inspect(reason)}"}
-    end
+    # Manager.update_plugin_config uses GenServer.cast and returns :ok
+    Manager.update_plugin_config(emulator.plugin_manager, plugin_name, config)
+    {:ok, emulator}
   end
 
   @doc """

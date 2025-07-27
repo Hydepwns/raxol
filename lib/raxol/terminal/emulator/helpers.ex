@@ -40,13 +40,13 @@ defmodule Raxol.Terminal.Emulator.Helpers do
   @doc """
   Gets the active buffer from the emulator.
   """
-  @spec get_active_buffer(Raxol.Terminal.Emulator.t()) :: ScreenBuffer.t()
-  def get_active_buffer(
+  @spec get_screen_buffer(Raxol.Terminal.Emulator.t()) :: ScreenBuffer.t()
+  def get_screen_buffer(
         %Raxol.Terminal.Emulator{active_buffer_type: :main} = emulator
       ),
       do: emulator.main_screen_buffer
 
-  def get_active_buffer(
+  def get_screen_buffer(
         %Raxol.Terminal.Emulator{active_buffer_type: :alternate} = emulator
       ),
       do: emulator.alternate_screen_buffer
@@ -75,4 +75,25 @@ defmodule Raxol.Terminal.Emulator.Helpers do
 
   def get_mode_manager_cursor_visible(%Raxol.Terminal.Emulator{} = emulator),
     do: get_mode_manager_struct(emulator).cursor_visible
+
+  @doc """
+  Gets the current cursor position.
+  """
+  @spec get_cursor_position(Raxol.Terminal.Emulator.t()) :: {non_neg_integer(), non_neg_integer()}
+  def get_cursor_position(%Raxol.Terminal.Emulator{cursor: cursor} = emulator) do
+    if is_pid(cursor) do
+      cursor_struct = get_cursor_struct(emulator)
+      case cursor_struct do
+        %{position: {x, y}} -> {x, y}
+        %{x: x, y: y} -> {x, y}
+        _ -> {0, 0}
+      end
+    else
+      case cursor do
+        %{position: {x, y}} -> {x, y}
+        %{x: x, y: y} -> {x, y}
+        _ -> {0, 0}
+      end
+    end
+  end
 end

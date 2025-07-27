@@ -249,36 +249,14 @@ defmodule Raxol.Terminal.Charset.Maps do
       ?h => "○",
       # Circle
       ?i => "◎",
-      # Star
-      ?j => "★",
-      # Star
-      ?k => "☆",
-      # Diamond
-      ?l => "◇",
-      # Square
-      ?m => "□",
-      # Square
-      ?n => "▣",
       # Square
       ?o => "▢",
       # Square
       ?p => "▤",
       # Square
-      ?q => "▥",
-      # Square
       ?r => "▦",
       # Square
       ?s => "▧",
-      # Square
-      ?t => "▨",
-      # Square
-      ?u => "▩",
-      # Square
-      ?v => "▪",
-      # Square
-      ?w => "▫",
-      # Square
-      ?x => "▬",
       # Square
       ?y => "▭",
       # Square
@@ -324,14 +302,6 @@ defmodule Raxol.Terminal.Charset.Maps do
       ?_ => "─",
       # Vertical line
       ?| => "│",
-      # Upper left corner
-      ?- => "┌",
-      # Upper right corner
-      ?+ => "┐",
-      # Lower left corner
-      ?* => "└",
-      # Lower right corner
-      ?# => "┘",
       # Mathematical symbols
       # Approximately equal
       ?~ => "≈",
@@ -353,8 +323,6 @@ defmodule Raxol.Terminal.Charset.Maps do
       ?! => "≠",
       # Identical
       ?= => "≡",
-      # Division
-      ?/ => "÷",
       # Multiplication
       ?\\ => "×",
       # Less than or equal
@@ -372,24 +340,14 @@ defmodule Raxol.Terminal.Charset.Maps do
       # Geometric shapes
       # Diamond
       ?@ => "◆",
-      # Square
-      ?# => "■",
       # Circle
       ?$ => "●",
       # Circle
       ?% => "○",
       # Circle
       ?& => "◎",
-      # Star
-      ?* => "★",
-      # Plus
-      ?+ => "⊕",
-      # Minus
-      ?- => "⊖",
       # Middle dot
-      ?. => "·",
-      # Slash
-      ?/ => "/"
+      ?. => "·"
     }
   end
 
@@ -484,11 +442,7 @@ defmodule Raxol.Terminal.Charset.Maps do
       ?_ => "∪",
       # Element of
       ?` => "∈",
-      # Not element of
-      ?' => "∉",
       # Subset of
-      ?' => "⊂",
-      # Superset of
       ?( => "⊃",
       # Subset of or equal to
       ?) => "⊆",

@@ -74,7 +74,7 @@ defmodule Raxol.Terminal.Commands.Editor do
           map()
         ) :: Emulator.t()
   def clear_screen(emulator, mode, cursor_pos, default_style) do
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     {cursor_x, cursor_y} = cursor_pos
 
     case mode do
@@ -117,7 +117,7 @@ defmodule Raxol.Terminal.Commands.Editor do
           map()
         ) :: Emulator.t()
   def clear_line(emulator, mode, cursor_pos, default_style) do
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     {cursor_x, cursor_y} = cursor_pos
 
     new_buffer =

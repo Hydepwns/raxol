@@ -38,9 +38,6 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
         }
 
   # Extension manifest file name
-  @manifest_file "extension.json"
-  @config_file "config.exs"
-  @script_file "script.ex"
 
   # Client API
   def start_link(opts \\ []) do
@@ -314,12 +311,4 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     |> Base.encode16()
     |> binary_part(0, 8)
   end
-
-
-
-
-
-
-
-
 end

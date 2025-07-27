@@ -13,10 +13,6 @@ defmodule Raxol.Terminal.Session do
   use GenServer
   require Raxol.Core.Runtime.Log
 
-  # alias Raxol.Core.Events.Event # Unused
-  # alias Raxol.Core.Runtime.EventLoop # Unused
-  # alias Raxol.Core.I18n # Unused
-  # alias Raxol.Terminal.{Cell, ScreenBuffer, Input, Emulator, Renderer} # Simplify aliases
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
   alias Raxol.Terminal.Session.Storage
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
@@ -213,7 +209,7 @@ defmodule Raxol.Terminal.Session do
 
     emulator = EmulatorStruct.new(width, height, scrollback: scrollback_limit)
 
-    # Create a default screen buffer without relying on get_active_buffer
+    # Create a default screen buffer without relying on get_screen_buffer
     # Default to main buffer - no need to pattern match since we know new emulators default to :main
     screen_buffer =
       try do

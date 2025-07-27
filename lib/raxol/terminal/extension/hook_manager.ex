@@ -14,7 +14,13 @@ defmodule Raxol.Terminal.Extension.HookManager do
         {:error, :extension_not_found}
 
       extension ->
-        handle_hook_registration(extension, extension_id, hook_name, callback, state)
+        handle_hook_registration(
+          extension,
+          extension_id,
+          hook_name,
+          callback,
+          state
+        )
     end
   end
 
@@ -47,7 +53,13 @@ defmodule Raxol.Terminal.Extension.HookManager do
 
   # Private functions
 
-  defp handle_hook_registration(extension, extension_id, hook_name, callback, state) do
+  defp handle_hook_registration(
+         extension,
+         extension_id,
+         hook_name,
+         callback,
+         state
+       ) do
     if hook_name in extension.hooks do
       callback_map = build_callback_map(callback, extension_id)
 

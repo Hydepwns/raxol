@@ -66,94 +66,142 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
   A tuple {updated_emulator, remaining_input}.
   """
   def handle_parsed_sequence(parsed_sequence, _rest, emulator) do
-    IO.puts("DEBUG: handle_parsed_sequence called with: #{inspect(parsed_sequence)}")
-    case parsed_sequence do
-      {:osc, remaining, _} ->
-        handle_ansi_sequences(remaining, emulator)
+    IO.puts(
+      "DEBUG: handle_parsed_sequence called with: #{inspect(parsed_sequence)}"
+    )
 
-      {:dcs, remaining, _} ->
-        handle_ansi_sequences(remaining, emulator)
+    handle_sequence_type(parsed_sequence, emulator)
+  end
 
-      {:incomplete, _} ->
-        {emulator, <<>>}
+  # Handle different sequence types
+  defp handle_sequence_type({:osc, remaining, _}, emulator) do
+    handle_ansi_sequences(remaining, emulator)
+  end
 
-      {:csi_cursor_pos, params, remaining, _} ->
-        {CursorHandlers.handle_cup(params, emulator), remaining}
+  defp handle_sequence_type({:dcs, remaining, _}, emulator) do
+    handle_ansi_sequences(remaining, emulator)
+  end
 
-      {:csi_cursor_up, params, remaining, _} ->
-        {CursorHandlers.handle_A(params, emulator), remaining}
+  defp handle_sequence_type({:incomplete, _}, emulator) do
+    {emulator, <<>>}
+  end
 
-      {:csi_cursor_down, params, remaining, _} ->
-        {CursorHandlers.handle_B(params, emulator), remaining}
+  defp handle_sequence_type({:csi_cursor_pos, params, remaining, _}, emulator) do
+    {CursorHandlers.handle_cup(params, emulator), remaining}
+  end
 
-      {:csi_cursor_forward, params, remaining, _} ->
-        {CursorHandlers.handle_C(params, emulator), remaining}
+  defp handle_sequence_type({:csi_cursor_up, params, remaining, _}, emulator) do
+    {CursorHandlers.handle_A(params, emulator), remaining}
+  end
 
-      {:csi_cursor_back, params, remaining, _} ->
-        {CursorHandlers.handle_D(params, emulator), remaining}
+  defp handle_sequence_type({:csi_cursor_down, params, remaining, _}, emulator) do
+    {CursorHandlers.handle_B(params, emulator), remaining}
+  end
 
-      {:csi_cursor_show, remaining, _} ->
-        {set_cursor_visible(true, emulator), remaining}
+  defp handle_sequence_type(
+         {:csi_cursor_forward, params, remaining, _},
+         emulator
+       ) do
+    {CursorHandlers.handle_C(params, emulator), remaining}
+  end
 
-      {:csi_cursor_hide, remaining, _} ->
-        {set_cursor_visible(false, emulator), remaining}
+  defp handle_sequence_type({:csi_cursor_back, params, remaining, _}, emulator) do
+    {CursorHandlers.handle_D(params, emulator), remaining}
+  end
 
-      {:csi_clear_screen, remaining, _} ->
-        {ScreenOperations.clear_screen(emulator), remaining}
+  defp handle_sequence_type({:csi_cursor_show, remaining, _}, emulator) do
+    {set_cursor_visible(true, emulator), remaining}
+  end
 
-      {:csi_clear_line, remaining, _} ->
-        {ScreenOperations.clear_line(emulator), remaining}
+  defp handle_sequence_type({:csi_cursor_hide, remaining, _}, emulator) do
+    {set_cursor_visible(false, emulator), remaining}
+  end
 
-      {:csi_set_mode, params, remaining, _} ->
-        {handle_set_mode(params, emulator), remaining}
+  defp handle_sequence_type({:csi_clear_screen, remaining, _}, emulator) do
+    {ScreenOperations.clear_screen(emulator), remaining}
+  end
 
-      {:csi_reset_mode, params, remaining, _} ->
-        {handle_reset_mode(params, emulator), remaining}
+  defp handle_sequence_type({:csi_clear_line, remaining, _}, emulator) do
+    {ScreenOperations.clear_line(emulator), remaining}
+  end
 
-      {:csi_set_standard_mode, params, remaining, _} ->
-        {handle_set_standard_mode(params, emulator), remaining}
+  defp handle_sequence_type({:csi_set_mode, params, remaining, _}, emulator) do
+    {handle_set_mode(params, emulator), remaining}
+  end
 
-      {:csi_reset_standard_mode, params, remaining, _} ->
-        {handle_reset_standard_mode(params, emulator), remaining}
+  defp handle_sequence_type({:csi_reset_mode, params, remaining, _}, emulator) do
+    {handle_reset_mode(params, emulator), remaining}
+  end
 
-      {:esc_equals, remaining, _} ->
-        {handle_esc_equals(emulator), remaining}
+  defp handle_sequence_type(
+         {:csi_set_standard_mode, params, remaining, _},
+         emulator
+       ) do
+    {handle_set_standard_mode(params, emulator), remaining}
+  end
 
-      {:esc_greater, remaining, _} ->
-        {handle_esc_greater(emulator), remaining}
+  defp handle_sequence_type(
+         {:csi_reset_standard_mode, params, remaining, _},
+         emulator
+       ) do
+    {handle_reset_standard_mode(params, emulator), remaining}
+  end
 
-      {:sgr, params, remaining, _} ->
-        IO.puts(
-          "DEBUG: SGR handler called with params=#{inspect(params)}, remaining=#{inspect(remaining)}"
-        )
+  defp handle_sequence_type({:esc_equals, remaining, _}, emulator) do
+    {handle_esc_equals(emulator), remaining}
+  end
 
-        IO.puts(
-          "DEBUG: SGR handler emulator.style before=#{inspect(emulator.style)}"
-        )
+  defp handle_sequence_type({:esc_greater, remaining, _}, emulator) do
+    {handle_esc_greater(emulator), remaining}
+  end
 
-        result = {handle_sgr(params, emulator), remaining}
+  defp handle_sequence_type({:sgr, params, remaining, _}, emulator) do
+    IO.puts(
+      "DEBUG: SGR handler called with params=#{inspect(params)}, remaining=#{inspect(remaining)}"
+    )
 
-        IO.puts(
-          "DEBUG: SGR handler result emulator.style after=#{inspect(elem(result, 0).style)}"
-        )
+    IO.puts(
+      "DEBUG: SGR handler emulator.style before=#{inspect(emulator.style)}"
+    )
 
-        result
+    result = {handle_sgr(params, emulator), remaining}
 
-      {:unknown, remaining, _} ->
-        handle_ansi_sequences(remaining, emulator)
+    IO.puts(
+      "DEBUG: SGR handler result emulator.style after=#{inspect(elem(result, 0).style)}"
+    )
 
-      {:csi_set_scroll_region, params, remaining, _} ->
-        {handle_set_scroll_region(params, emulator), remaining}
+    result
+  end
 
-      {:csi_general, params, intermediates, final_byte, remaining} ->
-        {handle_csi_general(params, final_byte, emulator, intermediates), remaining}
+  defp handle_sequence_type({:unknown, remaining, _}, emulator) do
+    handle_ansi_sequences(remaining, emulator)
+  end
 
-      {:cursor_horizontal_absolute, col, remaining} ->
-        IO.puts("DEBUG: handle_parsed_sequence cursor_horizontal_absolute col=#{inspect(col)}")
-        result = CursorHandlers.handle_G(emulator, [col + 1])
-        IO.puts("DEBUG: handle_G result cursor=#{inspect(result)}")
-        {result, remaining}
-    end
+  defp handle_sequence_type(
+         {:csi_set_scroll_region, params, remaining, _},
+         emulator
+       ) do
+    {handle_set_scroll_region(params, emulator), remaining}
+  end
+
+  defp handle_sequence_type(
+         {:csi_general, params, intermediates, final_byte, remaining},
+         emulator
+       ) do
+    {handle_csi_general(params, final_byte, emulator, intermediates), remaining}
+  end
+
+  defp handle_sequence_type(
+         {:cursor_horizontal_absolute, col, remaining},
+         emulator
+       ) do
+    IO.puts(
+      "DEBUG: handle_parsed_sequence cursor_horizontal_absolute col=#{inspect(col)}"
+    )
+
+    result = CursorHandlers.handle_G(emulator, [col + 1])
+    IO.puts("DEBUG: handle_G result cursor=#{inspect(result)}")
+    {result, remaining}
   end
 
   # Mode handling functions
@@ -165,6 +213,7 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
         {:ok, mode_name} ->
           ModeManager.set_mode(acc, [mode_name])
           acc
+
         :error ->
           acc
       end
@@ -179,6 +228,7 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
         {:ok, mode_name} ->
           ModeManager.reset_mode(acc, [mode_name])
           acc
+
         :error ->
           acc
       end
@@ -188,33 +238,39 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
   def handle_set_standard_mode(params, emulator) do
     parsed_params = parse_mode_params(params)
 
-    Enum.reduce(parsed_params, emulator, fn param, acc ->
-      case lookup_standard_mode(param) do
-        {:ok, mode_name} ->
-          case ModeManager.set_standard_mode(acc, mode_name, true) do
-            {:ok, updated_emulator} -> updated_emulator
-            {:error, _} -> acc
-          end
-        :error ->
-          acc
-      end
-    end)
+    Enum.reduce(parsed_params, emulator, &set_standard_mode_param/2)
+  end
+
+  defp set_standard_mode_param(param, acc) do
+    case lookup_standard_mode(param) do
+      {:ok, mode_name} ->
+        case ModeManager.set_standard_mode(acc, mode_name, true) do
+          {:ok, updated_emulator} -> updated_emulator
+          {:error, _} -> acc
+        end
+
+      :error ->
+        acc
+    end
   end
 
   def handle_reset_standard_mode(params, emulator) do
     parsed_params = parse_mode_params(params)
 
-    Enum.reduce(parsed_params, emulator, fn param, acc ->
-      case lookup_standard_mode(param) do
-        {:ok, mode_name} ->
-          case ModeManager.set_standard_mode(acc, mode_name, false) do
-            {:ok, updated_emulator} -> updated_emulator
-            {:error, _} -> acc
-          end
-        :error ->
-          acc
-      end
-    end)
+    Enum.reduce(parsed_params, emulator, &reset_standard_mode_param/2)
+  end
+
+  defp reset_standard_mode_param(param, acc) do
+    case lookup_standard_mode(param) do
+      {:ok, mode_name} ->
+        case ModeManager.set_standard_mode(acc, mode_name, false) do
+          {:ok, updated_emulator} -> updated_emulator
+          {:error, _} -> acc
+        end
+
+      :error ->
+        acc
+    end
   end
 
   def handle_esc_equals(emulator) do
@@ -229,7 +285,10 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
 
   def handle_sgr(params, emulator) do
     parsed_params = parse_sgr_params(params)
-    updated_style = SGRProcessor.process_sgr_codes(parsed_params, emulator.style)
+
+    updated_style =
+      SGRProcessor.process_sgr_codes(parsed_params, emulator.style)
+
     %{emulator | style: updated_style}
   end
 

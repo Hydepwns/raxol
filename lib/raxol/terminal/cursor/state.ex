@@ -182,7 +182,8 @@ defmodule Raxol.Terminal.Cursor.State do
   @doc """
   Updates cursor position based on text input.
   """
-  def update_position_from_text(%Manager{} = cursor, text) when is_binary(text) do
+  def update_position_from_text(%Manager{} = cursor, text)
+      when is_binary(text) do
     # Calculate new position based on text length
     new_col = cursor.col + String.length(text)
     %{cursor | col: new_col, position: {cursor.row, new_col}}

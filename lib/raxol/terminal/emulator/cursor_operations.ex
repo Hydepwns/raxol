@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   """
 
   import Raxol.Guards
-  
+
   alias Raxol.Terminal.Emulator
 
   @type emulator :: Emulator.t()
@@ -79,7 +79,12 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @doc """
   Moves the cursor left by the specified count.
   """
-  @spec move_cursor_left(emulator(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: emulator()
+  @spec move_cursor_left(
+          emulator(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: emulator()
   def move_cursor_left(emulator, count, _width, _height) do
     move_cursor_back(emulator, count)
   end
@@ -87,7 +92,12 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @doc """
   Moves the cursor right by the specified count.
   """
-  @spec move_cursor_right(emulator(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: emulator()
+  @spec move_cursor_right(
+          emulator(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: emulator()
   def move_cursor_right(emulator, count, _width, _height) do
     move_cursor_forward(emulator, count)
   end
@@ -95,9 +105,15 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @doc """
   Moves the cursor to the specified column.
   """
-  @spec move_cursor_to_column(emulator(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: emulator()
+  @spec move_cursor_to_column(
+          emulator(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: emulator()
   def move_cursor_to_column(emulator, column, _width, _height) do
-    {_current_x, current_y} = Raxol.Terminal.Emulator.Helpers.get_cursor_position(emulator)
+    {_current_x, current_y} =
+      Raxol.Terminal.Emulator.Helpers.get_cursor_position(emulator)
 
     Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(
       emulator,
@@ -111,7 +127,8 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   """
   @spec move_cursor_to_line_start(emulator()) :: emulator()
   def move_cursor_to_line_start(emulator) do
-    {_current_x, current_y} = Raxol.Terminal.Emulator.Helpers.get_cursor_position(emulator)
+    {_current_x, current_y} =
+      Raxol.Terminal.Emulator.Helpers.get_cursor_position(emulator)
 
     Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(
       emulator,
@@ -123,7 +140,8 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @doc """
   Moves the cursor to the specified position.
   """
-  @spec move_cursor_to(emulator(), non_neg_integer(), non_neg_integer()) :: emulator()
+  @spec move_cursor_to(emulator(), non_neg_integer(), non_neg_integer()) ::
+          emulator()
   def move_cursor_to(emulator, x, y) do
     Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(emulator, x, y)
   end
@@ -131,7 +149,8 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @doc """
   Moves the cursor to the specified position (2-arity version).
   """
-  @spec move_cursor_to(emulator(), {non_neg_integer(), non_neg_integer()}) :: emulator()
+  @spec move_cursor_to(emulator(), {non_neg_integer(), non_neg_integer()}) ::
+          emulator()
   def move_cursor_to(emulator, {x, y}) do
     move_cursor_to(emulator, x, y)
   end
@@ -139,7 +158,8 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @doc """
   Moves the cursor to the specified position (alias for move_cursor_to).
   """
-  @spec move_cursor(emulator(), non_neg_integer(), non_neg_integer()) :: emulator()
+  @spec move_cursor(emulator(), non_neg_integer(), non_neg_integer()) ::
+          emulator()
   def move_cursor(emulator, x, y) do
     Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(emulator, x, y)
   end

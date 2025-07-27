@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
     case emulator.cursor do
       %{row: _, col: _} = cursor ->
         # For test cursors that have row/col fields (like CursorManager)
-        active_buffer = Raxol.Terminal.BufferManager.get_active_buffer(emulator)
+        active_buffer = Raxol.Terminal.BufferManager.get_screen_buffer(emulator)
         _height = Raxol.Terminal.ScreenBuffer.get_height(active_buffer)
 
         new_row = max(0, cursor.row - amount)
@@ -42,7 +42,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
     case emulator.cursor do
       %{row: _, col: _} = cursor ->
         # For test cursors that have row/col fields (like CursorManager)
-        active_buffer = Raxol.Terminal.BufferManager.get_active_buffer(emulator)
+        active_buffer = Raxol.Terminal.BufferManager.get_screen_buffer(emulator)
         height = Raxol.Terminal.ScreenBuffer.get_height(active_buffer)
 
         new_row = min(height - 1, cursor.row + amount)
@@ -71,7 +71,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
     case emulator.cursor do
       %{row: _, col: _} = cursor ->
         # For test cursors that have row/col fields (like CursorManager)
-        active_buffer = Raxol.Terminal.BufferManager.get_active_buffer(emulator)
+        active_buffer = Raxol.Terminal.BufferManager.get_screen_buffer(emulator)
         width = Raxol.Terminal.ScreenBuffer.get_width(active_buffer)
 
         new_col = min(width - 1, cursor.col + amount)
@@ -123,7 +123,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
   """
   def handle_cursor_position_direct(emulator, row, col) do
     # Handle direct coordinate setting with proper clamping
-    active_buffer = Raxol.Terminal.BufferManager.get_active_buffer(emulator)
+    active_buffer = Raxol.Terminal.BufferManager.get_screen_buffer(emulator)
     width = Raxol.Terminal.ScreenBuffer.get_width(active_buffer)
     height = Raxol.Terminal.ScreenBuffer.get_height(active_buffer)
 
@@ -144,16 +144,19 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
             | row: row_clamped,
               col: col_clamped
           }
+
         %{position: _} = cursor ->
           %{
             cursor
             | position: {row_clamped, col_clamped}
           }
+
         _ ->
           Raxol.Terminal.Cursor.Manager.set_position(
             emulator.cursor,
             {row_clamped, col_clamped}
           )
+
           emulator.cursor
       end
 
@@ -163,14 +166,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
   @doc """
   Handles cursor position with parameter parsing.
   """
-  def handle_cursor_position(emulator, col, row) when is_integer(col) and is_integer(row) do
+  def handle_cursor_position(emulator, col, row)
+      when is_integer(col) and is_integer(row) do
     # Handle direct col/row parameters (3-argument version for tests)
     # The test calls handle_cursor_position(emulator, 5, 15) expecting col=5, row=15
     # These are already 0-indexed coordinates, so use them directly
     case emulator.cursor do
       %{row: _, col: _} = cursor ->
         # For test cursors that have row/col fields (like CursorManager)
-        active_buffer = Raxol.Terminal.BufferManager.get_active_buffer(emulator)
+        active_buffer = Raxol.Terminal.BufferManager.get_screen_buffer(emulator)
         width = Raxol.Terminal.ScreenBuffer.get_width(active_buffer)
         height = Raxol.Terminal.ScreenBuffer.get_height(active_buffer)
 
@@ -184,6 +188,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
       _ ->
         # For PID-based cursors, use the standard handler
         result = Cursor.handle_command(emulator, [col, row], ?H)
+
         case result do
           {:ok, updated_emulator} -> updated_emulator
           {:error, _, _} -> emulator
@@ -195,14 +200,16 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
   def handle_cursor_position(emulator, params) do
     # The CSI parser already provides {row, col} in the correct order
     # params is already {row, col} from the CSI parser
-    {row, col} = case params do
-      {r, c} when is_integer(r) and is_integer(c) -> {r, c}
-      [r, ?;, c] when is_integer(r) and is_integer(c) -> {r, c}  # Handle params with semicolon
-      [r, c] when is_integer(r) and is_integer(c) -> {r, c}
-      [r] when is_integer(r) -> {r, 1}
-      [] -> {1, 1}
-      _ -> {1, 1}
-    end
+    {row, col} =
+      case params do
+        {r, c} when is_integer(r) and is_integer(c) -> {r, c}
+        # Handle params with semicolon
+        [r, ?;, c] when is_integer(r) and is_integer(c) -> {r, c}
+        [r, c] when is_integer(r) and is_integer(c) -> {r, c}
+        [r] when is_integer(r) -> {r, 1}
+        [] -> {1, 1}
+        _ -> {1, 1}
+      end
 
     # Handle both PID-based and struct-based cursors
     case emulator.cursor do

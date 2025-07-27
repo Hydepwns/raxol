@@ -7,7 +7,13 @@ defmodule Raxol.Terminal.Buffer.Manager do
   use GenServer
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.Buffer.Manager.{BufferImpl, Behaviour, MemoryCalculator, ProcessManager}
+  alias Raxol.Terminal.Buffer.Manager.{
+    BufferImpl,
+    Behaviour,
+    MemoryCalculator,
+    ProcessManager
+  }
+
   alias Raxol.Terminal.Buffer.{Operations, DamageTracker}
   alias Raxol.Terminal.MemoryManager
   alias Raxol.Terminal.Integration.Renderer
@@ -49,27 +55,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
   # Client API
 
   def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name)
-    gen_server_opts = Keyword.delete(opts, :name)
-
-    # Ensure we have a valid name for GenServer
-    valid_name =
-      case name do
-        nil -> __MODULE__
-        # Don't use references as names
-        ref when is_reference(ref) -> nil
-        atom when is_atom(atom) -> atom
-        {:global, term} -> {:global, term}
-        {:via, module, term} -> {:via, module, term}
-        # Fallback to module name
-        _ -> __MODULE__
-      end
-
-    if valid_name do
-      GenServer.start_link(__MODULE__, gen_server_opts, name: valid_name)
-    else
-      GenServer.start_link(__MODULE__, gen_server_opts)
-    end
+    alias Raxol.Terminal.Buffer.GenServerHelpers
+    GenServerHelpers.start_link_with_name_validation(__MODULE__, opts)
   end
 
   @doc """
@@ -291,7 +278,9 @@ defmodule Raxol.Terminal.Buffer.Manager do
   def update_memory_usage(%__MODULE__{} = manager) do
     # IO.puts("DEBUG: update_memory_usage called with %__MODULE__{} struct")
     # Calculate memory usage for both buffers
-    active_memory = MemoryCalculator.calculate_buffer_memory(manager.active_buffer)
+    active_memory =
+      MemoryCalculator.calculate_buffer_memory(manager.active_buffer)
+
     back_memory = MemoryCalculator.calculate_buffer_memory(manager.back_buffer)
     total_memory = active_memory + back_memory
 
@@ -339,8 +328,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
     GenServer.call(pid, :get_back_buffer)
   end
 
-  def get_active_buffer(pid) when is_pid(pid) or is_atom(pid) do
-    GenServer.call(pid, :get_active_buffer)
+  def get_screen_buffer(pid) when is_pid(pid) or is_atom(pid) do
+    GenServer.call(pid, :get_screen_buffer)
   end
 
   def get_cursor do
@@ -641,7 +630,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
     {:reply, usage <= limit, state}
   end
 
-  def handle_call(:get_active_buffer, _from, state) do
+  def handle_call(:get_screen_buffer, _from, state) do
     {:reply, state.active_buffer, state}
   end
 
@@ -656,10 +645,4 @@ defmodule Raxol.Terminal.Buffer.Manager do
     metrics = Map.update(state.metrics, operation, 1, &(&1 + 1))
     %{state | metrics: metrics}
   end
-
-
-
-
-
-
 end

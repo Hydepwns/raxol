@@ -44,11 +44,25 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   defp process_lines_for_erase_from_start(cells, row, col, empty_cell, width) do
     Enum.with_index(cells)
     |> Enum.map(fn {line, line_row} ->
-      process_line_for_erase_from_start(line, line_row, row, col, empty_cell, width)
+      process_line_for_erase_from_start(
+        line,
+        line_row,
+        row,
+        col,
+        empty_cell,
+        width
+      )
     end)
   end
 
-  defp process_line_for_erase_from_start(line, line_row, row, col, empty_cell, width) do
+  defp process_line_for_erase_from_start(
+         line,
+         line_row,
+         row,
+         col,
+         empty_cell,
+         width
+       ) do
     cond do
       line_row < row -> List.duplicate(empty_cell, width)
       line_row == row -> clear_line_to_position(line, col, empty_cell)
@@ -58,7 +72,9 @@ defmodule Raxol.Terminal.Buffer.Eraser do
 
   defp clear_line_to_position(line, col, empty_cell) do
     Enum.with_index(line)
-    |> Enum.map(fn {cell, cell_col} -> if cell_col <= col, do: empty_cell, else: cell end)
+    |> Enum.map(fn {cell, cell_col} ->
+      if cell_col <= col, do: empty_cell, else: cell
+    end)
   end
 
   def erase_from_start_of_line_to_cursor(buffer) do
@@ -503,6 +519,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           ScreenBuffer.t()
   def erase_line(buffer, line, mode) do
     {_row, col} = buffer.cursor_position || {0, 0}
+
     case mode do
       # From cursor to end of line
       0 -> clear_line_from(buffer, line, col)

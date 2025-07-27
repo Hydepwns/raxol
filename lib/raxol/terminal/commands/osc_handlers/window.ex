@@ -44,10 +44,13 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Window do
     case parse_size(size_str) do
       {:ok, {width, height}} ->
         # Update window size in window state
-        window_state = Map.merge(emulator.window_state, %{
-          size: {width, height},
-          size_pixels: {width * 8, height * 16}  # Approximate pixel size
-        })
+        window_state =
+          Map.merge(emulator.window_state, %{
+            size: {width, height},
+            # Approximate pixel size
+            size_pixels: {width * 8, height * 16}
+          })
+
         {:ok, %{emulator | window_state: window_state}}
 
       :error ->
@@ -62,10 +65,13 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.Window do
     case parse_size(data) do
       {:ok, {width, height}} ->
         # Update window size in window state
-        window_state = Map.merge(emulator.window_state, %{
-          size: {width, height},
-          size_pixels: {width * 8, height * 16}  # Approximate pixel size
-        })
+        window_state =
+          Map.merge(emulator.window_state, %{
+            size: {width, height},
+            # Approximate pixel size
+            size_pixels: {width * 8, height * 16}
+          })
+
         {:ok, %{emulator | window_state: window_state}}
 
       :error ->

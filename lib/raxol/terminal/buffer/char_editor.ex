@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     case String.length(string) do
       0 -> cell
       1 -> insert_char(cell, string)
-      _ -> %{cell | char: string, width: String.length(string)}
+      _ -> %{cell | char: string}
     end
   end
 
@@ -46,7 +46,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
       when integer?(length) and length > 0 do
     case length do
       1 -> delete_char(cell)
-      _ -> %{cell | char: " ", width: 1}
+      _ -> %{cell | char: " "}
     end
   end
 
@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     case String.length(string) do
       0 -> cell
       1 -> replace_char(cell, string)
-      _ -> %{cell | char: string, width: String.length(string)}
+      _ -> %{cell | char: string}
     end
   end
 

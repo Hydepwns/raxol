@@ -12,12 +12,12 @@ defmodule Raxol.Terminal.ScreenManager do
   @doc """
   Gets the currently active screen buffer.
   """
-  @spec get_active_buffer(EmulatorStruct.t()) :: ScreenBuffer.t()
-  def get_active_buffer(%{active_buffer_type: :main} = emulator) do
+  @spec get_screen_buffer(EmulatorStruct.t()) :: ScreenBuffer.t()
+  def get_screen_buffer(%{active_buffer_type: :main} = emulator) do
     emulator.main_screen_buffer
   end
 
-  def get_active_buffer(%{active_buffer_type: :alternate} = emulator) do
+  def get_screen_buffer(%{active_buffer_type: :alternate} = emulator) do
     emulator.alternate_screen_buffer
   end
 

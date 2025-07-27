@@ -158,7 +158,8 @@ defmodule Raxol.Terminal.Cursor.Movement do
   @doc """
   Constrains the cursor position to within the specified bounds.
   """
-  @spec constrain_position(Manager.t(), non_neg_integer(), non_neg_integer()) :: Manager.t()
+  @spec constrain_position(Manager.t(), non_neg_integer(), non_neg_integer()) ::
+          Manager.t()
   def constrain_position(cursor, width, height) do
     clamped_row = max(0, min(cursor.row, height - 1))
     clamped_col = max(0, min(cursor.col, width - 1))

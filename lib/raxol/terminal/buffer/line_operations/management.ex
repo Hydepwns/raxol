@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Management do
   Handles line management operations for the screen buffer.
   """
 
-  import Raxol.Guards
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting

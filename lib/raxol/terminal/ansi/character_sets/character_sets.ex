@@ -366,16 +366,19 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
 end
 
 defmodule Raxol.Terminal.ANSI.CharacterSets.ASCII do
+  @moduledoc "ASCII character set translation module."
   def translate_char(codepoint), do: codepoint
   def translate_string(string), do: string
 end
 
 defmodule Raxol.Terminal.ANSI.CharacterSets.DEC do
+  @moduledoc "DEC character set translation module."
   def translate_char(codepoint), do: codepoint
   def translate_string(string), do: string
 end
 
 defmodule Raxol.Terminal.ANSI.CharacterSets.UK do
+  @moduledoc "UK character set translation module."
   def translate_char(codepoint), do: codepoint
   def translate_string(string), do: string
 end

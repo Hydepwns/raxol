@@ -82,7 +82,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
     end
   end
 
-  def handle_window_title(emulator, data), do: {:ok, %{emulator | window_title: data}}
+  def handle_window_title(emulator, data),
+    do: {:ok, %{emulator | window_title: data}}
+
   def handle_icon_name(emulator, _data), do: {:ok, emulator}
   def handle_icon_title(emulator, _data), do: {:ok, emulator}
   def handle_foreground_color(emulator, _data), do: {:ok, emulator}

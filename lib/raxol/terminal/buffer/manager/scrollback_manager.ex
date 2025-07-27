@@ -8,7 +8,10 @@ defmodule Raxol.Terminal.Buffer.Manager.ScrollbackManager do
   Adds a buffer to the scrollback history.
   """
   def add_to_scrollback(
-        %Raxol.Terminal.Buffer.Manager.TestBufferManager{scrollback: sb, scrollback_size: sz} = mgr,
+        %Raxol.Terminal.Buffer.Manager.TestBufferManager{
+          scrollback: sb,
+          scrollback_size: sz
+        } = mgr,
         buffer
       ) do
     %{mgr | scrollback: [buffer | sb] |> Enum.take(sz)}
@@ -55,7 +58,10 @@ defmodule Raxol.Terminal.Buffer.Manager.ScrollbackManager do
   @doc """
   Gets the scrollback history.
   """
-  def get_scrollback(%Raxol.Terminal.Buffer.Manager.TestBufferManager{scrollback: sb}), do: sb
+  def get_scrollback(%Raxol.Terminal.Buffer.Manager.TestBufferManager{
+        scrollback: sb
+      }),
+      do: sb
 
   def get_scrollback(%Raxol.Terminal.Emulator{} = emulator),
     do: emulator.scrollback_buffer
@@ -97,7 +103,10 @@ defmodule Raxol.Terminal.Buffer.Manager.ScrollbackManager do
   @doc """
   Gets the current scrollback size limit.
   """
-  def get_scrollback_size(%Raxol.Terminal.Buffer.Manager.TestBufferManager{scrollback_size: sz}), do: sz
+  def get_scrollback_size(%Raxol.Terminal.Buffer.Manager.TestBufferManager{
+        scrollback_size: sz
+      }),
+      do: sz
 
   def get_scrollback_size(%Raxol.Terminal.Emulator{} = emulator),
     do: emulator.scrollback_limit
@@ -113,7 +122,10 @@ defmodule Raxol.Terminal.Buffer.Manager.ScrollbackManager do
   @doc """
   Clears the scrollback history.
   """
-  def clear_scrollback(%Raxol.Terminal.Buffer.Manager.TestBufferManager{} = mgr), do: %{mgr | scrollback: []}
+  def clear_scrollback(
+        %Raxol.Terminal.Buffer.Manager.TestBufferManager{} = mgr
+      ),
+      do: %{mgr | scrollback: []}
 
   def clear_scrollback(%Raxol.Terminal.Emulator{} = emulator),
     do: %{emulator | scrollback_buffer: []}
