@@ -18,7 +18,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CommunicationIntegrationT
         }
       end
 
-      def api_version, do: "1.0.0"
 
       @impl true
       def init(config) do
@@ -60,7 +59,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CommunicationIntegrationT
 
       @impl true
       def get_api_version, do: "1.0.0"
-      def api_version, do: "1.0.0"
 
       @impl true
       def get_dependencies, do: [{:communicating_plugin_b, ">= 1.0.0"}]
@@ -81,7 +79,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CommunicationIntegrationT
         }
       end
 
-      def api_version, do: "1.0.0"
 
       @impl true
       def init(config) do
@@ -123,7 +120,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CommunicationIntegrationT
 
       @impl true
       def get_api_version, do: "1.0.0"
-      def api_version, do: "1.0.0"
 
       @impl true
       def get_dependencies, do: []

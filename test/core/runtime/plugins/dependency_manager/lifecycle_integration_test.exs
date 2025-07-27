@@ -19,7 +19,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
       end
 
       @impl true
-      def init(_config) do
+      def init(config) do
         Process.put(:lifecycle_plugin_a_init, true)
 
         plugin = %Raxol.Plugins.Plugin{
@@ -36,13 +36,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
       end
 
       @impl Raxol.Plugins.LifecycleBehaviour
-      def start(_config) do
+      def start(config) do
         Process.put(:lifecycle_plugin_a_start, true)
         {:ok, config}
       end
 
       @impl Raxol.Plugins.LifecycleBehaviour
-      def stop(_config) do
+      def stop(config) do
         Process.put(:lifecycle_plugin_a_stop, true)
         {:ok, config}
       end
