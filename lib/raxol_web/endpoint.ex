@@ -59,7 +59,8 @@ defmodule RaxolWeb.Endpoint do
     end
   end
 
-  if Mix.env() == :dev and Code.ensure_loaded?(Phoenix.LiveDashboard.RequestLogger) do
+  if Mix.env() == :dev and
+       Code.ensure_loaded?(Phoenix.LiveDashboard.RequestLogger) do
     plug Phoenix.LiveDashboard.RequestLogger,
       param_key: "request_logger",
       cookie_key: "request_logger"

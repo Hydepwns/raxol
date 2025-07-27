@@ -93,8 +93,8 @@ defmodule RaxolWeb.Settings.PreferencesComponent do
         font_size < 8 or font_size > 24 ->
           {:error, "Font size must be between 8 and 24"}
 
-        scrollback_size < 100 or scrollback_size > 10000 ->
-          {:error, "Scrollback size must be between 100 and 10000"}
+        scrollback_size < 100 or scrollback_size > 10_000 ->
+          {:error, "Scrollback size must be between 100 and 10_000"}
 
         true ->
           {:ok,

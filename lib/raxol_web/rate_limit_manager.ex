@@ -1,4 +1,10 @@
 defmodule RaxolWeb.RateLimitManager do
+  @moduledoc """
+  Rate limiting manager for web requests.
+
+  Manages request rate limiting across different endpoints and users
+  to prevent abuse and ensure system stability.
+  """
   use GenServer
   require Logger
 

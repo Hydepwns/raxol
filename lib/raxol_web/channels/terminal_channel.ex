@@ -14,6 +14,7 @@ defmodule RaxolWeb.TerminalChannel do
   use RaxolWeb, :channel
   alias Raxol.Terminal.Renderer
   alias Raxol.Terminal.Input
+  alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
   require Logger
   import Raxol.Guards
@@ -89,131 +90,30 @@ defmodule RaxolWeb.TerminalChannel do
 
   @impl Phoenix.Channel
   def handle_in("input", %{"data" => data}, socket) do
-    with :ok <- validate_input_size(data),
-         :ok <- check_rate_limit(socket),
-         :ok <- validate_input_data(data) do
-      state = socket.assigns.terminal_state
+    case validate_and_process_input(data, socket) do
+      {:ok, new_state, cursor_info} ->
+        socket = assign(socket, :terminal_state, new_state)
+        broadcast!(socket, "output", Map.merge(%{html: renderer_module().render(new_state.renderer)}, cursor_info))
+        {:reply, :ok, socket}
 
-      # Process input through emulator with error handling
-      case process_input_safely(state.emulator, data) do
-        {:ok, {emulator, _output}} ->
-          renderer = %{
-            state.renderer
-            | screen_buffer: emulator.main_screen_buffer
-          }
-
-          new_state = %{state | emulator: emulator, renderer: renderer}
-          socket = assign(socket, :terminal_state, new_state)
-
-          # Get cursor position and visibility
-          {cursor_x, cursor_y} = emulator_module().get_cursor_position(emulator)
-          cursor_visible = emulator_module().get_cursor_visible(emulator)
-
-          # Broadcast output to client
-          broadcast!(socket, "output", %{
-            html: renderer_module().render(renderer),
-            cursor: %{x: cursor_x, y: cursor_y, visible: cursor_visible}
-          })
-
-          {:reply, :ok, socket}
-
-        {:error, _reason} ->
-          {:reply, {:error, %{reason: "input_processing_failed"}}, socket}
-      end
-    else
-      {:error, :rate_limited} ->
-        {:reply, {:error, %{reason: "rate_limited"}}, socket}
-
-      {:error, :invalid_input} ->
-        {:reply, {:error, %{reason: "invalid_input"}}, socket}
+      {:error, reason} ->
+        {:reply, {:error, %{reason: reason}}, socket}
     end
   end
 
-  # Rate limiting implementation
-  defp check_rate_limit(socket) do
-    user_id = socket.assigns.user_id
-    key = "rate_limit:#{user_id}"
-
-    # Ensure rate limit table exists (for testing scenarios)
-    ensure_rate_limit_table()
-
-    case :ets.lookup(:rate_limit_table, key) do
-      [{^key, count, timestamp}] ->
-        now = System.system_time(:second)
-
-        if now - timestamp >= 1 do
-          :ets.insert(:rate_limit_table, {key, 1, now})
-          :ok
-        else
-          if count >= @rate_limit_per_second do
-            {:error, :rate_limited}
-          else
-            :ets.insert(:rate_limit_table, {key, count + 1, timestamp})
-            :ok
-          end
-        end
-
-      [] ->
-        :ets.insert(:rate_limit_table, {key, 1, System.system_time(:second)})
-        :ok
-    end
-  end
-
-  defp ensure_rate_limit_table do
-    case :ets.info(:rate_limit_table) do
-      :undefined ->
-        :ets.new(:rate_limit_table, [:set, :public, :named_table])
-
-      _ ->
-        :ok
-    end
-  end
-
-  defp validate_input_size(data)
-       when is_binary(data) and byte_size(data) <= @max_input_size,
-       do: :ok
-
-  defp validate_input_size(_), do: {:error, :invalid_input}
-
-  defp validate_input_data(data) when is_binary(data), do: :ok
-  defp validate_input_data(_), do: {:error, :invalid_input}
-
-  defp process_input_safely(emulator, data) do
-    try do
-      {:ok, emulator_module().process_input(emulator, data)}
-    rescue
-      _error ->
-        {:error, :processing_failed}
-    end
-  end
-
+  @impl Phoenix.Channel
   def handle_in("resize", %{"width" => width, "height" => height}, socket) do
-    state = socket.assigns.terminal_state
+    case validate_dimensions(width, height) do
+      :ok ->
+        state = socket.assigns.terminal_state
+        {new_state, cursor_info} = resize_terminal(state, width, height)
+        socket = assign(socket, :terminal_state, new_state)
 
-    # Validate dimensions
-    if is_integer(width) and is_integer(height) and width > 0 and height > 0 and
-         width <= 200 and height <= 100 do
-      # Resize emulator
-      emulator = emulator_module().resize(state.emulator, width, height)
-      renderer = %{state.renderer | screen_buffer: emulator.main_screen_buffer}
+        broadcast!(socket, "resize", Map.merge(%{width: width, height: height}, cursor_info))
+        {:reply, :ok, socket}
 
-      new_state = %{state | emulator: emulator, renderer: renderer}
-      socket = assign(socket, :terminal_state, new_state)
-
-      # Get cursor position and visibility
-      {cursor_x, cursor_y} = emulator_module().get_cursor_position(emulator)
-      cursor_visible = emulator_module().get_cursor_visible(emulator)
-
-      # Broadcast resize event to client
-      broadcast!(socket, "resize", %{
-        width: width,
-        height: height,
-        cursor: %{x: cursor_x, y: cursor_y, visible: cursor_visible}
-      })
-
-      {:reply, :ok, socket}
-    else
-      {:reply, {:error, %{reason: "invalid_dimensions"}}, socket}
+      :error ->
+        {:reply, {:error, %{reason: "invalid_dimensions"}}, socket}
     end
   end
 
@@ -301,7 +201,7 @@ defmodule RaxolWeb.TerminalChannel do
     limit = if integer?(limit), do: limit, else: String.to_integer("#{limit}")
 
     # Validate limit
-    if limit >= 100 and limit <= 10000 do
+    if limit >= 100 and limit <= 10_000 do
       emulator = %{state.emulator | scrollback_limit: limit}
       new_state = %{state | emulator: emulator}
       socket = assign(socket, :terminal_state, new_state)
@@ -309,6 +209,116 @@ defmodule RaxolWeb.TerminalChannel do
     else
       {:reply, {:error, %{reason: "invalid_limit"}}, socket}
     end
+  end
+
+  defp validate_and_process_input(data, socket) do
+    with :ok <- validate_input_size(data),
+         :ok <- check_rate_limit(socket),
+         :ok <- validate_input_data(data) do
+      state = socket.assigns.terminal_state
+
+      case process_input_safely(state.emulator, data) do
+        {:ok, {emulator, _output}} ->
+          renderer = %{state.renderer | screen_buffer: emulator.main_screen_buffer}
+          new_state = %{state | emulator: emulator, renderer: renderer}
+
+          {cursor_x, cursor_y} = emulator_module().get_cursor_position(emulator)
+          cursor_visible = emulator_module().get_cursor_visible(emulator)
+          cursor_info = %{cursor: %{x: cursor_x, y: cursor_y, visible: cursor_visible}}
+
+          {:ok, new_state, cursor_info}
+
+        {:error, _reason} ->
+          {:error, "input_processing_failed"}
+      end
+    else
+      {:error, :rate_limited} -> {:error, "rate_limited"}
+      {:error, :invalid_input} -> {:error, "invalid_input"}
+    end
+  end
+
+  # Rate limiting implementation
+  defp check_rate_limit(socket) do
+    user_id = socket.assigns.user_id
+    key = "rate_limit:#{user_id}"
+
+    # Ensure rate limit table exists (for testing scenarios)
+    ensure_rate_limit_table()
+
+    case :ets.lookup(:rate_limit_table, key) do
+      [{^key, count, timestamp}] ->
+        check_existing_rate_limit(key, count, timestamp)
+
+      [] ->
+        :ets.insert(:rate_limit_table, {key, 1, System.system_time(:second)})
+        :ok
+    end
+  end
+
+  defp check_existing_rate_limit(key, count, timestamp) do
+    now = System.system_time(:second)
+
+    cond do
+      now - timestamp >= 1 ->
+        :ets.insert(:rate_limit_table, {key, 1, now})
+        :ok
+
+      count >= @rate_limit_per_second ->
+        {:error, :rate_limited}
+
+      true ->
+        :ets.insert(:rate_limit_table, {key, count + 1, timestamp})
+        :ok
+    end
+  end
+
+  defp ensure_rate_limit_table do
+    case :ets.info(:rate_limit_table) do
+      :undefined ->
+        :ets.new(:rate_limit_table, [:set, :public, :named_table])
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp validate_input_size(data)
+       when is_binary(data) and byte_size(data) <= @max_input_size,
+       do: :ok
+
+  defp validate_input_size(_), do: {:error, :invalid_input}
+
+  defp validate_input_data(data) when is_binary(data), do: :ok
+  defp validate_input_data(_), do: {:error, :invalid_input}
+
+  defp process_input_safely(emulator, data) do
+    try do
+      {:ok, emulator_module().process_input(emulator, data)}
+    rescue
+      _error ->
+        {:error, :processing_failed}
+    end
+  end
+
+  defp validate_dimensions(width, height) do
+    if is_integer(width) and is_integer(height) and width > 0 and height > 0 and
+         width <= 200 and height <= 100 do
+      :ok
+    else
+      :error
+    end
+  end
+
+  defp resize_terminal(state, width, height) do
+    emulator = emulator_module().resize(state.emulator, width, height)
+    renderer = %{state.renderer | screen_buffer: emulator.main_screen_buffer}
+    new_state = %{state | emulator: emulator, renderer: renderer}
+
+    {cursor_x, cursor_y} = emulator_module().get_cursor_position(emulator)
+    cursor_visible = emulator_module().get_cursor_visible(emulator)
+    cursor_info = %{cursor: %{x: cursor_x, y: cursor_y, visible: cursor_visible}}
+
+    {new_state, cursor_info}
   end
 
   @impl Phoenix.Channel

@@ -20,9 +20,30 @@ defmodule RaxolWeb.AdminController do
   def users(conn, _params) do
     # Admin user management
     users = [
-      %{id: 1, name: "John Doe", email: "john@example.com", role: "admin", status: "active", last_login: "2024-01-15T10:30:00Z"},
-      %{id: 2, name: "Jane Smith", email: "jane@example.com", role: "user", status: "active", last_login: "2024-01-15T09:15:00Z"},
-      %{id: 3, name: "Bob Johnson", email: "bob@example.com", role: "user", status: "inactive", last_login: "2024-01-10T14:20:00Z"}
+      %{
+        id: 1,
+        name: "John Doe",
+        email: "john@example.com",
+        role: "admin",
+        status: "active",
+        last_login: "2024-01-15T10:30:00Z"
+      },
+      %{
+        id: 2,
+        name: "Jane Smith",
+        email: "jane@example.com",
+        role: "user",
+        status: "active",
+        last_login: "2024-01-15T09:15:00Z"
+      },
+      %{
+        id: 3,
+        name: "Bob Johnson",
+        email: "bob@example.com",
+        role: "user",
+        status: "inactive",
+        last_login: "2024-01-10T14:20:00Z"
+      }
     ]
 
     render(conn, :users, users: users)
@@ -31,9 +52,27 @@ defmodule RaxolWeb.AdminController do
   def projects(conn, _params) do
     # Admin project management
     projects = [
-      %{id: 1, name: "Raxol Web App", owner: "John Doe", status: "active", created_at: "2024-01-01"},
-      %{id: 2, name: "Mobile Dashboard", owner: "Jane Smith", status: "active", created_at: "2024-01-05"},
-      %{id: 3, name: "API Gateway", owner: "Bob Johnson", status: "completed", created_at: "2023-12-15"}
+      %{
+        id: 1,
+        name: "Raxol Web App",
+        owner: "John Doe",
+        status: "active",
+        created_at: "2024-01-01"
+      },
+      %{
+        id: 2,
+        name: "Mobile Dashboard",
+        owner: "Jane Smith",
+        status: "active",
+        created_at: "2024-01-05"
+      },
+      %{
+        id: 3,
+        name: "API Gateway",
+        owner: "Bob Johnson",
+        status: "completed",
+        created_at: "2023-12-15"
+      }
     ]
 
     render(conn, :projects, projects: projects)

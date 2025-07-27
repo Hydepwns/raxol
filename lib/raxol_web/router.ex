@@ -92,7 +92,7 @@ defmodule RaxolWeb.Router do
 
   # API routes
   scope "/api", RaxolWeb do
-    pipe_through :api
+    pipe_through(:api)
 
     # Public API endpoints
     get("/health", ApiController, :health)
@@ -100,7 +100,7 @@ defmodule RaxolWeb.Router do
 
     # Protected API endpoints
     scope "/v1" do
-      pipe_through :auth
+      pipe_through(:auth)
 
       # User API
       get("/users", Api.UserController, :index)

@@ -17,9 +17,24 @@ defmodule RaxolWeb.DashboardController do
     # Get overview data
     overview_data = %{
       recent_activities: [
-        %{id: 1, type: "user_registration", message: "New user registered", timestamp: "2024-01-15T10:30:00Z"},
-        %{id: 2, type: "project_created", message: "Project 'Raxol Web App' created", timestamp: "2024-01-15T09:15:00Z"},
-        %{id: 3, type: "system_update", message: "System updated to v1.2.0", timestamp: "2024-01-15T08:45:00Z"}
+        %{
+          id: 1,
+          type: "user_registration",
+          message: "New user registered",
+          timestamp: "2024-01-15T10:30:00Z"
+        },
+        %{
+          id: 2,
+          type: "project_created",
+          message: "Project 'Raxol Web App' created",
+          timestamp: "2024-01-15T09:15:00Z"
+        },
+        %{
+          id: 3,
+          type: "system_update",
+          message: "System updated to v1.2.0",
+          timestamp: "2024-01-15T08:45:00Z"
+        }
       ],
       system_status: %{
         database: "healthy",

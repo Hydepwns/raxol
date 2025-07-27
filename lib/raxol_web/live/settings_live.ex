@@ -6,13 +6,12 @@ defmodule RaxolWeb.SettingsLive do
   alias Raxol.Core.UserPreferences
   alias Raxol.System.Updater
   alias Raxol.Cloud.Config
-  import Raxol.Guards
 
   @impl Phoenix.LiveView
   def mount(%{"token" => token}, _session, socket) do
     # Validate the token and get user_id
     case Phoenix.Token.verify(RaxolWeb.Endpoint, "user socket", token,
-           max_age: 86400
+           max_age: 86_400
          ) do
       {:ok, user_id} ->
         case Accounts.get_user(user_id) do
@@ -55,7 +54,6 @@ defmodule RaxolWeb.SettingsLive do
               |> redirect(to: "/")
 
             {:ok, updated_socket}
-
         end
 
       {:error, _reason} ->

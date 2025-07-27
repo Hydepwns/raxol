@@ -1,4 +1,11 @@
 defmodule RaxolWeb.AuthPlug do
+  @moduledoc """
+  Authentication plug for web requests.
+
+  Handles session-based authentication by validating session tokens
+  and ensuring users are properly authenticated before accessing
+  protected resources.
+  """
   import Plug.Conn
   import Phoenix.Controller
 

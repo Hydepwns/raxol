@@ -1,4 +1,10 @@
 defmodule RaxolWeb.AccessibilityComponent do
+  @moduledoc """
+  Live component for accessibility options and controls.
+
+  Provides an accessibility toolbar with options for users with
+  visual, motor, or cognitive accessibility needs.
+  """
   use RaxolWeb, :live_component
 
   def render(assigns) do

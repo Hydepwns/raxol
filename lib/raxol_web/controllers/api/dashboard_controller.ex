@@ -5,7 +5,7 @@ defmodule RaxolWeb.Api.DashboardController do
     stats = %{
       total_users: 150,
       active_projects: 25,
-      total_revenue: 45230,
+      total_revenue: 45_230,
       growth_rate: 12.5,
       chart_data: [
         %{month: "Jan", users: 120, projects: 20},

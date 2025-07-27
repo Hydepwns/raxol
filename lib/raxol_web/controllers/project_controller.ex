@@ -4,10 +4,34 @@ defmodule RaxolWeb.ProjectController do
   def index(conn, _params) do
     # Mock project data
     projects = [
-      %{id: 1, name: "Raxol Web App", description: "Modern web application built with Phoenix", status: "active", progress: 75},
-      %{id: 2, name: "Mobile Dashboard", description: "React Native mobile app", status: "active", progress: 45},
-      %{id: 3, name: "API Gateway", description: "Microservices API gateway", status: "completed", progress: 100},
-      %{id: 4, name: "Data Analytics", description: "Real-time analytics platform", status: "pending", progress: 0}
+      %{
+        id: 1,
+        name: "Raxol Web App",
+        description: "Modern web application built with Phoenix",
+        status: "active",
+        progress: 75
+      },
+      %{
+        id: 2,
+        name: "Mobile Dashboard",
+        description: "React Native mobile app",
+        status: "active",
+        progress: 45
+      },
+      %{
+        id: 3,
+        name: "API Gateway",
+        description: "Microservices API gateway",
+        status: "completed",
+        progress: 100
+      },
+      %{
+        id: 4,
+        name: "Data Analytics",
+        description: "Real-time analytics platform",
+        status: "pending",
+        progress: 0
+      }
     ]
 
     render(conn, :index, projects: projects)

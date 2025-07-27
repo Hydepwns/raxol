@@ -3,9 +3,24 @@ defmodule RaxolWeb.Api.ProjectController do
 
   def index(conn, _params) do
     projects = [
-      %{id: 1, name: "Raxol Web App", description: "Modern web application", status: "active"},
-      %{id: 2, name: "Mobile Dashboard", description: "React Native app", status: "active"},
-      %{id: 3, name: "API Gateway", description: "Microservices gateway", status: "completed"}
+      %{
+        id: 1,
+        name: "Raxol Web App",
+        description: "Modern web application",
+        status: "active"
+      },
+      %{
+        id: 2,
+        name: "Mobile Dashboard",
+        description: "React Native app",
+        status: "active"
+      },
+      %{
+        id: 3,
+        name: "API Gateway",
+        description: "Microservices gateway",
+        status: "completed"
+      }
     ]
 
     json(conn, %{projects: projects, total: length(projects)})
