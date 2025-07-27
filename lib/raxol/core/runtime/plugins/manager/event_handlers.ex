@@ -132,7 +132,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
   end
 
   defp handle_cast_message({:update_plugin_config, plugin_name, config}, state) do
-    {:ok, updated_state} = State.update_plugin_config(state, plugin_name, config)
+    {:ok, updated_state} =
+      State.update_plugin_config(state, plugin_name, config)
+
     {:noreply, updated_state}
   end
 
@@ -165,7 +167,10 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
     handle_clipboard_result(pid, content, state)
   end
 
-  defp handle_info_message({:reload_plugin_file_debounced, plugin_id, path}, state) do
+  defp handle_info_message(
+         {:reload_plugin_file_debounced, plugin_id, path},
+         state
+       ) do
     handle_reload_plugin_file(plugin_id, path, state)
   end
 
@@ -225,7 +230,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
   end
 
   defp handle_command_response(command, response, state) do
-    {:ok, updated_state} = CommandHandler.handle_response(command, response, state)
+    {:ok, updated_state} =
+      CommandHandler.handle_response(command, response, state)
+
     {:noreply, updated_state}
   end
 

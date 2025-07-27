@@ -119,7 +119,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
       "[#{__MODULE__}] Starting file watcher",
       %{config: config}
     )
-    
+
     # For now, just return a mock PID
     # In a real implementation, this would start a GenServer or use a file system watcher
     {:ok, spawn(fn -> :ok end)}
@@ -133,7 +133,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
       "[#{__MODULE__}] Stopping file watcher",
       %{pid: pid}
     )
-    
+
     # For now, just return :ok
     # In a real implementation, this would stop the watcher process
     :ok
@@ -147,7 +147,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
       "[#{__MODULE__}] Subscribing to file watcher events",
       %{pid: pid}
     )
-    
+
     # For now, just return :ok
     # In a real implementation, this would subscribe the calling process to events
     :ok

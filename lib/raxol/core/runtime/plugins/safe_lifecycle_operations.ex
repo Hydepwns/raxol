@@ -212,23 +212,26 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
   defp restore_plugin_state(plugin_id, backup, state) do
     restored_state = state
 
-    restored_state = if backup.plugin do
-      put_in(restored_state.plugins[plugin_id], backup.plugin)
-    else
-      restored_state
-    end
+    restored_state =
+      if backup.plugin do
+        put_in(restored_state.plugins[plugin_id], backup.plugin)
+      else
+        restored_state
+      end
 
-    restored_state = if backup.plugin_state do
-      put_in(restored_state.plugin_states[plugin_id], backup.plugin_state)
-    else
-      restored_state
-    end
+    restored_state =
+      if backup.plugin_state do
+        put_in(restored_state.plugin_states[plugin_id], backup.plugin_state)
+      else
+        restored_state
+      end
 
-    restored_state = if backup.metadata do
-      put_in(restored_state.metadata[plugin_id], backup.metadata)
-    else
-      restored_state
-    end
+    restored_state =
+      if backup.metadata do
+        put_in(restored_state.metadata[plugin_id], backup.metadata)
+      else
+        restored_state
+      end
 
     {:ok, restored_state}
   end

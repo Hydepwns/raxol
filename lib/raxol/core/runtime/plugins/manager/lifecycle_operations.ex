@@ -36,23 +36,27 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.LifecycleOperations do
   """
   @spec handle_load_plugin(plugin_id(), state()) :: {:reply, any(), state()}
   def handle_load_plugin(plugin_id, state) do
-    operation = LifecycleManager.load_plugin(
-           plugin_id,
-           # default config
-           %{},
-           state.plugins,
-           state.metadata,
-           state.plugin_states,
-           state.load_order,
-           state.command_registry_table,
-           state.plugin_config
-         )
+    operation =
+      LifecycleManager.load_plugin(
+        plugin_id,
+        # default config
+        %{},
+        state.plugins,
+        state.metadata,
+        state.plugin_states,
+        state.load_order,
+        state.command_registry_table,
+        state.plugin_config
+      )
 
     handle_plugin_operation(operation, plugin_id, state, "load")
   end
 
   defp handle_plugin_operation(operation, plugin_id, state, operation_type) do
-    send(state.runtime_pid, {:plugin_operation_attempted, plugin_id, operation_type})
+    send(
+      state.runtime_pid,
+      {:plugin_operation_attempted, plugin_id, operation_type}
+    )
 
     case operation do
       {:ok, new_plugins, new_metadata, new_plugin_states, new_load_order} ->
@@ -64,12 +68,18 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.LifecycleOperations do
             load_order: new_load_order
         }
 
-        send(state.runtime_pid, {:plugin_operation_succeeded, plugin_id, operation_type})
+        send(
+          state.runtime_pid,
+          {:plugin_operation_succeeded, plugin_id, operation_type}
+        )
 
         {:ok, new_state}
 
       {:error, reason} ->
-        send(state.runtime_pid, {:plugin_operation_failed, plugin_id, operation_type, reason})
+        send(
+          state.runtime_pid,
+          {:plugin_operation_failed, plugin_id, operation_type, reason}
+        )
 
         {:error, reason, state}
     end
@@ -156,5 +166,4 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.LifecycleOperations do
 
     {:ok, new_state}
   end
-
 end

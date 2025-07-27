@@ -236,11 +236,12 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     state_with_load = %{state | load_stats: load_stats}
 
     # Adaptive scaling based on load
-    state_scaled = if state.config.adaptive_scaling do
-      maybe_scale_workers(state_with_load)
-    else
-      state_with_load
-    end
+    state_scaled =
+      if state.config.adaptive_scaling do
+        maybe_scale_workers(state_with_load)
+      else
+        state_with_load
+      end
 
     # Update back-pressure status
     new_state = update_back_pressure_status(state_scaled)

@@ -18,10 +18,10 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
           # First unload the plugin
           # unload_plugin uses GenServer.cast and always returns :ok
           Raxol.Core.Runtime.Plugins.Manager.unload_plugin(plugin_id)
-          
+
           # Give it a moment to unload
           Process.sleep(10)
-          
+
           # Then reload it
           case Raxol.Core.Runtime.Plugins.Manager.load_plugin(
                  plugin_id,

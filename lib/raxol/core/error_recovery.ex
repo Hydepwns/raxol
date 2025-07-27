@@ -392,7 +392,7 @@ defmodule Raxol.Core.ErrorRecovery do
     name = Keyword.get(opts, :name, :default)
     threshold = Keyword.get(opts, :threshold, 5)
     timeout = Keyword.get(opts, :timeout, 30_000)
-    
+
     %CircuitBreaker{
       name: name,
       state: :closed,
@@ -405,7 +405,6 @@ defmodule Raxol.Core.ErrorRecovery do
     }
   end
 
-
   @doc """
   Gets the current state of a circuit breaker.
   """
@@ -417,12 +416,13 @@ defmodule Raxol.Core.ErrorRecovery do
   Resets a circuit breaker to its initial state.
   """
   def circuit_breaker_reset(circuit_breaker) do
-    %{circuit_breaker | 
-      state: :closed,
-      failure_count: 0,
-      success_count: 0,
-      last_failure_time: nil,
-      half_open_requests: 0
+    %{
+      circuit_breaker
+      | state: :closed,
+        failure_count: 0,
+        success_count: 0,
+        last_failure_time: nil,
+        half_open_requests: 0
     }
   end
 end

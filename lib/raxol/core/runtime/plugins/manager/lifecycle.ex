@@ -204,6 +204,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Lifecycle do
         config: config,
         status: :loaded
       }
+
       {:ok, plugin}
     end
   end

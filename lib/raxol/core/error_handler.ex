@@ -43,7 +43,6 @@ defmodule Raxol.Core.ErrorHandler do
           {:error, error_type, String.t()}
           | {:error, error_type, String.t(), error_context}
 
-
   @doc """
   Wraps a function call with error handling and logging.
 
