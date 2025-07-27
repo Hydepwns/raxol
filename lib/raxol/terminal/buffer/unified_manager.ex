@@ -379,7 +379,9 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   def handle_call(:get_total_lines, _from, state) do
-    total_lines = state.height + ScrollOperations.get_size(state.scrollback_buffer)
+    total_lines =
+      state.height + ScrollOperations.get_size(state.scrollback_buffer)
+
     {:reply, {:ok, total_lines}, state}
   end
 
@@ -706,8 +708,10 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   defp get_cell_direct(state, x, y) do
     case CellOperations.get_cell_at_coordinates(state, x, y) do
-      {:valid, cell} -> {:ok, cell}
-      # The type system says {:invalid, _} never happens, so we only handle {:valid, _}
+      {:valid, cell} ->
+        {:ok, cell}
+
+        # The type system says {:invalid, _} never happens, so we only handle {:valid, _}
     end
   end
 

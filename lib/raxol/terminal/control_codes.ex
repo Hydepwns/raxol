@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.ControlCodes do
-
   @moduledoc """
   Handles C0 control codes and simple ESC sequences.
 

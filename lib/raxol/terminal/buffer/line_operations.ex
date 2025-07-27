@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Buffer.LineOperations do
-
   @moduledoc """
   Provides line-level operations for the screen buffer.
   This module handles operations like inserting, deleting, and manipulating lines.

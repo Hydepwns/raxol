@@ -268,8 +268,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
     do: set_custom_shape(__MODULE__, shape, params)
 
   def update_position(pid \\ __MODULE__, position)
-  
-  def update_position(pid, {row, col}) when is_integer(row) and is_integer(col) do
+
+  def update_position(pid, {row, col})
+      when is_integer(row) and is_integer(col) do
     GenServer.call(pid, {:update_position, row, col})
   end
 

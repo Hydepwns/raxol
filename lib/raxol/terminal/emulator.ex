@@ -130,145 +130,269 @@ defmodule Raxol.Terminal.Emulator do
   ]
 
   @type t :: %__MODULE__{
-    state: any(),
-    event: any(),
-    buffer: any(),
-    config: any(),
-    command: any(),
-    cursor: any(),
-    window_manager: any(),
-    mode_manager: any(),
-    active_buffer_type: atom(),
-    main_screen_buffer: any(),
-    active: any(),
-    alternate: any(),
-    charset_state: map(),
-    width: non_neg_integer(),
-    height: non_neg_integer(),
-    window_state: map(),
-    state_stack: list(),
-    parser_state: any(),
-    command_history: list(),
-    max_command_history: non_neg_integer(),
-    scrollback_buffer: list(),
-    output_buffer: list(),
-    current_command_buffer: String.t(),
-    screen_buffer_manager: any(),
-    output_manager: any(),
-    cursor_manager: any(),
-    scrollback_manager: any(),
-    selection_manager: any(),
-    mode_manager_pid: any(),
-    style_manager: any(),
-    damage_tracker: any(),
-    mode_state: map(),
-    style: any(),
-    cursor_style: atom(),
-    saved_cursor: any(),
-    scroll_region: tuple(),
-    scrollback_limit: non_neg_integer(),
-    memory_limit: non_neg_integer(),
-    session_id: String.t(),
-    client_options: map(),
-    window_title: String.t() | nil,
-    last_col_exceeded: boolean(),
-    icon_name: String.t() | nil,
-    tab_stops: list(),
-    color_palette: map(),
-    last_key_event: any(),
-    current_hyperlink: any(),
-    active_buffer: any(),
-    alternate_screen_buffer: any(),
-    sixel_state: any(),
-    cursor_blink_rate: non_neg_integer(),
-    notification_manager: any(),
-    clipboard_manager: any(),
-    hyperlink_manager: any(),
-    font_manager: any(),
-    color_manager: any(),
-    capabilities_manager: any(),
-    device_status_manager: any(),
-    graphics_manager: any(),
-    input_manager: any(),
-    metrics_manager: any(),
-    mouse_manager: any(),
-    plugin_manager: any(),
-    registry: any(),
-    renderer: any(),
-    scroll_manager: any(),
-    session_manager: any(),
-    state_manager: any(),
-    supervisor: any(),
-    sync_manager: any(),
-    tab_manager: any(),
-    terminal_state_manager: any(),
-    theme_manager: any(),
-    validation_service: any(),
-    window_registry: any()
-  }
+          state: any(),
+          event: any(),
+          buffer: any(),
+          config: any(),
+          command: any(),
+          cursor: any(),
+          window_manager: any(),
+          mode_manager: any(),
+          active_buffer_type: atom(),
+          main_screen_buffer: any(),
+          active: any(),
+          alternate: any(),
+          charset_state: map(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          window_state: map(),
+          state_stack: list(),
+          parser_state: any(),
+          command_history: list(),
+          max_command_history: non_neg_integer(),
+          scrollback_buffer: list(),
+          output_buffer: list(),
+          current_command_buffer: String.t(),
+          screen_buffer_manager: any(),
+          output_manager: any(),
+          cursor_manager: any(),
+          scrollback_manager: any(),
+          selection_manager: any(),
+          mode_manager_pid: any(),
+          style_manager: any(),
+          damage_tracker: any(),
+          mode_state: map(),
+          style: any(),
+          cursor_style: atom(),
+          saved_cursor: any(),
+          scroll_region: tuple(),
+          scrollback_limit: non_neg_integer(),
+          memory_limit: non_neg_integer(),
+          session_id: String.t(),
+          client_options: map(),
+          window_title: String.t() | nil,
+          last_col_exceeded: boolean(),
+          icon_name: String.t() | nil,
+          tab_stops: list(),
+          color_palette: map(),
+          last_key_event: any(),
+          current_hyperlink: any(),
+          active_buffer: any(),
+          alternate_screen_buffer: any(),
+          sixel_state: any(),
+          cursor_blink_rate: non_neg_integer(),
+          notification_manager: any(),
+          clipboard_manager: any(),
+          hyperlink_manager: any(),
+          font_manager: any(),
+          color_manager: any(),
+          capabilities_manager: any(),
+          device_status_manager: any(),
+          graphics_manager: any(),
+          input_manager: any(),
+          metrics_manager: any(),
+          mouse_manager: any(),
+          plugin_manager: any(),
+          registry: any(),
+          renderer: any(),
+          scroll_manager: any(),
+          session_manager: any(),
+          state_manager: any(),
+          supervisor: any(),
+          sync_manager: any(),
+          tab_manager: any(),
+          terminal_state_manager: any(),
+          theme_manager: any(),
+          validation_service: any(),
+          window_registry: any()
+        }
 
   # Cursor operations
-  def get_cursor_position(emulator), do: Raxol.Terminal.Operations.CursorOperations.get_cursor_position(emulator)
-  def set_cursor_position(emulator, x, y), do: Raxol.Terminal.Operations.CursorOperations.set_cursor_position(emulator, x, y)
-  def get_cursor_style(emulator), do: Raxol.Terminal.Operations.CursorOperations.get_cursor_style(emulator)
-  def set_cursor_style(emulator, style), do: Raxol.Terminal.Operations.CursorOperations.set_cursor_style(emulator, style)
-  def cursor_visible?(emulator), do: Raxol.Terminal.Operations.CursorOperations.cursor_visible?(emulator)
-  def get_cursor_visible(emulator), do: Raxol.Terminal.Operations.CursorOperations.cursor_visible?(emulator)
-  def set_cursor_visibility(emulator, visible), do: Raxol.Terminal.Operations.CursorOperations.set_cursor_visibility(emulator, visible)
-  def cursor_blinking?(emulator), do: Raxol.Terminal.Operations.CursorOperations.cursor_blinking?(emulator)
-  def set_cursor_blink(emulator, blinking), do: Raxol.Terminal.Operations.CursorOperations.set_cursor_blink(emulator, blinking)
-  def blinking?(emulator), do: Raxol.Terminal.Operations.CursorOperations.cursor_blinking?(emulator)
+  def get_cursor_position(emulator),
+    do: Raxol.Terminal.Operations.CursorOperations.get_cursor_position(emulator)
+
+  def set_cursor_position(emulator, x, y),
+    do:
+      Raxol.Terminal.Operations.CursorOperations.set_cursor_position(
+        emulator,
+        x,
+        y
+      )
+
+  def get_cursor_style(emulator),
+    do: Raxol.Terminal.Operations.CursorOperations.get_cursor_style(emulator)
+
+  def set_cursor_style(emulator, style),
+    do:
+      Raxol.Terminal.Operations.CursorOperations.set_cursor_style(
+        emulator,
+        style
+      )
+
+  def cursor_visible?(emulator),
+    do: Raxol.Terminal.Operations.CursorOperations.cursor_visible?(emulator)
+
+  def get_cursor_visible(emulator),
+    do: Raxol.Terminal.Operations.CursorOperations.cursor_visible?(emulator)
+
+  def set_cursor_visibility(emulator, visible),
+    do:
+      Raxol.Terminal.Operations.CursorOperations.set_cursor_visibility(
+        emulator,
+        visible
+      )
+
+  def cursor_blinking?(emulator),
+    do: Raxol.Terminal.Operations.CursorOperations.cursor_blinking?(emulator)
+
+  def set_cursor_blink(emulator, blinking),
+    do:
+      Raxol.Terminal.Operations.CursorOperations.set_cursor_blink(
+        emulator,
+        blinking
+      )
+
+  def blinking?(emulator),
+    do: Raxol.Terminal.Operations.CursorOperations.cursor_blinking?(emulator)
 
   # Screen operations
-  def clear_screen(emulator), do: Raxol.Terminal.Operations.ScreenOperations.clear_screen(emulator)
-  def clear_line(emulator, line), do: Raxol.Terminal.Operations.ScreenOperations.clear_line(emulator, line)
-  def erase_display(emulator, mode), do: Raxol.Terminal.Operations.ScreenOperations.erase_display(emulator, mode)
-  def erase_in_display(emulator, mode), do: Raxol.Terminal.Operations.ScreenOperations.erase_in_display(emulator, mode)
-  def erase_line(emulator, mode), do: Raxol.Terminal.Operations.ScreenOperations.erase_line(emulator, mode)
-  def erase_in_line(emulator, mode), do: Raxol.Terminal.Operations.ScreenOperations.erase_in_line(emulator, mode)
-  def erase_from_cursor_to_end(emulator), do: Raxol.Terminal.Operations.ScreenOperations.erase_from_cursor_to_end(emulator)
-  def erase_from_start_to_cursor(emulator), do: Raxol.Terminal.Operations.ScreenOperations.erase_from_start_to_cursor(emulator)
-  def erase_chars(emulator, count), do: Raxol.Terminal.Operations.ScreenOperations.erase_chars(emulator, count)
+  def clear_screen(emulator),
+    do: Raxol.Terminal.Operations.ScreenOperations.clear_screen(emulator)
+
+  def clear_line(emulator, line),
+    do: Raxol.Terminal.Operations.ScreenOperations.clear_line(emulator, line)
+
+  def erase_display(emulator, mode),
+    do: Raxol.Terminal.Operations.ScreenOperations.erase_display(emulator, mode)
+
+  def erase_in_display(emulator, mode),
+    do:
+      Raxol.Terminal.Operations.ScreenOperations.erase_in_display(
+        emulator,
+        mode
+      )
+
+  def erase_line(emulator, mode),
+    do: Raxol.Terminal.Operations.ScreenOperations.erase_line(emulator, mode)
+
+  def erase_in_line(emulator, mode),
+    do: Raxol.Terminal.Operations.ScreenOperations.erase_in_line(emulator, mode)
+
+  def erase_from_cursor_to_end(emulator),
+    do:
+      Raxol.Terminal.Operations.ScreenOperations.erase_from_cursor_to_end(
+        emulator
+      )
+
+  def erase_from_start_to_cursor(emulator),
+    do:
+      Raxol.Terminal.Operations.ScreenOperations.erase_from_start_to_cursor(
+        emulator
+      )
+
+  def erase_chars(emulator, count),
+    do: Raxol.Terminal.Operations.ScreenOperations.erase_chars(emulator, count)
 
   # Text operations
-  def insert_char(emulator, char), do: Raxol.Terminal.Operations.TextOperations.insert_char(emulator, char)
-  def insert_chars(emulator, count), do: Raxol.Terminal.Operations.TextOperations.insert_chars(emulator, count)
-  def delete_char(emulator), do: Raxol.Terminal.Operations.TextOperations.delete_char(emulator)
-  def delete_chars(emulator, count), do: Raxol.Terminal.Operations.TextOperations.delete_chars(emulator, count)
-  def write_text(emulator, text), do: Raxol.Terminal.Operations.TextOperations.write_text(emulator, text)
+  def insert_char(emulator, char),
+    do: Raxol.Terminal.Operations.TextOperations.insert_char(emulator, char)
+
+  def insert_chars(emulator, count),
+    do: Raxol.Terminal.Operations.TextOperations.insert_chars(emulator, count)
+
+  def delete_char(emulator),
+    do: Raxol.Terminal.Operations.TextOperations.delete_char(emulator)
+
+  def delete_chars(emulator, count),
+    do: Raxol.Terminal.Operations.TextOperations.delete_chars(emulator, count)
+
+  def write_text(emulator, text),
+    do: Raxol.Terminal.Operations.TextOperations.write_text(emulator, text)
 
   # Selection operations
-  def start_selection(emulator, x, y), do: Raxol.Terminal.Operations.SelectionOperations.start_selection(emulator, x, y)
-  def update_selection(emulator, x, y), do: Raxol.Terminal.Operations.SelectionOperations.update_selection(emulator, x, y)
-  def end_selection(emulator), do: Raxol.Terminal.Operations.SelectionOperations.end_selection(emulator)
-  def clear_selection(emulator), do: Raxol.Terminal.Operations.SelectionOperations.clear_selection(emulator)
-  def get_selection(emulator), do: Raxol.Terminal.Operations.SelectionOperations.get_selection(emulator)
-  def has_selection?(emulator), do: Raxol.Terminal.Operations.SelectionOperations.has_selection?(emulator)
+  def start_selection(emulator, x, y),
+    do:
+      Raxol.Terminal.Operations.SelectionOperations.start_selection(
+        emulator,
+        x,
+        y
+      )
+
+  def update_selection(emulator, x, y),
+    do:
+      Raxol.Terminal.Operations.SelectionOperations.update_selection(
+        emulator,
+        x,
+        y
+      )
+
+  def end_selection(emulator),
+    do: Raxol.Terminal.Operations.SelectionOperations.end_selection(emulator)
+
+  def clear_selection(emulator),
+    do: Raxol.Terminal.Operations.SelectionOperations.clear_selection(emulator)
+
+  def get_selection(emulator),
+    do: Raxol.Terminal.Operations.SelectionOperations.get_selection(emulator)
+
+  def has_selection?(emulator),
+    do: Raxol.Terminal.Operations.SelectionOperations.has_selection?(emulator)
 
   # Scroll operations
-  def scroll_up(emulator, lines), do: Raxol.Terminal.Operations.ScrollOperations.scroll_up(emulator, lines)
-  def scroll_down(emulator, lines), do: Raxol.Terminal.Operations.ScrollOperations.scroll_down(emulator, lines)
+  def scroll_up(emulator, lines),
+    do: Raxol.Terminal.Operations.ScrollOperations.scroll_up(emulator, lines)
+
+  def scroll_down(emulator, lines),
+    do: Raxol.Terminal.Operations.ScrollOperations.scroll_down(emulator, lines)
 
   # State operations
-  def save_state(emulator), do: Raxol.Terminal.Operations.StateOperations.save_state(emulator)
-  def restore_state(emulator), do: Raxol.Terminal.Operations.StateOperations.restore_state(emulator)
+  def save_state(emulator),
+    do: Raxol.Terminal.Operations.StateOperations.save_state(emulator)
+
+  def restore_state(emulator),
+    do: Raxol.Terminal.Operations.StateOperations.restore_state(emulator)
 
   # Buffer operations
-  def switch_to_alternate_screen(emulator), do: Raxol.Terminal.Emulator.BufferOperations.switch_to_alternate_screen(emulator)
-  def switch_to_normal_screen(emulator), do: Raxol.Terminal.Emulator.BufferOperations.switch_to_normal_screen(emulator)
-  def clear_scrollback(emulator), do: Raxol.Terminal.Emulator.BufferOperations.clear_scrollback(emulator)
-  def update_active_buffer(emulator, buffer), do: Raxol.Terminal.Emulator.BufferOperations.update_active_buffer(emulator, buffer)
-  def write_to_output(emulator, data), do: Raxol.Terminal.Emulator.BufferOperations.write_to_output(emulator, data)
+  def switch_to_alternate_screen(emulator),
+    do:
+      Raxol.Terminal.Emulator.BufferOperations.switch_to_alternate_screen(
+        emulator
+      )
+
+  def switch_to_normal_screen(emulator),
+    do:
+      Raxol.Terminal.Emulator.BufferOperations.switch_to_normal_screen(emulator)
+
+  def clear_scrollback(emulator),
+    do: Raxol.Terminal.Emulator.BufferOperations.clear_scrollback(emulator)
+
+  def update_active_buffer(emulator, buffer),
+    do:
+      Raxol.Terminal.Emulator.BufferOperations.update_active_buffer(
+        emulator,
+        buffer
+      )
+
+  def write_to_output(emulator, data),
+    do: Raxol.Terminal.Emulator.BufferOperations.write_to_output(emulator, data)
 
   # Dimension and property operations
-  def get_width(emulator), do: Raxol.Terminal.Emulator.Dimensions.get_width(emulator)
-  def get_height(emulator), do: Raxol.Terminal.Emulator.Dimensions.get_height(emulator)
-  def get_scroll_region(emulator), do: Raxol.Terminal.Emulator.Dimensions.get_scroll_region(emulator)
-  def visible?(emulator), do: Raxol.Terminal.Operations.CursorOperations.cursor_visible?(emulator)
+  def get_width(emulator),
+    do: Raxol.Terminal.Emulator.Dimensions.get_width(emulator)
+
+  def get_height(emulator),
+    do: Raxol.Terminal.Emulator.Dimensions.get_height(emulator)
+
+  def get_scroll_region(emulator),
+    do: Raxol.Terminal.Emulator.Dimensions.get_scroll_region(emulator)
+
+  def visible?(emulator),
+    do: Raxol.Terminal.Operations.CursorOperations.cursor_visible?(emulator)
 
   # Constructor functions - delegate to Coordinator
   def new(width \\ 80, height \\ 24), do: Coordinator.new(width, height)
   def new(width, height, opts), do: Coordinator.new(width, height, opts)
+
   def new(width, height, session_id, client_options) do
     opts = [session_id: session_id, client_options: client_options]
     {:ok, Coordinator.new(width, height, opts)}
@@ -276,7 +400,7 @@ defmodule Raxol.Terminal.Emulator do
 
   # Reset and cleanup functions - delegate to Coordinator
   def reset(emulator), do: Coordinator.reset(emulator)
-  
+
   # Resize function - delegate to Coordinator
   def resize(emulator, new_width, new_height) do
     Coordinator.resize(emulator, new_width, new_height)
@@ -325,11 +449,21 @@ defmodule Raxol.Terminal.Emulator do
   """
   def process_input(emulator, input) do
     # Delegate to input processor
-    case Raxol.Terminal.Input.CoreHandler.process_terminal_input(emulator, input) do
-      {updated_emulator, output} when is_binary(output) -> {updated_emulator, output}
-      {updated_emulator, _} -> {updated_emulator, ""}
-      updated_emulator when is_map(updated_emulator) -> {updated_emulator, ""}
-      _ -> {emulator, ""}
+    case Raxol.Terminal.Input.CoreHandler.process_terminal_input(
+           emulator,
+           input
+         ) do
+      {updated_emulator, output} when is_binary(output) ->
+        {updated_emulator, output}
+
+      {updated_emulator, _} ->
+        {updated_emulator, ""}
+
+      updated_emulator when is_map(updated_emulator) ->
+        {updated_emulator, ""}
+
+      _ ->
+        {emulator, ""}
     end
   end
 

@@ -164,10 +164,11 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
       end
 
     # Extract the state from the result tuple
-    state = case result do
-      {:ok, s} -> s
-      s -> s
-    end
+    state =
+      case result do
+        {:ok, s} -> s
+        s -> s
+      end
 
     # Schedule periodic checkpoints
     if state.config.checkpoint_interval > 0 do
@@ -336,7 +337,10 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp process_chunk(chunk, emulator_state) do
-    case Raxol.Terminal.Operations.TextOperations.write_text(emulator_state, chunk) do
+    case Raxol.Terminal.Operations.TextOperations.write_text(
+           emulator_state,
+           chunk
+         ) do
       {:ok, new_state} -> {:ok, new_state}
       error -> error
     end

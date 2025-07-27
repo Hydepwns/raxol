@@ -60,7 +60,8 @@ defmodule Raxol.Terminal.Emulator.Dimensions do
   @doc """
   Gets the current scroll region.
   """
-  @spec get_scroll_region(emulator()) :: {non_neg_integer(), non_neg_integer()} | nil
+  @spec get_scroll_region(emulator()) ::
+          {non_neg_integer(), non_neg_integer()} | nil
   def get_scroll_region(emulator) do
     emulator.scroll_region
   end

@@ -192,13 +192,13 @@ defmodule Raxol.Terminal.TestHelper do
   Cleans up test environment for a specific environment.
   """
   def cleanup_test_env(env \\ :default)
-  
+
   def cleanup_test_env(context) when is_map(context) do
     # Extract environment from context or use default
     env = Map.get(context, :env, :default)
     cleanup_test_env(env)
   end
-  
+
   def cleanup_test_env(env) do
     # Clean up any test-specific configuration
     Application.delete_env(:raxol, :test_mode)

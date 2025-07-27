@@ -85,9 +85,10 @@ defmodule Raxol.Terminal.Emulator.Coordinator do
   """
   def resize(emulator, new_width, new_height) do
     case validate_dimensions(new_width, new_height) do
-      {:ok, _} -> 
+      {:ok, _} ->
         %{emulator | width: new_width, height: new_height}
-      {:error, reason} -> 
+
+      {:error, reason} ->
         {:error, reason}
     end
   end

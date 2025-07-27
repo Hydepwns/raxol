@@ -75,16 +75,27 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Handler do
       charset ->
         # If gset_index is already an atom (g0, g1, g2, g3), use it directly
         # If it's an integer, convert it
-        gset = case gset_index do
-          :g0 -> :g0
-          :g1 -> :g1
-          :g2 -> :g2
-          :g3 -> :g3
-          index when is_integer(index) ->
-            StateManager.index_to_gset(index)
-          _ -> nil
-        end
-        
+        gset =
+          case gset_index do
+            :g0 ->
+              :g0
+
+            :g1 ->
+              :g1
+
+            :g2 ->
+              :g2
+
+            :g3 ->
+              :g3
+
+            index when is_integer(index) ->
+              StateManager.index_to_gset(index)
+
+            _ ->
+              nil
+          end
+
         case gset do
           nil -> state
           _ -> StateManager.set_gset(state, gset, charset)

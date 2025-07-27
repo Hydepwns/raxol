@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   Safely resizes the buffer with validation.
   """
   def resize(pid \\ __MODULE__, width, height)
-  
+
   def resize(pid, width, height) when width > 0 and height > 0 do
     GenServer.call(pid, {:resize, {width, height}})
   end

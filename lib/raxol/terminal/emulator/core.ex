@@ -9,7 +9,6 @@ defmodule Raxol.Terminal.Emulator.Core do
   - Buffer management
   """
 
-
   alias Raxol.Terminal.{
     ScreenBuffer,
     Buffer.Scrollback,

@@ -447,7 +447,10 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   Handles CSI G - Cursor Horizontal Absolute (CHA)
   """
   def handle_G(emulator, params) do
-    column = get_valid_pos_param(params, 0, 1) - 1  # Convert to 0-based
-    {:ok, move_cursor_to_column(emulator, column, emulator.width, emulator.height)}
+    # Convert to 0-based
+    column = get_valid_pos_param(params, 0, 1) - 1
+
+    {:ok,
+     move_cursor_to_column(emulator, column, emulator.width, emulator.height)}
   end
 end

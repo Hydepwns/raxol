@@ -16,6 +16,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
     cursor_pos =
       if is_pid(emulator.cursor) do
         result = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
         case result do
           {:ok, pos} -> pos
           pos when is_tuple(pos) and tuple_size(pos) == 2 -> pos
@@ -24,7 +25,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
       else
         {0, 0}
       end
-    
+
     blank_style = Raxol.Terminal.ANSI.TextFormatting.new()
     {active_buffer, cursor_pos, blank_style}
   end

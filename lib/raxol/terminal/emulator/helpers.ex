@@ -79,10 +79,12 @@ defmodule Raxol.Terminal.Emulator.Helpers do
   @doc """
   Gets the current cursor position.
   """
-  @spec get_cursor_position(Raxol.Terminal.Emulator.t()) :: {non_neg_integer(), non_neg_integer()}
+  @spec get_cursor_position(Raxol.Terminal.Emulator.t()) ::
+          {non_neg_integer(), non_neg_integer()}
   def get_cursor_position(%Raxol.Terminal.Emulator{cursor: cursor} = emulator) do
     if is_pid(cursor) do
       cursor_struct = get_cursor_struct(emulator)
+
       case cursor_struct do
         %{position: {x, y}} -> {x, y}
         %{x: x, y: y} -> {x, y}
