@@ -374,5 +374,4 @@ defmodule Mix.Tasks.Benchmark do
   defp format_optimizations(opts) do
     Enum.map_join(opts, "\n", fn opt -> "  • #{opt}" end)
   end
-
 end

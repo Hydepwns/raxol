@@ -1,5 +1,4 @@
 defmodule Raxol.Benchmarks.VisualizationBenchmarkRealistic do
-
   @moduledoc """
   A realistic benchmark tool for visualization components with progressive data sizes.
   Tests the performance impact of our optimizations on various dataset sizes.

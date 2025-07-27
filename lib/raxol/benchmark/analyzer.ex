@@ -309,20 +309,22 @@ defmodule Raxol.Benchmark.Analyzer do
     optimizations = []
 
     # Check memory allocation
-    optimizations = if scenario.memory_usage_data.statistics.average > 1_000_000 do
-      ["High memory allocation detected" | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if scenario.memory_usage_data.statistics.average > 1_000_000 do
+        ["High memory allocation detected" | optimizations]
+      else
+        optimizations
+      end
 
     # Check execution time
-    optimizations = if scenario.run_time_data.statistics.average > 50_000 do
-      [
-        "Consider breaking into smaller operations" | optimizations
-      ]
-    else
-      optimizations
-    end
+    optimizations =
+      if scenario.run_time_data.statistics.average > 50_000 do
+        [
+          "Consider breaking into smaller operations" | optimizations
+        ]
+      else
+        optimizations
+      end
 
     optimizations
   end

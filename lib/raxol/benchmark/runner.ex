@@ -67,7 +67,7 @@ defmodule Raxol.Benchmark.Runner do
   Runs a specific benchmark suite.
   """
   def run_suite(suite, opts \\ []) do
-    options = 
+    options =
       @default_options
       |> Map.merge(Enum.into(opts, %{}))
       |> Map.to_list()
@@ -98,7 +98,7 @@ defmodule Raxol.Benchmark.Runner do
   Runs a single benchmark for quick testing.
   """
   def run_single(name, benchmark_fn, opts \\ []) do
-    options = 
+    options =
       @default_options
       |> Map.merge(Enum.into(opts, %{}))
       |> Map.to_list()
@@ -147,7 +147,12 @@ defmodule Raxol.Benchmark.Runner do
         end,
         "Cursor movement" => fn ->
           emulator = create_test_emulator()
-          Raxol.Terminal.Operations.CursorOperations.move_cursor(emulator, 10, 10)
+
+          Raxol.Terminal.Operations.CursorOperations.move_cursor(
+            emulator,
+            10,
+            10
+          )
         end,
         "Screen clear" => fn ->
           emulator = create_test_emulator()

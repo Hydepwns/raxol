@@ -471,6 +471,7 @@ defmodule Raxol.Benchmark.Reporter do
 
   defp collect_environment_info do
     {family, name} = :os.type()
+
     %{
       elixir_version: System.version(),
       otp_version: :erlang.system_info(:otp_release) |> List.to_string(),

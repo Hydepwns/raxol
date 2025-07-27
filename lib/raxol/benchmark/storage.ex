@@ -305,6 +305,7 @@ defmodule Raxol.Benchmark.Storage do
 
   defp collect_environment do
     {family, name} = :os.type()
+
     %{
       os: "#{family}_#{name}",
       cpu_count: System.schedulers_online(),
