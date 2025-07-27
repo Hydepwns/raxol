@@ -14,10 +14,17 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
     active_buffer = Emulator.get_screen_buffer(emulator)
 
     cursor_pos =
-      if is_map(emulator.cursor) and Map.has_key?(emulator.cursor, :position),
-        do: emulator.cursor.position,
-        else: {0, 0}
-
+      if is_pid(emulator.cursor) do
+        result = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+        case result do
+          {:ok, pos} -> pos
+          pos when is_tuple(pos) and tuple_size(pos) == 2 -> pos
+          _ -> {0, 0}
+        end
+      else
+        {0, 0}
+      end
+    
     blank_style = Raxol.Terminal.ANSI.TextFormatting.new()
     {active_buffer, cursor_pos, blank_style}
   end
@@ -28,8 +35,9 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
           integer(),
           {integer(), integer()}
         ) :: {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_erase(emulator, type, erase_param, {row, col}) do
-    {active_buffer, _, default_style} = get_buffer_state(emulator)
+  def handle_erase(emulator, type, erase_param, _pos) do
+    {active_buffer, cursor_pos, default_style} = get_buffer_state(emulator)
+    {row, col} = cursor_pos
 
     new_buffer =
       apply_erase_operation(
@@ -133,21 +141,6 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
       selection: nil,
       scroll_region: nil
     }
-  end
-
-  defp get_valid_param(params, index, default, min, max) do
-    case Enum.at(params, index, default) do
-      value when is_integer(value) and value >= min and value <= max ->
-        value
-
-      _ ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Invalid parameter value at index #{index}, using default #{default}",
-          %{}
-        )
-
-        default
-    end
   end
 
   @spec get_valid_non_neg_param(

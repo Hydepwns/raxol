@@ -272,7 +272,7 @@ defmodule Raxol.MixProject do
 
   defp description do
     """
-    Modern Elixir toolkit for building advanced terminal user interfaces (TUIs) with components, theming, event handling, accessibility, and high performance."
+    Full-stack terminal application framework for Elixir. Build sophisticated terminal applications with component-based UI, real-time web interface, plugin system, and enterprise features.
     """
   end
 
