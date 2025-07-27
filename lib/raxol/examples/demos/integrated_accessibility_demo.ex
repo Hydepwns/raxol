@@ -2,7 +2,7 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
   @moduledoc """
   A demo showcasing integrated accessibility features.
   """
-  
+
   @behaviour Raxol.Core.Runtime.Application
 
   alias Raxol.Core.Renderer.View

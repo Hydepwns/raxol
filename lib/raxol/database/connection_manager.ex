@@ -118,12 +118,12 @@ defmodule Raxol.Database.ConnectionManager do
         # Use custom_query instead of query to avoid exceptions
         # Execute query to close connections
         # Errors are handled by the rescue clause
-        {:ok, _} = Repo.custom_query(
-          "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid()"
-        )
-        Raxol.Core.Runtime.Log.info(
-          "Successfully closed existing connections"
-        )
+        {:ok, _} =
+          Repo.custom_query(
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid()"
+          )
+
+        Raxol.Core.Runtime.Log.info("Successfully closed existing connections")
       rescue
         e ->
           Raxol.Core.Runtime.Log.error(

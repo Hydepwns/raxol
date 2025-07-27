@@ -1,5 +1,4 @@
 defmodule Raxol.Cloud.EdgeComputing do
-
   @moduledoc """
   Edge computing support for Raxol applications.
 

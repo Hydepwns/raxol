@@ -93,7 +93,16 @@ defmodule RaxolWeb.TerminalChannel do
     case validate_and_process_input(data, socket) do
       {:ok, new_state, cursor_info} ->
         socket = assign(socket, :terminal_state, new_state)
-        broadcast!(socket, "output", Map.merge(%{html: renderer_module().render(new_state.renderer)}, cursor_info))
+
+        broadcast!(
+          socket,
+          "output",
+          Map.merge(
+            %{html: renderer_module().render(new_state.renderer)},
+            cursor_info
+          )
+        )
+
         {:reply, :ok, socket}
 
       {:error, reason} ->
@@ -109,7 +118,12 @@ defmodule RaxolWeb.TerminalChannel do
         {new_state, cursor_info} = resize_terminal(state, width, height)
         socket = assign(socket, :terminal_state, new_state)
 
-        broadcast!(socket, "resize", Map.merge(%{width: width, height: height}, cursor_info))
+        broadcast!(
+          socket,
+          "resize",
+          Map.merge(%{width: width, height: height}, cursor_info)
+        )
+
         {:reply, :ok, socket}
 
       :error ->
@@ -219,12 +233,19 @@ defmodule RaxolWeb.TerminalChannel do
 
       case process_input_safely(state.emulator, data) do
         {:ok, {emulator, _output}} ->
-          renderer = %{state.renderer | screen_buffer: emulator.main_screen_buffer}
+          renderer = %{
+            state.renderer
+            | screen_buffer: emulator.main_screen_buffer
+          }
+
           new_state = %{state | emulator: emulator, renderer: renderer}
 
           {cursor_x, cursor_y} = emulator_module().get_cursor_position(emulator)
           cursor_visible = emulator_module().get_cursor_visible(emulator)
-          cursor_info = %{cursor: %{x: cursor_x, y: cursor_y, visible: cursor_visible}}
+
+          cursor_info = %{
+            cursor: %{x: cursor_x, y: cursor_y, visible: cursor_visible}
+          }
 
           {:ok, new_state, cursor_info}
 
@@ -316,7 +337,10 @@ defmodule RaxolWeb.TerminalChannel do
 
     {cursor_x, cursor_y} = emulator_module().get_cursor_position(emulator)
     cursor_visible = emulator_module().get_cursor_visible(emulator)
-    cursor_info = %{cursor: %{x: cursor_x, y: cursor_y, visible: cursor_visible}}
+
+    cursor_info = %{
+      cursor: %{x: cursor_x, y: cursor_y, visible: cursor_visible}
+    }
 
     {new_state, cursor_info}
   end

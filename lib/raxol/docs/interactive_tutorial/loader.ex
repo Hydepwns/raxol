@@ -1,5 +1,4 @@
 defmodule Raxol.Docs.InteractiveTutorial.Loader do
-
   @moduledoc """
   Handles loading and parsing of tutorials from markdown files.
   """
