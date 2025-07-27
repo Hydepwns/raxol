@@ -269,7 +269,9 @@ defmodule Raxol.Plugins.Lifecycle do
   def disable_plugin(%Core{} = manager, name) when binary?(name) do
     case get_plugin(manager, name) do
       {:ok, plugin} ->
-        {:ok, updated_config} = ManagerUpdate.update_and_save_config(manager, name, :disable)
+        {:ok, updated_config} =
+          ManagerUpdate.update_and_save_config(manager, name, :disable)
+
         {:ok,
          ManagerUpdate.update_manager_state(
            manager,
@@ -386,5 +388,4 @@ defmodule Raxol.Plugins.Lifecycle do
         {:error, :load_failed, plugin_name, "Not found in initialized list"}
     end
   end
-
 end

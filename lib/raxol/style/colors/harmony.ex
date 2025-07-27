@@ -3,7 +3,6 @@ defmodule Raxol.Style.Colors.Harmony do
   Provides functions for generating color harmonies based on a base color.
   """
 
-
   alias Raxol.Style.Colors.HSL
   alias Raxol.Style.Colors.Color
 

@@ -1,5 +1,4 @@
 defmodule Raxol.Animation.Framework do
-
   @moduledoc """
   Coordinates the lifecycle of animations within Raxol.
 

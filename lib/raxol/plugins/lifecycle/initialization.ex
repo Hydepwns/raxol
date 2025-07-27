@@ -179,7 +179,7 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
   def check_api_compatibility(plugin, module) do
     PluginDependency.check_api_compatibility(
       plugin.api_version,
-      module.api_version()
+      module.get_api_version()
     )
   end
 

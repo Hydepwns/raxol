@@ -1,5 +1,4 @@
 defmodule Raxol.Style.Colors.HotReload do
-
   @moduledoc """
   Provides hot-reloading capabilities for color themes.
 
