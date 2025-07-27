@@ -99,7 +99,7 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
   end
 
   describe "rendering" do
-    setup %{pid: pid} do
+    setup %{pid: _pid} do
       # Initialize terminal for rendering tests
       UnifiedRenderer.init_terminal()
 
@@ -117,11 +117,11 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
       %{state: state}
     end
 
-    test "renders empty buffer", %{pid: pid, state: state} do
+    test "renders empty buffer", %{pid: _pid, state: state} do
       assert UnifiedRenderer.render(state) == :ok
     end
 
-    test "renders buffer with content", %{pid: pid, state: state} do
+    test "renders buffer with content", %{pid: _pid, state: state} do
       # Add some content to the buffer
       {:ok, buffer_manager} =
         UnifiedManager.write(state.buffer_manager, "Hello, World!")
@@ -131,7 +131,7 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
       assert UnifiedRenderer.render(state) == :ok
     end
 
-    test "handles rendering errors", %{pid: pid, state: state} do
+    test "handles rendering errors", %{pid: _pid, state: state} do
       # Shutdown terminal to force an error
       UnifiedRenderer.shutdown_terminal()
 
@@ -140,14 +140,14 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
   end
 
   describe "cursor operations" do
-    test "sets cursor visibility", %{pid: pid} do
+    test "sets cursor visibility", %{pid: _pid} do
       assert UnifiedRenderer.set_cursor_visibility(true) == :ok
       assert UnifiedRenderer.set_cursor_visibility(false) == :ok
     end
   end
 
   describe "window operations" do
-    test "sets and gets terminal title", %{pid: pid} do
+    test "sets and gets terminal title", %{pid: _pid} do
       title = "Test Terminal"
       assert UnifiedRenderer.set_title(title) == :ok
       assert UnifiedRenderer.get_title() == title

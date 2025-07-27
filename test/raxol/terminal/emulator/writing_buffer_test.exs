@@ -23,7 +23,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       # emulator = Emulator.new(80, 24) # Removed: Use emulator from context
       {emulator, _} = Emulator.process_input(emulator, "Hello")
       # Check buffer content -> use main_screen_buffer
-      buffer = Emulator.get_active_buffer(emulator)
+      buffer = Emulator.get_screen_buffer(emulator)
       line0_cells = Enum.at(buffer.cells, 0)
       line0_text = Enum.map_join(line0_cells, & &1.char)
       assert String.starts_with?(line0_text, "Hello")
@@ -35,18 +35,18 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
     test "clear_buffer creates a new empty buffer", %{emulator: emulator} do
       # emulator = Emulator.new(80, 24) # Removed: Use emulator from context
       # Use field access - THIS IS INCORRECT, new buffer is NOT empty
-      # refute ScreenBuffer.is_empty?(Emulator.get_active_buffer(emulator))
+      # refute ScreenBuffer.is_empty?(Emulator.get_screen_buffer(emulator))
 
       # emulator = Emulator.new(80, 24) # Removed
       # Use field access - THIS IS INCORRECT, new buffer is NOT empty
-      # assert ScreenBuffer.is_empty?(Emulator.get_active_buffer(emulator))
+      # assert ScreenBuffer.is_empty?(Emulator.get_screen_buffer(emulator))
       # Clear buffer doesn't reset cursor, Emulator.new() does.
 
-      # buffer_before = Emulator.get_active_buffer(emulator) # Not needed
+      # buffer_before = Emulator.get_screen_buffer(emulator) # Not needed
       # Replace the direct call with processing the ANSI clear screen sequence
       # Use the correct Elixir escape sequence representation: \e
       {emulator_after, _output} = Emulator.process_input(emulator, "\e[2J")
-      buffer_after = Emulator.get_active_buffer(emulator_after)
+      buffer_after = Emulator.get_screen_buffer(emulator_after)
       # Verify the buffer cells contain spaces (cleared), ignore style
       all_spaces =
         Enum.all?(buffer_after.cells, fn row ->
@@ -59,7 +59,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
 
     test "get_buffer returns the screen buffer struct", %{emulator: emulator} do
       # emulator = Emulator.new(80, 24) # Removed: Use emulator from context
-      buffer = Emulator.get_active_buffer(emulator)
+      buffer = Emulator.get_screen_buffer(emulator)
       assert is_struct(buffer, ScreenBuffer)
       assert buffer.width == 80
     end
@@ -76,7 +76,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
              "Cursor should be at row 1, col 5"
 
       # Verify buffer content
-      buffer = Emulator.get_active_buffer(emulator_after)
+      buffer = Emulator.get_screen_buffer(emulator_after)
 
       # Expected Screen: Line 0: "Hello", Line 1: "World" (cursor at {10, 1})
       expected_cells_line0 =
@@ -133,7 +133,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
              "Cursor should be at row 7, col 1"
 
       # Check buffer content after processing
-      buffer = Emulator.get_active_buffer(emulator_after)
+      buffer = Emulator.get_screen_buffer(emulator_after)
 
       # Expected Screen: Line 0: "Line 1", Line 1: "       Line 2" (starts at col 7 after space)
       expected_buffer = %Raxol.Terminal.ScreenBuffer{
@@ -184,9 +184,9 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       emulator: emulator
     } do
       # emulator = Emulator.new(80, 24) # Removed: Use emulator from context
-      # Use ScreenBuffer.get_cell_at via get_active_buffer
+      # Use ScreenBuffer.get_cell_at via get_screen_buffer
       cell =
-        ScreenBuffer.get_cell_at(Emulator.get_active_buffer(emulator), 0, 0)
+        ScreenBuffer.get_cell_at(Emulator.get_screen_buffer(emulator), 0, 0)
 
       assert is_struct(cell, Cell)
       # Can add more assertions, e.g., default cell content
@@ -223,7 +223,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       {emulator_after_wrap, _} = Emulator.process_input(emulator, "X")
 
       # === Check state AFTER wrap is triggered ===
-      buffer_after_wrap = Emulator.get_active_buffer(emulator_after_wrap)
+      buffer_after_wrap = Emulator.get_screen_buffer(emulator_after_wrap)
       # Check line 0 (should now contain the new content after scroll)
       line0_text_after =
         buffer_after_wrap
@@ -303,7 +303,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
 
       # Check state AFTER 11th char (autowrap off)
       # Buffer should NOT have scrolled, line 0 should contain overwritten 'X' at the end
-      buffer_after_char11 = Emulator.get_active_buffer(emulator_after_char11)
+      buffer_after_char11 = Emulator.get_screen_buffer(emulator_after_char11)
 
       line0_text_after =
         buffer_after_char11

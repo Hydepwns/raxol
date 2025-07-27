@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
   defp unwrap_ok(:ok), do: :ok
   defp unwrap_ok({:ok, result}), do: result
 
-  describe "handle_J/2 (Erase in Display)" do
+  describe "handle_erase/4 (Erase in Display)" do
     test "erases from cursor to end of screen (mode 0)", %{emulator: emulator} do
       # Set cursor to middle of screen
       Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {5, 5})
@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_J(emulator, [0])
+      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :screen, 0, {5, 5})
 
       # Check that content from cursor to end is erased
       # Before cursor should remain
@@ -41,7 +41,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_J(emulator, [1])
+      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :screen, 1, {5, 5})
 
       # Check that content from beginning to cursor is erased
       # Beginning should be erased
@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_J(emulator, [2])
+      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :screen, 2, {5, 5})
 
       # Check that entire screen is erased
       assert_cell_at(updated_emulator, 0, 0, " ")
@@ -68,7 +68,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_J(emulator, [])
+      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :screen, 0, {5, 5})
 
       # Should default to mode 0 (erase from cursor to end)
       # Since cursor is at {0,0}, cursor position should be erased
@@ -82,14 +82,14 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       emulator = fill_screen_with_content(emulator, "X")
       emulator = scroll_up(emulator, 5)
 
-      {:ok, updated_emulator} = EraseHandlers.handle_J(emulator, [3])
+      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :screen, 3, {0, 0})
 
       # Scrollback should be cleared
       assert scrollback_is_empty(updated_emulator)
     end
   end
 
-  describe "handle_K/2 (Erase in Line)" do
+  describe "handle_erase/4 (Erase in Line)" do
     test "erases from cursor to end of line (mode 0)", %{emulator: emulator} do
       # Set cursor to middle of line (row 0, column 5)
       Raxol.Terminal.Cursor.Manager.set_position(emulator.cursor, {0, 5})
@@ -97,7 +97,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_K(emulator, [0])
+      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :line, 0, {5, 10})
 
       # Check that content from cursor to end of line is erased
       # Before cursor should remain
@@ -117,7 +117,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_K(emulator, [1])
+      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :line, 1, {5, 10})
 
       # Check that content from beginning to cursor is erased
       # Beginning should be erased
@@ -132,7 +132,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_K(emulator, [2])
+      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :line, 2, {5, 10})
 
       # Check that entire line is erased
       assert_cell_at(updated_emulator, 0, 0, " ")
@@ -144,7 +144,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_K(emulator, [])
+      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :line, 0, {5, 10})
 
       # Should default to mode 0 (erase from cursor to end of line)
       # Since cursor is at {0,0}, cursor position should be erased
@@ -157,7 +157,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
   # Helper functions
   defp fill_screen_with_content(emulator, char) do
     # Get the active buffer from the emulator
-    buffer = get_active_buffer(emulator)
+    buffer = get_screen_buffer(emulator)
 
     # Fill the entire screen with the specified character
     filled_buffer =
@@ -173,7 +173,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
 
   defp fill_line_with_content(emulator, line, char) do
     # Get the active buffer from the emulator
-    buffer = get_active_buffer(emulator)
+    buffer = get_screen_buffer(emulator)
 
     # Fill the specified line with the character
     filled_buffer =
@@ -187,7 +187,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
 
   defp scroll_up(emulator, lines) do
     # Get the active buffer from the emulator
-    buffer = get_active_buffer(emulator)
+    buffer = get_screen_buffer(emulator)
 
     # Scroll the buffer up by the specified number of lines
     {scrolled_buffer, _scrolled_lines} =
@@ -199,7 +199,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
 
   defp scrollback_is_empty(emulator) do
     # Get the active buffer from the emulator
-    buffer = get_active_buffer(emulator)
+    buffer = get_screen_buffer(emulator)
 
     # Check if the scrollback buffer is empty
     buffer.scrollback == []
@@ -207,7 +207,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
 
   defp assert_cell_at(emulator, x, y, expected_char) do
     # Get the active buffer from the emulator
-    buffer = get_active_buffer(emulator)
+    buffer = get_screen_buffer(emulator)
 
     # Get the character at the specified position
     actual_char = Raxol.Terminal.ScreenBuffer.get_char(buffer, x, y)
@@ -218,7 +218,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
   end
 
   # Helper functions to get and update the active buffer
-  defp get_active_buffer(emulator) do
+  defp get_screen_buffer(emulator) do
     case emulator.active_buffer_type do
       :main -> emulator.main_screen_buffer
       :alternate -> emulator.alternate_screen_buffer

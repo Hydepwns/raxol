@@ -29,22 +29,18 @@ defmodule RaxolWeb.SettingsLiveTest do
     setup %{conn: conn} do
       # Check if agent is running
       agent_pid = Process.whereis(Raxol.Accounts)
-      IO.inspect(agent_pid, label: "Agent PID")
 
       # Register the test user in the current process
       reg_result = Accounts.register_user(%{
         email: "test@example.com",
         password: "password123"
       })
-      IO.inspect(reg_result, label: "register_user result")
 
       # Check agent state after registration
       agent_state = Agent.get(Raxol.Accounts, fn users -> users end)
-      IO.inspect(agent_state, label: "Agent state after registration")
 
       # Fetch the user by email to get the correct struct and id
       find_result = Accounts.find_user_by_email("test@example.com")
-      IO.inspect(find_result, label: "find_user_by_email result")
       {:ok, user} = find_result
       # Log in the user using the conn from ConnCase setup
       conn = log_in_user(conn, user)

@@ -101,7 +101,10 @@ defmodule Raxol.Test.Integration.HierarchySetup do
                   }
 
                   # Immediately update the state in the ComponentManager
-                  ComponentManager.set_component_state(child_id, updated_child_state)
+                  ComponentManager.set_component_state(
+                    child_id,
+                    updated_child_state
+                  )
 
                   # Update parent's child_states map with the new child state
                   updated_parent_state =
@@ -299,7 +302,10 @@ defmodule Raxol.Test.Integration.HierarchySetup do
     IO.puts("DEBUG: parent_mounted = #{inspect(parent_mounted)}")
     IO.puts("DEBUG: child_mounted = #{inspect(child_mounted)}")
     IO.puts("DEBUG: child_mounted.state = #{inspect(child_mounted.state)}")
-    IO.puts("DEBUG: child_mounted.state.mounted = #{inspect(child_mounted.state.mounted)}")
+
+    IO.puts(
+      "DEBUG: child_mounted.state.mounted = #{inspect(child_mounted.state.mounted)}"
+    )
 
     # Update parent's child_states with the child's mounted state (including component_manager_id)
     updated_parent_state =
@@ -337,10 +343,16 @@ defmodule Raxol.Test.Integration.HierarchySetup do
 
     # Set up parent/child references
     child_struct_with_parent =
-      Map.put(child_struct_with_mounted_state, :parent, parent_struct_with_mounted_state)
+      Map.put(
+        child_struct_with_mounted_state,
+        :parent,
+        parent_struct_with_mounted_state
+      )
 
     parent_struct_with_child =
-      Map.put(parent_struct_with_mounted_state, :children, [child_struct_with_parent])
+      Map.put(parent_struct_with_mounted_state, :children, [
+        child_struct_with_parent
+      ])
 
     {:ok, parent_struct_with_child, child_struct_with_parent}
   end
@@ -382,12 +394,22 @@ defmodule Raxol.Test.Integration.HierarchySetup do
               child_mounted = ComponentManager.get_component(child_id)
 
               # Update the mounted states with component_manager_id
-              updated_parent_state = Map.put(parent_mounted.state, :component_manager_id, parent_id)
-              updated_child_state = Map.put(child_mounted.state, :component_manager_id, child_id)
+              updated_parent_state =
+                Map.put(parent_mounted.state, :component_manager_id, parent_id)
+
+              updated_child_state =
+                Map.put(child_mounted.state, :component_manager_id, child_id)
 
               # Update the components in ComponentManager with the new states
-              ComponentManager.set_component_state(parent_id, updated_parent_state)
-              ComponentManager.set_component_state(child_id, updated_child_state)
+              ComponentManager.set_component_state(
+                parent_id,
+                updated_parent_state
+              )
+
+              ComponentManager.set_component_state(
+                child_id,
+                updated_child_state
+              )
 
               # Update the structs with the new states
               parent_struct = %{

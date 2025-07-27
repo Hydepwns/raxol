@@ -1,5 +1,12 @@
 defmodule Raxol.Test.ComponentManagerTestMocks do
+  @moduledoc """
+  Test mocks for component manager testing.
+
+  Provides mock component implementations for testing
+  the component manager's lifecycle and behavior.
+  """
   defmodule Raxol.Core.Runtime.ComponentManagerTest.TestComponent do
+    @moduledoc "Mock test component for component manager testing."
     # Mock component module for testing ComponentManager
     # Moved from component_manager_test.exs
 

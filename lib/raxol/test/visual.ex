@@ -146,7 +146,7 @@ defmodule Raxol.Test.Visual do
 
   defp write_cell_to_buffer(_unexpected_cell_data, buffer), do: buffer
 
-  defp render_to_string(buffer, theme, opts \\ %{}) do
+  defp render_to_string(buffer, theme, opts) do
     # Check if we need HTML output (for snapshots) or plain text (for responsive tests)
     output_format = Map.get(opts, :output_format, :html)
 

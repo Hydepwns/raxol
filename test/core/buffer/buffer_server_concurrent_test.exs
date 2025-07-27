@@ -49,7 +49,7 @@ defmodule Raxol.Core.Buffer.BufferServerConcurrentTest do
         end)
 
       # Wait for all writers to complete
-      results = Task.await_many(writers, 10000)
+      results = Task.await_many(writers, 10_000)
 
       # Verify all writers completed successfully
       assert Enum.all?(results, fn result ->
@@ -104,7 +104,7 @@ defmodule Raxol.Core.Buffer.BufferServerConcurrentTest do
     test "handles concurrent reads and writes", %{buffer_pid: pid} do
       # Create reader and writer processes
       readers =
-        Enum.map(1..2, fn reader_id ->
+        Enum.map(1..2, fn _reader_id ->
           Task.async(fn ->
             Enum.each(1..10, fn _ ->
               x = :rand.uniform(80) - 1
@@ -127,7 +127,7 @@ defmodule Raxol.Core.Buffer.BufferServerConcurrentTest do
         end)
 
       # Wait for all processes to complete
-      results = Task.await_many(readers ++ writers, 10000)
+      results = Task.await_many(readers ++ writers, 10_000)
 
       # Verify all processes completed successfully
       assert Enum.all?(results, fn result ->
@@ -178,7 +178,7 @@ defmodule Raxol.Core.Buffer.BufferServerConcurrentTest do
       ]
 
       # Wait for all operations to complete
-      results = Task.await_many(operations, 10000)
+      results = Task.await_many(operations, 10_000)
 
       # Verify all operations completed successfully
       assert Enum.all?(results, fn result ->

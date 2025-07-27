@@ -33,7 +33,11 @@ defmodule Raxol.Test.Integration do
   import Raxol.Guards
 
   # Delegation to focused modules
-  alias Raxol.Test.Integration.{HierarchySetup, EventSimulation, ComponentManagement}
+  alias Raxol.Test.Integration.{
+    HierarchySetup,
+    EventSimulation,
+    ComponentManagement
+  }
 
   defmacro __using__(_opts) do
     quote do
@@ -82,8 +86,6 @@ defmodule Raxol.Test.Integration do
     HierarchySetup.setup_component_hierarchy(parent_module, child_module, opts)
   end
 
-
-
   def setup_component_hierarchy(parent_struct, child_structs, opts)
       when is_map(parent_struct) and is_list(child_structs) do
     HierarchySetup.setup_component_hierarchy(parent_struct, child_structs, opts)
@@ -111,11 +113,19 @@ defmodule Raxol.Test.Integration do
         opts
       )
       when is_list(child_modules) do
-    HierarchySetup.setup_component_hierarchy_with_mounting(parent_module, child_modules, opts)
+    HierarchySetup.setup_component_hierarchy_with_mounting(
+      parent_module,
+      child_modules,
+      opts
+    )
   end
 
   def setup_component_hierarchy_with_mounting(parent_module, child_module, opts) do
-    HierarchySetup.setup_component_hierarchy_with_mounting(parent_module, child_module, opts)
+    HierarchySetup.setup_component_hierarchy_with_mounting(
+      parent_module,
+      child_module,
+      opts
+    )
   end
 
   @doc """
@@ -126,8 +136,6 @@ defmodule Raxol.Test.Integration do
   def simulate_user_action(component, action) do
     EventSimulation.simulate_user_action(component, action)
   end
-
-
 
   @doc """
   Simulates component mounting in the application.
@@ -168,6 +176,4 @@ defmodule Raxol.Test.Integration do
   def simulate_broadcast_event(parent, event_type, event_data \\ %{}) do
     EventSimulation.simulate_broadcast_event(parent, event_type, event_data)
   end
-
-
 end

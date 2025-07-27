@@ -23,7 +23,7 @@ defmodule Raxol.DataCase do
     end
   end
 
-  setup tags do
+  setup _tags do
     # For MockDB, we don't need sandbox checkout
     # result = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
     #
@@ -53,7 +53,7 @@ defmodule Raxol.DataCase do
   end
 
   # Public setup/1 for use in other test helpers
-  def setup(tags) do
+  def setup(_tags) do
     # For MockDB, we don't need sandbox checkout
     # result = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
     #

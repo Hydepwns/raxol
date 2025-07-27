@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       # Insert 3 characters (CSI 3 @)
       {emulator, _} = Emulator.process_input(emulator, "\e[3@")
 
-      buffer = Emulator.get_active_buffer(emulator)
+      buffer = Emulator.get_screen_buffer(emulator)
       expected_content = ["a", " ", " ", " ", "b", "c", "d", "e", "f", " "]
 
       Enum.each(0..9, fn x ->
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       # Delete 2 characters (CSI 2 P)
       {emulator, _} = Emulator.process_input(emulator, "\e[2P")
 
-      buffer = Emulator.get_active_buffer(emulator)
+      buffer = Emulator.get_screen_buffer(emulator)
       expected_content = ["a", "b", "e", "f", "g", "h", "i", "j", " ", " "]
 
       Enum.each(0..9, fn x ->
@@ -79,7 +79,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       # Insert 2 lines (CSI 2 L)
       {emulator, _} = Emulator.process_input(emulator, "\e[2L")
 
-      buffer = Emulator.get_active_buffer(emulator)
+      buffer = Emulator.get_screen_buffer(emulator)
 
       # Debug: Print actual buffer content
       IO.puts("DEBUG: Actual buffer content after Insert Line:")
@@ -214,13 +214,13 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       # Move cursor to line 0 (index 0)
       {emulator, _} = Emulator.process_input(emulator, "\e[1;1H")
 
-      buffer_before = Emulator.get_active_buffer(emulator)
+      buffer_before = Emulator.get_screen_buffer(emulator)
 
       # Process CSI M (Delete line)
       {emulator_after, _} = Emulator.process_input(emulator, "\e[M")
 
       # Buffer should be unchanged
-      assert Emulator.get_active_buffer(emulator_after) == buffer_before
+      assert Emulator.get_screen_buffer(emulator_after) == buffer_before
     end
   end
 end

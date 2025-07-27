@@ -88,7 +88,7 @@ defmodule Raxol.Test.Support.DriverTestHelper do
 
   def assert_mouse_event(expected_x, expected_y, expected_button) do
     # Assert mouse event
-    assert_receive {:mouse, expected_x, expected_y, expected_button}
+    assert_receive {:mouse, ^expected_x, ^expected_y, ^expected_button}
   end
 
   def assert_mouse_event(
@@ -98,8 +98,8 @@ defmodule Raxol.Test.Support.DriverTestHelper do
         expected_modifier
       ) do
     # Assert mouse event with modifier
-    assert_receive {:mouse, expected_x, expected_y, expected_button,
-                    expected_modifier}
+    assert_receive {:mouse, ^expected_x, ^expected_y, ^expected_button,
+                    ^expected_modifier}
   end
 
   defp driver_loop(test_pid) do

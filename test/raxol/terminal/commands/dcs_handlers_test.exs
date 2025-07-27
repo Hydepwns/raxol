@@ -4,19 +4,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
 
   alias Raxol.Terminal.Commands.DCSHandlers
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-  # For new_emulator
-  alias Raxol.Terminal.ANSI.TextFormatting
-  # For new_emulator
-  alias Raxol.Terminal.ScreenBuffer
-  # For new_emulator
-  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
-  # For Sixel tests
-  alias Raxol.Terminal.ANSI.SixelGraphics
-  # For Sixel tests to get cell
-  alias Raxol.Terminal.Buffer.Operations, as: BufferOps
-  # For Sixel tests to check cell content
-  alias Raxol.Terminal.Cell
+  # Only keeping aliases that are actually used
 
   # Add a helper at the top of the file for unwrapping handler results
   defp unwrap_ok({:ok, value}), do: value
@@ -261,7 +249,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       # A single sixel '@' (pattern 1 - top pixel) means the top-most pixel line in the 6-pixel Sixel row is active.
       # The blitter averages or takes dominant color. For a single pixel, it should be its color.
       {cx, cy} = initial_cursor_pos
-      active_buffer = Emulator.get_active_buffer(updated_emulator)
+      active_buffer = Emulator.get_screen_buffer(updated_emulator)
 
       # The Sixel pixel is placed at cursor + sixel offset
       # Based on the debug output, "#1A" places a pixel at {0, 1} relative to cursor

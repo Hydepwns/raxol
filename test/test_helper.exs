@@ -51,11 +51,9 @@ end
 # as test modules are often redefined during test runs.
 # These warnings can be safely ignored.
 
-# Load support files (except clipboard_assertions which needs Mox)
-IO.puts("[TestHelper] Loading support files...")
-Code.require_file("support/test_helpers.ex", __DIR__)
-Code.require_file("support/event_macro_helpers.ex", __DIR__)
-Code.require_file("support/test_helper.ex", __DIR__)
+# Support files are automatically compiled by Mix due to elixirc_paths configuration
+# No need to require them explicitly
+IO.puts("[TestHelper] Support files loaded via elixirc_paths...")
 
 # Set up mocks
 IO.puts("[TestHelper] Setting up mocks...")
@@ -192,9 +190,8 @@ Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
   for: Raxol.Core.KeyboardShortcutsBehaviour
 )
 
-# Load clipboard assertions after Mox is configured
-IO.puts("[TestHelper] Loading clipboard assertions...")
-Code.require_file("support/clipboard_assertions.ex", __DIR__)
+# Clipboard assertions are automatically loaded via elixirc_paths
+IO.puts("[TestHelper] Clipboard assertions loaded via elixirc_paths...")
 
 # Start the event registry for tests
 IO.puts("[TestHelper] Starting event registry...")

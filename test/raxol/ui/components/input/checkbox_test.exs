@@ -223,7 +223,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     # alias Raxol.Core.Events.InputEvent # REMOVE THIS LINE
 
     # Helper to create initial state
-    defp init_state(props \\ []) do
+    defp init_state(props) do
       {:ok, state} = Checkbox.init([id: :cb_event] ++ props)
       state = Map.put_new(state, :style, %{})
       Map.put_new(state, :type, :checkbox)

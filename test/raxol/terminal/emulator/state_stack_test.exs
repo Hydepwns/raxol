@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       emulator = %{emulator | cursor: Manager.move_to(emulator.cursor, 10, 5)}
       # Bold (CSI 1 m) - Set some style to ensure it's NOT restored
       {emulator, ""} = Emulator.process_input(emulator, "\e[1m")
-      main_buffer_snapshot = Emulator.get_active_buffer(emulator)
+      main_buffer_snapshot = Emulator.get_screen_buffer(emulator)
       cursor_snapshot = emulator.cursor
       # Capture style BEFORE save
       style_snapshot = emulator.style
@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       assert emulator.active_buffer_type == :main
 
       # Verify buffer content is unchanged (DECSC/DECRC should not affect it for mode 1048)
-      active_buffer_after_op = Emulator.get_active_buffer(emulator)
+      active_buffer_after_op = Emulator.get_screen_buffer(emulator)
       line_cells = ScreenBuffer.get_line(active_buffer_after_op, 0)
 
       line_text =
@@ -112,7 +112,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       # Check content roughly
       assert line_text == "MainBuf" <> String.duplicate(" ", 73)
 
-      assert Emulator.get_active_buffer(emulator) == main_buffer_snapshot
+      assert Emulator.get_screen_buffer(emulator) == main_buffer_snapshot
 
       # 3. Modify cursor and style on main buffer
       emulator = %{emulator | cursor: Manager.move_to(emulator.cursor, 20, 15)}
@@ -127,7 +127,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       assert emulator.active_buffer_type == :main
       # Verify main buffer content is unchanged from before restore
       # (Buffer content itself is not saved/restored by 1048)
-      active_buffer_after_restore = Emulator.get_active_buffer(emulator)
+      active_buffer_after_restore = Emulator.get_screen_buffer(emulator)
 
       line_cells_after_restore =
         ScreenBuffer.get_line(active_buffer_after_restore, 0)
@@ -157,33 +157,33 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       emulator = Emulator.new(80, 24)
       # Write to main buffer
       {emulator, _} = Emulator.process_input(emulator, "MainBuf")
-      main_buffer_snapshot = Emulator.get_active_buffer(emulator)
+      main_buffer_snapshot = Emulator.get_screen_buffer(emulator)
       # Switch to alternate buffer (DECSET ?1047h)
       {emulator, _} = Emulator.process_input(emulator, "\e[?1047h")
       assert emulator.active_buffer_type == :alternate
       # Write to alternate buffer
       {emulator, _} = Emulator.process_input(emulator, "AltBuf")
-      alt_buffer_snapshot = Emulator.get_active_buffer(emulator)
+      alt_buffer_snapshot = Emulator.get_screen_buffer(emulator)
       # Switch back to main buffer (DECRST ?1047l)
       {emulator, _} = Emulator.process_input(emulator, "\e[?1047l")
       assert emulator.active_buffer_type == :main
       # Main buffer should be unchanged
-      assert Emulator.get_active_buffer(emulator) == main_buffer_snapshot
+      assert Emulator.get_screen_buffer(emulator) == main_buffer_snapshot
       # Alternate buffer should retain its content for next switch
       {emulator, _} = Emulator.process_input(emulator, "\e[?1047h")
-      assert Emulator.get_active_buffer(emulator) == alt_buffer_snapshot
+      assert Emulator.get_screen_buffer(emulator) == alt_buffer_snapshot
     end
 
     test ~c"DEC mode 1049 switches to alternate buffer, clears it, and restores state" do
       emulator = Emulator.new(80, 24)
       # Write to main buffer
       {emulator, _} = Emulator.process_input(emulator, "MainBuf")
-      main_buffer_snapshot = Emulator.get_active_buffer(emulator)
+      main_buffer_snapshot = Emulator.get_screen_buffer(emulator)
       # Switch to alternate buffer (DECSET ?1049h)
       {emulator, _} = Emulator.process_input(emulator, "\e[?1049h")
       assert emulator.active_buffer_type == :alternate
       # Alternate buffer should be cleared
-      alt_buffer = Emulator.get_active_buffer(emulator)
+      alt_buffer = Emulator.get_screen_buffer(emulator)
 
       assert Enum.all?(alt_buffer.cells, fn row ->
                Enum.all?(row, &(&1.char == " "))
@@ -195,10 +195,10 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       {emulator, _} = Emulator.process_input(emulator, "\e[?1049l")
       assert emulator.active_buffer_type == :main
       # Main buffer should be unchanged
-      assert Emulator.get_active_buffer(emulator) == main_buffer_snapshot
+      assert Emulator.get_screen_buffer(emulator) == main_buffer_snapshot
       # Alternate buffer should be cleared again on next switch
       {emulator, _} = Emulator.process_input(emulator, "\e[?1049h")
-      alt_buffer2 = Emulator.get_active_buffer(emulator)
+      alt_buffer2 = Emulator.get_screen_buffer(emulator)
 
       assert Enum.all?(alt_buffer2.cells, fn row ->
                Enum.all?(row, &(&1.char == " "))

@@ -1,6 +1,13 @@
 defmodule Raxol.Test.MockPlugins do
+  @moduledoc """
+  Mock plugins for testing plugin system functionality.
+
+  Provides various mock plugin implementations for testing
+  dependency handling, versioning, crashes, and lifecycle events.
+  """
   # --- Mock Plugins for Testing Dependencies and Versions ---
   defmodule MockDependencyPlugin do
+    @moduledoc "Mock plugin that provides dependencies for testing."
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
 
     def init(_config) do
@@ -27,6 +34,7 @@ defmodule Raxol.Test.MockPlugins do
   end
 
   defmodule MockDependentPlugin do
+    @moduledoc "Mock plugin with dependencies for testing dependency resolution."
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
 
     def init(_config) do
@@ -55,6 +63,7 @@ defmodule Raxol.Test.MockPlugins do
   end
 
   defmodule MockIncompatibleVersionPlugin do
+    @moduledoc "Mock plugin with incompatible version for testing version conflicts."
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
 
     def init(_config) do
@@ -84,6 +93,7 @@ defmodule Raxol.Test.MockPlugins do
 
   # --- Mock Plugin for Event Testing ---
   defmodule MockEventConsumingPlugin do
+    @moduledoc "Mock plugin for testing event consumption and handling."
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
 
     def init(config_or_state) do

@@ -103,10 +103,13 @@ defmodule Raxol.Test.Integration.EventSimulation do
                   )
                 end
               end
+
             _ ->
               :ok
           end)
+
           {updated_component, commands}
+
         {:error, reason} ->
           # Log error but continue with local update
           IO.puts(

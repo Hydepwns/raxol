@@ -96,7 +96,7 @@ defmodule Raxol.Test.IntegrationHelper do
       iex> perform_end_to_end_test(state, "Hello, World!")
       {:ok, %{write_time: 5, render_time: 16}}
   """
-  def perform_end_to_end_test(state, test_data, opts \\ []) do
+  def perform_end_to_end_test(state, test_data, _opts \\ []) do
     with {:ok, _} <-
            Raxol.Test.BufferHelper.write_test_data(
              state.buffer.buffer,
@@ -109,7 +109,6 @@ defmodule Raxol.Test.IntegrationHelper do
            ),
          :ok <-
            (case render_result do
-              :ok -> :ok
               # Handle HTML output
               html when is_binary(html) -> :ok
               {:error, reason} -> {:error, reason}
@@ -166,7 +165,6 @@ defmodule Raxol.Test.IntegrationHelper do
            ),
          :ok <-
            (case render_result do
-              :ok -> :ok
               # Handle HTML output
               html when is_binary(html) -> :ok
               {:error, reason} -> {:error, reason}
@@ -337,7 +335,7 @@ defmodule Raxol.Test.IntegrationHelper do
     end
   end
 
-  defp perform_operation(state, :metrics_collect, opts) do
+  defp perform_operation(_state, :metrics_collect, opts) do
     # Collect metrics of a specific type (default to :custom)
     metrics_type = Keyword.get(opts, :type, :custom)
 

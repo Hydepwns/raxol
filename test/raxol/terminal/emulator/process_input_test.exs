@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       input = "Hello" <> "\e[A" <> "World"
       {emulator, ""} = Emulator.process_input(emulator, input)
 
-      buffer = Emulator.get_active_buffer(emulator)
+      buffer = Emulator.get_screen_buffer(emulator)
       # Check buffer content
       assert ScreenBuffer.get_cell_at(buffer, 0, 0).char == "H"
       assert ScreenBuffer.get_cell_at(buffer, 4, 0).char == "o"
@@ -155,7 +155,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       # Assuming parser resets, expect text to be processed, remaining empty.
       assert remaining2 == ""
       # Check buffer for "Hello" and cursor position
-      buffer = Emulator.get_active_buffer(emulator)
+      buffer = Emulator.get_screen_buffer(emulator)
       assert ScreenBuffer.get_cell_at(buffer, 0, 0).char == "H"
       assert Emulator.get_cursor_position_struct(emulator) == {0, 5}
     end

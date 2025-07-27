@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Tab.UnifiedTabTest do
     end
 
     test "sets active tab" do
-      assert {:ok, tab1} = UnifiedTab.create_tab()
+      assert {:ok, _tab1} = UnifiedTab.create_tab()
       assert {:ok, tab2} = UnifiedTab.create_tab()
 
       assert :ok = UnifiedTab.set_active_tab(tab2)

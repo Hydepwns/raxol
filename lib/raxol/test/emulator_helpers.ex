@@ -37,7 +37,7 @@ defmodule Raxol.Test.EmulatorHelpers do
   """
   def get_line_text(emulator, line_index) do
     # IO.puts("get_line_text(#{line_index}):") # DEBUG
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     line_cells = ScreenBuffer.get_line(buffer, line_index)
 
     text = Enum.map_join(line_cells, &(&1.char || " "))

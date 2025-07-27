@@ -71,7 +71,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
     test "handles concurrent writes to same region", %{buffer_pid: pid} do
       # Create writers that write to the same region
       writers =
-        Enum.map(1..5, fn writer_id ->
+        Enum.map(1..5, fn _writer_id ->
           Task.async(fn ->
             Enum.each(0..4, fn y ->
               Enum.each(0..4, fn x ->
@@ -106,7 +106,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
     test "handles concurrent reads and writes", %{buffer_pid: pid} do
       # Create reader and writer processes
       readers =
-        Enum.map(1..5, fn reader_id ->
+        Enum.map(1..5, fn _reader_id ->
           Task.async(fn ->
             Enum.each(1..100, fn _ ->
               x = :rand.uniform(80) - 1
@@ -117,9 +117,9 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
         end)
 
       writers =
-        Enum.map(1..5, fn writer_id ->
+        Enum.map(1..5, fn _writer_id ->
           Task.async(fn ->
-            Enum.each(1..100, fn i ->
+            Enum.each(1..100, fn _i ->
               x = :rand.uniform(80) - 1
               y = :rand.uniform(24) - 1
               cell = Cell.new("W", TextFormatting.new(foreground: :green))
@@ -157,7 +157,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
 
         # Writer
         Task.async(fn ->
-          Enum.each(1..100, fn i ->
+          Enum.each(1..100, fn _i ->
             x = :rand.uniform(80) - 1
             y = :rand.uniform(24) - 1
             cell = Cell.new("W", TextFormatting.new(foreground: :yellow))
@@ -203,7 +203,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
     test "handles high concurrency stress test", %{buffer_pid: pid} do
       # Create many concurrent operations
       operations =
-        Enum.flat_map(1..20, fn i ->
+        Enum.flat_map(1..20, fn _i ->
           [
             # Reader
             Task.async(fn ->
@@ -216,7 +216,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
 
             # Writer
             Task.async(fn ->
-              Enum.each(1..50, fn j ->
+              Enum.each(1..50, fn _j ->
                 x = :rand.uniform(80) - 1
                 y = :rand.uniform(24) - 1
                 cell = Cell.new("W", TextFormatting.new(foreground: :blue))
@@ -228,7 +228,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
         end)
 
       # Wait for all operations to complete
-      results = Task.await_many(operations, 10000)
+      results = Task.await_many(operations, 10_000)
 
       # Verify all operations completed successfully
       assert Enum.all?(results, fn result ->

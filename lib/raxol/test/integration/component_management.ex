@@ -112,6 +112,4 @@ defmodule Raxol.Test.Integration.ComponentManagement do
       Map.put(acc, name, component)
     end)
   end
-
-
 end

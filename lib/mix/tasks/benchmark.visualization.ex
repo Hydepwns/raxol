@@ -19,10 +19,8 @@ defmodule Mix.Tasks.Benchmark.Visualization do
 
   @impl Mix.Task
   def run(args) do
-    # Start the application to ensure all modules are loaded
     Mix.Task.run("app.start")
 
-    # Helper function to summarize chart results
     summarize_chart_results = fn results ->
       results
       |> Enum.map_join("\n", fn r ->
@@ -30,7 +28,6 @@ defmodule Mix.Tasks.Benchmark.Visualization do
       end)
     end
 
-    # Helper function to summarize treemap results
     summarize_treemap_results = fn results ->
       results
       |> Enum.map_join("\n", fn r ->
@@ -38,13 +35,11 @@ defmodule Mix.Tasks.Benchmark.Visualization do
       end)
     end
 
-    # Get benchmark configuration
     {datasets, iterations, title, test_size} = get_benchmark_config(args)
 
     output_dir =
       "test/performance/benchmark_results/visualization/#{Atom.to_string(test_size)}"
 
-    # Print header
     IO.puts("""
     =================================================
     Raxol Visualization Performance Benchmark
@@ -57,7 +52,6 @@ defmodule Mix.Tasks.Benchmark.Visualization do
       Output: #{output_dir}
     """)
 
-    # Run benchmark
     benchmark_opts = [
       output_path: output_dir,
       datasets: datasets,
@@ -66,16 +60,13 @@ defmodule Mix.Tasks.Benchmark.Visualization do
       memory_test: true
     ]
 
-    # Time the entire benchmark
     {benchmark_time, results} =
       :timer.tc(fn ->
         VisualizationBenchmark.run_benchmark(benchmark_opts)
       end)
 
-    # Convert to seconds
     total_time_s = benchmark_time / 1_000_000
 
-    # Print summary
     IO.puts("""
     =================================================
     Benchmark Completed in #{Float.round(total_time_s, 2)} seconds

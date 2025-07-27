@@ -11,14 +11,14 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
     test ~c"new creates a new terminal emulator instance with defaults" do
       emulator = Emulator.new(80, 24)
       # Use ScreenBuffer functions for dimensions -> use main_screen_buffer
-      assert ScreenBuffer.get_width(Emulator.get_active_buffer(emulator)) == 80
-      assert ScreenBuffer.get_height(Emulator.get_active_buffer(emulator)) == 24
+      assert ScreenBuffer.get_width(Emulator.get_screen_buffer(emulator)) == 80
+      assert ScreenBuffer.get_height(Emulator.get_screen_buffer(emulator)) == 24
       # Get cursor struct from PID and access position field
       cursor = Emulator.get_cursor_struct(emulator)
       assert cursor.position == {0, 0}
       # Access screen_buffer field directly -> use main_screen_buffer
-      assert is_struct(Emulator.get_active_buffer(emulator), ScreenBuffer)
-      buffer = Emulator.get_active_buffer(emulator)
+      assert is_struct(Emulator.get_screen_buffer(emulator), ScreenBuffer)
+      buffer = Emulator.get_screen_buffer(emulator)
       # Access field on returned struct
       assert buffer.width == 80
       # Access field on returned struct
@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       emulator = Emulator.new(80, 24)
       cursor = Emulator.get_cursor_struct(emulator)
       # Initial position {0, 0}
-      {x, y} = cursor.position
+      {_x, _y} = cursor.position
 
       # Test down - move to row 2, col 0
       # Use the aliased Manager module function

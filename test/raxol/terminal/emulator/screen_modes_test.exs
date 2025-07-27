@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       {emulator, _} = Emulator.process_input(emulator, "ab")
 
       # Check buffer state immediately after writing
-      buffer_after_write = Emulator.get_active_buffer(emulator)
+      buffer_after_write = Emulator.get_screen_buffer(emulator)
       cell_a_after_write = ScreenBuffer.get_cell_at(buffer_after_write, 0, 0)
       cell_b_after_write = ScreenBuffer.get_cell_at(buffer_after_write, 1, 0)
 
@@ -37,12 +37,12 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       assert cell_b_after_write.char == "b"
 
       # Access screen_buffer field directly -> use main_screen_buffer
-      buffer_before = Emulator.get_active_buffer(emulator)
+      buffer_before = Emulator.get_screen_buffer(emulator)
       cell_a = ScreenBuffer.get_cell_at(buffer_before, 0, 0)
       cell_b = ScreenBuffer.get_cell_at(buffer_before, 1, 0)
 
       # Save for later comparison, access field directly -> use main_screen_buffer
-      main_buffer_content = Emulator.get_active_buffer(emulator)
+      main_buffer_content = Emulator.get_screen_buffer(emulator)
 
       # Switch to alternate screen buffer
       {emulator, _} = Emulator.process_input(emulator, "\e[?1047h")
@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       {emulator, _} = Emulator.process_input(emulator, "xy")
 
       # Check that alternate buffer has the new content
-      alternate_buffer = Emulator.get_active_buffer(emulator)
+      alternate_buffer = Emulator.get_screen_buffer(emulator)
       cell_x = ScreenBuffer.get_cell_at(alternate_buffer, 0, 0)
       cell_y = ScreenBuffer.get_cell_at(alternate_buffer, 1, 0)
       # Access :char field
@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       {emulator, _} = Emulator.process_input(emulator, "\e[?1047l")
 
       # Check that main buffer still has original content
-      main_buffer = Emulator.get_active_buffer(emulator)
+      main_buffer = Emulator.get_screen_buffer(emulator)
       cell_a_after = ScreenBuffer.get_cell_at(main_buffer, 0, 0)
       cell_b_after = ScreenBuffer.get_cell_at(main_buffer, 1, 0)
       # Access :char field
@@ -86,14 +86,14 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       # Write to main buffer
       {emulator, _} = Emulator.process_input(emulator, "main")
-      main_buffer_content_snapshot = Emulator.get_active_buffer(emulator)
+      main_buffer_content_snapshot = Emulator.get_screen_buffer(emulator)
 
       # Switch to alternate buffer (DECSET ?1047h)
       {emulator, ""} = Emulator.process_input(emulator, "\e[?1047h")
       assert emulator.active_buffer_type == :alternate
       # Write something to alternate buffer
       {emulator, _} = Emulator.process_input(emulator, "alt")
-      alt_buffer_content_snapshot = Emulator.get_active_buffer(emulator)
+      alt_buffer_content_snapshot = Emulator.get_screen_buffer(emulator)
       refute ScreenBuffer.empty?(alt_buffer_content_snapshot)
       cell_a = ScreenBuffer.get_cell_at(alt_buffer_content_snapshot, 0, 0)
       assert cell_a.char == "a"
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       {emulator, ""} = Emulator.process_input(emulator, "\e[?1047l")
       assert emulator.active_buffer_type == :main
       # Verify main buffer content is restored
-      assert Emulator.get_active_buffer(emulator) ==
+      assert Emulator.get_screen_buffer(emulator) ==
                main_buffer_content_snapshot
 
       # Switch back to alternate buffer (DECSET ?1047h) AGAIN
@@ -110,7 +110,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       assert emulator.active_buffer_type == :alternate
 
       # *** Verify alternate buffer content was NOT cleared and still matches previous alt content ***
-      assert Emulator.get_active_buffer(emulator) == alt_buffer_content_snapshot
+      assert Emulator.get_screen_buffer(emulator) == alt_buffer_content_snapshot
     end
 
     test ~c"sets and resets screen modes (Insert Mode - IRM)" do

@@ -18,17 +18,17 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     end
   end
 
-  describe "get_active_buffer/1" do
+  describe "get_screen_buffer/1" do
     test "returns nil when no active buffer" do
       emulator = TestHelper.create_test_emulator()
-      assert BufferOperations.get_active_buffer(emulator) == nil
+      assert BufferOperations.get_screen_buffer(emulator) == nil
     end
 
     test "returns active buffer when set" do
       emulator = TestHelper.create_test_emulator()
       buffer = %{type: :normal, content: "test"}
       emulator = BufferOperations.set_active_buffer(emulator, buffer)
-      assert BufferOperations.get_active_buffer(emulator) == buffer
+      assert BufferOperations.get_screen_buffer(emulator) == buffer
     end
   end
 
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       emulator = TestHelper.create_test_emulator()
       buffer = %{type: :normal, content: "test"}
       emulator = BufferOperations.set_active_buffer(emulator, buffer)
-      assert BufferOperations.get_active_buffer(emulator) == buffer
+      assert BufferOperations.get_screen_buffer(emulator) == buffer
     end
 
     test "updates existing active buffer" do
@@ -46,7 +46,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       buffer2 = %{type: :normal, content: "test2"}
       emulator = BufferOperations.set_active_buffer(emulator, buffer1)
       emulator = BufferOperations.set_active_buffer(emulator, buffer2)
-      assert BufferOperations.get_active_buffer(emulator) == buffer2
+      assert BufferOperations.get_screen_buffer(emulator) == buffer2
     end
   end
 
@@ -90,7 +90,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       emulator = BufferOperations.set_active_buffer(emulator, active)
       emulator = BufferOperations.set_alternate_buffer(emulator, alternate)
       emulator = BufferOperations.switch_buffers(emulator)
-      assert BufferOperations.get_active_buffer(emulator) == alternate
+      assert BufferOperations.get_screen_buffer(emulator) == alternate
       assert BufferOperations.get_alternate_buffer(emulator) == active
     end
   end
@@ -326,7 +326,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
 
   # Helper functions
 
-  defp create_test_cells(width \\ 10, height \\ 5) do
+  defp create_test_cells(width, height) do
     for _y <- 0..(height - 1) do
       for _x <- 0..(width - 1) do
         Raxol.Terminal.Buffer.Cell.new("X")

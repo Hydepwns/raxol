@@ -83,21 +83,13 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       test_name: test_name,
       pid: pid
     } do
-      metrics = [
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 60,
-          tags: %{service: "test"}
-        }
-      ]
-
-      try do
-        # Cleanup - meck removed
-      catch
-        :error, {:not_mocked, _} -> :ok
-      end
-
-      # Note: UnifiedCollector started in setup, using real metrics instead of mocks
+      # Record metrics into UnifiedCollector
+      Raxol.Core.Metrics.UnifiedCollector.record_metric(
+        "test_metric",
+        :custom,
+        60,
+        tags: %{service: "test"}
+      )
 
       # Force alert check only if process is alive
       if Process.alive?(pid) do
@@ -111,8 +103,6 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
       assert alert_state.active == true
       assert alert_state.current_value == 60
-
-      # Cleanup - meck removed
     end
 
     test "does not trigger alert when condition is not met", %{
@@ -120,21 +110,13 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       test_name: test_name,
       pid: pid
     } do
-      metrics = [
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 40,
-          tags: %{service: "test"}
-        }
-      ]
-
-      try do
-        # Cleanup - meck removed
-      catch
-        :error, {:not_mocked, _} -> :ok
-      end
-
-      # Note: UnifiedCollector started in setup, using real metrics instead of mocks
+      # Record metrics into UnifiedCollector
+      Raxol.Core.Metrics.UnifiedCollector.record_metric(
+        "test_metric",
+        :custom,
+        40,
+        tags: %{service: "test"}
+      )
 
       # Force alert check only if process is alive
       if Process.alive?(pid) do
@@ -148,8 +130,6 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
       assert alert_state.active == false
       assert alert_state.current_value == 40
-
-      # Cleanup - meck removed
     end
 
     test "respects cooldown period", %{
@@ -157,21 +137,13 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       test_name: test_name,
       pid: pid
     } do
-      metrics = [
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 60,
-          tags: %{service: "test"}
-        }
-      ]
-
-      try do
-        # Cleanup - meck removed
-      catch
-        :error, {:not_mocked, _} -> :ok
-      end
-
-      # Note: UnifiedCollector started in setup, using real metrics instead of mocks
+      # Record metrics into UnifiedCollector
+      Raxol.Core.Metrics.UnifiedCollector.record_metric(
+        "test_metric",
+        :custom,
+        60,
+        tags: %{service: "test"}
+      )
 
       # Force first alert check only if process is alive
       if Process.alive?(pid) do
@@ -194,8 +166,6 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
       # Only one alert should be recorded due to cooldown
       assert length(history) == 1
-
-      # Cleanup - meck removed
     end
   end
 
@@ -219,21 +189,13 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       test_name: test_name,
       pid: pid
     } do
-      metrics = [
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 60,
-          tags: %{service: "test"}
-        }
-      ]
-
-      try do
-        # Cleanup - meck removed
-      catch
-        :error, {:not_mocked, _} -> :ok
-      end
-
-      # Note: UnifiedCollector started in setup, using real metrics instead of mocks
+      # Record metrics into UnifiedCollector
+      Raxol.Core.Metrics.UnifiedCollector.record_metric(
+        "test_metric",
+        :custom,
+        60,
+        tags: %{service: "test"}
+      )
 
       # Force alert check only if process is alive
       if Process.alive?(pid) do
@@ -246,8 +208,6 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
                AlertManager.acknowledge_alert(rule_id, test_name)
 
       assert alert_state.acknowledged == true
-
-      # Cleanup - meck removed
     end
   end
 
@@ -262,32 +222,26 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
         condition: :above,
         threshold: 50,
         severity: :warning,
-        tags: %{service: "test"},
+        tags: %{},
         group_by: ["service", "region"]
       }
 
       {:ok, rule_id} = AlertManager.add_rule(rule, test_name)
 
-      metrics = [
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 60,
-          tags: %{service: "test", region: "us"}
-        },
-        %{
-          timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond),
-          value: 40,
-          tags: %{service: "test", region: "eu"}
-        }
-      ]
+      # Record metrics into UnifiedCollector
+      Raxol.Core.Metrics.UnifiedCollector.record_metric(
+        "test_metric",
+        :custom,
+        60,
+        tags: %{service: "test", region: "us"}
+      )
 
-      try do
-        # Cleanup - meck removed
-      catch
-        :error, {:not_mocked, _} -> :ok
-      end
-
-      # Note: UnifiedCollector started in setup, using real metrics instead of mocks
+      Raxol.Core.Metrics.UnifiedCollector.record_metric(
+        "test_metric",
+        :custom,
+        40,
+        tags: %{service: "test", region: "eu"}
+      )
 
       # Force alert check only if process is alive
       if Process.alive?(pid) do
@@ -299,8 +253,6 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
                AlertManager.get_alert_state(rule_id, test_name)
 
       assert alert_state.active == true
-
-      # Cleanup - meck removed
     end
   end
 

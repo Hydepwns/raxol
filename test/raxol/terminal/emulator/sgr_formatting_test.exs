@@ -295,7 +295,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       emulator = Emulator.new()
       # Write SGR for bold red, then text
       {emulator, _} = Emulator.process_input(emulator, "\e[1;31mBold Red")
-      buffer = Raxol.Terminal.Emulator.get_active_buffer(emulator)
+      buffer = Raxol.Terminal.Emulator.get_screen_buffer(emulator)
       # Get the first cell (should be 'B')
       first_cell = buffer.cells |> List.first() |> List.first()
       assert first_cell.char == "B"

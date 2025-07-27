@@ -288,7 +288,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
     #   # Erase: \e[K (EL mode 0: from cursor to end)
     #   input_str = "Hello\e[2;3HWorld\e[3D\e[K"
     #   {emulator, _output} = Emulator.process_input(emulator, input_str)
-    #   buffer = Emulator.get_active_buffer(emulator)
+    #   buffer = Emulator.get_screen_buffer(emulator)
     #
     #   line1_cells = ScreenBuffer.get_line(buffer, 0)
     #   line2_cells = ScreenBuffer.get_line(buffer, 1)
@@ -307,7 +307,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
     # test "EL erases line from beginning to cursor", %{emulator: emulator, buffer_width: _buffer_width} do
     #   input_str = "Hello\e[2;3HWorld\e[3D\e[1K"
     #   {emulator, _output} = Emulator.process_input(emulator, input_str)
-    #   buffer = Emulator.get_active_buffer(emulator)
+    #   buffer = Emulator.get_screen_buffer(emulator)
     #   line1_cells = ScreenBuffer.get_line(buffer, 0)
     #   line2_cells = ScreenBuffer.get_line(buffer, 1)
     #
@@ -324,7 +324,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
     # test "EL erases entire line", %{emulator: emulator, buffer_width: _buffer_width} do
     #   input_str = "Hello\e[2;3HWorld\e[3D\e[2K"
     #   {emulator, _output} = Emulator.process_input(emulator, input_str)
-    #   buffer = Emulator.get_active_buffer(emulator)
+    #   buffer = Emulator.get_screen_buffer(emulator)
     #   line1_cells = ScreenBuffer.get_line(buffer, 0)
     #   line2_cells = ScreenBuffer.get_line(buffer, 1)
     #
@@ -387,7 +387,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       input_str = "\e[2;4H\e[1J"
 
       {emulator, _output} = Emulator.process_input(emulator, input_str)
-      buffer = Emulator.get_active_buffer(emulator)
+      buffer = Emulator.get_screen_buffer(emulator)
 
       # Lines 0 should be all spaces (completely cleared)
       assert Enum.map(ScreenBuffer.get_line(buffer, 0), & &1.char) ==
@@ -449,7 +449,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       input_str = "\e[2;2H\e[2J"
 
       {emulator, _output} = Emulator.process_input(emulator, input_str)
-      buffer = Emulator.get_active_buffer(emulator)
+      buffer = Emulator.get_screen_buffer(emulator)
 
       # All lines should be spaces
       for y <- 0..(buffer.height - 1) do

@@ -283,7 +283,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       {:ok,
        emulator: emulator,
        buffer_height:
-         ScreenBuffer.get_height(Emulator.get_active_buffer(emulator))}
+         ScreenBuffer.get_height(Emulator.get_screen_buffer(emulator))}
     end
 
     test "sets a valid scrolling region and moves cursor to home", %{

@@ -55,7 +55,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     # Fetch the emulator from the Renderer state
     state = :sys.get_state(Renderer)
     emulator = Map.fetch!(state, :emulator)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     content = ScreenBuffer.get_content(buffer)
     # The label is rendered at y=0, x=0, so should be on the first line
     assert String.starts_with?(content, "World")
@@ -106,7 +106,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
 
     state = :sys.get_state(Renderer)
     emulator = Map.fetch!(state, :emulator)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     content = ScreenBuffer.get_content(buffer)
     [line1, line2 | _] = String.split(content, "\n")
     assert line1 =~ "First"
@@ -173,7 +173,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
 
     state = :sys.get_state(Renderer)
     emulator = Map.fetch!(state, :emulator)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     content = ScreenBuffer.get_content(buffer)
     [line1 | _] = String.split(content, "\n")
     assert line1 =~ "Deeper!"
@@ -229,7 +229,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
 
     state = :sys.get_state(Renderer)
     emulator = Map.fetch!(state, :emulator)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     content = ScreenBuffer.get_content(buffer)
     [line1, line2, line3 | _] = String.split(content, "\n")
     assert line1 =~ "X"
@@ -301,7 +301,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
 
     state = :sys.get_state(Renderer)
     emulator = Map.fetch!(state, :emulator)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     content = ScreenBuffer.get_content(buffer)
     [line1 | _] = String.split(content, "\n")
     assert line1 =~ "Changed Deep!"
@@ -375,7 +375,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
 
     state = :sys.get_state(Renderer)
     emulator = Map.fetch!(state, :emulator)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     content = ScreenBuffer.get_content(buffer)
     lines = String.split(content, "\n")
     assert Enum.any?(lines, &(&1 =~ "B2 changed"))
@@ -407,7 +407,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
 
     state = :sys.get_state(Renderer)
     emulator = Map.fetch!(state, :emulator)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     content = ScreenBuffer.get_content(buffer)
     assert content =~ "Visible"
     assert content =~ "Also visible"
@@ -454,7 +454,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
 
     state = :sys.get_state(Renderer)
     emulator = Map.fetch!(state, :emulator)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     content = ScreenBuffer.get_content(buffer)
     lines = String.split(content, "\n")
     assert Enum.at(lines, 0) =~ "L1!"
@@ -507,7 +507,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
 
     state = :sys.get_state(Renderer)
     emulator = Map.fetch!(state, :emulator)
-    buffer = Emulator.get_active_buffer(emulator)
+    buffer = Emulator.get_screen_buffer(emulator)
     content = ScreenBuffer.get_content(buffer)
     lines = String.split(content, "\n")
     assert Enum.at(lines, 1) =~ "B!"

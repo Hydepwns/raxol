@@ -87,7 +87,7 @@ defmodule Raxol.Test.Support.MockImplementations do
      }}
   end
 
-  def terminal_emulator_get_active_buffer(_emulator),
+  def terminal_emulator_get_screen_buffer(_emulator),
     do: %{mock: :screen_buffer}
 
   def terminal_emulator_update_active_buffer(emulator, _new_buffer),
@@ -103,7 +103,7 @@ defmodule Raxol.Test.Support.MockImplementations do
   def clipboard_plugin_handle_event(_event, state), do: {:ok, state}
   def clipboard_plugin_handle_command(_command, _args, state), do: {:ok, state}
 
-  def plugin_event_filter_filter_event(_event), do: {:ok, _event}
+  def plugin_event_filter_filter_event(event), do: {:ok, event}
   def plugin_event_filter_should_process_event?(_event), do: true
 
   def plugin_command_dispatcher_dispatch_command(_command, _args),

@@ -7,7 +7,6 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   require Mox
   import Mox
   import Raxol.Test.Support.TestHelper
-  import Raxol.Guards
 
   alias Raxol.Core.Runtime.Supervisor
 

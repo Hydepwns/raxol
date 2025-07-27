@@ -16,22 +16,24 @@ defmodule Raxol.UI.RendererTestHelper do
           if Map.has_key?(arg4, :variants) do
             variants = Map.get(arg4, :variants, %{})
             colors = Map.drop(arg4, [:variants])
+
             # Don't merge defaults - let themes be partial for inheritance testing
             {colors, %{}, %{}, variants}
           else
             # Don't merge defaults - let themes be partial for inheritance testing
             {arg4, %{}, %{}, %{}}
           end
+
         is_map(arg2) and is_map(arg3) and (is_map(arg4) or is_nil(arg4)) ->
           # Called as (name, colors, styles, fonts)
           # Don't merge defaults - let themes be partial for inheritance testing
           {arg2, arg3, arg4 || %{}, %{}}
+
         true ->
           # Fallback: treat arg2 as colors if it's a map
           {if(is_map(arg2), do: arg2, else: %{}),
            if(is_map(arg3), do: arg3, else: %{}),
-           if(is_map(arg4), do: arg4, else: %{}),
-           %{}}
+           if(is_map(arg4), do: arg4, else: %{}), %{}}
       end
 
     %Raxol.UI.Theming.Theme{

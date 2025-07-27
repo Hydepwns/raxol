@@ -21,8 +21,8 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
 
     test ~c"set_state/2 updates the state" do
       initial_state = Manager.new()
-      new_state = %{initial_state | state: :escape}
-      assert Manager.set_state(initial_state, new_state) == new_state
+      new_state = Manager.set_state(initial_state, :escape)
+      assert new_state.state == :escape
     end
 
     test ~c"transition_to/2 transitions to a new state and clears relevant buffers" do
@@ -202,17 +202,17 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
 
       # ESC N (SS2) + "A" + ESC N (SS2) + "B"
       # First, process ESC N (SS2)
-      {:continue, _emu, state1, rest1} =
+      {:continue, _emu, state1, _rest1} =
         Manager.process_input(emulator, %{state | state: :escape}, <<78>>)
 
       assert state1.single_shift == :ss2
       # Now process 'A'
-      {:continue, _emu, state2, rest2} =
+      {:continue, _emu, state2, _rest2} =
         Manager.process_input(emulator, state1, <<"A">>)
 
       assert state2.single_shift == nil
       # Now process ESC N (SS2) again
-      {:continue, _emu, state3, rest3} =
+      {:continue, _emu, state3, _rest3} =
         Manager.process_input(emulator, %{state2 | state: :escape}, <<78>>)
 
       assert state3.single_shift == :ss2
@@ -233,17 +233,17 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       }
 
       # ESC O (SS3) + "A" + ESC O (SS3) + "B"
-      {:continue, _emu, state1, rest1} =
+      {:continue, _emu, state1, _rest1} =
         Manager.process_input(emulator, %{state | state: :escape}, <<79>>)
 
       assert state1.single_shift == :ss3
 
-      {:continue, _emu, state2, rest2} =
+      {:continue, _emu, state2, _rest2} =
         Manager.process_input(emulator, state1, <<"A">>)
 
       assert state2.single_shift == nil
 
-      {:continue, _emu, state3, rest3} =
+      {:continue, _emu, state3, _rest3} =
         Manager.process_input(emulator, %{state2 | state: :escape}, <<79>>)
 
       assert state3.single_shift == :ss3
@@ -264,12 +264,12 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       }
 
       # ESC N (SS2) at end
-      {:continue, _emu, state1, _rest1} =
+      {:continue, _emu, state1, __rest1} =
         Manager.process_input(emulator, %{state | state: :escape}, <<78>>)
 
       assert state1.single_shift == :ss2
       # Now process a printable character
-      {:continue, _emu, state2, _rest2} =
+      {:continue, _emu, state2, __rest2} =
         Manager.process_input(emulator, state1, "A")
 
       assert state2.single_shift == nil
@@ -285,12 +285,12 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       }
 
       # ESC O (SS3) at end
-      {:continue, _emu, state1, _rest1} =
+      {:continue, _emu, state1, __rest1} =
         Manager.process_input(emulator, %{state | state: :escape}, <<79>>)
 
       assert state1.single_shift == :ss3
       # Now process a printable character
-      {:continue, _emu, state2, _rest2} =
+      {:continue, _emu, state2, __rest2} =
         Manager.process_input(emulator, state1, "B")
 
       assert state2.single_shift == nil
@@ -306,14 +306,14 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       }
 
       # ESC N (SS2) + BEL (7)
-      {:continue, _emu, state1, rest1} =
+      {:continue, _emu, state1, _rest1} =
         Manager.process_input(emulator, %{state | state: :escape}, <<78, 7>>)
 
       # After ESC N, single_shift should be :ss2 (before BEL is processed)
       assert state1.single_shift == :ss2
       # Now process BEL
-      {:continue, _emu, state2, _rest2} =
-        Manager.process_input(emulator, state1, rest1)
+      {:continue, _emu, state2, __rest2} =
+        Manager.process_input(emulator, state1, _rest1)
 
       assert state2.single_shift == nil
     end
@@ -328,13 +328,13 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       }
 
       # ESC O (SS3) + BEL (7)
-      {:continue, _emu, state1, rest1} =
+      {:continue, _emu, state1, _rest1} =
         Manager.process_input(emulator, %{state | state: :escape}, <<79, 7>>)
 
       assert state1.single_shift == :ss3
 
-      {:continue, _emu, state2, _rest2} =
-        Manager.process_input(emulator, state1, rest1)
+      {:continue, _emu, state2, __rest2} =
+        Manager.process_input(emulator, state1, _rest1)
 
       assert state2.single_shift == nil
     end

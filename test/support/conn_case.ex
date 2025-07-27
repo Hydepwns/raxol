@@ -92,6 +92,7 @@ defmodule RaxolWeb.ConnCase do
     if Application.get_env(:raxol, :database_enabled, true) do
       ensure_test_user_exists()
     end
+
     setup_user_session(conn, user)
   end
 

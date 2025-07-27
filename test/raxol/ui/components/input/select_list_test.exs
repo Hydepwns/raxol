@@ -200,7 +200,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       assert state3.is_search_focused == false
     end
 
-    test "filters options by searchable field", %{state: state} do
+    test "filters options by searchable field", %{state: _state} do
       options = [
         {"Alice", %{email: "alice@example.com"}},
         {"Bob", %{email: "bob@work.com"}},
@@ -248,7 +248,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       refute Enum.any?(texts, &String.contains?(&1, "Carol"))
     end
 
-    test "shows empty message when no options match filter", %{state: state} do
+    test "shows empty message when no options match filter", %{state: _state} do
       options = [
         {"Alpha", :alpha},
         {"Beta", :beta},
@@ -290,7 +290,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       refute Enum.any?(texts, &String.contains?(&1, "Gamma"))
     end
 
-    test "filters options case-insensitively", %{state: state} do
+    test "filters options case-insensitively", %{state: _state} do
       options = [
         {"Apple", :apple},
         {"banana", :banana},
@@ -359,7 +359,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
     end
 
     test "keyboard navigation only moves through filtered options", %{
-      state: state
+      state: _state
     } do
       options = [
         {"Alpha", :alpha},
