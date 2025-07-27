@@ -313,5 +313,4 @@ defmodule Raxol.Core.Events.Event do
       position: position
     })
   end
-
 end

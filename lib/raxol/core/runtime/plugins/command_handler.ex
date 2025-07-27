@@ -112,7 +112,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
            state.command_registry_table,
            state.plugin_config
          ) do
-      :ok -> {:ok, :plugin_unloaded}
+      {:ok, _updated_maps} -> {:ok, :plugin_unloaded}
       {:error, reason} -> {:error, reason}
     end
   end
@@ -124,12 +124,19 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
     end
   end
 
-  defp execute_command(:update_plugin, _namespace, {plugin_id, update_fun}, state) do
-    updated_state = Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
-      plugin_id,
-      update_fun,
-      state
-    )
+  defp execute_command(
+         :update_plugin,
+         _namespace,
+         {plugin_id, update_fun},
+         state
+       ) do
+    updated_state =
+      Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
+        plugin_id,
+        update_fun,
+        state
+      )
+
     {:ok, updated_state}
   end
 
@@ -142,12 +149,19 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
     Raxol.Core.Runtime.Plugins.StateManager.get_plugin_state(plugin_id, state)
   end
 
-  defp execute_command(:set_plugin_state, _namespace, {plugin_id, new_state}, state) do
-    updated_state = Raxol.Core.Runtime.Plugins.StateManager.set_plugin_state(
-      plugin_id,
-      new_state,
-      state
-    )
+  defp execute_command(
+         :set_plugin_state,
+         _namespace,
+         {plugin_id, new_state},
+         state
+       ) do
+    updated_state =
+      Raxol.Core.Runtime.Plugins.StateManager.set_plugin_state(
+        plugin_id,
+        new_state,
+        state
+      )
+
     {:ok, updated_state}
   end
 
@@ -158,5 +172,19 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
     )
 
     {:error, :unknown_command}
+  end
+
+  @doc """
+  Handles responses from command execution.
+  """
+  def handle_response(command, response, state) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Handling response for command: #{inspect(command)}",
+      %{command: command, response: response}
+    )
+
+    # For now, just return the state unchanged
+    # This would be where you'd process command responses and update state accordingly
+    {:ok, state}
   end
 end

@@ -62,7 +62,6 @@ defmodule Raxol.Core.Runtime.Command do
       Command.notify("Task Complete", "Your background job finished.")
   """
 
-  # alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
   require Raxol.Core.Runtime.Log
 
   @type t :: %__MODULE__{

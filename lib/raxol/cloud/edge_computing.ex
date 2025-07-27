@@ -1,5 +1,4 @@
 defmodule Raxol.Cloud.EdgeComputing do
-  import Raxol.Guards
 
   @moduledoc """
   Edge computing support for Raxol applications.

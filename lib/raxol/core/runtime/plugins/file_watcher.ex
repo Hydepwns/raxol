@@ -55,7 +55,10 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
       %{plugin_id: plugin_id, plugin_path: plugin_path}
     )
 
-    case Raxol.Core.Runtime.Plugins.PluginReloader.reload_plugin(plugin_id, state) do
+    case Raxol.Core.Runtime.Plugins.PluginReloader.reload_plugin(
+           plugin_id,
+           state
+         ) do
       {:ok, updated_state} ->
         {:ok, updated_state}
 
@@ -81,14 +84,17 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
     )
 
     # Cancel existing timer if any
-    new_state = Raxol.Core.Runtime.Plugins.TimerManager.cancel_existing_timer(state)
+    new_state =
+      Raxol.Core.Runtime.Plugins.TimerManager.cancel_existing_timer(state)
 
     # Schedule new reload
-    timer_ref = Process.send_after(
-      self(),
-      {:reload_plugin_file_debounced, plugin_id, path},
-      1000  # 1 second debounce
-    )
+    timer_ref =
+      Process.send_after(
+        self(),
+        {:reload_plugin_file_debounced, plugin_id, path},
+        # 1 second debounce
+        1000
+      )
 
     updated_state = %{new_state | file_event_timer: timer_ref}
     {:ok, updated_state}
@@ -103,5 +109,47 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
       _ ->
         {:error, :invalid_path}
     end
+  end
+
+  @doc """
+  Starts the file watcher process.
+  """
+  def start_link(config \\ %{}) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Starting file watcher",
+      %{config: config}
+    )
+    
+    # For now, just return a mock PID
+    # In a real implementation, this would start a GenServer or use a file system watcher
+    {:ok, spawn(fn -> :ok end)}
+  end
+
+  @doc """
+  Stops the file watcher process.
+  """
+  def stop(pid) when is_pid(pid) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Stopping file watcher",
+      %{pid: pid}
+    )
+    
+    # For now, just return :ok
+    # In a real implementation, this would stop the watcher process
+    :ok
+  end
+
+  @doc """
+  Subscribes to file watcher events.
+  """
+  def subscribe(pid) when is_pid(pid) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Subscribing to file watcher events",
+      %{pid: pid}
+    )
+    
+    # For now, just return :ok
+    # In a real implementation, this would subscribe the calling process to events
+    :ok
   end
 end

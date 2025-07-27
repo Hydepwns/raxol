@@ -25,7 +25,7 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
         mode: :hybrid,
         config: %{
           connection_check_interval: 5000,
-          sync_interval: 30000,
+          sync_interval: 30_000,
           retry_limit: 5,
           compression_enabled: true,
           # 100MB

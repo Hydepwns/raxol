@@ -614,13 +614,12 @@ defmodule Raxol.Accounts do
   end
 
   defp database_enabled? do
-    enabled = Application.get_env(:raxol, :database_enabled, false)
-    IO.inspect(enabled, label: "database_enabled? result")
-    enabled
+    Application.get_env(:raxol, :database_enabled, false)
   end
 
   # Legacy User struct for backward compatibility
   defmodule User do
+    @moduledoc "Legacy user struct for backward compatibility."
     defstruct [:id, :email, :password_hash, :role]
   end
 end

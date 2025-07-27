@@ -14,14 +14,18 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
       %{plugin_id_string: plugin_id_string}
     )
 
-    case Raxol.Core.Runtime.Plugins.LifecycleManager.reload_plugin(plugin_id_string, state) do
+    case Raxol.Core.Runtime.Plugins.LifecycleManager.reload_plugin(
+           plugin_id_string,
+           state
+         ) do
       {:ok, {updated_metadata, updated_states, updated_table}} ->
-        updated_state = Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
-          state,
-          updated_metadata,
-          updated_states,
-          updated_table
-        )
+        updated_state =
+          Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
+            state,
+            updated_metadata,
+            updated_states,
+            updated_table
+          )
 
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Successfully reloaded plugin by ID: #{plugin_id_string}",
@@ -51,14 +55,18 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
       %{plugin_id: plugin_id}
     )
 
-    case Raxol.Core.Runtime.Plugins.LifecycleManager.reload_plugin(plugin_id, state) do
+    case Raxol.Core.Runtime.Plugins.LifecycleManager.reload_plugin(
+           plugin_id,
+           state
+         ) do
       {:ok, {updated_metadata, updated_states, updated_table}} ->
-        updated_state = Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
-          state,
-          updated_metadata,
-          updated_states,
-          updated_table
-        )
+        updated_state =
+          Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
+            state,
+            updated_metadata,
+            updated_states,
+            updated_table
+          )
 
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Successfully reloaded plugin: #{plugin_id}",

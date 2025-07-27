@@ -11,7 +11,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.ConfigOperations do
   @doc """
   Gets the configuration for a specific plugin.
   """
-  @spec handle_get_plugin_config(plugin_id(), state()) :: {:reply, any(), state()}
+  @spec handle_get_plugin_config(plugin_id(), state()) ::
+          {:reply, any(), state()}
   def handle_get_plugin_config(plugin_id, state) do
     config = Map.get(state.plugin_config, plugin_id, %{})
     {:reply, config, state}
@@ -20,7 +21,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.ConfigOperations do
   @doc """
   Updates the configuration for a specific plugin.
   """
-  @spec handle_update_plugin_config(plugin_id(), plugin_config(), state()) :: {:reply, :ok, state()}
+  @spec handle_update_plugin_config(plugin_id(), plugin_config(), state()) ::
+          {:reply, :ok, state()}
   def handle_update_plugin_config(plugin_id, config, state) do
     new_plugin_config = Map.put(state.plugin_config, plugin_id, config)
     updated_state = %{state | plugin_config: new_plugin_config}
@@ -30,7 +32,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.ConfigOperations do
   @doc """
   Initializes a plugin with specific configuration.
   """
-  @spec handle_initialize_plugin(plugin_id(), plugin_config(), state()) :: {:reply, any(), state()}
+  @spec handle_initialize_plugin(plugin_id(), plugin_config(), state()) ::
+          {:reply, any(), state()}
   def handle_initialize_plugin(plugin_id, config, state) do
     case Map.get(state.plugins, plugin_id) do
       nil ->
@@ -41,17 +44,18 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.ConfigOperations do
         new_plugin_config = Map.put(state.plugin_config, plugin_id, config)
 
         # Initialize plugin state if the module supports it
-        initial_state = 
+        initial_state =
           if function_exported?(plugin_module, :init, 1) do
             apply(plugin_module, :init, [config])
           else
             %{}
           end
 
-        new_plugin_states = Map.put(state.plugin_states, plugin_id, initial_state)
+        new_plugin_states =
+          Map.put(state.plugin_states, plugin_id, initial_state)
 
         updated_state = %{
-          state 
+          state
           | plugin_config: new_plugin_config,
             plugin_states: new_plugin_states
         }
@@ -67,7 +71,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.ConfigOperations do
   def handle_init_with_config(config, state) do
     # Apply global plugin configuration
     updated_state = %{
-      state 
+      state
       | plugin_config: Map.merge(state.plugin_config, config)
     }
 
@@ -79,10 +83,6 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.ConfigOperations do
   """
   @spec handle_initialize(state()) :: {:reply, any(), state()}
   def handle_initialize(state) do
-    # Perform basic initialization
-    # This could include loading default plugins, setting up watchers, etc.
-    
-    # For now, just return the current state as initialized
     {:reply, {:ok, :initialized}, state}
   end
 end

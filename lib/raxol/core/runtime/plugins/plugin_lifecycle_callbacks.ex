@@ -58,7 +58,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginLifecycleCallbacks do
           updated_table =
             case command_table do
               table when is_map(table) -> table
-              table when is_atom(table) -> %{}  # Convert atom to empty map
+              # Convert atom to empty map
+              table when is_atom(table) -> %{}
               _ -> %{}
             end
 
@@ -66,7 +67,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginLifecycleCallbacks do
           # We need to get the current plugins map from the metadata
           current_plugins = Map.get(current_metadata, :plugins, %{})
           updated_plugins = Map.put(current_plugins, plugin_id, module)
-          updated_metadata_with_plugins = Map.put(updated_metadata, :plugins, updated_plugins)
+
+          updated_metadata_with_plugins =
+            Map.put(updated_metadata, :plugins, updated_plugins)
 
           {:ok, {updated_metadata_with_plugins, updated_states, updated_table}}
 

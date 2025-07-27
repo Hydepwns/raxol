@@ -167,7 +167,11 @@ defmodule Raxol.Core.Performance.AIIntegration do
   ## Returns
     - Map containing predicted issues and confidence levels
   """
-  def predict_performance_issues(metrics, historical_data \\ [], _options \\ %{}) do
+  def predict_performance_issues(
+        metrics,
+        historical_data \\ [],
+        _options \\ %{}
+      ) do
     # Analyze current metrics
     current_analysis = Analyzer.analyze(metrics)
 
@@ -186,10 +190,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     {:ok, predictions}
   end
 
-  # Private functions
-
   defp generate_mock_analysis(_ai_data) do
-    # Enhanced mock analysis with more realistic data
     %{
       insights: [
         "Component rendering time has increased by 15% over the last 10 frames",

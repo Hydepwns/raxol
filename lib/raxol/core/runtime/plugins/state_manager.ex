@@ -40,7 +40,8 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
   @doc """
   Updates a plugin's state using a function.
   """
-  def update_plugin_state(plugin_id, update_fun, state) when is_function(update_fun, 1) do
+  def update_plugin_state(plugin_id, update_fun, state)
+      when is_function(update_fun, 1) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Updating state for plugin: #{plugin_id}",
       %{plugin_id: plugin_id}
@@ -48,7 +49,10 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
 
     current_state = Map.get(state.plugin_states, plugin_id, %{})
     updated_state = update_fun.(current_state)
-    updated_plugin_states = Map.put(state.plugin_states, plugin_id, updated_state)
+
+    updated_plugin_states =
+      Map.put(state.plugin_states, plugin_id, updated_state)
+
     %{state | plugin_states: updated_plugin_states}
   end
 
@@ -83,7 +87,9 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
           %{plugin_name: plugin_name}
         )
 
-        updated_plugin_config = Map.put(state.plugin_config, plugin_name, config)
+        updated_plugin_config =
+          Map.put(state.plugin_config, plugin_name, config)
+
         %{state | plugin_config: updated_plugin_config}
 
       {:error, reason} ->
@@ -93,6 +99,7 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
           nil,
           %{plugin_name: plugin_name, reason: reason}
         )
+
         {:error, reason}
     end
   end
@@ -110,7 +117,12 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
   @doc """
   Updates plugin state with new metadata, states, and table.
   """
-  def update_plugin_state(state, updated_metadata, updated_states, updated_table) do
+  def update_plugin_state(
+        state,
+        updated_metadata,
+        updated_states,
+        updated_table
+      ) do
     %{
       state
       | metadata: updated_metadata,
@@ -120,7 +132,8 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
   end
 
   # Helper function to validate plugin configuration
-  defp validate_plugin_config_static(_plugin_name, config) when is_map(config) do
+  defp validate_plugin_config_static(_plugin_name, config)
+       when is_map(config) do
     # Basic validation - ensure config is a map and has required fields
     case config do
       %{enabled: enabled} when is_boolean(enabled) ->

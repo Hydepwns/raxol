@@ -356,16 +356,12 @@ defmodule Raxol.Core.Config.Manager do
 
   defp validate_value(_key, _value), do: {:error, "Invalid value"}
 
-  defp maybe_persist(_key, _value, %{persist: false}), do: :ok
-
   defp maybe_persist(key, value, opts) do
     case Keyword.get(opts, :persist, true) do
       true -> persist_config_change(key, value, opts)
       false -> :ok
     end
   end
-
-  defp maybe_persist_delete(_key, %{persist: false}), do: :ok
 
   defp maybe_persist_delete(key, opts) do
     case Keyword.get(opts, :persist, true) do

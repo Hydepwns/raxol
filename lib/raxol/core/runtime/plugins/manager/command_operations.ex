@@ -14,10 +14,10 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.CommandOperations do
   @doc """
   Handles command execution.
   """
-  @spec handle_execute_command(command(), any(), any(), state()) :: {:reply, any(), state()}
+  @spec handle_execute_command(command(), any(), any(), state()) ::
+          {:reply, any(), state()}
   def handle_execute_command(command, _arg1, _arg2, state) do
-    # Use CommandHandler for command execution
-    case CommandHandler.execute_command(command, state.plugins) do
+    case CommandHandler.process_command(command, state) do
       {:ok, result} ->
         {:reply, {:ok, result}, state}
 
@@ -43,7 +43,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.CommandOperations do
   @doc """
   Handles plugin hook calls.
   """
-  @spec handle_call_hook(plugin_id(), hook_name(), list(), state()) :: {:reply, any(), state()}
+  @spec handle_call_hook(plugin_id(), hook_name(), list(), state()) ::
+          {:reply, any(), state()}
   def handle_call_hook(plugin_id, hook_name, args, state) do
     case Map.get(state.plugins, plugin_id) do
       nil ->
@@ -52,7 +53,6 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.CommandOperations do
       plugin_module ->
         case call_plugin_hook(plugin_module, hook_name, args) do
           {:ok, result} ->
-            # Update plugin state if the hook returned a new state
             updated_state = maybe_update_plugin_state(plugin_id, result, state)
             {:reply, {:ok, result}, updated_state}
 
@@ -60,13 +60,10 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.CommandOperations do
             {:reply, {:error, reason}, state}
 
           result ->
-            # Direct result without error tuple
             {:reply, result, state}
         end
     end
   end
-
-  # Private helper functions
 
   @doc false
   def call_plugin_hook(plugin_module, hook_name, args) do
@@ -86,7 +83,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.CommandOperations do
   defp maybe_update_plugin_state(plugin_id, result, state) do
     case result do
       {:state_update, new_plugin_state} ->
-        new_plugin_states = Map.put(state.plugin_states, plugin_id, new_plugin_state)
+        new_plugin_states =
+          Map.put(state.plugin_states, plugin_id, new_plugin_state)
+
         %{state | plugin_states: new_plugin_states}
 
       _ ->

@@ -1,7 +1,7 @@
 defmodule Raxol.Cloud.Monitoring.Backends do
   @moduledoc """
   Backend adapters for various monitoring services.
-  
+
   This module provides integrations with popular monitoring and observability
   platforms, allowing Raxol applications to send metrics, logs, and traces
   to external services.
@@ -9,17 +9,17 @@ defmodule Raxol.Cloud.Monitoring.Backends do
 
   @type backend_type :: :prometheus | :datadog | :new_relic | :grafana | :custom
   @type metric_data :: %{
-    name: String.t(),
-    value: number(),
-    tags: map(),
-    timestamp: integer()
-  }
+          name: String.t(),
+          value: number(),
+          tags: map(),
+          timestamp: integer()
+        }
   @type log_data :: %{
-    level: atom(),
-    message: String.t(),
-    metadata: map(),
-    timestamp: integer()
-  }
+          level: atom(),
+          message: String.t(),
+          metadata: map(),
+          timestamp: integer()
+        }
 
   @doc """
   Initializes a monitoring backend.
@@ -70,7 +70,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   defp init_prometheus(config) do
     port = Map.get(config, :port, 9090)
     path = Map.get(config, :metrics_path, "/metrics")
-    
+
     # Start Prometheus metrics endpoint
     case start_prometheus_endpoint(port, path) do
       {:ok, pid} -> {:ok, pid}
@@ -90,13 +90,17 @@ defmodule Raxol.Cloud.Monitoring.Backends do
       # This would typically use a library like prometheus_ex
       # For now, we'll use a simple HTTP endpoint
       cowboy_opts = [port: port]
+
       dispatch = [
-        {:_, [
-          {path, __MODULE__.PrometheusHandler, []}
-        ]}
+        {:_,
+         [
+           {path, __MODULE__.PrometheusHandler, []}
+         ]}
       ]
-      
-      case :cowboy.start_clear(:prometheus_metrics, cowboy_opts, %{env: %{dispatch: dispatch}}) do
+
+      case :cowboy.start_clear(:prometheus_metrics, cowboy_opts, %{
+             env: %{dispatch: dispatch}
+           }) do
         {:ok, pid} -> {:ok, pid}
         {:error, :eaddrinuse} -> {:error, :port_in_use}
         error -> error
@@ -109,7 +113,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   defp register_prometheus_metric(%{name: name, value: value, tags: tags}) do
     # Register or update the metric in Prometheus registry
     metric_name = String.replace(name, ".", "_")
-    
+
     # This would use prometheus_ex functions
     # :prometheus_gauge.set(metric_name, tags, value)
     # For now, store in process dictionary as placeholder
@@ -121,7 +125,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     api_key = Map.get(config, :api_key)
     app_key = Map.get(config, :app_key)
     host = Map.get(config, :host, "app.datadoghq.com")
-    
+
     if api_key do
       {:ok, %{api_key: api_key, app_key: app_key, host: host}}
     else
@@ -132,24 +136,24 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   defp send_datadog_metrics(metrics) do
     config = Application.get_env(:raxol, :datadog_config, %{})
     api_key = Map.get(config, :api_key)
-    
+
     if api_key do
       datadog_metrics = Enum.map(metrics, &format_datadog_metric/1)
-      
+
       payload = %{
         series: datadog_metrics
       }
-      
+
       headers = [
         {"Content-Type", "application/json"},
         {"DD-API-KEY", api_key}
       ]
-      
+
       case HTTPoison.post(
-        "https://api.datadoghq.com/api/v1/series",
-        Jason.encode!(payload),
-        headers
-      ) do
+             "https://api.datadoghq.com/api/v1/series",
+             Jason.encode!(payload),
+             headers
+           ) do
         {:ok, %{status_code: 202}} -> :ok
         {:ok, %{status_code: status}} -> {:error, {:http_error, status}}
         {:error, reason} -> {:error, reason}
@@ -164,20 +168,20 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   defp send_datadog_logs(logs) do
     config = Application.get_env(:raxol, :datadog_config, %{})
     api_key = Map.get(config, :api_key)
-    
+
     if api_key do
       datadog_logs = Enum.map(logs, &format_datadog_log/1)
-      
+
       headers = [
         {"Content-Type", "application/json"},
         {"DD-API-KEY", api_key}
       ]
-      
+
       case HTTPoison.post(
-        "https://http-intake.logs.datadoghq.com/v1/input/#{api_key}",
-        Jason.encode!(datadog_logs),
-        headers
-      ) do
+             "https://http-intake.logs.datadoghq.com/v1/input/#{api_key}",
+             Jason.encode!(datadog_logs),
+             headers
+           ) do
         {:ok, %{status_code: 200}} -> :ok
         {:ok, %{status_code: status}} -> {:error, {:http_error, status}}
         {:error, reason} -> {:error, reason}
@@ -192,7 +196,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   # New Relic backend implementation
   defp init_new_relic(config) do
     license_key = Map.get(config, :license_key)
-    
+
     if license_key do
       {:ok, %{license_key: license_key}}
     else
@@ -203,24 +207,24 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   defp send_new_relic_metrics(metrics) do
     config = Application.get_env(:raxol, :new_relic_config, %{})
     license_key = Map.get(config, :license_key)
-    
+
     if license_key do
       new_relic_metrics = Enum.map(metrics, &format_new_relic_metric/1)
-      
+
       payload = %{
         metrics: new_relic_metrics
       }
-      
+
       headers = [
         {"Content-Type", "application/json"},
         {"X-License-Key", license_key}
       ]
-      
+
       case HTTPoison.post(
-        "https://metric-api.newrelic.com/metric/v1",
-        Jason.encode!(payload),
-        headers
-      ) do
+             "https://metric-api.newrelic.com/metric/v1",
+             Jason.encode!(payload),
+             headers
+           ) do
         {:ok, %{status_code: 202}} -> :ok
         {:ok, %{status_code: status}} -> {:error, {:http_error, status}}
         {:error, reason} -> {:error, reason}
@@ -235,20 +239,20 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   defp send_new_relic_logs(logs) do
     config = Application.get_env(:raxol, :new_relic_config, %{})
     license_key = Map.get(config, :license_key)
-    
+
     if license_key do
       new_relic_logs = Enum.map(logs, &format_new_relic_log/1)
-      
+
       headers = [
         {"Content-Type", "application/json"},
         {"X-License-Key", license_key}
       ]
-      
+
       case HTTPoison.post(
-        "https://log-api.newrelic.com/log/v1",
-        Jason.encode!(new_relic_logs),
-        headers
-      ) do
+             "https://log-api.newrelic.com/log/v1",
+             Jason.encode!(new_relic_logs),
+             headers
+           ) do
         {:ok, %{status_code: 202}} -> :ok
         {:ok, %{status_code: status}} -> {:error, {:http_error, status}}
         {:error, reason} -> {:error, reason}
@@ -264,7 +268,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   defp init_grafana(config) do
     url = Map.get(config, :url)
     api_key = Map.get(config, :api_key)
-    
+
     if url && api_key do
       {:ok, %{url: url, api_key: api_key}}
     else
@@ -276,20 +280,20 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     config = Application.get_env(:raxol, :grafana_config, %{})
     url = Map.get(config, :url)
     api_key = Map.get(config, :api_key)
-    
+
     if url && api_key do
       grafana_metrics = Enum.map(metrics, &format_grafana_metric/1)
-      
+
       headers = [
         {"Content-Type", "application/json"},
         {"Authorization", "Bearer #{api_key}"}
       ]
-      
+
       case HTTPoison.post(
-        "#{url}/api/v1/push",
-        Jason.encode!(grafana_metrics),
-        headers
-      ) do
+             "#{url}/api/v1/push",
+             Jason.encode!(grafana_metrics),
+             headers
+           ) do
         {:ok, %{status_code: 200}} -> :ok
         {:ok, %{status_code: status}} -> {:error, {:http_error, status}}
         {:error, reason} -> {:error, reason}
@@ -309,7 +313,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   # Custom backend implementation
   defp init_custom_backend(config) do
     handler = Map.get(config, :handler)
-    
+
     if handler && is_function(handler, 2) do
       {:ok, %{handler: handler}}
     else
@@ -320,7 +324,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   defp send_custom_metrics(metrics) do
     config = Application.get_env(:raxol, :custom_monitoring_config, %{})
     handler = Map.get(config, :metrics_handler)
-    
+
     if handler && is_function(handler, 1) do
       try do
         handler.(metrics)
@@ -336,7 +340,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   defp send_custom_logs(logs) do
     config = Application.get_env(:raxol, :custom_monitoring_config, %{})
     handler = Map.get(config, :logs_handler)
-    
+
     if handler && is_function(handler, 1) do
       try do
         handler.(logs)
@@ -351,7 +355,12 @@ defmodule Raxol.Cloud.Monitoring.Backends do
 
   # Format functions for different backends
 
-  defp format_datadog_metric(%{name: name, value: value, tags: tags, timestamp: timestamp}) do
+  defp format_datadog_metric(%{
+         name: name,
+         value: value,
+         tags: tags,
+         timestamp: timestamp
+       }) do
     %{
       metric: name,
       points: [[timestamp, value]],
@@ -360,7 +369,12 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     }
   end
 
-  defp format_datadog_log(%{level: level, message: message, metadata: metadata, timestamp: timestamp}) do
+  defp format_datadog_log(%{
+         level: level,
+         message: message,
+         metadata: metadata,
+         timestamp: timestamp
+       }) do
     %{
       ddsource: "raxol",
       ddtags: format_tags_for_datadog(metadata),
@@ -371,7 +385,12 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     }
   end
 
-  defp format_new_relic_metric(%{name: name, value: value, tags: tags, timestamp: timestamp}) do
+  defp format_new_relic_metric(%{
+         name: name,
+         value: value,
+         tags: tags,
+         timestamp: timestamp
+       }) do
     %{
       name: name,
       type: "gauge",
@@ -381,7 +400,12 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     }
   end
 
-  defp format_new_relic_log(%{level: level, message: message, metadata: metadata, timestamp: timestamp}) do
+  defp format_new_relic_log(%{
+         level: level,
+         message: message,
+         metadata: metadata,
+         timestamp: timestamp
+       }) do
     Map.merge(metadata, %{
       message: message,
       level: Atom.to_string(level),
@@ -390,7 +414,12 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     })
   end
 
-  defp format_grafana_metric(%{name: name, value: value, tags: tags, timestamp: timestamp}) do
+  defp format_grafana_metric(%{
+         name: name,
+         value: value,
+         tags: tags,
+         timestamp: timestamp
+       }) do
     %{
       name: name,
       value: value,

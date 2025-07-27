@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   @moduledoc """
   Comprehensive validation system for plugins before loading.
-  
+
   This module provides extensive validation checks including security,
   compatibility, performance, and structural validation to ensure
   plugins are safe and properly implemented.
@@ -11,22 +11,24 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
 
   @type validation_result :: :ok | {:error, term()}
   @type plugin_metadata :: %{
-    name: String.t(),
-    version: String.t(),
-    author: String.t(),
-    description: String.t(),
-    dependencies: [String.t()],
-    api_version: String.t()
-  }
+          name: String.t(),
+          version: String.t(),
+          author: String.t(),
+          description: String.t(),
+          dependencies: [String.t()],
+          api_version: String.t()
+        }
 
   @required_callbacks [:init, :handle_event, :cleanup]
-  @max_plugin_size 10_000_000  # 10MB limit
+  # 10MB limit
+  @max_plugin_size 10_000_000
   @supported_api_versions ["1.0", "1.1", "2.0"]
 
   @doc """
   Performs comprehensive validation of a plugin.
   """
-  @spec validate_plugin(String.t(), module(), map(), map()) :: validation_result()
+  @spec validate_plugin(String.t(), module(), map(), map()) ::
+          validation_result()
   def validate_plugin(plugin_id, plugin_module, plugins, options \\ %{}) do
     with :ok <- validate_not_loaded(plugin_id, plugins),
          :ok <- validate_behaviour(plugin_module),
@@ -82,11 +84,12 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
         else
           error -> error
         end
-      
+
       {:error, :no_metadata} ->
         {:error, :missing_metadata}
-        
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -141,26 +144,30 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     case get_plugin_dependencies(plugin_module) do
       {:ok, dependencies} ->
         validate_dependency_list(dependencies, loaded_plugins)
-        
+
       {:error, :no_dependencies} ->
         :ok
-        
-      error -> error
+
+      error ->
+        error
     end
   end
 
   @doc """
   Resolves plugin identity from string or module.
   """
-  @spec resolve_plugin_identity(String.t() | module()) :: 
-    {:ok, {String.t(), module()}} | {:error, term()}
+  @spec resolve_plugin_identity(String.t() | module()) ::
+          {:ok, {String.t(), module()}} | {:error, term()}
   def resolve_plugin_identity(id) when is_binary(id) do
     case Raxol.Core.Runtime.Plugins.Loader.load_code(id) do
-      :ok -> 
-        module = String.to_existing_atom("Elixir.#{id}")
+      {:ok, module} ->
         {:ok, {id, module}}
-      {:error, :module_not_found} -> 
+
+      {:error, :module_not_found} ->
         {:error, :module_not_found}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -196,13 +203,15 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
 
   defp validate_required_callbacks(plugin_module) do
     available_callbacks = plugin_module.__info__(:functions)
-    
-    missing_callbacks = 
+
+    missing_callbacks =
       @required_callbacks
-      |> Enum.filter(fn callback -> 
-        not Enum.any?(available_callbacks, fn {name, _arity} -> name == callback end)
+      |> Enum.filter(fn callback ->
+        not Enum.any?(available_callbacks, fn {name, _arity} ->
+          name == callback
+        end)
       end)
-    
+
     if Enum.empty?(missing_callbacks) do
       :ok
     else
@@ -225,11 +234,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
 
   defp validate_required_fields(metadata) do
     required_fields = [:name, :version, :author, :api_version]
-    
-    missing_fields = 
+
+    missing_fields =
       required_fields
       |> Enum.filter(fn field -> not Map.has_key?(metadata, field) end)
-    
+
     if Enum.empty?(missing_fields) do
       :ok
     else
@@ -262,7 +271,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   defp validate_file_access(plugin_module, options) do
     # Check if plugin attempts to access restricted files
     restricted_access = Map.get(options, :restrict_file_access, true)
-    
+
     if restricted_access and has_file_system_access?(plugin_module) do
       {:error, :unauthorized_file_access}
     else
@@ -273,7 +282,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   defp validate_network_access(plugin_module, options) do
     # Check if plugin attempts network operations
     restricted_network = Map.get(options, :restrict_network_access, true)
-    
+
     if restricted_network and has_network_access?(plugin_module) do
       {:error, :unauthorized_network_access}
     else
@@ -292,17 +301,14 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
 
   defp validate_resource_limits(plugin_module) do
     # Validate that plugin doesn't exceed resource limits
-    case check_resource_usage(plugin_module) do
-      :ok -> :ok
-      {:error, reason} -> {:error, {:resource_limit_exceeded, reason}}
-    end
+    check_resource_usage(plugin_module)
   end
 
   defp validate_elixir_version(_plugin_module) do
     # Check minimum Elixir version requirements
     current_version = System.version()
     min_version = "1.12.0"
-    
+
     if Version.compare(current_version, min_version) in [:eq, :gt] do
       :ok
     else
@@ -314,7 +320,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     # Check minimum OTP version requirements
     current_version = System.otp_release()
     min_version = "24"
-    
+
     if String.to_integer(current_version) >= String.to_integer(min_version) do
       :ok
     else
@@ -335,12 +341,14 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   defp validate_initialization_time(plugin_module) do
     # Measure plugin initialization time
     try do
-      {time, _result} = :timer.tc(fn ->
-        plugin_module.init(%{})
-      end)
-      
-      max_init_time = 5_000_000  # 5 seconds in microseconds
-      
+      {time, _result} =
+        :timer.tc(fn ->
+          plugin_module.init(%{})
+        end)
+
+      # 5 seconds in microseconds
+      max_init_time = 5_000_000
+
       if time > max_init_time do
         {:error, {:initialization_too_slow, time}}
       else
@@ -356,8 +364,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     case get_module_size(plugin_module) do
       {:ok, size} when size > @max_plugin_size ->
         {:error, {:plugin_too_large, size, @max_plugin_size}}
+
       {:ok, _size} ->
         :ok
+
       {:error, reason} ->
         {:error, {:size_check_failed, reason}}
     end
@@ -377,10 +387,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   end
 
   defp validate_dependency_list(dependencies, loaded_plugins) do
-    missing_deps = 
+    missing_deps =
       dependencies
       |> Enum.filter(fn dep -> not Map.has_key?(loaded_plugins, dep) end)
-    
+
     if Enum.empty?(missing_deps) do
       :ok
     else
@@ -393,9 +403,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   defp has_file_system_access?(plugin_module) do
     # Analyze module for file system operations
     try do
-      {:ok, {^plugin_module, [abstract_code: {:raw_abstract_v1, forms}]}} = 
-        :beam_lib.chunks(plugin_module.module_info(:compile)[:source], [:abstract_code])
-      
+      {:ok, {^plugin_module, [abstract_code: {:raw_abstract_v1, forms}]}} =
+        :beam_lib.chunks(plugin_module.module_info(:compile)[:source], [
+          :abstract_code
+        ])
+
       analyze_forms_for_file_access(forms)
     rescue
       _ -> false
@@ -405,9 +417,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   defp has_network_access?(plugin_module) do
     # Analyze module for network operations
     try do
-      {:ok, {^plugin_module, [abstract_code: {:raw_abstract_v1, forms}]}} = 
-        :beam_lib.chunks(plugin_module.module_info(:compile)[:source], [:abstract_code])
-      
+      {:ok, {^plugin_module, [abstract_code: {:raw_abstract_v1, forms}]}} =
+        :beam_lib.chunks(plugin_module.module_info(:compile)[:source], [
+          :abstract_code
+        ])
+
       analyze_forms_for_network_access(forms)
     rescue
       _ -> false
@@ -432,7 +446,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
             {:ok, %File.Stat{size: size}} -> {:ok, size}
             {:error, reason} -> {:error, reason}
           end
-        _ -> {:error, :module_path_not_found}
+
+        _ ->
+          {:error, :module_path_not_found}
       end
     rescue
       _ -> {:error, :size_check_error}

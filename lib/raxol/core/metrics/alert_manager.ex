@@ -39,7 +39,6 @@ defmodule Raxol.Core.Metrics.AlertManager do
   }
 
   # Helper function to get the process name
-  defp process_name(pid_or_name \\ __MODULE__)
   defp process_name(pid) when is_pid(pid), do: pid
   defp process_name(name) when is_atom(name), do: name
   defp process_name(_), do: __MODULE__
@@ -198,45 +197,92 @@ defmodule Raxol.Core.Metrics.AlertManager do
   end
 
   defp check_alert(rule_id, rule, state) do
-    metrics = UnifiedCollector.get_metrics(rule.metric_name, rule.tags)
-    current_value = get_current_value(metrics, rule)
-    alert_state = state.alert_states[rule_id]
-
-    {new_alert_state, should_trigger} =
-      evaluate_alert(
-        current_value,
-        rule,
-        alert_state
-      )
-
-    if should_trigger do
-      trigger_alert(rule_id, rule, current_value, state)
-    else
-      %{
-        state
-        | alert_states: Map.put(state.alert_states, rule_id, new_alert_state)
-      }
+    # For grouped metrics, we need to get all metrics regardless of tags
+    metrics_result = case rule.group_by do
+      [] -> 
+        # Single alert - use exact tag matching
+        UnifiedCollector.get_metrics(rule.metric_name, rule.tags)
+      _ -> 
+        # Grouped metrics - get all metrics with this name
+        UnifiedCollector.get_metrics(rule.metric_name, %{})
+    end
+    
+    metrics = case metrics_result do
+      {:ok, data} -> data
+      {:error, _} -> []
+      data when is_list(data) -> data
+      _ -> []
+    end
+    
+    case rule.group_by do
+      [] ->
+        # Single alert for all metrics
+        current_value = get_single_value(metrics)
+        alert_state = state.alert_states[rule_id]
+        
+        {new_alert_state, should_trigger} =
+          evaluate_alert(current_value, rule, alert_state)
+        
+        if should_trigger do
+          trigger_alert(rule_id, rule, current_value, state)
+        else
+          %{
+            state
+            | alert_states: Map.put(state.alert_states, rule_id, new_alert_state)
+          }
+        end
+        
+      group_by ->
+        # Multiple alerts for grouped metrics
+        grouped_values = get_grouped_values(metrics, group_by)
+        
+        # For now, we'll evaluate the first group or use the max value
+        current_value = case grouped_values do
+          [] -> nil
+          values -> 
+            metric_values = values |> Enum.map(fn {_, v} -> v end)
+            case metric_values do
+              [] -> nil
+              vals -> Enum.max(vals)
+            end
+        end
+        
+        alert_state = state.alert_states[rule_id]
+        
+        {new_alert_state, should_trigger} =
+          evaluate_alert(current_value, rule, alert_state)
+        
+        if should_trigger do
+          trigger_alert(rule_id, rule, current_value, state)
+        else
+          %{
+            state
+            | alert_states: Map.put(state.alert_states, rule_id, new_alert_state)
+          }
+        end
     end
   end
 
-  defp get_current_value(metrics, rule) do
-    case rule.group_by do
-      [] ->
-        metrics
-        |> List.first()
-        |> Map.get(:value)
-
-      group_by ->
-        metrics
-        |> Enum.group_by(fn metric ->
-          group_by
-          |> Enum.map_join(":", &Map.get(metric.tags, &1))
-        end)
-        |> Enum.map(fn {group, group_metrics} ->
-          values = Enum.map(group_metrics, & &1.value)
-          {group, Aggregator.calculate_aggregation(values, :mean)}
-        end)
+  defp get_single_value(metrics) do
+    case List.first(metrics) do
+      nil -> nil
+      metric -> Map.get(metric, :value)
     end
+  end
+  
+  defp get_grouped_values(metrics, group_by) do
+    metrics
+    |> Enum.group_by(fn metric ->
+      group_by
+      |> Enum.map_join(":", fn key ->
+        # Handle both string and atom keys
+        Map.get(metric.tags, key) || Map.get(metric.tags, String.to_atom(key))
+      end)
+    end)
+    |> Enum.map(fn {group, group_metrics} ->
+      values = Enum.map(group_metrics, & &1.value)
+      {group, Aggregator.calculate_aggregation(values, :mean)}
+    end)
   end
 
   defp evaluate_alert(current_value, rule, alert_state) do
@@ -266,6 +312,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
 
   defp evaluate_condition(condition, value, threshold) do
     case {condition, value, threshold} do
+      {_, nil, _} -> false
       {:above, val, thresh} when val > thresh -> true
       {:below, val, thresh} when val < thresh -> true
       {:equals, val, thresh} when val == thresh -> true

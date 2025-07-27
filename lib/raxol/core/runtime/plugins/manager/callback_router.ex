@@ -17,7 +17,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.CallbackRouter do
   Routes handle_call callbacks to appropriate operation modules.
   """
   @spec route_call(tuple(), pid(), state()) :: {:reply, any(), state()}
-  
+
   # Lifecycle operations
   def route_call({:load_plugin, plugin_id, config}, _from, state) do
     LifecycleOperations.handle_load_plugin(plugin_id, config, state)
@@ -125,7 +125,11 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.CallbackRouter do
   # Fallback for unhandled messages
   def route_call(unhandled_message, _from, state) do
     require Logger
-    Logger.warning("Unhandled message in PluginManager: #{inspect(unhandled_message)}")
+
+    Logger.warning(
+      "Unhandled message in PluginManager: #{inspect(unhandled_message)}"
+    )
+
     {:reply, {:error, {:unhandled_message, unhandled_message}}, state}
   end
 end

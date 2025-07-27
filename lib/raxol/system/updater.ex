@@ -1,6 +1,5 @@
 defmodule Raxol.System.Updater do
   use GenServer
-  import Raxol.Guards
   require Logger
 
   @moduledoc """

@@ -108,7 +108,12 @@ defmodule Raxol.Core.Events.TermboxConverter do
     end
   end
 
-  defp handle_event(%{type: :key, key: key_code, char: char_code, mod: mod_code}) do
+  defp handle_event(%{
+         type: :key,
+         key: key_code,
+         char: char_code,
+         mod: mod_code
+       }) do
     event = %Event{
       type: :key,
       data: %{

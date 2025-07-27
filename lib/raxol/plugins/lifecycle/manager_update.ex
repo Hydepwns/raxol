@@ -10,6 +10,7 @@ defmodule Raxol.Plugins.Lifecycle.ManagerUpdate do
     case save_plugin_config(manager.config, plugin_name, merged_config) do
       {:ok, saved_config} ->
         {:ok, update_manager_state(manager, plugin, saved_config)}
+
       {:error, _reason} ->
         # Logging should be handled by caller
         {:ok, update_manager_state(manager, plugin, manager.config)}
@@ -32,6 +33,7 @@ defmodule Raxol.Plugins.Lifecycle.ManagerUpdate do
            saved_config,
            plugin_state
          )}
+
       {:error, _reason} ->
         # Logging should be handled by caller
         {:ok,
@@ -104,6 +106,7 @@ defmodule Raxol.Plugins.Lifecycle.ManagerUpdate do
     case PluginConfig.save(updated_config) do
       {:ok, saved_config} ->
         {:ok, saved_config}
+
       {:error, _reason} ->
         # Logging should be handled by caller
         {:ok, manager.config}

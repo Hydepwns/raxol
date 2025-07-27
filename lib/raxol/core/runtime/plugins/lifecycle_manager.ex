@@ -8,7 +8,16 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   @doc """
   Loads a plugin with the given configuration.
   """
-  def load_plugin(plugin_id, config, plugins, metadata, plugin_states, load_order, command_registry_table, plugin_config) do
+  def load_plugin(
+        plugin_id,
+        config,
+        plugins,
+        metadata,
+        plugin_states,
+        load_order,
+        command_registry_table,
+        plugin_config
+      ) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Loading plugin: #{plugin_id}",
       %{plugin_id: plugin_id, config: config}
@@ -29,6 +38,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           "[#{__MODULE__}] Successfully loaded plugin: #{plugin_id}",
           %{plugin_id: plugin_id}
         )
+
         {:ok, updated_maps}
 
       {:error, reason} ->
@@ -38,6 +48,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           nil,
           %{plugin_id: plugin_id, reason: reason}
         )
+
         {:error, reason}
     end
   end
@@ -45,7 +56,16 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   @doc """
   Loads a plugin by module.
   """
-  def load_plugin_by_module(module, config, plugins, metadata, plugin_states, load_order, command_registry_table, plugin_config) do
+  def load_plugin_by_module(
+        module,
+        config,
+        plugins,
+        metadata,
+        plugin_states,
+        load_order,
+        command_registry_table,
+        plugin_config
+      ) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Loading plugin module: #{inspect(module)}",
       %{module: module, config: config}
@@ -79,6 +99,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           "[#{__MODULE__}] Successfully loaded plugin module: #{inspect(module)}",
           %{module: module}
         )
+
         {:ok, {updated_metadata, updated_states, updated_table}}
 
       {:error, reason} ->
@@ -88,6 +109,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           nil,
           %{module: module, reason: reason}
         )
+
         {:error, reason}
     end
   end
@@ -95,7 +117,14 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   @doc """
   Unloads a plugin.
   """
-  def unload_plugin(plugin_id, plugins, metadata, plugin_states, command_registry_table, plugin_config) do
+  def unload_plugin(
+        plugin_id,
+        plugins,
+        metadata,
+        plugin_states,
+        command_registry_table,
+        plugin_config
+      ) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Unloading plugin: #{plugin_id}",
       %{plugin_id: plugin_id}
@@ -114,6 +143,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           "[#{__MODULE__}] Successfully unloaded plugin: #{plugin_id}",
           %{plugin_id: plugin_id}
         )
+
         {:ok, {updated_metadata, updated_states, updated_command_table}}
 
       {:error, reason} ->
@@ -123,6 +153,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           nil,
           %{plugin_id: plugin_id, reason: reason}
         )
+
         {:error, reason}
     end
   end
@@ -130,7 +161,16 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   @doc """
   Initializes a plugin with the given configuration.
   """
-  def initialize_plugin(plugin_name, _config, plugins, metadata, plugin_states, _load_order, command_registry_table, _plugin_config) do
+  def initialize_plugin(
+        plugin_name,
+        _config,
+        plugins,
+        metadata,
+        plugin_states,
+        _load_order,
+        command_registry_table,
+        _plugin_config
+      ) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Initializing plugin: #{plugin_name}",
       %{plugin_name: plugin_name}
@@ -141,13 +181,20 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
       metadata: metadata,
       plugin_states: plugin_states
     }
-    case Raxol.Core.Runtime.Plugins.Discovery.initialize_plugin(plugin_name, state) do
+
+    case Raxol.Core.Runtime.Plugins.Discovery.initialize_plugin(
+           plugin_name,
+           state
+         ) do
       {:ok, updated_state} ->
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Successfully initialized plugin: #{plugin_name}",
           %{plugin_name: plugin_name}
         )
-        {:ok, {updated_state.metadata, updated_state.plugin_states, command_registry_table}}
+
+        {:ok,
+         {updated_state.metadata, updated_state.plugin_states,
+          command_registry_table}}
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
@@ -156,6 +203,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           nil,
           %{plugin_name: plugin_name, reason: reason}
         )
+
         {:error, reason}
     end
   end
@@ -163,7 +211,15 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   @doc """
   Initializes all plugins.
   """
-  def initialize_plugins(plugins, metadata, plugin_config, plugin_states, load_order, command_registry_table, config) do
+  def initialize_plugins(
+        plugins,
+        metadata,
+        plugin_config,
+        plugin_states,
+        load_order,
+        command_registry_table,
+        config
+      ) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Initializing all plugins",
       %{plugin_count: map_size(plugins)}
@@ -183,6 +239,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           "[#{__MODULE__}] Successfully initialized all plugins",
           %{plugin_count: map_size(plugins)}
         )
+
         {:ok, {updated_metadata, updated_states, updated_table}}
 
       {:error, reason} ->
@@ -192,6 +249,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           nil,
           %{reason: reason}
         )
+
         {:error, reason}
     end
   end
@@ -211,6 +269,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           "[#{__MODULE__}] Successfully enabled plugin: #{plugin_id}",
           %{plugin_id: plugin_id}
         )
+
         {:ok, updated_state}
 
       {:error, reason} ->
@@ -220,6 +279,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           nil,
           %{plugin_id: plugin_id, reason: reason}
         )
+
         {:error, reason}
     end
   end
@@ -239,6 +299,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           "[#{__MODULE__}] Successfully disabled plugin: #{plugin_id}",
           %{plugin_id: plugin_id}
         )
+
         {:ok, updated_state}
 
       {:error, reason} ->
@@ -248,6 +309,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           nil,
           %{plugin_id: plugin_id, reason: reason}
         )
+
         {:error, reason}
     end
   end
@@ -267,6 +329,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           "[#{__MODULE__}] Successfully reloaded plugin: #{plugin_id}",
           %{plugin_id: plugin_id}
         )
+
         {:ok, {updated_metadata, updated_states, updated_table}}
 
       {:error, reason} ->
@@ -276,6 +339,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           nil,
           %{plugin_id: plugin_id, reason: reason}
         )
+
         {:error, reason}
     end
   end
@@ -283,7 +347,16 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   @doc """
   Reloads a plugin from disk.
   """
-  def reload_plugin_from_disk(plugin_id, path, plugins, metadata, plugin_states, load_order, command_registry_table, plugin_config) do
+  def reload_plugin_from_disk(
+        plugin_id,
+        path,
+        plugins,
+        metadata,
+        plugin_states,
+        load_order,
+        command_registry_table,
+        plugin_config
+      ) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Reloading plugin from disk: #{plugin_id}",
       %{plugin_id: plugin_id, path: path}
@@ -304,6 +377,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           "[#{__MODULE__}] Successfully reloaded plugin from disk: #{plugin_id}",
           %{plugin_id: plugin_id, path: path}
         )
+
         {:ok, {updated_metadata, updated_states, updated_table}}
 
       {:error, reason} ->
@@ -313,6 +387,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           nil,
           %{plugin_id: plugin_id, path: path, reason: reason}
         )
+
         {:error, reason}
     end
   end
@@ -326,12 +401,16 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
       %{plugin_id: plugin_id}
     )
 
-    case Raxol.Core.Runtime.Plugins.Discovery.cleanup_plugin(plugin_id, metadata) do
+    case Raxol.Core.Runtime.Plugins.Discovery.cleanup_plugin(
+           plugin_id,
+           metadata
+         ) do
       {:ok, updated_metadata} ->
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Successfully cleaned up plugin: #{plugin_id}",
           %{plugin_id: plugin_id}
         )
+
         {:ok, updated_metadata}
 
       {:error, reason} ->
@@ -341,6 +420,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           nil,
           %{plugin_id: plugin_id, reason: reason}
         )
+
         {:error, reason}
     end
   end
@@ -348,7 +428,15 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   @doc """
   Handles an event.
   """
-  def handle_event(event, plugins, metadata, plugin_states, load_order, command_registry_table, plugin_config) do
+  def handle_event(
+        event,
+        plugins,
+        metadata,
+        plugin_states,
+        load_order,
+        command_registry_table,
+        plugin_config
+      ) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Handling event: #{inspect(event)}",
       %{event: event}
@@ -368,6 +456,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           "[#{__MODULE__}] Successfully handled event: #{inspect(event)}",
           %{event: event}
         )
+
         {:ok, {updated_metadata, updated_states, updated_table}}
 
       {:error, reason} ->
@@ -377,6 +466,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           nil,
           %{event: event, reason: reason}
         )
+
         {:error, reason}
     end
   end

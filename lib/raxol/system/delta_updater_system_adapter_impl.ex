@@ -1,6 +1,12 @@
 defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
-  @behaviour Raxol.System.DeltaUpdaterSystemAdapterBehaviour
+  @moduledoc """
+  System adapter implementation for delta updater.
 
+  Provides concrete implementations of system operations needed
+  for delta updating, including HTTP requests and file operations.
+  """
+
+  @behaviour Raxol.System.DeltaUpdaterSystemAdapterBehaviour
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour
   def httpc_request(method, url_with_headers, http_options, stream_options) do
@@ -49,7 +55,11 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour
   def updater_do_replace_executable(current_exe, new_exe, platform) do
-    Raxol.System.Updater.Network.do_replace_executable(current_exe, new_exe, platform)
+    Raxol.System.Updater.Network.do_replace_executable(
+      current_exe,
+      new_exe,
+      platform
+    )
   end
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour

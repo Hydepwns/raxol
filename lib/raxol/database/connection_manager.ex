@@ -50,17 +50,10 @@ defmodule Raxol.Database.ConnectionManager do
   def healthy? do
     try do
       # Simple query to check connection
-      case Repo.custom_query("SELECT 1") do
-        {:ok, _} ->
-          true
-
-        {:error, error} ->
-          Raxol.Core.Runtime.Log.error(
-            "Database connection check failed: #{inspect(error)}"
-          )
-
-          false
-      end
+      # If query succeeds, connection is healthy
+      # Errors are handled by the rescue clause
+      {:ok, _} = Repo.custom_query("SELECT 1")
+      true
     rescue
       error ->
         Raxol.Core.Runtime.Log.error(
@@ -123,19 +116,14 @@ defmodule Raxol.Database.ConnectionManager do
       # Close existing connections in the pool
       try do
         # Use custom_query instead of query to avoid exceptions
-        case Repo.custom_query(
-               "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid()"
-             ) do
-          {:ok, _} ->
-            Raxol.Core.Runtime.Log.info(
-              "Successfully closed existing connections"
-            )
-
-          {:error, error} ->
-            Raxol.Core.Runtime.Log.error(
-              "Error closing existing connections: #{inspect(error)}"
-            )
-        end
+        # Execute query to close connections
+        # Errors are handled by the rescue clause
+        {:ok, _} = Repo.custom_query(
+          "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid()"
+        )
+        Raxol.Core.Runtime.Log.info(
+          "Successfully closed existing connections"
+        )
       rescue
         e ->
           Raxol.Core.Runtime.Log.error(

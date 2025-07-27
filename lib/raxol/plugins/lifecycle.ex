@@ -9,9 +9,14 @@ defmodule Raxol.Plugins.Lifecycle do
   require Raxol.Core.Runtime.Log
   import Raxol.Guards
 
-  # Alias necessary modules
   alias Raxol.Plugins.{PluginConfig, Manager.Core}
-  alias Raxol.Plugins.Lifecycle.{Initialization, Dependencies, ManagerUpdate, ErrorHandling}
+
+  alias Raxol.Plugins.Lifecycle.{
+    Initialization,
+    Dependencies,
+    ManagerUpdate,
+    ErrorHandling
+  }
 
   @doc """
   Loads a single plugin module and initializes it.
@@ -34,7 +39,12 @@ defmodule Raxol.Plugins.Lifecycle do
 
   defp load_plugin_internal(manager, plugin_name, module, config) do
     with {:ok, plugin, merged_config, plugin_state} <-
-           Initialization.initialize_plugin_with_config(manager, plugin_name, module, config),
+           Initialization.initialize_plugin_with_config(
+             manager,
+             plugin_name,
+             module,
+             config
+           ),
          :ok <- Dependencies.validate_plugin_dependencies(plugin, manager),
          {:ok, updated_manager} <-
            ManagerUpdate.update_manager_with_plugin(
@@ -75,7 +85,10 @@ defmodule Raxol.Plugins.Lifecycle do
     module_configs = prepare_module_configs(modules)
 
     with {:ok, initialized_plugins} <-
-           Initialization.initialize_all_plugins_with_configs(manager, module_configs),
+           initialize_all_plugins_with_configs(
+             manager,
+             module_configs
+           ),
          {:ok, sorted_plugin_names} <-
            Dependencies.resolve_plugin_order(initialized_plugins),
          {:ok, final_manager} <-
@@ -102,7 +115,8 @@ defmodule Raxol.Plugins.Lifecycle do
       manager.plugins
       |> Map.merge(manager.loaded_plugins)
 
-    load_order = Enum.map(sorted_plugin_names, &Dependencies.normalize_plugin_key/1)
+    load_order =
+      Enum.map(sorted_plugin_names, &Dependencies.normalize_plugin_key/1)
 
     %{manager | loaded_plugins: loaded_plugins, load_order: load_order}
   end
@@ -112,7 +126,12 @@ defmodule Raxol.Plugins.Lifecycle do
                                                     {:ok, acc_plugins} ->
       plugin_name = Initialization.get_plugin_id_from_metadata(module)
 
-      case Initialization.initialize_plugin_with_config(manager, plugin_name, module, config) do
+      case Initialization.initialize_plugin_with_config(
+             manager,
+             plugin_name,
+             module,
+             config
+           ) do
         {:ok, plugin, _merged_config, _plugin_state} ->
           {:cont, {:ok, [plugin | acc_plugins]}}
 
@@ -214,8 +233,10 @@ defmodule Raxol.Plugins.Lifecycle do
   def enable_plugin(%Core{} = manager, name) when binary?(name) do
     with {:ok, plugin} <- get_plugin(manager, name),
          :ok <- check_plugin_dependencies(plugin, manager),
-         {:ok, updated_config} <- ManagerUpdate.update_and_save_config(manager, name, :enable) do
-      {:ok, ManagerUpdate.update_manager_state(manager, plugin, updated_config, true)}
+         {:ok, updated_config} <-
+           ManagerUpdate.update_and_save_config(manager, name, :enable) do
+      {:ok,
+       ManagerUpdate.update_manager_state(manager, plugin, updated_config, true)}
     else
       {:error, reason} -> {:error, reason}
     end
@@ -248,13 +269,14 @@ defmodule Raxol.Plugins.Lifecycle do
   def disable_plugin(%Core{} = manager, name) when binary?(name) do
     case get_plugin(manager, name) do
       {:ok, plugin} ->
-        case ManagerUpdate.update_and_save_config(manager, name, :disable) do
-          {:ok, updated_config} ->
-            {:ok, ManagerUpdate.update_manager_state(manager, plugin, updated_config, false)}
-
-          {:error, reason} ->
-            {:error, reason}
-        end
+        {:ok, updated_config} = ManagerUpdate.update_and_save_config(manager, name, :disable)
+        {:ok,
+         ManagerUpdate.update_manager_state(
+           manager,
+           plugin,
+           updated_config,
+           false
+         )}
 
       {:error, _} ->
         {:error, "Plugin #{name} not found"}
@@ -365,15 +387,4 @@ defmodule Raxol.Plugins.Lifecycle do
     end
   end
 
-  defp handle_plugin_error(plugin, callback_name, plugin_result, _acc) do
-    case plugin_result do
-      {:error, reason} ->
-        ErrorHandling.log_plugin_error(plugin, callback_name, reason)
-        {:halt, {:error, reason}}
-
-      other ->
-        ErrorHandling.log_unexpected_result(plugin, callback_name, other)
-        {:cont, {:error, "Unexpected result"}}
-    end
-  end
 end

@@ -178,29 +178,31 @@ defmodule Raxol.AI.PerformanceOptimization do
       false
   """
   def should_render?(component_name, context \\ %{}) do
-    if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
-      true
+    if UXRefinement.feature_enabled?(:ai_performance_optimization) do
+      with_state(fn state -> handle_predictive_rendering(state, component_name, context) end)
     else
-      with_state(fn state ->
-        if !feature_enabled?(:predictive_rendering, state) do
-          {state, true}
-        else
-          metrics = Map.get(state.render_metrics, component_name)
+      true
+    end
+  end
 
-          result =
-            predictive_render_decision(metrics, component_name, context, state)
+  defp handle_predictive_rendering(state, component_name, context) do
+    if feature_enabled?(:predictive_rendering, state) do
+      metrics = Map.get(state.render_metrics, component_name)
 
-          usage_patterns =
-            update_usage_patterns(
-              state.usage_patterns,
-              component_name,
-              result,
-              context
-            )
+      result =
+        predictive_render_decision(metrics, component_name, context, state)
 
-          {%{state | usage_patterns: usage_patterns}, result}
-        end
-      end)
+      usage_patterns =
+        update_usage_patterns(
+          state.usage_patterns,
+          component_name,
+          result,
+          context
+        )
+
+      {%{state | usage_patterns: usage_patterns}, result}
+    else
+      {state, true}
     end
   end
 
@@ -246,13 +248,9 @@ defmodule Raxol.AI.PerformanceOptimization do
       16  # milliseconds (approximately 60fps)
   """
   def get_refresh_rate(component_name) do
-    if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
-      16
-    else
+    if UXRefinement.feature_enabled?(:ai_performance_optimization) do
       with_state(fn state ->
-        if !feature_enabled?(:adaptive_throttling, state) do
-          {state, 16}
-        else
+        if feature_enabled?(:adaptive_throttling, state) do
           metrics = Map.get(state.render_metrics, component_name)
           usage = Map.get(state.component_usage, component_name)
           refresh_rate = calculate_refresh_rate(metrics, usage)
@@ -288,9 +286,7 @@ defmodule Raxol.AI.PerformanceOptimization do
       ["user_settings", "user_activity"]
   """
   def get_prefetch_recommendations(current_component) do
-    if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
-      []
-    else
+    if UXRefinement.feature_enabled?(:ai_performance_optimization) do
       with_state(fn state ->
         {state, build_recommendations(state.component_usage, current_component)}
       end)
@@ -317,11 +313,8 @@ defmodule Raxol.AI.PerformanceOptimization do
       ]
   """
   def analyze_performance do
-    if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
-      []
-    else
+    if UXRefinement.feature_enabled?(:ai_performance_optimization) do
       with_state(fn state ->
-        # Identify slow components
         slow_components =
           state.render_metrics
           |> Enum.filter(fn {_, metrics} ->
@@ -336,8 +329,6 @@ defmodule Raxol.AI.PerformanceOptimization do
               suggestion: get_optimization_suggestion(name, metrics)
             }
           end)
-
-        # Additional analyses would go here
 
         {state, slow_components}
       end)
@@ -401,16 +392,14 @@ defmodule Raxol.AI.PerformanceOptimization do
   end
 
   defp collect_baseline_metrics do
-    # This would collect system metrics to establish a baseline
-    # For now, just a placeholder
     _ = Benchmarks.run_all([])
   end
 
   @doc """
   Gets AI-powered optimization analysis for a component.
-  
+
   ## Examples
-  
+
       iex> get_ai_optimization_analysis("MyComponent", "defmodule MyComponent do...", %{avg_time: 150})
       {:ok, [%{type: :performance, description: "...", suggestion: "..."}]}
   """
@@ -421,42 +410,56 @@ defmodule Raxol.AI.PerformanceOptimization do
         metrics: metrics,
         performance_issues: identify_performance_patterns(metrics)
       }
-      
+
       ServiceAdapter.analyze_performance(code, context)
     else
-      {:ok, [%{
-        type: :static,
-        description: "Static analysis suggestion",
-        suggestion: get_optimization_suggestion(component_name, metrics)
-      }]}
+      {:ok,
+       [
+         %{
+           type: :static,
+           description: "Static analysis suggestion",
+           suggestion: get_optimization_suggestion(component_name, metrics)
+         }
+       ]}
     end
   end
 
   defp infer_component_type(component_name) do
     cond do
-      String.contains?(component_name, ["table", "list", "grid"]) -> "data_display"
-      String.contains?(component_name, ["form", "input", "field"]) -> "user_input"
-      String.contains?(component_name, ["chart", "graph", "plot"]) -> "visualization"
-      String.contains?(component_name, ["modal", "dialog", "popup"]) -> "overlay"
-      true -> "general"
+      String.contains?(component_name, ["table", "list", "grid"]) ->
+        "data_display"
+
+      String.contains?(component_name, ["form", "input", "field"]) ->
+        "user_input"
+
+      String.contains?(component_name, ["chart", "graph", "plot"]) ->
+        "visualization"
+
+      String.contains?(component_name, ["modal", "dialog", "popup"]) ->
+        "overlay"
+
+      true ->
+        "general"
     end
   end
 
   defp identify_performance_patterns(metrics) do
     patterns = []
-    
-    patterns = if metrics.avg_time > 100 do
-      ["slow_rendering" | patterns]
-    else
-      patterns
-    end
-    
-    patterns = if metrics.count > 100 and metrics.avg_time > 50 do
-      ["frequent_heavy_renders" | patterns]
-    else
-      patterns
-    end
-    
+
+    patterns =
+      if metrics.avg_time > 100 do
+        ["slow_rendering" | patterns]
+      else
+        patterns
+      end
+
+    patterns =
+      if metrics.count > 100 and metrics.avg_time > 50 do
+        ["frequent_heavy_renders" | patterns]
+      else
+        patterns
+      end
+
     patterns
   end
 

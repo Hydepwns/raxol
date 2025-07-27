@@ -10,14 +10,19 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
     case check_for_circular_dependency(plugin, manager) do
       :ok ->
         case check_dependencies(plugin, manager) do
-          :ok -> :ok
+          :ok ->
+            :ok
+
           {:error, :missing_dependencies, missing, chain} ->
             {:error, :missing_dependencies, missing, chain}
+
           {:error, reason} ->
             {:error, reason}
         end
+
       {:error, {:circular_dependency, name}} ->
         {:error, {:circular_dependency, name}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -45,8 +50,10 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
          ) do
       {:ok, sorted_plugin_names} ->
         {:ok, Enum.map(sorted_plugin_names, &normalize_plugin_key/1)}
+
       {:error, cycle} ->
         {:error, :circular_dependency, cycle, nil}
+
       other ->
         {:error, :resolve_failed, other}
     end
@@ -54,6 +61,7 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
 
   def check_for_circular_dependency(plugin, manager) do
     plugin_key = plugin.name
+
     plugins =
       manager.plugins
       |> Enum.map(fn {k, v} ->
@@ -68,8 +76,10 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
          ) do
       {:ok, _order} ->
         :ok
+
       {:error, :circular_dependency, _cycle, _chain} ->
         {:error, {:circular_dependency, plugin.name}}
+
       _other ->
         :ok
     end

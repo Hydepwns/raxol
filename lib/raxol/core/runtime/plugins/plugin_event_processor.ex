@@ -17,35 +17,54 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
         command_table,
         plugin_config
       ) do
-    # Process event through enabled plugins in load order
+    initial_state = {metadata, plugin_states, command_table}
+
     Enum.reduce_while(
       load_order,
-      {:ok, {metadata, plugin_states, command_table}},
-      fn plugin_id, acc ->
-        case acc do
-          {:ok, {current_metadata, current_states, current_table}} ->
-            case process_plugin_event(
-                   plugin_id,
-                   event,
-                   plugins,
-                   current_metadata,
-                   current_states,
-                   current_table,
-                   plugin_config
-                 ) do
-              {:ok, {updated_metadata, updated_states, updated_table}} ->
-                {:cont,
-                 {:ok, {updated_metadata, updated_states, updated_table}}}
-
-              {:error, reason} ->
-                {:halt, {:error, reason}}
-            end
-
-          {:error, _reason} = error ->
-            {:halt, error}
-        end
-      end
+      {:ok, initial_state},
+      &process_single_plugin(&1, &2, event, plugins, plugin_config)
     )
+  end
+
+  defp process_single_plugin(plugin_id, acc, event, plugins, plugin_config) do
+    case acc do
+      {:ok, {current_metadata, current_states, current_table}} ->
+        handle_plugin_processing(
+          plugin_id,
+          event,
+          plugins,
+          current_metadata,
+          current_states,
+          current_table,
+          plugin_config
+        )
+
+      {:error, _reason} = error ->
+        {:halt, error}
+    end
+  end
+
+  defp handle_plugin_processing(
+         plugin_id,
+         event,
+         plugins,
+         metadata,
+         states,
+         table,
+         config
+       ) do
+    case process_plugin_event(
+           plugin_id,
+           event,
+           plugins,
+           metadata,
+           states,
+           table,
+           config
+         ) do
+      {:ok, result} -> {:cont, {:ok, result}}
+      {:error, reason} -> {:halt, {:error, reason}}
+    end
   end
 
   @doc """
@@ -60,80 +79,134 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
         command_table,
         _plugin_config
       ) do
-    case Map.get(plugins, plugin_id) do
-      nil ->
-        {:error, :plugin_not_found}
+    with {:ok, plugin_module} <- get_plugin_module(plugins, plugin_id),
+         {:ok, _} <- validate_plugin_enabled(metadata, plugin_id),
+         {:ok, plugin_state} <- get_plugin_state(plugin_states, plugin_id) do
+      execute_plugin_event_handler(
+        plugin_module,
+        plugin_id,
+        event,
+        plugin_state,
+        metadata,
+        plugin_states,
+        command_table
+      )
+    else
+      {:error, :plugin_disabled} ->
+        {:ok, {metadata, plugin_states, command_table}}
 
-      plugin_module ->
-        case Map.get(metadata, plugin_id) do
-          %{enabled: true} ->
-            # Plugin is enabled, process the event
-            case Map.get(plugin_states, plugin_id) do
-              nil ->
-                {:error, :plugin_state_not_found}
-
-              plugin_state ->
-                try do
-                  # Call the plugin's handle_event callback if it exists
-                  if function_exported?(plugin_module, :handle_event, 2) do
-                    case plugin_module.handle_event(event, plugin_state) do
-                      {:ok, updated_plugin_state} ->
-                        updated_states =
-                          Map.put(
-                            plugin_states,
-                            plugin_id,
-                            updated_plugin_state
-                          )
-
-                        {:ok, {metadata, updated_states, command_table}}
-
-                      {:error, reason} ->
-                        Raxol.Core.Runtime.Log.warning_with_context(
-                          "Plugin #{plugin_id} failed to handle event",
-                          %{
-                            plugin_id: plugin_id,
-                            event: event,
-                            reason: reason,
-                            module: __MODULE__
-                          }
-                        )
-
-                        {:ok, {metadata, plugin_states, command_table}}
-
-                      other ->
-                        Raxol.Core.Runtime.Log.warning_with_context(
-                          "Plugin #{plugin_id} returned unexpected value from handle_event",
-                          %{
-                            plugin_id: plugin_id,
-                            event: event,
-                            value: other,
-                            module: __MODULE__
-                          }
-                        )
-
-                        {:ok, {metadata, plugin_states, command_table}}
-                    end
-                  else
-                    # Plugin doesn't implement handle_event, continue
-                    {:ok, {metadata, plugin_states, command_table}}
-                  end
-                rescue
-                  e ->
-                    Raxol.Core.Runtime.Log.error_with_stacktrace(
-                      "Plugin #{plugin_id} crashed during event handling",
-                      e,
-                      nil,
-                      %{plugin_id: plugin_id, event: event, module: __MODULE__}
-                    )
-
-                    {:ok, {metadata, plugin_states, command_table}}
-                end
-            end
-
-          _ ->
-            # Plugin is disabled or metadata doesn't have enabled: true
-            {:ok, {metadata, plugin_states, command_table}}
-        end
+      {:error, _} = error ->
+        error
     end
+  end
+
+  defp get_plugin_module(plugins, plugin_id) do
+    case Map.get(plugins, plugin_id) do
+      nil -> {:error, :plugin_not_found}
+      module -> {:ok, module}
+    end
+  end
+
+  defp validate_plugin_enabled(metadata, plugin_id) do
+    case Map.get(metadata, plugin_id) do
+      %{enabled: true} -> {:ok, :enabled}
+      _ -> {:error, :plugin_disabled}
+    end
+  end
+
+  defp get_plugin_state(plugin_states, plugin_id) do
+    case Map.get(plugin_states, plugin_id) do
+      nil -> {:error, :plugin_state_not_found}
+      state -> {:ok, state}
+    end
+  end
+
+  defp execute_plugin_event_handler(
+         plugin_module,
+         plugin_id,
+         event,
+         plugin_state,
+         metadata,
+         plugin_states,
+         command_table
+       ) do
+    if function_exported?(plugin_module, :handle_event, 2) do
+      handle_plugin_event_call(
+        plugin_module,
+        plugin_id,
+        event,
+        plugin_state,
+        metadata,
+        plugin_states,
+        command_table
+      )
+    else
+      {:ok, {metadata, plugin_states, command_table}}
+    end
+  end
+
+  defp handle_plugin_event_call(
+         plugin_module,
+         plugin_id,
+         event,
+         plugin_state,
+         metadata,
+         plugin_states,
+         command_table
+       ) do
+    try do
+      case plugin_module.handle_event(event, plugin_state) do
+        {:ok, updated_plugin_state} ->
+          updated_states =
+            Map.put(plugin_states, plugin_id, updated_plugin_state)
+
+          {:ok, {metadata, updated_states, command_table}}
+
+        {:error, reason} ->
+          log_plugin_error(plugin_id, event, reason)
+          {:ok, {metadata, plugin_states, command_table}}
+
+        other ->
+          log_plugin_unexpected_return(plugin_id, event, other)
+          {:ok, {metadata, plugin_states, command_table}}
+      end
+    rescue
+      e ->
+        log_plugin_crash(plugin_id, event, e)
+        {:ok, {metadata, plugin_states, command_table}}
+    end
+  end
+
+  defp log_plugin_error(plugin_id, event, reason) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Plugin #{plugin_id} failed to handle event",
+      %{
+        plugin_id: plugin_id,
+        event: event,
+        reason: reason,
+        module: __MODULE__
+      }
+    )
+  end
+
+  defp log_plugin_unexpected_return(plugin_id, event, value) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Plugin #{plugin_id} returned unexpected value from handle_event",
+      %{
+        plugin_id: plugin_id,
+        event: event,
+        value: value,
+        module: __MODULE__
+      }
+    )
+  end
+
+  defp log_plugin_crash(plugin_id, event, exception) do
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "Plugin #{plugin_id} crashed during event handling",
+      exception,
+      nil,
+      %{plugin_id: plugin_id, event: event, module: __MODULE__}
+    )
   end
 end

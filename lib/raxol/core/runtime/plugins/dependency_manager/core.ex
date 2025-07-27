@@ -441,7 +441,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   """
   def check_circular_dependencies(plugin_id, dependencies, _loaded_plugins) do
     graph =
-      Graph.build_dependency_graph(%{plugin_id => %{dependencies: dependencies}})
+      Graph.build_dependency_graph(%{
+        plugin_id => %{dependencies: dependencies}
+      })
 
     case Resolver.find_cycles(graph) do
       {:ok, []} ->

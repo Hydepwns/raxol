@@ -43,7 +43,10 @@ defmodule Raxol.System.Updater.Core do
     url =
       "https://github.com/#{@github_repo}/releases/download/v#{version}/raxol-#{version}-#{platform}.#{ext}"
 
-    case Network.download_file(url, Path.join(settings.download_path, "update.#{ext}")) do
+    case Network.download_file(
+           url,
+           Path.join(settings.download_path, "update.#{ext}")
+         ) do
       :ok -> {:ok, version}
       {:error, reason} -> {:error, reason}
     end
@@ -55,8 +58,10 @@ defmodule Raxol.System.Updater.Core do
     ext = if platform == "windows", do: "zip", else: "tar.gz"
     update_path = Path.join(settings.download_path, "update.#{ext}")
 
-    with :ok <- Network.extract_archive(update_path, settings.download_path, ext),
-         {:ok, new_exe} <- Network.find_executable(settings.download_path, platform),
+    with :ok <-
+           Network.extract_archive(update_path, settings.download_path, ext),
+         {:ok, new_exe} <-
+           Network.find_executable(settings.download_path, platform),
          :ok <- apply_update(context.current_exe, new_exe, platform) do
       {:ok, version}
     else
@@ -136,14 +141,25 @@ defmodule Raxol.System.Updater.Core do
         bg = {0, 0, 0}
 
         fg_hex =
-          Raxol.Style.Colors.Color.from_rgb(elem(fg, 0), elem(fg, 1), elem(fg, 2))
+          Raxol.Style.Colors.Color.from_rgb(
+            elem(fg, 0),
+            elem(fg, 1),
+            elem(fg, 2)
+          )
           |> Raxol.Style.Colors.Color.to_hex()
 
         bg_hex =
-          Raxol.Style.Colors.Color.from_rgb(elem(bg, 0), elem(bg, 1), elem(bg, 2))
+          Raxol.Style.Colors.Color.from_rgb(
+            elem(bg, 0),
+            elem(bg, 1),
+            elem(bg, 2)
+          )
           |> Raxol.Style.Colors.Color.to_hex()
 
-        Raxol.UI.Terminal.println("Update Available!", color: fg_hex, background: bg_hex)
+        Raxol.UI.Terminal.println("Update Available!",
+          color: fg_hex,
+          background: bg_hex
+        )
 
         :ok
 
@@ -249,14 +265,14 @@ defmodule Raxol.System.Updater.Core do
   defp perform_install_update(version, state) do
     case self_update(version, use_delta: true) do
       :ok ->
-        _new_state = %{
+        new_state = %{
           state
           | status: :installed,
             current_version: version,
             error: nil
         }
 
-        {:ok, state}
+        {:ok, new_state}
 
       {:error, reason} ->
         _new_state = %{state | status: :error, error: reason}
@@ -344,7 +360,10 @@ defmodule Raxol.System.Updater.Core do
       "Delta update available (#{delta_info.savings_percent}% smaller download)"
     )
 
-    case Raxol.System.DeltaUpdater.apply_delta_update(version, delta_info.delta_url) do
+    case Raxol.System.DeltaUpdater.apply_delta_update(
+           version,
+           delta_info.delta_url
+         ) do
       :ok ->
         :ok
 

@@ -70,7 +70,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
   """
   def new(opts \\ []) do
     telemetry_enabled = Keyword.get(opts, :telemetry_enabled, true)
-    
+
     collector = %__MODULE__{
       frame_times: [],
       memory_usage: 0,
@@ -88,12 +88,12 @@ defmodule Raxol.Core.Performance.MetricsCollector do
       start_time: System.monotonic_time(:microsecond),
       telemetry_enabled: telemetry_enabled
     }
-    
+
     # Send initialization telemetry
     if telemetry_enabled do
       send_telemetry(:collector_initialized, %{}, %{})
     end
-    
+
     collector
   end
 
@@ -124,8 +124,8 @@ defmodule Raxol.Core.Performance.MetricsCollector do
 
     # Update counters
     updated_counters = %{
-      collector.operation_counters | 
-      frames_rendered: collector.operation_counters.frames_rendered + 1
+      collector.operation_counters
+      | frames_rendered: collector.operation_counters.frames_rendered + 1
     }
 
     # Send telemetry
@@ -135,9 +135,10 @@ defmodule Raxol.Core.Performance.MetricsCollector do
       })
     end
 
-    %{collector | 
-      frame_times: frame_times,
-      operation_counters: updated_counters
+    %{
+      collector
+      | frame_times: frame_times,
+        operation_counters: updated_counters
     }
   end
 
@@ -332,12 +333,14 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     # Update event timings (keep last 100 for each type)
     current_timings = Map.get(collector.event_timings, event_type, [])
     updated_timings = [processing_time | Enum.take(current_timings, 99)]
-    new_event_timings = Map.put(collector.event_timings, event_type, updated_timings)
+
+    new_event_timings =
+      Map.put(collector.event_timings, event_type, updated_timings)
 
     # Update counters
     updated_counters = %{
-      collector.operation_counters | 
-      events_processed: collector.operation_counters.events_processed + 1
+      collector.operation_counters
+      | events_processed: collector.operation_counters.events_processed + 1
     }
 
     # Send telemetry
@@ -348,9 +351,10 @@ defmodule Raxol.Core.Performance.MetricsCollector do
       })
     end
 
-    %{collector | 
-      event_timings: new_event_timings,
-      operation_counters: updated_counters
+    %{
+      collector
+      | event_timings: new_event_timings,
+        operation_counters: updated_counters
     }
   end
 
@@ -370,8 +374,9 @@ defmodule Raxol.Core.Performance.MetricsCollector do
   def record_operation(collector, operation_type, duration) do
     # Update counters
     updated_counters = %{
-      collector.operation_counters | 
-      operations_completed: collector.operation_counters.operations_completed + 1
+      collector.operation_counters
+      | operations_completed:
+          collector.operation_counters.operations_completed + 1
     }
 
     # Send telemetry
@@ -399,7 +404,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     # Simple CPU usage approximation
     run_queue = :erlang.statistics(:run_queue)
     logical_processors = :erlang.system_info(:logical_processors)
-    cpu_usage = min(100.0, (run_queue / logical_processors) * 100.0)
+    cpu_usage = min(100.0, run_queue / logical_processors * 100.0)
 
     # Add to samples (keep last 60)
     cpu_samples = [cpu_usage | Enum.take(collector.cpu_samples, 59)]
@@ -434,33 +439,33 @@ defmodule Raxol.Core.Performance.MetricsCollector do
   """
   def get_all_metrics(collector) do
     uptime = System.monotonic_time(:microsecond) - collector.start_time
-    
+
     %{
       # Frame metrics
       fps: get_fps(collector),
       average_frame_time: get_avg_frame_time(collector),
       frame_count: collector.operation_counters.frames_rendered,
-      
+
       # Memory metrics
       memory_usage: collector.memory_usage,
       memory_trend: get_memory_trend(collector),
       gc_stats: get_gc_stats(collector),
-      
+
       # Event metrics
       event_timings: get_event_timing_stats(collector),
       events_processed: collector.operation_counters.events_processed,
-      
+
       # CPU metrics
       cpu_usage: get_current_cpu_usage(collector),
       average_cpu_usage: get_average_cpu_usage(collector),
-      
+
       # System metrics
       uptime_seconds: uptime / 1_000_000,
       operations_completed: collector.operation_counters.operations_completed,
-      
+
       # Performance scores
       performance_score: calculate_performance_score(collector),
-      
+
       # Collection timestamp
       timestamp: System.monotonic_time(:microsecond)
     }
@@ -478,16 +483,17 @@ defmodule Raxol.Core.Performance.MetricsCollector do
   Reset metrics collector.
   """
   def reset_metrics(collector) do
-    %{collector |
-      frame_times: [],
-      event_timings: %{},
-      performance_history: [],
-      cpu_samples: [],
-      operation_counters: %{
-        frames_rendered: 0,
-        events_processed: 0,
-        operations_completed: 0
-      }
+    %{
+      collector
+      | frame_times: [],
+        event_timings: %{},
+        performance_history: [],
+        cpu_samples: [],
+        operation_counters: %{
+          frames_rendered: 0,
+          events_processed: 0,
+          operations_completed: 0
+        }
     }
   end
 
@@ -501,18 +507,21 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     )
   end
 
-  defp get_average_event_time(timings) when is_list(timings) and length(timings) > 0 do
+  defp get_average_event_time(timings)
+       when is_list(timings) and length(timings) > 0 do
     Enum.sum(timings) / length(timings)
   end
+
   defp get_average_event_time(_), do: 0.0
 
   defp get_event_timing_stats(collector) do
     Enum.map(collector.event_timings, fn {event_type, timings} ->
-      {event_type, %{
-        count: length(timings),
-        average: get_average_event_time(timings),
-        latest: List.first(timings, 0.0)
-      }}
+      {event_type,
+       %{
+         count: length(timings),
+         average: get_average_event_time(timings),
+         latest: List.first(timings, 0.0)
+       }}
     end)
     |> Map.new()
   end
@@ -533,13 +542,19 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     fps = get_fps(collector)
     cpu_usage = get_average_cpu_usage(collector)
     memory_trend = get_memory_trend(collector)
-    
+
     # Weight different factors
-    fps_score = min(100.0, fps / 60.0 * 100.0)  # Target 60 FPS
-    cpu_score = max(0.0, 100.0 - cpu_usage)     # Lower CPU usage is better
-    memory_score = if memory_trend < 0, do: 100.0, else: max(0.0, 100.0 - abs(memory_trend) / 1000.0)
-    
+    # Target 60 FPS
+    fps_score = min(100.0, fps / 60.0 * 100.0)
+    # Lower CPU usage is better
+    cpu_score = max(0.0, 100.0 - cpu_usage)
+
+    memory_score =
+      if memory_trend < 0,
+        do: 100.0,
+        else: max(0.0, 100.0 - abs(memory_trend) / 1000.0)
+
     # Weighted average
-    (fps_score * 0.4 + cpu_score * 0.3 + memory_score * 0.3)
+    fps_score * 0.4 + cpu_score * 0.3 + memory_score * 0.3
   end
 end

@@ -7,8 +7,6 @@ defmodule Raxol.Auth.Plug do
   import Phoenix.Controller
 
   alias Raxol.Accounts
-  # alias Raxol.Repo # Removed - Unused
-  # alias Raxol.Accounts.User # Removed - Unused
 
   require Raxol.Core.Runtime.Log
 

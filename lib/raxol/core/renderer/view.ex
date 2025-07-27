@@ -11,7 +11,13 @@ defmodule Raxol.Core.Renderer.View do
   alias Raxol.Core.Renderer.View.Components.{Text, Box, Scroll}
   alias Raxol.Core.Renderer.View.Utils.ViewUtils
   alias Raxol.Core.Renderer.Layout, as: LayoutEngine
-  alias Raxol.Core.Renderer.View.{Components, Borders, Validation, LayoutHelpers}
+
+  alias Raxol.Core.Renderer.View.{
+    Components,
+    Borders,
+    Validation,
+    LayoutHelpers
+  }
 
   @typedoc """
   Style options for a view. Typically a list of atoms, e.g., [:bold, :underline].
@@ -668,8 +674,6 @@ defmodule Raxol.Core.Renderer.View do
     LayoutHelpers.flex(constraints)
   end
 
-
-
   @doc """
   Creates a shadow effect for a view.
 
@@ -687,10 +691,6 @@ defmodule Raxol.Core.Renderer.View do
   def shadow(opts \\ []) do
     Components.shadow(opts)
   end
-
-
-
-
 
   defp process_layout_result(result, _view), do: result
 end

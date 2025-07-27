@@ -123,6 +123,7 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
 
     if is_map(plugin_state) and not is_struct(plugin_state) do
       merged_plugin = Map.merge(base_plugin, plugin_state)
+
       if Map.get(merged_plugin, :name) == nil do
         Map.put(merged_plugin, :name, base_plugin.name)
       else
@@ -159,11 +160,13 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
          :ok <- Validation.validate_string_field(plugin.version, :version),
          :ok <- Validation.validate_boolean_field(plugin.enabled, :enabled),
          :ok <- Validation.validate_map_field(plugin.config, :config),
-         :ok <- Validation.validate_string_field(plugin.api_version, :api_version) do
+         :ok <-
+           Validation.validate_string_field(plugin.api_version, :api_version) do
       :ok
     else
       {:error, {:invalid_field, field, type}} ->
         {:error, {:invalid_field, field, type}}
+
       error ->
         error
     end
@@ -176,7 +179,7 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
   def check_api_compatibility(plugin, module) do
     PluginDependency.check_api_compatibility(
       plugin.api_version,
-      module.api_version
+      module.api_version()
     )
   end
 
@@ -191,7 +194,10 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
 
   def get_merged_config(manager, plugin_name, module, config) do
     default_config = get_default_config(module)
-    persisted_config = PluginConfig.get_plugin_config(manager.config, plugin_name)
+
+    persisted_config =
+      PluginConfig.get_plugin_config(manager.config, plugin_name)
+
     default_config
     |> Map.merge(persisted_config)
     |> Map.merge(config)

@@ -92,7 +92,8 @@ defmodule Raxol.Core.Renderer.View.Validation do
     end
   end
 
-  defp valid_size?({width, height}) when is_integer(width) and is_integer(height) do
+  defp valid_size?({width, height})
+       when is_integer(width) and is_integer(height) do
     width > 0 and height > 0
   end
 

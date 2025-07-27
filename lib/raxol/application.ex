@@ -1,4 +1,11 @@
 defmodule Raxol.Application do
+  @moduledoc """
+  Main application module for Raxol terminal emulator.
+
+  Handles application startup, supervision tree initialization,
+  and core system configuration.
+  """
+
   use Application
   require Raxol.Core.Runtime.Log
 
@@ -62,6 +69,13 @@ end
 
 # Create a mock application supervisor for testing
 defmodule Raxol.Test.MockApplicationSupervisor do
+  @moduledoc """
+  Mock application supervisor for testing purposes.
+
+  Provides a simplified supervision tree for test environments
+  without starting all production services.
+  """
+
   use Supervisor
   require Raxol.Core.Runtime.Log
 

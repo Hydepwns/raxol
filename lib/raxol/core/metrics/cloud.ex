@@ -179,6 +179,7 @@ defmodule Raxol.Core.Metrics.Cloud do
   defp send_metrics_to_cloud(metrics, state) do
     config = state.config
     recipient = state.test_pid || self()
+
     case config.service do
       :datadog ->
         formatted = format_for_datadog(metrics)

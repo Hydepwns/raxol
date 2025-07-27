@@ -149,7 +149,7 @@ defmodule Raxol.Benchmarks.Performance.Rendering do
   # Making public for use by other benchmarks
   def calculate_components_per_frame(simple_component_time_μs) do
     # Calculate how many simple components can render in 16.67ms (60 FPS)
-    frame_budget_μs = 16667
+    frame_budget_μs = 16_667
     trunc(frame_budget_μs / simple_component_time_μs)
   end
 

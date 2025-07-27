@@ -20,7 +20,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.StateOperations do
   @doc """
   Gets the state of a specific plugin.
   """
-  @spec handle_get_plugin_state(plugin_id(), state()) :: {:reply, any(), state()}
+  @spec handle_get_plugin_state(plugin_id(), state()) ::
+          {:reply, any(), state()}
   def handle_get_plugin_state(plugin_id, state) do
     plugin_state = Map.get(state.plugin_states, plugin_id, %{})
     {:reply, plugin_state, state}
@@ -29,7 +30,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.StateOperations do
   @doc """
   Sets the state of a specific plugin.
   """
-  @spec handle_set_plugin_state(plugin_id(), plugin_state(), state()) :: {:reply, :ok, state()}
+  @spec handle_set_plugin_state(plugin_id(), plugin_state(), state()) ::
+          {:reply, :ok, state()}
   def handle_set_plugin_state(plugin_id, new_state, state) do
     new_plugin_states = Map.put(state.plugin_states, plugin_id, new_state)
     updated_state = %{state | plugin_states: new_plugin_states}
@@ -39,11 +41,15 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.StateOperations do
   @doc """
   Updates the state of a specific plugin using an update function.
   """
-  @spec handle_update_plugin_state(plugin_id(), function(), state()) :: {:reply, any(), state()}
+  @spec handle_update_plugin_state(plugin_id(), function(), state()) ::
+          {:reply, any(), state()}
   def handle_update_plugin_state(plugin_id, update_fun, state) do
     current_state = Map.get(state.plugin_states, plugin_id, %{})
     new_plugin_state = update_fun.(current_state)
-    new_plugin_states = Map.put(state.plugin_states, plugin_id, new_plugin_state)
+
+    new_plugin_states =
+      Map.put(state.plugin_states, plugin_id, new_plugin_state)
+
     updated_state = %{state | plugin_states: new_plugin_states}
     {:reply, new_plugin_state, updated_state}
   end
@@ -72,7 +78,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.StateOperations do
     plugins_with_metadata =
       Enum.map(state.plugins, fn {plugin_id, module} ->
         metadata = Map.get(state.metadata, plugin_id, %{})
-        
+
         %{
           id: plugin_id,
           module: module,
@@ -95,12 +101,14 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.StateOperations do
 
       module ->
         metadata = Map.get(state.metadata, plugin_id, %{})
+
         plugin_info = %{
           id: plugin_id,
           module: module,
           metadata: metadata,
           enabled: Map.get(metadata, :enabled, true)
         }
+
         {:reply, {:ok, plugin_info}, state}
     end
   end
@@ -108,7 +116,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.StateOperations do
   @doc """
   Checks if a plugin is loaded.
   """
-  @spec handle_plugin_loaded?(plugin_id(), state()) :: {:reply, boolean(), state()}
+  @spec handle_plugin_loaded?(plugin_id(), state()) ::
+          {:reply, boolean(), state()}
   def handle_plugin_loaded?(plugin_id, state) do
     loaded = Map.has_key?(state.plugins, plugin_id)
     {:reply, loaded, state}

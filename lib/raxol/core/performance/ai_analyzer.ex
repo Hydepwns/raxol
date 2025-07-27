@@ -32,7 +32,12 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
     analysis_data = Analyzer.analyze(metrics)
 
     # Ensure analysis_data has the required :trends key
-    analysis_data = Map.put_new(analysis_data, :trends, %{fps_trend: "stable", memory_trend: "stable", jank_trend: "stable"})
+    analysis_data =
+      Map.put_new(analysis_data, :trends, %{
+        fps_trend: "stable",
+        memory_trend: "stable",
+        jank_trend: "stable"
+      })
 
     ai_data = Analyzer.prepare_ai_data(analysis_data)
 
@@ -77,63 +82,6 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
         generated_at: DateTime.utc_now(),
         version: "1.0.0"
       }
-    }
-  end
-
-  # Private functions
-
-  defp generate_mock_analysis(_ai_data) do
-    # This is a mock implementation that returns sample analysis
-    %{
-      insights: [
-        "Component rendering is taking longer than expected",
-        "Memory usage shows an upward trend",
-        "Several components are re-rendering unnecessarily"
-      ],
-      recommendations: [
-        %{
-          priority: "high",
-          area: "Component Optimization",
-          description: "Consider implementing React.memo for pure components",
-          impact: "High performance improvement",
-          effort: "Low"
-        },
-        %{
-          priority: "medium",
-          area: "Lifecycle Management",
-          description: "Review component lifecycle methods",
-          impact: "Medium performance improvement",
-          effort: "Medium"
-        },
-        %{
-          priority: "medium",
-          area: "State Management",
-          description: "Optimize state management patterns",
-          impact: "Medium performance improvement",
-          effort: "High"
-        }
-      ],
-      risk_level: :medium,
-      confidence: 0.85,
-      risk_assessment: %{
-        overall_risk: "medium",
-        areas: [
-          %{"area" => "Rendering Performance", "level" => "high"},
-          %{"area" => "Memory Usage", "level" => "medium"},
-          %{"area" => "State Management", "level" => "low"}
-        ],
-        trends: [
-          %{"area" => "Performance", "trend" => "declining"},
-          %{"area" => "Memory", "trend" => "stable"},
-          %{"area" => "Complexity", "trend" => "increasing"}
-        ]
-      },
-      optimization_impact: %{
-        "Performance" => "15-25% improvement",
-        "Memory Usage" => "10-15% reduction",
-        "User Experience" => "Significant improvement"
-      },
-      ai_confidence: 0.85
     }
   end
 

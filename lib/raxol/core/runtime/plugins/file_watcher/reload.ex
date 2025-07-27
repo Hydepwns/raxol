@@ -16,39 +16,27 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
         # Attempt to reload the plugin
         try do
           # First unload the plugin
-          case Raxol.Core.Runtime.Plugins.Manager.unload_plugin(plugin_id) do
-            :ok ->
-              # Then reload it
-              case Raxol.Core.Runtime.Plugins.Manager.load_plugin(
-                     plugin_id,
-                     %{}
-                   ) do
-                {:ok, _} ->
-                  Raxol.Core.Runtime.Log.info(
-                    "[#{__MODULE__}] Successfully reloaded plugin #{plugin_id}"
-                  )
+          # unload_plugin uses GenServer.cast and always returns :ok
+          Raxol.Core.Runtime.Plugins.Manager.unload_plugin(plugin_id)
+          
+          # Give it a moment to unload
+          Process.sleep(10)
+          
+          # Then reload it
+          case Raxol.Core.Runtime.Plugins.Manager.load_plugin(
+                 plugin_id,
+                 %{}
+               ) do
+            {:ok, _} ->
+              Raxol.Core.Runtime.Log.info(
+                "[#{__MODULE__}] Successfully reloaded plugin #{plugin_id}"
+              )
 
-                  :ok
-
-                {:error, reason} ->
-                  Raxol.Core.Runtime.Log.error_with_stacktrace(
-                    "[#{__MODULE__}] Failed to reload plugin #{plugin_id}",
-                    reason,
-                    nil,
-                    %{
-                      module: __MODULE__,
-                      plugin_id: plugin_id,
-                      path: path,
-                      reason: reason
-                    }
-                  )
-
-                  {:error, {:reload_failed, reason}}
-              end
+              :ok
 
             {:error, reason} ->
               Raxol.Core.Runtime.Log.error_with_stacktrace(
-                "[#{__MODULE__}] Failed to unload plugin #{plugin_id}",
+                "[#{__MODULE__}] Failed to reload plugin #{plugin_id}",
                 reason,
                 nil,
                 %{
@@ -59,7 +47,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
                 }
               )
 
-              {:error, {:unload_failed, reason}}
+              {:error, {:reload_failed, reason}}
           end
         rescue
           e ->

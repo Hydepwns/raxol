@@ -1,5 +1,4 @@
 defmodule Raxol.Benchmarks.VisualizationBenchmarkRealistic do
-  import Raxol.Guards
 
   @moduledoc """
   A realistic benchmark tool for visualization components with progressive data sizes.
