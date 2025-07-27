@@ -179,7 +179,9 @@ defmodule Raxol.AI.PerformanceOptimization do
   """
   def should_render?(component_name, context \\ %{}) do
     if UXRefinement.feature_enabled?(:ai_performance_optimization) do
-      with_state(fn state -> handle_predictive_rendering(state, component_name, context) end)
+      with_state(fn state ->
+        handle_predictive_rendering(state, component_name, context)
+      end)
     else
       true
     end

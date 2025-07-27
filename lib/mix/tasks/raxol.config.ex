@@ -246,12 +246,11 @@ defmodule Mix.Tasks.Raxol.Config do
 
   defp handle_show_result({:error, reason}, _format) do
     Mix.shell().error("❌ Failed to load configuration: #{inspect(reason)}")
+
     Mix.shell().info(
       "💡 Run 'mix raxol.config init' to create a configuration file"
     )
   end
-
-
 
   defp handle_get([_, key | _], opts) do
     file_path = get_config_path(opts)
