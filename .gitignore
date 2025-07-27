@@ -59,6 +59,9 @@ yarn-error.log
 # Build output and generated files
 **/dist/
 
+# Benchmark output files
+bench/output/
+
 # Phoenix
 /priv/static/cache_manifest.json
 
