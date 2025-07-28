@@ -13,16 +13,21 @@ defmodule Raxol.Security.Auditor do
   """
 
   require Logger
-  import Bitwise
 
   @type security_risk :: :low | :medium | :high | :critical
   @type audit_result :: {:ok, :passed} | {:error, security_risk, String.t()}
 
   # Common attack patterns
   @sql_injection_patterns [
-    ~r/(\b(union|select|insert|update|delete|drop|create)\b.*\b(from|where|table)\b)/i,
-    ~r/(';|";|--|\*|\/\*|\*\/|xp_|sp_)/i,
-    ~r/(\b(or|and)\b\s*\d+\s*=\s*\d+)/i
+    ~r/('\s*(;|union|or|and)\s*)/i,  # SQL injection with quotes
+    ~r/('--'|"--")/,  # SQL comments after quote
+    ~r/(--\s*$|;\s*--)/i,  # SQL comments at end
+    ~r/(\/\*|\*\/)/,  # Block comments
+    ~r/(xp_|sp_)/i,  # SQL Server extended procedures
+    ~r/(\bor\b\s+'?1'?\s*=\s*'?1'?)/i,  # Classic OR 1=1
+    ~r/(';\s*(drop|delete|update|insert)\s+)/i,  # Injection with statement
+    ~r/\bunion\s+select\b/i,  # UNION SELECT attack
+    ~r/\bdrop\s+table\b/i  # DROP TABLE attack
   ]
 
   @xss_patterns [
@@ -300,6 +305,15 @@ defmodule Raxol.Security.Auditor do
     {:ok, input}
   end
 
+  defp sanitize_input(input, type, opts) when type in [:html, :text] do
+    if Keyword.get(opts, :sanitize, false) do
+      sanitized = sanitize_html(input)
+      {:ok, sanitized}
+    else
+      {:ok, input}
+    end
+  end
+
   defp sanitize_input(input, _, _), do: {:ok, input}
 
   defp validate_username(username) do
@@ -348,9 +362,12 @@ defmodule Raxol.Security.Auditor do
     end
   end
 
-  defp get_user_permissions(_user) do
-    # Mock implementation
-    {:ok, %{read: true, write: true, admin: false}}
+  defp get_user_permissions(user) do
+    # Return actual user permissions from the user map
+    case user do
+      %{permissions: permissions} -> {:ok, permissions}
+      _ -> {:ok, %{}}
+    end
   end
 
   defp check_resource_access(permissions, _resource, action) do

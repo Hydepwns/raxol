@@ -59,7 +59,7 @@ defmodule Raxol.Core.Standards.CodeStyle do
       ## Options
 
       - `:name` - Process name (optional)
-      - `:timeout` - Operation timeout in ms (default: #{@default_timeout})
+      - `:timeout` - Operation timeout in ms (default: 5000)
 
       ## Examples
 

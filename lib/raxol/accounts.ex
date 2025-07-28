@@ -25,9 +25,6 @@ defmodule Raxol.Accounts do
   require Raxol.Core.Runtime.Log
 
   # Configuration
-  @max_failed_attempts 5
-  # 15 minutes
-  @lockout_duration_seconds 900
   @default_role_name "user"
 
   def start_link(_opts) do

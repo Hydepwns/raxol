@@ -14,7 +14,6 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
   require Logger
 
   alias Raxol.Core.Concurrency.WorkerPool
-  alias Raxol.Core.Performance.Metrics
 
   @default_config %{
     # Worker pool configuration
