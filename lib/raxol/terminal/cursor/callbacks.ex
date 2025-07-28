@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
   """
   def handle_get_position(state) do
     Raxol.Core.Runtime.Log.debug(
-      "Getting cursor position: {#{state.col}, #{state.row}}"
+      "Getting cursor position: {#{state.row}, #{state.col}}"
     )
 
     {state.position, state}

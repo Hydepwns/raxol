@@ -6,11 +6,11 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
 
   def get_cursor_position(emulator) do
-    # Returns {row, col} format
+    # Returns {row, col} format for ANSI consistency
     CursorManager.get_position(emulator.cursor)
   end
 
-  def set_cursor_position(emulator, row, col) do
+  def set_cursor_position(emulator, col, row) do
     # Get emulator dimensions for bounds checking
     width = Raxol.Terminal.Emulator.get_width(emulator)
     height = Raxol.Terminal.Emulator.get_height(emulator)
@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
     clamped_row = max(0, min(row, height - 1))
     clamped_col = max(0, min(col, width - 1))
 
-    # CursorManager.set_position expects {row, col} format
+    # CursorManager.set_position expects {row, col} tuple
     CursorManager.set_position(emulator.cursor, {clamped_row, clamped_col})
     emulator
   end
@@ -100,7 +100,7 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
     cursor_blinking?(emulator)
   end
 
-  def move_cursor(emulator, x, y) do
-    set_cursor_position(emulator, y, x)
+  def move_cursor(emulator, col, row) do
+    set_cursor_position(emulator, col, row)
   end
 end

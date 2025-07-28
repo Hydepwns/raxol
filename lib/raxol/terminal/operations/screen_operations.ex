@@ -195,7 +195,8 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
     {x, y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
 
     # Update the buffer's cursor position before erasing
-    buffer_with_cursor = ScreenBuffer.set_cursor_position(buffer, x, y)
+    # Note: emulator returns {col, row} but buffer expects {row, col}
+    buffer_with_cursor = ScreenBuffer.set_cursor_position(buffer, y, x)
     new_buffer = Eraser.erase_in_display(buffer_with_cursor, mode)
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
