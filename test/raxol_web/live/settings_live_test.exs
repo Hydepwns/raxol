@@ -28,16 +28,16 @@ defmodule RaxolWeb.SettingsLiveTest do
   describe "Settings page" do
     setup %{conn: conn} do
       # Check if agent is running
-      agent_pid = Process.whereis(Raxol.Accounts)
+      _agent_pid = Process.whereis(Raxol.Accounts)
 
       # Register the test user in the current process
-      reg_result = Accounts.register_user(%{
+      _reg_result = Accounts.register_user(%{
         email: "test@example.com",
         password: "password123"
       })
 
       # Check agent state after registration
-      agent_state = Agent.get(Raxol.Accounts, fn users -> users end)
+      _agent_state = Agent.get(Raxol.Accounts, fn users -> users end)
 
       # Fetch the user by email to get the correct struct and id
       find_result = Accounts.find_user_by_email("test@example.com")

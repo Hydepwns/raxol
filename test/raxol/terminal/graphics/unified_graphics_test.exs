@@ -61,7 +61,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
     end
 
     test ~c"sets active graphics context" do
-      assert {:ok, graphics1} = UnifiedGraphics.create_graphics()
+      assert {:ok, _graphics1} = UnifiedGraphics.create_graphics()
       assert {:ok, graphics2} = UnifiedGraphics.create_graphics()
 
       assert :ok = UnifiedGraphics.set_active_graphics(graphics2)
@@ -158,8 +158,8 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphicsTest do
 
   describe "cleanup" do
     test ~c"cleans up all graphics contexts" do
-      assert {:ok, graphics1} = UnifiedGraphics.create_graphics()
-      assert {:ok, graphics2} = UnifiedGraphics.create_graphics()
+      assert {:ok, _graphics1} = UnifiedGraphics.create_graphics()
+      assert {:ok, _graphics2} = UnifiedGraphics.create_graphics()
 
       assert :ok = UnifiedGraphics.cleanup()
       assert UnifiedGraphics.get_graphics() == []

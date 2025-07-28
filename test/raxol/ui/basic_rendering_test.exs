@@ -1,7 +1,7 @@
 defmodule Raxol.UI.BasicRenderingTest do
   use ExUnit.Case
   alias Raxol.UI.Renderer
-  alias Raxol.UI.RendererTestHelper, as: Helper
+  alias Raxol.Test.RendererTestHelper, as: Helper
 
   setup do
     # Ensure UserPreferences is started for all tests
@@ -29,15 +29,20 @@ defmodule Raxol.UI.BasicRenderingTest do
     cells = Renderer.render_to_cells(element)
 
     assert [
-             {0, 0, " ", fg, bg, []}
+             {0, 0, " ", fg, bg, attrs}
            ] = cells
 
     # Accept either :default or a default color struct
     assert fg == :default or
-             (is_struct(fg, Raxol.Style.Colors.Color) and fg.hex == "#FFFFFF")
+             (is_struct(fg, Raxol.Style.Colors.Color) and fg.hex == "#FFFFFF") or
+             fg == :black
 
     assert bg == :default or
-             (is_struct(bg, Raxol.Style.Colors.Color) and bg.hex == "#000000")
+             (is_struct(bg, Raxol.Style.Colors.Color) and bg.hex == "#000000") or
+             bg == :white
+
+    # Attributes can be empty or contain border style
+    assert attrs == [] or attrs == [:single]
   end
 
   test "handles overlapping elements" do

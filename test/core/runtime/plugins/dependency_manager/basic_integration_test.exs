@@ -16,6 +16,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.BasicIntegrationTest do
     end
 
     def api_version, do: "1.0.0"
+    def get_api_version, do: "1.0.0"
 
     def init(config) do
       plugin = %Raxol.Plugins.Plugin{
@@ -48,6 +49,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.BasicIntegrationTest do
     end
 
     def api_version, do: "1.0.0"
+    def get_api_version, do: "1.0.0"
 
     def init(config) do
       plugin = %Raxol.Plugins.Plugin{
@@ -80,6 +82,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.BasicIntegrationTest do
     end
 
     def api_version, do: "1.0.0"
+    def get_api_version, do: "1.0.0"
 
     def init(config) do
       plugin = %Raxol.Plugins.Plugin{
@@ -112,6 +115,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.BasicIntegrationTest do
     end
 
     def api_version, do: "1.0.0"
+    def get_api_version, do: "1.0.0"
 
     def init(config) do
       plugin = %Raxol.Plugins.Plugin{
@@ -161,6 +165,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.BasicIntegrationTest do
         end
 
         def api_version, do: "1.0.0"
+    def get_api_version, do: "1.0.0"
 
         def init(config) do
           plugin = %Raxol.Plugins.Plugin{
@@ -193,6 +198,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.BasicIntegrationTest do
         end
 
         def api_version, do: "1.0.0"
+    def get_api_version, do: "1.0.0"
 
         def init(config) do
           plugin = %Raxol.Plugins.Plugin{
@@ -238,6 +244,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.BasicIntegrationTest do
         end
 
         def api_version, do: "1.0.0"
+    def get_api_version, do: "1.0.0"
 
         def init(config) do
           plugin = %Raxol.Plugins.Plugin{
@@ -270,6 +277,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.BasicIntegrationTest do
         end
 
         def api_version, do: "1.0.0"
+    def get_api_version, do: "1.0.0"
 
         def init(config) do
           plugin = %Raxol.Plugins.Plugin{
@@ -315,6 +323,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.BasicIntegrationTest do
         end
 
         def api_version, do: "1.0.0"
+    def get_api_version, do: "1.0.0"
 
         def init(config) do
           plugin = %Raxol.Plugins.Plugin{
@@ -352,6 +361,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.BasicIntegrationTest do
         end
 
         def api_version, do: "1.0.0"
+    def get_api_version, do: "1.0.0"
 
         def init(config) do
           plugin = %Raxol.Plugins.Plugin{

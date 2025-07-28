@@ -40,8 +40,7 @@ defmodule Raxol.I18nAccessibilityTest do
 
   # Alias the core I18n module
   alias Raxol.Core.I18n
-  # Alias the mock implementation
-  alias Raxol.Core.Accessibility.Mock, as: AccessibilityMock
+  # AccessibilityMock is defined via Mox.defmock below
 
   # NOTE (2024-05-02): Still investigating persistent Mox compilation error:
   # Mox compilation error: "UndefinedFunctionError: function Mox.__using__/1 is undefined or private".

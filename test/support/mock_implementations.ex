@@ -111,7 +111,7 @@ defmodule Raxol.Test.Support.MockImplementations do
 
   def plugin_command_dispatcher_register_command(_command, _handler), do: :ok
 
-  def plugin_reloader_reload_plugin(_module), do: {:ok, _module}
+  def plugin_reloader_reload_plugin(module), do: {:ok, module}
   def plugin_reloader_reload_all_plugins, do: {:ok, []}
 
   def plugin_command_handler_handle_command(_command, _args, state),

@@ -205,7 +205,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPluginTest do
       assert plugin_state.status == :inactive
 
       # Load base plugin
-      assert {:ok, base_id} =
+      assert {:ok, _base_id} =
                UnifiedPlugin.load_plugin(
                  "test/fixtures/plugins/base",
                  :extension,

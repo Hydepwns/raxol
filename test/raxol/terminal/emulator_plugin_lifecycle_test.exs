@@ -44,14 +44,14 @@ defmodule Raxol.Terminal.EmulatorPluginLifecycleTest do
     test "handles plugin init crash gracefully", %{emulator: _emulator} do
       assert match?(
                {:error, _},
-               Manager.load_plugin_by_module(Raxol.Test.MockPlugins.MockCrashyPlugin, %{})
+               Manager.load_plugin_by_module(Raxol.Test.MockPlugins.MockOnInitCrashPlugin, %{})
              )
     end
 
     test "handles plugin terminate crash gracefully", %{emulator: _emulator} do
-      assert :ok = Manager.load_plugin_by_module(Raxol.Test.MockPlugins.MockCrashyPlugin, %{})
+      assert :ok = Manager.load_plugin_by_module(Raxol.Test.MockPlugins.MockOnTerminateCrashPlugin, %{})
       # Trigger plugin termination (unload or reload)
-      result = Manager.reload_plugin("mock_crashy_plugin")
+      result = Manager.reload_plugin("mock_on_terminate_crash_plugin")
 
       case result do
         :ok -> assert true

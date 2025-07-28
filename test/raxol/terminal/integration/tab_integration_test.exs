@@ -56,11 +56,11 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
 
       # Update first tab
       assert {:ok, state1} = UnifiedTab.get_tab_state(tab1)
-      updated_state1 = State.update(state1.window_state, "Tab 1 content")
+      _updated_state1 = State.update(state1.window_state, "Tab 1 content")
 
       # Update second tab
       assert {:ok, state2} = UnifiedTab.get_tab_state(tab2)
-      updated_state2 = State.update(state2.window_state, "Tab 2 content")
+      _updated_state2 = State.update(state2.window_state, "Tab 2 content")
 
       # Switch between tabs
       assert :ok = UnifiedTab.set_active_tab(tab1)
@@ -96,7 +96,7 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
       assert {:ok, tab_state} = UnifiedTab.get_tab_state(tab_id)
 
       # Update window state
-      updated_state = State.update(tab_state.window_state, "Test content")
+      _updated_state = State.update(tab_state.window_state, "Test content")
 
       # Close tab
       assert :ok = UnifiedTab.close_tab(tab_id)

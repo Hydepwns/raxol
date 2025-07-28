@@ -9,9 +9,12 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
     # Create a test terminal
     terminal = Emulator.new()
 
-    # Start the terminal manager
-    {:ok, manager_pid} =
-      Manager.start_link(terminal: terminal, runtime_pid: self())
+    # Start the terminal manager (handle already_started case)
+    manager_pid = 
+      case Manager.start_link(terminal: terminal, runtime_pid: self()) do
+        {:ok, pid} -> pid
+        {:error, {:already_started, pid}} -> pid
+      end
 
     # Add manager to context
     {:ok, %{manager: manager_pid, terminal: terminal}}

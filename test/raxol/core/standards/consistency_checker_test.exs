@@ -78,7 +78,7 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
 
       File.write!("test_bad_errors.ex", content)
       
-      assert {:ok, issues} = ConsistencyChecker.check_file("test_bad_errors.ex")
+      assert {:ok, _issues} = ConsistencyChecker.check_file("test_bad_errors.ex")
       
       # Note: This specific check might not be caught by the current implementation
       # but demonstrates the test structure

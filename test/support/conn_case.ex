@@ -55,7 +55,7 @@ defmodule RaxolWeb.ConnCase do
   @doc """
   Setup helper functions for tests that interact with the DB
   """
-  def setup_sandbox(tags) do
+  def setup_sandbox(_tags) do
     # For MockDB, we don't need sandbox checkout
     # :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
     #

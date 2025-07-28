@@ -77,7 +77,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
       end
 
       @impl true
-      def init(_config) do
+      def init(config) do
         Process.put(:lifecycle_plugin_b_init, true)
 
         plugin = %Raxol.Plugins.Plugin{
@@ -94,13 +94,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
       end
 
       @impl Raxol.Plugins.LifecycleBehaviour
-      def start(_config) do
+      def start(config) do
         Process.put(:lifecycle_plugin_b_start, true)
         {:ok, config}
       end
 
       @impl Raxol.Plugins.LifecycleBehaviour
-      def stop(_config) do
+      def stop(config) do
         Process.put(:lifecycle_plugin_b_stop, true)
         {:ok, config}
       end
@@ -239,7 +239,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
         def api_version, do: "1.0.0"
 
         @impl true
-        def init(_config) do
+        def init(config) do
           plugin = %Raxol.Plugins.Plugin{
             name: "error_test_plugin",
             version: "1.0.0",
@@ -302,7 +302,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
         def api_version, do: "1.0.0"
 
         @impl true
-        def init(_config) do
+        def init(config) do
           plugin = %Raxol.Plugins.Plugin{
             name: "state_test_plugin",
             version: "1.0.0",
@@ -317,12 +317,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
         end
 
         @impl Raxol.Plugins.LifecycleBehaviour
-        def start(_config) do
+        def start(config) do
           {:ok, Map.put(config, :start_state, "started")}
         end
 
         @impl Raxol.Plugins.LifecycleBehaviour
-        def stop(_config) do
+        def stop(config) do
           Process.put(:final_state, config)
           {:ok, config}
         end
@@ -387,7 +387,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
         def api_version, do: "1.0.0"
 
         @impl true
-        def init(_config) do
+        def init(config) do
           # Verify default config is merged (allowing for custom overrides)
           assert config.setting1 in ["default1", "custom1"]
           assert config.setting2 == "default2"
@@ -406,7 +406,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
         end
 
         @impl Raxol.Plugins.LifecycleBehaviour
-        def start(_config) do
+        def start(config) do
           # Verify all config is present (allowing for custom overrides)
           assert config.setting1 in ["default1", "custom1"]
           assert config.setting2 == "default2"
@@ -416,7 +416,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
         end
 
         @impl Raxol.Plugins.LifecycleBehaviour
-        def stop(_config) do
+        def stop(config) do
           # Verify all config is maintained (allowing for custom overrides)
           assert config.setting1 in ["default1", "custom1"]
           assert config.setting2 == "default2"

@@ -142,12 +142,11 @@ defmodule Raxol.Style.Colors.SystemTest do
       # Explicitly apply the theme to ensure process dictionary is set
       assert :ok == System.apply_theme(test_theme().id)
 
-      color_hex = System.get_color(:primary)
-      assert color_hex != nil
-      assert color_hex == "#0077CC"
+      color = System.get_color(:primary)
+      assert color != nil
+      assert color.hex == "#0077CC"
 
-      # Convert hex to Color struct for component testing
-      color = Color.from_hex(color_hex)
+      # Verify the Color struct properties
       assert color.r == 0
       assert color.g == 119
       assert color.b == 204

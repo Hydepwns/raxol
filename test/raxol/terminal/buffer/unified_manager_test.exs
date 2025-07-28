@@ -25,6 +25,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
       )
     end
 
+    # Clear cache before each test to avoid state persistence
+    if Process.whereis(System) do
+      Raxol.Terminal.Cache.System.clear()
+    end
+
     # Start the buffer manager with supervision
     {:ok, pid} = start_supervised({UnifiedManager, [width: 80, height: 50]})
     %{pid: pid}

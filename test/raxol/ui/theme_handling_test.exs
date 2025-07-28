@@ -1,7 +1,7 @@
 defmodule Raxol.UI.ThemeHandlingTest do
   use ExUnit.Case
   alias Raxol.UI.Renderer
-  alias Raxol.UI.RendererTestHelper, as: Helper
+  alias Raxol.Test.RendererTestHelper, as: Helper
   alias Raxol.UI.Theming.Theme
 
   setup do

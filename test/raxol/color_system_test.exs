@@ -102,6 +102,12 @@ defmodule Raxol.ColorSystemTest do
 
   describe "ColorSystem with accessibility integration" do
     test "applies high contrast mode to theme colors" do
+      # Start UserPreferences if not already started
+      case Process.whereis(Raxol.Core.UserPreferences) do
+        nil -> {:ok, _} = Raxol.Core.UserPreferences.start_link(test_mode?: true)
+        _pid -> :ok
+      end
+      
       # Subscribe to both theme change and high contrast events
       {:ok, ref} =
         Raxol.Core.Events.Manager.subscribe([
@@ -253,12 +259,20 @@ defmodule Raxol.ColorSystemTest do
     end
 
     test "color system integrates with user preferences" do
+      # Start UserPreferences if not already started
+      case Process.whereis(Raxol.Core.UserPreferences) do
+        nil -> {:ok, _} = Raxol.Core.UserPreferences.start_link(test_mode?: true)
+        _pid -> :ok
+      end
+      
       # Test theme application with different high contrast settings
       # --- Test 1: Apply dark theme without high contrast ---
       ColorSystem.apply_theme(:dark, high_contrast: false)
 
       # Verify standard dark theme color
-      assert ColorSystem.get_color(:accent) == "#4A9CD5",
+      accent_color = ColorSystem.get_color(:accent)
+      assert accent_color != nil, "Expected accent color to be available"
+      assert accent_color.hex == "#4A9CD5",
              "Expected dark theme accent color"
 
       refute Accessibility.get_option(

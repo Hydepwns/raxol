@@ -360,7 +360,7 @@ defmodule Raxol.Test.MetricsHelper do
   @doc """
   Collects metrics of a specific type.
   """
-  def collect_metrics(type, opts \\ []) do
+  def collect_metrics(type, _opts \\ []) do
     Raxol.Core.Metrics.UnifiedCollector.get_metrics_by_type(type)
   end
 

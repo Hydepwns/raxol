@@ -10,8 +10,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
 
   describe "input processing" do
     test "processes valid input safely", %{pid: pid} do
-      assert :ok = SafeEmulator.process_input(pid, "Hello, Terminal!")
-      assert :ok = SafeEmulator.process_input(pid, "\e[1;31mRed Text\e[0m")
+      assert {:ok, :ok} = SafeEmulator.process_input(pid, "Hello, Terminal!")
+      assert {:ok, :ok} = SafeEmulator.process_input(pid, "\e[1;31mRed Text\e[0m")
     end
 
     test "rejects oversized input", %{pid: pid} do
@@ -22,22 +22,22 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
 
     test "handles malformed sequences gracefully", %{pid: pid} do
       # These should not crash the emulator
-      assert :ok = SafeEmulator.process_input(pid, "\e[")
-      assert :ok = SafeEmulator.process_input(pid, "\e[999999999m")
-      assert :ok = SafeEmulator.process_input(pid, <<0xFF, 0xFE>>)
+      assert {:ok, :ok} = SafeEmulator.process_input(pid, "\e[")
+      assert {:ok, :ok} = SafeEmulator.process_input(pid, "\e[999999999m")
+      assert {:ok, :ok} = SafeEmulator.process_input(pid, <<0xFF, 0xFE>>)
     end
 
     test "chunks large input for processing", %{pid: pid} do
       # Input that's large but under the limit
       large_input = String.duplicate("A", 10_000)
-      assert :ok = SafeEmulator.process_input(pid, large_input)
+      assert {:ok, :ok} = SafeEmulator.process_input(pid, large_input)
     end
   end
 
   describe "sequence handling" do
     test "validates sequences before processing", %{pid: pid} do
       # Valid sequence
-      assert {:ok, _} = SafeEmulator.handle_sequence(pid, {:csi_cursor_up, 1, "", ""})
+      assert :ok = SafeEmulator.handle_sequence(pid, {:csi_cursor_up, 1, "", ""})
       
       # Invalid sequences
       assert {:error, {:invalid_sequence, _}} = SafeEmulator.handle_sequence(pid, "not a tuple")
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
   describe "resize operations" do
     test "validates dimensions", %{pid: pid} do
       # Valid resize
-      assert :ok = SafeEmulator.resize(pid, 100, 50)
+      assert {:ok, :ok} = SafeEmulator.resize(pid, 100, 50)
       
       # Invalid dimensions
       assert {:error, :invalid_dimensions} = SafeEmulator.resize(pid, 0, 24)
@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
     end
 
     test "creates checkpoint after resize", %{pid: pid} do
-      assert :ok = SafeEmulator.resize(pid, 120, 40)
+      assert {:ok, :ok} = SafeEmulator.resize(pid, 120, 40)
       
       # State should reflect new dimensions
       {:ok, state} = SafeEmulator.get_state(pid)
@@ -124,7 +124,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
       {:ok, pid} = SafeEmulator.start_link(
         width: 80,
         height: 24,
-        checkpoint_interval: 100  # 100ms for testing
+        checkpoint_interval: 100,  # 100ms for testing
+        name: :test_checkpoint_emulator
       )
       
       # Wait for checkpoint
@@ -132,12 +133,15 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
       
       # Verify checkpoint was created (would need internal state access)
       assert {:ok, _} = SafeEmulator.get_state(pid)
+      
+      # Clean up
+      GenServer.stop(pid)
     end
 
     test "handles timeout gracefully", %{pid: pid} do
       # This would require mocking to force a timeout
       # For now, verify normal operation completes within timeout
-      assert :ok = SafeEmulator.process_input(pid, "Quick input")
+      assert {:ok, :ok} = SafeEmulator.process_input(pid, "Quick input")
     end
   end
 end

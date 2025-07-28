@@ -50,8 +50,8 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
       assert charset_state.g2 == :dec_special_graphics
       assert charset_state.g0 == :us_ascii
 
-      # Invoke G2 into GR (LS2R: ESC ~)
-      {emulator, ""} = Emulator.process_input(emulator, "\e~")
+      # Invoke G2 into GR (LS2R: ESC })
+      {emulator, ""} = Emulator.process_input(emulator, "\e}")
       charset_state_g2_in_gr = emulator.charset_state
       assert charset_state_g2_in_gr.gr == :g2
 

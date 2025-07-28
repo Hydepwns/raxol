@@ -34,10 +34,16 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
       emulator = TestHelper.create_test_emulator()
       emulator = ScreenOperations.write_string(emulator, 0, 0, "test1", %{})
       emulator = ScreenOperations.write_string(emulator, 0, 1, "test2", %{})
-      emulator = ScreenOperations.set_cursor_position(emulator, 0, 0)
+      emulator = ScreenOperations.write_string(emulator, 0, 2, "test3", %{})
+      # Set cursor to middle of line 1
+      emulator = ScreenOperations.set_cursor_position(emulator, 2, 1)
       emulator = ScreenOperations.erase_in_display(emulator)
-      assert String.trim(ScreenOperations.get_line(emulator, 0)) == ""
-      assert String.trim(ScreenOperations.get_line(emulator, 1)) == "test2"
+      # Line 0 should remain untouched
+      assert String.trim(ScreenOperations.get_line(emulator, 0)) == "test1"
+      # Line 1 should be erased from position 2 onward (keeping "te")
+      assert ScreenOperations.get_line(emulator, 1) |> String.slice(0, 2) == "te"
+      # Line 2 should be completely erased
+      assert String.trim(ScreenOperations.get_line(emulator, 2)) == ""
     end
   end
 
@@ -127,7 +133,7 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
       emulator = ScreenOperations.insert_chars(emulator, 3)
 
       assert String.trim(ScreenOperations.get_line(emulator, 0)) ==
-               "test1   test2"
+               "test1    test2"
     end
   end
 

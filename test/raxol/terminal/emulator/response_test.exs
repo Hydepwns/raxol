@@ -64,8 +64,8 @@ defmodule Raxol.Terminal.Emulator.ResponseTest do
 
     test ~c"DSR 6n (Report Cursor Position) returns correct CPR" do
       emulator = Emulator.new(80, 24)
-      # Move cursor to (col 10, row 5) (0-based)
-      emulator = %{emulator | cursor: Manager.move_to(emulator.cursor, 10, 5)}
+      # Move cursor to row 5, col 10 (0-based)
+      emulator = %{emulator | cursor: Manager.move_to(emulator.cursor, 5, 10)}
       input = "\e[6n"
       {_updated_emulator, output} = Emulator.process_input(emulator, input)
       # Expecting CPR: ESC [ <row=6> ; <col=11> R (1-based)

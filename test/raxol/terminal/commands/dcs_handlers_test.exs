@@ -257,7 +257,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       sixel_pixel_y = cy + 1
 
       cell_at_sixel =
-        ScreenBuffer.get_cell(active_buffer, sixel_pixel_x, sixel_pixel_y)
+        Raxol.Terminal.ScreenBuffer.get_cell(active_buffer, sixel_pixel_x, sixel_pixel_y)
 
       refute is_nil(cell_at_sixel),
              "Cell at Sixel pixel position should exist after Sixel blit"

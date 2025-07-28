@@ -26,8 +26,8 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
     test "fails to initialize when requested", %{context: context} do
       Process.flag(:trap_exit, true)
       args = %{fail_init: true}
-      TestEventSource.start_link(args, context)
-      assert_receive {:EXIT, _pid, :init_failed}
+      result = TestEventSource.start_link(args, context)
+      assert {:error, :init_failed} = result
     end
 
     test "sends events to subscriber", %{context: context} do

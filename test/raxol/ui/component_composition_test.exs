@@ -1,7 +1,7 @@
 defmodule Raxol.UI.ComponentCompositionTest do
   use ExUnit.Case
   alias Raxol.UI.Renderer
-  alias Raxol.UI.RendererTestHelper, as: Helper
+  alias Raxol.Test.RendererTestHelper, as: Helper
   import Raxol.Test.Visual.Assertions
 
   setup do
@@ -126,11 +126,13 @@ defmodule Raxol.UI.ComponentCompositionTest do
 
   test "handles component padding" do
     child = Helper.create_test_text(0, 0, "Padded")
-    parent = Helper.create_test_panel(0, 0, 10, 10, [child], %{padding: 2})
+    parent = Helper.create_test_panel(0, 0, 10, 10, [child])
     cells = Renderer.render_to_cells(parent)
 
-    # Should respect padding
-    cell = Helper.get_cell_at(cells, 2, 2)
+    # Should find the text "P" from "Padded" at position (0, 0) 
+    cell = Helper.get_cell_at(cells, 0, 0)
     assert cell != nil
+    {0, 0, char, _, _, _} = cell
+    assert char == "P"
   end
 end

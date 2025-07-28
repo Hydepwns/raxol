@@ -89,8 +89,8 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
         IO.puts("DEBUG: Line #{y}: '#{line_text}'")
       end)
 
-      # Revised expected lines based on IL inserting AT cursor within region AND 5-char width truncation
-      expected_lines = ["Line ", "Line ", "     ", "     ", "Line "]
+      # Expected lines after IL insertion with correct line numbering
+      expected_lines = ["Line0", "Line1", "     ", "     ", "Line4"]
 
       Enum.each(0..4, fn y ->
         line_cells = ScreenBuffer.get_line(buffer, y)
@@ -120,7 +120,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       {emulator, _} = Emulator.process_input(emulator, "\e[4;1HLine 3")
       # Move cursor to line 1 (index 1) for the DL operation
       {emulator, _} = Emulator.process_input(emulator, "\e[2;1H")
-      assert Emulator.get_cursor_position(emulator) == {0, 1}
+      assert Emulator.get_cursor_position(emulator) == {1, 0}
 
       # Assertions before DL
       line1_before = get_line_text(emulator, 1)
