@@ -503,6 +503,9 @@ defmodule Raxol.Terminal.ControlCodes do
     ?M => &Raxol.Terminal.ControlCodes.handle_ri/1,
     ?n => &Raxol.Terminal.ControlCodes.handle_ls2/1,
     ?o => &Raxol.Terminal.ControlCodes.handle_ls3/1,
+    ?~ => &Raxol.Terminal.ControlCodes.handle_ls1r/1,
+    ?} => &Raxol.Terminal.ControlCodes.handle_ls2r/1,
+    ?| => &Raxol.Terminal.ControlCodes.handle_ls3r/1,
     ?= => &Raxol.Terminal.Emulator.handle_esc_equals/1,
     ?> => &Raxol.Terminal.Emulator.handle_esc_greater/1
   }
@@ -512,6 +515,10 @@ defmodule Raxol.Terminal.ControlCodes do
   """
   @spec handle_escape(Emulator.t(), integer()) :: Emulator.t()
   def handle_escape(emulator, byte) do
+    Raxol.Core.Runtime.Log.debug(
+      "ControlCodes.handle_escape called with byte=#{inspect(byte)}"
+    )
+    
     case Map.get(@escape_handlers, byte) do
       nil ->
         Raxol.Core.Runtime.Log.debug(
@@ -521,7 +528,14 @@ defmodule Raxol.Terminal.ControlCodes do
         emulator
 
       handler ->
-        handler.(emulator)
+        Raxol.Core.Runtime.Log.debug(
+          "Found handler for byte #{inspect(byte)}, calling handler"
+        )
+        result = handler.(emulator)
+        Raxol.Core.Runtime.Log.debug(
+          "Handler returned: #{inspect(result)}"
+        )
+        result
     end
   end
 
@@ -544,6 +558,39 @@ defmodule Raxol.Terminal.ControlCodes do
     %{
       emulator
       | charset_state: %{emulator.charset_state | gl: :g3}
+    }
+  end
+
+  @doc """
+  Handle Locking Shift 1 Right (LS1R) - ESC ~
+  Invokes G1 character set into GR
+  """
+  def handle_ls1r(%Emulator{} = emulator) do
+    %{
+      emulator
+      | charset_state: %{emulator.charset_state | gr: :g1}
+    }
+  end
+
+  @doc """
+  Handle Locking Shift 2 Right (LS2R) - ESC }
+  Invokes G2 character set into GR
+  """
+  def handle_ls2r(%Emulator{} = emulator) do
+    %{
+      emulator
+      | charset_state: %{emulator.charset_state | gr: :g2}
+    }
+  end
+
+  @doc """
+  Handle Locking Shift 3 Right (LS3R) - ESC |
+  Invokes G3 character set into GR
+  """
+  def handle_ls3r(%Emulator{} = emulator) do
+    %{
+      emulator
+      | charset_state: %{emulator.charset_state | gr: :g3}
     }
   end
 end

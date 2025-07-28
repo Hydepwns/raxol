@@ -43,38 +43,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     {:ok, %{emulator | style: updated_style}}
   end
 
-  @sgr_attributes %{
-    1 => :bold,
-    2 => :faint,
-    3 => :italic,
-    4 => :underline,
-    5 => :blink,
-    7 => :reverse,
-    8 => :conceal,
-    9 => :crossed_out
-  }
-
-  @sgr_colors %{
-    0 => :black,
-    1 => :red,
-    2 => :green,
-    3 => :yellow,
-    4 => :blue,
-    5 => :magenta,
-    6 => :cyan,
-    7 => :white
-  }
-
-  @sgr_bright_colors %{
-    0 => :bright_black,
-    1 => :bright_red,
-    2 => :bright_green,
-    3 => :bright_yellow,
-    4 => :bright_blue,
-    5 => :bright_magenta,
-    6 => :bright_cyan,
-    7 => :bright_white
-  }
 
   @doc """
   Handles Cursor Position (CUP) command.
@@ -208,15 +176,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
 
   def handle_rm(emulator, params) do
     case params do
-      [?\s | rest] -> handle_private_rm(emulator, rest)
-      _ -> {:ok, emulator}
+      [?? | rest] -> handle_private_rm(emulator, rest)
+      _ -> handle_standard_rm(emulator, params)
     end
   end
 
   def handle_sm(emulator, params) do
     case params do
-      [?\s | rest] -> handle_private_sm(emulator, rest)
-      _ -> {:ok, emulator}
+      [?? | rest] -> handle_private_sm(emulator, rest)
+      _ -> handle_standard_sm(emulator, params)
     end
   end
 
@@ -387,6 +355,28 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
           nil -> {:ok, emulator}
         end
 
+      _ ->
+        {:ok, emulator}
+    end
+  end
+
+  defp handle_standard_rm(emulator, params) do
+    case params do
+      [4] -> 
+        # Reset insert mode (IRM)
+        mode_manager = Raxol.Terminal.ModeManager.set_mode(emulator.mode_manager, [:irm], false)
+        {:ok, %{emulator | mode_manager: mode_manager}}
+      _ ->
+        {:ok, emulator}
+    end
+  end
+
+  defp handle_standard_sm(emulator, params) do
+    case params do
+      [4] -> 
+        # Set insert mode (IRM)
+        mode_manager = Raxol.Terminal.ModeManager.set_mode(emulator.mode_manager, [:irm], true)
+        {:ok, %{emulator | mode_manager: mode_manager}}
       _ ->
         {:ok, emulator}
     end

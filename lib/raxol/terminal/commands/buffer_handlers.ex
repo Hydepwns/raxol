@@ -127,35 +127,32 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
     blank_line = List.duplicate(blank_cell, buffer.width)
     blank_lines_to_insert = List.duplicate(blank_line, count)
 
-    # Split the buffer cells at the insertion row
-    {top_part, bottom_part} = Enum.split(buffer.cells, y)
-
-    # Take only the lines from the bottom part that will fit within the scroll region
+    # Split the buffer: lines before scroll region, scroll region, lines after scroll region
+    {lines_before_scroll, rest} = Enum.split(buffer.cells, scroll_top)
+    {scroll_region_lines, lines_after_scroll} = Enum.split(rest, scroll_bottom - scroll_top + 1)
+    
+    # Split the scroll region at the insertion point
+    insertion_point_in_region = y - scroll_top
+    {scroll_before_insertion, scroll_after_insertion} = Enum.split(scroll_region_lines, insertion_point_in_region)
+    
+    # Calculate how many lines from scroll_after_insertion can fit after inserting count lines
     max_lines_in_region = scroll_bottom - scroll_top + 1
-    lines_after_insertion = y - scroll_top + count
-    lines_to_keep = max(0, max_lines_in_region - lines_after_insertion)
-
-    # Keep lines from the bottom part that fit within the scroll region
-    kept_bottom_part = Enum.take(bottom_part, lines_to_keep)
-
-    # Add blank lines at the bottom of the scroll region if needed
-    remaining_lines =
-      max_lines_in_region - lines_after_insertion - lines_to_keep
-
-    additional_blank_lines =
-      if remaining_lines > 0 do
-        List.duplicate(blank_line, remaining_lines)
+    lines_after_insertion_count = max_lines_in_region - insertion_point_in_region - count
+    kept_scroll_lines = if lines_after_insertion_count > 0, do: Enum.take(scroll_after_insertion, lines_after_insertion_count), else: []
+    
+    # Reconstruct the scroll region
+    new_scroll_region = scroll_before_insertion ++ blank_lines_to_insert ++ kept_scroll_lines
+    
+    # Pad the scroll region to the correct size if needed
+    padded_scroll_region = 
+      if length(new_scroll_region) < max_lines_in_region do
+        new_scroll_region ++ List.duplicate(blank_line, max_lines_in_region - length(new_scroll_region))
       else
-        []
+        Enum.take(new_scroll_region, max_lines_in_region)
       end
 
-    # Combine the parts
-    new_cells =
-      top_part ++
-        blank_lines_to_insert ++ kept_bottom_part ++ additional_blank_lines
-
-    # Ensure we don't exceed the buffer height
-    final_cells = Enum.take(new_cells, buffer.height)
+    # Combine all parts: lines before + modified scroll region + lines after (unchanged)
+    final_cells = lines_before_scroll ++ padded_scroll_region ++ lines_after_scroll
 
     %{buffer | cells: final_cells}
   end
@@ -243,4 +240,10 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
     updated_buffer = Editor.insert_chars(buffer, y, x, n, style)
     {:ok, Emulator.update_active_buffer(emulator, updated_buffer)}
   end
+
+  # Uppercase aliases for CSI command handlers
+  def handle_L(emulator, count), do: handle_l_alias(emulator, count)
+  def handle_M(emulator, count), do: handle_m_alias(emulator, count)
+  def handle_P(emulator, count), do: handle_p_alias(emulator, count)
+  def handle_X(emulator, count), do: handle_x_alias(emulator, count)
 end

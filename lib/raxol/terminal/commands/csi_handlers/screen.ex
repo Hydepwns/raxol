@@ -62,17 +62,17 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_cuu(emulator, params) do
     lines = Enum.at(params, 0, 1)
-    {x, y} = Emulator.get_cursor_position(emulator)
+    {row, col} = Emulator.get_cursor_position(emulator)
     {top, _bottom} = get_scroll_region(emulator)
 
-    new_y =
-      if y - lines < top do
+    new_row =
+      if row - lines < top do
         top
       else
-        y - lines
+        row - lines
       end
 
-    {:ok, Emulator.move_cursor(emulator, x, new_y)}
+    {:ok, Emulator.move_cursor(emulator, col, new_row)}
   end
 
   @doc """
@@ -81,17 +81,17 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_cud(emulator, params) do
     lines = Enum.at(params, 0, 1)
-    {x, y} = Emulator.get_cursor_position(emulator)
+    {row, col} = Emulator.get_cursor_position(emulator)
     {_top, bottom} = get_scroll_region(emulator)
 
-    new_y =
-      if y + lines > bottom do
+    new_row =
+      if row + lines > bottom do
         bottom
       else
-        y + lines
+        row + lines
       end
 
-    {:ok, Emulator.move_cursor(emulator, x, new_y)}
+    {:ok, Emulator.move_cursor(emulator, col, new_row)}
   end
 
   @doc """
@@ -109,16 +109,16 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_cub(emulator, params) do
     cols = Enum.at(params, 0, 1)
-    {x, y} = Emulator.get_cursor_position(emulator)
+    {row, col} = Emulator.get_cursor_position(emulator)
 
-    new_x =
-      if x - cols < 0 do
+    new_col =
+      if col - cols < 0 do
         0
       else
-        x - cols
+        col - cols
       end
 
-    {:ok, Emulator.move_cursor(emulator, new_x, y)}
+    {:ok, Emulator.move_cursor(emulator, new_col, row)}
   end
 
   @doc """
@@ -127,17 +127,17 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_cnl(emulator, params) do
     lines = Enum.at(params, 0, 1)
-    {_x, y} = Emulator.get_cursor_position(emulator)
+    {row, _col} = Emulator.get_cursor_position(emulator)
     {_top, bottom} = get_scroll_region(emulator)
 
-    new_y =
-      if y + lines > bottom do
+    new_row =
+      if row + lines > bottom do
         bottom
       else
-        y + lines
+        row + lines
       end
 
-    {:ok, Emulator.move_cursor(emulator, 0, new_y)}
+    {:ok, Emulator.move_cursor(emulator, 0, new_row)}
   end
 
   @doc """
@@ -146,17 +146,17 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_cpl(emulator, params) do
     lines = Enum.at(params, 0, 1)
-    {_x, y} = Emulator.get_cursor_position(emulator)
+    {row, _col} = Emulator.get_cursor_position(emulator)
     {top, _bottom} = get_scroll_region(emulator)
 
-    new_y =
-      if y - lines < top do
+    new_row =
+      if row - lines < top do
         top
       else
-        y - lines
+        row - lines
       end
 
-    {:ok, Emulator.move_cursor(emulator, 0, new_y)}
+    {:ok, Emulator.move_cursor(emulator, 0, new_row)}
   end
 
   @doc """
@@ -164,13 +164,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   Moves cursor to specified horizontal position.
   """
   def handle_cha(emulator, params) do
-    x = Enum.at(params, 0, 1)
-    {_x, y} = Emulator.get_cursor_position(emulator)
+    col = Enum.at(params, 0, 1)
+    {row, _col} = Emulator.get_cursor_position(emulator)
 
     # Convert from 1-indexed to 0-indexed
-    x_0 = max(0, x - 1)
+    col_0 = max(0, col - 1)
 
-    {:ok, Emulator.move_cursor(emulator, x_0, y)}
+    {:ok, Emulator.move_cursor(emulator, col_0, row)}
   end
 
   @doc """
@@ -178,14 +178,16 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   Moves cursor to specified position.
   """
   def handle_cup(emulator, params) do
-    x = Enum.at(params, 0, 1)
-    y = Enum.at(params, 1, 1)
+    # ANSI CUP is ESC[row;colH - first param is row, second is col
+    row = Enum.at(params, 0, 1)
+    col = Enum.at(params, 1, 1)
 
     # Convert from 1-indexed to 0-indexed
-    x_0 = max(0, x - 1)
-    y_0 = max(0, y - 1)
+    row_0 = max(0, row - 1)
+    col_0 = max(0, col - 1)
 
-    {:ok, Emulator.move_cursor(emulator, x_0, y_0)}
+    # Emulator.move_cursor expects (col, row) order
+    {:ok, Emulator.move_cursor(emulator, col_0, row_0)}
   end
 
   @doc """
@@ -194,16 +196,16 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_cht(emulator, params) do
     cols = Enum.at(params, 0, 1)
-    {x, y} = Emulator.get_cursor_position(emulator)
+    {row, col} = Emulator.get_cursor_position(emulator)
 
-    new_x =
-      if x + cols > emulator.width - 1 do
+    new_col =
+      if col + cols > emulator.width - 1 do
         emulator.width - 1
       else
-        x + cols
+        col + cols
       end
 
-    {:ok, Emulator.move_cursor(emulator, new_x, y)}
+    {:ok, Emulator.move_cursor(emulator, new_col, row)}
   end
 
   @doc """
@@ -212,28 +214,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_ed(emulator, params) do
     mode = Enum.at(params, 0, 0)
-    {x, y} = Emulator.get_cursor_position(emulator)
 
     buffer = Emulator.get_screen_buffer(emulator)
 
     new_buffer =
-      case mode do
-        0 ->
-          Raxol.Terminal.ScreenBuffer.erase_in_display(buffer, {x, y}, :to_end)
-
-        1 ->
-          Raxol.Terminal.ScreenBuffer.erase_in_display(
-            buffer,
-            {x, y},
-            :to_beginning
-          )
-
-        2 ->
-          Raxol.Terminal.ScreenBuffer.erase_in_display(buffer, {x, y}, :all)
-
-        _ ->
-          buffer
-      end
+      Raxol.Terminal.Buffer.Operations.Erasing.erase_in_display(
+        buffer,
+        mode,
+        emulator.cursor
+      )
 
     {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
@@ -244,28 +233,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_el(emulator, params) do
     mode = Enum.at(params, 0, 0)
-    {x, y} = Emulator.get_cursor_position(emulator)
 
     buffer = Emulator.get_screen_buffer(emulator)
 
     new_buffer =
-      case mode do
-        0 ->
-          Raxol.Terminal.ScreenBuffer.erase_in_line(buffer, {x, y}, :to_end)
-
-        1 ->
-          Raxol.Terminal.ScreenBuffer.erase_in_line(
-            buffer,
-            {x, y},
-            :to_beginning
-          )
-
-        2 ->
-          Raxol.Terminal.ScreenBuffer.erase_in_line(buffer, {x, y}, :all)
-
-        _ ->
-          buffer
-      end
+      Raxol.Terminal.Buffer.Operations.Erasing.erase_in_line(
+        buffer,
+        mode,
+        emulator.cursor
+      )
 
     {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
@@ -276,7 +252,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_il(emulator, params) do
     lines = Enum.at(params, 0, 1)
-    {_col, row} = Emulator.get_cursor_position(emulator)
+    {row, _col} = Emulator.get_cursor_position(emulator)
     {top, bottom} = get_scroll_region(emulator)
 
     buffer = Emulator.get_screen_buffer(emulator)
@@ -293,7 +269,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_dl(emulator, params) do
     lines = Enum.at(params, 0, 1)
-    {_col, row} = Emulator.get_cursor_position(emulator)
+    {row, _col} = Emulator.get_cursor_position(emulator)
     {top, bottom} = get_scroll_region(emulator)
 
     buffer = Emulator.get_screen_buffer(emulator)
@@ -390,10 +366,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_ech(emulator, params) do
     chars = Enum.at(params, 0, 1)
-    {x, y} = Emulator.get_cursor_position(emulator)
+    {row, col} = Emulator.get_cursor_position(emulator)
 
     buffer = Emulator.get_screen_buffer(emulator)
-    new_buffer = Raxol.Terminal.ScreenBuffer.erase_chars(buffer, y, x, chars)
+    new_buffer = Raxol.Terminal.ScreenBuffer.erase_chars(buffer, row, col, chars)
     {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
@@ -402,18 +378,18 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   Moves cursor to the previous tab stop.
   """
   def handle_cbt(emulator, _params) do
-    {x, y} = Emulator.get_cursor_position(emulator)
+    {row, col} = Emulator.get_cursor_position(emulator)
     tab_stops = emulator.tab_stops
 
-    new_x =
-      if x > 0 do
-        x - 1
+    new_col =
+      if col > 0 do
+        col - 1
       else
         emulator.width - 1
       end
 
-    if MapSet.member?(tab_stops, {new_x, y}) do
-      {:ok, Emulator.move_cursor(emulator, new_x, y)}
+    if MapSet.member?(tab_stops, {new_col, row}) do
+      {:ok, Emulator.move_cursor(emulator, new_col, row)}
     else
       {:ok, emulator}
     end
@@ -442,9 +418,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_vpa(emulator, params) do
     y = Enum.at(params, 0, 1)
-    {x, _y} = Emulator.get_cursor_position(emulator)
+    {_row, col} = Emulator.get_cursor_position(emulator)
 
-    {:ok, Emulator.move_cursor(emulator, x, y)}
+    {:ok, Emulator.move_cursor(emulator, col, y - 1)}
   end
 
   @doc """
@@ -453,16 +429,16 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   """
   def handle_vpr(emulator, params) do
     lines = Enum.at(params, 0, 1)
-    {x, y} = Emulator.get_cursor_position(emulator)
+    {row, col} = Emulator.get_cursor_position(emulator)
 
-    new_y =
-      if y + lines > emulator.height - 1 do
+    new_row =
+      if row + lines > emulator.height - 1 do
         emulator.height - 1
       else
-        y + lines
+        row + lines
       end
 
-    {:ok, Emulator.move_cursor(emulator, x, new_y)}
+    {:ok, Emulator.move_cursor(emulator, col, new_row)}
   end
 
   @doc """
@@ -562,16 +538,16 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   end
 
   defp move_cursor_horizontally(emulator, cols, :relative) do
-    {x, y} = Emulator.get_cursor_position(emulator)
+    {row, col} = Emulator.get_cursor_position(emulator)
 
-    new_x =
-      if x + cols > emulator.width - 1 do
+    new_col =
+      if col + cols > emulator.width - 1 do
         emulator.width - 1
       else
-        x + cols
+        col + cols
       end
 
-    {:ok, Emulator.move_cursor(emulator, new_x, y)}
+    {:ok, Emulator.move_cursor(emulator, new_col, row)}
   end
 
   @doc """

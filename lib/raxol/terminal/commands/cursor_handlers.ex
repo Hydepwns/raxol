@@ -453,4 +453,40 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     {:ok,
      move_cursor_to_column(emulator, column, emulator.width, emulator.height)}
   end
+
+  @doc """
+  Handles CSI E - Cursor Next Line (CNL)
+  Moves cursor to beginning of line n lines down
+  """
+  def handle_E(emulator, params) do
+    count = get_valid_pos_param(params, 0, 1)
+    
+    # Move down by count lines
+    emulator_after_down = move_cursor_down(emulator, count)
+    
+    # Move to column 0
+    {:ok, move_cursor_to_column(emulator_after_down, 0, emulator.width, emulator.height)}
+  end
+
+  @doc """
+  Handles CSI F - Cursor Previous Line (CPL)
+  Moves cursor to beginning of line n lines up
+  """
+  def handle_F(emulator, params) do
+    count = get_valid_pos_param(params, 0, 1)
+    
+    # Move up by count lines
+    emulator_after_up = move_cursor_up(emulator, count)
+    
+    # Move to column 0
+    {:ok, move_cursor_to_column(emulator_after_up, 0, emulator.width, emulator.height)}
+  end
+
+  @doc """
+  Handles CSI H - Cursor Position (CUP)
+  Sets cursor position to row;column
+  """
+  def handle_H(emulator, params) do
+    handle_cup(emulator, params)
+  end
 end
