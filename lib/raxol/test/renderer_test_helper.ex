@@ -1,6 +1,6 @@
 import ExUnit.Assertions
 
-defmodule Raxol.UI.RendererTestHelper do
+defmodule Raxol.Test.RendererTestHelper do
   @moduledoc """
   Helper module for renderer tests providing common test utilities and fixtures.
   """

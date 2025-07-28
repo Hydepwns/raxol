@@ -29,7 +29,6 @@ defmodule Raxol.Test.Integration do
       end
   """
 
-  import ExUnit.Assertions
   import Raxol.Guards
 
   # Delegation to focused modules
