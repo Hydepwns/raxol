@@ -236,12 +236,12 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     {:ok, restored_state}
   end
 
-  defp enable_plugin_full(plugin_id, state) do
+  defp _enable_plugin_full(plugin_id, state) do
     # Full plugin enablement with all features
     {:ok, put_in(state.plugin_states[plugin_id][:enabled], true)}
   end
 
-  defp enable_plugin_limited(plugin_id, state) do
+  defp _enable_plugin_limited(plugin_id, state) do
     # Limited plugin enablement
     {:ok, put_in(state.plugin_states[plugin_id][:enabled], :limited)}
   end

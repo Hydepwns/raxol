@@ -55,7 +55,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
             initialized: false,
             tick_timer: nil,
             file_event_timer: nil,
-            file_watcher_pid: nil
+            file_watcher_pid: nil,
+            plugin_dirs: Map.get(opts_map, :plugin_dirs, []),
+            plugins_dir: Map.get(opts_map, :plugins_dir, nil)
           }
 
         state when is_map(state) ->
@@ -72,7 +74,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
               initialized: false,
               tick_timer: nil,
               file_event_timer: nil,
-              file_watcher_pid: nil
+              file_watcher_pid: nil,
+              plugin_dirs: [],
+              plugins_dir: nil
             },
             state
           )
@@ -90,7 +94,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
             initialized: false,
             tick_timer: nil,
             file_event_timer: nil,
-            file_watcher_pid: nil
+            file_watcher_pid: nil,
+            plugin_dirs: [],
+            plugins_dir: nil
           }
       end
 

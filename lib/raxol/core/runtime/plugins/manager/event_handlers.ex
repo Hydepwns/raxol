@@ -67,6 +67,45 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
     {:reply, metadata, state}
   end
 
+  defp handle_call_message(:initialize, _from, state) do
+    case Lifecycle.initialize(state) do
+      {:ok, initialized_state} ->
+        final_state = setup_file_watching_if_enabled(initialized_state)
+        {:reply, :ok, final_state}
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  defp handle_call_message({:initialize_with_config, config}, _from, state) do
+    updated_state = %{state | plugin_config: config}
+    case Lifecycle.initialize(updated_state) do
+      {:ok, initialized_state} ->
+        final_state = setup_file_watching_if_enabled(initialized_state)
+        {:reply, :ok, final_state}
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  defp handle_call_message({:load_plugin_by_module, module, config}, _from, state) do
+    case Lifecycle.load_plugin_by_module(state, module, config) do
+      {:ok, updated_state} ->
+        {:reply, :ok, updated_state}
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  defp handle_call_message({:load_plugin, plugin_id}, _from, state) do
+    case Lifecycle.load_plugin(state, plugin_id) do
+      {:ok, updated_state} ->
+        {:reply, :ok, updated_state}
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
   defp handle_call_message(unhandled, from, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Unhandled call in plugin manager",

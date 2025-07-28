@@ -46,7 +46,10 @@ defmodule Raxol.Plugins.Manager.Events do
   """
   def handle_mouse_event(%Core{} = manager, event, rendered_cells)
       when map?(event) do
-    EventHandler.handle_mouse_event(manager, event, rendered_cells)
+    case EventHandler.handle_mouse_event(manager, event, rendered_cells) do
+      {:ok, updated_manager} -> {:ok, updated_manager, :propagate}
+      error -> error
+    end
   end
 
   @doc """

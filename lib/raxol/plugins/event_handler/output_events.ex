@@ -9,12 +9,12 @@ defmodule Raxol.Plugins.EventHandler.OutputEvents do
   alias Raxol.Plugins.EventHandler.Common
 
   @type manager :: Core.t()
-  @type result :: {:ok, manager()} | {:error, term()}
+  @type result :: {:ok, manager(), binary()} | {:error, term()}
 
   @doc """
   Dispatches an "output" event to all enabled plugins implementing `handle_output/2`.
   """
-  @spec handle_output(Core.t(), binary()) :: result()
+  @spec handle_output(Core.t(), binary()) :: {:ok, Core.t(), binary()} | {:error, term()}
   def handle_output(manager, output) do
     initial_acc = %{
       manager: manager,
@@ -33,8 +33,8 @@ defmodule Raxol.Plugins.EventHandler.OutputEvents do
       )
 
     case result do
-      %{manager: updated_manager} ->
-        {:ok, updated_manager}
+      %{manager: updated_manager, transformed_output: transformed_output} ->
+        {:ok, updated_manager, transformed_output}
 
       error ->
         error
