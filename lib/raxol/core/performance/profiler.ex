@@ -112,7 +112,31 @@ defmodule Raxol.Core.Performance.Profiler do
         Enum.sort(large_list)
       end
   """
-  def benchmark(operation, opts \\ [], fun) do
+  defmacro benchmark(operation, opts \\ [], do: block) do
+    quote do
+      iterations = Keyword.get(unquote(opts), :iterations, 100)
+      warmup = Keyword.get(unquote(opts), :warmup, 10)
+      
+      fun = fn -> unquote(block) end
+
+      # Warmup runs
+      for _ <- 1..warmup, do: fun.()
+
+      # Actual benchmark
+      results =
+        for _ <- 1..iterations do
+          {time, _result} = :timer.tc(fun)
+          time
+        end
+
+      Raxol.Core.Performance.Profiler.analyze_benchmark_results(unquote(operation), results)
+    end
+  end
+
+  @doc """
+  Benchmarks a function with multiple iterations (function version).
+  """
+  def benchmark_fun(operation, opts \\ [], fun) when is_function(fun) do
     iterations = Keyword.get(opts, :iterations, 100)
     warmup = Keyword.get(opts, :warmup, 10)
 
@@ -143,8 +167,8 @@ defmodule Raxol.Core.Performance.Profiler do
     old_fun = Keyword.fetch!(implementations, :old)
     new_fun = Keyword.fetch!(implementations, :new)
 
-    old_results = benchmark(:"#{operation}_old", [], old_fun)
-    new_results = benchmark(:"#{operation}_new", [], new_fun)
+    old_results = benchmark_fun(:"#{operation}_old", [], old_fun)
+    new_results = benchmark_fun(:"#{operation}_new", [], new_fun)
 
     %{
       operation: operation,
@@ -174,7 +198,31 @@ defmodule Raxol.Core.Performance.Profiler do
   @doc """
   Profiles memory usage of a function.
   """
-  def profile_memory(operation, fun) do
+  defmacro profile_memory(operation, do: block) do
+    quote do
+      :erlang.garbage_collect()
+      before_info = Process.info(self(), [:memory, :garbage_collection])
+
+      result = unquote(block)
+
+      after_info = Process.info(self(), [:memory, :garbage_collection])
+
+      memory_delta =
+        Keyword.get(after_info, :memory, 0) - Keyword.get(before_info, :memory, 0)
+
+      gc_runs = Raxol.Core.Performance.Profiler.get_gc_runs(after_info) - 
+                Raxol.Core.Performance.Profiler.get_gc_runs(before_info)
+
+      Raxol.Core.Performance.Profiler.record_memory_metrics(unquote(operation), memory_delta, gc_runs)
+
+      result
+    end
+  end
+
+  @doc """
+  Profiles memory usage of a function (function version).
+  """
+  def profile_memory_fun(operation, fun) when is_function(fun) do
     :erlang.garbage_collect()
     before_info = Process.info(self(), [:memory, :garbage_collection])
 
@@ -337,7 +385,7 @@ defmodule Raxol.Core.Performance.Profiler do
     end
   end
 
-  defp analyze_benchmark_results(operation, times) do
+  def analyze_benchmark_results(operation, times) do
     sorted = Enum.sort(times)
     count = length(sorted)
 
@@ -376,13 +424,13 @@ defmodule Raxol.Core.Performance.Profiler do
     :math.sqrt(variance)
   end
 
-  defp get_gc_runs(info) do
+  def get_gc_runs(info) do
     info
     |> Keyword.get(:garbage_collection, [])
     |> Keyword.get(:number_of_gcs, 0)
   end
 
-  defp record_memory_metrics(operation, memory_delta, gc_runs) do
+  def record_memory_metrics(operation, memory_delta, gc_runs) do
     metrics = %Metrics{
       operation: operation,
       memory_delta: memory_delta,
