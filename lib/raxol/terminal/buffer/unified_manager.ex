@@ -327,7 +327,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
         # Invalidate cache for this cell
         cache_key = "cell_#{x}_#{y}"
         Cache.invalidate(cache_key, :buffer)
-        {:reply, :ok, new_state}
+        {:reply, {:ok, new_state}, new_state}
 
       {:error, reason} ->
         {:reply, {:error, reason}, state}
@@ -566,7 +566,6 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
                                                  {:ok, current_state} ->
       case update_single_command(current_state, command) do
         {:ok, new_state} -> {:cont, {:ok, new_state}}
-        {:error, _reason} = error -> {:halt, error}
       end
     end)
   end

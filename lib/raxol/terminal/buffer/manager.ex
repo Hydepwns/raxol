@@ -458,10 +458,12 @@ defmodule Raxol.Terminal.Buffer.Manager do
     end
   end
 
-  def handle_call({:resize, size, opts}, _from, state) do
+  def handle_call({:resize, size, _opts}, _from, state) do
     try do
-      new_buffer = Operations.resize(state.active_buffer, size, opts)
-      new_state = %{state | active_buffer: new_buffer}
+      {width, height} = size
+      new_buffer = BufferImpl.resize(state.active_buffer, width, height)
+      new_back_buffer = BufferImpl.resize(state.back_buffer, width, height)
+      new_state = %{state | active_buffer: new_buffer, back_buffer: new_back_buffer}
       {:reply, :ok, new_state}
     catch
       kind, reason ->

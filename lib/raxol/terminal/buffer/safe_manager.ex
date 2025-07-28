@@ -18,6 +18,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   @circuit_breaker_timeout 30_000
   @retry_attempts 3
   @retry_backoff 100
+  @max_input_size 1_000_000
 
   defstruct [
     :manager_pid,
@@ -100,7 +101,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   @impl true
   def init(opts) do
     # Initialize with error handling
-    state =
+    result =
       with_error_handling :init do
         # Start the underlying buffer manager
         manager_opts = Keyword.take(opts, [:width, :height, :scrollback_size])
@@ -149,19 +150,36 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
         end
       end
 
-    {:ok, state}
+    # with_error_handling wraps the result in {:ok, state}
+    # so we need to unwrap it for GenServer.init
+    case result do
+      {:ok, state} -> {:ok, state}
+      {:error, _reason} -> 
+        # Fallback state if initialization completely fails
+        {:ok, %__MODULE__{
+          manager_pid: nil,
+          circuit_breaker: ErrorRecovery.circuit_breaker_init(),
+          error_count: 0,
+          fallback_buffer: BufferImpl.new(80, 24),
+          stats: %{errors: 1}
+        }}
+    end
   end
 
   @impl true
   def handle_call({:write, data, opts}, from, state) do
-    with_error_handling :write do
-      # Check circuit breaker
-      case ErrorRecovery.with_circuit_breaker(
-             :buffer_write,
-             fn ->
-               perform_write(state.manager_pid, data, opts)
-             end
-           ) do
+    try do
+      # Check input size first
+      if byte_size(data) > @max_input_size do
+        {:reply, {:error, :input_too_large}, state}
+      else
+        # Check circuit breaker
+        case ErrorRecovery.with_circuit_breaker(
+               :buffer_write,
+               fn ->
+                 perform_write(state.manager_pid, data, opts)
+               end
+             ) do
         {:ok, result} ->
           new_stats = Map.update(state.stats, :writes, 1, &(&1 + 1))
 
@@ -187,13 +205,19 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
             state,
             from
           )
+        end
       end
+    rescue
+      error ->
+        Logger.error("Error in write handler: #{inspect(error)}")
+        new_stats = Map.update(state.stats, :errors, 1, &(&1 + 1))
+        {:reply, {:error, error}, %{state | stats: new_stats}}
     end
   end
 
   @impl true
   def handle_call({:read, opts}, _from, state) do
-    with_error_handling :read do
+    try do
       case ErrorRecovery.with_retry(
              fn -> perform_read(state.manager_pid, opts) end,
              max_attempts: @retry_attempts,
@@ -206,12 +230,23 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
         {:error, reason} ->
           handle_read_error(opts, reason, state)
       end
+    rescue
+      error ->
+        Logger.error("Error in read handler: #{inspect(error)}")
+        new_stats = Map.update(state.stats, :errors, 1, &(&1 + 1))
+        {:reply, {:error, error}, %{state | stats: new_stats}}
     end
   end
 
   @impl true
-  def handle_call({:resize, {width, height}}, _from, state) do
-    with_error_handling :resize do
+  def handle_call({:resize, {width, height}}, from, state) do
+    # Delegate to the non-tuple version
+    handle_call({:resize, width, height}, from, state)
+  end
+
+  @impl true
+  def handle_call({:resize, width, height}, _from, state) when is_number(width) and is_number(height) do
+    try do
       # Validate dimensions
       cond do
         width <= 0 or height <= 0 ->
@@ -232,6 +267,11 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
               {:reply, {:error, reason}, increment_error_count(state)}
           end
       end
+    rescue
+      error ->
+        Logger.error("Error in resize handler: #{inspect(error)}")
+        new_stats = Map.update(state.stats, :errors, 1, &(&1 + 1))
+        {:reply, {:error, error}, %{state | stats: new_stats}}
     end
   end
 
@@ -330,10 +370,13 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp perform_resize(manager_pid, width, height) do
-    GenServer.call(manager_pid, {:resize, {width, height}, []}, 5_000)
-  catch
-    :exit, {:timeout, _} -> {:error, :timeout}
-    :exit, {:noproc, _} -> {:error, :manager_dead}
+    try do
+      Manager.resize(manager_pid, {width, height})
+    catch
+      :exit, {:timeout, _} -> {:error, :timeout}
+      :exit, {:noproc, _} -> {:error, :manager_dead}
+      _, error -> {:error, error}
+    end
   end
 
   defp handle_fallback_write(data, _opts, state) do
@@ -384,6 +427,40 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
       | error_count: state.error_count + 1,
         last_error_time: DateTime.utc_now(),
         stats: Map.update(state.stats, :errors, 1, &(&1 + 1))
+    }
+  end
+
+  defp _record_circuit_success(circuit_breaker) do
+    case circuit_breaker.state do
+      :half_open ->
+        # If we're in half-open state and call succeeds, close the circuit
+        %{circuit_breaker | 
+          state: :closed,
+          failure_count: 0,
+          success_count: circuit_breaker.success_count + 1
+        }
+      _ ->
+        # Otherwise just increment success count
+        %{circuit_breaker | 
+          success_count: circuit_breaker.success_count + 1
+        }
+    end
+  end
+
+  defp _record_circuit_failure(circuit_breaker) do
+    new_failure_count = circuit_breaker.failure_count + 1
+    
+    new_state = 
+      if new_failure_count >= circuit_breaker.threshold do
+        :open
+      else
+        circuit_breaker.state
+      end
+    
+    %{circuit_breaker | 
+      state: new_state,
+      failure_count: new_failure_count,
+      last_failure_time: DateTime.utc_now()
     }
   end
 end

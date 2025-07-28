@@ -152,15 +152,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations.CharOperations do
   end
 
   defp insert_chars_into_line(line, col, count, width, default_style) do
-    # If the character at the cursor is a space, skip it when inserting
+    # Split the line at the cursor position
     {before, after_part} = Enum.split(line, col)
-
-    # If the first char in after_part is a space, drop it (to avoid duplicating the space)
-    after_part =
-      case after_part do
-        [%{char: " "} | rest] -> rest
-        _ -> after_part
-      end
 
     blank_cell = %Cell{
       char: " ",

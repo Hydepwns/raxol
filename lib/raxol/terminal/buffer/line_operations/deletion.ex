@@ -109,19 +109,22 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
   Deletes lines at the specified position within the scroll region.
   """
   def delete_lines_in_region(buffer, lines, y, top, bottom) do
-    # Ensure we're within the scroll region
-    y = max(top, min(y, bottom - 1))
+    # Only operate if cursor is within the scroll region
+    if y >= top and y <= bottom do
+      # Calculate how many lines we can actually delete within the region
+      available_lines = bottom - y + 1
+      lines_to_delete = min(lines, available_lines)
 
-    # Calculate how many lines we can actually delete
-    available_lines = bottom - y
-    lines_to_delete = min(lines, available_lines)
-
-    if lines_to_delete > 0 do
-      # Delete lines from y to y + lines_to_delete - 1
-      # This shifts content up from below the deleted region
-      buffer
-      |> delete_lines_from_position(y, lines_to_delete, bottom)
+      if lines_to_delete > 0 do
+        # Delete lines from y to y + lines_to_delete - 1
+        # This shifts content up from below the deleted region
+        buffer
+        |> delete_lines_from_position(y, lines_to_delete, bottom + 1)
+      else
+        buffer
+      end
     else
+      # Cursor is outside scroll region - no effect
       buffer
     end
   end
@@ -156,26 +159,30 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
   end
 
   defp delete_lines_from_position(buffer, start_y, count, bottom) do
+    # Calculate the number of lines that need to be shifted up
+    lines_to_shift = max(0, bottom - start_y - count)
+    
     # Shift lines from below the deletion region up
-    Enum.reduce(start_y..(bottom - count - 1), buffer, fn y, acc ->
-      # Get the line that should move up
-      source_line = get_line(acc, y + count)
-      # Set it at the current position
-      set_line(acc, y, source_line)
-    end)
-    |> then(fn acc ->
-      # Fill the bottom lines with empty content
-      Enum.reduce((bottom - count)..(bottom - 1), acc, fn y, acc ->
-        set_line(acc, y, create_empty_line())
-      end)
+    buffer = 
+      if lines_to_shift > 0 do
+        Enum.reduce(0..(lines_to_shift - 1), buffer, fn offset, acc ->
+          target_y = start_y + offset
+          source_y = start_y + count + offset
+          # Get the line that should move up
+          source_line = get_line(acc, source_y)
+          # Set it at the current position
+          set_line(acc, target_y, source_line)
+        end)
+      else
+        buffer
+      end
+    
+    # Fill the bottom lines with empty content
+    Enum.reduce((bottom - count)..(bottom - 1), buffer, fn y, acc ->
+      set_line(acc, y, create_empty_line(buffer.width))
     end)
   end
 
-  defp create_empty_line do
-    # Create an empty line with default attributes
-    # Use the existing function with default width
-    create_empty_line(80)
-  end
 
   # Helper functions
   defp create_empty_lines(width, count) do

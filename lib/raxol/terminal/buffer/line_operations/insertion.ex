@@ -232,13 +232,6 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
           ScreenBuffer.t()
   def insert_lines(buffer, lines, y, top, bottom) do
     if y >= top and y <= bottom and lines > 0 do
-      # Debug output
-      IO.puts(
-        "DEBUG: insert_lines called with lines=#{lines}, y=#{y}, top=#{top}, bottom=#{bottom}"
-      )
-
-      IO.puts("DEBUG: buffer height=#{length(buffer.cells)}")
-
       # Split the buffer into three parts:
       # 1. Lines before the scroll region (unchanged)
       # 2. Lines within the scroll region (affected by insertion)
@@ -247,15 +240,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
       {before_region, rest} = Enum.split(buffer.cells, top)
       {in_region, after_region} = Enum.split(rest, bottom - top + 1)
 
-      IO.puts("DEBUG: before_region length=#{length(before_region)}")
-      IO.puts("DEBUG: in_region length=#{length(in_region)}")
-      IO.puts("DEBUG: after_region length=#{length(after_region)}")
-
       # Split the region at the cursor position
       {before_cursor, after_cursor} = Enum.split(in_region, y - top)
-
-      IO.puts("DEBUG: before_cursor length=#{length(before_cursor)}")
-      IO.puts("DEBUG: after_cursor length=#{length(after_cursor)}")
 
       # Create blank lines
       blank_lines = create_empty_lines(buffer.width, lines)
@@ -264,9 +250,6 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
       # We can only keep lines that fit within the scroll region
       lines_to_keep = max(0, bottom - y - lines + 1)
       kept_lines = Enum.take(after_cursor, lines_to_keep)
-
-      IO.puts("DEBUG: lines_to_keep=#{lines_to_keep}")
-      IO.puts("DEBUG: kept_lines length=#{length(kept_lines)}")
 
       # Combine the region parts: before cursor + blank lines + kept lines
       new_region = before_cursor ++ blank_lines ++ kept_lines
@@ -287,13 +270,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
           Enum.take(new_region, length(in_region))
         end
 
-      IO.puts("DEBUG: final_region length=#{length(final_region)}")
-
       # Combine all parts: before region + final region + after region
       new_cells = before_region ++ final_region ++ after_region
-
-      IO.puts("DEBUG: new_cells length=#{length(new_cells)}")
-      IO.puts("DEBUG: original buffer length=#{length(buffer.cells)}")
 
       %{buffer | cells: new_cells}
     else
