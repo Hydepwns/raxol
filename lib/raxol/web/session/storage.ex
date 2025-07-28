@@ -16,9 +16,15 @@ defmodule Raxol.Web.Session.Storage do
   Initialize the session storage system.
   """
   def init do
-    # Create ETS table for session storage
-    _ = :ets.new(@table_name, [:named_table, :set, :public])
-    :ok
+    # Create ETS table for session storage if it doesn't exist
+    case :ets.whereis(@table_name) do
+      :undefined ->
+        _ = :ets.new(@table_name, [:named_table, :set, :public])
+        :ok
+      _tid ->
+        # Table already exists
+        :ok
+    end
   end
 
   @doc """

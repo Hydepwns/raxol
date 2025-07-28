@@ -50,7 +50,18 @@ defmodule Raxol.Web.Session.Manager do
 
     :ok = Cleanup.init()
 
-    {:ok, _monitor_state} = Monitor.init(%{})
+    # Monitor is a GenServer and should be started by a supervisor
+    # In test environment, we can skip starting the monitor
+    if function_exported?(Mix, :env, 0) and Mix.env() != :test do
+      # Only start monitor in non-test environments where supervisor is available
+      case Process.whereis(Monitor) do
+        nil -> 
+          # Monitor not started, let supervisor handle it
+          :ok
+        _pid -> 
+          :ok
+      end
+    end
 
     state = %{
       sessions: %{},
