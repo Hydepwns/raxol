@@ -77,12 +77,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
         get_cursor_position_safe(updated_emulator.cursor)
 
       if current_cursor_row >= buffer_height - 1 do
-        updated_emulator_with_flag = %{
-          updated_emulator
-          | cursor_handled_by_autowrap: true
-        }
-
-        scrolled_emulator = Emulator.maybe_scroll(updated_emulator_with_flag)
+        scrolled_emulator = Emulator.maybe_scroll(updated_emulator)
         new_cursor_row = buffer_height - 1
 
         updated_cursor =
@@ -157,13 +152,8 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
             get_cursor_position_safe(updated_emulator.cursor)
 
           if current_cursor_row >= buffer_height - 1 do
-            updated_emulator_with_flag = %{
-              updated_emulator
-              | cursor_handled_by_autowrap: true
-            }
-
             scrolled_emulator =
-              Emulator.maybe_scroll(updated_emulator_with_flag)
+              Emulator.maybe_scroll(updated_emulator)
 
             new_cursor_row = buffer_height - 1
 
@@ -264,9 +254,9 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
       if write_row >= buffer_height and auto_wrap_mode and
            emulator.last_col_exceeded do
         # Autowrap would go out of bounds, so we need to handle this specially
-        # Write at the current position but move cursor to next line
+        # Write at the current cursor position but move cursor to next line
         # The emulator will handle scrolling when the cursor moves out of bounds
-        {write_col, current_cursor_row, next_cursor_col, next_cursor_row,
+        {current_cursor_col, current_cursor_row, next_cursor_col, next_cursor_row,
          next_last_col_exceeded}
       else
         {write_col, write_row, next_cursor_col, next_cursor_row,
@@ -443,11 +433,11 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
       ) do
     cond do
       last_col_exceeded and auto_wrap_mode ->
-        # For autowrap, we need to check if the next line is within bounds
-        # If not, we should stay on the current line and let scrolling handle it
+        # For autowrap, stay at current position for writing
+        # and advance cursor to next line, column 0
         write_y = current_y + 1
 
-        {0, write_y, char_width, write_y,
+        {current_x, current_y, 0, write_y,
          auto_wrap_mode and char_width >= buffer_width}
 
       last_col_exceeded and not auto_wrap_mode ->

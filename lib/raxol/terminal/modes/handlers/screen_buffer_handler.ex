@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Modes.Types.ModeTypes
+  alias Raxol.Terminal.ModeManager
 
   @screen_buffer_module Application.compile_env(
                           :raxol,
@@ -128,11 +129,14 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
           TextFormatting.new()
         )
 
-      # Preserve the current mode manager state but set alternate_buffer_active to true
-      # This ensures that modes like interlacing_mode are preserved when switching buffers
+      # Create a fresh mode manager with default values for alternate screen
+      # but preserve certain critical modes that should persist
+      default_mode_manager = ModeManager.new()
       updated_mode_manager = %{
-        emulator_with_saved_state.mode_manager
-        | alternate_buffer_active: true
+        default_mode_manager
+        | alternate_buffer_active: true,
+          # Preserve only critical modes that should persist across screen switches
+          interlacing_mode: emulator_with_saved_state.mode_manager.interlacing_mode
       }
 
       {:ok,

@@ -22,6 +22,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     dectcem: &__MODULE__.handle_cursor_visibility/2,
     focus_events: &__MODULE__.handle_focus_events/2,
     bracketed_paste: &__MODULE__.handle_bracketed_paste/2,
+    dec_alt_screen: &__MODULE__.handle_alt_screen/2,
     dec_alt_screen_save: &__MODULE__.handle_alt_screen_save/2,
     decsc_deccara: &__MODULE__.handle_cursor_save_restore/2,
     alt_screen_buffer: &__MODULE__.handle_alt_screen_buffer/2,
@@ -225,6 +226,43 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
        emulator
        | mode_manager: %{emulator.mode_manager | bracketed_paste_mode: value}
      }}
+  end
+
+  def handle_alt_screen(value, emulator) do
+    # Mode 47 - Switch to/from alternate screen without save/restore
+    require Logger
+
+    Logger.debug(
+      "DECPrivateHandler.handle_alt_screen called with value=#{inspect(value)}"
+    )
+
+    new_mode_manager = %{
+      emulator.mode_manager
+      | alternate_buffer_active: value,
+        active_buffer_type: if(value, do: :alternate, else: :main)
+    }
+
+    # Update the active buffer type based on the mode
+    new_active_buffer_type = if value, do: :alternate, else: :main
+
+    # Update emulator state
+    new_emulator = %{
+      emulator
+      | mode_manager: new_mode_manager,
+        active_buffer_type: new_active_buffer_type
+    }
+
+    # Reset cursor position to (0, 0) when switching to alternate buffer
+    new_emulator =
+      if value do
+        # Reset cursor to top-left when enabling alternate buffer
+        Raxol.Terminal.Cursor.Manager.set_position(new_emulator.cursor, {0, 0})
+        new_emulator
+      else
+        new_emulator
+      end
+
+    {:ok, new_emulator}
   end
 
   def handle_alt_screen_save(value, emulator) do

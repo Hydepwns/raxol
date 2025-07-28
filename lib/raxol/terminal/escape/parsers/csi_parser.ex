@@ -146,22 +146,7 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
     %{}
   end
 
-  @cursor_move_map %{
-    "A" => :up,
-    "B" => :down,
-    "C" => :right,
-    "D" => :left
-  }
 
-  @scroll_map %{
-    "S" => :up,
-    "T" => :down
-  }
-
-  @mode_map %{
-    "h" => true,
-    "l" => false
-  }
 
   defp dispatch_csi(params, final_byte, remaining) do
     IO.puts("DEBUG: dispatch_csi called with final_byte=#{inspect(final_byte)}")
