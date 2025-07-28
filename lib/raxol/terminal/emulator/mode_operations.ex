@@ -13,38 +13,48 @@ defmodule Raxol.Terminal.Emulator.ModeOperations do
   @doc """
   Sets a terminal mode using the mode manager.
   """
-  @spec set_mode(emulator(), atom()) :: emulator()
+  @spec set_mode(emulator(), atom()) :: {:ok, emulator()} | {:error, term()}
   def set_mode(emulator, mode) do
-    Logger.debug("Emulator.set_mode/2 called with mode=#{inspect(mode)}")
-    Logger.debug("Emulator.set_mode/2: about to call ModeManager.set_mode")
+    Logger.debug("ModeOperations.set_mode called with mode=#{inspect(mode)}")
+    Logger.debug("ModeOperations.set_mode: about to call ModeManager.set_mode")
     result = Raxol.Terminal.ModeManager.set_mode(emulator, [mode])
 
     Logger.debug(
-      "Emulator.set_mode/2: ModeManager.set_mode returned #{inspect(result)}"
+      "ModeOperations.set_mode: ModeManager.set_mode returned #{inspect(result)}"
     )
 
     case result do
       {:ok, new_emulator} ->
-        Logger.debug("Emulator.set_mode/2: returning new_emulator")
-        new_emulator
+        Logger.debug("ModeOperations.set_mode: returning {:ok, new_emulator}")
+        {:ok, new_emulator}
 
       {:error, reason} ->
         Logger.debug(
-          "Emulator.set_mode/2: ModeManager.set_mode returned {:error, #{inspect(reason)}}"
+          "ModeOperations.set_mode: ModeManager.set_mode returned {:error, #{inspect(reason)}}"
         )
 
-        emulator
+        {:error, reason}
     end
   end
 
   @doc """
   Resets a terminal mode using the mode manager.
   """
-  @spec reset_mode(emulator(), atom()) :: emulator()
+  @spec reset_mode(emulator(), atom()) :: {:ok, emulator()} | {:error, term()}
   def reset_mode(emulator, mode) do
-    case Raxol.Terminal.ModeManager.reset_mode(emulator, [mode]) do
-      {:ok, new_emulator} -> new_emulator
-      {:error, _} -> emulator
+    Logger.debug("ModeOperations.reset_mode called with mode=#{inspect(mode)}")
+    Logger.debug("ModeOperations.reset_mode: about to call ModeManager.reset_mode")
+    result = Raxol.Terminal.ModeManager.reset_mode(emulator, [mode])
+    
+    Logger.debug("ModeOperations.reset_mode: ModeManager.reset_mode returned #{inspect(result)}")
+    
+    case result do
+      {:ok, new_emulator} -> 
+        Logger.debug("ModeOperations.reset_mode: returning {:ok, new_emulator}")
+        {:ok, new_emulator}
+      {:error, reason} -> 
+        Logger.debug("ModeOperations.reset_mode: returning {:error, #{inspect(reason)}}")
+        {:error, reason}
     end
   end
 end

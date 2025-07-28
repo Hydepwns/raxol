@@ -14,7 +14,6 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   alias Raxol.Terminal.Emulator
 
   alias Raxol.Terminal.Emulator.{
-    TextOperations,
     Dimensions
   }
 
@@ -138,11 +137,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
         width = Keyword.get(opts, :width, 80)
         height = Keyword.get(opts, :height, 24)
 
-        emulator_state =
-          case Emulator.new(width, height) do
-            {:ok, emulator} -> emulator
-            _ -> create_default_emulator()
-          end
+        emulator_state = Emulator.new(width, height)
 
         %__MODULE__{
           emulator_state: emulator_state,
@@ -371,10 +366,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   defp safe_resize(width, height, state) do
     try do
-      case Dimensions.resize(state.emulator_state, width, height) do
-        {:ok, new_state} -> {:ok, new_state}
-        error -> error
-      end
+      new_state = Dimensions.resize(state.emulator_state, width, height)
+      {:ok, new_state}
     rescue
       e ->
         Logger.error("Exception during resize: #{inspect(e)}")
@@ -523,14 +516,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   defp create_default_emulator do
     # Create a minimal emulator state
-    %{
-      width: 80,
-      height: 24,
-      cursor_x: 0,
-      cursor_y: 0,
-      buffer: [],
-      style: %{}
-    }
+    Emulator.new(80, 24)
   end
 
   defp schedule_checkpoint(interval) when interval > 0 do

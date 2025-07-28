@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Emulator do
   """
 
   alias Raxol.Terminal.Emulator.Coordinator
+  alias Raxol.Terminal.Emulator.ModeOperations
 
   @behaviour Raxol.Terminal.EmulatorBehaviour
 
@@ -103,6 +104,10 @@ defmodule Raxol.Terminal.Emulator do
     alternate_screen_buffer: nil,
     sixel_state: nil,
     cursor_blink_rate: 500,
+    
+    # Device status flags
+    device_status_reported: false,
+    cursor_position_reported: false,
     notification_manager: nil,
     clipboard_manager: nil,
     hyperlink_manager: nil,
@@ -181,6 +186,8 @@ defmodule Raxol.Terminal.Emulator do
           alternate_screen_buffer: any(),
           sixel_state: any(),
           cursor_blink_rate: non_neg_integer(),
+          device_status_reported: boolean(),
+          cursor_position_reported: boolean(),
           notification_manager: any(),
           clipboard_manager: any(),
           hyperlink_manager: any(),
@@ -234,6 +241,12 @@ defmodule Raxol.Terminal.Emulator do
 
   def get_cursor_visible(emulator),
     do: Raxol.Terminal.Operations.CursorOperations.cursor_visible?(emulator)
+
+  def get_cursor_position_struct(emulator),
+    do: Raxol.Terminal.Emulator.Helpers.get_cursor_position_struct(emulator)
+
+  def get_mode_manager_cursor_visible(emulator),
+    do: Raxol.Terminal.Emulator.Helpers.get_mode_manager_cursor_visible(emulator)
 
   def set_cursor_visibility(emulator, visible),
     do:
@@ -427,6 +440,7 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   # Helper functions for tests and backwards compatibility
+  def get_screen_buffer(%{active_buffer_type: :alternate, alternate_screen_buffer: buffer}) when buffer != nil, do: buffer
   def get_screen_buffer(%{main_screen_buffer: buffer}), do: buffer
   def get_screen_buffer(_), do: nil
 
@@ -470,17 +484,53 @@ defmodule Raxol.Terminal.Emulator do
   # Additional missing functions needed by various modules
   def get_scrollback(emulator), do: emulator.scrollback_buffer || []
   def maybe_scroll(emulator), do: emulator
-  def set_mode(emulator, _mode), do: emulator
-  def reset_mode(emulator, _mode), do: emulator
+  def set_mode(emulator, mode), do: ModeOperations.set_mode(emulator, mode)
+  def reset_mode(emulator, mode), do: ModeOperations.reset_mode(emulator, mode)
   def set_attribute(emulator, _attr, _value), do: emulator
   def get_mode_manager(emulator), do: emulator.mode_manager
-  def get_config_struct(emulator), do: emulator.config || %{}
+  def get_config_struct(emulator),
+    do: Raxol.Terminal.Emulator.Helpers.get_config_struct(emulator)
   def move_cursor_to(emulator, x, y), do: move_cursor(emulator, x, y)
   def move_cursor_to(emulator, x, y, _opts), do: move_cursor(emulator, x, y)
   def move_cursor_up(emulator, _count), do: emulator
   def move_cursor_down(emulator, _count), do: emulator
   def move_cursor_forward(emulator, _count), do: emulator
   def move_cursor_back(emulator, _count), do: emulator
-  def handle_esc_equals(emulator), do: emulator
-  def handle_esc_greater(emulator), do: emulator
+  def handle_esc_equals(emulator) do
+    # DECKPAM - Enable application keypad mode (ESC =)
+    require Logger
+    Logger.debug("Emulator.handle_esc_equals called - setting decckm mode")
+    Logger.debug("Initial cursor_keys_mode: #{inspect(emulator.mode_manager.cursor_keys_mode)}")
+    
+    result = ModeOperations.set_mode(emulator, :decckm)
+    
+    case result do
+      {:ok, new_emulator} ->
+        Logger.debug("ModeOperations.set_mode succeeded")
+        Logger.debug("Final cursor_keys_mode: #{inspect(new_emulator.mode_manager.cursor_keys_mode)}")
+        new_emulator
+      {:error, reason} ->
+        Logger.debug("ModeOperations.set_mode failed: #{inspect(reason)}")
+        emulator
+    end
+  end
+  
+  def handle_esc_greater(emulator) do
+    # DECKPNM - Disable application keypad mode (ESC >)
+    require Logger
+    Logger.debug("Emulator.handle_esc_greater called - resetting decckm mode")
+    Logger.debug("Initial cursor_keys_mode: #{inspect(emulator.mode_manager.cursor_keys_mode)}")
+    
+    result = ModeOperations.reset_mode(emulator, :decckm)
+    
+    case result do
+      {:ok, new_emulator} ->
+        Logger.debug("ModeOperations.reset_mode succeeded")
+        Logger.debug("Final cursor_keys_mode: #{inspect(new_emulator.mode_manager.cursor_keys_mode)}")
+        new_emulator
+      {:error, reason} ->
+        Logger.debug("ModeOperations.reset_mode failed: #{inspect(reason)}")
+        emulator
+    end
+  end
 end
