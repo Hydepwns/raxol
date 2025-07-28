@@ -189,6 +189,7 @@ defmodule Raxol.MixProject do
       {:mox, "~> 1.2", only: :test},
       {:meck, "~> 0.9", only: :test},
       {:excoveralls, "~> 0.18", only: :test},
+      {:floki, ">= 0.30.0", only: :test},
 
       # Benchmarking suite
       {:benchee, "~> 1.3", only: [:dev, :test]},

@@ -38,6 +38,8 @@ defmodule Raxol.Application do
           RaxolWeb.RateLimitManager,
           # Start the Dynamic Supervisor for Raxol applications
           Raxol.DynamicSupervisor,
+          # Start the ErrorRecovery GenServer
+          Raxol.Core.ErrorRecovery,
           # Start the UserPreferences GenServer
           Raxol.Core.UserPreferences,
           # Start the Terminal Sync System
@@ -106,6 +108,9 @@ defmodule Raxol.Test.MockApplicationSupervisor do
     #     nil
     #   end
 
+    # Add ErrorRecovery for tests
+    error_recovery_child_spec = Raxol.Core.ErrorRecovery
+
     # Add UserPreferences for tests, ensuring it starts in test mode
     user_preferences_child_spec =
       {Raxol.Core.UserPreferences, [test_mode?: true]}
@@ -127,6 +132,7 @@ defmodule Raxol.Test.MockApplicationSupervisor do
 
     children = [
       pubsub_child_spec,
+      error_recovery_child_spec,
       user_preferences_child_spec,
       accounts_child_spec,
       sync_system_child_spec,
