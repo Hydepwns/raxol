@@ -221,9 +221,6 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
           :ok ->
             new_state = update_in(state.themes, &Map.delete(&1, theme_id))
             {:ok, new_state}
-
-          {:error, reason} ->
-            {:error, reason}
         end
     end
   end

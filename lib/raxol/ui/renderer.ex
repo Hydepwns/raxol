@@ -65,16 +65,36 @@ defmodule Raxol.UI.Renderer do
           []
           # Check for zero dimensions
         else
-          if Map.get(valid_element, :width, 0) == 0 or
-               Map.get(valid_element, :height, 0) == 0 do
+          # Calculate dimensions if missing, especially for text elements
+          element_with_dims = calculate_element_dimensions(valid_element)
+          width = Map.get(element_with_dims, :width, 0)
+          height = Map.get(element_with_dims, :height, 0)
+          if width == 0 or height == 0 do
             []
           else
-            render_visible_element(valid_element, theme, parent_style)
+            render_visible_element(element_with_dims, theme, parent_style)
           end
         end
 
       {:error, _reason} ->
         []
+    end
+  end
+
+  # --- Element Dimension Calculation ---
+
+  defp calculate_element_dimensions(element) do
+    case Map.get(element, :type) do
+      :text ->
+        # Calculate text dimensions if missing
+        text = Map.get(element, :text, "")
+        width = if Map.has_key?(element, :width), do: element.width, else: String.length(text)
+        height = if Map.has_key?(element, :height), do: element.height, else: 1
+        Map.merge(element, %{width: width, height: height})
+      
+      _ ->
+        # For other element types, return as-is
+        element
     end
   end
 
@@ -192,5 +212,10 @@ defmodule Raxol.UI.Renderer do
       cells,
       Map.get(table_element, :clip_bounds)
     )
+  end
+
+  # Catch-all clause for unhandled element types
+  defp render_visible_element(_element, _theme, _parent_style) do
+    []
   end
 end
