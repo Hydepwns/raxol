@@ -42,8 +42,8 @@ defmodule Raxol.Terminal.ParserStateManager do
   @spec process_char(Emulator.t(), char()) :: {Emulator.t(), any()}
   def process_char(emulator, char) do
     state = get_parser_state(emulator)
-    {new_state, output} = ParserState.process_char(state, char)
-    {update_parser_state(emulator, new_state), output}
+    output = ParserState.process_char(state, char)
+    {emulator, output}
   end
 
   @doc """

@@ -137,5 +137,4 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.CellOperations do
     other
   end
 
-  defp has_default_style?(_), do: true
 end

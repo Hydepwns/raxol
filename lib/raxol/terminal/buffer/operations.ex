@@ -7,7 +7,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
   import Raxol.Guards
   @behaviour Raxol.Terminal.Buffer.OperationsBehaviour
 
-  alias Raxol.Terminal.Emulator
 
   # Alias the new modules
   alias Raxol.Terminal.Buffer.Operations.{Text, Scrolling, Erasing, Utils}
@@ -203,13 +202,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
     Erasing.erase_in_display(buffer, mode, cursor)
   end
 
-  defp update_emulator_if_needed(buffer, updated_buffer) do
-    if Map.has_key?(buffer, :emulator_owner) and is_map(buffer.emulator_owner) do
-      Emulator.update_active_buffer(buffer.emulator_owner, updated_buffer)
-    else
-      updated_buffer
-    end
-  end
 
   @doc """
   Writes a character to the buffer at the specified position.

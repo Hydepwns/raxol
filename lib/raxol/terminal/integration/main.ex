@@ -174,13 +174,17 @@ defmodule Raxol.Terminal.Integration do
   """
   def set_config_value(%State{} = state, key, value) do
     # Update configuration
-    state = Config.set_config_value(state, key, value)
+    case Config.set_config_value(state, key, value) do
+      {:ok, updated_state} ->
+        # Update renderer configuration
+        updated_state = IntegrationRenderer.set_config_value(updated_state, key, value)
 
-    # Update renderer configuration
-    state = IntegrationRenderer.set_config_value(state, key, value)
+        # Render the updated state
+        render(updated_state)
 
-    # Render the updated state
-    render(state)
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @doc """
@@ -188,13 +192,17 @@ defmodule Raxol.Terminal.Integration do
   """
   def reset_config(%State{} = state) do
     # Reset configuration
-    state = Config.reset_config(state)
+    case Config.reset_config(state) do
+      {:ok, updated_state} ->
+        # Reset renderer configuration
+        updated_state = IntegrationRenderer.reset_config(updated_state)
 
-    # Reset renderer configuration
-    state = IntegrationRenderer.reset_config(state)
+        # Render the updated state
+        render(updated_state)
 
-    # Render the updated state
-    render(state)
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @doc """

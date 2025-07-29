@@ -68,9 +68,6 @@ defmodule Raxol.Terminal.Config.Manager do
     }
   end
 
-  @doc """
-  Creates a new config manager with width and height.
-  """
   @spec new(non_neg_integer(), non_neg_integer()) :: Config.t()
   defp new(width, height) do
     %Config{

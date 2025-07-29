@@ -709,8 +709,9 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     case CellOperations.get_cell_at_coordinates(state, x, y) do
       {:valid, cell} ->
         {:ok, cell}
-
-        # The type system says {:invalid, _} never happens, so we only handle {:valid, _}
+      {:invalid, cell} ->
+        # Return default cell for invalid coordinates
+        {:ok, cell}
     end
   end
 

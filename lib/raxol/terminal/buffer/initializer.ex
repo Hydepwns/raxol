@@ -49,9 +49,6 @@ defmodule Raxol.Terminal.Buffer.Initializer do
 
   def validate_dimension(_, default), do: default
 
-  @doc """
-  Creates an empty grid of cells with the specified dimensions.
-  """
   @spec create_empty_grid(non_neg_integer(), non_neg_integer()) ::
           list(list(Cell.t()))
   defp create_empty_grid(width, height) do

@@ -189,24 +189,29 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
   end
 
   def handle_decsc(emulator, _params) do
-    # Save the full cursor struct
-    {:ok, %{emulator | saved_cursor: emulator.cursor, cursor_saved: true}}
+    # Save cursor position to cursor manager's saved fields
+    cursor = emulator.cursor
+    updated_cursor = %{cursor | 
+      saved_row: cursor.row,
+      saved_col: cursor.col
+    }
+    {:ok, %{emulator | cursor: updated_cursor}}
   end
 
   def handle_decrc(emulator, _params) do
-    case emulator.saved_cursor do
-      nil ->
+    cursor = emulator.cursor
+    case {cursor.saved_row, cursor.saved_col} do
+      {nil, _} ->
         {:ok, emulator}
-
-      saved_cursor ->
-        # Restore the full cursor struct
-        {:ok,
-         %{
-           emulator
-           | cursor: saved_cursor,
-             saved_cursor: saved_cursor,
-             cursor_restored: true
-         }}
+      {_, nil} ->
+        {:ok, emulator}
+      {saved_row, saved_col} ->
+        # Restore cursor position from saved fields
+        updated_cursor = %{cursor | 
+          row: saved_row,
+          col: saved_col
+        }
+        {:ok, %{emulator | cursor: updated_cursor}}
     end
   end
 

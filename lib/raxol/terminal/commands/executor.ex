@@ -302,20 +302,16 @@ defmodule Raxol.Terminal.Commands.Executor do
          final_byte,
          data_string
        ) do
-    case intermediates_buffer do
-      "" ->
-        # Simple DCS command without intermediates
-        DCSHandlers.handle_dcs(emulator, params_buffer, data_string)
-
-      _ ->
-        # DCS command with intermediates - pass final byte
-        DCSHandlers.handle_dcs(
-          emulator,
-          params_buffer,
-          intermediates_buffer,
-          final_byte,
-          data_string
-        )
+    # Always use the 5-argument version of handle_dcs which properly handles all cases
+    case DCSHandlers.handle_dcs(
+           emulator,
+           params_buffer,
+           intermediates_buffer,
+           final_byte,
+           data_string
+         ) do
+      {:ok, updated_emulator} -> updated_emulator
+      {:error, _reason, fallback_emulator} -> fallback_emulator
     end
   end
 

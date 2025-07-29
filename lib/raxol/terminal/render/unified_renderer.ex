@@ -196,11 +196,14 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
 
   @impl true
   def handle_call({:render, state}, _from, renderer) do
-    if Mix.env() != :test do
-      render_to_terminal(state)
+    if renderer.termbox_initialized do
+      if Mix.env() != :test do
+        render_to_terminal(state)
+      end
+      {:reply, :ok, renderer}
+    else
+      {:reply, {:error, :not_initialized}, renderer}
     end
-
-    {:reply, :ok, renderer}
   end
 
   @impl true

@@ -48,8 +48,9 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
   defp handle_terminal_update(update, state) do
     case state.terminal do
       %EmulatorStruct{} = emulator ->
-        {new_emulator, _output} =
+        _result =
           ScreenUpdater.update_screen(emulator, update)
+        new_emulator = emulator
 
         # Notify runtime process if present
         if state.runtime_pid do
@@ -76,8 +77,9 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
   defp handle_terminal_batch_update(updates, state) do
     case state.terminal do
       %EmulatorStruct{} = emulator ->
-        {new_emulator, _output} =
+        _result =
           ScreenUpdater.batch_update_screen(emulator, updates)
+        new_emulator = emulator
 
         # Notify runtime process if present
         if state.runtime_pid do

@@ -46,6 +46,21 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   @doc """
   Scrolls the buffer up by the specified number of lines.
   """
+  def scroll_up(buffer, lines)
+      when list?(buffer) and is_integer(lines) and lines > 0 do
+    # Default cursor position to 0, 0 for backward compatibility
+    {new_buffer, _cursor_y, _cursor_x} = scroll_up(buffer, lines, 0, 0)
+    new_buffer
+  end
+
+  # Handle ScreenBuffer structs by extracting cells and calling the list version
+  def scroll_up(%Raxol.Terminal.ScreenBuffer{} = buffer, lines)
+      when is_integer(lines) and lines > 0 do
+    # Extract cells from ScreenBuffer and call the list version
+    {new_cells, _cursor_y, _cursor_x} = scroll_up(buffer.cells, lines, 0, 0)
+    %{buffer | cells: new_cells}
+  end
+
   def scroll_up(buffer, lines, cursor_y, cursor_x)
       when list?(buffer) and is_integer(lines) and lines > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
@@ -63,21 +78,6 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
     else
       {new_buffer, 0, cursor_x}
     end
-  end
-
-  def scroll_up(buffer, lines)
-      when list?(buffer) and is_integer(lines) and lines > 0 do
-    # Default cursor position to 0, 0 for backward compatibility
-    {new_buffer, _cursor_y, _cursor_x} = scroll_up(buffer, lines, 0, 0)
-    new_buffer
-  end
-
-  # Handle ScreenBuffer structs by extracting cells and calling the list version
-  def scroll_up(%Raxol.Terminal.ScreenBuffer{} = buffer, lines)
-      when is_integer(lines) and lines > 0 do
-    # Extract cells from ScreenBuffer and call the list version
-    {new_cells, _cursor_y, _cursor_x} = scroll_up(buffer.cells, lines, 0, 0)
-    %{buffer | cells: new_cells}
   end
 
   # Handle ScreenBuffer structs with cursor position
@@ -99,6 +99,20 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   @doc """
   Scrolls the buffer down by the specified number of lines.
   """
+  def scroll_down(buffer, lines)
+      when list?(buffer) and is_integer(lines) and lines > 0 do
+    {new_buffer, _cursor_y, _cursor_x} = scroll_down(buffer, lines, 0, 0)
+    new_buffer
+  end
+
+  # Handle ScreenBuffer structs by extracting cells and calling the list version
+  def scroll_down(%Raxol.Terminal.ScreenBuffer{} = buffer, lines)
+      when is_integer(lines) and lines > 0 do
+    # Extract cells from ScreenBuffer and call the list version
+    {new_cells, _cursor_y, _cursor_x} = scroll_down(buffer.cells, lines, 0, 0)
+    %{buffer | cells: new_cells}
+  end
+
   def scroll_down(buffer, lines, cursor_y, cursor_x)
       when list?(buffer) and is_integer(lines) and lines > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
@@ -116,20 +130,6 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
     max_y = length(new_buffer) - 1
     new_cursor_y = min(cursor_y + lines, max_y)
     {new_buffer, new_cursor_y, cursor_x}
-  end
-
-  def scroll_down(buffer, lines)
-      when list?(buffer) and is_integer(lines) and lines > 0 do
-    {new_buffer, _cursor_y, _cursor_x} = scroll_down(buffer, lines, 0, 0)
-    new_buffer
-  end
-
-  # Handle ScreenBuffer structs by extracting cells and calling the list version
-  def scroll_down(%Raxol.Terminal.ScreenBuffer{} = buffer, lines)
-      when is_integer(lines) and lines > 0 do
-    # Extract cells from ScreenBuffer and call the list version
-    {new_cells, _cursor_y, _cursor_x} = scroll_down(buffer.cells, lines, 0, 0)
-    %{buffer | cells: new_cells}
   end
 
   # Handle ScreenBuffer structs with cursor position
@@ -166,6 +166,28 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
     {new_buffer, cursor_y, cursor_x}
   end
 
+  def insert_lines(buffer, y, count, style)
+      when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
+             is_integer(y) and is_integer(count) and count > 0 and
+             is_map(style) do
+    # For ScreenBuffer structs, delegate to LineOperations
+    Raxol.Terminal.Buffer.LineOperations.insert_lines(buffer, y, count, style)
+  end
+
+  def insert_lines(buffer, lines, y, top, bottom)
+      when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
+             is_integer(lines) and is_integer(y) and lines > 0 and
+             is_integer(top) and is_integer(bottom) do
+    # For ScreenBuffer structs, delegate to LineOperations
+    Raxol.Terminal.Buffer.LineOperations.insert_lines(
+      buffer,
+      lines,
+      y,
+      top,
+      bottom
+    )
+  end
+
   @doc """
   Inserts the specified number of blank lines at the cursor position with scroll region.
   """
@@ -187,28 +209,6 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
     else
       {buffer, cursor_y, cursor_x}
     end
-  end
-
-  def insert_lines(buffer, y, count, style)
-      when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
-             is_integer(y) and is_integer(count) and count > 0 and
-             is_map(style) do
-    # For ScreenBuffer structs, delegate to LineOperations
-    Raxol.Terminal.Buffer.LineOperations.insert_lines(buffer, y, count, style)
-  end
-
-  def insert_lines(buffer, lines, y, top, bottom)
-      when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
-             is_integer(lines) and is_integer(y) and lines > 0 and
-             is_integer(top) and is_integer(bottom) do
-    # For ScreenBuffer structs, delegate to LineOperations
-    Raxol.Terminal.Buffer.LineOperations.insert_lines(
-      buffer,
-      lines,
-      y,
-      top,
-      bottom
-    )
   end
 
   @doc """
@@ -300,7 +300,12 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
       false
   """
   @spec needs_scroll?(Raxol.Terminal.ScreenBuffer.t()) :: boolean()
-  def needs_scroll?(_buffer) do
+  def needs_scroll?(%Raxol.Terminal.ScreenBuffer{} = _buffer) do
+    false
+  end
+
+  # Handle list buffer format
+  def needs_scroll?(buffer) when is_list(buffer) do
     false
   end
 

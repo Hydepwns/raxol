@@ -305,48 +305,4 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     end
   end
 
-  defp fill_blank_lines(buffer, region_start, count, style, :up) do
-    region_height = get_region_height(buffer, region_start)
-    region_end = region_start + region_height - 1
-    blank_start = region_end - count + 1
-    blank_end = region_end
-    empty_line = List.duplicate(Cell.new(" ", style), buffer.width)
-
-    updated_cells =
-      Enum.with_index(buffer.cells)
-      |> Enum.map(fn {line, idx} ->
-        if idx >= blank_start and idx <= blank_end do
-          empty_line
-        else
-          line
-        end
-      end)
-
-    %{buffer | cells: updated_cells}
-  end
-
-  defp fill_blank_lines(buffer, region_start, count, style, :down) do
-    region_height = get_region_height(buffer, region_start)
-    _region_end = region_start + region_height - 1
-    blank_start = region_start
-    blank_end = region_start + count - 1
-    empty_line = List.duplicate(Cell.new(" ", style), buffer.width)
-
-    updated_cells =
-      Enum.with_index(buffer.cells)
-      |> Enum.map(fn {line, idx} ->
-        if idx >= blank_start and idx <= blank_end do
-          empty_line
-        else
-          line
-        end
-      end)
-
-    %{buffer | cells: updated_cells}
-  end
-
-  defp get_region_height(buffer, region_start) do
-    # Try to infer region height from buffer.cells length and region_start
-    buffer.height - region_start
-  end
 end

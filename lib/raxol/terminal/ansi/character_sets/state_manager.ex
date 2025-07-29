@@ -240,12 +240,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
     )
   end
 
-  """
-  def update_charset_state(emulator, charset_state) do
-    %{emulator | charset_state: charset_state}
-  end
-
-  @doc \"""
+  @doc """
   Validates a character set state.
   Returns :ok if valid, or {:error, reason} if invalid.
   """

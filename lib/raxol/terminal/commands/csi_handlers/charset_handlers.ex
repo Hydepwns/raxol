@@ -112,9 +112,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CharsetHandlers do
     end
   end
 
-  defp get_charset(charset_code) do
-    Map.get(@charset_mapping, charset_code, :us_ascii)
-  end
 
   defp get_charset_module(charset_code) do
     Map.get(@charset_mapping, charset_code, :us_ascii)

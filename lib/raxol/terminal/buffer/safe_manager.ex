@@ -430,37 +430,4 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
     }
   end
 
-  defp _record_circuit_success(circuit_breaker) do
-    case circuit_breaker.state do
-      :half_open ->
-        # If we're in half-open state and call succeeds, close the circuit
-        %{circuit_breaker | 
-          state: :closed,
-          failure_count: 0,
-          success_count: circuit_breaker.success_count + 1
-        }
-      _ ->
-        # Otherwise just increment success count
-        %{circuit_breaker | 
-          success_count: circuit_breaker.success_count + 1
-        }
-    end
-  end
-
-  defp _record_circuit_failure(circuit_breaker) do
-    new_failure_count = circuit_breaker.failure_count + 1
-    
-    new_state = 
-      if new_failure_count >= circuit_breaker.threshold do
-        :open
-      else
-        circuit_breaker.state
-      end
-    
-    %{circuit_breaker | 
-      state: new_state,
-      failure_count: new_failure_count,
-      last_failure_time: DateTime.utc_now()
-    }
-  end
 end

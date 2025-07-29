@@ -120,8 +120,12 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   # --- Attribute functionality delegation ---
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
-  def apply_attribute(style, attribute),
-    do: Attributes.apply_attribute(style, attribute)
+  def apply_attribute(style, attribute) do
+    case attribute do
+      :reset -> new()
+      _ -> Attributes.apply_attribute(style, attribute)
+    end
+  end
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
   def set_bold(style), do: Attributes.set_bold(style)

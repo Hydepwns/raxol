@@ -18,10 +18,11 @@ defmodule Raxol.Terminal.Manager.SessionHandler do
   @spec create_session(map(), map()) :: {:ok, binary()} | {:error, term()}
   def create_session(opts, state) do
     case SessionManager.create_session(opts, state.runtime_pid) do
-      {:ok, session_id, pid} ->
+      {:ok, session} ->
+        session_id = session.id
         new_state = %{
           state
-          | sessions: Map.put(state.sessions, session_id, pid)
+          | sessions: Map.put(state.sessions, session_id, session)
         }
 
         {:ok, session_id, new_state}
@@ -41,7 +42,7 @@ defmodule Raxol.Terminal.Manager.SessionHandler do
            state.sessions,
            state.runtime_pid
          ) do
-      :ok ->
+      {:ok, _sessions} ->
         new_state = %{state | sessions: Map.delete(state.sessions, session_id)}
         {:ok, new_state}
 

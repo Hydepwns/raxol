@@ -21,8 +21,12 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
 
   def handle_dcs(emulator, _params, intermediates, final_byte, data_string) do
     case {intermediates, final_byte} do
-      # Sixel Graphics - DCS q ... ST
+      # Sixel Graphics - DCS q ... ST (with or without quote intermediate)
       {"\"", ?q} ->
+        handle_sixel(emulator, data_string)
+        
+      # Sixel Graphics - DCS q ... ST (without intermediate)
+      {"", ?q} ->
         handle_sixel(emulator, data_string)
 
       # DECRQSS - DCS ! | ... ST
@@ -236,9 +240,9 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
       {r, g, b} ->
         Logger.debug("Found color {#{r}, #{g}, #{b}} for index #{color_index}")
 
-        # Create a proper TextFormatting.Core struct with the background color
+        # Create a proper TextFormatting struct with the background color
         style =
-          Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+          Raxol.Terminal.ANSI.TextFormatting.new(%{
             background: {:rgb, r, g, b}
           })
 

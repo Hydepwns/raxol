@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.Buffer.LineEditor do
     eff_row = min(row, buffer.height - 1)
 
     # Create blank lines with the provided default style
-    blank_cell = %Cell{style: default_style}
+    blank_cell = %Cell{style: default_style, char: " "}
     blank_line = List.duplicate(blank_cell, buffer.width)
     blank_lines_to_insert = List.duplicate(blank_line, count)
 
@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.Buffer.LineEditor do
     eff_count = min(count, buffer.height - eff_row)
 
     # Create blank lines with the provided default style to add at the bottom
-    blank_cell = %Cell{style: default_style}
+    blank_cell = %Cell{style: default_style, char: " "}
     blank_line = List.duplicate(blank_cell, buffer.width)
     blank_lines_to_add = List.duplicate(blank_line, eff_count)
 

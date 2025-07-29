@@ -239,26 +239,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
     end
   end
 
-  defp parse_cursor_position_params(params) do
-    case params do
-      [] ->
-        {1, 1}
-
-      [row] ->
-        {row, 1}
-
-      [row, col] ->
-        {row, col}
-
-      [row, ?;, col] ->
-        row_int = if is_integer(row), do: row, else: row - ?0
-        col_int = if is_integer(col), do: col, else: col - ?0
-        {row_int, col_int}
-
-      _ ->
-        {1, 1}
-    end
-  end
 
   @doc """
   Handles cursor column positioning.

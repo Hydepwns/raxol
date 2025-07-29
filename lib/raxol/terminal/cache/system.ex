@@ -274,7 +274,10 @@ defmodule Raxol.Terminal.Cache.System do
           update_namespace(state, namespace, %{
             namespace_state
             | cache: %{},
-              size: 0
+              size: 0,
+              hit_count: 0,
+              miss_count: 0,
+              eviction_count: 0
           })
 
         {:reply, :ok, updated_state}
