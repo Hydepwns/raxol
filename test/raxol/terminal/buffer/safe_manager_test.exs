@@ -4,6 +4,14 @@ defmodule Raxol.Terminal.Buffer.SafeManagerTest do
   alias Raxol.Terminal.Buffer.SafeManager
 
   setup do
+    # Ensure ErrorRecovery is started for tests
+    case GenServer.whereis(Raxol.Core.ErrorRecovery) do
+      nil ->
+        {:ok, _} = Raxol.Core.ErrorRecovery.start_link()
+      _ ->
+        :ok
+    end
+    
     {:ok, pid} = SafeManager.start_link(width: 80, height: 24)
     
     on_exit(fn ->

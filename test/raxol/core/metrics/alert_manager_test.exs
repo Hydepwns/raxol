@@ -8,9 +8,13 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
   setup do
     # Start UnifiedCollector for metrics dependency if not already started
-    case Raxol.Core.Metrics.UnifiedCollector.start_link() do
-      {:ok, uc_pid} -> uc_pid
-      {:error, {:already_started, uc_pid}} -> uc_pid
+    uc_pid = case Raxol.Core.Metrics.UnifiedCollector.start_link() do
+      {:ok, pid} -> 
+        pid
+      {:error, {:already_started, pid}} -> 
+        pid
+      {:error, reason} ->
+        raise "Failed to start UnifiedCollector: #{inspect(reason)}"
     end
 
     # Use a unique name for each test to avoid conflicts
@@ -21,9 +25,14 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
       if Process.alive?(pid) do
         GenServer.stop(pid)
       end
+      
+      # Also stop UnifiedCollector if we started it
+      if uc_pid && Process.alive?(uc_pid) do
+        GenServer.stop(uc_pid)
+      end
     end)
 
-    {:ok, test_name: test_name, pid: pid}
+    {:ok, test_name: test_name, pid: pid, collector_pid: uc_pid}
   end
 
   describe "rule management" do

@@ -28,7 +28,8 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
       opts = [
         fps: 30,
         theme: %{foreground: :white, background: :black},
-        font_settings: %{size: 12}
+        font_settings: %{size: 12},
+        name: :"unified_renderer_custom_#{System.unique_integer([:positive])}"
       ]
 
       {:ok, pid} = UnifiedRenderer.start_link(opts)

@@ -359,9 +359,15 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       # Stop the server
       :ok = BufferServerRefactored.stop(pid)
 
-      # Try to use the stopped server
-      result = BufferServerRefactored.get_cell(pid, 0, 0)
-      assert result == {:error, :noproc} or result == {:error, :normal}
+      # Try to use the stopped server - should raise an exit
+      assert_raise RuntimeError, fn ->
+        try do
+          BufferServerRefactored.get_cell(pid, 0, 0)
+        catch
+          :exit, {:noproc, _} -> raise "Process not alive"
+          :exit, _ -> raise "Process not alive"
+        end
+      end
     end
   end
 

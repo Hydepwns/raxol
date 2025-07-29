@@ -1,4 +1,3 @@
-import Raxol.Core.Renderer.View, only: [ensure_keyword: 1]
 
 defmodule Raxol.Core.Renderer.BufferTest do
   @moduledoc """

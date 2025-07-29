@@ -419,13 +419,6 @@ defmodule Raxol.Test.PluginTestFixtures do
         {"invalid_type", "invalid_version"}
       ]
 
-    defp metadata_errors do
-      [
-        :invalid_id,
-        :invalid_version,
-        :invalid_dependencies
-      ]
-    end
 
     def get_metadata do
       # Return invalid metadata structure to test error handling

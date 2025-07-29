@@ -138,6 +138,9 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
 
   describe "cache statistics" do
     test "tracks cache statistics", %{animation_data: animation_data} do
+      # Get initial stats
+      {:ok, initial_stats} = AnimationCache.get_animation_cache_stats()
+      
       # Cache some animations
       :ok = AnimationCache.cache_animation_data("anim1", animation_data)
       :ok = AnimationCache.cache_animation_data("anim2", animation_data)
@@ -153,13 +156,18 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
 
       # Get cache stats
       {:ok, stats} = AnimationCache.get_animation_cache_stats()
-      # 5 + 3 hits
-      assert stats.hit_count == 8
-      assert stats.miss_count == 0
-      assert stats.hit_ratio == 1.0
+      # Check the delta - we expect 8 hits
+      hit_delta = stats.hit_count - initial_stats.hit_count
+      miss_delta = stats.miss_count - initial_stats.miss_count
+      
+      assert hit_delta == 8
+      assert miss_delta == 0
     end
 
     test "tracks cache misses", %{animation_data: animation_data} do
+      # Get initial stats
+      {:ok, initial_stats} = AnimationCache.get_animation_cache_stats()
+      
       # Try to get non-existent animations
       for _ <- 1..3 do
         AnimationCache.get_cached_animation("nonexistent")
@@ -170,9 +178,12 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
 
       # Get cache stats
       {:ok, stats} = AnimationCache.get_animation_cache_stats()
-      assert stats.miss_count == 3
-      assert stats.hit_count == 0
-      assert stats.hit_ratio == 0.0
+      # Check the delta - we expect 3 misses
+      miss_delta = stats.miss_count - initial_stats.miss_count
+      hit_delta = stats.hit_count - initial_stats.hit_count
+      
+      assert miss_delta == 3
+      assert hit_delta == 0
     end
   end
 

@@ -18,24 +18,28 @@ defmodule Raxol.Test.MetricsHelper do
     * `{:ok, state}` - The test state containing all started components
   """
   def setup_metrics_test(opts \\ []) do
-    # Start metrics collector
+    # Start metrics collector unless disabled
     collector =
-      case Raxol.Core.Metrics.UnifiedCollector.start_link(
-             Keyword.get(opts, :collector_opts,
-               retention_period: :timer.minutes(5),
-               max_samples: 100,
-               flush_interval: :timer.seconds(1),
-               cloud_enabled: false
-             )
-           ) do
-        {:ok, pid} ->
-          pid
+      if Keyword.get(opts, :start_collector, true) do
+        case Raxol.Core.Metrics.UnifiedCollector.start_link(
+               Keyword.get(opts, :collector_opts,
+                 retention_period: :timer.minutes(5),
+                 max_samples: 100,
+                 flush_interval: :timer.seconds(1),
+                 cloud_enabled: false
+               )
+             ) do
+          {:ok, pid} ->
+            pid
 
-        {:error, {:already_started, pid}} ->
-          pid
+          {:error, {:already_started, pid}} ->
+            pid
 
-        {:error, reason} ->
-          raise "Failed to start UnifiedCollector: #{inspect(reason)}"
+          {:error, reason} ->
+            raise "Failed to start UnifiedCollector: #{inspect(reason)}"
+        end
+      else
+        nil
       end
 
     # Start metrics aggregator
@@ -108,21 +112,22 @@ defmodule Raxol.Test.MetricsHelper do
     * `state` - The test state returned by `setup_metrics_test/1`
   """
   def cleanup_metrics_test(state) do
-    if Process.alive?(state.collector) do
+    if state.collector && Process.alive?(state.collector) do
       Raxol.Core.Metrics.UnifiedCollector.stop(state.collector)
     end
 
-    if Process.alive?(state.aggregator) do
+    if state.aggregator && Process.alive?(state.aggregator) do
       Raxol.Core.Metrics.Aggregator.stop(state.aggregator)
     end
 
-    if Process.alive?(state.visualizer) do
+    if state.visualizer && Process.alive?(state.visualizer) do
       Raxol.Core.Metrics.Visualizer.stop(state.visualizer)
     end
 
-    if Process.alive?(state.alert_manager) do
+    if state.alert_manager && Process.alive?(state.alert_manager) do
       Raxol.Core.Metrics.AlertManager.stop(state.alert_manager)
     end
+    :ok
   end
 
   @doc """
@@ -160,15 +165,25 @@ defmodule Raxol.Test.MetricsHelper do
       :ok
   """
   def verify_metric(name, type, expected_value, opts \\ []) do
+    expected_tags = Keyword.get(opts, :tags, [])
+    
     case Raxol.Core.Metrics.UnifiedCollector.get_metric(name, type, opts) do
       [] ->
-        {:error, :metric_not_found}
+        # Check if metric exists with different tags
+        case Raxol.Core.Metrics.UnifiedCollector.get_metric(name, type, []) do
+          [] ->
+            {:error, :metric_not_found}
+          [%{tags: actual_tags} | _] when actual_tags != expected_tags ->
+            {:error, {:unexpected_tags, actual_tags, expected_tags}}
+          _ ->
+            {:error, :metric_not_found}
+        end
 
       [%{value: ^expected_value} | _] ->
         :ok
 
       [%{value: actual_value} | _] ->
-        {:error, {:unexpected_value, actual_value}}
+        {:error, {:unexpected_value, actual_value, expected_value}}
 
       _ ->
         {:error, :invalid_metric_format}

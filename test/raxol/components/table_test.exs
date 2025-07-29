@@ -158,7 +158,7 @@ defmodule Raxol.UI.Components.TableTest do
       assert Map.has_key?(rendered, :type)
       assert rendered.type == :box
       flex = get_in(rendered, [:children, Access.at(0)])
-      [header | rows] = flex.children
+      [_header | rows] = flex.children
       assert length(rows) == 1
       first_row = List.first(rows)
       assert map?(first_row)
@@ -493,7 +493,7 @@ defmodule Raxol.UI.Components.TableTest do
     end
 
     test "column style and header_style are respected", %{
-      columns: columns,
+      columns: _columns,
       data: data
     } do
       custom_columns = [

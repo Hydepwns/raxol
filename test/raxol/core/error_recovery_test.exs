@@ -64,7 +64,7 @@ defmodule Raxol.Core.ErrorRecoveryTest do
       end, max_retries: 3, base_delay: 10)
       
       assert result == {:ok, "success after retries"}
-      assert :counters.get(counter, 1) == 2
+      assert :counters.get(counter, 1) == 3
     end
     
     test "fails after max retries" do

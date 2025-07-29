@@ -65,6 +65,10 @@ defmodule Raxol.Plugins.PluginSystemTest do
             dependencies: ["hyperlink"]
           }
         end
+        
+        def get_api_version do
+          "1.0"
+        end
 
         def api_version do
           "1.0.0"
@@ -112,6 +116,10 @@ defmodule Raxol.Plugins.PluginSystemTest do
             version: "1.0.0",
             dependencies: []
           }
+        end
+        
+        def get_api_version do
+          "1.0"
         end
 
         def api_version do

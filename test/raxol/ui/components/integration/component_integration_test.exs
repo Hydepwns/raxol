@@ -260,7 +260,7 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
       assert child.state.component_manager_id != nil
 
       # Simulate child event that should propagate to parent
-      {updated_child, _} =
+      {_updated_child, _} =
         Raxol.Test.Integration.simulate_event_with_manager_update(child, %{
           type: :click
         })

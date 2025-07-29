@@ -58,37 +58,33 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
 
   describe "handle_u/2 (Restore Cursor Position - RCP)" do
     test "restores the cursor state from saved_cursor", %{emulator: emulator} do
-      saved_cursor_state = %CursorManager{
-        row: 7,
-        col: 3,
-        style: :blink_underline,
-        visible: false
-      }
-
-      emulator_with_saved = %{emulator | saved_cursor: saved_cursor_state}
-
-      current_cursor_state = %CursorManager{
-        row: 0,
-        col: 0,
-        style: :steady_block,
-        visible: true
-      }
-
-      emulator_to_restore = %{
-        emulator_with_saved
-        | cursor: current_cursor_state
-      }
-
-      result_emulator = unwrap_ok(CSIHandlers.handle_u(emulator_to_restore, []))
-
-      assert result_emulator.cursor == saved_cursor_state
-
-      assert result_emulator.saved_cursor == saved_cursor_state
+      # Set cursor to a specific position
+      cursor_with_position = %{emulator.cursor | row: 7, col: 3}
+      emulator = %{emulator | cursor: cursor_with_position}
+      
+      # Save cursor position (handle_s)
+      emulator_with_saved = unwrap_ok(CSIHandlers.handle_s(emulator, []))
+      
+      # Verify position was saved
+      assert emulator_with_saved.cursor.saved_row == 7
+      assert emulator_with_saved.cursor.saved_col == 3
+      
+      # Move cursor to different position
+      moved_cursor = %{emulator_with_saved.cursor | row: 0, col: 0}
+      emulator_moved = %{emulator_with_saved | cursor: moved_cursor}
+      
+      # Restore cursor position (handle_u)
+      result_emulator = unwrap_ok(CSIHandlers.handle_u(emulator_moved, []))
+      
+      # Verify cursor was restored to saved position
+      assert result_emulator.cursor.row == 7
+      assert result_emulator.cursor.col == 3
     end
 
     test "does nothing if saved_cursor is nil", %{emulator: emulator} do
       initial_cursor_state = emulator.cursor
-      assert emulator.saved_cursor == nil
+      assert emulator.cursor.saved_row == nil
+      assert emulator.cursor.saved_col == nil
 
       result_emulator = unwrap_ok(CSIHandlers.handle_u(emulator, []))
 
@@ -517,13 +513,21 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
     test "handles save/restore cursor sequences" do
       emulator = new_emulator()
 
+      # Move cursor to a specific position first
+      emulator = %{emulator | cursor: %{emulator.cursor | row: 5, col: 10}}
+
       # Save Cursor Position
       state = CSIHandlers.handle_sequence(emulator, [?s])
-      assert state.cursor_saved == true
+      assert state.cursor.saved_row == 5
+      assert state.cursor.saved_col == 10
+
+      # Move cursor to a different position
+      state = %{state | cursor: %{state.cursor | row: 15, col: 20}}
 
       # Restore Cursor Position
       state = CSIHandlers.handle_sequence(state, [?u])
-      assert state.cursor_restored == true
+      assert state.cursor.row == 5
+      assert state.cursor.col == 10
     end
 
     test "ignores unknown sequences" do

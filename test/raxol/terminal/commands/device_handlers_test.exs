@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Commands.DeviceHandlersTest do
   alias Raxol.Terminal.{Commands.DeviceHandlers, Emulator, OutputManager}
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
-  alias Raxol.Terminal.ANSI.TextFormatting
 
   setup do
     # Create a test emulator with a 10x10 screen using the proper constructor

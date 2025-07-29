@@ -11,6 +11,11 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   alias Raxol.Core.KeyboardShortcuts
 
   setup do
+    # Ensure UserPreferences is started
+    unless Process.whereis(Raxol.Core.UserPreferences) do
+      start_supervised!({Raxol.Core.UserPreferences, [test_mode?: true]})
+    end
+    
     # Initialize event manager for tests
     EventManager.init()
 

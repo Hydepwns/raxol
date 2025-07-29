@@ -4,7 +4,9 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
   alias Raxol.Terminal.Emulator.SafeEmulator
 
   setup do
-    {:ok, pid} = SafeEmulator.start_link(width: 80, height: 24)
+    # Generate unique name for each test to avoid conflicts
+    name = :"safe_emulator_test_#{System.unique_integer([:positive])}"
+    {:ok, pid} = SafeEmulator.start_link(width: 80, height: 24, name: name)
     {:ok, pid: pid}
   end
 

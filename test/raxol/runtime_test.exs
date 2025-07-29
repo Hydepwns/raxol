@@ -175,10 +175,16 @@ defmodule Raxol.RuntimeTest do
     # For now, let's comment it out to see if already_started errors are resolved.
     # assert_receive {:plugin_manager_ready, ^plugin_manager_pid}, 1000
 
+    # Get the PIDs of the processes we need for tests
+    dispatcher_pid = Process.whereis(Dispatcher)
+    driver_pid = Process.whereis(TerminalDriver)
+    
     # Return the captured PIDs in the context
     {:ok,
      %{
-       supervisor_pid: supervisor_pid
+       supervisor_pid: supervisor_pid,
+       dispatcher_pid: dispatcher_pid,
+       driver_pid: driver_pid
      }}
   end
 

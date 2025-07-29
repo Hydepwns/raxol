@@ -165,7 +165,7 @@ defmodule Raxol.Core.Buffer.BufferPerformanceTest do
 
         # Create and fill buffer
         buffer = Buffer.new({width, height})
-        buffer = fill_buffer(buffer, width, height)
+        _buffer = fill_buffer(buffer, width, height)
 
         # Measure memory after
         :erlang.garbage_collect()

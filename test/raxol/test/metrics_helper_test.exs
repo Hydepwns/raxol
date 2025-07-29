@@ -2,10 +2,15 @@ defmodule Raxol.Test.MetricsHelperTest do
   use ExUnit.Case
   alias Raxol.Test.MetricsHelper
 
-  setup do
-    context = MetricsHelper.setup_metrics_test()
-    on_exit(fn -> MetricsHelper.cleanup_metrics_test(context) end)
-    {:ok, context}
+  setup context do
+    # Skip default setup for tests that handle their own setup
+    unless context[:skip_setup] do
+      context = MetricsHelper.setup_metrics_test()
+      on_exit(fn -> MetricsHelper.cleanup_metrics_test(context) end)
+      {:ok, context}
+    else
+      :ok
+    end
   end
 
   describe "setup_metrics_test/1" do
@@ -27,7 +32,14 @@ defmodule Raxol.Test.MetricsHelperTest do
       MetricsHelper.cleanup_metrics_test(context)
     end
 
+    @tag skip_setup: true
     test ~c"can start without collector" do
+      # Ensure any existing collector is stopped first
+      if pid = Process.whereis(Raxol.Core.Metrics.UnifiedCollector) do
+        GenServer.stop(pid)
+        Process.sleep(10)
+      end
+      
       context = MetricsHelper.setup_metrics_test(start_collector: false)
       refute Process.whereis(Raxol.Core.Metrics.UnifiedCollector)
       MetricsHelper.cleanup_metrics_test(context)
@@ -161,7 +173,14 @@ defmodule Raxol.Test.MetricsHelperTest do
       refute Process.whereis(Raxol.Core.Metrics.UnifiedCollector)
     end
 
+    @tag skip_setup: true
     test ~c"handles already stopped collector" do
+      # Ensure any existing collector is stopped first
+      if pid = Process.whereis(Raxol.Core.Metrics.UnifiedCollector) do
+        GenServer.stop(pid)
+        Process.sleep(10)
+      end
+      
       context = MetricsHelper.setup_metrics_test(start_collector: false)
       :ok = MetricsHelper.cleanup_metrics_test(context)
       refute Process.whereis(Raxol.Core.Metrics.UnifiedCollector)

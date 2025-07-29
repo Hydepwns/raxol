@@ -9,6 +9,22 @@ defmodule RaxolWeb.TerminalLiveTest do
   setup %{conn: conn} do
     # Dummy user with id "user" to match Auth.validate_token
     user = %{id: "user", role: :user}
+    
+    # Ensure PubSub is started
+    unless Process.whereis(Raxol.PubSub) do
+      start_supervised!({Phoenix.PubSub, name: Raxol.PubSub})
+    end
+    
+    # Ensure Presence is started
+    unless Process.whereis(RaxolWeb.Presence) do
+      start_supervised!(RaxolWeb.Presence)
+    end
+    
+    # Ensure Raxol.Accounts is started before logging in user
+    unless Process.whereis(Raxol.Accounts) do
+      start_supervised!({Raxol.Accounts, []})
+    end
+    
     # Use the helper from ConnCase
     conn = log_in_user(conn, user)
 

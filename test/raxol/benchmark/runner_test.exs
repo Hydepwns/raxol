@@ -36,6 +36,9 @@ defmodule Raxol.Benchmark.RunnerTest do
     end
 
     test "can profile an operation" do
+      # Ensure module is loaded
+      Code.ensure_loaded?(Runner)
+      
       # For now, just verify the function exists (with default args, it's exported as arity 3)
       assert function_exported?(Runner, :profile, 3)
     end
@@ -77,6 +80,9 @@ defmodule Raxol.Benchmark.RunnerTest do
     end
 
     test "can compile report data" do
+      # Ensure module is loaded
+      Code.ensure_loaded?(Reporter)
+      
       # Verify the module exists and has expected functions
       assert function_exported?(Reporter, :generate_comprehensive_report, 1)
       assert function_exported?(Reporter, :generate_comprehensive_report, 2)

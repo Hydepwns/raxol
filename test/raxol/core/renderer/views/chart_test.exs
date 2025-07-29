@@ -1,4 +1,3 @@
-import Raxol.Core.Renderer.View, only: [ensure_keyword: 1]
 import Raxol.Guards
 
 defmodule Raxol.Core.Renderer.Views.ChartTest do
