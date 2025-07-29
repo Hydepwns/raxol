@@ -187,6 +187,63 @@ defmodule RaxolWeb.SettingsLive do
     end
   end
 
+  def handle_event("update_password", %{"current_password" => current_password, "user" => user_params}, socket) do
+    user = socket.assigns.current_user
+    new_password = user_params["password"]
+    password_confirmation = user_params["password_confirmation"]
+
+    # Validate password confirmation
+    if new_password != password_confirmation do
+      error_changeset = %Ecto.Changeset{
+        data: %Raxol.Auth.User{},
+        errors: [password_confirmation: {"does not match", []}],
+        valid?: false
+      }
+
+      {:noreply,
+       socket
+       |> put_flash(:error, "Password confirmation does not match.")
+       |> assign(:password_changeset, error_changeset)}
+    else
+      # Update password using Accounts module
+      case Accounts.update_password(user.id, current_password, new_password) do
+        {:ok, updated_user} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Password updated successfully.")
+           |> push_navigate(to: "/settings")
+           |> assign(:current_user, updated_user)}
+
+        {:error, :invalid_current_password} ->
+          error_changeset = %Ecto.Changeset{
+            data: %Raxol.Auth.User{},
+            errors: [current_password: {"is incorrect", []}],
+            valid?: false
+          }
+
+          {:noreply,
+           socket
+           |> put_flash(:error, "Current password is incorrect.")
+           |> assign(:password_changeset, error_changeset)}
+
+        {:error, changeset} when is_map(changeset) ->
+          {:noreply, assign(socket, :password_changeset, changeset)}
+
+        {:error, reason} ->
+          error_changeset = %Ecto.Changeset{
+            data: %Raxol.Auth.User{},
+            errors: [password: {"failed to update", []}],
+            valid?: false
+          }
+
+          {:noreply,
+           socket
+           |> put_flash(:error, "Failed to update password: #{inspect(reason)}")
+           |> assign(:password_changeset, error_changeset)}
+      end
+    end
+  end
+
   # Handle messages from child components
   @impl Phoenix.LiveView
   def handle_info({:profile_updated, updated_user}, socket) do

@@ -63,21 +63,21 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_input(%__MODULE__{} = plugin, input) do
+  def handle_input(plugin_state, input) do
     # Process input for hyperlink-related commands
     case input do
       "link " <> url ->
         # Create and display a hyperlink
         hyperlink = create_hyperlink(url)
-        {:ok, plugin, hyperlink}
+        {:ok, plugin_state, hyperlink}
 
       _ ->
-        {:ok, plugin}
+        {:ok, plugin_state}
     end
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_output(%Raxol.Plugins.HyperlinkPlugin{} = plugin, event) do
+  def handle_output(plugin_state, event) do
     output =
       cond do
         is_binary(event) ->
@@ -100,14 +100,14 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
           create_hyperlink(url)
         end)
 
-      {:ok, plugin, modified_output}
+      {:ok, plugin_state, modified_output}
     else
-      {:ok, plugin}
+      {:ok, plugin_state}
     end
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_mouse(%__MODULE__{} = plugin, rendered_cells, event) do
+  def handle_mouse(plugin_state, rendered_cells, event) do
     case event do
       %{
         type: :mouse,
@@ -116,29 +116,29 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
         y: click_y,
         modifiers: _modifiers
       } ->
-        handle_left_click(plugin, click_x, click_y, rendered_cells)
+        handle_left_click(plugin_state, click_x, click_y, rendered_cells)
 
       _ ->
-        {:ok, plugin}
+        {:ok, plugin_state}
     end
   end
 
-  defp handle_left_click(plugin, x, y, rendered_cells) do
+  defp handle_left_click(plugin_state, x, y, rendered_cells) do
     # For now, just log the click and return success
     # In a real implementation, you would check the rendered_cells for hyperlinks
     Raxol.Core.Runtime.Log.debug(
       "[HyperlinkPlugin] Mouse click at (#{x}, #{y}) with rendered_cells: #{inspect(rendered_cells)}"
     )
 
-    # Enable the plugin when a mouse click is detected (for testing purposes)
-    updated_plugin = %{plugin | enabled: true}
-    {:ok, updated_plugin}
+    # Return the state unchanged for now
+    # In a real implementation, you would check the rendered_cells for hyperlinks
+    {:ok, plugin_state}
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_resize(%__MODULE__{} = plugin, _width, _height) do
+  def handle_resize(plugin_state, _width, _height) do
     # This plugin might not need to react to resize
-    {:ok, plugin}
+    {:ok, plugin_state}
   end
 
   @impl Raxol.Plugins.Plugin
@@ -147,7 +147,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     :ok
   end
 
-  def cleanup(plugin) when is_map(plugin) do
+  def cleanup(plugin_state) when is_map(plugin_state) do
     # Handle case where plugin is passed as a map
     :ok
   end

@@ -112,9 +112,6 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
     %{state | render_scheduled_for_next_frame: true}
   end
 
-  @doc """
-  Commits the painted output to the renderer.
-  """
   @spec commit_to_renderer(term(), module()) :: :ok
   defp commit_to_renderer(painted_output, renderer_module) do
     renderer = renderer_module || Raxol.UI.Rendering.Renderer

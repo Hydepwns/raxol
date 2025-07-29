@@ -62,6 +62,18 @@ defmodule Raxol.Plugins.EventHandler.OutputEvents do
              transformed_output: transformed_output
          }}
 
+      {:ok, updated_plugin_state, transformed_output}
+      when is_map(updated_plugin_state) and is_binary(transformed_output) ->
+        updated_manager =
+          Common.update_manager_state(acc.manager, plugin, updated_plugin_state)
+
+        {:cont,
+         %{
+           acc
+           | manager: updated_manager,
+             transformed_output: transformed_output
+         }}
+
       {:ok, updated_plugin} ->
         updated_plugin_state = Common.extract_plugin_state(updated_plugin)
 

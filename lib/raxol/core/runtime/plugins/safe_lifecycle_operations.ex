@@ -100,10 +100,10 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     quote do
       ErrorRecovery.degrade_gracefully unquote(plugin_id) do
         # Full feature - enable with all capabilities
-        enable_plugin_full(unquote(plugin_id), unquote(state))
+        {:ok, put_in(unquote(state).plugin_states[unquote(plugin_id)][:enabled], true)}
       else
         # Degraded mode - enable with limited capabilities
-        enable_plugin_limited(unquote(plugin_id), unquote(state))
+        {:ok, unquote(state)}
       end
     end
   end
@@ -236,15 +236,6 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     {:ok, restored_state}
   end
 
-  defp _enable_plugin_full(plugin_id, state) do
-    # Full plugin enablement with all features
-    {:ok, put_in(state.plugin_states[plugin_id][:enabled], true)}
-  end
-
-  defp _enable_plugin_limited(plugin_id, state) do
-    # Limited plugin enablement
-    {:ok, put_in(state.plugin_states[plugin_id][:enabled], :limited)}
-  end
 
   defp validate_all_operations(_, operations) do
     errors =

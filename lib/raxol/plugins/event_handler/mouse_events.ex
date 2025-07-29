@@ -10,12 +10,12 @@ defmodule Raxol.Plugins.EventHandler.MouseEvents do
 
   @type manager :: Core.t()
   @type mouse_event :: map()
-  @type result :: {:ok, manager()} | {:error, term()}
+  @type result :: {:ok, manager()} | {:ok, manager(), :propagate | :halt} | {:error, term()}
 
   @doc """
   Dispatches a "mouse_event" to all enabled plugins implementing `handle_mouse_event/3`.
   """
-  @spec handle_mouse_event(Core.t(), mouse_event(), map()) :: result()
+  @spec handle_mouse_event(Core.t(), mouse_event(), map()) :: {:ok, manager(), :propagate | :halt} | {:error, term()}
   def handle_mouse_event(%Core{} = manager, event, rendered_cells) do
     initial_acc = %{
       manager: manager,
@@ -36,8 +36,9 @@ defmodule Raxol.Plugins.EventHandler.MouseEvents do
       )
 
     case result do
-      %{manager: updated_manager} ->
-        {:ok, updated_manager}
+      %{manager: updated_manager, halt_requested: halt_requested} ->
+        propagation = if halt_requested, do: :halt, else: :propagate
+        {:ok, updated_manager, propagation}
 
       error ->
         error

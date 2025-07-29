@@ -77,7 +77,11 @@ defmodule Raxol.Plugins.EventHandler.Common do
 
       true ->
         try do
-          result = apply(plugin.module, callback_name, args)
+          # Get the plugin from the manager
+          plugin_instance = Core.get_plugin(acc.manager, plugin.name)
+          # Prepend the plugin instance to the args
+          full_args = [plugin_instance | args]
+          result = apply(plugin.module, callback_name, full_args)
           result_handler.(acc, plugin, callback_name, result)
         rescue
           error ->
@@ -98,6 +102,20 @@ defmodule Raxol.Plugins.EventHandler.Common do
       manager
       | plugin_states:
           Map.put(manager.plugin_states, plugin_name, new_plugin_state)
+    }
+  end
+
+  @doc """
+  Updates a plugin instance in the manager.
+  """
+  @spec update_manager_plugin(Core.t(), plugin(), plugin()) :: Core.t()
+  def update_manager_plugin(manager, _old_plugin, updated_plugin) do
+    plugin_name = normalize_plugin_key(updated_plugin.name)
+    
+    %{
+      manager
+      | plugins: Map.put(manager.plugins, plugin_name, updated_plugin),
+        loaded_plugins: Map.put(manager.loaded_plugins, plugin_name, updated_plugin)
     }
   end
 

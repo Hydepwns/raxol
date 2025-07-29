@@ -266,7 +266,7 @@ defmodule Raxol.Config.Loader do
 
       # Environment variable references
       String.starts_with?(value, "${") and String.ends_with?(value, "}") ->
-        var_name = String.slice(value, 2..-2)
+        var_name = String.slice(value, 2..-2//1)
         System.get_env(var_name, value)
 
       # File paths

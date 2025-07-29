@@ -126,7 +126,8 @@ defmodule Raxol.Core.Performance.Profiler do
       results =
         for _ <- 1..iterations do
           {time, _result} = :timer.tc(fun)
-          time
+          # Ensure minimum time of 1 microsecond to avoid 0
+          max(time, 1)
         end
 
       Raxol.Core.Performance.Profiler.analyze_benchmark_results(unquote(operation), results)
@@ -246,6 +247,14 @@ defmodule Raxol.Core.Performance.Profiler do
   def report(opts \\ []) do
     format = Keyword.get(opts, :format, :text)
     operations = Keyword.get(opts, :operations, :all)
+    
+    # If operations are specified as a list, return raw data unless format is explicitly set
+    format = 
+      if is_list(operations) and not Keyword.has_key?(opts, :format) do
+        :raw
+      else
+        format
+      end
 
     GenServer.call(__MODULE__, {:generate_report, format, operations})
   end
@@ -290,7 +299,11 @@ defmodule Raxol.Core.Performance.Profiler do
   @impl true
   def handle_call({:generate_report, format, operations}, _from, state) do
     report = build_report(state, operations)
-    formatted_report = format_report(report, format)
+    formatted_report = 
+      case format do
+        :raw -> report
+        _ -> format_report(report, format)
+      end
     {:reply, formatted_report, state}
   end
 
@@ -389,16 +402,29 @@ defmodule Raxol.Core.Performance.Profiler do
     sorted = Enum.sort(times)
     count = length(sorted)
 
-    %{
-      operation: operation,
-      min: Enum.min(sorted),
-      max: Enum.max(sorted),
-      mean: Enum.sum(sorted) / count,
-      median: Enum.at(sorted, div(count, 2)),
-      p95: Enum.at(sorted, round(count * 0.95)),
-      p99: Enum.at(sorted, round(count * 0.99)),
-      std_dev: calculate_std_dev(sorted)
-    }
+    if count == 0 do
+      %{
+        operation: operation,
+        min: 0,
+        max: 0,
+        mean: 0,
+        median: 0,
+        p95: 0,
+        p99: 0,
+        std_dev: 0
+      }
+    else
+      %{
+        operation: operation,
+        min: Enum.min(sorted),
+        max: Enum.max(sorted),
+        mean: Enum.sum(sorted) / count,
+        median: Enum.at(sorted, div(count, 2)),
+        p95: Enum.at(sorted, round(count * 0.95)),
+        p99: Enum.at(sorted, round(count * 0.99)),
+        std_dev: calculate_std_dev(sorted)
+      }
+    end
   end
 
   defp calculate_improvement(old_results, new_results) do
@@ -469,9 +495,10 @@ defmodule Raxol.Core.Performance.Profiler do
   end
 
   defp build_report(state, operations) when is_list(operations) do
-    state.profiles
+    filtered_profiles = state.profiles
     |> Enum.filter(&(&1.operation in operations))
-    |> build_report(:all)
+    
+    build_report(%{state | profiles: filtered_profiles}, :all)
   end
 
   defp format_report(report, :text) do

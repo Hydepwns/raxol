@@ -284,9 +284,6 @@ defmodule Raxol.Style.Colors.HotReload do
     end
   end
 
-  defp notify_subscribers(subscribers, theme) do
-    Enum.each(subscribers, fn pid -> send(pid, {:theme_reloaded, theme}) end)
-  end
 
   defp schedule_check do
     timer_id = System.unique_integer([:positive])

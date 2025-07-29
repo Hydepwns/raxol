@@ -167,18 +167,14 @@ defmodule Raxol.Core.ErrorRecovery do
       end
   """
   def with_cleanup(fun, cleanup_fun) do
-    resource = nil
-
     try do
       result = fun.()
+      safe_cleanup(cleanup_fun, result)
       {:ok, result}
     rescue
       error ->
+        safe_cleanup(cleanup_fun, nil)
         {:error, :runtime, Exception.message(error), %{exception: error}}
-    after
-      if resource && cleanup_fun do
-        safe_cleanup(cleanup_fun, resource)
-      end
     end
   end
 

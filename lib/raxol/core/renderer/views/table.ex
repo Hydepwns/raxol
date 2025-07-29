@@ -291,10 +291,6 @@ defmodule Raxol.Core.Renderer.Views.Table do
   defp get_column_value(row, %{key: key}) when is_atom(key),
     do: Map.get(row, key)
 
-  defp format_cell_value(value, %{format: format}) when is_function(format, 1),
-    do: format.(value)
-
-  defp format_cell_value(value, _), do: to_string(value)
 
   @doc """
   Constructs a Table struct for view usage (not stateful component usage).
@@ -330,25 +326,6 @@ defmodule Raxol.Core.Renderer.Views.Table do
     end
   end
 
-  defp build_row_style(index, _row, striped, selectable, selected, row_style) do
-    style = row_style
-
-    style =
-      if striped and rem(index, 2) == 1 do
-        [:inverse | style]
-      else
-        style
-      end
-
-    style =
-      if selectable and selected == index do
-        [:bold, :inverse | style]
-      else
-        style
-      end
-
-    style
-  end
 
   # Group handle_call clauses together
   def handle_call({:update_props, _new_props}, _from, state) do

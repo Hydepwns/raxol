@@ -42,6 +42,10 @@ defmodule Raxol.Application do
           Raxol.Core.ErrorRecovery,
           # Start the UserPreferences GenServer
           Raxol.Core.UserPreferences,
+          # Start the Performance Profiler
+          Raxol.Core.Performance.Profiler,
+          # Start the Performance Monitor
+          Raxol.Core.Performance.Monitor,
           # Start the Terminal Sync System
           {Raxol.Terminal.Sync.System, []},
           # Start the Terminal Supervisor
