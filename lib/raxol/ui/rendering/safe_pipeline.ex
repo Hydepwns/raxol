@@ -16,9 +16,6 @@ defmodule Raxol.UI.Rendering.SafePipeline do
 
   # Target 60 FPS
   @render_timeout 16
-  @max_frame_skip 3
-  # 80% of frame budget
-  @performance_threshold 0.8
 
   defstruct [
     :pipeline,
@@ -234,7 +231,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
     case ErrorRecovery.with_circuit_breaker(state.error_handler, :render, fn ->
            perform_render(scene, state)
          end) do
-      {:ok, result, new_breaker} ->
+      {:ok, result} ->
         end_time = System.monotonic_time(:microsecond)
         # Convert to ms
         render_time = (end_time - start_time) / 1000.0
@@ -242,18 +239,17 @@ defmodule Raxol.UI.Rendering.SafePipeline do
         new_state =
           state
           |> update_performance_stats(render_time)
-          |> Map.put(:error_handler, new_breaker)
           |> check_performance_threshold(render_time)
 
         {:ok, result, new_state}
 
-      {:error, :circuit_open} ->
+      {:error, :circuit_open, _message, _metadata} ->
         Logger.warning("Circuit breaker open, using fallback renderer")
         use_fallback_renderer(scene, state)
 
-      {:error, reason, new_breaker} ->
-        new_state = %{state | error_handler: new_breaker}
-        {:error, reason, new_state}
+      {:error, :circuit_failure, message, _metadata} ->
+        Logger.error("Render failed: #{message}")
+        handle_render_error(message, scene, state, System.monotonic_time(:microsecond) - start_time)
     end
   end
 

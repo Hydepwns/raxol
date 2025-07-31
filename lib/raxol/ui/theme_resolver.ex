@@ -3,9 +3,6 @@ defmodule Raxol.UI.ThemeResolver do
   Handles theme resolution, color processing, and theme-related utilities.
   """
 
-  @default_fg :white
-  @default_bg :black
-
   @doc """
   Resolves an element's theme, handling string themes and providing fallbacks.
   """

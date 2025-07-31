@@ -189,7 +189,7 @@ defmodule Raxol.Style.Colors.HotReload do
 
     current_times = get_current_times(state.watched_paths)
     changed_files = find_changed_files(current_times, state.last_modified)
-    IO.puts("[HotReload DEBUG] changed_files: #{inspect(changed_files)}")
+    # IO.puts("[HotReload DEBUG] changed_files: #{inspect(changed_files)}")
 
     Enum.each(changed_files, &handle_theme_change(&1, state.subscribers))
 
@@ -203,48 +203,48 @@ defmodule Raxol.Style.Colors.HotReload do
   end
 
   defp find_changed_files(current_times, last_modified) do
-    IO.puts(
-      "[HotReload DEBUG] Comparing times - current: #{inspect(current_times)}"
-    )
-
-    IO.puts(
-      "[HotReload DEBUG] Comparing times - last: #{inspect(last_modified)}"
-    )
+    # IO.puts(
+    #   "[HotReload DEBUG] Comparing times - current: #{inspect(current_times)}"
+    # )
+    # 
+    # IO.puts(
+    #   "[HotReload DEBUG] Comparing times - last: #{inspect(last_modified)}"
+    # )
 
     changed =
       Enum.filter(current_times, fn {path, mtime} ->
         case Map.get(last_modified, path) do
           nil ->
-            IO.puts("[HotReload DEBUG] New file detected: #{path}")
+            # IO.puts("[HotReload DEBUG] New file detected: #{path}")
             true
 
           old_time ->
             changed = old_time != mtime
 
-            IO.puts(
-              "[HotReload DEBUG] File #{path}: old=#{inspect(old_time)}, new=#{inspect(mtime)}, changed=#{changed}"
-            )
+            # IO.puts(
+            #   "[HotReload DEBUG] File #{path}: old=#{inspect(old_time)}, new=#{inspect(mtime)}, changed=#{changed}"
+            # )
 
             changed
         end
       end)
 
-    IO.puts("[HotReload DEBUG] Found changed files: #{inspect(changed)}")
+    # IO.puts("[HotReload DEBUG] Found changed files: #{inspect(changed)}")
     changed
   end
 
   defp handle_theme_change({path, _mtime}, subscribers) do
-    IO.puts(
-      "[HotReload DEBUG] handle_theme_change: path=#{inspect(path)} subscribers=#{inspect(subscribers)}"
-    )
+    # IO.puts(
+    #   "[HotReload DEBUG] handle_theme_change: path=#{inspect(path)} subscribers=#{inspect(subscribers)}"
+    # )
 
     theme_name = Path.basename(path, ".json") |> String.to_atom()
 
     case Persistence.load_theme(theme_name) do
       {:ok, theme} ->
-        IO.puts(
-          "[HotReload DEBUG] Loaded theme: #{inspect(theme.name)}. Notifying subscribers..."
-        )
+        # IO.puts(
+        #   "[HotReload DEBUG] Loaded theme: #{inspect(theme.name)}. Notifying subscribers..."
+        # )
 
         Enum.each(subscribers, fn pid ->
           # Don't send message to self
@@ -261,9 +261,9 @@ defmodule Raxol.Style.Colors.HotReload do
               {:ok, theme_map} ->
                 theme_struct = Persistence.map_to_theme_struct(theme_map)
 
-                IO.puts(
-                  "[HotReload DEBUG] Loaded theme by path: #{inspect(theme_struct.name)}. Notifying subscribers..."
-                )
+                # IO.puts(
+                #   "[HotReload DEBUG] Loaded theme by path: #{inspect(theme_struct.name)}. Notifying subscribers..."
+                # )
 
                 Enum.each(subscribers, fn pid ->
                   # Don't send message to self
@@ -273,13 +273,16 @@ defmodule Raxol.Style.Colors.HotReload do
                 end)
 
               _ ->
-                IO.puts(
-                  "[HotReload DEBUG] Failed to decode theme JSON at #{path}"
-                )
+                # IO.puts(
+                #   "[HotReload DEBUG] Failed to decode theme JSON at #{path}"
+                # )
+                :ok
             end
 
           _ ->
-            IO.puts("[HotReload DEBUG] Failed to load theme: #{theme_name}")
+            # IO.puts("[HotReload DEBUG] Failed to load theme: #{theme_name}")
+            require Logger
+            Logger.debug("[HotReload] Failed to load theme: #{theme_name}")
         end
     end
   end

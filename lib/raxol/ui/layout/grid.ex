@@ -1,9 +1,7 @@
 defmodule Raxol.UI.Layout.Grid do
   @moduledoc """
-  Grid layout component.
+  Grid layout utility functions.
   """
-
-  use Raxol.UI.Components.Base.Component
 
   @doc """
   Processes a grid element, calculating layout for it and its children.

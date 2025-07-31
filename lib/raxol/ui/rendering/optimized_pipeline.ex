@@ -154,6 +154,21 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
     {:reply, :ok, new_state}
   end
 
+  def handle_call(:get_stats, _from, state) do
+    stats =
+      Map.put(
+        state.stats,
+        :avg_frame_time,
+        if state.stats.total_frames > 0 do
+          state.stats.total_time / state.stats.total_frames
+        else
+          0
+        end
+      )
+
+    {:reply, stats, state}
+  end
+
   @impl true
   def handle_info(:render_tick, state) do
     start_time = System.monotonic_time(:millisecond)
@@ -368,22 +383,6 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   """
   def get_stats do
     GenServer.call(__MODULE__, :get_stats)
-  end
-
-  @impl true
-  def handle_call(:get_stats, _from, state) do
-    stats =
-      Map.put(
-        state.stats,
-        :avg_frame_time,
-        if state.stats.total_frames > 0 do
-          state.stats.total_time / state.stats.total_frames
-        else
-          0
-        end
-      )
-
-    {:reply, stats, state}
   end
 
   @doc """
