@@ -212,34 +212,6 @@ defmodule RaxolWeb.TerminalLive do
     end
   end
 
-  defp handle_scroll_update(socket, offset) do
-    emulator = socket.assigns.emulator
-
-    new_emulator =
-      if offset < 0,
-        do: Raxol.Terminal.Commands.Screen.scroll_up(emulator, abs(offset)),
-        else: Raxol.Terminal.Commands.Screen.scroll_down(emulator, abs(offset))
-
-    renderer = %{
-      socket.assigns.renderer
-      | screen_buffer: new_emulator.main_screen_buffer
-    }
-
-    terminal_html = Raxol.Terminal.Renderer.render(renderer)
-    new_scrollback_size = length(new_emulator.scrollback_buffer || [])
-    at_bottom = new_scrollback_size == 0
-
-    socket =
-      socket
-      |> assign(:emulator, new_emulator)
-      |> assign(:renderer, renderer)
-      |> assign(:terminal_html, terminal_html)
-      |> assign(:scrollback_size, new_scrollback_size)
-      |> assign(:at_bottom, at_bottom)
-
-    {:noreply, socket}
-  end
-
   def handle_event("scroll_to_top", _params, socket) do
     emulator = socket.assigns.emulator
     scrollback_size = length(emulator.scrollback_buffer || [])
@@ -307,6 +279,34 @@ defmodule RaxolWeb.TerminalLive do
     # Also update own cursor immediately
     cursors = Map.put(socket.assigns.cursors, socket.assigns.user_id, cursor)
     {:noreply, assign(socket, cursor: cursor, cursors: cursors)}
+  end
+
+  defp handle_scroll_update(socket, offset) do
+    emulator = socket.assigns.emulator
+
+    new_emulator =
+      if offset < 0,
+        do: Raxol.Terminal.Commands.Screen.scroll_up(emulator, abs(offset)),
+        else: Raxol.Terminal.Commands.Screen.scroll_down(emulator, abs(offset))
+
+    renderer = %{
+      socket.assigns.renderer
+      | screen_buffer: new_emulator.main_screen_buffer
+    }
+
+    terminal_html = Raxol.Terminal.Renderer.render(renderer)
+    new_scrollback_size = length(new_emulator.scrollback_buffer || [])
+    at_bottom = new_scrollback_size == 0
+
+    socket =
+      socket
+      |> assign(:emulator, new_emulator)
+      |> assign(:renderer, renderer)
+      |> assign(:terminal_html, terminal_html)
+      |> assign(:scrollback_size, new_scrollback_size)
+      |> assign(:at_bottom, at_bottom)
+
+    {:noreply, socket}
   end
 
   @impl Phoenix.LiveView
