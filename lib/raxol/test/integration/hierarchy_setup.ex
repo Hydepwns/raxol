@@ -134,8 +134,7 @@ defmodule Raxol.Test.Integration.HierarchySetup do
 
           {:ok, parent_struct, mounted_children}
 
-        {:error, reason} ->
-          IO.puts("Failed to mount parent: #{inspect(reason)}")
+        {:error, _reason} ->
           {:ok, parent_struct, updated_children}
       end
     else
@@ -367,27 +366,10 @@ defmodule Raxol.Test.Integration.HierarchySetup do
          mount_in_manager
        ) do
     if mount_in_manager do
-      IO.puts(
-        "Attempting to mount parent module: #{inspect(parent_struct.module)}"
-      )
-
-      IO.puts("Parent state: #{inspect(parent_state)}")
-
       case ComponentManager.mount(parent_struct.module, parent_state) do
         {:ok, parent_id} ->
-          IO.puts("Successfully mounted parent with ID: #{inspect(parent_id)}")
-
-          IO.puts(
-            "Attempting to mount child module: #{inspect(child_struct.module)}"
-          )
-
-          IO.puts("Child state: #{inspect(child_state)}")
-
           case ComponentManager.mount(child_struct.module, child_state) do
             {:ok, child_id} ->
-              IO.puts(
-                "Successfully mounted child with ID: #{inspect(child_id)}"
-              )
 
               # Get the mounted states from ComponentManager
               parent_mounted = ComponentManager.get_component(parent_id)
@@ -425,12 +407,10 @@ defmodule Raxol.Test.Integration.HierarchySetup do
               {:ok, parent_struct, child_struct}
 
             {:error, reason} ->
-              IO.puts("Failed to mount child: #{inspect(reason)}")
               {:error, {:child_mount_failed, reason}}
           end
 
         {:error, reason} ->
-          IO.puts("Failed to mount parent: #{inspect(reason)}")
           {:error, {:parent_mount_failed, reason}}
       end
     else

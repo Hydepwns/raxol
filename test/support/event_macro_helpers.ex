@@ -278,38 +278,6 @@ defmodule EventMacroHelpers do
   end
 
   @doc """
-  Collects all events of the specified type received within the timeout.
-
-  ## Parameters
-    * `event_type` - The event type to collect (atom)
-    * `timeout` - Timeout in milliseconds (default: 1000)
-
-  ## Returns
-    * `list()` - List of received events
-
-  ## Examples
-      iex> events = EventMacroHelpers.collect_events(:click, 1000)
-      iex> length(events)
-      3
-  """
-  defmacro collect_events(event_type, timeout \\ 1000) do
-    quote do
-      collect_events_recursive(unquote(event_type), [], unquote(timeout))
-    end
-  end
-
-  # Helper function for collecting events recursively
-  defp collect_events_recursive(event_type, collected, timeout) do
-    receive do
-      %Raxol.Core.Events.Event{type: ^event_type} = event ->
-        collect_events_recursive(event_type, [event | collected], timeout)
-    after
-      timeout ->
-        Enum.reverse(collected)
-    end
-  end
-
-  @doc """
   Asserts that an event has the expected source.
 
   ## Parameters

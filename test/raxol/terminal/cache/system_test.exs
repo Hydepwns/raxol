@@ -109,18 +109,19 @@ defmodule Raxol.Terminal.Cache.SystemTest do
       large_value = String.duplicate("x", value_size)
       
       # Insert 4 values (20MB total, exceeding 19MB limit)
+      # Use longer delays to ensure different timestamps
       for i <- 1..4 do
         System.put("key#{i}", large_value, namespace: :general)
-        # Small delay to ensure different timestamps
-        :timer.sleep(50)
+        # Longer delay to ensure distinct last_access timestamps
+        :timer.sleep(200)
       end
 
-      # Access some keys to change their last access time
-      :timer.sleep(100)
+      # Access some keys to change their last access time with more delay
+      :timer.sleep(500)
       System.get("key3", namespace: :general)
-      :timer.sleep(50)
+      :timer.sleep(200)
       System.get("key4", namespace: :general)
-      :timer.sleep(50)
+      :timer.sleep(200)
 
       # Add a 5th value that should trigger eviction
       System.put("key5", large_value, namespace: :general)
@@ -132,15 +133,16 @@ defmodule Raxol.Terminal.Cache.SystemTest do
       result4 = System.get("key4", namespace: :general)
       result5 = System.get("key5", namespace: :general)
 
-      # key1 or key2 should be evicted (oldest, not accessed recently)
-      # At least one of them should be evicted
-      evicted_count = Enum.count([result1, result2], fn r -> r == {:error, :not_found} end)
-      assert evicted_count >= 1, "Expected at least one key to be evicted, but none were"
+      # Both key1 and key2 should be evicted (oldest, not accessed recently)
+      # Since the cache can only hold 3 large values, and key5 was just added,
+      # key3 and key4 were recently accessed, so key1 and key2 must be evicted
+      assert {:error, :not_found} = result1, "key1 should have been evicted"
+      assert {:error, :not_found} = result2, "key2 should have been evicted"
       
       # The recently accessed keys should still be present
-      assert {:ok, _} = result3
-      assert {:ok, _} = result4
-      assert {:ok, _} = result5
+      assert {:ok, _} = result3, "key3 should still be present (recently accessed)"
+      assert {:ok, _} = result4, "key4 should still be present (recently accessed)"
+      assert {:ok, _} = result5, "key5 should be present (just added)"
     end
 
     @tag :skip

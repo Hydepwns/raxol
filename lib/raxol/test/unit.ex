@@ -97,17 +97,12 @@ defmodule Raxol.Test.Unit do
   Returns the updated state and any emitted commands.
   """
   def simulate_event(component, %Event{} = event) do
-    IO.puts("Simulating event: #{inspect(event)}")
-    IO.puts("Initial component state: #{inspect(component.state)}")
-
     result = component.module.handle_event(event, component.state, %{})
-    IO.puts("handle_event result: #{inspect(result)}")
 
     {new_state_map, commands} =
       parse_handle_event_result(result, component.state)
 
     updated_component = %{component | state: new_state_map}
-    IO.puts("Final component state: #{inspect(updated_component.state)}")
 
     # Track commands for assertions
     Enum.each(commands, fn command ->
