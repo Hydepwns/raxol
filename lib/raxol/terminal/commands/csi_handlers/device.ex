@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
   alias Raxol.Terminal.Emulator
 
   # Suppress warnings for functions called dynamically via apply/3
-  @compile {:nowarn_unused_function, [
+  @compile {:no_warn_unused, [
     handle_report_window_size: 1,
     handle_resize_window: 3,
     handle_report_window_state: 2,
@@ -213,18 +213,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
   end
 
   # The following functions are called dynamically via apply/3 in dispatch_window_operation
-  # credo:disable-for-lines:100 Credo.Check.Refactor.UnlessWithElse
-  # dialyzer:nowarn_function handle_report_window_size: 1
-  # dialyzer:nowarn_function handle_resize_window: 3
-  # dialyzer:nowarn_function handle_report_window_state: 2
-  # dialyzer:nowarn_function handle_window_action: 2
-  # dialyzer:nowarn_function handle_unmaximize_window: 1
-  # dialyzer:nowarn_function handle_report_window_position: 1
-  # dialyzer:nowarn_function handle_report_screen_size_pixels: 1
-  # dialyzer:nowarn_function handle_report_cell_size: 1
-  # dialyzer:nowarn_function handle_report_screen_size_chars: 1
-  # dialyzer:nowarn_function handle_report_icon_label: 1
-  # dialyzer:nowarn_function handle_report_window_state_0: 1
 
   defp handle_report_window_size(emulator) do
     updated_emulator =

@@ -295,13 +295,8 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   end
 
   def handle_call({:process_output, data}, _from, state) do
-    case process_output_data(state, data) do
-      {:ok, new_state, commands} ->
-        {:reply, {:ok, commands}, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, new_state, commands} = process_output_data(state, data)
+    {:reply, {:ok, commands}, new_state}
   end
 
   def handle_call({:update_config, config}, _from, state) do
@@ -462,13 +457,8 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     new_state = %{state | output_buffer: state.output_buffer <> data}
 
     # Process the output buffer
-    case process_output_buffer(new_state) do
-      {:ok, final_state, commands} ->
-        {:ok, final_state, commands}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    {:ok, final_state, commands} = process_output_buffer(new_state)
+    {:ok, final_state, commands}
   end
 
   defp process_output_buffer(state) do
@@ -637,9 +627,6 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
       {:ok, command} ->
         {:ok, %{state | processing_escape: false, escape_buffer: ""}, [command]}
 
-      :incomplete ->
-        {:ok, %{state | escape_buffer: state.escape_buffer <> rest}, []}
-
       :invalid ->
         {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
     end
@@ -649,9 +636,6 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     case parse_ss3_sequence(rest) do
       {:ok, command} ->
         {:ok, %{state | processing_escape: false, escape_buffer: ""}, [command]}
-
-      :incomplete ->
-        {:ok, %{state | escape_buffer: state.escape_buffer <> rest}, []}
 
       :invalid ->
         {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}

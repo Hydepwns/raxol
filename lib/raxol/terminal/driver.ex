@@ -376,46 +376,19 @@ defmodule Raxol.Terminal.Driver do
 
   defp send_initial_resize_event(dispatcher_pid) do
     # Keep this as it provides an immediate size on startup
-    case get_terminal_size() do
-      {:ok, width, height} ->
-        Raxol.Core.Runtime.Log.info("Initial terminal size: #{width}x#{height}")
-        event = %Event{type: :resize, data: %{width: width, height: height}}
+    {:ok, width, height} = get_terminal_size()
+    Raxol.Core.Runtime.Log.info("Initial terminal size: #{width}x#{height}")
+    event = %Event{type: :resize, data: %{width: width, height: height}}
 
-        # In test mode, send directly to the test process
-        if Mix.env() == :test do
-          Raxol.Core.Runtime.Log.info(
-            "[Driver] Sending resize event in test mode: #{inspect(event)}"
-          )
+    # In test mode, send directly to the test process
+    if Mix.env() == :test do
+      Raxol.Core.Runtime.Log.info(
+        "[Driver] Sending resize event in test mode: #{inspect(event)}"
+      )
 
-          send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
-        else
-          GenServer.cast(dispatcher_pid, {:dispatch, event})
-        end
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Failed to get initial terminal size (#{inspect(reason)}). Using default 80x24.",
-          %{}
-        )
-
-        default_width = 80
-        default_height = 24
-
-        event = %Event{
-          type: :resize,
-          data: %{width: default_width, height: default_height}
-        }
-
-        # In test mode, send directly to the test process
-        if Mix.env() == :test do
-          Raxol.Core.Runtime.Log.info(
-            "[Driver] Sending default resize event in test mode: #{inspect(event)}"
-          )
-
-          send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
-        else
-          GenServer.cast(dispatcher_pid, {:dispatch, event})
-        end
+      send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
+    else
+      GenServer.cast(dispatcher_pid, {:dispatch, event})
     end
   end
 

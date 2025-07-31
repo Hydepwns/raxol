@@ -70,21 +70,7 @@ defmodule Raxol.Terminal.Cache.EvictionHelpers do
   end
 
   defp do_evict_by(cache, size, needed_size, max_size, sort_fn, order, policy) do
-    log_file = "tmp/eviction_debug.log"
-
-    File.write!(
-      log_file,
-      "[EvictionHelpers] do_evict_by called. size=#{size}, needed_size=#{needed_size}, max_size=#{max_size}\n",
-      [:append]
-    )
-
     if size + needed_size <= max_size do
-      File.write!(
-        log_file,
-        "[EvictionHelpers] Done evicting. Final size: #{size}\n",
-        [:append]
-      )
-
       {cache, size}
     else
       cache_list = Map.to_list(cache)
@@ -92,21 +78,9 @@ defmodule Raxol.Terminal.Cache.EvictionHelpers do
 
       case sorted do
         [] ->
-          File.write!(
-            log_file,
-            "[EvictionHelpers] No more entries to evict. Returning as is.\n",
-            [:append]
-          )
-
           {cache, size}
 
         [{key, entry} | _rest] ->
-          File.write!(
-            log_file,
-            "[EvictionHelpers] Evicting key: #{inspect(key)}, entry size: #{entry.size}, current size: #{size}, needed size: #{needed_size}, max size: #{max_size}\n",
-            [:append]
-          )
-
           new_cache = Map.delete(cache, key)
           new_size = size - entry.size
 

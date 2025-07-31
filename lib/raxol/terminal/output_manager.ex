@@ -89,13 +89,8 @@ defmodule Raxol.Terminal.OutputManager do
   """
   @spec flush(Emulator.t()) :: {:ok, Emulator.t()} | {:error, String.t()}
   def flush(emulator) do
-    case OutputBuffer.flush(emulator.output_buffer) do
-      {:ok, new_buffer} ->
-        {:ok, update_buffer(emulator, new_buffer)}
-
-      {:error, reason} ->
-        {:error, "Failed to flush output buffer: #{inspect(reason)}"}
-    end
+    {:ok, new_buffer} = OutputBuffer.flush(emulator.output_buffer)
+    {:ok, update_buffer(emulator, new_buffer)}
   end
 
   @doc """

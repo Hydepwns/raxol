@@ -164,12 +164,6 @@ defmodule Raxol.Terminal.Cache.System do
 
         {updated_cache, updated_size} =
           if namespace_state.size + entry_size > namespace_state.max_size do
-            File.write!(
-              "tmp/eviction_debug.log",
-              "[CacheSystem] Eviction needed. current_size=#{namespace_state.size}, entry_size=#{entry_size}, max_size=#{namespace_state.max_size}\n",
-              [:append]
-            )
-
             {cache_after_eviction, size_after_eviction} =
               evict_entries(
                 namespace_state.cache,
@@ -179,20 +173,8 @@ defmodule Raxol.Terminal.Cache.System do
                 namespace_state.max_size
               )
 
-            File.write!(
-              "tmp/eviction_debug.log",
-              "[CacheSystem] After eviction: cache_size=#{map_size(cache_after_eviction)}, total_size=#{size_after_eviction}, cache_keys=#{inspect(Map.keys(cache_after_eviction))}\n",
-              [:append]
-            )
-
             {cache_after_eviction, size_after_eviction}
           else
-            File.write!(
-              "tmp/eviction_debug.log",
-              "[CacheSystem] No eviction needed. current_size=#{namespace_state.size}, entry_size=#{entry_size}, max_size=#{namespace_state.max_size}\n",
-              [:append]
-            )
-
             {namespace_state.cache, namespace_state.size}
           end
 
@@ -200,7 +182,7 @@ defmodule Raxol.Terminal.Cache.System do
           value: value,
           size: entry_size,
           created_at: System.system_time(:second),
-          last_access: System.system_time(:second),
+          last_access: System.monotonic_time(:millisecond),
           access_count: 1,
           ttl: ttl || state.default_ttl,
           metadata: metadata
@@ -322,7 +304,7 @@ defmodule Raxol.Terminal.Cache.System do
   defp handle_valid_entry(entry, key, namespace_state, state, namespace) do
     updated_entry = %{
       entry
-      | last_access: System.system_time(:second),
+      | last_access: System.monotonic_time(:millisecond),
         access_count: entry.access_count + 1
     }
 
@@ -373,15 +355,7 @@ defmodule Raxol.Terminal.Cache.System do
   end
 
   defp calculate_size(value) do
-    size = :erlang.external_size(value)
-
-    File.write!(
-      "tmp/eviction_debug.log",
-      "[CacheSystem] Calculating size for value, size=#{size}\n",
-      [:append]
-    )
-
-    size
+    :erlang.external_size(value)
   end
 
   defp calculate_hit_ratio(namespace_state) do

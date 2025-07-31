@@ -120,6 +120,13 @@ defmodule Raxol.Terminal.Buffer.Operations do
     Scrolling.insert_lines(buffer, count, cursor_y, cursor_x)
   end
 
+  def insert_lines(buffer, y, count, style)
+      when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
+             is_integer(y) and is_integer(count) and count > 0 and
+             is_map(style) do
+    Scrolling.insert_lines(buffer, y, count, style)
+  end
+
   @doc """
   Inserts the specified number of blank lines at the cursor position with scroll region.
   """
@@ -135,13 +142,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
       scroll_top,
       scroll_bottom
     )
-  end
-
-  def insert_lines(buffer, y, count, style)
-      when is_struct(buffer, Raxol.Terminal.ScreenBuffer) and
-             is_integer(y) and is_integer(count) and count > 0 and
-             is_map(style) do
-    Scrolling.insert_lines(buffer, y, count, style)
   end
 
   def insert_lines(buffer, lines, y, top, bottom)

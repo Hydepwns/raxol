@@ -228,7 +228,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
   end
 
   # Helper function to get current cursor position
-  defp get_cursor_position(emulator) do
+  defp get_cursor_position(_emulator) do
     # For PID cursors, we need to query the cursor manager
     # For now, return a default position that tests can override
     %{row: 1, col: 1, style: :block, visible: true}

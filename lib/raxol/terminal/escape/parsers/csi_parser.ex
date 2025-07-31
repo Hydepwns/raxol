@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
     action = final_byte == "h"
 
     prefix_len = 1 + String.length(params_str) + String.length(final_byte)
-    remaining = String.slice(data, prefix_len..-1)
+    remaining = String.slice(data, prefix_len..-1//1)
 
     if mode_code do
       {:ok, {:set_mode, :dec_private, mode_code, action}, remaining}
@@ -71,7 +71,7 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
       [params_str, final_byte] when final_byte != "" ->
         params = BaseParser.parse_params(params_str)
         prefix_len = String.length(params_str) + String.length(final_byte)
-        remaining = String.slice(data, prefix_len..-1)
+        remaining = String.slice(data, prefix_len..-1//1)
         dispatch_csi(params, final_byte, remaining)
 
       _ ->

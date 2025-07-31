@@ -116,9 +116,6 @@ defmodule Raxol.Terminal.Sync.System do
 
       {:error, :conflict, new_state} ->
         {:reply, {:error, :conflict}, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
     end
   end
 
