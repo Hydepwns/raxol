@@ -21,7 +21,6 @@ defmodule Raxol.SequenceExecutor do
   defp execute_steps(emulator, [step | rest]) do
     case execute_step(emulator, step) do
       {:ok, new_emulator} -> execute_steps(new_emulator, rest)
-      {:error, reason} -> {:error, reason}
     end
   end
 

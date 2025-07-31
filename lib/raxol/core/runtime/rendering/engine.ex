@@ -350,38 +350,27 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         }
 
         # Process cells through plugins using CellProcessor
-        case Raxol.Plugins.CellProcessor.process(
-               plugin_manager,
-               cells,
-               emulator_state
-             ) do
-          {:ok, updated_manager, processed_cells, collected_commands} ->
-            # Execute any collected commands (like escape sequences)
-            execute_plugin_commands(collected_commands)
+        {:ok, updated_manager, processed_cells, collected_commands} =
+          Raxol.Plugins.CellProcessor.process(
+            plugin_manager,
+            cells,
+            emulator_state
+          )
 
-            # Update plugin manager state in dispatcher if needed
-            update_plugin_manager_in_dispatcher(
-              state.dispatcher_pid,
-              updated_manager
-            )
+        # Execute any collected commands (like escape sequences)
+        execute_plugin_commands(collected_commands)
 
-            Raxol.Core.Runtime.Log.debug(
-              "Rendering Engine: Plugin transforms applied. Processed cells: #{length(processed_cells)}, Commands: #{length(collected_commands)}"
-            )
+        # Update plugin manager state in dispatcher if needed
+        update_plugin_manager_in_dispatcher(
+          state.dispatcher_pid,
+          updated_manager
+        )
 
-            processed_cells
+        Raxol.Core.Runtime.Log.debug(
+          "Rendering Engine: Plugin transforms applied. Processed cells: #{length(processed_cells)}, Commands: #{length(collected_commands)}"
+        )
 
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.error_with_stacktrace(
-              "Rendering Engine: Plugin transform error",
-              reason,
-              nil,
-              %{module: __MODULE__, cells_count: length(cells)}
-            )
-
-            # Return original cells on error
-            cells
-        end
+        processed_cells
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning_with_context(

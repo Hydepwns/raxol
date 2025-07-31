@@ -202,34 +202,34 @@ defmodule Raxol.Test.Integration.HierarchySetup do
       ComponentManager.get_component(parent_struct.state.component_manager_id).state
 
     # Get the mounted state from ComponentManager for each child
-    IO.puts("DEBUG: Getting mounted state for children...")
+    # IO.puts("DEBUG: Getting mounted state for children...")
 
-    IO.puts(
-      "DEBUG: mounted_children have component_manager_id: #{inspect(Enum.map(mounted_children, fn c -> c.state.component_manager_id end))}"
-    )
+    # IO.puts(
+    #   "DEBUG: mounted_children have component_manager_id: #{inspect(Enum.map(mounted_children, fn c -> c.state.component_manager_id end))}"
+    # )
 
     mounted_children_with_state =
       Enum.map(mounted_children, fn child ->
-        IO.puts(
-          "DEBUG: Processing child #{inspect(child.state.id)} with component_manager_id: #{inspect(child.state.component_manager_id)}"
-        )
+        # IO.puts(
+        #   "DEBUG: Processing child #{inspect(child.state.id)} with component_manager_id: #{inspect(child.state.component_manager_id)}"
+        # )
 
         if child.state.component_manager_id do
           child_mounted =
             ComponentManager.get_component(child.state.component_manager_id)
 
-          IO.puts(
-            "DEBUG: Found child by component_manager_id: #{inspect(child_mounted.state.component_manager_id)}"
-          )
+          # IO.puts(
+          #   "DEBUG: Found child by component_manager_id: #{inspect(child_mounted.state.component_manager_id)}"
+          # )
 
           %{child | state: child_mounted.state}
         else
           # If child doesn't have component_manager_id, try to find it by ID
           all_components = ComponentManager.get_all_components()
 
-          IO.puts(
-            "DEBUG: All components in manager: #{inspect(Map.keys(all_components))}"
-          )
+          # IO.puts(
+          #   "DEBUG: All components in manager: #{inspect(Map.keys(all_components))}"
+          # )
 
           child_component =
             Enum.find_value(all_components, fn {_manager_id, comp} ->
@@ -237,15 +237,15 @@ defmodule Raxol.Test.Integration.HierarchySetup do
             end)
 
           if child_component do
-            IO.puts(
-              "DEBUG: Found child by ID: #{inspect(child_component.state.component_manager_id)}"
-            )
+            # IO.puts(
+            #   "DEBUG: Found child by ID: #{inspect(child_component.state.component_manager_id)}"
+            # )
 
             %{child | state: child_component.state}
           else
-            IO.puts(
-              "DEBUG: Could not find child #{inspect(child.state.id)} in ComponentManager"
-            )
+            # IO.puts(
+            #   "DEBUG: Could not find child #{inspect(child.state.id)} in ComponentManager"
+            # )
 
             child
           end
@@ -299,13 +299,13 @@ defmodule Raxol.Test.Integration.HierarchySetup do
       ComponentManager.get_component(child_struct.state.component_manager_id)
 
     # Debug output
-    IO.puts("DEBUG: parent_mounted = #{inspect(parent_mounted)}")
-    IO.puts("DEBUG: child_mounted = #{inspect(child_mounted)}")
-    IO.puts("DEBUG: child_mounted.state = #{inspect(child_mounted.state)}")
+    # IO.puts("DEBUG: parent_mounted = #{inspect(parent_mounted)}")
+    # IO.puts("DEBUG: child_mounted = #{inspect(child_mounted)}")
+    # IO.puts("DEBUG: child_mounted.state = #{inspect(child_mounted.state)}")
 
-    IO.puts(
-      "DEBUG: child_mounted.state.mounted = #{inspect(child_mounted.state.mounted)}"
-    )
+    # IO.puts(
+    #   "DEBUG: child_mounted.state.mounted = #{inspect(child_mounted.state.mounted)}"
+    # )
 
     # Update parent's child_states with the child's mounted state (including component_manager_id)
     updated_parent_state =

@@ -53,8 +53,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     current_chain = [plugin_id | dependency_chain]
 
     case check_conflicting_requirements(dependencies, current_chain) do
-      {:error, _} = error -> error
       :ok -> process_dependencies(dependencies, loaded_plugins, current_chain)
+      {:error, _, _, _} = error -> error
     end
   end
 

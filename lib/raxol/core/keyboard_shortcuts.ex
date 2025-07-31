@@ -360,8 +360,8 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
     full_message = help_message <> shortcuts_help
 
-    # Announce through accessibility system if available
-    if function_exported?(Accessibility, :announce, 3) do
+    # Announce through accessibility system if available and user_preferences_pid_or_name is provided
+    if function_exported?(Accessibility, :announce, 3) and user_preferences_pid_or_name != nil do
       Accessibility.announce(
         full_message,
         [priority: :medium],

@@ -2,6 +2,8 @@ defmodule Raxol.Core.Runtime.Log do
   @moduledoc """
   Standardized logging helpers for error and warning messages with context and stacktraces.
   """
+  
+  require Logger
 
   @doc """
   Logs an error with stacktrace and context.
@@ -17,19 +19,19 @@ defmodule Raxol.Core.Runtime.Log do
   Logs a warning with context.
   """
   def warning_with_context(msg, context) do
-    IO.puts("[WARN] #{msg} | Context: #{inspect(context)}")
+    Logger.warning("#{msg} | Context: #{inspect(context)}")
   end
 
   def info_with_context(msg, context) do
-    IO.puts("[INFO] #{msg} | Context: #{inspect(context)}")
+    Logger.info("#{msg} | Context: #{inspect(context)}")
   end
 
   def debug_with_context(msg, context) do
-    IO.puts("[DEBUG] #{msg} | Context: #{inspect(context)}")
+    Logger.debug("#{msg} | Context: #{inspect(context)}")
   end
 
   def error_with_context(msg, context) do
-    IO.puts("[ERROR] #{msg} | Context: #{inspect(context)}")
+    Logger.error("#{msg} | Context: #{inspect(context)}")
   end
 
   def info(msg), do: log(:info, msg)
@@ -47,12 +49,13 @@ defmodule Raxol.Core.Runtime.Log do
   end
 
   defp log(level, msg, context \\ nil) do
-    label = level |> Atom.to_string() |> String.upcase()
-
-    output =
-      "[#{label}] #{msg}" <>
-        if context, do: " | Context: #{inspect(context)}", else: ""
-
-    IO.puts(output)
+    message = if context, do: "#{msg} | Context: #{inspect(context)}", else: msg
+    
+    case level do
+      :info -> Logger.info(message)
+      :debug -> Logger.debug(message)
+      :warn -> Logger.warning(message)
+      :error -> Logger.error(message)
+    end
   end
 end

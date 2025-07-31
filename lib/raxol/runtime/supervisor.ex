@@ -9,6 +9,8 @@ defmodule Raxol.Runtime.Supervisor do
 
   alias Raxol.Core.Runtime.Events.Dispatcher
   alias Raxol.Core.Runtime.Plugins.Manager
+  alias Raxol.Terminal.Driver, as: TerminalDriver
+  alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
 
   def start_link(init_args) do
     Supervisor.start_link(__MODULE__, init_args, name: __MODULE__)
@@ -76,13 +78,21 @@ defmodule Raxol.Runtime.Supervisor do
          runtime_pid: runtime_pid,
          debug_mode: debug_mode
        }) do
-    [
-      # 0. User Preferences (needs to start early)
-      {Raxol.Core.UserPreferences,
-       if(Mix.env() == :test, do: [test_mode?: true], else: [])},
+    # Only start UserPreferences if not already running (in test mode it may be started by test_helper)
+    user_prefs_children = if Mix.env() == :test and Process.whereis(Raxol.Core.UserPreferences) do
+      []
+    else
+      [{Raxol.Core.UserPreferences, if(Mix.env() == :test, do: [test_mode?: true], else: [])}]
+    end
 
-      # ADDED: Start the Registry under supervision
-      {Registry, keys: :duplicate, name: :raxol_event_subscriptions},
+    # Only start Registry if not already running (in test mode it may be started by test_helper)
+    registry_children = if Mix.env() == :test and Process.whereis(:raxol_event_subscriptions) do
+      []
+    else
+      [{Registry, keys: :duplicate, name: :raxol_event_subscriptions}]
+    end
+
+    user_prefs_children ++ registry_children ++ [
 
       # NEW: Start the Rendering Renderer GenServer
       {Raxol.UI.Rendering.Renderer, []},
@@ -135,13 +145,14 @@ defmodule Raxol.Runtime.Supervisor do
         type: :worker
       }
     ] ++
-      if IO.ANSI.enabled?() do
+      if IO.ANSI.enabled?() or Mix.env() == :test do
+        driver_module = if Mix.env() == :test, do: Raxol.Terminal.DriverMock, else: Raxol.Terminal.Driver
         [
           # 4. Terminal Driver (needs Dispatcher PID)
           %{
             id: TerminalDriver,
             # Passes registered name
-            start: {Raxol.Terminal.Driver, :start_link, [Dispatcher]},
+            start: {driver_module, :start_link, [Dispatcher]},
             restart: :permanent,
             type: :worker
           }
