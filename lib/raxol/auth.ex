@@ -293,13 +293,6 @@ defmodule Raxol.Auth do
 
       {:error, changeset} ->
         {:error, changeset}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error(
-          "Database error creating user: #{inspect(reason)}"
-        )
-
-        {:error, reason}
     end
   end
 
@@ -482,10 +475,11 @@ defmodule Raxol.Auth do
 
   defp get_default_role_id do
     # Get the default "user" role ID
-    case Repo.get_by(Role, name: "user") do
-      # Will be handled by the changeset
-      nil -> nil
-      role when not is_nil(role) -> role.id
+    role = Repo.get_by(Role, name: "user")
+    
+    cond do
+      is_nil(role) -> nil
+      true -> Map.get(role, :id)
     end
   end
 end

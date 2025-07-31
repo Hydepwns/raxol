@@ -136,10 +136,8 @@ defmodule Raxol.Core do
 
     case validate_application_module(app_module) do
       :ok ->
-        case initialize_core_systems(options) do
-          :ok -> start_runtime(app_module, options)
-          {:error, reason} -> {:error, reason}
-        end
+        :ok = initialize_core_systems(options)
+        start_runtime(app_module, options)
 
       {:error, reason} ->
         {:error, reason}
@@ -265,21 +263,11 @@ defmodule Raxol.Core do
   """
   @spec unload_plugin(plugin_id()) :: :ok | {:error, term()}
   def unload_plugin(plugin_id) do
-    case Manager.unload_plugin(plugin_id) do
-      :ok ->
-        Raxol.Core.Runtime.Log.info(
-          "[#{__MODULE__}] Plugin unloaded: #{inspect(plugin_id)}"
-        )
-
-        :ok
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error(
-          "[#{__MODULE__}] Failed to unload plugin #{inspect(plugin_id)}: #{inspect(reason)}"
-        )
-
-        {:error, reason}
-    end
+    :ok = Manager.unload_plugin(plugin_id)
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Plugin unloaded: #{inspect(plugin_id)}"
+    )
+    :ok
   end
 
   @doc """

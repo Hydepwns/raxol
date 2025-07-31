@@ -234,18 +234,9 @@ defmodule Raxol.Config do
           end
 
         # Validate configuration
-        case validate_config(state.config, state.schemas) do
-          {:ok, :valid} ->
-            Logger.info("Configuration loaded and validated successfully")
-            state
-
-          {:error, errors} ->
-            Logger.warning(
-              "Configuration validation errors: #{inspect(errors)}"
-            )
-
-            state
-        end
+        {:ok, :valid} = validate_config(state.config, state.schemas)
+        Logger.info("Configuration loaded and validated successfully")
+        state
       end
 
     {:ok, state}
@@ -263,15 +254,10 @@ defmodule Raxol.Config do
     new_sources = put_nested(state.sources, keys, :runtime)
 
     # Validate the new value
-    case validate_value(keys, value, state.schemas) do
-      :ok ->
-        new_state = %{state | config: new_config, sources: new_sources}
-        broadcast_change(keys, value)
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    :ok = validate_value(keys, value, state.schemas)
+    new_state = %{state | config: new_config, sources: new_sources}
+    broadcast_change(keys, value)
+    {:reply, :ok, new_state}
   end
 
   @impl true
@@ -279,15 +265,10 @@ defmodule Raxol.Config do
     new_config = deep_merge(state.config, config)
 
     # Validate merged config
-    case validate_config(new_config, state.schemas) do
-      {:ok, :valid} ->
-        new_state = %{state | config: new_config}
-        broadcast_change(:all, new_config)
-        {:reply, :ok, new_state}
-
-      {:error, errors} ->
-        {:reply, {:error, errors}, state}
-    end
+    {:ok, :valid} = validate_config(new_config, state.schemas)
+    new_state = %{state | config: new_config}
+    broadcast_change(:all, new_config)
+    {:reply, :ok, new_state}
   end
 
   @impl true
