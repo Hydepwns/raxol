@@ -203,6 +203,18 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
 
   describe "shortcut handling specific to UXRefinement callbacks" do
     test "shortcut callback from register_component_hint triggers FocusManager.set_focus" do
+      # Configure the application to use the mock in this test
+      original_config = Application.get_env(:raxol, :focus_manager_impl)
+      Application.put_env(:raxol, :focus_manager_impl, Raxol.Mocks.FocusManagerMock)
+      
+      on_exit(fn ->
+        if original_config do
+          Application.put_env(:raxol, :focus_manager_impl, original_config)
+        else
+          Application.delete_env(:raxol, :focus_manager_impl)
+        end
+      end)
+      
       stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
       stub(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
 

@@ -5,23 +5,23 @@ defmodule Raxol.Test.Support.Mocks.BufferManagerMock do
 
   @behaviour Raxol.Terminal.Buffer.Manager.Behaviour
 
-  def initialize_buffers(width, height, _opts \\ []) do
+  def initialize_buffers(width, height, _buffer_type, _opts \\ []) do
     %{
-      main: Raxol.Terminal.Buffer.Manager.Buffer.new(width, height),
-      alternate: Raxol.Terminal.Buffer.Manager.Buffer.new(width, height)
+      main: %{width: width, height: height, cells: []},
+      alternate: %{width: width, height: height, cells: []}
     }
   end
 
-  def write(_data, _opts), do: :ok
-  def read(_opts), do: {:ok, ""}
-  def resize(_size, _opts), do: :ok
-  def scroll(_lines), do: :ok
-  def set_cell(_x, _y, _cell), do: :ok
-  def get_cell(_x, _y), do: %{char: " ", style: %{}}
-  def clear_damage(), do: :ok
-  def get_memory_usage(), do: 0
-  def get_scrollback_count(), do: 0
-  def get_metrics(), do: %{}
+  def write(_buffer, _data, _opts), do: :ok
+  def read(_buffer, _opts), do: {:ok, ""}
+  def resize(_buffer, _width, _height), do: :ok
+  def scroll(_buffer, _lines), do: :ok
+  def set_cell(_buffer, _x, _y, _cell), do: :ok
+  def get_cell(_x, _y, _buffer), do: %{char: " ", style: %{}}
+  def clear_damage(_buffer), do: :ok
+  def get_memory_usage(_buffer), do: 0
+  def get_metrics(_buffer), do: %{}
+  def get_scrollback_count(_buffer), do: 0
 end
 
 defmodule Raxol.Test.Support.Mocks.BufferScrollbackMock do

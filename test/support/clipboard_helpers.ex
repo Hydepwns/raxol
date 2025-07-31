@@ -52,7 +52,7 @@ defmodule Raxol.Test.Support.ClipboardHelpers do
   @doc """
   Expects a clipboard paste operation that returns an error.
   """
-  def expect_clipboard_paste_error(mock \\ ClipboardMock) do
+  def expect_clipboard_paste_error(mock \\ Raxol.Core.ClipboardMock) do
     expect(mock, :paste, fn -> {:error, :error} end)
   end
 end

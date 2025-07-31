@@ -98,16 +98,27 @@ end
 # --- All test code below ---
 defmodule Raxol.RuntimeTest do
   use ExUnit.Case, async: false
+  import Mox
 
   alias Raxol.Runtime.Supervisor, as: RuntimeSupervisor
   alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
   alias Raxol.Core.Runtime.Events.Dispatcher
   alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
   alias Raxol.Terminal.Driver, as: TerminalDriver
+  
+  # Define the mock if not already defined
+  Mox.defmock(Raxol.Terminal.DriverMock, for: Raxol.Terminal.Driver.Behaviour)
 
   setup context do
     # Call the cleanup helper at the beginning of setup
     setup_runtime_environment(context)
+    
+    # Set up DriverMock expectations for all tests that might need it
+    stub(Raxol.Terminal.DriverMock, :start_link, fn dispatcher_module_or_pid ->
+      # Return a mock process that behaves like the Terminal.Driver
+      # The dispatcher can be either a module name (from supervisor) or PID
+      {:ok, spawn(fn -> Process.sleep(:infinity) end)}
+    end)
 
     # Ensure ETS table is clean and exists before each test
     try do
@@ -131,13 +142,13 @@ defmodule Raxol.RuntimeTest do
       :plugin_manager_config,
       %{
         Raxol.Core.Plugins.Core.ClipboardPlugin => [
-          clipboard_impl: ClipboardMock
+          clipboard_impl: Raxol.Core.ClipboardMock
         ]
       }
     )
 
     # Get original stty settings to restore after test, handle potential errors
-    original_stty =
+    _original_stty =
       case System.cmd("stty", ["-g"]) do
         {output, 0} ->
           String.trim(output)
@@ -178,6 +189,15 @@ defmodule Raxol.RuntimeTest do
     # Get the PIDs of the processes we need for tests
     dispatcher_pid = Process.whereis(Dispatcher)
     driver_pid = Process.whereis(TerminalDriver)
+    
+    # Ensure critical processes are running
+    if is_nil(dispatcher_pid) do
+      raise "Dispatcher process not found - supervisor may have failed to start it"
+    end
+    
+    if is_nil(driver_pid) do
+      raise "TerminalDriver process not found - supervisor may have failed to start it"
+    end
     
     # Return the captured PIDs in the context
     {:ok,
@@ -287,7 +307,7 @@ defmodule Raxol.RuntimeTest do
     assert is_pid(driver_pid), "TerminalDriver not running"
 
     # Monitor supervisor to ensure it doesn't crash UNEXPECTEDLY during the test
-    ref = Process.monitor(supervisor_pid)
+    _ref = Process.monitor(supervisor_pid)
 
     # Send Ctrl+Q -> MockApp -> Command.quit() -> Command.execute sends :quit_runtime to test process
     # Ctrl+Q -> :quit command
@@ -340,19 +360,19 @@ defmodule Raxol.RuntimeTest do
     :timer.sleep(100)
 
     # Mox expectations
-    Mox.expect(ClipboardMock, :copy, fn "copied from mock" -> :ok end)
+    Mox.expect(Raxol.Core.ClipboardMock, :copy, fn "copied from mock" -> :ok end)
 
     # For :notify (Ctrl+N from MockApp)
-    Mox.expect(NotificationMock, :get_os_type, fn -> {:unix, :darwin} end)
+    Mox.expect(SystemInteractionMock, :get_os_type, fn -> {:unix, :darwin} end)
 
-    Mox.expect(NotificationMock, :find_executable, fn "osascript" ->
+    Mox.expect(SystemInteractionMock, :find_executable, fn "osascript" ->
       "/usr/bin/osascript"
     end)
 
     expected_script =
       ~s(display notification "MockApp notification" with title "Raxol Notification")
 
-    Mox.expect(NotificationMock, :system_cmd, fn "/usr/bin/osascript",
+    Mox.expect(SystemInteractionMock, :system_cmd, fn "/usr/bin/osascript",
                                                  ["-e", ^expected_script],
                                                  [stderr_to_stdout: true] ->
       {"", 0}
@@ -384,7 +404,7 @@ defmodule Raxol.RuntimeTest do
     :timer.sleep(100)
 
     # Mox expectation for ClipboardMock.paste/0, allow from any process
-    Mox.expect(ClipboardMock, :paste, fn -> {:ok, "Test Clipboard Content"} end)
+    Mox.expect(Raxol.Core.ClipboardMock, :paste, fn -> {:ok, "Test Clipboard Content"} end)
 
     # Check initial model state using the helper
     assert_model(dispatcher_pid, %{count: 0, last_clipboard: nil})
@@ -603,55 +623,4 @@ defmodule Raxol.RuntimeTest do
     end
   end
 
-  # --- Event-based wait helpers ---
-  defp wait_for_process(fun, timeout) do
-    start = System.monotonic_time(:millisecond)
-    do_wait_for_process(fun, start, timeout)
-  end
-
-  defp do_wait_for_process(fun, start, timeout) do
-    case fun.() do
-      nil ->
-        if System.monotonic_time(:millisecond) - start < timeout do
-          Process.sleep(10)
-          do_wait_for_process(fun, start, timeout)
-        else
-          flunk("Process did not become available within \\#{timeout}ms")
-        end
-
-      pid ->
-        pid
-    end
-  end
-
-  defp wait_for_model(dispatcher_pid, expected, timeout) do
-    start = System.monotonic_time(:millisecond)
-    do_wait_for_model(dispatcher_pid, expected, start, timeout)
-  end
-
-  defp do_wait_for_model(dispatcher_pid, expected, start, timeout) do
-    case GenServer.call(dispatcher_pid, :get_model, 100) do
-      {:ok, model} ->
-        expected_with_theme =
-          Map.put(expected, :current_theme_id, "Default Theme")
-
-        if model == expected_with_theme do
-          :ok
-        else
-          check_timeout_and_retry(dispatcher_pid, expected, start, timeout)
-        end
-
-      _ ->
-        check_timeout_and_retry(dispatcher_pid, expected, start, timeout)
-    end
-  end
-
-  defp check_timeout_and_retry(dispatcher_pid, expected, start, timeout) do
-    if System.monotonic_time(:millisecond) - start < timeout do
-      Process.sleep(20)
-      do_wait_for_model(dispatcher_pid, expected, start, timeout)
-    else
-      flunk("Model did not reach expected state within #{timeout}ms.")
-    end
-  end
 end

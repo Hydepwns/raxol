@@ -100,8 +100,9 @@ defmodule RaxolWeb.ConnCase do
     # Check if Accounts process is running
     if Process.whereis(Raxol.Accounts) do
       case Raxol.Accounts.get_user("user") do
-        nil -> create_test_user()
-        _ -> :ok
+        {:error, :not_found} -> create_test_user()
+        {:error, _} -> create_test_user()
+        {:ok, _user} -> :ok
       end
     else
       # If Accounts isn't running, skip user creation

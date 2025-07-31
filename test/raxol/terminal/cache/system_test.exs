@@ -101,7 +101,7 @@ defmodule Raxol.Terminal.Cache.SystemTest do
       # The general namespace has 19MB (19 * 1024 * 1024 bytes)
       # Get the actual cache size from stats
       {:ok, stats} = System.stats(namespace: :general)
-      max_size = stats.max_size
+      _max_size = stats.max_size
       
       # Create values that together will exceed the cache size
       # Using 5MB values to ensure we trigger eviction
