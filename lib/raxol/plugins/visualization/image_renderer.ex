@@ -134,9 +134,11 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
 
   defp decode_image(data) do
     # Use Mogrify to decode image data
-    case Mogrify.open(data) do
-      {:ok, image} -> {:ok, image}
-      {:error, reason} -> {:error, reason}
+    try do
+      image = Mogrify.open(data)
+      {:ok, image}
+    rescue
+      e -> {:error, Exception.message(e)}
     end
   end
 

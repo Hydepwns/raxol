@@ -6,6 +6,7 @@ defmodule Raxol.Plugins.SearchPlugin do
   """
 
   @behaviour Raxol.Plugins.Plugin
+  @behaviour Raxol.Plugins.LifecycleBehaviour
 
   @type t :: %__MODULE__{
           name: String.t(),

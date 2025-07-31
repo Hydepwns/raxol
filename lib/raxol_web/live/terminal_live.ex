@@ -201,6 +201,17 @@ defmodule RaxolWeb.TerminalLive do
     end
   end
 
+  def handle_event("scroll_to_bottom", _params, socket) do
+    emulator = socket.assigns.emulator
+    scrollback_size = length(emulator.scrollback_buffer || [])
+
+    if scrollback_size > 0 do
+      handle_scroll_update(socket, scrollback_size)
+    else
+      {:noreply, socket}
+    end
+  end
+
   defp handle_scroll_update(socket, offset) do
     emulator = socket.assigns.emulator
 
@@ -227,17 +238,6 @@ defmodule RaxolWeb.TerminalLive do
       |> assign(:at_bottom, at_bottom)
 
     {:noreply, socket}
-  end
-
-  def handle_event("scroll_to_bottom", _params, socket) do
-    emulator = socket.assigns.emulator
-    scrollback_size = length(emulator.scrollback_buffer || [])
-
-    if scrollback_size > 0 do
-      handle_scroll_update(socket, scrollback_size)
-    else
-      {:noreply, socket}
-    end
   end
 
   def handle_event("scroll_to_top", _params, socket) do

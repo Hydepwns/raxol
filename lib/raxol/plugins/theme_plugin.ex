@@ -186,4 +186,15 @@ defmodule Raxol.Plugins.ThemePlugin do
       Theme.get(theme_name) || Theme.default_theme()
     end
   end
+
+  # LifecycleBehaviour callbacks
+  @impl Raxol.Plugins.LifecycleBehaviour
+  def start(config) do
+    {:ok, config}
+  end
+
+  @impl Raxol.Plugins.LifecycleBehaviour
+  def stop(config) do
+    {:ok, config}
+  end
 end
