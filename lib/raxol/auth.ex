@@ -124,8 +124,9 @@ defmodule Raxol.Auth do
       {:error, :not_found} ->
         # Fallback to Accounts for backward compatibility
         case Accounts.get_user(user_id) do
-          nil -> {:error, :not_found}
-          user -> {:ok, user}
+          {:error, :not_found} -> {:error, :not_found}
+          {:error, reason} -> {:error, reason}
+          {:ok, user} -> {:ok, user}
         end
 
       {:error, reason} ->
@@ -484,7 +485,7 @@ defmodule Raxol.Auth do
     case Repo.get_by(Role, name: "user") do
       # Will be handled by the changeset
       nil -> nil
-      role -> role.id
+      role when not is_nil(role) -> role.id
     end
   end
 end

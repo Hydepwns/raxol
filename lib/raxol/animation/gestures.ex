@@ -284,7 +284,6 @@ defmodule Raxol.Animation.Gestures do
     case phase do
       :move -> detect_move_gesture(distance, velocity_magnitude, duration)
       :up -> detect_up_gesture(distance, velocity_magnitude, duration)
-      _ -> nil
     end
   end
 
@@ -341,7 +340,8 @@ defmodule Raxol.Animation.Gestures do
           handler.(gesture_data)
         catch
           kind, reason ->
-            IO.puts(
+            require Logger
+            Logger.error(
               "Error in gesture handler: #{inspect(kind)}, #{inspect(reason)}"
             )
         end

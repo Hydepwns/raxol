@@ -568,21 +568,6 @@ defmodule Raxol.Accounts do
     Bcrypt.hash_pwd_salt(password)
   end
 
-  defp update_user_login_success(user) do
-    attrs = %{
-      last_login: DateTime.utc_now(),
-      failed_login_attempts: 0,
-      locked_until: nil
-    }
-
-    case Database.update(User, user, attrs) do
-      {:ok, updated_user} ->
-        {:ok, Repo.preload(updated_user, [:role, :permissions])}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
 
   defp update_user_password(user, new_password) do
     attrs = %{password: new_password}
@@ -606,7 +591,7 @@ defmodule Raxol.Accounts do
     case Repo.get_by(Role, name: @default_role_name) do
       # Will be handled by the changeset
       nil -> nil
-      role -> role.id
+      role when not is_nil(role) -> role.id
     end
   end
 
