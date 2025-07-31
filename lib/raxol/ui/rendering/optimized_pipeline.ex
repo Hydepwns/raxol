@@ -32,19 +32,35 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
 
   # Caching macro
   defmacro cached(name, opts, do: block) do
-    quote do
-      cache_key = {unquote(name), unquote(opts[:key])}
-      ttl = unquote(opts[:ttl])
-      current_time = System.monotonic_time(:millisecond)
+    if opts[:ttl] == :infinity do
+      quote do
+        cache_key = {unquote(name), unquote(opts[:key])}
+        
+        case Process.get(cache_key) do
+          {result, _timestamp} ->
+            result
 
-      case Process.get(cache_key) do
-        {result, timestamp} when current_time - timestamp < ttl ->
-          result
+          _ ->
+            result = unquote(block)
+            Process.put(cache_key, {result, System.monotonic_time(:millisecond)})
+            result
+        end
+      end
+    else
+      quote do
+        cache_key = {unquote(name), unquote(opts[:key])}
+        ttl = unquote(opts[:ttl])
+        current_time = System.monotonic_time(:millisecond)
 
-        _ ->
-          result = unquote(block)
-          Process.put(cache_key, {result, current_time})
-          result
+        case Process.get(cache_key) do
+          {result, timestamp} when current_time - timestamp < ttl ->
+            result
+
+          _ ->
+            result = unquote(block)
+            Process.put(cache_key, {result, current_time})
+            result
+        end
       end
     end
   end
