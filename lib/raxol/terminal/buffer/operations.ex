@@ -50,12 +50,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Scrolls the buffer up by the specified number of lines.
   """
-  def scroll_up(buffer, lines, cursor_y, cursor_x)
-      when list?(buffer) and is_integer(lines) and lines > 0 and
-             is_integer(cursor_y) and is_integer(cursor_x) do
-    Scrolling.scroll_up(buffer, lines, cursor_y, cursor_x)
-  end
-
   def scroll_up(buffer, lines)
       when list?(buffer) and is_integer(lines) and lines > 0 do
     Scrolling.scroll_up(buffer, lines)
@@ -65,6 +59,12 @@ defmodule Raxol.Terminal.Buffer.Operations do
   def scroll_up(%Raxol.Terminal.ScreenBuffer{} = buffer, lines)
       when is_integer(lines) and lines > 0 do
     Scrolling.scroll_up(buffer, lines)
+  end
+
+  def scroll_up(buffer, lines, cursor_y, cursor_x)
+      when list?(buffer) and is_integer(lines) and lines > 0 and
+             is_integer(cursor_y) and is_integer(cursor_x) do
+    Scrolling.scroll_up(buffer, lines, cursor_y, cursor_x)
   end
 
   # Handle ScreenBuffer structs with cursor position
@@ -82,12 +82,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Scrolls the buffer down by the specified number of lines.
   """
-  def scroll_down(buffer, lines, cursor_y, cursor_x)
-      when list?(buffer) and is_integer(lines) and lines > 0 and
-             is_integer(cursor_y) and is_integer(cursor_x) do
-    Scrolling.scroll_down(buffer, lines, cursor_y, cursor_x)
-  end
-
   def scroll_down(buffer, lines)
       when list?(buffer) and is_integer(lines) and lines > 0 do
     Scrolling.scroll_down(buffer, lines)
@@ -97,6 +91,12 @@ defmodule Raxol.Terminal.Buffer.Operations do
   def scroll_down(%Raxol.Terminal.ScreenBuffer{} = buffer, lines)
       when is_integer(lines) and lines > 0 do
     Scrolling.scroll_down(buffer, lines)
+  end
+
+  def scroll_down(buffer, lines, cursor_y, cursor_x)
+      when list?(buffer) and is_integer(lines) and lines > 0 and
+             is_integer(cursor_y) and is_integer(cursor_x) do
+    Scrolling.scroll_down(buffer, lines, cursor_y, cursor_x)
   end
 
   # Handle ScreenBuffer structs with cursor position
@@ -191,14 +191,16 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Erases characters in the current line based on the mode.
   """
-  def erase_in_line(buffer, mode, cursor) do
+  def erase_in_line(buffer, mode, cursor_x, cursor_y) do
+    cursor = %{x: cursor_x, y: cursor_y}
     Erasing.erase_in_line(buffer, mode, cursor)
   end
 
   @doc """
   Erases characters in the display based on the mode.
   """
-  def erase_in_display(buffer, mode, cursor) do
+  def erase_in_display(buffer, mode, cursor_x, cursor_y) do
+    cursor = %{x: cursor_x, y: cursor_y}
     Erasing.erase_in_display(buffer, mode, cursor)
   end
 

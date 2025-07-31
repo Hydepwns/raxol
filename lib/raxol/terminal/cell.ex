@@ -157,8 +157,8 @@ defmodule Raxol.Terminal.Cell do
       %{bold: true, underline: true} # Note: :bold remains, :underline added
   """
   def merge_style(%__MODULE__{} = cell, style_to_merge)
-      when is_struct(style_to_merge, TextFormatting.Core) do
-    default_style = TextFormatting.Core.new()
+      when is_struct(style_to_merge) do
+    default_style = TextFormatting.new()
 
     # Convert both styles to maps for easier manipulation
     cell_style_map = Map.from_struct(cell.style)
@@ -176,15 +176,17 @@ defmodule Raxol.Terminal.Cell do
         end
       end)
 
-    # Convert back to TextFormatting.Core struct using new() function
-    final_style = TextFormatting.Core.new(final_style_map)
+    # Convert back to struct by starting with cell.style's module
+    final_style = struct(cell.style.__struct__, final_style_map)
     %{cell | style: final_style}
   end
 
   def merge_style(%__MODULE__{} = cell, style_to_merge)
       when map?(style_to_merge) do
-    # Handle plain maps by converting to TextFormatting.Core struct first
-    style_struct = TextFormatting.Core.new(style_to_merge)
+    # Handle plain maps by converting to TextFormatting struct first
+    style_struct = TextFormatting.new()
+    # Apply the attributes from the map
+    style_struct = struct(style_struct, style_to_merge)
     merge_style(cell, style_struct)
   end
 

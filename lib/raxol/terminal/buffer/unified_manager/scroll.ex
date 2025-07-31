@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
   managing scrollback content, and handling scroll operations.
   """
 
-  alias Raxol.Terminal.Buffer.Cell
+  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.Buffer.Scroll, as: ScrollBuffer
 
   @doc """

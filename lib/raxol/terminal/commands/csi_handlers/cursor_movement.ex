@@ -218,7 +218,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
         # Use the direct cursor positioning function
         case handle_cursor_position_direct(emulator, row, col) do
           {:ok, updated_emulator} -> updated_emulator
-          {:error, _, _} -> emulator
           updated_emulator -> updated_emulator
         end
 

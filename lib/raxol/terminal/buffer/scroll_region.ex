@@ -92,7 +92,6 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> ScrollRegion.get_region(buffer)
       nil
   """
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   @spec clear(ScreenBuffer.t()) :: ScreenBuffer.t()
   def clear(buffer) do
     %{buffer | scroll_region: nil}
@@ -282,7 +281,6 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.scroll_down(buffer, 1)
       iex> # Content is scrolled down within region 5-15
   """
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   def scroll_down(buffer, lines, scroll_region_arg \\ nil)
 
   def scroll_down(buffer, lines, scroll_region_arg) when lines > 0 do
@@ -532,7 +530,6 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   @doc """
   Gets the current scroll position within the scroll region.
   """
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   @spec get_scroll_position(ScreenBuffer.t()) :: non_neg_integer()
   def get_scroll_position(%ScreenBuffer{scroll_position: position}) do
     position

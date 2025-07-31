@@ -410,7 +410,6 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
 
   defp param_byte?(byte), do: byte >= ?0 and byte <= ?9
   defp intermediate_byte?(byte), do: byte >= 0x20 and byte <= 0x2F
-  defp final_byte?(byte), do: byte >= 0x40 and byte <= 0x7E
 
   defp csi_final_byte?(byte),
     do:

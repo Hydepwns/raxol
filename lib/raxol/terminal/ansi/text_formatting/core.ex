@@ -84,7 +84,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Core do
   Creates a new text formatting struct with default values.
   """
   def new do
-    %__MODULE__{
+    %{
       bold: false,
       italic: false,
       underline: false,
@@ -255,6 +255,205 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Core do
 
   @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
   @doc """
+  Applies a single attribute to the text style.
+  """
+  @spec apply_attribute(text_style(), atom()) :: text_style()
+  def apply_attribute(style, attribute) do
+    case attribute do
+      :bold -> set_bold(style)
+      :faint -> set_faint(style)
+      :italic -> set_italic(style)
+      :underline -> set_underline(style)
+      :blink -> set_blink(style)
+      :reverse -> set_reverse(style)
+      :conceal -> set_conceal(style)
+      :strikethrough -> set_strikethrough(style)
+      _ -> style
+    end
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Sets bold attribute.
+  """
+  @spec set_bold(text_style()) :: text_style()
+  def set_bold(style) do
+    %{style | bold: true}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Sets faint attribute.
+  """
+  @spec set_faint(text_style()) :: text_style()
+  def set_faint(style) do
+    %{style | faint: true}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Sets italic attribute.
+  """
+  @spec set_italic(text_style()) :: text_style()
+  def set_italic(style) do
+    %{style | italic: true}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Sets underline attribute.
+  """
+  @spec set_underline(text_style()) :: text_style()
+  def set_underline(style) do
+    %{style | underline: true}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Sets blink attribute.
+  """
+  @spec set_blink(text_style()) :: text_style()
+  def set_blink(style) do
+    %{style | blink: true}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Sets reverse attribute.
+  """
+  @spec set_reverse(text_style()) :: text_style()
+  def set_reverse(style) do
+    %{style | reverse: true}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Sets conceal attribute.
+  """
+  @spec set_conceal(text_style()) :: text_style()
+  def set_conceal(style) do
+    %{style | conceal: true}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Sets strikethrough attribute.
+  """
+  @spec set_strikethrough(text_style()) :: text_style()
+  def set_strikethrough(style) do
+    %{style | strikethrough: true}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Sets fraktur attribute.
+  """
+  @spec set_fraktur(text_style()) :: text_style()
+  def set_fraktur(style) do
+    %{style | fraktur: true}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Sets double underline attribute.
+  """
+  @spec set_double_underline(text_style()) :: text_style()
+  def set_double_underline(style) do
+    %{style | double_underline: true}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Sets framed attribute.
+  """
+  @spec set_framed(text_style()) :: text_style()
+  def set_framed(style) do
+    %{style | framed: true}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Sets encircled attribute.
+  """
+  @spec set_encircled(text_style()) :: text_style()
+  def set_encircled(style) do
+    %{style | encircled: true}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Sets overlined attribute.
+  """
+  @spec set_overlined(text_style()) :: text_style()
+  def set_overlined(style) do
+    %{style | overlined: true}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Resets bold attribute.
+  """
+  @spec reset_bold(text_style()) :: text_style()
+  def reset_bold(style) do
+    %{style | bold: false}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Resets italic attribute.
+  """
+  @spec reset_italic(text_style()) :: text_style()
+  def reset_italic(style) do
+    %{style | italic: false}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Resets underline attribute.
+  """
+  @spec reset_underline(text_style()) :: text_style()
+  def reset_underline(style) do
+    %{style | underline: false}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Resets blink attribute.
+  """
+  @spec reset_blink(text_style()) :: text_style()
+  def reset_blink(style) do
+    %{style | blink: false}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Resets reverse attribute.
+  """
+  @spec reset_reverse(text_style()) :: text_style()
+  def reset_reverse(style) do
+    %{style | reverse: false}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Resets framed and encircled attributes.
+  """
+  @spec reset_framed_encircled(text_style()) :: text_style()
+  def reset_framed_encircled(style) do
+    %{style | framed: false, encircled: false}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
+  Resets overlined attribute.
+  """
+  @spec reset_overlined(text_style()) :: text_style()
+  def reset_overlined(style) do
+    %{style | overlined: false}
+  end
+
+  @impl Raxol.Terminal.ANSI.TextFormattingBehaviour
+  @doc """
   Sets a custom attribute in the style map.
   """
   @spec set_custom(text_style(), atom(), any()) :: text_style()
@@ -374,10 +573,10 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Core do
   end
 
   defp ensure_text_formatting_struct(nil), do: new()
-  defp ensure_text_formatting_struct(%__MODULE__{} = style), do: style
+  defp ensure_text_formatting_struct(%__MODULE__{} = style), do: Map.from_struct(style)
 
   defp ensure_text_formatting_struct(style) when is_map(style) do
-    # Convert map to struct, using defaults for missing fields
+    # Merge with defaults for missing fields
     new()
     |> Map.merge(style)
   end

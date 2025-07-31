@@ -452,13 +452,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   defp handle_split_window_request(window, direction, state) do
     case direction do
       direction when direction in [:horizontal, :vertical] ->
-        case do_split_window(window, direction, state) do
-          {:ok, new_window_id, new_state} ->
-            {:reply, {:ok, new_window_id}, new_state}
-
-          {:error, reason} ->
-            {:reply, {:error, reason}, state}
-        end
+        {:ok, new_window_id, new_state} = do_split_window(window, direction, state)
+        {:reply, {:ok, new_window_id}, new_state}
 
       _ ->
         {:reply, {:error, :invalid_direction}, state}

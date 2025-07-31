@@ -514,11 +514,6 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
     0
   end
 
-  defp create_default_emulator do
-    # Create a minimal emulator state
-    Emulator.new(80, 24)
-  end
-
   defp schedule_checkpoint(interval) when interval > 0 do
     Process.send_after(self(), :scheduled_checkpoint, interval)
   end

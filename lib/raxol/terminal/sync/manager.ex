@@ -305,15 +305,5 @@ defmodule Raxol.Terminal.Sync.Manager do
     end
   end
 
-  defp get_consistency_level(component_type) do
-    case component_type do
-      :split -> :strong
-      :window -> :strong
-      :tab -> :eventual
-      _ -> :strong
-    end
-  end
 
-  # Helper to get process name (for future-proofing)
-  defp process_name(opts \\ []), do: Keyword.get(opts, :name, __MODULE__)
 end

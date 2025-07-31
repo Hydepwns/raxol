@@ -213,14 +213,6 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
       row < buffer.height and col < buffer.width
   end
 
-  defp insert_chars_in_line(line, col, count, width) do
-    {left, right} = Enum.split(line, col)
-    blanks = Enum.map(1..count, fn _ -> %Cell{char: " ", dirty: true} end)
-    shifted_right = Enum.take(right, width - col - count)
-
-    (left ++ blanks ++ shifted_right)
-    |> pad_or_truncate_line(width)
-  end
 
   @doc """
   Inserts a specified number of characters at the given position.

@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Integration do
   @doc """
   Initializes a new terminal integration state.
   """
-  def init(opts \\ %{}) do
+  def init(opts \\ []) do
     # Initialize components
     buffer_manager = BufferManager.new()
     cursor_manager = CursorManager.new(opts)
@@ -62,12 +62,12 @@ defmodule Raxol.Terminal.Integration do
     %{type: :key, key: <<key>>}
   end
 
-  defp convert_input_event({:mouse, {x, y, button}}) do
-    %{type: :mouse, x: x, y: y, button: button, event_type: :press}
-  end
-
   defp convert_input_event({:mouse, {x, y, :move}}) do
     %{type: :mouse, x: x, y: y, button: 0, event_type: :move}
+  end
+
+  defp convert_input_event({:mouse, {x, y, button}}) do
+    %{type: :mouse, x: x, y: y, button: button, event_type: :press}
   end
 
   defp convert_input_event({:invalid, _reason}) do
@@ -192,17 +192,12 @@ defmodule Raxol.Terminal.Integration do
   """
   def reset_config(%State{} = state) do
     # Reset configuration
-    case Config.reset_config(state) do
-      {:ok, updated_state} ->
-        # Reset renderer configuration
-        updated_state = IntegrationRenderer.reset_config(updated_state)
+    {:ok, updated_state} = Config.reset_config(state)
+    # Reset renderer configuration
+    updated_state = IntegrationRenderer.reset_config(updated_state)
 
-        # Render the updated state
-        render(updated_state)
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    # Render the updated state
+    render(updated_state)
   end
 
   @doc """

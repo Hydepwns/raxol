@@ -102,6 +102,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     Operations.clear(buffer, style)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def clear_line(buffer, line, style \\ nil) do
     Operations.clear_line(buffer, line, style)
   end
@@ -130,30 +131,37 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     Operations.erase_chars(buffer, x, y, count)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_cursor_to_end(buffer) do
     Operations.erase_from_cursor_to_end(buffer)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_start_to_cursor(buffer) do
     Operations.erase_from_start_to_cursor(buffer)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_all(buffer) do
     Operations.erase_all(buffer)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_all_with_scrollback(buffer) do
     Operations.erase_all_with_scrollback(buffer)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_cursor_to_end_of_line(buffer) do
     Operations.erase_from_cursor_to_end_of_line(buffer)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_from_start_of_line_to_cursor(buffer) do
     Operations.erase_from_start_of_line_to_cursor(buffer)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def erase_line(buffer) do
     Operations.erase_line(buffer)
   end
@@ -214,6 +222,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     Operations.erase_region(buffer, x, y, width, height)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def mark_damaged(buffer, x, y, width, height) do
     Operations.mark_damaged(buffer, x, y, width, height)
   end
@@ -227,26 +236,32 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     Operations.get_size(buffer)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def scroll_up(buffer, lines) do
     Operations.scroll_up(buffer, lines)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def scroll_down(buffer, lines) do
     Operations.scroll_down(buffer, lines)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def set_scroll_region(buffer, start_line, end_line) do
     Operations.set_scroll_region(buffer, start_line, end_line)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def clear_scroll_region(buffer) do
     Operations.clear_scroll_region(buffer)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_scroll_region_boundaries(buffer) do
     Operations.get_scroll_region_boundaries(buffer)
   end
 
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_scroll_position(buffer) do
     Operations.get_scroll_position(buffer)
   end

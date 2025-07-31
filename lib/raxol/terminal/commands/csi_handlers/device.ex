@@ -5,6 +5,37 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
 
   alias Raxol.Terminal.Emulator
 
+  # Suppress warnings for functions called dynamically via apply/3
+  @compile {:nowarn_unused_function, [
+    handle_report_window_size: 1,
+    handle_resize_window: 3,
+    handle_report_window_state: 2,
+    handle_window_action: 2,
+    handle_unmaximize_window: 1,
+    handle_report_window_position: 1,
+    handle_report_screen_size_pixels: 1,
+    handle_report_cell_size: 1,
+    handle_report_screen_size_chars: 1,
+    handle_report_icon_label: 1,
+    handle_report_window_state_0: 1,
+    handle_report_window_title: 1
+  ]}
+
+  @dialyzer {:nowarn_function, [
+    handle_report_window_size: 1,
+    handle_resize_window: 3,
+    handle_report_window_state: 2,
+    handle_window_action: 2,
+    handle_unmaximize_window: 1,
+    handle_report_window_position: 1,
+    handle_report_screen_size_pixels: 1,
+    handle_report_cell_size: 1,
+    handle_report_screen_size_chars: 1,
+    handle_report_icon_label: 1,
+    handle_report_window_state_0: 1,
+    handle_report_window_title: 1
+  ]}
+
   def handle_command(emulator, params, intermediates_buffer, byte) do
     case byte do
       # Device Attributes
@@ -181,6 +212,20 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
     end
   end
 
+  # The following functions are called dynamically via apply/3 in dispatch_window_operation
+  # credo:disable-for-lines:100 Credo.Check.Refactor.UnlessWithElse
+  # dialyzer:nowarn_function handle_report_window_size: 1
+  # dialyzer:nowarn_function handle_resize_window: 3
+  # dialyzer:nowarn_function handle_report_window_state: 2
+  # dialyzer:nowarn_function handle_window_action: 2
+  # dialyzer:nowarn_function handle_unmaximize_window: 1
+  # dialyzer:nowarn_function handle_report_window_position: 1
+  # dialyzer:nowarn_function handle_report_screen_size_pixels: 1
+  # dialyzer:nowarn_function handle_report_cell_size: 1
+  # dialyzer:nowarn_function handle_report_screen_size_chars: 1
+  # dialyzer:nowarn_function handle_report_icon_label: 1
+  # dialyzer:nowarn_function handle_report_window_state_0: 1
+
   defp handle_report_window_size(emulator) do
     updated_emulator =
       Emulator.write_to_output(
@@ -234,15 +279,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
     {:ok, updated_emulator}
   end
 
-  defp handle_report_window_size_pixels(emulator) do
-    updated_emulator =
-      Emulator.write_to_output(
-        emulator,
-        "\e[14;#{emulator.window.height};#{emulator.window.width}t"
-      )
-
-    {:ok, updated_emulator}
-  end
 
   defp handle_report_screen_size_pixels(emulator) do
     updated_emulator =
@@ -281,13 +317,14 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
     {:ok, updated_emulator}
   end
 
+
+  defp handle_report_window_state_0(emulator),
+    do: handle_report_window_state(emulator, 0)
+
   defp handle_report_window_title(emulator) do
     updated_emulator =
       Emulator.write_to_output(emulator, "\e[21;#{emulator.window.title}t")
 
     {:ok, updated_emulator}
   end
-
-  defp handle_report_window_state_0(emulator),
-    do: handle_report_window_state(emulator, 0)
 end

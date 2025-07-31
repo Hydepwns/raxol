@@ -28,14 +28,24 @@ defmodule Raxol.Terminal.Buffer.Cell do
   @doc """
   Creates a new cell with default settings.
   """
-  def new(opts \\ []) do
+  def new(opts \\ [])
+
+  def new(opts) when is_list(opts) do
     case opts do
-      opts when is_binary(opts) -> new_from_string(opts)
-      opts when is_map(opts) -> new_from_map(opts)
-      opts when is_list(opts) -> new_from_keyword(opts)
-      _ -> %__MODULE__{}
+      [] -> %__MODULE__{}
+      _ -> new_from_keyword(opts)
     end
   end
+
+  def new(arg) when is_binary(arg) do
+    %__MODULE__{char: arg, fg: nil, bg: nil}
+  end
+
+  def new(opts) when is_map(opts) do
+    new_from_map(opts)
+  end
+
+  def new(_), do: %__MODULE__{}
 
   @doc """
   Creates a new cell with the specified character and style.
@@ -60,10 +70,6 @@ defmodule Raxol.Terminal.Buffer.Cell do
 
     # IO.puts("DEBUG: Cell.new/2 - created cell: #{inspect(cell)}")
     cell
-  end
-
-  def new(arg) when is_binary(arg) do
-    %__MODULE__{char: arg, fg: nil, bg: nil}
   end
 
   @doc """
@@ -347,10 +353,6 @@ defmodule Raxol.Terminal.Buffer.Cell do
       w ->
         w
     end
-  end
-
-  defp new_from_string(char) do
-    %__MODULE__{char: char}
   end
 
   defp new_from_map(opts) do
