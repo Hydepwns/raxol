@@ -516,7 +516,6 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   # Server Callbacks
 
   def init(opts) do
-    IO.puts("[UnifiedManager] init/1 called with opts: #{inspect(opts)}")
     Logger.debug("[UnifiedManager] init/1 called with opts: #{inspect(opts)}")
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)
@@ -709,6 +708,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     case CellOperations.get_cell_at_coordinates(state, x, y) do
       {:valid, cell} ->
         {:ok, cell}
+
       {:invalid, cell} ->
         # Return default cell for invalid coordinates
         {:ok, cell}

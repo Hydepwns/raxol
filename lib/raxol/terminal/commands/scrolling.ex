@@ -304,5 +304,4 @@ defmodule Raxol.Terminal.Commands.Scrolling do
       fallback_line
     end
   end
-
 end

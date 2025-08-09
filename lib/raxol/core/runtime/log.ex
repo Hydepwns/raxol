@@ -2,7 +2,7 @@ defmodule Raxol.Core.Runtime.Log do
   @moduledoc """
   Standardized logging helpers for error and warning messages with context and stacktraces.
   """
-  
+
   require Logger
 
   @doc """
@@ -50,7 +50,7 @@ defmodule Raxol.Core.Runtime.Log do
 
   defp log(level, msg, context \\ nil) do
     message = if context, do: "#{msg} | Context: #{inspect(context)}", else: msg
-    
+
     case level do
       :info -> Logger.info(message)
       :debug -> Logger.debug(message)

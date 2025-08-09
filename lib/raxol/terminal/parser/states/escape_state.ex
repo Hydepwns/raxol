@@ -73,9 +73,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
       "EscapeState: Found DCS final byte 'P', transitioning to dcs_entry with rest=#{inspect(rest)}"
     )
 
-    IO.puts(
-      "DEBUG: EscapeState - Found DCS final byte 'P', transitioning to dcs_entry with rest=#{inspect(rest)}"
-    )
+    # Found DCS final byte 'P', transitioning to dcs_entry
 
     next_parser_state = %{parser_state | state: :dcs_entry}
     {:continue, emulator, next_parser_state, rest}

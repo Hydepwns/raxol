@@ -21,6 +21,7 @@ defmodule Raxol.Web.Session.Storage do
       :undefined ->
         _ = :ets.new(@table_name, [:named_table, :set, :public])
         :ok
+
       _tid ->
         # Table already exists
         :ok

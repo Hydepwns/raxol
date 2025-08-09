@@ -24,7 +24,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.SequenceDispatcher do
     [?6, ?R] => {:cursor_position_report, []},
     [?N] => {:locking_shift_g0, []},
     [?O] => {:locking_shift_g1, []},
-    [?R] => {:single_shift_g2, []}
+    [?R] => {:single_shift_g2, []},
+    # Bracketed paste sequences
+    [?2, ?0, ?0, ?~] => {:bracketed_paste_start, []},
+    [?2, ?0, ?1, ?~] => {:bracketed_paste_end, []}
   }
 
   def handle_sequence(emulator, sequence) do

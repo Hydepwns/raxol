@@ -214,15 +214,6 @@ defmodule Raxol.Terminal.Modes.Types.ModeTypes do
       dependencies: [],
       conflicts: []
     },
-    # Column Width Mode (132 columns) - standard code
-    3 => %{
-      category: :standard,
-      code: 3,
-      name: :deccolm_132,
-      default_value: false,
-      dependencies: [],
-      conflicts: [:deccolm_80]
-    },
     # Column Width Mode (132 columns) - alternative code
     132 => %{
       category: :standard,

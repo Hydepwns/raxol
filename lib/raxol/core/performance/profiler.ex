@@ -116,7 +116,7 @@ defmodule Raxol.Core.Performance.Profiler do
     quote do
       iterations = Keyword.get(unquote(opts), :iterations, 100)
       warmup = Keyword.get(unquote(opts), :warmup, 10)
-      
+
       fun = fn -> unquote(block) end
 
       # Warmup runs
@@ -130,7 +130,10 @@ defmodule Raxol.Core.Performance.Profiler do
           max(time, 1)
         end
 
-      Raxol.Core.Performance.Profiler.analyze_benchmark_results(unquote(operation), results)
+      Raxol.Core.Performance.Profiler.analyze_benchmark_results(
+        unquote(operation),
+        results
+      )
     end
   end
 
@@ -209,12 +212,18 @@ defmodule Raxol.Core.Performance.Profiler do
       after_info = Process.info(self(), [:memory, :garbage_collection])
 
       memory_delta =
-        Keyword.get(after_info, :memory, 0) - Keyword.get(before_info, :memory, 0)
+        Keyword.get(after_info, :memory, 0) -
+          Keyword.get(before_info, :memory, 0)
 
-      gc_runs = Raxol.Core.Performance.Profiler.get_gc_runs(after_info) - 
-                Raxol.Core.Performance.Profiler.get_gc_runs(before_info)
+      gc_runs =
+        Raxol.Core.Performance.Profiler.get_gc_runs(after_info) -
+          Raxol.Core.Performance.Profiler.get_gc_runs(before_info)
 
-      Raxol.Core.Performance.Profiler.record_memory_metrics(unquote(operation), memory_delta, gc_runs)
+      Raxol.Core.Performance.Profiler.record_memory_metrics(
+        unquote(operation),
+        memory_delta,
+        gc_runs
+      )
 
       result
     end
@@ -247,9 +256,9 @@ defmodule Raxol.Core.Performance.Profiler do
   def report(opts \\ []) do
     format = Keyword.get(opts, :format, :text)
     operations = Keyword.get(opts, :operations, :all)
-    
+
     # If operations are specified as a list, return raw data unless format is explicitly set
-    format = 
+    format =
       if is_list(operations) and not Keyword.has_key?(opts, :format) do
         :raw
       else
@@ -299,11 +308,13 @@ defmodule Raxol.Core.Performance.Profiler do
   @impl true
   def handle_call({:generate_report, format, operations}, _from, state) do
     report = build_report(state, operations)
-    formatted_report = 
+
+    formatted_report =
       case format do
         :raw -> report
         _ -> format_report(report, format)
       end
+
     {:reply, formatted_report, state}
   end
 
@@ -495,9 +506,10 @@ defmodule Raxol.Core.Performance.Profiler do
   end
 
   defp build_report(state, operations) when is_list(operations) do
-    filtered_profiles = state.profiles
-    |> Enum.filter(&(&1.operation in operations))
-    
+    filtered_profiles =
+      state.profiles
+      |> Enum.filter(&(&1.operation in operations))
+
     build_report(%{state | profiles: filtered_profiles}, :all)
   end
 

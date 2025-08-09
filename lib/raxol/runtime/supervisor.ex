@@ -79,74 +79,84 @@ defmodule Raxol.Runtime.Supervisor do
          debug_mode: debug_mode
        }) do
     # Only start UserPreferences if not already running (in test mode it may be started by test_helper)
-    user_prefs_children = if Mix.env() == :test and Process.whereis(Raxol.Core.UserPreferences) do
-      []
-    else
-      [{Raxol.Core.UserPreferences, if(Mix.env() == :test, do: [test_mode?: true], else: [])}]
-    end
+    user_prefs_children =
+      if Mix.env() == :test and Process.whereis(Raxol.Core.UserPreferences) do
+        []
+      else
+        [
+          {Raxol.Core.UserPreferences,
+           if(Mix.env() == :test, do: [test_mode?: true], else: [])}
+        ]
+      end
 
     # Only start Registry if not already running (in test mode it may be started by test_helper)
-    registry_children = if Mix.env() == :test and Process.whereis(:raxol_event_subscriptions) do
-      []
-    else
-      [{Registry, keys: :duplicate, name: :raxol_event_subscriptions}]
-    end
+    registry_children =
+      if Mix.env() == :test and Process.whereis(:raxol_event_subscriptions) do
+        []
+      else
+        [{Registry, keys: :duplicate, name: :raxol_event_subscriptions}]
+      end
 
-    user_prefs_children ++ registry_children ++ [
+    user_prefs_children ++
+      registry_children ++
+      [
+        # NEW: Start the Rendering Renderer GenServer
+        {Raxol.UI.Rendering.Renderer, []},
 
-      # NEW: Start the Rendering Renderer GenServer
-      {Raxol.UI.Rendering.Renderer, []},
+        # NEW: Start the Plugin Registry GenServer
+        {Raxol.Core.Runtime.Plugins.Registry, []},
 
-      # NEW: Start the Plugin Registry GenServer
-      {Raxol.Core.Runtime.Plugins.Registry, []},
-
-      # 1. Plugin Manager (needed by Dispatcher)
-      {Manager, [runtime_pid: runtime_pid]},
-      # 2. Dispatcher (needs plugin manager, app_module, model, runtime_pid, commands)
-      %{
-        id: Dispatcher,
-        start:
-          {Dispatcher, :start_link,
-           [
-             runtime_pid,
-             %{
-               app_module: app_module,
-               model: initial_model,
-               initial_commands: initial_commands,
-               width: initial_term_size.width,
-               height: initial_term_size.height,
-               # Uses registered name
-               plugin_manager: Manager,
-               command_registry_table: :raxol_command_registry,
-               debug_mode: debug_mode
-             }
-           ]},
-        restart: :permanent,
-        type: :worker
-      },
-      # 3. Rendering Engine (needs Dispatcher PID, app_module, size)
-      %{
-        id: RenderingEngine,
-        start:
-          {Raxol.Core.Runtime.Rendering.Engine, :start_link,
-           [
-             %{
-               # Assume terminal for now
-               environment: :terminal,
-               width: initial_term_size.width,
-               height: initial_term_size.height,
-               buffer: nil,
-               app_module: app_module,
-               # Uses registered name
-               dispatcher_pid: Dispatcher
-             }
-           ]},
-        restart: :permanent,
-        type: :worker
-      }
-    ] ++
+        # 1. Plugin Manager (needed by Dispatcher)
+        {Manager, [runtime_pid: runtime_pid]},
+        # 2. Dispatcher (needs plugin manager, app_module, model, runtime_pid, commands)
+        %{
+          id: Dispatcher,
+          start:
+            {Dispatcher, :start_link,
+             [
+               runtime_pid,
+               %{
+                 app_module: app_module,
+                 model: initial_model,
+                 initial_commands: initial_commands,
+                 width: initial_term_size.width,
+                 height: initial_term_size.height,
+                 # Uses registered name
+                 plugin_manager: Manager,
+                 command_registry_table: :raxol_command_registry,
+                 debug_mode: debug_mode
+               }
+             ]},
+          restart: :permanent,
+          type: :worker
+        },
+        # 3. Rendering Engine (needs Dispatcher PID, app_module, size)
+        %{
+          id: RenderingEngine,
+          start:
+            {Raxol.Core.Runtime.Rendering.Engine, :start_link,
+             [
+               %{
+                 # Assume terminal for now
+                 environment: :terminal,
+                 width: initial_term_size.width,
+                 height: initial_term_size.height,
+                 buffer: nil,
+                 app_module: app_module,
+                 # Uses registered name
+                 dispatcher_pid: Dispatcher
+               }
+             ]},
+          restart: :permanent,
+          type: :worker
+        }
+      ] ++
       if IO.ANSI.enabled?() or Mix.env() == :test do
-        driver_module = if Mix.env() == :test, do: Raxol.Terminal.DriverMock, else: Raxol.Terminal.Driver
+        driver_module =
+          if Mix.env() == :test,
+            do: Raxol.Terminal.DriverMock,
+            else: Raxol.Terminal.Driver
+
         [
           # 4. Terminal Driver (needs Dispatcher PID)
           %{

@@ -224,4 +224,20 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
       end)
     end
   end
+
+  @doc """
+  Mount hook - called when component is mounted.
+  No special setup needed for Dashboard.
+  """
+  @impl true
+  @spec mount(map()) :: {map(), list()}
+  def mount(state), do: {state, []}
+
+  @doc """
+  Unmount hook - called when component is unmounted.
+  No cleanup needed for Dashboard.
+  """
+  @impl true
+  @spec unmount(map()) :: map()
+  def unmount(state), do: state
 end

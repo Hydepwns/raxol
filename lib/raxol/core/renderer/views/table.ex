@@ -291,7 +291,6 @@ defmodule Raxol.Core.Renderer.Views.Table do
   defp get_column_value(row, %{key: key}) when is_atom(key),
     do: Map.get(row, key)
 
-
   @doc """
   Constructs a Table struct for view usage (not stateful component usage).
   Accepts a map of props and returns the struct directly (not a tuple).
@@ -325,7 +324,6 @@ defmodule Raxol.Core.Renderer.Views.Table do
         :error
     end
   end
-
 
   # Group handle_call clauses together
   def handle_call({:update_props, _new_props}, _from, state) do

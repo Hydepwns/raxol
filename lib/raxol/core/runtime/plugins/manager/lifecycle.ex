@@ -208,11 +208,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Lifecycle do
               state: plugin_state,
               status: :loaded
             }
+
             {:ok, plugin}
-          
+
           {:error, reason} ->
             {:error, reason}
-            
+
           _ ->
             {:error, :invalid_init_response}
         end
@@ -222,6 +223,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Lifecycle do
       catch
         :exit, reason ->
           {:error, {:init_exit, reason}}
+
         :throw, reason ->
           {:error, {:init_throw, reason}}
       end

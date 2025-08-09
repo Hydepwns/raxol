@@ -200,6 +200,7 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
       if Mix.env() != :test do
         render_to_terminal(state)
       end
+
       {:reply, :ok, renderer}
     else
       {:reply, {:error, :not_initialized}, renderer}

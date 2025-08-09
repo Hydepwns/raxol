@@ -587,5 +587,4 @@ defmodule Raxol.Terminal.Driver do
         %Event{type: :unknown_test_input, data: %{raw: input_data}}
     end
   end
-
 end

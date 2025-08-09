@@ -11,7 +11,6 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
   end
 
   describe "column width changes" do
-    @tag :skip
     test "switching to 132-column mode", %{emulator: emulator} do
       # Process the CSI sequence for 132-column mode
       {new_emulator, _rest} =
@@ -32,7 +31,6 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
              )
     end
 
-    @tag :skip
     test "switching back to 80-column mode", %{emulator: emulator} do
       # First switch to 132-column mode
       {emulator_132, _rest1} =
@@ -60,7 +58,6 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
              )
     end
 
-    @tag :skip
     test "screen clearing on column width change", %{emulator: emulator} do
       # Write some content initially to ensure it gets cleared
       emulator = write_content(emulator, "Initial content")
@@ -72,7 +69,7 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
 
       # Verify screen is cleared and cursor is home
       assert screen_clear?(emulator_132)
-      assert emulator_132.cursor.position == {0, 0}
+      assert Emulator.get_cursor_position(emulator_132) == {0, 0}
       # Verify width still changes
       buffer_132 = Emulator.get_screen_buffer(emulator_132)
       assert ScreenBuffer.get_width(buffer_132) == 132
@@ -83,7 +80,7 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
 
       # Verify screen is cleared again and cursor is home
       assert screen_clear?(emulator_80)
-      assert emulator_80.cursor.position == {0, 0}
+      assert Emulator.get_cursor_position(emulator_80) == {0, 0}
       # Verify width changes back
       active_buffer_80 = Emulator.get_screen_buffer(emulator_80)
       assert ScreenBuffer.get_width(active_buffer_80) == 80

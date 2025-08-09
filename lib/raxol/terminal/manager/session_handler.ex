@@ -20,6 +20,7 @@ defmodule Raxol.Terminal.Manager.SessionHandler do
     case SessionManager.create_session(opts, state.runtime_pid) do
       {:ok, session} ->
         session_id = session.id
+
         new_state = %{
           state
           | sessions: Map.put(state.sessions, session_id, session)

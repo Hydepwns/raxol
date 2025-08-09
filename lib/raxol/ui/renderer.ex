@@ -69,6 +69,7 @@ defmodule Raxol.UI.Renderer do
           element_with_dims = calculate_element_dimensions(valid_element)
           width = Map.get(element_with_dims, :width, 0)
           height = Map.get(element_with_dims, :height, 0)
+
           if width == 0 or height == 0 do
             []
           else
@@ -88,10 +89,15 @@ defmodule Raxol.UI.Renderer do
       :text ->
         # Calculate text dimensions if missing
         text = Map.get(element, :text, "")
-        width = if Map.has_key?(element, :width), do: element.width, else: String.length(text)
+
+        width =
+          if Map.has_key?(element, :width),
+            do: element.width,
+            else: String.length(text)
+
         height = if Map.has_key?(element, :height), do: element.height, else: 1
         Map.merge(element, %{width: width, height: height})
-      
+
       _ ->
         # For other element types, return as-is
         element

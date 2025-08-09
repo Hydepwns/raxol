@@ -32,10 +32,6 @@ defmodule Raxol.System.Updater do
     State.default_update_settings()
   end
 
-  def check_for_updates do
-    Core.check_for_updates()
-  end
-
   def download_update(version) do
     Core.download_update(version)
   end

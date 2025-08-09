@@ -11,6 +11,8 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.ApplyHandlers do
     CharsetHandlers
   }
 
+  alias Raxol.Terminal.Commands.CSIHandlers
+
   def apply_handler(emulator, :cursor_up, amount),
     do: CursorMovement.handle_cursor_up(emulator, amount)
 
@@ -76,4 +78,11 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.ApplyHandlers do
 
   def apply_handler(emulator, :single_shift_g3, _params),
     do: CharsetHandlers.handle_single_shift_g3(emulator)
+
+  # Bracketed paste handlers
+  def apply_handler(emulator, :bracketed_paste_start, _params),
+    do: CSIHandlers.handle_bracketed_paste_start(emulator)
+
+  def apply_handler(emulator, :bracketed_paste_end, _params),
+    do: CSIHandlers.handle_bracketed_paste_end(emulator)
 end

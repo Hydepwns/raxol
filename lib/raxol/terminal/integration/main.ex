@@ -177,7 +177,8 @@ defmodule Raxol.Terminal.Integration do
     case Config.set_config_value(state, key, value) do
       {:ok, updated_state} ->
         # Update renderer configuration
-        updated_state = IntegrationRenderer.set_config_value(updated_state, key, value)
+        updated_state =
+          IntegrationRenderer.set_config_value(updated_state, key, value)
 
         # Render the updated state
         render(updated_state)

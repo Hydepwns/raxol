@@ -287,7 +287,6 @@ defmodule Raxol.Style.Colors.HotReload do
     end
   end
 
-
   defp schedule_check do
     timer_id = System.unique_integer([:positive])
     Process.send_after(self(), {:check_changes, timer_id}, @check_interval)

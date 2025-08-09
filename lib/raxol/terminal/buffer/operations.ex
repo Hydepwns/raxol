@@ -7,7 +7,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
   import Raxol.Guards
   @behaviour Raxol.Terminal.Buffer.OperationsBehaviour
 
-
   # Alias the new modules
   alias Raxol.Terminal.Buffer.Operations.{Text, Scrolling, Erasing, Utils}
 
@@ -203,7 +202,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
     cursor = %{x: cursor_x, y: cursor_y}
     Erasing.erase_in_display(buffer, mode, cursor)
   end
-
 
   @doc """
   Writes a character to the buffer at the specified position.

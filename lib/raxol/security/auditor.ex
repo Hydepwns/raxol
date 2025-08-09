@@ -19,15 +19,24 @@ defmodule Raxol.Security.Auditor do
 
   # Common attack patterns
   @sql_injection_patterns [
-    ~r/('\s*(;|union|or|and)\s*)/i,  # SQL injection with quotes
-    ~r/('--'|"--")/,  # SQL comments after quote
-    ~r/(--\s*$|;\s*--)/i,  # SQL comments at end
-    ~r/(\/\*|\*\/)/,  # Block comments
-    ~r/(xp_|sp_)/i,  # SQL Server extended procedures
-    ~r/(\bor\b\s+'?1'?\s*=\s*'?1'?)/i,  # Classic OR 1=1
-    ~r/(';\s*(drop|delete|update|insert)\s+)/i,  # Injection with statement
-    ~r/\bunion\s+select\b/i,  # UNION SELECT attack
-    ~r/\bdrop\s+table\b/i  # DROP TABLE attack
+    # SQL injection with quotes
+    ~r/('\s*(;|union|or|and)\s*)/i,
+    # SQL comments after quote
+    ~r/('--'|"--")/,
+    # SQL comments at end
+    ~r/(--\s*$|;\s*--)/i,
+    # Block comments
+    ~r/(\/\*|\*\/)/,
+    # SQL Server extended procedures
+    ~r/(xp_|sp_)/i,
+    # Classic OR 1=1
+    ~r/(\bor\b\s+'?1'?\s*=\s*'?1'?)/i,
+    # Injection with statement
+    ~r/(';\s*(drop|delete|update|insert)\s+)/i,
+    # UNION SELECT attack
+    ~r/\bunion\s+select\b/i,
+    # DROP TABLE attack
+    ~r/\bdrop\s+table\b/i
   ]
 
   @xss_patterns [

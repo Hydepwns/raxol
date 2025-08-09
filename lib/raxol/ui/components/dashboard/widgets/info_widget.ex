@@ -44,4 +44,20 @@ defmodule Raxol.UI.Components.Dashboard.Widgets.InfoWidget do
       end
     end
   end
+
+  @doc """
+  Mount hook - called when component is mounted.
+  No special setup needed for InfoWidget.
+  """
+  @impl true
+  @spec mount(map()) :: {map(), list()}
+  def mount(state), do: {state, []}
+
+  @doc """
+  Unmount hook - called when component is unmounted.
+  No cleanup needed for InfoWidget.
+  """
+  @impl true
+  @spec unmount(map()) :: map()
+  def unmount(state), do: state
 end

@@ -60,7 +60,7 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
     for: Raxol.Core.Runtime.Plugins.Manager.Behaviour
   )
 
-  Mox.defmock(Raxol.Terminal.DriverMock, for: Raxol.Terminal.Driver.Behaviour)
+  # DriverMock already defined in test/support/terminal_driver_mock.ex
 
   setup do
     # Set Mox to global mode so expectations are visible to spawned processes

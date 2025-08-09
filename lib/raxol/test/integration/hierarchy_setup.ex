@@ -370,7 +370,6 @@ defmodule Raxol.Test.Integration.HierarchySetup do
         {:ok, parent_id} ->
           case ComponentManager.mount(child_struct.module, child_state) do
             {:ok, child_id} ->
-
               # Get the mounted states from ComponentManager
               parent_mounted = ComponentManager.get_component(parent_id)
               child_mounted = ComponentManager.get_component(child_id)

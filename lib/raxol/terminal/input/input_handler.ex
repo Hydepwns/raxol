@@ -235,9 +235,7 @@ defmodule Raxol.Terminal.Input.InputHandler do
         _params,
         _single_shift
       ) do
-    IO.puts(
-      "DEBUG: InputHandler - Processing codepoint: #{inspect(char_codepoint)} (#{List.to_string([char_codepoint])})"
-    )
+    # Processing printable character
 
     # Use the CharacterProcessor to handle the printable character
     # This will write the character to the buffer and update cursor position

@@ -143,53 +143,48 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
   end
 
   defp misc_commands do
-    %{}
+    %{
+      "~" => {:special_sequence, &dispatch_csi_special_sequence/2}
+    }
   end
 
-
-
   defp dispatch_csi(params, final_byte, remaining) do
-    IO.puts("DEBUG: dispatch_csi called with final_byte=#{inspect(final_byte)}")
+    # DEBUG output removed
 
     case csi_dispatch_map()[final_byte] do
       nil ->
-        IO.puts("DEBUG: dispatch_csi unknown final_byte=#{inspect(final_byte)}")
+        # DEBUG output removed
         dispatch_csi_unknown(params, final_byte, remaining)
 
       {:simple, handler} ->
-        IO.puts(
-          "DEBUG: dispatch_csi routing to simple handler for final_byte=#{inspect(final_byte)}"
-        )
+        # DEBUG: dispatch_csi routing to simple handler for final_byte=#{inspect(final_byte)}
 
         handler.(params, remaining)
 
       {:cursor_position, handler} ->
-        IO.puts(
-          "DEBUG: dispatch_csi routing to cursor_position handler for final_byte=#{inspect(final_byte)}"
-        )
+        # DEBUG: dispatch_csi routing to cursor_position handler for final_byte=#{inspect(final_byte)}
 
         handler.(params, remaining)
 
       {:cursor_move, handler, direction} ->
-        IO.puts(
-          "DEBUG: dispatch_csi routing to cursor_move handler for final_byte=#{inspect(final_byte)}"
-        )
+        # DEBUG: dispatch_csi routing to cursor_move handler for final_byte=#{inspect(final_byte)}
 
         handler.(params, direction, remaining)
 
       {:scroll, handler, direction} ->
-        IO.puts(
-          "DEBUG: dispatch_csi routing to scroll handler for final_byte=#{inspect(final_byte)}"
-        )
+        # DEBUG: dispatch_csi routing to scroll handler for final_byte=#{inspect(final_byte)}
 
         handler.(params, direction, remaining)
 
       {:mode, handler, set?} ->
-        IO.puts(
-          "DEBUG: dispatch_csi routing to mode handler for final_byte=#{inspect(final_byte)}"
-        )
+        # DEBUG: dispatch_csi routing to mode handler for final_byte=#{inspect(final_byte)}
 
         handler.(params, :standard, set?, remaining)
+
+      {:special_sequence, handler} ->
+        # DEBUG: dispatch_csi routing to special_sequence handler for final_byte=#{inspect(final_byte)}
+
+        handler.(params, remaining)
     end
   end
 
@@ -213,9 +208,7 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
   defp dispatch_csi_cursor_horizontal_absolute(params, remaining) do
     col = BaseParser.param_at(params, 0, 1)
 
-    IO.puts(
-      "DEBUG: dispatch_csi_cursor_horizontal_absolute called with params=#{inspect(params)}, col=#{inspect(col)}"
-    )
+    # DEBUG: dispatch_csi_cursor_horizontal_absolute called with params=#{inspect(params)}, col=#{inspect(col)}
 
     {:ok, {:cursor_horizontal_absolute, max(0, col - 1)}, remaining}
   end
@@ -287,6 +280,24 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
 
   defp dispatch_csi_restore_cursor(_params, remaining) do
     {:ok, {:dec_restore_cursor, nil}, remaining}
+  end
+
+  defp dispatch_csi_special_sequence(params, remaining) do
+    code = BaseParser.param_at(params, 0, nil)
+
+    case code do
+      200 ->
+        # Bracketed paste start
+        {:ok, {:bracketed_paste_start}, remaining}
+
+      201 ->
+        # Bracketed paste end
+        {:ok, {:bracketed_paste_end}, remaining}
+
+      _ ->
+        BaseParser.log_unknown_sequence("CSI Special", "#{inspect(code)}~")
+        {:error, :unknown_sequence, remaining}
+    end
   end
 
   defp dispatch_csi_unknown(_params, final_byte, remaining) do

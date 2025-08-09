@@ -55,10 +55,11 @@ defmodule Raxol.Web.Session.Manager do
     if function_exported?(Mix, :env, 0) and Mix.env() != :test do
       # Only start monitor in non-test environments where supervisor is available
       case Process.whereis(Monitor) do
-        nil -> 
+        nil ->
           # Monitor not started, let supervisor handle it
           :ok
-        _pid -> 
+
+        _pid ->
           :ok
       end
     end

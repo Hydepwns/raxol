@@ -143,6 +143,40 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   defdelegate handle_window_size_report(emulator), to: WindowHandlers
   defdelegate handle_window_size_pixels(emulator), to: WindowHandlers
 
+  # Bracketed paste handling
+  def handle_bracketed_paste_start(emulator) do
+    if emulator.mode_manager.bracketed_paste_mode do
+      %{emulator | bracketed_paste_active: true, bracketed_paste_buffer: ""}
+    else
+      emulator
+    end
+  end
+
+  def handle_bracketed_paste_end(emulator) do
+    if emulator.mode_manager.bracketed_paste_mode and
+         emulator.bracketed_paste_active do
+      # Process the accumulated paste buffer as a single paste event
+      updated_emulator =
+        process_paste_content(emulator, emulator.bracketed_paste_buffer)
+
+      %{
+        updated_emulator
+        | bracketed_paste_active: false,
+          bracketed_paste_buffer: ""
+      }
+    else
+      %{emulator | bracketed_paste_active: false, bracketed_paste_buffer: ""}
+    end
+  end
+
+  defp process_paste_content(emulator, content) when content != "" do
+    # When bracketed paste is enabled, paste content should be processed
+    # without interpretation as commands - just insert as literal text
+    Raxol.Terminal.Input.TextProcessor.handle_text_input(content, emulator)
+  end
+
+  defp process_paste_content(emulator, _empty_content), do: emulator
+
   @doc """
   Handles a CSI sequence with command and parameters.
   """

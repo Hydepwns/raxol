@@ -72,6 +72,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
       {:ok, initialized_state} ->
         final_state = setup_file_watching_if_enabled(initialized_state)
         {:reply, :ok, final_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -79,19 +80,26 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
 
   defp handle_call_message({:initialize_with_config, config}, _from, state) do
     updated_state = %{state | plugin_config: config}
+
     case Lifecycle.initialize(updated_state) do
       {:ok, initialized_state} ->
         final_state = setup_file_watching_if_enabled(initialized_state)
         {:reply, :ok, final_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
 
-  defp handle_call_message({:load_plugin_by_module, module, config}, _from, state) do
+  defp handle_call_message(
+         {:load_plugin_by_module, module, config},
+         _from,
+         state
+       ) do
     case Lifecycle.load_plugin_by_module(state, module, config) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -101,6 +109,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
     case Lifecycle.load_plugin(state, plugin_id) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end

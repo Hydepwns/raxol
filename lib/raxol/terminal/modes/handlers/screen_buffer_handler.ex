@@ -132,11 +132,13 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
       # Create a fresh mode manager with default values for alternate screen
       # but preserve certain critical modes that should persist
       default_mode_manager = ModeManager.new()
+
       updated_mode_manager = %{
         default_mode_manager
         | alternate_buffer_active: true,
           # Preserve only critical modes that should persist across screen switches
-          interlacing_mode: emulator_with_saved_state.mode_manager.interlacing_mode
+          interlacing_mode:
+            emulator_with_saved_state.mode_manager.interlacing_mode
       }
 
       {:ok,

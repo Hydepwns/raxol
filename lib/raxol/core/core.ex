@@ -264,9 +264,11 @@ defmodule Raxol.Core do
   @spec unload_plugin(plugin_id()) :: :ok | {:error, term()}
   def unload_plugin(plugin_id) do
     :ok = Manager.unload_plugin(plugin_id)
+
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Plugin unloaded: #{inspect(plugin_id)}"
     )
+
     :ok
   end
 

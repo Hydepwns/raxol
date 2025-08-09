@@ -238,7 +238,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.CursorMovement do
     end
   end
 
-
   @doc """
   Handles cursor column positioning.
   """

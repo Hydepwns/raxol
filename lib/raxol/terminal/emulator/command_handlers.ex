@@ -378,8 +378,10 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
 
   defp handle_screen_buffer_switch(emulator, _mode, _value), do: emulator
 
-  defp log_sgr_debug(msg) do
-    File.write!("tmp/sgr_debug.log", msg <> "\n", [:append])
+  defp log_sgr_debug(_msg) do
+    # Disabled for performance - uncomment for debugging
+    # File.write!("tmp/sgr_debug.log", msg <> "\n", [:append])
+    :ok
   end
 
   defp handle_csi_command(final_byte, params, emulator, intermediates) do

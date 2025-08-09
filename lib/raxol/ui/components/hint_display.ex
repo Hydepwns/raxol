@@ -112,4 +112,20 @@ defmodule Raxol.UI.Components.HintDisplay do
 
   # Remove old render/2, render_title, render_hints, render_shortcuts, render_footer
   # Remove old @impl Component annotations
+
+  @doc """
+  Mount hook - called when component is mounted.
+  No special setup needed for HintDisplay.
+  """
+  @impl true
+  @spec mount(map()) :: {map(), list()}
+  def mount(state), do: {state, []}
+
+  @doc """
+  Unmount hook - called when component is unmounted.
+  No cleanup needed for HintDisplay.
+  """
+  @impl true
+  @spec unmount(map()) :: map()
+  def unmount(state), do: state
 end

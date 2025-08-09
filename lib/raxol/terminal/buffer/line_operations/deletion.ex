@@ -161,9 +161,9 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
   defp delete_lines_from_position(buffer, start_y, count, bottom) do
     # Calculate the number of lines that need to be shifted up
     lines_to_shift = max(0, bottom - start_y - count)
-    
+
     # Shift lines from below the deletion region up
-    buffer = 
+    buffer =
       if lines_to_shift > 0 do
         Enum.reduce(0..(lines_to_shift - 1), buffer, fn offset, acc ->
           target_y = start_y + offset
@@ -176,13 +176,12 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
       else
         buffer
       end
-    
+
     # Fill the bottom lines with empty content
     Enum.reduce((bottom - count)..(bottom - 1), buffer, fn y, acc ->
       set_line(acc, y, create_empty_line(buffer.width))
     end)
   end
-
 
   # Helper functions
   defp create_empty_lines(width, count) do

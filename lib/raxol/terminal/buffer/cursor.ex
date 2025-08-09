@@ -124,13 +124,12 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.visible?(buffer)
       true
   """
-  @spec visible?(ScreenBuffer.t()) :: boolean()
-  def visible?(buffer) do
-    buffer.cursor.visible
+  @spec visible?(ScreenBuffer.t() | t()) :: boolean()
+  def visible?(%ScreenBuffer{} = buffer) do
+    buffer.cursor_visible
   end
 
-  @spec visible?(t()) :: boolean()
-  def visible?(cursor) do
+  def visible?(%__MODULE__{} = cursor) do
     cursor.visible
   end
 
@@ -223,13 +222,13 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.blinking?(buffer)
       true
   """
-  @spec blinking?(ScreenBuffer.t()) :: boolean()
-  def blinking?(buffer) do
-    buffer.cursor.blink_state
+  @spec blinking?(ScreenBuffer.t() | t()) :: boolean()
+  def blinking?(%ScreenBuffer{} = _buffer) do
+    # ScreenBuffer doesn't have cursor blink state, default to false
+    false
   end
 
-  @spec blinking?(t()) :: boolean()
-  def blinking?(cursor) do
+  def blinking?(%__MODULE__{} = cursor) do
     cursor.blink_state
   end
 

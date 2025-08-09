@@ -153,16 +153,19 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
     # with_error_handling wraps the result in {:ok, state}
     # so we need to unwrap it for GenServer.init
     case result do
-      {:ok, state} -> {:ok, state}
-      {:error, _reason} -> 
+      {:ok, state} ->
+        {:ok, state}
+
+      {:error, _reason} ->
         # Fallback state if initialization completely fails
-        {:ok, %__MODULE__{
-          manager_pid: nil,
-          circuit_breaker: ErrorRecovery.circuit_breaker_init(),
-          error_count: 0,
-          fallback_buffer: BufferImpl.new(80, 24),
-          stats: %{errors: 1}
-        }}
+        {:ok,
+         %__MODULE__{
+           manager_pid: nil,
+           circuit_breaker: ErrorRecovery.circuit_breaker_init(),
+           error_count: 0,
+           fallback_buffer: BufferImpl.new(80, 24),
+           stats: %{errors: 1}
+         }}
     end
   end
 
@@ -180,31 +183,31 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
                  perform_write(state.manager_pid, data, opts)
                end
              ) do
-        {:ok, result} ->
-          new_stats = Map.update(state.stats, :writes, 1, &(&1 + 1))
+          {:ok, result} ->
+            new_stats = Map.update(state.stats, :writes, 1, &(&1 + 1))
 
-          new_state = %{
-            state
-            | stats: new_stats,
-              error_count: 0
-          }
+            new_state = %{
+              state
+              | stats: new_stats,
+                error_count: 0
+            }
 
-          {:reply, {:ok, result}, new_state}
+            {:reply, {:ok, result}, new_state}
 
-        {:error, :circuit_open, _message, _metadata} ->
-          # Use fallback buffer
-          Logger.warning("Circuit breaker open, using fallback buffer")
-          handle_fallback_write(data, opts, state)
+          {:error, :circuit_open, _message, _metadata} ->
+            # Use fallback buffer
+            Logger.warning("Circuit breaker open, using fallback buffer")
+            handle_fallback_write(data, opts, state)
 
-        {:error, :circuit_failure, message, _metadata} ->
-          # Retry with exponential backoff
-          handle_write_error(
-            data,
-            opts,
-            message,
-            state,
-            from
-          )
+          {:error, :circuit_failure, message, _metadata} ->
+            # Retry with exponential backoff
+            handle_write_error(
+              data,
+              opts,
+              message,
+              state,
+              from
+            )
         end
       end
     rescue
@@ -245,7 +248,8 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   @impl true
-  def handle_call({:resize, width, height}, _from, state) when is_number(width) and is_number(height) do
+  def handle_call({:resize, width, height}, _from, state)
+      when is_number(width) and is_number(height) do
     try do
       # Validate dimensions
       cond do
@@ -429,5 +433,4 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
         stats: Map.update(state.stats, :errors, 1, &(&1 + 1))
     }
   end
-
 end

@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
       # Sixel Graphics - DCS q ... ST (with or without quote intermediate)
       {"\"", ?q} ->
         handle_sixel(emulator, data_string)
-        
+
       # Sixel Graphics - DCS q ... ST (without intermediate)
       {"", ?q} ->
         handle_sixel(emulator, data_string)

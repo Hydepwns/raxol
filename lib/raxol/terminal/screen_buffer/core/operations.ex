@@ -38,7 +38,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Core.Operations do
   Writes a character at the specified position.
   """
   def write_char(buffer, x, y, char, style) do
-    IO.puts("DEBUG: Core.write_char/4 called")
+    # DEBUG output removed
     # Create a proper Cell struct instead of using Access behavior
     cell = Raxol.Terminal.Cell.new(char, style)
 

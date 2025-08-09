@@ -3,38 +3,28 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
   Handlers for device-related CSI commands.
   """
 
+  # NOTE: The functions handle_report_*, handle_resize_window, handle_unmaximize_window, 
+  # and handle_window_action are called dynamically via apply/3 in dispatch_window_operation/3.
+  # The compiler cannot detect this usage pattern and shows "unused function" warnings.
+  # These warnings are expected and can be ignored - the functions ARE used at runtime.
+
   alias Raxol.Terminal.Emulator
 
-  # Suppress warnings for functions called dynamically via apply/3
-  @compile {:no_warn_unused, [
-    handle_report_window_size: 1,
-    handle_resize_window: 3,
-    handle_report_window_state: 2,
-    handle_window_action: 2,
-    handle_unmaximize_window: 1,
-    handle_report_window_position: 1,
-    handle_report_screen_size_pixels: 1,
-    handle_report_cell_size: 1,
-    handle_report_screen_size_chars: 1,
-    handle_report_icon_label: 1,
-    handle_report_window_state_0: 1,
-    handle_report_window_title: 1
-  ]}
-
-  @dialyzer {:nowarn_function, [
-    handle_report_window_size: 1,
-    handle_resize_window: 3,
-    handle_report_window_state: 2,
-    handle_window_action: 2,
-    handle_unmaximize_window: 1,
-    handle_report_window_position: 1,
-    handle_report_screen_size_pixels: 1,
-    handle_report_cell_size: 1,
-    handle_report_screen_size_chars: 1,
-    handle_report_icon_label: 1,
-    handle_report_window_state_0: 1,
-    handle_report_window_title: 1
-  ]}
+  @dialyzer {:nowarn_function,
+             [
+               handle_report_window_size: 1,
+               handle_resize_window: 3,
+               handle_report_window_state: 2,
+               handle_window_action: 2,
+               handle_unmaximize_window: 1,
+               handle_report_window_position: 1,
+               handle_report_screen_size_pixels: 1,
+               handle_report_cell_size: 1,
+               handle_report_screen_size_chars: 1,
+               handle_report_icon_label: 1,
+               handle_report_window_state_0: 1,
+               handle_report_window_title: 1
+             ]}
 
   def handle_command(emulator, params, intermediates_buffer, byte) do
     case byte do
@@ -267,7 +257,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
     {:ok, updated_emulator}
   end
 
-
   defp handle_report_screen_size_pixels(emulator) do
     updated_emulator =
       Emulator.write_to_output(
@@ -304,7 +293,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
 
     {:ok, updated_emulator}
   end
-
 
   defp handle_report_window_state_0(emulator),
     do: handle_report_window_state(emulator, 0)

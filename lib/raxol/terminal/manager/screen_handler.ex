@@ -50,6 +50,7 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
       %EmulatorStruct{} = emulator ->
         _result =
           ScreenUpdater.update_screen(emulator, update)
+
         new_emulator = emulator
 
         # Notify runtime process if present
@@ -79,6 +80,7 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
       %EmulatorStruct{} = emulator ->
         _result =
           ScreenUpdater.batch_update_screen(emulator, updates)
+
         new_emulator = emulator
 
         # Notify runtime process if present

@@ -249,7 +249,13 @@ defmodule Raxol.UI.Rendering.SafePipeline do
 
       {:error, :circuit_failure, message, _metadata} ->
         Logger.error("Render failed: #{message}")
-        handle_render_error(message, scene, state, System.monotonic_time(:microsecond) - start_time)
+
+        handle_render_error(
+          message,
+          scene,
+          state,
+          System.monotonic_time(:microsecond) - start_time
+        )
     end
   end
 

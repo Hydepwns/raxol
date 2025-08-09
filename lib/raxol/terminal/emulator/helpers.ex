@@ -61,7 +61,9 @@ defmodule Raxol.Terminal.Emulator.Helpers do
   def get_mode_manager_struct_for_test(%Raxol.Terminal.Emulator{} = emulator),
     do: get_mode_manager_struct(emulator)
 
-  def get_cursor_position_struct(%Raxol.Terminal.Emulator{cursor: cursor} = emulator) do
+  def get_cursor_position_struct(
+        %Raxol.Terminal.Emulator{cursor: cursor} = emulator
+      ) do
     if is_pid(cursor) do
       get_cursor_struct(emulator).position
     else
@@ -94,14 +96,18 @@ defmodule Raxol.Terminal.Emulator.Helpers do
       cursor_struct = get_cursor_struct(emulator)
 
       case cursor_struct do
-        %{position: {row, col}} -> {row, col}  # Already in {row, col} format
-        %{row: row, col: col} -> {row, col}    # Use row/col fields directly
+        # Already in {row, col} format
+        %{position: {row, col}} -> {row, col}
+        # Use row/col fields directly
+        %{row: row, col: col} -> {row, col}
         _ -> {0, 0}
       end
     else
       case cursor do
-        %{position: {row, col}} -> {row, col}  # Already in {row, col} format
-        %{row: row, col: col} -> {row, col}    # Use row/col fields directly
+        # Already in {row, col} format
+        %{position: {row, col}} -> {row, col}
+        # Use row/col fields directly
+        %{row: row, col: col} -> {row, col}
         _ -> {0, 0}
       end
     end

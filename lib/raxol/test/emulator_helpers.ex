@@ -17,7 +17,7 @@ defmodule Raxol.Test.EmulatorHelpers do
       Enum.reduce(start_line..(end_line - 1), emulator, fn y, emu ->
         # Move to start of line y (0-based index -> y+1 is 1-based row)
         {emu_moved, _} = Emulator.process_input(emu, "\e[#{y + 1};1H")
-        
+
         # Write line number y
         line_text = "Line #{y}"
         # SIMPLIFIED: Just write the line text, let emulator handle rest
@@ -25,7 +25,7 @@ defmodule Raxol.Test.EmulatorHelpers do
 
         # Write the content for the line
         {emu_written, _} = Emulator.process_input(emu_moved, text_to_write)
-        
+
         emu_written
       end)
 

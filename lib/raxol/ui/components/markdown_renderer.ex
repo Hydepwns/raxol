@@ -27,6 +27,7 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
   # It avoids raw HTML but might not render complex Markdown accurately.
 
   @spec render(map(), map()) :: any()
+  @impl true
   def render(state, _context) do
     markdown_text = state[:markdown_text] || ""
 
@@ -52,17 +53,36 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
 
   @doc "Initializes the MarkdownRenderer component state from props."
   @spec init(map()) :: map()
+  @impl true
   def init(props), do: props
 
   @doc "Updates the MarkdownRenderer component state. No updates are handled by default."
   @spec update(term(), map()) :: map()
+  @impl true
   def update(_message, state), do: state
 
   @doc "Handles events for the MarkdownRenderer component. No events are handled by default."
   @spec handle_event(term(), map(), map()) :: {map(), list()}
+  @impl true
   def handle_event(_event, state, _context), do: {state, []}
 
   # Hypothetical raw_html component/function - needed for the above approach
   # If Raxol doesn't have this, the render function needs to change.
   # defp raw_html(assigns), do: # ... implementation depends on Raxol internals
+
+  @doc """
+  Mount hook - called when component is mounted.
+  No special setup needed for MarkdownRenderer.
+  """
+  @impl true
+  @spec mount(map()) :: {map(), list()}
+  def mount(state), do: {state, []}
+
+  @doc """
+  Unmount hook - called when component is unmounted.
+  No cleanup needed for MarkdownRenderer.
+  """
+  @impl true
+  @spec unmount(map()) :: map()
+  def unmount(state), do: state
 end

@@ -33,9 +33,7 @@ defmodule Raxol.Terminal.Buffer.Manager.MemoryCalculator do
   defp calculate_map_memory(cells) do
     memory = map_size(cells) * 64
 
-    IO.puts(
-      "DEBUG: Map-based cells, size: #{map_size(cells)}, memory: #{memory}"
-    )
+    # DEBUG: Map-based cells, size: #{map_size(cells)}, memory: #{memory}
 
     memory
   end
@@ -44,9 +42,7 @@ defmodule Raxol.Terminal.Buffer.Manager.MemoryCalculator do
     total_cells = Enum.reduce(cells, 0, fn row, acc -> acc + length(row) end)
     memory = total_cells * 64
 
-    IO.puts(
-      "DEBUG: List-based cells, total_cells: #{total_cells}, memory: #{memory}"
-    )
+    # DEBUG: List-based cells, total_cells: #{total_cells}, memory: #{memory}
 
     memory
   end
@@ -54,9 +50,7 @@ defmodule Raxol.Terminal.Buffer.Manager.MemoryCalculator do
   defp calculate_fallback_memory(buffer) do
     memory = buffer.width * buffer.height * 8
 
-    IO.puts(
-      "DEBUG: Fallback calculation, width: #{buffer.width}, height: #{buffer.height}, memory: #{memory}"
-    )
+    # DEBUG: Fallback calculation, width: #{buffer.width}, height: #{buffer.height}, memory: #{memory}
 
     memory
   end

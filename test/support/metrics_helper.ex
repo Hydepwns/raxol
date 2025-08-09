@@ -127,6 +127,7 @@ defmodule Raxol.Test.MetricsHelper do
     if state.alert_manager && Process.alive?(state.alert_manager) do
       Raxol.Core.Metrics.AlertManager.stop(state.alert_manager)
     end
+
     :ok
   end
 
@@ -166,15 +167,17 @@ defmodule Raxol.Test.MetricsHelper do
   """
   def verify_metric(name, type, expected_value, opts \\ []) do
     expected_tags = Keyword.get(opts, :tags, [])
-    
+
     case Raxol.Core.Metrics.UnifiedCollector.get_metric(name, type, opts) do
       [] ->
         # Check if metric exists with different tags
         case Raxol.Core.Metrics.UnifiedCollector.get_metric(name, type, []) do
           [] ->
             {:error, :metric_not_found}
+
           [%{tags: actual_tags} | _] when actual_tags != expected_tags ->
             {:error, {:unexpected_tags, actual_tags, expected_tags}}
+
           _ ->
             {:error, :metric_not_found}
         end

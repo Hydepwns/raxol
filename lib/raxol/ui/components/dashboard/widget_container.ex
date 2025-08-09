@@ -91,4 +91,20 @@ defmodule Raxol.UI.Components.Dashboard.WidgetContainer do
 
   # Don't render handle if widget is too small
   defp render_resize_handle(_bounds), do: nil
+
+  @doc """
+  Mount hook - called when component is mounted.
+  No special setup needed for WidgetContainer.
+  """
+  @impl true
+  @spec mount(map()) :: {map(), list()}
+  def mount(state), do: {state, []}
+
+  @doc """
+  Unmount hook - called when component is unmounted.
+  No cleanup needed for WidgetContainer.
+  """
+  @impl true
+  @spec unmount(map()) :: map()
+  def unmount(state), do: state
 end
