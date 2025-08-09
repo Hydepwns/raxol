@@ -56,7 +56,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   defdelegate handle_scroll_down(emulator, lines), to: ScreenHandlers
 
   # Device handler delegations
-  defdelegate handle_device_status(emulator, param), to: DeviceHandlers
   defdelegate handle_device_status(emulator, params), to: DeviceHandlers
   defdelegate handle_cursor_position_report(emulator), to: DeviceHandlers
 

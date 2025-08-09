@@ -133,12 +133,6 @@ defmodule Raxol.Terminal.Cursor.Movement do
     %{cursor | col: column, position: {cursor.row, column}}
   end
 
-  def move_to_column(other, _col) do
-    # DEBUG: move_to_column/2 called with non-cursor: #{inspect(other)} (type: #{inspect(other.__struct__)}
-
-    other
-  end
-
   @doc """
   Moves the cursor to the specified column with bounds clamping.
   """
