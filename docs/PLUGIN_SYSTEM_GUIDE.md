@@ -475,7 +475,7 @@ defmodule MyRaxolPlugin.MixProject do
 
   defp deps do
     [
-      {:raxol, "~> 0.8.0"},
+      {:raxol, "~> 0.9.0"},
       # Other dependencies
     ]
   end

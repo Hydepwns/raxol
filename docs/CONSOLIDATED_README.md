@@ -71,7 +71,7 @@ Welcome to Raxol—a full-stack terminal application framework for Elixir that e
 ## 🔗 External Resources
 
 - [GitHub Repository](https://github.com/Hydepwns/raxol)
-- [HexDocs](https://hexdocs.pm/raxol/0.8.0)
+- [HexDocs](https://hexdocs.pm/raxol/0.9.0)
 - [Issue Tracker](https://github.com/Hydepwns/raxol/issues)
 - [Discussions](https://github.com/Hydepwns/raxol/discussions)
 - [Changelog](../CHANGELOG.md)
