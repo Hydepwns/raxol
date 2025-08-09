@@ -261,9 +261,6 @@ defmodule Raxol.Terminal.Cursor.Manager do
     %{state | color: nil}
   end
 
-  def set_custom_shape(pid, shape, params),
-    do: GenServer.call(pid, {:set_custom_shape, shape, params})
-
   def set_custom_shape(shape, params),
     do: set_custom_shape(__MODULE__, shape, params)
 
@@ -282,7 +279,6 @@ defmodule Raxol.Terminal.Cursor.Manager do
     GenServer.call(pid, :reset_position)
   end
 
-  def update_blink(pid), do: GenServer.call(pid, :update_blink)
   def update_blink(), do: update_blink(__MODULE__)
 
   @doc """

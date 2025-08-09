@@ -471,7 +471,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
     - state: The current state
 
   ## Returns
-    - {:ok, updated_state}
+
+  Returns `{:ok, updated_state}`
   """
   def handle_scroll_event(%Event{type: :scroll}, state) do
     {_scroll_row, _scroll_col} = state.scroll_offset
@@ -487,7 +488,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
     - state: The current state
 
   ## Returns
-    - {:ok, updated_state}
+
+  Returns `{:ok, updated_state}`
   """
   def handle_resize_event(%Event{type: :resize}, state) do
     {_scroll_row, _scroll_col} = state.scroll_offset

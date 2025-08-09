@@ -14,9 +14,10 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   Computes the minimal set of changes (diff) between two UI trees.
 
   Returns:
-    * :no_change if trees are identical
-    * {:replace, new_tree} if the root node differs significantly
-    * {:update, path, changes} for subtree updates. `path` is a list of indices
+
+    * `:no_change` if trees are identical
+    * `{:replace, new_tree}` if the root node differs significantly  
+    * `{:update, path, changes}` for subtree updates. `path` is a list of indices
       to the parent node, and `changes` describes the modifications to its children
       (either as indexed diffs or keyed operations).
 
