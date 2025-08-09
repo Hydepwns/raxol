@@ -31,6 +31,7 @@ defmodule Raxol.AccessibilityTestHelpers do
       assert_announced("File saved successfully")
     end
   end
+  ```
   """
 
   alias Raxol.Core.Accessibility

@@ -158,11 +158,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate write_char(buffer, x, y, char, style), to: Content
 
-  def write_char(buffer, x, y, char, style) do
-    # DEBUG output removed
-    Content.write_char(buffer, x, y, char, style)
-  end
-
   def write_string(buffer, x, y, string),
     do: write_string(buffer, x, y, string, nil)
 
@@ -501,10 +496,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   def get_scroll_region(buffer) do
     Raxol.Terminal.Buffer.ScrollRegion.get_region(buffer)
-  end
-
-  def get_scroll_position(buffer) do
-    ScrollRegion.get_scroll_position(buffer)
   end
 
   defdelegate shift_region_to_line(buffer, region, target_line),

@@ -292,10 +292,6 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         # Handle compilation errors and other exceptions
         # Force the error to be caught and return reload_failed
         {:error, :reload_failed}
-    catch
-      :error, _ ->
-        # Catch any other errors
-        {:error, :reload_failed}
     end
   end
 
