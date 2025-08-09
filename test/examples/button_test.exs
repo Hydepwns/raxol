@@ -44,7 +44,7 @@ defmodule Raxol.Examples.ButtonTest do
       assert match?({:ok, _}, result)
       {:ok, button} = result
 
-      {updated, _commands} =
+      {_updated, _commands} =
         Raxol.Test.Unit.simulate_event(
           button,
           Raxol.Core.Events.Event.new(:click, %{target: button.state.id})

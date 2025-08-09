@@ -5,8 +5,10 @@ defmodule Raxol.Terminal.TerminalUtils do
   """
 
   require Raxol.Core.Runtime.Log
-  alias :termbox2_nif, as: Termbox2Nif
   import Raxol.Guards
+  
+  # Check if termbox2_nif is available at compile time
+  @termbox2_available Code.ensure_loaded?(:termbox2_nif)
 
   @doc """
   Detects terminal dimensions using a multi-layered approach:
@@ -140,8 +142,8 @@ defmodule Raxol.Terminal.TerminalUtils do
       "[TerminalUtils] Calling Termbox2Nif.tb_width/tb_height (NIF)..."
     )
 
-    width = Termbox2Nif.tb_width()
-    height = Termbox2Nif.tb_height()
+    width = if @termbox2_available, do: apply(:termbox2_nif, :tb_width, []), else: 0
+    height = if @termbox2_available, do: apply(:termbox2_nif, :tb_height, []), else: 0
 
     if integer?(width) and integer?(height) and width > 0 and height > 0 do
       {:ok, width, height}

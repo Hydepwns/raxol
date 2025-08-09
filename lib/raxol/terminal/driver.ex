@@ -18,8 +18,9 @@ defmodule Raxol.Terminal.Driver do
   # import Bitwise
 
   alias Raxol.Core.Events.Event
-  # Use termbox2_nif directly
-  alias :termbox2_nif, as: Termbox2Nif
+
+  # Check if termbox2_nif is available at compile time
+  @termbox2_available Code.ensure_loaded?(:termbox2_nif)
 
   # Add import for real_tty? from TerminalUtils
   import Raxol.Terminal.TerminalUtils, only: [real_tty?: 0]
@@ -86,7 +87,10 @@ defmodule Raxol.Terminal.Driver do
           "[TerminalDriver] TTY detected, calling Termbox2Nif.tb_init()..."
         )
 
-        _ = Termbox2Nif.tb_init()
+        _ =
+          if @termbox2_available,
+            do: apply(:termbox2_nif, :tb_init, []),
+            else: :ok
       else
         Raxol.Core.Runtime.Log.warning_with_context(
           "Not attached to a TTY. Skipping Termbox2Nif.tb_init(). Terminal features will be disabled.",
@@ -263,7 +267,9 @@ defmodule Raxol.Terminal.Driver do
   end
 
   defp handle_termbox_recovery(reason, state) do
-    case Termbox2Nif.tb_shutdown() do
+    case if @termbox2_available,
+           do: apply(:termbox2_nif, :tb_shutdown, []),
+           else: :ok do
       :ok ->
         case initialize_termbox() do
           :ok ->
@@ -291,7 +297,10 @@ defmodule Raxol.Terminal.Driver do
     # Only attempt shutdown if not in test environment
     if Mix.env() != :test do
       if real_tty?() do
-        _ = Termbox2Nif.tb_shutdown()
+        _ =
+          if @termbox2_available,
+            do: apply(:termbox2_nif, :tb_shutdown, []),
+            else: :ok
       end
     end
 
@@ -311,7 +320,10 @@ defmodule Raxol.Terminal.Driver do
   """
   def process_title_change(title, state) when is_binary(title) do
     if Mix.env() != :test and real_tty?() do
-      _ = Termbox2Nif.tb_set_title(title)
+      _ =
+        if @termbox2_available,
+          do: apply(:termbox2_nif, :tb_set_title, [title]),
+          else: :ok
     end
 
     {:noreply, state}
@@ -323,7 +335,10 @@ defmodule Raxol.Terminal.Driver do
   def process_position_change(x, y, state)
       when is_integer(x) and is_integer(y) do
     if Mix.env() != :test and real_tty?() do
-      _ = Termbox2Nif.tb_set_position(x, y)
+      _ =
+        if @termbox2_available,
+          do: apply(:termbox2_nif, :tb_set_position, [x, y]),
+          else: :ok
     end
 
     {:noreply, state}
@@ -332,7 +347,7 @@ defmodule Raxol.Terminal.Driver do
   # --- Private Helpers ---
 
   defp initialize_termbox do
-    case Termbox2Nif.tb_init() do
+    case if @termbox2_available, do: apply(:termbox2_nif, :tb_init, []), else: 0 do
       0 -> :ok
       -1 -> {:error, :init_failed}
       other -> {:error, {:unexpected_result, other}}
@@ -349,8 +364,15 @@ defmodule Raxol.Terminal.Driver do
 
       true ->
         try do
-          width = Termbox2Nif.tb_width()
-          height = Termbox2Nif.tb_height()
+          width =
+            if @termbox2_available,
+              do: apply(:termbox2_nif, :tb_width, []),
+              else: 80
+
+          height =
+            if @termbox2_available,
+              do: apply(:termbox2_nif, :tb_height, []),
+              else: 24
 
           if width > 0 and height > 0 do
             {:ok, width, height}

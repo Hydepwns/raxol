@@ -1,7 +1,6 @@
 defmodule Raxol.Terminal.SessionTest do
   use ExUnit.Case, async: true
   alias Raxol.Terminal.Session
-  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
   alias Raxol.Terminal.Renderer
   alias Raxol.Terminal.ScreenBuffer
 

@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Tab.WindowIntegrationTest do
       {:ok, tab_id, tab_manager} = Manager.create_tab(tab_manager)
       window_config = %{title: "Test Window", width: 80, height: 24}
 
-      {:ok, window_id, updated_tab_manager, updated_window_manager} =
+      {:ok, window_id, updated_tab_manager, _updated_window_manager} =
         WindowIntegration.create_window_for_tab(
           tab_manager,
           window_manager,
@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.Tab.WindowIntegrationTest do
           tab_id
         )
 
-      {:ok, updated_tab_manager, updated_window_manager} =
+      {:ok, updated_tab_manager, _updated_window_manager} =
         WindowIntegration.destroy_window_for_tab(
           tab_manager,
           window_manager,
@@ -94,7 +94,7 @@ defmodule Raxol.Terminal.Tab.WindowIntegrationTest do
           tab_id
         )
 
-      {:ok, updated_tab_manager, updated_window_manager} =
+      {:ok, updated_tab_manager, _updated_window_manager} =
         WindowIntegration.switch_to_tab(tab_manager, window_manager, tab_id)
 
       assert updated_tab_manager.active_tab == tab_id
@@ -155,7 +155,7 @@ defmodule Raxol.Terminal.Tab.WindowIntegrationTest do
 
       window_config = %{title: "Updated Title", width: 100, height: 30}
 
-      {:ok, updated_tab_manager, updated_window_manager} =
+      {:ok, updated_tab_manager, _updated_window_manager} =
         WindowIntegration.update_window_for_tab(
           tab_manager,
           window_manager,
