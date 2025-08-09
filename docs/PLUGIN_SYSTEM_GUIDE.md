@@ -635,7 +635,7 @@ config :raxol,
 
 ## Next Steps
 
-- Explore [example plugins](../examples/plugins/) in the repository
+- Explore [plugin development guide](../examples/guides/04_extending_raxol/plugin_development.md)
 - Read the [Plugin API Reference](https://hexdocs.pm/raxol/Raxol.Plugin.html)
 - Join the [plugin developer community](https://github.com/Hydepwns/raxol/discussions/categories/plugins)
 - Submit your plugin to the [Raxol Plugin Registry](https://raxol-plugins.org)

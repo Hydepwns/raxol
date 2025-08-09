@@ -14,8 +14,8 @@ Welcome to Raxol—a full-stack terminal application framework for Elixir that e
 ## 🚀 Quick Start
 
 1. **Installation**: Choose your preferred method
-   - [Nix Development Environment](DEVELOPMENT.md#nix-setup) (Recommended)
-   - [Manual Installation](DEVELOPMENT.md#manual-installation)
+   - [Nix Development Environment](DEVELOPMENT.md#quick-setup) (Recommended)
+   - [Manual Installation](DEVELOPMENT.md#prerequisites)
 
 2. **First Application**: [Quick Start Guide](../examples/guides/01_getting_started/quick_start.md)
 
@@ -35,9 +35,9 @@ Welcome to Raxol—a full-stack terminal application framework for Elixir that e
 - [Plugin System Guide](PLUGIN_SYSTEM_GUIDE.md) - Creating and managing plugins
 
 ### Component System
-- [Component Guide](components/README.md) - Complete component reference for terminal and web
-- [Component API](components/api/README.md) - API documentation with lifecycle details
-- [Style Guide](components/style_guide.md) - Theming and styling patterns
+- [Component Guide](./components/README.md) - Complete component reference for terminal and web
+- [Component API](./components/api/README.md) - API documentation with lifecycle details
+- [Style Guide](./components/style_guide.md) - Theming and styling patterns
 
 ### User Guides
 - [Getting Started](../examples/guides/01_getting_started/) - Installation, first app, and web access

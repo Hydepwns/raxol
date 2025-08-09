@@ -503,6 +503,6 @@ end
 
 ## Next Steps
 
-- Review [Component Testing](testing.md) patterns
-- Learn about [Performance](../performance/README.md) optimization
+- Review [Component Testing](../../examples/guides/05_development_and_testing/testing.md) patterns
+- Learn about [Performance](../../examples/guides/05_development_and_testing/development/planning/performance/PerformanceOptimization.md) optimization
 - Explore [Web Rendering](README.md#web-rendering) specifics

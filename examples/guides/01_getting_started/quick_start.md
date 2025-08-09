@@ -415,7 +415,7 @@ Congratulations! You've built a full-featured application using Raxol. Here's wh
 ### Join the Community
 - [GitHub Discussions](https://github.com/Hydepwns/raxol/discussions)
 - [Issue Tracker](https://github.com/Hydepwns/raxol/issues)
-- [Contributing Guide](../../../CONTRIBUTING.md)
+- [Development Guide](../../../docs/DEVELOPMENT.md)
 
 ## Summary
 
