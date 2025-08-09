@@ -9,28 +9,31 @@ defmodule Raxol.Terminal.ANSI.SequenceHandlers do
   """
   @spec parse_ansi_sequence(binary()) :: {:incomplete, nil} | tuple()
   def parse_ansi_sequence(rest) do
-    File.write!(
-      "tmp/parse_ansi_sequence.log",
-      "parse_ansi_sequence input: #{inspect(rest)}\n",
-      [:append]
-    )
+    # Disabled for performance
+    # File.write!(
+    #   "tmp/parse_ansi_sequence.log",
+    #   "parse_ansi_sequence input: #{inspect(rest)}\n",
+    #   [:append]
+    # )
 
     case find_matching_parser(rest) do
       nil ->
-        File.write!(
-          "tmp/parse_ansi_sequence.log",
-          "parse_ansi_sequence result: nil\n",
-          [:append]
-        )
+        # Disabled for performance
+        # File.write!(
+        #   "tmp/parse_ansi_sequence.log",
+        #   "parse_ansi_sequence result: nil\n",
+        #   [:append]
+        # )
 
         {:incomplete, nil}
 
       result ->
-        File.write!(
-          "tmp/parse_ansi_sequence.log",
-          "parse_ansi_sequence result: #{inspect(result)}\n",
-          [:append]
-        )
+        # Disabled for performance
+        # File.write!(
+        #   "tmp/parse_ansi_sequence.log",
+        #   "parse_ansi_sequence result: #{inspect(result)}\n",
+        #   [:append]
+        # )
 
         result
     end
@@ -306,40 +309,44 @@ defmodule Raxol.Terminal.ANSI.SequenceHandlers do
       [params, rest] when is_binary(params) ->
         # Validate that params contains only digits, semicolons, and colons, or is empty (reset)
         if params == "" or String.match?(params, ~r/^[\d;:]*$/) do
-          File.write!(
-            "tmp/parse_sgr.log",
-            "parse_sgr MATCH: params=#{inspect(params)}, rest=#{inspect(rest)}\n",
-            [:append]
-          )
+          # Disabled for performance
+          # File.write!(
+          #   "tmp/parse_sgr.log",
+          #   "parse_sgr MATCH: params=#{inspect(params)}, rest=#{inspect(rest)}\n",
+          #   [:append]
+          # )
 
           {:sgr, params, rest, nil}
         else
-          File.write!(
-            "tmp/parse_sgr.log",
-            "parse_sgr NO_MATCH: params=#{inspect(params)} (invalid format)\n",
-            [:append]
-          )
+          # Disabled for performance
+          # File.write!(
+          #   "tmp/parse_sgr.log",
+          #   "parse_sgr NO_MATCH: params=#{inspect(params)} (invalid format)\n",
+          #   [:append]
+          # )
 
           nil
         end
 
       _ ->
-        File.write!(
-          "tmp/parse_sgr.log",
-          "parse_sgr NO_MATCH: no 'm' found in #{inspect(remaining)}\n",
-          [:append]
-        )
+        # Disabled for performance
+        # File.write!(
+        #   "tmp/parse_sgr.log",
+        #   "parse_sgr NO_MATCH: no 'm' found in #{inspect(remaining)}\n",
+        #   [:append]
+        # )
 
         nil
     end
   end
 
-  def parse_sgr(input) do
-    File.write!(
-      "tmp/parse_sgr.log",
-      "parse_sgr NO_MATCH: input=#{inspect(input)} (no ESC[)\n",
-      [:append]
-    )
+  def parse_sgr(_input) do
+    # Disabled for performance
+    # File.write!(
+    #   "tmp/parse_sgr.log",
+    #   "parse_sgr NO_MATCH: input=#{inspect(input)} (no ESC[)\n",
+    #   [:append]
+    # )
 
     nil
   end
