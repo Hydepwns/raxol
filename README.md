@@ -276,24 +276,6 @@ end
 # Run with: mix raxol.run --app MyApp
 ```
 
-## What's New in v0.9.0
-
-### Complete Terminal Feature Suite
-
-- **🖱️ Mouse Handling**: Full mouse event system with click, drag, selection, and multiple reporting modes (X10, cell motion, SGR)
-- **⌨️ Tab Completion**: Advanced completion system with cycling, callbacks, and built-in Elixir keyword support
-- **📋 Bracketed Paste**: Secure paste mode that distinguishes typed vs pasted text (ESC[200~/ESC[201~)
-- **📐 Column Width**: Dynamic 80/132 column switching with proper VT100 behavior (ESC[?3h/ESC[?3l)
-- **🖼️ Sixel Graphics**: Complete implementation with parser, renderer, and graphics management
-- **📚 Command History**: Multi-layer history system with persistence, navigation, and search
-
-### Quality Assurance
-
-- **✅ 100% Test Pass Rate**: 1751/1751 tests passing
-- **🏭 Production Ready**: Feature-complete terminal framework
-- **📋 VT100/ANSI Compliant**: Comprehensive escape sequence support
-- **🔧 Zero Technical Debt**: All compilation warnings documented, all features implemented
-
 ## Why Raxol?
 
 ### For Terminal App Developers
