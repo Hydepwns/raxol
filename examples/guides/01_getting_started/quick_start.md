@@ -11,7 +11,7 @@ tags: [quick start, guide, tutorial, application, components]
 
 This guide walks you through creating your first application using Raxol, a full-stack terminal application framework for Elixir. You'll build a TodoApp that showcases Raxol's component system, state management, and ability to run both in the terminal and through a web browser.
 
-_Raxol 0.8.0 is a comprehensive framework that goes beyond terminal UI—it includes web interfaces, plugins, and enterprise features. This guide will introduce you to all these capabilities!_
+_Raxol 0.9.0 is a comprehensive framework that goes beyond terminal UI—it includes web interfaces, plugins, and enterprise features. This guide will introduce you to all these capabilities!_
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ First, add `raxol` to your project's dependencies. Open your `mix.exs` file and 
 ```elixir
 def deps do
   [
-    {:raxol, "~> 0.8.0"}
+    {:raxol, "~> 0.9.0"}
   ]
 end
 ```
@@ -312,7 +312,7 @@ Update your `mix.exs`:
 ```elixir
 defp deps do
   [
-    {:raxol, "~> 0.8.0"},
+    {:raxol, "~> 0.9.0"},
     {:phoenix, "~> 1.7"},
     {:phoenix_live_view, "~> 0.20"},
     {:plug_cowboy, "~> 2.5"}

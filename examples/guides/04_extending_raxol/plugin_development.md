@@ -9,7 +9,7 @@ tags: [plugin, development, guide, extension]
 
 # Plugin Development Guide
 
-_Raxol 0.8.0 is a full-stack terminal application framework with an enhanced plugin system that supports both terminal and web functionality. Make sure you are using the latest version for plugin development!_
+_Raxol 0.9.0 is a full-stack terminal application framework with an enhanced plugin system that supports both terminal and web functionality. Make sure you are using the latest version for plugin development!_
 
 ## Table of Contents
 
