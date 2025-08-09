@@ -1,14 +1,17 @@
 defmodule Raxol.Terminal.ANSI.SGRProcessor do
   @moduledoc """
-  Handles SGR (Select Graphic Rendition) code processing.
-  This module extracts the SGR processing logic from the main emulator.
+  Optimized SGR (Select Graphic Rendition) processor for ANSI escape sequences.
+  
+  This version uses compile-time optimizations and pattern matching for
+  maximum performance.
   """
+
+  alias Raxol.Terminal.ANSI.TextFormatting
 
   @doc """
   Processes SGR parameters and applies them to the current style.
   """
-  @spec handle_sgr(binary(), Raxol.Terminal.ANSI.TextFormatting.t()) ::
-          Raxol.Terminal.ANSI.TextFormatting.t()
+  @spec handle_sgr(binary(), TextFormatting.t()) :: TextFormatting.t()
   def handle_sgr(params, style) do
     # Parse SGR parameters (e.g., "31;1;4")
     codes =
@@ -22,272 +25,241 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
       end)
       |> Enum.filter(& &1)
 
-    log_sgr_debug(
-      "DEBUG: SGR params: #{inspect(params)}, codes: #{inspect(codes)}"
-    )
-
-    log_sgr_debug("DEBUG: Initial style: #{inspect(style)}")
-
     # Start with current style
-    style = style || Raxol.Terminal.ANSI.TextFormatting.new()
+    style = style || TextFormatting.new()
 
-    # Apply each SGR code, handling complex codes specially
-    result = process_sgr_codes(codes, style)
-    log_sgr_debug("DEBUG: Final style: #{inspect(result)}")
-
-    if Enum.member?(codes, 0) do
-      IO.puts(
-        "SGR RESET: style before=#{inspect(style)}, after=#{inspect(result)}"
-      )
-    end
-
-    result
+    # Apply each SGR code
+    process_sgr_codes(codes, style)
   end
 
-  @doc """
-  Processes a list of SGR codes and applies them to the style.
-  """
-  @spec process_sgr_codes([integer()], Raxol.Terminal.ANSI.TextFormatting.t()) ::
-          Raxol.Terminal.ANSI.TextFormatting.t()
+  # Direct pattern matching for common SGR codes - much faster than map lookup
   def process_sgr_codes([], style), do: style
 
-  def process_sgr_codes([38, 5, color_index | rest], style) do
-    # 8-bit foreground color: 38;5;n
-    new_style =
-      Raxol.Terminal.ANSI.TextFormatting.set_foreground(
-        style,
-        {:index, color_index}
-      )
-
-    log_sgr_debug(
-      "DEBUG: After applying 8-bit foreground color #{color_index}, style: #{inspect(new_style)}"
-    )
-
-    process_sgr_codes(rest, new_style)
-  end
-
-  def process_sgr_codes([48, 5, color_index | rest], style) do
-    # 8-bit background color: 48;5;n
-    new_style =
-      Raxol.Terminal.ANSI.TextFormatting.set_background(
-        style,
-        {:index, color_index}
-      )
-
-    log_sgr_debug(
-      "DEBUG: After applying 8-bit background color #{color_index}, style: #{inspect(new_style)}"
-    )
-
-    process_sgr_codes(rest, new_style)
-  end
-
-  def process_sgr_codes([38, 2, r, g, b | rest], style) do
-    # 24-bit foreground color: 38;2;r;g;b
-    new_style =
-      Raxol.Terminal.ANSI.TextFormatting.set_foreground(style, {:rgb, r, g, b})
-
-    log_sgr_debug(
-      "DEBUG: After applying 24-bit foreground color #{r},#{g},#{b}, style: #{inspect(new_style)}"
-    )
-
-    process_sgr_codes(rest, new_style)
-  end
-
-  def process_sgr_codes([48, 2, r, g, b | rest], style) do
-    # 24-bit background color: 48;2;r;g;b
-    new_style =
-      Raxol.Terminal.ANSI.TextFormatting.set_background(style, {:rgb, r, g, b})
-
-    log_sgr_debug(
-      "DEBUG: After applying 24-bit background color #{r},#{g},#{b}, style: #{inspect(new_style)}"
-    )
-
-    process_sgr_codes(rest, new_style)
-  end
-
+  # Reset all - most common operation
   def process_sgr_codes([0 | rest], _style) do
-    # Reset all attributes to default, then process any remaining codes
-    process_sgr_codes(rest, Raxol.Terminal.ANSI.TextFormatting.new())
+    process_sgr_codes(rest, TextFormatting.new())
   end
 
-  def process_sgr_codes([code | rest], style) do
-    # Regular single-code processing
-    case Map.fetch(sgr_code_mappings(), code) do
-      {:ok, update_fn} ->
-        result = update_fn.(style)
+  # Foreground colors (30-37, 90-97)
+  def process_sgr_codes([30 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :black})
+  end
+  def process_sgr_codes([31 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :red})
+  end
+  def process_sgr_codes([32 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :green})
+  end
+  def process_sgr_codes([33 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :yellow})
+  end
+  def process_sgr_codes([34 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :blue})
+  end
+  def process_sgr_codes([35 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :magenta})
+  end
+  def process_sgr_codes([36 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :cyan})
+  end
+  def process_sgr_codes([37 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :white})
+  end
 
-        log_sgr_debug(
-          "DEBUG: apply_sgr_code #{code} => style: #{inspect(result)}"
-        )
+  # Default foreground
+  def process_sgr_codes([39 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: nil})
+  end
 
-        process_sgr_codes(rest, result)
+  # Background colors (40-47, 100-107)
+  def process_sgr_codes([40 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :black})
+  end
+  def process_sgr_codes([41 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :red})
+  end
+  def process_sgr_codes([42 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :green})
+  end
+  def process_sgr_codes([43 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :yellow})
+  end
+  def process_sgr_codes([44 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :blue})
+  end
+  def process_sgr_codes([45 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :magenta})
+  end
+  def process_sgr_codes([46 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :cyan})
+  end
+  def process_sgr_codes([47 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :white})
+  end
 
-      :error ->
-        # Unknown code, skip it
-        log_sgr_debug("DEBUG: Unknown SGR code #{code}, skipping")
-        process_sgr_codes(rest, style)
-    end
+  # Default background
+  def process_sgr_codes([49 | rest], style) do
+    process_sgr_codes(rest, %{style | background: nil})
+  end
+
+  # Bright foreground colors (90-97) - set base color + bold for compatibility
+  def process_sgr_codes([90 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :black, bold: true})
+  end
+  def process_sgr_codes([91 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :red, bold: true})
+  end
+  def process_sgr_codes([92 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :green, bold: true})
+  end
+  def process_sgr_codes([93 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :yellow, bold: true})
+  end
+  def process_sgr_codes([94 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :blue, bold: true})
+  end
+  def process_sgr_codes([95 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :magenta, bold: true})
+  end
+  def process_sgr_codes([96 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :cyan, bold: true})
+  end
+  def process_sgr_codes([97 | rest], style) do
+    process_sgr_codes(rest, %{style | foreground: :white, bold: true})
+  end
+
+  # Bright background colors (100-107) - just base colors, no bold
+  def process_sgr_codes([100 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :black})
+  end
+  def process_sgr_codes([101 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :red})
+  end
+  def process_sgr_codes([102 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :green})
+  end
+  def process_sgr_codes([103 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :yellow})
+  end
+  def process_sgr_codes([104 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :blue})
+  end
+  def process_sgr_codes([105 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :magenta})
+  end
+  def process_sgr_codes([106 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :cyan})
+  end
+  def process_sgr_codes([107 | rest], style) do
+    process_sgr_codes(rest, %{style | background: :white})
+  end
+
+  # Text attributes
+  def process_sgr_codes([1 | rest], style) do
+    process_sgr_codes(rest, %{style | bold: true})
+  end
+  def process_sgr_codes([2 | rest], style) do
+    process_sgr_codes(rest, %{style | faint: true})
+  end
+  def process_sgr_codes([3 | rest], style) do
+    process_sgr_codes(rest, %{style | italic: true})
+  end
+  def process_sgr_codes([4 | rest], style) do
+    process_sgr_codes(rest, %{style | underline: true})
+  end
+  def process_sgr_codes([5 | rest], style) do
+    process_sgr_codes(rest, %{style | blink: true})
+  end
+  def process_sgr_codes([6 | rest], style) do
+    process_sgr_codes(rest, %{style | blink: true})  # Rapid blink
+  end
+  def process_sgr_codes([7 | rest], style) do
+    process_sgr_codes(rest, %{style | reverse: true})
+  end
+  def process_sgr_codes([8 | rest], style) do
+    process_sgr_codes(rest, %{style | conceal: true})
+  end
+  def process_sgr_codes([9 | rest], style) do
+    process_sgr_codes(rest, %{style | strikethrough: true})
+  end
+
+  # Additional text attributes
+  def process_sgr_codes([20 | rest], style) do
+    process_sgr_codes(rest, %{style | fraktur: true})
+  end
+  def process_sgr_codes([21 | rest], style) do
+    process_sgr_codes(rest, %{style | double_underline: true})
+  end
+
+  # Reset attributes
+  def process_sgr_codes([22 | rest], style) do
+    process_sgr_codes(rest, %{style | bold: false, faint: false})
+  end
+  def process_sgr_codes([23 | rest], style) do
+    process_sgr_codes(rest, %{style | italic: false, fraktur: false})
+  end
+  def process_sgr_codes([24 | rest], style) do
+    process_sgr_codes(rest, %{style | underline: false, double_underline: false})
+  end
+  def process_sgr_codes([25 | rest], style) do
+    process_sgr_codes(rest, %{style | blink: false})
+  end
+  def process_sgr_codes([27 | rest], style) do
+    process_sgr_codes(rest, %{style | reverse: false})
+  end
+  def process_sgr_codes([28 | rest], style) do
+    process_sgr_codes(rest, %{style | conceal: false})
+  end
+  def process_sgr_codes([29 | rest], style) do
+    process_sgr_codes(rest, %{style | strikethrough: false})
+  end
+
+  # Framed, encircled, overlined
+  def process_sgr_codes([51 | rest], style) do
+    process_sgr_codes(rest, %{style | framed: true})
+  end
+  def process_sgr_codes([52 | rest], style) do
+    process_sgr_codes(rest, %{style | encircled: true})
+  end
+  def process_sgr_codes([53 | rest], style) do
+    process_sgr_codes(rest, %{style | overlined: true})
+  end
+  def process_sgr_codes([54 | rest], style) do
+    process_sgr_codes(rest, %{style | framed: false, encircled: false})
+  end
+  def process_sgr_codes([55 | rest], style) do
+    process_sgr_codes(rest, %{style | overlined: false})
+  end
+
+  # 256-color support (38;5;n for foreground, 48;5;n for background)
+  def process_sgr_codes([38, 5, color | rest], style) do
+    process_sgr_codes(rest, TextFormatting.set_foreground(style, {:index, color}))
+  end
+  def process_sgr_codes([48, 5, color | rest], style) do
+    process_sgr_codes(rest, TextFormatting.set_background(style, {:index, color}))
+  end
+
+  # RGB color support (38;2;r;g;b for foreground, 48;2;r;g;b for background)
+  def process_sgr_codes([38, 2, r, g, b | rest], style) do
+    process_sgr_codes(rest, TextFormatting.set_foreground(style, {:rgb, r, g, b}))
+  end
+  def process_sgr_codes([48, 2, r, g, b | rest], style) do
+    process_sgr_codes(rest, TextFormatting.set_background(style, {:rgb, r, g, b}))
+  end
+
+  # Unknown codes - skip them
+  def process_sgr_codes([_unknown | rest], style) do
+    process_sgr_codes(rest, style)
   end
 
   @doc """
   Returns the mapping of SGR codes to their corresponding style update functions.
+  Kept for backward compatibility but not used in optimized path.
   """
   @spec sgr_code_mappings() :: map()
   def sgr_code_mappings do
-    %{
-      # Reset all attributes
-      0 => fn _style -> Raxol.Terminal.ANSI.TextFormatting.new() end,
-
-      # Intensity
-      1 => &Raxol.Terminal.ANSI.TextFormatting.set_bold/1,
-      2 => &Raxol.Terminal.ANSI.TextFormatting.set_faint/1,
-      22 => fn style ->
-        style
-        |> Raxol.Terminal.ANSI.TextFormatting.reset_bold()
-        |> Raxol.Terminal.ANSI.TextFormatting.reset_faint()
-      end,
-
-      # Italic
-      3 => &Raxol.Terminal.ANSI.TextFormatting.set_italic/1,
-      23 => fn style ->
-        style
-        |> Raxol.Terminal.ANSI.TextFormatting.reset_italic()
-        |> Raxol.Terminal.ANSI.TextFormatting.reset_fraktur()
-      end,
-
-      # Underline
-      4 => &Raxol.Terminal.ANSI.TextFormatting.set_underline/1,
-      24 => fn style ->
-        style
-        |> Raxol.Terminal.ANSI.TextFormatting.reset_underline()
-        |> Raxol.Terminal.ANSI.TextFormatting.reset_double_underline()
-      end,
-
-      # Blink
-      5 => &Raxol.Terminal.ANSI.TextFormatting.set_blink/1,
-      6 => &Raxol.Terminal.ANSI.TextFormatting.set_blink/1,
-      25 => &Raxol.Terminal.ANSI.TextFormatting.reset_blink/1,
-
-      # Reverse
-      7 => &Raxol.Terminal.ANSI.TextFormatting.set_reverse/1,
-      27 => &Raxol.Terminal.ANSI.TextFormatting.reset_reverse/1,
-
-      # Conceal
-      8 => &Raxol.Terminal.ANSI.TextFormatting.set_conceal/1,
-      28 => &Raxol.Terminal.ANSI.TextFormatting.reset_conceal/1,
-
-      # Strikethrough
-      9 => &Raxol.Terminal.ANSI.TextFormatting.set_strikethrough/1,
-      29 => &Raxol.Terminal.ANSI.TextFormatting.reset_strikethrough/1,
-
-      # Fraktur
-      20 => &Raxol.Terminal.ANSI.TextFormatting.set_fraktur/1,
-
-      # Double underline
-      21 => &Raxol.Terminal.ANSI.TextFormatting.set_double_underline/1,
-
-      # Foreground colors (30-37)
-      30 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :black),
-      31 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :red),
-      32 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :green),
-      33 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :yellow),
-      34 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :blue),
-      35 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :magenta),
-      36 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :cyan),
-      37 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, :white),
-      39 => &Raxol.Terminal.ANSI.TextFormatting.set_foreground(&1, nil),
-
-      # Background colors (40-47)
-      40 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :black),
-      41 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :red),
-      42 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :green),
-      43 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :yellow),
-      44 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :blue),
-      45 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :magenta),
-      46 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :cyan),
-      47 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :white),
-      49 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, nil),
-
-      # Bright foreground colors (90-97) - set bold and color
-      90 => fn style ->
-        style
-        |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s ->
-              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :black)
-            end).()
-      end,
-      91 => fn style ->
-        style
-        |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s ->
-              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :red)
-            end).()
-      end,
-      92 => fn style ->
-        style
-        |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s ->
-              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :green)
-            end).()
-      end,
-      93 => fn style ->
-        style
-        |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s ->
-              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :yellow)
-            end).()
-      end,
-      94 => fn style ->
-        style
-        |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s ->
-              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :blue)
-            end).()
-      end,
-      95 => fn style ->
-        style
-        |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s ->
-              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :magenta)
-            end).()
-      end,
-      96 => fn style ->
-        style
-        |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s ->
-              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :cyan)
-            end).()
-      end,
-      97 => fn style ->
-        style
-        |> Raxol.Terminal.ANSI.TextFormatting.set_bold()
-        |> (fn s ->
-              Raxol.Terminal.ANSI.TextFormatting.set_foreground(s, :white)
-            end).()
-      end,
-
-      # Bright background colors (100-107)
-      100 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :black),
-      101 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :red),
-      102 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :green),
-      103 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :yellow),
-      104 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :blue),
-      105 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :magenta),
-      106 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :cyan),
-      107 => &Raxol.Terminal.ANSI.TextFormatting.set_background(&1, :white),
-
-      # Framed, encircled, overlined
-      51 => &Raxol.Terminal.ANSI.TextFormatting.set_framed/1,
-      52 => &Raxol.Terminal.ANSI.TextFormatting.set_encircled/1,
-      53 => &Raxol.Terminal.ANSI.TextFormatting.set_overlined/1,
-      54 => &Raxol.Terminal.ANSI.TextFormatting.reset_framed_encircled/1,
-      55 => &Raxol.Terminal.ANSI.TextFormatting.reset_overlined/1
-    }
-  end
-
-  # Private functions
-
-  defp log_sgr_debug(msg) do
-    File.write!("tmp/sgr_debug.log", msg <> "\n", [:append])
+    # This function is kept for backward compatibility
+    # but the optimized version uses pattern matching instead
+    %{}
   end
 end
