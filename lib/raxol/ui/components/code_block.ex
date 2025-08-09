@@ -19,6 +19,7 @@ defmodule Raxol.UI.Components.CodeBlock do
     * `class`: Optional CSS class for the outer `pre` tag.
   """
   @spec render(map(), map()) :: any()
+  @impl true
   def render(state, _context) do
     _language = state[:language] || "text"
     code_content = state[:content] || ""
@@ -87,15 +88,34 @@ defmodule Raxol.UI.Components.CodeBlock do
 
   @doc "Initializes the component state from props."
   @spec init(map()) :: map()
+  @impl true
   def init(props), do: props
 
   @doc "Updates the component state. No updates are handled by default."
   @spec update(term(), map()) :: map()
+  @impl true
   def update(_message, state), do: state
 
   @doc "Handles events for the component. No events are handled by default."
   @spec handle_event(term(), map(), map()) :: {map(), list()}
+  @impl true
   def handle_event(_event, state, _context), do: {state, []}
+
+  @doc """
+  Mount hook - called when component is mounted.
+  No special setup needed for CodeBlock.
+  """
+  @impl true
+  @spec mount(map()) :: {map(), list()}
+  def mount(state), do: {state, []}
+
+  @doc """
+  Unmount hook - called when component is unmounted.
+  No cleanup needed for CodeBlock.
+  """
+  @impl true
+  @spec unmount(map()) :: map()
+  def unmount(state), do: state
 
   # Removed render_fallback/3 helper function
 

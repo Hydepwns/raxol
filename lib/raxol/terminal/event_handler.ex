@@ -68,41 +68,85 @@ defmodule Raxol.Terminal.EventHandler do
   # Private Functions
 
   defp handle_mouse_press(emulator, button, x, y) do
-    case Emulator.get_mode_manager(emulator).mouse_mode do
-      :normal ->
+    # Always handle selection for left button regardless of mouse reporting mode
+    emulator =
+      if button == :left do
+        handle_mouse_selection_start(emulator, x, y)
+      else
+        emulator
+      end
+
+    case Emulator.get_mode_manager(emulator).mouse_report_mode do
+      :none ->
         {:ok, emulator}
 
-      :button ->
+      :x10 ->
         process_mouse_button_event(emulator, :press, button, x, y)
 
-      :any ->
+      :cell_motion ->
         process_mouse_any_event(emulator, :press, button, x, y)
+
+      :sgr ->
+        process_mouse_any_event(emulator, :press, button, x, y)
+
+      _ ->
+        {:ok, emulator}
     end
   end
 
   defp handle_mouse_release(emulator, button, x, y) do
-    case Emulator.get_mode_manager(emulator).mouse_mode do
-      :normal ->
+    # Handle selection end for left button
+    emulator =
+      if button == :left do
+        handle_mouse_selection_end(emulator)
+      else
+        emulator
+      end
+
+    case Emulator.get_mode_manager(emulator).mouse_report_mode do
+      :none ->
         {:ok, emulator}
 
-      :button ->
-        process_mouse_button_event(emulator, :release, button, x, y)
+      :x10 ->
+        # X10 mode only reports press events, not releases
+        {:ok, emulator}
 
-      :any ->
+      :cell_motion ->
         process_mouse_any_event(emulator, :release, button, x, y)
+
+      :sgr ->
+        process_mouse_any_event(emulator, :release, button, x, y)
+
+      _ ->
+        {:ok, emulator}
     end
   end
 
   defp handle_mouse_move(emulator, x, y) do
-    case Emulator.get_mode_manager(emulator).mouse_mode do
-      :normal ->
+    # Handle selection drag if active
+    emulator =
+      if emulator.selection_manager && emulator.selection_manager.active do
+        handle_mouse_selection_drag(emulator, x, y)
+      else
+        emulator
+      end
+
+    case Emulator.get_mode_manager(emulator).mouse_report_mode do
+      :none ->
         {:ok, emulator}
 
-      :button ->
+      :x10 ->
+        # X10 mode doesn't report move events
+        {:ok, emulator}
+
+      :cell_motion ->
         process_mouse_move_event(emulator, x, y)
 
-      :any ->
+      :sgr ->
         process_mouse_move_event(emulator, x, y)
+
+      _ ->
+        {:ok, emulator}
     end
   end
 
@@ -206,23 +250,103 @@ defmodule Raxol.Terminal.EventHandler do
   # Helper Functions
 
   defp convert_to_terminal_coordinates(_emulator, x, y) do
+    # Convert pixel coordinates to cell coordinates
+    # For now, assume direct mapping - this could be enhanced based on font metrics
     {x, y}
   end
 
-  defp generate_mouse_command(_type, _button, _x, _y) do
-    ""
+  defp generate_mouse_command(type, button, x, y) do
+    # Generate standard mouse command sequence
+    # Format: ESC [ M <button> <x+32> <y+32>
+    button_code = encode_mouse_button(button, type)
+    <<27, "[M", button_code, x + 32, y + 32>>
   end
 
-  defp generate_mouse_any_command(_type, _button, _x, _y) do
-    ""
+  defp generate_mouse_any_command(type, button, x, y) do
+    # For "any event" mode, use SGR format which is more reliable
+    # Format: ESC [ < <button> ; <x> ; <y> <M or m>
+    button_code = encode_sgr_button(button, type)
+    suffix = if type == :press, do: "M", else: "m"
+    "\e[<#{button_code};#{x};#{y}#{suffix}"
   end
 
-  defp generate_mouse_move_command(_x, _y) do
-    ""
+  defp generate_mouse_move_command(x, y) do
+    # Mouse move events typically use button code 32 (motion)
+    <<27, "[M", 32, x + 32, y + 32>>
+  end
+
+  # Mouse button encoding for standard format
+  defp encode_mouse_button(button, type) do
+    base_code =
+      case button do
+        :left -> 0
+        :middle -> 1
+        :right -> 2
+        _ -> 0
+      end
+
+    # Add press/release flag (release = base + 3)
+    case type do
+      :press -> base_code
+      # Standard release code
+      :release -> 3
+      _ -> base_code
+    end
+  end
+
+  # Mouse button encoding for SGR format
+  defp encode_sgr_button(button, _type) do
+    case button do
+      :left -> 0
+      :middle -> 1
+      :right -> 2
+      _ -> 0
+    end
   end
 
   defp generate_normal_key_command(_key, _modifiers) do
     ""
+  end
+
+  # Mouse selection handling functions
+
+  defp handle_mouse_selection_start(emulator, x, y) do
+    alias Raxol.Terminal.Selection.Manager
+
+    # Initialize selection manager if not present
+    selection_manager = emulator.selection_manager || Manager.new()
+
+    # Convert screen coordinates to terminal coordinates
+    {term_x, term_y} = convert_to_terminal_coordinates(emulator, x, y)
+
+    # Start new selection
+    updated_selection_manager =
+      Manager.start_selection(selection_manager, {term_x, term_y})
+
+    %{emulator | selection_manager: updated_selection_manager}
+  end
+
+  defp handle_mouse_selection_drag(emulator, x, y) do
+    alias Raxol.Terminal.Selection.Manager
+
+    if emulator.selection_manager && emulator.selection_manager.active do
+      # Convert screen coordinates to terminal coordinates
+      {term_x, term_y} = convert_to_terminal_coordinates(emulator, x, y)
+
+      # Update selection end position
+      updated_selection_manager =
+        Manager.update_selection(emulator.selection_manager, {term_x, term_y})
+
+      %{emulator | selection_manager: updated_selection_manager}
+    else
+      emulator
+    end
+  end
+
+  defp handle_mouse_selection_end(emulator) do
+    # Selection remains active until explicitly cleared
+    # This allows for copy operations after selection is made
+    emulator
   end
 
   defp generate_application_key_command(_key, _modifiers) do

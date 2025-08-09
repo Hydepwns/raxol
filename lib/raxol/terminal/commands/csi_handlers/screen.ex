@@ -369,7 +369,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     {row, col} = Emulator.get_cursor_position(emulator)
 
     buffer = Emulator.get_screen_buffer(emulator)
-    new_buffer = Raxol.Terminal.ScreenBuffer.erase_chars(buffer, row, col, chars)
+
+    new_buffer =
+      Raxol.Terminal.ScreenBuffer.erase_chars(buffer, row, col, chars)
+
     {:ok, Raxol.Terminal.Emulator.update_active_buffer(emulator, new_buffer)}
   end
 

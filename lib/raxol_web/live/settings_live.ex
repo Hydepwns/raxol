@@ -187,7 +187,11 @@ defmodule RaxolWeb.SettingsLive do
     end
   end
 
-  def handle_event("update_password", %{"current_password" => current_password, "user" => user_params}, socket) do
+  def handle_event(
+        "update_password",
+        %{"current_password" => current_password, "user" => user_params},
+        socket
+      ) do
     user = socket.assigns.current_user
     new_password = user_params["password"]
     password_confirmation = user_params["password_confirmation"]

@@ -159,7 +159,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   defdelegate write_char(buffer, x, y, char, style), to: Content
 
   def write_char(buffer, x, y, char, style) do
-    IO.puts("DEBUG: ScreenBuffer.write_char/4 called")
+    # DEBUG output removed
     Content.write_char(buffer, x, y, char, style)
   end
 

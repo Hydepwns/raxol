@@ -87,6 +87,10 @@ defmodule Raxol.Terminal.Emulator do
     mode_state: %{},
     style: nil,
     cursor_style: :block,
+
+    # Bracketed paste state
+    bracketed_paste_active: false,
+    bracketed_paste_buffer: "",
     saved_cursor: nil,
     scroll_region: {0, 23},
     scrollback_limit: 1000,
@@ -104,7 +108,7 @@ defmodule Raxol.Terminal.Emulator do
     alternate_screen_buffer: nil,
     sixel_state: nil,
     cursor_blink_rate: 500,
-    
+
     # Device status flags
     device_status_reported: false,
     cursor_position_reported: false,
@@ -169,6 +173,8 @@ defmodule Raxol.Terminal.Emulator do
           mode_state: map(),
           style: any(),
           cursor_style: atom(),
+          bracketed_paste_active: boolean(),
+          bracketed_paste_buffer: String.t(),
           saved_cursor: any(),
           scroll_region: tuple(),
           scrollback_limit: non_neg_integer(),
@@ -215,9 +221,11 @@ defmodule Raxol.Terminal.Emulator do
         }
 
   # Cursor operations
+  @doc "Gets the current cursor position as {x, y}."
   def get_cursor_position(emulator),
     do: Raxol.Terminal.Operations.CursorOperations.get_cursor_position(emulator)
 
+  @doc "Sets the cursor position to the specified coordinates."
   def set_cursor_position(emulator, x, y),
     do:
       Raxol.Terminal.Operations.CursorOperations.set_cursor_position(
@@ -226,9 +234,11 @@ defmodule Raxol.Terminal.Emulator do
         y
       )
 
+  @doc "Gets the current cursor style (:block, :line, :underscore)."
   def get_cursor_style(emulator),
     do: Raxol.Terminal.Operations.CursorOperations.get_cursor_style(emulator)
 
+  @doc "Sets the cursor style to :block, :line, or :underscore."
   def set_cursor_style(emulator, style),
     do:
       Raxol.Terminal.Operations.CursorOperations.set_cursor_style(
@@ -236,18 +246,24 @@ defmodule Raxol.Terminal.Emulator do
         style
       )
 
+  @doc "Returns true if the cursor is visible."
   def cursor_visible?(emulator),
     do: Raxol.Terminal.Operations.CursorOperations.cursor_visible?(emulator)
 
+  @doc "Gets cursor visibility state."
   def get_cursor_visible(emulator),
     do: Raxol.Terminal.Operations.CursorOperations.cursor_visible?(emulator)
 
+  @doc "Gets cursor position as a structured object."
   def get_cursor_position_struct(emulator),
     do: Raxol.Terminal.Emulator.Helpers.get_cursor_position_struct(emulator)
 
+  @doc "Gets cursor visibility from mode manager."
   def get_mode_manager_cursor_visible(emulator),
-    do: Raxol.Terminal.Emulator.Helpers.get_mode_manager_cursor_visible(emulator)
+    do:
+      Raxol.Terminal.Emulator.Helpers.get_mode_manager_cursor_visible(emulator)
 
+  @doc "Sets cursor visibility."
   def set_cursor_visibility(emulator, visible),
     do:
       Raxol.Terminal.Operations.CursorOperations.set_cursor_visibility(
@@ -255,9 +271,11 @@ defmodule Raxol.Terminal.Emulator do
         visible
       )
 
+  @doc "Returns true if the cursor is blinking."
   def cursor_blinking?(emulator),
     do: Raxol.Terminal.Operations.CursorOperations.cursor_blinking?(emulator)
 
+  @doc "Sets cursor blinking state."
   def set_cursor_blink(emulator, blinking),
     do:
       Raxol.Terminal.Operations.CursorOperations.set_cursor_blink(
@@ -265,19 +283,24 @@ defmodule Raxol.Terminal.Emulator do
         blinking
       )
 
+  @doc "Returns cursor blinking state."
   def blinking?(emulator),
     do: Raxol.Terminal.Operations.CursorOperations.cursor_blinking?(emulator)
 
   # Screen operations
+  @doc "Clears the entire screen."
   def clear_screen(emulator),
     do: Raxol.Terminal.Operations.ScreenOperations.clear_screen(emulator)
 
+  @doc "Clears the specified line."
   def clear_line(emulator, line),
     do: Raxol.Terminal.Operations.ScreenOperations.clear_line(emulator, line)
 
+  @doc "Erases display content based on mode (0=to end, 1=from start, 2=entire)."
   def erase_display(emulator, mode),
     do: Raxol.Terminal.Operations.ScreenOperations.erase_display(emulator, mode)
 
+  @doc "Erases content within the display."
   def erase_in_display(emulator, mode),
     do:
       Raxol.Terminal.Operations.ScreenOperations.erase_in_display(
@@ -285,44 +308,55 @@ defmodule Raxol.Terminal.Emulator do
         mode
       )
 
+  @doc "Erases line content based on mode."
   def erase_line(emulator, mode),
     do: Raxol.Terminal.Operations.ScreenOperations.erase_line(emulator, mode)
 
+  @doc "Erases content within the current line."
   def erase_in_line(emulator, mode),
     do: Raxol.Terminal.Operations.ScreenOperations.erase_in_line(emulator, mode)
 
+  @doc "Erases from cursor position to end of screen."
   def erase_from_cursor_to_end(emulator),
     do:
       Raxol.Terminal.Operations.ScreenOperations.erase_from_cursor_to_end(
         emulator
       )
 
+  @doc "Erases from start of screen to cursor position."
   def erase_from_start_to_cursor(emulator),
     do:
       Raxol.Terminal.Operations.ScreenOperations.erase_from_start_to_cursor(
         emulator
       )
 
+  @doc "Erases the specified number of characters."
   def erase_chars(emulator, count),
     do: Raxol.Terminal.Operations.ScreenOperations.erase_chars(emulator, count)
 
   # Text operations
+  @doc "Inserts a character at the cursor position."
   def insert_char(emulator, char),
     do: Raxol.Terminal.Operations.TextOperations.insert_char(emulator, char)
 
+  @doc "Inserts the specified number of blank characters."
   def insert_chars(emulator, count),
     do: Raxol.Terminal.Operations.TextOperations.insert_chars(emulator, count)
 
+  @doc "Deletes the character at the cursor position."
   def delete_char(emulator),
     do: Raxol.Terminal.Operations.TextOperations.delete_char(emulator)
 
+  @doc "Deletes the specified number of characters."
   def delete_chars(emulator, count),
     do: Raxol.Terminal.Operations.TextOperations.delete_chars(emulator, count)
 
+  @doc "Writes text to the terminal at the cursor position."
   def write_text(emulator, text),
     do: Raxol.Terminal.Operations.TextOperations.write_text(emulator, text)
 
   # Selection operations
+  @doc "Starts text selection at the specified coordinates."
   def start_selection(emulator, x, y),
     do:
       Raxol.Terminal.Operations.SelectionOperations.start_selection(
@@ -331,6 +365,7 @@ defmodule Raxol.Terminal.Emulator do
         y
       )
 
+  @doc "Updates the selection endpoint to the specified coordinates."
   def update_selection(emulator, x, y),
     do:
       Raxol.Terminal.Operations.SelectionOperations.update_selection(
@@ -339,46 +374,58 @@ defmodule Raxol.Terminal.Emulator do
         y
       )
 
+  @doc "Ends the current text selection."
   def end_selection(emulator),
     do: Raxol.Terminal.Operations.SelectionOperations.end_selection(emulator)
 
+  @doc "Clears the current text selection."
   def clear_selection(emulator),
     do: Raxol.Terminal.Operations.SelectionOperations.clear_selection(emulator)
 
+  @doc "Gets the currently selected text."
   def get_selection(emulator),
     do: Raxol.Terminal.Operations.SelectionOperations.get_selection(emulator)
 
+  @doc "Returns true if text is currently selected."
   def has_selection?(emulator),
     do: Raxol.Terminal.Operations.SelectionOperations.has_selection?(emulator)
 
   # Scroll operations
+  @doc "Scrolls the display up by the specified number of lines."
   def scroll_up(emulator, lines),
     do: Raxol.Terminal.Operations.ScrollOperations.scroll_up(emulator, lines)
 
+  @doc "Scrolls the display down by the specified number of lines."
   def scroll_down(emulator, lines),
     do: Raxol.Terminal.Operations.ScrollOperations.scroll_down(emulator, lines)
 
   # State operations
+  @doc "Saves the current terminal state."
   def save_state(emulator),
     do: Raxol.Terminal.Operations.StateOperations.save_state(emulator)
 
+  @doc "Restores the previously saved terminal state."
   def restore_state(emulator),
     do: Raxol.Terminal.Operations.StateOperations.restore_state(emulator)
 
   # Buffer operations
+  @doc "Switches to the alternate screen buffer."
   def switch_to_alternate_screen(emulator),
     do:
       Raxol.Terminal.Emulator.BufferOperations.switch_to_alternate_screen(
         emulator
       )
 
+  @doc "Switches to the normal screen buffer."
   def switch_to_normal_screen(emulator),
     do:
       Raxol.Terminal.Emulator.BufferOperations.switch_to_normal_screen(emulator)
 
+  @doc "Clears the scrollback buffer."
   def clear_scrollback(emulator),
     do: Raxol.Terminal.Emulator.BufferOperations.clear_scrollback(emulator)
 
+  @doc "Updates the active buffer with new content."
   def update_active_buffer(emulator, buffer),
     do:
       Raxol.Terminal.Emulator.BufferOperations.update_active_buffer(
@@ -386,66 +433,117 @@ defmodule Raxol.Terminal.Emulator do
         buffer
       )
 
+  @doc "Writes data to the output buffer."
   def write_to_output(emulator, data),
     do: Raxol.Terminal.Emulator.BufferOperations.write_to_output(emulator, data)
 
   # Dimension and property operations
+  @doc "Gets the terminal width in columns."
   def get_width(emulator),
     do: Raxol.Terminal.Emulator.Dimensions.get_width(emulator)
 
+  @doc "Gets the terminal height in rows."
   def get_height(emulator),
     do: Raxol.Terminal.Emulator.Dimensions.get_height(emulator)
 
+  @doc "Gets the current scroll region as {top, bottom}."
   def get_scroll_region(emulator),
     do: Raxol.Terminal.Emulator.Dimensions.get_scroll_region(emulator)
 
+  @doc "Returns cursor visibility state."
   def visible?(emulator),
     do: Raxol.Terminal.Operations.CursorOperations.cursor_visible?(emulator)
 
   # Constructor functions - delegate to Coordinator
+  @doc "Creates a new terminal emulator with default dimensions (80x24)."
   def new(width \\ 80, height \\ 24), do: Coordinator.new(width, height)
+
+  @doc "Creates a new terminal emulator with options."
   def new(width, height, opts), do: Coordinator.new(width, height, opts)
 
+  @doc "Creates a new terminal emulator with session ID and client options."
   def new(width, height, session_id, client_options) do
     opts = [session_id: session_id, client_options: client_options]
     {:ok, Coordinator.new(width, height, opts)}
   end
 
+  @doc """
+  Creates a lightweight emulator without GenServer processes.
+
+  This is optimized for performance-critical paths like parsing.
+  For full terminal emulation, use `new/2` instead.
+  """
+  def new_lite(width \\ 80, height \\ 24, opts \\ []) do
+    alias Raxol.Terminal.EmulatorLite
+    alias Raxol.Terminal.Emulator.Adapter
+
+    lite = EmulatorLite.new(width, height, opts)
+    Adapter.from_lite(lite)
+  end
+
+  @doc """
+  Creates a minimal emulator for fastest possible operations.
+
+  No history, no alternate buffer, no scrollback, no GenServers.
+  """
+  def new_minimal(width \\ 80, height \\ 24) do
+    alias Raxol.Terminal.EmulatorLite
+    alias Raxol.Terminal.Emulator.Adapter
+
+    lite = EmulatorLite.new_minimal(width, height)
+    Adapter.from_lite(lite)
+  end
+
   # Reset and cleanup functions - delegate to Coordinator
+  @doc "Resets the terminal emulator to its initial state."
   def reset(emulator), do: Coordinator.reset(emulator)
 
   # Resize function - delegate to Coordinator
+  @doc "Resizes the terminal to the specified dimensions."
   def resize(emulator, new_width, new_height) do
     Coordinator.resize(emulator, new_width, new_height)
   end
 
   # Complex coordination operations
+  @doc "Moves the cursor to the specified position."
   def move_cursor(emulator, x, y), do: Coordinator.move_cursor(emulator, x, y)
 
+  @doc "Clears the screen and moves cursor to home position."
   def clear_screen_and_home(emulator),
     do: Coordinator.clear_screen_and_home(emulator)
 
+  @doc "Validates terminal dimensions."
   def validate_dimensions(width, height),
     do: Coordinator.validate_dimensions(width, height)
 
   # Mode update functions - simplified implementations
+  @doc "Updates insert mode state."
   def update_insert_mode(emulator, enabled) do
     mode_state = Map.put(emulator.mode_state, :insert_mode, enabled)
     {:ok, %{emulator | mode_state: mode_state}}
   end
 
+  @doc "Updates auto wrap mode state."
   def update_auto_wrap_mode(emulator, enabled) do
     mode_state = Map.put(emulator.mode_state, :auto_wrap, enabled)
     {:ok, %{emulator | mode_state: mode_state}}
   end
 
   # Helper functions for tests and backwards compatibility
-  def get_screen_buffer(%{active_buffer_type: :alternate, alternate_screen_buffer: buffer}) when buffer != nil, do: buffer
+  @doc "Gets the active screen buffer."
+  def get_screen_buffer(%{
+        active_buffer_type: :alternate,
+        alternate_screen_buffer: buffer
+      })
+      when buffer != nil,
+      do: buffer
+
   def get_screen_buffer(%{main_screen_buffer: buffer}), do: buffer
   def get_screen_buffer(_), do: nil
 
   # Note: get_cursor_position/1 is already defined by cursor_delegations() macro
 
+  @doc "Sets terminal dimensions after validation."
   def set_dimensions(emulator, width, height) do
     case Coordinator.validate_dimensions(width, height) do
       {:ok, _} -> {:ok, %{emulator | width: width, height: height}}
@@ -454,8 +552,13 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   # Legacy compatibility functions
+  @doc "Gets output buffer (legacy compatibility)."
   def get_output_buffer(_emulator), do: {:ok, []}
+
+  @doc "Applies color changes (legacy compatibility)."
   def apply_color_changes(emulator), do: {:ok, emulator}
+
+  @doc "Updates blink state (legacy compatibility)."
   def update_blink_state(emulator), do: {:ok, emulator}
 
   @doc """
@@ -482,52 +585,95 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   # Additional missing functions needed by various modules
+  @doc "Gets the scrollback buffer contents."
   def get_scrollback(emulator), do: emulator.scrollback_buffer || []
+
+  @doc "Performs automatic scrolling if needed."
   def maybe_scroll(emulator), do: emulator
+
+  @doc "Sets a terminal mode."
   def set_mode(emulator, mode), do: ModeOperations.set_mode(emulator, mode)
+
+  @doc "Resets a terminal mode."
   def reset_mode(emulator, mode), do: ModeOperations.reset_mode(emulator, mode)
+
+  @doc "Sets a terminal attribute."
   def set_attribute(emulator, _attr, _value), do: emulator
+
+  @doc "Gets the mode manager."
   def get_mode_manager(emulator), do: emulator.mode_manager
+
+  @doc "Gets the configuration structure."
   def get_config_struct(emulator),
     do: Raxol.Terminal.Emulator.Helpers.get_config_struct(emulator)
+
+  @doc "Moves cursor to specified position."
   def move_cursor_to(emulator, x, y), do: move_cursor(emulator, x, y)
+
+  @doc "Moves cursor to specified position with options."
   def move_cursor_to(emulator, x, y, _opts), do: move_cursor(emulator, x, y)
+
+  @doc "Moves cursor up (stub implementation)."
   def move_cursor_up(emulator, _count), do: emulator
+
+  @doc "Moves cursor down (stub implementation)."
   def move_cursor_down(emulator, _count), do: emulator
+
+  @doc "Moves cursor forward (stub implementation)."
   def move_cursor_forward(emulator, _count), do: emulator
+
+  @doc "Moves cursor back (stub implementation)."
   def move_cursor_back(emulator, _count), do: emulator
+  @doc "Handles ESC = sequence (DECKPAM - Enable application keypad mode)."
   def handle_esc_equals(emulator) do
     # DECKPAM - Enable application keypad mode (ESC =)
     require Logger
     Logger.debug("Emulator.handle_esc_equals called - setting decckm mode")
-    Logger.debug("Initial cursor_keys_mode: #{inspect(emulator.mode_manager.cursor_keys_mode)}")
-    
+
+    Logger.debug(
+      "Initial cursor_keys_mode: #{inspect(emulator.mode_manager.cursor_keys_mode)}"
+    )
+
     result = ModeOperations.set_mode(emulator, :decckm)
-    
+
     case result do
       {:ok, new_emulator} ->
         Logger.debug("ModeOperations.set_mode succeeded")
-        Logger.debug("Final cursor_keys_mode: #{inspect(new_emulator.mode_manager.cursor_keys_mode)}")
+
+        Logger.debug(
+          "Final cursor_keys_mode: #{inspect(new_emulator.mode_manager.cursor_keys_mode)}"
+        )
+
         new_emulator
+
       {:error, reason} ->
         Logger.debug("ModeOperations.set_mode failed: #{inspect(reason)}")
         emulator
     end
   end
-  
+
+  @doc "Handles ESC > sequence (DECKPNM - Disable application keypad mode)."
   def handle_esc_greater(emulator) do
     # DECKPNM - Disable application keypad mode (ESC >)
     require Logger
     Logger.debug("Emulator.handle_esc_greater called - resetting decckm mode")
-    Logger.debug("Initial cursor_keys_mode: #{inspect(emulator.mode_manager.cursor_keys_mode)}")
-    
+
+    Logger.debug(
+      "Initial cursor_keys_mode: #{inspect(emulator.mode_manager.cursor_keys_mode)}"
+    )
+
     result = ModeOperations.reset_mode(emulator, :decckm)
-    
+
     case result do
       {:ok, new_emulator} ->
         Logger.debug("ModeOperations.reset_mode succeeded")
-        Logger.debug("Final cursor_keys_mode: #{inspect(new_emulator.mode_manager.cursor_keys_mode)}")
+
+        Logger.debug(
+          "Final cursor_keys_mode: #{inspect(new_emulator.mode_manager.cursor_keys_mode)}"
+        )
+
         new_emulator
+
       {:error, reason} ->
         Logger.debug("ModeOperations.reset_mode failed: #{inspect(reason)}")
         emulator

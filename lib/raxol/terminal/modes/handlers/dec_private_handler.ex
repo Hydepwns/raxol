@@ -64,8 +64,13 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   # Private Functions
 
   defp find_mode_definition(mode_name) do
-    ModeTypes.get_all_modes()
-    |> Map.values()
+    # Search DEC private modes first to handle duplicates correctly
+    dec_private_modes = ModeTypes.get_modes_by_category(:dec_private)
+    screen_buffer_modes = ModeTypes.get_modes_by_category(:screen_buffer)
+    mouse_modes = ModeTypes.get_modes_by_category(:mouse)
+
+    # Search in order of preference for DEC private handler
+    (dec_private_modes ++ screen_buffer_modes ++ mouse_modes)
     |> Enum.find(&(&1.name == mode_name))
   end
 

@@ -14,7 +14,8 @@ defmodule Raxol.Plugins.EventHandler.OutputEvents do
   @doc """
   Dispatches an "output" event to all enabled plugins implementing `handle_output/2`.
   """
-  @spec handle_output(Core.t(), binary()) :: {:ok, Core.t(), binary()} | {:error, term()}
+  @spec handle_output(Core.t(), binary()) ::
+          {:ok, Core.t(), binary()} | {:error, term()}
   def handle_output(manager, output) do
     initial_acc = %{
       manager: manager,

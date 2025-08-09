@@ -415,14 +415,14 @@ defmodule Raxol.Terminal.Cursor.Manager do
   def get_state(%__MODULE__{} = state), do: State.get_state(state)
 
   def set_state(pid, state_atom) when is_pid(pid) do
-    IO.puts("DEBUG: Manager.set_state PID clause matched for #{inspect(pid)}")
-    IO.puts("DEBUG: State module: #{inspect(State)}")
+    # DEBUG output removed
+    # DEBUG output removed
     GenServer.call(pid, {:set_state_atom, state_atom})
   end
 
   def set_state(%__MODULE__{} = state, state_atom) do
-    IO.puts("DEBUG: Manager.set_state struct clause matched")
-    IO.puts("DEBUG: State module: #{inspect(State)}")
+    # DEBUG output removed
+    # DEBUG output removed
     State.set_state(state, state_atom)
   end
 

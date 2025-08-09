@@ -568,7 +568,6 @@ defmodule Raxol.Accounts do
     Bcrypt.hash_pwd_salt(password)
   end
 
-
   defp update_user_password(user, new_password) do
     attrs = %{password: new_password}
 
@@ -589,7 +588,7 @@ defmodule Raxol.Accounts do
   defp get_default_role_id do
     # Get the default "user" role ID
     role = Repo.get_by(Role, name: @default_role_name)
-    
+
     cond do
       is_nil(role) -> nil
       true -> Map.get(role, :id)

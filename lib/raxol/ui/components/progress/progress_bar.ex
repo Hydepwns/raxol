@@ -204,5 +204,21 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
     value |> max(min_val) |> min(max_val)
   end
 
+  @doc """
+  Mount hook - called when component is mounted.
+  No special setup needed for ProgressBar.
+  """
+  @impl true
+  @spec mount(map()) :: {map(), list()}
+  def mount(state), do: {state, []}
+
+  @doc """
+  Unmount hook - called when component is unmounted.
+  No cleanup needed for ProgressBar.
+  """
+  @impl true
+  @spec unmount(map()) :: map()
+  def unmount(state), do: state
+
   # Remove old render/1 and handle_event/2 if they existed
 end

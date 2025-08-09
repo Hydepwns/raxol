@@ -66,9 +66,7 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
   A tuple {updated_emulator, remaining_input}.
   """
   def handle_parsed_sequence(parsed_sequence, _rest, emulator) do
-    IO.puts(
-      "DEBUG: handle_parsed_sequence called with: #{inspect(parsed_sequence)}"
-    )
+    # DEBUG: handle_parsed_sequence called with: #{inspect(parsed_sequence)}
 
     handle_sequence_type(parsed_sequence, emulator)
   end
@@ -156,19 +154,12 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
   end
 
   defp handle_sequence_type({:sgr, params, remaining, _}, emulator) do
-    IO.puts(
-      "DEBUG: SGR handler called with params=#{inspect(params)}, remaining=#{inspect(remaining)}"
-    )
-
-    IO.puts(
-      "DEBUG: SGR handler emulator.style before=#{inspect(emulator.style)}"
-    )
+    # DEBUG: SGR handler called with params=#{inspect(params)}, remaining=#{inspect(remaining)}
+    # DEBUG: SGR handler emulator.style before=#{inspect(emulator.style)}
 
     result = {handle_sgr(params, emulator), remaining}
 
-    IO.puts(
-      "DEBUG: SGR handler result emulator.style after=#{inspect(elem(result, 0).style)}"
-    )
+    # DEBUG: SGR handler result emulator.style after=#{inspect(elem(result, 0).style)}
 
     result
   end
@@ -195,12 +186,10 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
          {:cursor_horizontal_absolute, col, remaining},
          emulator
        ) do
-    IO.puts(
-      "DEBUG: handle_parsed_sequence cursor_horizontal_absolute col=#{inspect(col)}"
-    )
+    # DEBUG: handle_parsed_sequence cursor_horizontal_absolute col=#{inspect(col)}
 
     result = CursorHandlers.handle_G(emulator, [col + 1])
-    IO.puts("DEBUG: handle_G result cursor=#{inspect(result)}")
+    # DEBUG output removed
     {result, remaining}
   end
 

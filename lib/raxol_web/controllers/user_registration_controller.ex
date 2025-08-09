@@ -18,6 +18,7 @@ defmodule RaxolWeb.UserRegistrationController do
 
     if changeset.valid? do
       {:ok, user} = Raxol.Repo.insert(changeset)
+
       conn
       |> UserAuth.log_in_user(user)
       |> put_flash(:info, "User created successfully.")

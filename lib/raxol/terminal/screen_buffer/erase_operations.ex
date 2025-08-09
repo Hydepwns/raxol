@@ -35,10 +35,8 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   @doc """
   Erases from start to cursor position.
   """
-  def erase_from_start_to_cursor(buffer, x, y, top, bottom) do
-    IO.puts(
-      "DEBUG: erase_from_start_to_cursor called with x=#{x}, y=#{y}, top=#{top}, bottom=#{bottom}"
-    )
+  def erase_from_start_to_cursor(buffer, x, y, top, _bottom) do
+    # DEBUG: erase_from_start_to_cursor called with x=#{x}, y=#{y}, top=#{top}, bottom=#{bottom}
 
     # Clear from start of line to cursor (inclusive)
     line = Enum.at(buffer.cells, y, [])
@@ -48,15 +46,15 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
     new_cells = List.replace_at(buffer.cells, y, cleared_line)
 
     # Clear all previous lines completely
-    IO.puts("DEBUG: Clearing lines from #{top} to #{y - 1}")
+    # DEBUG output removed
 
     new_cells =
       Enum.reduce(top..(y - 1), new_cells, fn line_num, acc ->
-        IO.puts("DEBUG: Clearing line #{line_num}")
+        # DEBUG output removed
         List.replace_at(acc, line_num, List.duplicate(empty_cell, buffer.width))
       end)
 
-    IO.puts("DEBUG: Final buffer has #{length(new_cells)} lines")
+    # DEBUG output removed
     %{buffer | cells: new_cells}
   end
 

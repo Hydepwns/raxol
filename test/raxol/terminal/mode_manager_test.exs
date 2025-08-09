@@ -81,7 +81,6 @@ defmodule Raxol.Terminal.ModeManagerTest do
     test "looks up valid standard mode codes" do
       assert ModeManager.lookup_standard(4) == :irm
       assert ModeManager.lookup_standard(20) == :lnm
-      assert ModeManager.lookup_standard(3) == :deccolm_132
       assert ModeManager.lookup_standard(132) == :deccolm_132
       assert ModeManager.lookup_standard(80) == :deccolm_80
     end

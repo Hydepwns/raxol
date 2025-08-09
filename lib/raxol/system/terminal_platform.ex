@@ -202,7 +202,7 @@ defmodule Raxol.System.TerminalPlatform do
   defp get_color_capabilities do
     %{
       basic: true,
-      true_color: supports_true_color?(),
+      true_color: :true_color in get_supported_features(),
       palette: if(supports_256_colors?(), do: "xterm-256color", else: "default")
     }
   end
@@ -217,7 +217,7 @@ defmodule Raxol.System.TerminalPlatform do
 
   defp get_input_capabilities do
     %{
-      mouse: supports_mouse?(),
+      mouse: :mouse in get_supported_features(),
       bracketed_paste: supports_bracketed_paste?(),
       focus: supports_focus?()
     }
@@ -242,16 +242,6 @@ defmodule Raxol.System.TerminalPlatform do
     case System.cmd("wt", ["--version"]) do
       {version, 0} -> String.trim(version)
       _ -> "unknown"
-    end
-  end
-
-  defp supports_true_color? do
-    cond do
-      System.get_env("COLORTERM") in ["truecolor", "24bit"] -> true
-      System.get_env("TERM") in ["xterm-24bit", "iterm", "iTerm.app"] -> true
-      System.get_env("TERM_PROGRAM") == "iTerm.app" -> true
-      System.get_env("TERM_EMULATOR") == "JetBrains-JediTerm" -> true
-      true -> false
     end
   end
 

@@ -134,9 +134,7 @@ defmodule Raxol.Terminal.Cursor.Movement do
   end
 
   def move_to_column(other, _col) do
-    IO.puts(
-      "[DEBUG] move_to_column/2 called with non-cursor: #{inspect(other)} (type: #{inspect(other.__struct__)}"
-    )
+    # DEBUG: move_to_column/2 called with non-cursor: #{inspect(other)} (type: #{inspect(other.__struct__)}
 
     other
   end

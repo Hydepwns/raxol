@@ -229,4 +229,20 @@ defmodule Raxol.UI.Components.Selection.List do
     do: Map.get_and_update(struct, key, fun)
 
   def pop(struct, key) when is_atom(key), do: Map.pop(struct, key)
+
+  @doc """
+  Mount hook - called when component is mounted.
+  No special setup needed for List.
+  """
+  @impl true
+  @spec mount(map()) :: {map(), list()}
+  def mount(state), do: {state, []}
+
+  @doc """
+  Unmount hook - called when component is unmounted.
+  No cleanup needed for List.
+  """
+  @impl true
+  @spec unmount(map()) :: map()
+  def unmount(state), do: state
 end

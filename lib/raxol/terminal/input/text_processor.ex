@@ -38,15 +38,13 @@ defmodule Raxol.Terminal.Input.TextProcessor do
   end
 
   defp process_input_characters(emulator, input) do
-    IO.puts("DEBUG: TextProcessor - Input: #{inspect(input)}")
+    # DEBUG output removed
     codepoints = String.to_charlist(input)
-    IO.puts("DEBUG: TextProcessor - Codepoints: #{inspect(codepoints)}")
+    # DEBUG output removed
 
     codepoints
     |> Enum.reduce(emulator, fn codepoint, emu ->
-      IO.puts(
-        "DEBUG: TextProcessor - Processing codepoint: #{inspect(codepoint)} (#{List.to_string([codepoint])})"
-      )
+      # DEBUG: TextProcessor - Processing codepoint: #{inspect(codepoint)} (#{List.to_string([codepoint])})
 
       Raxol.Terminal.Input.CharacterProcessor.process_character(emu, codepoint)
     end)

@@ -156,9 +156,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec handle_g_alias(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_g_alias(emulator, params) do
-    IO.puts(
-      "DEBUG: handle_G called with params=#{inspect(params)}, cursor=#{inspect(emulator.cursor)}"
-    )
+    # DEBUG: handle_G called with params=#{inspect(params)}, cursor=#{inspect(emulator.cursor)}
 
     column = Enum.at(params, 0, 1)
     # Convert to 0-based
@@ -460,12 +458,18 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   """
   def handle_E(emulator, params) do
     count = get_valid_pos_param(params, 0, 1)
-    
+
     # Move down by count lines
     emulator_after_down = move_cursor_down(emulator, count)
-    
+
     # Move to column 0
-    {:ok, move_cursor_to_column(emulator_after_down, 0, emulator.width, emulator.height)}
+    {:ok,
+     move_cursor_to_column(
+       emulator_after_down,
+       0,
+       emulator.width,
+       emulator.height
+     )}
   end
 
   @doc """
@@ -474,12 +478,18 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   """
   def handle_F(emulator, params) do
     count = get_valid_pos_param(params, 0, 1)
-    
+
     # Move up by count lines
     emulator_after_up = move_cursor_up(emulator, count)
-    
+
     # Move to column 0
-    {:ok, move_cursor_to_column(emulator_after_up, 0, emulator.width, emulator.height)}
+    {:ok,
+     move_cursor_to_column(
+       emulator_after_up,
+       0,
+       emulator.width,
+       emulator.height
+     )}
   end
 
   @doc """

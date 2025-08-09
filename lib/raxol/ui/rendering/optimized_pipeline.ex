@@ -35,14 +35,19 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
     if opts[:ttl] == :infinity do
       quote do
         cache_key = {unquote(name), unquote(opts[:key])}
-        
+
         case Process.get(cache_key) do
           {result, _timestamp} ->
             result
 
           _ ->
             result = unquote(block)
-            Process.put(cache_key, {result, System.monotonic_time(:millisecond)})
+
+            Process.put(
+              cache_key,
+              {result, System.monotonic_time(:millisecond)}
+            )
+
             result
         end
       end

@@ -50,9 +50,9 @@ defmodule Raxol.Style.Colors.Color do
     def to_string(%Raxol.Style.Colors.Color{hex: hex}) when is_binary(hex) do
       hex
     end
-    
+
     def to_string(%Raxol.Style.Colors.Color{r: r, g: g, b: b}) do
-      "#" <> 
+      "#" <>
         (r |> Integer.to_string(16) |> String.pad_leading(2, "0")) <>
         (g |> Integer.to_string(16) |> String.pad_leading(2, "0")) <>
         (b |> Integer.to_string(16) |> String.pad_leading(2, "0"))

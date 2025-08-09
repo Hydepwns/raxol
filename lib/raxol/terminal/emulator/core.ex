@@ -31,14 +31,12 @@ defmodule Raxol.Terminal.Emulator.Core do
   @spec process_input(Raxol.Terminal.Emulator.t(), binary()) ::
           {Raxol.Terminal.Emulator.t(), binary()}
   def process_input(emulator, input) do
-    IO.puts("DEBUG: process_input called with input: #{inspect(input)}")
+    # DEBUG output removed
 
     # Handle character set commands first
     case get_charset_command(input) do
       {field, value} ->
-        IO.puts(
-          "DEBUG: process_input matched charset command: #{field} = #{value}"
-        )
+        # DEBUG: process_input matched charset command: #{field} = #{value}
 
         # If it's a charset command, handle it completely and return
         updated_emulator = %{
@@ -49,9 +47,7 @@ defmodule Raxol.Terminal.Emulator.Core do
         {updated_emulator, ""}
 
       :no_match ->
-        IO.puts(
-          "DEBUG: process_input no charset match, using parser-based processing"
-        )
+        # DEBUG: process_input no charset match, using parser-based processing
 
         # Use parser-based input processing for all other input
         {updated_emulator, output} =
@@ -82,16 +78,12 @@ defmodule Raxol.Terminal.Emulator.Core do
   def ensure_cursor_in_visible_region(emulator) do
     # If cursor position was handled by autowrap, don't override it
     if Map.get(emulator, :cursor_handled_by_autowrap, false) do
-      IO.puts(
-        "DEBUG: ensure_cursor_in_visible_region - cursor_handled_by_autowrap is true, skipping cursor adjustment"
-      )
+      # DEBUG: ensure_cursor_in_visible_region - cursor_handled_by_autowrap is true, skipping cursor adjustment
 
       # Remove the flag and return the emulator without further cursor adjustment
       %{emulator | cursor_handled_by_autowrap: false}
     else
-      IO.puts(
-        "DEBUG: ensure_cursor_in_visible_region - cursor_handled_by_autowrap is false, checking cursor position"
-      )
+      # DEBUG: ensure_cursor_in_visible_region - cursor_handled_by_autowrap is false, checking cursor position
 
       active_buffer = get_screen_buffer(emulator)
       buffer_height = ScreenBuffer.get_height(active_buffer)
@@ -108,9 +100,7 @@ defmodule Raxol.Terminal.Emulator.Core do
             {0, 0}
         end
 
-      IO.puts(
-        "DEBUG: ensure_cursor_in_visible_region - cursor_y: #{cursor_y}, buffer_height: #{buffer_height}"
-      )
+      # DEBUG: ensure_cursor_in_visible_region - cursor_y: #{cursor_y}, buffer_height: #{buffer_height}
 
       if cursor_y >= buffer_height do
         # Scroll until the cursor is in the visible region
@@ -332,9 +322,7 @@ defmodule Raxol.Terminal.Emulator.Core do
 
     # If cursor position was handled by autowrap, don't override it
     if Map.get(emulator, :cursor_handled_by_autowrap, false) do
-      IO.puts(
-        "DEBUG: perform_scroll - cursor_handled_by_autowrap is true, skipping cursor adjustment"
-      )
+      # DEBUG: perform_scroll - cursor_handled_by_autowrap is true, skipping cursor adjustment
 
       emulator_with_updated_buffer
     else

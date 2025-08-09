@@ -237,7 +237,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   """
   @spec new(non_neg_integer(), non_neg_integer(), map(), map()) ::
           Raxol.Terminal.Emulator.t()
-  def new(width, height, config \\ %{}, options \\ %{}) do
+  def new(width, height, config, options) do
     # Merge config and options
     merged_opts = Map.merge(config, options)
 

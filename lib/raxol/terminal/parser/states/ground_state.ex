@@ -73,9 +73,10 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
   end
 
   defp handle_input(data, emulator, parser_state) do
-    Raxol.Core.Runtime.Log.debug(
-      "GroundState handling input: #{inspect(data)}, current parser state: #{inspect(parser_state)}"
-    )
+    # Disabled for performance
+    # Raxol.Core.Runtime.Log.debug(
+    #   "GroundState handling input: #{inspect(data)}, current parser state: #{inspect(parser_state)}"
+    # )
 
     dispatch_input(data, emulator, parser_state)
   end
@@ -120,13 +121,12 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
   end
 
   defp handle_escape_sequence(emulator, _parser_state, rest) do
-    Raxol.Core.Runtime.Log.debug(
-      "GroundState: ESC detected, transitioning to EscapeState with rest=#{inspect(rest)}"
-    )
+    # Disabled for performance
+    # Raxol.Core.Runtime.Log.debug(
+    #   "GroundState: ESC detected, transitioning to EscapeState with rest=#{inspect(rest)}"
+    # )
 
-    IO.puts(
-      "DEBUG: GroundState - ESC detected, transitioning to EscapeState with rest=#{inspect(rest)}"
-    )
+    # ESC detected, transitioning to EscapeState
 
     {new_emulator, new_parser_state, new_rest_input} =
       Parser.transition_to_escape(emulator, rest)
@@ -170,28 +170,31 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
   end
 
   defp handle_printable_char(emulator, parser_state, char_codepoint, rest) do
-    IO.puts(
-      "DEBUG: GroundState - Processing char_codepoint: #{inspect(char_codepoint)} (#{List.to_string([char_codepoint])}), rest: #{inspect(rest)}"
-    )
+    # Check if we're in bracketed paste mode
+    if emulator.bracketed_paste_active do
+      # Accumulate the character in the bracketed paste buffer
+      char_string = List.to_string([char_codepoint])
+      updated_buffer = emulator.bracketed_paste_buffer <> char_string
+      updated_emulator = %{emulator | bracketed_paste_buffer: updated_buffer}
+      {:continue, updated_emulator, parser_state, rest}
+    else
+      # Normal processing for printable character
+      emulator_with_history =
+        History.maybe_add_to_history(emulator, char_codepoint)
 
-    emulator_with_history =
-      History.maybe_add_to_history(emulator, char_codepoint)
+      {updated_emulator, _output_events} =
+        InputHandler.handle_printable_character(
+          emulator_with_history,
+          char_codepoint,
+          parser_state.params,
+          parser_state.single_shift
+        )
 
-    {updated_emulator, _output_events} =
-      InputHandler.handle_printable_character(
-        emulator_with_history,
-        char_codepoint,
-        parser_state.params,
-        parser_state.single_shift
-      )
+      next_parser_state = %{parser_state | single_shift: nil}
 
-    next_parser_state = %{parser_state | single_shift: nil}
-
-    IO.puts(
-      "DEBUG: GroundState - Returning continue with rest: #{inspect(rest)}"
-    )
-
-    {:continue, updated_emulator, next_parser_state, rest}
+      # Continue with remaining input
+      {:continue, updated_emulator, next_parser_state, rest}
+    end
   end
 
   defp handle_unknown_input(emulator, parser_state, other) do

@@ -573,7 +573,9 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Core do
   end
 
   defp ensure_text_formatting_struct(nil), do: new()
-  defp ensure_text_formatting_struct(%__MODULE__{} = style), do: Map.from_struct(style)
+
+  defp ensure_text_formatting_struct(%__MODULE__{} = style),
+    do: Map.from_struct(style)
 
   defp ensure_text_formatting_struct(style) when is_map(style) do
     # Merge with defaults for missing fields

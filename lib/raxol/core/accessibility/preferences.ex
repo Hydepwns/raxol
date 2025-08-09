@@ -25,7 +25,6 @@ defmodule Raxol.Core.Accessibility.Preferences do
   # Helper function to get preference key as a path list
   defp pref_key(key), do: [:accessibility, key]
 
-
   # Helper to get preference using pid_or_name or default
   defp get_pref(key, default, pid_or_name) do
     target_pid_or_name = pid_or_name || @default_prefs_name

@@ -518,7 +518,7 @@ defmodule Raxol.Terminal.ControlCodes do
     Raxol.Core.Runtime.Log.debug(
       "ControlCodes.handle_escape called with byte=#{inspect(byte)}"
     )
-    
+
     case Map.get(@escape_handlers, byte) do
       nil ->
         Raxol.Core.Runtime.Log.debug(
@@ -531,10 +531,9 @@ defmodule Raxol.Terminal.ControlCodes do
         Raxol.Core.Runtime.Log.debug(
           "Found handler for byte #{inspect(byte)}, calling handler"
         )
+
         result = handler.(emulator)
-        Raxol.Core.Runtime.Log.debug(
-          "Handler returned: #{inspect(result)}"
-        )
+        Raxol.Core.Runtime.Log.debug("Handler returned: #{inspect(result)}")
         result
     end
   end

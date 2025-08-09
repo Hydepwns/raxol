@@ -107,4 +107,4 @@ bench/snapshots/
 
 # Claude AI artifacts
 .claude/
-# CLAUDE.md 
+CLAUDE.md 

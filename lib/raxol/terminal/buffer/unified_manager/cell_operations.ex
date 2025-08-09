@@ -136,5 +136,4 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.CellOperations do
     # Return unchanged if not a Cell struct
     other
   end
-
 end

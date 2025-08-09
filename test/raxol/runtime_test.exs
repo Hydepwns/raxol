@@ -106,8 +106,7 @@ defmodule Raxol.RuntimeTest do
   alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
   alias Raxol.Terminal.Driver, as: TerminalDriver
   
-  # Define the mock if not already defined
-  Mox.defmock(Raxol.Terminal.DriverMock, for: Raxol.Terminal.Driver.Behaviour)
+  # DriverMock already defined in test/support/terminal_driver_mock.ex
 
   setup context do
     # Call the cleanup helper at the beginning of setup

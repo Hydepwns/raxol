@@ -234,4 +234,20 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
 
   # Remove old handle_dropdown_keys (logic moved to handle_event)
   # Remove old @impl Component annotation
+
+  @doc """
+  Mount hook - called when component is mounted.
+  No special setup needed for Dropdown.
+  """
+  @impl true
+  @spec mount(map()) :: {map(), list()}
+  def mount(state), do: {state, []}
+
+  @doc """
+  Unmount hook - called when component is unmounted.
+  No cleanup needed for Dropdown.
+  """
+  @impl true
+  @spec unmount(map()) :: map()
+  def unmount(state), do: state
 end

@@ -304,6 +304,4 @@ defmodule Raxol.Terminal.Sync.Manager do
       true -> :keep_existing
     end
   end
-
-
 end

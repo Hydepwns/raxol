@@ -76,13 +76,17 @@ defmodule Raxol.Plugins.EventHandler.InputEvents do
 
       {:ok, updated_plugin} ->
         # Update both the plugin instance and its state
-        updated_manager_with_plugin = 
+        updated_manager_with_plugin =
           Common.update_manager_plugin(acc.manager, plugin, updated_plugin)
-        
+
         updated_plugin_state = Common.extract_plugin_state(updated_plugin)
-        
+
         updated_manager =
-          Common.update_manager_state(updated_manager_with_plugin, plugin, updated_plugin_state)
+          Common.update_manager_state(
+            updated_manager_with_plugin,
+            plugin,
+            updated_plugin_state
+          )
 
         {:cont, %{acc | manager: updated_manager}}
 
@@ -92,13 +96,17 @@ defmodule Raxol.Plugins.EventHandler.InputEvents do
 
       {:halt, updated_plugin} ->
         # Update both the plugin instance and its state
-        updated_manager_with_plugin = 
+        updated_manager_with_plugin =
           Common.update_manager_plugin(acc.manager, plugin, updated_plugin)
-        
+
         updated_plugin_state = Common.extract_plugin_state(updated_plugin)
-        
+
         updated_manager =
-          Common.update_manager_state(updated_manager_with_plugin, plugin, updated_plugin_state)
+          Common.update_manager_state(
+            updated_manager_with_plugin,
+            plugin,
+            updated_plugin_state
+          )
 
         {:halt, %{acc | manager: updated_manager}}
 

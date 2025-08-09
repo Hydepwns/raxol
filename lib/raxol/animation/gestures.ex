@@ -341,6 +341,7 @@ defmodule Raxol.Animation.Gestures do
         catch
           kind, reason ->
             require Logger
+
             Logger.error(
               "Error in gesture handler: #{inspect(kind)}, #{inspect(reason)}"
             )

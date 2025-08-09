@@ -129,30 +129,46 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
 
     # Split the buffer: lines before scroll region, scroll region, lines after scroll region
     {lines_before_scroll, rest} = Enum.split(buffer.cells, scroll_top)
-    {scroll_region_lines, lines_after_scroll} = Enum.split(rest, scroll_bottom - scroll_top + 1)
-    
+
+    {scroll_region_lines, lines_after_scroll} =
+      Enum.split(rest, scroll_bottom - scroll_top + 1)
+
     # Split the scroll region at the insertion point
     insertion_point_in_region = y - scroll_top
-    {scroll_before_insertion, scroll_after_insertion} = Enum.split(scroll_region_lines, insertion_point_in_region)
-    
+
+    {scroll_before_insertion, scroll_after_insertion} =
+      Enum.split(scroll_region_lines, insertion_point_in_region)
+
     # Calculate how many lines from scroll_after_insertion can fit after inserting count lines
     max_lines_in_region = scroll_bottom - scroll_top + 1
-    lines_after_insertion_count = max_lines_in_region - insertion_point_in_region - count
-    kept_scroll_lines = if lines_after_insertion_count > 0, do: Enum.take(scroll_after_insertion, lines_after_insertion_count), else: []
-    
+
+    lines_after_insertion_count =
+      max_lines_in_region - insertion_point_in_region - count
+
+    kept_scroll_lines =
+      if lines_after_insertion_count > 0,
+        do: Enum.take(scroll_after_insertion, lines_after_insertion_count),
+        else: []
+
     # Reconstruct the scroll region
-    new_scroll_region = scroll_before_insertion ++ blank_lines_to_insert ++ kept_scroll_lines
-    
+    new_scroll_region =
+      scroll_before_insertion ++ blank_lines_to_insert ++ kept_scroll_lines
+
     # Pad the scroll region to the correct size if needed
-    padded_scroll_region = 
+    padded_scroll_region =
       if length(new_scroll_region) < max_lines_in_region do
-        new_scroll_region ++ List.duplicate(blank_line, max_lines_in_region - length(new_scroll_region))
+        new_scroll_region ++
+          List.duplicate(
+            blank_line,
+            max_lines_in_region - length(new_scroll_region)
+          )
       else
         Enum.take(new_scroll_region, max_lines_in_region)
       end
 
     # Combine all parts: lines before + modified scroll region + lines after (unchanged)
-    final_cells = lines_before_scroll ++ padded_scroll_region ++ lines_after_scroll
+    final_cells =
+      lines_before_scroll ++ padded_scroll_region ++ lines_after_scroll
 
     %{buffer | cells: final_cells}
   end

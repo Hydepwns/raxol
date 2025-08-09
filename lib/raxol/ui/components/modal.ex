@@ -298,4 +298,20 @@ defmodule Raxol.UI.Components.Modal do
 
     props
   end
+
+  @doc """
+  Mount hook - called when component is mounted.
+  No special setup needed for Modal.
+  """
+  @impl true
+  @spec mount(map()) :: {map(), list()}
+  def mount(state), do: {state, []}
+
+  @doc """
+  Unmount hook - called when component is unmounted.
+  No cleanup needed for Modal.
+  """
+  @impl true
+  @spec unmount(map()) :: map()
+  def unmount(state), do: state
 end

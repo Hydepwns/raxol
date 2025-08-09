@@ -351,4 +351,20 @@ defmodule Raxol.UI.Components.FocusRing do
         %{border_color: color}
     end
   end
+
+  @doc """
+  Mount hook - called when component is mounted.
+  No special setup needed for FocusRing.
+  """
+  @impl true
+  @spec mount(map()) :: {map(), list()}
+  def mount(state), do: {state, []}
+
+  @doc """
+  Unmount hook - called when component is unmounted.
+  No cleanup needed for FocusRing.
+  """
+  @impl true
+  @spec unmount(map()) :: map()
+  def unmount(state), do: state
 end

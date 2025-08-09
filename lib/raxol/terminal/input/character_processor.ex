@@ -256,8 +256,8 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
         # Autowrap would go out of bounds, so we need to handle this specially
         # Write at the current cursor position but move cursor to next line
         # The emulator will handle scrolling when the cursor moves out of bounds
-        {current_cursor_col, current_cursor_row, next_cursor_col, next_cursor_row,
-         next_last_col_exceeded}
+        {current_cursor_col, current_cursor_row, next_cursor_col,
+         next_cursor_row, next_last_col_exceeded}
       else
         {write_col, write_row, next_cursor_col, next_cursor_row,
          next_last_col_exceeded}
@@ -291,8 +291,8 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
           {0, 0}
       end
     rescue
-      e ->
-        IO.puts("ERROR: Failed to get cursor position: #{inspect(e)}")
+      _e ->
+        # ERROR: Failed to get cursor position: #{inspect(e)}
         {0, 0}
     end
   end
@@ -374,9 +374,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
       end
     rescue
       exception ->
-        IO.puts(
-          "ERROR in write_character/3: #{inspect(exception)}\n#{Exception.format(:error, exception, __STACKTRACE__)}"
-        )
+        # ERROR in write_character/3: #{inspect(exception)}\n#{Exception.format(:error, exception, __STACKTRACE__)}
 
         reraise(exception, __STACKTRACE__)
     end

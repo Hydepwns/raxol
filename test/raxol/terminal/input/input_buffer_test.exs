@@ -265,40 +265,48 @@ defmodule Raxol.Terminal.InputTest do
   alias Raxol.Terminal.Input
 
   describe "tab_complete/1" do
-    # The following tests are commented out because :completion_callback and related fields do not exist in %Input{}.
-    # test 'completes with a single match' do
-    #   input = %Input{buffer: "def", completion_callback: fn _ -> ["defmodule"] end}
-    #   result = Input.tab_complete(input)
-    #   assert result.buffer == "defmodule"
-    #   assert result.completion_options == []
-    #   assert result.completion_index == 0
-    # end
+    test 'completes with a single match' do
+      input = %Input{buffer: ["d", "e", "f"], completion_callback: fn _ -> ["defmodule"] end}
+      result = Input.tab_complete(input)
+      assert result.buffer == ["d", "e", "f", "m", "o", "d", "u", "l", "e"]
+      assert result.completion_options == []
+      assert result.completion_index == 0
+    end
 
-    # test 'cycles through multiple matches' do
-    #   input = %Input{buffer: "d", completion_callback: fn _ -> ["def", "defmodule", "do"] end, completion_index: 0}
-    #   result1 = Input.tab_complete(input)
-    #   assert result1.buffer == "def"
-    #   result2 = Input.tab_complete(result1)
-    #   assert result2.buffer == "defmodule"
-    #   result3 = Input.tab_complete(result2)
-    #   assert result3.buffer == "do"
-    #   result4 = Input.tab_complete(result3)
-    #   assert result4.buffer == "def"
-    # end
+    test 'cycles through multiple matches' do
+      input = %Input{buffer: ["d"], completion_callback: fn _ -> ["def", "defmodule", "do"] end, completion_index: 0}
+      result1 = Input.tab_complete(input)
+      assert result1.buffer == ["d", "e", "f"]
+      result2 = Input.tab_complete(result1)
+      assert result2.buffer == ["d", "e", "f", "m", "o", "d", "u", "l", "e"]
+      result3 = Input.tab_complete(result2)
+      assert result3.buffer == ["d", "o"]
+      result4 = Input.tab_complete(result3)
+      assert result4.buffer == ["d", "e", "f"]
+    end
 
-    # test 'no matches leaves buffer unchanged' do
-    #   input = %Input{buffer: "xyz", completion_callback: fn _ -> [] end}
-    #   result = Input.tab_complete(input)
-    #   assert result.buffer == "xyz"
-    # end
+    test 'no matches leaves buffer unchanged' do
+      input = %Input{buffer: ["x", "y", "z"], completion_callback: fn _ -> [] end}
+      result = Input.tab_complete(input)
+      assert result.buffer == ["x", "y", "z"]
+    end
   end
 
   describe "example_completion_callback/1" do
-    # test 'returns Elixir keywords that match the buffer' do
-    #   assert Input.example_completion_callback("d") == ["def", "defmodule", "defp", "do"]
-    #   assert Input.example_completion_callback("def") == ["def", "defmodule", "defp"]
-    #   assert Input.example_completion_callback("xyz") == []
-    # end
+    test 'returns Elixir keywords that match the buffer' do
+      result_d = Input.example_completion_callback("d")
+      assert "def" in result_d
+      assert "defmodule" in result_d 
+      assert "defp" in result_d
+      assert "do" in result_d
+      
+      result_def = Input.example_completion_callback("def")
+      assert "def" in result_def
+      assert "defmodule" in result_def
+      assert "defp" in result_def
+      
+      assert Input.example_completion_callback("xyz") == []
+    end
   end
 
   describe "mouse event handling" do

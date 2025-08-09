@@ -111,11 +111,12 @@ defmodule Raxol.Plugins.EventHandler.Common do
   @spec update_manager_plugin(Core.t(), plugin(), plugin()) :: Core.t()
   def update_manager_plugin(manager, _old_plugin, updated_plugin) do
     plugin_name = normalize_plugin_key(updated_plugin.name)
-    
+
     %{
       manager
       | plugins: Map.put(manager.plugins, plugin_name, updated_plugin),
-        loaded_plugins: Map.put(manager.loaded_plugins, plugin_name, updated_plugin)
+        loaded_plugins:
+          Map.put(manager.loaded_plugins, plugin_name, updated_plugin)
     }
   end
 

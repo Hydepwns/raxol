@@ -213,7 +213,6 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
       row < buffer.height and col < buffer.width
   end
 
-
   @doc """
   Inserts a specified number of characters at the given position.
   Characters to the right of the insertion point are shifted right.
