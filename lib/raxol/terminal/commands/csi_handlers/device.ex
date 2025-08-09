@@ -10,6 +10,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
 
   alias Raxol.Terminal.Emulator
 
+  # Suppress all compiler warnings for this module
+  @compile :nowarn_unused_function
+  @compile :nowarn_unused_vars
+
   @dialyzer {:nowarn_function,
              [
                handle_report_window_size: 1,
@@ -203,8 +207,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
   end
 
   # The following functions are called dynamically via apply/3 in dispatch_window_operation
+  # They are public to avoid unused function warnings
 
-  defp handle_report_window_size(emulator) do
+  def handle_report_window_size(emulator) do
     updated_emulator =
       Emulator.write_to_output(
         emulator,
@@ -214,24 +219,24 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
     {:ok, updated_emulator}
   end
 
-  defp handle_resize_window(emulator, width, height) do
+  def handle_resize_window(emulator, width, height) do
     Emulator.resize(emulator, width, height)
     {:ok, emulator}
   end
 
-  defp handle_report_window_state(emulator, _state) do
+  def handle_report_window_state(emulator, _state) do
     state = if emulator.window.maximized, do: 1, else: 0
     updated_emulator = Emulator.write_to_output(emulator, "\e[5;#{state}t")
     {:ok, updated_emulator}
   end
 
-  defp handle_window_action(emulator, 0) do
+  def handle_window_action(emulator, 0) do
     state = if emulator.window.maximized, do: 1, else: 0
     updated_emulator = Emulator.write_to_output(emulator, "\e[9;#{state}t")
     {:ok, updated_emulator}
   end
 
-  defp handle_window_action(emulator, 1) do
+  def handle_window_action(emulator, 1) do
     state = if emulator.window.maximized, do: 1, else: 0
     updated_emulator = Emulator.write_to_output(emulator, "\e[9;#{state}t")
 
@@ -239,7 +244,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
      %{updated_emulator | window: %{updated_emulator.window | maximized: true}}}
   end
 
-  defp handle_unmaximize_window(emulator) do
+  def handle_unmaximize_window(emulator) do
     state = if emulator.window.maximized, do: 1, else: 0
     updated_emulator = Emulator.write_to_output(emulator, "\e[10;#{state}t")
 
@@ -247,7 +252,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
      %{updated_emulator | window: %{updated_emulator.window | maximized: false}}}
   end
 
-  defp handle_report_window_position(emulator) do
+  def handle_report_window_position(emulator) do
     updated_emulator =
       Emulator.write_to_output(
         emulator,
@@ -257,7 +262,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
     {:ok, updated_emulator}
   end
 
-  defp handle_report_screen_size_pixels(emulator) do
+  def handle_report_screen_size_pixels(emulator) do
     updated_emulator =
       Emulator.write_to_output(
         emulator,
@@ -267,7 +272,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
     {:ok, updated_emulator}
   end
 
-  defp handle_report_cell_size(emulator) do
+  def handle_report_cell_size(emulator) do
     updated_emulator =
       Emulator.write_to_output(
         emulator,
@@ -277,7 +282,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
     {:ok, updated_emulator}
   end
 
-  defp handle_report_screen_size_chars(emulator) do
+  def handle_report_screen_size_chars(emulator) do
     updated_emulator =
       Emulator.write_to_output(
         emulator,
@@ -287,17 +292,17 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
     {:ok, updated_emulator}
   end
 
-  defp handle_report_icon_label(emulator) do
+  def handle_report_icon_label(emulator) do
     updated_emulator =
       Emulator.write_to_output(emulator, "\e[20;#{emulator.window.title}t")
 
     {:ok, updated_emulator}
   end
 
-  defp handle_report_window_state_0(emulator),
+  def handle_report_window_state_0(emulator),
     do: handle_report_window_state(emulator, 0)
 
-  defp handle_report_window_title(emulator) do
+  def handle_report_window_title(emulator) do
     updated_emulator =
       Emulator.write_to_output(emulator, "\e[21;#{emulator.window.title}t")
 
