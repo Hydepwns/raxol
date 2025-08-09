@@ -88,8 +88,8 @@ bench/results/
 *.ez
 *.iml
 .vscode/
-themes/working_version.json
-themes/staged_version.json
+priv/themes/working_version.json
+priv/themes/staged_version.json
 
 # Editor / Development Artifacts
 preferences.json
@@ -98,3 +98,13 @@ preferences.json
 docs/search-index.json
 tmp/eviction_debug.log
 last_test_output.txt
+
+# Benchmark artifacts
+bench/output/
+bench/results/**/*.benchee
+bench/results/**/*_summary.json
+bench/snapshots/
+
+# Claude AI artifacts
+.claude/
+# CLAUDE.md 
