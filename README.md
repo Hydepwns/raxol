@@ -62,7 +62,7 @@ Raxol is a **full-stack terminal application framework** that enables developers
 
 ## Installation
 
-See [Installation Guide](docs/DEVELOPMENT.md#installation) for detailed setup instructions including:
+See [Installation Guide](docs/DEVELOPMENT.md#quick-setup) for detailed setup instructions including:
 
 - Nix development environment (recommended)
 - Manual installation steps
@@ -183,19 +183,19 @@ Raxol follows a layered, modular architecture designed for extensibility and per
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    Applications                         │
-│         (User TUI Apps, Plugins, Extensions)           │
+│         (User TUI Apps, Plugins, Extensions)            │
 ├─────────────────────────────────────────────────────────┤
 │                  UI Framework Layer                     │
-│    (Components, Layouts, Themes, Event System)         │
+│    (Components, Layouts, Themes, Event System)          │
 ├─────────────────────────────────────────────────────────┤
 │                   Web Interface Layer                   │
-│    (Phoenix LiveView, WebSockets, Auth, API)          │
+│      (Phoenix LiveView, WebSockets, Auth, API)          │
 ├─────────────────────────────────────────────────────────┤
 │                Terminal Emulator Core                   │
-│  (ANSI Parser, Buffer Manager, Input Handler)          │
+│   (ANSI Parser, Buffer Manager, Input Handler)          │
 ├─────────────────────────────────────────────────────────┤
 │                  Platform Services                      │
-│ (Plugins, Config, Metrics, Security, Persistence)      │
+│  (Plugins, Config, Metrics, Security, Persistence)      │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -297,17 +297,13 @@ end
 
 Comprehensive documentation and guides:
 
-- [Installation Guide](docs/DEVELOPMENT.md#installation)
+- [Installation Guide](docs/DEVELOPMENT.md#quick-setup)
 - [Component Reference](docs/components/README.md)
 - [Terminal Emulator Guide](examples/guides/02_core_concepts/terminal_emulator.md)
-- [Web Interface Guide](examples/guides/03_web_interface/web_terminal.md)
 - [Plugin Development](examples/guides/04_extending_raxol/plugin_development.md)
+- [Enterprise Features](examples/guides/06_enterprise/README.md)
 - [API Documentation](https://hexdocs.pm/raxol/0.8.0)
 - [Example Applications](examples/)
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ### Development Setup
 
@@ -333,6 +329,4 @@ MIT License - see [LICENSE.md](LICENSE.md)
 ## Support
 
 - [Documentation Hub](docs/CONSOLIDATED_README.md)
-- [GitHub Issues](https://github.com/Hydepwns/raxol/issues)
-- [Discussions](https://github.com/Hydepwns/raxol/discussions)
 - [Hex.pm Package](https://hex.pm/packages/raxol)

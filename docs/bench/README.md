@@ -273,5 +273,5 @@ When adding new features:
 ## Resources
 
 - [Benchee Documentation](https://hexdocs.pm/benchee)
-- [Performance Best Practices](../docs/PERFORMANCE.md)
-- [Optimization Guide](../docs/OPTIMIZATION.md)
+- [Performance Monitoring](../../examples/guides/05_development_and_testing/development/planning/performance/PerformanceMonitoring.md)
+- [Performance Optimization](../../examples/guides/05_development_and_testing/development/planning/performance/PerformanceOptimization.md)

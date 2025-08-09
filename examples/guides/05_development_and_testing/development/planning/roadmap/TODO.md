@@ -1,13 +1,21 @@
 ---
-title: TODO List
-description: List of pending tasks and improvements for Raxol Terminal Emulator
-date: 2025-05-10
+title: TODO List (DEPRECATED)
+description: This file has been deprecated - see root TODO.md for current roadmap
+date: 2025-08-09
 author: Raxol Team
 section: roadmap
-tags: [roadmap, todo, tasks]
+tags: [roadmap, todo, tasks, deprecated]
 ---
 
-# Raxol Project Roadmap
+# ⚠️ DEPRECATED - This TODO file is no longer maintained
+
+**Please refer to the main project TODO at `/TODO.md` for the current roadmap and task tracking.**
+
+This file has been kept for historical reference only. All active tasks and updates have been consolidated into the main TODO.md file in the project root.
+
+---
+
+# Raxol Project Roadmap (Historical - Last Updated 2025-05-10)
 
 ## Documentation (Ongoing)
 

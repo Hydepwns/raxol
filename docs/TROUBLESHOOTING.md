@@ -384,5 +384,5 @@ Include:
 ### Resources
 
 - [Development Guide](DEVELOPMENT.md) - Setup and workflow
-- [Nix Troubleshooting](NIX_TROUBLESHOOTING.md) - Nix-specific issues
+- [Nix Troubleshooting](DEVELOPMENT.md#nix-cache-issues) - Nix-specific issues
 - [GitHub Issues](https://github.com/Hydepwns/raxol/issues)
