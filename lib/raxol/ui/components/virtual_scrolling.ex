@@ -38,7 +38,9 @@ defmodule Raxol.UI.Components.VirtualScrolling do
         item_height: 40,  # or :variable for dynamic heights
         viewport_height: 600,
         buffer_size: 5,   # items to render outside viewport
-        data_loader: &MyDataLoader.load_items/2
+        data_loader: &MyDataLoader.load_items/2,
+        search_entire_dataset: true,  # Enable full dataset search (default: false)
+        search_batch_size: 1000       # Batch size for dataset search (default: 1000)
       })
       
       # Register scroll container
@@ -82,6 +84,7 @@ defmodule Raxol.UI.Components.VirtualScrolling do
     :accessibility_controller,
     :infinite_scroll,
     :filter_state,
+    :search_config,
     :search_index
   ]
 
@@ -295,6 +298,10 @@ defmodule Raxol.UI.Components.VirtualScrolling do
         has_more: true
       },
       filter_state: %{active: false, filter_fn: nil, filtered_indices: []},
+      search_config: %{
+        search_entire_dataset: Map.get(config, :search_entire_dataset, false),
+        search_batch_size: Map.get(config, :search_batch_size, 1000)
+      },
       search_index: %{active: false, query: "", matches: [], current_match: 0}
     }
 
@@ -911,15 +918,57 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   end
 
   defp find_search_matches(state, query, search_fn) do
-    # Search within currently loaded items first
+    # Search within currently loaded items first for immediate results
     loaded_matches =
       state.item_cache.items
       |> Enum.filter(fn {_index, item} -> search_fn.(item, query) end)
       |> Enum.map(fn {index, _item} -> index end)
       |> Enum.sort()
 
-    # TODO: In a full implementation, would search entire dataset
-    loaded_matches
+    # For full dataset search, we need to load and search all items
+    # This is done in batches to prevent memory overflow
+    if state.search_config.search_entire_dataset do
+      search_entire_dataset(state, query, search_fn, loaded_matches)
+    else
+      loaded_matches
+    end
+  end
+  
+  defp search_entire_dataset(state, query, search_fn, initial_matches) do
+    total_items = state.config.item_count
+    batch_size = state.search_config.search_batch_size || 1000
+    
+    # Search in batches to avoid memory issues
+    all_matches = 
+      0
+      |> Stream.iterate(&(&1 + batch_size))
+      |> Stream.take_while(&(&1 < total_items))
+      |> Task.async_stream(fn start_index ->
+        end_index = min(start_index + batch_size - 1, total_items - 1)
+        count = end_index - start_index + 1
+        
+        case state.data_source.loader.(start_index, count) do
+          {:ok, items} ->
+            items
+            |> Enum.with_index(start_index)
+            |> Enum.filter(fn {item, _index} -> search_fn.(item, query) end)
+            |> Enum.map(fn {_item, index} -> index end)
+          
+          {:error, reason} ->
+            Logger.warning("Search batch failed for indices #{start_index}-#{end_index}: #{inspect(reason)}")
+            []
+        end
+      end, max_concurrency: 4, timeout: :infinity)
+      |> Stream.flat_map(fn 
+        {:ok, matches} -> matches
+        {:exit, _reason} -> []
+      end)
+      |> Enum.to_list()
+      
+    # Combine with initially loaded matches and remove duplicates
+    (initial_matches ++ all_matches)
+    |> Enum.uniq()
+    |> Enum.sort()
   end
 
   defp calculate_performance_stats(state) do

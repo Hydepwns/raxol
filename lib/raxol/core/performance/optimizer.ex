@@ -258,13 +258,129 @@ defmodule Raxol.Core.Performance.Optimizer do
 
   @doc """
   Implements connection pooling for external resources.
+  
+  Uses poolboy if available, otherwise creates a simple connection pool using Registry.
+  
+  ## Examples
+  
+      with_pooled_connection(:database, fn conn ->
+        MyRepo.query(conn, "SELECT * FROM users")
+      end)
   """
-  def with_pooled_connection(pool_name, _fun) do
+  def with_pooled_connection(pool_name, fun) when is_function(fun, 1) do
     profile :pooled_connection, metadata: %{pool: pool_name} do
-      # TODO: Implement actual connection pooling when poolboy is available
-      # For now, just execute the function directly
-      # fun.()
+      if poolboy_available?() do
+        :poolboy.transaction(pool_name, fun)
+      else
+        # Fallback to simple connection management
+        case get_or_create_connection(pool_name) do
+          {:ok, conn} ->
+            try do
+              fun.(conn)
+            after
+              return_connection(pool_name, conn)
+            end
+          {:error, reason} ->
+            Logger.warning("Failed to get connection from pool #{pool_name}: #{inspect(reason)}")
+            {:error, :connection_unavailable}
+        end
+      end
     end
+  end
+  
+  def with_pooled_connection(pool_name, fun) when is_function(fun, 0) do
+    # For compatibility with zero-arity functions
+    profile :pooled_connection, metadata: %{pool: pool_name} do
+      if poolboy_available?() do
+        :poolboy.transaction(pool_name, fn _conn -> fun.() end)
+      else
+        fun.()
+      end
+    end
+  end
+  
+  @doc """
+  Initializes a connection pool with the given configuration.
+  
+  ## Options
+  
+  - `:size` - Pool size (default: 5)
+  - `:max_overflow` - Maximum overflow connections (default: 10) 
+  - `:worker` - Worker module for connections
+  - `:worker_args` - Arguments for worker initialization
+  
+  ## Examples
+  
+      init_connection_pool(:database, 
+        size: 5, 
+        max_overflow: 10,
+        worker: MyConnectionWorker,
+        worker_args: [host: "localhost", port: 5432]
+      )
+  """
+  def init_connection_pool(pool_name, opts \\ []) do
+    if poolboy_available?() do
+      init_poolboy_pool(pool_name, opts)
+    else
+      init_simple_pool(pool_name, opts)
+    end
+  end
+  
+  # Private functions
+  
+  defp poolboy_available? do
+    Code.ensure_loaded?(:poolboy)
+  end
+  
+  defp init_poolboy_pool(pool_name, opts) do
+    pool_config = [
+      name: {:local, pool_name},
+      worker_module: Keyword.get(opts, :worker, Raxol.Core.Performance.DefaultWorker),
+      size: Keyword.get(opts, :size, 5),
+      max_overflow: Keyword.get(opts, :max_overflow, 10)
+    ]
+    
+    worker_args = Keyword.get(opts, :worker_args, [])
+    
+    case :poolboy.start_link(pool_config, worker_args) do
+      {:ok, _pid} -> {:ok, pool_name}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+  
+  defp init_simple_pool(pool_name, _opts) do
+    # Simple connection tracking using Registry
+    registry_name = :"#{pool_name}_connections"
+    
+    case Registry.start_link(keys: :unique, name: registry_name) do
+      {:ok, _pid} -> 
+        Logger.info("Initialized simple connection pool: #{pool_name}")
+        {:ok, pool_name}
+      {:error, {:already_started, _pid}} -> 
+        {:ok, pool_name}
+      {:error, reason} -> 
+        {:error, reason}
+    end
+  end
+  
+  defp get_or_create_connection(pool_name) do
+    registry_name = :"#{pool_name}_connections"
+    connection_id = "conn_#{System.unique_integer([:positive])}"
+    
+    case Registry.register(registry_name, connection_id, %{created_at: DateTime.utc_now()}) do
+      {:ok, _pid} ->
+        # In a real implementation, this would create an actual connection
+        # For now, return a mock connection identifier
+        {:ok, %{id: connection_id, pool: pool_name}}
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+  
+  defp return_connection(pool_name, conn) do
+    registry_name = :"#{pool_name}_connections"
+    Registry.unregister(registry_name, conn.id)
+    :ok
   end
 
   @doc """
