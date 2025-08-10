@@ -1,0 +1,308 @@
+{
+  "Raxol Component": {
+    "prefix": "defcomponent",
+    "body": [
+      "defmodule ${1:ComponentName} do",
+      "  use Raxol.Component",
+      "",
+      "  def init(props) do",
+      "    {",
+      "      :ok,",
+      "      %{",
+      "        ${2:state_key}: ${3:default_value}",
+      "      }",
+      "    }",
+      "  end",
+      "",
+      "  def render(props, state) do",
+      "    ~R\"\"\"",
+      "    ${4:<!-- Component content -->}",
+      "    \"\"\"",
+      "  end",
+      "",
+      "  def update(${5:action}, state) do",
+      "    case ${5:action} do",
+      "      ${6:pattern} ->",
+      "        {:ok, %{state | ${7:key}: ${8:new_value}}}",
+      "    end",
+      "  end",
+      "end"
+    ],
+    "description": "Create a new Raxol component"
+  },
+
+  "Raxol Text Component": {
+    "prefix": "rtext",
+    "body": [
+      "Text.render(",
+      "  content: \"${1:text content}\",",
+      "  style: %{",
+      "    color: :${2:white},",
+      "    bold: ${3:false}",
+      "  }",
+      ")"
+    ],
+    "description": "Raxol Text component"
+  },
+
+  "Raxol Button Component": {
+    "prefix": "rbutton",
+    "body": [
+      "Button.render(",
+      "  label: \"${1:Click Me}\",",
+      "  variant: :${2:primary},",
+      "  on_click: ${3:&handle_click/1}",
+      ")"
+    ],
+    "description": "Raxol Button component"
+  },
+
+  "Raxol Input Component": {
+    "prefix": "rinput",
+    "body": [
+      "TextInput.render(",
+      "  value: ${1:state.value},",
+      "  placeholder: \"${2:Enter text...}\",",
+      "  on_change: ${3:&handle_input/1}",
+      ")"
+    ],
+    "description": "Raxol TextInput component"
+  },
+
+  "Raxol Box Layout": {
+    "prefix": "rbox",
+    "body": [
+      "Box.render(",
+      "  width: ${1:40},",
+      "  height: ${2:10},",
+      "  border: :${3:single},",
+      "  title: \"${4:Box Title}\"",
+      ") do",
+      "  ${5:# Content}",
+      "end"
+    ],
+    "description": "Raxol Box layout component"
+  },
+
+  "Raxol Flex Layout": {
+    "prefix": "rflex",
+    "body": [
+      "Flex.render(",
+      "  direction: :${1:horizontal},",
+      "  gap: ${2:2},",
+      "  align: :${3:center}",
+      ") do",
+      "  [",
+      "    ${4:# Flex items}",
+      "  ]",
+      "end"
+    ],
+    "description": "Raxol Flex layout component"
+  },
+
+  "Raxol Event Handler": {
+    "prefix": "revent",
+    "body": [
+      "def handle_event(\"${1:event_name}\", ${2:params}, state) do",
+      "  ${3:# Handle event}",
+      "  {:ok, ${4:new_state}}",
+      "end"
+    ],
+    "description": "Raxol event handler function"
+  },
+
+  "Raxol State Update": {
+    "prefix": "rupdate",
+    "body": [
+      "def update(${1:action}, state) do",
+      "  case ${1:action} do",
+      "    {:${2:action_type}, ${3:value}} ->",
+      "      {:ok, %{state | ${4:key}: ${3:value}}}",
+      "",
+      "    _ ->",
+      "      {:ok, state}",
+      "  end",
+      "end"
+    ],
+    "description": "Raxol state update function"
+  },
+
+  "Raxol Props Validation": {
+    "prefix": "rprops",
+    "body": [
+      "def validate_props(props) do",
+      "  with {:ok, ${1:prop}} <- validate_${1:prop}(props[:${1:prop}]) do",
+      "    {:ok, props}",
+      "  else",
+      "    {:error, reason} -> {:error, \"Invalid ${1:prop}: #{reason}\"}",
+      "  end",
+      "end",
+      "",
+      "defp validate_${1:prop}(${2:value}) when ${3:guard} do",
+      "  {:ok, ${2:value}}",
+      "end",
+      "",
+      "defp validate_${1:prop}(${4:invalid}) do",
+      "  {:error, \"Expected ${5:description}, got #{inspect(${4:invalid})}\"}",
+      "end"
+    ],
+    "description": "Raxol props validation functions"
+  },
+
+  "Raxol Terminal Application": {
+    "prefix": "rtermapp",
+    "body": [
+      "defmodule ${1:AppName} do",
+      "  use Raxol.Terminal",
+      "",
+      "  def start do",
+      "    Raxol.Terminal.start_link(__MODULE__, %{})",
+      "  end",
+      "",
+      "  def init(_args) do",
+      "    {",
+      "      :ok,",
+      "      %{",
+      "        current_screen: :${2:main},",
+      "        ${3:state_key}: ${4:initial_value}",
+      "      }",
+      "    }",
+      "  end",
+      "",
+      "  def render(state) do",
+      "    case state.current_screen do",
+      "      :${2:main} ->",
+      "        render_${2:main}(state)",
+      "    end",
+      "  end",
+      "",
+      "  defp render_${2:main}(state) do",
+      "    ~R\"\"\"",
+      "    ${5:<!-- Main screen content -->}",
+      "    \"\"\"",
+      "  end",
+      "end"
+    ],
+    "description": "Raxol Terminal Application"
+  },
+
+  "Raxol Screen": {
+    "prefix": "rscreen",
+    "body": [
+      "def render_${1:screen_name}(state) do",
+      "  ~R\"\"\"",
+      "  <Box title=\"${2:Screen Title}\" width={${3:80}} height={${4:24}}>",
+      "    ${5:<!-- Screen content -->}",
+      "  </Box>",
+      "  \"\"\"",
+      "end"
+    ],
+    "description": "Raxol screen render function"
+  },
+
+  "Raxol Style Map": {
+    "prefix": "rstyle",
+    "body": [
+      "%{",
+      "  color: :${1:white},",
+      "  background: :${2:black},",
+      "  bold: ${3:false},",
+      "  italic: ${4:false},",
+      "  underline: ${5:false}",
+      "}"
+    ],
+    "description": "Raxol style map"
+  },
+
+  "Raxol ANSI Escape": {
+    "prefix": "ransi",
+    "body": [
+      "\"#{IO.ANSI.${1:color}()}${2:text}#{IO.ANSI.reset()}\""
+    ],
+    "description": "ANSI escape sequence"
+  },
+
+  "Raxol Test Case": {
+    "prefix": "rtest",
+    "body": [
+      "defmodule ${1:ComponentName}Test do",
+      "  use ExUnit.Case, async: true",
+      "  alias ${2:ModuleName}.${1:ComponentName}",
+      "",
+      "  describe \"${3:functionality}\" do",
+      "    test \"${4:test description}\" do",
+      "      props = %{${5:test_prop}: ${6:test_value}}",
+      "      {:ok, state} = ${1:ComponentName}.init(props)",
+      "",
+      "      result = ${1:ComponentName}.render(props, state)",
+      "",
+      "      assert ${7:assertion}",
+      "    end",
+      "  end",
+      "end"
+    ],
+    "description": "Raxol component test"
+  },
+
+  "Raxol Mock Component": {
+    "prefix": "rmock",
+    "body": [
+      "defmodule Mock${1:ComponentName} do",
+      "  def render(props, _state \\\\%{}) do",
+      "    \"${2:Mock output for #{inspect(props)}}\"",
+      "  end",
+      "",
+      "  def init(_props) do",
+      "    {:ok, %{}}",
+      "  end",
+      "",
+      "  def update(_action, state) do",
+      "    {:ok, state}",
+      "  end",
+      "end"
+    ],
+    "description": "Raxol mock component for testing"
+  },
+
+  "Raxol GenServer Component": {
+    "prefix": "rgenserver",
+    "body": [
+      "defmodule ${1:ComponentName} do",
+      "  use GenServer",
+      "  use Raxol.Component",
+      "",
+      "  # Client API",
+      "",
+      "  def start_link(opts) do",
+      "    GenServer.start_link(__MODULE__, opts, name: __MODULE__)",
+      "  end",
+      "",
+      "  def ${2:client_function}(${3:args}) do",
+      "    GenServer.call(__MODULE__, {:${2:client_function}, ${3:args}})",
+      "  end",
+      "",
+      "  # Server Callbacks",
+      "",
+      "  @impl true",
+      "  def init(opts) do",
+      "    {:ok, %{${4:initial_state}}}",
+      "  end",
+      "",
+      "  @impl true",
+      "  def handle_call({:${2:client_function}, ${3:args}}, _from, state) do",
+      "    ${5:# Handle the call}",
+      "    {:reply, ${6:reply}, ${7:new_state}}",
+      "  end",
+      "",
+      "  # Component Callbacks",
+      "",
+      "  def render(props, state) do",
+      "    ~R\"\"\"",
+      "    ${8:<!-- Component content -->}",
+      "    \"\"\"",
+      "  end",
+      "end"
+    ],
+    "description": "Raxol GenServer-based component"
+  }
+}
