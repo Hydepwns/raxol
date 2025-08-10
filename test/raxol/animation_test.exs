@@ -667,13 +667,23 @@ defmodule Raxol.AnimationTest do
         wait_for_animation_start(element_id, animation.name)
 
         # Manually advance animation time to ensure completion
-        instance = get_in(StateManager.get_active_animations(), [element_id, animation.name])
+        instance =
+          get_in(StateManager.get_active_animations(), [
+            element_id,
+            animation.name
+          ])
+
         if instance do
           updated_instance = %{
             instance
             | start_time: instance.start_time - (animation.duration + 1)
           }
-          StateManager.put_active_animation(element_id, animation.name, updated_instance)
+
+          StateManager.put_active_animation(
+            element_id,
+            animation.name,
+            updated_instance
+          )
         end
 
         # Apply animations to ensure completion

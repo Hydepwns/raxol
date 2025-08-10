@@ -5,8 +5,12 @@ defmodule Raxol.Core.Runtime.CommandTest do
   """
   use ExUnit.Case, async: false
   alias Raxol.Core.Runtime.Command
+
   setup do
-    temp_dir = System.tmp_dir!() |> Path.join("raxol_test_#{:os.system_time(:nanosecond)}")
+    temp_dir =
+      System.tmp_dir!()
+      |> Path.join("raxol_test_#{:os.system_time(:nanosecond)}")
+
     File.mkdir_p!(temp_dir)
     on_exit(fn -> File.rm_rf!(temp_dir) end)
     {:ok, temp_dir: temp_dir}

@@ -5,13 +5,19 @@ defmodule Raxol.Benchmark.RunnerTest do
 
   describe "benchmark runner" do
     test "can run a simple benchmark" do
-      result = Runner.run_single("test operation", fn -> 
-        Enum.sum(1..100)
-      end, time: 0.1, warmup: 0.1)
-      
+      result =
+        Runner.run_single(
+          "test operation",
+          fn ->
+            Enum.sum(1..100)
+          end,
+          time: 0.1,
+          warmup: 0.1
+        )
+
       assert result.scenarios
       assert length(result.scenarios) > 0
-      
+
       scenario = hd(result.scenarios)
       assert scenario.name == "test operation"
       assert scenario.run_time_data.statistics.average > 0
@@ -26,9 +32,9 @@ defmodule Raxol.Benchmark.RunnerTest do
         },
         options: [time: 0.1, warmup: 0.1]
       }
-      
+
       result = Runner.run_suite(suite)
-      
+
       assert result.suite_name == "Test Suite"
       assert result.results
       assert result.duration >= 0
@@ -38,7 +44,7 @@ defmodule Raxol.Benchmark.RunnerTest do
     test "can profile an operation" do
       # Ensure module is loaded
       Code.ensure_loaded?(Runner)
-      
+
       # For now, just verify the function exists (with default args, it's exported as arity 3)
       assert function_exported?(Runner, :profile, 3)
     end
@@ -48,9 +54,9 @@ defmodule Raxol.Benchmark.RunnerTest do
     test "can analyze benchmark results" do
       # Create mock results
       results = [create_mock_result()]
-      
+
       analysis = Analyzer.analyze(results)
-      
+
       assert analysis.summary
       assert analysis.statistics
       assert is_list(analysis.recommendations)
@@ -58,7 +64,7 @@ defmodule Raxol.Benchmark.RunnerTest do
 
     test "can detect regressions" do
       results = [create_mock_result()]
-      
+
       # Without baseline, should return empty list
       regressions = Analyzer.check_regressions(results)
       assert regressions == []
@@ -74,15 +80,16 @@ defmodule Raxol.Benchmark.RunnerTest do
   describe "reporter" do
     test "can generate console report" do
       results = [create_mock_result()]
-      
+
       # Should not raise
-      assert Reporter.generate_comprehensive_report(results, format: :console) == :ok
+      assert Reporter.generate_comprehensive_report(results, format: :console) ==
+               :ok
     end
 
     test "can compile report data" do
       # Ensure module is loaded
       Code.ensure_loaded?(Reporter)
-      
+
       # Verify the module exists and has expected functions
       assert function_exported?(Reporter, :generate_comprehensive_report, 1)
       assert function_exported?(Reporter, :generate_comprehensive_report, 2)

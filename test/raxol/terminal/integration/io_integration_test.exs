@@ -12,7 +12,8 @@ defmodule Raxol.Terminal.Integration.IOIntegrationTest do
     {:ok, _unified_io_pid} = Raxol.Terminal.IO.UnifiedIO.start_link()
 
     # Start the UnifiedWindow process
-    {:ok, _unified_window_pid} = Raxol.Terminal.Window.UnifiedWindow.start_link()
+    {:ok, _unified_window_pid} =
+      Raxol.Terminal.Window.UnifiedWindow.start_link()
 
     # Start the main integration module
     {:ok, pid} = Main.start_link(%{})

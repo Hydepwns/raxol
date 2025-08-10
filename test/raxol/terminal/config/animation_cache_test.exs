@@ -130,13 +130,14 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
 
       # Verify cache handling - large item may be evicted due to size limits
       case AnimationCache.get_cached_animation("large_anim") do
-        {:ok, cached_large} -> 
+        {:ok, cached_large} ->
           assert cached_large == large_data
-        {:error, :not_found} -> 
+
+        {:error, :not_found} ->
           # Large item was evicted due to size limits - this is expected behavior
           :ok
       end
-      
+
       # Small animation should still be retrievable
       {:ok, cached_small} = AnimationCache.get_cached_animation("small_anim")
       assert cached_small == animation_data
@@ -147,7 +148,7 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
     test "tracks cache statistics", %{animation_data: animation_data} do
       # Get initial stats
       {:ok, initial_stats} = AnimationCache.get_animation_cache_stats()
-      
+
       # Cache some animations
       :ok = AnimationCache.cache_animation_data("anim1", animation_data)
       :ok = AnimationCache.cache_animation_data("anim2", animation_data)
@@ -166,7 +167,7 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
       # Check the delta - we expect 8 hits
       hit_delta = stats.hit_count - initial_stats.hit_count
       miss_delta = stats.miss_count - initial_stats.miss_count
-      
+
       assert hit_delta == 8
       assert miss_delta == 0
     end
@@ -174,7 +175,7 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
     test "tracks cache misses", %{animation_data: animation_data} do
       # Get initial stats
       {:ok, initial_stats} = AnimationCache.get_animation_cache_stats()
-      
+
       # Try to get non-existent animations
       for _ <- 1..3 do
         AnimationCache.get_cached_animation("nonexistent")
@@ -188,7 +189,7 @@ defmodule Raxol.Terminal.Config.AnimationCacheTest do
       # Check the delta - we expect 3 misses
       miss_delta = stats.miss_count - initial_stats.miss_count
       hit_delta = stats.hit_count - initial_stats.hit_count
-      
+
       assert miss_delta == 3
       assert hit_delta == 0
     end

@@ -18,25 +18,38 @@ defmodule Raxol.Terminal.EmulatorPluginLifecycleTest do
 
     :ok = Manager.initialize()
     emulator = Emulator.new(80, 24)
+
     on_exit(fn ->
       # Safely delete ETS table if it exists
       try do
         :ets.delete(:test_command_registry)
       catch
-        :error, :badarg -> :ok  # Table doesn't exist
+        # Table doesn't exist
+        :error, :badarg -> :ok
       end
     end)
+
     {:ok, %{emulator: emulator}}
   end
 
   describe "plugin lifecycle" do
     test "loads and enables a plugin", %{emulator: _emulator} do
-      assert :ok = Manager.load_plugin_by_module(Raxol.Test.MockPlugins.MockDependencyPlugin, %{})
+      assert :ok =
+               Manager.load_plugin_by_module(
+                 Raxol.Test.MockPlugins.MockDependencyPlugin,
+                 %{}
+               )
+
       assert :ok = Manager.enable_plugin("mock_dependency_plugin")
     end
 
     test "disables and reloads a plugin", %{emulator: _emulator} do
-      assert :ok = Manager.load_plugin_by_module(Raxol.Test.MockPlugins.MockDependencyPlugin, %{})
+      assert :ok =
+               Manager.load_plugin_by_module(
+                 Raxol.Test.MockPlugins.MockDependencyPlugin,
+                 %{}
+               )
+
       assert :ok = Manager.disable_plugin("mock_dependency_plugin")
       assert :ok = Manager.reload_plugin("mock_dependency_plugin")
     end
@@ -44,12 +57,20 @@ defmodule Raxol.Terminal.EmulatorPluginLifecycleTest do
     test "handles plugin init crash gracefully", %{emulator: _emulator} do
       assert match?(
                {:error, _},
-               Manager.load_plugin_by_module(Raxol.Test.MockPlugins.MockOnInitCrashPlugin, %{})
+               Manager.load_plugin_by_module(
+                 Raxol.Test.MockPlugins.MockOnInitCrashPlugin,
+                 %{}
+               )
              )
     end
 
     test "handles plugin terminate crash gracefully", %{emulator: _emulator} do
-      assert :ok = Manager.load_plugin_by_module(Raxol.Test.MockPlugins.MockOnTerminateCrashPlugin, %{})
+      assert :ok =
+               Manager.load_plugin_by_module(
+                 Raxol.Test.MockPlugins.MockOnTerminateCrashPlugin,
+                 %{}
+               )
+
       # Trigger plugin termination (unload or reload)
       result = Manager.reload_plugin("mock_on_terminate_crash_plugin")
 

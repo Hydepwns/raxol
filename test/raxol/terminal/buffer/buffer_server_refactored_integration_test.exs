@@ -115,9 +115,18 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       :ok =
         BufferServerRefactored.atomic_operation(pid, fn buffer ->
           buffer
-          |> Raxol.Terminal.ScreenBuffer.write_char(0, 0, "A", %{foreground: 7, background: 0})
-          |> Raxol.Terminal.ScreenBuffer.write_char(1, 0, "B", %{foreground: 7, background: 0})
-          |> Raxol.Terminal.ScreenBuffer.write_char(2, 0, "C", %{foreground: 7, background: 0})
+          |> Raxol.Terminal.ScreenBuffer.write_char(0, 0, "A", %{
+            foreground: 7,
+            background: 0
+          })
+          |> Raxol.Terminal.ScreenBuffer.write_char(1, 0, "B", %{
+            foreground: 7,
+            background: 0
+          })
+          |> Raxol.Terminal.ScreenBuffer.write_char(2, 0, "C", %{
+            foreground: 7,
+            background: 0
+          })
         end)
 
       # Verify all cells were set atomically
@@ -313,10 +322,10 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       # Create tasks that read and write concurrently
       read_tasks =
         for _ <- 1..5 do
-                  Task.async(fn ->
-          {:ok, cell} = BufferServerRefactored.get_cell(pid, 0, 0)
-          Cell.get_char(cell)
-        end)
+          Task.async(fn ->
+            {:ok, cell} = BufferServerRefactored.get_cell(pid, 0, 0)
+            Cell.get_char(cell)
+          end)
         end
 
       write_tasks =

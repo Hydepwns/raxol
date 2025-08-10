@@ -15,7 +15,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
     unless Process.whereis(Raxol.Core.UserPreferences) do
       start_supervised!({Raxol.Core.UserPreferences, [test_mode?: true]})
     end
-    
+
     # Initialize event manager for tests
     EventManager.init()
 

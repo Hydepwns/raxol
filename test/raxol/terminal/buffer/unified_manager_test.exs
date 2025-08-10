@@ -75,7 +75,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
     end
 
     test "returns cached cell after set", %{pid: pid} do
-      cell = %Cell{char: "A", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})}
+      cell = %Cell{
+        char: "A",
+        style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})
+      }
+
       {:ok, _} = UnifiedManager.set_cell(pid, 0, 0, cell)
       {:ok, retrieved_cell} = UnifiedManager.get_cell(pid, 0, 0)
       assert retrieved_cell == cell
@@ -83,7 +87,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
 
     test "handles concurrent access", %{pid: pid} do
       # Set a cell
-      cell = %Cell{char: "A", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})}
+      cell = %Cell{
+        char: "A",
+        style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})
+      }
+
       {:ok, _} = UnifiedManager.set_cell(pid, 0, 0, cell)
 
       # Concurrent reads
@@ -102,7 +110,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
 
   describe "set_cell/4" do
     test "sets cell and invalidates cache", %{pid: pid} do
-      cell = %Cell{char: "A", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red, background: :blue})}
+      cell = %Cell{
+        char: "A",
+        style:
+          Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+            foreground: :red,
+            background: :blue
+          })
+      }
+
       {:ok, _new_state} = UnifiedManager.set_cell(pid, 0, 0, cell)
       {:ok, retrieved_cell} = UnifiedManager.get_cell(pid, 0, 0)
       assert retrieved_cell == cell
@@ -111,7 +127,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
 
   describe "fill_region/6" do
     test "fills region with cell", %{pid: pid} do
-      cell = %Cell{char: "X", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red, background: :blue})}
+      cell = %Cell{
+        char: "X",
+        style:
+          Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+            foreground: :red,
+            background: :blue
+          })
+      }
+
       {:ok, _new_state} = UnifiedManager.fill_region(pid, 0, 0, 5, 5, cell)
 
       # Check all cells in region
@@ -125,8 +149,23 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
   describe "scroll_region/6" do
     test "scrolls region up", %{pid: pid} do
       # Fill region with different cells
-      cell1 = %Cell{char: "1", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red, background: :blue})}
-      cell2 = %Cell{char: "2", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red, background: :blue})}
+      cell1 = %Cell{
+        char: "1",
+        style:
+          Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+            foreground: :red,
+            background: :blue
+          })
+      }
+
+      cell2 = %Cell{
+        char: "2",
+        style:
+          Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+            foreground: :red,
+            background: :blue
+          })
+      }
 
       # Fill first two rows
       {:ok, _state} = UnifiedManager.fill_region(pid, 0, 0, 5, 1, cell1)
@@ -146,7 +185,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
   describe "clear/1" do
     test "clears buffer and cache", %{pid: pid} do
       # Fill buffer with data
-      cell = %Cell{char: "X", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red, background: :blue})}
+      cell = %Cell{
+        char: "X",
+        style:
+          Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+            foreground: :red,
+            background: :blue
+          })
+      }
+
       {:ok, _state} = UnifiedManager.fill_region(pid, 0, 0, 5, 5, cell)
 
       # Clear buffer
@@ -163,7 +210,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
   describe "resize/3" do
     test "resizes buffer and clears cache", %{pid: pid} do
       # Fill buffer with data
-      cell = %Cell{char: "X", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red, background: :blue})}
+      cell = %Cell{
+        char: "X",
+        style:
+          Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+            foreground: :red,
+            background: :blue
+          })
+      }
+
       {:ok, _state} = UnifiedManager.fill_region(pid, 0, 0, 5, 5, cell)
 
       # Resize buffer
@@ -183,7 +238,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
   describe "memory management" do
     test "tracks memory usage", %{pid: pid} do
       # Fill buffer with data
-      cell = %Cell{char: "X", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red, background: :blue})}
+      cell = %Cell{
+        char: "X",
+        style:
+          Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+            foreground: :red,
+            background: :blue
+          })
+      }
+
       {:ok, new_state} = UnifiedManager.fill_region(pid, 0, 0, 5, 5, cell)
 
       assert new_state.memory_usage >= 0
@@ -194,7 +257,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
   describe "metrics" do
     test "tracks operation metrics", %{pid: pid} do
       # Perform some operations
-      cell = %Cell{char: "X", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red, background: :blue})}
+      cell = %Cell{
+        char: "X",
+        style:
+          Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+            foreground: :red,
+            background: :blue
+          })
+      }
+
       {:ok, new_state} = UnifiedManager.set_cell(pid, 0, 0, cell)
 
       # Check that metrics are being tracked
@@ -205,7 +276,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
   describe "buffer operations with caching" do
     test "get_cell caches results", %{pid: pid} do
       # Set a cell value
-      cell = %Cell{char: "A", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red, background: :black})}
+      cell = %Cell{
+        char: "A",
+        style:
+          Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+            foreground: :red,
+            background: :black
+          })
+      }
+
       {:ok, _} = UnifiedManager.set_cell(pid, 0, 0, cell)
 
       # First get should be a cache miss
@@ -223,13 +302,29 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
 
     test "set_cell invalidates cache", %{pid: pid} do
       # Set initial cell value
-      cell1 = %Cell{char: "A", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red, background: :black})}
+      cell1 = %Cell{
+        char: "A",
+        style:
+          Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+            foreground: :red,
+            background: :black
+          })
+      }
+
       {:ok, _} = UnifiedManager.set_cell(pid, 0, 0, cell1)
       {:ok, retrieved_cell} = UnifiedManager.get_cell(pid, 0, 0)
       assert retrieved_cell.char == "A"
 
       # Change cell value
-      cell2 = %Cell{char: "B", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :blue, background: :white})}
+      cell2 = %Cell{
+        char: "B",
+        style:
+          Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+            foreground: :blue,
+            background: :white
+          })
+      }
+
       {:ok, _} = UnifiedManager.set_cell(pid, 0, 0, cell2)
       {:ok, retrieved_cell} = UnifiedManager.get_cell(pid, 0, 0)
       assert retrieved_cell.char == "B"
@@ -239,7 +334,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
 
     test "fill_region invalidates cache", %{pid: pid} do
       # Fill a region
-      cell1 = %Cell{char: "X", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})}
+      cell1 = %Cell{
+        char: "X",
+        style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})
+      }
+
       {:ok, _} = UnifiedManager.fill_region(pid, 0, 0, 10, 5, cell1)
 
       # Verify fill worked
@@ -248,7 +347,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
       assert retrieved_cell.style.foreground == :red
 
       # Fill overlapping region
-      cell2 = %Cell{char: "Y", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :blue})}
+      cell2 = %Cell{
+        char: "Y",
+        style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :blue})
+      }
+
       {:ok, _} = UnifiedManager.fill_region(pid, 5, 2, 15, 7, cell2)
 
       # Verify new fill worked
@@ -259,7 +362,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
 
     test "scroll_region updates cache", %{pid: pid} do
       # Fill initial content
-      cell = %Cell{char: "A", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})}
+      cell = %Cell{
+        char: "A",
+        style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})
+      }
+
       {:ok, _} = UnifiedManager.fill_region(pid, 0, 0, 10, 5, cell)
 
       # Scroll region up by 2 lines
@@ -278,15 +385,23 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
       # Verify bottom rows are empty (rows 3-4)
       {:ok, retrieved_cell} = UnifiedManager.get_cell(pid, 0, 3)
       assert retrieved_cell.char == " "
-      
+
       {:ok, retrieved_cell} = UnifiedManager.get_cell(pid, 0, 4)
       assert retrieved_cell.char == " "
     end
 
     test "clear invalidates entire cache", %{pid: pid} do
       # Fill some content
-      cell1 = %Cell{char: "X", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})}
-      cell2 = %Cell{char: "Y", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :blue})}
+      cell1 = %Cell{
+        char: "X",
+        style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})
+      }
+
+      cell2 = %Cell{
+        char: "Y",
+        style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :blue})
+      }
+
       {:ok, _} = UnifiedManager.fill_region(pid, 0, 0, 10, 5, cell1)
       {:ok, _} = UnifiedManager.fill_region(pid, 0, 5, 10, 10, cell2)
 
@@ -302,7 +417,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
 
     test "resize updates cache", %{pid: pid} do
       # Fill initial content
-      cell = %Cell{char: "X", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})}
+      cell = %Cell{
+        char: "X",
+        style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})
+      }
+
       {:ok, _} = UnifiedManager.fill_region(pid, 0, 0, 10, 5, cell)
 
       # Resize buffer
@@ -319,7 +438,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
   describe "scrollback buffer caching" do
     test "scrollback content is cached", %{pid: pid} do
       # Fill content that will be scrolled out
-      cell = %Cell{char: "A", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})}
+      cell = %Cell{
+        char: "A",
+        style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})
+      }
+
       {:ok, _} = UnifiedManager.fill_region(pid, 0, 0, 80, 24, cell)
 
       # Scroll up to move content to scrollback
@@ -338,14 +461,22 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
 
     test "scrollback cache is updated on new content", %{pid: pid} do
       # Fill initial content
-      cell1 = %Cell{char: "A", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})}
+      cell1 = %Cell{
+        char: "A",
+        style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})
+      }
+
       {:ok, _} = UnifiedManager.fill_region(pid, 0, 0, 80, 24, cell1)
 
       # Scroll up
       {:ok, _} = UnifiedManager.scroll_up(pid, 0, 10)
 
       # Fill new content
-      cell2 = %Cell{char: "B", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :blue})}
+      cell2 = %Cell{
+        char: "B",
+        style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :blue})
+      }
+
       {:ok, _} = UnifiedManager.fill_region(pid, 0, 0, 80, 24, cell2)
 
       # Verify scrollback still has old content
@@ -401,7 +532,14 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
         for i <- 1..10 do
           Task.async(fn ->
             for _j <- 1..100 do
-              cell = %Cell{char: "T#{i}", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})}
+              cell = %Cell{
+                char: "T#{i}",
+                style:
+                  Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+                    foreground: :red
+                  })
+              }
+
               {:ok, _} = UnifiedManager.set_cell(pid, i, i, cell)
               {:ok, retrieved_cell} = UnifiedManager.get_cell(pid, i, i)
               assert retrieved_cell.char == "T#{i}"
@@ -417,7 +555,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
       tasks = [
         Task.async(fn ->
           for _i <- 1..100 do
-            cell = %Cell{char: "A", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})}
+            cell = %Cell{
+              char: "A",
+              style:
+                Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :red})
+            }
+
             {:ok, _} = UnifiedManager.fill_region(pid, 0, 0, 10, 10, cell)
           end
         end),
@@ -442,7 +585,14 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
         for i <- 1..25 do
           Task.async(fn ->
             for _j <- 1..20 do
-              cell = %Cell{char: "S#{i}", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :blue})}
+              cell = %Cell{
+                char: "S#{i}",
+                style:
+                  Raxol.Terminal.ANSI.TextFormatting.Core.new(%{
+                    foreground: :blue
+                  })
+              }
+
               {:ok, _} = UnifiedManager.set_cell(pid, i, i + 10, cell)
               {:ok, retrieved_cell} = UnifiedManager.get_cell(pid, i, i + 10)
               assert retrieved_cell.char == "S#{i}"
@@ -482,7 +632,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManagerTest do
       start_time = System.monotonic_time()
 
       # Perform bulk operations
-      cell = %Cell{char: "P", style: Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :green})}
+      cell = %Cell{
+        char: "P",
+        style:
+          Raxol.Terminal.ANSI.TextFormatting.Core.new(%{foreground: :green})
+      }
+
       {:ok, _} = UnifiedManager.fill_region(pid, 0, 0, 80, 24, cell)
 
       end_time = System.monotonic_time()

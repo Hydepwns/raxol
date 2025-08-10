@@ -21,7 +21,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :screen, 0, {5, 5})
+      {:ok, updated_emulator} =
+        EraseHandlers.handle_erase(emulator, :screen, 0, {5, 5})
 
       # Check that content from cursor to end is erased
       # Before cursor should remain
@@ -41,7 +42,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :screen, 1, {5, 5})
+      {:ok, updated_emulator} =
+        EraseHandlers.handle_erase(emulator, :screen, 1, {5, 5})
 
       # Check that content from beginning to cursor is erased
       # Beginning should be erased
@@ -56,7 +58,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :screen, 2, {5, 5})
+      {:ok, updated_emulator} =
+        EraseHandlers.handle_erase(emulator, :screen, 2, {5, 5})
 
       # Check that entire screen is erased
       assert_cell_at(updated_emulator, 0, 0, " ")
@@ -68,7 +71,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill screen with content
       emulator = fill_screen_with_content(emulator, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :screen, 0, {5, 5})
+      {:ok, updated_emulator} =
+        EraseHandlers.handle_erase(emulator, :screen, 0, {5, 5})
 
       # Should default to mode 0 (erase from cursor to end)
       # Since cursor is at {0,0}, cursor position should be erased
@@ -82,7 +86,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       emulator = fill_screen_with_content(emulator, "X")
       emulator = scroll_up(emulator, 5)
 
-      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :screen, 3, {0, 0})
+      {:ok, updated_emulator} =
+        EraseHandlers.handle_erase(emulator, :screen, 3, {0, 0})
 
       # Scrollback should be cleared
       assert scrollback_is_empty(updated_emulator)
@@ -97,7 +102,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :line, 0, {5, 10})
+      {:ok, updated_emulator} =
+        EraseHandlers.handle_erase(emulator, :line, 0, {5, 10})
 
       # Check that content from cursor to end of line is erased
       # Before cursor should remain
@@ -117,7 +123,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :line, 1, {5, 10})
+      {:ok, updated_emulator} =
+        EraseHandlers.handle_erase(emulator, :line, 1, {5, 10})
 
       # Check that content from beginning to cursor is erased
       # Beginning should be erased
@@ -132,7 +139,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :line, 2, {5, 10})
+      {:ok, updated_emulator} =
+        EraseHandlers.handle_erase(emulator, :line, 2, {5, 10})
 
       # Check that entire line is erased
       assert_cell_at(updated_emulator, 0, 0, " ")
@@ -144,7 +152,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Fill line with content
       emulator = fill_line_with_content(emulator, 0, "X")
 
-      {:ok, updated_emulator} = EraseHandlers.handle_erase(emulator, :line, 0, {5, 10})
+      {:ok, updated_emulator} =
+        EraseHandlers.handle_erase(emulator, :line, 0, {5, 10})
 
       # Should default to mode 0 (erase from cursor to end of line)
       # Since cursor is at {0,0}, cursor position should be erased

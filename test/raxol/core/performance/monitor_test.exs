@@ -60,7 +60,8 @@ defmodule Raxol.Core.Performance.MonitorTest do
 
     test "tracks memory usage" do
       # Faster interval for testing
-      {:ok, monitor} = Monitor.start_link(memory_check_interval: 100, parent_pid: self())
+      {:ok, monitor} =
+        Monitor.start_link(memory_check_interval: 100, parent_pid: self())
 
       # Wait for initial memory check
       assert_receive {:memory_check, _}, 400
@@ -123,7 +124,8 @@ defmodule Raxol.Core.Performance.MonitorTest do
 
     test "tracks garbage collection statistics" do
       # Faster interval
-      {:ok, monitor} = Monitor.start_link(memory_check_interval: 100, parent_pid: self())
+      {:ok, monitor} =
+        Monitor.start_link(memory_check_interval: 100, parent_pid: self())
 
       # Wait for initial check
       assert_receive {:memory_check, _}, 400

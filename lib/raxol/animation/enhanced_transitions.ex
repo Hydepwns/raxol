@@ -11,11 +11,8 @@ defmodule Raxol.Animation.EnhancedTransitions do
   - Performance-optimized batch animations
   """
 
-  import Raxol.Guards
   alias Raxol.Animation.Framework
-  alias Raxol.Animation.Physics.PhysicsEngine
   alias Raxol.Animation.Physics.Vector
-  alias Raxol.Animation.Easing
 
   @doc """
   Creates a morphing animation that smoothly transitions between different visual states.
@@ -361,7 +358,7 @@ defmodule Raxol.Animation.EnhancedTransitions do
     end)
   end
 
-  defp update_animation_sequence(progress, params, sequence_state) do
+  defp update_animation_sequence(progress, params, _sequence_state) do
     total_duration = params[:total_duration]
     current_time = progress * total_duration
 
@@ -417,7 +414,7 @@ defmodule Raxol.Animation.EnhancedTransitions do
     end)
   end
 
-  defp update_batch_animation(progress, params, batch_state) do
+  defp update_batch_animation(progress, params, _batch_state) do
     total_duration = params[:duration] || 300
     stagger_delay = params[:stagger_delay] || 0
 

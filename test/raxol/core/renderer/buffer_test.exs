@@ -1,4 +1,3 @@
-
 defmodule Raxol.Core.Renderer.BufferTest do
   @moduledoc """
   Tests for the renderer buffer, including creation, cell operations,

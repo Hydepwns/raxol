@@ -16,23 +16,25 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       emulator: emulator
     } do
       emulator = fill_buffer_with_test_data(emulator)
-      CursorManager.set_position(emulator.cursor, {0, 5})  # (x, y) format
+      # (x, y) format
+      CursorManager.set_position(emulator.cursor, {0, 5})
 
       result_emulator = unwrap_ok(BufferHandlers.handle_L(emulator, [2]))
-      
+
       # After inserting 2 lines at row 5:
       # - Lines 0-4 stay the same
       # - 2 blank lines are inserted at rows 5-6
       # - Original lines 5-7 shift down to rows 7-9
       # - Original lines 8-9 are lost (pushed off screen)
       assert get_line_raw(result_emulator, 5) == String.duplicate(" ", 10)
-      assert get_line_raw(result_emulator, 6) == String.duplicate(" ", 10) 
+      assert get_line_raw(result_emulator, 6) == String.duplicate(" ", 10)
       assert get_line_raw(result_emulator, 7) == "Line 5    "
     end
 
     test "handles missing parameter", %{emulator: emulator} do
       emulator = fill_buffer_with_test_data(emulator)
-      CursorManager.set_position(emulator.cursor, {0, 5})  # (x, y) format
+      # (x, y) format
+      CursorManager.set_position(emulator.cursor, {0, 5})
 
       result_emulator = unwrap_ok(BufferHandlers.handle_L(emulator, []))
       # Default is 1 line when no parameter given
@@ -47,7 +49,8 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       emulator: emulator
     } do
       emulator = fill_buffer_with_test_data(emulator)
-      CursorManager.set_position(emulator.cursor, {0, 5})  # (x, y) format
+      # (x, y) format
+      CursorManager.set_position(emulator.cursor, {0, 5})
 
       result_emulator = unwrap_ok(BufferHandlers.handle_M(emulator, [2]))
       assert get_line(result_emulator, 5) == "Line 7"
@@ -58,7 +61,8 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
 
     test "handles missing parameter", %{emulator: emulator} do
       emulator = fill_buffer_with_test_data(emulator)
-      CursorManager.set_position(emulator.cursor, {0, 5})  # (x, y) format
+      # (x, y) format
+      CursorManager.set_position(emulator.cursor, {0, 5})
 
       result_emulator = unwrap_ok(BufferHandlers.handle_M(emulator, []))
       assert get_line(result_emulator, 5) == "Line 6"

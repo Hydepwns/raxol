@@ -6,7 +6,7 @@ defmodule Raxol.Storage.EventStorage do
   and provides a unified interface for storing and retrieving events.
   """
 
-  alias Raxol.Architecture.EventSourcing.{Event, EventStream, Snapshot}
+  alias Raxol.Architecture.EventSourcing.{Event, EventStream}
 
   @type event :: Event.t()
   @type stream_name :: String.t()
@@ -62,7 +62,7 @@ defmodule Raxol.Storage.EventStorage.Memory do
   use GenServer
   require Logger
 
-  alias Raxol.Architecture.EventSourcing.{Event, EventStream, Snapshot}
+  alias Raxol.Architecture.EventSourcing.{Event, EventStream}
 
   defstruct [
     :events,
@@ -284,7 +284,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
   use GenServer
   require Logger
 
-  alias Raxol.Architecture.EventSourcing.{Event, EventStream, Snapshot}
+  alias Raxol.Architecture.EventSourcing.{Event, EventStream}
 
   defstruct [
     :config,

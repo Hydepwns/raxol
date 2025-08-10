@@ -237,6 +237,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
 
       # Debug: Print the buffer state after wrap
       IO.puts("DEBUG: Buffer after wrap:")
+
       for i <- 0..0 do
         line = buffer_after_wrap |> ScreenBuffer.get_line(i)
         line_text = line |> Enum.map_join(& &1.char)
@@ -253,6 +254,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
 
       # With height=1, no scrollback is generated
       scrollback_lines = buffer_after_wrap.scrollback
+
       assert length(scrollback_lines) == 0,
              "No scrollback expected with height=1"
 
@@ -260,6 +262,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       # Debug output shows cursor at {1, 0} which means it wrapped to next line
       # But with height=1, this is effectively out of bounds
       cursor_pos = Emulator.get_cursor_position(emulator_after_wrap)
+
       assert cursor_pos == {1, 0} || cursor_pos == {0, 10},
              "Cursor should be at {1, 0} or {0, 10} AFTER wrap, got: #{inspect(cursor_pos)}"
 

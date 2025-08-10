@@ -382,7 +382,6 @@ defmodule Raxol.Audit.Analyzer do
   end
 
   defp analyze_data_flow(events, _state) do
-    anomalies = []
 
     # Group events by user
     by_user = Enum.group_by(events, &Map.get(&1, :user_id))
@@ -637,7 +636,7 @@ defmodule Raxol.Audit.Analyzer do
     }
   end
 
-  defp check_compliance_status(state) do
+  defp check_compliance_status(_state) do
     # Check current compliance status
     %{
       frameworks: [:soc2, :hipaa, :gdpr, :pci_dss],
@@ -709,7 +708,7 @@ defmodule Raxol.Audit.Analyzer do
     }
   end
 
-  defp init_compliance_rules(config) do
+  defp init_compliance_rules(_config) do
     [
       %{
         framework: :gdpr,
@@ -748,13 +747,13 @@ defmodule Raxol.Audit.Analyzer do
     }
   end
 
-  defp update_metrics(event, detections, metrics) do
+  defp update_metrics(_event, detections, metrics) do
     metrics
     |> Map.update!(:events_analyzed, &(&1 + 1))
     |> Map.update!(:detections_triggered, &(&1 + length(detections)))
   end
 
-  defp extract_rule_details(rule, event) do
+  defp extract_rule_details(_rule, event) do
     %{
       triggered_at: event.timestamp,
       event_id: event.event_id,

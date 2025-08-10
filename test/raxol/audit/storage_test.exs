@@ -7,7 +7,7 @@ defmodule Raxol.Audit.StorageTest do
   setup do
     # Clean up test directory if it exists
     File.rm_rf!(@test_storage_path)
-    
+
     config = %{
       storage_path: @test_storage_path,
       compress_logs: false,
@@ -15,13 +15,14 @@ defmodule Raxol.Audit.StorageTest do
       rotation_period: :daily,
       keep_files: 7
     }
-    
+
     {:ok, _pid} = Storage.start_link(config)
-    
+
     on_exit(fn ->
       if Process.whereis(Storage) do
         GenServer.stop(Storage)
       end
+
       File.rm_rf!(@test_storage_path)
     end)
 
@@ -43,9 +44,9 @@ defmodule Raxol.Audit.StorageTest do
         outcome: :success,
         metadata: %{extra: "data"}
       }
-      
+
       assert :ok = Storage.store_batch([event])
-      
+
       {:ok, results} = Storage.query(%{event_type: :authentication})
       assert length(results) == 1
       stored_event = hd(results)
@@ -84,7 +85,7 @@ defmodule Raxol.Audit.StorageTest do
           resource_id: "doc123"
         }
       ]
-      
+
       Storage.store_batch(events)
       :ok
     end
@@ -108,10 +109,12 @@ defmodule Raxol.Audit.StorageTest do
     end
 
     test "queries by resource" do
-      {:ok, results} = Storage.query(%{
-        resource_type: "document",
-        resource_id: "doc123"
-      })
+      {:ok, results} =
+        Storage.query(%{
+          resource_type: "document",
+          resource_id: "doc123"
+        })
+
       assert length(results) == 1
       assert hd(results).resource_id == "doc123"
     end
@@ -120,19 +123,22 @@ defmodule Raxol.Audit.StorageTest do
       # Add more events
       events = create_test_events(20)
       Storage.store_batch(events)
-      
+
       {:ok, page1} = Storage.query(%{}, limit: 5, offset: 0)
       {:ok, page2} = Storage.query(%{}, limit: 5, offset: 5)
-      
+
       assert length(page1) == 5
       assert length(page2) == 5
       assert hd(page1).event_id != hd(page2).event_id
     end
 
     test "queries with sorting" do
-      {:ok, asc_results} = Storage.query(%{}, sort_by: :timestamp, sort_order: :asc)
-      {:ok, desc_results} = Storage.query(%{}, sort_by: :timestamp, sort_order: :desc)
-      
+      {:ok, asc_results} =
+        Storage.query(%{}, sort_by: :timestamp, sort_order: :asc)
+
+      {:ok, desc_results} =
+        Storage.query(%{}, sort_by: :timestamp, sort_order: :desc)
+
       assert hd(asc_results).timestamp <= List.last(asc_results).timestamp
       assert hd(desc_results).timestamp >= List.last(desc_results).timestamp
     end
@@ -145,12 +151,12 @@ defmodule Raxol.Audit.StorageTest do
         command: "rm -rf important_files",
         event_type: :security
       }
-      
+
       Storage.store_batch([event_with_text])
-      
+
       {:ok, results} = Storage.query(%{text_search: "suspicious"})
       assert Enum.any?(results, &(&1.event_id == "search_test"))
-      
+
       {:ok, results} = Storage.query(%{text_search: "important"})
       assert Enum.any?(results, &(&1.event_id == "search_test"))
     end
@@ -159,17 +165,17 @@ defmodule Raxol.Audit.StorageTest do
   describe "get_events_in_range/3" do
     test "gets events within time range" do
       now = System.system_time(:millisecond)
-      
+
       events = [
         %{event_id: "old", timestamp: now - 60_000},
         %{event_id: "recent", timestamp: now - 10_000},
         %{event_id: "current", timestamp: now}
       ]
-      
+
       Storage.store_batch(events)
-      
+
       {:ok, results} = Storage.get_events_in_range(now - 30_000, now + 1000)
-      
+
       event_ids = Enum.map(results, & &1.event_id)
       assert "recent" in event_ids
       assert "current" in event_ids
@@ -180,18 +186,18 @@ defmodule Raxol.Audit.StorageTest do
   describe "delete_before/2" do
     test "deletes old events" do
       now = System.system_time(:millisecond)
-      
+
       events = [
         %{event_id: "very_old", timestamp: now - 100_000},
         %{event_id: "old", timestamp: now - 60_000},
         %{event_id: "recent", timestamp: now - 10_000}
       ]
-      
+
       Storage.store_batch(events)
-      
+
       {:ok, deleted_count} = Storage.delete_before(now - 30_000)
       assert deleted_count == 2
-      
+
       {:ok, remaining} = Storage.query(%{})
       assert length(remaining) == 1
       assert hd(remaining).event_id == "recent"
@@ -201,18 +207,19 @@ defmodule Raxol.Audit.StorageTest do
   describe "create_index/2" do
     test "creates index for faster queries" do
       assert :ok = Storage.create_index(:session_id)
-      
+
       # Store events with session_id
-      events = for i <- 1..10 do
-        %{
-          event_id: "evt#{i}",
-          timestamp: System.system_time(:millisecond),
-          session_id: "session_#{rem(i, 3)}"
-        }
-      end
-      
+      events =
+        for i <- 1..10 do
+          %{
+            event_id: "evt#{i}",
+            timestamp: System.system_time(:millisecond),
+            session_id: "session_#{rem(i, 3)}"
+          }
+        end
+
       Storage.store_batch(events)
-      
+
       # Query should use index
       {:ok, results} = Storage.query(%{session_id: "session_1"})
       assert length(results) > 0
@@ -224,9 +231,9 @@ defmodule Raxol.Audit.StorageTest do
     test "returns storage statistics" do
       events = create_test_events(10)
       Storage.store_batch(events)
-      
+
       {:ok, stats} = Storage.get_statistics()
-      
+
       assert stats.total_events == 10
       assert stats.storage_size_bytes > 0
       assert is_list(stats.indexed_fields)
@@ -239,16 +246,16 @@ defmodule Raxol.Audit.StorageTest do
         event_id: "old",
         timestamp: 1000
       }
-      
+
       new_event = %{
         event_id: "new",
         timestamp: 2000
       }
-      
+
       Storage.store_batch([old_event, new_event])
-      
+
       {:ok, stats} = Storage.get_statistics()
-      
+
       assert stats.oldest_event.event_id == "old"
       assert stats.newest_event.event_id == "new"
     end
@@ -259,11 +266,11 @@ defmodule Raxol.Audit.StorageTest do
       # Store some events
       events = create_test_events(5)
       Storage.store_batch(events)
-      
+
       # Trigger rotation
       send(Process.whereis(Storage), :rotate_file)
       Process.sleep(100)
-      
+
       # Check that files were rotated
       files = File.ls!(@test_storage_path)
       assert length(files) >= 1
@@ -274,21 +281,22 @@ defmodule Raxol.Audit.StorageTest do
     test "compresses archived files when enabled" do
       # Restart with compression enabled
       GenServer.stop(Storage)
-      
+
       config = %{
         storage_path: @test_storage_path,
         compress_logs: true
       }
-      
+
       {:ok, _pid} = Storage.start_link(config)
-      
+
       # Store events and trigger rotation
       events = create_test_events(10)
       Storage.store_batch(events)
-      
+
       send(Process.whereis(Storage), :rotate_file)
-      Process.sleep(500)  # Give compression time to complete
-      
+      # Give compression time to complete
+      Process.sleep(500)
+
       files = File.ls!(@test_storage_path)
       assert Enum.any?(files, &String.ends_with?(&1, ".gz"))
     end
@@ -301,13 +309,13 @@ defmodule Raxol.Audit.StorageTest do
         %{event_id: "e2", timestamp: 2000, user_id: "bob", severity: :low},
         %{event_id: "e3", timestamp: 3000, user_id: "alice", severity: :low}
       ]
-      
+
       Storage.store_batch(events)
-      
+
       # User index should work
       {:ok, alice_events} = Storage.query(%{user_id: "alice"})
       assert length(alice_events) == 2
-      
+
       # Severity index should work
       {:ok, low_events} = Storage.query(%{severity: :low})
       assert length(low_events) == 2
@@ -315,19 +323,20 @@ defmodule Raxol.Audit.StorageTest do
 
     test "rebuilds index for existing data" do
       # Store events without custom field
-      events = for i <- 1..5 do
-        %{
-          event_id: "evt#{i}",
-          timestamp: System.system_time(:millisecond),
-          custom_field: "value_#{rem(i, 2)}"
-        }
-      end
-      
+      events =
+        for i <- 1..5 do
+          %{
+            event_id: "evt#{i}",
+            timestamp: System.system_time(:millisecond),
+            custom_field: "value_#{rem(i, 2)}"
+          }
+        end
+
       Storage.store_batch(events)
-      
+
       # Create index after data exists
       Storage.create_index(:custom_field)
-      
+
       # Should be able to query by custom field
       {:ok, results} = Storage.query(%{custom_field: "value_0"})
       assert length(results) > 0
@@ -354,17 +363,17 @@ defmodule Raxol.Audit.StorageTest do
           error_message: "Permission denied for sensitive operation"
         }
       ]
-      
+
       Storage.store_batch(events)
-      
+
       {:ok, results} = Storage.query(%{text_search: "update"})
       assert length(results) == 1
       assert hd(results).event_id == "e2"
-      
+
       {:ok, results} = Storage.query(%{text_search: "sensitive"})
       assert length(results) == 1
       assert hd(results).event_id == "e3"
-      
+
       {:ok, results} = Storage.query(%{text_search: "user"})
       assert length(results) == 1
     end
@@ -375,28 +384,29 @@ defmodule Raxol.Audit.StorageTest do
         timestamp: 1000,
         description: "Critical security alert detected"
       }
-      
+
       Storage.store_batch([event])
-      
+
       {:ok, results} = Storage.query(%{text_search: "critical security"})
       assert length(results) == 1
-      
+
       {:ok, results} = Storage.query(%{text_search: "security alert"})
       assert length(results) == 1
-      
+
       {:ok, results} = Storage.query(%{text_search: "nonexistent term"})
       assert length(results) == 0
     end
   end
 
   # Helper functions
-  
+
   defp create_test_events(count) do
     for i <- 1..count do
       %{
         event_id: "evt_#{i}",
         timestamp: System.system_time(:millisecond) + i,
-        event_type: Enum.random([:authentication, :authorization, :data_access]),
+        event_type:
+          Enum.random([:authentication, :authorization, :data_access]),
         user_id: "user_#{rem(i, 3)}",
         severity: Enum.random([:low, :medium, :high])
       }

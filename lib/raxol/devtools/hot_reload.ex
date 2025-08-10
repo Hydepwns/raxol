@@ -404,7 +404,7 @@ defmodule Raxol.DevTools.HotReload do
     try do
       # Get the current module's source file
       case :code.get_object_code(module) do
-        {^module, binary, filename} ->
+        {^module, _binary, filename} ->
           # Purge the old version
           :code.purge(module)
           :code.delete(module)

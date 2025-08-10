@@ -206,7 +206,7 @@ defmodule Raxol.Audit.Exporter do
     events = load_filtered_events(filters)
     template = Keyword.get(opts, :template) || "default"
 
-    pdf_data = generate_pdf_report(events, template, _state)
+    pdf_data = generate_pdf_report(events, template, nil)
     finalize_export(pdf_data, opts)
   end
 
@@ -515,7 +515,7 @@ defmodule Raxol.Audit.Exporter do
     |> String.replace("'", "&apos;")
   end
 
-  defp send_events_to_siem(events, siem_config, state) do
+  defp send_events_to_siem(events, siem_config, _state) do
     case siem_config.type do
       :splunk -> send_to_splunk(events, siem_config)
       :elastic -> send_to_elastic(events, siem_config)
@@ -551,22 +551,22 @@ defmodule Raxol.Audit.Exporter do
     end
   end
 
-  defp send_to_elastic(events, config) do
+  defp send_to_elastic(_events, _config) do
     # Elasticsearch integration
     :ok
   end
 
-  defp send_to_qradar(events, config) do
+  defp send_to_qradar(_events, _config) do
     # IBM QRadar integration
     :ok
   end
 
-  defp send_to_sentinel(events, config) do
+  defp send_to_sentinel(_events, _config) do
     # Azure Sentinel integration
     :ok
   end
 
-  defp generate_pdf_report(events, template, _state) do
+  defp generate_pdf_report(_events, _template, _state) do
     # Generate PDF using a template engine
     # This would use a library like ChromicPDF or wkhtmltopdf
     "<html><body>Audit Report</body></html>"
@@ -582,7 +582,7 @@ defmodule Raxol.Audit.Exporter do
     end
   end
 
-  defp generate_pdf_from_report(report, state) do
+  defp generate_pdf_from_report(report, _state) do
     # Convert report to PDF
     "<html><body>#{inspect(report)}</body></html>"
   end
@@ -705,7 +705,7 @@ defmodule Raxol.Audit.Exporter do
     }
   end
 
-  defp identify_soc2_findings(events) do
+  defp identify_soc2_findings(_events) do
     # Placeholder for findings
     []
   end
@@ -739,20 +739,20 @@ defmodule Raxol.Audit.Exporter do
   end
 
   # Placeholder functions for compliance analysis
-  defp analyze_access_controls(events), do: %{}
-  defp analyze_audit_controls(events), do: %{}
-  defp analyze_integrity_controls(events), do: %{}
-  defp analyze_transmission_security(events), do: %{}
-  defp generate_phi_access_log(events), do: []
-  defp identify_hipaa_incidents(events), do: []
-  defp analyze_article_32_security(events), do: %{}
-  defp analyze_article_33_breach_notification(events), do: %{}
-  defp analyze_article_35_dpia(events), do: %{}
-  defp analyze_dsr_compliance(events), do: %{}
-  defp analyze_data_transfers(events), do: %{}
-  defp analyze_requirement_7_access(events), do: %{}
-  defp analyze_requirement_8_authentication(events), do: %{}
-  defp analyze_requirement_10_logging(events), do: %{}
-  defp analyze_cde_access(events), do: []
-  defp identify_pci_incidents(events), do: []
+  defp analyze_access_controls(_events), do: %{}
+  defp analyze_audit_controls(_events), do: %{}
+  defp analyze_integrity_controls(_events), do: %{}
+  defp analyze_transmission_security(_events), do: %{}
+  defp generate_phi_access_log(_events), do: []
+  defp identify_hipaa_incidents(_events), do: []
+  defp analyze_article_32_security(_events), do: %{}
+  defp analyze_article_33_breach_notification(_events), do: %{}
+  defp analyze_article_35_dpia(_events), do: %{}
+  defp analyze_dsr_compliance(_events), do: %{}
+  defp analyze_data_transfers(_events), do: %{}
+  defp analyze_requirement_7_access(_events), do: %{}
+  defp analyze_requirement_8_authentication(_events), do: %{}
+  defp analyze_requirement_10_logging(_events), do: %{}
+  defp analyze_cde_access(_events), do: []
+  defp identify_pci_incidents(_events), do: []
 end

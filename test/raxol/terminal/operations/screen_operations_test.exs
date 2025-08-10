@@ -41,7 +41,9 @@ defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
       # Line 0 should remain untouched
       assert String.trim(ScreenOperations.get_line(emulator, 0)) == "test1"
       # Line 1 should be erased from position 2 onward (keeping "te")
-      assert ScreenOperations.get_line(emulator, 1) |> String.slice(0, 2) == "te"
+      assert ScreenOperations.get_line(emulator, 1) |> String.slice(0, 2) ==
+               "te"
+
       # Line 2 should be completely erased
       assert String.trim(ScreenOperations.get_line(emulator, 2)) == ""
     end

@@ -402,8 +402,10 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       # Lines 2, 3, 4 should be untouched
       assert Enum.map(ScreenBuffer.get_line(buffer, 2), & &1.char) ==
                List.duplicate("C", buffer.width)
+
       assert Enum.map(ScreenBuffer.get_line(buffer, 3), & &1.char) ==
                List.duplicate("D", buffer.width)
+
       assert Enum.map(ScreenBuffer.get_line(buffer, 4), & &1.char) ==
                List.duplicate("A", buffer.width)
 
@@ -464,11 +466,14 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
     test "ED command clears screen correctly" do
       emulator = Emulator.new(80, 24)
       {emulator, _} = Emulator.process_input(emulator, "Hello World")
-      {emulator, _} = Emulator.process_input(emulator, "\e[4;2H")  # Move to row 4, col 2
-      {emulator, _} = Emulator.process_input(emulator, "\e[J")     # Clear from cursor to end
+      # Move to row 4, col 2
+      {emulator, _} = Emulator.process_input(emulator, "\e[4;2H")
+      # Clear from cursor to end
+      {emulator, _} = Emulator.process_input(emulator, "\e[J")
 
       position = Emulator.get_cursor_position(emulator)
-      assert position == {3, 1}  # {row, col} format: row 3, col 1
+      # {row, col} format: row 3, col 1
+      assert position == {3, 1}
     end
   end
 end

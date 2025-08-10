@@ -89,10 +89,17 @@ defmodule Raxol.UI.RendererTest do
       assert find_cell(rendered_cells, 7, 2) == {7, 2, "2", :cyan, :default, []}
 
       # Verify data cells (split: "D1" at (1,4) and (2,4), "D2" at (6,4) and (7,4))
-      assert find_cell(rendered_cells, 1, 4) == {1, 4, "D", :default, :default, []}
-      assert find_cell(rendered_cells, 2, 4) == {2, 4, "1", :default, :default, []}
-      assert find_cell(rendered_cells, 6, 4) == {6, 4, "D", :default, :default, []}
-      assert find_cell(rendered_cells, 7, 4) == {7, 4, "2", :default, :default, []}
+      assert find_cell(rendered_cells, 1, 4) ==
+               {1, 4, "D", :default, :default, []}
+
+      assert find_cell(rendered_cells, 2, 4) ==
+               {2, 4, "1", :default, :default, []}
+
+      assert find_cell(rendered_cells, 6, 4) ==
+               {6, 4, "D", :default, :default, []}
+
+      assert find_cell(rendered_cells, 7, 4) ==
+               {7, 4, "2", :default, :default, []}
     end
 
     test "applies theme styles to table header and data rows" do

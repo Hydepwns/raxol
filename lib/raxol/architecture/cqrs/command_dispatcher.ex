@@ -39,8 +39,6 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
   require Logger
 
   alias Raxol.Architecture.CQRS.{Command, CommandHandler}
-  alias Raxol.Architecture.EventSourcing.EventStore
-  alias Raxol.Monitoring.Metrics
 
   defstruct [
     :handlers,
@@ -555,7 +553,7 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
     }
   end
 
-  defp register_default_handlers(state) do
+  defp register_default_handlers(_state) do
     # This would register the default handlers for terminal commands
     # In a real implementation, this might be done via configuration
     # or dependency injection

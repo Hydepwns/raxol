@@ -265,16 +265,25 @@ defmodule Raxol.Terminal.InputTest do
   alias Raxol.Terminal.Input
 
   describe "tab_complete/1" do
-    test 'completes with a single match' do
-      input = %Input{buffer: ["d", "e", "f"], completion_callback: fn _ -> ["defmodule"] end}
+    test ~c"completes with a single match" do
+      input = %Input{
+        buffer: ["d", "e", "f"],
+        completion_callback: fn _ -> ["defmodule"] end
+      }
+
       result = Input.tab_complete(input)
       assert result.buffer == ["d", "e", "f", "m", "o", "d", "u", "l", "e"]
       assert result.completion_options == []
       assert result.completion_index == 0
     end
 
-    test 'cycles through multiple matches' do
-      input = %Input{buffer: ["d"], completion_callback: fn _ -> ["def", "defmodule", "do"] end, completion_index: 0}
+    test ~c"cycles through multiple matches" do
+      input = %Input{
+        buffer: ["d"],
+        completion_callback: fn _ -> ["def", "defmodule", "do"] end,
+        completion_index: 0
+      }
+
       result1 = Input.tab_complete(input)
       assert result1.buffer == ["d", "e", "f"]
       result2 = Input.tab_complete(result1)
@@ -285,26 +294,30 @@ defmodule Raxol.Terminal.InputTest do
       assert result4.buffer == ["d", "e", "f"]
     end
 
-    test 'no matches leaves buffer unchanged' do
-      input = %Input{buffer: ["x", "y", "z"], completion_callback: fn _ -> [] end}
+    test ~c"no matches leaves buffer unchanged" do
+      input = %Input{
+        buffer: ["x", "y", "z"],
+        completion_callback: fn _ -> [] end
+      }
+
       result = Input.tab_complete(input)
       assert result.buffer == ["x", "y", "z"]
     end
   end
 
   describe "example_completion_callback/1" do
-    test 'returns Elixir keywords that match the buffer' do
+    test ~c"returns Elixir keywords that match the buffer" do
       result_d = Input.example_completion_callback("d")
       assert "def" in result_d
-      assert "defmodule" in result_d 
+      assert "defmodule" in result_d
       assert "defp" in result_d
       assert "do" in result_d
-      
+
       result_def = Input.example_completion_callback("def")
       assert "def" in result_def
       assert "defmodule" in result_def
       assert "defp" in result_def
-      
+
       assert Input.example_completion_callback("xyz") == []
     end
   end

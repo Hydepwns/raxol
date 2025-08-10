@@ -27,9 +27,18 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       IO.puts("DEBUG: After writing 'ab':")
       IO.puts("  cell_a.char = #{inspect(cell_a_after_write.char)}")
       IO.puts("  cell_b.char = #{inspect(cell_b_after_write.char)}")
-      IO.puts("  buffer_after_write type: #{inspect(buffer_after_write.__struct__)}")
-      IO.puts("  emulator.main_screen_buffer type: #{inspect(emulator.main_screen_buffer.__struct__)}")
-      IO.puts("  emulator.active_buffer_type: #{inspect(emulator.active_buffer_type)}")
+
+      IO.puts(
+        "  buffer_after_write type: #{inspect(buffer_after_write.__struct__)}"
+      )
+
+      IO.puts(
+        "  emulator.main_screen_buffer type: #{inspect(emulator.main_screen_buffer.__struct__)}"
+      )
+
+      IO.puts(
+        "  emulator.active_buffer_type: #{inspect(emulator.active_buffer_type)}"
+      )
 
       # Access :char field
       assert cell_a_after_write.char == "a"
