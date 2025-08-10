@@ -61,6 +61,13 @@ defmodule Raxol.Audit.Storage do
   end
 
   @doc """
+  Queries audit events with filters and options from a specific storage.
+  """
+  def query(storage, filters, opts) when is_atom(storage) or is_pid(storage) do
+    GenServer.call(storage, {:query, filters, opts}, 30_000)
+  end
+
+  @doc """
   Gets events within a time range.
   """
   def get_events_in_range(storage \\ __MODULE__, start_time, end_time) do
@@ -292,13 +299,28 @@ defmodule Raxol.Audit.Storage do
   defp filter_by_time(events, _), do: events
 
   defp filter_by_severity(events, %{severity: severity}) do
-    Enum.filter(events, &(&1[:severity] == severity))
+    # Handle both atom and string comparisons
+    Enum.filter(events, fn event ->
+      event_severity = event[:severity]
+
+      event_severity == severity or
+        event_severity == to_string(severity) or
+        (is_binary(event_severity) and
+           String.to_atom(event_severity) == severity)
+    end)
   end
 
   defp filter_by_severity(events, _), do: events
 
   defp filter_by_event_type(events, %{event_type: type}) do
-    Enum.filter(events, &(&1[:event_type] == type))
+    # Handle both atom and string comparisons
+    Enum.filter(events, fn event ->
+      event_type = event[:event_type]
+
+      event_type == type or
+        event_type == to_string(type) or
+        (is_binary(event_type) and String.to_atom(event_type) == type)
+    end)
   end
 
   defp filter_by_event_type(events, _), do: events
@@ -409,8 +431,30 @@ defmodule Raxol.Audit.Storage do
 
   defp decode_event(line) do
     case Jason.decode(line, keys: :atoms) do
-      {:ok, event} -> event
-      {:error, _} -> nil
+      {:ok, event} ->
+        # Convert common string values to atoms for consistency
+        event
+        |> convert_value(:event_type)
+        |> convert_value(:severity)
+        |> convert_value(:outcome)
+
+      {:error, _} ->
+        nil
+    end
+  end
+
+  defp convert_value(event, key) do
+    case Map.get(event, key) do
+      value when is_binary(value) ->
+        try do
+          Map.put(event, key, String.to_atom(value))
+        rescue
+          # Keep as string if conversion fails
+          ArgumentError -> event
+        end
+
+      _ ->
+        event
     end
   end
 
