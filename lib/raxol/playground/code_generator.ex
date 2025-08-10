@@ -28,9 +28,6 @@ defmodule Raxol.Playground.CodeGenerator do
     end
   end
 
-  @doc """
-  Generates a full component module.
-  """
   defp generate_component_code(component, props, state, include_imports) do
     module_name = generate_module_name(component)
 
@@ -77,9 +74,6 @@ defmodule Raxol.Playground.CodeGenerator do
     """
   end
 
-  @doc """
-  Generates standalone render code.
-  """
   defp generate_standalone_code(component, props, _state, include_imports) do
     imports =
       if include_imports do
@@ -93,9 +87,6 @@ defmodule Raxol.Playground.CodeGenerator do
     """
   end
 
-  @doc """
-  Generates example usage code.
-  """
   defp generate_example_code(component, props, state, include_imports) do
     imports =
       if include_imports do
@@ -215,7 +206,7 @@ defmodule Raxol.Playground.CodeGenerator do
     "\n#{formatted_pairs}\n"
   end
 
-  defp format_map(map, indent) when map_size(map) == 0 do
+  defp format_map(map, _indent) when map_size(map) == 0 do
     "%{}"
   end
 
@@ -362,7 +353,7 @@ defmodule Raxol.Playground.CodeGenerator do
   """
   def generate_composition(components, layout \\ :vertical) do
     render_calls =
-      Enum.map(components, fn {component, props, state} ->
+      Enum.map(components, fn {component, props, _state} ->
         generate_render_call(component, props)
       end)
 

@@ -283,7 +283,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
       end
 
     # Initialize keyboard tracking for accessibility shortcuts
-    {:ok, keyboard_tracker} =
+    {:ok, _keyboard_tracker} =
       KeyboardTracker.start_link(
         global_shortcuts: true,
         accessibility_mode: true,
@@ -836,7 +836,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     :ok
   end
 
-  defp announce_focus_change(state, component_id, component) do
+  defp announce_focus_change(state, _component_id, component) do
     role_description = Map.get(@aria_roles, component.config.role, "element")
     announcement = "#{component.config.label} #{role_description}"
 
@@ -974,7 +974,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     }
   end
 
-  defp format_content_for_reading(content, verbosity, reading_mode) do
+  defp format_content_for_reading(content, _verbosity, reading_mode) do
     base_text = content.text
 
     case reading_mode do

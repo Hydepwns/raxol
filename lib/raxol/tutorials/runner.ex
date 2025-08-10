@@ -10,7 +10,7 @@ defmodule Raxol.Tutorials.Runner do
   require Logger
 
   alias Raxol.Docs.InteractiveTutorial
-  alias Raxol.Docs.InteractiveTutorial.{Loader, Renderer}
+  # Tutorial runner functionality - aliases will be added as needed
 
   defstruct [
     :current_tutorial,

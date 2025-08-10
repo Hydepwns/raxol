@@ -520,17 +520,7 @@ defmodule Raxol.Playground do
     IO.puts("#{String.duplicate("─", 60)}\n")
   end
 
-  defp display_props(props) do
-    IO.puts("\n#{IO.ANSI.bright()}Current Props:#{IO.ANSI.reset()}")
-
-    if map_size(props) == 0 do
-      IO.puts("  (none)")
-    else
-      Enum.each(props, fn {key, value} ->
-        IO.puts("  #{key}: #{inspect(value)}")
-      end)
-    end
-  end
+  # Removed display_props - was unused
 
   defp display_code(code) do
     IO.puts("\n#{IO.ANSI.bright()}Generated Code:#{IO.ANSI.reset()}")
@@ -604,23 +594,7 @@ defmodule Raxol.Playground do
     """)
   end
 
-  defp parse_value("true"), do: true
-  defp parse_value("false"), do: false
-  defp parse_value("nil"), do: nil
-  defp parse_value(":" <> atom), do: String.to_atom(atom)
-
-  defp parse_value(value) do
-    case Integer.parse(value) do
-      {int, ""} ->
-        int
-
-      _ ->
-        case Float.parse(value) do
-          {float, ""} -> float
-          _ -> value
-        end
-    end
-  end
+  # Removed parse_value - was unused
 
   defp start_web_server(_port) do
     # Web server implementation would go here

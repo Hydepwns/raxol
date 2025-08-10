@@ -373,7 +373,7 @@ defmodule Raxol.Terminal.TerminalRegistry do
         # Already cleaned up
         {:noreply, state}
 
-      process ->
+      _process ->
         # Mark as closing in metadata but don't remove yet
         # The process monitor will handle the actual cleanup
         case get_in(state.terminal_metadata, [event.terminal_id]) do

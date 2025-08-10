@@ -97,113 +97,15 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     performance_profile: :balanced
   }
 
-  # Shader sources (simplified - in practice would be loaded from files)
-  @vertex_shader """
-  #version 450 core
-
-  layout(location = 0) in vec2 position;
-  layout(location = 1) in vec2 texcoord;
-  layout(location = 2) in vec4 color;
-  layout(location = 3) in float glyph_index;
-
-  uniform mat4 projection;
-  uniform mat4 view;
-
-  out vec2 frag_texcoord;
-  out vec4 frag_color;
-  out float frag_glyph_index;
-
-  void main() {
-    gl_Position = projection * view * vec4(position, 0.0, 1.0);
-    frag_texcoord = texcoord;
-    frag_color = color;
-    frag_glyph_index = glyph_index;
-  }
-  """
-
-  @fragment_shader """
-  #version 450 core
-
-  in vec2 frag_texcoord;
-  in vec4 frag_color;
-  in float frag_glyph_index;
-
-  uniform sampler2DArray font_atlas;
-  uniform float gamma_correction;
-  uniform vec2 atlas_size;
-
-  out vec4 color;
-
-  void main() {
-    vec3 atlas_coord = vec3(frag_texcoord, frag_glyph_index);
-    float alpha = texture(font_atlas, atlas_coord).r;
-    
-    // Apply gamma correction for better text rendering
-    alpha = pow(alpha, 1.0 / gamma_correction);
-    
-    color = vec4(frag_color.rgb, frag_color.a * alpha);
-  }
-  """
-
-  @compute_layout_shader """
-  #version 450 core
-
-  layout(local_size_x = 64) in;
-
-  layout(std430, binding = 0) readonly buffer InputBuffer {
-    uint characters[];
-  };
-
-  layout(std430, binding = 1) writeonly buffer OutputBuffer {
-    vec4 positions[];
-    vec4 colors[];
-    vec2 texcoords[];
-  };
-
-  uniform float cell_width;
-  uniform float cell_height;
-  uniform ivec2 terminal_size;
-
-  void main() {
-    uint index = gl_GlobalInvocationID.x;
-    
-    if (index >= characters.length()) {
-      return;
-    }
-    
-    uint character = characters[index];
-    uint row = index / terminal_size.x;
-    uint col = index % terminal_size.x;
-    
-    float x = col * cell_width;
-    float y = row * cell_height;
-    
-    // Output glyph position
-    positions[index] = vec4(x, y, x + cell_width, y + cell_height);
-    
-    // Extract color from character data (simplified)
-    uint fg_color = (character >> 8) & 0xFFFFFF;
-    colors[index] = vec4(
-      ((fg_color >> 16) & 0xFF) / 255.0,
-      ((fg_color >> 8) & 0xFF) / 255.0,
-      (fg_color & 0xFF) / 255.0,
-      1.0
-    );
-    
-    // Calculate texture coordinates based on character
-    uint char_code = character & 0xFF;
-    float u = (char_code % 16) / 16.0;
-    float v = (char_code / 16) / 16.0;
-    texcoords[index] = vec2(u, v);
-  }
-  """
+  # Shader sources removed - were unused module attributes
 
   ## Public API
 
   @doc """
   Initializes GPU acceleration with the specified configuration.
   """
-  def init(config \\ %{}) do
+  def init(config \\ %{})
+  def init(config) do
     merged_config = Map.merge(@default_config, config)
 
     case start_link(merged_config) do
@@ -450,7 +352,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     end
   end
 
-  defp initialize_backend(:software, config) do
+  defp initialize_backend(:software, _config) do
     Logger.info("Using software rendering fallback")
     {:ok, %{device: :software, queue: :software, pipeline: :software}}
   end
@@ -541,7 +443,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     {:ok, surface}
   end
 
-  defp render_metal(_state, surface, terminal_buffer, opts) do
+  defp render_metal(_state, _surface, terminal_buffer, _opts) do
     # Placeholder for Metal rendering
     # Would encode render commands, submit to GPU, etc.
     Logger.debug("Rendering #{length(terminal_buffer)} characters with Metal")
@@ -582,7 +484,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     {:ok, surface}
   end
 
-  defp render_vulkan(_state, surface, terminal_buffer, opts) do
+  defp render_vulkan(_state, _surface, terminal_buffer, _opts) do
     # Placeholder for Vulkan rendering
     Logger.debug("Rendering #{length(terminal_buffer)} characters with Vulkan")
 
@@ -594,7 +496,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   end
 
   # Software fallback implementation
-  defp render_software(_state, surface, terminal_buffer, opts) do
+  defp render_software(_state, _surface, terminal_buffer, _opts) do
     # Software rasterization fallback
     Logger.debug(
       "Rendering #{length(terminal_buffer)} characters with software fallback"
@@ -657,74 +559,19 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     GenServer.call(context, {:create_font_atlas, font_config})
   end
 
-  defp build_font_atlas(_state, font_config) do
-    # This would rasterize font glyphs into a texture atlas
-    # For now, we create a placeholder
-    atlas = %{
-      texture_id: System.unique_integer(),
-      glyph_map: %{},
-      atlas_size: {1024, 1024},
-      glyph_size: {16, 24},
-      font_config: font_config
-    }
-
-    {:ok, atlas}
-  end
+  # Removed unused build_font_atlas
 
   ## Shader Management
 
-  defp compile_shaders(state) do
-    case state.backend do
-      :metal ->
-        compile_metal_shaders(state)
+  # Removed unused compile_shaders
 
-      :vulkan ->
-        compile_vulkan_shaders(state)
+  # Removed unused compile_metal_shaders
 
-      :software ->
-        {:ok, :no_shaders_needed}
-    end
-  end
+  # Removed unused compile_vulkan_shaders
 
-  defp compile_metal_shaders(_state) do
-    # Placeholder for Metal shader compilation
-    vertex_shader = compile_metal_shader(@vertex_shader, :vertex)
-    fragment_shader = compile_metal_shader(@fragment_shader, :fragment)
-    compute_shader = compile_metal_shader(@compute_layout_shader, :compute)
+  # Removed unused compile_metal_shader
 
-    shaders = %{
-      vertex: vertex_shader,
-      fragment: fragment_shader,
-      compute: compute_shader
-    }
-
-    {:ok, shaders}
-  end
-
-  defp compile_vulkan_shaders(state) do
-    # Placeholder for Vulkan shader compilation (SPIR-V)
-    vertex_spirv = compile_glsl_to_spirv(@vertex_shader, :vertex)
-    fragment_spirv = compile_glsl_to_spirv(@fragment_shader, :fragment)
-    compute_spirv = compile_glsl_to_spirv(@compute_layout_shader, :compute)
-
-    shaders = %{
-      vertex: vertex_spirv,
-      fragment: fragment_spirv,
-      compute: compute_spirv
-    }
-
-    {:ok, shaders}
-  end
-
-  defp compile_metal_shader(source, type) do
-    # Placeholder for Metal shader compilation
-    {:metal_shader, type, :erlang.phash2(source)}
-  end
-
-  defp compile_glsl_to_spirv(source, type) do
-    # Placeholder for GLSL to SPIR-V compilation
-    {:spirv_shader, type, :erlang.phash2(source)}
-  end
+  # Removed unused compile_glsl_to_spirv
 
   ## Performance Monitoring
 
@@ -735,43 +582,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     GenServer.call(context, {:profile_performance, duration_ms})
   end
 
-  defp run_performance_profiling(state, duration_ms) do
-    # Run profiling for specified duration
-    # This would collect detailed GPU metrics
+  # Removed unused run_performance_profiling
 
-    profile_results = %{
-      average_frame_time: state.render_stats.average_frame_time,
-      gpu_utilization: :rand.uniform(100),
-      memory_bandwidth: :rand.uniform(1000),
-      shader_execution_time: :rand.uniform(10),
-      recommendations: generate_performance_recommendations(state)
-    }
-
-    {:ok, profile_results}
-  end
-
-  defp generate_performance_recommendations(state) do
-    recommendations = []
-
-    # Check frame time
-    recommendations =
-      if state.render_stats.average_frame_time > 16.67 do
-        [
-          "Consider reducing MSAA samples or texture resolution"
-          | recommendations
-        ]
-      else
-        recommendations
-      end
-
-    # Check config
-    recommendations =
-      if state.config.performance_profile == :battery do
-        ["Enable performance profile for better frame rates" | recommendations]
-      else
-        recommendations
-      end
-
-    recommendations
-  end
+  # Removed unused generate_performance_recommendations
 end

@@ -342,7 +342,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     end
   end
 
-  defp retrieve_and_decrypt(key, opts, state) do
+  defp retrieve_and_decrypt(key, _opts, state) do
     start_time = System.system_time(:millisecond)
 
     # Retrieve from backend
@@ -492,7 +492,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     end
   end
 
-  defp decrypt_file(encrypted_name, output_path, opts, state) do
+  defp decrypt_file(encrypted_name, output_path, _opts, state) do
     storage_path = get_storage_path(encrypted_name, state)
 
     case File.open(storage_path, [:read, :binary]) do

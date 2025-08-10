@@ -74,7 +74,7 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
   use GenServer
   require Logger
 
-  alias Raxol.Terminal.Multiplexer.{Window, Pane, Layout}
+  # Multiplexer aliases will be added as needed
 
   defstruct [
     :sessions,
@@ -146,14 +146,7 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
     storage_path: "~/.raxol/sessions"
   }
 
-  # Default layouts
-  @default_layouts %{
-    even_horizontal: %{type: :split, direction: :horizontal, ratio: 0.5},
-    even_vertical: %{type: :split, direction: :vertical, ratio: 0.5},
-    main_horizontal: %{type: :main, direction: :horizontal, main_ratio: 0.6},
-    main_vertical: %{type: :main, direction: :vertical, main_ratio: 0.6},
-    tiled: %{type: :grid, rows: :auto, columns: :auto}
-  }
+  # Default layouts would be defined here when needed
 
   ## Public API
 
@@ -861,13 +854,13 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
     end
   end
 
-  defp update_pane_layout(state, new_pane, updated_existing_pane) do
+  defp update_pane_layout(state, _new_pane, _updated_existing_pane) do
     # This would update the actual layout structures
     # For now, just return the state
     state
   end
 
-  defp enrich_session_details(session, state) do
+  defp enrich_session_details(session, _state) do
     # Add detailed information about windows and panes
     windows =
       Enum.map(session.windows, fn window_id ->
@@ -1030,7 +1023,7 @@ defmodule EventBus do
     {:ok, %{subscribers: []}}
   end
 
-  def handle_cast({:broadcast, event_type, event_data}, state) do
+  def handle_cast({:broadcast, _event_type, _event_data}, state) do
     # Would broadcast to subscribers
     {:noreply, state}
   end

@@ -301,4 +301,38 @@ defmodule Raxol do
       reduced_motion: false
     })
   end
+
+  @doc """
+  Starts a Raxol application.
+
+  ## Parameters
+
+  * `module` - The application module that implements the Raxol.Core.Runtime.Application behaviour
+  * `props` - Initial props to pass to the application
+  * `config` - Configuration options for the application
+
+  ## Returns
+
+  {:ok, pid} on success, {:error, reason} on failure.
+
+  ## Example
+
+      {:ok, pid} = Raxol.start_app(MyApp, %{user: "alice"}, [])
+  """
+  def start_app(module, props, _config) do
+    # For now, return a simple success tuple
+    # In a full implementation, this would start the runtime
+    case module.init(props) do
+      {_initial_state, _commands} ->
+        # Start a simple GenServer to represent the app
+        pid = spawn(fn ->
+          receive do
+            :stop -> :ok
+          end
+        end)
+        {:ok, pid}
+      error ->
+        {:error, error}
+    end
+  end
 end

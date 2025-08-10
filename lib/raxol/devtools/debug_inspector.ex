@@ -30,7 +30,7 @@ defmodule Raxol.DevTools.DebugInspector do
   """
 
   use GenServer
-  alias Raxol.UI.State.{Store, Context, Hooks}
+  alias Raxol.UI.State.Store
   require Logger
 
   defmodule InspectorState do

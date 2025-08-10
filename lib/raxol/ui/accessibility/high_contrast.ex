@@ -1005,7 +1005,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     {255 - r, 255 - g, 255 - b}
   end
 
-  defp apply_theme_to_system(theme, config) do
+  defp apply_theme_to_system(theme, _config) do
     # This would apply the theme to the actual terminal UI system
     # For now, we'll log the application
     Logger.info("Applying high contrast theme: #{theme.name}")
@@ -1115,7 +1115,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     end
   end
 
-  defp is_color_blind_friendly(theme) do
+  defp is_color_blind_friendly(_theme) do
     # Check if theme uses patterns/shapes in addition to color
     # This would analyze the theme for color-blind accessibility
     # Simplified for now

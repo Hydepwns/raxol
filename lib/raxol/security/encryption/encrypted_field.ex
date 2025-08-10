@@ -24,8 +24,9 @@ defmodule Raxol.Security.Encryption.EncryptedField do
   """
 
   use Ecto.Type
+  require Logger
 
-  alias Raxol.Security.Encryption.{KeyManager, EncryptedStorage}
+  alias Raxol.Security.Encryption.KeyManager
 
   @impl Ecto.Type
   def type, do: :binary

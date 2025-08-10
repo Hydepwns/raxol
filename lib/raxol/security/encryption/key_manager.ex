@@ -336,7 +336,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
   ## Private Functions
 
-  defp init_master_key(config) do
+  defp init_master_key(_config) do
     # In production, this would load from secure storage or HSM
     # For now, generate a new master key
     case System.get_env("RAXOL_MASTER_KEY") do
@@ -676,7 +676,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
   defp generate_key_material(:aes_256_ctr), do: :crypto.strong_rand_bytes(32)
 
-  defp generate_key_in_hsm(algorithm, hsm_client) do
+  defp generate_key_in_hsm(algorithm, _hsm_client) do
     # Simulate HSM key generation
     Logger.debug("Generating #{algorithm} key in HSM")
     :crypto.strong_rand_bytes(32)
@@ -809,7 +809,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
     end)
   end
 
-  defp should_rotate?(key, now, rotation_days) do
+  defp should_rotate?(key, now, _rotation_days) do
     case key.expires_at do
       nil ->
         false
@@ -842,7 +842,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
     }
   end
 
-  defp get_key_creation_time(key_id, state) do
+  defp get_key_creation_time(_key_id, _state) do
     # Extract from file timestamp or stored metadata
     DateTime.utc_now()
   end

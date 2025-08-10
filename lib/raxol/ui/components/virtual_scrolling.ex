@@ -66,7 +66,7 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   require Logger
 
   alias Raxol.UI.Events.ScrollTracker
-  alias Raxol.Performance.MemoryManager
+  # Performance alias will be added when memory management is needed
   alias Raxol.Core.Accessibility
 
   defstruct [
@@ -267,7 +267,7 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   @impl GenServer
   def init(config) do
     # Initialize scroll tracker for handling scroll events
-    {:ok, scroll_tracker} =
+    {:ok, _scroll_tracker} =
       ScrollTracker.start_link(
         debounce_ms: config.scroll_debounce_ms,
         on_scroll: &handle_scroll_event/1
@@ -914,7 +914,7 @@ defmodule Raxol.UI.Components.VirtualScrolling do
     # Search within currently loaded items first
     loaded_matches =
       state.item_cache.items
-      |> Enum.filter(fn {index, item} -> search_fn.(item, query) end)
+      |> Enum.filter(fn {_index, item} -> search_fn.(item, query) end)
       |> Enum.map(fn {index, _item} -> index end)
       |> Enum.sort()
 
