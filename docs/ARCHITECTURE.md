@@ -278,6 +278,6 @@ The component system follows React-style patterns with lifecycle management. See
 
 ## References
 
-- [Component Guide](../examples/guides/03_components_and_layout/components/README.md)
-- [Plugin Development](../examples/guides/04_extending_raxol/plugin_development.md)
-- [Testing Guide](../examples/guides/05_development_and_testing/testing.md)
+- [Component Guide](examples/guides/03_components_and_layout/components/README.md)
+- [Plugin Development](examples/guides/04_extending_raxol/plugin_development.md)
+- [Testing Guide](examples/guides/05_development_and_testing/testing.md)
