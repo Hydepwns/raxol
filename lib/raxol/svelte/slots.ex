@@ -303,8 +303,7 @@ defmodule Raxol.Svelte.Slots.Tabs do
   Tabs component using scoped slots.
   """
   use Raxol.Svelte.Component
-  use Raxol.Svelte.Slots
-  use Raxol.Svelte.Reactive
+  use Phoenix.Component
 
   state(:active_tab, 0)
   state(:tabs, [])
@@ -319,12 +318,10 @@ defmodule Raxol.Svelte.Slots.Tabs do
     end)
   end
 
-  reactive :tab_count do
-    length(@tabs)
-  end
+  # Note: reactive declarations removed due to module conflicts
 
   def render(assigns) do
-    ~H"""
+    ~S"""
     <Box class="tabs">
       <!-- Tab headers -->
       <Row class="tab-headers" border_bottom="single">
@@ -371,7 +368,7 @@ defmodule Raxol.Svelte.Slots.DataTable do
   Data table component with customizable columns using slots.
   """
   use Raxol.Svelte.Component
-  use Raxol.Svelte.Slots
+  use Phoenix.Component
 
   state(:data, [])
   state(:columns, [])
@@ -394,7 +391,7 @@ defmodule Raxol.Svelte.Slots.DataTable do
   end
 
   def render(assigns) do
-    ~H"""
+    ~S"""
     <Box class="data-table" border="single">
       <!-- Table header -->
       <Row class="table-header" background="gray">

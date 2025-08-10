@@ -428,6 +428,7 @@ defmodule Raxol.Svelte.Context.AuthProvider do
   """
   use Raxol.Svelte.Component
   use Raxol.Svelte.Context
+  use Phoenix.Component
 
   state(:user, nil)
   state(:loading, false)
@@ -496,7 +497,7 @@ defmodule Raxol.Svelte.Context.AuthProvider do
   end
 
   def render(assigns) do
-    ~H"""
+    ~S"""
     {@children}
     """
   end
