@@ -497,4 +497,4 @@ end
 ## Additional Resources
 
 - [Style Guide](style_guide.md) - Component styling patterns
-- [Testing Guide](../../examples/guides/05_development_and_testing/testing.md) - Component testing patterns
+- [Testing Guide](../examples/guides/05_development_and_testing/testing.md) - Component testing patterns

@@ -13,7 +13,7 @@ Complete documentation for the Raxol full-stack terminal application framework.
 ## Core Documentation
 
 ### System Architecture & Setup
-- [**Architecture Decision Records**](adr/README.md) - Complete architectural foundation ✅
+- [**Architecture Decision Records**](./adr/README.md) - Complete architectural foundation ✅
   - 9 comprehensive ADRs covering all major decisions
   - Production-ready implementations with metrics and validation
   - Enterprise-grade documentation for onboarding and maintenance
@@ -24,8 +24,8 @@ Complete documentation for the Raxol full-stack terminal application framework.
 ### Framework Features
 - [**Web Interface**](WEB_INTERFACE_GUIDE.md) - Phoenix LiveView integration with WASH-style continuity
 - [**Plugin System**](PLUGIN_SYSTEM_GUIDE.md) - Creating and managing plugins
-- [**Components**](components/README.md) - Complete component reference
-- [**API Reference**](components/api/README.md) - Component lifecycle and API
+- [**Components**](./components/README.md) - Complete component reference
+- [**API Reference**](./components/api/README.md) - Component lifecycle and API
 
 ## User Guides
 
@@ -37,7 +37,7 @@ Comprehensive guides organized by topic:
 - [**Extensions**](./examples/guides/04_extending_raxol/) - Plugins and customization
 - [**Development**](./examples/guides/05_development_and_testing/) - Testing and workflow
 - [**Enterprise**](./examples/guides/06_enterprise/) - Auth, monitoring, deployment
-- [**WASH System**](./docs/archive/WASH_STYLE_DESIGN.md) - Web continuity architecture and design
+- **WASH System** - Web continuity architecture and design (documentation in progress)
 
 ## Examples & Code
 
@@ -94,6 +94,6 @@ A production-ready terminal framework for Elixir that enables building sophistic
 
 ---
 
-**Need something specific?** Use the search function or browse the guides above. Most questions are answered in the [Getting Started](../examples/guides/01_getting_started/) section.
+**Need something specific?** Use the search function or browse the guides above. Most questions are answered in the [Getting Started](./examples/guides/01_getting_started/) section.
 
 *Documentation last updated: 2025-08-10*
