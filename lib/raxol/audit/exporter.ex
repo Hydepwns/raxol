@@ -221,7 +221,7 @@ defmodule Raxol.Audit.Exporter do
 
   defp format_xml(events) do
     event_xml = Enum.map(events, &format_event_xml/1) |> Enum.join("\n")
-    
+
     """
     <?xml version="1.0" encoding="UTF-8"?>
     <AuditLog xmlns="http://raxol.io/audit/1.0">
@@ -254,22 +254,25 @@ defmodule Raxol.Audit.Exporter do
     user = Map.get(event, :user_id, "unknown")
     action = Map.get(event, :action, "")
     outcome = Map.get(event, :outcome, "")
-    
+
     case description do
-      "" -> "#{event_type}: User #{user} performed #{action} with outcome #{outcome}"
-      desc -> desc
+      "" ->
+        "#{event_type}: User #{user} performed #{action} with outcome #{outcome}"
+
+      desc ->
+        desc
     end
   end
 
   defp escape_xml(text) when is_binary(text) do
     text
     |> String.replace("&", "&amp;")
-    |> String.replace("<", "&lt;") 
+    |> String.replace("<", "&lt;")
     |> String.replace(">", "&gt;")
     |> String.replace("\"", "&quot;")
     |> String.replace("'", "&#39;")
   end
-  
+
   defp escape_xml(other), do: to_string(other)
 
   defp format_cef_message(event) do
@@ -312,15 +315,13 @@ defmodule Raxol.Audit.Exporter do
       format_event_message(event)
   end
 
-
-
   ## Compliance Reports
 
   defp generate_report(:soc2, time_range, opts, state) do
     events = load_events_for_timerange(time_range)
 
     {start_time, end_time} = time_range
-    
+
     report = %{
       framework: "SOC 2 Type II",
       period: %{
@@ -344,7 +345,7 @@ defmodule Raxol.Audit.Exporter do
     events = load_events_for_timerange(time_range)
 
     {start_time, end_time} = time_range
-    
+
     report = %{
       framework: "HIPAA",
       period: %{
@@ -369,7 +370,7 @@ defmodule Raxol.Audit.Exporter do
     events = load_events_for_timerange(time_range)
 
     {start_time, end_time} = time_range
-    
+
     report = %{
       framework: "GDPR",
       period: %{
@@ -393,7 +394,7 @@ defmodule Raxol.Audit.Exporter do
     events = load_events_for_timerange(time_range)
 
     {start_time, end_time} = time_range
-    
+
     report = %{
       framework: "PCI DSS v4.0",
       period: %{
@@ -429,11 +430,12 @@ defmodule Raxol.Audit.Exporter do
   end
 
   defp finalize_export(data, opts) do
-    result = data
-    |> maybe_compress(Keyword.get(opts, :compress, false))
-    |> maybe_encrypt(Keyword.get(opts, :encrypt, false))
-    |> maybe_sign(Keyword.get(opts, :sign, false))
-    
+    result =
+      data
+      |> maybe_compress(Keyword.get(opts, :compress, false))
+      |> maybe_encrypt(Keyword.get(opts, :encrypt, false))
+      |> maybe_sign(Keyword.get(opts, :sign, false))
+
     {:ok, result}
   end
 
@@ -555,7 +557,6 @@ defmodule Raxol.Audit.Exporter do
     |> String.replace("\n", "\\n")
     |> String.replace("\r", "\\r")
   end
-
 
   defp send_events_to_siem(events, siem_config, _state) do
     case siem_config.type do

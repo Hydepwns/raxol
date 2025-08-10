@@ -347,26 +347,28 @@ defmodule Raxol.Audit.Storage do
 
   defp filter_by_text_search(events, %{text_search: query}, state) do
     # Try search index first
-    matching_ids = 
+    matching_ids =
       query
-      |> search_in_index(state.search_index) 
+      |> search_in_index(state.search_index)
       |> MapSet.to_list()
-    
+
     indexed_results = Enum.filter(events, &(&1.event_id in matching_ids))
-    
+
     # Fallback to direct text search if index returns no results
     if Enum.empty?(indexed_results) do
       query_lower = String.downcase(query)
+
       Enum.filter(events, fn event ->
-        searchable_text = [
-          Map.get(event, :description, ""),
-          Map.get(event, :command, ""),
-          Map.get(event, :error_message, ""),
-          Map.get(event, :denial_reason, "")
-        ]
-        |> Enum.join(" ")
-        |> String.downcase()
-        
+        searchable_text =
+          [
+            Map.get(event, :description, ""),
+            Map.get(event, :command, ""),
+            Map.get(event, :error_message, ""),
+            Map.get(event, :denial_reason, "")
+          ]
+          |> Enum.join(" ")
+          |> String.downcase()
+
         String.contains?(searchable_text, query_lower)
       end)
     else

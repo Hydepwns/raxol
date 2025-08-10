@@ -192,6 +192,7 @@ defmodule Raxol.MixProject do
       {:meck, "~> 0.9", only: :test},
       {:excoveralls, "~> 0.18", only: :test},
       {:floki, ">= 0.30.0", only: :test},
+      {:stream_data, "~> 1.1", only: [:dev, :test]},
 
       # Benchmarking suite
       {:benchee, "~> 1.3", only: [:dev, :test]},
@@ -301,7 +302,7 @@ defmodule Raxol.MixProject do
   defp docs do
     [
       main: "readme",
-      logo: "assets/logo.png",
+      logo: "assets/logo.svg",
       extras: [
         "README.md",
         "docs/API.md",

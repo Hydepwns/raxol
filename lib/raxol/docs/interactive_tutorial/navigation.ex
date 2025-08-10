@@ -51,14 +51,15 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
       if current_index < length(tutorial.steps) - 1 do
         next_step = Enum.at(tutorial.steps, current_index + 1)
 
-        updated_state = state
-        |> Map.put(:current_step, next_step.id)
-        |> Map.update!(
-          :history,
-          &[{:step_change, tutorial_id, next_step.id} | &1]
-        )
-        |> State.update_progress(tutorial_id, next_step.id)
-        
+        updated_state =
+          state
+          |> Map.put(:current_step, next_step.id)
+          |> Map.update!(
+            :history,
+            &[{:step_change, tutorial_id, next_step.id} | &1]
+          )
+          |> State.update_progress(tutorial_id, next_step.id)
+
         {:ok, State.get_current_step(updated_state), updated_state}
       else
         # This was the last step, mark tutorial as completed
