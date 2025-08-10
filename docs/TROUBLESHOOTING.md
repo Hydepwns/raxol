@@ -1,3 +1,12 @@
+---
+title: Troubleshooting Guide
+description: Solutions to common issues and problems in Raxol applications
+date: 2025-08-10
+author: Raxol Team
+section: documentation
+tags: [troubleshooting, debugging, help, support]
+---
+
 # Troubleshooting Guide
 
 Complete guide to troubleshooting issues in Raxol, including common errors, solutions, and debugging techniques.

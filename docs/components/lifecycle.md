@@ -1,3 +1,12 @@
+---
+title: Component Lifecycle
+description: Comprehensive guide to Raxol component lifecycle in terminal and web environments
+date: 2025-08-10
+author: Raxol Team
+section: components
+tags: [lifecycle, components, hooks, terminal, web]
+---
+
 # Component Lifecycle
 
 Comprehensive guide to the Raxol component lifecycle, covering initialization, mounting, updates, rendering, and unmounting in both terminal and web environments.

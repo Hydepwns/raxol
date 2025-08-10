@@ -98,8 +98,8 @@ mix test test/performance/parser_test.exs
 ```
 
 ## Metrics
-- Target: < 100 μs/op ✅ Achieved: 3.3 μs/op
-- SGR processing: < 1 μs ✅ Achieved: 0.08 μs
+- Target: < 100 μs/op - Achieved: 3.3 μs/op
+- SGR processing: < 1 μs - Achieved: 0.08 μs
 - Memory allocations: Reduced by 75%
 - Throughput: 300,000 ops/sec achieved
 

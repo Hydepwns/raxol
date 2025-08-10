@@ -1,3 +1,12 @@
+---
+title: Raxol Configuration Guide
+description: Complete guide to configuring Raxol applications and runtime settings
+date: 2025-08-10
+author: Raxol Team
+section: documentation
+tags: [configuration, setup, settings, guide]
+---
+
 # Raxol Configuration Guide
 
 ## Overview
