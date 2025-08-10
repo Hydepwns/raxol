@@ -8,23 +8,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    name: Test (Elixir ${{ matrix.elixir }} | OTP ${{ matrix.otp }} | ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Main testing matrix - most stable combinations
-          - os: ubuntu-latest
-            elixir: "1.17.3"
-            otp: "27.0"
-          - os: macos-latest
-            elixir: "1.17.3"
-            otp: "27.0"
-
+  test-linux:
+    name: Test (Elixir 1.17.3 | OTP 27.0 | ubuntu-latest)
+    runs-on: ubuntu-latest
+    
     services:
-      # Note: Service containers only work on Linux runners
       postgres:
         image: postgres:14
         env:
@@ -201,6 +189,102 @@ jobs:
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  test-macos:
+    name: Test (Elixir 1.17.3 | OTP 27.0 | macos-latest)
+    runs-on: macos-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Mix dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            priv/plts
+          key: ${{ runner.os }}-mix-27.0-1.17.3-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-27.0-1.17.3-
+            ${{ runner.os }}-mix-
+
+      - name: Install macOS Dependencies and Setup PostgreSQL
+        run: |
+          brew install openssl@1.1
+          echo "LDFLAGS=-L$(brew --prefix openssl@1.1)/lib" >> $GITHUB_ENV
+          echo "CFLAGS=-I$(brew --prefix openssl@1.1)/include" >> $GITHUB_ENV
+
+          # Set up PostgreSQL locally on macOS since service containers aren't available
+          brew services start postgresql@14 || true
+          sleep 3
+          createuser -s postgres || true
+          psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" postgres || true
+          createdb -U postgres raxol_test || true
+
+      - name: Set up Erlang and Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27.0"
+          elixir-version: "1.17.3"
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Setup Mix and Rebar
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+
+      - name: Install Mix Dependencies
+        run: |
+          mix deps.get
+          mix deps.compile
+
+      - name: Install npm dependencies in subfolders
+        run: |
+          for dir in scripts/docs vscode-raxol; do
+            if [ -d "$dir" ] && [ -f "$dir/package.json" ]; then
+              echo "Installing npm dependencies in $dir"
+              (cd "$dir" && npm install)
+            fi
+          done
+
+      - name: Ensure Cowlib App File
+        run: |
+          if [ ! -f "deps/cowlib/ebin/cowlib.app" ]; then
+            echo "Fixing cowlib..."
+            (cd deps/cowlib && mix compile)
+          fi
+
+      - name: Run Tests
+        run: |
+          mix test --cover --warnings-as-errors
+        env:
+          MIX_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost/raxol_test
+          CI: true
+          SKIP_TERMBOX2_TESTS: true
+
+      - name: Run Credo
+        run: mix credo --strict
+        continue-on-error: true
+
+      - name: Upload coverage reports
+        if: success()
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./cover/coverage.xml
+          flags: unittests
+          name: codecov-${{ runner.os }}
+          fail_ci_if_error: false
+
+      # Skip Snyk security scan on macOS to avoid Docker dependencies
+      - name: Security Scan on macOS
+        run: |
+          echo "Skipping Snyk security scan on macOS (Docker not available)"
 
   format:
     name: Format
