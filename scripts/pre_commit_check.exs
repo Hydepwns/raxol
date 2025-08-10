@@ -117,10 +117,12 @@ defmodule PreCommitCheck do
       (all_markdown_files_in_project_glob ++ existing_additional_files)
       |> Enum.uniq()
 
-    # Filter out files in the deps/ directory
+    # Filter out files in the deps/ directory and node_modules
     markdown_files_filtered =
       Enum.reject(all_markdown_files_in_project, fn file_path ->
-        String.starts_with?(file_path, "deps/")
+        String.starts_with?(file_path, "deps/") or
+          String.starts_with?(file_path, "node_modules/") or
+          String.contains?(file_path, "/node_modules/")
       end)
 
     # Normalize all paths before putting them into the set
@@ -244,7 +246,9 @@ defmodule PreCommitCheck do
       headings =
         content_without_frontmatter
         |> String.split("\n")
-        |> Enum.filter(fn line -> Regex.match?(~r/^#\s|^##\s|^###\s|^####\s|^#####\s|^######\s/, line) end)
+        |> Enum.filter(fn line ->
+          Regex.match?(~r/^#\s|^##\s|^###\s|^####\s|^#####\s|^######\s/, line)
+        end)
         |> Enum.map(fn line ->
           # Remove leading #s and whitespace
           String.replace(line, ~r/^#+\s*/, "")
@@ -254,10 +258,14 @@ defmodule PreCommitCheck do
       normalize_anchor = fn str ->
         str
         |> String.downcase()
-        |> String.replace(~r/[^a-z0-9\-\s]/u, "") # Remove most punctuation
-        |> String.replace(~r/[\s]+/, "-")         # Spaces to dashes
-        |> String.replace(~r/-+/, "-")             # Collapse dashes
-        |> String.trim("-")                        # Trim leading/trailing dashes
+        # Remove most punctuation
+        |> String.replace(~r/[^a-z0-9\-\s]/u, "")
+        # Spaces to dashes
+        |> String.replace(~r/[\s]+/, "-")
+        # Collapse dashes
+        |> String.replace(~r/-+/, "-")
+        # Trim leading/trailing dashes
+        |> String.trim("-")
       end
 
       heading_anchors = Enum.map(headings, normalize_anchor)

@@ -61,6 +61,15 @@ Raxol aims to be the definitive terminal application framework, combining:
 
 ## HIGH-PRIORITY ROADMAP
 
+### Strategic Positioning & Market Fit
+Critical for long-term success - validate assumptions and find product-market fit:
+- [ ] **Next.js Paradigm Integration** - Add Next.js-style framework support alongside existing multi-framework architecture
+- [ ] **Focus on Native Terminal Advantages** - Identify and perfect use cases where terminal is genuinely superior to web
+- [ ] **WASH-Style Continuity Polish** - Make seamless terminal↔web transitions the killer feature
+- [ ] **Performance-Critical Use Cases** - Target real-time monitoring, log analysis, system introspection where 3.3μs matters
+- [ ] **Terminal-Native Features** - Sixel graphics, raw input modes, direct OS integration that web can't match
+- [ ] **Product-Market Fit Validation** - Find 10 real users with genuine problems Raxol solves better than alternatives
+
 ### Plugin Ecosystem Foundation
 Critical for adoption - needs to be done before community plugins:
 - [ ] **Plugin API versioning system** - Backwards compatibility guarantees
@@ -88,6 +97,15 @@ Unlock enterprise adoption:
 - [ ] **Compliance reports** - Automated SOC2/HIPAA/GDPR reporting
 - [ ] **Data residency controls** - Geographic data isolation
 
+### Framework Strategy & Developer Experience
+Address the multi-framework complexity question:
+- [ ] **Framework Focus Decision** - Pick one framework and make it perfect rather than spreading across all five
+- [ ] **Framework Migration Tools** - `mix raxol.migrate --from=react --to=svelte` for easy switching
+- [ ] **Live Component Preview** - See changes without full app restart
+- [ ] **Performance Profiler UI** - Visual bottleneck identification and optimization recommendations
+- [ ] **Error Boundary System** - Better crash recovery and debugging with helpful error messages
+- [ ] **Developer Experience Acceleration** - Tools that make developers love using Raxol over alternatives
+
 ### Documentation Excellence
 - [ ] **Performance tuning guide** - Optimization strategies
 - [ ] **Troubleshooting playbooks** - Common issues and solutions
@@ -95,6 +113,7 @@ Unlock enterprise adoption:
 - [ ] **Deployment guide** - Docker, K8s, systemd, AWS/GCP/Azure
 - [ ] **Security hardening guide** - Production best practices
 - [ ] **API versioning guide** - Backwards compatibility
+- [ ] **Use Case Documentation** - When to choose Raxol over web apps, clear value propositions
 
 ---
 
@@ -181,6 +200,14 @@ Unlock enterprise adoption:
 - [ ] **Set up Dependabot** - Automated dependency updates
 - [ ] **Create .github/FUNDING.yml** - Sponsorship options
 - [ ] **Add CODEOWNERS file** - Automatic review assignments
+
+### Community Growth & Positioning
+- [ ] **Position as "Next.js of Terminal UIs"** - Opinionated but flexible with amazing defaults
+- [ ] **Launch Bounty Program** - Incentivize community contributions for core features
+- [ ] **Run Plugin Contests** - Jumpstart ecosystem with quality extensions and community engagement
+- [ ] **Create Corporate Adoption Program** - Direct enterprise support and success stories
+- [ ] **Build One Killer Demo App** - Something that showcases the 10x better experience over alternatives
+- [ ] **Get 10 Real Users** - Not developers, actual end users who validate product-market fit
 
 ### Marketing Preparation
 - [ ] **Terminal Renaissance blog series** - Weekly technical posts
