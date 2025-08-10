@@ -9,6 +9,8 @@ tags: [architecture, documentation, design]
 
 # Raxol Architecture
 
+> **Architecture Decision Records**: All major architectural decisions are documented in [ADRs](adr/README.md). This document provides an overview, while ADRs contain detailed decision context, alternatives considered, and validation metrics.
+
 ## System Overview
 
 Raxol is a full-stack terminal application framework that enables building sophisticated terminal applications with both local and web interfaces. The framework combines a powerful terminal emulator core with a component-based UI system, real-time web capabilities, and an extensible plugin architecture.
@@ -110,7 +112,7 @@ graph TB
 
 ### Web Interface Architecture
 
-The web layer enables browser-based access using Phoenix LiveView:
+The web layer enables browser-based access using Phoenix LiveView. See [ADR-0008: Phoenix LiveView Integration Architecture](adr/0008-phoenix-liveview-integration-architecture.md) for the decision rationale and [ADR-0004: WASH-Style Web Continuity](adr/0004-wash-style-web-continuity.md) for the continuity system design.
 
 ```mermaid
 graph TB
@@ -141,7 +143,7 @@ Key features:
 
 ### Plugin System Architecture
 
-The plugin system enables runtime extensibility:
+The plugin system enables runtime extensibility. See [ADR-0005: Runtime Plugin System Architecture](adr/0005-runtime-plugin-system-architecture.md) for detailed decision context and implementation rationale.
 
 ```mermaid
 graph TB
@@ -220,6 +222,8 @@ sequenceDiagram
 
 ### Component Framework
 
+The component system follows React-style patterns with lifecycle management. See [ADR-0001: Component-Based Architecture](adr/0001-component-based-architecture.md) for the architectural decision and [ADR-0007: State Management Strategy](adr/0007-state-management-strategy.md) for state handling patterns.
+
 - `Raxol.UI.Components.Base.Component` - Component behaviour and lifecycle
 - `Raxol.Core.Renderer.View` - View composition and layout
 - `Raxol.Core.Renderer.Layout` - Layout calculations
@@ -250,10 +254,10 @@ sequenceDiagram
 
 - `Raxol.Core.Config` - Configuration management
 - `Raxol.Core.Metrics` - Telemetry and monitoring
-- `Raxol.Security.*` - Authentication and security
+- `Raxol.Security.*` - Authentication and security (see [ADR-0006: Enterprise Security and Compliance Model](adr/0006-enterprise-security-and-compliance-model.md))
 - `Raxol.Core.ErrorHandler` - Error handling and recovery
 
-> **Note:** The buffer management subsystem was fully migrated from a monolithic GenServer (`BufferServer`) to the new modular `BufferServerRefactored` architecture. This new system is composed of focused modules for operation processing, batching, metrics, and damage tracking, resulting in a 42,000x performance improvement and greatly improved maintainability. All legacy code has been removed.
+> **Note:** The buffer management subsystem was fully migrated from a monolithic GenServer (`BufferServer`) to the new modular `BufferServerRefactored` architecture. This new system is composed of focused modules for operation processing, batching, metrics, and damage tracking, resulting in a 42,000x performance improvement and greatly improved maintainability. All legacy code has been removed. See [ADR-0009: High-Performance Buffer Management](adr/0009-high-performance-buffer-management.md) for the complete decision context and technical details.
 
 ## Design Principles
 
