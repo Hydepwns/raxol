@@ -69,8 +69,8 @@ jobs:
       - name: Set up Erlang and Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{ matrix.otp }}
-          elixir-version: ${{ matrix.elixir }}
+          otp-version: "27.0"
+          elixir-version: "1.17.3"
 
       - name: Install Node.js
         uses: actions/setup-node@v3
