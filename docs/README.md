@@ -1,4 +1,13 @@
-# 📚 Raxol Documentation
+---
+title: Raxol Documentation
+description: Documentation hub for the Raxol terminal application framework
+date: 2025-08-10
+author: Raxol Team
+section: documentation
+tags: [documentation, hub, navigation, framework]
+---
+
+# Raxol Documentation
 
 > **Note**: Raxol is a full-stack terminal application framework. Please use the [Documentation Hub](CONSOLIDATED_README.md) for complete documentation.
 

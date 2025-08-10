@@ -1,3 +1,12 @@
+---
+title: Component Guide
+description: Complete guide to Raxol's component system for terminal and web applications
+date: 2025-08-10
+author: Raxol Team
+section: components
+tags: [components, guide, terminal, web, ui]
+---
+
 # Component Guide
 
 Complete guide to Raxol's component system for building applications that work seamlessly in both terminal and web environments.

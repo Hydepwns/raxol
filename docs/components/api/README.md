@@ -1,3 +1,12 @@
+---
+title: Component API Reference
+description: Complete API documentation for Raxol components and behaviors
+date: 2025-08-10
+author: Raxol Team
+section: components
+tags: [api, reference, components, behaviors, documentation]
+---
+
 # Component API Reference
 
 Complete API documentation for Raxol components, including base behaviors, component types, and usage patterns.

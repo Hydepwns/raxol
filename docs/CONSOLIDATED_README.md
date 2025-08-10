@@ -11,7 +11,7 @@ tags: [documentation, hub, guide, reference, framework]
 
 Welcome to Raxol—a full-stack terminal application framework for Elixir that enables you to build sophisticated terminal applications with both local and web interfaces.
 
-## 🚀 Quick Start
+## Quick Start
 
 1. **Installation**: Choose your preferred method
    - [Nix Development Environment](DEVELOPMENT.md#quick-setup) (Recommended)
@@ -25,7 +25,7 @@ Welcome to Raxol—a full-stack terminal application framework for Elixir that e
    mix run bin/demo.exs form  # Specific demo
    ```
 
-## 📚 Documentation Structure
+## Documentation Structure
 
 ### Core Documentation
 - [Architecture](ARCHITECTURE.md) - Full system architecture including web and plugin layers
@@ -53,7 +53,7 @@ Welcome to Raxol—a full-stack terminal application framework for Elixir that e
 - [Advanced Examples](../examples/snippets/advanced/) - Complex implementations
 - [Showcase](../examples/snippets/showcase/) - Feature demonstrations
 
-## 🎯 Key Features
+## Key Features
 
 ### Core Framework Components
 - **Advanced Terminal Emulator**: Full ANSI/VT100+ compliance with Sixel graphics, Unicode support, and buffer management
@@ -68,7 +68,7 @@ Welcome to Raxol—a full-stack terminal application framework for Elixir that e
 - **Concurrent Users**: Supports 100+ simultaneous sessions
 - **Memory Efficiency**: Optimized buffer management with configurable limits
 
-## 🔗 External Resources
+## External Resources
 
 - [GitHub Repository](https://github.com/Hydepwns/raxol)
 - [HexDocs](https://hexdocs.pm/raxol/0.9.0)
@@ -76,7 +76,7 @@ Welcome to Raxol—a full-stack terminal application framework for Elixir that e
 - [Discussions](https://github.com/Hydepwns/raxol/discussions)
 - [Changelog](../CHANGELOG.md)
 
-## 🚀 Framework Capabilities
+## Framework Capabilities
 
 Raxol is more than a terminal UI toolkit—it's a comprehensive framework for building modern terminal applications that can run locally or be accessed through the web. Whether you're building development tools, administrative interfaces, or collaborative applications, Raxol provides the foundation you need.
 

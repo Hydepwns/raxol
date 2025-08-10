@@ -1,3 +1,12 @@
+---
+title: Raxol Web Interface Guide
+description: Guide to building and deploying web-based terminal applications
+date: 2025-08-10
+author: Raxol Team
+section: documentation
+tags: [web, interface, phoenix, liveview, guide]
+---
+
 # Raxol Web Interface Guide
 
 ## Overview

@@ -1,3 +1,12 @@
+---
+title: Raxol API Reference
+description: Complete API documentation for the Raxol terminal framework with examples
+date: 2025-08-10
+author: Raxol Team
+section: documentation
+tags: [api, reference, documentation, framework]
+---
+
 # Raxol API Reference
 
 Complete API documentation for the Raxol terminal framework with examples.

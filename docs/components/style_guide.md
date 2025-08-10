@@ -1,3 +1,12 @@
+---
+title: Component Style Guide
+description: Essential styling patterns and best practices for Raxol components
+date: 2025-08-10
+author: Raxol Team
+section: components
+tags: [styling, components, design, patterns, guide]
+---
+
 # Component Style Guide
 
 Essential styling patterns and best practices for Raxol components.
