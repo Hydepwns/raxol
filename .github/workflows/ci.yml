@@ -17,11 +17,11 @@ jobs:
         include:
           # Main testing matrix - most stable combinations
           - os: ubuntu-latest
-            elixir: "1.15.7"
-            otp: "26.0"
+            elixir: "1.17.3"
+            otp: "27.0"
           - os: macos-latest
-            elixir: "1.15.7"
-            otp: "26.0"
+            elixir: "1.17.3"
+            otp: "27.0"
 
     services:
       # Note: Service containers only work on Linux runners
@@ -226,8 +226,8 @@ jobs:
       - name: Set up Erlang and Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "26.0"
-          elixir-version: "1.15.7"
+          otp-version: "27.0"
+          elixir-version: "1.17.3"
 
       - name: Check Docker Availability
         id: check_docker
@@ -281,8 +281,8 @@ jobs:
       - name: Set up Erlang and Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "25.0"
-          elixir-version: "1.14"
+          otp-version: "27.0"
+          elixir-version: "1.17.3"
 
       - name: Check Docker Availability
         id: check_docker

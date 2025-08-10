@@ -382,7 +382,6 @@ defmodule Raxol.Audit.Analyzer do
   end
 
   defp analyze_data_flow(events, _state) do
-
     # Group events by user
     by_user = Enum.group_by(events, &Map.get(&1, :user_id))
 

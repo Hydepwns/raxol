@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Rendering.Backend do
   @moduledoc """
   Behaviour definition for terminal rendering backends.
-  
+
   This module defines the interface that all rendering backends must implement,
   including GPU-accelerated backends (OpenGL, Metal, Vulkan) and software rendering.
   """
@@ -29,7 +29,8 @@ defmodule Raxol.Terminal.Rendering.Backend do
           effects: list()
         ]
 
-  @type effect_type :: :blur | :glow | :scanlines | :chromatic_aberration | :vignette
+  @type effect_type ::
+          :blur | :glow | :scanlines | :chromatic_aberration | :vignette
 
   @type stats :: %{
           fps: float(),
@@ -42,7 +43,8 @@ defmodule Raxol.Terminal.Rendering.Backend do
   @doc """
   Initializes the rendering backend with the given configuration.
   """
-  @callback init(config :: map()) :: {:ok, state :: term()} | {:error, reason :: term()}
+  @callback init(config :: map()) ::
+              {:ok, state :: term()} | {:error, reason :: term()}
 
   @doc """
   Creates a rendering surface with the specified options.
@@ -70,7 +72,11 @@ defmodule Raxol.Terminal.Rendering.Backend do
   @doc """
   Enables a visual effect on the rendering backend.
   """
-  @callback enable_effect(state :: term(), effect :: effect_type(), params :: keyword()) ::
+  @callback enable_effect(
+              state :: term(),
+              effect :: effect_type(),
+              params :: keyword()
+            ) ::
               {:ok, new_state :: term()} | {:error, reason :: term()}
 
   @doc """

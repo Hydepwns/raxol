@@ -720,6 +720,6 @@ You've mastered Raxol's component system! You now understand:
 
 ## Next Steps
 
-- Explore [Terminal Emulation](/tutorials/terminal_emulation)
-- Learn about [Advanced Input Handling](/tutorials/advanced_input)
-- Build [Production Applications](/tutorials/production_apps)
+- Explore [Terminal Emulation](terminal_emulation.md)
+- Learn about [Advanced Input Handling](advanced_input.md)
+- Build [Production Applications](production_apps.md)
