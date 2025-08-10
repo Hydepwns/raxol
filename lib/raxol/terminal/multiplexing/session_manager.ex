@@ -569,7 +569,7 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
         state
       ) do
     case find_pane(state, session_id, window_id, pane_id) do
-      {:ok, session, window, pane} ->
+      {:ok, _session, window, pane} ->
         if length(window.panes) >= state.config.max_panes_per_window do
           {:reply, {:error, :max_panes_exceeded}, state}
         else

@@ -81,7 +81,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   def accordion do
     %{
       type: :compound_component,
-      render_fn: fn props, context ->
+      render_fn: fn props, _context ->
         accordion_type = Map.get(props, :type, :single)
 
         default_value =
@@ -170,7 +170,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   def accordion_item do
     %{
       type: :compound_component,
-      render_fn: fn props, context ->
+      render_fn: fn props, _context ->
         value = Map.get(props, :value)
         disabled = Map.get(props, :disabled, false)
         children = Map.get(props, :children, [])
@@ -223,7 +223,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   def accordion_trigger do
     %{
       type: :compound_component,
-      render_fn: fn props, context ->
+      render_fn: fn props, _context ->
         children = Map.get(props, :children, [])
 
         # Get item context
@@ -273,7 +273,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   def accordion_content do
     %{
       type: :compound_component,
-      render_fn: fn props, context ->
+      render_fn: fn props, _context ->
         children = Map.get(props, :children, [])
 
         # Get item context
@@ -312,7 +312,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   def dropdown do
     %{
       type: :compound_component,
-      render_fn: fn props, context ->
+      render_fn: fn props, _context ->
         controlled_open = Map.get(props, :open)
         default_open = Map.get(props, :default_open, false)
         on_open_change = Map.get(props, :on_open_change)
@@ -369,7 +369,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   def dropdown_trigger do
     %{
       type: :compound_component,
-      render_fn: fn props, context ->
+      render_fn: fn props, _context ->
         children = Map.get(props, :children, [])
 
         # Get dropdown context
@@ -400,7 +400,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   def dropdown_content do
     %{
       type: :compound_component,
-      render_fn: fn props, context ->
+      render_fn: fn props, _context ->
         children = Map.get(props, :children, [])
 
         # Get dropdown context
@@ -464,7 +464,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   def dropdown_item do
     %{
       type: :compound_component,
-      render_fn: fn props, context ->
+      render_fn: fn props, _context ->
         value = Map.get(props, :value)
         disabled = Map.get(props, :disabled, false)
         on_select = Map.get(props, :on_select)
@@ -545,7 +545,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   def tabs do
     %{
       type: :compound_component,
-      render_fn: fn props, context ->
+      render_fn: fn props, _context ->
         controlled_value = Map.get(props, :value)
         default_value = Map.get(props, :default_value)
         on_value_change = Map.get(props, :on_value_change)
@@ -583,7 +583,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   def tabs_list do
     %{
       type: :compound_component,
-      render_fn: fn props, context ->
+      render_fn: fn props, _context ->
         children = Map.get(props, :children, [])
 
         # Get tabs context
@@ -629,7 +629,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   def tabs_trigger do
     %{
       type: :compound_component,
-      render_fn: fn props, context ->
+      render_fn: fn props, _context ->
         value = Map.get(props, :value)
         disabled = Map.get(props, :disabled, false)
         children = Map.get(props, :children, [])
@@ -698,7 +698,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   def tabs_content do
     %{
       type: :compound_component,
-      render_fn: fn props, context ->
+      render_fn: fn props, _context ->
         value = Map.get(props, :value)
         children = Map.get(props, :children, [])
 

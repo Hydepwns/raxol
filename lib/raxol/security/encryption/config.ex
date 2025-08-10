@@ -375,7 +375,7 @@ defmodule Raxol.Security.Encryption.Config do
 
       # Check key length
       if params[:key_length] && params.key_length < requirements.min_key_length do
-        violations = [
+        _violations = [
           {:key_length, "Minimum #{requirements.min_key_length} bits required"}
           | violations
         ]
@@ -384,7 +384,7 @@ defmodule Raxol.Security.Encryption.Config do
       # Check algorithm
       if params[:algorithm] &&
            params.algorithm not in requirements.allowed_algorithms do
-        violations = [
+        _violations = [
           {:algorithm, "Algorithm not allowed for #{profile.name}"} | violations
         ]
       end
@@ -392,7 +392,7 @@ defmodule Raxol.Security.Encryption.Config do
       # Check rotation
       if params[:rotation_days] &&
            params.rotation_days > requirements.key_rotation_days do
-        violations = [
+        _violations = [
           {:rotation, "Maximum #{requirements.key_rotation_days} days allowed"}
           | violations
         ]
@@ -400,7 +400,7 @@ defmodule Raxol.Security.Encryption.Config do
 
       # Check audit requirement
       if requirements[:require_audit] && !params[:audit_enabled] do
-        violations = [
+        _violations = [
           {:audit, "Audit logging required for #{profile.name}"} | violations
         ]
       end

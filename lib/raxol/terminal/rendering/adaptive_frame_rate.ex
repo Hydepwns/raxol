@@ -649,7 +649,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
 
   ## Update Functions
 
-  defp update_content_analyzer(analyzer, change_type, intensity) do
+  defp update_content_analyzer(analyzer, change_type, _intensity) do
     now = System.monotonic_time(:millisecond)
 
     # Add to recent changes

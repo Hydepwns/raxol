@@ -131,7 +131,7 @@ defmodule Raxol.Handlers.UpdateTerminalHandler do
          {:ok, current_config} <- get_terminal_config(terminal_process),
          :ok <- validate_version(current_config, command.expected_version),
          {:ok, changes} <- calculate_changes(current_config, command),
-         {:ok, updated_config} <-
+         {:ok, _updated_config} <-
            apply_configuration_changes(terminal_process, changes),
          {:ok, event} <-
            create_terminal_configured_event(command, changes, current_config),

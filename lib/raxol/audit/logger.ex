@@ -26,7 +26,6 @@ defmodule Raxol.Audit.Logger do
     AuthorizationEvent,
     ConfigurationChangeEvent,
     ComplianceEvent,
-    TerminalAuditEvent,
     DataPrivacyEvent
   }
 
@@ -220,6 +219,13 @@ defmodule Raxol.Audit.Logger do
     }
 
     log_event(event, :privacy, :medium)
+  end
+
+  @doc """
+  Logs a debug message.
+  """
+  def debug(message) do
+    Logger.debug("[AUDIT] #{message}")
   end
 
   @doc """

@@ -11,8 +11,7 @@ defmodule Raxol.Terminal.TerminalProcess do
   require Logger
 
   alias Raxol.Terminal.TerminalRegistry
-  alias Raxol.Terminal.{Emulator, Session, Buffer}
-  alias Raxol.UI.Theming.ThemeManager
+  # Terminal process aliases will be added as needed
 
   defstruct [
     :terminal_id,
@@ -313,7 +312,7 @@ defmodule Raxol.Terminal.TerminalProcess do
     {:ok, %{state | emulator: new_emulator}}
   end
 
-  defp process_input(input_message, state) do
+  defp process_input(_input_message, state) do
     # Process input and send to emulator
     updated_metrics = %{
       state.metrics
@@ -329,7 +328,7 @@ defmodule Raxol.Terminal.TerminalProcess do
     {:ok, new_state}
   end
 
-  defp process_output(data, state) do
+  defp process_output(_data, state) do
     # Process output from emulator and update buffer
     updated_metrics = %{
       state.metrics
@@ -371,7 +370,7 @@ defmodule Raxol.Terminal.TerminalProcess do
 
   defp save_terminal_session(state) do
     # Save terminal session data
-    session_data = %{
+    _session_data = %{
       terminal_id: state.terminal_id,
       user_id: state.user_id,
       buffer_content: get_buffer_content(state),
