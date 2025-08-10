@@ -331,7 +331,7 @@ end
 - [Damage Tracker](../../lib/raxol/terminal/buffer/damage_tracker.ex)
 - [Buffer Manager](../../lib/raxol/terminal/buffer/manager.ex)
 - [Performance Benchmarks](../../lib/raxol/benchmarks/visualization_benchmark.ex)
-- [Architecture Documentation](../ARCHITECTURE.md#buffer-management-layer)
+- [Architecture Documentation](../ARCHITECTURE.md#terminal-core)
 
 ## Alternative Approaches Considered
 

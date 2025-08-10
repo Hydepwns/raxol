@@ -838,4 +838,4 @@ end
 
 ---
 
-This API reference covers the core functionality of Raxol. For more examples and advanced usage, check out the [examples directory](examples/) and the [component showcase](examples/showcase.ex).
+This API reference covers the core functionality of Raxol. For more examples and advanced usage, check out the [examples directory](./examples/) and the [component showcase](./examples/showcase.ex).

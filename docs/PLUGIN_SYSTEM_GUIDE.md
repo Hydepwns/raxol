@@ -13,7 +13,7 @@ tags: [plugins, extensions, development, guide]
 
 The Raxol plugin system enables you to extend the framework's functionality at runtime without modifying core code. Plugins can add new commands, hook into system events, provide custom UI components, and integrate with external services.
 
-> **📚 Architecture Context**: See [ADR-0005: Runtime Plugin System Architecture](adr/0005-runtime-plugin-system-architecture.md) for the complete architectural decision context, alternatives considered, and technical implementation details.
+> **📚 Architecture Context**: See [ADR-0005: Runtime Plugin System Architecture](./adr/0005-runtime-plugin-system-architecture.md) for the complete architectural decision context, alternatives considered, and technical implementation details.
 
 ## Plugin Architecture
 
@@ -646,7 +646,7 @@ config :raxol,
 
 ## Next Steps
 
-- Explore [plugin development guide](../examples/guides/04_extending_raxol/plugin_development.md)
+- Explore [plugin development guide](./examples/guides/04_extending_raxol/plugin_development.md)
 - Read the [Plugin API Reference](https://hexdocs.pm/raxol/Raxol.Plugin.html)
 - Join the [plugin developer community](https://github.com/Hydepwns/raxol/discussions/categories/plugins)
 - Submit your plugin to the [Raxol Plugin Registry](https://raxol-plugins.org)

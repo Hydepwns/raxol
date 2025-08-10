@@ -6,9 +6,9 @@
 
 | ADR | Title | Status | Coverage |
 |-----|-------|--------|----------|
-| [0001](adr/0001-component-based-architecture.md) | Component-Based Architecture | Accepted | ✅ **Current** - Matches React-style component system |
-| [0002](adr/0002-parser-performance-optimization.md) | Parser Performance Optimization | Implemented | ✅ **Current** - 3.3μs/op achieved (30x improvement) |
-| [0003](adr/0003-terminal-emulation-strategy.md) | Terminal Emulation Strategy | Accepted | ✅ **Current** - Layered architecture implemented |
+| [0001](./adr/0001-component-based-architecture.md) | Component-Based Architecture | Accepted | ✅ **Current** - Matches React-style component system |
+| [0002](./adr/0002-parser-performance-optimization.md) | Parser Performance Optimization | Implemented | ✅ **Current** - 3.3μs/op achieved (30x improvement) |
+| [0003](./adr/0003-terminal-emulation-strategy.md) | Terminal Emulation Strategy | Accepted | ✅ **Current** - Layered architecture implemented |
 
 ## Gap Analysis - Missing Critical ADRs
 

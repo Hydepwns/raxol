@@ -304,11 +304,11 @@ defmodule Raxol.MixProject do
       extras: [
         "README.md",
         "docs/CONFIGURATION.md",
-        "examples/guides/01_getting_started/quick_start.md",
-        "examples/guides/02_core_concepts/terminal_emulator.md",
-        "examples/snippets/README.md",
-        "extensions/vscode/README.md",
-        "examples/guides/03_components_and_layout/components/README.md"
+        "docs/examples/guides/01_getting_started/quick_start.md",
+        "docs/examples/guides/02_core_concepts/terminal_emulator.md",
+        "docs/examples/snippets/README.md",
+        "vscode-raxol/README.md",
+        "docs/examples/guides/03_components_and_layout/components/README.md"
       ],
       source_url: "https://github.com/Hydepwns/raxol",
       source_ref: "v#{@version}",

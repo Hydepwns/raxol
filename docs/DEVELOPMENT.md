@@ -11,7 +11,7 @@ tags: [development, setup, nix, workflow]
 
 This guide explains how to set up and work with the Raxol development environment using Nix.
 
-> **📚 For Architecture Context**: See [Architecture Decision Records](adr/README.md) for detailed background on all major architectural decisions and design rationale.
+> **📚 For Architecture Context**: See [Architecture Decision Records](./adr/README.md) for detailed background on all major architectural decisions and design rationale.
 
 ## Recent Infrastructure Improvements
 

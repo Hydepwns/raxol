@@ -125,12 +125,12 @@ Raxol.Terminal.resume_session(session.id)
 
 ## References
 
-- [WASH System Design Document](../archive/WASH_STYLE_DESIGN.md)
+- WASH System Design Document (documentation in progress)
 - [Original WASH Paper](https://www.informatik.uni-kiel.de/~thiemann/papers/wash.pdf)
 - [SessionBridge Implementation](../../lib/raxol/web/session_bridge.ex)
 - [PersistentStore Implementation](../../lib/raxol/web/persistent_store.ex)
 - [StateSynchronizer Implementation](../../lib/raxol/web/state_synchronizer.ex)
-- [FlowEngine Implementation](../../lib/raxol/web/flow_engine.ex)
+- FlowEngine Implementation (planned: `lib/raxol/web/flow_engine.ex`)
 - [StateMachine Implementation](../../lib/raxol/web/state_machine.ex)
 
 ## Alternative Approaches Considered
