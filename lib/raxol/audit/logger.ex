@@ -316,7 +316,7 @@ defmodule Raxol.Audit.Logger do
 
   @impl GenServer
   def handle_call({:query_logs, filters, opts}, _from, state) do
-    case Storage.query(state.storage, filters, opts) do
+    case Storage.query(filters, opts) do
       {:ok, results} -> {:reply, {:ok, results}, state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end

@@ -494,6 +494,19 @@ defmodule Raxol.Audit.Events do
   Creates a data access audit event.
   """
   def data_access_event(user_id, operation, resource_type, opts \\ []) do
+    metadata = Keyword.get(opts, :metadata, %{})
+
+    # Add export_format to metadata if operation is export
+    metadata =
+      if operation == :export do
+        case Keyword.get(opts, :export_format) do
+          nil -> metadata
+          format -> Map.put(metadata, :export_format, format)
+        end
+      else
+        metadata
+      end
+
     %DataAccessEvent{
       event_id: generate_event_id(),
       timestamp: System.system_time(:millisecond),
@@ -509,7 +522,7 @@ defmodule Raxol.Audit.Events do
       error_message: Keyword.get(opts, :error_message),
       ip_address: Keyword.get(opts, :ip_address),
       session_id: Keyword.get(opts, :session_id),
-      metadata: Keyword.get(opts, :metadata, %{})
+      metadata: metadata
     }
   end
 
@@ -517,6 +530,26 @@ defmodule Raxol.Audit.Events do
   Creates a terminal audit event.
   """
   def terminal_audit_event(user_id, terminal_id, action, opts \\ []) do
+    metadata = Keyword.get(opts, :metadata, %{})
+
+    # Add elevation_type to metadata if action is privilege_escalation
+    metadata =
+      if action == :privilege_escalation do
+        metadata =
+          case Keyword.get(opts, :elevation_type) do
+            nil -> metadata
+            elev_type -> Map.put(metadata, :elevation_type, elev_type)
+          end
+
+        # Also add target_user to metadata if provided
+        case Keyword.get(opts, :target_user) do
+          nil -> metadata
+          user -> Map.put(metadata, :target_user, user)
+        end
+      else
+        metadata
+      end
+
     %TerminalAuditEvent{
       event_id: generate_event_id(),
       timestamp: System.system_time(:millisecond),
@@ -531,7 +564,7 @@ defmodule Raxol.Audit.Events do
       duration_ms: Keyword.get(opts, :duration_ms),
       ip_address: Keyword.get(opts, :ip_address),
       session_id: Keyword.get(opts, :session_id),
-      metadata: Keyword.get(opts, :metadata, %{})
+      metadata: metadata
     }
   end
 
@@ -539,7 +572,23 @@ defmodule Raxol.Audit.Events do
   Creates a security event.
   """
   def security_event(event_type, severity, description, opts \\ []) do
-    %SecurityEvent{
+    metadata = Keyword.get(opts, :metadata, %{})
+
+    # Add threat_indicators to metadata if provided
+    metadata =
+      case Keyword.get(opts, :threat_indicators) do
+        nil -> metadata
+        indicators -> Map.put(metadata, :threat_indicators, indicators)
+      end
+
+    # Add action_taken to metadata if provided (for backward compatibility)
+    metadata =
+      case Keyword.get(opts, :action_taken) do
+        nil -> metadata
+        action -> Map.put(metadata, :action_taken, action)
+      end
+
+    event = %SecurityEvent{
       event_id: generate_event_id(),
       timestamp: System.system_time(:millisecond),
       event_type: event_type,
@@ -553,6 +602,131 @@ defmodule Raxol.Audit.Events do
       blocked: Keyword.get(opts, :blocked, false),
       user_id: Keyword.get(opts, :user_id),
       description: description,
+      metadata: metadata
+    }
+
+    # Add dynamic fields for backward compatibility
+    event =
+      case Keyword.get(opts, :threat_indicators) do
+        nil -> event
+        indicators -> Map.put(event, :threat_indicators, indicators)
+      end
+
+    case Keyword.get(opts, :action_taken) do
+      nil -> event
+      action -> Map.put(event, :action_taken, action)
+    end
+  end
+
+  @doc """
+  Creates a compliance audit event with 4 arguments (for backward compatibility).
+  """
+  def compliance_event(framework, requirement, activity, status) do
+    compliance_event(framework, requirement, activity, status, [])
+  end
+
+  @doc """
+  Creates a compliance audit event.
+  """
+  def compliance_event(framework, requirement, activity, status, opts)
+      when is_list(opts) do
+    %ComplianceEvent{
+      event_id: generate_event_id(),
+      timestamp: System.system_time(:millisecond),
+      compliance_framework: framework,
+      requirement: requirement,
+      activity: activity,
+      status: status,
+      evidence: Keyword.get(opts, :evidence),
+      auditor_id: Keyword.get(opts, :auditor_id),
+      findings: Keyword.get(opts, :findings),
+      remediation_required: Keyword.get(opts, :remediation_required, false),
+      due_date: Keyword.get(opts, :due_date),
+      metadata: Keyword.get(opts, :metadata, %{})
+    }
+  end
+
+  @doc """
+  Creates a configuration change audit event with 5 arguments (for backward compatibility).
+  """
+  def configuration_change_event(
+        user_id,
+        component,
+        setting,
+        old_value,
+        new_value
+      ) do
+    configuration_change_event(
+      user_id,
+      component,
+      setting,
+      old_value,
+      new_value,
+      []
+    )
+  end
+
+  @doc """
+  Creates a configuration change audit event.
+  """
+  def configuration_change_event(
+        user_id,
+        component,
+        setting,
+        old_value,
+        new_value,
+        opts
+      )
+      when is_list(opts) do
+    change_type =
+      cond do
+        is_nil(old_value) && not is_nil(new_value) -> :create
+        not is_nil(old_value) && is_nil(new_value) -> :delete
+        true -> :update
+      end
+
+    %ConfigurationChangeEvent{
+      event_id: generate_event_id(),
+      timestamp: System.system_time(:millisecond),
+      user_id: user_id,
+      component: component,
+      setting: setting,
+      old_value: old_value,
+      new_value: new_value,
+      change_type: change_type,
+      approval_required: Keyword.get(opts, :approval_required, false),
+      approved_by: Keyword.get(opts, :approved_by),
+      rollback_available: Keyword.get(opts, :rollback_available, false),
+      ip_address: Keyword.get(opts, :ip_address),
+      session_id: Keyword.get(opts, :session_id),
+      metadata: Keyword.get(opts, :metadata, %{})
+    }
+  end
+
+  @doc """
+  Creates a privacy/GDPR audit event with 3 arguments (for backward compatibility).
+  """
+  def privacy_event(data_subject_id, request_type, status) do
+    privacy_event(data_subject_id, request_type, status, [])
+  end
+
+  @doc """
+  Creates a privacy/GDPR audit event.
+  """
+  def privacy_event(data_subject_id, request_type, status, opts)
+      when is_list(opts) do
+    %DataPrivacyEvent{
+      event_id: generate_event_id(),
+      timestamp: System.system_time(:millisecond),
+      data_subject_id: data_subject_id,
+      request_type: request_type,
+      status: status,
+      processor_id: Keyword.get(opts, :processor_id),
+      data_categories: Keyword.get(opts, :data_categories),
+      legal_basis: Keyword.get(opts, :legal_basis),
+      retention_period: Keyword.get(opts, :retention_period),
+      third_parties: Keyword.get(opts, :third_parties),
+      cross_border_transfer: Keyword.get(opts, :cross_border_transfer, false),
       metadata: Keyword.get(opts, :metadata, %{})
     }
   end
