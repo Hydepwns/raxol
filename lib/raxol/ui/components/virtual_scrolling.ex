@@ -933,38 +933,45 @@ defmodule Raxol.UI.Components.VirtualScrolling do
       loaded_matches
     end
   end
-  
+
   defp search_entire_dataset(state, query, search_fn, initial_matches) do
     total_items = state.config.item_count
     batch_size = state.search_config.search_batch_size || 1000
-    
+
     # Search in batches to avoid memory issues
-    all_matches = 
+    all_matches =
       0
       |> Stream.iterate(&(&1 + batch_size))
       |> Stream.take_while(&(&1 < total_items))
-      |> Task.async_stream(fn start_index ->
-        end_index = min(start_index + batch_size - 1, total_items - 1)
-        count = end_index - start_index + 1
-        
-        case state.data_source.loader.(start_index, count) do
-          {:ok, items} ->
-            items
-            |> Enum.with_index(start_index)
-            |> Enum.filter(fn {item, _index} -> search_fn.(item, query) end)
-            |> Enum.map(fn {_item, index} -> index end)
-          
-          {:error, reason} ->
-            Logger.warning("Search batch failed for indices #{start_index}-#{end_index}: #{inspect(reason)}")
-            []
-        end
-      end, max_concurrency: 4, timeout: :infinity)
-      |> Stream.flat_map(fn 
+      |> Task.async_stream(
+        fn start_index ->
+          end_index = min(start_index + batch_size - 1, total_items - 1)
+          count = end_index - start_index + 1
+
+          case state.data_source.loader.(start_index, count) do
+            {:ok, items} ->
+              items
+              |> Enum.with_index(start_index)
+              |> Enum.filter(fn {item, _index} -> search_fn.(item, query) end)
+              |> Enum.map(fn {_item, index} -> index end)
+
+            {:error, reason} ->
+              Logger.warning(
+                "Search batch failed for indices #{start_index}-#{end_index}: #{inspect(reason)}"
+              )
+
+              []
+          end
+        end,
+        max_concurrency: 4,
+        timeout: :infinity
+      )
+      |> Stream.flat_map(fn
         {:ok, matches} -> matches
         {:exit, _reason} -> []
       end)
       |> Enum.to_list()
-      
+
     # Combine with initially loaded matches and remove duplicates
     (initial_matches ++ all_matches)
     |> Enum.uniq()

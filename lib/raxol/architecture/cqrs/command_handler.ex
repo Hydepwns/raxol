@@ -1,6 +1,6 @@
 defmodule Raxol.Architecture.CQRS.CommandHandler do
   require Logger
-  
+
   @moduledoc """
   Command handler behaviour for CQRS pattern implementation in Raxol.
 

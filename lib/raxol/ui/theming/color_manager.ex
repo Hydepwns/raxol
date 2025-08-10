@@ -47,7 +47,11 @@ defmodule Raxol.UI.Theming.ColorManager do
 
   @impl GenServer
   def handle_call({:update_palette, palette}, _from, state) do
-    new_state = %{state | current_palette: Map.merge(state.current_palette, palette)}
+    new_state = %{
+      state
+      | current_palette: Map.merge(state.current_palette, palette)
+    }
+
     {:reply, :ok, new_state}
   end
 

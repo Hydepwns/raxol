@@ -30,7 +30,7 @@ config :raxol, RaxolWeb.Endpoint,
 config :raxol, Raxol.Repo,
   username: "postgres",
   password: "postgres",
-  hostname: "localhost", 
+  hostname: "localhost",
   database: "raxol_test",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 10

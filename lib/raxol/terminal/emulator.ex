@@ -457,29 +457,29 @@ defmodule Raxol.Terminal.Emulator do
   # Process management
   @doc """
   Starts a linked terminal emulator process.
-  
+
   This function starts a GenServer-based terminal emulator that can handle
   terminal operations asynchronously.
-  
+
   ## Options
-  
+
     * `:width` - Terminal width in columns (default: 80)
     * `:height` - Terminal height in rows (default: 24)
     * `:name` - Optional process name for registration
     * `:session_id` - Optional session identifier
-  
+
   ## Examples
-  
+
       {:ok, pid} = Emulator.start_link(width: 120, height: 40)
   """
   def start_link(opts \\ []) do
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)
     name = Keyword.get(opts, :name)
-    
+
     # Create initial emulator state
     initial_state = new(width, height, opts)
-    
+
     # Start a GenServer with the emulator state
     GenServer.start_link(
       __MODULE__.Server,

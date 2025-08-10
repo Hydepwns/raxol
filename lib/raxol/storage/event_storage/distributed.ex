@@ -84,7 +84,10 @@ defmodule Raxol.Storage.EventStorage.Distributed do
       consistency_level: config.consistency_level
     }
 
-    Logger.info("Distributed event storage initialized with replication factor #{config.replication_factor}")
+    Logger.info(
+      "Distributed event storage initialized with replication factor #{config.replication_factor}"
+    )
+
     {:ok, state}
   end
 
@@ -92,25 +95,54 @@ defmodule Raxol.Storage.EventStorage.Distributed do
   def handle_call({:append_event, event, stream_name}, _from, state) do
     # For now, delegate to local storage
     # In a full implementation, this would replicate across nodes
-    result = Raxol.Storage.EventStorage.Disk.append_event(state.local_storage, event, stream_name)
+    result =
+      Raxol.Storage.EventStorage.Disk.append_event(
+        state.local_storage,
+        event,
+        stream_name
+      )
+
     {:reply, result, state}
   end
 
   @impl GenServer
   def handle_call({:append_events, events, stream_name}, _from, state) do
-    result = Raxol.Storage.EventStorage.Disk.append_events(state.local_storage, events, stream_name)
+    result =
+      Raxol.Storage.EventStorage.Disk.append_events(
+        state.local_storage,
+        events,
+        stream_name
+      )
+
     {:reply, result, state}
   end
 
   @impl GenServer
-  def handle_call({:read_stream, stream_name, start_position, count}, _from, state) do
-    result = Raxol.Storage.EventStorage.Disk.read_stream(state.local_storage, stream_name, start_position, count)
+  def handle_call(
+        {:read_stream, stream_name, start_position, count},
+        _from,
+        state
+      ) do
+    result =
+      Raxol.Storage.EventStorage.Disk.read_stream(
+        state.local_storage,
+        stream_name,
+        start_position,
+        count
+      )
+
     {:reply, result, state}
   end
 
   @impl GenServer
   def handle_call({:read_all, start_position, count}, _from, state) do
-    result = Raxol.Storage.EventStorage.Disk.read_all(state.local_storage, start_position, count)
+    result =
+      Raxol.Storage.EventStorage.Disk.read_all(
+        state.local_storage,
+        start_position,
+        count
+      )
+
     {:reply, result, state}
   end
 
@@ -122,13 +154,23 @@ defmodule Raxol.Storage.EventStorage.Distributed do
 
   @impl GenServer
   def handle_call({:save_snapshot, snapshot}, _from, state) do
-    result = Raxol.Storage.EventStorage.Disk.save_snapshot(state.local_storage, snapshot)
+    result =
+      Raxol.Storage.EventStorage.Disk.save_snapshot(
+        state.local_storage,
+        snapshot
+      )
+
     {:reply, result, state}
   end
 
   @impl GenServer
   def handle_call({:load_snapshot, stream_name}, _from, state) do
-    result = Raxol.Storage.EventStorage.Disk.load_snapshot(state.local_storage, stream_name)
+    result =
+      Raxol.Storage.EventStorage.Disk.load_snapshot(
+        state.local_storage,
+        stream_name
+      )
+
     {:reply, result, state}
   end
 end

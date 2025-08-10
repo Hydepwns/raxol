@@ -106,5 +106,4 @@ bench/results/**/*_summary.json
 bench/snapshots/
 
 # Claude AI artifacts
-.claude/
-CLAUDE.md 
+# .claude/

@@ -396,6 +396,6 @@ You've completed the Getting Started tutorial! You now understand:
 
 ## Next Steps
 
-- Explore the [Component Catalog](/tutorials/component_catalog)
-- Learn about [Terminal Emulation](/tutorials/terminal_emulation)
-- Build a [Real-World Application](/tutorials/building_apps)
+- Explore the [Component Catalog](component_catalog.md)
+- Learn about [Terminal Emulation](terminal_emulation.md)
+- Build a [Real-World Application](building_apps.md)

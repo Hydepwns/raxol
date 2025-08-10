@@ -195,10 +195,7 @@ defmodule Raxol.Web.FlowEngine do
     end
   end
   
-  @doc """
-  Adds error handler to a flow.
-  """
-  defmacro flow |> on_error(handler) do
+  defmacro flow ~> on_error(handler) do
     quote do
       add_error_handler(unquote(flow), unquote(handler))
     end
@@ -207,7 +204,7 @@ defmodule Raxol.Web.FlowEngine do
   @doc """
   Adds success handler to a flow.
   """
-  defmacro flow |> on_success(handler) do
+  defmacro flow ~> on_success(handler) do
     quote do
       add_success_handler(unquote(flow), unquote(handler))
     end
@@ -359,7 +356,7 @@ defmodule Raxol.Web.FlowEngine do
   def persist_session do
     step(:persist_session, "Persist Session State") do
       case SessionBridge.get_session_state(context.session_id) do
-        {:ok, session_state} ->
+        {:ok, _session_state} ->
           # Ensure session is persisted across all tiers
           :ok = PersistentStore.persist_to_all_tiers(context.session_id)
           
@@ -442,7 +439,10 @@ defmodule Raxol.Web.FlowEngine do
   defp execute_step_with_retry(step, context, attempt \\ 1) do
     try do
       case step.handler.(context) do
-        result when result in [{:continue, _}, {:redirect, _}, {:halt, _}, {:async, _}] ->
+        {:continue, _} = result -> result
+        {:redirect, _} = result -> result
+        {:halt, _} = result -> result
+        {:async, _} = result ->
           result
         {:error, reason} when attempt < step.retry_attempts ->
           Logger.warning("Step #{step.name} failed (attempt #{attempt}), retrying: #{inspect(reason)}")

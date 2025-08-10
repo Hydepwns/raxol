@@ -32,7 +32,7 @@ defmodule Raxol.UI.Events.ScrollTracker do
   @impl GenServer
   def init(opts) do
     config = Keyword.get(opts, :config, %{})
-    
+
     state = %__MODULE__{
       config: config,
       scroll_position: 0,

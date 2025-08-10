@@ -325,12 +325,15 @@ defmodule Raxol do
     case module.init(props) do
       {_initial_state, _commands} ->
         # Start a simple GenServer to represent the app
-        pid = spawn(fn ->
-          receive do
-            :stop -> :ok
-          end
-        end)
+        pid =
+          spawn(fn ->
+            receive do
+              :stop -> :ok
+            end
+          end)
+
         {:ok, pid}
+
       error ->
         {:error, error}
     end

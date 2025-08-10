@@ -115,7 +115,13 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     %{
       max_texture_size: 4096,
       supports_shaders: true,
-      supports_effects: [:blur, :glow, :scanlines, :chromatic_aberration, :vignette],
+      supports_effects: [
+        :blur,
+        :glow,
+        :scanlines,
+        :chromatic_aberration,
+        :vignette
+      ],
       hardware_accelerated: true
     }
   end
@@ -575,7 +581,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   defp remove_surface(state, surface) when is_map(surface) do
     # Find surface by content
-    surface_id = 
+    surface_id =
       state.surface_cache
       |> Enum.find_value(fn {id, cached_surface} ->
         if cached_surface == surface, do: id

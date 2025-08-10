@@ -366,7 +366,7 @@ defmodule Raxol.Audit.Integration do
     # This integrates with the existing account lockout mechanism in Raxol.Auth
     ip = Keyword.get(opts, :ip_address)
     Logger.debug("Tracking failed attempt for #{username} from #{ip}")
-    
+
     # Log security event for audit trail
     Logger.log_security_event(
       :failed_authentication,
@@ -377,7 +377,7 @@ defmodule Raxol.Audit.Integration do
       user_agent: Keyword.get(opts, :user_agent),
       timestamp: DateTime.utc_now()
     )
-    
+
     # Note: Account lockout logic is handled automatically in Raxol.Auth.authenticate_user_password/2
     # which updates failed_login_attempts and sets locked_until when attempts >= 5
     :ok

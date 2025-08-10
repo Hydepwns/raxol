@@ -32,7 +32,7 @@ defmodule Raxol.UI.Events.KeyboardTracker do
   @impl GenServer
   def init(opts) do
     config = Keyword.get(opts, :config, %{})
-    
+
     state = %__MODULE__{
       config: config,
       key_bindings: %{},

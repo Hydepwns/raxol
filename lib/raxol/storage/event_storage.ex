@@ -52,7 +52,7 @@ defmodule Raxol.Storage.EventStorage do
               {:ok, Snapshot.t()} | {:error, term()}
 
   # Default implementation delegation functions
-  
+
   @doc """
   Appends an event to the specified stream.
   """
@@ -60,8 +60,10 @@ defmodule Raxol.Storage.EventStorage do
     case storage do
       pid when is_pid(pid) ->
         GenServer.call(pid, {:append_event, event, stream_name})
+
       module when is_atom(module) ->
         module.append_event(module, event, stream_name)
+
       _ ->
         {:error, :invalid_storage}
     end
@@ -74,8 +76,10 @@ defmodule Raxol.Storage.EventStorage do
     case storage do
       pid when is_pid(pid) ->
         GenServer.call(pid, {:append_events, events, stream_name})
+
       module when is_atom(module) ->
         module.append_events(module, events, stream_name)
+
       _ ->
         {:error, :invalid_storage}
     end
@@ -88,8 +92,10 @@ defmodule Raxol.Storage.EventStorage do
     case storage do
       pid when is_pid(pid) ->
         GenServer.call(pid, {:read_stream, stream_name, start_position, count})
+
       module when is_atom(module) ->
         module.read_stream(module, stream_name, start_position, count)
+
       _ ->
         {:error, :invalid_storage}
     end
@@ -102,8 +108,10 @@ defmodule Raxol.Storage.EventStorage do
     case storage do
       pid when is_pid(pid) ->
         GenServer.call(pid, {:read_all, start_position, count})
+
       module when is_atom(module) ->
         module.read_all(module, start_position, count)
+
       _ ->
         {:error, :invalid_storage}
     end
@@ -116,8 +124,10 @@ defmodule Raxol.Storage.EventStorage do
     case storage do
       pid when is_pid(pid) ->
         GenServer.call(pid, :list_streams)
+
       module when is_atom(module) ->
         module.list_streams(module)
+
       _ ->
         {:error, :invalid_storage}
     end
@@ -130,8 +140,10 @@ defmodule Raxol.Storage.EventStorage do
     case storage do
       pid when is_pid(pid) ->
         GenServer.call(pid, {:save_snapshot, snapshot})
+
       module when is_atom(module) ->
         module.save_snapshot(module, snapshot)
+
       _ ->
         {:error, :invalid_storage}
     end
@@ -144,8 +156,10 @@ defmodule Raxol.Storage.EventStorage do
     case storage do
       pid when is_pid(pid) ->
         GenServer.call(pid, {:load_snapshot, stream_name})
+
       module when is_atom(module) ->
         module.load_snapshot(module, stream_name)
+
       _ ->
         {:error, :invalid_storage}
     end

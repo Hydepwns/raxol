@@ -20,7 +20,7 @@ config :raxol, :web,
 
 config :raxol, :core,
   max_concurrent_sessions: 1000,
-  buffer_size_limit: 10485760
+  buffer_size_limit: 10_485_760
 
 # Phoenix Production Configuration
 config :raxol, RaxolWeb.Endpoint,
