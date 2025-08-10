@@ -764,8 +764,8 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   defp init_storage_backend(config) do
     case config.storage_backend do
       :memory -> EventStorage.Memory.start_link()
-      :disk -> EventStorage.Disk.start_link(config)
-      :distributed -> EventStorage.Distributed.start_link(config)
+      :disk -> EventStorage.Disk.start_link(config: config)
+      :distributed -> EventStorage.Distributed.start_link(config: config)
     end
   end
 

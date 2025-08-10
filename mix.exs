@@ -125,7 +125,9 @@ defmodule Raxol.MixProject do
   defp core_deps do
     [
       # Terminal rendering library - maintained fork at https://github.com/hydepwns/termbox2-nif
-      # {:termbox2_nif, "~> 2.0"},  # TODO: Re-enable when testing complete
+      # {:termbox2_nif, "~> 2.0"},  # Disabled - NIF loading issues with path resolution
+      # Connection pooling library (optional)
+      {:poolboy, "~> 1.5", optional: true},
       # Tutorial loading frontmatter parser
       {:yaml_elixir, "~> 2.11"},
       # Syntax highlighting core
