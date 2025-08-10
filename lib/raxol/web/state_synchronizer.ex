@@ -35,7 +35,7 @@ defmodule Raxol.Web.StateSynchronizer do
 
   use GenServer
   alias Phoenix.PubSub
-  alias Raxol.Web.{PersistentStore, SessionBridge}
+  alias Raxol.Web.SessionBridge
 
   require Logger
 

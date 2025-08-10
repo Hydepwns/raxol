@@ -494,12 +494,27 @@ defmodule Raxol.Web.PersistentStore do
       metadata: Map.take(session_state, [:state, :metadata])
     }
 
-    %Session{}
-    |> Session.changeset(attrs)
-    |> Repo.insert_or_update()
-    |> case do
-      {:ok, _session} -> :ok
-      {:error, reason} -> {:error, reason}
+    # Try to find existing session first
+    case Repo.get_by(Session, session_id: session_id) do
+      nil ->
+        # Insert new session
+        %Session{}
+        |> Session.changeset(attrs)
+        |> Repo.insert()
+        |> case do
+          {:ok, _session} -> :ok
+          {:error, reason} -> {:error, reason}
+        end
+        
+      existing_session ->
+        # Update existing session
+        existing_session
+        |> Session.changeset(attrs)
+        |> Repo.update()
+        |> case do
+          {:ok, _session} -> :ok
+          {:error, reason} -> {:error, reason}
+        end
     end
   end
 

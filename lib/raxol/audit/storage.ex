@@ -56,8 +56,8 @@ defmodule Raxol.Audit.Storage do
   @doc """
   Queries audit events with filters and options.
   """
-  def query(storage \\ __MODULE__, filters, opts \\ []) do
-    GenServer.call(storage, {:query, filters, opts}, 30_000)
+  def query(filters, opts \\ []) do
+    GenServer.call(__MODULE__, {:query, filters, opts}, 30_000)
   end
 
   @doc """
