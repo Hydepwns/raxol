@@ -32,10 +32,16 @@ defmodule Raxol.Web.PersistentStore do
   """
 
   use GenServer
-  alias Raxol.Web.Session.Session
-  alias Raxol.Repo
-
   require Logger
+
+  # Database functionality - aliases
+  # alias Raxol.Web.Session.Session  # Unused - commented out
+  alias Raxol.Repo
+  
+  # Check if database functionality is available at runtime.
+  defp database_available? do
+    Code.ensure_loaded?(Ecto.Schema) and Code.ensure_loaded?(Raxol.Repo)
+  end
 
   @ets_table :raxol_sessions_ets
   @dets_file "priv/sessions.dets"
@@ -484,37 +490,43 @@ defmodule Raxol.Web.PersistentStore do
   end
 
   defp store_in_database(session_id, session_state, _config) do
-    # Store in database using Ecto
-    attrs = %{
-      id: session_id,
-      user_id: Map.get(session_state, :user_id, "unknown"),
-      status: :active,
-      created_at: Map.get(session_state, :created_at, DateTime.utc_now()),
-      last_active: DateTime.utc_now(),
-      metadata: Map.take(session_state, [:state, :metadata])
-    }
+    if database_available?() do
+      # Store in database using Ecto
+      attrs = %{
+        id: session_id,
+        user_id: Map.get(session_state, :user_id, "unknown"),
+        status: :active,
+        created_at: Map.get(session_state, :created_at, DateTime.utc_now()),
+        last_active: DateTime.utc_now(),
+        metadata: Map.take(session_state, [:state, :metadata])
+      }
 
-    # Try to find existing session first
-    case Repo.get_by(Session, session_id: session_id) do
-      nil ->
-        # Insert new session
-        %Session{}
-        |> Session.changeset(attrs)
-        |> Repo.insert()
-        |> case do
-          {:ok, _session} -> :ok
-          {:error, reason} -> {:error, reason}
-        end
+      # Try to find existing session first
+      case Repo.get_by(Raxol.Web.Session.Session, session_id: session_id) do
+        nil ->
+          # Insert new session
+          %Raxol.Web.Session.Session{}
+          |> Raxol.Web.Session.Session.changeset(attrs)
+          |> Repo.insert()
+          |> case do
+            {:ok, _session} -> :ok
+            {:error, reason} -> {:error, reason}
+          end
 
-      existing_session ->
-        # Update existing session
-        existing_session
-        |> Session.changeset(attrs)
-        |> Repo.update()
-        |> case do
-          {:ok, _session} -> :ok
-          {:error, reason} -> {:error, reason}
-        end
+        existing_session ->
+          # Update existing session
+          existing_session
+          |> Raxol.Web.Session.Session.changeset(attrs)
+          |> Repo.update()
+          |> case do
+            {:ok, _session} -> :ok
+            {:error, reason} -> {:error, reason}
+          end
+      end
+    else
+      # Database not available - skip database storage
+      Logger.debug("Database not available, skipping database storage")
+      :ok
     end
   end
 
@@ -554,15 +566,16 @@ defmodule Raxol.Web.PersistentStore do
   end
 
   defp get_from_database(session_id) do
-    case Repo.get(Session, session_id) do
-      nil ->
-        {:error, :not_found}
+    if database_available?() do
+      case Repo.get(Raxol.Web.Session.Session, session_id) do
+        nil ->
+          {:error, :not_found}
 
-      session ->
-        # Convert database record to session state format
-        session_state = %{
-          session_id: session.id,
-          user_id: session.user_id,
+        session ->
+          # Convert database record to session state format
+          session_state = %{
+            session_id: session.id,
+            user_id: session.user_id,
           created_at: session.created_at,
           updated_at: session.updated_at,
           state: get_in(session.metadata, ["state"]) || %{},
@@ -574,6 +587,9 @@ defmodule Raxol.Web.PersistentStore do
         }
 
         {:ok, session_state}
+      end
+    else
+      {:error, :not_found}
     end
   end
 
@@ -704,18 +720,26 @@ defmodule Raxol.Web.PersistentStore do
   end
 
   defp delete_from_database(session_id) do
-    case Repo.get(Session, session_id) do
-      nil -> :ok
-      session -> Repo.delete(session)
+    if database_available?() do
+      case Repo.get(Raxol.Web.Session.Session, session_id) do
+        nil -> :ok
+        session -> Repo.delete(session)
+      end
+    else
+      :ok
     end
   end
 
   defp count_database_sessions do
-    # Simple count - in practice might be cached
-    try do
-      Repo.aggregate(Session, :count, :id)
-    rescue
-      _ -> 0
+    if database_available?() do
+      # Simple count - in practice might be cached
+      try do
+        Repo.aggregate(Raxol.Web.Session.Session, :count, :id)
+      rescue
+        _ -> 0
+      end
+    else
+      0
     end
   end
 end
