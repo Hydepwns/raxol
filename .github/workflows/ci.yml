@@ -51,19 +51,33 @@ jobs:
             libssl-dev libwxgtk3.2-dev libgl1-mesa-dev libglu1-mesa-dev \
             libpng-dev openssl
 
+      - name: Check Docker Availability  
+        if: runner.os == 'macOS'
+        run: |
+          if command -v docker &> /dev/null; then
+            echo "Docker is available"
+            echo "DOCKER_AVAILABLE=true" >> $GITHUB_ENV
+          else
+            echo "Docker is not available on macOS runner"
+            echo "DOCKER_AVAILABLE=false" >> $GITHUB_ENV
+          fi
+
       - name: Install macOS Dependencies and Setup PostgreSQL
         if: runner.os == 'macOS'
         run: |
-          brew install openssl@1.1
+          brew install openssl@1.1 postgresql@14
           echo "LDFLAGS=-L$(brew --prefix openssl@1.1)/lib" >> $GITHUB_ENV
           echo "CFLAGS=-I$(brew --prefix openssl@1.1)/include" >> $GITHUB_ENV
 
           # Set up PostgreSQL locally on macOS since service containers aren't available
           brew services start postgresql@14 || true
-          sleep 3
+          sleep 5
           createuser -s postgres || true
           psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" postgres || true
           createdb -U postgres raxol_test || true
+          
+          # Verify PostgreSQL is running
+          pg_isready -h localhost || echo "PostgreSQL may not be ready yet"
 
 
       - name: Set up Erlang and Elixir
@@ -177,7 +191,7 @@ jobs:
 
       # For macOS, directly use npm-installed Snyk CLI to avoid Docker entirely
       - name: Security Scan on macOS
-        if: runner.os == 'macOS' && env.DOCKER_AVAILABLE == 'true'
+        if: runner.os == 'macOS'
         run: |
           # Install Snyk CLI via npm
           echo "Installing Snyk CLI via npm..."
@@ -209,18 +223,32 @@ jobs:
             ${{ runner.os }}-mix-27.0-1.17.3-
             ${{ runner.os }}-mix-
 
+      - name: Check Docker Availability
+        id: check_docker
+        run: |
+          if command -v docker &> /dev/null; then
+            echo "Docker is available"
+            echo "DOCKER_AVAILABLE=true" >> $GITHUB_ENV
+          else
+            echo "Docker is not available on macOS runner"
+            echo "DOCKER_AVAILABLE=false" >> $GITHUB_ENV
+          fi
+
       - name: Install macOS Dependencies and Setup PostgreSQL
         run: |
-          brew install openssl@1.1
+          brew install openssl@1.1 postgresql@14
           echo "LDFLAGS=-L$(brew --prefix openssl@1.1)/lib" >> $GITHUB_ENV
           echo "CFLAGS=-I$(brew --prefix openssl@1.1)/include" >> $GITHUB_ENV
 
           # Set up PostgreSQL locally on macOS since service containers aren't available
           brew services start postgresql@14 || true
-          sleep 3
+          sleep 5
           createuser -s postgres || true
           psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" postgres || true
           createdb -U postgres raxol_test || true
+          
+          # Verify PostgreSQL is running
+          pg_isready -h localhost || echo "PostgreSQL may not be ready yet"
 
       - name: Set up Erlang and Elixir
         uses: erlef/setup-beam@v1
@@ -259,14 +287,34 @@ jobs:
             (cd deps/cowlib && mix compile)
           fi
 
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost; then
+              echo "PostgreSQL is ready!"
+              break
+            fi
+            echo "Waiting for PostgreSQL to be ready... ($i/30)"
+            sleep 1
+          done
+
       - name: Run Tests
         run: |
           mix test --cover --warnings-as-errors
         env:
           MIX_ENV: test
-          DATABASE_URL: postgres://postgres:postgres@localhost/raxol_test
+          RAXOL_ENV: test
+          RAXOL_HEADLESS: true
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: raxol_test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/raxol_test
           CI: true
           SKIP_TERMBOX2_TESTS: true
+          TERM: xterm-256color
+          PLATFORM: macOS
 
       - name: Run Credo
         run: mix credo --strict
@@ -281,10 +329,23 @@ jobs:
           name: codecov-${{ runner.os }}
           fail_ci_if_error: false
 
-      # Skip Snyk security scan on macOS to avoid Docker dependencies
+      # Use npm-installed Snyk CLI on macOS to avoid Docker dependencies
       - name: Security Scan on macOS
+        if: env.SNYK_TOKEN != ''
         run: |
-          echo "Skipping Snyk security scan on macOS (Docker not available)"
+          # Install Snyk CLI via npm
+          echo "Installing Snyk CLI via npm..."
+          npm install -g snyk
+          
+          # Authenticate with Snyk
+          snyk auth ${{ secrets.SNYK_TOKEN }}
+          
+          # Run the security scan
+          echo "Running Snyk security scan..."
+          snyk test --severity-threshold=high || echo "Snyk found issues but continuing"
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
   format:
     name: Format

@@ -203,7 +203,13 @@ Raxol aims to be the definitive terminal application framework, combining:
 2. ~~**Fix tutorial navigation tests**~~ - COMPLETED: Fixed state management, missing Raxol.Component module, and navigation logic
 3. ~~**Fix unused aliases**~~ - COMPLETED: Added proper aliases for PersistentStore and StateSynchronizer modules in session_bridge.ex
 4. ~~**Fix Repo.insert_or_update**~~ - COMPLETED: Implemented runtime database availability checks with conditional execution patterns for test/production environments
-5. **macOS CI runner** - Resolve Docker availability issue for macOS GitHub Actions
+5. ~~**macOS CI runner**~~ - COMPLETED: Resolved Docker availability issue for macOS GitHub Actions ✅
+   - Added Docker availability detection for all CI runners
+   - Configured PostgreSQL to run locally on macOS without Docker
+   - Fixed security scanning to use npm-installed Snyk instead of Docker
+   - Created CI-specific configuration for platform detection
+   - Added DockerHelper test utility for conditional test execution
+   - Created fallback macOS CI workflow for testing
 6. ~~**Fix remaining test failures**~~ - COMPLETED: Achieved 100% test pass rate by fixing 4 critical test failures (settings, renderer, cursor save, alert manager)
 
 ### Priority Tasks for Next Session

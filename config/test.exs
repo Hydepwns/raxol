@@ -1,5 +1,10 @@
 import Config
 
+# Import CI-specific configuration if running in CI
+if System.get_env("CI") == "true" do
+  import_config "ci.exs"
+end
+
 # Prevent Ecto from automatically starting the Repo in tests
 config :raxol, ecto_repos: []
 
