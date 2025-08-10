@@ -11,7 +11,17 @@ defmodule Raxol.UI.Layout.Engine do
   import Raxol.Guards
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.UI.Layout.{Grid, Panels, Containers, Table, Elements, Inputs}
+  alias Raxol.UI.Layout.{
+    Grid,
+    Panels,
+    Containers,
+    Table,
+    Elements,
+    Inputs,
+    Flexbox,
+    CSSGrid,
+    Responsive
+  }
 
   @doc """
   Applies layout to a view, calculating absolute positions for all elements.
@@ -75,6 +85,26 @@ defmodule Raxol.UI.Layout.Engine do
   def process_element(%{type: :grid} = grid, space, acc) do
     # Delegate to grid layout processing
     Grid.process(grid, space, acc)
+  end
+
+  def process_element(%{type: :flex} = flex, space, acc) do
+    # Delegate to flexbox layout processing
+    Flexbox.process_flex(flex, space, acc)
+  end
+
+  def process_element(%{type: :css_grid} = css_grid, space, acc) do
+    # Delegate to CSS Grid layout processing
+    CSSGrid.process_css_grid(css_grid, space, acc)
+  end
+
+  def process_element(%{type: :responsive} = responsive, space, acc) do
+    # Delegate to responsive layout processing
+    Responsive.process_responsive(responsive, space, acc)
+  end
+
+  def process_element(%{type: :responsive_grid} = responsive_grid, space, acc) do
+    # Delegate to responsive grid layout processing
+    Responsive.process_responsive_grid(responsive_grid, space, acc)
   end
 
   # Process basic text/label
@@ -224,6 +254,22 @@ defmodule Raxol.UI.Layout.Engine do
         %{type: :grid} = grid ->
           Grid.process(grid, space, current_acc)
 
+        %{type: :flex} = flex ->
+          Flexbox.process_flex(flex, space, current_acc)
+
+        %{type: :css_grid} = css_grid ->
+          CSSGrid.process_css_grid(css_grid, space, current_acc)
+
+        %{type: :responsive} = responsive ->
+          Responsive.process_responsive(responsive, space, current_acc)
+
+        %{type: :responsive_grid} = responsive_grid ->
+          Responsive.process_responsive_grid(
+            responsive_grid,
+            space,
+            current_acc
+          )
+
         _ ->
           # For non-container elements, process in the same space
           process_element(child, space, current_acc)
@@ -279,7 +325,18 @@ defmodule Raxol.UI.Layout.Engine do
       type when type in [:button, :text_input] ->
         Inputs.measure(type, attrs_map, available_space)
 
-      type when type in [:row, :column, :panel, :grid, :view] ->
+      type
+      when type in [
+             :row,
+             :column,
+             :panel,
+             :grid,
+             :view,
+             :flex,
+             :css_grid,
+             :responsive,
+             :responsive_grid
+           ] ->
         measure_container_element(type, element, available_space)
 
       :table ->
@@ -304,6 +361,18 @@ defmodule Raxol.UI.Layout.Engine do
 
   defp measure_container_element(:view, element, available_space),
     do: measure_view(element, available_space)
+
+  defp measure_container_element(:flex, element, available_space),
+    do: Flexbox.measure_flex(element, available_space)
+
+  defp measure_container_element(:css_grid, element, available_space),
+    do: CSSGrid.measure_css_grid(element, available_space)
+
+  defp measure_container_element(:responsive, element, available_space),
+    do: Responsive.measure_responsive(element, available_space)
+
+  defp measure_container_element(:responsive_grid, element, available_space),
+    do: Responsive.measure_responsive(element, available_space)
 
   defp measure_view(element, available_space) do
     %{type: :column, children: Map.get(element, :children, [])}

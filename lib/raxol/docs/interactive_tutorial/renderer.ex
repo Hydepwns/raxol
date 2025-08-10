@@ -129,9 +129,12 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
   defp render_hints(%Step{hints: []}), do: nil
 
   defp render_hints(%Step{hints: hints}) do
-    ("### Hints\n" <>
-       Enum.with_index(hints, 1))
-    |> Enum.map_join("\n", fn {hint, index} -> "#{index}. #{hint}" end)
+    hints_with_index = Enum.with_index(hints, 1)
+
+    "### Hints\n" <>
+      Enum.map_join(hints_with_index, "\n", fn {hint, index} ->
+        "#{index}. #{hint}"
+      end)
   end
 
   defp render_interactive_element(%{type: :code_editor} = element) do

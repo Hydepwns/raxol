@@ -1,20 +1,27 @@
 defmodule Raxol.Audit.Events do
   @moduledoc """
   Audit event definitions for compliance and security tracking.
-  
+
   These events capture all security-relevant actions in the system,
   providing a comprehensive audit trail for compliance requirements
   including SOC2, HIPAA, GDPR, and PCI-DSS.
   """
-  
+
   defmodule AuditEvent do
     @moduledoc """
     Base audit event structure with common fields for all audit events.
     """
-    
+
     use Raxol.Architecture.EventSourcing.Event
-    
-    @enforce_keys [:event_id, :timestamp, :event_type, :severity, :actor, :resource]
+
+    @enforce_keys [
+      :event_id,
+      :timestamp,
+      :event_type,
+      :severity,
+      :actor,
+      :resource
+    ]
     defstruct [
       :event_id,
       :timestamp,
@@ -32,51 +39,51 @@ defmodule Raxol.Audit.Events do
       :metadata,
       :tags
     ]
-    
+
     @type severity :: :critical | :high | :medium | :low | :info
     @type outcome :: :success | :failure | :error | :denied
-    
+
     @type actor :: %{
-      user_id: String.t() | nil,
-      service_id: String.t() | nil,
-      api_key_id: String.t() | nil,
-      ip_address: String.t(),
-      user_agent: String.t() | nil
-    }
-    
+            user_id: String.t() | nil,
+            service_id: String.t() | nil,
+            api_key_id: String.t() | nil,
+            ip_address: String.t(),
+            user_agent: String.t() | nil
+          }
+
     @type resource :: %{
-      type: String.t(),
-      id: String.t(),
-      name: String.t() | nil,
-      owner: String.t() | nil
-    }
-    
+            type: String.t(),
+            id: String.t(),
+            name: String.t() | nil,
+            owner: String.t() | nil
+          }
+
     @type t :: %__MODULE__{
-      event_id: String.t(),
-      timestamp: integer(),
-      event_type: String.t(),
-      severity: severity(),
-      actor: actor(),
-      resource: resource(),
-      action: String.t(),
-      outcome: outcome(),
-      reason: String.t() | nil,
-      ip_address: String.t() | nil,
-      user_agent: String.t() | nil,
-      session_id: String.t() | nil,
-      correlation_id: String.t() | nil,
-      metadata: map(),
-      tags: [String.t()]
-    }
+            event_id: String.t(),
+            timestamp: integer(),
+            event_type: String.t(),
+            severity: severity(),
+            actor: actor(),
+            resource: resource(),
+            action: String.t(),
+            outcome: outcome(),
+            reason: String.t() | nil,
+            ip_address: String.t() | nil,
+            user_agent: String.t() | nil,
+            session_id: String.t() | nil,
+            correlation_id: String.t() | nil,
+            metadata: map(),
+            tags: [String.t()]
+          }
   end
-  
+
   defmodule AuthenticationEvent do
     @moduledoc """
     Audit event for authentication attempts.
     """
-    
+
     use Raxol.Architecture.EventSourcing.Event
-    
+
     defstruct [
       :event_id,
       :timestamp,
@@ -91,41 +98,51 @@ defmodule Raxol.Audit.Events do
       :mfa_used,
       :metadata
     ]
-    
-    @type authentication_method :: :password | :sso | :api_key | :certificate | :biometric
+
+    @type authentication_method ::
+            :password | :sso | :api_key | :certificate | :biometric
     @type outcome :: :success | :failure | :locked | :expired
-    
+
     @type t :: %__MODULE__{
-      event_id: String.t(),
-      timestamp: integer(),
-      user_id: String.t() | nil,
-      username: String.t(),
-      authentication_method: authentication_method(),
-      outcome: outcome(),
-      failure_reason: String.t() | nil,
-      ip_address: String.t(),
-      user_agent: String.t() | nil,
-      session_id: String.t() | nil,
-      mfa_used: boolean(),
-      metadata: map()
-    }
-    
+            event_id: String.t(),
+            timestamp: integer(),
+            user_id: String.t() | nil,
+            username: String.t(),
+            authentication_method: authentication_method(),
+            outcome: outcome(),
+            failure_reason: String.t() | nil,
+            ip_address: String.t(),
+            user_agent: String.t() | nil,
+            session_id: String.t() | nil,
+            mfa_used: boolean(),
+            metadata: map()
+          }
+
     def validate(event) do
-      with :ok <- Raxol.Audit.Events.validate_required(event, [:event_id, :timestamp, :username, :authentication_method, :outcome]),
+      with :ok <-
+             Raxol.Audit.Events.validate_required(event, [
+               :event_id,
+               :timestamp,
+               :username,
+               :authentication_method,
+               :outcome
+             ]),
            :ok <- validate_outcome(event) do
         {:ok, event}
       end
     end
-    
-    defp validate_outcome(%{outcome: :failure, failure_reason: nil}), do: {:error, :failure_reason_required}
+
+    defp validate_outcome(%{outcome: :failure, failure_reason: nil}),
+      do: {:error, :failure_reason_required}
+
     defp validate_outcome(_), do: :ok
   end
-  
+
   defmodule AuthorizationEvent do
     @moduledoc """
     Audit event for authorization decisions.
     """
-    
+
     defstruct [
       :event_id,
       :timestamp,
@@ -141,31 +158,31 @@ defmodule Raxol.Audit.Events do
       :session_id,
       :metadata
     ]
-    
+
     @type outcome :: :granted | :denied | :error
-    
+
     @type t :: %__MODULE__{
-      event_id: String.t(),
-      timestamp: integer(),
-      user_id: String.t(),
-      resource_type: String.t(),
-      resource_id: String.t(),
-      action: String.t(),
-      permission: String.t() | nil,
-      outcome: outcome(),
-      denial_reason: String.t() | nil,
-      policy_evaluated: String.t() | nil,
-      ip_address: String.t() | nil,
-      session_id: String.t() | nil,
-      metadata: map()
-    }
+            event_id: String.t(),
+            timestamp: integer(),
+            user_id: String.t(),
+            resource_type: String.t(),
+            resource_id: String.t(),
+            action: String.t(),
+            permission: String.t() | nil,
+            outcome: outcome(),
+            denial_reason: String.t() | nil,
+            policy_evaluated: String.t() | nil,
+            ip_address: String.t() | nil,
+            session_id: String.t() | nil,
+            metadata: map()
+          }
   end
-  
+
   defmodule DataAccessEvent do
     @moduledoc """
     Audit event for data access operations.
     """
-    
+
     defstruct [
       :event_id,
       :timestamp,
@@ -183,35 +200,36 @@ defmodule Raxol.Audit.Events do
       :session_id,
       :metadata
     ]
-    
+
     @type operation :: :read | :write | :update | :delete | :export | :import
-    @type data_classification :: :public | :internal | :confidential | :restricted
+    @type data_classification ::
+            :public | :internal | :confidential | :restricted
     @type outcome :: :success | :failure | :partial
-    
+
     @type t :: %__MODULE__{
-      event_id: String.t(),
-      timestamp: integer(),
-      user_id: String.t(),
-      operation: operation(),
-      resource_type: String.t(),
-      resource_id: String.t() | nil,
-      data_classification: data_classification(),
-      fields_accessed: [String.t()] | nil,
-      records_count: integer() | nil,
-      query: String.t() | nil,
-      outcome: outcome(),
-      error_message: String.t() | nil,
-      ip_address: String.t() | nil,
-      session_id: String.t() | nil,
-      metadata: map()
-    }
+            event_id: String.t(),
+            timestamp: integer(),
+            user_id: String.t(),
+            operation: operation(),
+            resource_type: String.t(),
+            resource_id: String.t() | nil,
+            data_classification: data_classification(),
+            fields_accessed: [String.t()] | nil,
+            records_count: integer() | nil,
+            query: String.t() | nil,
+            outcome: outcome(),
+            error_message: String.t() | nil,
+            ip_address: String.t() | nil,
+            session_id: String.t() | nil,
+            metadata: map()
+          }
   end
-  
+
   defmodule ConfigurationChangeEvent do
     @moduledoc """
     Audit event for system configuration changes.
     """
-    
+
     defstruct [
       :event_id,
       :timestamp,
@@ -228,32 +246,32 @@ defmodule Raxol.Audit.Events do
       :session_id,
       :metadata
     ]
-    
+
     @type change_type :: :create | :update | :delete
-    
+
     @type t :: %__MODULE__{
-      event_id: String.t(),
-      timestamp: integer(),
-      user_id: String.t(),
-      component: String.t(),
-      setting: String.t(),
-      old_value: term() | nil,
-      new_value: term() | nil,
-      change_type: change_type(),
-      approval_required: boolean(),
-      approved_by: String.t() | nil,
-      rollback_available: boolean(),
-      ip_address: String.t() | nil,
-      session_id: String.t() | nil,
-      metadata: map()
-    }
+            event_id: String.t(),
+            timestamp: integer(),
+            user_id: String.t(),
+            component: String.t(),
+            setting: String.t(),
+            old_value: term() | nil,
+            new_value: term() | nil,
+            change_type: change_type(),
+            approval_required: boolean(),
+            approved_by: String.t() | nil,
+            rollback_available: boolean(),
+            ip_address: String.t() | nil,
+            session_id: String.t() | nil,
+            metadata: map()
+          }
   end
-  
+
   defmodule SecurityEvent do
     @moduledoc """
     Audit event for security-related incidents.
     """
-    
+
     defstruct [
       :event_id,
       :timestamp,
@@ -270,35 +288,40 @@ defmodule Raxol.Audit.Events do
       :description,
       :metadata
     ]
-    
-    @type event_type :: :intrusion_attempt | :malware_detected | :policy_violation | 
-                        :suspicious_activity | :brute_force | :data_exfiltration
+
+    @type event_type ::
+            :intrusion_attempt
+            | :malware_detected
+            | :policy_violation
+            | :suspicious_activity
+            | :brute_force
+            | :data_exfiltration
     @type severity :: :critical | :high | :medium | :low
     @type threat_level :: :immediate | :high | :moderate | :low
-    
+
     @type t :: %__MODULE__{
-      event_id: String.t(),
-      timestamp: integer(),
-      event_type: event_type(),
-      severity: severity(),
-      threat_level: threat_level(),
-      source_ip: String.t() | nil,
-      target_resource: String.t() | nil,
-      attack_vector: String.t() | nil,
-      detection_method: String.t(),
-      response_action: String.t() | nil,
-      blocked: boolean(),
-      user_id: String.t() | nil,
-      description: String.t(),
-      metadata: map()
-    }
+            event_id: String.t(),
+            timestamp: integer(),
+            event_type: event_type(),
+            severity: severity(),
+            threat_level: threat_level(),
+            source_ip: String.t() | nil,
+            target_resource: String.t() | nil,
+            attack_vector: String.t() | nil,
+            detection_method: String.t(),
+            response_action: String.t() | nil,
+            blocked: boolean(),
+            user_id: String.t() | nil,
+            description: String.t(),
+            metadata: map()
+          }
   end
-  
+
   defmodule ComplianceEvent do
     @moduledoc """
     Audit event for compliance-related activities.
     """
-    
+
     defstruct [
       :event_id,
       :timestamp,
@@ -313,31 +336,31 @@ defmodule Raxol.Audit.Events do
       :due_date,
       :metadata
     ]
-    
+
     @type compliance_framework :: :soc2 | :hipaa | :gdpr | :pci_dss | :iso27001
     @type status :: :compliant | :non_compliant | :partial | :under_review
-    
+
     @type t :: %__MODULE__{
-      event_id: String.t(),
-      timestamp: integer(),
-      compliance_framework: compliance_framework(),
-      requirement: String.t(),
-      activity: String.t(),
-      status: status(),
-      evidence: map() | nil,
-      auditor_id: String.t() | nil,
-      findings: [String.t()] | nil,
-      remediation_required: boolean(),
-      due_date: integer() | nil,
-      metadata: map()
-    }
+            event_id: String.t(),
+            timestamp: integer(),
+            compliance_framework: compliance_framework(),
+            requirement: String.t(),
+            activity: String.t(),
+            status: status(),
+            evidence: map() | nil,
+            auditor_id: String.t() | nil,
+            findings: [String.t()] | nil,
+            remediation_required: boolean(),
+            due_date: integer() | nil,
+            metadata: map()
+          }
   end
-  
+
   defmodule TerminalAuditEvent do
     @moduledoc """
     Audit event specific to terminal operations.
     """
-    
+
     defstruct [
       :event_id,
       :timestamp,
@@ -354,43 +377,56 @@ defmodule Raxol.Audit.Events do
       :session_id,
       :metadata
     ]
-    
-    @type action :: :command_executed | :file_accessed | :network_connection | 
-                    :privilege_escalation | :terminal_resized | :session_shared
-    
+
+    @type action ::
+            :command_executed
+            | :file_accessed
+            | :network_connection
+            | :privilege_escalation
+            | :terminal_resized
+            | :session_shared
+
     @type t :: %__MODULE__{
-      event_id: String.t(),
-      timestamp: integer(),
-      user_id: String.t(),
-      terminal_id: String.t(),
-      action: action(),
-      command: String.t() | nil,
-      working_directory: String.t() | nil,
-      environment_variables: map() | nil,
-      output_captured: boolean(),
-      exit_code: integer() | nil,
-      duration_ms: integer() | nil,
-      ip_address: String.t() | nil,
-      session_id: String.t() | nil,
-      metadata: map()
-    }
-    
+            event_id: String.t(),
+            timestamp: integer(),
+            user_id: String.t(),
+            terminal_id: String.t(),
+            action: action(),
+            command: String.t() | nil,
+            working_directory: String.t() | nil,
+            environment_variables: map() | nil,
+            output_captured: boolean(),
+            exit_code: integer() | nil,
+            duration_ms: integer() | nil,
+            ip_address: String.t() | nil,
+            session_id: String.t() | nil,
+            metadata: map()
+          }
+
     def validate(event) do
-      with :ok <- Raxol.Audit.Events.validate_required(event, [:event_id, :timestamp, :user_id, :terminal_id, :action]) do
+      with :ok <-
+             Raxol.Audit.Events.validate_required(event, [
+               :event_id,
+               :timestamp,
+               :user_id,
+               :terminal_id,
+               :action
+             ]) do
         validate_action_specific(event)
       end
     end
-    
-    defp validate_action_specific(%{action: :command_executed, command: nil}), 
+
+    defp validate_action_specific(%{action: :command_executed, command: nil}),
       do: {:error, :command_required_for_execution}
+
     defp validate_action_specific(_), do: {:ok, true}
   end
-  
+
   defmodule DataPrivacyEvent do
     @moduledoc """
     Audit event for GDPR and privacy-related operations.
     """
-    
+
     defstruct [
       :event_id,
       :timestamp,
@@ -405,29 +441,35 @@ defmodule Raxol.Audit.Events do
       :cross_border_transfer,
       :metadata
     ]
-    
-    @type request_type :: :access | :rectification | :erasure | :portability | 
-                          :restriction | :consent_given | :consent_withdrawn
+
+    @type request_type ::
+            :access
+            | :rectification
+            | :erasure
+            | :portability
+            | :restriction
+            | :consent_given
+            | :consent_withdrawn
     @type status :: :pending | :processing | :completed | :rejected
-    
+
     @type t :: %__MODULE__{
-      event_id: String.t(),
-      timestamp: integer(),
-      data_subject_id: String.t(),
-      request_type: request_type(),
-      status: status(),
-      processor_id: String.t() | nil,
-      data_categories: [String.t()] | nil,
-      legal_basis: String.t() | nil,
-      retention_period: integer() | nil,
-      third_parties: [String.t()] | nil,
-      cross_border_transfer: boolean(),
-      metadata: map()
-    }
+            event_id: String.t(),
+            timestamp: integer(),
+            data_subject_id: String.t(),
+            request_type: request_type(),
+            status: status(),
+            processor_id: String.t() | nil,
+            data_categories: [String.t()] | nil,
+            legal_basis: String.t() | nil,
+            retention_period: integer() | nil,
+            third_parties: [String.t()] | nil,
+            cross_border_transfer: boolean(),
+            metadata: map()
+          }
   end
-  
+
   # Helper functions for creating audit events
-  
+
   @doc """
   Creates an authentication audit event.
   """
@@ -447,7 +489,7 @@ defmodule Raxol.Audit.Events do
       metadata: Keyword.get(opts, :metadata, %{})
     }
   end
-  
+
   @doc """
   Creates a data access audit event.
   """
@@ -470,7 +512,7 @@ defmodule Raxol.Audit.Events do
       metadata: Keyword.get(opts, :metadata, %{})
     }
   end
-  
+
   @doc """
   Creates a terminal audit event.
   """
@@ -492,7 +534,7 @@ defmodule Raxol.Audit.Events do
       metadata: Keyword.get(opts, :metadata, %{})
     }
   end
-  
+
   @doc """
   Creates a security event.
   """
@@ -514,14 +556,14 @@ defmodule Raxol.Audit.Events do
       metadata: Keyword.get(opts, :metadata, %{})
     }
   end
-  
+
   defp generate_event_id do
     :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false)
   end
-  
+
   def validate_required(event, fields) do
     missing = Enum.filter(fields, &(Map.get(event, &1) == nil))
-    
+
     if Enum.empty?(missing) do
       :ok
     else
