@@ -1,0 +1,705 @@
+defmodule Raxol.Storage.EventStorage do
+  @moduledoc """
+  Storage interface for event sourcing system.
+
+  This module defines the behavior for event storage implementations
+  and provides a unified interface for storing and retrieving events.
+  """
+
+  alias Raxol.Architecture.EventSourcing.{Event, EventStream, Snapshot}
+
+  @type event :: Event.t()
+  @type stream_name :: String.t()
+  @type position :: non_neg_integer()
+  @type version :: non_neg_integer()
+
+  @callback append_event(
+              storage :: term(),
+              event :: event(),
+              stream_name :: stream_name()
+            ) ::
+              {:ok, String.t()} | {:error, term()}
+
+  @callback append_events(
+              storage :: term(),
+              events :: [event()],
+              stream_name :: stream_name()
+            ) ::
+              {:ok, [String.t()]} | {:error, term()}
+
+  @callback read_stream(
+              storage :: term(),
+              stream_name :: stream_name(),
+              start_position :: position(),
+              count :: pos_integer()
+            ) ::
+              {:ok, [event()]} | {:error, term()}
+
+  @callback read_all(
+              storage :: term(),
+              start_position :: position(),
+              count :: pos_integer()
+            ) ::
+              {:ok, [event()]} | {:error, term()}
+
+  @callback list_streams(storage :: term()) ::
+              {:ok, [EventStream.t()]} | {:error, term()}
+
+  @callback save_snapshot(storage :: term(), snapshot :: Snapshot.t()) ::
+              :ok | {:error, term()}
+
+  @callback load_snapshot(storage :: term(), stream_name :: stream_name()) ::
+              {:ok, Snapshot.t()} | {:error, term()}
+end
+
+defmodule Raxol.Storage.EventStorage.Memory do
+  @moduledoc """
+  In-memory event storage implementation for development and testing.
+  """
+
+  @behaviour Raxol.Storage.EventStorage
+
+  use GenServer
+  require Logger
+
+  alias Raxol.Architecture.EventSourcing.{Event, EventStream, Snapshot}
+
+  defstruct [
+    :events,
+    :streams,
+    :snapshots,
+    :global_position,
+    :config
+  ]
+
+  ## Client API
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def append_event(storage \\ __MODULE__, event, stream_name) do
+    GenServer.call(storage, {:append_event, event, stream_name})
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def append_events(storage \\ __MODULE__, events, stream_name) do
+    GenServer.call(storage, {:append_events, events, stream_name})
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def read_stream(storage \\ __MODULE__, stream_name, start_position, count) do
+    GenServer.call(storage, {:read_stream, stream_name, start_position, count})
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def read_all(storage \\ __MODULE__, start_position, count) do
+    GenServer.call(storage, {:read_all, start_position, count})
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def list_streams(storage \\ __MODULE__) do
+    GenServer.call(storage, :list_streams)
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def save_snapshot(storage \\ __MODULE__, snapshot) do
+    GenServer.call(storage, {:save_snapshot, snapshot})
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def load_snapshot(storage \\ __MODULE__, stream_name) do
+    GenServer.call(storage, {:load_snapshot, stream_name})
+  end
+
+  ## GenServer Implementation
+
+  @impl GenServer
+  def init(_opts) do
+    state = %__MODULE__{
+      events: [],
+      streams: %{},
+      snapshots: %{},
+      global_position: 0,
+      config: %{}
+    }
+
+    Logger.info("Memory event storage initialized")
+    {:ok, state}
+  end
+
+  @impl GenServer
+  def handle_call({:append_event, event, stream_name}, _from, state) do
+    case do_append_event(event, stream_name, state) do
+      {:ok, event_id, new_state} ->
+        {:reply, {:ok, event_id}, new_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call({:append_events, events, stream_name}, _from, state) do
+    case do_append_events(events, stream_name, state) do
+      {:ok, event_ids, new_state} ->
+        {:reply, {:ok, event_ids}, new_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call(
+        {:read_stream, stream_name, start_position, count},
+        _from,
+        state
+      ) do
+    events =
+      state.events
+      |> Enum.filter(fn event -> event.stream_name == stream_name end)
+      |> Enum.filter(fn event -> event.position >= start_position end)
+      |> Enum.sort_by(& &1.position)
+      |> Enum.take(count)
+
+    {:reply, {:ok, events}, state}
+  end
+
+  @impl GenServer
+  def handle_call({:read_all, start_position, count}, _from, state) do
+    events =
+      state.events
+      |> Enum.filter(fn event -> event.position >= start_position end)
+      |> Enum.sort_by(& &1.position)
+      |> Enum.take(count)
+
+    {:reply, {:ok, events}, state}
+  end
+
+  @impl GenServer
+  def handle_call(:list_streams, _from, state) do
+    streams = Map.values(state.streams)
+    {:reply, {:ok, streams}, state}
+  end
+
+  @impl GenServer
+  def handle_call({:save_snapshot, snapshot}, _from, state) do
+    new_snapshots = Map.put(state.snapshots, snapshot.stream_name, snapshot)
+    new_state = %{state | snapshots: new_snapshots}
+
+    {:reply, :ok, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:load_snapshot, stream_name}, _from, state) do
+    case Map.get(state.snapshots, stream_name) do
+      nil -> {:reply, {:error, :not_found}, state}
+      snapshot -> {:reply, {:ok, snapshot}, state}
+    end
+  end
+
+  ## Private Implementation
+
+  defp do_append_event(event, stream_name, state) do
+    # Assign global position and stream position
+    global_position = state.global_position + 1
+    stream = get_or_create_stream(stream_name, state.streams)
+    stream_position = stream.last_position + 1
+
+    # Create the stored event
+    stored_event = %{
+      event
+      | position: global_position,
+        metadata:
+          Map.put(event.metadata || %{}, :stream_position, stream_position)
+    }
+
+    # Update state
+    new_events = [stored_event | state.events]
+
+    updated_stream = %{
+      stream
+      | version: stream.version + 1,
+        last_position: stream_position,
+        last_event_at: System.system_time(:millisecond)
+    }
+
+    new_streams = Map.put(state.streams, stream_name, updated_stream)
+
+    new_state = %{
+      state
+      | events: new_events,
+        streams: new_streams,
+        global_position: global_position
+    }
+
+    {:ok, stored_event.id, new_state}
+  end
+
+  defp do_append_events(events, stream_name, state) do
+    case events do
+      [] ->
+        {:ok, [], state}
+
+      _ ->
+        # Process all events in batch
+        {event_ids, final_state} =
+          Enum.reduce(events, {[], state}, fn event, {acc_ids, acc_state} ->
+            case do_append_event(event, stream_name, acc_state) do
+              {:ok, event_id, new_state} ->
+                {[event_id | acc_ids], new_state}
+
+              {:error, reason} ->
+                throw({:error, reason})
+            end
+          end)
+
+        {:ok, Enum.reverse(event_ids), final_state}
+    end
+  catch
+    {:error, reason} -> {:error, reason}
+  end
+
+  defp get_or_create_stream(stream_name, streams) do
+    Map.get(streams, stream_name, %EventStream{
+      name: stream_name,
+      version: 0,
+      last_position: 0,
+      created_at: System.system_time(:millisecond),
+      last_event_at: nil,
+      metadata: %{}
+    })
+  end
+end
+
+defmodule Raxol.Storage.EventStorage.Disk do
+  @moduledoc """
+  Disk-based event storage implementation for production use.
+  """
+
+  @behaviour Raxol.Storage.EventStorage
+
+  use GenServer
+  require Logger
+
+  alias Raxol.Architecture.EventSourcing.{Event, EventStream, Snapshot}
+
+  defstruct [
+    :config,
+    :data_directory,
+    :streams_index,
+    :global_position,
+    :file_handles
+  ]
+
+  @default_config %{
+    data_directory: "data/events",
+    # 100MB
+    max_file_size: 100_000_000,
+    compression_enabled: true,
+    fsync_every_write: false
+  }
+
+  ## Client API
+
+  def start_link(opts \\ []) do
+    config =
+      Keyword.get(opts, :config, %{})
+      |> then(&Map.merge(@default_config, &1))
+
+    GenServer.start_link(__MODULE__, config, name: __MODULE__)
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def append_event(storage \\ __MODULE__, event, stream_name) do
+    GenServer.call(storage, {:append_event, event, stream_name})
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def append_events(storage \\ __MODULE__, events, stream_name) do
+    GenServer.call(storage, {:append_events, events, stream_name})
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def read_stream(storage \\ __MODULE__, stream_name, start_position, count) do
+    GenServer.call(storage, {:read_stream, stream_name, start_position, count})
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def read_all(storage \\ __MODULE__, start_position, count) do
+    GenServer.call(storage, {:read_all, start_position, count})
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def list_streams(storage \\ __MODULE__) do
+    GenServer.call(storage, :list_streams)
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def save_snapshot(storage \\ __MODULE__, snapshot) do
+    GenServer.call(storage, {:save_snapshot, snapshot})
+  end
+
+  @impl Raxol.Storage.EventStorage
+  def load_snapshot(storage \\ __MODULE__, stream_name) do
+    GenServer.call(storage, {:load_snapshot, stream_name})
+  end
+
+  ## GenServer Implementation
+
+  @impl GenServer
+  def init(config) do
+    data_dir = config.data_directory
+
+    # Ensure data directory exists
+    case File.mkdir_p(data_dir) do
+      :ok ->
+        Logger.info("Disk event storage initialized at #{data_dir}")
+
+        # Load existing streams index
+        streams_index = load_streams_index(data_dir)
+        global_position = calculate_global_position(streams_index)
+
+        state = %__MODULE__{
+          config: config,
+          data_directory: data_dir,
+          streams_index: streams_index,
+          global_position: global_position,
+          file_handles: %{}
+        }
+
+        {:ok, state}
+
+      {:error, reason} ->
+        Logger.error(
+          "Failed to create data directory #{data_dir}: #{inspect(reason)}"
+        )
+
+        {:stop, {:data_directory_creation_failed, reason}}
+    end
+  end
+
+  @impl GenServer
+  def handle_call({:append_event, event, stream_name}, _from, state) do
+    case do_append_event(event, stream_name, state) do
+      {:ok, event_id, new_state} ->
+        {:reply, {:ok, event_id}, new_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call({:append_events, events, stream_name}, _from, state) do
+    case do_append_events(events, stream_name, state) do
+      {:ok, event_ids, new_state} ->
+        {:reply, {:ok, event_ids}, new_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call(
+        {:read_stream, stream_name, start_position, count},
+        _from,
+        state
+      ) do
+    case read_stream_events(stream_name, start_position, count, state) do
+      {:ok, events} ->
+        {:reply, {:ok, events}, state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call({:read_all, start_position, count}, _from, state) do
+    case read_all_events(start_position, count, state) do
+      {:ok, events} ->
+        {:reply, {:ok, events}, state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call(:list_streams, _from, state) do
+    streams = Map.values(state.streams_index)
+    {:reply, {:ok, streams}, state}
+  end
+
+  @impl GenServer
+  def handle_call({:save_snapshot, snapshot}, _from, state) do
+    case write_snapshot_to_disk(snapshot, state) do
+      :ok ->
+        {:reply, :ok, state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call({:load_snapshot, stream_name}, _from, state) do
+    case read_snapshot_from_disk(stream_name, state) do
+      {:ok, snapshot} ->
+        {:reply, {:ok, snapshot}, state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl GenServer
+  def terminate(_reason, state) do
+    # Close all file handles
+    Enum.each(state.file_handles, fn {_stream, handle} ->
+      File.close(handle)
+    end)
+
+    :ok
+  end
+
+  ## Private Implementation
+
+  defp do_append_event(event, stream_name, state) do
+    # Assign positions
+    global_position = state.global_position + 1
+    stream = get_or_create_stream(stream_name, state.streams_index)
+    stream_position = stream.last_position + 1
+
+    # Create stored event
+    stored_event = %{
+      event
+      | position: global_position,
+        metadata:
+          Map.put(event.metadata || %{}, :stream_position, stream_position)
+    }
+
+    # Write to disk
+    case write_event_to_disk(stored_event, stream_name, state) do
+      :ok ->
+        # Update streams index
+        updated_stream = %{
+          stream
+          | version: stream.version + 1,
+            last_position: stream_position,
+            last_event_at: System.system_time(:millisecond)
+        }
+
+        new_streams_index =
+          Map.put(state.streams_index, stream_name, updated_stream)
+
+        # Update state
+        new_state = %{
+          state
+          | streams_index: new_streams_index,
+            global_position: global_position
+        }
+
+        # Persist streams index
+        case persist_streams_index(new_streams_index, state) do
+          :ok ->
+            {:ok, stored_event.id, new_state}
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp do_append_events(events, stream_name, state) when is_list(events) do
+    case events do
+      [] ->
+        {:ok, [], state}
+
+      _ ->
+        # Process all events in batch
+        {event_ids, final_state} =
+          Enum.reduce(events, {[], state}, fn event, {acc_ids, acc_state} ->
+            case do_append_event(event, stream_name, acc_state) do
+              {:ok, event_id, new_state} ->
+                {[event_id | acc_ids], new_state}
+
+              {:error, reason} ->
+                throw({:error, reason})
+            end
+          end)
+
+        {:ok, Enum.reverse(event_ids), final_state}
+    end
+  catch
+    {:error, reason} -> {:error, reason}
+  end
+
+  defp write_event_to_disk(event, stream_name, state) do
+    file_path = stream_file_path(stream_name, state.data_directory)
+
+    event_data = Event.to_json(event)
+
+    case event_data do
+      {:ok, json} ->
+        line = json <> "\n"
+        File.write(file_path, line, [:append])
+
+      {:error, reason} ->
+        {:error, {:json_encoding_failed, reason}}
+    end
+  end
+
+  defp read_stream_events(stream_name, start_position, count, state) do
+    file_path = stream_file_path(stream_name, state.data_directory)
+
+    case File.exists?(file_path) do
+      true ->
+        case File.read(file_path) do
+          {:ok, content} ->
+            events =
+              content
+              |> String.split("\n", trim: true)
+              |> Enum.map(&parse_event_json/1)
+              |> Enum.filter(&filter_ok/1)
+              |> Enum.map(&elem(&1, 1))
+              |> Enum.filter(fn event ->
+                stream_position =
+                  get_in(event.metadata, [:stream_position]) || 0
+
+                stream_position >= start_position
+              end)
+              |> Enum.take(count)
+
+            {:ok, events}
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      false ->
+        {:ok, []}
+    end
+  end
+
+  defp read_all_events(start_position, count, state) do
+    # This is a simplified implementation - in production you'd want
+    # better indexing and streaming for large datasets
+    all_events =
+      state.streams_index
+      |> Map.keys()
+      |> Enum.flat_map(fn stream_name ->
+        case read_stream_events(stream_name, 0, 100_000, state) do
+          {:ok, events} -> events
+          {:error, _} -> []
+        end
+      end)
+      |> Enum.filter(fn event -> event.position >= start_position end)
+      |> Enum.sort_by(& &1.position)
+      |> Enum.take(count)
+
+    {:ok, all_events}
+  end
+
+  defp write_snapshot_to_disk(snapshot, state) do
+    file_path = snapshot_file_path(snapshot.stream_name, state.data_directory)
+
+    case :erlang.term_to_binary(snapshot) do
+      binary_data ->
+        File.write(file_path, binary_data)
+    end
+  end
+
+  defp read_snapshot_from_disk(stream_name, state) do
+    file_path = snapshot_file_path(stream_name, state.data_directory)
+
+    case File.read(file_path) do
+      {:ok, binary_data} ->
+        try do
+          snapshot = :erlang.binary_to_term(binary_data)
+          {:ok, snapshot}
+        rescue
+          _ -> {:error, :corrupt_snapshot}
+        end
+
+      {:error, :enoent} ->
+        {:error, :not_found}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp get_or_create_stream(stream_name, streams_index) do
+    Map.get(streams_index, stream_name, %EventStream{
+      name: stream_name,
+      version: 0,
+      last_position: 0,
+      created_at: System.system_time(:millisecond),
+      last_event_at: nil,
+      metadata: %{}
+    })
+  end
+
+  defp load_streams_index(data_dir) do
+    index_file = Path.join(data_dir, "streams.index")
+
+    case File.read(index_file) do
+      {:ok, binary_data} ->
+        try do
+          :erlang.binary_to_term(binary_data)
+        rescue
+          _ -> %{}
+        end
+
+      {:error, :enoent} ->
+        %{}
+
+      {:error, _reason} ->
+        %{}
+    end
+  end
+
+  defp persist_streams_index(streams_index, state) do
+    index_file = Path.join(state.data_directory, "streams.index")
+    binary_data = :erlang.term_to_binary(streams_index)
+
+    File.write(index_file, binary_data)
+  end
+
+  defp calculate_global_position(streams_index) do
+    streams_index
+    |> Map.values()
+    |> Enum.map(& &1.last_position)
+    |> Enum.max(fn -> 0 end)
+  end
+
+  defp stream_file_path(stream_name, data_dir) do
+    safe_name = String.replace(stream_name, ~r/[^a-zA-Z0-9_-]/, "_")
+    Path.join(data_dir, "#{safe_name}.events")
+  end
+
+  defp snapshot_file_path(stream_name, data_dir) do
+    safe_name = String.replace(stream_name, ~r/[^a-zA-Z0-9_-]/, "_")
+    snapshots_dir = Path.join(data_dir, "snapshots")
+    File.mkdir_p(snapshots_dir)
+    Path.join(snapshots_dir, "#{safe_name}.snapshot")
+  end
+
+  defp parse_event_json(json) do
+    case Jason.decode(json, keys: :atoms) do
+      {:ok, data} -> Event.from_map(data)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp filter_ok({:ok, _}), do: true
+  defp filter_ok(_), do: false
+end
