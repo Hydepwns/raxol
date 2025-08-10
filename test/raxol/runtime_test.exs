@@ -105,13 +105,13 @@ defmodule Raxol.RuntimeTest do
   alias Raxol.Core.Runtime.Events.Dispatcher
   alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
   alias Raxol.Terminal.Driver, as: TerminalDriver
-  
+
   # DriverMock already defined in test/support/terminal_driver_mock.ex
 
   setup context do
     # Call the cleanup helper at the beginning of setup
     setup_runtime_environment(context)
-    
+
     # Set up DriverMock expectations for all tests that might need it
     stub(Raxol.Terminal.DriverMock, :start_link, fn dispatcher_module_or_pid ->
       # Return a mock process that behaves like the Terminal.Driver
@@ -188,16 +188,16 @@ defmodule Raxol.RuntimeTest do
     # Get the PIDs of the processes we need for tests
     dispatcher_pid = Process.whereis(Dispatcher)
     driver_pid = Process.whereis(TerminalDriver)
-    
+
     # Ensure critical processes are running
     if is_nil(dispatcher_pid) do
       raise "Dispatcher process not found - supervisor may have failed to start it"
     end
-    
+
     if is_nil(driver_pid) do
       raise "TerminalDriver process not found - supervisor may have failed to start it"
     end
-    
+
     # Return the captured PIDs in the context
     {:ok,
      %{
@@ -372,8 +372,8 @@ defmodule Raxol.RuntimeTest do
       ~s(display notification "MockApp notification" with title "Raxol Notification")
 
     Mox.expect(SystemInteractionMock, :system_cmd, fn "/usr/bin/osascript",
-                                                 ["-e", ^expected_script],
-                                                 [stderr_to_stdout: true] ->
+                                                      ["-e", ^expected_script],
+                                                      [stderr_to_stdout: true] ->
       {"", 0}
     end)
 
@@ -403,7 +403,9 @@ defmodule Raxol.RuntimeTest do
     :timer.sleep(100)
 
     # Mox expectation for ClipboardMock.paste/0, allow from any process
-    Mox.expect(Raxol.Core.ClipboardMock, :paste, fn -> {:ok, "Test Clipboard Content"} end)
+    Mox.expect(Raxol.Core.ClipboardMock, :paste, fn ->
+      {:ok, "Test Clipboard Content"}
+    end)
 
     # Check initial model state using the helper
     assert_model(dispatcher_pid, %{count: 0, last_clipboard: nil})
@@ -621,5 +623,4 @@ defmodule Raxol.RuntimeTest do
       File.Error -> :ok
     end
   end
-
 end

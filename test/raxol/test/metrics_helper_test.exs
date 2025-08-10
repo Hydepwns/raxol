@@ -39,7 +39,7 @@ defmodule Raxol.Test.MetricsHelperTest do
         GenServer.stop(pid)
         Process.sleep(10)
       end
-      
+
       context = MetricsHelper.setup_metrics_test(start_collector: false)
       refute Process.whereis(Raxol.Core.Metrics.UnifiedCollector)
       MetricsHelper.cleanup_metrics_test(context)
@@ -180,7 +180,7 @@ defmodule Raxol.Test.MetricsHelperTest do
         GenServer.stop(pid)
         Process.sleep(10)
       end
-      
+
       context = MetricsHelper.setup_metrics_test(start_collector: false)
       :ok = MetricsHelper.cleanup_metrics_test(context)
       refute Process.whereis(Raxol.Core.Metrics.UnifiedCollector)

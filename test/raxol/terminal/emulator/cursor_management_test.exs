@@ -40,7 +40,10 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
       IO.puts("DEBUG: cursor type: #{inspect(emulator.cursor)}")
       IO.puts("DEBUG: is_pid(cursor): #{is_pid(emulator.cursor)}")
       IO.puts("DEBUG: Manager module: #{inspect(Manager)}")
-      IO.puts("DEBUG: Manager.set_state function: #{inspect(&Manager.set_state/2)}")
+
+      IO.puts(
+        "DEBUG: Manager.set_state function: #{inspect(&Manager.set_state/2)}"
+      )
 
       # Use full module name to avoid alias issues
       IO.puts("DEBUG: About to call Raxol.Terminal.Cursor.Manager.set_state")

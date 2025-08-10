@@ -61,21 +61,21 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
       # Set cursor to a specific position
       cursor_with_position = %{emulator.cursor | row: 7, col: 3}
       emulator = %{emulator | cursor: cursor_with_position}
-      
+
       # Save cursor position (handle_s)
       emulator_with_saved = unwrap_ok(CSIHandlers.handle_s(emulator, []))
-      
+
       # Verify position was saved
       assert emulator_with_saved.cursor.saved_row == 7
       assert emulator_with_saved.cursor.saved_col == 3
-      
+
       # Move cursor to different position
       moved_cursor = %{emulator_with_saved.cursor | row: 0, col: 0}
       emulator_moved = %{emulator_with_saved | cursor: moved_cursor}
-      
+
       # Restore cursor position (handle_u)
       result_emulator = unwrap_ok(CSIHandlers.handle_u(emulator_moved, []))
-      
+
       # Verify cursor was restored to saved position
       assert result_emulator.cursor.row == 7
       assert result_emulator.cursor.col == 3
@@ -986,9 +986,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
 
   describe "device status" do
     test "reports cursor position", %{emulator: emulator} do
-      emulator = %{emulator | cursor: %{emulator.cursor | row: 9, col: 9, position: {9, 9}}}
+      emulator = %{
+        emulator
+        | cursor: %{emulator.cursor | row: 9, col: 9, position: {9, 9}}
+      }
+
       result = CSIHandlers.handle_device_status(emulator, 6)
-      assert Raxol.Terminal.OutputManager.get_content(result) =~ ~r/\x1B\[10;10R/
+
+      assert Raxol.Terminal.OutputManager.get_content(result) =~
+               ~r/\x1B\[10;10R/
     end
 
     test "reports device status", %{emulator: emulator} do

@@ -1,7 +1,7 @@
 ExUnit.configure(max_printable_chars: 1000)
 
-  alias Raxol.Terminal.Buffer.Manager
-  alias Raxol.Terminal.Buffer.Manager.{BufferOperations, ScrollbackManager}
+alias Raxol.Terminal.Buffer.Manager
+alias Raxol.Terminal.Buffer.Manager.{BufferOperations, ScrollbackManager}
 
 defmodule Raxol.Terminal.Buffer.ManagerTest do
   use ExUnit.Case, async: false

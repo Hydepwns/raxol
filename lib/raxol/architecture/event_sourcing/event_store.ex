@@ -66,7 +66,6 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
 
   alias Raxol.Architecture.EventSourcing.{Event, EventStream, Snapshot}
   alias Raxol.Storage.EventStorage
-  alias Raxol.Monitoring.Metrics
 
   defstruct [
     :config,
@@ -754,7 +753,7 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
     end
   end
 
-  defp process_projection(projection_name, state) do
+  defp process_projection(projection_name, _state) do
     # This would be a more sophisticated projection processor
     # For now, it's a placeholder
     Logger.debug("Processing projection: #{projection_name}")

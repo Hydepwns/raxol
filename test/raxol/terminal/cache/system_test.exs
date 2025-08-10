@@ -9,17 +9,18 @@ defmodule Raxol.Terminal.Cache.SystemTest do
       nil ->
         # Not running, start it
         {:ok, _pid} = System.start_link()
+
       _pid ->
         # Already running, clear all caches to reset state
         # This will also reset statistics since they're per-namespace
         :ok
     end
-    
+
     # Clear all namespaces to ensure clean state and reset stats
     System.clear(namespace: :general)
     System.clear(namespace: :cells)
     System.clear(namespace: :metadata)
-    
+
     :ok
   end
 
@@ -97,17 +98,17 @@ defmodule Raxol.Terminal.Cache.SystemTest do
     test ~c"LRU eviction" do
       # Clear cache before test
       System.clear(namespace: :general)
-      
+
       # The general namespace has 19MB (19 * 1024 * 1024 bytes)
       # Get the actual cache size from stats
       {:ok, stats} = System.stats(namespace: :general)
       _max_size = stats.max_size
-      
+
       # Create values that together will exceed the cache size
       # Using 5MB values to ensure we trigger eviction
       value_size = 5 * 1024 * 1024
       large_value = String.duplicate("x", value_size)
-      
+
       # Insert 4 values (20MB total, exceeding 19MB limit)
       # Use longer delays to ensure different timestamps
       for i <- 1..4 do
@@ -138,10 +139,14 @@ defmodule Raxol.Terminal.Cache.SystemTest do
       # key3 and key4 were recently accessed, so key1 and key2 must be evicted
       assert {:error, :not_found} = result1, "key1 should have been evicted"
       assert {:error, :not_found} = result2, "key2 should have been evicted"
-      
+
       # The recently accessed keys should still be present
-      assert {:ok, _} = result3, "key3 should still be present (recently accessed)"
-      assert {:ok, _} = result4, "key4 should still be present (recently accessed)"
+      assert {:ok, _} = result3,
+             "key3 should still be present (recently accessed)"
+
+      assert {:ok, _} = result4,
+             "key4 should still be present (recently accessed)"
+
       assert {:ok, _} = result5, "key5 should be present (just added)"
     end
 
@@ -149,14 +154,16 @@ defmodule Raxol.Terminal.Cache.SystemTest do
       # Cache system uses LRU policy by default. 
       # LFU and FIFO eviction policies are not currently implemented
       # but the system works correctly with LRU.
-      assert true  # Test that the system is stable without these features
+      # Test that the system is stable without these features
+      assert true
     end
 
     test ~c"FIFO eviction - not implemented" do
       # Cache system uses LRU policy by default.
       # LFU and FIFO eviction policies are not currently implemented
       # but the system works correctly with LRU.
-      assert true  # Test that the system is stable without these features
+      # Test that the system is stable without these features
+      assert true
     end
   end
 

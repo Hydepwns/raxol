@@ -22,7 +22,8 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
     test ~c"moves the cursor to a new position" do
       cursor = Manager.new()
       cursor = Manager.move_to(cursor, 10, 5)
-      assert cursor.position == {10, 5}  # position is {row, col} format
+      # position is {row, col} format
+      assert cursor.position == {10, 5}
     end
   end
 
@@ -31,7 +32,8 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       cursor = Manager.new()
       cursor = Manager.move_to(cursor, 10, 5)
       cursor = Manager.save_position(cursor)
-      assert cursor.saved_position == {10, 5}  # position is {row, col} format
+      # position is {row, col} format
+      assert cursor.saved_position == {10, 5}
     end
   end
 
@@ -42,14 +44,16 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       cursor = Manager.save_position(cursor)
       cursor = Manager.move_to(cursor, 0, 0)
       cursor = Manager.restore_position(cursor)
-      assert cursor.position == {10, 5}  # position is {row, col} format
+      # position is {row, col} format
+      assert cursor.position == {10, 5}
     end
 
     test ~c"returns cursor unchanged if no saved position" do
       cursor = Manager.new()
       cursor = Manager.move_to(cursor, 10, 5)
       restored = Manager.restore_position(cursor)
-      assert restored.position == {10, 5}  # position is {row, col} format
+      # position is {row, col} format
+      assert restored.position == {10, 5}
     end
   end
 
@@ -150,7 +154,8 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       assert cursor.history_index == 1
 
       state = hd(cursor.history)
-      assert state.position == {10, 5}  # position is {row, col} format
+      # position is {row, col} format
+      assert state.position == {10, 5}
       assert state.style == :underline
     end
   end
@@ -166,7 +171,8 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       cursor = Manager.set_style(cursor, :block)
 
       cursor = Manager.restore_from_history(cursor)
-      assert cursor.position == {10, 5}  # position is {row, col} format
+      # position is {row, col} format
+      assert cursor.position == {10, 5}
       assert cursor.style == :underline
     end
 
@@ -174,7 +180,8 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       cursor = Manager.new()
       cursor = Manager.move_to(cursor, 10, 5)
       restored = Manager.restore_from_history(cursor)
-      assert restored.position == {10, 5}  # position is {row, col} format
+      # position is {row, col} format
+      assert restored.position == {10, 5}
     end
   end
 end

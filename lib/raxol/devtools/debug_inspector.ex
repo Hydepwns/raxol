@@ -721,7 +721,7 @@ defmodule Raxol.DevTools.DebugInspector do
       variance = calculate_variance(profile.render_times)
       # High variance
       if variance > 100 do
-        bottlenecks = [
+        [
           "Inconsistent render times (variance: #{Float.round(variance, 2)})"
           | bottlenecks
         ]

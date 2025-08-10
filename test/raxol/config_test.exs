@@ -10,7 +10,7 @@ defmodule Raxol.ConfigTest do
         terminal: %{width: 80, height: 24},
         theme: %{name: "default"}
       }
-      
+
       # Test that default values are accessible
       assert config.terminal.width == 80
       assert config.terminal.height == 24
@@ -20,9 +20,9 @@ defmodule Raxol.ConfigTest do
     test "merges configuration from multiple sources" do
       base = %{terminal: %{width: 80, height: 24}}
       override = %{terminal: %{width: 120}}
-      
+
       merged = deep_merge(base, override)
-      
+
       assert merged.terminal.width == 120
       assert merged.terminal.height == 24
     end
@@ -32,7 +32,7 @@ defmodule Raxol.ConfigTest do
       # For now, test the parsing logic directly
       key = "RAXOL_TERMINAL__WIDTH"
       expected_path = [:terminal, :width]
-      
+
       parsed_path = parse_env_key(key, "RAXOL_")
       assert parsed_path == expected_path
     end
@@ -47,7 +47,7 @@ defmodule Raxol.ConfigTest do
           scrollback_size: 10_000
         }
       }
-      
+
       result = Schema.validate_config(valid_config)
       assert {:ok, :valid} = result
     end
@@ -55,11 +55,12 @@ defmodule Raxol.ConfigTest do
     test "detects invalid configuration values" do
       invalid_config = %{
         terminal: %{
-          width: -10,  # Invalid: negative width
+          # Invalid: negative width
+          width: -10,
           height: 24
         }
       }
-      
+
       result = Schema.validate_config(invalid_config)
       assert {:error, _errors} = result
     end
@@ -76,11 +77,11 @@ defmodule Raxol.ConfigTest do
       # Create temporary test files
       test_dir = "test/tmp/config"
       File.mkdir_p!(test_dir)
-      
+
       on_exit(fn ->
         File.rm_rf!(test_dir)
       end)
-      
+
       {:ok, test_dir: test_dir}
     end
 
@@ -90,15 +91,15 @@ defmodule Raxol.ConfigTest do
       width = 120
       height = 40
       """
-      
+
       file_path = Path.join(test_dir, "test.toml")
       File.write!(file_path, toml_content)
-      
+
       case Loader.load_file(file_path) do
         {:ok, config} ->
           assert config.terminal.width == 120
           assert config.terminal.height == 40
-        
+
         {:error, reason} ->
           flunk("Failed to load TOML: #{inspect(reason)}")
       end
@@ -113,15 +114,15 @@ defmodule Raxol.ConfigTest do
         }
       }
       """
-      
+
       file_path = Path.join(test_dir, "test.json")
       File.write!(file_path, json_content)
-      
+
       case Loader.load_file(file_path) do
         {:ok, config} ->
           assert config.terminal.width == 120
           assert config.terminal.height == 40
-        
+
         {:error, reason} ->
           flunk("Failed to load JSON: #{inspect(reason)}")
       end
@@ -129,11 +130,11 @@ defmodule Raxol.ConfigTest do
 
     test "generates configuration files", %{test_dir: test_dir} do
       file_path = Path.join(test_dir, "generated.toml")
-      
+
       result = Generator.generate_minimal_config(file_path)
       assert :ok = result
       assert File.exists?(file_path)
-      
+
       # Verify the generated file can be loaded
       {:ok, config} = Loader.load_file(file_path)
       assert Map.has_key?(config, :terminal)
@@ -144,16 +145,16 @@ defmodule Raxol.ConfigTest do
     test "generates default configuration" do
       # Test that generator creates valid config by actually calling it
       temp_path = Path.join(System.tmp_dir!(), "test_config.toml")
-      
+
       # Clean up any existing file
       File.rm(temp_path)
-      
+
       # Generate the configuration
       assert {:ok, ^temp_path} = Generator.generate_default_config(temp_path)
-      
+
       # Verify the file was created
       assert File.exists?(temp_path)
-      
+
       # Clean up
       File.rm(temp_path)
     end
@@ -162,10 +163,10 @@ defmodule Raxol.ConfigTest do
       # Test environment configs
       dev_config = Generator.development_config()
       prod_config = Generator.production_config()
-      
+
       # Development should have debug logging
       assert get_in(dev_config, [:logging, :level]) == :debug
-      
+
       # Production should have stricter settings
       assert get_in(prod_config, [:logging, :level]) == :info
     end
@@ -184,6 +185,7 @@ defmodule Raxol.ConfigTest do
     Map.merge(left, right, fn
       _key, left_val, right_val when is_map(left_val) and is_map(right_val) ->
         deep_merge(left_val, right_val)
+
       _key, _left_val, right_val ->
         right_val
     end)

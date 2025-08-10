@@ -14,6 +14,7 @@ defmodule Raxol.Terminal.Operations.TextOperationsTest do
       style = %{fg: :red, bg: :blue}
       emulator = TextOperations.write_string(emulator, 0, 0, "test", style)
       cell = TextOperations.get_cell_at(emulator, 0, 0)
+
       # The style is converted to a TextFormatting struct, so compare the relevant fields
       assert cell.style.foreground == style.fg
       assert cell.style.background == style.bg
@@ -92,6 +93,7 @@ defmodule Raxol.Terminal.Operations.TextOperationsTest do
       emulator = TextOperations.write_string(emulator, 0, 0, "test", style)
       cell = TextOperations.get_cell_at(emulator, 0, 0)
       assert cell.char == "t"
+
       # The style is converted to a TextFormatting struct, so compare the relevant fields
       assert cell.style.foreground == style.fg
       assert cell.style.background == style.bg

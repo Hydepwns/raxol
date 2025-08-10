@@ -564,7 +564,7 @@ defmodule Raxol.Playground.Examples do
     end)
   end
 
-  defp run_sequence_example(example, sequence) do
+  defp run_sequence_example(_example, sequence) do
     Enum.with_index(sequence, 1)
     |> Enum.each(fn {step, index} ->
       IO.puts(

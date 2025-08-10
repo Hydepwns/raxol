@@ -23,12 +23,8 @@ defmodule Raxol.Audit.Logger do
   alias Raxol.Audit.{Events, Storage, Analyzer, Exporter}
 
   alias Raxol.Audit.Events.{
-    AuditEvent,
-    AuthenticationEvent,
     AuthorizationEvent,
-    DataAccessEvent,
     ConfigurationChangeEvent,
-    SecurityEvent,
     ComplianceEvent,
     TerminalAuditEvent,
     DataPrivacyEvent
@@ -426,7 +422,7 @@ defmodule Raxol.Audit.Logger do
     end
   end
 
-  defp enrich_event(event, state) do
+  defp enrich_event(event, _state) do
     # Add system context
     Map.merge(event, %{
       node: node(),
@@ -579,7 +575,7 @@ defmodule Raxol.Audit.Logger do
     %{state | metrics: metrics}
   end
 
-  defp init_alert_handlers(config) do
+  defp init_alert_handlers(_config) do
     # Initialize alert handlers based on config
     []
   end
@@ -592,7 +588,7 @@ defmodule Raxol.Audit.Logger do
     }
   end
 
-  defp init_encryption_key(config) do
+  defp init_encryption_key(_config) do
     # In production, load from secure key management
     :crypto.strong_rand_bytes(32)
   end

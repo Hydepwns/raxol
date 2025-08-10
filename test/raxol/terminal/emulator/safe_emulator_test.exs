@@ -13,13 +13,17 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
   describe "input processing" do
     test "processes valid input safely", %{pid: pid} do
       assert {:ok, :ok} = SafeEmulator.process_input(pid, "Hello, Terminal!")
-      assert {:ok, :ok} = SafeEmulator.process_input(pid, "\e[1;31mRed Text\e[0m")
+
+      assert {:ok, :ok} =
+               SafeEmulator.process_input(pid, "\e[1;31mRed Text\e[0m")
     end
 
     test "rejects oversized input", %{pid: pid} do
       # Create input larger than 1MB
       large_input = String.duplicate("x", 1_048_577)
-      assert {:error, :input_too_large} = SafeEmulator.process_input(pid, large_input)
+
+      assert {:error, :input_too_large} =
+               SafeEmulator.process_input(pid, large_input)
     end
 
     test "handles malformed sequences gracefully", %{pid: pid} do
@@ -39,11 +43,15 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
   describe "sequence handling" do
     test "validates sequences before processing", %{pid: pid} do
       # Valid sequence
-      assert :ok = SafeEmulator.handle_sequence(pid, {:csi_cursor_up, 1, "", ""})
-      
+      assert :ok =
+               SafeEmulator.handle_sequence(pid, {:csi_cursor_up, 1, "", ""})
+
       # Invalid sequences
-      assert {:error, {:invalid_sequence, _}} = SafeEmulator.handle_sequence(pid, "not a tuple")
-      assert {:error, {:invalid_sequence, _}} = SafeEmulator.handle_sequence(pid, {:only_one})
+      assert {:error, {:invalid_sequence, _}} =
+               SafeEmulator.handle_sequence(pid, "not a tuple")
+
+      assert {:error, {:invalid_sequence, _}} =
+               SafeEmulator.handle_sequence(pid, {:only_one})
     end
   end
 
@@ -51,16 +59,18 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
     test "validates dimensions", %{pid: pid} do
       # Valid resize
       assert {:ok, :ok} = SafeEmulator.resize(pid, 100, 50)
-      
+
       # Invalid dimensions
       assert {:error, :invalid_dimensions} = SafeEmulator.resize(pid, 0, 24)
       assert {:error, :invalid_dimensions} = SafeEmulator.resize(pid, 80, -5)
-      assert {:error, :dimensions_too_large} = SafeEmulator.resize(pid, 15_000, 15_000)
+
+      assert {:error, :dimensions_too_large} =
+               SafeEmulator.resize(pid, 15_000, 15_000)
     end
 
     test "creates checkpoint after resize", %{pid: pid} do
       assert {:ok, :ok} = SafeEmulator.resize(pid, 120, 40)
-      
+
       # State should reflect new dimensions
       {:ok, state} = SafeEmulator.get_state(pid)
       assert state.dimensions == {120, 40}
@@ -70,7 +80,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
   describe "health monitoring" do
     test "reports health status", %{pid: pid} do
       {:ok, health} = SafeEmulator.get_health(pid)
-      
+
       assert health.status == :healthy
       assert health.error_stats.total_errors == 0
       assert health.recovery_state == :normal
@@ -80,7 +90,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
       # Trigger some errors
       SafeEmulator.handle_sequence(pid, "invalid")
       SafeEmulator.handle_sequence(pid, {:invalid})
-      
+
       {:ok, health} = SafeEmulator.get_health(pid)
       assert health.error_stats.total_errors >= 2
       assert Map.has_key?(health.error_stats.errors_by_type, :sequence_error)
@@ -91,13 +101,13 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
     test "can create and restore checkpoints", %{pid: pid} do
       # Process some input
       SafeEmulator.process_input(pid, "Original state")
-      
+
       # Create checkpoint
       SafeEmulator.checkpoint(pid)
-      
+
       # Make changes
       SafeEmulator.process_input(pid, "Modified state")
-      
+
       # Recover
       assert :ok = SafeEmulator.recover(pid)
     end
@@ -107,9 +117,10 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
       for _ <- 1..4 do
         SafeEmulator.recover(pid)
       end
-      
+
       # Next recovery should fail
-      assert {:error, :max_recovery_attempts_exceeded} = SafeEmulator.recover(pid)
+      assert {:error, :max_recovery_attempts_exceeded} =
+               SafeEmulator.recover(pid)
     end
 
     test "buffers input during recovery", %{pid: pid} do
@@ -123,19 +134,21 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
   describe "automatic features" do
     test "schedules periodic checkpoints" do
       # Start with checkpoint interval
-      {:ok, pid} = SafeEmulator.start_link(
-        width: 80,
-        height: 24,
-        checkpoint_interval: 100,  # 100ms for testing
-        name: :test_checkpoint_emulator
-      )
-      
+      {:ok, pid} =
+        SafeEmulator.start_link(
+          width: 80,
+          height: 24,
+          # 100ms for testing
+          checkpoint_interval: 100,
+          name: :test_checkpoint_emulator
+        )
+
       # Wait for checkpoint
       Process.sleep(150)
-      
+
       # Verify checkpoint was created (would need internal state access)
       assert {:ok, _} = SafeEmulator.get_state(pid)
-      
+
       # Clean up
       GenServer.stop(pid)
     end

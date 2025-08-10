@@ -83,6 +83,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
 
       # Debug: Print actual buffer content
       IO.puts("DEBUG: Actual buffer content after Insert Line:")
+
       Enum.each(0..4, fn y ->
         line_cells = ScreenBuffer.get_line(buffer, y)
         line_text = Enum.map_join(line_cells, &(&1.char || " "))

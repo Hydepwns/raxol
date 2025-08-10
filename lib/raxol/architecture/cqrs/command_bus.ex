@@ -61,9 +61,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
   use GenServer
   require Logger
 
-  alias Raxol.Architecture.CQRS.{Command, CommandHandler, CommandResult}
-  alias Raxol.Architecture.EventSourcing.EventStore
-  alias Raxol.Monitoring.Metrics
+  alias Raxol.Architecture.CQRS.Command
 
   defstruct [
     :config,

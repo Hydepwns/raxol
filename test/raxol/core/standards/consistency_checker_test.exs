@@ -12,11 +12,13 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       """
 
       File.write!("test_no_moduledoc.ex", content)
-      
-      assert {:ok, issues} = ConsistencyChecker.check_file("test_no_moduledoc.ex")
+
+      assert {:ok, issues} =
+               ConsistencyChecker.check_file("test_no_moduledoc.ex")
+
       assert Enum.any?(issues, fn issue ->
-        issue.type == :missing_moduledoc
-      end)
+               issue.type == :missing_moduledoc
+             end)
 
       File.rm!("test_no_moduledoc.ex")
     end
@@ -33,11 +35,13 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       """
 
       File.write!("test_no_doc.ex", content)
-      
+
       assert {:ok, issues} = ConsistencyChecker.check_file("test_no_doc.ex")
+
       assert Enum.any?(issues, fn issue ->
-        issue.type == :missing_doc && issue.message =~ "public_function/1"
-      end)
+               issue.type == :missing_doc &&
+                 issue.message =~ "public_function/1"
+             end)
 
       File.rm!("test_no_doc.ex")
     end
@@ -55,11 +59,12 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       """
 
       File.write!("test_bad_naming.ex", content)
-      
+
       assert {:ok, issues} = ConsistencyChecker.check_file("test_bad_naming.ex")
+
       assert Enum.any?(issues, fn issue ->
-        issue.type == :naming_convention && issue.message =~ "uppercase"
-      end)
+               issue.type == :naming_convention && issue.message =~ "uppercase"
+             end)
 
       File.rm!("test_bad_naming.ex")
     end
@@ -77,12 +82,13 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       """
 
       File.write!("test_bad_errors.ex", content)
-      
-      assert {:ok, _issues} = ConsistencyChecker.check_file("test_bad_errors.ex")
-      
+
+      assert {:ok, _issues} =
+               ConsistencyChecker.check_file("test_bad_errors.ex")
+
       # Note: This specific check might not be caught by the current implementation
       # but demonstrates the test structure
-      
+
       File.rm!("test_bad_errors.ex")
     end
 
@@ -99,11 +105,13 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       """
 
       File.write!("test_long_lines.ex", content)
-      
+
       assert {:ok, issues} = ConsistencyChecker.check_file("test_long_lines.ex")
+
       assert Enum.any?(issues, fn issue ->
-        issue.type == :formatting && issue.message =~ "exceeds 120 characters"
-      end)
+               issue.type == :formatting &&
+                 issue.message =~ "exceeds 120 characters"
+             end)
 
       File.rm!("test_long_lines.ex")
     end
@@ -126,12 +134,13 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       """
 
       File.write!("test_good_code.ex", content)
-      
+
       assert {:ok, issues} = ConsistencyChecker.check_file("test_good_code.ex")
-      
+
       # Should have minimal issues
-      assert length(issues) <= 1  # Allow for module name mismatch
-      
+      # Allow for module name mismatch
+      assert length(issues) <= 1
+
       File.rm!("test_good_code.ex")
     end
   end
@@ -140,11 +149,11 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
     setup do
       # Create test directory structure
       File.mkdir_p!("test_consistency_check")
-      
+
       on_exit(fn ->
         File.rm_rf!("test_consistency_check")
       end)
-      
+
       :ok
     end
 
@@ -163,8 +172,9 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       end
       """)
 
-      assert {:ok, report} = ConsistencyChecker.check_directory("test_consistency_check")
-      
+      assert {:ok, report} =
+               ConsistencyChecker.check_directory("test_consistency_check")
+
       assert report.total_files == 2
       assert length(report.issues) > 0
       assert Map.has_key?(report.summary, :missing_moduledoc)
@@ -172,7 +182,7 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
 
     test "handles nested directories" do
       File.mkdir_p!("test_consistency_check/nested")
-      
+
       File.write!("test_consistency_check/nested/nested_file.ex", """
       defmodule NestedFile do
         @moduledoc "Nested file"
@@ -180,7 +190,9 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       end
       """)
 
-      assert {:ok, report} = ConsistencyChecker.check_directory("test_consistency_check")
+      assert {:ok, report} =
+               ConsistencyChecker.check_directory("test_consistency_check")
+
       assert report.total_files >= 1
     end
   end
@@ -204,7 +216,7 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       }
 
       output = ConsistencyChecker.generate_report(report)
-      
+
       assert output =~ "Total files analyzed: 10"
       assert output =~ "Total issues found: 1"
       assert output =~ "Missing doc"
@@ -216,8 +228,20 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       report = %{
         total_files: 5,
         issues: [
-          %{file: "a.ex", line: 1, type: :missing_moduledoc, message: "Missing moduledoc", severity: :warning},
-          %{file: "b.ex", line: 10, type: :missing_doc, message: "Missing doc", severity: :warning}
+          %{
+            file: "a.ex",
+            line: 1,
+            type: :missing_moduledoc,
+            message: "Missing moduledoc",
+            severity: :warning
+          },
+          %{
+            file: "b.ex",
+            line: 10,
+            type: :missing_doc,
+            message: "Missing doc",
+            severity: :warning
+          }
         ],
         summary: %{
           missing_moduledoc: 1,
@@ -226,7 +250,7 @@ defmodule Raxol.Core.Standards.ConsistencyCheckerTest do
       }
 
       output = ConsistencyChecker.generate_report(report)
-      
+
       assert output =~ "Add @moduledoc documentation"
       assert output =~ "Add @doc documentation"
     end

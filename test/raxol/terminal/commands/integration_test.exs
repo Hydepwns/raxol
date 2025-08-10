@@ -70,21 +70,27 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
         |> CSIHandlers.handle_cursor_position(10, 10)
         |> unwrap_ok()
 
-      IO.puts("After cursor position: #{inspect(Raxol.Terminal.Cursor.Manager.get_position(result1.cursor))}")
+      IO.puts(
+        "After cursor position: #{inspect(Raxol.Terminal.Cursor.Manager.get_position(result1.cursor))}"
+      )
 
       result2 =
         result1
         |> OSCHandlers.handle_window_title("Test")
         |> unwrap_ok()
 
-      IO.puts("After window title: #{inspect(Raxol.Terminal.Cursor.Manager.get_position(result2.cursor))}")
+      IO.puts(
+        "After window title: #{inspect(Raxol.Terminal.Cursor.Manager.get_position(result2.cursor))}"
+      )
 
       result =
         result2
         |> OSCHandlers.handle_window_size(100, 50)
         |> unwrap_ok()
 
-      IO.puts("After window size: #{inspect(Raxol.Terminal.Cursor.Manager.get_position(result.cursor))}")
+      IO.puts(
+        "After window size: #{inspect(Raxol.Terminal.Cursor.Manager.get_position(result.cursor))}"
+      )
 
       assert Raxol.Terminal.Cursor.Manager.get_position(result.cursor) == {9, 9}
     end

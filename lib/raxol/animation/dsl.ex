@@ -52,7 +52,6 @@ defmodule Raxol.Animation.DSL do
   """
 
   alias Raxol.Animation.Framework
-  alias Raxol.Animation.EnhancedTransitions
 
   # Animation sequence structure
   defmodule Sequence do
