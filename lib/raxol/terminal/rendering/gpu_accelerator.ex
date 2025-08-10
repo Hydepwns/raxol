@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   use GenServer
   require Logger
 
-  @behaviour Raxol.Terminal.Rendering.Backend
+  # @behaviour Raxol.Terminal.Rendering.Backend  # Commented out due to init/1 conflict with GenServer
 
   defstruct [
     :backend,
@@ -99,13 +99,40 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   # Shader sources removed - were unused module attributes
 
+  ## Backend-style API (without behaviour to avoid init/1 conflict)
+
+  @doc """
+  Checks if GPU acceleration is available on the current system.
+  """
+  def available? do
+    metal_available?() or vulkan_available?()
+  end
+
+  @doc """
+  Gets the backend's capabilities and supported features.
+  """
+  def capabilities do
+    %{
+      max_texture_size: 4096,
+      supports_shaders: true,
+      supports_effects: [:blur, :glow, :scanlines, :chromatic_aberration, :vignette],
+      hardware_accelerated: true
+    }
+  end
+
+  @doc """
+  Destroys a rendering surface and releases its resources.
+  """
+  def destroy_surface(context, surface) do
+    GenServer.call(context, {:destroy_surface, surface})
+  end
+
   ## Public API
 
   @doc """
   Initializes GPU acceleration with the specified configuration.
   """
-  def init(config \\ %{})
-  def init(config) do
+  def initialize(config \\ %{}) do
     merged_config = Map.merge(@default_config, config)
 
     case start_link(merged_config) do
@@ -263,6 +290,17 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   @impl GenServer
   def handle_call(:get_stats, _from, state) do
     {:reply, state.render_stats, state}
+  end
+
+  @impl GenServer
+  def handle_call({:destroy_surface, surface}, _from, state) do
+    case remove_surface(state, surface) do
+      {:ok, new_state} ->
+        {:reply, :ok, new_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
   end
 
   @impl GenServer
@@ -521,6 +559,33 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     # Placeholder for effect removal
     Logger.debug("Removing effect #{effect_type}")
     {:ok, state}
+  end
+
+  defp remove_surface(state, surface_id) when is_binary(surface_id) do
+    case Map.get(state.surface_cache, surface_id) do
+      nil ->
+        {:error, :surface_not_found}
+
+      _surface ->
+        new_cache = Map.delete(state.surface_cache, surface_id)
+        new_state = %{state | surface_cache: new_cache}
+        {:ok, new_state}
+    end
+  end
+
+  defp remove_surface(state, surface) when is_map(surface) do
+    # Find surface by content
+    surface_id = 
+      state.surface_cache
+      |> Enum.find_value(fn {id, cached_surface} ->
+        if cached_surface == surface, do: id
+      end)
+
+    if surface_id do
+      remove_surface(state, surface_id)
+    else
+      {:error, :surface_not_found}
+    end
   end
 
   defp generate_surface_id(width, height) do

@@ -429,7 +429,7 @@ defmodule Raxol.UI.Layout.Flexbox do
   end
 
   defp position_cross_axis(positioned_children, space, flex_props, cross_axis) do
-    max_cross_size = get_dimension(space, cross_axis)
+    _max_cross_size = get_dimension(space, cross_axis)
 
     Enum.map(positioned_children, fn {child, child_space, flex} ->
       # Determine alignment for this item
@@ -536,7 +536,7 @@ defmodule Raxol.UI.Layout.Flexbox do
     available_main_size = get_dimension(space, main_axis)
     gap_size = get_gap_size(flex_props.gap, main_axis)
 
-    {lines, current_line, current_size} =
+    {lines, current_line, _current_size} =
       Enum.reduce(children_with_dims, {[], [], 0}, fn item =
                                                         {_child, dims, _flex},
                                                       {lines, current_line,

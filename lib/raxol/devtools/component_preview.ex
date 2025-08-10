@@ -31,7 +31,7 @@ defmodule Raxol.DevTools.ComponentPreview do
       })
   """
 
-  alias Raxol.UI.State.{Context, Hooks}
+  alias Raxol.UI.State.Context
   alias Raxol.DevTools.PropsValidator
   require Logger
 

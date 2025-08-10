@@ -150,6 +150,25 @@ defmodule Raxol.Animation.Physics.Vector do
   end
 
   @doc """
+  Creates a vector from a map with x, y, and optionally z keys.
+  """
+  def from_map(%{x: x, y: y, z: z}) do
+    %__MODULE__{x: x / 1.0, y: y / 1.0, z: z / 1.0}
+  end
+
+  def from_map(%{x: x, y: y}) do
+    %__MODULE__{x: x / 1.0, y: y / 1.0, z: 0.0}
+  end
+
+  def from_map(%{"x" => x, "y" => y, "z" => z}) do
+    %__MODULE__{x: x / 1.0, y: y / 1.0, z: z / 1.0}
+  end
+
+  def from_map(%{"x" => x, "y" => y}) do
+    %__MODULE__{x: x / 1.0, y: y / 1.0, z: 0.0}
+  end
+
+  @doc """
   Converts the vector to a string representation.
   """
   def to_string(%__MODULE__{} = v) do

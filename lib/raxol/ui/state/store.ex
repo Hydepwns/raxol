@@ -695,7 +695,7 @@ defmodule Raxol.UI.State.Store do
   defp starts_with_path?([h | t1], [h | t2]), do: starts_with_path?(t1, t2)
   defp starts_with_path?(_, _), do: false
 
-  defp delete_in(data, []) do
+  defp delete_in(_data, []) do
     # Delete everything
     %{}
   end

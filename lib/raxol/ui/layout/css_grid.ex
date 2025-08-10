@@ -445,7 +445,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
          row_tracks,
          areas,
          content_space,
-         grid_props
+         _grid_props
        ) do
     Enum.reduce(children, [], fn child, acc ->
       child_attrs = Map.get(child, :attrs, %{})
@@ -598,7 +598,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
     end
   end
 
-  defp find_auto_placement(item, occupancy, flow, col_count, row_count) do
+  defp find_auto_placement(_item, occupancy, flow, col_count, row_count) do
     # Find first available position based on flow direction
     case flow do
       :row ->
@@ -826,7 +826,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
   defp calculate_minmax_track_size(track, items, direction) do
     # Calculate both min and max, then clamp
     min_track = calculate_auto_track_size(track.value.min, items, direction)
-    max_track = calculate_auto_track_size(track.value.max, items, direction)
+    _max_track = calculate_auto_track_size(track.value.max, items, direction)
 
     # For now, use the min value
     %{track | value: min_track.value, type: :fixed}
