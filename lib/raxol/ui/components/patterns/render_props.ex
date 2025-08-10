@@ -1,0 +1,733 @@
+defmodule Raxol.UI.Components.Patterns.RenderProps do
+  @moduledoc """
+  Render Props pattern implementation for Raxol UI.
+
+  Render Props is a technique for sharing code between components using a prop whose
+  value is a function. A component with a render prop takes a function that returns
+  an element and calls it instead of implementing its own render logic.
+
+  This pattern is particularly useful for:
+  - Data fetching components
+  - Mouse/keyboard event handling
+  - Scroll position tracking
+  - Animation state management
+  - Form state management
+
+  ## Usage
+
+      # Data fetcher with render prop
+      %{
+        type: :data_provider,
+        attrs: %{
+          fetch_fn: fn -> fetch_users() end,
+          render: fn %{data: users, loading: loading, error: error} ->
+            cond do
+              loading ->
+                text("Loading users...")
+              error ->
+                text("Error: \#{error}")
+              true ->
+                render_user_list(users)
+            end
+          end
+        }
+      }
+      
+      # Mouse tracker with render prop
+      %{
+        type: :mouse_tracker,
+        attrs: %{
+          render: fn %{mouse_x: x, mouse_y: y} ->
+            text("Mouse position: (\#{x}, \#{y})")
+          end
+        }
+      }
+  """
+
+  alias Raxol.UI.State.Hooks
+
+  @doc """
+  Data provider component that fetches data and provides it via render prop.
+
+  ## Props
+  - `:fetch_fn` - Function that returns data (can be async)
+  - `:render` - Function that receives `%{data, loading, error, refetch}`
+  - `:dependencies` - List of values that trigger refetch when changed
+  - `:cache_key` - Optional cache key for memoization
+
+  ## Examples
+
+      %{
+        type: :data_provider,
+        attrs: %{
+          fetch_fn: fn -> HTTPoison.get("/api/users") end,
+          dependencies: [user_id],
+          render: fn state ->
+            case state do
+              %{loading: true} -> loading_spinner()
+              %{error: error} -> error_message(error)
+              %{data: data} -> user_list(data)
+            end
+          end
+        }
+      }
+  """
+  def data_provider do
+    %{
+      type: :render_prop_component,
+      render_fn: fn props, _context ->
+        fetch_fn = Map.get(props, :fetch_fn)
+        render_fn = Map.get(props, :render)
+        dependencies = Map.get(props, :dependencies, [])
+        cache_key = Map.get(props, :cache_key)
+
+        if fetch_fn && render_fn do
+          # Use async hook for data fetching
+          {data, loading, error, refetch} =
+            Hooks.use_async(fetch_fn, dependencies)
+
+          # Memoize if cache key provided
+          render_state = %{
+            data: data,
+            loading: loading,
+            error: error,
+            refetch: refetch
+          }
+
+          if cache_key do
+            Hooks.use_memo(
+              fn ->
+                render_fn.(render_state)
+              end,
+              [render_state, cache_key]
+            )
+          else
+            render_fn.(render_state)
+          end
+        else
+          %{
+            type: :text,
+            attrs: %{content: "Error: Missing fetch_fn or render prop"}
+          }
+        end
+      end
+    }
+  end
+
+  @doc """
+  Mouse tracker component that tracks mouse position and provides it via render prop.
+
+  ## Props
+  - `:render` - Function that receives `%{mouse_x, mouse_y, is_over}`
+  - `:track_outside` - Whether to track mouse when outside component (default: false)
+
+  ## Examples
+
+      %{
+        type: :mouse_tracker,
+        attrs: %{
+          render: fn %{mouse_x: x, mouse_y: y, is_over: over} ->
+            column([
+              text("Mouse: (\#{x}, \#{y})"),
+              text("Over component: \#{over}")
+            ])
+          end
+        }
+      }
+  """
+  def mouse_tracker do
+    %{
+      type: :render_prop_component,
+      render_fn: fn props, _context ->
+        render_fn = Map.get(props, :render)
+        track_outside = Map.get(props, :track_outside, false)
+
+        if render_fn do
+          {mouse_pos, set_mouse_pos} = Hooks.use_state(%{x: 0, y: 0})
+          {is_over, set_is_over} = Hooks.use_state(false)
+
+          # Set up mouse event listeners
+          Hooks.use_effect(
+            fn ->
+              # This would integrate with actual event system
+              mouse_listener = fn event ->
+                set_mouse_pos.(%{x: event.x, y: event.y})
+              end
+
+              enter_listener = fn _event ->
+                set_is_over.(true)
+              end
+
+              leave_listener = fn _event ->
+                set_is_over.(false)
+              end
+
+              # Register listeners (placeholder)
+              register_mouse_events(
+                mouse_listener,
+                enter_listener,
+                leave_listener,
+                track_outside
+              )
+
+              # Cleanup function
+              fn ->
+                unregister_mouse_events(
+                  mouse_listener,
+                  enter_listener,
+                  leave_listener
+                )
+              end
+            end,
+            [track_outside]
+          )
+
+          render_state = %{
+            mouse_x: mouse_pos.x,
+            mouse_y: mouse_pos.y,
+            is_over: is_over
+          }
+
+          render_fn.(render_state)
+        else
+          %{type: :text, attrs: %{content: "Error: Missing render prop"}}
+        end
+      end
+    }
+  end
+
+  @doc """
+  Keyboard handler component that tracks key states and provides them via render prop.
+
+  ## Props
+  - `:render` - Function that receives `%{pressed_keys, key_combinations}`
+  - `:track_combinations` - List of key combinations to track (e.g., [:ctrl_c, :alt_tab])
+
+  ## Examples
+
+      %{
+        type: :keyboard_handler,
+        attrs: %{
+          track_combinations: [:ctrl_c, :ctrl_v, :escape],
+          render: fn %{pressed_keys: keys, key_combinations: combos} ->
+            column([
+              text("Pressed keys: \#{Enum.join(keys, \", \")}"),
+              text("Active combinations: \#{Enum.join(combos, \", \")}")
+            ])
+          end
+        }
+      }
+  """
+  def keyboard_handler do
+    %{
+      type: :render_prop_component,
+      render_fn: fn props, _context ->
+        render_fn = Map.get(props, :render)
+        track_combinations = Map.get(props, :track_combinations, [])
+
+        if render_fn do
+          {pressed_keys, set_pressed_keys} = Hooks.use_state([])
+          {active_combinations, set_active_combinations} = Hooks.use_state([])
+
+          # Set up keyboard event listeners
+          Hooks.use_effect(
+            fn ->
+              keydown_listener = fn event ->
+                key = event.key
+
+                set_pressed_keys.(fn keys ->
+                  if key not in keys do
+                    [key | keys]
+                  else
+                    keys
+                  end
+                end)
+
+                # Check for key combinations
+                new_combinations =
+                  check_key_combinations(
+                    pressed_keys ++ [key],
+                    track_combinations
+                  )
+
+                set_active_combinations.(new_combinations)
+              end
+
+              keyup_listener = fn event ->
+                key = event.key
+
+                set_pressed_keys.(fn keys ->
+                  List.delete(keys, key)
+                end)
+              end
+
+              # Register listeners (placeholder)
+              register_keyboard_events(keydown_listener, keyup_listener)
+
+              # Cleanup function
+              fn ->
+                unregister_keyboard_events(keydown_listener, keyup_listener)
+              end
+            end,
+            [track_combinations]
+          )
+
+          render_state = %{
+            pressed_keys: pressed_keys,
+            key_combinations: active_combinations
+          }
+
+          render_fn.(render_state)
+        else
+          %{type: :text, attrs: %{content: "Error: Missing render prop"}}
+        end
+      end
+    }
+  end
+
+  @doc """
+  Scroll tracker component that monitors scroll position and provides it via render prop.
+
+  ## Props
+  - `:render` - Function that receives `%{scroll_x, scroll_y, scroll_direction, is_scrolling}`
+  - `:throttle_ms` - Throttle scroll events (default: 16ms for 60fps)
+
+  ## Examples
+
+      %{
+        type: :scroll_tracker,
+        attrs: %{
+          throttle_ms: 50,
+          render: fn %{scroll_y: y, scroll_direction: dir, is_scrolling: scrolling} ->
+            column([
+              text("Scroll Y: \#{y}"),
+              text("Direction: \#{dir}"),
+              text("Scrolling: \#{scrolling}")
+            ])
+          end
+        }
+      }
+  """
+  def scroll_tracker do
+    %{
+      type: :render_prop_component,
+      render_fn: fn props, _context ->
+        render_fn = Map.get(props, :render)
+        throttle_ms = Map.get(props, :throttle_ms, 16)
+
+        if render_fn do
+          {scroll_pos, set_scroll_pos} = Hooks.use_state(%{x: 0, y: 0})
+          {scroll_direction, set_scroll_direction} = Hooks.use_state(:none)
+          {is_scrolling, set_is_scrolling} = Hooks.use_state(false)
+
+          # Throttled scroll handler
+          throttled_scroll_handler =
+            Hooks.use_callback(
+              fn event ->
+                new_x = event.scroll_x
+                new_y = event.scroll_y
+
+                # Determine scroll direction
+                direction =
+                  cond do
+                    new_y > scroll_pos.y -> :down
+                    new_y < scroll_pos.y -> :up
+                    new_x > scroll_pos.x -> :right
+                    new_x < scroll_pos.x -> :left
+                    true -> :none
+                  end
+
+                set_scroll_pos.(%{x: new_x, y: new_y})
+                set_scroll_direction.(direction)
+                set_is_scrolling.(true)
+
+                # Clear scrolling state after a delay
+                Process.send_after(self(), :clear_scrolling, throttle_ms * 3)
+              end,
+              [scroll_pos, throttle_ms]
+            )
+
+          # Set up scroll event listeners
+          Hooks.use_effect(
+            fn ->
+              # Register throttled scroll listener (placeholder)
+              register_scroll_events(throttled_scroll_handler, throttle_ms)
+
+              # Cleanup function
+              fn ->
+                unregister_scroll_events(throttled_scroll_handler)
+              end
+            end,
+            [throttled_scroll_handler]
+          )
+
+          # Handle clearing scrolling state
+          Hooks.use_effect(fn ->
+            receive do
+              :clear_scrolling ->
+                set_is_scrolling.(false)
+            after
+              0 -> :ok
+            end
+          end)
+
+          render_state = %{
+            scroll_x: scroll_pos.x,
+            scroll_y: scroll_pos.y,
+            scroll_direction: scroll_direction,
+            is_scrolling: is_scrolling
+          }
+
+          render_fn.(render_state)
+        else
+          %{type: :text, attrs: %{content: "Error: Missing render prop"}}
+        end
+      end
+    }
+  end
+
+  @doc """
+  Form state manager component that handles form state and validation via render prop.
+
+  ## Props
+  - `:render` - Function that receives form state and handlers
+  - `:initial_values` - Initial form values
+  - `:validation_schema` - Validation rules
+  - `:on_submit` - Submit handler function
+
+  ## Examples
+
+      %{
+        type: :form_provider,
+        attrs: %{
+          initial_values: %{name: "", email: ""},
+          validation_schema: %{
+            name: [{:required, "Name is required"}],
+            email: [{:required, "Email is required"}, {:email, "Invalid email"}]
+          },
+          render: fn %{values: values, errors: errors, handle_change: change, handle_submit: submit} ->
+            form([
+              text_input(value: values.name, on_change: change.(:name)),
+              if errors.name, do: error_text(errors.name),
+              text_input(value: values.email, on_change: change.(:email)),
+              if errors.email, do: error_text(errors.email),
+              button(label: "Submit", on_click: submit)
+            ])
+          end
+        }
+      }
+  """
+  def form_provider do
+    %{
+      type: :render_prop_component,
+      render_fn: fn props, _context ->
+        render_fn = Map.get(props, :render)
+        initial_values = Map.get(props, :initial_values, %{})
+        validation_schema = Map.get(props, :validation_schema, %{})
+        on_submit = Map.get(props, :on_submit)
+
+        if render_fn do
+          {values, set_values} = Hooks.use_state(initial_values)
+          {errors, set_errors} = Hooks.use_state(%{})
+          {is_submitting, set_is_submitting} = Hooks.use_state(false)
+
+          # Validation function
+          validate_field =
+            Hooks.use_callback(
+              fn field, value ->
+                field_rules = Map.get(validation_schema, field, [])
+
+                Enum.reduce_while(field_rules, nil, fn {rule, message}, _acc ->
+                  case validate_rule(rule, value, values) do
+                    true -> {:cont, nil}
+                    false -> {:halt, message}
+                  end
+                end)
+              end,
+              [validation_schema, values]
+            )
+
+          # Handle field changes
+          handle_change =
+            Hooks.use_callback(
+              fn field ->
+                fn value ->
+                  set_values.(fn current_values ->
+                    Map.put(current_values, field, value)
+                  end)
+
+                  # Validate field
+                  error = validate_field.(field, value)
+
+                  set_errors.(fn current_errors ->
+                    if error do
+                      Map.put(current_errors, field, error)
+                    else
+                      Map.delete(current_errors, field)
+                    end
+                  end)
+                end
+              end,
+              [set_values, set_errors, validate_field]
+            )
+
+          # Handle form submission
+          handle_submit =
+            Hooks.use_callback(
+              fn ->
+                # Validate all fields
+                all_errors =
+                  Enum.reduce(values, %{}, fn {field, value}, acc ->
+                    case validate_field.(field, value) do
+                      nil -> acc
+                      error -> Map.put(acc, field, error)
+                    end
+                  end)
+
+                set_errors.(all_errors)
+
+                if Enum.empty?(all_errors) and on_submit do
+                  set_is_submitting.(true)
+
+                  Task.start(fn ->
+                    try do
+                      on_submit.(values)
+                      set_is_submitting.(false)
+                    catch
+                      kind, reason ->
+                        set_errors.(%{
+                          _form: "Submit failed: #{inspect({kind, reason})}"
+                        })
+
+                        set_is_submitting.(false)
+                    end
+                  end)
+                end
+              end,
+              [values, errors, on_submit, validate_field]
+            )
+
+          render_state = %{
+            values: values,
+            errors: errors,
+            is_submitting: is_submitting,
+            handle_change: handle_change,
+            handle_submit: handle_submit,
+            set_field_value: fn field, value ->
+              set_values.(fn current -> Map.put(current, field, value) end)
+            end,
+            reset_form: fn ->
+              set_values.(initial_values)
+              set_errors.(%{})
+            end
+          }
+
+          render_fn.(render_state)
+        else
+          %{type: :text, attrs: %{content: "Error: Missing render prop"}}
+        end
+      end
+    }
+  end
+
+  @doc """
+  Timer component that provides time-based state via render prop.
+
+  ## Props
+  - `:render` - Function that receives timer state
+  - `:interval` - Update interval in milliseconds
+  - `:duration` - Total duration (optional)
+  - `:auto_start` - Whether to start automatically (default: true)
+
+  ## Examples
+
+      %{
+        type: :timer,
+        attrs: %{
+          interval: 1000,
+          duration: 60000,  # 1 minute
+          render: fn %{elapsed: elapsed, remaining: remaining, percentage: pct} ->
+            column([
+              text("Elapsed: \#{elapsed}ms"),
+              text("Remaining: \#{remaining}ms"),
+              progress_bar(percentage: pct)
+            ])
+          end
+        }
+      }
+  """
+  def timer do
+    %{
+      type: :render_prop_component,
+      render_fn: fn props, _context ->
+        render_fn = Map.get(props, :render)
+        interval = Map.get(props, :interval, 1000)
+        duration = Map.get(props, :duration)
+        auto_start = Map.get(props, :auto_start, true)
+
+        if render_fn do
+          {elapsed, set_elapsed} = Hooks.use_state(0)
+          {is_running, set_is_running} = Hooks.use_state(auto_start)
+          {start_time, set_start_time} = Hooks.use_state(nil)
+
+          # Timer effect
+          Hooks.use_effect(
+            fn ->
+              if is_running do
+                if start_time == nil do
+                  set_start_time.(System.monotonic_time(:millisecond))
+                end
+
+                timer_ref = :timer.send_interval(interval, self(), :timer_tick)
+
+                fn -> :timer.cancel(timer_ref) end
+              end
+            end,
+            [is_running, interval]
+          )
+
+          # Handle timer ticks
+          Hooks.use_effect(fn ->
+            receive do
+              :timer_tick ->
+                if start_time do
+                  current_time = System.monotonic_time(:millisecond)
+                  new_elapsed = current_time - start_time
+                  set_elapsed.(new_elapsed)
+
+                  # Check if duration reached
+                  if duration && new_elapsed >= duration do
+                    set_is_running.(false)
+                  end
+                end
+            after
+              0 -> :ok
+            end
+          end)
+
+          # Timer controls
+          start_timer =
+            Hooks.use_callback(
+              fn ->
+                set_is_running.(true)
+                set_start_time.(System.monotonic_time(:millisecond))
+                set_elapsed.(0)
+              end,
+              []
+            )
+
+          stop_timer =
+            Hooks.use_callback(
+              fn ->
+                set_is_running.(false)
+              end,
+              []
+            )
+
+          reset_timer =
+            Hooks.use_callback(
+              fn ->
+                set_elapsed.(0)
+                set_start_time.(nil)
+                set_is_running.(auto_start)
+              end,
+              [auto_start]
+            )
+
+          remaining = if duration, do: max(0, duration - elapsed), else: nil
+
+          percentage =
+            if duration, do: min(100, elapsed / duration * 100), else: 0
+
+          render_state = %{
+            elapsed: elapsed,
+            remaining: remaining,
+            percentage: percentage,
+            is_running: is_running,
+            start: start_timer,
+            stop: stop_timer,
+            reset: reset_timer
+          }
+
+          render_fn.(render_state)
+        else
+          %{type: :text, attrs: %{content: "Error: Missing render prop"}}
+        end
+      end
+    }
+  end
+
+  # Helper functions (placeholders for actual implementations)
+
+  defp register_mouse_events(
+         _mouse_listener,
+         _enter_listener,
+         _leave_listener,
+         _track_outside
+       ) do
+    # This would integrate with the actual event system
+    :ok
+  end
+
+  defp unregister_mouse_events(
+         _mouse_listener,
+         _enter_listener,
+         _leave_listener
+       ) do
+    # This would integrate with the actual event system
+    :ok
+  end
+
+  defp register_keyboard_events(_keydown_listener, _keyup_listener) do
+    # This would integrate with the actual event system
+    :ok
+  end
+
+  defp unregister_keyboard_events(_keydown_listener, _keyup_listener) do
+    # This would integrate with the actual event system
+    :ok
+  end
+
+  defp register_scroll_events(_scroll_listener, _throttle_ms) do
+    # This would integrate with the actual event system
+    :ok
+  end
+
+  defp unregister_scroll_events(_scroll_listener) do
+    # This would integrate with the actual event system
+    :ok
+  end
+
+  defp check_key_combinations(pressed_keys, track_combinations) do
+    Enum.filter(track_combinations, fn combination ->
+      case combination do
+        :ctrl_c -> :ctrl in pressed_keys and :c in pressed_keys
+        :ctrl_v -> :ctrl in pressed_keys and :v in pressed_keys
+        :alt_tab -> :alt in pressed_keys and :tab in pressed_keys
+        :escape -> :escape in pressed_keys
+        _ -> false
+      end
+    end)
+  end
+
+  defp validate_rule(:required, value, _values) do
+    value != nil and value != ""
+  end
+
+  defp validate_rule(:email, value, _values) do
+    String.contains?(value, "@") and String.contains?(value, ".")
+  end
+
+  defp validate_rule({:min_length, min}, value, _values) do
+    String.length(to_string(value)) >= min
+  end
+
+  defp validate_rule({:max_length, max}, value, _values) do
+    String.length(to_string(value)) <= max
+  end
+
+  defp validate_rule(_rule, _value, _values) do
+    # Unknown rule passes by default
+    true
+  end
+end
