@@ -1,0 +1,141 @@
+base_config:
+  raxol:
+    terminal:
+      default_width: 80
+      default_height: 24
+      scrollback_lines: 1000
+      enable_ansi: true
+      enable_mouse: true
+      debug_mode: false
+    
+    web:
+      default_theme: "light"
+      enable_websockets: true
+      session_timeout: 3600
+    
+    core:
+      max_concurrent_sessions: 100
+      session_cleanup_interval: 300000
+      buffer_size_limit: 1048576
+      
+    audit:
+      enabled: true
+      log_level: :info
+      retention_days: 365
+      
+    security:
+      enable_encryption: true
+      key_rotation_days: 90
+      failed_login_lockout: 15
+      max_login_attempts: 5
+
+environment_specific:
+  dev:
+    raxol:
+      web:
+        enable_hot_reload: true
+        debug_mode: true
+      terminal:
+        debug_mode: true
+      core:
+        max_concurrent_sessions: 10
+    
+    logger:
+      level: :debug
+      
+  test:
+    raxol:
+      core:
+        max_concurrent_sessions: 5
+        buffer_size_limit: 65536
+      security:
+        failed_login_lockout: 1
+      terminal:
+        default_width: 40
+        default_height: 12
+        
+    logger:
+      level: :warn
+      
+  prod:
+    raxol:
+      web:
+        enable_hot_reload: false
+        debug_mode: false
+      terminal:
+        debug_mode: false
+      core:
+        max_concurrent_sessions: 1000
+        buffer_size_limit: 10485760
+      security:
+        enable_encryption: true
+        
+    logger:
+      level: :info
+
+phoenix_config:
+  base:
+    endpoint:
+      url:
+        host: "localhost"
+        port: 4000
+      render_errors:
+        view: "RaxolWeb.ErrorView"
+        accepts: ["html", "json"]
+      pubsub_server: "Raxol.PubSub"
+      live_view:
+        signing_salt: "generated_salt"
+        
+  environments:
+    dev:
+      endpoint:
+        debug_errors: true
+        code_reloader: true
+        check_origin: false
+        watchers:
+          esbuild:
+            - "default"
+            - "--sourcemap=inline"
+            - "--watch"
+      
+    test:
+      endpoint:
+        http:
+          port: 4002
+        server: false
+        
+    prod:
+      endpoint:
+        cache_static_manifest: "priv/static/cache_manifest.json"
+        server: true
+
+database_config:
+  base:
+    ecto_repos: ["Raxol.Repo"]
+    
+  repo_config:
+    adapter: "Ecto.Adapters.Postgres"
+    pool: "Ecto.Adapters.SQL.Sandbox"
+    
+  environments:
+    dev:
+      database: "raxol_dev"
+      hostname: "localhost"
+      username: "postgres"
+      password: "postgres"
+      pool_size: 10
+      
+    test:
+      database: "raxol_test#{System.get_env(\"MIX_TEST_PARTITION\")}"
+      hostname: "localhost"
+      username: "postgres"
+      password: "postgres"
+      pool: "Ecto.Adapters.SQL.Sandbox"
+      pool_size: 10
+      
+    prod:
+      database: "${DATABASE_NAME}"
+      hostname: "${DATABASE_HOST}"
+      username: "${DATABASE_USERNAME}"
+      password: "${DATABASE_PASSWORD}"
+      pool_size: "${DATABASE_POOL_SIZE}"

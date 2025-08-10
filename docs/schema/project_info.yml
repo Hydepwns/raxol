@@ -1,0 +1,87 @@
+name: "Raxol"
+version: "1.0.0"
+status: "Production Ready"
+tagline: "The Most Advanced Terminal Framework in Elixir"
+
+description:
+  short: "A full-stack terminal application framework for Elixir"
+  long: |
+    Raxol is a full-stack terminal application framework that combines:
+    - **Advanced Terminal Emulator**: Full ANSI/VT100+ compliant terminal emulator with Sixel graphics, Unicode support
+    - **Component-Based TUI Framework**: React-style component system for building rich terminal user interfaces  
+    - **Real-Time Web Interface**: Phoenix LiveView-powered web terminal with real-time collaboration
+    - **Extensible Plugin Architecture**: Runtime plugin system for extending functionality
+    - **Enterprise Features**: Built-in authentication, session management, metrics, and monitoring
+
+mission: |
+  Raxol aims to be the definitive terminal application framework, combining:
+  - **Performance**: Sub-millisecond operations, efficient memory usage
+  - **Modern UI Framework**: CSS-like animations, Flexbox/Grid layouts, reactive state management
+  - **Developer Experience**: React-style components, hot reloading, component preview, debugging tools
+  - **Enterprise Features**: Authentication, monitoring, multi-tenancy, audit logs, encryption
+  - **Innovation**: Sixel graphics, collaborative editing, AI integration points
+  - **Reliability**: 100% test coverage, fault tolerance, graceful degradation
+
+prerequisites:
+  - name: "Elixir"
+    version: "~> 1.14"
+    required: true
+  - name: "Erlang/OTP" 
+    version: "~> 25.0"
+    required: true
+  - name: "PostgreSQL"
+    version: "~> 14.0"
+    required: true
+  - name: "Node.js"
+    version: "~> 18.0"
+    required: false
+    note: "For asset compilation"
+
+badges:
+  - name: "CI"
+    url: "https://github.com/Hydepwns/raxol/workflows/CI/badge.svg"
+    link: "https://github.com/Hydepwns/raxol/actions/workflows/ci.yml"
+  - name: "Codecov"
+    url: "https://codecov.io/gh/Hydepwns/raxol/branch/master/graph/badge.svg"
+    link: "https://codecov.io/gh/Hydepwns/raxol"
+  - name: "Hex.pm"
+    url: "https://img.shields.io/hexpm/v/raxol.svg"
+    link: "https://hex.pm/packages/raxol"
+  - name: "Documentation"
+    url: "https://img.shields.io/badge/docs-hexdocs-purple.svg"
+    link: "https://hexdocs.pm/raxol"
+  - name: "Compilation"
+    url: "https://img.shields.io/badge/warnings-0-brightgreen.svg"
+    link: "https://github.com/Hydepwns/raxol"
+  - name: "Tests"
+    url: "https://img.shields.io/badge/tests-1751%20passing-brightgreen.svg"
+    link: "https://github.com/Hydepwns/raxol/actions"
+
+repository:
+  url: "https://github.com/Hydepwns/raxol"
+  issues: "https://github.com/Hydepwns/raxol/issues"
+  
+hex_package: "raxol"
+documentation_url: "https://hexdocs.pm/raxol"
+license: "MIT"
+
+maintainers:
+  - "Raxol Team"
+
+documentation:
+  status: "Complete"
+  architecture_decisions:
+    coverage: "100%"
+    count: 9
+    location: "docs/adr/"
+    description: "Comprehensive ADRs covering all major architectural decisions"
+  api_documentation: 
+    coverage: "100%"
+    location: "https://hexdocs.pm/raxol"
+  guides:
+    tutorials: "Interactive tutorial system with hands-on learning"
+    playground: "Live component testing and preview"
+    examples: "Comprehensive code examples and demos"
+
+contact:
+  enterprise: "enterprise@raxol.dev"
