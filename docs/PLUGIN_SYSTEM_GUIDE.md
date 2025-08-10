@@ -13,6 +13,8 @@ tags: [plugins, extensions, development, guide]
 
 The Raxol plugin system enables you to extend the framework's functionality at runtime without modifying core code. Plugins can add new commands, hook into system events, provide custom UI components, and integrate with external services.
 
+> **📚 Architecture Context**: See [ADR-0005: Runtime Plugin System Architecture](adr/0005-runtime-plugin-system-architecture.md) for the complete architectural decision context, alternatives considered, and technical implementation details.
+
 ## Plugin Architecture
 
 ```
