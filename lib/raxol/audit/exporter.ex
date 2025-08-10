@@ -41,8 +41,8 @@ defmodule Raxol.Audit.Exporter do
   @doc """
   Exports audit events in the specified format.
   """
-  def export(exporter \\ __MODULE__, format, filters, opts \\ []) do
-    GenServer.call(exporter, {:export, format, filters, opts}, 60_000)
+  def export(format, filters, opts \\ []) do
+    GenServer.call(__MODULE__, {:export, format, filters, opts}, 60_000)
   end
 
   @doc """
@@ -219,6 +219,59 @@ defmodule Raxol.Audit.Exporter do
 
   ## Format Converters
 
+  defp format_xml(events) do
+    event_xml = Enum.map(events, &format_event_xml/1) |> Enum.join("\n")
+    
+    """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <AuditLog xmlns="http://raxol.io/audit/1.0">
+      <ExportTime>#{DateTime.utc_now() |> DateTime.to_iso8601()}</ExportTime>
+      <EventCount>#{length(events)}</EventCount>
+      <Events>
+    #{event_xml}
+      </Events>
+    </AuditLog>
+    """
+  end
+
+  defp format_event_xml(event) do
+    """
+        <Event>
+      <EventID>#{Map.get(event, :event_id, "")}</EventID>
+      <Timestamp>#{Map.get(event, :timestamp, System.system_time(:millisecond))}</Timestamp>
+      <Type>#{Map.get(event, :event_type, "unknown")}</Type>
+      <Severity>#{Map.get(event, :severity, "info")}</Severity>
+      <User>#{Map.get(event, :user_id, "")}</User>
+      <IPAddress>#{Map.get(event, :ip_address, "")}</IPAddress>
+      <Details>#{escape_xml(format_event_details(event))}</Details>
+    </Event>
+    """
+  end
+
+  defp format_event_details(event) do
+    description = Map.get(event, :description, "")
+    event_type = Map.get(event, :event_type, "unknown")
+    user = Map.get(event, :user_id, "unknown")
+    action = Map.get(event, :action, "")
+    outcome = Map.get(event, :outcome, "")
+    
+    case description do
+      "" -> "#{event_type}: User #{user} performed #{action} with outcome #{outcome}"
+      desc -> desc
+    end
+  end
+
+  defp escape_xml(text) when is_binary(text) do
+    text
+    |> String.replace("&", "&amp;")
+    |> String.replace("<", "&lt;") 
+    |> String.replace(">", "&gt;")
+    |> String.replace("\"", "&quot;")
+    |> String.replace("'", "&#39;")
+  end
+  
+  defp escape_xml(other), do: to_string(other)
+
   defp format_cef_message(event) do
     # CEF:Version|Device Vendor|Device Product|Device Version|Device Event Class ID|Name|Severity|Extension
     timestamp = format_timestamp(event.timestamp)
@@ -259,41 +312,21 @@ defmodule Raxol.Audit.Exporter do
       format_event_message(event)
   end
 
-  defp format_xml(events) do
-    """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <AuditLog xmlns="http://raxol.io/audit/1.0">
-      <ExportTime>#{DateTime.utc_now() |> DateTime.to_iso8601()}</ExportTime>
-      <EventCount>#{length(events)}</EventCount>
-      <Events>
-        #{Enum.map(events, &event_to_xml/1) |> Enum.join("\n")}
-      </Events>
-    </AuditLog>
-    """
-  end
 
-  defp event_to_xml(event) do
-    """
-        <Event>
-          <EventID>#{event.event_id}</EventID>
-          <Timestamp>#{event.timestamp}</Timestamp>
-          <Type>#{Map.get(event, :event_type, "unknown")}</Type>
-          <Severity>#{Map.get(event, :severity, "info")}</Severity>
-          <User>#{Map.get(event, :user_id, "")}</User>
-          <IPAddress>#{Map.get(event, :ip_address, "")}</IPAddress>
-          <Details>#{escape_xml(format_event_message(event))}</Details>
-        </Event>
-    """
-  end
 
   ## Compliance Reports
 
   defp generate_report(:soc2, time_range, opts, state) do
     events = load_events_for_timerange(time_range)
 
+    {start_time, end_time} = time_range
+    
     report = %{
       framework: "SOC 2 Type II",
-      period: time_range,
+      period: %{
+        start: start_time,
+        end: end_time
+      },
       generated_at: DateTime.utc_now(),
       controls: [
         analyze_cc6_logical_access(events),
@@ -310,9 +343,14 @@ defmodule Raxol.Audit.Exporter do
   defp generate_report(:hipaa, time_range, opts, state) do
     events = load_events_for_timerange(time_range)
 
+    {start_time, end_time} = time_range
+    
     report = %{
       framework: "HIPAA",
-      period: time_range,
+      period: %{
+        start: start_time,
+        end: end_time
+      },
       generated_at: DateTime.utc_now(),
       safeguards: [
         analyze_access_controls(events),
@@ -330,9 +368,14 @@ defmodule Raxol.Audit.Exporter do
   defp generate_report(:gdpr, time_range, opts, state) do
     events = load_events_for_timerange(time_range)
 
+    {start_time, end_time} = time_range
+    
     report = %{
       framework: "GDPR",
-      period: time_range,
+      period: %{
+        start: start_time,
+        end: end_time
+      },
       generated_at: DateTime.utc_now(),
       articles: [
         analyze_article_32_security(events),
@@ -349,9 +392,14 @@ defmodule Raxol.Audit.Exporter do
   defp generate_report(:pci_dss, time_range, opts, state) do
     events = load_events_for_timerange(time_range)
 
+    {start_time, end_time} = time_range
+    
     report = %{
       framework: "PCI DSS v4.0",
-      period: time_range,
+      period: %{
+        start: start_time,
+        end: end_time
+      },
       generated_at: DateTime.utc_now(),
       requirements: [
         analyze_requirement_7_access(events),
@@ -381,10 +429,12 @@ defmodule Raxol.Audit.Exporter do
   end
 
   defp finalize_export(data, opts) do
-    data
+    result = data
     |> maybe_compress(Keyword.get(opts, :compress, false))
     |> maybe_encrypt(Keyword.get(opts, :encrypt, false))
     |> maybe_sign(Keyword.get(opts, :sign, false))
+    
+    {:ok, result}
   end
 
   defp maybe_compress(data, true) do
@@ -506,14 +556,6 @@ defmodule Raxol.Audit.Exporter do
     |> String.replace("\r", "\\r")
   end
 
-  defp escape_xml(string) do
-    string
-    |> String.replace("&", "&amp;")
-    |> String.replace("<", "&lt;")
-    |> String.replace(">", "&gt;")
-    |> String.replace("\"", "&quot;")
-    |> String.replace("'", "&apos;")
-  end
 
   defp send_events_to_siem(events, siem_config, _state) do
     case siem_config.type do

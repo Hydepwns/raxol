@@ -12,8 +12,15 @@ defmodule Raxol.Audit.AnalyzerTest do
     {:ok, _pid} = Analyzer.start_link(config)
 
     on_exit(fn ->
-      if Process.whereis(Analyzer) do
-        GenServer.stop(Analyzer)
+      case Process.whereis(Analyzer) do
+        pid when is_pid(pid) ->
+          try do
+            GenServer.stop(Analyzer, :normal, 1000)
+          catch
+            :exit, _ -> :ok
+          end
+        nil -> 
+          :ok
       end
     end)
 

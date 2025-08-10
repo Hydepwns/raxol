@@ -12,9 +12,17 @@ defmodule Raxol.UI.RendererPartialRenderTest do
 
     on_exit(fn ->
       # Stop the globally named GenServer after the test, but only if it's alive.
-      case Process.whereis(Raxol.UI.Rendering.Renderer) do
-        nil -> :ok
-        pid -> GenServer.stop(pid, :normal, :infinity)
+      try do
+        case Process.whereis(Raxol.UI.Rendering.Renderer) do
+          nil -> :ok
+          pid when is_pid(pid) -> 
+            if Process.alive?(pid) do
+              GenServer.stop(pid, :normal, 1000)
+            end
+        end
+      catch
+        :exit, {:noproc, _} -> :ok  # Process already dead
+        :exit, {:timeout, _} -> :ok  # Timeout is acceptable in cleanup
       end
     end)
 

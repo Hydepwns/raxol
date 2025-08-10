@@ -64,7 +64,7 @@ export class RaxolDefinitionProvider implements vscode.DefinitionProvider {
     }
 
     private isEventHandlerReference(line: string, word: string): boolean {
-        return /&\\w+\\/\\d+/.test(line) && line.includes(word);
+        return /&\w+\/\d+/.test(line) && line.includes(word);
     }
 
     private async findComponentDefinition(componentName: string): Promise<vscode.Location | null> {
@@ -81,7 +81,7 @@ export class RaxolDefinitionProvider implements vscode.DefinitionProvider {
             try {
                 const document = await vscode.workspace.openTextDocument(file);
                 const content = document.getText();
-                const lines = content.split('\\n');
+                const lines = content.split('\n');
 
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i];
@@ -123,7 +123,7 @@ export class RaxolDefinitionProvider implements vscode.DefinitionProvider {
 
     private async findFunctionDefinition(document: vscode.TextDocument, functionName: string): Promise<vscode.Location | null> {
         const content = document.getText();
-        const lines = content.split('\\n');
+        const lines = content.split('\n');
 
         // First, search in the current document
         for (let i = 0; i < lines.length; i++) {
@@ -161,7 +161,7 @@ export class RaxolDefinitionProvider implements vscode.DefinitionProvider {
             try {
                 const document = await vscode.workspace.openTextDocument(file);
                 const content = document.getText();
-                const lines = content.split('\\n');
+                const lines = content.split('\n');
 
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i];
@@ -188,10 +188,10 @@ export class RaxolDefinitionProvider implements vscode.DefinitionProvider {
 
     private async findEventHandlerDefinition(document: vscode.TextDocument, handlerName: string): Promise<vscode.Location | null> {
         const content = document.getText();
-        const lines = content.split('\\n');
+        const lines = content.split('\n');
 
         // Extract the actual function name from the handler reference
-        const functionName = handlerName.replace(/^handle_/, '').replace(/\\/\\d+$/, '');
+        const functionName = handlerName.replace(/^handle_/, '').replace(/\/\d+$/, '');
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];

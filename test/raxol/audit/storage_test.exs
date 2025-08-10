@@ -19,8 +19,14 @@ defmodule Raxol.Audit.StorageTest do
     {:ok, _pid} = Storage.start_link(config)
 
     on_exit(fn ->
-      if Process.whereis(Storage) do
-        GenServer.stop(Storage)
+      case Process.whereis(Storage) do
+        pid when is_pid(pid) ->
+          try do
+            GenServer.stop(Storage, :normal, 1000)
+          catch
+            :exit, _ -> :ok
+          end
+        nil -> :ok
       end
 
       File.rm_rf!(@test_storage_path)

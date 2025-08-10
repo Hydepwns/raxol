@@ -20,8 +20,14 @@ defmodule Raxol.Audit.LoggerTest do
     {:ok, _pid} = Logger.start_link(config: config)
 
     on_exit(fn ->
-      if Process.whereis(Logger) do
-        GenServer.stop(Logger)
+      case Process.whereis(Logger) do
+        pid when is_pid(pid) ->
+          try do
+            GenServer.stop(Logger, :normal, 1000)
+          catch
+            :exit, _ -> :ok
+          end
+        nil -> :ok
       end
     end)
 

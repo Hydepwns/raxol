@@ -1,17 +1,13 @@
 defmodule Raxol.Tutorials.RunnerTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Raxol.Tutorials.Runner
 
   setup do
-    # Start a new runner for each test
-    {:ok, pid} = Runner.start_link()
-
-    on_exit(fn ->
-      if Process.alive?(pid), do: GenServer.stop(pid)
-    end)
-
-    {:ok, runner: pid}
+    # Restart the named runner for isolation
+    if Process.whereis(Runner), do: GenServer.stop(Runner)
+    {:ok, _pid} = Runner.start_link()
+    :ok
   end
 
   describe "list_tutorials/0" do
@@ -65,8 +61,9 @@ defmodule Raxol.Tutorials.RunnerTest do
     test "previous_step goes back" do
       {:ok, _} = Runner.next_step()
       {:ok, output} = Runner.previous_step()
-
-      assert output =~ "Step" or output =~ "Getting Started"
+      
+      # Should go back to first step which is "Understanding the Architecture"
+      assert output =~ "Understanding the Architecture"
     end
 
     test "show_current displays current step" do
@@ -153,13 +150,15 @@ defmodule Raxol.Tutorials.RunnerTest do
   describe "state management" do
     test "maintains state across operations" do
       {:ok, _} = Runner.start_tutorial("getting_started")
-      {:ok, _} = Runner.next_step()
       {:ok, output1} = Runner.show_current()
 
       {:ok, _} = Runner.next_step()
       {:ok, output2} = Runner.show_current()
 
+      # Should show different steps: first "Understanding the Architecture", then "Working with Components"
       refute output1 == output2
+      assert output1 =~ "Understanding the Architecture"
+      assert output2 =~ "Working with Components"
     end
 
     test "handles multiple tutorial switches" do

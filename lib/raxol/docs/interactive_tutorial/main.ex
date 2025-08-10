@@ -104,8 +104,7 @@ defmodule Raxol.Docs.InteractiveTutorial do
   def next_step do
     with_state(fn state ->
       case Navigation.next_step(state) do
-        {:ok, step} when is_map(step) ->
-          updated_state = %{state | current_step: step.id}
+        {:ok, step, updated_state} when is_map(step) ->
           {updated_state, {:ok, step}}
 
         {:ok, :tutorial_completed} ->
@@ -126,8 +125,7 @@ defmodule Raxol.Docs.InteractiveTutorial do
   def previous_step do
     with_state(fn state ->
       case Navigation.previous_step(state) do
-        {:ok, step} ->
-          updated_state = %{state | current_step: step.id}
+        {:ok, step, updated_state} ->
           {updated_state, {:ok, step}}
 
         {:error, reason} ->

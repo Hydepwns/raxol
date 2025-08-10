@@ -324,7 +324,7 @@ defmodule Raxol.Audit.Logger do
 
   @impl GenServer
   def handle_call({:export_logs, format, filters, opts}, _from, state) do
-    case Exporter.export(state.exporter, format, filters, opts) do
+    case Exporter.export(format, filters, opts) do
       {:ok, exported_data} -> {:reply, {:ok, exported_data}, state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end

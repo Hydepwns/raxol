@@ -430,7 +430,8 @@ defmodule Raxol.Audit.Analyzer do
       |> DateTime.from_unix!(:millisecond)
       |> Map.get(:hour)
 
-    user_profile = Map.get(state.user_profiles, event[:user_id], %{})
+    user_id = Map.get(event, :user_id)
+    user_profile = Map.get(state.user_profiles, user_id, %{})
     usual_hours = Map.get(user_profile, :usual_hours, 8..18)
 
     hour not in usual_hours
@@ -442,7 +443,8 @@ defmodule Raxol.Audit.Analyzer do
     if ip == nil do
       false
     else
-      user_profile = Map.get(state.user_profiles, event[:user_id], %{})
+      user_id = Map.get(event, :user_id)
+      user_profile = Map.get(state.user_profiles, user_id, %{})
       known_ips = Map.get(user_profile, :known_ips, MapSet.new())
 
       not MapSet.member?(known_ips, ip)
@@ -451,7 +453,8 @@ defmodule Raxol.Audit.Analyzer do
 
   defp unusual_behavior?(event, state) do
     # Simplified behavior analysis
-    user_profile = Map.get(state.user_profiles, event[:user_id], %{})
+    user_id = Map.get(event, :user_id)
+    user_profile = Map.get(state.user_profiles, user_id, %{})
     baseline = Map.get(user_profile, :behavior_baseline, %{})
 
     # Check if event type is unusual for this user
@@ -661,9 +664,12 @@ defmodule Raxol.Audit.Analyzer do
         name: "suspicious_command_execution",
         type: :pattern,
         condition: fn event, _state ->
-          command = Map.get(event, :command, "")
-          suspicious = ["curl | sh", "wget | bash", "rm -rf /", ":(){ :|:& };:"]
-          Enum.any?(suspicious, &String.contains?(command, &1))
+          command = case event do
+            %{command: cmd} when is_binary(cmd) -> cmd
+            _ -> Map.get(event, :command, "")
+          end
+          suspicious = ["curl", "wget", "rm -rf", ":()", "| sh", "| bash"]
+          Enum.any?(suspicious, &String.contains?(String.downcase(command), &1))
         end,
         severity: :critical,
         action: :block
@@ -677,6 +683,16 @@ defmodule Raxol.Audit.Analyzer do
         end,
         severity: :medium,
         action: :alert
+      },
+      %{
+        name: "security_event_detected",
+        type: :pattern,
+        condition: fn event, _state ->
+          Map.get(event, :event_type) == :security or
+            Map.get(event, :action) == :intrusion_detected
+        end,
+        severity: :high,
+        action: :investigate
       }
     ]
   end

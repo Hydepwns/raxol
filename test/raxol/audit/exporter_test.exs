@@ -23,8 +23,26 @@ defmodule Raxol.Audit.ExporterTest do
     Storage.store_batch(events)
 
     on_exit(fn ->
-      if Process.whereis(Exporter), do: GenServer.stop(Exporter)
-      if Process.whereis(Storage), do: GenServer.stop(Storage)
+      case Process.whereis(Exporter) do
+        pid when is_pid(pid) ->
+          try do
+            GenServer.stop(Exporter, :normal, 1000)
+          catch
+            :exit, _ -> :ok
+          end
+        nil -> :ok
+      end
+      
+      case Process.whereis(Storage) do
+        pid when is_pid(pid) ->
+          try do
+            GenServer.stop(Storage, :normal, 1000)
+          catch
+            :exit, _ -> :ok
+          end
+        nil -> :ok
+      end
+      
       File.rm_rf!("test/audit_export_test")
       File.rm_rf!("test/audit_exports")
     end)

@@ -258,6 +258,7 @@ defmodule Raxol.Audit.Storage do
         |> filter_by_severity(filters)
         |> filter_by_event_type(filters)
         |> filter_by_resource(filters)
+        |> filter_by_session_id(filters)
         |> filter_by_text_search(filters, state)
 
       # Apply sorting
@@ -338,10 +339,39 @@ defmodule Raxol.Audit.Storage do
 
   defp filter_by_resource(events, _), do: events
 
+  defp filter_by_session_id(events, %{session_id: session_id}) do
+    Enum.filter(events, &(Map.get(&1, :session_id) == session_id))
+  end
+
+  defp filter_by_session_id(events, _), do: events
+
   defp filter_by_text_search(events, %{text_search: query}, state) do
-    # Use search index for full-text search
-    matching_ids = search_in_index(query, state.search_index)
-    Enum.filter(events, &(&1.event_id in matching_ids))
+    # Try search index first
+    matching_ids = 
+      query
+      |> search_in_index(state.search_index) 
+      |> MapSet.to_list()
+    
+    indexed_results = Enum.filter(events, &(&1.event_id in matching_ids))
+    
+    # Fallback to direct text search if index returns no results
+    if Enum.empty?(indexed_results) do
+      query_lower = String.downcase(query)
+      Enum.filter(events, fn event ->
+        searchable_text = [
+          Map.get(event, :description, ""),
+          Map.get(event, :command, ""),
+          Map.get(event, :error_message, ""),
+          Map.get(event, :denial_reason, "")
+        ]
+        |> Enum.join(" ")
+        |> String.downcase()
+        
+        String.contains?(searchable_text, query_lower)
+      end)
+    else
+      indexed_results
+    end
   end
 
   defp filter_by_text_search(events, _, _), do: events
