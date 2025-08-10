@@ -111,10 +111,12 @@ defmodule Raxol.Terminal.TerminalRegistry do
       config: config
     }
 
-    # Subscribe to terminal events
-    EventStore.subscribe(self(),
-      event_types: [TerminalCreatedEvent, TerminalClosedEvent]
-    )
+    # Subscribe to terminal events (skip in test mode to avoid circular dependencies)
+    unless Mix.env() == :test do
+      EventStore.subscribe(self(),
+        event_types: [TerminalCreatedEvent, TerminalClosedEvent]
+      )
+    end
 
     Logger.info("Terminal registry initialized")
     {:ok, state}
