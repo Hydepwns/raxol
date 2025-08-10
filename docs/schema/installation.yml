@@ -1,0 +1,113 @@
+prerequisites:
+  - name: "Elixir"
+    version: "1.17+"
+    required: true
+    
+  - name: "PostgreSQL"
+    version: "latest"
+    required: false
+    note: "optional, for web features"
+    
+  - name: "Node.js"
+    version: "latest"
+    required: true
+    note: "for asset compilation"
+
+installation_methods:
+  hex_package:
+    title: "Add Raxol to your mix.exs dependencies"
+    code: |
+      def deps do
+        [
+          {:raxol, "~> 0.9.0"}
+        ]
+      end
+
+  development_setup:
+    title: "Development Setup"
+    steps:
+      - description: "Clone the repository"
+        code: |
+          git clone https://github.com/Hydepwns/raxol.git
+          cd raxol
+      
+      - description: "Install dependencies"
+        code: "mix deps.get"
+        
+      - description: "Run tests"
+        code: "mix test"
+        
+      - description: "Start development server"
+        code: "mix phx.server"
+
+nix_environment:
+  title: "Nix Environment (Recommended)"
+  description: "Raxol uses Nix for reproducible development environments"
+  steps:
+    - description: "Enter development shell (auto-configures PostgreSQL, Erlang/Elixir paths)"
+      code: "nix-shell"
+      
+    - description: "Alternative with direnv (auto-loads on cd)"
+      code: "direnv allow"
+
+development_commands:
+  core_workflow:
+    - command: "mix deps.get"
+      description: "Install dependencies"
+      
+    - command: "mix test"
+      description: "Run all tests"
+      
+    - command: "mix test test/path/to/test_file.exs"
+      description: "Run specific test file"
+      
+    - command: "mix test test/path/to/test_file.exs:123"
+      description: "Run single test with line number"
+      
+    - command: "timeout 120 mix test --exclude integration --exclude slow --exclude performance --max-failures 20"
+      description: "Run tests with exclusions (faster CI-style run)"
+      
+    - command: "mix phx.server"
+      description: "Run Phoenix web server"
+      
+    - command: "mix credo"
+      description: "Code quality checks"
+      
+    - command: "mix lint"
+      description: "Code quality checks"
+      
+    - command: "mix docs"
+      description: "Generate documentation"
+
+  database_operations:
+    - command: "mix ecto.setup"
+      description: "Database setup (Nix handles PostgreSQL automatically)"
+      
+    - command: "mix ecto.reset"
+      description: "Reset database"
+      
+    - command: "pg_ctl -D $PGDATA status"
+      description: "Check database status"
+      
+    - command: "pg_ctl -D $PGDATA stop"
+      description: "Stop database"
+      
+    - command: "pg_ctl -D $PGDATA start"
+      description: "Start database"
+
+  asset_management:
+    - command: "mix assets.setup"
+      description: "Setup assets"
+      
+    - command: "mix assets.build"
+      description: "Build assets for development"
+      
+    - command: "mix assets.deploy"
+      description: "Deploy assets for production"
+
+environment_variables:
+  nix_managed:
+    - "ERLANG_PATH, ELIXIR_PATH - Language runtime paths"
+    - "ERL_EI_INCLUDE_DIR, ERL_EI_LIBDIR - Native compilation paths"
+    - "PGDATA, PGHOST, PGPORT - PostgreSQL configuration"
+    - "MIX_ENV - Mix environment"

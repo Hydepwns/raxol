@@ -1,0 +1,125 @@
+system_overview: |
+  Raxol follows a layered, modular architecture designed for extensibility and performance.
+  All major architectural decisions are documented in comprehensive Architecture Decision Records (ADRs).
+
+layers:
+  - name: "Applications"
+    description: "User TUI Apps, Plugins, Extensions"
+    position: 5
+    
+  - name: "UI Framework Layer" 
+    description: "Components, Layouts, Themes, Event System"
+    position: 4
+    
+  - name: "Web Interface Layer"
+    description: "Phoenix LiveView, WebSockets, Auth, API"
+    position: 3
+    
+  - name: "Terminal Emulator Core"
+    description: "ANSI Parser, Buffer Manager, Input Handler"
+    position: 2
+    
+  - name: "Platform Services"
+    description: "Plugins, Config, Metrics, Security, Persistence"
+    position: 1
+
+architecture_decisions:
+  status: "Complete"
+  coverage: "9 comprehensive ADRs"
+  location: "docs/adr/"
+  description: |
+    All major architectural decisions are documented with context, alternatives considered, 
+    and validation metrics. ADRs cover core architecture, performance, web integration, 
+    extensibility, and enterprise security.
+  
+  categories:
+    - name: "Core Architecture"
+      adrs: ["ADR-0001: Component-Based Architecture", "ADR-0003: Terminal Emulation Strategy", "ADR-0007: State Management Strategy"]
+    - name: "Performance & Scalability" 
+      adrs: ["ADR-0002: Parser Performance Optimization", "ADR-0009: High-Performance Buffer Management"]
+    - name: "Web Integration & Collaboration"
+      adrs: ["ADR-0004: WASH-Style Web Continuity Architecture", "ADR-0008: Phoenix LiveView Integration Architecture"]
+    - name: "Extensibility & Security"
+      adrs: ["ADR-0005: Runtime Plugin System Architecture", "ADR-0006: Enterprise Security and Compliance Model"]
+
+design_principles:
+  - name: "Separation of Concerns"
+    description: "Each layer has clear responsibilities"
+    
+  - name: "Event-Driven"
+    description: "Components communicate through events"
+    
+  - name: "Supervision Trees" 
+    description: "Fault-tolerant with OTP supervision"
+    
+  - name: "Performance First"
+    description: "Optimized for high-throughput terminal operations"
+    
+  - name: "Extensible"
+    description: "Plugin system allows extending any layer"
+
+key_modules:
+  application_runtime:
+    - name: "Raxol.Application"
+      description: "Main application startup and supervision tree"
+    - name: "Raxol.Core.Runtime.Application"
+      description: "Application lifecycle management"
+    - name: "Raxol.Core.Runtime.Events.Dispatcher"
+      description: "Event dispatching system"
+    - name: "Raxol.Core.Runtime.Lifecycle"
+      description: "Component lifecycle management"
+
+  terminal_core:
+    - name: "Raxol.Terminal.Emulator"
+      description: "Main terminal emulation engine"
+    - name: "Raxol.Terminal.Buffer.Manager"
+      description: "Advanced buffer management (uses new modular BufferServerRefactored)"
+    - name: "Raxol.Terminal.ANSI.*"
+      description: "Comprehensive ANSI/VT100+ sequence handling"
+    - name: "Raxol.Terminal.Renderer"
+      description: "Terminal rendering with damage tracking"
+
+  ui_framework:
+    - name: "Raxol.UI.Components.Base.Component"
+      description: "Component behavior and lifecycle"
+    - name: "Raxol.Core.Renderer.View"
+      description: "View composition and layout engine"
+    - name: "Raxol.UI.Components.*"
+      description: "Rich component library (Button, TextInput, Table, etc.)"
+
+  web_interface:
+    - name: "RaxolWeb.TerminalLive"
+      description: "Phoenix LiveView terminal interface"
+    - name: "RaxolWeb.TerminalChannel"
+      description: "WebSocket communication layer"
+    - name: "RaxolWeb.Presence"
+      description: "Multi-user presence tracking"
+    - name: "Raxol.Accounts"
+      description: "User authentication system"
+
+  plugin_system:
+    - name: "Raxol.Core.Runtime.Plugins.Manager"
+      description: "Plugin lifecycle management"
+    - name: "Raxol.Core.Runtime.Plugins.Registry"
+      description: "Command registration system"
+    - name: "Raxol.Plugin"
+      description: "Plugin behavior definition"
+      features: "Runtime loading/unloading without restart"
+
+performance_characteristics:
+  buffer_management:
+    improvement: "42,000x performance improvement over legacy system"
+    features:
+      - "Modular operation processing with batching"
+      - "Comprehensive damage tracking for minimal screen updates" 
+      - "Memory-efficient scrollback management"
+  
+  rendering_optimization:
+    - "Damage tracking for incremental updates"
+    - "Sub-millisecond local operations"
+    - "< 2ms average frame time for complex UIs"
+    - "Efficient ANSI sequence processing with state machines"
+  
+  parser_performance:
+    current: "3.3 μs/op (30x improvement achieved)"
+    target: "<100 μs"
