@@ -505,7 +505,7 @@ defmodule Raxol.Web.PersistentStore do
           {:ok, _session} -> :ok
           {:error, reason} -> {:error, reason}
         end
-        
+
       existing_session ->
         # Update existing session
         existing_session
