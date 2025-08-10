@@ -137,4 +137,4 @@ Built something cool with Raxol? Share it with the community:
 - [Documentation](https://hexdocs.pm/raxol)
 - [API Reference](docs/API.md)
 - [Architecture](docs/ARCHITECTURE.md)
-- [Contributing](CONTRIBUTING.md)
+- [Contributing](../CONTRIBUTING.md)

@@ -15,7 +15,7 @@
    - [Buffer](#raxolterminalbuffer)
    - [Parser](#raxolterminalparser)
 3. [UI Components](#ui-components)
-   - [Component System](#raxolcomponent-1)
+   - [Component System](#raxolcomponent)
    - [Layout Engines](#raxoluilayout)
    - [Built-in Components](#raxoluicomponents)
 4. [State Management](#state-management)
@@ -26,14 +26,14 @@
    - [Plugin Manager](#raxolpluginmanager)
 6. [Event System](#event-system)
    - [Event Bus](#raxoleventsbus)
-   - [Event Sourcing](#event-patterns)
+   - [Event Patterns](#raxolevents)
 7. [Performance APIs](#performance-apis)
    - [Benchmarks](#raxolbenchmarksperformance)
    - [Metrics](#raxolmetrics)
 8. [Security APIs](#security-apis)
    - [Encryption](#raxolsecurityencryption)
    - [Audit Logging](#raxolaudit)
-9. [Advanced Topics](#advanced-topics)
+9. [Advanced Usage](#advanced-usage)
    - [Session Management](#session-management)
    - [Terminal Multiplexing](#terminal-multiplexing)
    - [Animation System](#animation-system)
@@ -543,37 +543,6 @@ IO.puts("Average parse time: #{time}μs")
 ---
 
 ## UI Components
-
-### Raxol.Component
-
-Base component system for building terminal UIs.
-
-```elixir
-defmodule MyComponent do
-  use Raxol.Component
-  
-  @impl true
-  def init(props) do
-    %{count: 0}
-  end
-  
-  @impl true
-  def render(state, props) do
-    """
-    Count: #{state.count}
-    Press + to increment
-    """
-  end
-  
-  @impl true
-  def handle_event(:key_press, "+", state) do
-    {:ok, %{state | count: state.count + 1}}
-  end
-end
-
-# Use component
-{:ok, component} = Raxol.Component.start(MyComponent, %{})
-```
 
 ### Raxol.UI.Layout
 
