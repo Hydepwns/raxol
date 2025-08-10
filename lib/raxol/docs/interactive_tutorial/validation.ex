@@ -12,10 +12,21 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   @doc """
   Validates a user's solution for an exercise.
   """
-  def validate_solution(%Step{} = step, solution) when binary?(solution) do
-    case step.exercise do
-      nil -> {:error, "No exercise defined for this step"}
-      exercise -> do_validate(exercise, solution)
+  def validate_solution(%Step{} = step, solution) when is_binary(solution) do
+    cond do
+      is_nil(step.exercise) ->
+        {:error, "No exercise defined for this step"}
+
+      is_function(step.validation, 1) ->
+        # Use custom validation function if provided
+        if step.validation.(solution) do
+          {:ok, "Solution is correct!"}
+        else
+          {:error, "Solution is incorrect"}
+        end
+
+      true ->
+        do_validate(step.exercise, solution)
     end
   end
 

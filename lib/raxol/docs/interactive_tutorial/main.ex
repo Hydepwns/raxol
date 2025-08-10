@@ -16,7 +16,7 @@ defmodule Raxol.Docs.InteractiveTutorial do
 
   alias Raxol.Docs.InteractiveTutorial.{
     State,
-    Loader,
+    SimpleLoader,
     Navigation,
     Validation,
     Renderer
@@ -31,9 +31,9 @@ defmodule Raxol.Docs.InteractiveTutorial do
   def init do
     initial_state = State.new()
 
-    # Load tutorials from Markdown files
+    # Load tutorials
     state =
-      Loader.load_tutorials_from_markdown("docs/tutorials")
+      SimpleLoader.load_tutorials()
       |> Enum.reduce(initial_state, fn tutorial, acc ->
         register_tutorial(tutorial, acc)
       end)
@@ -80,7 +80,21 @@ defmodule Raxol.Docs.InteractiveTutorial do
   """
   def start_tutorial(tutorial_id) do
     with_state(fn state ->
-      Navigation.start_tutorial(state, tutorial_id)
+      case Navigation.start_tutorial(state, tutorial_id) do
+        {:ok, step} ->
+          tutorial = Map.get(state.tutorials, tutorial_id)
+
+          updated_state = %{
+            state
+            | current_tutorial: tutorial_id,
+              current_step: if(step, do: step.id, else: nil)
+          }
+
+          {updated_state, {:ok, tutorial}}
+
+        {:error, reason} ->
+          {state, {:error, reason}}
+      end
     end)
   end
 
@@ -89,7 +103,20 @@ defmodule Raxol.Docs.InteractiveTutorial do
   """
   def next_step do
     with_state(fn state ->
-      Navigation.next_step(state)
+      case Navigation.next_step(state) do
+        {:ok, step} when is_map(step) ->
+          updated_state = %{state | current_step: step.id}
+          {updated_state, {:ok, step}}
+
+        {:ok, :tutorial_completed} ->
+          {state, {:ok, :tutorial_completed}}
+
+        {:error, reason} ->
+          {state, {:error, reason}}
+
+        other ->
+          {state, {:error, "Unexpected response: #{inspect(other)}"}}
+      end
     end)
   end
 
@@ -98,7 +125,14 @@ defmodule Raxol.Docs.InteractiveTutorial do
   """
   def previous_step do
     with_state(fn state ->
-      Navigation.previous_step(state)
+      case Navigation.previous_step(state) do
+        {:ok, step} ->
+          updated_state = %{state | current_step: step.id}
+          {updated_state, {:ok, step}}
+
+        {:error, reason} ->
+          {state, {:error, reason}}
+      end
     end)
   end
 
@@ -107,7 +141,14 @@ defmodule Raxol.Docs.InteractiveTutorial do
   """
   def jump_to_step(step_id) do
     with_state(fn state ->
-      Navigation.jump_to_step(state, step_id)
+      case Navigation.jump_to_step(state, step_id) do
+        {:ok, step} ->
+          updated_state = %{state | current_step: step_id}
+          {updated_state, {:ok, step}}
+
+        {:error, reason} ->
+          {state, {:error, reason}}
+      end
     end)
   end
 
@@ -116,7 +157,8 @@ defmodule Raxol.Docs.InteractiveTutorial do
   """
   def get_progress(tutorial_id) do
     with_state(fn state ->
-      Navigation.get_progress(state, tutorial_id)
+      progress = Navigation.get_progress(state, tutorial_id)
+      {state, progress}
     end)
   end
 
@@ -127,7 +169,7 @@ defmodule Raxol.Docs.InteractiveTutorial do
     with_state(fn state ->
       case State.get_current_step(state) do
         nil ->
-          nil
+          {state, nil}
 
         step ->
           {state, {Map.get(state.tutorials, state.current_tutorial), step}}
@@ -141,8 +183,12 @@ defmodule Raxol.Docs.InteractiveTutorial do
   def validate_exercise(solution) do
     with_state(fn state ->
       case State.get_current_step(state) do
-        nil -> {:error, "No tutorial in progress"}
-        step -> Validation.validate_solution(step, solution)
+        nil ->
+          {state, {:error, "No tutorial in progress"}}
+
+        step ->
+          result = Validation.validate_solution(step, solution)
+          {state, result}
       end
     end)
   end
@@ -154,13 +200,16 @@ defmodule Raxol.Docs.InteractiveTutorial do
     with_state(fn state ->
       case State.get_current_step(state) do
         nil ->
-          {:error, "No tutorial in progress"}
+          {state, {:error, "No tutorial in progress"}}
 
         step ->
-          case step.hints do
-            [] -> {:error, "No hints available"}
-            hints -> {:ok, List.first(hints)}
-          end
+          result =
+            case step.hints do
+              [] -> {:error, "No hints available"}
+              hints -> {:ok, List.first(hints)}
+            end
+
+          {state, result}
       end
     end)
   end
@@ -171,8 +220,12 @@ defmodule Raxol.Docs.InteractiveTutorial do
   def render_current_step do
     with_state(fn state ->
       case State.get_current_step(state) do
-        nil -> {:error, "No tutorial in progress"}
-        step -> Renderer.render_step(step)
+        nil ->
+          {state, {:error, "No tutorial in progress"}}
+
+        step ->
+          result = Renderer.render_step(step)
+          {state, result}
       end
     end)
   end
@@ -183,17 +236,28 @@ defmodule Raxol.Docs.InteractiveTutorial do
   def render_interactive_elements do
     with_state(fn state ->
       case State.get_current_step(state) do
-        nil -> {:error, "No tutorial in progress"}
-        step -> Renderer.render_interactive_elements(step)
+        nil ->
+          {state, {:error, "No tutorial in progress"}}
+
+        step ->
+          result = Renderer.render_interactive_elements(step)
+          {state, result}
       end
     end)
   end
 
   # Helper function to work with state
   defp with_state(state \\ nil, fun) do
-    current_state = state || Process.get(@state_key)
-    {updated_state, result} = fun.(current_state)
-    Process.put(@state_key, updated_state)
-    result
+    current_state = state || Process.get(@state_key) || State.new()
+
+    case fun.(current_state) do
+      {updated_state, result} ->
+        Process.put(@state_key, updated_state)
+        result
+
+      updated_state when is_map(updated_state) ->
+        Process.put(@state_key, updated_state)
+        updated_state
+    end
   end
 end

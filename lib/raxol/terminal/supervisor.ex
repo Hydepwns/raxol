@@ -28,9 +28,64 @@ defmodule Raxol.Terminal.Supervisor do
            clipboard: %{max_size: 1 * 1024 * 1024},
            general: %{max_size: 19 * 1024 * 1024}
          }
-       ]}
+       ]},
+      # Event Sourcing & CQRS Components
+      {Raxol.Architecture.EventSourcing.EventStore, []},
+      {Raxol.Terminal.TerminalRegistry, []},
+      {Raxol.Architecture.CQRS.CommandDispatcher, []}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
+  end
+
+  @doc """
+  Starts a new terminal with the given configuration using CQRS.
+  """
+  def start_terminal(terminal_config) do
+    case DynamicSupervisor.start_child(
+           Raxol.Terminal.DynamicSupervisor,
+           {Raxol.Terminal.TerminalProcess, terminal_config}
+         ) do
+      {:ok, pid} ->
+        Logger.info(
+          "Started terminal #{terminal_config.terminal_id} with pid #{inspect(pid)}"
+        )
+
+        {:ok, pid}
+
+      {:error, reason} ->
+        Logger.error(
+          "Failed to start terminal #{terminal_config.terminal_id}: #{inspect(reason)}"
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Stops a terminal process using CQRS.
+  """
+  def stop_terminal(terminal_id) do
+    case Raxol.Terminal.TerminalRegistry.lookup(terminal_id) do
+      {:ok, pid} ->
+        case DynamicSupervisor.terminate_child(
+               Raxol.Terminal.DynamicSupervisor,
+               pid
+             ) do
+          :ok ->
+            Logger.info("Stopped terminal #{terminal_id}")
+            :ok
+
+          {:error, reason} ->
+            Logger.error(
+              "Failed to stop terminal #{terminal_id}: #{inspect(reason)}"
+            )
+
+            {:error, reason}
+        end
+
+      {:error, :not_found} ->
+        {:error, :terminal_not_found}
+    end
   end
 end
