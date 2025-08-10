@@ -161,7 +161,7 @@ defmodule Raxol.UI.Interactions.DragDrop do
 
   Updated drag/drop state with drag operation active.
   """
-  def start_drag(state, element_id, %{x: x, y: y} = position, drag_config) do
+  def start_drag(state, element_id, %{x: _x, y: _y} = position, drag_config) do
     if drag_config.draggable do
       # Announce to screen readers if accessibility is enabled
       if drag_config.accessibility.announce_drag_start do
@@ -204,7 +204,7 @@ defmodule Raxol.UI.Interactions.DragDrop do
   @doc """
   Handle drag movement during an active drag operation.
   """
-  def handle_drag_move(state, %{x: x, y: y} = new_position) do
+  def handle_drag_move(state, %{x: _x, y: _y} = new_position) do
     if state.active do
       # Apply constraints to movement
       constrained_position =
@@ -254,7 +254,7 @@ defmodule Raxol.UI.Interactions.DragDrop do
   @doc """
   Handle the end of a drag operation (drop or cancel).
   """
-  def end_drag(state, %{x: x, y: y} = drop_position, cancelled \\ false) do
+  def end_drag(state, %{x: _x, y: _y} = drop_position, cancelled \\ false) do
     if state.active do
       result =
         if cancelled do
@@ -439,7 +439,7 @@ defmodule Raxol.UI.Interactions.DragDrop do
     :cancelled
   end
 
-  defp handle_drop_attempt(state, drop_position) do
+  defp handle_drop_attempt(state, _drop_position) do
     if state.valid_drop_target do
       result = state.valid_drop_target.on_drop.(state.drag_data)
 

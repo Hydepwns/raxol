@@ -382,7 +382,7 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
 
     used_sets =
       @all_ligature_sets
-      |> Enum.filter(fn {set_name, ligatures} ->
+      |> Enum.filter(fn {_set_name, ligatures} ->
         ligatures
         |> Map.keys()
         |> Enum.any?(&String.contains?(all_text, &1))
@@ -477,7 +477,7 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
 
   defp apply_font_adjustments(ligature_map, font) do
     # Adjust unicode points based on font
-    base_offset =
+    _base_offset =
       case font do
         :fira_code -> @fira_code_base
         :jetbrains_mono -> @jetbrains_mono_base

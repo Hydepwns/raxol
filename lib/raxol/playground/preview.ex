@@ -6,14 +6,14 @@ defmodule Raxol.Playground.Preview do
   generating terminal output that shows how the component will appear.
   """
 
-  alias Raxol.Playground.{Themes, MockRenderer}
+  # Remove unused aliases
 
   @doc """
   Generates a preview of a component with given props and state.
   """
   def generate(component, props \\ %{}, state \\ %{}, opts \\ []) do
     theme = Keyword.get(opts, :theme, :default)
-    force_refresh = Keyword.get(opts, :force_refresh, false)
+    _force_refresh = Keyword.get(opts, :force_refresh, false)
 
     # Apply theme
     themed_props = apply_theme(props, theme)
@@ -233,7 +233,7 @@ defmodule Raxol.Playground.Preview do
 
     if is_open and length(options) > 0 do
       option_lines =
-        Enum.with_index(options, fn option, idx ->
+        Enum.with_index(options, fn option, _idx ->
           marker =
             if option == selected,
               do: "#{IO.ANSI.bright()}► #{IO.ANSI.reset()}",
@@ -334,7 +334,7 @@ defmodule Raxol.Playground.Preview do
   defp render_box(props) do
     title = Map.get(props, :title)
     border = Map.get(props, :border, :single)
-    padding = Map.get(props, :padding, 1)
+    _padding = Map.get(props, :padding, 1)
     width = Map.get(props, :width, 30)
     height = Map.get(props, :height, 10)
 
@@ -516,7 +516,7 @@ defmodule Raxol.Playground.Preview do
       "(Modal is hidden)"
     else
       # Create modal overlay effect
-      overlay = String.duplicate("▓", width + 4)
+      _overlay = String.duplicate("▓", width + 4)
 
       top_border = "╔" <> String.duplicate("═", width) <> "╗"
 
