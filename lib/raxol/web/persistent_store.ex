@@ -37,7 +37,7 @@ defmodule Raxol.Web.PersistentStore do
   # Database functionality - aliases
   # alias Raxol.Web.Session.Session  # Unused - commented out
   alias Raxol.Repo
-  
+
   # Check if database functionality is available at runtime.
   defp database_available? do
     Code.ensure_loaded?(Ecto.Schema) and Code.ensure_loaded?(Raxol.Repo)
@@ -576,17 +576,17 @@ defmodule Raxol.Web.PersistentStore do
           session_state = %{
             session_id: session.id,
             user_id: session.user_id,
-          created_at: session.created_at,
-          updated_at: session.updated_at,
-          state: get_in(session.metadata, ["state"]) || %{},
-          metadata:
-            Map.merge(
-              get_in(session.metadata, ["metadata"]) || %{},
-              %{tier: :database}
-            )
-        }
+            created_at: session.created_at,
+            updated_at: session.updated_at,
+            state: get_in(session.metadata, ["state"]) || %{},
+            metadata:
+              Map.merge(
+                get_in(session.metadata, ["metadata"]) || %{},
+                %{tier: :database}
+              )
+          }
 
-        {:ok, session_state}
+          {:ok, session_state}
       end
     else
       {:error, :not_found}

@@ -664,10 +664,12 @@ defmodule Raxol.Audit.Analyzer do
         name: "suspicious_command_execution",
         type: :pattern,
         condition: fn event, _state ->
-          command = case event do
-            %{command: cmd} when is_binary(cmd) -> cmd
-            _ -> Map.get(event, :command, "")
-          end
+          command =
+            case event do
+              %{command: cmd} when is_binary(cmd) -> cmd
+              _ -> Map.get(event, :command, "")
+            end
+
           suspicious = ["curl", "wget", "rm -rf", ":()", "| sh", "| bash"]
           Enum.any?(suspicious, &String.contains?(String.downcase(command), &1))
         end,
