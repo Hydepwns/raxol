@@ -95,7 +95,7 @@ When making significant architectural decisions:
 ## Status: ADR Coverage Complete ✅
 
 **Current Coverage**: 9 ADRs covering all major architectural decisions  
-**Gap Analysis**: [ADR Audit Plan](../ADR_AUDIT_PLAN.md) - **COMPLETED**
+**Gap Analysis**: ADR Audit Plan - **COMPLETED**
 
 ### Major Architecture Areas Documented
 - ✅ **Core Framework**: Component architecture and terminal emulation strategy
