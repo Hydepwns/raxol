@@ -52,7 +52,11 @@ defmodule Raxol.Terminal.Commands.CSIHandlersTest do
         unwrap_ok(CSIHandlers.handle_s(emulator_with_cursor, []))
 
       assert result_emulator.saved_cursor == current_cursor_state
-      assert result_emulator.cursor == current_cursor_state
+      # Cursor should have the same position but with saved state populated
+      assert result_emulator.cursor.row == current_cursor_state.row
+      assert result_emulator.cursor.col == current_cursor_state.col
+      assert result_emulator.cursor.saved_row == current_cursor_state.row
+      assert result_emulator.cursor.saved_col == current_cursor_state.col
     end
   end
 

@@ -48,13 +48,13 @@ export class RaxolCompletionProvider implements vscode.CompletionItemProvider {
     private shouldProvideComponentCompletions(textBeforeCursor: string): boolean {
         return /\\b[A-Z][a-zA-Z]*$/.test(textBeforeCursor) || 
                textBeforeCursor.endsWith('Raxol.UI.') ||
-               /\\.render\\s*\\($/.test(textBeforeCursor);
+               /\.render\s*\($/.test(textBeforeCursor);
     }
 
     private shouldProvidePropsCompletions(textBeforeCursor: string): boolean {
-        return /\\w+\\.render\\s*\\([^)]*[,:]?\\s*$/.test(textBeforeCursor) ||
-               /%\\{[^}]*[,:]?\\s*$/.test(textBeforeCursor) ||
-               /Map\\.get\\s*\\(\\s*props\\s*,\\s*:$/.test(textBeforeCursor);
+        return /\w+\.render\s*\([^)]*[,:]?\s*$/.test(textBeforeCursor) ||
+               /%\{[^}]*[,:]?\s*$/.test(textBeforeCursor) ||
+               /Map\.get\s*\(\s*props\s*,\s*:$/.test(textBeforeCursor);
     }
 
     private shouldProvideEventCompletions(textBeforeCursor: string): boolean {

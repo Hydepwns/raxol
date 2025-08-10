@@ -1,9 +1,10 @@
 defmodule Raxol do
   @moduledoc """
-  Raxol is a feature-rich terminal UI framework for Elixir.
+  Raxol is a world-class terminal UI framework for Elixir.
 
   It provides a comprehensive set of components and tools for building
-  beautiful, accessible, and responsive terminal applications.
+  beautiful, accessible, and responsive terminal applications with
+  enterprise-grade features and sub-millisecond performance.
 
   ## Features
 

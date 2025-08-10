@@ -84,7 +84,7 @@ defmodule Raxol.Web.StateMachine do
       StateMachine.sync_with_session_bridge(machine, session_id)
   """
 
-  alias Raxol.Web.{SessionBridge, PersistentStore}
+  alias Raxol.Web.PersistentStore
 
   require Logger
 

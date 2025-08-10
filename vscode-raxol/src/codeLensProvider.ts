@@ -105,7 +105,7 @@ export class RaxolCodeLensProvider implements vscode.CodeLensProvider {
             const line = lines[i];
             
             // Look for render function definitions
-            if (line.match(/def\\s+render\\s*\\(/)) {
+            if (line.match(/def\s+render\s*\(/)) {
                 matches.push({ line: i });
             }
         }

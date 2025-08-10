@@ -54,8 +54,8 @@ export class RaxolHoverProvider implements vscode.HoverProvider {
     }
 
     private isPropReference(line: string, word: string): boolean {
-        return /\\w+\\.render\\s*\\([^)]*/.test(line) && 
-               new RegExp(`\\\\b${word}:\\\\s*`).test(line);
+        return /\w+\.render\s*\([^)]*/.test(line) && 
+               new RegExp(`\\b${word}:\\s*`).test(line);
     }
 
     private isEventReference(line: string, word: string): boolean {
@@ -95,7 +95,7 @@ export class RaxolHoverProvider implements vscode.HoverProvider {
         
         if (componentInfo.props.length > 0) {
             markdown.appendMarkdown(`**Props:**\\n`);
-            componentInfo.props.forEach(prop => {
+            componentInfo.props.forEach((prop: any) => {
                 markdown.appendMarkdown(`- \`${prop.name}\` _(${prop.type})_: ${prop.description}\\n`);
             });
         }
@@ -114,7 +114,7 @@ export class RaxolHoverProvider implements vscode.HoverProvider {
             return null;
         }
 
-        const prop = componentInfo.props.find(p => p.name === propName);
+        const prop = componentInfo.props.find((p: any) => p.name === propName);
         if (!prop) {
             return null;
         }
@@ -214,7 +214,7 @@ export class RaxolHoverProvider implements vscode.HoverProvider {
         
         if (moduleInfo.functions && moduleInfo.functions.length > 0) {
             markdown.appendMarkdown(`**Key functions:**\\n`);
-            moduleInfo.functions.slice(0, 5).forEach(func => {
+            moduleInfo.functions.slice(0, 5).forEach((func: any) => {
                 markdown.appendMarkdown(`- \`${func}\`\\n`);
             });
         }

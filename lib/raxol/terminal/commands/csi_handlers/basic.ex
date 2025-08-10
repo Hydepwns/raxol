@@ -192,8 +192,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     case emulator.cursor do
       %{row: row, col: col} = cursor ->
         # Struct-based cursor with row/col fields
+        # Save both to the cursor struct and emulator's saved_cursor field
         updated_cursor = %{cursor | saved_row: row, saved_col: col}
-        {:ok, %{emulator | cursor: updated_cursor}}
+        {:ok, %{emulator | cursor: updated_cursor, saved_cursor: cursor}}
 
       _pid_cursor ->
         # PID-based cursor - save to emulator's saved_cursor field

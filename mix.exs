@@ -301,18 +301,83 @@ defmodule Raxol.MixProject do
   defp docs do
     [
       main: "readme",
+      logo: "assets/logo.png",
       extras: [
         "README.md",
+        "docs/API.md",
         "docs/CONFIGURATION.md",
+        "CONTRIBUTING.md",
+        "docs/tutorials/01_getting_started.md",
+        "docs/tutorials/02_component_deep_dive.md",
+        "docs/tutorials/03_terminal_emulation.md",
         "docs/examples/guides/01_getting_started/quick_start.md",
         "docs/examples/guides/02_core_concepts/terminal_emulator.md",
-        "docs/examples/snippets/README.md",
-        "vscode-raxol/README.md",
-        "docs/examples/guides/03_components_and_layout/components/README.md"
+        "docs/examples/snippets/README.md"
+      ],
+      groups_for_extras: [
+        "Getting Started": [
+          "README.md",
+          "docs/tutorials/01_getting_started.md",
+          "docs/examples/guides/01_getting_started/quick_start.md"
+        ],
+        Tutorials: [
+          "docs/tutorials/02_component_deep_dive.md",
+          "docs/tutorials/03_terminal_emulation.md",
+          "docs/examples/guides/02_core_concepts/terminal_emulator.md"
+        ],
+        "API Reference": ["docs/API.md"],
+        Configuration: ["docs/CONFIGURATION.md"],
+        Examples: ["docs/examples/snippets/README.md"],
+        Contributing: ["CONTRIBUTING.md"]
+      ],
+      groups_for_modules: [
+        Core: [
+          Raxol,
+          Raxol.Application,
+          Raxol.Component,
+          Raxol.Minimal
+        ],
+        "Terminal Emulation": [
+          ~r/^Raxol\.Terminal\..*/
+        ],
+        "UI Components": [
+          ~r/^Raxol\.UI\..*/
+        ],
+        "State Management": [
+          ~r/^Raxol\.UI\.State\..*/
+        ],
+        Performance: [
+          ~r/^Raxol\.Benchmarks\..*/,
+          ~r/^Raxol\.Metrics.*/
+        ],
+        "Security & Audit": [
+          ~r/^Raxol\.Security\..*/,
+          ~r/^Raxol\.Audit.*/
+        ],
+        Plugins: [
+          ~r/^Raxol\.Plugin.*/
+        ],
+        "Events & Architecture": [
+          ~r/^Raxol\.Events.*/,
+          ~r/^Raxol\.Architecture\..*/
+        ],
+        "Web & Cloud": [
+          ~r/^Raxol\.Web\..*/,
+          ~r/^Raxol\.Cloud\..*/,
+          ~r/^RaxolWeb\..*/
+        ]
       ],
       source_url: "https://github.com/Hydepwns/raxol",
       source_ref: "v#{@version}",
-      formatters: ["html"]
+      formatters: ["html"],
+      api_reference: true,
+      nest_modules_by_prefix: [
+        Raxol.Terminal,
+        Raxol.UI,
+        Raxol.Security,
+        Raxol.Audit,
+        Raxol.Architecture
+      ]
     ]
   end
 end

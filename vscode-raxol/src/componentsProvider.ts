@@ -119,7 +119,7 @@ export class RaxolComponentsProvider implements vscode.TreeDataProvider<Componen
         const props: string[] = [];
         
         // Look for Map.get(props, :prop_name) patterns
-        const propMatches = content.match(/Map\\.get\\(props,\\s*:([a-zA-Z_][a-zA-Z0-9_]*)/g);
+        const propMatches = content.match(/Map\.get\(props,\s*:([a-zA-Z_][a-zA-Z0-9_]*)/g);
         if (propMatches) {
             propMatches.forEach(match => {
                 const propMatch = match.match(/:([a-zA-Z_][a-zA-Z0-9_]*)/);

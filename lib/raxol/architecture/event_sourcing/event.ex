@@ -38,6 +38,7 @@ defmodule Raxol.Architecture.EventSourcing.Event do
       end
   """
 
+  @derive Jason.Encoder
   defstruct [
     :id,
     :stream_name,
@@ -326,6 +327,7 @@ defmodule Raxol.Architecture.EventSourcing.EventStream do
   Represents a stream of events for a specific aggregate.
   """
 
+  @derive Jason.Encoder
   defstruct [
     :name,
     :version,
@@ -350,6 +352,7 @@ defmodule Raxol.Architecture.EventSourcing.Snapshot do
   Represents a snapshot of aggregate state at a specific version.
   """
 
+  @derive Jason.Encoder
   defstruct [
     :stream_name,
     :version,

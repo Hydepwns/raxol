@@ -14,7 +14,6 @@ defmodule Raxol.Tutorials.Runner do
 
   defstruct [
     :current_tutorial,
-    :current_step,
     :progress,
     :state,
     :input_buffer,
@@ -27,42 +26,43 @@ defmodule Raxol.Tutorials.Runner do
   Starts the tutorial runner.
   """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
   Lists all available tutorials.
   """
-  def list_tutorials do
-    GenServer.call(__MODULE__, :list_tutorials)
+  def list_tutorials(server \\ __MODULE__) do
+    GenServer.call(server, :list_tutorials)
   end
 
   @doc """
   Starts a specific tutorial by ID.
   """
-  def start_tutorial(tutorial_id) do
-    GenServer.call(__MODULE__, {:start_tutorial, tutorial_id})
+  def start_tutorial(tutorial_id, server \\ __MODULE__) do
+    GenServer.call(server, {:start_tutorial, tutorial_id})
   end
 
   @doc """
   Displays the current step.
   """
-  def show_current do
-    GenServer.call(__MODULE__, :show_current)
+  def show_current(server \\ __MODULE__) do
+    GenServer.call(server, :show_current)
   end
 
   @doc """
   Advances to the next step.
   """
-  def next_step do
-    GenServer.call(__MODULE__, :next_step)
+  def next_step(server \\ __MODULE__) do
+    GenServer.call(server, :next_step)
   end
 
   @doc """
   Goes back to the previous step.
   """
-  def previous_step do
-    GenServer.call(__MODULE__, :previous_step)
+  def previous_step(server \\ __MODULE__) do
+    GenServer.call(server, :previous_step)
   end
 
   @doc """
@@ -109,7 +109,6 @@ defmodule Raxol.Tutorials.Runner do
 
     state = %__MODULE__{
       current_tutorial: nil,
-      current_step: nil,
       progress: %{},
       state: :idle,
       input_buffer: "",
@@ -137,7 +136,6 @@ defmodule Raxol.Tutorials.Runner do
         new_state = %{
           state
           | current_tutorial: tutorial,
-            current_step: 0,
             state: :in_tutorial
         }
 
@@ -177,9 +175,8 @@ defmodule Raxol.Tutorials.Runner do
         {:reply, {:ok, output}, state}
 
       {:ok, step} ->
-        new_state = %{state | current_step: state.current_step + 1}
         output = format_step(step)
-        {:reply, {:ok, output}, new_state}
+        {:reply, {:ok, output}, state}
 
       {:error, reason} ->
         {:reply, {:error, reason}, state}
@@ -190,9 +187,8 @@ defmodule Raxol.Tutorials.Runner do
   def handle_call(:previous_step, _from, state) do
     case InteractiveTutorial.previous_step() do
       {:ok, step} when is_map(step) ->
-        new_state = %{state | current_step: max(0, state.current_step - 1)}
         output = format_step(step)
-        {:reply, {:ok, output}, new_state}
+        {:reply, {:ok, output}, state}
 
       {:error, reason} ->
         {:reply, {:error, reason}, state}
@@ -323,10 +319,12 @@ defmodule Raxol.Tutorials.Runner do
     """
   end
 
-  defp format_current_step(state) do
+  defp format_current_step(_state) do
     case InteractiveTutorial.get_current_position() do
       {tutorial, step} ->
-        format_step_with_context(step, tutorial, state.current_step)
+        # Find the step index for display
+        step_index = Enum.find_index(tutorial.steps, &(&1.id == step.id)) || 0
+        format_step_with_context(step, tutorial, step_index)
 
       nil ->
         "No active step. Use 'next' to advance."

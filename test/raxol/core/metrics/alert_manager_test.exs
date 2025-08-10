@@ -25,13 +25,23 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
     {:ok, pid} = AlertManager.start_link(name: test_name)
 
     on_exit(fn ->
-      if Process.alive?(pid) do
-        GenServer.stop(pid)
+      try do
+        if Process.alive?(pid) do
+          GenServer.stop(pid, :normal, 1000)
+        end
+      catch
+        :exit, {:noproc, _} -> :ok  # Process already dead
+        :exit, {:timeout, _} -> :ok  # Timeout is acceptable in cleanup
       end
 
       # Also stop UnifiedCollector if we started it
-      if uc_pid && Process.alive?(uc_pid) do
-        GenServer.stop(uc_pid)
+      try do
+        if uc_pid && Process.alive?(uc_pid) do
+          GenServer.stop(uc_pid, :normal, 1000)
+        end
+      catch
+        :exit, {:noproc, _} -> :ok  # Process already dead
+        :exit, {:timeout, _} -> :ok  # Timeout is acceptable in cleanup
       end
     end)
 
