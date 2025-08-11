@@ -118,7 +118,8 @@ defmodule Raxol.UI.Components.TextInput do
   updated_input = TextInput.handle_key_event(input, {:none, ?a})
   ```
   """
-  def handle_key_event(input, {_meta, key} = _key_event) when key in 32..126 do
+  def handle_key_event(input, {_meta, key} = _key_event)
+      when key in 32..126//1 do
     # Only process if not disabled
     if input.disabled do
       input

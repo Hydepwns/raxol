@@ -24,7 +24,8 @@ defmodule Raxol.Style.Colors.Formats do
           {integer(), integer(), integer()}
           | {integer(), integer(), integer(), integer()}
         ) :: String.t()
-  def to_hex({r, g, b}) when r in 0..255 and g in 0..255 and b in 0..255 do
+  def to_hex({r, g, b})
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     r_hex = Integer.to_string(r, 16) |> String.pad_leading(2, "0")
     g_hex = Integer.to_string(g, 16) |> String.pad_leading(2, "0")
     b_hex = Integer.to_string(b, 16) |> String.pad_leading(2, "0")
@@ -32,7 +33,8 @@ defmodule Raxol.Style.Colors.Formats do
   end
 
   def to_hex({r, g, b, a})
-      when r in 0..255 and g in 0..255 and b in 0..255 and a in 0..255 do
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 and
+             a in 0..255//1 do
     base = to_hex({r, g, b})
     a_hex = Integer.to_string(a, 16) |> String.pad_leading(2, "0")
     base <> String.upcase(a_hex)
@@ -94,7 +96,7 @@ defmodule Raxol.Style.Colors.Formats do
       {205, 0, 0}
   """
   @spec ansi_to_rgb(integer()) :: {integer(), integer(), integer()}
-  def ansi_to_rgb(code) when code in 0..255 do
+  def ansi_to_rgb(code) when code in 0..255//1 do
     case code do
       # Basic 16 colors
       # Black
@@ -162,7 +164,7 @@ defmodule Raxol.Style.Colors.Formats do
         {255, 255, 255}
 
       # 216 colors (6x6x6 cube)
-      n when n in 16..231 ->
+      n when n in 16..231//1 ->
         n = n - 16
         r = div(n, 36) * 51
         g = rem(div(n, 6), 6) * 51
@@ -170,7 +172,7 @@ defmodule Raxol.Style.Colors.Formats do
         {r, g, b}
 
       # 24 grayscale colors
-      n when n in 232..255 ->
+      n when n in 232..255//1 ->
         value = (n - 232) * 10 + 8
         {value, value, value}
     end
@@ -185,7 +187,8 @@ defmodule Raxol.Style.Colors.Formats do
       196
   """
   @spec rgb_to_ansi({integer(), integer(), integer()}) :: integer()
-  def rgb_to_ansi({r, g, b}) when r in 0..255 and g in 0..255 and b in 0..255 do
+  def rgb_to_ansi({r, g, b})
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     # For now, we'll use a simple approximation
     # This could be improved with a more sophisticated color matching algorithm
     find_closest_ansi_256(r, g, b)

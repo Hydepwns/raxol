@@ -92,11 +92,12 @@ defmodule Raxol.Core.Renderer.Color do
     end
   end
 
-  def to_ansi(color) when integer?(color) and color in 0..255 do
+  def to_ansi(color) when integer?(color) and color in 0..255//1 do
     "\e[38;5;#{color}m"
   end
 
-  def to_ansi({r, g, b}) when r in 0..255 and g in 0..255 and b in 0..255 do
+  def to_ansi({r, g, b})
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     "\e[38;2;#{r};#{g};#{b}m"
   end
 
@@ -131,11 +132,12 @@ defmodule Raxol.Core.Renderer.Color do
     end
   end
 
-  def to_bg_ansi(color) when integer?(color) and color in 0..255 do
+  def to_bg_ansi(color) when integer?(color) and color in 0..255//1 do
     "\e[48;5;#{color}m"
   end
 
-  def to_bg_ansi({r, g, b}) when r in 0..255 and g in 0..255 and b in 0..255 do
+  def to_bg_ansi({r, g, b})
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     "\e[48;2;#{r};#{g};#{b}m"
   end
 
@@ -193,7 +195,7 @@ defmodule Raxol.Core.Renderer.Color do
   end
 
   defp process_color_entry({key, {r, g, b}})
-       when r in 0..255 and g in 0..255 and b in 0..255 do
+       when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     {key, {r, g, b}}
   end
 
@@ -310,7 +312,7 @@ defmodule Raxol.Core.Renderer.Color do
   Converts RGB values to the nearest ANSI 256 color code.
   """
   def rgb_to_ansi256({r, g, b})
-      when r in 0..255 and g in 0..255 and b in 0..255 do
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     if r == g and g == b do
       grayscale_to_ansi256(r)
     else
