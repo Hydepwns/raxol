@@ -99,7 +99,7 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
       if has_struct do
         struct(module, %{
           name: plugin_name,
-          version: Map.get(metadata, :version, "1.0.0"),
+          version: Map.get(metadata, :version, "1.0.1"),
           description: Map.get(metadata, :description, "Plugin for #{module}"),
           enabled: true,
           config: config,
@@ -110,7 +110,7 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
       else
         %Raxol.Plugins.Plugin{
           name: plugin_name,
-          version: Map.get(metadata, :version, "1.0.0"),
+          version: Map.get(metadata, :version, "1.0.1"),
           description: Map.get(metadata, :description, "Plugin for #{module}"),
           enabled: true,
           config: config,

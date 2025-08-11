@@ -2,7 +2,7 @@
   "name": "raxol",
   "displayName": "Raxol Terminal Framework",
   "description": "Advanced development support for Raxol terminal UI framework",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "raxol-team",
   "engines": {
     "vscode": "^1.80.0"

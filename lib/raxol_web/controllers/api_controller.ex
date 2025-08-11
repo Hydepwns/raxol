@@ -5,7 +5,7 @@ defmodule RaxolWeb.ApiController do
     health_status = %{
       status: "healthy",
       timestamp: DateTime.utc_now(),
-      version: "1.0.0",
+      version: "1.0.1",
       uptime: "15 days, 8 hours"
     }
 

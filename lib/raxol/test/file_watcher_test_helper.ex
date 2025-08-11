@@ -159,7 +159,7 @@ if Mix.env() == :test do
         def get_metadata do
           %{
             name: "#{name}",
-            version: "1.0.0",
+            version: "1.0.1",
             description: "Test plugin #{name}",
             author: "Test Author",
             dependencies: []

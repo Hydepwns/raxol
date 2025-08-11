@@ -3,8 +3,8 @@
 **The Most Advanced Terminal Framework in Elixir**
 
 [![CI](https://github.com/Hydepwns/raxol/workflows/CI/badge.svg)](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-2681%20passing-brightgreen.svg)](https://github.com/Hydepwns/raxol/actions)
-[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](https://codecov.io/gh/Hydepwns/raxol)
+[![Tests](https://img.shields.io/badge/tests-300%2B%20files-brightgreen.svg)](https://github.com/Hydepwns/raxol/actions)
+[![Coverage](https://img.shields.io/badge/coverage-98.7%25-brightgreen.svg)](https://codecov.io/gh/Hydepwns/raxol)
 [![Warnings](https://img.shields.io/badge/warnings-0-brightgreen.svg)](https://github.com/Hydepwns/raxol)
 [![Performance](https://img.shields.io/badge/parser-3.3μs%2Fop-blue.svg)](docs/bench)
 [![Hex.pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
@@ -89,7 +89,7 @@ Think **React, Svelte, LiveView** meets tmux - choose your preferred UI paradigm
 # Add to mix.exs
 def deps do
   [
-    {:raxol, "~> 1.0.0"}
+    {:raxol, "~> 1.0.1"}
   ]
 end
 ```
@@ -244,7 +244,7 @@ end
 Install our VSCode extension for the best development experience:
 
 ```bash
-code --install-extension raxol-1.0.0.vsix
+code --install-extension raxol-1.0.1.vsix
 ```
 
 Features:

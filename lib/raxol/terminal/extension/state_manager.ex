@@ -99,7 +99,7 @@ defmodule Raxol.Terminal.Extension.StateManager do
     do: Keyword.get(opts, :name, manifest["name"] || "Unnamed Extension")
 
   defp get_extension_version(opts, manifest),
-    do: Keyword.get(opts, :version, manifest["version"] || "1.0.0")
+    do: Keyword.get(opts, :version, manifest["version"] || "1.0.1")
 
   defp get_extension_description(opts, manifest),
     do: Keyword.get(opts, :description, manifest["description"] || "")

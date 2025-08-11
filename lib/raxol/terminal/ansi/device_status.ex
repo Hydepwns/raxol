@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.ANSI.DeviceStatus do
     %{
       cursor_position: {1, 1},
       device_type: "VT100",
-      version: "1.0.0",
+      version: "1.0.1",
       terminal_id: "00000000",
       features:
         MapSet.new([

@@ -38,7 +38,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     enabled: true,
     config: %{},
     dependencies: [],
-    api_version: "1.0.0",
+    api_version: "1.0.1",
     # Clipboard-specific state
     selection_active: false,
     selection_start: nil,
@@ -207,7 +207,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   def get_dependencies, do: []
 
   @impl Raxol.Plugins.Plugin
-  def get_api_version, do: "1.0.0"
+  def get_api_version, do: "1.0.1"
 
   @doc """
   Returns the API version for compatibility checking.

@@ -39,7 +39,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmarkSimple do
         treemap_style: :compact
       },
       dependencies: [],
-      api_version: "1.0.0"
+      api_version: "1.0.1"
     }
 
     # ----- Test chart rendering -----
