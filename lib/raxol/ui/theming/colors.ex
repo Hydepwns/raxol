@@ -65,7 +65,8 @@ defmodule Raxol.UI.Theming.Colors do
       iex> rgb_to_hex(255, 0, 0)
       "#FF0000"
   """
-  def rgb_to_hex(r, g, b) when r in 0..255 and g in 0..255 and b in 0..255 do
+  def rgb_to_hex(r, g, b)
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     Color.from_rgb(r, g, b).hex
   end
 
@@ -77,7 +78,7 @@ defmodule Raxol.UI.Theming.Colors do
       iex> ansi_to_rgb(1)
       {205, 0, 0}
   """
-  def ansi_to_rgb(code) when code in 0..255 do
+  def ansi_to_rgb(code) when code in 0..255//1 do
     color = Color.from_ansi(code)
     {color.r, color.g, color.b}
   end
@@ -90,7 +91,8 @@ defmodule Raxol.UI.Theming.Colors do
       iex> rgb_to_ansi(255, 0, 0)
       196
   """
-  def rgb_to_ansi(r, g, b) when r in 0..255 and g in 0..255 and b in 0..255 do
+  def rgb_to_ansi(r, g, b)
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     Color.from_rgb(r, g, b) |> Color.to_ansi_256()
   end
 
@@ -216,7 +218,8 @@ defmodule Raxol.UI.Theming.Colors do
       iex> rgb_to_hsl(255, 0, 0)
       {0, 1.0, 0.5}
   """
-  def rgb_to_hsl(r, g, b) when r in 0..255 and g in 0..255 and b in 0..255 do
+  def rgb_to_hsl(r, g, b)
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     Utilities.rgb_to_hsl(r, g, b)
   end
 
@@ -246,9 +249,14 @@ defmodule Raxol.UI.Theming.Colors do
   """
   def to_rgb(color) do
     case color do
-      hex when binary?(hex) -> hex_to_rgb(hex)
-      name when atom?(name) -> hex_to_rgb(@color_names[name])
-      {r, g, b} when r in 0..255 and g in 0..255 and b in 0..255 -> {r, g, b}
+      hex when binary?(hex) ->
+        hex_to_rgb(hex)
+
+      name when atom?(name) ->
+        hex_to_rgb(@color_names[name])
+
+      {r, g, b} when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 ->
+        {r, g, b}
     end
   end
 
@@ -271,11 +279,12 @@ defmodule Raxol.UI.Theming.Colors do
       name when atom?(name) ->
         @color_names[name]
 
-      {r, g, b} when r in 0..255 and g in 0..255 and b in 0..255 ->
+      {r, g, b} when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 ->
         rgb_to_hex(r, g, b)
 
       {r, g, b, a}
-      when r in 0..255 and g in 0..255 and b in 0..255 and a in 0..255 ->
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 and
+             a in 0..255//1 ->
         (rgb_to_hex(r, g, b) <> Integer.to_string(a, 16))
         |> String.pad_leading(2, "0")
     end
@@ -568,9 +577,9 @@ defmodule Raxol.UI.Theming.Colors do
 
   defp valid_palette_color?({index, {r, g, b}})
        when integer?(index) and
-              r in 0..255 and
-              g in 0..255 and
-              b in 0..255 do
+              r in 0..255//1 and
+              g in 0..255//1 and
+              b in 0..255//1 do
     true
   end
 

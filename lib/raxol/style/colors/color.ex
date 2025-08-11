@@ -102,7 +102,8 @@ defmodule Raxol.Style.Colors.Color do
       %Color{r: 255, g: 0, b: 0, hex: "#FF0000"}
   """
   @spec from_rgb(integer(), integer(), integer()) :: t()
-  def from_rgb(r, g, b) when r in 0..255 and g in 0..255 and b in 0..255 do
+  def from_rgb(r, g, b)
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     hex = Formats.to_hex({r, g, b})
     %__MODULE__{r: r, g: g, b: b, hex: hex}
   end
@@ -117,7 +118,8 @@ defmodule Raxol.Style.Colors.Color do
   """
   @spec from_rgba(integer(), integer(), integer(), integer()) :: t()
   def from_rgba(r, g, b, a)
-      when r in 0..255 and g in 0..255 and b in 0..255 and a in 0..255 do
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 and
+             a in 0..255//1 do
     hex = Formats.to_hex({r, g, b, a})
     %__MODULE__{r: r, g: g, b: b, a: a, hex: hex}
   end
@@ -131,7 +133,7 @@ defmodule Raxol.Style.Colors.Color do
       %Color{r: 205, g: 0, b: 0, hex: "#CD0000", ansi_code: 1}
   """
   @spec from_ansi(integer()) :: t()
-  def from_ansi(code) when code in 0..255 do
+  def from_ansi(code) when code in 0..255//1 do
     {r, g, b} = Formats.ansi_to_rgb(code)
     hex = Formats.to_hex({r, g, b})
     %__MODULE__{r: r, g: g, b: b, hex: hex, ansi_code: code}
