@@ -276,7 +276,7 @@ defmodule Raxol.MixProject do
 
   defp description do
     """
-    Full-stack terminal application framework for Elixir. Build sophisticated terminal applications with component-based UI, real-time web interface, plugin system, and enterprise features.
+    The Next.js of Terminal UIs - Build blazing-fast, interactive terminal applications with React-style components, 60fps animations, and seamless web continuity. Enterprise-ready with 3.3μs parsing performance.
     """
   end
 
