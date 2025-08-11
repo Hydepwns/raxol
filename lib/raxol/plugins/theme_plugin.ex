@@ -99,7 +99,7 @@ defmodule Raxol.Plugins.ThemePlugin do
   def cleanup(_plugin), do: :ok
 
   @impl Raxol.Plugins.Plugin
-  def get_api_version, do: "1.0.0"
+  def get_api_version, do: "1.0.1"
 
   @doc """
   Returns the API version for compatibility checking.

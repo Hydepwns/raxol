@@ -24,7 +24,7 @@ defmodule SimpleDocGenerator do
     %{
       project: %{
         name: "Raxol",
-        version: "1.0.0", 
+        version: "1.0.1", 
         status: "Production Ready",
         tagline: "A modern Elixir framework for building terminal-based applications with web capabilities"
       },

@@ -14,7 +14,7 @@ defmodule Raxol.Test.MockPlugins do
       {:ok,
        %{
          name: "mock_dependency_plugin",
-         version: "1.0.0",
+         version: "1.0.1",
          dependencies: [],
          raxol_compatibility: "~>1.0"
        }}
@@ -41,7 +41,7 @@ defmodule Raxol.Test.MockPlugins do
       {:ok,
        %{
          name: "mock_dependent_plugin",
-         version: "1.0.0",
+         version: "1.0.1",
          dependencies: [
            %{"name" => "mock_dependency_plugin", "version" => ">=1.0.0"}
          ],
@@ -70,7 +70,7 @@ defmodule Raxol.Test.MockPlugins do
       {:ok,
        %{
          name: "mock_incompatible_plugin",
-         version: "1.0.0",
+         version: "1.0.1",
          # Incompatible with Manager API version "1.0"
          raxol_compatibility: "~>2.0.0"
        }}

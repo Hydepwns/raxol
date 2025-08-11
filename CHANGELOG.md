@@ -1,3 +1,11 @@
+## [1.0.1] - 2025-08-11
+
+### Changed
+- Updated package documentation and performance benchmarks
+- Added professional release notes for v1.0.0
+- Improved test infrastructure stability
+- Enhanced NIF loading reliability
+
 ## [1.0.0] - 2025-08-11
 
 ### Sprint 5 - Critical Architectural Fixes

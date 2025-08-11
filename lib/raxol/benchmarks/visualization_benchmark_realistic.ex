@@ -36,7 +36,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmarkRealistic do
       enabled: true,
       config: %{},
       dependencies: [],
-      api_version: "1.0.0"
+      api_version: "1.0.1"
     }
 
     IO.puts("Testing Chart Rendering Performance...")

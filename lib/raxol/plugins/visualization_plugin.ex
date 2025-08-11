@@ -18,7 +18,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
             enabled: true,
             config: %{},
             dependencies: [],
-            api_version: "1.0.0"
+            api_version: "1.0.1"
 
   @impl Raxol.Plugins.Plugin
   def init(config \\ %{}) do

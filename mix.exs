@@ -1,7 +1,7 @@
 defmodule Raxol.MixProject do
   use Mix.Project
 
-  @version "1.0.0"
+  @version "1.0.1"
   @source_url "https://github.com/Hydepwns/raxol"
 
   def project do
@@ -130,8 +130,6 @@ defmodule Raxol.MixProject do
 
   defp core_deps do
     [
-      # Terminal rendering library - local development version
-      {:termbox2_nif, path: "lib/termbox2_nif"},
       # Connection pooling library (optional)
       {:poolboy, "~> 1.5", optional: true},
       # Tutorial loading frontmatter parser
