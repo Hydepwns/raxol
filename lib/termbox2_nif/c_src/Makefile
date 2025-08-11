@@ -53,6 +53,11 @@ $(TARGET): $(OBJ)
 	$(CC) $(LDFLAGS) $(ERL_LDFLAGS) $^ -o $@
 	mkdir -p ../priv
 	cp $(TARGET) ../priv/
+	# Also copy to main app priv directory if MIX_APP_PATH is set
+	@if [ -n "$(MIX_APP_PATH)" ]; then \
+		mkdir -p ../../../$(MIX_APP_PATH); \
+		cp $(TARGET) ../../../$(MIX_APP_PATH)/; \
+	fi
 
 # Clean build artifacts
 clean:
