@@ -27,6 +27,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
           renderer_id: String.t() | nil
         }
 
+  @type t :: window_state()
+
   @type state :: %{
           windows: %{window_id() => window_state()},
           active_window: window_id() | nil,

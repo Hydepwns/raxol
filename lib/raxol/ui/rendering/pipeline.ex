@@ -134,8 +134,8 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   Returns:
     * :no_change if trees are identical
-    * {:replace, new_tree} if the root node differs
-    * {:update, path, changes} for subtree updates (path is a list of indices)
+    * `{:replace, new_tree}` if the root node differs
+    * `{:update, path, changes}` for subtree updates (path is a list of indices)
 
   """
   @spec diff_trees(old_tree :: map() | nil, new_tree :: map() | nil) ::

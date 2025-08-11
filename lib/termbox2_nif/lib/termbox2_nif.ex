@@ -7,31 +7,35 @@ defmodule :termbox2_nif do
 
   def load_nif do
     # Try raxol app's priv directory first (since termbox2_nif is part of raxol)
-    priv_dir = case :code.priv_dir(:raxol) do
-      {:error, _} ->
-        # Fallback to termbox2_nif app priv directory
-        case :code.priv_dir(:termbox2_nif) do
-          {:error, _} ->
-            # Final fallback: construct path relative to current module
-            case :code.which(__MODULE__) do
-              :non_existing -> 
-                # Development fallback
-                Path.join([File.cwd!(), "priv"])
-              path ->
-                path
-                |> List.to_string()
-                |> Path.dirname()
-                |> Path.dirname()
-                |> Path.dirname()
-                |> Path.join("priv")
-            end
-          dir -> 
-            List.to_string(dir)
-        end
-      dir -> 
-        List.to_string(dir)
-    end
-    
+    priv_dir =
+      case :code.priv_dir(:raxol) do
+        {:error, _} ->
+          # Fallback to termbox2_nif app priv directory
+          case :code.priv_dir(:termbox2_nif) do
+            {:error, _} ->
+              # Final fallback: construct path relative to current module
+              case :code.which(__MODULE__) do
+                :non_existing ->
+                  # Development fallback
+                  Path.join([File.cwd!(), "priv"])
+
+                path ->
+                  path
+                  |> List.to_string()
+                  |> Path.dirname()
+                  |> Path.dirname()
+                  |> Path.dirname()
+                  |> Path.join("priv")
+              end
+
+            dir ->
+              List.to_string(dir)
+          end
+
+        dir ->
+          List.to_string(dir)
+      end
+
     nif_path = Path.join(priv_dir, "termbox2_nif")
 
     case :erlang.load_nif(String.to_charlist(nif_path), 0) do

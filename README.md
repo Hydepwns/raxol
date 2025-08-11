@@ -6,7 +6,7 @@
 [![Tests](https://img.shields.io/badge/tests-300%2B%20files-brightgreen.svg)](https://github.com/Hydepwns/raxol/actions)
 [![Coverage](https://img.shields.io/badge/coverage-98.7%25-brightgreen.svg)](https://codecov.io/gh/Hydepwns/raxol)
 [![Warnings](https://img.shields.io/badge/warnings-0-brightgreen.svg)](https://github.com/Hydepwns/raxol)
-[![Performance](https://img.shields.io/badge/parser-3.3μs%2Fop-blue.svg)](docs/bench)
+[![Performance](https://img.shields.io/badge/parser-3.3μs%2Fop-blue.svg)](bench/README.md)
 [![Hex.pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
 [![Documentation](https://img.shields.io/badge/docs-hexdocs-purple.svg)](https://hexdocs.pm/raxol)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
@@ -223,21 +223,21 @@ end
 ## Documentation
 
 ### Getting Started
-- **[Interactive Tutorial](docs/tutorials)** - Learn by doing with `mix raxol.tutorial`
-- **[Code Examples](docs/examples)** - Working examples and snippets
-- **[Component Playground](docs/tutorials)** - Try components live with `mix raxol.playground`
+- **[Interactive Tutorial](doc/01_getting_started.html)** - Learn by doing with `mix raxol.tutorial`
+- **[Code Examples](https://hexdocs.pm/raxol/Raxol.Examples.html)** - Working examples and snippets
+- **[Component Playground](doc/02_component_deep_dive.html)** - Try components live with `mix raxol.playground`
 
 ### Developer Resources
 - **[API Reference](https://hexdocs.pm/raxol)** - Complete API documentation
-- **[Component Catalog](docs/components)** - Pre-built UI components
-- **[Architecture Guide](docs/ARCHITECTURE.md)** - System design and patterns
+- **[Component Catalog](https://hexdocs.pm/raxol/Raxol.UI.html)** - Pre-built UI components
+- **[Architecture Guide](https://hexdocs.pm/raxol/Raxol.Core.html)** - System design and patterns
 - **[Contributing Guide](CONTRIBUTING.md)** - Join the development
 
 ### Advanced Topics
-- **[Benchmarks](docs/bench)** - Performance measurements and optimization
-- **[Architecture Decisions](docs/adr)** - ADR documentation
-- **[Consolidated Guide](docs/CONSOLIDATED_README.md)** - Comprehensive documentation
-- **[Web Interface](docs/WEB_INTERFACE_GUIDE.md)** - Browser integration
+- **[Benchmarks](bench/README.md)** - Performance measurements and optimization
+- **[Architecture Decisions](https://hexdocs.pm/raxol/Raxol.Architecture.html)** - ADR documentation
+- **[Consolidated Guide](https://hexdocs.pm/raxol)** - Comprehensive documentation
+- **[Web Interface](https://hexdocs.pm/raxol/Raxol.LiveView.html)** - Browser integration
 
 ## VSCode Extension
 
@@ -271,4 +271,4 @@ MIT License - see [LICENSE.md](LICENSE.md)
 
 **Ready to build the future of terminal applications?**
 
-[Get Started](docs/tutorials) • [View Source](https://github.com/Hydepwns/raxol) • [Report Issues](https://github.com/Hydepwns/raxol/issues)
+[Get Started](https://hexdocs.pm/raxol) • [View Source](https://github.com/Hydepwns/raxol) • [Report Issues](https://github.com/Hydepwns/raxol/issues)

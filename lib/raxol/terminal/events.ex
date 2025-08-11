@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Events do
   @moduledoc """
   Global event management for terminal interactions.
-  
+
   This module provides a centralized event system for handling global terminal
   events such as clicks, keyboard input, and other user interactions that need
   to be processed at the application level.
@@ -12,10 +12,10 @@ defmodule Raxol.Terminal.Events do
 
   @doc """
   Registers a global click handler that will be called whenever a click occurs.
-  
+
   ## Parameters
     - `handler` - A function that takes a click position and handles the event
-  
+
   ## Examples
       
       Raxol.Terminal.Events.register_global_click(fn {x, y} ->
@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Events do
 
   @doc """
   Unregisters a previously registered click handler.
-  
+
   ## Parameters
     - `ref` - The reference returned from register_global_click
   """
@@ -42,7 +42,7 @@ defmodule Raxol.Terminal.Events do
 
   @doc """
   Triggers a click event at the given position.
-  
+
   This will call all registered click handlers.
   """
   @spec trigger_click({integer(), integer()}) :: :ok
@@ -61,11 +61,12 @@ defmodule Raxol.Terminal.Events do
 
   @impl true
   def init(_opts) do
-    {:ok, %{
-      click_handlers: %{},
-      key_handlers: %{},
-      focus_handlers: %{}
-    }}
+    {:ok,
+     %{
+       click_handlers: %{},
+       key_handlers: %{},
+       focus_handlers: %{}
+     }}
   end
 
   @impl true
@@ -91,7 +92,7 @@ defmodule Raxol.Terminal.Events do
           Logger.error("Click handler error: #{inspect(error)}")
       end
     end)
-    
+
     {:noreply, state}
   end
 end

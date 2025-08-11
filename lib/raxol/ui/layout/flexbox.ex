@@ -36,16 +36,16 @@ defmodule Raxol.UI.Layout.Flexbox do
   alias Raxol.UI.Layout.Engine
 
   @type t :: %{
-    type: :flexbox,
-    direction: atom(),
-    justify: atom(),
-    align: atom(),
-    wrap: atom(),
-    gap: number(),
-    children: list(),
-    width: number() | nil,
-    height: number() | nil
-  }
+          type: :flexbox,
+          direction: atom(),
+          justify: atom(),
+          align: atom(),
+          wrap: atom(),
+          gap: number(),
+          children: list(),
+          width: number() | nil,
+          height: number() | nil
+        }
 
   @doc """
   Processes a flex container, calculating layout for it and its children.
@@ -744,7 +744,7 @@ defmodule Raxol.UI.Layout.Flexbox do
 
   @doc """
   Creates a new flexbox layout with the given options.
-  
+
   ## Options
   - `:direction` - flex direction (row, column)
   - `:justify` - justify content
@@ -772,23 +772,24 @@ defmodule Raxol.UI.Layout.Flexbox do
 
   @doc """
   Renders the flexbox layout.
-  
+
   Returns the layout with calculated positions for all children.
   """
   @spec render(t()) :: {:ok, map()}
   def render(flexbox) do
     # Simple rendering that returns the structure
     # In real implementation, this would calculate actual positions
-    {:ok, %{
-      type: :rendered_flexbox,
-      layout: flexbox,
-      children: flexbox.children
-    }}
+    {:ok,
+     %{
+       type: :rendered_flexbox,
+       layout: flexbox,
+       children: flexbox.children
+     }}
   end
 
   @doc """
   Calculates the layout for flexbox and its children.
-  
+
   Returns a map with calculated dimensions and positions.
   """
   @spec calculate_layout(t()) :: map()
@@ -796,10 +797,10 @@ defmodule Raxol.UI.Layout.Flexbox do
     # Calculate total space needed
     total_width = flexbox.width || calculate_content_width(flexbox)
     total_height = flexbox.height || calculate_content_height(flexbox)
-    
+
     # Calculate child positions based on flex properties
     child_layouts = calculate_child_layouts(flexbox, total_width, total_height)
-    
+
     %{
       width: total_width,
       height: total_height,
@@ -820,7 +821,11 @@ defmodule Raxol.UI.Layout.Flexbox do
     |> Enum.max(fn -> 0 end)
   end
 
-  defp calculate_content_height(%{direction: :column, children: children, gap: gap}) do
+  defp calculate_content_height(%{
+         direction: :column,
+         children: children,
+         gap: gap
+       }) do
     children
     |> Enum.map(fn child -> Map.get(child, :height, 0) end)
     |> Enum.sum()

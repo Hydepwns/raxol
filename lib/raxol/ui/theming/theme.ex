@@ -15,6 +15,20 @@ defmodule Raxol.UI.Theming.Theme do
   @type color_value :: Color.t() | atom() | String.t()
   @type style_map :: %{atom() => any()}
 
+  @type t :: %__MODULE__{
+          id: String.t() | nil,
+          name: String.t() | nil,
+          description: String.t() | nil,
+          colors: map() | nil,
+          component_styles: map() | nil,
+          styles: map() | nil,
+          variants: map() | nil,
+          metadata: map() | nil,
+          fonts: map() | nil,
+          ui_mappings: map() | nil,
+          dark_mode: boolean() | nil
+        }
+
   @derive Jason.Encoder
   defstruct [
     :id,

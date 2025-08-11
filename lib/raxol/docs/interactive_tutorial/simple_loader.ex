@@ -97,9 +97,9 @@ defmodule Raxol.Docs.InteractiveTutorial.SimpleLoader do
           },
           validation: nil,
           hints: [
-            "Use Raxol.UI.list/2 to render lists",
+            "Use Raxol.UI.Components.Button for interactive elements",
             "Store todos as a list of maps",
-            "Use Raxol.UI.checkbox/2 for completion status"
+            "Use Raxol.UI.Components.TextInput for form inputs"
           ],
           next_steps: [],
           interactive_elements: []

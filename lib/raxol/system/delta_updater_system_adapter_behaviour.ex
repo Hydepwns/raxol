@@ -82,7 +82,6 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterBehaviour do
 
   @doc """
   Replaces the current executable with a new one.
-  This abstracts the call to `Raxol.System.Updater.do_replace_executable/3`.
   """
   @callback updater_do_replace_executable(
               current_exe :: String.t(),

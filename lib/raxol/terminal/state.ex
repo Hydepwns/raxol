@@ -8,6 +8,25 @@ defmodule Raxol.Terminal.State do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
 
+  @type cursor :: %{
+          position: {non_neg_integer(), non_neg_integer()},
+          visible: boolean(),
+          style: atom(),
+          blink_state: boolean()
+        }
+
+  @type t :: %{
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          scrollback_limit: non_neg_integer(),
+          memory_limit: non_neg_integer(),
+          screen_buffer: ScreenBuffer.t(),
+          cursor: cursor(),
+          style: TextFormatting.t(),
+          scroll_region: term() | nil,
+          saved_states: list(map())
+        }
+
   @doc """
   Creates a new terminal state with the specified dimensions and limits.
   """
@@ -16,7 +35,7 @@ defmodule Raxol.Terminal.State do
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer()
-        ) :: map()
+        ) :: t()
   def new(width, height, scrollback_limit, memory_limit) do
     %{
       width: width,
@@ -39,7 +58,7 @@ defmodule Raxol.Terminal.State do
   @doc """
   Saves the current state.
   """
-  @spec save_state(map()) :: map()
+  @spec save_state(t()) :: t()
   def save_state(state) do
     saved_state = %{
       cursor: state.cursor,
@@ -53,7 +72,7 @@ defmodule Raxol.Terminal.State do
   @doc """
   Restores the most recently saved state.
   """
-  @spec restore_state(map()) :: map()
+  @spec restore_state(t()) :: {:ok, t()} | {:error, atom()}
   def restore_state(state) do
     case state.saved_states do
       [saved_state | rest] ->
@@ -75,7 +94,7 @@ defmodule Raxol.Terminal.State do
   @doc """
   Gets the current cursor position.
   """
-  @spec get_cursor_position(map()) :: {non_neg_integer(), non_neg_integer()}
+  @spec get_cursor_position(t()) :: {non_neg_integer(), non_neg_integer()}
   def get_cursor_position(state) do
     state.cursor.position
   end
@@ -83,8 +102,8 @@ defmodule Raxol.Terminal.State do
   @doc """
   Sets the cursor position.
   """
-  @spec set_cursor_position(map(), non_neg_integer(), non_neg_integer()) ::
-          map()
+  @spec set_cursor_position(t(), non_neg_integer(), non_neg_integer()) ::
+          t()
   def set_cursor_position(state, x, y) do
     new_cursor = %{state.cursor | position: {x, y}}
     %{state | cursor: new_cursor}
@@ -93,7 +112,7 @@ defmodule Raxol.Terminal.State do
   @doc """
   Gets the current screen buffer.
   """
-  @spec get_screen_buffer(map()) :: ScreenBuffer.t()
+  @spec get_screen_buffer(t()) :: ScreenBuffer.t()
   def get_screen_buffer(state) do
     state.screen_buffer
   end
@@ -101,7 +120,7 @@ defmodule Raxol.Terminal.State do
   @doc """
   Sets the screen buffer.
   """
-  @spec set_screen_buffer(map(), ScreenBuffer.t()) :: map()
+  @spec set_screen_buffer(t(), ScreenBuffer.t()) :: t()
   def set_screen_buffer(state, buffer) do
     %{state | screen_buffer: buffer}
   end

@@ -50,6 +50,7 @@ defmodule Raxol.UI.Components.Base.Component do
       end
   """
 
+  @type t :: map()
   @type props :: map()
   @type state :: map()
   @type message :: term()

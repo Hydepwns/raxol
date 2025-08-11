@@ -561,7 +561,11 @@ defmodule RaxolWeb.TerminalLive do
 
   # Initialize cache table in mount
   defp initialize_cache do
-    Raxol.Core.CompilerState.ensure_table(:terminal_cache, [:set, :public, :named_table])
+    Raxol.Core.CompilerState.ensure_table(:terminal_cache, [
+      :set,
+      :public,
+      :named_table
+    ])
   end
 
   defp broadcast_terminal_update(socket, terminal_html, cursor) do

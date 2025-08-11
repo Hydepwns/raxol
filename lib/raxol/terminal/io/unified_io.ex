@@ -89,7 +89,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
           buffer_manager: UnifiedManager.t(),
           scroll_buffer: UnifiedScroll.t(),
           renderer: UnifiedRenderer.t(),
-          command_history: History.t(),
+          command_history: term(),
 
           # Configuration
           config: map()

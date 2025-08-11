@@ -13,9 +13,13 @@ defmodule Raxol.UI.Components.Progress do
   }
 
   # Delegate component behaviour
+  @doc false
   defdelegate init(props), to: Component
+  @doc false
   defdelegate update(msg, state), to: Component
+  @doc false
   defdelegate handle_event(event, props, state), to: Component
+  @doc false
   defdelegate render(state, props), to: Component
   defdelegate spinner_types(), to: Component
 

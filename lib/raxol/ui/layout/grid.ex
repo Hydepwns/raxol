@@ -199,7 +199,7 @@ defmodule Raxol.UI.Layout.Grid do
 
   @doc """
   Creates a new grid layout with the given options.
-  
+
   ## Options
   - `:columns` - number of columns
   - `:rows` - number of rows
@@ -211,7 +211,7 @@ defmodule Raxol.UI.Layout.Grid do
   @spec new(keyword()) :: map()
   def new(opts \\ []) do
     gap = Keyword.get(opts, :gap, 0)
-    
+
     %{
       type: :grid,
       columns: Keyword.get(opts, :columns, 1),
@@ -227,22 +227,23 @@ defmodule Raxol.UI.Layout.Grid do
 
   @doc """
   Renders the grid layout.
-  
+
   Returns the layout with calculated positions for all children.
   """
   @spec render(map()) :: {:ok, map()}
   def render(grid) do
     # Simple rendering that returns the structure
-    {:ok, %{
-      type: :rendered_grid,
-      layout: grid,
-      children: position_children(grid)
-    }}
+    {:ok,
+     %{
+       type: :rendered_grid,
+       layout: grid,
+       children: position_children(grid)
+     }}
   end
 
   @doc """
   Calculates spacing between grid cells based on gap value.
-  
+
   Returns a map with calculated spacing values.
   """
   @spec calculate_spacing(map()) :: {:ok, map()}
@@ -250,13 +251,14 @@ defmodule Raxol.UI.Layout.Grid do
     # Use gap_x and gap_y, which are set from gap if not specified
     gap_x = Map.get(grid, :gap_x, grid.gap)
     gap_y = Map.get(grid, :gap_y, grid.gap)
-    
-    {:ok, %{
-      horizontal_spacing: gap_x * (grid.columns - 1),
-      vertical_spacing: gap_y * (grid.rows - 1),
-      total_gap_width: gap_x * (grid.columns - 1),
-      total_gap_height: gap_y * (grid.rows - 1)
-    }}
+
+    {:ok,
+     %{
+       horizontal_spacing: gap_x * (grid.columns - 1),
+       vertical_spacing: gap_y * (grid.rows - 1),
+       total_gap_width: gap_x * (grid.columns - 1),
+       total_gap_height: gap_y * (grid.rows - 1)
+     }}
   end
 
   defp position_children(grid) do
@@ -265,12 +267,14 @@ defmodule Raxol.UI.Layout.Grid do
     |> Enum.map(fn {child, index} ->
       col = rem(index, grid.columns)
       row = div(index, grid.columns)
-      
+
       Map.merge(child, %{
         grid_column: col,
         grid_row: row,
-        x: col * 10,  # Simplified positioning
-        y: row * 10   # Simplified positioning
+        # Simplified positioning
+        x: col * 10,
+        # Simplified positioning
+        y: row * 10
       })
     end)
   end

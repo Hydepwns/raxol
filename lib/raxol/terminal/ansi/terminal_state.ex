@@ -12,8 +12,10 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
     :max_saved_states
   ]
 
+  @type state_stack :: list(map())
+
   @type t :: %__MODULE__{
-          state_stack: list(map()),
+          state_stack: state_stack(),
           current_state: map(),
           saved_states: list(map()),
           max_saved_states: integer()

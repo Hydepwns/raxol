@@ -125,4 +125,4 @@ sequenceDiagram
 
 ## Related Documentation
 
-For more examples, check the [examples directory](../../examples/).
+For more examples, check the [examples directory](docs/examples/README.html).

@@ -41,12 +41,12 @@ defmodule Raxol.Core.Renderer.Views.Table do
   @type props :: %{
           columns: [column()],
           data: [map()],
-          border: View.border_style(),
+          border: View.Types.border_style(),
           striped: boolean(),
           selectable: boolean(),
           selected: non_neg_integer() | nil,
-          header_style: View.style(),
-          row_style: View.style()
+          header_style: View.Types.style(),
+          row_style: View.Types.style()
         }
 
   defmodule RowContext do

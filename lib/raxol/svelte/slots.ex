@@ -1,8 +1,9 @@
 defmodule Raxol.Svelte.Slots do
   # Suppress warnings for template-used functions and macro-generated GenServer callbacks
   @compile {:no_warn_unused, [{:_sorted_data, 3}]}
-  @compile {:no_warn_undefined, [{:handle_cast, 2}, {:code_change, 3}, {:terminate, 2}]}
-  
+  @compile {:no_warn_undefined,
+            [{:handle_cast, 2}, {:code_change, 3}, {:terminate, 2}]}
+
   @moduledoc """
   Svelte-style slot system for component composition.
 
@@ -301,8 +302,9 @@ end
 
 defmodule Raxol.Svelte.Slots.Tabs do
   # Suppress warnings for macro-generated GenServer callbacks that are optional
-  @compile {:no_warn_undefined, [{:handle_cast, 2}, {:code_change, 3}, {:terminate, 2}]}
-  
+  @compile {:no_warn_undefined,
+            [{:handle_cast, 2}, {:code_change, 3}, {:terminate, 2}]}
+
   @moduledoc """
   Tabs component using scoped slots.
   """
@@ -365,8 +367,9 @@ end
 
 defmodule Raxol.Svelte.Slots.DataTable do
   # Suppress warnings for macro-generated GenServer callbacks that are optional
-  @compile {:no_warn_undefined, [{:handle_cast, 2}, {:code_change, 3}, {:terminate, 2}]}
-  
+  @compile {:no_warn_undefined,
+            [{:handle_cast, 2}, {:code_change, 3}, {:terminate, 2}]}
+
   @moduledoc """
   Data table component with customizable columns using slots.
   """
@@ -454,7 +457,7 @@ defmodule Raxol.Svelte.Slots.DataTable do
   # Used in HEEx template above - not actually unused despite compiler warning
   # Dummy function to satisfy unused function warning
   def __unused_function_refs__, do: [&_sorted_data/3]
-  
+
   defp _sorted_data(data, nil, _order), do: Enum.with_index(data)
 
   defp _sorted_data(data, sort_by, sort_order) do

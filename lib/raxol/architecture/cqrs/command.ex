@@ -51,6 +51,8 @@ defmodule Raxol.Architecture.CQRS.Command do
       end
   """
 
+  @type t :: struct()
+
   @callback new(attrs :: map()) :: {:ok, struct()} | {:error, term()}
 
   defmacro __using__(_opts) do

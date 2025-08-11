@@ -142,7 +142,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
     {:ok, %{emulator | cursor: updated_cursor}}
   end
 
-  @doc "Handles Horizontal Position Absolute (HPA - '`' character)"
+  @doc "Handles Horizontal Position Absolute (HPA - backtick character)"
   @spec handle_hpa(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_hpa(emulator, params) do
