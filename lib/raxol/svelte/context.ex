@@ -1,4 +1,7 @@
 defmodule Raxol.Svelte.Context do
+  # Suppress warnings for macro-generated GenServer callbacks that are optional
+  @compile {:no_warn_undefined, [{:handle_cast, 2}, {:code_change, 3}, {:terminate, 2}]}
+  
   @moduledoc """
   Svelte-style context system for passing data through component trees
   without prop drilling.
@@ -344,7 +347,7 @@ defmodule Raxol.Svelte.Context.ThemeProvider do
 
   state(:theme, "light")
 
-  def mount(terminal, props) do
+  def mount_with_context(terminal, props) do
     {:ok, component} = GenServer.start_link(__MODULE__, {terminal, props})
 
     theme_data = %{
@@ -363,10 +366,10 @@ defmodule Raxol.Svelte.Context.ThemeProvider do
   def toggle_theme do
     current = get_state(:theme)
     new_theme = if current == "light", do: "dark", else: "light"
-    set_theme(new_theme)
+    update_theme(new_theme)
   end
 
-  def set_theme(theme_name) do
+  def update_theme(theme_name) do
     set_state(:theme, theme_name)
 
     # Update context
@@ -375,13 +378,13 @@ defmodule Raxol.Svelte.Context.ThemeProvider do
       colors: get_theme_colors(theme_name),
       spacing: get_theme_spacing(theme_name),
       toggle: fn -> toggle_theme() end,
-      set_theme: fn name -> set_theme(name) end
+      set_theme: fn name -> update_theme(name) end
     }
 
     update_context(:theme, fn _ -> theme_data end)
   end
 
-  def render(assigns) do
+  def render(_assigns) do
     ~S"""
     <Box class={"theme-" <> @theme}>
       {@children}
@@ -434,7 +437,7 @@ defmodule Raxol.Svelte.Context.AuthProvider do
   state(:loading, false)
   state(:error, nil)
 
-  def mount(terminal, props, parent) when is_pid(parent) or is_nil(parent) do
+  def mount_with_parent(terminal, props, parent) when is_pid(parent) or is_nil(parent) do
     {:ok, component} = GenServer.start_link(__MODULE__, {terminal, props})
 
     auth_data = %{
@@ -496,7 +499,7 @@ defmodule Raxol.Svelte.Context.AuthProvider do
     {:ok, %{id: 1, name: "User", email: "user@example.com"}}
   end
 
-  def render(assigns) do
+  def render(_assigns) do
     ~S"""
     {@children}
     """

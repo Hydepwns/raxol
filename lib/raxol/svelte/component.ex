@@ -284,6 +284,22 @@ defmodule Raxol.Svelte.Component do
       def update_state(name, fun) do
         GenServer.call(self(), {:update_state, name, fun})
       end
+
+      # Default GenServer callbacks to satisfy behaviour requirements
+      @impl GenServer
+      def handle_cast(_msg, state) do
+        {:noreply, state}
+      end
+
+      @impl GenServer
+      def terminate(_reason, _state) do
+        :ok
+      end
+
+      @impl GenServer
+      def code_change(_old_vsn, state, _extra) do
+        {:ok, state}
+      end
     end
   end
 

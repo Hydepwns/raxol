@@ -160,22 +160,22 @@ defmodule Raxol.Svelte.Actions.Builtin do
       y >= element.y && y < element.y + element.height
   end
 
-  defp focus_next_in_element(element) do
+  defp focus_next_in_element(_element) do
     # Implementation for focusing next focusable element
     :ok
   end
 
-  defp focus_prev_in_element(element) do
+  defp focus_prev_in_element(_element) do
     # Implementation for focusing previous focusable element
     :ok
   end
 
-  defp start_drag(element, start_pos, options) do
+  defp start_drag(_element, _start_pos, _options) do
     # Implementation for drag behavior
     :ok
   end
 
-  defp recalculate_size(element) do
+  defp recalculate_size(_element) do
     # Implementation for auto-resize
     :ok
   end

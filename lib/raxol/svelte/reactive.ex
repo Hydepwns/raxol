@@ -151,7 +151,7 @@ defmodule Raxol.Svelte.Reactive do
     statement
   end
 
-  defp transform_statement_body({:=, meta, [var, expression]}) do
+  defp transform_statement_body({:=, _meta, [var, expression]}) do
     transformed_expr = transform_expression(expression)
 
     quote do

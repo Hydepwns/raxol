@@ -411,25 +411,35 @@ defmodule Raxol.Svelte.Animator do
   end
 
   defp apply_property_update(element, :x, value) do
-    Raxol.Terminal.Buffer.move_element(element, round(value), element.y)
+    # TODO: Implement when Terminal.Buffer.move_element is available
+    # Raxol.Terminal.Buffer.move_element(element, round(value), element.y)
+    Map.put(element, :x, round(value))
   end
 
   defp apply_property_update(element, :y, value) do
-    Raxol.Terminal.Buffer.move_element(element, element.x, round(value))
+    # TODO: Implement when Terminal.Buffer.move_element is available
+    # Raxol.Terminal.Buffer.move_element(element, element.x, round(value))
+    Map.put(element, :y, round(value))
   end
 
   defp apply_property_update(element, :opacity, value) do
-    Raxol.Terminal.Buffer.set_element_opacity(element, value)
+    # TODO: Implement when Terminal.Buffer.set_element_opacity is available
+    # Raxol.Terminal.Buffer.set_element_opacity(element, value)
+    Map.put(element, :opacity, value)
   end
 
   defp apply_property_update(element, :scale_x, value) do
-    new_width = round(element.original_width * value)
-    Raxol.Terminal.Buffer.resize_element(element, new_width, element.height)
+    new_width = round(Map.get(element, :original_width, element.width) * value)
+    # TODO: Implement when Terminal.Buffer.resize_element is available
+    # Raxol.Terminal.Buffer.resize_element(element, new_width, element.height)
+    Map.put(element, :width, new_width)
   end
 
   defp apply_property_update(element, :scale_y, value) do
-    new_height = round(element.original_height * value)
-    Raxol.Terminal.Buffer.resize_element(element, element.width, new_height)
+    new_height = round(Map.get(element, :original_height, element.height) * value)
+    # TODO: Implement when Terminal.Buffer.resize_element is available  
+    # Raxol.Terminal.Buffer.resize_element(element, element.width, new_height)
+    Map.put(element, :height, new_height)
   end
 
   defp apply_property_update(_element, _property, _value) do
@@ -441,5 +451,26 @@ defmodule Raxol.Svelte.Animator do
     Enum.all?(keyframes, fn {_, _, _, duration, _, delay} ->
       elapsed >= delay + duration
     end)
+  end
+
+  # Default GenServer callbacks to satisfy behaviour requirements
+  @impl GenServer
+  def handle_call(_msg, _from, state) do
+    {:reply, :ok, state}
+  end
+
+  @impl GenServer
+  def handle_cast(_msg, state) do
+    {:noreply, state}
+  end
+
+  @impl GenServer
+  def terminate(_reason, _state) do
+    :ok
+  end
+
+  @impl GenServer
+  def code_change(_old_vsn, state, _extra) do
+    {:ok, state}
   end
 end
