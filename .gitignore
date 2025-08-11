@@ -46,6 +46,14 @@ raxol-*.tar
 .secrets
 # Use .secrets.example as a template instead
 
+# Security: Never commit encryption keys or sensitive data
+data/keys/
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+
 # Database files
 *.sqlite3
 *.sqlite3-journal
