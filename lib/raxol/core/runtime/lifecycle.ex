@@ -8,8 +8,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   require Logger
 
   alias Raxol.Core.Runtime.Events.Dispatcher
-
   alias Raxol.Core.Runtime.Plugins.Manager
+  alias Raxol.Core.CompilerState
 
   defmodule State do
     @moduledoc false
@@ -146,18 +146,21 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     registry_table_name =
       Module.concat(CommandRegistryTable, Atom.to_string(app_module))
 
-    case :ets.new(registry_table_name, [
+    case CompilerState.ensure_table(registry_table_name, [
            :set,
            :protected,
            :named_table,
-           read_concurrency: true
+           {:read_concurrency, true}
          ]) do
-      ^registry_table_name ->
+      :ok ->
+        {:ok, registry_table_name}
+
+      table_id when is_reference(table_id) ->
         {:ok, registry_table_name}
 
       _ ->
         {:error, :registry_table_creation_failed,
-         fn -> :ets.delete(registry_table_name) end}
+         fn -> CompilerState.safe_delete_table(registry_table_name) end}
     end
   end
 
@@ -404,17 +407,17 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       end
     end
 
-    if state.command_registry_table &&
-         :ets.info(state.command_registry_table) != :undefined do
-      :ets.delete(state.command_registry_table)
-
-      Raxol.Core.Runtime.Log.debug(
-        "[#{__MODULE__}] Deleted ETS table: #{inspect(state.command_registry_table)}"
-      )
-    else
-      Raxol.Core.Runtime.Log.debug(
-        "[#{__MODULE__}] ETS table #{inspect(state.command_registry_table)} not found or already deleted."
-      )
+    if state.command_registry_table do
+      case CompilerState.safe_delete_table(state.command_registry_table) do
+        :ok ->
+          Raxol.Core.Runtime.Log.debug(
+            "[#{__MODULE__}] Deleted ETS table: #{inspect(state.command_registry_table)}"
+          )
+        {:error, :table_not_found} ->
+          Raxol.Core.Runtime.Log.debug(
+            "[#{__MODULE__}] ETS table #{inspect(state.command_registry_table)} not found or already deleted."
+          )
+      end
     end
 
     :ok

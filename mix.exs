@@ -15,7 +15,7 @@ defmodule Raxol.MixProject do
         ignore_module_conflict: true,
         compile_order: [:cell, :operations]
       ],
-      compilers: Mix.compilers(),
+      compilers: Mix.compilers() ++ [:elixir_make],
       consolidate_protocols: Mix.env() != :test,
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -32,6 +32,12 @@ defmodule Raxol.MixProject do
         "coveralls.post": :test,
         "coveralls.html": :test
       ],
+      make_cwd: "lib/termbox2_nif/c_src",
+      make_targets: ["all"],
+      make_clean: ["clean"],
+      make_env: %{
+        "MIX_APP_PATH" => "priv"
+      },
       dialyzer: [
         # Add core Elixir apps needed for tests
         plt_add_apps: [:ex_unit],
@@ -70,7 +76,7 @@ defmodule Raxol.MixProject do
           # :ecto_sql,  # Removed to prevent auto-starting Repo
           # :postgrex,  # Removed to prevent auto-starting Repo
           :runtime_tools,
-          # :termbox2_nif,  # Temporarily disabled for testing
+          :termbox2_nif,  # NIF integration now working with elixir_make
           :toml
         ] ++ test_applications()
     ]
@@ -124,8 +130,8 @@ defmodule Raxol.MixProject do
 
   defp core_deps do
     [
-      # Terminal rendering library - maintained fork at https://github.com/hydepwns/termbox2-nif
-      # {:termbox2_nif, "~> 2.0"},  # Disabled - NIF loading issues with path resolution
+      # Terminal rendering library - local development version
+      {:termbox2_nif, path: "lib/termbox2_nif"},
       # Connection pooling library (optional)
       {:poolboy, "~> 1.5", optional: true},
       # Tutorial loading frontmatter parser

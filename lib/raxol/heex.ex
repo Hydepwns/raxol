@@ -42,14 +42,15 @@ defmodule Raxol.HEEx do
   This function takes standard HEEx templates and converts them
   to terminal buffer operations.
   """
-  def compile_heex_for_terminal(template, assigns) do
+  def compile_heex_for_terminal(template, _assigns) do
     # In a real implementation, this would:
     # 1. Parse the HEEx template
     # 2. Convert HTML-like elements to terminal buffer operations
     # 3. Handle terminal-specific attributes and styling
 
-    rendered = Phoenix.Component.render_string(template, assigns)
-    convert_html_to_terminal(rendered)
+    # For now, return a placeholder since Phoenix.Component.render_string doesn't exist
+    # TODO: Implement proper HEEx template compilation with assigns
+    convert_html_to_terminal(template)
   end
 
   defp convert_html_to_terminal(html) do
