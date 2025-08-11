@@ -1,7 +1,5 @@
 # Raxol
 
-**The Most Advanced Terminal Framework in Elixir**
-
 [![CI](https://github.com/Hydepwns/raxol/workflows/CI/badge.svg)](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-300%2B%20files-brightgreen.svg)](https://github.com/Hydepwns/raxol/actions)
 [![Coverage](https://img.shields.io/badge/coverage-98.7%25-brightgreen.svg)](https://codecov.io/gh/Hydepwns/raxol)
@@ -15,7 +13,8 @@
 
 Raxol is a production-ready, high-performance terminal application framework that brings modern UI development patterns to the terminal. 
 
-Think **React, Svelte, LiveView** meets tmux - choose your preferred UI paradigm with enterprise features built-in.
+Think **React, Svelte, LiveView** meets tmux, or *Next.js* for the terminal.
+Choose your preferred UI paradigm, with free enterprise features built-in.
 
 ### Why Raxol?
 
@@ -132,7 +131,7 @@ mix test
 
   # Framework Comparison Table
   ┌─────────────┬──────────────┬─────────────────┬──────────────┬───────────┐
-  │ Framework   │ Paradigm     │ Best For        │ Learning Curve│
+  │ Framework   │ Paradigm     │ Best For        │ Learning Curve │
   ├─────────────┼──────────────┼─────────────────┼──────────┼───────────────┤
   │ React       │ Virtual DOM  │ Familiar APIs   │ Easy            │
   │ Svelte      │ Reactive     │ Performance     │ Medium          │
