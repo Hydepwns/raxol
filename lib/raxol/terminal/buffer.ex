@@ -352,6 +352,66 @@ defmodule Raxol.Terminal.Buffer do
     from_screen_buffer(filled_screen_buffer, buffer)
   end
 
+  @doc """
+  Clear a rectangular region in the buffer.
+  """
+  def clear_region(buffer, x, y, width, height) do
+    fill_region(buffer, x, y, width, height, Cell.new())
+  end
+
+  @doc """
+  Draw a box in the buffer with the specified style.
+  """
+  def draw_box(buffer, x, y, width, height, style \\ nil) do
+    # Draw corners
+    buffer
+    |> set_cell(x, y, "┌", style)
+    |> set_cell(x + width - 1, y, "┐", style)
+    |> set_cell(x, y + height - 1, "└", style)
+    |> set_cell(x + width - 1, y + height - 1, "┘", style)
+    |> draw_horizontal_line(x + 1, y, width - 2, "─", style)
+    |> draw_horizontal_line(x + 1, y + height - 1, width - 2, "─", style)
+    |> draw_vertical_line(x, y + 1, height - 2, "│", style)
+    |> draw_vertical_line(x + width - 1, y + 1, height - 2, "│", style)
+  end
+
+  @doc """
+  Move the cursor to the specified position.
+  """
+  def move_cursor(buffer, x, y) do
+    %{buffer | cursor_x: x, cursor_y: y}
+  end
+
+  # Private helper functions for drawing
+  defp draw_horizontal_line(buffer, x, y, length, char, style) do
+    Enum.reduce(0..(length - 1), buffer, fn i, acc ->
+      set_cell(acc, x + i, y, char, style)
+    end)
+  end
+
+  defp draw_vertical_line(buffer, x, y, length, char, style) do
+    Enum.reduce(0..(length - 1), buffer, fn i, acc ->
+      set_cell(acc, x, y + i, char, style)
+    end)
+  end
+
+  defp set_cell(buffer, x, y, char, style) do
+    if x >= 0 and x < buffer.width and y >= 0 and y < buffer.height do
+      cell = Cell.new(char, style || %{})
+
+      cells =
+        List.replace_at(
+          buffer.cells,
+          y,
+          List.replace_at(Enum.at(buffer.cells, y), x, cell)
+        )
+
+      %{buffer | cells: cells}
+    else
+      buffer
+    end
+  end
+
   # Private functions
 
   defp create_empty_grid(width, height) do
