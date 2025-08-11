@@ -24,6 +24,22 @@ Think **React, Svelte, LiveView** meets tmux - choose your preferred UI paradigm
 - **Enterprise Ready**: Audit logging, encryption, SAML/OIDC support, compliance (SOC2/HIPAA/GDPR)
 - **Innovation First**: Sixel graphics, WASH-style session continuity, real-time collaboration
 
+## Use Cases
+
+### Perfect For
+- **Terminal IDEs** - Build the next vim/emacs
+- **DevOps Tools** - Modern k9s, lazygit alternatives
+- **System Monitoring** - Real-time dashboards
+- **Database Clients** - Interactive SQL/NoSQL tools
+- **Chat Applications** - Terminal-based communication tools
+- **Games** - Roguelikes, MUDs, interactive fiction
+
+### Real-World Applications
+- Internal DevOps tooling
+- Customer support interfaces
+- Infrastructure monitoring
+- Interactive programming education
+
 ## Key Features
 
 ### Core Terminal Framework
@@ -99,15 +115,14 @@ mix test
 ### Choose Your Framework
 
 - Use whatever you're comfortable with:
-+
+```bash
   use Raxol.UI, framework: :react      # Familiar React patterns
   use Raxol.UI, framework: :svelte     # Reactive with compile-time optimization
   use Raxol.UI, framework: :liveview   # Phoenix LiveView patterns
   use Raxol.UI, framework: :heex       # Phoenix templates
   use Raxol.UI, framework: :raw        # Direct terminal control
 
-  Universal Features (Work Across ALL Frameworks)
-
+  #Universal Features (Work Across ALL Frameworks)
   - Actions system - use:tooltip, use:draggable, etc.
   - Transitions & animations - 60 FPS engine
   - Context API - no prop drilling
@@ -115,8 +130,7 @@ mix test
   - Theme system - unified styling
   - Event handling - keyboard, mouse, custom
 
-  Framework Comparison Table
-
+  # Framework Comparison Table
   ┌─────────────┬──────────────┬─────────────────┬───────────┐
   │ Framework   │ Paradigm     │ Best For        │ Learning Curve  │
   ├─────────────┼──────────────┼─────────────────┼───────────┤
@@ -126,6 +140,7 @@ mix test
   │ HEEx        │ Templates    │ Simple UIs      │ Very Easy       │
   │ Raw         │ Direct       │ Maximum control │ Hard            │
   └─────────────┴──────────────┴─────────────────┴───────────┘
+```
   
 #### React-Style
 ```elixir  
@@ -184,6 +199,7 @@ end
 
 ## Architecture
 
+```bash
 ┌─────────────────────────────────────────────────┐
 │                    Applications                         │
 │         (TUI Apps • Plugins • Extensions)               │
@@ -201,7 +217,7 @@ end
 │                Platform Services                        │
 │   (Security • Metrics • Persistence • Plugins)          │
 └─────────────────────────────────────────────────┘
-
+```
 
 
 ## Documentation
@@ -237,22 +253,6 @@ Features:
 - Component snippets
 - Live preview
 - Integrated terminal
-
-## Use Cases
-
-### Perfect For
-- **Terminal IDEs** - Build the next vim/emacs
-- **DevOps Tools** - Modern k9s, lazygit alternatives
-- **System Monitoring** - Real-time dashboards
-- **Database Clients** - Interactive SQL/NoSQL tools
-- **Chat Applications** - Terminal-based communication tools
-- **Games** - Roguelikes, MUDs, interactive fiction
-
-### Real-World Applications
-- Internal DevOps tooling
-- Customer support interfaces
-- Infrastructure monitoring
-- Interactive programming education
 
 ## Roadmap
 
