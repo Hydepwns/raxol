@@ -97,9 +97,9 @@ defmodule Raxol.Security.SessionManager do
 
   @impl true
   def init(opts) do
-    # Create ETS tables for fast lookups
-    :ets.new(:sessions, [:set, :private, :named_table])
-    :ets.new(:user_sessions, [:bag, :private, :named_table])
+    # Create ETS tables for fast lookups (safe creation)
+    Raxol.Core.CompilerState.ensure_table(:sessions, [:set, :private, :named_table])
+    Raxol.Core.CompilerState.ensure_table(:user_sessions, [:bag, :private, :named_table])
 
     # Schedule cleanup
     schedule_cleanup()
@@ -264,9 +264,10 @@ defmodule Raxol.Security.SessionManager do
   end
 
   defp lookup_session(session_id) do
-    case :ets.lookup(:sessions, session_id) do
-      [{_, session}] -> session
-      [] -> nil
+    case Raxol.Core.CompilerState.safe_lookup(:sessions, session_id) do
+      {:ok, [{_, session}]} -> session
+      {:ok, []} -> nil
+      {:error, :table_not_found} -> nil
     end
   end
 
@@ -284,7 +285,10 @@ defmodule Raxol.Security.SessionManager do
   end
 
   defp get_user_sessions_internal(user_id) do
-    :ets.lookup(:user_sessions, user_id)
+    case Raxol.Core.CompilerState.safe_lookup(:user_sessions, user_id) do
+      {:ok, sessions} -> sessions
+      {:error, :table_not_found} -> []
+    end
     |> Enum.map(fn {_, session_id} -> lookup_session(session_id) end)
     |> Enum.filter(& &1)
     |> Enum.reject(&expired?/1)

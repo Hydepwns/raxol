@@ -14,8 +14,8 @@ defmodule RaxolWeb.RateLimitManager do
 
   @impl true
   def init(_) do
-    # Create the rate limiting table
-    :ets.new(:rate_limit_table, [:set, :public, :named_table])
+    # Create the rate limiting table safely (handles race conditions)
+    Raxol.Core.CompilerState.ensure_table(:rate_limit_table, [:set, :public, :named_table])
 
     # Schedule cleanup every minute
     schedule_cleanup()
