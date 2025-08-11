@@ -77,7 +77,7 @@ defmodule Raxol.MixProject do
           # :postgrex,  # Removed to prevent auto-starting Repo
           :runtime_tools,
           # NIF integration now working with elixir_make
-          :termbox2_nif,
+          # :termbox2_nif,
           :toml
         ] ++ test_applications()
     ]

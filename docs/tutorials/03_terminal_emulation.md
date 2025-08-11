@@ -783,6 +783,6 @@ You've mastered Raxol's terminal emulation features! You now understand:
 
 ## Next Steps
 
-- Build [Terminal Applications](docs/tutorials/building_apps.html)
-- Explore [Performance Optimization](docs/tutorials/performance.html)
-- Learn [Testing Strategies](docs/tutorials/testing.html)
+- Build [Terminal Applications](building_apps.md)
+- Explore [Performance Optimization](performance.md)
+- Learn [Testing Strategies](testing.md)
