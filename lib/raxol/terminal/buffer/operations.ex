@@ -4,6 +4,8 @@ defmodule Raxol.Terminal.Buffer.Operations do
   and cursor movement.
   """
 
+  @type t :: term()
+
   import Raxol.Guards
   @behaviour Raxol.Terminal.Buffer.OperationsBehaviour
 

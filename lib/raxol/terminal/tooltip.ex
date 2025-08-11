@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Tooltip do
   @moduledoc """
   Tooltip display functionality for terminal UI.
-  
+
   This module provides tooltip rendering capabilities for terminal applications,
   allowing contextual help text to appear on hover or focus.
   """
@@ -11,10 +11,10 @@ defmodule Raxol.Terminal.Tooltip do
 
   @doc """
   Shows a tooltip with the given text at the current cursor position.
-  
+
   ## Parameters
     - `text` - The text to display in the tooltip
-  
+
   ## Examples
       
       Raxol.Terminal.Tooltip.show("Click to submit")
@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.Tooltip do
 
   @doc """
   Hides the currently displayed tooltip.
-  
+
   ## Examples
       
       Raxol.Terminal.Tooltip.hide()

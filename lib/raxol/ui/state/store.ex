@@ -195,10 +195,11 @@ defmodule Raxol.UI.State.Store do
       unsubscribe.()
   """
   # Handle property test style: subscribe(store, callback) when store is first
-  def subscribe(store, callback) when (is_pid(store) or is_atom(store)) and is_function(callback, 1) do
+  def subscribe(store, callback)
+      when (is_pid(store) or is_atom(store)) and is_function(callback, 1) do
     subscribe([], callback, [], store)
   end
-  
+
   # Handle standard style: subscribe(path, callback, options, store)
   def subscribe(path, callback, options \\ [], store \\ __MODULE__)
       when is_function(callback, 1) do
@@ -364,15 +365,16 @@ defmodule Raxol.UI.State.Store do
   def handle_call({:get_state, path}, _from, state) do
     # Ensure path is a list
     path_list = if is_list(path), do: path, else: [path]
-    
+
     # Safely get value with proper error handling
-    value = try do
-      get_in(state.data, path_list)
-    rescue
-      # Handle case where state.data might not be a proper map/keyword list
-      ArgumentError -> nil
-    end
-    
+    value =
+      try do
+        get_in(state.data, path_list)
+      rescue
+        # Handle case where state.data might not be a proper map/keyword list
+        ArgumentError -> nil
+      end
+
     {:reply, value, state}
   end
 
@@ -380,7 +382,7 @@ defmodule Raxol.UI.State.Store do
   def handle_call({:update_state, path, value}, _from, state) do
     # Ensure path is a list
     path_list = if is_list(path), do: path, else: [path]
-    
+
     new_data = put_in(state.data, path_list, value)
     new_state = %{state | data: new_data}
 
@@ -394,7 +396,7 @@ defmodule Raxol.UI.State.Store do
   def handle_call({:delete_state, path}, _from, state) do
     # Ensure path is a list
     path_list = if is_list(path), do: path, else: [path]
-    
+
     new_data = delete_in(state.data, path_list)
     new_state = %{state | data: new_data}
 
@@ -745,11 +747,11 @@ defmodule Raxol.UI.State.Store do
 
   @doc """
   Updates a value in the store at the given path.
-  
+
   This function supports multiple argument orders and function updates to match property test expectations.
-  
+
   ## Examples
-  
+
       # Direct value update
       Store.update(store, :counter, 42)
       Store.update(store, [:user, :name], "John")
@@ -758,33 +760,35 @@ defmodule Raxol.UI.State.Store do
       Store.update(store, :counter, fn count -> count + 1 end)
       Store.update(store, [:items], fn items -> [new_item | items] end)
   """
-  @spec update(GenServer.server(), atom() | list(), any() | (any() -> any())) :: :ok
+  @spec update(GenServer.server(), atom() | list(), any() | (any() -> any())) ::
+          :ok
   def update(store \\ __MODULE__, path, value_or_fun)
-  
+
   # Handle function updates
   def update(store, path, fun) when is_function(fun, 1) do
     # Ensure path is a list
     path_list = if is_list(path), do: path, else: [path]
-    
+
     # Get current value, apply function, then update
     current_value = get_state(path_list, store)
-    
+
     # Safely handle arithmetic operations with proper type checking
-    new_value = try do
-      fun.(current_value)
-    rescue
-      ArithmeticError -> 
-        # If arithmetic fails, ensure we have proper numeric types
-        case current_value do
-          nil -> fun.(0)
-          n when is_number(n) -> fun.(n)
-          _ -> fun.(0)
-        end
-    end
-    
+    new_value =
+      try do
+        fun.(current_value)
+      rescue
+        ArithmeticError ->
+          # If arithmetic fails, ensure we have proper numeric types
+          case current_value do
+            nil -> fun.(0)
+            n when is_number(n) -> fun.(n)
+            _ -> fun.(0)
+          end
+      end
+
     update_state(path_list, new_value, store)
   end
-  
+
   # Handle direct value updates
   def update(store, path, value) do
     # Ensure path is a list

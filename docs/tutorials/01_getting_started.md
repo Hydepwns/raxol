@@ -55,7 +55,7 @@ end
 Create a simple counter application that displays a number and allows incrementing/decrementing it.
 
 #### Hints
-- Use `Raxol.UI.button/2` for interactive buttons
+- Use `Raxol.Core.Renderer.View.Components.button/2` for interactive buttons
 - Handle events with `handle_event/2`
 - Update state immutably
 
@@ -114,9 +114,9 @@ end
 Build a todo list component that allows adding, removing, and marking items as complete.
 
 #### Hints
-- Use `Raxol.UI.list/2` to render lists
+- Use `Raxol.UI.Components.Button` for interactive elements
 - Store todos as a list of maps with `text` and `completed` fields
-- Use `Raxol.UI.checkbox/2` for completion status
+- Use `Raxol.UI.Components.TextInput` for form inputs
 
 ### Step 3: Handling User Input
 ---
@@ -396,6 +396,6 @@ You've completed the Getting Started tutorial! You now understand:
 
 ## Next Steps
 
-- Explore the [Component Catalog](component_catalog.md)
-- Learn about [Terminal Emulation](terminal_emulation.md)
-- Build a [Real-World Application](building_apps.md)
+- Explore the [Component Catalog](docs/tutorials/component_catalog.html)
+- Learn about [Terminal Emulation](docs/tutorials/03_terminal_emulation.html)
+- Build a [Real-World Application](docs/tutorials/building_apps.html)

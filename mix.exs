@@ -76,7 +76,8 @@ defmodule Raxol.MixProject do
           # :ecto_sql,  # Removed to prevent auto-starting Repo
           # :postgrex,  # Removed to prevent auto-starting Repo
           :runtime_tools,
-          :termbox2_nif,  # NIF integration now working with elixir_make
+          # NIF integration now working with elixir_make
+          :termbox2_nif,
           :toml
         ] ++ test_applications()
     ]
@@ -305,7 +306,7 @@ defmodule Raxol.MixProject do
 
   defp docs do
     [
-      main: "readme",
+      main: "01_getting_started",
       logo: "assets/logo.svg",
       extras: [
         "README.md",

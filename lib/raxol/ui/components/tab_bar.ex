@@ -35,6 +35,7 @@ defmodule Raxol.UI.Components.TabBar do
   def handle_tab_change(model, tab_id) do
     %{model | active_tab: tab_id}
   end
+  ```
 
   @behaviour Raxol.ComponentBehaviour
 

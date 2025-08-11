@@ -1,7 +1,8 @@
 defmodule Raxol.Svelte.Context do
   # Suppress warnings for macro-generated GenServer callbacks that are optional
-  @compile {:no_warn_undefined, [{:handle_cast, 2}, {:code_change, 3}, {:terminate, 2}]}
-  
+  @compile {:no_warn_undefined,
+            [{:handle_cast, 2}, {:code_change, 3}, {:terminate, 2}]}
+
   @moduledoc """
   Svelte-style context system for passing data through component trees
   without prop drilling.
@@ -437,7 +438,8 @@ defmodule Raxol.Svelte.Context.AuthProvider do
   state(:loading, false)
   state(:error, nil)
 
-  def mount_with_parent(terminal, props, parent) when is_pid(parent) or is_nil(parent) do
+  def mount_with_parent(terminal, props, parent)
+      when is_pid(parent) or is_nil(parent) do
     {:ok, component} = GenServer.start_link(__MODULE__, {terminal, props})
 
     auth_data = %{

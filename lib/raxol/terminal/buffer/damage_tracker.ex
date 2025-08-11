@@ -16,6 +16,7 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
           damage_regions: [damage_region()],
           max_regions: non_neg_integer()
         }
+  @type t :: damage_tracker()
 
   @doc """
   Creates a new damage tracker.

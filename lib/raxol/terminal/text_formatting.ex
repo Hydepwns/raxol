@@ -4,26 +4,36 @@ defmodule Raxol.Terminal.TextFormatting do
   This module re-exports the functionality from ANSI.TextFormatting to maintain compatibility.
   """
 
+  @doc false
   defdelegate new(), to: Raxol.Terminal.ANSI.TextFormatting
 
+  @doc false
   defdelegate set_foreground(style, color),
     to: Raxol.Terminal.ANSI.TextFormatting
 
+  @doc false
   defdelegate set_background(style, color),
     to: Raxol.Terminal.ANSI.TextFormatting
 
+  @doc false
   defdelegate get_foreground(style), to: Raxol.Terminal.ANSI.TextFormatting
+  @doc false
   defdelegate get_background(style), to: Raxol.Terminal.ANSI.TextFormatting
+  @doc false
   defdelegate set_double_width(style), to: Raxol.Terminal.ANSI.TextFormatting
 
+  @doc false
   defdelegate set_double_height_top(style),
     to: Raxol.Terminal.ANSI.TextFormatting
 
+  @doc false
   defdelegate set_double_height_bottom(style),
     to: Raxol.Terminal.ANSI.TextFormatting
 
+  @doc false
   defdelegate reset_size(style), to: Raxol.Terminal.ANSI.TextFormatting
 
+  @doc false
   defdelegate apply_attribute(style, attribute),
     to: Raxol.Terminal.ANSI.TextFormatting
 
@@ -33,6 +43,7 @@ defmodule Raxol.Terminal.TextFormatting do
   defdelegate effective_width(style, char),
     to: Raxol.Terminal.ANSI.TextFormatting
 
+  @doc false
   defdelegate get_default_style(),
     to: Raxol.Terminal.ANSI.TextFormatting,
     as: :new

@@ -18,6 +18,16 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
     @moduledoc """
     State for the Dashboard component.
     """
+
+    @type t :: %__MODULE__{
+            widgets: list(),
+            grid_config: map(),
+            dragging: term() | nil,
+            resizing: term() | nil,
+            layout: list(),
+            id: atom()
+          }
+
     # List of widget configurations (%{id: _, type: _, title: _, grid_spec: %{}})
     defstruct widgets: [],
               # Grid config (%{parent_bounds: _, cols: _, rows: _, gap: _})

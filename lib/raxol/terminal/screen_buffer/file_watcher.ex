@@ -11,7 +11,7 @@ defmodule Raxol.Terminal.ScreenBuffer.FileWatcher do
   @type debounce_timeout :: non_neg_integer()
 
   @type t :: %__MODULE__{
-          watched_paths: MapSet.new(Path.t()),
+          watched_paths: MapSet.t(Path.t()),
           pending_events: events(),
           last_event_time: non_neg_integer()
         }

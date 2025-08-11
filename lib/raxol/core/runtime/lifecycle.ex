@@ -413,6 +413,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
           Raxol.Core.Runtime.Log.debug(
             "[#{__MODULE__}] Deleted ETS table: #{inspect(state.command_registry_table)}"
           )
+
         {:error, :table_not_found} ->
           Raxol.Core.Runtime.Log.debug(
             "[#{__MODULE__}] ETS table #{inspect(state.command_registry_table)} not found or already deleted."

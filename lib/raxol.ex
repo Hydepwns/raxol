@@ -183,7 +183,7 @@ defmodule Raxol do
 
   ## Parameters
 
-  * `return_value` - Value to return from the `Raxol.run/3` function
+  * `return_value` - Value to return from the `Raxol.run/2` function
 
   ## Example
 
@@ -348,7 +348,7 @@ defmodule Raxol do
 
   ## Returns
 
-  {:ok, pid} on success, {:error, reason} on failure.
+  `{:ok, pid}` on success, `{:error, reason}` on failure.
 
   ## Example
 

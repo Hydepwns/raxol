@@ -21,7 +21,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   @type series :: %{
           name: String.t(),
           data: [number()],
-          color: View.color()
+          color: View.Types.color()
         }
 
   @type options :: [

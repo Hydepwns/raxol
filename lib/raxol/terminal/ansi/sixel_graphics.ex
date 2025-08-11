@@ -14,6 +14,15 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   @behaviour Raxol.Terminal.ANSI.SixelGraphics.Behaviour
 
+  @type sixel_state :: %{
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          data: binary(),
+          palette: map(),
+          current_color: non_neg_integer(),
+          pixel_buffer: map()
+        }
+
   @type t :: %__MODULE__{
           width: non_neg_integer(),
           height: non_neg_integer(),

@@ -271,13 +271,22 @@ defmodule RaxolWeb.TerminalChannel do
         check_existing_rate_limit(key, count, timestamp)
 
       {:ok, []} ->
-        Raxol.Core.CompilerState.safe_insert(:rate_limit_table, {key, 1, System.system_time(:second)})
+        Raxol.Core.CompilerState.safe_insert(
+          :rate_limit_table,
+          {key, 1, System.system_time(:second)}
+        )
+
         :ok
 
       {:error, :table_not_found} ->
         # Table doesn't exist, ensure it exists and try again
         ensure_rate_limit_table()
-        Raxol.Core.CompilerState.safe_insert(:rate_limit_table, {key, 1, System.system_time(:second)})
+
+        Raxol.Core.CompilerState.safe_insert(
+          :rate_limit_table,
+          {key, 1, System.system_time(:second)}
+        )
+
         :ok
     end
   end
@@ -300,7 +309,11 @@ defmodule RaxolWeb.TerminalChannel do
   end
 
   defp ensure_rate_limit_table do
-    Raxol.Core.CompilerState.ensure_table(:rate_limit_table, [:set, :public, :named_table])
+    Raxol.Core.CompilerState.ensure_table(:rate_limit_table, [
+      :set,
+      :public,
+      :named_table
+    ])
   end
 
   defp validate_input_size(data)

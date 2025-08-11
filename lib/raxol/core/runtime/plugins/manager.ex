@@ -9,6 +9,11 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   - Utility functions (error handling, cleanup)
   """
 
+  @type t :: %{
+          plugins: map(),
+          state: term(),
+          config: map()
+        }
   @type plugin_id :: String.t()
   @type plugin_metadata :: map()
   @type plugin_state :: map()

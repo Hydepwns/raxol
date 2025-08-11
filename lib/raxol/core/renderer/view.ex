@@ -21,7 +21,7 @@ defmodule Raxol.Core.Renderer.View do
 
   @typedoc """
   Style options for a view. Typically a list of atoms, e.g., [:bold, :underline].
-  See `Raxol.Core.Renderer.View.Types.style/0` for details.
+  See `Raxol.Core.Renderer.View.Types.style()` type for details.
   """
   @type style :: Types.style()
 

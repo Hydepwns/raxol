@@ -436,7 +436,9 @@ defmodule Raxol.Svelte.Animator do
   end
 
   defp apply_property_update(element, :scale_y, value) do
-    new_height = round(Map.get(element, :original_height, element.height) * value)
+    new_height =
+      round(Map.get(element, :original_height, element.height) * value)
+
     # TODO: Implement when Terminal.Buffer.resize_element is available  
     # Raxol.Terminal.Buffer.resize_element(element, element.width, new_height)
     Map.put(element, :height, new_height)
