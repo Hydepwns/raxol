@@ -14,8 +14,7 @@ defmodule CSV do
 
   defp encode_row(row) do
     row
-    |> Enum.map(&escape_field/1)
-    |> Enum.join(",")
+    |> Enum.map_join(",", &escape_field/1)
     |> Kernel.<>("\n")
   end
 
