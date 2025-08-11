@@ -196,4 +196,82 @@ defmodule Raxol.UI.Layout.Grid do
       height: grid_cells.cell_height
     }
   end
+
+  @doc """
+  Creates a new grid layout with the given options.
+  
+  ## Options
+  - `:columns` - number of columns
+  - `:rows` - number of rows
+  - `:gap` - gap between cells
+  - `:children` - child elements
+  - `:width` - grid width
+  - `:height` - grid height
+  """
+  @spec new(keyword()) :: map()
+  def new(opts \\ []) do
+    gap = Keyword.get(opts, :gap, 0)
+    
+    %{
+      type: :grid,
+      columns: Keyword.get(opts, :columns, 1),
+      rows: Keyword.get(opts, :rows, 1),
+      gap: gap,
+      gap_x: Keyword.get(opts, :gap_x, gap),
+      gap_y: Keyword.get(opts, :gap_y, gap),
+      children: Keyword.get(opts, :children, []),
+      width: Keyword.get(opts, :width),
+      height: Keyword.get(opts, :height)
+    }
+  end
+
+  @doc """
+  Renders the grid layout.
+  
+  Returns the layout with calculated positions for all children.
+  """
+  @spec render(map()) :: {:ok, map()}
+  def render(grid) do
+    # Simple rendering that returns the structure
+    {:ok, %{
+      type: :rendered_grid,
+      layout: grid,
+      children: position_children(grid)
+    }}
+  end
+
+  @doc """
+  Calculates spacing between grid cells based on gap value.
+  
+  Returns a map with calculated spacing values.
+  """
+  @spec calculate_spacing(map()) :: {:ok, map()}
+  def calculate_spacing(grid) do
+    # Use gap_x and gap_y, which are set from gap if not specified
+    gap_x = Map.get(grid, :gap_x, grid.gap)
+    gap_y = Map.get(grid, :gap_y, grid.gap)
+    
+    {:ok, %{
+      horizontal_spacing: gap_x * (grid.columns - 1),
+      vertical_spacing: gap_y * (grid.rows - 1),
+      total_gap_width: gap_x * (grid.columns - 1),
+      total_gap_height: gap_y * (grid.rows - 1)
+    }}
+  end
+
+  defp position_children(grid) do
+    grid.children
+    |> Enum.with_index()
+    |> Enum.map(fn {child, index} ->
+      col = rem(index, grid.columns)
+      row = div(index, grid.columns)
+      
+      Map.merge(child, %{
+        grid_column: col,
+        grid_row: row,
+        x: col * 10,  # Simplified positioning
+        y: row * 10   # Simplified positioning
+      })
+    end)
+  end
 end

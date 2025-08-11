@@ -134,7 +134,8 @@ defmodule Raxol.UI.Components.Button do
         border: Borders.new(%{style: :rounded})
       )
 
-    combined_style = Style.merge(base_style, custom_style)
+    custom_style_struct = Style.new(custom_style)
+    combined_style = Style.merge(base_style, custom_style_struct)
 
     if disabled do
       Style.merge(
@@ -196,4 +197,31 @@ defmodule Raxol.UI.Components.Button do
       button.label
     end
   end
+
+  @doc """
+  Handles a click event on the button.
+
+  Executes the on_click callback if the button is not disabled.
+  """
+  @spec handle_click(map()) :: :ok | {:error, :disabled}
+  def handle_click(%{disabled: true}), do: {:error, :disabled}
+
+  def handle_click(%{on_click: nil}), do: :ok
+
+  def handle_click(%{on_click: on_click}) when is_function(on_click, 0) do
+    on_click.()
+    :ok
+  end
+
+  def handle_click(%{on_click: on_click}) when is_function(on_click, 1) do
+    on_click.(:clicked)
+    :ok
+  end
+
+  def handle_click(%{on_click: {module, function, args}}) do
+    apply(module, function, args)
+    :ok
+  end
+
+  def handle_click(%{on_click: _}), do: :ok
 end

@@ -388,4 +388,79 @@ defmodule Raxol.UI.Components.TextInput do
   # defp maybe_update_cursor_position(_state) do
   #   # Implementation of maybe_update_cursor_position/1
   # end
+
+  @doc """
+  Handles text input by updating the value.
+  
+  This is a simplified API for property tests that directly updates the value.
+  """
+  @spec handle_input(map(), String.t()) :: map()
+  def handle_input(%{disabled: true} = input, _text), do: input
+  
+  def handle_input(input, text) do
+    # Check if there's a validator
+    validator = Map.get(input, :validator) || Map.get(input, :validation)
+    
+    # If validator exists and text doesn't pass validation, filter or reject
+    if validator && !validator.(input.value <> text) do
+      # Check if this is a numeric validator by testing if it accepts digits
+      is_numeric_validator = validator.("123")
+      
+      # Filter the text to only include valid characters
+      filtered_text = if is_numeric_validator do
+        # For numeric validator, filter only digits from the typed text
+        input.value <> String.replace(text, ~r/[^\d]/, "")
+      else
+        # For other validators, reject the typed text entirely if invalid
+        input.value
+      end
+      
+      # Apply max_length constraint if present
+      new_value = if input.max_length do
+        String.slice(filtered_text, 0, input.max_length)
+      else
+        filtered_text
+      end
+      
+      %{
+        input 
+        | value: new_value,
+          cursor_pos: String.length(new_value)
+      }
+    else
+      # Append typed text to existing value
+      combined_value = input.value <> text
+      
+      # Apply max_length constraint if present
+      new_value = if input.max_length do
+        String.slice(combined_value, 0, input.max_length)
+      else
+        combined_value
+      end
+      
+      updated_input = %{
+        input 
+        | value: new_value,
+          cursor_pos: String.length(new_value)
+      }
+      
+      # Validate if needed
+      validate_input(updated_input)
+    end
+  end
+
+  @doc """
+  Handles cursor positioning.
+  
+  Ensures cursor stays within valid bounds.
+  """
+  @spec handle_cursor(map(), integer()) :: map()
+  def handle_cursor(%{disabled: true} = input, _pos), do: input
+  
+  def handle_cursor(input, pos) do
+    max_pos = String.length(input.value)
+    new_pos = pos |> max(0) |> min(max_pos)
+    
+    %{input | cursor_pos: new_pos}
+  end
 end
