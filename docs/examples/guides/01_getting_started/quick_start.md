@@ -17,7 +17,7 @@ _Raxol 0.9.0 is a comprehensive framework that goes beyond terminal UI—it incl
 
 Before you start, ensure you have:
 
-1. **Development environment set up:** We recommend using the [Nix development environment](docs/DEVELOPMENT.html) for the best experience. This provides all necessary dependencies automatically.
+1. **Development environment set up:** We recommend using the [Nix development environment](../../../DEVELOPMENT.md) for the best experience. This provides all necessary dependencies automatically.
 
 2. **Elixir installed (if not using Nix):** Raxol requires Elixir 1.17.1 or later. You can find installation instructions on the [official Elixir website](https://elixir-lang.org/install.html).
 
@@ -401,10 +401,10 @@ In this guide, you've learned:
 Congratulations! You've built a full-featured application using Raxol. Here's what to explore next:
 
 ### Learn More
-- [Component Reference](docs/examples/guides/03_component_reference/README.html) - Detailed documentation for all UI components
-- [Web Interface Guide](docs/WEB_INTERFACE_GUIDE.html) - Deep dive into web capabilities
-- [Plugin Development](docs/examples/guides/04_extending_raxol/plugin_development.html) - Advanced plugin features
-- [Enterprise Features](docs/examples/guides/06_enterprise/README.html) - Authentication, monitoring, and deployment
+- [Component Reference](../03_component_reference/inputs/README.md) - Detailed documentation for all UI components
+- [Web Interface Guide](../../../WEB_INTERFACE_GUIDE.md) - Deep dive into web capabilities
+- [Plugin Development](../04_extending_raxol/plugin_development.md) - Advanced plugin features
+- [Enterprise Features](../06_enterprise/README.md) - Authentication, monitoring, and deployment
 
 ### Example Applications
 - **Dashboard App**: Real-time metrics and monitoring
@@ -415,7 +415,7 @@ Congratulations! You've built a full-featured application using Raxol. Here's wh
 ### Join the Community
 - [GitHub Discussions](https://github.com/Hydepwns/raxol/discussions)
 - [Issue Tracker](https://github.com/Hydepwns/raxol/issues)
-- [Development Guide](docs/DEVELOPMENT.html)
+- [Development Guide](../../../DEVELOPMENT.md)
 
 ## Summary
 

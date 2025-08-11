@@ -243,4 +243,4 @@ After installation, check out:
 
 - [Quick Start Guide](quick_start.md) to create your first Raxol application
 - [Examples](../) for sample applications and use cases
-- [Development Guide](docs/DEVELOPMENT.html) for detailed development setup instructions
+- [Development Guide](../../../DEVELOPMENT.md) for detailed development setup instructions
