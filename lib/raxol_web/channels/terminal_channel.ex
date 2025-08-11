@@ -266,12 +266,18 @@ defmodule RaxolWeb.TerminalChannel do
     # Ensure rate limit table exists (for testing scenarios)
     ensure_rate_limit_table()
 
-    case :ets.lookup(:rate_limit_table, key) do
-      [{^key, count, timestamp}] ->
+    case Raxol.Core.CompilerState.safe_lookup(:rate_limit_table, key) do
+      {:ok, [{^key, count, timestamp}]} ->
         check_existing_rate_limit(key, count, timestamp)
 
-      [] ->
-        :ets.insert(:rate_limit_table, {key, 1, System.system_time(:second)})
+      {:ok, []} ->
+        Raxol.Core.CompilerState.safe_insert(:rate_limit_table, {key, 1, System.system_time(:second)})
+        :ok
+
+      {:error, :table_not_found} ->
+        # Table doesn't exist, ensure it exists and try again
+        ensure_rate_limit_table()
+        Raxol.Core.CompilerState.safe_insert(:rate_limit_table, {key, 1, System.system_time(:second)})
         :ok
     end
   end
@@ -294,13 +300,7 @@ defmodule RaxolWeb.TerminalChannel do
   end
 
   defp ensure_rate_limit_table do
-    case :ets.info(:rate_limit_table) do
-      :undefined ->
-        :ets.new(:rate_limit_table, [:set, :public, :named_table])
-
-      _ ->
-        :ok
-    end
+    Raxol.Core.CompilerState.ensure_table(:rate_limit_table, [:set, :public, :named_table])
   end
 
   defp validate_input_size(data)

@@ -518,8 +518,8 @@ defmodule RaxolWeb.TerminalLive do
   defp render_terminal_with_cache(renderer, theme) do
     cache_key = generate_cache_key(renderer, theme)
 
-    case :ets.lookup(:terminal_cache, cache_key) do
-      [{^cache_key, rendered, timestamp}] ->
+    case Raxol.Core.CompilerState.safe_lookup(:terminal_cache, cache_key) do
+      {:ok, [{^cache_key, rendered, timestamp}]} ->
         # Cache is valid for 1 second
         if System.system_time(:second) - timestamp < 1 do
           rendered
@@ -527,7 +527,12 @@ defmodule RaxolWeb.TerminalLive do
           render_and_cache(renderer, cache_key)
         end
 
-      [] ->
+      {:ok, []} ->
+        render_and_cache(renderer, cache_key)
+
+      {:error, :table_not_found} ->
+        # Cache table doesn't exist, ensure it exists and render
+        initialize_cache()
         render_and_cache(renderer, cache_key)
     end
   end
@@ -556,13 +561,7 @@ defmodule RaxolWeb.TerminalLive do
 
   # Initialize cache table in mount
   defp initialize_cache do
-    case :ets.info(:terminal_cache) do
-      :undefined ->
-        :ets.new(:terminal_cache, [:set, :public, :named_table])
-
-      _ ->
-        :ok
-    end
+    Raxol.Core.CompilerState.ensure_table(:terminal_cache, [:set, :public, :named_table])
   end
 
   defp broadcast_terminal_update(socket, terminal_html, cursor) do
