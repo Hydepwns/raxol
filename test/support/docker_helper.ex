@@ -78,8 +78,9 @@ defmodule Raxol.Test.DockerHelper do
   end
 
   defp skip_test(reason) do
-    # Use ExUnit's skip macro through raising SkipError
-    raise ExUnit.SkipError, message: reason
+    # Use ExUnit's skip functionality
+    ExUnit.configure(exclude: [skip: true])
+    {:skip, reason}
   end
 
   @doc """
