@@ -97,7 +97,8 @@ defmodule Raxol.Terminal.Color.TrueColor do
       %TrueColor{r: 128, g: 128, b: 128, a: 128}
   """
   def rgb(r, g, b, a \\ 255)
-      when r in 0..255 and g in 0..255 and b in 0..255 and a in 0..255 do
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 and
+             a in 0..255//1 do
     %__MODULE__{r: r, g: g, b: b, a: a}
   end
 
@@ -139,7 +140,8 @@ defmodule Raxol.Terminal.Color.TrueColor do
       %TrueColor{r: 0, g: 255, b: 0, a: 255}
   """
   def hsl(h, s, l, a \\ 100)
-      when h in 0..360 and s in 0..100 and l in 0..100 and a in 0..100 do
+      when h in 0..360//1 and s in 0..100//1 and l in 0..100//1 and
+             a in 0..100//1 do
     {r, g, b} = hsl_to_rgb(h, s / 100, l / 100)
 
     %__MODULE__{
@@ -159,7 +161,8 @@ defmodule Raxol.Terminal.Color.TrueColor do
       %TrueColor{r: 255, g: 0, b: 0, a: 255}
   """
   def hsv(h, s, v, a \\ 100)
-      when h in 0..360 and s in 0..100 and v in 0..100 and a in 0..100 do
+      when h in 0..360//1 and s in 0..100//1 and v in 0..100//1 and
+             a in 0..100//1 do
     {r, g, b} = hsv_to_rgb(h, s / 100, v / 100)
 
     %__MODULE__{
