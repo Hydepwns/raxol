@@ -131,15 +131,15 @@ mix test
   - Event handling - keyboard, mouse, custom
 
   # Framework Comparison Table
-  ┌─────────────┬──────────────┬─────────────────┬───────────┐
-  │ Framework   │ Paradigm     │ Best For        │ Learning Curve  │
-  ├─────────────┼──────────────┼─────────────────┼───────────┤
+  ┌─────────────┬──────────────┬─────────────────┬──────────────┬───────────┐
+  │ Framework   │ Paradigm     │ Best For        │ Learning Curve│
+  ├─────────────┼──────────────┼─────────────────┼──────────┼───────────────┤
   │ React       │ Virtual DOM  │ Familiar APIs   │ Easy            │
   │ Svelte      │ Reactive     │ Performance     │ Medium          │
   │ LiveView    │ Server-side  │ Real-time apps  │ Easy            │
   │ HEEx        │ Templates    │ Simple UIs      │ Very Easy       │
   │ Raw         │ Direct       │ Maximum control │ Hard            │
-  └─────────────┴──────────────┴─────────────────┴───────────┘
+  └─────────────┴──────────────┴─────────────────┴──────────────┴───────────┘
 ```
   
 #### React-Style
@@ -200,23 +200,23 @@ end
 ## Architecture
 
 ```bash
-┌─────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────┐
 │                    Applications                         │
 │         (TUI Apps • Plugins • Extensions)               │
-├─────────────────────────────────────────────────┤
+├──────────────────────────────────────────────────────────┤
 │               Multi-Framework UI Layer                  │
 │    React • Svelte • LiveView • HEEx • Raw               │
 │     (Universal: Actions • Slots • Context)              │
-├─────────────────────────────────────────────────┤
+├──────────────────────────────────────────────────────────┤
 │               Session Continuity Layer                  │
 │     (WASH Bridge • State Sync • Collaboration)          │
-├─────────────────────────────────────────────────┤
+├──────────────────────────────────────────────────────────┤
 │               Terminal Emulator Core                    │
 │      (Parser • Buffer • Input • Rendering)              │
-├─────────────────────────────────────────────────┤
+├──────────────────────────────────────────────────────────┤
 │                Platform Services                        │
 │   (Security • Metrics • Persistence • Plugins)          │
-└─────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────┘
 ```
 
 
