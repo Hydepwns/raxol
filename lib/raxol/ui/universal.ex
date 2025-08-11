@@ -174,8 +174,9 @@ defmodule Raxol.UI.Universal do
     from + (to - from) * progress
   end
 
-  defp interpolate(from, to, progress) when is_binary(from) and is_binary(to) do
+  defp interpolate(from, to, _progress) when is_binary(from) and is_binary(to) do
     # Color interpolation or other string interpolation
+    # TODO: Implement proper string/color interpolation using progress
     to
   end
 
