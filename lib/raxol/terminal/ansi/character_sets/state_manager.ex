@@ -166,7 +166,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
   @doc """
   Converts a G-set index to an atom.
   """
-  def index_to_gset(index) when index in 0..3 do
+  def index_to_gset(index) when index in 0..3//1 do
     case index do
       0 -> :g0
       1 -> :g1

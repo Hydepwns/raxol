@@ -80,7 +80,7 @@ defmodule Raxol.Terminal.Emulator.Output do
   """
   @spec write_control(EmulatorStruct.t(), char()) :: {:ok, EmulatorStruct.t()}
   def write_control(%EmulatorStruct{} = emulator, char)
-      when is_integer(char) and char in 0..31 do
+      when is_integer(char) and char in 0..31//1 do
     write(emulator, <<char>>)
   end
 

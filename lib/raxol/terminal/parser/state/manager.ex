@@ -159,32 +159,32 @@ defmodule Raxol.Terminal.Parser.State.Manager do
 
   defp process_csi_entry_state(manager, char) do
     cond do
-      char in 0x30..0x3F -> set_state(manager, :csi_param)
-      char in 0x20..0x2F -> set_state(manager, :csi_intermediate)
-      char in 0x40..0x7E -> set_state(manager, :ground)
+      char in 0x30..0x3F//1 -> set_state(manager, :csi_param)
+      char in 0x20..0x2F//1 -> set_state(manager, :csi_intermediate)
+      char in 0x40..0x7E//1 -> set_state(manager, :ground)
       true -> set_state(manager, :csi_ignore)
     end
   end
 
   defp process_csi_param_state(manager, char) do
     cond do
-      char in 0x30..0x3F -> manager
-      char in 0x20..0x2F -> set_state(manager, :csi_intermediate)
-      char in 0x40..0x7E -> set_state(manager, :ground)
+      char in 0x30..0x3F//1 -> manager
+      char in 0x20..0x2F//1 -> set_state(manager, :csi_intermediate)
+      char in 0x40..0x7E//1 -> set_state(manager, :ground)
       true -> set_state(manager, :csi_ignore)
     end
   end
 
   defp process_csi_intermediate_state(manager, char) do
     cond do
-      char in 0x20..0x2F -> manager
-      char in 0x40..0x7E -> set_state(manager, :ground)
+      char in 0x20..0x2F//1 -> manager
+      char in 0x40..0x7E//1 -> set_state(manager, :ground)
       true -> set_state(manager, :csi_ignore)
     end
   end
 
   defp process_csi_ignore_state(manager, char) do
-    if char in 0x40..0x7E do
+    if char in 0x40..0x7E//1 do
       set_state(manager, :ground)
     else
       manager
@@ -201,26 +201,26 @@ defmodule Raxol.Terminal.Parser.State.Manager do
 
   defp process_dcs_entry_state(manager, char) do
     cond do
-      char in 0x30..0x3F -> set_state(manager, :dcs_param)
-      char in 0x20..0x2F -> set_state(manager, :dcs_intermediate)
-      char in 0x40..0x7E -> set_state(manager, :dcs_passthrough)
+      char in 0x30..0x3F//1 -> set_state(manager, :dcs_param)
+      char in 0x20..0x2F//1 -> set_state(manager, :dcs_intermediate)
+      char in 0x40..0x7E//1 -> set_state(manager, :dcs_passthrough)
       true -> set_state(manager, :ground)
     end
   end
 
   defp process_dcs_param_state(manager, char) do
     cond do
-      char in 0x30..0x3F -> manager
-      char in 0x20..0x2F -> set_state(manager, :dcs_intermediate)
-      char in 0x40..0x7E -> set_state(manager, :dcs_passthrough)
+      char in 0x30..0x3F//1 -> manager
+      char in 0x20..0x2F//1 -> set_state(manager, :dcs_intermediate)
+      char in 0x40..0x7E//1 -> set_state(manager, :dcs_passthrough)
       true -> set_state(manager, :ground)
     end
   end
 
   defp process_dcs_intermediate_state(manager, char) do
     cond do
-      char in 0x20..0x2F -> manager
-      char in 0x40..0x7E -> set_state(manager, :dcs_passthrough)
+      char in 0x20..0x2F//1 -> manager
+      char in 0x40..0x7E//1 -> set_state(manager, :dcs_passthrough)
       true -> set_state(manager, :ground)
     end
   end
@@ -297,7 +297,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
 
   defp handle_escape_printable(manager, char) do
     case char do
-      _ when char in 0x30..0x7E -> set_state(manager, :ground)
+      _ when char in 0x30..0x7E//1 -> set_state(manager, :ground)
       _ -> manager
     end
   end

@@ -13,17 +13,17 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
     dispatch_byte(byte, data)
   end
 
-  defp dispatch_byte(byte, data) when byte in 0x30..0x39 or byte == 0x3B do
+  defp dispatch_byte(byte, data) when byte in 0x30..0x39//1 or byte == 0x3B do
     {:csi_param, Map.update(data, :params_buffer, <<byte>>, &(&1 <> <<byte>>))}
   end
 
   defp dispatch_byte(byte, data)
-       when byte in 0x20..0x2F or byte == 0x3F or byte == 0x3E do
+       when byte in 0x20..0x2F//1 or byte == 0x3F or byte == 0x3E do
     {:csi_intermediate,
      Map.update(data, :intermediates_buffer, <<byte>>, &(&1 <> <<byte>>))}
   end
 
-  defp dispatch_byte(byte, data) when byte in 0x40..0x7E do
+  defp dispatch_byte(byte, data) when byte in 0x40..0x7E//1 do
     {:ground, Map.put(data, :final_byte, byte)}
   end
 

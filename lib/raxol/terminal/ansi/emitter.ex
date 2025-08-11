@@ -94,10 +94,10 @@ defmodule Raxol.Terminal.ANSI.Emitter do
 
   The ANSI escape sequence for the requested color.
   """
-  def foreground(color_code) when color_code in 0..15,
+  def foreground(color_code) when color_code in 0..15//1,
     do: "\e[38;5;#{color_code}m"
 
-  def background(color_code) when color_code in 0..15,
+  def background(color_code) when color_code in 0..15//1,
     do: "\e[48;5;#{color_code}m"
 
   # Named colors
@@ -124,20 +124,20 @@ defmodule Raxol.Terminal.ANSI.Emitter do
   end
 
   # 256 color support
-  def foreground_256(color_code) when color_code in 0..255,
+  def foreground_256(color_code) when color_code in 0..255//1,
     do: "\e[38;5;#{color_code}m"
 
-  def background_256(color_code) when color_code in 0..255,
+  def background_256(color_code) when color_code in 0..255//1,
     do: "\e[48;5;#{color_code}m"
 
   # True color (24-bit) support
   def foreground_rgb(r, g, b)
-      when r in 0..255 and g in 0..255 and b in 0..255 do
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     "\e[38;2;#{r};#{g};#{b}m"
   end
 
   def background_rgb(r, g, b)
-      when r in 0..255 and g in 0..255 and b in 0..255 do
+      when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     "\e[48;2;#{r};#{g};#{b}m"
   end
 

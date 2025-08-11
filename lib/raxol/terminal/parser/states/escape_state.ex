@@ -150,7 +150,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
     process_escape_byte(byte, emulator, state)
   end
 
-  defp process_escape_byte(byte, emulator, state) when byte in 0x18..0x1A do
+  defp process_escape_byte(byte, emulator, state) when byte in 0x18..0x1A//1 do
     {:ok, emulator, %{state | state: :ground}}
   end
 

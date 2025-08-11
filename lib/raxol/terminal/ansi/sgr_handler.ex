@@ -108,13 +108,13 @@ defmodule Raxol.Terminal.ANSI.SGRHandler do
   end
 
   @param_range_handlers %{
-    (1..9) => &__MODULE__.handle_basic_attributes/2,
-    (20..29) => &__MODULE__.handle_text_style_attributes/2,
-    (30..39) => &__MODULE__.handle_foreground_colors/2,
-    (40..49) => &__MODULE__.handle_background_colors/2,
-    (51..55) => &__MODULE__.handle_decoration_attributes/2,
-    (90..97) => &__MODULE__.handle_bright_foreground_colors/2,
-    (100..107) => &__MODULE__.handle_bright_background_colors/2
+    (1..9//1) => &__MODULE__.handle_basic_attributes/2,
+    (20..29//1) => &__MODULE__.handle_text_style_attributes/2,
+    (30..39//1) => &__MODULE__.handle_foreground_colors/2,
+    (40..49//1) => &__MODULE__.handle_background_colors/2,
+    (51..55//1) => &__MODULE__.handle_decoration_attributes/2,
+    (90..97//1) => &__MODULE__.handle_bright_foreground_colors/2,
+    (100..107//1) => &__MODULE__.handle_bright_background_colors/2
   }
 
   defp handle_param_range(param, style) do
