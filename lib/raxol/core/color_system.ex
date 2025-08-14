@@ -1,6 +1,5 @@
 defmodule Raxol.Core.ColorSystem do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Core color system for Raxol.
 
@@ -16,7 +15,7 @@ defmodule Raxol.Core.ColorSystem do
   """
 
   alias Raxol.UI.Theming.Theme
-  alias Raxol.Core.Accessibility.ThemeIntegration
+  alias Raxol.Core.Accessibility
   alias Raxol.UI.Theming.Colors
   alias Raxol.Style.Colors.{Color, Utilities}
   require Raxol.Core.Runtime.Log
@@ -34,7 +33,7 @@ defmodule Raxol.Core.ColorSystem do
       iex> theme.name
       "dark"
   """
-  def create_theme(name, colors) when binary?(name) and map?(colors) do
+  def create_theme(name, colors) when is_binary(name) and is_map(colors) do
     # Convert hex colors to Color structs
     colors =
       Map.new(colors, fn {key, value} -> {key, Color.from_hex(value)} end)
@@ -55,7 +54,7 @@ defmodule Raxol.Core.ColorSystem do
       iex> get_color(theme, :primary)
       %Color{r: 255, g: 0, b: 0, hex: "#FF0000"}
   """
-  def get_color(theme, name) when map?(theme) and atom?(name) do
+  def get_color(theme, name) when is_map(theme) and is_atom(name) do
     get_in(theme, [:colors, name])
   end
 
@@ -69,7 +68,7 @@ defmodule Raxol.Core.ColorSystem do
       %Color{r: 255, g: 0, b: 0, hex: "#FF0000"}
   """
   def get_color(theme, name, context)
-      when map?(theme) and atom?(name) and atom?(context) do
+      when is_map(theme) and is_atom(name) and is_atom(context) do
     color = get_in(theme, [:colors, name])
 
     case context do
@@ -153,7 +152,7 @@ defmodule Raxol.Core.ColorSystem do
   """
   @spec get(atom(), atom()) :: Raxol.Style.Colors.color_value() | nil
   def get(theme_id, color_name)
-      when atom?(theme_id) and atom?(color_name) do
+      when is_atom(theme_id) and is_atom(color_name) do
     # Get the theme struct using the correct alias
     theme = Theme.get(theme_id)
 
@@ -172,17 +171,7 @@ defmodule Raxol.Core.ColorSystem do
 
       base_palette = theme.colors
 
-      cond do
-        variant_palette && Map.has_key?(variant_palette, color_name) ->
-          safe_map_get(variant_palette, color_name)
-
-        Map.has_key?(base_palette, color_name) ->
-          safe_map_get(base_palette, color_name)
-
-        true ->
-          # Color not found in either palette
-          nil
-      end
+      lookup_color_in_palettes(color_name, variant_palette, base_palette)
     else
       Raxol.Core.Runtime.Log.warning_with_context(
         "ColorSystem: Theme with ID #{theme_id} not found. Falling back.",
@@ -206,7 +195,7 @@ defmodule Raxol.Core.ColorSystem do
   """
   @spec get_as(atom(), atom(), atom()) :: any() | nil
   def get_as(theme_id, color_name, format \\ :term)
-      when atom?(theme_id) and atom?(color_name) and atom?(format) do
+      when is_atom(theme_id) and is_atom(color_name) and is_atom(format) do
     # Pass theme_id to get/2
     color_value = get(theme_id, color_name)
 
@@ -264,7 +253,7 @@ defmodule Raxol.Core.ColorSystem do
 
     if theme do
       # Store current theme in process dictionary for compatibility
-      Process.put(:color_system_current_theme, theme_id)
+      Raxol.Style.Colors.System.Server.set_current_theme(theme_id)
       :ok
     else
       Raxol.Core.Runtime.Log.warning_with_context(
@@ -272,7 +261,7 @@ defmodule Raxol.Core.ColorSystem do
         %{}
       )
 
-      Process.put(:color_system_current_theme, :default)
+      Raxol.Style.Colors.System.Server.set_current_theme(:default)
       :ok
     end
   end
@@ -291,7 +280,7 @@ defmodule Raxol.Core.ColorSystem do
       {:ok, %{name: "default", colors: %{...}}}
   """
   def get_current_theme do
-    theme_id = Process.get(:color_system_current_theme, :default)
+    theme_id = Raxol.Style.Colors.System.Server.get_current_theme(:default)
     theme = Theme.get(theme_id)
 
     if theme do
@@ -318,7 +307,7 @@ defmodule Raxol.Core.ColorSystem do
       iex> ColorSystem.set_theme(:dark)
       :ok
   """
-  def set_theme(theme_id) when atom?(theme_id) do
+  def set_theme(theme_id) when is_atom(theme_id) do
     Raxol.Core.Runtime.Log.debug(
       "Setting color system theme to: #{inspect(theme_id)}"
     )
@@ -326,7 +315,7 @@ defmodule Raxol.Core.ColorSystem do
     theme = Theme.get(theme_id)
 
     if theme do
-      Process.put(:color_system_current_theme, theme_id)
+      Raxol.Style.Colors.System.Server.set_current_theme(theme_id)
       :ok
     else
       {:error, :theme_not_found}
@@ -359,6 +348,21 @@ defmodule Raxol.Core.ColorSystem do
   end
 
   defp safe_map_get(data, key, default \\ nil) do
-    if map?(data), do: Map.get(data, key, default), else: default
+    if is_map(data), do: Map.get(data, key, default), else: default
+  end
+  
+  defp lookup_color_in_palettes(color_name, variant_palette, base_palette) do
+    case {variant_palette && Map.has_key?(variant_palette, color_name), 
+          Map.has_key?(base_palette, color_name)} do
+      {true, _} ->
+        safe_map_get(variant_palette, color_name)
+      
+      {false, true} ->
+        safe_map_get(base_palette, color_name)
+      
+      _ ->
+        # Color not found in either palette
+        nil
+    end
   end
 end

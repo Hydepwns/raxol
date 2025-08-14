@@ -1,7 +1,6 @@
 defmodule Raxol.UI.Components.Terminal.EmulatorTest do
   use ExUnit.Case
-  import Raxol.Guards
-
+  
   setup_all do
     start_supervised!({Raxol.Terminal.Window.UnifiedWindow, %{}})
     start_supervised!({Raxol.Terminal.IO.UnifiedIO, %{}})
@@ -70,7 +69,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     assert match_success, "Expected a 2-tuple, but got: #{inspect(result)}"
 
     # Also check tuple size if it is a tuple
-    if tuple?(result) do
+    if is_tuple(result) do
     else
     end
   end
@@ -80,7 +79,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     assert Map.has_key?(initial_state, :state)
 
     # For now, just verify the structure is correct
-    assert map?(initial_state.state)
+    assert is_map(initial_state.state)
   end
 
   test ~c"processes basic input", %{initial_state: initial_state} do
@@ -89,7 +88,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
       EmulatorComponent.process_input("Hello", initial_state)
 
     # Verify the structure
-    assert map?(updated_state)
+    assert is_map(updated_state)
     assert Map.has_key?(updated_state, :state)
   end
 
@@ -97,17 +96,17 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     # Test SGR sequences (e.g., color changes)
     # Input: ESC [ 31 m (set text color to red)
     {state1, _} = EmulatorComponent.process_input("\e[31m", initial_state)
-    assert map?(state1)
+    assert is_map(state1)
     assert Map.has_key?(state1, :state)
 
     # Process text with red style active
     {state2, _} = EmulatorComponent.process_input("Red", state1)
-    assert map?(state2)
+    assert is_map(state2)
     assert Map.has_key?(state2, :state)
 
     # Process reset code
     {state3, _} = EmulatorComponent.process_input("\e[0m", state2)
-    assert map?(state3)
+    assert is_map(state3)
     assert Map.has_key?(state3, :state)
   end
 
@@ -117,7 +116,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     {new_state, output} = result
 
     # For debugging, let's just check the structure if it's a tuple
-    if tuple?(result) do
+    if is_tuple(result) do
     end
 
     # Re-add a simple assertion to ensure the test runs and we see output
@@ -132,7 +131,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     state = EmulatorComponent.handle_resize({40, 12}, state)
 
     # Verify the structure
-    assert map?(state)
+    assert is_map(state)
     assert Map.has_key?(state, :state)
   end
 
@@ -145,7 +144,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     {state, _output} = EmulatorComponent.process_input(long_line, initial_state)
 
     # Verify the structure
-    assert map?(state)
+    assert is_map(state)
     assert Map.has_key?(state, :state)
   end
 
@@ -155,7 +154,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
       EmulatorComponent.process_input("\e[1;31mBold Red\e[0m", initial_state)
 
     # Verify the structure
-    assert map?(state)
+    assert is_map(state)
     assert Map.has_key?(state, :state)
   end
 
@@ -164,7 +163,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     {state, _} = EmulatorComponent.process_input("\e[5;20r", initial_state)
 
     # Verify the structure
-    assert map?(state)
+    assert is_map(state)
     assert Map.has_key?(state, :state)
   end
 
@@ -177,7 +176,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     state = EmulatorComponent.handle_resize({40, 12}, state)
 
     # Verify the structure
-    assert map?(state)
+    assert is_map(state)
     assert Map.has_key?(state, :state)
   end
 
@@ -188,7 +187,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     {state, _} = EmulatorComponent.process_input("\e[4h", initial_state)
 
     # Verify the structure
-    assert map?(state)
+    assert is_map(state)
     assert Map.has_key?(state, :state)
 
     # Normal mode (resetting insert mode)
@@ -197,7 +196,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     {state, _} = EmulatorComponent.process_input("\e[4l", state)
 
     # Verify the structure
-    assert map?(state)
+    assert is_map(state)
     assert Map.has_key?(state, :state)
   end
 
@@ -206,7 +205,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     {state, _} = EmulatorComponent.process_input("Hello", initial_state)
 
     # Verify the structure
-    assert map?(state)
+    assert is_map(state)
     assert Map.has_key?(state, :state)
   end
 
@@ -220,7 +219,7 @@ defmodule Raxol.UI.Components.Terminal.EmulatorTest do
     {state, _} = result
 
     # Verify the structure
-    assert map?(state)
+    assert is_map(state)
     assert Map.has_key?(state, :state)
   end
 end

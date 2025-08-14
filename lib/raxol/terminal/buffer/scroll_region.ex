@@ -52,26 +52,17 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   """
   @spec set_region(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           ScreenBuffer.t()
-  def set_region(buffer, top, bottom) do
-    # Check for invalid regions
-    cond do
-      # Negative values
-      top < 0 or bottom < 0 ->
-        %{buffer | scroll_region: nil, scroll_position: 0}
-
-      # Top > bottom
-      top > bottom ->
-        %{buffer | scroll_region: nil, scroll_position: 0}
-
-      # Bottom >= height (out of bounds)
-      bottom >= buffer.height ->
-        %{buffer | scroll_region: nil, scroll_position: 0}
-
-      # Valid region
-      true ->
-        %{buffer | scroll_region: {top, bottom}, scroll_position: top}
-    end
-  end
+  def set_region(buffer, top, bottom) when top < 0 or bottom < 0,
+    do: %{buffer | scroll_region: nil, scroll_position: 0}
+  
+  def set_region(buffer, top, bottom) when top > bottom,
+    do: %{buffer | scroll_region: nil, scroll_position: 0}
+  
+  def set_region(buffer, top, bottom) when bottom >= buffer.height,
+    do: %{buffer | scroll_region: nil, scroll_position: 0}
+  
+  def set_region(buffer, top, bottom),
+    do: %{buffer | scroll_region: {top, bottom}, scroll_position: top}
 
   @doc """
   Clears the scroll region, resetting to full screen.
@@ -459,33 +450,58 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
          scroll_end,
          lines,
          empty_line
-       ) do
-    cond do
-      idx <= scroll_end - lines ->
-        get_moved_line(cells, idx, lines, :up, empty_line)
-
-      idx <= scroll_end ->
-        empty_line
-
-      true ->
-        Enum.at(cells, idx, empty_line)
-    end
-  end
+       ) when idx <= scroll_end - lines,
+       do: get_moved_line(cells, idx, lines, :up, empty_line)
+       
+  defp transform_line_for_up_scroll(
+         idx,
+         _cells,
+         _scroll_start,
+         scroll_end,
+         _lines,
+         empty_line
+       ) when idx <= scroll_end,
+       do: empty_line
+       
+  defp transform_line_for_up_scroll(
+         idx,
+         cells,
+         _scroll_start,
+         _scroll_end,
+         _lines,
+         empty_line
+       ),
+       do: Enum.at(cells, idx, empty_line)
 
   defp transform_line_for_down_scroll(
          idx,
-         cells,
+         _cells,
          scroll_start,
+         _scroll_end,
+         lines,
+         empty_line
+       ) when idx < scroll_start + lines,
+       do: empty_line
+       
+  defp transform_line_for_down_scroll(
+         idx,
+         cells,
+         _scroll_start,
          scroll_end,
          lines,
          empty_line
-       ) do
-    cond do
-      idx < scroll_start + lines -> empty_line
-      idx <= scroll_end -> get_moved_line(cells, idx, lines, :down, empty_line)
-      true -> Enum.at(cells, idx, empty_line)
-    end
-  end
+       ) when idx <= scroll_end,
+       do: get_moved_line(cells, idx, lines, :down, empty_line)
+       
+  defp transform_line_for_down_scroll(
+         idx,
+         cells,
+         _scroll_start,
+         _scroll_end,
+         _lines,
+         empty_line
+       ),
+       do: Enum.at(cells, idx, empty_line)
 
   defp get_moved_line(cells, idx, lines, direction, empty_line) do
     case direction do

@@ -61,13 +61,15 @@ defmodule Raxol.TestAnalyzer do
 
   def categorize_failures(failures) do
     failures
-    |> Enum.group_by(fn failure ->
-      cond do
-        String.contains?(failure, "timeout") -> :timeout
-        String.contains?(failure, "assertion") -> :assertion
-        String.contains?(failure, "exception") -> :exception
-        true -> :other
-      end
-    end)
+    |> Enum.group_by(&categorize_failure/1)
+  end
+
+  defp categorize_failure(failure) do
+    cond do
+      String.contains?(failure, "timeout") -> :timeout
+      String.contains?(failure, "assertion") -> :assertion
+      String.contains?(failure, "exception") -> :exception
+      true -> :other
+    end
   end
 end

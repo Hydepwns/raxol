@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles OSC 4 (Color Palette Set/Query) commands.
 
@@ -244,7 +243,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
 
   # Helper for safe palette access
   defp get_palette_color(palette, index)
-       when integer?(index) and index >= 0 and index <= 255 do
+       when is_integer(index) and index >= 0 and index <= 255 do
     case Map.get(palette, index) do
       nil -> {:error, :invalid_color_index}
       color -> {:ok, color}

@@ -203,17 +203,16 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
             has_permission: has_permission
           })
 
-        cond do
-          not user_context.authenticated ->
-            login_component.(enhanced_props)
-
-          required_permissions != [] and
-              not Enum.all?(required_permissions, has_permission) ->
-            unauthorized_component.(enhanced_props)
-
-          true ->
-            component_module.render(enhanced_props, context)
-        end
+        render_based_on_auth_state(
+          user_context,
+          required_permissions,
+          has_permission,
+          component_module,
+          enhanced_props,
+          context,
+          login_component,
+          unauthorized_component
+        )
       end
     end
   end
@@ -267,16 +266,15 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
             refetch: refetch
           })
 
-        cond do
-          loading ->
-            loading_component.(enhanced_props)
-
-          error ->
-            error_component.(enhanced_props)
-
-          true ->
-            component_module.render(enhanced_props, context)
-        end
+        render_based_on_data_state(
+          loading,
+          error,
+          component_module,
+          enhanced_props,
+          context,
+          loading_component,
+          error_component
+        )
       end
     end
   end
@@ -655,5 +653,112 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
   defp default_analytics_provider(event_name, event_data) do
     require Logger
     Logger.info("Analytics: #{event_name} - #{inspect(event_data)}")
+  end
+
+  defp render_based_on_auth_state(
+         user_context,
+         required_permissions,
+         has_permission,
+         component_module,
+         enhanced_props,
+         context,
+         login_component,
+         unauthorized_component
+       )
+
+  defp render_based_on_auth_state(
+         %{authenticated: false},
+         _required_permissions,
+         _has_permission,
+         _component_module,
+         enhanced_props,
+         _context,
+         login_component,
+         _unauthorized_component
+       ) do
+    login_component.(enhanced_props)
+  end
+
+  defp render_based_on_auth_state(
+         %{authenticated: true},
+         required_permissions,
+         has_permission,
+         _component_module,
+         enhanced_props,
+         _context,
+         _login_component,
+         unauthorized_component
+       )
+       when required_permissions != [] and
+              not is_function(has_permission) do
+    unauthorized_component.(enhanced_props)
+  end
+
+  defp render_based_on_auth_state(
+         %{authenticated: true},
+         required_permissions,
+         has_permission,
+         component_module,
+         enhanced_props,
+         context,
+         _login_component,
+         unauthorized_component
+       )
+       when required_permissions != [] do
+    if Enum.all?(required_permissions, has_permission) do
+      component_module.render(enhanced_props, context)
+    else
+      unauthorized_component.(enhanced_props)
+    end
+  end
+
+  defp render_based_on_auth_state(
+         %{authenticated: true},
+         _required_permissions,
+         _has_permission,
+         component_module,
+         enhanced_props,
+         context,
+         _login_component,
+         _unauthorized_component
+       ) do
+    component_module.render(enhanced_props, context)
+  end
+
+  defp render_based_on_data_state(
+         true,
+         _error,
+         _component_module,
+         enhanced_props,
+         _context,
+         loading_component,
+         _error_component
+       ) do
+    loading_component.(enhanced_props)
+  end
+
+  defp render_based_on_data_state(
+         false,
+         error,
+         _component_module,
+         enhanced_props,
+         _context,
+         _loading_component,
+         error_component
+       )
+       when not is_nil(error) do
+    error_component.(enhanced_props)
+  end
+
+  defp render_based_on_data_state(
+         false,
+         _error,
+         component_module,
+         enhanced_props,
+         context,
+         _loading_component,
+         _error_component
+       ) do
+    component_module.render(enhanced_props, context)
   end
 end

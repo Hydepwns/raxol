@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Runtime.Subscription do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Provides a way to subscribe to recurring updates and external events.
 
@@ -57,7 +56,7 @@ defmodule Raxol.Core.Runtime.Subscription do
   def interval(interval_ms, msg, opts \\ [])
 
   def interval(interval_ms, msg, opts)
-      when integer?(interval_ms) and interval_ms > 0 do
+      when is_integer(interval_ms) and interval_ms > 0 do
     data = %{
       interval: interval_ms,
       message: msg,
@@ -83,7 +82,7 @@ defmodule Raxol.Core.Runtime.Subscription do
     * `:focus_change` - Terminal focus change
     * `:component` - Component-specific events
   """
-  def events(event_types) when list?(event_types) do
+  def events(event_types) when is_list(event_types) do
     new(:events, event_types)
   end
 
@@ -105,7 +104,7 @@ defmodule Raxol.Core.Runtime.Subscription do
   """
   def file_watch(path, event_types \\ [:modify])
 
-  def file_watch(path, event_types) when list?(event_types) do
+  def file_watch(path, event_types) when is_list(event_types) do
     data = %{
       path: path,
       events: event_types
@@ -121,18 +120,17 @@ defmodule Raxol.Core.Runtime.Subscription do
   The event source should implement the `Raxol.Core.Runtime.EventSource`
   behaviour.
   """
+  def custom(source_module, init_args) when not is_atom(source_module) do
+    {:error, :invalid_module}
+  end
+
+  def custom(_source_module, init_args) when not is_map(init_args) do
+    {:error, :invalid_args}
+  end
+
   def custom(source_module, init_args) do
-    cond do
-      not is_atom(source_module) ->
-        {:error, :invalid_module}
-
-      not is_map(init_args) ->
-        {:error, :invalid_args}
-
-      true ->
-        data = %{module: source_module, args: init_args}
-        new(:custom, data)
-    end
+    data = %{module: source_module, args: init_args}
+    new(:custom, data)
   end
 
   @doc """

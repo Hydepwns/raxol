@@ -15,8 +15,7 @@ defmodule RaxolWeb.TerminalLive do
   alias RaxolWeb.Presence
   alias Phoenix.PubSub
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-  import Raxol.Guards
-
+  
   @impl Phoenix.LiveView
   def mount(_params, session, socket) do
     # In test environment, always use connected mode to ensure assigns are available
@@ -190,7 +189,7 @@ defmodule RaxolWeb.TerminalLive do
 
   def handle_event("scroll", %{"offset" => offset}, socket) do
     offset =
-      if integer?(offset), do: offset, else: String.to_integer("#{offset}")
+      if is_integer(offset), do: offset, else: String.to_integer("#{offset}")
 
     emulator = socket.assigns.emulator
     scrollback_size = length(emulator.scrollback_buffer || [])
@@ -238,7 +237,7 @@ defmodule RaxolWeb.TerminalLive do
   end
 
   def handle_event("set_scrollback_limit", %{"limit" => limit}, socket) do
-    limit = if integer?(limit), do: limit, else: String.to_integer("#{limit}")
+    limit = if is_integer(limit), do: limit, else: String.to_integer("#{limit}")
     emulator = %{socket.assigns.emulator | scrollback_limit: limit}
     {:noreply, assign(socket, emulator: emulator, scrollback_limit: limit)}
   end

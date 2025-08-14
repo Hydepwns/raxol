@@ -36,14 +36,14 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
       quote do
         cache_key = {unquote(name), unquote(opts[:key])}
 
-        case Process.get(cache_key) do
+        case Raxol.UI.State.Management.Server.get_cache(cache_key) do
           {result, _timestamp} ->
             result
 
           _ ->
             result = unquote(block)
 
-            Process.put(
+            Raxol.UI.State.Management.Server.set_cache(
               cache_key,
               {result, System.monotonic_time(:millisecond)}
             )
@@ -57,13 +57,13 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
         ttl = unquote(opts[:ttl])
         current_time = System.monotonic_time(:millisecond)
 
-        case Process.get(cache_key) do
+        case Raxol.UI.State.Management.Server.get_cache(cache_key) do
           {result, timestamp} when current_time - timestamp < ttl ->
             result
 
           _ ->
             result = unquote(block)
-            Process.put(cache_key, {result, current_time})
+            Raxol.UI.State.Management.Server.set_cache(cache_key, {result, current_time})
             result
         end
       end

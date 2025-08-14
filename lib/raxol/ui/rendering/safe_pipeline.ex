@@ -443,13 +443,20 @@ defmodule Raxol.UI.Rendering.SafePipeline do
     end
   end
 
-  defp validate_animation(animation) do
-    cond do
-      not is_map(animation) -> {:error, :invalid_format}
-      not Map.has_key?(animation, :duration) -> {:error, :missing_duration}
-      animation.duration <= 0 -> {:error, :invalid_duration}
-      true -> :ok
-    end
+  defp validate_animation(animation) when not is_map(animation) do
+    {:error, :invalid_format}
+  end
+
+  defp validate_animation(animation) when not is_map_key(animation, :duration) do
+    {:error, :missing_duration}
+  end
+
+  defp validate_animation(%{duration: duration}) when duration <= 0 do
+    {:error, :invalid_duration}
+  end
+
+  defp validate_animation(_animation) do
+    :ok
   end
 
   defp create_fallback_renderer do

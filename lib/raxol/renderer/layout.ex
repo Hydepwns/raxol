@@ -1,6 +1,5 @@
 defmodule Raxol.Renderer.Layout do
-  import Raxol.Guards
-  import Kernel, except: [to_string: 1]
+    import Kernel, except: [to_string: 1]
   require Raxol.Core.Renderer.View
 
   @moduledoc """
@@ -76,16 +75,16 @@ defmodule Raxol.Renderer.Layout do
       [single_view] -> single_view
       [first_view | _rest] -> first_view
       [] -> Raxol.Renderer.Layout.Utils.create_default_view(dimensions)
-      single_map when map?(single_map) -> single_map
+      single_map when is_map(single_map) -> single_map
       _other -> Raxol.Renderer.Layout.Utils.create_default_view(dimensions)
     end
   end
 
   defp flatten_result(result) do
-    flat = List.flatten(result) |> Enum.reject(&nil?/1)
+    flat = List.flatten(result) |> Enum.reject(&is_nil/1)
 
     case flat do
-      [single_map] when map?(single_map) -> single_map
+      [single_map] when is_map(single_map) -> single_map
       _ -> flat
     end
   end
@@ -163,25 +162,10 @@ defmodule Raxol.Renderer.Layout do
     to: Raxol.Renderer.Layout.Utils
 
   # Process children functions
-  def process_children(children, space, acc) when list?(children) do
+  def process_children(children, space, acc) when is_list(children) do
     new_child_elements =
       Enum.flat_map(children, fn child_node ->
-        normalized_child =
-          cond do
-            # If it's already a properly formatted map, use it as-is
-            map?(child_node) and Map.has_key?(child_node, :type) and
-              Map.has_key?(child_node, :position) and
-                Map.has_key?(child_node, :size) ->
-              child_node
-
-            # If it's a list, process each element
-            list?(child_node) ->
-              process_children(child_node, space, [])
-
-            # Otherwise, ensure it has required keys
-            true ->
-              ensure_required_keys(child_node, space, :box)
-          end
+        normalized_child = normalize_child_node(child_node, space)
 
         # Pass empty acc, collect this child's elements
         process_element(normalized_child, space, [])
@@ -191,7 +175,7 @@ defmodule Raxol.Renderer.Layout do
     new_child_elements ++ acc
   end
 
-  def process_children(child, space, acc) when map?(child) do
+  def process_children(child, space, acc) when is_map(child) do
     normalized_child =
       if Map.has_key?(child, :type) and Map.has_key?(child, :position) and
            Map.has_key?(child, :size) do
@@ -204,4 +188,22 @@ defmodule Raxol.Renderer.Layout do
   end
 
   def process_children(_other, _space, acc), do: acc
+  
+  # Helper to normalize child nodes
+  defp normalize_child_node(child_node, space) when is_map(child_node) do
+    if Map.has_key?(child_node, :type) and Map.has_key?(child_node, :position) and
+       Map.has_key?(child_node, :size) do
+      child_node
+    else
+      ensure_required_keys(child_node, space, :box)
+    end
+  end
+  
+  defp normalize_child_node(child_node, space) when is_list(child_node) do
+    process_children(child_node, space, [])
+  end
+  
+  defp normalize_child_node(child_node, space) do
+    ensure_required_keys(child_node, space, :box)
+  end
 end

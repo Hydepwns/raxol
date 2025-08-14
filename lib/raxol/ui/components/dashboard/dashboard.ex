@@ -11,8 +11,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
   alias Raxol.View.Elements, as: UI
   # Add alias
   alias Raxol.UI.Components.Dashboard.LayoutPersistence
-  import Raxol.Guards
-
+  
   # --- Model ---
   defmodule Model do
     @moduledoc """
@@ -69,14 +68,14 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
   Returns {:ok, model} on success, or {:error, reason} on failure.
   """
   def init_from_saved_layout(default_widgets, grid_config)
-      when list?(default_widgets) and map?(grid_config) do
+      when is_list(default_widgets) and is_map(grid_config) do
     # Try to load saved widgets from file
     loaded_widgets = LayoutPersistence.load_layout()
 
     # If we have loaded widgets, use them - otherwise use defaults
     # Check if loaded_widgets is a non-empty list
     widgets =
-      if list?(loaded_widgets) && loaded_widgets != [] do
+      if is_list(loaded_widgets) && loaded_widgets != [] do
         Raxol.Core.Runtime.Log.info(
           "Initializing dashboard from saved layout with #{length(loaded_widgets)} widgets"
         )
@@ -107,7 +106,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
   Validates a list of widget configurations to ensure they can be properly rendered.
   Returns true if widgets are valid, false otherwise.
   """
-  def validate_widgets(widgets) when list?(widgets) do
+  def validate_widgets(widgets) when is_list(widgets) do
     # Check that all widgets have required fields
     Enum.all?(widgets, fn widget ->
       required_fields = [:id, :type, :title, :grid_spec]

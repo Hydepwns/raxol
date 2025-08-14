@@ -348,12 +348,7 @@ defmodule Raxol.Cloud.Integrations do
           ]
         )
 
-        status =
-          cond do
-            target > current -> :scaling_up
-            target < current -> :scaling_down
-            true -> :no_change
-          end
+        status = determine_scaling_status(target, current)
 
         {:ok,
          %{
@@ -557,4 +552,10 @@ defmodule Raxol.Cloud.Integrations do
       {_, _} -> "#{service}.#{provider}.example.com"
     end
   end
+  
+  # Helper functions for pattern matching refactoring
+
+  defp determine_scaling_status(target, current) when target > current, do: :scaling_up
+  defp determine_scaling_status(target, current) when target < current, do: :scaling_down
+  defp determine_scaling_status(_target, _current), do: :no_change
 end

@@ -5,8 +5,7 @@ defmodule Raxol.Plugins.Manager.Core do
   """
 
   require Raxol.Core.Runtime.Log
-  import Raxol.Guards
-
+  
   alias Raxol.Plugins.{
     Plugin,
     PluginConfig
@@ -66,7 +65,7 @@ defmodule Raxol.Plugins.Manager.Core do
   @doc """
   Gets a plugin by name.
   """
-  def get_plugin(%__MODULE__{} = manager, name) when binary?(name) do
+  def get_plugin(%__MODULE__{} = manager, name) when is_binary(name) do
     plugin_key = normalize_plugin_key(name)
     Map.get(manager.plugins, plugin_key)
   end
@@ -74,7 +73,7 @@ defmodule Raxol.Plugins.Manager.Core do
   @doc """
   Gets a plugin's state by name.
   """
-  def get_plugin_state(%__MODULE__{} = manager, name) when binary?(name) do
+  def get_plugin_state(%__MODULE__{} = manager, name) when is_binary(name) do
     plugin_key = normalize_plugin_key(name)
     Map.get(manager.plugin_states, plugin_key)
   end
@@ -83,7 +82,7 @@ defmodule Raxol.Plugins.Manager.Core do
   Sets a plugin's state by name.
   """
   def set_plugin_state(%__MODULE__{} = manager, name, state)
-      when binary?(name) do
+      when is_binary(name) do
     plugin_key = normalize_plugin_key(name)
 
     %{
@@ -96,7 +95,7 @@ defmodule Raxol.Plugins.Manager.Core do
   Updates a plugin's state using a function.
   """
   def update_plugin_state(%__MODULE__{} = manager, name, update_fun)
-      when binary?(name) and function?(update_fun, 1) do
+      when is_binary(name) and is_function(update_fun, 1) do
     plugin_key = normalize_plugin_key(name)
     current_state = Map.get(manager.plugin_states, plugin_key, %{})
     new_state = update_fun.(current_state)
@@ -124,7 +123,7 @@ defmodule Raxol.Plugins.Manager.Core do
   @doc """
   Updates the plugins map in the manager and keeps loaded_plugins in sync.
   """
-  def update_plugins(%__MODULE__{} = manager, plugins) when map?(plugins) do
+  def update_plugins(%__MODULE__{} = manager, plugins) when is_map(plugins) do
     %{manager | plugins: plugins, loaded_plugins: plugins}
   end
 
@@ -138,7 +137,7 @@ defmodule Raxol.Plugins.Manager.Core do
   @doc """
   Loads a plugin module and initializes it. Delegates to Raxol.Plugins.Lifecycle.load_plugin/3.
   """
-  def load_plugin(%__MODULE__{} = manager, module) when atom?(module) do
+  def load_plugin(%__MODULE__{} = manager, module) when is_atom(module) do
     Raxol.Plugins.Lifecycle.load_plugin(manager, module)
   end
 
@@ -147,7 +146,7 @@ defmodule Raxol.Plugins.Manager.Core do
   Delegates to Raxol.Plugins.Lifecycle.load_plugin/3.
   """
   def load_plugin(%__MODULE__{} = manager, module, config)
-      when atom?(module) and map?(config) do
+      when is_atom(module) and is_map(config) do
     Raxol.Plugins.Lifecycle.load_plugin(manager, module, config)
   end
 
@@ -156,7 +155,7 @@ defmodule Raxol.Plugins.Manager.Core do
   Delegates to Raxol.Plugins.Lifecycle.unload_plugin/2.
   """
   def unload_plugin(%__MODULE__{} = manager, plugin_name)
-      when binary?(plugin_name) do
+      when is_binary(plugin_name) do
     Raxol.Plugins.Lifecycle.unload_plugin(manager, plugin_name)
   end
 
@@ -165,7 +164,7 @@ defmodule Raxol.Plugins.Manager.Core do
   Delegates to Raxol.Plugins.Lifecycle.enable_plugin/2.
   """
   def enable_plugin(%__MODULE__{} = manager, plugin_name)
-      when binary?(plugin_name) do
+      when is_binary(plugin_name) do
     Raxol.Plugins.Lifecycle.enable_plugin(manager, plugin_name)
   end
 
@@ -174,7 +173,7 @@ defmodule Raxol.Plugins.Manager.Core do
   Delegates to Raxol.Plugins.Lifecycle.disable_plugin/2.
   """
   def disable_plugin(%__MODULE__{} = manager, plugin_name)
-      when binary?(plugin_name) do
+      when is_binary(plugin_name) do
     Raxol.Plugins.Lifecycle.disable_plugin(manager, plugin_name)
   end
 
@@ -182,7 +181,7 @@ defmodule Raxol.Plugins.Manager.Core do
   Loads multiple plugins in the correct dependency order.
   Delegates to Raxol.Plugins.Lifecycle.load_plugins/2.
   """
-  def load_plugins(%__MODULE__{} = manager, modules) when list?(modules) do
+  def load_plugins(%__MODULE__{} = manager, modules) when is_list(modules) do
     Raxol.Plugins.Lifecycle.load_plugins(manager, modules)
   end
 

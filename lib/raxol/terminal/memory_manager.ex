@@ -4,8 +4,7 @@ defmodule Raxol.Terminal.MemoryManager do
   """
 
   use GenServer
-  import Raxol.Guards
-
+  
   @type t :: %__MODULE__{
           max_memory: non_neg_integer(),
           current_memory: non_neg_integer(),
@@ -133,7 +132,7 @@ defmodule Raxol.Terminal.MemoryManager do
 
   defp calculate_buffer_usage(state) do
     case state do
-      %{buffer_manager: buffer_manager} when not nil?(buffer_manager) ->
+      %{buffer_manager: buffer_manager} when not is_nil(buffer_manager) ->
         case buffer_manager do
           %{memory_usage: usage} when is_integer(usage) -> usage
           _ -> 0
@@ -146,7 +145,7 @@ defmodule Raxol.Terminal.MemoryManager do
 
   defp calculate_scrollback_usage(state) do
     case state do
-      %{scroll_buffer: scroll_buffer} when not nil?(scroll_buffer) ->
+      %{scroll_buffer: scroll_buffer} when not is_nil(scroll_buffer) ->
         case scroll_buffer do
           %{memory_usage: usage} when is_integer(usage) -> usage
           _ -> 0
@@ -166,7 +165,7 @@ defmodule Raxol.Terminal.MemoryManager do
   defp cleanup_memory(state) do
     # Trim scrollback history to reduce memory usage
     case state do
-      %{scroll_buffer: scroll_buffer} when not nil?(scroll_buffer) ->
+      %{scroll_buffer: scroll_buffer} when not is_nil(scroll_buffer) ->
         # For now, just return the state as-is since we don't have the trim function
         # In a real implementation, this would trim the scroll buffer
         state

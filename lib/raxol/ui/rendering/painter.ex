@@ -3,8 +3,7 @@ defmodule Raxol.UI.Rendering.Painter do
   Handles painting of UI components to the terminal.
   """
 
-  import Raxol.Guards
-  require Raxol.Core.Runtime.Log
+    require Raxol.Core.Runtime.Log
 
   @doc """
   Paints the render tree into draw commands or buffer updates.
@@ -54,7 +53,7 @@ defmodule Raxol.UI.Rendering.Painter do
   defp do_paint_node(nil, _parent_x, _parent_y), do: []
 
   defp do_paint_node(composed_node, _parent_x_offset, _parent_y_offset)
-       when not map?(composed_node) do
+       when not is_map(composed_node) do
     Raxol.Core.Runtime.Log.warning(
       "Paint Stage: Encountered non-map node, expected composed map structure: #{inspect(composed_node)}"
     )
@@ -135,9 +134,9 @@ defmodule Raxol.UI.Rendering.Painter do
   end
 
   defp get_primitive_type(value) do
-    if binary?(value),
+    if is_binary(value),
       do: :text,
-      else: if(number?(value), do: :number, else: :unknown)
+      else: if(is_number(value), do: :number, else: :unknown)
   end
 
   defp paint_children(composed_node, parent_x_offset, parent_y_offset) do

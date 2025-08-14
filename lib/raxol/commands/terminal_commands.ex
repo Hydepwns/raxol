@@ -151,18 +151,15 @@ defmodule Raxol.Commands.UpdateTerminalCommand do
     end
   end
 
-  defp validate_dimensions_if_present(command) do
-    cond do
-      command.width && not (command.width >= 20 && command.width <= 300) ->
-        {:error, {:invalid_width, command.width}}
-
-      command.height && not (command.height >= 5 && command.height <= 100) ->
-        {:error, {:invalid_height, command.height}}
-
-      true ->
-        :ok
-    end
-  end
+  defp validate_dimensions_if_present(command) 
+       when command.width != nil and (command.width < 20 or command.width > 300),
+       do: {:error, {:invalid_width, command.width}}
+       
+  defp validate_dimensions_if_present(command)
+       when command.height != nil and (command.height < 5 or command.height > 100),
+       do: {:error, {:invalid_height, command.height}}
+       
+  defp validate_dimensions_if_present(_command), do: :ok
 end
 
 defmodule Raxol.Commands.SendInputCommand do
@@ -223,18 +220,13 @@ defmodule Raxol.Commands.SendInputCommand do
     validate_inclusion(command.input_type, valid_types)
   end
 
-  defp validate_input_data(command) do
-    cond do
-      is_nil(command.input_data) ->
-        {:error, :input_data_required}
-
-      byte_size(command.input_data) > 10_000 ->
-        {:error, :input_data_too_large}
-
-      true ->
-        :ok
-    end
-  end
+  defp validate_input_data(%{input_data: nil}),
+    do: {:error, :input_data_required}
+    
+  defp validate_input_data(command) when byte_size(command.input_data) > 10_000,
+    do: {:error, :input_data_too_large}
+    
+  defp validate_input_data(_command), do: :ok
 end
 
 defmodule Raxol.Commands.CloseTerminalCommand do

@@ -4,8 +4,7 @@ defmodule Raxol.Terminal.ANSI.SGRHandler do
   Translates SGR codes into updates on a TextFormatting style map.
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.Terminal.ANSI.TextFormatting
 
   @text_style_map %{
@@ -66,30 +65,30 @@ defmodule Raxol.Terminal.ANSI.SGRHandler do
   defp do_apply_sgr_params([], style), do: style
 
   defp do_apply_sgr_params([38, 5, index | rest], style)
-       when integer?(index) do
+       when is_integer(index) do
     new_style = TextFormatting.apply_color(style, :foreground, {:index, index})
     do_apply_sgr_params(rest, new_style)
   end
 
   defp do_apply_sgr_params([48, 5, index | rest], style)
-       when integer?(index) do
+       when is_integer(index) do
     new_style = TextFormatting.apply_color(style, :background, {:index, index})
     do_apply_sgr_params(rest, new_style)
   end
 
   defp do_apply_sgr_params([38, 2, r, g, b | rest], style)
-       when integer?(r) and integer?(g) and integer?(b) do
+       when is_integer(r) and is_integer(g) and is_integer(b) do
     new_style = TextFormatting.apply_color(style, :foreground, {:rgb, r, g, b})
     do_apply_sgr_params(rest, new_style)
   end
 
   defp do_apply_sgr_params([48, 2, r, g, b | rest], style)
-       when integer?(r) and integer?(g) and integer?(b) do
+       when is_integer(r) and is_integer(g) and is_integer(b) do
     new_style = TextFormatting.apply_color(style, :background, {:rgb, r, g, b})
     do_apply_sgr_params(rest, new_style)
   end
 
-  defp do_apply_sgr_params([param | rest], style) when integer?(param) do
+  defp do_apply_sgr_params([param | rest], style) when is_integer(param) do
     new_style = parse_single_sgr_param(param, style)
     do_apply_sgr_params(rest, new_style)
   end

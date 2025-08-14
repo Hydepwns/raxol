@@ -349,13 +349,9 @@ defmodule Raxol.Core.Renderer.Views.Table do
       value.type in [:box, :chart, :sparkline]
   end
 
-  defp to_string_value(value) do
-    cond do
-      is_binary(value) -> value
-      is_nil(value) -> ""
-      true -> to_string(value)
-    end
-  end
+  defp to_string_value(value) when is_binary(value), do: value
+  defp to_string_value(nil), do: ""
+  defp to_string_value(value), do: to_string(value)
 
   defp align_text(value_str, col) do
     case Map.get(col, :align, :left) do

@@ -19,6 +19,14 @@ Complete guide to troubleshooting issues in Raxol, including common errors, solu
 - [Nix Environment](#nix-environment) - Nix-specific issues
 - [Debugging](#debugging) - Debugging techniques
 
+## Quick Fixes
+
+### Compilation Fails with Make Error
+```bash
+export TMPDIR=/tmp  # Fix for nix-shell TMPDIR issues
+mix deps.compile
+```
+
 ## Common Errors
 
 ### 1. Mox.UnexpectedCallError
@@ -267,23 +275,42 @@ nix-shell  # This will reinitialize the database
 
 **Problem**: `termbox2_nif` or other native dependencies fail to compile.
 
+**Common Error Messages**:
+```
+** (Mix.Error) Could not compile with "make" (exit status: 2).
+You need to have gcc and make installed.
+```
+
+```
+mktemp: failed to create file via template '/private/tmp/nix-shell-XXXXX/cc-params.XXXXXX': No such file or directory
+```
+
 **Solution**:
 
 ```bash
+# IMPORTANT: Set TMPDIR for nix-shell environments
+export TMPDIR=/tmp
+
 # Clean all dependencies
 mix deps.clean --all
 
 # Reinstall dependencies
 mix deps.get
 
-# Recompile with verbose output
-mix deps.compile --verbose
+# Recompile with TMPDIR set
+export TMPDIR=/tmp && mix deps.compile
+
+# For persistent fix, add to your shell config:
+echo 'export TMPDIR=/tmp' >> ~/.zshrc  # or ~/.bashrc
 
 # Check environment variables
 echo $ERL_EI_INCLUDE_DIR
 echo $ERL_EI_LIBDIR
 echo $ERLANG_PATH
+echo $TMPDIR
 ```
+
+**Note**: The TMPDIR issue occurs in nix-shell environments where the default temporary directory doesn't exist. Setting `TMPDIR=/tmp` resolves this.
 
 ## Debugging
 

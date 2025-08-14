@@ -1,7 +1,6 @@
 # Errors implementation for monitoring
 defmodule Raxol.Cloud.Monitoring.Errors do
-  import Raxol.Guards
-
+  
   @moduledoc false
 
   # Process dictionary key for errors
@@ -13,12 +12,12 @@ defmodule Raxol.Cloud.Monitoring.Errors do
       config: config
     }
 
-    Process.put(@errors_key, errors_state)
+    Raxol.Cloud.Monitoring.Server.init_errors(errors_state)
     :ok
   end
 
   def record(error, opts \\ []) do
-    opts = if map?(opts), do: Enum.into(opts, []), else: opts
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     errors_state = get_errors_state()
 
     # Create error entry
@@ -37,7 +36,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
     updated_errors = [error_entry | errors_state.errors] |> Enum.take(1000)
 
     # Update errors state
-    Process.put(@errors_key, %{errors_state | errors: updated_errors})
+    Raxol.Cloud.Monitoring.Server.update_errors(%{errors_state | errors: updated_errors})
 
     # Send to backends
     send_error_to_backends(error_entry, errors_state.config)
@@ -46,7 +45,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
   end
 
   def get(opts \\ []) do
-    opts = if map?(opts), do: Enum.into(opts, []), else: opts
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     errors_state = get_errors_state()
 
     limit = Keyword.get(opts, :limit, 100)
@@ -80,24 +79,22 @@ defmodule Raxol.Cloud.Monitoring.Errors do
   # Private helpers
 
   defp get_errors_state() do
-    Process.get(@errors_key) || %{errors: [], config: %{}}
+    Raxol.Cloud.Monitoring.Server.get_errors() || %{errors: [], config: %{}}
   end
 
-  defp get_error_message(error) do
-    cond do
-      Kernel.is_exception(error) && Map.has_key?(error, :message) ->
-        error.message
+  # Helper functions for pattern matching refactoring
+  
+  defp get_error_message(error) when Kernel.is_exception(error) and is_map_key(error, :message),
+    do: error.message
 
-      binary?(error) ->
-        error
+  defp get_error_message(error) when is_binary(error),
+    do: error
 
-      true ->
-        inspect(error)
-    end
-  end
+  defp get_error_message(error),
+    do: inspect(error)
 
   defp get_stacktrace(opts) do
-    opts = if map?(opts), do: Enum.into(opts, []), else: opts
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
 
     Keyword.get(
       opts,

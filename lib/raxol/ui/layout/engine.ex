@@ -8,8 +8,7 @@ defmodule Raxol.UI.Layout.Engine do
   * Managing the layout pipeline
   """
 
-  import Raxol.Guards
-  require Raxol.Core.Runtime.Log
+    require Raxol.Core.Runtime.Log
 
   alias Raxol.UI.Layout.{
     Grid,
@@ -57,7 +56,7 @@ defmodule Raxol.UI.Layout.Engine do
 
   # Process a view element
   def process_element(%{type: :view, children: children}, space, acc)
-      when list?(children) do
+      when is_list(children) do
     # Process children with the available space
     process_children(children, space, acc)
   end
@@ -111,7 +110,7 @@ defmodule Raxol.UI.Layout.Engine do
   def process_element(%{type: type, attrs: attrs} = _element, space, acc)
       when type in [:label, :text] do
     # Convert keyword list to map if needed
-    attrs_map = if list?(attrs), do: Map.new(attrs), else: attrs
+    attrs_map = convert_attrs_to_map(attrs)
 
     # Create a text element at the given position
     text_element = %{
@@ -161,7 +160,7 @@ defmodule Raxol.UI.Layout.Engine do
     # Create a text input element composed of box and text
     value = Map.get(attrs, :value, "")
     placeholder = Map.get(attrs, :placeholder, "")
-    display_text = if value == "", do: placeholder, else: value
+    display_text = get_display_text(value, placeholder)
 
     # Add component_type, potentially pass placeholder/value info if Renderer needs it
     component_attrs = Map.put(attrs, :component_type, :text_input)
@@ -196,7 +195,7 @@ defmodule Raxol.UI.Layout.Engine do
     label = Map.get(attrs, :label, "")
     component_attrs = Map.put(attrs, :component_type, :checkbox)
 
-    checkbox_text = if checked, do: "[✓]", else: "[ ]"
+    checkbox_text = get_checkbox_text(checked)
 
     checkbox_elements = [
       # Checkbox text (box + label)
@@ -238,7 +237,7 @@ defmodule Raxol.UI.Layout.Engine do
   end
 
   # Process children of a container element (Helper)
-  defp process_children(children, space, acc) when list?(children) do
+  defp process_children(children, space, acc) when is_list(children) do
     # Process each child with proper delegation to container-specific modules
     Enum.reduce(children, acc, fn child, current_acc ->
       case child do
@@ -301,9 +300,9 @@ defmodule Raxol.UI.Layout.Engine do
 
   # Handles valid elements (maps with :type and :attrs)
   def measure_element(%{type: type, attrs: attrs} = element, available_space)
-      when atom?(type) do
+      when is_atom(type) do
     # Convert keyword list to map if needed
-    attrs_map = if list?(attrs), do: Map.new(attrs), else: attrs
+    attrs_map = convert_attrs_to_map(attrs)
     measure_element_by_type(type, element, attrs_map, available_space)
   end
 
@@ -387,6 +386,17 @@ defmodule Raxol.UI.Layout.Engine do
 
     %{width: 0, height: 0}
   end
+
+  # --- Helper Functions ---
+
+  defp convert_attrs_to_map(attrs) when is_list(attrs), do: Map.new(attrs)
+  defp convert_attrs_to_map(attrs), do: attrs
+
+  defp get_display_text("", placeholder), do: placeholder
+  defp get_display_text(value, _placeholder), do: value
+
+  defp get_checkbox_text(true), do: "[✓]"
+  defp get_checkbox_text(false), do: "[ ]"
 
   # --- End Measurement Logic ---
 end

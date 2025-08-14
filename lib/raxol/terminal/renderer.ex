@@ -170,17 +170,16 @@ defmodule Raxol.Terminal.Renderer do
     |> build_style_string()
   end
 
-  defp normalize_style(style) do
-    cond do
-      is_map(style) and Map.has_key?(style, :__struct__) ->
-        Map.from_struct(style)
+  defp normalize_style(%{__struct__: _} = style) do
+    Map.from_struct(style)
+  end
 
-      is_map(style) ->
-        style
+  defp normalize_style(style) when is_map(style) do
+    style
+  end
 
-      true ->
-        %{}
-    end
+  defp normalize_style(_style) do
+    %{}
   end
 
   defp add_background_color(attrs, style_map, theme) do

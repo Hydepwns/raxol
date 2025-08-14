@@ -20,8 +20,7 @@ defmodule Raxol.Terminal.ModeManager do
 
   alias Raxol.Terminal.Modes.Types.ModeTypes
   alias Raxol.Terminal.ModeManager.{SavedState}
-  import Raxol.Guards
-
+  
   @type mode :: atom()
 
   defstruct cursor_visible: true,
@@ -49,7 +48,7 @@ defmodule Raxol.Terminal.ModeManager do
   Looks up a DEC private mode code and returns the corresponding mode atom.
   """
   @spec lookup_private(integer()) :: mode() | nil
-  def lookup_private(code) when integer?(code) do
+  def lookup_private(code) when is_integer(code) do
     case ModeTypes.lookup_private(code) do
       nil -> nil
       mode_def -> mode_def.name
@@ -60,7 +59,7 @@ defmodule Raxol.Terminal.ModeManager do
   Looks up a standard mode code and returns the corresponding mode atom.
   """
   @spec lookup_standard(integer()) :: mode() | nil
-  def lookup_standard(code) when integer?(code) do
+  def lookup_standard(code) when is_integer(code) do
     case ModeTypes.lookup_standard(code) do
       nil -> nil
       mode_def -> mode_def.name
@@ -75,7 +74,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec set_mode(Emulator.t(), [mode()], atom() | nil) ::
           {:ok, Emulator.t()} | {:error, term()}
-  def set_mode(emulator, modes, category \\ nil) when list?(modes) do
+  def set_mode(emulator, modes, category \\ nil) when is_list(modes) do
     require Logger
 
     Logger.debug(
@@ -129,7 +128,7 @@ defmodule Raxol.Terminal.ModeManager do
   """
   @spec reset_mode(Emulator.t(), [mode()], atom() | nil) ::
           {:ok, Emulator.t()} | {:error, term()}
-  def reset_mode(emulator, modes, category \\ nil) when list?(modes) do
+  def reset_mode(emulator, modes, category \\ nil) when is_list(modes) do
     Enum.reduce_while(modes, {:ok, emulator}, fn mode, {:ok, emu} ->
       case do_reset_mode(mode, emu, category) do
         {:ok, new_emu} -> {:cont, {:ok, new_emu}}

@@ -9,8 +9,7 @@ defmodule Raxol.Renderer.Layout.Elements do
   - Border and box elements
   """
 
-  import Raxol.Guards
-
+  
   # Default styles
   @default_style %{fg: :white, bg: :black}
   @default_button_style %{fg: :white, bg: :blue}
@@ -31,7 +30,7 @@ defmodule Raxol.Renderer.Layout.Elements do
   A list of processed child elements.
   """
   def process_view_element(%{children: children}, space, acc)
-      when list?(children) do
+      when is_list(children) do
     Raxol.Renderer.Layout.process_children(children, space, acc)
   end
 
@@ -53,7 +52,7 @@ defmodule Raxol.Renderer.Layout.Elements do
   A list of processed panel elements.
   """
   def process_panel_element(%{attrs: attrs, children: children}, space, acc)
-      when list?(children) do
+      when is_list(children) do
     panel_space = Raxol.Renderer.Layout.apply_panel_layout(space, attrs)
     panel_elements = Raxol.Renderer.Layout.create_panel_elements(space, attrs)
 
@@ -257,7 +256,7 @@ defmodule Raxol.Renderer.Layout.Elements do
         space,
         acc
       )
-      when list?(children) do
+      when is_list(children) do
     offset = Map.get(opts, :offset, {1, 1})
     {_offset_x, _offset_y} = offset
 
@@ -316,7 +315,7 @@ defmodule Raxol.Renderer.Layout.Elements do
       border: border
     }
 
-    if list?(children) and children != [] do
+    if is_list(children) and children != [] do
       inner_space = %{
         x: space.x,
         y: space.y,

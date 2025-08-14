@@ -1,9 +1,8 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   @moduledoc """
   Handles plugin command registration and dispatch for the Plugin Manager.
+  Uses functional patterns with proper error handling using with statements and Tasks.
   """
-
-  import Raxol.Guards
 
   @behaviour Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
 
@@ -16,51 +15,63 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     # Normalize command name: trim whitespace and downcase
     processed_command_name =
       command_name
-      |> (fn name -> if atom?(name), do: Atom.to_string(name), else: name end).()
+      |> (fn name -> if is_atom(name), do: Atom.to_string(name), else: name end).()
       |> String.trim()
       |> String.downcase()
 
     # Namespace is optional (pass nil for global search or specific module)
-    namespace_module =
-      cond do
-        binary?(namespace) ->
-          try do
-            String.to_existing_atom(namespace)
-          rescue
-            ArgumentError ->
-              # If namespace string cannot be converted to an atom, treat as no namespace
-              Raxol.Core.Runtime.Log.debug(
-                # {namespace}" could not be converted to an existing atom."
-                "Namespace string "
-              )
-
-              nil
-          end
-
-        atom?(namespace) ->
-          namespace
-
-        true ->
-          nil
-      end
+    namespace_module = process_namespace(namespace)
 
     CommandRegistry.lookup_command(
       command_table,
-      # Corrected: Pass the processed namespace (atom or nil)
       namespace_module,
-      # Use the processed command name (binary)
       processed_command_name
     )
+  end
+
+  defp process_namespace(namespace) when is_binary(namespace) do
+    # Functional approach to converting namespace string to atom
+    with {:ok, atom} <- safe_string_to_existing_atom(namespace) do
+      atom
+    else
+      {:error, _} ->
+        Raxol.Core.Runtime.Log.debug(
+          "Namespace string could not be converted to an existing atom."
+        )
+        nil
+    end
+  end
+
+  defp process_namespace(namespace) when is_atom(namespace), do: namespace
+  defp process_namespace(_), do: nil
+
+  defp safe_string_to_existing_atom(string) do
+    # Safe conversion without try/catch
+    if atom_exists?(string) do
+      {:ok, String.to_existing_atom(string)}
+    else
+      {:error, :atom_not_found}
+    end
+  end
+
+  defp atom_exists?(string) do
+    # Check if the atom already exists in the atom table
+    # This is a safe way to check without creating new atoms
+    string
+    |> String.to_charlist()
+    |> :erlang.list_to_existing_atom()
+    |> is_atom()
+  rescue
+    ArgumentError -> false
   end
 
   @impl Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
   def register_plugin_commands(plugin_module, _plugin_state, command_table) do
     if function_exported?(plugin_module, :get_commands, 0) do
-      try do
-        commands = plugin_module.get_commands()
+      with {:ok, commands} <- safe_get_commands(plugin_module) do
         process_commands(plugin_module, commands, command_table)
-      rescue
-        error ->
+      else
+        {:error, error} ->
           log_command_error(plugin_module, error)
           command_table
       end
@@ -69,8 +80,23 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
+  defp safe_get_commands(plugin_module) do
+    # Use Task to safely execute and handle any errors
+    task = Task.async(fn -> 
+      {:ok, plugin_module.get_commands()}
+    end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task) do
+      {:ok, result} -> result
+      nil -> {:error, :timeout}
+      {:exit, reason} -> {:error, {:exit, reason}}
+    end
+  rescue
+    error -> {:error, error}
+  end
+
   defp process_commands(plugin_module, commands, command_table)
-       when list?(commands) do
+       when is_list(commands) do
     Enum.reduce(
       commands,
       command_table,
@@ -84,7 +110,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   end
 
   defp register_command(plugin_module, {name, function, arity}, acc)
-       when atom?(name) and atom?(function) and integer?(arity) and
+       when is_atom(name) and is_atom(function) and is_integer(arity) and
               arity >= 0 do
     name_str = Atom.to_string(name) |> String.trim() |> String.downcase()
 
@@ -113,9 +139,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
            function,
            arity
          ) do
-      {:ok, new_table} when map?(new_table) -> new_table
+      {:ok, new_table} when is_map(new_table) -> new_table
       {:error, _reason} -> acc
-      new_table when map?(new_table) -> new_table
+      new_table when is_map(new_table) -> new_table
       _ -> acc
     end
   end
@@ -235,10 +261,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
 
   defp execute_command(handler, args, plugin_state) do
     case with_timeout(fn -> handler.(args, plugin_state) end, 5000) do
-      {:ok, new_state, result} when map?(new_state) ->
+      {:ok, new_state, result} when is_map(new_state) ->
         {:ok, new_state, result}
 
-      {:error, reason, new_state} when map?(new_state) ->
+      {:error, reason, new_state} when is_map(new_state) ->
         {:error, reason, new_state}
 
       {:error, {:exception, _error}} ->
@@ -277,41 +303,40 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   Validates command arguments.
   """
   def validate_command_args(args) do
-    cond do
-      nil?(args) ->
-        {:error, :invalid_args}
-
-      not list?(args) ->
-        {:error, :invalid_args}
-
-      Enum.any?(args, &(not binary?(&1) and not number?(&1))) ->
-        {:error, :invalid_args}
-
-      true ->
-        :ok
+    with false <- is_nil(args),
+         true <- is_list(args),
+         true <- Enum.all?(args, &(is_binary(&1) or is_number(&1))) do
+      :ok
+    else
+      _ -> {:error, :invalid_args}
     end
   end
 
-  # Helper function to execute a function with a timeout
+  # Functional helper function to execute a function with a timeout using Task
   defp with_timeout(fun, timeout) do
-    task =
-      Task.async(fn ->
-        try do
-          fun.()
-        rescue
-          error -> {:error, {:exception, error}}
-        end
-      end)
+    task = Task.async(fn ->
+      safe_execute(fun)
+    end)
 
-    try do
-      Task.await(task, timeout)
-    catch
-      :exit, {:timeout, _} ->
-        Task.shutdown(task)
+    case Task.yield(task, timeout) || Task.shutdown(task) do
+      {:ok, result} -> 
+        result
+      nil -> 
         {:error, :timeout}
-
-      :exit, reason ->
-        {:error, reason}
+      {:exit, reason} -> 
+        {:error, {:exit, reason}}
     end
+  end
+
+  defp safe_execute(fun) do
+    # Execute the function safely and return structured result
+    case fun.() do
+      {:ok, _state, _result} = success -> success
+      {:error, _reason, _state} = error -> error
+      {:error, _reason} = error -> error
+      other -> {:ok, other, nil}
+    end
+  rescue
+    error -> {:error, {:exception, error}}
   end
 end

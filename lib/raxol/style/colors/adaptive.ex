@@ -320,29 +320,26 @@ defmodule Raxol.Style.Colors.Adaptive do
 
   # Private Helpers
 
+  # Helper functions for pattern matching refactoring
+
   defp detect_color_support_impl do
-    cond do
-      # Highest priority: NO_COLOR environment variable or TERM=dumb
-      System.get_env("NO_COLOR") != nil or System.get_env("TERM") == "dumb" ->
-        :no_color
+    case {check_no_color_conditions(), System.get_env("COLORTERM")} do
+      {true, _} -> :no_color
+      {false, colorterm} when colorterm in ["truecolor", "24bit"] -> :true_color
+      {false, _} -> detect_color_support_fallback()
+    end
+  end
 
-      # Check COLORTERM explicitly first
-      System.get_env("COLORTERM") in ["truecolor", "24bit"] ->
-        :true_color
+  defp check_no_color_conditions do
+    System.get_env("NO_COLOR") != nil or System.get_env("TERM") == "dumb"
+  end
 
-      # Check other indicators
-      check_if_other_true_color_indicators() ->
-        :true_color
-
-      check_if_256_colors_supported() ->
-        :ansi_256
-
-      check_if_16_colors_supported() ->
-        :ansi_16
-
-      # Default: Assume no color support if none of the above match
-      true ->
-        :no_color
+  defp detect_color_support_fallback do
+    case {check_if_other_true_color_indicators(), check_if_256_colors_supported(), check_if_16_colors_supported()} do
+      {true, _, _} -> :true_color
+      {false, true, _} -> :ansi_256
+      {false, false, true} -> :ansi_16
+      {false, false, false} -> :no_color
     end
   end
 

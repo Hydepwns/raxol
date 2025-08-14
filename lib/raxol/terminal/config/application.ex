@@ -6,8 +6,7 @@ defmodule Raxol.Terminal.Config.Application do
   ensuring all changes are properly propagated throughout the system.
   """
 
-  import Raxol.Guards
-  alias Raxol.Terminal.Config.{Validation, Capabilities}
+    alias Raxol.Terminal.Config.{Validation, Capabilities}
 
   @doc """
   Applies a configuration to the terminal.
@@ -91,7 +90,7 @@ defmodule Raxol.Terminal.Config.Application do
       nil ->
         %{}
 
-      pid when pid?(pid) ->
+      pid when is_pid(pid) ->
         # Try to get configuration from the terminal process
         case get_config_from_terminal(pid) do
           {:ok, config_map} ->
@@ -133,21 +132,21 @@ defmodule Raxol.Terminal.Config.Application do
 
   # Apply display configuration
   defp apply_display_config(%{display: display}, terminal_pid)
-       when map?(display) or tuple?(display) do
+       when is_map(display) or is_tuple(display) do
     pid = terminal_pid || default_terminal_pid()
 
     if pid do
       # Extract relevant display settings
       settings = %{
         width:
-          if(map?(display),
+          if(is_map(display),
             do: Map.get(display, :width),
-            else: if(tuple?(display), do: elem(display, 0), else: nil)
+            else: if(is_tuple(display), do: elem(display, 0), else: nil)
           ),
         height:
-          if(map?(display),
+          if(is_map(display),
             do: Map.get(display, :height),
-            else: if(tuple?(display), do: elem(display, 1), else: nil)
+            else: if(is_tuple(display), do: elem(display, 1), else: nil)
           ),
         title: Map.get(display, :title),
         colors: Map.get(display, :colors),
@@ -167,7 +166,7 @@ defmodule Raxol.Terminal.Config.Application do
   defp apply_display_config(_, _), do: :ok
 
   # Apply input configuration
-  defp apply_input_config(%{input: input}, terminal_pid) when map?(input) do
+  defp apply_input_config(%{input: input}, terminal_pid) when is_map(input) do
     pid = terminal_pid || default_terminal_pid()
 
     if pid do
@@ -192,7 +191,7 @@ defmodule Raxol.Terminal.Config.Application do
 
   # Apply rendering configuration
   defp apply_rendering_config(%{rendering: rendering}, terminal_pid)
-       when map?(rendering) do
+       when is_map(rendering) do
     pid = terminal_pid || default_terminal_pid()
 
     if pid do
@@ -215,7 +214,7 @@ defmodule Raxol.Terminal.Config.Application do
   defp apply_rendering_config(_, _), do: :ok
 
   # Apply ANSI configuration
-  defp apply_ansi_config(%{ansi: ansi}, terminal_pid) when map?(ansi) do
+  defp apply_ansi_config(%{ansi: ansi}, terminal_pid) when is_map(ansi) do
     pid = terminal_pid || default_terminal_pid()
 
     if pid do
@@ -239,7 +238,7 @@ defmodule Raxol.Terminal.Config.Application do
 
   # Apply behavior configuration
   defp apply_behavior_config(%{behavior: behavior}, terminal_pid)
-       when map?(behavior) do
+       when is_map(behavior) do
     pid = terminal_pid || default_terminal_pid()
 
     if pid do
@@ -285,7 +284,7 @@ defmodule Raxol.Terminal.Config.Application do
   end
 
   # Deep merge two maps
-  defp deep_merge(left, right) when map?(left) and map?(right) do
+  defp deep_merge(left, right) when is_map(left) and is_map(right) do
     Map.merge(left, right)
   end
 end

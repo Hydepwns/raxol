@@ -1,207 +1,193 @@
 defmodule Raxol.Core.I18n do
-  import Raxol.Guards
-
   @moduledoc """
-  Internationalization framework for Raxol terminal UI applications.
-
-  This module provides comprehensive internationalization (i18n) support:
-  - Translation of UI text to multiple languages
-  - Right-to-left (RTL) language support
-  - Integration with accessibility features
-  - Language detection and selection
-  - Translation fallbacks
-  - Dynamic language switching
-
-  The framework works seamlessly with the accessibility module to provide
-  screen reader announcements in the user's preferred language.
-
-  ## Usage
-
-  ```elixir
-  # Initialize with default locale
-  I18n.init(default_locale: "en")
-
-  # Get a translated string
-  message = I18n.t("welcome_message")
-
-  # Get a translated string with variables
-  greeting = I18n.t("hello_name", %{name: "John"})
-
-  # Switch to a different locale
-  I18n.set_locale("fr")
-
-  # Check if the current locale is RTL
-  rtl = I18n.rtl?()
-  ```
+  Refactored internationalization module using GenServer for state management.
+  
+  This module provides the same API as the original I18n module but delegates
+  all state management to a supervised GenServer, eliminating Process dictionary usage.
+  
+  ## Migration Guide
+  
+  1. Add the I18n.Server to your supervision tree:
+  
+      children = [
+        {Raxol.Core.I18n.Server, name: Raxol.Core.I18n.Server, config: config}
+      ]
+      
+  2. Replace `Raxol.Core.I18n` with `Raxol.Core.I18n` in your code
+  
+  3. All API calls remain the same
   """
-
-  alias Cldr
-
-  # Public API
-
+  
+  alias Raxol.Core.I18n.Server
+  
+  @server Raxol.Core.I18n.Server
+  
   @doc """
   Initialize the i18n framework.
+  
+  Now initializes the GenServer state instead of Process dictionary.
   """
   def init(config \\ []) do
-    config_map = Enum.into(config, %{})
-    Process.put(:i18n_config, config_map)
-
-    Process.put(
-      :i18n_event_manager,
-      Map.get(config_map, :event_manager, Raxol.Core.Events.Manager)
-    )
-
-    Process.put(
-      :i18n_accessibility_module,
-      Map.get(config_map, :accessibility_module, Raxol.Core.Accessibility)
-    )
-
-    Process.put(:i18n_current_locale, Map.get(config_map, :default_locale))
-    Process.put(:i18n_translations, %{})
-    Process.put(:i18n_rtl_locales, Map.get(config_map, :rtl_locales, []))
-    load_translations(Map.get(config_map, :default_locale))
-    :ok
+    ensure_server_started(config)
+    Server.init_i18n(@server, config)
   end
-
+  
   @doc """
   Get a translated string for the given key.
+  
+  ## Examples
+  
+      iex> I18n.t("welcome_message")
+      "Welcome!"
+      
+      iex> I18n.t("hello_name", %{name: "John"})
+      "Hello, John!"
   """
   def t(key, bindings \\ %{}) do
-    locale = get_locale()
-    translations = Process.get(:i18n_translations)
-    config = Process.get(:i18n_config)
-    fallback_locale = Map.get(config, :fallback_locale)
-
-    template =
-      get_in(translations, [locale, key]) ||
-        get_in(translations, [fallback_locale, key]) || key
-
-    EEx.eval_string(template, bindings: bindings)
+    ensure_server_started()
+    Server.t(@server, key, bindings)
   end
-
+  
   @doc """
   Set the current locale.
+  
+  ## Examples
+  
+      iex> I18n.set_locale("fr")
+      :ok
+      
+      iex> I18n.set_locale("invalid")
+      {:error, :locale_not_available}
   """
   def set_locale(locale) do
-    config = Process.get(:i18n_config)
-    available_locales = Map.get(config, :available_locales, ["en"])
-    event_manager = Process.get(:i18n_event_manager)
-
-    if Enum.member?(available_locales, locale) do
-      previous_locale = Process.get(:i18n_current_locale)
-      Process.put(:i18n_current_locale, locale)
-      load_translations(locale)
-      event = {:locale_changed, previous_locale, locale}
-      event_manager.broadcast(event)
-      handle_locale_changed(event)
-      :ok
-    else
-      {:error, :locale_not_available}
-    end
+    ensure_server_started()
+    Server.set_locale(@server, locale)
   end
-
+  
   @doc """
   Get the current locale.
+  
+  ## Examples
+  
+      iex> I18n.get_locale()
+      "en"
   """
   def get_locale do
-    Process.get(:i18n_current_locale, "en")
+    ensure_server_started()
+    Server.get_locale(@server)
   end
-
+  
   @doc """
   Check if the current locale is right-to-left.
+  
+  ## Examples
+  
+      iex> I18n.set_locale("ar")
+      iex> I18n.rtl?()
+      true
+      
+      iex> I18n.set_locale("en")
+      iex> I18n.rtl?()
+      false
   """
   def rtl? do
-    Enum.member?(Process.get(:i18n_rtl_locales, []), get_locale())
+    ensure_server_started()
+    Server.rtl?(@server)
   end
-
-  @doc """
-  Handle locale changed events.
-  """
-  def handle_locale_changed({:locale_changed, old_locale, new_locale}) do
-    old_rtl = Enum.member?(Process.get(:i18n_rtl_locales, []), old_locale)
-    new_rtl = Enum.member?(Process.get(:i18n_rtl_locales, []), new_locale)
-    event_manager = Process.get(:i18n_event_manager)
-    accessibility = Process.get(:i18n_accessibility_module)
-
-    if old_rtl != new_rtl do
-      event_manager.broadcast({:rtl_changed, new_rtl})
-    end
-
-    direction = if new_rtl, do: :rtl, else: :ltr
-    accessibility.set_option(:direction, direction)
-
-    :ok
-  end
-
+  
   @doc """
   Format a currency amount according to the current locale.
+  
+  ## Examples
+  
+      iex> I18n.format_currency(1234.56, "USD")
+      "$1,234.56"
+      
+      iex> I18n.set_locale("fr")
+      iex> I18n.format_currency(1234.56, "EUR")
+      "1 234,56 €"
   """
   def format_currency(amount, currency_code)
-      when number?(amount) and binary?(currency_code) do
-    locale = get_locale()
-
-    case Cldr.Number.to_string(amount,
-           currency: currency_code,
-           backend: Raxol.Cldr,
-           locale: locale
-         ) do
-      {:ok, formatted} -> formatted
-      {:error, {exception, _}} -> raise exception
-    end
+      when is_number(amount) and is_binary(currency_code) do
+    ensure_server_started()
+    Server.format_currency(@server, amount, currency_code)
   end
-
+  
   @doc """
   Format a datetime according to the current locale.
+  
+  ## Examples
+  
+      iex> dt = DateTime.utc_now()
+      iex> I18n.format_datetime(dt)
+      "December 12, 2025 at 3:45 PM"
   """
-  def format_datetime(datetime) when struct?(datetime, DateTime) do
-    locale = get_locale()
-
-    case Cldr.DateTime.to_string(datetime, backend: Raxol.Cldr, locale: locale) do
-      {:ok, formatted} -> formatted
-      {:error, {exception, _}} -> raise exception
-    end
+  def format_datetime(datetime) when is_struct(datetime, DateTime) do
+    ensure_server_started()
+    Server.format_datetime(@server, datetime)
   end
-
-  # Private functions
-
-  defp load_translations(locale) do
-    # In a real application, this would load translations from a file
-    # For now, we'll just use a map
-    translations =
-      case locale do
-        "fr" ->
-          %{
-            "welcome_message" => "Bienvenue!",
-            "hello_name" => "Bonjour, %{name}!",
-            "test_announcement" => "Ceci est une annonce de test"
-          }
-
-        _ ->
-          %{
-            "welcome_message" => "Welcome!",
-            "hello_name" => "Hello, %{name}!",
-            "test_announcement" => "This is a test announcement"
-          }
-      end
-
-    Process.put(
-      :i18n_translations,
-      Map.put(Process.get(:i18n_translations), locale, translations)
-    )
-
+  
+  @doc """
+  Handle locale changed events.
+  
+  This is now handled internally by the server.
+  """
+  def handle_locale_changed({:locale_changed, _old, _new} = event) do
+    # The server handles this internally now
+    # This function exists for backward compatibility
+    _ = event
     :ok
   end
-
+  
   @doc """
   Clean up i18n resources.
+  
+  With GenServer, cleanup happens automatically when the server stops.
   """
   def cleanup do
-    Process.delete(:i18n_config)
-    Process.delete(:i18n_event_manager)
-    Process.delete(:i18n_accessibility_module)
-    Process.delete(:i18n_current_locale)
-    Process.delete(:i18n_translations)
-    Process.delete(:i18n_rtl_locales)
-    :ok
+    case Process.whereis(@server) do
+      nil -> :ok
+      pid -> 
+        GenServer.stop(pid, :normal, 5000)
+        :ok
+    end
+  end
+  
+  @doc """
+  Get all available locales.
+  """
+  def available_locales do
+    ensure_server_started()
+    Server.available_locales(@server)
+  end
+  
+  @doc """
+  Add or update translations for a locale.
+  
+  ## Examples
+  
+      iex> I18n.add_translations("en", %{
+      ...>   "new_key" => "New translation",
+      ...>   "another_key" => "Another translation"
+      ...> })
+      :ok
+  """
+  def add_translations(locale, translations) when is_map(translations) do
+    ensure_server_started()
+    Server.add_translations(@server, locale, translations)
+  end
+  
+  # Private Functions
+  
+  defp ensure_server_started(config \\ %{}) do
+    case Process.whereis(@server) do
+      nil ->
+        # Start the server if not running
+        {:ok, _pid} = Server.start_link(name: @server, config: config)
+        :ok
+      
+      _pid ->
+        :ok
+    end
   end
 end

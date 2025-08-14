@@ -2,7 +2,11 @@ defmodule Raxol.Terminal.Session do
   @moduledoc """
   Terminal session module.
 
-  This module manages terminal sessions, including:
+  This module manages terminal sessions with pure functional patterns.
+  
+  REFACTORED: All try/rescue blocks replaced with functional error handling.
+  
+  Features:
   - Session lifecycle
   - Input/output handling
   - State management
@@ -16,8 +20,7 @@ defmodule Raxol.Terminal.Session do
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
   alias Raxol.Terminal.Session.Storage
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-  import Raxol.Guards
-
+  
   @type t :: %__MODULE__{
           id: String.t(),
           emulator: EmulatorStruct.t(),
@@ -182,7 +185,7 @@ defmodule Raxol.Terminal.Session do
   def count_active_sessions do
     # Guard against potential nil return or other issues
     case Raxol.Terminal.Registry.count() do
-      count when integer?(count) and count >= 0 -> count
+      count when is_integer(count) and count >= 0 -> count
       _ -> 0
     end
   end
@@ -209,15 +212,8 @@ defmodule Raxol.Terminal.Session do
 
     emulator = EmulatorStruct.new(width, height, scrollback: scrollback_limit)
 
-    # Create a default screen buffer without relying on get_screen_buffer
-    # Default to main buffer - no need to pattern match since we know new emulators default to :main
-    screen_buffer =
-      try do
-        # Access main buffer directly since we know new emulators default to main buffer
-        emulator.main_screen_buffer
-      rescue
-        _ -> ScreenBuffer.new(width, height)
-      end
+    # Create a default screen buffer using safe access
+    screen_buffer = safe_get_screen_buffer(emulator, width, height)
 
     # Create renderer with screen buffer
     renderer = Renderer.new(screen_buffer, theme)
@@ -235,57 +231,20 @@ defmodule Raxol.Terminal.Session do
     }
 
     # Register with error handling
-    try do
-      Raxol.Terminal.Registry.register(id, state)
-    rescue
-      e ->
-        Raxol.Core.Runtime.Log.error(
-          "Failed to register session: #{inspect(e)}"
-        )
-    end
+    safe_register_session(id, state)
 
     {:ok, state}
   end
 
   def handle_cast({:input, input}, state) do
-    # Handle process_input with more robust pattern matching
-    new_state =
-      try do
-        case EmulatorStruct.process_input(state.emulator, input) do
-          {new_emulator, _output}
-          when struct?(new_emulator, EmulatorStruct) ->
-            %{state | emulator: new_emulator}
-
-          _ ->
-            state
-        end
-      rescue
-        _ -> state
-      end
-
+    # Handle process_input with safe execution
+    new_state = safe_process_input(state, input)
     {:noreply, new_state}
   end
 
   def handle_cast(:save_session, state) do
     Task.start(fn ->
-      try do
-        case Storage.save_session(state) do
-          :ok ->
-            Raxol.Core.Runtime.Log.info(
-              "Session saved successfully: #{state.id}"
-            )
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.error(
-              "Failed to save session #{state.id}: #{inspect(reason)}"
-            )
-        end
-      rescue
-        e ->
-          Raxol.Core.Runtime.Log.error(
-            "Exception saving session #{state.id}: #{inspect(e)}"
-          )
-      end
+      safe_save_session_async(state)
     end)
 
     {:noreply, state}
@@ -310,20 +269,8 @@ defmodule Raxol.Terminal.Session do
       "Starting save_session for session: #{state.id}"
     )
 
-    try do
-      Raxol.Core.Runtime.Log.info("Calling Storage.save_session...")
-      result = Storage.save_session(state)
-
-      Raxol.Core.Runtime.Log.info(
-        "Storage.save_session completed with result: #{inspect(result)}"
-      )
-
-      {:reply, result, state}
-    rescue
-      e ->
-        Raxol.Core.Runtime.Log.error("Exception in save_session: #{inspect(e)}")
-        {:reply, {:error, :save_failed}, state}
-    end
+    result = safe_save_session_sync(state)
+    {:reply, result, state}
   end
 
   def handle_info(:auto_save, state) do
@@ -349,5 +296,100 @@ defmodule Raxol.Terminal.Session do
         theme: Map.get(config, :theme, state.theme),
         auto_save: Map.get(config, :auto_save, state.auto_save)
     }
+  end
+
+  # Safe execution functions using Task
+
+  defp safe_get_screen_buffer(emulator, width, height) do
+    task = Task.async(fn ->
+      # Access main buffer directly since we know new emulators default to main buffer
+      emulator.main_screen_buffer
+    end)
+    
+    case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
+      {:ok, buffer} when not is_nil(buffer) -> 
+        buffer
+      _ -> 
+        ScreenBuffer.new(width, height)
+    end
+  end
+
+  defp safe_register_session(id, state) do
+    task = Task.async(fn ->
+      Raxol.Terminal.Registry.register(id, state)
+    end)
+    
+    case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
+      {:ok, _} -> 
+        :ok
+      _ ->
+        Raxol.Core.Runtime.Log.error(
+          "Failed to register session: timeout or error"
+        )
+        :ok
+    end
+  end
+
+  defp safe_process_input(state, input) do
+    task = Task.async(fn ->
+      case EmulatorStruct.process_input(state.emulator, input) do
+        {new_emulator, _output}
+        when is_struct(new_emulator, EmulatorStruct) ->
+          %{state | emulator: new_emulator}
+
+        _ ->
+          state
+      end
+    end)
+    
+    case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
+      {:ok, new_state} -> 
+        new_state
+      _ -> 
+        state
+    end
+  end
+
+  defp safe_save_session_async(state) do
+    task = Task.async(fn ->
+      Storage.save_session(state)
+    end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
+      {:ok, :ok} ->
+        Raxol.Core.Runtime.Log.info(
+          "Session saved successfully: #{state.id}"
+        )
+
+      {:ok, {:error, reason}} ->
+        Raxol.Core.Runtime.Log.error(
+          "Failed to save session #{state.id}: #{inspect(reason)}"
+        )
+
+      _ ->
+        Raxol.Core.Runtime.Log.error(
+          "Exception saving session #{state.id}: timeout or crash"
+        )
+    end
+  end
+
+  defp safe_save_session_sync(state) do
+    Raxol.Core.Runtime.Log.info("Calling Storage.save_session...")
+    
+    task = Task.async(fn ->
+      Storage.save_session(state)
+    end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} ->
+        Raxol.Core.Runtime.Log.info(
+          "Storage.save_session completed with result: #{inspect(result)}"
+        )
+        result
+        
+      _ ->
+        Raxol.Core.Runtime.Log.error("Exception in save_session: timeout or crash")
+        {:error, :save_failed}
+    end
   end
 end

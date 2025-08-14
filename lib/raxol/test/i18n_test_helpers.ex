@@ -17,7 +17,7 @@ defmodule Raxol.I18nTestHelpers do
   import ExUnit.Assertions
   import Raxol.AccessibilityTestHelpers
 
-  alias Raxol.Core.I18n, as: Gettext
+  alias Raxol.Core.I18n, as: I18n
 
   @doc """
   Executes the given function with a specific locale set.

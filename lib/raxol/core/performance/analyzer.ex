@@ -240,13 +240,13 @@ defmodule Raxol.Core.Performance.Analyzer do
   end
 
   defp analyze_fps_stability(metrics) do
-    cond do
-      metrics.fps >= 55 -> "stable"
-      metrics.fps >= 45 -> "moderate"
-      metrics.fps >= 30 -> "unstable"
-      true -> "critical"
-    end
+    classify_fps_stability(metrics.fps)
   end
+
+  defp classify_fps_stability(fps) when fps >= 55, do: "stable"
+  defp classify_fps_stability(fps) when fps >= 45, do: "moderate"
+  defp classify_fps_stability(fps) when fps >= 30, do: "unstable"
+  defp classify_fps_stability(_fps), do: "critical"
 
   defp analyze_memory_growth(metrics) do
     case metrics.memory_usage do
@@ -258,22 +258,21 @@ defmodule Raxol.Core.Performance.Analyzer do
 
   defp analyze_gc_patterns(metrics) do
     gc_count = Map.get(metrics.gc_stats, :number_of_gcs, 0)
-
-    cond do
-      gc_count > 100 -> "frequent"
-      gc_count > 50 -> "moderate"
-      true -> "stable"
-    end
+    classify_gc_pattern(gc_count)
   end
+
+  defp classify_gc_pattern(count) when count > 100, do: "frequent"
+  defp classify_gc_pattern(count) when count > 50, do: "moderate"
+  defp classify_gc_pattern(_count), do: "stable"
 
   defp analyze_jank_patterns(metrics) do
-    cond do
-      metrics.jank_count > 10 -> "severe"
-      metrics.jank_count > 5 -> "moderate"
-      metrics.jank_count > 0 -> "minor"
-      true -> "none"
-    end
+    classify_jank_pattern(metrics.jank_count)
   end
+
+  defp classify_jank_pattern(count) when count > 10, do: "severe"
+  defp classify_jank_pattern(count) when count > 5, do: "moderate"
+  defp classify_jank_pattern(count) when count > 0, do: "minor"
+  defp classify_jank_pattern(_count), do: "none"
 
   defp get_environment_info do
     %{

@@ -3,8 +3,7 @@ defmodule Raxol.Examples.ButtonTest do
   use Raxol.Test.Unit
   use Raxol.Test.Integration
   use Raxol.Test.Visual
-  import Raxol.Guards
-
+  
   alias Raxol.UI.Components.Input.Button
   alias Raxol.Test.TestHelper
   alias Form
@@ -93,7 +92,7 @@ defmodule Raxol.Examples.ButtonTest do
           Raxol.Core.Events.Event.focus_event(:component, true)
         )
 
-      assert map?(button_focused.state)
+      assert is_map(button_focused.state)
       assert Map.has_key?(button_focused.state, :focused)
       assert Map.get(button_focused.state, :focused) == true
 
@@ -103,7 +102,7 @@ defmodule Raxol.Examples.ButtonTest do
           Raxol.Core.Events.Event.focus_event(:component, false)
         )
 
-      assert map?(button_unfocused.state)
+      assert is_map(button_unfocused.state)
       assert Map.has_key?(button_unfocused.state, :focused)
       assert Map.get(button_unfocused.state, :focused) == false
 
@@ -114,7 +113,7 @@ defmodule Raxol.Examples.ButtonTest do
           Raxol.Core.Events.Event.window(100, 30, :resize)
         )
 
-      assert map?(button_after_resize.state)
+      assert is_map(button_after_resize.state)
       assert Map.has_key?(button_after_resize.state, :focused)
       assert Map.get(button_after_resize.state, :focused) == false
     end
@@ -215,7 +214,7 @@ defmodule Raxol.Examples.ButtonTest do
         })
 
       view = Raxol.Test.Visual.render_component(button)
-      assert map?(view)
+      assert is_map(view)
       assert Map.get(view.attrs, :disabled, false) == false
       assert Map.get(view.attrs, :focused, false) == false
     end
@@ -293,7 +292,7 @@ defmodule Raxol.Examples.ButtonTest do
         })
 
       view = Raxol.Test.Visual.render_component(button)
-      assert map?(view)
+      assert is_map(view)
     end
 
     test "handles different states visually", _context do
@@ -304,7 +303,7 @@ defmodule Raxol.Examples.ButtonTest do
         })
 
       normal_view = Raxol.Test.Visual.render_component(button_normal)
-      assert map?(Map.get(normal_view, :attrs))
+      assert is_map(Map.get(normal_view, :attrs))
       assert Map.has_key?(Map.get(normal_view, :attrs, %{}), :disabled)
       assert Map.get(normal_view.attrs, :disabled, false) == false
 
@@ -315,7 +314,7 @@ defmodule Raxol.Examples.ButtonTest do
         })
 
       disabled_view = Raxol.Test.Visual.render_component(button_disabled)
-      assert map?(Map.get(disabled_view, :attrs))
+      assert is_map(Map.get(disabled_view, :attrs))
       assert Map.has_key?(Map.get(disabled_view, :attrs, %{}), :disabled)
       assert Map.get(disabled_view.attrs, :disabled, false) == true
     end

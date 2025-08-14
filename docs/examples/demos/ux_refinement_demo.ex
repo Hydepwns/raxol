@@ -20,8 +20,8 @@ defmodule Raxol.Examples.UXRefinementDemo do
   ```
   """
 
-  alias Raxol.Core.UXRefinement
-  alias Raxol.Core.FocusManager
+  alias Raxol.Core.UXRefinementRefactored, as: UXRefinementRefactoredRefactored, as: UXRefinementRefactored
+  alias Raxol.Core.FocusManagerRefactored, as: FocusManagerRefactored
   alias Raxol.UI.Components.FocusRing
   alias Raxol.Core.Runtime.Command
   alias Raxol.View.Elements, as: UI

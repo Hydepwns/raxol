@@ -19,29 +19,24 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   Implements debouncing to batch rapid updates.
   """
   @spec schedule_or_execute_render(diff_result(), tree(), state()) :: state()
+  def schedule_or_execute_render(_diff_result, _tree, %{render_scheduled_for_next_frame: true} = state) do
+    Logger.debug(
+      "Pipeline: Render already scheduled for next frame, skipping additional scheduling."
+    )
+    state
+  end
+
+  def schedule_or_execute_render(_diff_result, _tree, %{render_timer_ref: timer_ref} = state) 
+      when not is_nil(timer_ref) do
+    Logger.debug(
+      "Pipeline: Cancelling existing render timer and rescheduling."
+    )
+    Process.cancel_timer(timer_ref)
+    schedule_render(state)
+  end
+
   def schedule_or_execute_render(_diff_result, _tree, state) do
-    cond do
-      # If a render is already scheduled, let it handle this update
-      state.render_scheduled_for_next_frame ->
-        Logger.debug(
-          "Pipeline: Render already scheduled for next frame, skipping additional scheduling."
-        )
-
-        state
-
-      # If we have a render timer pending, cancel and reschedule
-      not is_nil(state.render_timer_ref) ->
-        Logger.debug(
-          "Pipeline: Cancelling existing render timer and rescheduling."
-        )
-
-        Process.cancel_timer(state.render_timer_ref)
-        schedule_render(state)
-
-      # No render scheduled, schedule one
-      true ->
-        schedule_render(state)
-    end
+    schedule_render(state)
   end
 
   @doc """

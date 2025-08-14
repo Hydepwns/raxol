@@ -1,7 +1,6 @@
 defmodule Raxol.UI.Components.TableTest do
   use ExUnit.Case
-  import Raxol.Guards
-  alias Raxol.UI.Components.Table
+    alias Raxol.UI.Components.Table
 
   @test_columns [
     %{
@@ -154,14 +153,14 @@ defmodule Raxol.UI.Components.TableTest do
       {:ok, updated_state} = result
       rendered = Table.render(updated_state, %{})
 
-      assert map?(rendered)
+      assert is_map(rendered)
       assert Map.has_key?(rendered, :type)
       assert rendered.type == :box
       flex = get_in(rendered, [:children, Access.at(0)])
       [_header | rows] = flex.children
       assert length(rows) == 1
       first_row = List.first(rows)
-      assert map?(first_row)
+      assert is_map(first_row)
       assert Map.has_key?(first_row, :type)
       assert first_row.type == :flex
       assert length(first_row.children) == 3

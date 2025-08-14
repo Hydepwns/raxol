@@ -40,18 +40,19 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
   end
 
   def validate_plugin_module(module) do
-    cond do
-      not Code.ensure_loaded?(module) ->
-        {:error, :module_not_found}
-
-      not function_exported?(module, :init, 1) ->
-        {:error, :missing_init}
-
-      not function_exported?(module, :cleanup, 1) ->
-        {:error, :missing_cleanup}
-
-      true ->
-        :ok
+    with true <- Code.ensure_loaded?(module),
+         true <- function_exported?(module, :init, 1),
+         true <- function_exported?(module, :cleanup, 1) do
+      :ok
+    else
+      false ->
+        case {Code.ensure_loaded?(module), 
+              function_exported?(module, :init, 1), 
+              function_exported?(module, :cleanup, 1)} do
+          {false, _, _} -> {:error, :module_not_found}
+          {true, false, _} -> {:error, :missing_init}
+          {true, true, false} -> {:error, :missing_cleanup}
+        end
     end
   end
 

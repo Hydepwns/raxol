@@ -7,8 +7,7 @@ defmodule Raxol.UI.Components.CodeBlock do
   """
   use Raxol.UI.Components.Base.Component
 
-  import Raxol.Guards
-
+  
   @doc """
   Renders the code block.
 
@@ -41,7 +40,7 @@ defmodule Raxol.UI.Components.CodeBlock do
         lexer = Makeup.Lexers.PlainTextLexer
 
         style =
-          if atom?(style_opt) && Code.ensure_loaded?(style_opt) do
+          if is_atom(style_opt) && Code.ensure_loaded?(style_opt) do
             style_opt
           else
             Makeup.Styles.GithubLight

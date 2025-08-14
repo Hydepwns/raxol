@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Metrics.Cloud do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Cloud integration for the Raxol metrics system.
 
@@ -41,7 +40,7 @@ defmodule Raxol.Core.Metrics.Cloud do
   @doc """
   Configures the cloud metrics service.
   """
-  def configure(config) when map?(config) do
+  def configure(config) when is_map(config) do
     GenServer.call(__MODULE__, {:configure, config})
   end
 
@@ -284,24 +283,24 @@ defmodule Raxol.Core.Metrics.Cloud do
 
   defp validate_service(_), do: {:error, :invalid_service}
 
-  defp validate_endpoint(endpoint) when binary?(endpoint) and endpoint != "",
+  defp validate_endpoint(endpoint) when is_binary(endpoint) and endpoint != "",
     do: :ok
 
   defp validate_endpoint(_), do: {:error, :invalid_endpoint}
 
-  defp validate_api_key(api_key) when binary?(api_key) and api_key != "",
+  defp validate_api_key(api_key) when is_binary(api_key) and api_key != "",
     do: :ok
 
   defp validate_api_key(_), do: {:error, :invalid_api_key}
 
   defp validate_batch_size(batch_size)
-       when integer?(batch_size) and batch_size > 0,
+       when is_integer(batch_size) and batch_size > 0,
        do: :ok
 
   defp validate_batch_size(_), do: {:error, :invalid_batch_size}
 
   defp validate_flush_interval(flush_interval)
-       when integer?(flush_interval) and flush_interval > 0,
+       when is_integer(flush_interval) and flush_interval > 0,
        do: :ok
 
   defp validate_flush_interval(_), do: {:error, :invalid_flush_interval}

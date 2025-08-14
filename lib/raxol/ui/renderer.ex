@@ -19,31 +19,28 @@ defmodule Raxol.UI.Renderer do
   ## Returns
     * List of cells in the format {x, y, char, fg, bg, attrs}
   """
-  def render_to_cells(element_or_elements, theme \\ nil) do
-    # Handle nil case
-    if is_nil(element_or_elements) do
-      []
-    else
-      # Ensure we have a list of elements
-      elements = CellManager.ensure_list(element_or_elements)
+  def render_to_cells(nil, _theme), do: []
 
-      # Get default theme if none provided
-      default_theme = theme || ThemeResolver.get_default_theme()
+  def render_to_cells(element_or_elements, theme) do
+    # Ensure we have a list of elements
+    elements = CellManager.ensure_list(element_or_elements)
 
-      # Render each element and flatten results
-      elements
-      |> Enum.flat_map(fn element ->
-        # Use element's theme if available, otherwise use default theme
-        element_theme =
-          ThemeResolver.resolve_element_theme_with_inheritance(
-            element,
-            default_theme
-          )
+    # Get default theme if none provided
+    default_theme = theme || ThemeResolver.get_default_theme()
 
-        render_element(element, element_theme, %{})
-      end)
-      |> CellManager.filter_valid_cells()
-    end
+    # Render each element and flatten results
+    elements
+    |> Enum.flat_map(fn element ->
+      # Use element's theme if available, otherwise use default theme
+      element_theme =
+        ThemeResolver.resolve_element_theme_with_inheritance(
+          element,
+          default_theme
+        )
+
+      render_element(element, element_theme, %{})
+    end)
+    |> CellManager.filter_valid_cells()
   end
 
   @doc """
@@ -60,60 +57,65 @@ defmodule Raxol.UI.Renderer do
   def render_element(element, theme, parent_style \\ %{}) do
     case validate_element(element) do
       {:ok, valid_element} ->
-        # Check visibility first
-        if Map.get(valid_element, :visible, true) == false do
-          []
-          # Check for zero dimensions
-        else
-          # Calculate dimensions if missing, especially for text elements
-          element_with_dims = calculate_element_dimensions(valid_element)
-          width = Map.get(element_with_dims, :width, 0)
-          height = Map.get(element_with_dims, :height, 0)
-
-          if width == 0 or height == 0 do
-            []
-          else
-            render_visible_element(element_with_dims, theme, parent_style)
-          end
-        end
+        render_validated_element(valid_element, theme, parent_style)
 
       {:error, _reason} ->
         []
     end
   end
 
-  # --- Element Dimension Calculation ---
+  defp render_validated_element(%{visible: false}, _theme, _parent_style), do: []
 
-  defp calculate_element_dimensions(element) do
-    case Map.get(element, :type) do
-      :text ->
-        # Calculate text dimensions if missing
-        text = Map.get(element, :text, "")
+  defp render_validated_element(valid_element, theme, parent_style) do
+    # Calculate dimensions if missing, especially for text elements
+    element_with_dims = calculate_element_dimensions(valid_element)
+    width = Map.get(element_with_dims, :width, 0)
+    height = Map.get(element_with_dims, :height, 0)
 
-        width =
-          if Map.has_key?(element, :width),
-            do: element.width,
-            else: String.length(text)
-
-        height = if Map.has_key?(element, :height), do: element.height, else: 1
-        Map.merge(element, %{width: width, height: height})
-
-      _ ->
-        # For other element types, return as-is
-        element
+    case {width, height} do
+      {0, _} -> []
+      {_, 0} -> []
+      _ -> render_visible_element(element_with_dims, theme, parent_style)
     end
   end
 
+  # --- Element Dimension Calculation ---
+
+  defp calculate_element_dimensions(%{type: :text} = element) do
+    # Calculate text dimensions if missing
+    text = Map.get(element, :text, "")
+    
+    width = get_text_width(element, text)
+    height = get_text_height(element)
+    
+    Map.merge(element, %{width: width, height: height})
+  end
+
+  defp calculate_element_dimensions(element) do
+    # For other element types, return as-is
+    element
+  end
+
+  defp get_text_width(%{width: width}, _text), do: width
+  defp get_text_width(_element, text), do: String.length(text)
+
+  defp get_text_height(%{height: height}), do: height
+  defp get_text_height(_element), do: 1
+
   # --- Element Validation ---
 
+  defp validate_element(nil), do: {:error, :nil_element}
+  
+  defp validate_element(element) when not is_map(element), do: {:error, :invalid_element}
+  
   defp validate_element(element) do
-    cond do
-      is_nil(element) -> {:error, :nil_element}
-      not is_map(element) -> {:error, :invalid_element}
-      not Map.has_key?(element, :type) -> {:error, :missing_type}
-      Map.get(element, :width, 0) < 0 -> {:error, :negative_width}
-      Map.get(element, :height, 0) < 0 -> {:error, :negative_height}
-      true -> {:ok, element}
+    case {Map.has_key?(element, :type),
+          Map.get(element, :width, 0) >= 0,
+          Map.get(element, :height, 0) >= 0} do
+      {false, _, _} -> {:error, :missing_type}
+      {true, false, _} -> {:error, :negative_width}
+      {true, true, false} -> {:error, :negative_height}
+      {true, true, true} -> {:ok, element}
     end
   end
 

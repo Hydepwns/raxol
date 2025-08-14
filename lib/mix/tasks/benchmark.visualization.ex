@@ -92,13 +92,16 @@ defmodule Mix.Tasks.Benchmark.Visualization do
   end
 
   defp get_test_size(args) do
-    cond do
-      "--small" in args -> :small
-      "--medium" in args -> :medium
-      "--large" in args -> :large
-      "--production" in args -> :production
-      true -> :small
-    end
+    size_mappings = [
+      {"--small", :small},
+      {"--medium", :medium},
+      {"--large", :large},
+      {"--production", :production}
+    ]
+    
+    Enum.find_value(size_mappings, :small, fn {flag, size} ->
+      if flag in args, do: size, else: nil
+    end)
   end
 
   defp get_config_for_size(test_size) do

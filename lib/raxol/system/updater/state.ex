@@ -1,199 +1,196 @@
 defmodule Raxol.System.Updater.State do
   @moduledoc """
-  State management for the Raxol System Updater including settings, progress tracking, statistics, and logging.
+  Refactored System Updater State module with GenServer-based state management.
+  
+  This module provides backward compatibility while eliminating Process dictionary usage.
+  All state is now managed through the Updater.State.Server GenServer.
+  
+  ## Migration Notes
+  
+  This module replaces direct Process dictionary usage with supervised GenServer state.
+  The API remains the same, but the implementation is now OTP-compliant and more robust.
+  
+  ## Features Maintained
+  
+  * Update settings management
+  * Progress tracking for active updates
+  * Update history and statistics
+  * Error tracking and logging
+  * Auto-update configuration
   """
-
+  
+  alias Raxol.System.Updater.State.Server
+  
+  @deprecated "Use Raxol.System.Updater.State instead of Raxol.System.Updater.State"
+  
   @update_settings_file "~/.raxol/update_settings.json"
-
-  def get_update_settings do
-    case Application.get_env(:raxol, :update_settings) do
-      nil -> default_update_settings()
-      settings -> settings
-    end
-  end
-
-  def set_update_settings(settings) do
-    Application.put_env(:raxol, :update_settings, settings)
-  end
-
-  def get_update_history do
-    settings = get_update_settings()
-    history_file = Path.join(settings.download_path, "update_history.json")
-
-    case File.read(history_file) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, history} -> {:ok, history}
-          _ -> {:ok, []}
-        end
-
-      {:error, :enoent} ->
-        {:ok, []}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  def clear_update_history do
-    settings = get_update_settings()
-    history_file = Path.join(settings.download_path, "update_history.json")
-
-    case File.write(history_file, Jason.encode!([])) do
-      :ok -> :ok
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  def get_update_progress do
-    case Process.get(:update_progress) do
-      nil -> 0
-      progress -> progress
-    end
-  end
-
-  def cancel_update do
-    case Process.get(:update_pid) do
+  
+  # Ensure server is started
+  defp ensure_server_started do
+    case Process.whereis(Server) do
       nil ->
-        {:error, :no_update_in_progress}
-
-      pid ->
-        Process.put(:update_progress, 0)
-        Process.exit(pid, :normal)
+        {:ok, _pid} = Server.start_link()
+        :ok
+      _pid ->
         :ok
     end
   end
-
+  
+  @doc """
+  Get the current update settings.
+  """
+  def get_update_settings do
+    ensure_server_started()
+    Server.get_update_settings()
+  end
+  
+  @doc """
+  Set the update settings.
+  """
+  def set_update_settings(settings) do
+    ensure_server_started()
+    Server.set_update_settings(settings)
+  end
+  
+  @doc """
+  Get the update history.
+  """
+  def get_update_history do
+    ensure_server_started()
+    Server.get_update_history()
+  end
+  
+  @doc """
+  Clear the update history.
+  """
+  def clear_update_history do
+    ensure_server_started()
+    Server.clear_update_history()
+  end
+  
+  @doc """
+  Get the current update progress (0-100).
+  """
+  def get_update_progress do
+    ensure_server_started()
+    Server.get_update_progress()
+  end
+  
+  @doc """
+  Set the update progress.
+  """
+  def set_update_progress(progress) do
+    ensure_server_started()
+    Server.set_update_progress(progress)
+  end
+  
+  @doc """
+  Cancel the current update operation.
+  """
+  def cancel_update do
+    ensure_server_started()
+    Server.cancel_update()
+  end
+  
+  @doc """
+  Get any error from the last update attempt.
+  """
   def get_update_error do
-    Process.get(:update_error)
+    ensure_server_started()
+    Server.get_update_error()
   end
-
+  
+  @doc """
+  Set an update error.
+  """
+  def set_update_error(error) do
+    ensure_server_started()
+    Server.set_update_error(error)
+  end
+  
+  @doc """
+  Clear any update error.
+  """
   def clear_update_error do
-    Process.delete(:update_error)
-    :ok
+    ensure_server_started()
+    Server.clear_update_error()
   end
-
+  
+  @doc """
+  Get the update log.
+  """
   def get_update_log do
-    settings = get_update_settings()
-    log_file = Path.join(settings.download_path, "update.log")
-
-    case File.read(log_file) do
-      {:ok, content} -> {:ok, String.split(content, "\n", trim: true)}
-      {:error, :enoent} -> {:ok, []}
-      {:error, reason} -> {:error, reason}
-    end
+    ensure_server_started()
+    Server.get_update_log()
   end
-
+  
+  @doc """
+  Clear the update log.
+  """
   def clear_update_log do
-    settings = get_update_settings()
-    log_file = Path.join(settings.download_path, "update.log")
-
-    case File.write(log_file, "") do
-      :ok -> :ok
-      {:error, reason} -> {:error, reason}
-    end
+    ensure_server_started()
+    Server.clear_update_log()
   end
-
+  
+  @doc """
+  Log an update message.
+  """
+  def log_update(message) do
+    ensure_server_started()
+    Server.log_update(message)
+  end
+  
+  @doc """
+  Get update statistics.
+  """
   def get_update_stats do
-    settings = get_update_settings()
-    stats_file = Path.join(settings.download_path, "update_stats.json")
-
-    case File.read(stats_file) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, stats} -> {:ok, stats}
-          _ -> {:ok, default_stats()}
-        end
-
-      {:error, :enoent} ->
-        {:ok, default_stats()}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    ensure_server_started()
+    Server.get_update_stats()
   end
-
+  
+  @doc """
+  Clear update statistics.
+  """
   def clear_update_stats do
-    settings = get_update_settings()
-    stats_file = Path.join(settings.download_path, "update_stats.json")
-    File.write(stats_file, Jason.encode!(default_stats()))
+    ensure_server_started()
+    Server.clear_update_stats()
   end
-
+  
+  @doc """
+  Update the statistics.
+  """
+  def update_stats(stats) do
+    ensure_server_started()
+    Server.update_stats(stats)
+  end
+  
+  @doc """
+  Enable or disable automatic update checking.
+  """
   def set_auto_check(enabled) when is_boolean(enabled) do
-    with {:ok, settings} <- get_update_settings() do
-      settings = Map.put(settings, "auto_check", enabled)
-      save_update_settings(settings)
-    end
+    ensure_server_started()
+    Server.set_auto_check(enabled)
   end
-
-  # --- Private Functions ---
-
+  
   @doc """
   Returns the default update settings.
+  This is provided for backward compatibility.
   """
   @spec default_update_settings() :: map()
   def default_update_settings do
     %{
       auto_update: true,
-      # 24 hours in seconds
-      check_interval: 24 * 60 * 60,
+      check_interval: 24 * 60 * 60,  # 24 hours in seconds
       update_channel: :stable,
       notify_on_update: true,
       download_path: System.get_env("HOME") <> "/.raxol/downloads",
       backup_path: System.get_env("HOME") <> "/.raxol/backups",
       max_backups: 5,
       retry_count: 3,
-      # seconds
-      retry_delay: 5,
-      # seconds
-      timeout: 300,
+      retry_delay: 5,  # seconds
+      timeout: 300,  # seconds
       verify_checksums: true,
       require_confirmation: true
     }
-  end
-
-  defp save_update_settings(settings) do
-    file_path = Path.expand(@update_settings_file)
-
-    case Jason.encode(settings) do
-      {:ok, json} ->
-        File.write(file_path, json)
-
-      error ->
-        error
-    end
-  end
-
-  defp default_stats do
-    %{
-      total_updates: 0,
-      successful_updates: 0,
-      failed_updates: 0,
-      last_update: nil,
-      average_update_time: 0
-    }
-  end
-
-  def set_update_progress(progress) do
-    Process.put(:update_progress, progress)
-  end
-
-  def set_update_error(error) do
-    Process.put(:update_error, error)
-  end
-
-  def log_update(message) do
-    settings = get_update_settings()
-    log_file = Path.join(settings.download_path, "update.log")
-    timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
-    log_entry = "[#{timestamp}] #{message}\n"
-
-    File.write(log_file, log_entry, [:append])
-  end
-
-  def update_stats(stats) do
-    settings = get_update_settings()
-    stats_file = Path.join(settings.download_path, "update_stats.json")
-    File.write(stats_file, Jason.encode!(stats))
   end
 end

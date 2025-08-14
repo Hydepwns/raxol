@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Accessibility.ThemeIntegration do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Manages the integration between accessibility settings and the active theme.
 
@@ -104,7 +103,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   reflect the persisted preferences.
   Accepts a keyword list of options (e.g., `[high_contrast: true, ...]`).
   """
-  def apply_settings(options) when list?(options) do
+  def apply_settings(options) when is_list(options) do
     high_contrast = Keyword.get(options, :high_contrast, false)
     reduced_motion = Keyword.get(options, :reduced_motion, false)
     large_text = Keyword.get(options, :large_text, false)
@@ -251,10 +250,10 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
           }
       end
 
-    cond do
-      high_contrast -> :high_contrast
-      reduced_motion -> :reduced_motion
-      true -> :standard
+    case {high_contrast, reduced_motion} do
+      {true, _} -> :high_contrast
+      {_, true} -> :reduced_motion
+      {false, false} -> :standard
     end
   end
 

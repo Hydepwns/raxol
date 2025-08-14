@@ -12,8 +12,7 @@ defmodule Raxol.Test.Visual.Assertions do
 
   import ExUnit.Assertions
   alias Raxol.Test.Visual
-  import Raxol.Guards
-
+  
   @doc """
   Asserts that a component's rendered output matches the expected snapshot.
 
@@ -65,7 +64,7 @@ defmodule Raxol.Test.Visual.Assertions do
 
       assert_renders_with component, "Expected Content"
   """
-  def assert_renders_with(component, expected) when binary?(expected) do
+  def assert_renders_with(component, expected) when is_binary(expected) do
     output = Visual.capture_render(component)
 
     assert output =~ expected,
@@ -79,7 +78,7 @@ defmodule Raxol.Test.Visual.Assertions do
 
       assert_styled_with component, %{color: :blue, bold: true}
   """
-  def assert_styled_with(component, style) when map?(style) do
+  def assert_styled_with(component, style) when is_map(style) do
     output = Visual.capture_render(component)
 
     Enum.each(style, fn {property, value} ->
@@ -99,7 +98,7 @@ defmodule Raxol.Test.Visual.Assertions do
         {20, 6}
       ]
   """
-  def assert_responsive(component, sizes) when list?(sizes) do
+  def assert_responsive(component, sizes) when is_list(sizes) do
     results = Visual.test_responsive_rendering(component, sizes)
 
     Enum.each(results, fn %{width: width, height: height, output: output} ->
@@ -128,7 +127,7 @@ defmodule Raxol.Test.Visual.Assertions do
         dark: dark_theme
       }
   """
-  def assert_theme_consistent(component, themes) when map?(themes) do
+  def assert_theme_consistent(component, themes) when is_map(themes) do
     results = Visual.test_themed_rendering(component, themes)
 
     # Verify basic structure remains consistent

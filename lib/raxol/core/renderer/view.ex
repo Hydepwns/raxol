@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Renderer.View do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Provides view-related functionality for rendering UI components.
   """
@@ -644,15 +643,14 @@ defmodule Raxol.Core.Renderer.View do
 
   defmacro ensure_keyword(opts) do
     quote do
-      cond do
-        list?(unquote(opts)) and length(unquote(opts)) > 0 and
-            tuple?(hd(unquote(opts))) ->
-          unquote(opts)
+      case unquote(opts) do
+        opts when is_list(opts) and length(opts) > 0 ->
+          if is_tuple(hd(opts)), do: opts, else: []
 
-        map?(unquote(opts)) ->
-          Map.to_list(unquote(opts))
+        opts when is_map(opts) ->
+          Map.to_list(opts)
 
-        true ->
+        _opts ->
           []
       end
     end

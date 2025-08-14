@@ -30,7 +30,7 @@ defmodule Raxol.DevTools.DebugInspector do
   """
 
   use GenServer
-  alias Raxol.UI.State.Store
+  alias Raxol.UI.State.Store, as: Store
   require Logger
 
   defmodule InspectorState do
@@ -99,12 +99,13 @@ defmodule Raxol.DevTools.DebugInspector do
   Starts the debug inspector with UI overlay.
   """
   def start do
-    case GenServer.whereis(__MODULE__) do
+    result = case GenServer.whereis(__MODULE__) do
       nil -> start_link()
       _pid -> :already_started
     end
 
     enable_ui_overlay()
+    result
   end
 
   @doc """
@@ -241,10 +242,9 @@ defmodule Raxol.DevTools.DebugInspector do
   def handle_call({:set_ui_overlay, enabled}, _from, state) do
     new_state = %{state | ui_overlay_active: enabled}
 
-    if enabled do
-      Logger.info("Debug UI overlay enabled")
-    else
-      Logger.info("Debug UI overlay disabled")
+    case enabled do
+      true -> Logger.info("Debug UI overlay enabled")
+      false -> Logger.info("Debug UI overlay disabled")
     end
 
     {:reply, :ok, new_state}
@@ -276,21 +276,21 @@ defmodule Raxol.DevTools.DebugInspector do
 
     # Update parent's children list
     updated_tree =
-      if parent_id do
-        case Map.get(new_tree, parent_id) do
-          nil ->
-            new_tree
+      case parent_id do
+        nil -> new_tree
+        parent_id ->
+          case Map.get(new_tree, parent_id) do
+            nil ->
+              new_tree
 
-          parent_info ->
-            updated_parent = %{
-              parent_info
-              | children: [component_id | parent_info.children]
-            }
+            parent_info ->
+              updated_parent = %{
+                parent_info
+                | children: [component_id | parent_info.children]
+              }
 
-            Map.put(new_tree, parent_id, updated_parent)
-        end
-      else
-        new_tree
+              Map.put(new_tree, parent_id, updated_parent)
+          end
       end
 
     new_state = %{state | component_tree: updated_tree}
@@ -427,10 +427,9 @@ defmodule Raxol.DevTools.DebugInspector do
     new_breakpoints =
       Enum.reduce(state.breakpoints, MapSet.new(), fn {comp_id, _condition} = bp,
                                                       acc ->
-        if comp_id == component_id do
-          acc
-        else
-          MapSet.put(acc, bp)
+        case comp_id == component_id do
+          true -> acc
+          false -> MapSet.put(acc, bp)
         end
       end)
 
@@ -441,10 +440,9 @@ defmodule Raxol.DevTools.DebugInspector do
   @impl GenServer
   def handle_call({:trace_renders, component_id, enabled}, _from, state) do
     new_traces =
-      if enabled do
-        Map.put(state.render_traces, component_id, [])
-      else
-        Map.delete(state.render_traces, component_id)
+      case enabled do
+        true -> Map.put(state.render_traces, component_id, [])
+        false -> Map.delete(state.render_traces, component_id)
       end
 
     new_state = %{state | render_traces: new_traces}
@@ -529,8 +527,9 @@ defmodule Raxol.DevTools.DebugInspector do
         )
 
         # If UI overlay is active, could trigger visual updates
-        if state.ui_overlay_active do
-          broadcast_state_change(path, new_value, old_value)
+        case state.ui_overlay_active do
+          true -> broadcast_state_change(path, new_value, old_value)
+          false -> :ok
         end
 
         {:noreply, state}
@@ -717,19 +716,19 @@ defmodule Raxol.DevTools.DebugInspector do
       end
 
     # Inconsistent render times
-    if length(profile.render_times) > 10 do
-      variance = calculate_variance(profile.render_times)
-      # High variance
-      if variance > 100 do
-        [
-          "Inconsistent render times (variance: #{Float.round(variance, 2)})"
-          | bottlenecks
-        ]
-      else
-        bottlenecks
-      end
-    else
-      bottlenecks
+    case length(profile.render_times) > 10 do
+      true ->
+        variance = calculate_variance(profile.render_times)
+        # High variance
+        case variance > 100 do
+          true ->
+            [
+              "Inconsistent render times (variance: #{Float.round(variance, 2)})"
+              | bottlenecks
+            ]
+          false -> bottlenecks
+        end
+      false -> bottlenecks
     end
   end
 
@@ -766,20 +765,24 @@ defmodule Raxol.DevTools.DebugInspector do
   end
 
   defp analyze_memory_snapshots(snapshots) do
-    if length(snapshots) < 2 do
-      %{status: "Not enough snapshots for analysis"}
-    else
-      [latest | rest] = snapshots
-      previous = List.first(rest)
+    case length(snapshots) < 2 do
+      true ->
+        %{status: "Not enough snapshots for analysis"}
+      false ->
+        [latest | rest] = snapshots
+        previous = List.first(rest)
 
-      memory_trend = latest.memory_info.total - previous.memory_info.total
+        memory_trend = latest.memory_info.total - previous.memory_info.total
 
-      %{
-        latest_snapshot: latest,
-        memory_trend: memory_trend,
-        trend_analysis:
-          if(memory_trend > 0, do: "increasing", else: "stable_or_decreasing")
-      }
+        %{
+          latest_snapshot: latest,
+          memory_trend: memory_trend,
+          trend_analysis:
+            case memory_trend > 0 do
+              true -> "increasing"
+              false -> "stable_or_decreasing"
+            end
+        }
     end
   end
 
@@ -793,13 +796,13 @@ defmodule Raxol.DevTools.DebugInspector do
       |> Enum.map(fn {id, info} -> {id, info.render_count} end)
 
     recommendations =
-      if not Enum.empty?(high_render_components) do
-        [
-          "Consider optimizing components with high render counts: #{inspect(high_render_components)}"
-          | recommendations
-        ]
-      else
-        recommendations
+      case Enum.empty?(high_render_components) do
+        false ->
+          [
+            "Consider optimizing components with high render counts: #{inspect(high_render_components)}"
+            | recommendations
+          ]
+        true -> recommendations
       end
 
     # Check for slow components
@@ -809,19 +812,18 @@ defmodule Raxol.DevTools.DebugInspector do
       |> Enum.map(fn {id, profile} -> {id, profile.average_render_time} end)
 
     recommendations =
-      if not Enum.empty?(slow_components) do
-        [
-          "Optimize slow rendering components: #{inspect(slow_components)}"
-          | recommendations
-        ]
-      else
-        recommendations
+      case Enum.empty?(slow_components) do
+        false ->
+          [
+            "Optimize slow rendering components: #{inspect(slow_components)}"
+            | recommendations
+          ]
+        true -> recommendations
       end
 
-    if Enum.empty?(recommendations) do
-      ["No performance issues detected"]
-    else
-      recommendations
+    case Enum.empty?(recommendations) do
+      true -> ["No performance issues detected"]
+      false -> recommendations
     end
   end
 
@@ -871,7 +873,10 @@ defmodule Raxol.DevTools.DebugInspector do
           type: :text,
           attrs: %{
             content:
-              "Profiling: #{if stats.profiling_active, do: "ON", else: "OFF"}"
+              "Profiling: #{case stats.profiling_active do
+                true -> "ON"
+                false -> "OFF"
+              end}"
           }
         },
         debug_overlay_controls()

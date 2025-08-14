@@ -4,8 +4,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
   report generation, and error handling.
   """
   use ExUnit.Case
-  import Raxol.Guards
-
+  
   alias Raxol.Core.Performance.AIAnalyzer
 
   describe "AI Analyzer" do
@@ -31,11 +30,11 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert Map.has_key?(analysis, :optimization_impact)
       assert Map.has_key?(analysis, :ai_confidence)
 
-      assert list?(analysis.insights)
-      assert list?(analysis.recommendations)
-      assert map?(analysis.risk_assessment)
-      assert map?(analysis.optimization_impact)
-      assert float?(analysis.ai_confidence)
+      assert is_list(analysis.insights)
+      assert is_list(analysis.recommendations)
+      assert is_map(analysis.risk_assessment)
+      assert is_map(analysis.optimization_impact)
+      assert is_float(analysis.ai_confidence)
     end
 
     test ~c"generates text report" do
@@ -58,7 +57,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert Map.has_key?(report, :analysis)
       assert Map.has_key?(report, :metadata)
 
-      assert binary?(report.report)
+      assert is_binary(report.report)
       assert String.contains?(report.report, "Performance Analysis Report")
       assert String.contains?(report.report, "Key Insights")
       assert String.contains?(report.report, "Recommendations")
@@ -86,7 +85,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert Map.has_key?(report, :analysis)
       assert Map.has_key?(report, :metadata)
 
-      assert binary?(report.report)
+      assert is_binary(report.report)
       assert {:ok, _} = Jason.decode(report.report)
     end
 
@@ -110,7 +109,7 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert Map.has_key?(report, :analysis)
       assert Map.has_key?(report, :metadata)
 
-      assert binary?(report.report)
+      assert is_binary(report.report)
       assert String.contains?(report.report, "<!DOCTYPE html>")
       assert String.contains?(report.report, "<html>")
       assert String.contains?(report.report, "<head>")
@@ -190,8 +189,8 @@ defmodule Raxol.Core.Performance.AIAnalyzerTest do
       assert Map.has_key?(report.metadata, :generated_at)
       assert Map.has_key?(report.metadata, :version)
 
-      assert struct?(report.metadata.generated_at, DateTime)
-      assert binary?(report.metadata.version)
+      assert is_struct(report.metadata.generated_at, DateTime)
+      assert is_binary(report.metadata.version)
     end
   end
 end

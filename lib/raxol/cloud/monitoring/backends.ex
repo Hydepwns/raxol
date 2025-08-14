@@ -117,7 +117,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     # This would use prometheus_ex functions
     # :prometheus_gauge.set(metric_name, tags, value)
     # For now, store in process dictionary as placeholder
-    Process.put({:prometheus_metric, metric_name}, {value, tags})
+    Raxol.Cloud.Monitoring.Server.put_prometheus_metric(metric_name, {value, tags})
   end
 
   # DataDog backend implementation
@@ -126,40 +126,41 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     app_key = Map.get(config, :app_key)
     host = Map.get(config, :host, "app.datadoghq.com")
 
-    if api_key do
+    with {:ok, _} <- validate_api_key(api_key) do
       {:ok, %{api_key: api_key, app_key: app_key, host: host}}
     else
-      {:error, :api_key_required}
+      {:error, reason} -> {:error, reason}
     end
   end
+
+  defp validate_api_key(nil), do: {:error, :api_key_required}
+  defp validate_api_key(api_key) when is_binary(api_key), do: {:ok, api_key}
+  defp validate_api_key(_), do: {:error, :invalid_api_key}
 
   defp send_datadog_metrics(metrics) do
     config = Application.get_env(:raxol, :datadog_config, %{})
     api_key = Map.get(config, :api_key)
 
-    if api_key do
-      datadog_metrics = Enum.map(metrics, &format_datadog_metric/1)
-
-      payload = %{
-        series: datadog_metrics
-      }
-
-      headers = [
-        {"Content-Type", "application/json"},
-        {"DD-API-KEY", api_key}
-      ]
-
-      case HTTPoison.post(
+    with {:ok, _} <- validate_api_key(api_key),
+         datadog_metrics = Enum.map(metrics, &format_datadog_metric/1),
+         payload = %{series: datadog_metrics},
+         headers = [
+           {"Content-Type", "application/json"},
+           {"DD-API-KEY", api_key}
+         ],
+         {:ok, response} <-
+           HTTPoison.post(
              "https://api.datadoghq.com/api/v1/series",
              Jason.encode!(payload),
              headers
            ) do
-        {:ok, %{status_code: 202}} -> :ok
-        {:ok, %{status_code: status}} -> {:error, {:http_error, status}}
-        {:error, reason} -> {:error, reason}
+      case response.status_code do
+        202 -> :ok
+        status -> {:error, {:http_error, status}}
       end
     else
-      {:error, :api_key_not_configured}
+      {:error, :api_key_required} -> {:error, :api_key_not_configured}
+      {:error, reason} -> {:error, reason}
     end
   rescue
     error -> {:error, error}
@@ -169,25 +170,25 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     config = Application.get_env(:raxol, :datadog_config, %{})
     api_key = Map.get(config, :api_key)
 
-    if api_key do
-      datadog_logs = Enum.map(logs, &format_datadog_log/1)
-
-      headers = [
-        {"Content-Type", "application/json"},
-        {"DD-API-KEY", api_key}
-      ]
-
-      case HTTPoison.post(
+    with {:ok, _} <- validate_api_key(api_key),
+         datadog_logs = Enum.map(logs, &format_datadog_log/1),
+         headers = [
+           {"Content-Type", "application/json"},
+           {"DD-API-KEY", api_key}
+         ],
+         {:ok, response} <-
+           HTTPoison.post(
              "https://http-intake.logs.datadoghq.com/v1/input/#{api_key}",
              Jason.encode!(datadog_logs),
              headers
            ) do
-        {:ok, %{status_code: 200}} -> :ok
-        {:ok, %{status_code: status}} -> {:error, {:http_error, status}}
-        {:error, reason} -> {:error, reason}
+      case response.status_code do
+        200 -> :ok
+        status -> {:error, {:http_error, status}}
       end
     else
-      {:error, :api_key_not_configured}
+      {:error, :api_key_required} -> {:error, :api_key_not_configured}
+      {:error, reason} -> {:error, reason}
     end
   rescue
     error -> {:error, error}
@@ -197,40 +198,41 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   defp init_new_relic(config) do
     license_key = Map.get(config, :license_key)
 
-    if license_key do
+    with {:ok, _} <- validate_license_key(license_key) do
       {:ok, %{license_key: license_key}}
     else
-      {:error, :license_key_required}
+      {:error, reason} -> {:error, reason}
     end
   end
+
+  defp validate_license_key(nil), do: {:error, :license_key_required}
+  defp validate_license_key(key) when is_binary(key), do: {:ok, key}
+  defp validate_license_key(_), do: {:error, :invalid_license_key}
 
   defp send_new_relic_metrics(metrics) do
     config = Application.get_env(:raxol, :new_relic_config, %{})
     license_key = Map.get(config, :license_key)
 
-    if license_key do
-      new_relic_metrics = Enum.map(metrics, &format_new_relic_metric/1)
-
-      payload = %{
-        metrics: new_relic_metrics
-      }
-
-      headers = [
-        {"Content-Type", "application/json"},
-        {"X-License-Key", license_key}
-      ]
-
-      case HTTPoison.post(
+    with {:ok, _} <- validate_license_key(license_key),
+         new_relic_metrics = Enum.map(metrics, &format_new_relic_metric/1),
+         payload = %{metrics: new_relic_metrics},
+         headers = [
+           {"Content-Type", "application/json"},
+           {"X-License-Key", license_key}
+         ],
+         {:ok, response} <-
+           HTTPoison.post(
              "https://metric-api.newrelic.com/metric/v1",
              Jason.encode!(payload),
              headers
            ) do
-        {:ok, %{status_code: 202}} -> :ok
-        {:ok, %{status_code: status}} -> {:error, {:http_error, status}}
-        {:error, reason} -> {:error, reason}
+      case response.status_code do
+        202 -> :ok
+        status -> {:error, {:http_error, status}}
       end
     else
-      {:error, :license_key_not_configured}
+      {:error, :license_key_required} -> {:error, :license_key_not_configured}
+      {:error, reason} -> {:error, reason}
     end
   rescue
     error -> {:error, error}
@@ -240,25 +242,25 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     config = Application.get_env(:raxol, :new_relic_config, %{})
     license_key = Map.get(config, :license_key)
 
-    if license_key do
-      new_relic_logs = Enum.map(logs, &format_new_relic_log/1)
-
-      headers = [
-        {"Content-Type", "application/json"},
-        {"X-License-Key", license_key}
-      ]
-
-      case HTTPoison.post(
+    with {:ok, _} <- validate_license_key(license_key),
+         new_relic_logs = Enum.map(logs, &format_new_relic_log/1),
+         headers = [
+           {"Content-Type", "application/json"},
+           {"X-License-Key", license_key}
+         ],
+         {:ok, response} <-
+           HTTPoison.post(
              "https://log-api.newrelic.com/log/v1",
              Jason.encode!(new_relic_logs),
              headers
            ) do
-        {:ok, %{status_code: 202}} -> :ok
-        {:ok, %{status_code: status}} -> {:error, {:http_error, status}}
-        {:error, reason} -> {:error, reason}
+      case response.status_code do
+        202 -> :ok
+        status -> {:error, {:http_error, status}}
       end
     else
-      {:error, :license_key_not_configured}
+      {:error, :license_key_required} -> {:error, :license_key_not_configured}
+      {:error, reason} -> {:error, reason}
     end
   rescue
     error -> {:error, error}
@@ -269,37 +271,45 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     url = Map.get(config, :url)
     api_key = Map.get(config, :api_key)
 
-    if url && api_key do
+    with {:ok, _} <- validate_grafana_config(url, api_key) do
       {:ok, %{url: url, api_key: api_key}}
     else
-      {:error, :url_and_api_key_required}
+      {:error, reason} -> {:error, reason}
     end
   end
+
+  defp validate_grafana_config(nil, _), do: {:error, :url_required}
+  defp validate_grafana_config(_, nil), do: {:error, :api_key_required}
+  defp validate_grafana_config(url, api_key) 
+       when is_binary(url) and is_binary(api_key), do: {:ok, {url, api_key}}
+  defp validate_grafana_config(_, _), do: {:error, :url_and_api_key_required}
 
   defp send_grafana_metrics(metrics) do
     config = Application.get_env(:raxol, :grafana_config, %{})
     url = Map.get(config, :url)
     api_key = Map.get(config, :api_key)
 
-    if url && api_key do
-      grafana_metrics = Enum.map(metrics, &format_grafana_metric/1)
-
-      headers = [
-        {"Content-Type", "application/json"},
-        {"Authorization", "Bearer #{api_key}"}
-      ]
-
-      case HTTPoison.post(
+    with {:ok, _} <- validate_grafana_config(url, api_key),
+         grafana_metrics = Enum.map(metrics, &format_grafana_metric/1),
+         headers = [
+           {"Content-Type", "application/json"},
+           {"Authorization", "Bearer #{api_key}"}
+         ],
+         {:ok, response} <-
+           HTTPoison.post(
              "#{url}/api/v1/push",
              Jason.encode!(grafana_metrics),
              headers
            ) do
-        {:ok, %{status_code: 200}} -> :ok
-        {:ok, %{status_code: status}} -> {:error, {:http_error, status}}
-        {:error, reason} -> {:error, reason}
+      case response.status_code do
+        200 -> :ok
+        status -> {:error, {:http_error, status}}
       end
     else
-      {:error, :grafana_not_configured}
+      {:error, :url_required} -> {:error, :grafana_not_configured}
+      {:error, :api_key_required} -> {:error, :grafana_not_configured}
+      {:error, :url_and_api_key_required} -> {:error, :grafana_not_configured}
+      {:error, reason} -> {:error, reason}
     end
   rescue
     error -> {:error, error}
@@ -314,18 +324,22 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   defp init_custom_backend(config) do
     handler = Map.get(config, :handler)
 
-    if handler && is_function(handler, 2) do
+    with {:ok, _} <- validate_handler(handler) do
       {:ok, %{handler: handler}}
     else
-      {:error, :invalid_handler}
+      {:error, reason} -> {:error, reason}
     end
   end
+
+  defp validate_handler(nil), do: {:error, :handler_required}
+  defp validate_handler(handler) when is_function(handler, 2), do: {:ok, handler}
+  defp validate_handler(_), do: {:error, :invalid_handler}
 
   defp send_custom_metrics(metrics) do
     config = Application.get_env(:raxol, :custom_monitoring_config, %{})
     handler = Map.get(config, :metrics_handler)
 
-    if handler && is_function(handler, 1) do
+    with {:ok, _} <- validate_metrics_handler(handler) do
       try do
         handler.(metrics)
         :ok
@@ -333,15 +347,19 @@ defmodule Raxol.Cloud.Monitoring.Backends do
         error -> {:error, error}
       end
     else
-      {:error, :handler_not_configured}
+      {:error, reason} -> {:error, reason}
     end
   end
+
+  defp validate_metrics_handler(nil), do: {:error, :handler_not_configured}
+  defp validate_metrics_handler(handler) when is_function(handler, 1), do: {:ok, handler}
+  defp validate_metrics_handler(_), do: {:error, :invalid_handler}
 
   defp send_custom_logs(logs) do
     config = Application.get_env(:raxol, :custom_monitoring_config, %{})
     handler = Map.get(config, :logs_handler)
 
-    if handler && is_function(handler, 1) do
+    with {:ok, _} <- validate_logs_handler(handler) do
       try do
         handler.(logs)
         :ok
@@ -349,9 +367,13 @@ defmodule Raxol.Cloud.Monitoring.Backends do
         error -> {:error, error}
       end
     else
-      {:error, :handler_not_configured}
+      {:error, reason} -> {:error, reason}
     end
   end
+
+  defp validate_logs_handler(nil), do: {:error, :handler_not_configured}
+  defp validate_logs_handler(handler) when is_function(handler, 1), do: {:ok, handler}
+  defp validate_logs_handler(_), do: {:error, :invalid_handler}
 
   # Format functions for different backends
 

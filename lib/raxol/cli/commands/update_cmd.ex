@@ -1,6 +1,5 @@
 defmodule Raxol.CLI.Commands.UpdateCmd do
-  import Raxol.Guards
-
+  
   @moduledoc """
   CLI command for managing Raxol updates.
 
@@ -79,25 +78,15 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
     )
   end
 
+  # Helper functions for pattern matching refactoring
+
   defp handle_command(opts) do
-    cond do
-      opts[:help] ->
-        print_help()
-
-      opts[:auto] ->
-        handle_auto_check(opts[:auto])
-
-      opts[:check] ->
-        check_for_updates(force: opts[:force])
-
-      opts[:delta_info] ->
-        show_delta_info(opts[:version], force: opts[:force])
-
-      true ->
-        perform_update(opts[:version],
-          force: opts[:force],
-          use_delta: !opts[:no_delta]
-        )
+    case {opts[:help], opts[:auto], opts[:check], opts[:delta_info]} do
+      {true, _, _, _} -> print_help()
+      {false, auto, _, _} when auto != nil -> handle_auto_check(auto)
+      {false, nil, true, _} -> check_for_updates(force: opts[:force])
+      {false, nil, false, true} -> show_delta_info(opts[:version], force: opts[:force])
+      {false, nil, false, false} -> perform_update(opts[:version], force: opts[:force], use_delta: !opts[:no_delta])
     end
   end
 
@@ -138,7 +127,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
     use_delta = Keyword.get(opts, :use_delta, true)
 
     check_result =
-      if nil?(version) do
+      if is_nil(version) do
         IO.puts("Checking for updates...")
         Updater.check_for_updates(opts)
       else
@@ -180,7 +169,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
 
   defp show_delta_info(version, opts) do
     # If no specific version is provided, check for latest
-    if nil?(version) do
+    if is_nil(version) do
       IO.puts("Checking for updates...")
 
       case Updater.check_for_updates(opts) do

@@ -235,31 +235,39 @@ defmodule Raxol.Terminal.Input.Buffer do
   end
 
   defp parse_next_event(input) do
-    cond do
-      result = parse_mouse_event(input) ->
-        result
+    parsers = [
+      &parse_mouse_event/1,
+      &parse_key_event_3_params/1,
+      &parse_key_event_2_params/1,
+      &parse_incomplete_escape/1,
+      &parse_single_character_event/1,
+      &parse_control_character/1
+    ]
 
-      result = parse_key_event_3_params(input) ->
-        result
+    Enum.find_value(parsers, fn parser ->
+      parser.(input)
+    end)
+  end
 
-      result = parse_key_event_2_params(input) ->
-        result
+  defp parse_incomplete_escape(input) do
+    if input == "\e" or String.starts_with?(input, "\e[") do
+      {:buffer, input}
+    end
+  end
 
-      # Incomplete escape sequence: just ESC or ESC + [
-      input == "\e" or String.starts_with?(input, "\e[") ->
-        {:buffer, input}
+  defp parse_single_character_event(input) do
+    if String.length(input) >= 1 and
+         not String.match?(String.first(input), ~r/[\x00-\x1F]/) do
+      char = String.first(input)
+      event = %Raxol.Terminal.Input.Event.KeyEvent{key: char, modifiers: []}
+      remaining = String.slice(input, 1..-1//1)
+      {:ok, event, remaining}
+    end
+  end
 
-      # Single character (non-control character)
-      String.length(input) >= 1 and
-          not String.match?(String.first(input), ~r/[\x00-\x1F]/) ->
-        char = String.first(input)
-        event = %Raxol.Terminal.Input.Event.KeyEvent{key: char, modifiers: []}
-        remaining = String.slice(input, 1..-1//1)
-        {:ok, event, remaining}
-
-      # Control character or escape sequence start
-      String.length(input) >= 1 ->
-        {:error, :unrecognized_sequence}
+  defp parse_control_character(input) do
+    if String.length(input) >= 1 do
+      {:error, :unrecognized_sequence}
     end
   end
 

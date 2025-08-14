@@ -5,10 +5,9 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   """
   # Must be false due to Process dictionary usage
   use ExUnit.Case, async: false
-  import Raxol.Guards
-
-  alias Raxol.Core.Events.Manager, as: EventManager
-  alias Raxol.Core.KeyboardShortcuts
+  
+  alias Raxol.Core.Events.Manager, as: Manager, as: EventManager
+  alias Raxol.Core.KeyboardShortcuts, as: KeyboardShortcuts
 
   setup do
     # Ensure UserPreferences is started
@@ -41,8 +40,8 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       assert shortcuts != nil
       assert Map.has_key?(shortcuts, :global)
       assert Map.has_key?(shortcuts, :contexts)
-      assert map?(shortcuts.global)
-      assert map?(shortcuts.contexts)
+      assert is_map(shortcuts.global)
+      assert is_map(shortcuts.contexts)
     end
   end
 

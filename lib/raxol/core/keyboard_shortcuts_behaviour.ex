@@ -1,4 +1,4 @@
-defmodule Raxol.Core.KeyboardShortcutsBehaviour do
+defmodule Raxol.Core.KeyboardShortcutsRefactoredBehaviour do
   @moduledoc """
   Behaviour for the KeyboardShortcuts module.
   This allows for mocking the KeyboardShortcuts module in tests.

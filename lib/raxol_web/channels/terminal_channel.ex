@@ -17,8 +17,7 @@ defmodule RaxolWeb.TerminalChannel do
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
   require Logger
-  import Raxol.Guards
-
+  
   # Rate limiting configuration
   @rate_limit_per_second 100
   # 10KB max input size
@@ -136,17 +135,7 @@ defmodule RaxolWeb.TerminalChannel do
     state = socket.assigns.terminal_state
     emulator = state.emulator
 
-    new_emulator =
-      cond do
-        offset < 0 ->
-          Raxol.Terminal.Commands.Screen.scroll_up(emulator, abs(offset))
-
-        offset > 0 ->
-          Raxol.Terminal.Commands.Screen.scroll_down(emulator, abs(offset))
-
-        true ->
-          emulator
-      end
+    new_emulator = apply_scroll_offset(emulator, offset)
 
     renderer = %{
       state.renderer
@@ -212,7 +201,7 @@ defmodule RaxolWeb.TerminalChannel do
   @impl Phoenix.Channel
   def handle_in("set_scrollback_limit", %{"limit" => limit}, socket) do
     state = socket.assigns.terminal_state
-    limit = if integer?(limit), do: limit, else: String.to_integer("#{limit}")
+    limit = if is_integer(limit), do: limit, else: String.to_integer("#{limit}")
 
     # Validate limit
     if limit >= 100 and limit <= 10_000 do
@@ -293,19 +282,21 @@ defmodule RaxolWeb.TerminalChannel do
 
   defp check_existing_rate_limit(key, count, timestamp) do
     now = System.system_time(:second)
+    check_rate_limit_status(key, count, timestamp, now)
+  end
 
-    cond do
-      now - timestamp >= 1 ->
-        :ets.insert(:rate_limit_table, {key, 1, now})
-        :ok
+  defp check_rate_limit_status(key, _count, timestamp, now) when now - timestamp >= 1 do
+    :ets.insert(:rate_limit_table, {key, 1, now})
+    :ok
+  end
 
-      count >= @rate_limit_per_second ->
-        {:error, :rate_limited}
+  defp check_rate_limit_status(_key, count, _timestamp, _now) when count >= @rate_limit_per_second do
+    {:error, :rate_limited}
+  end
 
-      true ->
-        :ets.insert(:rate_limit_table, {key, count + 1, timestamp})
-        :ok
-    end
+  defp check_rate_limit_status(key, count, timestamp, _now) do
+    :ets.insert(:rate_limit_table, {key, count + 1, timestamp})
+    :ok
   end
 
   defp ensure_rate_limit_table do
@@ -342,6 +333,16 @@ defmodule RaxolWeb.TerminalChannel do
       :error
     end
   end
+
+  defp apply_scroll_offset(emulator, offset) when offset < 0 do
+    Raxol.Terminal.Commands.Screen.scroll_up(emulator, abs(offset))
+  end
+
+  defp apply_scroll_offset(emulator, offset) when offset > 0 do
+    Raxol.Terminal.Commands.Screen.scroll_down(emulator, abs(offset))
+  end
+
+  defp apply_scroll_offset(emulator, _offset), do: emulator
 
   defp resize_terminal(state, width, height) do
     emulator = emulator_module().resize(state.emulator, width, height)

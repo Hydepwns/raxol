@@ -8,26 +8,24 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
   @doc """
   Erases characters in the current line based on the mode.
   """
-  def erase_in_line(buffer, mode, cursor) do
+  def erase_in_line(%Raxol.Terminal.ScreenBuffer{} = buffer, mode, cursor) do
     {row, col} = get_cursor_position(cursor)
-
-    cond do
-      is_struct(buffer, Raxol.Terminal.ScreenBuffer) ->
-        updated_cells = erase_in_line_cells(buffer.cells, mode, row, col)
-        %{buffer | cells: updated_cells}
-
-      is_list(buffer) ->
-        case mode do
-          0 -> erase_from_cursor_to_line_end(buffer, row, col)
-          1 -> erase_from_line_start_to_cursor(buffer, row, col)
-          2 -> erase_entire_line(buffer, row)
-          _ -> buffer
-        end
-
-      true ->
-        buffer
+    updated_cells = erase_in_line_cells(buffer.cells, mode, row, col)
+    %{buffer | cells: updated_cells}
+  end
+  
+  def erase_in_line(buffer, mode, cursor) when is_list(buffer) do
+    {row, col} = get_cursor_position(cursor)
+    
+    case mode do
+      0 -> erase_from_cursor_to_line_end(buffer, row, col)
+      1 -> erase_from_line_start_to_cursor(buffer, row, col)
+      2 -> erase_entire_line(buffer, row)
+      _ -> buffer
     end
   end
+  
+  def erase_in_line(buffer, _mode, _cursor), do: buffer
 
   @doc """
   Erases characters in the display based on the mode.
@@ -315,25 +313,31 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
     end)
   end
 
-  defp process_line_for_cursor_end(line, line_row, target_row, col) do
-    cond do
-      line_row < target_row -> line
-      line_row == target_row -> map_cells_from_column(line, col)
-      true -> List.duplicate(Cell.new(" "), length(line))
-    end
-  end
+  defp process_line_for_cursor_end(line, line_row, target_row, _col) when line_row < target_row,
+    do: line
+  
+  defp process_line_for_cursor_end(line, line_row, target_row, col) when line_row == target_row,
+    do: map_cells_from_column(line, col)
+  
+  defp process_line_for_cursor_end(line, _line_row, _target_row, _col),
+    do: List.duplicate(Cell.new(" "), length(line))
 
   defp erase_from_start_to_cursor(buffer, row, col) when is_list(buffer) do
     buffer
     |> Enum.with_index()
     |> Enum.map(fn {line, line_row} ->
-      cond do
-        line_row > row -> line
-        line_row == row -> map_cells_up_to_column(line, col)
-        true -> List.duplicate(Cell.new(" "), length(line))
-      end
+      process_line_for_cursor_start(line, line_row, row, col)
     end)
   end
+
+  defp process_line_for_cursor_start(line, line_row, row, _col) when line_row > row,
+    do: line
+  
+  defp process_line_for_cursor_start(line, line_row, row, col) when line_row == row,
+    do: map_cells_up_to_column(line, col)
+  
+  defp process_line_for_cursor_start(line, _line_row, _row, _col),
+    do: List.duplicate(Cell.new(" "), length(line))
 
   defp erase_all(buffer) when is_list(buffer) do
     width = length(hd(buffer))

@@ -3,19 +3,21 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorParser do
   Handles parsing of color specifications in various formats.
   """
 
-  import Raxol.Guards
-
+  
   @doc """
   Parses a color specification string into an RGB tuple.
   """
   @spec parse(String.t()) :: {:ok, {0..255, 0..255, 0..255}} | {:error, term()}
   def parse(spec) do
-    cond do
-      String.starts_with?(spec, "rgb:") -> parse_rgb_hex(spec)
-      String.starts_with?(spec, "#") -> parse_hex_color(spec)
-      String.starts_with?(spec, "rgb(") -> parse_rgb_decimal(spec)
-      true -> {:error, :unsupported_format}
-    end
+    parsers = [
+      {"rgb:", &parse_rgb_hex/1},
+      {"#", &parse_hex_color/1},
+      {"rgb(", &parse_rgb_decimal/1}
+    ]
+    
+    Enum.find_value(parsers, {:error, :unsupported_format}, fn {prefix, parser} ->
+      if String.starts_with?(spec, prefix), do: parser.(spec), else: nil
+    end)
   end
 
   @doc """
@@ -69,7 +71,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorParser do
 
   defp parse_rgb_decimal("rgb(" <> rest) do
     with trimmed <- String.trim_trailing(rest, ")"),
-         true <- binary?(trimmed),
+         true <- is_binary(trimmed),
          [r, g, b] <- String.split(trimmed, ","),
          {:ok, r_val} <- parse_decimal_component(r),
          {:ok, g_val} <- parse_decimal_component(g),

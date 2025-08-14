@@ -11,8 +11,7 @@ defmodule Raxol.Test.Integration.EventSimulation do
 
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Runtime.ComponentManager
-  import Raxol.Guards
-  import ExUnit.Assertions
+    import ExUnit.Assertions
 
   @doc """
   Simulates a user action on a component.
@@ -39,7 +38,7 @@ defmodule Raxol.Test.Integration.EventSimulation do
       end
 
     case event do
-      events when list?(events) ->
+      events when is_list(events) ->
         Enum.each(events, &process_event_with_commands(component, &1))
 
       event ->
@@ -218,7 +217,7 @@ defmodule Raxol.Test.Integration.EventSimulation do
           parent: Map.get(routing_info, :parent),
           child: Map.get(routing_info, :child)
         }
-        |> Enum.filter(fn {_k, v} -> not nil?(v) end)
+        |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
         |> Enum.into(%{})
 
       result = component.module.handle_event(component.state, event, context)

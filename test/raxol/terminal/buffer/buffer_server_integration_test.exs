@@ -1,14 +1,14 @@
 defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
   use ExUnit.Case, async: false
 
-  alias Raxol.Terminal.Buffer.BufferServerRefactored
+  alias Raxol.Terminal.Buffer.BufferServer
   alias Raxol.Terminal.Buffer, as: Buffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 
   setup do
     # Start a buffer server for each test
-    {:ok, pid} = BufferServerRefactored.start_link(width: 10, height: 5)
+    {:ok, pid} = BufferServer.start_link(width: 10, height: 5)
     %{buffer_pid: pid}
   end
 
@@ -17,20 +17,20 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       cell = Cell.new("A", TextFormatting.new())
 
       # Set cell asynchronously
-      :ok = BufferServerRefactored.set_cell(pid, 1, 1, cell)
+      :ok = BufferServer.set_cell(pid, 1, 1, cell)
 
       # Flush to ensure operation completes
-      :ok = BufferServerRefactored.flush(pid)
+      :ok = BufferServer.flush(pid)
 
       # Get cell and verify
-      {:ok, retrieved_cell} = BufferServerRefactored.get_cell(pid, 1, 1)
+      {:ok, retrieved_cell} = BufferServer.get_cell(pid, 1, 1)
       assert Cell.get_char(retrieved_cell) == "A"
     end
 
     test "can set and get cell with style", %{buffer_pid: pid} do
       # Set a cell with style
       :ok =
-        BufferServerRefactored.set_cell_sync(
+        BufferServer.set_cell_sync(
           pid,
           0,
           0,
@@ -38,7 +38,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
         )
 
       # Get the cell
-      {:ok, retrieved_cell} = BufferServerRefactored.get_cell(pid, 0, 0)
+      {:ok, retrieved_cell} = BufferServer.get_cell(pid, 0, 0)
 
       # Verify the cell content
       assert Cell.get_char(retrieved_cell) == "B"
@@ -49,11 +49,11 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
 
       # Try to set cell at invalid coordinates
       {:error, :invalid_coordinates} =
-        BufferServerRefactored.set_cell_sync(pid, 15, 15, cell)
+        BufferServer.set_cell_sync(pid, 15, 15, cell)
 
       # Try to get cell at invalid coordinates
       {:error, :invalid_coordinates} =
-        BufferServerRefactored.get_cell(pid, 15, 15)
+        BufferServer.get_cell(pid, 15, 15)
     end
   end
 
@@ -67,16 +67,16 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       ]
 
       # Process batch operations
-      :ok = BufferServerRefactored.batch_operations(pid, operations)
+      :ok = BufferServer.batch_operations(pid, operations)
 
       # Flush to ensure all operations complete
-      :ok = BufferServerRefactored.flush(pid)
+      :ok = BufferServer.flush(pid)
 
       # Verify results
-      {:ok, cell1} = BufferServerRefactored.get_cell(pid, 0, 0)
-      {:ok, cell2} = BufferServerRefactored.get_cell(pid, 1, 0)
-      {:ok, cell3} = BufferServerRefactored.get_cell(pid, 0, 1)
-      {:ok, cell4} = BufferServerRefactored.get_cell(pid, 0, 2)
+      {:ok, cell1} = BufferServer.get_cell(pid, 0, 0)
+      {:ok, cell2} = BufferServer.get_cell(pid, 1, 0)
+      {:ok, cell3} = BufferServer.get_cell(pid, 0, 1)
+      {:ok, cell4} = BufferServer.get_cell(pid, 0, 2)
 
       assert Cell.get_char(cell1) == "H"
       assert Cell.get_char(cell2) == "i"
@@ -97,12 +97,12 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       ]
 
       # Process batch operations
-      :ok = BufferServerRefactored.batch_operations(pid, operations)
-      :ok = BufferServerRefactored.flush(pid)
+      :ok = BufferServer.batch_operations(pid, operations)
+      :ok = BufferServer.flush(pid)
 
       # Verify valid operations succeeded
-      {:ok, cell1} = BufferServerRefactored.get_cell(pid, 0, 0)
-      {:ok, cell2} = BufferServerRefactored.get_cell(pid, 1, 1)
+      {:ok, cell1} = BufferServer.get_cell(pid, 0, 0)
+      {:ok, cell2} = BufferServer.get_cell(pid, 1, 1)
 
       assert Cell.get_char(cell1) == "A"
       assert Cell.get_char(cell2) == "C"
@@ -113,7 +113,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
     test "can perform atomic operations", %{buffer_pid: pid} do
       # Perform atomic operation
       :ok =
-        BufferServerRefactored.atomic_operation(pid, fn buffer ->
+        BufferServer.atomic_operation(pid, fn buffer ->
           buffer
           |> Raxol.Terminal.ScreenBuffer.write_char(0, 0, "A", %{
             foreground: 7,
@@ -130,9 +130,9 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
         end)
 
       # Verify all cells were set atomically
-      {:ok, cell1} = BufferServerRefactored.get_cell(pid, 0, 0)
-      {:ok, cell2} = BufferServerRefactored.get_cell(pid, 1, 0)
-      {:ok, cell3} = BufferServerRefactored.get_cell(pid, 2, 0)
+      {:ok, cell1} = BufferServer.get_cell(pid, 0, 0)
+      {:ok, cell2} = BufferServer.get_cell(pid, 1, 0)
+      {:ok, cell3} = BufferServer.get_cell(pid, 2, 0)
 
       assert Cell.get_char(cell1) == "A"
       assert Cell.get_char(cell2) == "B"
@@ -144,7 +144,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
     test "tracks operation metrics", %{buffer_pid: pid} do
       # Perform some operations
       :ok =
-        BufferServerRefactored.set_cell_sync(
+        BufferServer.set_cell_sync(
           pid,
           0,
           0,
@@ -152,17 +152,17 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
         )
 
       :ok =
-        BufferServerRefactored.set_cell_sync(
+        BufferServer.set_cell_sync(
           pid,
           1,
           0,
           Cell.new("B", TextFormatting.new())
         )
 
-      {:ok, _} = BufferServerRefactored.get_cell(pid, 0, 0)
+      {:ok, _} = BufferServer.get_cell(pid, 0, 0)
 
       # Get metrics
-      {:ok, metrics} = BufferServerRefactored.get_metrics(pid)
+      {:ok, metrics} = BufferServer.get_metrics(pid)
 
       # Verify metrics are being tracked
       assert metrics.operation_counts.writes >= 2
@@ -172,13 +172,13 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
 
     test "tracks memory usage", %{buffer_pid: pid} do
       # Get initial memory usage
-      initial_memory = BufferServerRefactored.get_memory_usage(pid)
+      initial_memory = BufferServer.get_memory_usage(pid)
       assert is_integer(initial_memory)
       assert initial_memory > 0
 
       # Perform operations to potentially change memory usage
       :ok =
-        BufferServerRefactored.set_cell_sync(
+        BufferServer.set_cell_sync(
           pid,
           0,
           0,
@@ -186,7 +186,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
         )
 
       # Get updated memory usage
-      updated_memory = BufferServerRefactored.get_memory_usage(pid)
+      updated_memory = BufferServer.get_memory_usage(pid)
       assert is_integer(updated_memory)
       assert updated_memory > 0
     end
@@ -196,7 +196,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
     test "tracks damage regions", %{buffer_pid: pid} do
       # Perform operations that should create damage regions
       :ok =
-        BufferServerRefactored.set_cell_sync(
+        BufferServer.set_cell_sync(
           pid,
           0,
           0,
@@ -204,7 +204,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
         )
 
       :ok =
-        BufferServerRefactored.set_cell_sync(
+        BufferServer.set_cell_sync(
           pid,
           1,
           1,
@@ -212,24 +212,24 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
         )
 
       # Get damage regions
-      damage_regions = BufferServerRefactored.get_damage_regions(pid)
+      damage_regions = BufferServer.get_damage_regions(pid)
 
       # Verify damage regions are tracked
       assert is_list(damage_regions)
       assert length(damage_regions) > 0
 
       # Clear damage regions
-      :ok = BufferServerRefactored.clear_damage_regions(pid)
+      :ok = BufferServer.clear_damage_regions(pid)
 
       # Verify damage regions are cleared
-      cleared_regions = BufferServerRefactored.get_damage_regions(pid)
+      cleared_regions = BufferServer.get_damage_regions(pid)
       assert cleared_regions == []
     end
   end
 
   describe "buffer state operations" do
     test "can get buffer dimensions", %{buffer_pid: pid} do
-      {width, height} = BufferServerRefactored.get_dimensions(pid)
+      {width, height} = BufferServer.get_dimensions(pid)
       assert width == 10
       assert height == 5
     end
@@ -237,7 +237,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
     test "can get buffer content", %{buffer_pid: pid} do
       # Set some content
       :ok =
-        BufferServerRefactored.set_cell_sync(
+        BufferServer.set_cell_sync(
           pid,
           0,
           0,
@@ -245,7 +245,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
         )
 
       :ok =
-        BufferServerRefactored.set_cell_sync(
+        BufferServer.set_cell_sync(
           pid,
           1,
           0,
@@ -253,7 +253,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
         )
 
       # Get buffer content
-      content = BufferServerRefactored.get_content(pid)
+      content = BufferServer.get_content(pid)
       assert is_binary(content)
       assert String.contains?(content, "H")
     end
@@ -261,7 +261,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
     test "can resize buffer", %{buffer_pid: pid} do
       # Set content before resize
       :ok =
-        BufferServerRefactored.set_cell_sync(
+        BufferServer.set_cell_sync(
           pid,
           0,
           0,
@@ -269,18 +269,18 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
         )
 
       # Resize buffer
-      :ok = BufferServerRefactored.resize(pid, 15, 8)
+      :ok = BufferServer.resize(pid, 15, 8)
 
       # Flush to ensure resize operation completes
-      :ok = BufferServerRefactored.flush(pid)
+      :ok = BufferServer.flush(pid)
 
       # Verify new dimensions
-      {width, height} = BufferServerRefactored.get_dimensions(pid)
+      {width, height} = BufferServer.get_dimensions(pid)
       assert width == 15
       assert height == 8
 
       # Verify content is preserved
-      {:ok, cell} = BufferServerRefactored.get_cell(pid, 0, 0)
+      {:ok, cell} = BufferServer.get_cell(pid, 0, 0)
       assert Cell.get_char(cell) == "A"
     end
   end
@@ -292,7 +292,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
         for i <- 0..9 do
           Task.async(fn ->
             cell = Cell.new("X#{i}", TextFormatting.new())
-            BufferServerRefactored.set_cell(pid, i, 0, cell)
+            BufferServer.set_cell(pid, i, 0, cell)
           end)
         end
 
@@ -300,11 +300,11 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       Enum.each(tasks, &Task.await/1)
 
       # Flush to ensure all operations complete
-      :ok = BufferServerRefactored.flush(pid)
+      :ok = BufferServer.flush(pid)
 
       # Verify all cells were written
       for i <- 0..9 do
-        {:ok, cell} = BufferServerRefactored.get_cell(pid, i, 0)
+        {:ok, cell} = BufferServer.get_cell(pid, i, 0)
         assert Cell.get_char(cell) == "X#{i}"
       end
     end
@@ -312,7 +312,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
     test "handles concurrent reads and writes", %{buffer_pid: pid} do
       # Set initial content
       :ok =
-        BufferServerRefactored.set_cell_sync(
+        BufferServer.set_cell_sync(
           pid,
           0,
           0,
@@ -323,7 +323,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       read_tasks =
         for _ <- 1..5 do
           Task.async(fn ->
-            {:ok, cell} = BufferServerRefactored.get_cell(pid, 0, 0)
+            {:ok, cell} = BufferServer.get_cell(pid, 0, 0)
             Cell.get_char(cell)
           end)
         end
@@ -332,7 +332,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
         for i <- 1..3 do
           Task.async(fn ->
             cell = Cell.new("B#{i}", TextFormatting.new())
-            BufferServerRefactored.set_cell(pid, i, 0, cell)
+            BufferServer.set_cell(pid, i, 0, cell)
           end)
         end
 
@@ -341,14 +341,14 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       Enum.each(write_tasks, &Task.await/1)
 
       # Flush to ensure all writes complete
-      :ok = BufferServerRefactored.flush(pid)
+      :ok = BufferServer.flush(pid)
 
       # Verify read results
       assert Enum.all?(read_results, &(&1 == "A"))
 
       # Verify write results
       for i <- 1..3 do
-        {:ok, cell} = BufferServerRefactored.get_cell(pid, i, 0)
+        {:ok, cell} = BufferServer.get_cell(pid, i, 0)
         assert Cell.get_char(cell) == "B#{i}"
       end
     end
@@ -360,18 +360,18 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
       invalid_cell = %{invalid: "data"}
 
       # Should handle gracefully
-      result = BufferServerRefactored.set_cell_sync(pid, 0, 0, invalid_cell)
+      result = BufferServer.set_cell_sync(pid, 0, 0, invalid_cell)
       assert result == :ok or match?({:error, _}, result)
     end
 
     test "handles server shutdown gracefully", %{buffer_pid: pid} do
       # Stop the server
-      :ok = BufferServerRefactored.stop(pid)
+      :ok = BufferServer.stop(pid)
 
       # Try to use the stopped server - should raise an exit
       assert_raise RuntimeError, fn ->
         try do
-          BufferServerRefactored.get_cell(pid, 0, 0)
+          BufferServer.get_cell(pid, 0, 0)
         catch
           :exit, {:noproc, _} -> raise "Process not alive"
           :exit, _ -> raise "Process not alive"
@@ -391,15 +391,15 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
 
       # Time the operation
       start_time = System.monotonic_time(:microsecond)
-      :ok = BufferServerRefactored.batch_operations(pid, operations)
-      :ok = BufferServerRefactored.flush(pid)
+      :ok = BufferServer.batch_operations(pid, operations)
+      :ok = BufferServer.flush(pid)
       end_time = System.monotonic_time(:microsecond)
 
       duration = end_time - start_time
 
       # Verify all operations completed
       for x <- 0..9, y <- 0..4 do
-        {:ok, cell} = BufferServerRefactored.get_cell(pid, x, y)
+        {:ok, cell} = BufferServer.get_cell(pid, x, y)
         assert Cell.get_char(cell) == "#{x}#{y}"
       end
 

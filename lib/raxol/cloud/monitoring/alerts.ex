@@ -1,7 +1,6 @@
 # Alerts implementation for monitoring
 defmodule Raxol.Cloud.Monitoring.Alerts do
-  import Raxol.Guards
-
+  
   @moduledoc false
 
   # Process dictionary key for alerts
@@ -12,12 +11,12 @@ defmodule Raxol.Cloud.Monitoring.Alerts do
       config: config
     }
 
-    Process.put(@alerts_key, alerts_state)
+    Raxol.Cloud.Monitoring.Server.init_alerts(alerts_state)
     :ok
   end
 
   def process(alert, opts \\ []) do
-    opts = if map?(opts), do: Enum.into(opts, []), else: opts
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     alerts_state = get_alerts_state()
 
     # Check if we should notify
@@ -34,7 +33,7 @@ defmodule Raxol.Cloud.Monitoring.Alerts do
   # Private helpers
 
   defp get_alerts_state() do
-    Process.get(@alerts_key) || %{config: %{}}
+    Raxol.Cloud.Monitoring.Server.get_alerts() || %{config: %{}}
   end
 
   defp send_notifications(_alert, _config) do

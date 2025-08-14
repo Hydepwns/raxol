@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Accessibility.Metadata do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles accessibility metadata for UI elements and component styles.
   """
@@ -19,11 +18,10 @@ defmodule Raxol.Core.Accessibility.Metadata do
       :ok
   """
   def register_element_metadata(element_id, metadata)
-      when binary?(element_id) and map?(metadata) do
-    # Store the metadata in process dictionary for simplicity
-    element_metadata = Process.get(:accessibility_element_metadata) || %{}
-    updated_metadata = Map.put(element_metadata, element_id, metadata)
-    Process.put(:accessibility_element_metadata, updated_metadata)
+      when is_binary(element_id) and is_map(metadata) do
+    # Delegate to the GenServer for metadata storage
+    alias Raxol.Core.Accessibility.Server
+    Server.register_element_metadata(element_id, metadata)
     :ok
   end
 
@@ -43,9 +41,10 @@ defmodule Raxol.Core.Accessibility.Metadata do
       iex> Metadata.get_element_metadata("search_button")
       %{label: "Search"}
   """
-  def get_element_metadata(element_id) when binary?(element_id) do
-    element_metadata = Process.get(:accessibility_element_metadata) || %{}
-    Map.get(element_metadata, element_id)
+  def get_element_metadata(element_id) when is_binary(element_id) do
+    # Delegate to the GenServer for metadata retrieval
+    alias Raxol.Core.Accessibility.Server
+    Server.get_element_metadata(element_id)
   end
 
   @doc """
@@ -62,10 +61,10 @@ defmodule Raxol.Core.Accessibility.Metadata do
       :ok
   """
   def register_component_style(component_type, style)
-      when atom?(component_type) and map?(style) do
-    component_styles = Process.get(:accessibility_component_styles) || %{}
-    updated_styles = Map.put(component_styles, component_type, style)
-    Process.put(:accessibility_component_styles, updated_styles)
+      when is_atom(component_type) and is_map(style) do
+    # Delegate to the GenServer for component style storage
+    alias Raxol.Core.Accessibility.Server
+    Server.register_component_style(component_type, style)
     :ok
   end
 
@@ -85,9 +84,10 @@ defmodule Raxol.Core.Accessibility.Metadata do
       iex> Metadata.get_component_style(:button)
       %{background: :blue}
   """
-  def get_component_style(component_type) when atom?(component_type) do
-    component_styles = Process.get(:accessibility_component_styles) || %{}
-    Map.get(component_styles, component_type, %{})
+  def get_component_style(component_type) when is_atom(component_type) do
+    # Delegate to the GenServer for component style retrieval
+    alias Raxol.Core.Accessibility.Server
+    Server.get_component_style(component_type)
   end
 
   @doc """
@@ -106,32 +106,32 @@ defmodule Raxol.Core.Accessibility.Metadata do
       iex> Metadata.get_accessible_name("search_button")
       "Search"
   """
-  def get_accessible_name(element) do
-    cond do
-      binary?(element) ->
-        # If element is a string ID, look up its metadata
-        metadata = get_element_metadata(element)
+  def get_accessible_name(element) when is_binary(element) do
+    # If element is a string ID, look up its metadata
+    metadata = get_element_metadata(element)
 
-        if metadata,
-          do: safe_map_get(metadata, :label),
-          else: nil
+    if metadata,
+      do: safe_map_get(metadata, :label),
+      else: nil
+  end
 
-      map?(element) && Map.has_key?(element, :label) ->
-        # If element is a map with a label key, use that
-        element.label
+  def get_accessible_name(%{label: label}) do
+    # If element is a map with a label key, use that
+    label
+  end
 
-      map?(element) && Map.has_key?(element, :id) ->
-        # If element has an ID, try to get metadata by ID
-        metadata = get_element_metadata(element.id)
+  def get_accessible_name(%{id: id} = element) when not is_map_key(element, :label) do
+    # If element has an ID but no label, try to get metadata by ID
+    metadata = get_element_metadata(id)
 
-        if metadata,
-          do: safe_map_get(metadata, :label),
-          else: nil
+    if metadata,
+      do: safe_map_get(metadata, :label),
+      else: nil
+  end
 
-      true ->
-        # Default fallback
-        "Focus changed"
-    end
+  def get_accessible_name(_element) do
+    # Default fallback
+    "Focus changed"
   end
 
   def get_component_hint(component_id, hint_level) do
@@ -139,6 +139,6 @@ defmodule Raxol.Core.Accessibility.Metadata do
   end
 
   defp safe_map_get(data, key, default \\ nil) do
-    if map?(data), do: Map.get(data, key, default), else: default
+    if is_map(data), do: Map.get(data, key, default), else: default
   end
 end

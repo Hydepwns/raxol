@@ -249,51 +249,8 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
 
   @impl GenServer
   def handle_call({:scale, new_size}, _from, state) do
-    cond do
-      new_size > length(state.workers) ->
-        # Scale up
-        additional_workers = new_size - length(state.workers)
-        new_workers = start_workers(state.supervisor_pid, additional_workers)
-
-        updated_state = %{
-          state
-          | workers: state.workers ++ new_workers,
-            available_workers: state.available_workers ++ new_workers,
-            min_size: new_size,
-            max_size: max(new_size, state.max_size)
-        }
-
-        {:reply, :ok, updated_state}
-
-      new_size < length(state.workers) ->
-        # Scale down
-        {workers_to_keep, workers_to_terminate} =
-          Enum.split(state.workers, new_size)
-
-        # Stop excess workers gracefully
-        Enum.each(workers_to_terminate, fn worker_pid ->
-          GenServer.stop(worker_pid, :normal)
-        end)
-
-        # Update available workers list
-        available_workers =
-          Enum.filter(state.available_workers, fn worker_pid ->
-            worker_pid in workers_to_keep
-          end)
-
-        updated_state = %{
-          state
-          | workers: workers_to_keep,
-            available_workers: available_workers,
-            min_size: new_size
-        }
-
-        {:reply, :ok, updated_state}
-
-      true ->
-        # No change needed
-        {:reply, :ok, state}
-    end
+    current_size = length(state.workers)
+    scale_pool(new_size, current_size, state)
   end
 
   @impl GenServer
@@ -316,35 +273,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
       "Worker #{inspect(worker_pid)} crashed with reason: #{inspect(reason)}"
     )
 
-    cond do
-      worker_pid in state.workers ->
-        # Replace crashed permanent worker
-        {:ok, new_worker} = start_worker(state.supervisor_pid)
-
-        updated_state = %{
-          state
-          | workers: replace_worker(state.workers, worker_pid, new_worker),
-            available_workers:
-              replace_worker(state.available_workers, worker_pid, new_worker),
-            busy_workers: List.delete(state.busy_workers, worker_pid)
-        }
-
-        {:noreply, updated_state}
-
-      worker_pid in state.overflow_workers ->
-        # Remove crashed overflow worker
-        updated_state = %{
-          state
-          | overflow_workers: List.delete(state.overflow_workers, worker_pid),
-            busy_workers: List.delete(state.busy_workers, worker_pid)
-        }
-
-        {:noreply, updated_state}
-
-      true ->
-        # Unknown worker, ignore
-        {:noreply, state}
-    end
+    handle_worker_crash(worker_pid, state)
   end
 
   ## Private functions
@@ -479,5 +408,98 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
       ^old_worker -> new_worker
       worker -> worker
     end)
+  end
+
+  # Helper functions for scaling and crash handling
+  defp scale_pool(new_size, current_size, state) when new_size > current_size do
+    # Scale up
+    additional_workers = new_size - current_size
+    new_workers = start_workers(state.supervisor_pid, additional_workers)
+
+    updated_state = %{
+      state
+      | workers: state.workers ++ new_workers,
+        available_workers: state.available_workers ++ new_workers,
+        min_size: new_size,
+        max_size: max(new_size, state.max_size)
+    }
+
+    {:reply, :ok, updated_state}
+  end
+
+  defp scale_pool(new_size, current_size, state) when new_size < current_size do
+    # Scale down
+    {workers_to_keep, workers_to_terminate} = Enum.split(state.workers, new_size)
+
+    # Stop excess workers gracefully
+    Enum.each(workers_to_terminate, fn worker_pid ->
+      GenServer.stop(worker_pid, :normal)
+    end)
+
+    # Update available workers list
+    available_workers =
+      Enum.filter(state.available_workers, fn worker_pid ->
+        worker_pid in workers_to_keep
+      end)
+
+    updated_state = %{
+      state
+      | workers: workers_to_keep,
+        available_workers: available_workers,
+        min_size: new_size
+    }
+
+    {:reply, :ok, updated_state}
+  end
+
+  defp scale_pool(_new_size, _current_size, state) do
+    # No change needed
+    {:reply, :ok, state}
+  end
+
+  defp handle_worker_crash(worker_pid, state) do
+    crash_type = classify_worker_crash(worker_pid, state)
+    execute_crash_handling(crash_type, worker_pid, state)
+  end
+
+  defp classify_worker_crash(worker_pid, state) do
+    worker_location = {worker_pid in state.workers, worker_pid in state.overflow_workers}
+    
+    case worker_location do
+      {true, _} -> :permanent_worker
+      {false, true} -> :overflow_worker
+      {false, false} -> :unknown_worker
+    end
+  end
+
+  defp execute_crash_handling(:permanent_worker, worker_pid, state) do
+    # Replace crashed permanent worker
+    {:ok, new_worker} = start_worker(state.supervisor_pid)
+
+    updated_state = %{
+      state
+      | workers: replace_worker(state.workers, worker_pid, new_worker),
+        available_workers:
+          replace_worker(state.available_workers, worker_pid, new_worker),
+        busy_workers: List.delete(state.busy_workers, worker_pid)
+    }
+
+    {:noreply, updated_state}
+  end
+
+  defp execute_crash_handling(:overflow_worker, worker_pid, state) do
+    # Remove crashed overflow worker
+    updated_state = %{
+      state
+      | overflow_workers: List.delete(state.overflow_workers, worker_pid),
+        busy_workers: List.delete(state.busy_workers, worker_pid)
+    }
+
+    {:noreply, updated_state}
+  end
+
+  defp execute_crash_handling(:unknown_worker, _worker_pid, state) do
+    # Unknown worker, ignore
+    {:noreply, state}
   end
 end

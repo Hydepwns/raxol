@@ -94,12 +94,15 @@ defmodule Raxol.Terminal.CharacterHandling do
   """
   @dialyzer {:nowarn_function, get_bidi_type: 1}
   def get_bidi_type(char) do
-    cond do
-      combining_char?(char) -> :COMBINING
-      char_in_ranges(char, rtl_ranges()) -> :RTL
-      char_in_ranges(char, ltr_ranges()) -> :LTR
-      true -> :NEUTRAL
-    end
+    bidi_checks = [
+      {&combining_char?/1, :COMBINING},
+      {fn c -> char_in_ranges(c, rtl_ranges()) end, :RTL},
+      {fn c -> char_in_ranges(c, ltr_ranges()) end, :LTR}
+    ]
+    
+    Enum.find_value(bidi_checks, :NEUTRAL, fn {check, type} ->
+      if check.(char), do: type, else: nil
+    end)
   end
 
   defp rtl_ranges do

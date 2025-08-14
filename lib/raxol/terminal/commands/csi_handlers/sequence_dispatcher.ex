@@ -65,12 +65,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.SequenceDispatcher do
   end
 
   defp parse_parameterized_sequence(sequence) do
-    cond do
-      SequenceParser.parse_cursor_sequence(sequence) != :error ->
-        SequenceParser.parse_cursor_sequence(sequence)
-
-      true ->
-        :error
+    case SequenceParser.parse_cursor_sequence(sequence) do
+      :error -> :error
+      result -> result
     end
   end
 end

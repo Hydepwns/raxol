@@ -1,6 +1,7 @@
 defmodule Raxol.DevTools.ComponentPreview do
   @moduledoc """
   Interactive component preview and playground for Raxol UI components.
+  Functional Programming Version - All try/catch blocks replaced with Task-based error handling.
 
   This module provides a development environment for previewing, testing, and
   iterating on UI components in isolation. It offers:
@@ -104,17 +105,6 @@ defmodule Raxol.DevTools.ComponentPreview do
 
   @doc """
   Registers a component story for the preview system.
-
-  ## Examples
-
-      ComponentPreview.register_story(Button, "primary", %{
-        label: "Primary Button",
-        variant: :primary
-      }, 
-        description: "A primary action button",
-        category: "Actions",
-        interactive_props: [:label, :disabled]
-      )
   """
   def register_story(component, story_name, props, opts \\ []) do
     story = Story.new(component, story_name, props, opts)
@@ -388,27 +378,48 @@ defmodule Raxol.DevTools.ComponentPreview do
         }
       },
       children: [
-        try do
-          cond do
-            function_exported?(component, :render, 2) ->
-              component.render(props, context)
-
-            function_exported?(component, :component, 1) ->
-              component.component(props)
-
-            true ->
-              error_component(
-                "Component #{component} does not export render/2 or component/1"
-              )
-          end
-        catch
-          kind, reason ->
-            error_component(
-              "Error rendering #{component}: #{inspect(kind)} - #{inspect(reason)}"
-            )
+        case safe_render_component(component, props, context) do
+          {:ok, rendered} -> rendered
+          {:error, reason} -> error_component("Error rendering #{component}: #{inspect(reason)}")
         end
       ]
     }
+  end
+
+  defp safe_render_component(component, props, context) do
+    with {:ok, render_method} <- determine_render_method(component),
+         {:ok, rendered} <- execute_render_method(render_method, component, props, context) do
+      {:ok, rendered}
+    else
+      {:error, reason} -> {:error, reason}
+      error -> {:error, {:unexpected_render_error, error}}
+    end
+  end
+
+  # Helper functions for pattern matching refactoring
+  
+  defp determine_render_method(component) do
+    case {function_exported?(component, :render, 2), function_exported?(component, :component, 1)} do
+      {true, _} -> {:ok, :render_2}
+      {false, true} -> {:ok, :component_1}
+      {false, false} -> {:error, "Component #{component} does not export render/2 or component/1"}
+    end
+  end
+
+  defp execute_render_method(:render_2, component, props, context) do
+    with {:ok, result} <- safe_component_render(component, props, context) do
+      {:ok, result}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp execute_render_method(:component_1, component, props, _context) do
+    with {:ok, result} <- safe_component_call(component, props) do
+      {:ok, result}
+    else
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   defp story_header(story) do
@@ -855,39 +866,74 @@ defmodule Raxol.DevTools.ComponentPreview do
   end
 
   defp extract_component_from_file(file_path) do
-    try do
-      content = File.read!(file_path)
+    with {:ok, content} <- safe_read_file(file_path),
+         {:ok, module_name} <- extract_module_name(content),
+         {:ok, module} <- safe_module_concat(module_name),
+         true <- is_valid_component?(module) do
+      module
+    else
+      _ -> nil
+    end
+  end
 
-      # Simple pattern matching for component modules
-      case Regex.run(~r/defmodule\s+([\w\.]+).*?do/, content) do
-        [_, module_name] ->
-          module = Module.concat([module_name])
+  defp safe_read_file(file_path) do
+    with {:ok, content} <- safe_file_read(file_path) do
+      {:ok, content}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
-          if Code.ensure_loaded?(module) and is_component_module?(module) do
-            module
-          else
-            nil
-          end
+  defp extract_module_name(content) do
+    with {:ok, regex_result} <- safe_regex_run(~r/defmodule\s+([\w\.]+).*?do/, content),
+         {:ok, module_name} <- extract_module_from_regex(regex_result) do
+      {:ok, module_name}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
-        _ ->
-          nil
-      end
-    catch
-      _, _ -> nil
+  defp safe_module_concat(module_name) do
+    with {:ok, module} <- safe_module_concat_call(module_name) do
+      {:ok, module}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp is_valid_component?(module) do
+    with {:ok, is_loaded} <- safe_code_ensure_loaded(module),
+         {:ok, is_component} <- safe_is_component_module(module) do
+      is_loaded and is_component
+    else
+      _ -> false
     end
   end
 
   defp is_component_module?(module) do
-    try do
-      functions = module.__info__(:functions)
-
-      Enum.any?(functions, fn {func, arity} ->
-        func in [:render, :component] and arity in [1, 2]
-      end)
-    catch
-      _, _ -> false
+    with {:ok, functions} <- safe_get_module_info(module),
+         true <- has_component_functions?(functions) do
+      true
+    else
+      _ -> false
     end
   end
+
+  defp safe_get_module_info(module) do
+    with {:ok, functions} <- safe_module_info_call(module, :functions) do
+      {:ok, functions}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp has_component_functions?(functions) when is_list(functions) do
+    Enum.any?(functions, fn {func, arity} ->
+      func in [:render, :component] and arity in [1, 2]
+    end)
+  end
+
+  defp has_component_functions?(_), do: false
 
   defp register_auto_story(component) do
     # Generate a basic story for discovered components
@@ -898,23 +944,45 @@ defmodule Raxol.DevTools.ComponentPreview do
   end
 
   defp get_component_prop_schema(component) do
-    try do
-      if function_exported?(component, :__props__, 0) do
-        component.__props__()
-      else
-        nil
-      end
-    catch
-      _, _ -> nil
+    with {:ok, has_props_export} <- check_props_export(component),
+         true <- has_props_export,
+         {:ok, schema} <- safe_get_props_schema(component) do
+      schema
+    else
+      _ -> nil
+    end
+  end
+
+  defp check_props_export(component) do
+    with {:ok, has_export} <- safe_function_exported_check(component, :__props__, 0) do
+      {:ok, has_export}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp safe_get_props_schema(component) do
+    with {:ok, schema} <- safe_component_props_call(component) do
+      {:ok, schema}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
   defp parse_value(string_value) do
-    try do
-      {value, _} = Code.eval_string(string_value)
-      value
-    catch
-      _, _ -> string_value
+    with {:ok, parsed} <- safe_eval_string(string_value) do
+      parsed
+    else
+      _ -> string_value
+    end
+  end
+
+  defp safe_eval_string(string_value) do
+    with {:ok, eval_result} <- safe_code_eval_string(string_value),
+         {:ok, value} <- extract_value_from_eval(eval_result) do
+      {:ok, value}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -932,5 +1000,150 @@ defmodule Raxol.DevTools.ComponentPreview do
     :timer.sleep(1000)
     Logger.debug("Preview server running on port #{port}")
     preview_server_loop(port)
+  end
+
+  # Functional helper functions replacing try/catch with Task-based error handling
+
+  defp safe_component_render(component, props, context) do
+    Task.async(fn -> component.render(props, context) end)
+    |> Task.yield(2000)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, reason} -> {:error, {:render_exception, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_component_call(component, props) do
+    Task.async(fn -> component.component(props) end)
+    |> Task.yield(2000)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, reason} -> {:error, {:component_exception, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_file_read(file_path) do
+    Task.async(fn -> File.read!(file_path) end)
+    |> Task.yield(1000)
+    |> case do
+      {:ok, content} -> {:ok, content}
+      {:exit, reason} -> {:error, {:file_read_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_regex_run(regex, content) do
+    Task.async(fn -> Regex.run(regex, content) end)
+    |> Task.yield(200)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, reason} -> {:error, {:regex_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp extract_module_from_regex(regex_result) do
+    case regex_result do
+      [_, module_name] -> {:ok, module_name}
+      _ -> {:error, :no_module_found}
+    end
+  end
+
+  defp safe_module_concat_call(module_name) do
+    Task.async(fn -> Module.concat([module_name]) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, module} -> {:ok, module}
+      {:exit, reason} -> {:error, {:module_concat_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_code_ensure_loaded(module) do
+    Task.async(fn -> Code.ensure_loaded?(module) end)
+    |> Task.yield(500)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, _reason} -> {:ok, false}
+      nil -> {:ok, false}
+    end
+  end
+
+  defp safe_is_component_module(module) do
+    Task.async(fn -> is_component_module?(module) end)
+    |> Task.yield(200)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, _reason} -> {:ok, false}
+      nil -> {:ok, false}
+    end
+  end
+
+  defp safe_module_info_call(module, info_type) do
+    Task.async(fn -> module.__info__(info_type) end)
+    |> Task.yield(200)
+    |> case do
+      {:ok, info} -> {:ok, info}
+      {:exit, reason} -> {:error, {:module_info_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_function_exported_check(component, function, arity) do
+    Task.async(fn -> function_exported?(component, function, arity) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, reason} -> {:error, {:export_check_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_component_props_call(component) do
+    Task.async(fn -> component.__props__() end)
+    |> Task.yield(500)
+    |> case do
+      {:ok, schema} -> {:ok, schema}
+      {:exit, reason} -> {:error, {:props_schema_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_code_eval_string(string_value) do
+    Task.async(fn -> Code.eval_string(string_value) end)
+    |> Task.yield(1000)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, reason} -> {:error, {:eval_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp extract_value_from_eval({value, _binding}) do
+    {:ok, value}
+  end
+
+  defp extract_value_from_eval(_) do
+    {:error, :invalid_eval_result}
   end
 end

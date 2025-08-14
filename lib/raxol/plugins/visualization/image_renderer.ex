@@ -1,6 +1,5 @@
 defmodule Raxol.Plugins.Visualization.ImageRenderer do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles rendering logic for image visualization within the VisualizationPlugin.
   Supports both sixel and kitty protocols for terminal image rendering.
@@ -52,10 +51,10 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   end
 
   defp detect_protocol(state) do
-    cond do
-      supports_kitty?(state) -> :kitty
-      supports_sixel?(state) -> :sixel
-      true -> :placeholder
+    case {supports_kitty?(state), supports_sixel?(state)} do
+      {true, _} -> :kitty
+      {_, true} -> :sixel
+      {false, false} -> :placeholder
     end
   end
 
@@ -106,7 +105,7 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
     end
   end
 
-  defp load_image_data(data) when binary?(data) do
+  defp load_image_data(data) when is_binary(data) do
     # Handle file path
     case File.read(data) do
       {:ok, content} -> {:ok, content}
@@ -114,7 +113,7 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
     end
   end
 
-  defp load_image_data(data) when binary?(data) do
+  defp load_image_data(data) when is_binary(data) do
     # Handle raw image data
     {:ok, data}
   end

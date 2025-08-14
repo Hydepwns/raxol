@@ -1,6 +1,5 @@
 defmodule Raxol.UI.Components.HintDisplay do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Displays contextual hints and keyboard shortcuts.
   """
@@ -46,7 +45,7 @@ defmodule Raxol.UI.Components.HintDisplay do
     )
 
     case msg do
-      {:set_hints, hints} when list?(hints) ->
+      {:set_hints, hints} when is_list(hints) ->
         {%{state | hints: hints}, []}
 
       :show ->
@@ -84,7 +83,7 @@ defmodule Raxol.UI.Components.HintDisplay do
       hint_texts =
         Enum.map(state.hints, fn
           {key, desc} -> "#{key}: #{desc}"
-          hint when binary?(hint) -> hint
+          hint when is_binary(hint) -> hint
           _ -> ""
         end)
 

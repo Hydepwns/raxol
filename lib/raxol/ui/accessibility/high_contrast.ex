@@ -345,34 +345,16 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     theme_registry = @builtin_themes
 
     # Detect system high contrast settings if enabled
-    {initial_theme, updated_config} =
-      if config.auto_detect_system do
-        case detect_system_high_contrast() do
-          {:ok, system_theme} -> {system_theme, config}
-          {:error, _reason} -> {config.default_theme, config}
-        end
-      else
-        {config.default_theme, config}
-      end
+    {initial_theme, updated_config} = get_initial_theme(config)
 
     # Initialize contrast analyzer
     contrast_analyzer = init_contrast_analyzer()
 
     # Initialize color blindness support
-    color_blind_config =
-      if config.color_blind_support do
-        init_color_blind_support()
-      else
-        nil
-      end
+    color_blind_config = init_color_blind_config(config)
 
     # Initialize system monitoring
-    system_monitor =
-      if config.auto_detect_system do
-        start_system_monitor()
-      else
-        nil
-      end
+    system_monitor = init_system_monitor(config)
 
     state = %__MODULE__{
       config: updated_config,
@@ -480,30 +462,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
 
   @impl GenServer
   def handle_call({:configure_color_blindness, type, options}, _from, state) do
-    if state.config.color_blind_support do
-      new_color_blind_config = %{
-        type: type,
-        strength: Map.get(options, :strength, 1.0),
-        enable_patterns: Map.get(options, :enable_patterns, false),
-        alternative_indicators: Map.get(options, :alternative_indicators, []),
-        correction_matrix: generate_color_correction_matrix(type)
-      }
-
-      new_state = %{state | color_blind_config: new_color_blind_config}
-
-      # Re-apply current theme with color blindness corrections
-      {:ok, updated_state} =
-        if state.current_theme do
-          apply_theme_internal(new_state, state.current_theme.name)
-        else
-          {:ok, new_state}
-        end
-
-      Logger.info("Color blindness support configured: #{type}")
-      {:reply, :ok, updated_state}
-    else
-      {:reply, {:error, :color_blind_support_disabled}, state}
-    end
+    configure_color_blindness_internal(state, type, options)
   end
 
   @impl GenServer
@@ -512,16 +471,9 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     new_state = %{state | config: new_config}
 
     # Re-apply current theme to adjust for large text
-    {:ok, updated_state} =
-      if state.current_theme do
-        apply_theme_internal(new_state, state.current_theme.name)
-      else
-        {:ok, new_state}
-      end
+    {:ok, updated_state} = reapply_current_theme(new_state)
 
-    Logger.info(
-      "Large text mode #{if enabled, do: "enabled", else: "disabled"}"
-    )
+    Logger.info("Large text mode #{format_enabled_status(enabled)}")
 
     {:reply, :ok, updated_state}
   end
@@ -533,16 +485,9 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     new_state = %{state | config: new_config}
 
     # Re-apply current theme with inversion
-    {:ok, updated_state} =
-      if state.current_theme do
-        apply_theme_internal(new_state, state.current_theme.name)
-      else
-        {:ok, new_state}
-      end
+    {:ok, updated_state} = reapply_current_theme(new_state)
 
-    Logger.info(
-      "Color inversion #{if new_invert, do: "enabled", else: "disabled"}"
-    )
+    Logger.info("Color inversion #{format_enabled_status(new_invert)}")
 
     {:reply, :ok, updated_state}
   end
@@ -587,12 +532,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
         state.config.large_text_mode
       )
 
-    suggestions =
-      if current_ratio < target_ratio do
-        generate_color_suggestions(foreground, background, target_ratio)
-      else
-        []
-      end
+    suggestions = build_contrast_suggestions(current_ratio, target_ratio, foreground, background)
 
     result = %{
       current_ratio: current_ratio,
@@ -605,47 +545,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
 
   @impl GenServer
   def handle_call(:get_accessibility_info, _from, state) do
-    info =
-      if state.current_theme do
-        theme = state.current_theme
-
-        # Analyze all color pairs in the theme
-        color_pairs = [
-          {:foreground_background, theme.foreground, theme.background},
-          {:accent_background, theme.accent, theme.background},
-          {:success_background, theme.success, theme.background},
-          {:warning_background, theme.warning, theme.background},
-          {:error_background, theme.error, theme.background},
-          {:info_background, theme.info, theme.background}
-        ]
-
-        contrast_analysis =
-          Enum.map(color_pairs, fn {pair_name, fg, bg} ->
-            ratio = calculate_contrast_ratio(fg, bg)
-
-            %{
-              pair: pair_name,
-              foreground: fg,
-              background: bg,
-              contrast_ratio: ratio,
-              wcag_aa_compliant: ratio >= @wcag_ratios.wcag_aa,
-              wcag_aaa_compliant: ratio >= @wcag_ratios.wcag_aaa
-            }
-          end)
-
-        %{
-          theme_name: theme.name,
-          compliance_level: theme.compliance_level,
-          large_text_optimized: theme.large_text_optimized,
-          color_blind_friendly: is_color_blind_friendly(theme),
-          contrast_analysis: contrast_analysis,
-          overall_compliance: determine_overall_compliance(contrast_analysis),
-          accessibility_features: get_enabled_accessibility_features(state)
-        }
-      else
-        %{error: :no_theme_active}
-      end
-
+    info = build_accessibility_info(state)
     {:reply, info, state}
   end
 
@@ -658,20 +558,10 @@ defmodule Raxol.UI.Accessibility.HighContrast do
 
       theme ->
         # Apply color blindness corrections if enabled
-        adjusted_theme =
-          if state.color_blind_config do
-            apply_color_blind_corrections(theme, state.color_blind_config)
-          else
-            theme
-          end
+        adjusted_theme = apply_color_adjustments(theme, state)
 
         # Apply color inversion if enabled
-        final_theme =
-          if state.config.invert_colors do
-            invert_theme_colors(adjusted_theme)
-          else
-            adjusted_theme
-          end
+        final_theme = apply_color_inversion(adjusted_theme, state.config)
 
         # Apply the theme to the UI system
         apply_theme_to_system(final_theme, state.config)
@@ -699,21 +589,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     missing_keys =
       Enum.filter(required_keys, fn key -> not Map.has_key?(theme, key) end)
 
-    if length(missing_keys) > 0 do
-      {:error, {:missing_keys, missing_keys}}
-    else
-      # Set defaults for optional keys
-      validated =
-        Map.merge(
-          %{
-            compliance_level: :wcag_aa,
-            large_text_optimized: false
-          },
-          theme
-        )
-
-      {:ok, validated}
-    end
+    validate_theme_keys(missing_keys, theme)
   end
 
   defp validate_theme_compliance(theme, required_level) do
@@ -725,16 +601,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
       {:accent_background, theme.accent, theme.background}
     ]
 
-    issues =
-      Enum.reduce(critical_pairs, [], fn {pair_name, fg, bg}, acc ->
-        ratio = calculate_contrast_ratio(fg, bg)
-
-        if ratio < required_ratio do
-          [%{pair: pair_name, ratio: ratio, required: required_ratio} | acc]
-        else
-          acc
-        end
-      end)
+    issues = collect_compliance_issues(critical_pairs, required_ratio)
 
     case issues do
       [] ->
@@ -790,118 +657,47 @@ defmodule Raxol.UI.Accessibility.HighContrast do
 
   defp get_achieved_compliance_level(ratio, large_text) do
     ratios = if large_text, do: @large_text_ratios, else: @wcag_ratios
-
-    cond do
-      ratio >= ratios.wcag_aaa -> :wcag_aaa
-      ratio >= ratios.wcag_aa -> :wcag_aa
-      ratio >= ratios.wcag_a -> :wcag_a
-      true -> :non_compliant
-    end
+    determine_compliance_from_ratio(ratio, ratios)
   end
 
   defp generate_contrast_recommendations(current_ratio, required_ratio) do
     improvement_needed = required_ratio / current_ratio
-
-    recommendations = []
-
-    recommendations =
-      if improvement_needed > 1.5 do
-        [
-          "Consider using darker background or lighter foreground colors"
-          | recommendations
-        ]
-      else
-        recommendations
-      end
-
-    recommendations =
-      if improvement_needed > 1.2 do
-        [
-          "Adjust color saturation or brightness for better contrast"
-          | recommendations
-        ]
-      else
-        recommendations
-      end
-
-    recommendations =
-      if current_ratio < 3.0 do
-        [
-          "Current contrast is very low - significant changes needed"
-          | recommendations
-        ]
-      else
-        recommendations
-      end
-
-    recommendations
+    build_recommendation_list([], improvement_needed, current_ratio)
   end
 
-  defp generate_color_suggestions(foreground, background, target_ratio) do
-    # Generate suggestions for improving contrast
-    current_ratio = calculate_contrast_ratio(foreground, background)
 
-    if current_ratio < target_ratio do
-      improvement_factor = target_ratio / current_ratio
+  defp build_contrast_suggestions(current_ratio, target_ratio, _foreground, _background) when current_ratio >= target_ratio, do: []
 
-      # Suggest darker background
-      darker_bg = darken_color(background, improvement_factor)
-      darker_bg_ratio = calculate_contrast_ratio(foreground, darker_bg)
+  defp build_contrast_suggestions(current_ratio, target_ratio, foreground, background) do
+    improvement_factor = target_ratio / current_ratio
 
-      # Suggest lighter foreground  
-      lighter_fg = lighten_color(foreground, improvement_factor)
-      lighter_fg_ratio = calculate_contrast_ratio(lighter_fg, background)
+    # Suggest darker background
+    darker_bg = darken_color(background, improvement_factor)
+    darker_bg_ratio = calculate_contrast_ratio(foreground, darker_bg)
 
-      suggestions = []
+    # Suggest lighter foreground  
+    lighter_fg = lighten_color(foreground, improvement_factor)
+    lighter_fg_ratio = calculate_contrast_ratio(lighter_fg, background)
 
-      suggestions =
-        if darker_bg_ratio >= target_ratio do
-          [
-            %{
-              type: :background,
-              color: darker_bg,
-              resulting_ratio: darker_bg_ratio
-            }
-            | suggestions
-          ]
-        else
-          suggestions
-        end
+    suggestions = build_suggestion_list([], darker_bg, darker_bg_ratio, lighter_fg, lighter_fg_ratio, target_ratio)
 
-      suggestions =
-        if lighter_fg_ratio >= target_ratio do
-          [
-            %{
-              type: :foreground,
-              color: lighter_fg,
-              resulting_ratio: lighter_fg_ratio
-            }
-            | suggestions
-          ]
-        else
-          suggestions
-        end
+    # Suggest high contrast alternatives
+    high_contrast_suggestions = [
+      %{
+        type: :both,
+        foreground: {255, 255, 255},
+        background: {0, 0, 0},
+        resulting_ratio: calculate_contrast_ratio({255, 255, 255}, {0, 0, 0})
+      },
+      %{
+        type: :both,
+        foreground: {0, 0, 0},
+        background: {255, 255, 255},
+        resulting_ratio: calculate_contrast_ratio({0, 0, 0}, {255, 255, 255})
+      }
+    ]
 
-      # Suggest high contrast alternatives
-      high_contrast_suggestions = [
-        %{
-          type: :both,
-          foreground: {255, 255, 255},
-          background: {0, 0, 0},
-          resulting_ratio: calculate_contrast_ratio({255, 255, 255}, {0, 0, 0})
-        },
-        %{
-          type: :both,
-          foreground: {0, 0, 0},
-          background: {255, 255, 255},
-          resulting_ratio: calculate_contrast_ratio({0, 0, 0}, {255, 255, 255})
-        }
-      ]
-
-      suggestions ++ high_contrast_suggestions
-    else
-      []
-    end
+    suggestions ++ high_contrast_suggestions
   end
 
   defp darken_color({r, g, b}, factor) do
@@ -1125,44 +921,27 @@ defmodule Raxol.UI.Accessibility.HighContrast do
   defp determine_overall_compliance(contrast_analysis) do
     compliant_pairs = Enum.count(contrast_analysis, & &1.wcag_aa_compliant)
     total_pairs = length(contrast_analysis)
-
-    cond do
-      compliant_pairs == total_pairs -> :fully_compliant
-      compliant_pairs > total_pairs * 0.8 -> :mostly_compliant
-      compliant_pairs > total_pairs * 0.5 -> :partially_compliant
-      true -> :non_compliant
-    end
+    calculate_compliance_level(compliant_pairs, total_pairs)
   end
 
+  defp determine_compliance_from_ratio(ratio, ratios) when ratio >= ratios.wcag_aaa, do: :wcag_aaa
+  defp determine_compliance_from_ratio(ratio, ratios) when ratio >= ratios.wcag_aa, do: :wcag_aa
+  defp determine_compliance_from_ratio(ratio, ratios) when ratio >= ratios.wcag_a, do: :wcag_a
+  defp determine_compliance_from_ratio(_ratio, _ratios), do: :non_compliant
+
+  defp calculate_compliance_level(compliant_pairs, total_pairs)
+       when compliant_pairs == total_pairs, do: :fully_compliant
+
+  defp calculate_compliance_level(compliant_pairs, total_pairs)
+       when compliant_pairs > total_pairs * 0.8, do: :mostly_compliant
+
+  defp calculate_compliance_level(compliant_pairs, total_pairs)
+       when compliant_pairs > total_pairs * 0.5, do: :partially_compliant
+
+  defp calculate_compliance_level(_compliant_pairs, _total_pairs), do: :non_compliant
+
   defp get_enabled_accessibility_features(state) do
-    features = []
-
-    features =
-      if state.config.large_text_mode,
-        do: ["Large text mode" | features],
-        else: features
-
-    features =
-      if state.config.invert_colors,
-        do: ["Color inversion" | features],
-        else: features
-
-    features =
-      if state.config.focus_enhancement,
-        do: ["Enhanced focus indicators" | features],
-        else: features
-
-    features =
-      if state.config.text_shadow,
-        do: ["Text shadows" | features],
-        else: features
-
-    features =
-      if state.color_blind_config && state.color_blind_config.type,
-        do: ["Color blindness support" | features],
-        else: features
-
-    features
+    build_feature_list(state)
   end
 
   ## Public Utility Functions
@@ -1193,12 +972,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     current_ratio = calculate_contrast_ratio(foreground, background)
 
     {final_foreground, final_background} =
-      if current_ratio < target_ratio do
-        # Automatically adjust colors
-        adjust_colors_for_contrast(foreground, background, target_ratio)
-      else
-        {foreground, background}
-      end
+      ensure_contrast_compliance(foreground, background, current_ratio, target_ratio)
 
     %{
       name: :custom_compliant,
@@ -1220,29 +994,269 @@ defmodule Raxol.UI.Accessibility.HighContrast do
   defp adjust_colors_for_contrast(foreground, background, target_ratio) do
     # Try darkening background first
     darker_bg = darken_color(background, 1.5)
+    adjust_colors_for_contrast_internal(foreground, background, darker_bg, target_ratio)
+  end
 
-    if calculate_contrast_ratio(foreground, darker_bg) >= target_ratio do
-      {foreground, darker_bg}
-    else
-      # Try lightening foreground
-      lighter_fg = lighten_color(foreground, 1.5)
+  ## Helper functions for refactored code
 
-      if calculate_contrast_ratio(lighter_fg, background) >= target_ratio do
-        {lighter_fg, background}
-      else
-        # Use high contrast pair as last resort
-        if relative_luminance(
-             elem(background, 0),
-             elem(background, 1),
-             elem(background, 2)
-           ) > 0.5 do
-          # Dark on light
-          {{0, 0, 0}, background}
-        else
-          # Light on dark
-          {{255, 255, 255}, background}
-        end
+  defp get_initial_theme(%{auto_detect_system: true} = config) do
+    case detect_system_high_contrast() do
+      {:ok, system_theme} -> {system_theme, config}
+      {:error, _reason} -> {config.default_theme, config}
+    end
+  end
+
+  defp get_initial_theme(config) do
+    {config.default_theme, config}
+  end
+
+  defp init_color_blind_config(%{color_blind_support: true}) do
+    init_color_blind_support()
+  end
+
+  defp init_color_blind_config(_config) do
+    nil
+  end
+
+  defp init_system_monitor(%{auto_detect_system: true}) do
+    start_system_monitor()
+  end
+
+  defp init_system_monitor(_config) do
+    nil
+  end
+
+  defp configure_color_blindness_internal(%{config: %{color_blind_support: false}} = state, _type, _options) do
+    {:reply, {:error, :color_blind_support_disabled}, state}
+  end
+
+  defp configure_color_blindness_internal(state, type, options) do
+    new_color_blind_config = %{
+      type: type,
+      strength: Map.get(options, :strength, 1.0),
+      enable_patterns: Map.get(options, :enable_patterns, false),
+      alternative_indicators: Map.get(options, :alternative_indicators, []),
+      correction_matrix: generate_color_correction_matrix(type)
+    }
+
+    new_state = %{state | color_blind_config: new_color_blind_config}
+
+    # Re-apply current theme with color blindness corrections
+    {:ok, updated_state} = reapply_current_theme(new_state)
+
+    Logger.info("Color blindness support configured: #{type}")
+    {:reply, :ok, updated_state}
+  end
+
+  defp reapply_current_theme(%{current_theme: nil} = state) do
+    {:ok, state}
+  end
+
+  defp reapply_current_theme(%{current_theme: current_theme} = state) do
+    apply_theme_internal(state, current_theme.name)
+  end
+
+  defp format_enabled_status(true), do: "enabled"
+  defp format_enabled_status(false), do: "disabled"
+
+  defp build_accessibility_info(%{current_theme: nil}) do
+    %{error: :no_theme_active}
+  end
+
+  defp build_accessibility_info(%{current_theme: theme} = state) do
+    # Analyze all color pairs in the theme
+    color_pairs = [
+      {:foreground_background, theme.foreground, theme.background},
+      {:accent_background, theme.accent, theme.background},
+      {:success_background, theme.success, theme.background},
+      {:warning_background, theme.warning, theme.background},
+      {:error_background, theme.error, theme.background},
+      {:info_background, theme.info, theme.background}
+    ]
+
+    contrast_analysis =
+      Enum.map(color_pairs, fn {pair_name, fg, bg} ->
+        ratio = calculate_contrast_ratio(fg, bg)
+
+        %{
+          pair: pair_name,
+          foreground: fg,
+          background: bg,
+          contrast_ratio: ratio,
+          wcag_aa_compliant: ratio >= 4.5,  # wcag_aa ratio
+          wcag_aaa_compliant: ratio >= 7.0   # wcag_aaa ratio
+        }
+      end)
+
+    %{
+      theme_name: theme.name,
+      compliance_level: theme.compliance_level,
+      large_text_optimized: theme.large_text_optimized,
+      color_blind_friendly: is_color_blind_friendly(theme),
+      contrast_analysis: contrast_analysis,
+      overall_compliance: determine_overall_compliance(contrast_analysis),
+      accessibility_features: get_enabled_accessibility_features(state)
+    }
+  end
+
+  defp apply_color_adjustments(theme, %{color_blind_config: nil}) do
+    theme
+  end
+
+  defp apply_color_adjustments(theme, %{color_blind_config: config}) do
+    apply_color_blind_corrections(theme, config)
+  end
+
+  defp apply_color_inversion(theme, %{invert_colors: true}) do
+    invert_theme_colors(theme)
+  end
+
+  defp apply_color_inversion(theme, _config) do
+    theme
+  end
+
+  defp validate_theme_keys([], theme) do
+    # Set defaults for optional keys
+    validated =
+      Map.merge(
+        %{
+          compliance_level: :wcag_aa,
+          large_text_optimized: false
+        },
+        theme
+      )
+
+    {:ok, validated}
+  end
+
+  defp validate_theme_keys(missing_keys, _theme) do
+    {:error, {:missing_keys, missing_keys}}
+  end
+
+  defp collect_compliance_issues(critical_pairs, required_ratio) do
+    Enum.reduce(critical_pairs, [], fn {pair_name, fg, bg}, acc ->
+      ratio = calculate_contrast_ratio(fg, bg)
+
+      case ratio < required_ratio do
+        true -> [%{pair: pair_name, ratio: ratio, required: required_ratio} | acc]
+        false -> acc
       end
+    end)
+  end
+
+  defp apply_gamma_correction(c_norm) when c_norm <= 0.03928 do
+    c_norm / 12.92
+  end
+
+  defp apply_gamma_correction(c_norm) do
+    :math.pow((c_norm + 0.055) / 1.055, 2.4)
+  end
+
+  defp build_recommendation_list(recommendations, improvement_needed, current_ratio) do
+    recommendations
+    |> add_major_improvement_recommendation(improvement_needed)
+    |> add_minor_improvement_recommendation(improvement_needed)
+    |> add_critical_contrast_recommendation(current_ratio)
+  end
+
+  defp add_major_improvement_recommendation(recommendations, improvement_needed) when improvement_needed > 1.5 do
+    ["Consider using darker background or lighter foreground colors" | recommendations]
+  end
+
+  defp add_major_improvement_recommendation(recommendations, _), do: recommendations
+
+  defp add_minor_improvement_recommendation(recommendations, improvement_needed) when improvement_needed > 1.2 do
+    ["Adjust color saturation or brightness for better contrast" | recommendations]
+  end
+
+  defp add_minor_improvement_recommendation(recommendations, _), do: recommendations
+
+  defp add_critical_contrast_recommendation(recommendations, current_ratio) when current_ratio < 3.0 do
+    ["Current contrast is very low - significant changes needed" | recommendations]
+  end
+
+  defp add_critical_contrast_recommendation(recommendations, _), do: recommendations
+
+  defp build_suggestion_list(suggestions, darker_bg, darker_bg_ratio, lighter_fg, lighter_fg_ratio, target_ratio) do
+    suggestions
+    |> add_background_suggestion(darker_bg, darker_bg_ratio, target_ratio)
+    |> add_foreground_suggestion(lighter_fg, lighter_fg_ratio, target_ratio)
+  end
+
+  defp add_background_suggestion(suggestions, darker_bg, darker_bg_ratio, target_ratio) when darker_bg_ratio >= target_ratio do
+    [%{
+      type: :background,
+      color: darker_bg,
+      resulting_ratio: darker_bg_ratio
+    } | suggestions]
+  end
+
+  defp add_background_suggestion(suggestions, _, _, _), do: suggestions
+
+  defp add_foreground_suggestion(suggestions, lighter_fg, lighter_fg_ratio, target_ratio) when lighter_fg_ratio >= target_ratio do
+    [%{
+      type: :foreground,
+      color: lighter_fg,
+      resulting_ratio: lighter_fg_ratio
+    } | suggestions]
+  end
+
+  defp add_foreground_suggestion(suggestions, _, _, _), do: suggestions
+
+  defp build_feature_list(state) do
+    []
+    |> add_feature("Large text mode", state.config.large_text_mode)
+    |> add_feature("Color inversion", state.config.invert_colors)
+    |> add_feature("Enhanced focus indicators", state.config.focus_enhancement)
+    |> add_feature("Text shadows", state.config.text_shadow)
+    |> add_color_blind_feature(state.color_blind_config)
+  end
+
+  defp add_feature(features, _name, false), do: features
+  defp add_feature(features, name, true), do: [name | features]
+
+  defp add_color_blind_feature(features, %{type: type}) when not is_nil(type) do
+    ["Color blindness support" | features]
+  end
+
+  defp add_color_blind_feature(features, _), do: features
+
+  defp ensure_contrast_compliance(foreground, background, current_ratio, target_ratio) when current_ratio >= target_ratio do
+    {foreground, background}
+  end
+
+  defp ensure_contrast_compliance(foreground, background, _current_ratio, target_ratio) do
+    adjust_colors_for_contrast(foreground, background, target_ratio)
+  end
+
+  defp adjust_colors_for_contrast_internal(foreground, background, darker_bg, target_ratio) do
+    case calculate_contrast_ratio(foreground, darker_bg) >= target_ratio do
+      true ->
+        {foreground, darker_bg}
+
+      false ->
+        # Try lightening foreground
+        lighter_fg = lighten_color(foreground, 1.5)
+
+        case calculate_contrast_ratio(lighter_fg, background) >= target_ratio do
+          true ->
+            {lighter_fg, background}
+
+          false ->
+            # Use high contrast pair as last resort
+            {r, g, b} = background
+            luminance = relative_luminance(r, g, b)
+
+            case luminance > 0.5 do
+              true ->
+                # Dark on light
+                {{0, 0, 0}, background}
+
+              false ->
+                # Light on dark
+                {{255, 255, 255}, background}
+            end
+        end
     end
   end
 end

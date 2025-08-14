@@ -78,17 +78,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
 
   @impl Raxol.Plugins.Plugin
   def handle_output(plugin_state, event) do
-    output =
-      cond do
-        is_binary(event) ->
-          event
-
-        is_map(event) and is_binary(Map.get(event, :data)) ->
-          Map.get(event, :data)
-
-        true ->
-          ""
-      end
+    output = extract_output_data(event)
 
     # Find URLs using a simple regex (could be more robust)
     url_regex = ~r{(https?://[\w./?=&\-]+)}
@@ -177,6 +167,19 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   def stop(config), do: {:ok, config}
 
   # Private functions
+
+  defp extract_output_data(event) do
+    case event do
+      output when is_binary(output) ->
+        output
+
+      %{data: data} when is_binary(data) ->
+        data
+
+      _ ->
+        ""
+    end
+  end
 
   defp create_hyperlink(url) do
     # OSC 8 escape sequence for hyperlinks

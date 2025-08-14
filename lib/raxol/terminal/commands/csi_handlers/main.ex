@@ -29,13 +29,16 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Main do
   end
 
   defp route_command(byte) do
-    cond do
-      basic_command?(byte) -> {:basic, byte}
-      cursor_command?(byte) -> {:cursor, byte}
-      screen_command?(byte) -> {:screen, byte}
-      device_command?(byte) -> {:device, byte}
-      true -> nil
-    end
+    command_checkers = [
+      {&basic_command?/1, :basic},
+      {&cursor_command?/1, :cursor},
+      {&screen_command?/1, :screen},
+      {&device_command?/1, :device}
+    ]
+    
+    Enum.find_value(command_checkers, nil, fn {checker, type} ->
+      if checker.(byte), do: {type, byte}, else: nil
+    end)
   end
 
   defp basic_command?(byte) do

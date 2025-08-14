@@ -1,7 +1,6 @@
 defmodule Raxol.UI.Components.Progress.SpinnerTest do
   use ExUnit.Case
-  import Raxol.Guards
-  alias Raxol.UI.Components.Progress.Spinner
+    alias Raxol.UI.Components.Progress.Spinner
   alias Raxol.Core.Events.Event
 
   describe "init/1" do
@@ -15,7 +14,7 @@ defmodule Raxol.UI.Components.Progress.SpinnerTest do
       assert state.speed == 80
       assert state.text == nil
       assert state.text_position == :right
-      assert integer?(state.last_update)
+      assert is_integer(state.last_update)
     end
 
     test ~c"initializes with provided values" do

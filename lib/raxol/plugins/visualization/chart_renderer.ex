@@ -1,6 +1,5 @@
 defmodule Raxol.Plugins.Visualization.ChartRenderer do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles rendering logic for chart visualizations within the VisualizationPlugin.
   """
@@ -61,7 +60,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
   # Draws a simple text-based bar chart within the given bounds.
   # Assumes data is a list of {label, value} tuples or maps with :label and :value keys.
   defp draw_tui_bar_chart(data, title, %{width: width, height: height} = bounds) do
-    if list?(data) and width > 4 and height > 4 do
+    if is_list(data) and width > 4 and height > 4 do
       {max_value, min_value} = calculate_value_bounds(data)
       {chart_height, chart_width} = calculate_chart_dimensions(width, height)
       grid = initialize_grid(width, height, title, max_value, min_value)
@@ -195,7 +194,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
 
   defp format_label(label, bar_width) do
     case label do
-      l when binary?(l) -> l
+      l when is_binary(l) -> l
       l -> inspect(l)
     end
     |> String.slice(0, bar_width)
@@ -205,7 +204,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
 
   @doc false
   # Sample data if it exceeds the threshold using simple interval sampling.
-  defp sample_chart_data(data) when list?(data) do
+  defp sample_chart_data(data) when is_list(data) do
     data_length = length(data)
 
     if data_length <= @max_chart_data_points do
@@ -226,8 +225,8 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
   defp sample_chart_data(other), do: other
 
   defp log_sampling(original_data, sampled_data) do
-    data_length = if list?(original_data), do: length(original_data), else: 0
-    sampled_length = if list?(sampled_data), do: length(sampled_data), else: 0
+    data_length = if is_list(original_data), do: length(original_data), else: 0
+    sampled_length = if is_list(sampled_data), do: length(sampled_data), else: 0
 
     if data_length != sampled_length and data_length > 0 do
       Raxol.Core.Runtime.Log.debug(

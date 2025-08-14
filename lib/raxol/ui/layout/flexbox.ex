@@ -32,8 +32,7 @@ defmodule Raxol.UI.Layout.Flexbox do
       }
   """
 
-  import Raxol.Guards
-  alias Raxol.UI.Layout.Engine
+    alias Raxol.UI.Layout.Engine
 
   @type t :: %{
           type: :flexbox,
@@ -51,7 +50,7 @@ defmodule Raxol.UI.Layout.Flexbox do
   Processes a flex container, calculating layout for it and its children.
   """
   def process_flex(%{type: :flex, children: children} = flex, space, acc)
-      when list?(children) do
+      when is_list(children) do
     attrs = Map.get(flex, :attrs, %{})
 
     # Parse flex properties
@@ -82,7 +81,7 @@ defmodule Raxol.UI.Layout.Flexbox do
   Measures the space needed by a flex container.
   """
   def measure_flex(%{type: :flex, children: children} = flex, available_space)
-      when list?(children) do
+      when is_list(children) do
     attrs = Map.get(flex, :attrs, %{})
     flex_props = parse_flex_properties(attrs)
 
@@ -703,7 +702,7 @@ defmodule Raxol.UI.Layout.Flexbox do
   end
 
   defp calculate_container_size(child_dimensions, flex_props, _content_space) do
-    if length(child_dimensions) == 0 do
+    if Enum.empty?(child_dimensions) do
       %{width: 0, height: 0}
     else
       {main_axis, cross_axis} = get_axes(flex_props.flex_direction)

@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   """
 
   alias Raxol.Terminal.Buffer
-  alias Raxol.Terminal.Buffer.BufferServerRefactored
+  alias Raxol.Terminal.Buffer.BufferServer
   alias Raxol.Terminal.Buffer.Cell
 
   @type buffer_or_pid :: Buffer.t() | pid()
@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   """
   @spec start_server(keyword()) :: {:ok, pid()} | {:error, term()}
   def start_server(opts \\ []) do
-    BufferServerRefactored.start_link(opts)
+    BufferServer.start_link(opts)
   end
 
   @doc """
@@ -89,7 +89,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
       height: buffer.height
     ]
 
-    case BufferServerRefactored.start_link(opts) do
+    case BufferServer.start_link(opts) do
       {:ok, pid} ->
         # Copy the buffer content to the server
         copy_buffer_to_server(buffer, pid)
@@ -129,14 +129,14 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
         Buffer.set_cell(buffer, x, y, cell)
 
       pid when is_pid(pid) ->
-        BufferServerRefactored.set_cell(pid, x, y, cell)
+        BufferServer.set_cell(pid, x, y, cell)
     end
   end
 
   @spec set_cell_sync(pid(), non_neg_integer(), non_neg_integer(), Cell.t()) ::
           :ok | {:error, :invalid_coordinates}
   def set_cell_sync(pid, x, y, cell) when is_pid(pid) do
-    BufferServerRefactored.set_cell_sync(pid, x, y, cell)
+    BufferServer.set_cell_sync(pid, x, y, cell)
   end
 
   @doc """
@@ -163,7 +163,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
         Buffer.get_cell(buffer, x, y)
 
       pid when is_pid(pid) ->
-        BufferServerRefactored.get_cell(pid, x, y)
+        BufferServer.get_cell(pid, x, y)
     end
   end
 
@@ -193,7 +193,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
       pid when is_pid(pid) ->
         # For server, we need to write at cursor position
         # This is a simplified implementation
-        BufferServerRefactored.write_string(pid, 0, 0, string)
+        BufferServer.write_string(pid, 0, 0, string)
     end
   end
 
@@ -230,7 +230,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
         Buffer.fill_region(buffer, x, y, width, height, cell)
 
       pid when is_pid(pid) ->
-        BufferServerRefactored.fill_region(pid, x, y, width, height, cell)
+        BufferServer.fill_region(pid, x, y, width, height, cell)
     end
   end
 
@@ -257,7 +257,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
         Buffer.scroll(buffer, lines)
 
       pid when is_pid(pid) ->
-        BufferServerRefactored.scroll(pid, lines)
+        BufferServer.scroll(pid, lines)
     end
   end
 
@@ -285,7 +285,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
         Buffer.resize(buffer, width, height)
 
       pid when is_pid(pid) ->
-        BufferServerRefactored.resize(pid, width, height)
+        BufferServer.resize(pid, width, height)
     end
   end
 
@@ -313,7 +313,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
         {buffer.width, buffer.height}
 
       pid when is_pid(pid) ->
-        BufferServerRefactored.get_dimensions(pid)
+        BufferServer.get_dimensions(pid)
     end
   end
 
@@ -336,7 +336,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
           {:ok, Buffer.t()} | {:error, term()}
   def atomic_operation(pid, operation)
       when is_pid(pid) and is_function(operation, 1) do
-    BufferServerRefactored.atomic_operation(pid, operation)
+    BufferServer.atomic_operation(pid, operation)
   end
 
   @doc """
@@ -355,7 +355,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   """
   @spec get_metrics(pid()) :: {:ok, map()} | {:error, term()}
   def get_metrics(pid) when is_pid(pid) do
-    BufferServerRefactored.get_metrics(pid)
+    BufferServer.get_metrics(pid)
   end
 
   @doc """
@@ -374,17 +374,17 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   @spec batch_operations(pid(), list()) :: :ok
   def batch_operations(pid, operations)
       when is_pid(pid) and is_list(operations) do
-    BufferServerRefactored.batch_operations(pid, operations)
+    BufferServer.batch_operations(pid, operations)
   end
 
   @spec flush(pid()) :: :ok | {:error, term()}
   def flush(pid) when is_pid(pid) do
-    BufferServerRefactored.flush(pid)
+    BufferServer.flush(pid)
   end
 
   @spec stop(pid()) :: :ok
   def stop(pid) when is_pid(pid) do
-    BufferServerRefactored.stop(pid)
+    BufferServer.stop(pid)
   end
 
   # Private helper functions
@@ -396,7 +396,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
       Enum.with_index(row)
       |> Enum.each(fn {cell, x} ->
         if cell.char != " " do
-          BufferServerRefactored.set_cell(pid, x, y, cell)
+          BufferServer.set_cell(pid, x, y, cell)
         end
       end)
     end)

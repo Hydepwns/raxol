@@ -1,6 +1,5 @@
 defmodule Raxol.Plugins.PluginConfig do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles persistence of plugin configurations.
   Stores and loads plugin configurations from disk.
@@ -94,7 +93,7 @@ defmodule Raxol.Plugins.PluginConfig do
   Gets the configuration for a specific plugin.
   """
   def get_plugin_config(%__MODULE__{} = config, plugin_name)
-      when binary?(plugin_name) do
+      when is_binary(plugin_name) do
     Map.get(config.plugin_configs, plugin_name, %{})
   end
 
@@ -102,7 +101,7 @@ defmodule Raxol.Plugins.PluginConfig do
   Updates the configuration for a specific plugin.
   """
   def update_plugin_config(%__MODULE__{} = config, plugin_name, plugin_config)
-      when binary?(plugin_name) and map?(plugin_config) do
+      when is_binary(plugin_name) and is_map(plugin_config) do
     updated_configs = Map.put(config.plugin_configs, plugin_name, plugin_config)
     %{config | plugin_configs: updated_configs}
   end
@@ -111,7 +110,7 @@ defmodule Raxol.Plugins.PluginConfig do
   Checks if a plugin is enabled.
   """
   def plugin_enabled?(%__MODULE__{} = config, plugin_name)
-      when binary?(plugin_name) do
+      when is_binary(plugin_name) do
     plugin_name in config.enabled_plugins
   end
 
@@ -119,7 +118,7 @@ defmodule Raxol.Plugins.PluginConfig do
   Enables a plugin.
   """
   def enable_plugin(%__MODULE__{} = config, plugin_name)
-      when binary?(plugin_name) do
+      when is_binary(plugin_name) do
     if plugin_name in config.enabled_plugins do
       config
     else
@@ -131,7 +130,7 @@ defmodule Raxol.Plugins.PluginConfig do
   Disables a plugin.
   """
   def disable_plugin(%__MODULE__{} = config, plugin_name)
-      when binary?(plugin_name) do
+      when is_binary(plugin_name) do
     %{
       config
       | enabled_plugins: List.delete(config.enabled_plugins, plugin_name)

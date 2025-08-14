@@ -1,6 +1,5 @@
 defmodule Raxol.Terminal.ANSI.SixelRenderer do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles rendering Sixel graphics data from a pixel buffer.
   """
@@ -61,12 +60,16 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
     {pan, pad, ph, pv}
   end
 
-  defp get_dimension(attrs, key, tuple_index, default) do
-    cond do
-      map?(attrs) -> Map.get(attrs, key, default)
-      tuple?(attrs) -> elem(attrs, tuple_index)
-      true -> default
-    end
+  defp get_dimension(attrs, key, tuple_index, default) when is_map(attrs) do
+    Map.get(attrs, key, default)
+  end
+
+  defp get_dimension(attrs, _key, tuple_index, _default) when is_tuple(attrs) do
+    elem(attrs, tuple_index)
+  end
+
+  defp get_dimension(_attrs, _key, _tuple_index, default) do
+    default
   end
 
   defp create_dcs_start(pan, pad, ph, pv) do
@@ -243,7 +246,7 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
   end
 
   defp get_palette_color(palette, index)
-       when integer?(index) and index >= 0 and index <= 255 do
+       when is_integer(index) and index >= 0 and index <= 255 do
     case Map.get(palette, index) do
       nil -> {:error, :invalid_color_index}
       color -> {:ok, color}

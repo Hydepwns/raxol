@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Runtime.Lifecycle do
-  import Raxol.Guards
-
+  
   @moduledoc "Manages the application lifecycle, including startup, shutdown, and terminal interaction."
 
   use GenServer
@@ -47,7 +46,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     * `:plugin_manager_opts` - Options to pass to the PluginManager's start_link function.
     * Other options are passed to the application module's `init/1` function.
   """
-  def start_link(app_module, options \\ []) when atom?(app_module) do
+  def start_link(app_module, options \\ []) when is_atom(app_module) do
     name_option = Keyword.get(options, :name, derive_process_name(app_module))
     GenServer.start_link(__MODULE__, {app_module, options}, name: name_option)
   end
@@ -230,7 +229,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
           {:ok, model}
 
-        model when map?(model) ->
+        model when is_map(model) ->
           Raxol.Core.Runtime.Log.info(
             "[#{__MODULE__}] #{inspect(app_module)}.init returned a map directly, using model: #{inspect(model)}"
           )
@@ -332,21 +331,25 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   defp log_waiting_status(state) do
     if Enum.any?(state.initial_commands) do
-      cond do
-        not state.dispatcher_ready and not state.plugin_manager_ready ->
+      case {state.dispatcher_ready, state.plugin_manager_ready} do
+        {false, false} ->
           Raxol.Core.Runtime.Log.info(
             "Waiting for Dispatcher and PluginManager to be ready before processing initial commands."
           )
 
-        not state.dispatcher_ready ->
+        {false, true} ->
           Raxol.Core.Runtime.Log.info(
             "Waiting for Dispatcher to be ready before processing initial commands."
           )
 
-        not state.plugin_manager_ready ->
+        {true, false} ->
           Raxol.Core.Runtime.Log.info(
             "Waiting for PluginManager to be ready before processing initial commands."
           )
+
+        {true, true} ->
+          # Both are ready - no logging needed
+          :ok
       end
     end
   end
@@ -433,7 +436,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   Gets the application name for a given module.
   """
   @spec get_app_name(atom()) :: String.t()
-  def get_app_name(app_module) when atom?(app_module) do
+  def get_app_name(app_module) when is_atom(app_module) do
     # Try to call app_name/0 on the module if it exists
     if function_exported?(app_module, :app_name, 0) do
       app_module.app_name()

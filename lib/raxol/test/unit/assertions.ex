@@ -12,8 +12,7 @@ defmodule Raxol.Test.Unit.Assertions do
   """
 
   import ExUnit.Assertions
-  import Raxol.Guards
-
+  
   @doc """
   Asserts that a component's rendered output matches the expected output.
 
@@ -43,7 +42,7 @@ defmodule Raxol.Test.Unit.Assertions do
         y: 0
       }
   """
-  def assert_layout(component, constraints) when map?(constraints) do
+  def assert_layout(component, constraints) when is_map(constraints) do
     layout = get_component_layout(component)
 
     Enum.each(constraints, fn {key, value} ->
@@ -65,7 +64,7 @@ defmodule Raxol.Test.Unit.Assertions do
         bold: true
       }
   """
-  def assert_style(component, style) when map?(style) do
+  def assert_style(component, style) when is_map(style) do
     applied_style = get_component_style(component)
 
     Enum.each(style, fn {key, value} ->
@@ -84,7 +83,7 @@ defmodule Raxol.Test.Unit.Assertions do
       assert_subscribed component, [:keyboard, :mouse]
   """
   def assert_subscribed(component, subscription_types)
-      when list?(subscription_types) do
+      when is_list(subscription_types) do
     active_subs = get_component_subscriptions(component)
 
     Enum.each(subscription_types, fn type ->
@@ -105,7 +104,7 @@ defmodule Raxol.Test.Unit.Assertions do
       ]
   """
   def assert_state_history(component, expected_states)
-      when list?(expected_states) do
+      when is_list(expected_states) do
     history = get_component_state_history(component)
 
     assert length(history) == length(expected_states),
@@ -129,7 +128,7 @@ defmodule Raxol.Test.Unit.Assertions do
       ]
   """
   def assert_command_sequence(_component, expected_commands)
-      when list?(expected_commands) do
+      when is_list(expected_commands) do
     # Placeholder: Need to integrate with command history or mocking framework
     # Always passes for now
     assert true
@@ -162,7 +161,7 @@ defmodule Raxol.Test.Unit.Assertions do
   # Private Helpers
 
   def assert_state_match(actual, expected)
-      when map?(actual) and map?(expected) do
+      when is_map(actual) and is_map(expected) do
     Enum.each(expected, fn {key, value} ->
       assert Map.get(actual, key) == value,
              "Expected state.#{key} to be #{inspect(value)}, but got: #{inspect(Map.get(actual, key))}"

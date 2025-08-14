@@ -1,6 +1,5 @@
 defmodule Raxol.Benchmarks.Performance do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Performance benchmarking and validation tools for Raxol.
 
@@ -70,11 +69,11 @@ defmodule Raxol.Benchmarks.Performance do
     Keyword.merge(default_opts, normalize_to_keyword(opts))
   end
 
-  defp normalize_to_keyword(opts) when list?(opts) and opts == [] do
+  defp normalize_to_keyword(opts) when is_list(opts) and opts == [] do
     []
   end
 
-  defp normalize_to_keyword(opts) when list?(opts) and tuple?(hd(opts)) do
+  defp normalize_to_keyword(opts) when is_list(opts) and is_tuple(hd(opts)) do
     opts
   end
 

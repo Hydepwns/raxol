@@ -459,11 +459,11 @@ defmodule Raxol.Terminal.Color.TrueColor do
   Detects the terminal's color capability.
   """
   def detect_terminal_capability do
-    cond do
-      supports_true_color?() -> :true_color
-      supports_256_color?() -> :color_256
-      supports_16_color?() -> :color_16
-      true -> :monochrome
+    case {supports_true_color?(), supports_256_color?(), supports_16_color?()} do
+      {true, _, _} -> :true_color
+      {_, true, _} -> :color_256
+      {_, _, true} -> :color_16
+      _ -> :monochrome
     end
   end
 
@@ -645,15 +645,20 @@ defmodule Raxol.Terminal.Color.TrueColor do
           do: delta / (2 - max_val - min_val),
           else: delta / (max_val + min_val)
 
-      h =
-        cond do
-          max_val == r -> rem((g - b) / delta + if(g < b, do: 6, else: 0), 6)
-          max_val == g -> (b - r) / delta + 2
-          max_val == b -> (r - g) / delta + 4
-        end
+      h = calculate_hue(max_val, delta, r, g, b)
 
       {round(h * 60), round(s * 100), round(l * 100)}
     end
+  end
+
+  defp calculate_hue(max_val, delta, r, g, b) when max_val == r do
+    rem((g - b) / delta + if(g < b, do: 6, else: 0), 6)
+  end
+  defp calculate_hue(max_val, delta, r, g, b) when max_val == g do
+    (b - r) / delta + 2
+  end
+  defp calculate_hue(max_val, delta, r, g, b) when max_val == b do
+    (r - g) / delta + 4
   end
 
   defp hsv_to_rgb(h, s, v) do
@@ -745,46 +750,55 @@ defmodule Raxol.Terminal.Color.TrueColor do
       else: 1 / 3 * :math.pow(29 / 6, 2) * t + 4 / 29
   end
 
-  defp to_256_color(%__MODULE__{r: r, g: g, b: b}) do
-    # Simplified mapping to 256-color palette
-    cond do
-      r == g and g == b ->
-        # Grayscale
-        232 + div(r * 23, 255)
+  defp to_256_color(%__MODULE__{r: r, g: g, b: b}) when r == g and g == b do
+    # Grayscale
+    232 + div(r * 23, 255)
+  end
 
-      true ->
-        # Color cube (6x6x6)
-        r_index = div(r * 5, 255)
-        g_index = div(g * 5, 255)
-        b_index = div(b * 5, 255)
-        16 + 36 * r_index + 6 * g_index + b_index
-    end
+  defp to_256_color(%__MODULE__{r: r, g: g, b: b}) do
+    # Color cube (6x6x6)
+    r_index = div(r * 5, 255)
+    g_index = div(g * 5, 255)
+    b_index = div(b * 5, 255)
+    16 + 36 * r_index + 6 * g_index + b_index
   end
 
   defp to_16_color(%__MODULE__{r: r, g: g, b: b}) do
-    # Map to basic ANSI colors
     brightness = (r + g + b) / 3
+    map_to_ansi_color(r, g, b, brightness)
+  end
 
-    cond do
-      # Red/Bright Red
-      r > 128 and g < 128 and b < 128 -> if brightness > 128, do: 91, else: 31
-      # Green/Bright Green
-      r < 128 and g > 128 and b < 128 -> if brightness > 128, do: 92, else: 32
-      # Blue/Bright Blue
-      r < 128 and g < 128 and b > 128 -> if brightness > 128, do: 94, else: 34
-      # Yellow/Bright Yellow
-      r > 128 and g > 128 and b < 128 -> if brightness > 128, do: 93, else: 33
-      # Magenta/Bright Magenta
-      r > 128 and g < 128 and b > 128 -> if brightness > 128, do: 95, else: 35
-      # Cyan/Bright Cyan
-      r < 128 and g > 128 and b > 128 -> if brightness > 128, do: 96, else: 36
-      # Black
-      brightness < 64 -> 30
-      # White
-      brightness > 192 -> 37
-      # Bright White/White
-      true -> if brightness > 128, do: 97, else: 37
-    end
+  # Red/Bright Red
+  defp map_to_ansi_color(r, g, b, brightness) when r > 128 and g < 128 and b < 128 do
+    if brightness > 128, do: 91, else: 31
+  end
+  # Green/Bright Green  
+  defp map_to_ansi_color(r, g, b, brightness) when r < 128 and g > 128 and b < 128 do
+    if brightness > 128, do: 92, else: 32
+  end
+  # Blue/Bright Blue
+  defp map_to_ansi_color(r, g, b, brightness) when r < 128 and g < 128 and b > 128 do
+    if brightness > 128, do: 94, else: 34
+  end
+  # Yellow/Bright Yellow
+  defp map_to_ansi_color(r, g, b, brightness) when r > 128 and g > 128 and b < 128 do
+    if brightness > 128, do: 93, else: 33
+  end
+  # Magenta/Bright Magenta
+  defp map_to_ansi_color(r, g, b, brightness) when r > 128 and g < 128 and b > 128 do
+    if brightness > 128, do: 95, else: 35
+  end
+  # Cyan/Bright Cyan
+  defp map_to_ansi_color(r, g, b, brightness) when r < 128 and g > 128 and b > 128 do
+    if brightness > 128, do: 96, else: 36
+  end
+  # Black
+  defp map_to_ansi_color(_r, _g, _b, brightness) when brightness < 64, do: 30
+  # White
+  defp map_to_ansi_color(_r, _g, _b, brightness) when brightness > 192, do: 37
+  # Default - Bright White/White based on brightness
+  defp map_to_ansi_color(_r, _g, _b, brightness) do
+    if brightness > 128, do: 97, else: 37
   end
 
   defp generate_monochromatic_palette(%__MODULE__{} = base_color) do

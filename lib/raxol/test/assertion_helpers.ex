@@ -5,12 +5,11 @@ defmodule Raxol.Test.AssertionHelpers do
   """
 
   import ExUnit.Assertions
-  import Raxol.Guards
-
+  
   @doc """
   Asserts that a component's state matches expected values.
   """
-  def assert_state_match(component, expected) when map?(expected) do
+  def assert_state_match(component, expected) when is_map(expected) do
     Enum.each([:style, :disabled, :focused], fn key ->
       assert Map.has_key?(component.state, key),
              "Expected state to have key #{inspect(key)}"
@@ -92,7 +91,7 @@ defmodule Raxol.Test.AssertionHelpers do
     results = Raxol.Test.Visual.test_responsive_rendering(component, sizes)
 
     Enum.each(results, fn %{width: width, height: height, output: output} ->
-      assert binary?(output),
+      assert is_binary(output),
              "Component failed to render at size #{width}x#{height}"
     end)
   end
@@ -106,7 +105,7 @@ defmodule Raxol.Test.AssertionHelpers do
       assert_receive {:theme_changed, ^theme}, 100
       output = capture_render(component)
 
-      assert binary?(output),
+      assert is_binary(output),
              "Component failed to render with theme: #{theme}"
     end)
   end

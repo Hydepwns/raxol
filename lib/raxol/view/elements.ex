@@ -6,8 +6,7 @@ defmodule Raxol.View.Elements do
   in Raxol views.
   """
 
-  import Raxol.Guards
-
+  
   @doc """
   Creates a panel with a title and content.
 
@@ -90,7 +89,7 @@ defmodule Raxol.View.Elements do
   * `:content` - The label text
   * Other options are passed as attributes
   """
-  defmacro label(opts) when list?(opts) do
+  defmacro label(opts) when is_list(opts) do
     quote do
       %{
         type: :label,

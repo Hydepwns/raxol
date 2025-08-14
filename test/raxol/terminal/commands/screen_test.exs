@@ -280,7 +280,9 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       {:ok, %{emulator: emulator, buffer_width: 10, buffer_height: 5}}
     end
 
-    # test "EL erases line from cursor to end", %{emulator: emulator, buffer_width: _buffer_width} do
+    # test "EL erases line from cursor to end", %{
+    #   emulator: emulator, buffer_width: _buffer_width
+    # } do
     #   # Initial: "Hello" at (0,0), cursor at (5,0)
     #   # Move: to (2,1)
     #   # Write: "World", cursor at (7,1) (0-indexed: __World___)

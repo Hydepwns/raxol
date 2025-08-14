@@ -3,8 +3,7 @@ defmodule Raxol.Terminal.Buffer do
   Manages the terminal buffer state and operations.
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.{Cell, Operations}
 
@@ -40,7 +39,7 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec new({non_neg_integer(), non_neg_integer()}) :: t()
   def new({width, height})
-      when integer?(width) and integer?(height) and width > 0 and height > 0 do
+      when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
     # Check for reasonable memory limits (1 million cells max)
     max_cells = 1_000_000
     total_cells = width * height
@@ -62,7 +61,7 @@ defmodule Raxol.Terminal.Buffer do
     }
   end
 
-  def new({width, height}) when integer?(width) and integer?(height) do
+  def new({width, height}) when is_integer(width) and is_integer(height) do
     raise ArgumentError,
           "Invalid buffer dimensions: width and height must be positive integers"
   end
@@ -86,7 +85,7 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec set_cell(t(), non_neg_integer(), non_neg_integer(), Cell.t()) :: t()
   def set_cell(buffer, x, y, cell)
-      when integer?(x) and integer?(y) and x >= 0 and y >= 0 and
+      when is_integer(x) and is_integer(y) and x >= 0 and y >= 0 and
              x < buffer.width and y < buffer.height do
     if not Cell.valid?(cell) do
       raise ArgumentError, "Invalid cell data: #{inspect(cell)}"
@@ -100,7 +99,7 @@ defmodule Raxol.Terminal.Buffer do
     %{buffer | cells: new_cells}
   end
 
-  def set_cell(buffer, x, y, _cell) when integer?(x) and integer?(y) do
+  def set_cell(buffer, x, y, _cell) when is_integer(x) and is_integer(y) do
     raise ArgumentError,
           "Coordinates out of bounds: (#{x}, #{y}) for buffer size #{buffer.width}x#{buffer.height}"
   end

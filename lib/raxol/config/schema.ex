@@ -691,28 +691,32 @@ defmodule Raxol.Config.Schema do
         value = Map.get(config, key)
         field_path = path ++ [key]
 
-        cond do
-          is_nil(value) and Map.get(field_schema, :required, false) ->
-            [{field_path, "required field is missing"}]
-
-          is_nil(value) ->
-            []
-
-          is_map(field_schema) and not Map.has_key?(field_schema, :type) ->
-            # Nested schema
-            validate_map(value, field_schema, field_path)
-
-          true ->
-            # Regular field
-            case do_validate(value, field_schema, field_path) do
-              :ok -> []
-              {:error, errors} when is_list(errors) -> errors
-              {:error, error} -> [error]
-            end
-        end
+        validate_field(value, field_schema, field_path)
       end)
 
     unknown_errors ++ field_errors
+  end
+
+  defp validate_field(value, field_schema, field_path) do
+    cond do
+      is_nil(value) and Map.get(field_schema, :required, false) ->
+        [{field_path, "required field is missing"}]
+
+      is_nil(value) ->
+        []
+
+      is_map(field_schema) and not Map.has_key?(field_schema, :type) ->
+        # Nested schema
+        validate_map(value, field_schema, field_path)
+
+      true ->
+        # Regular field
+        case do_validate(value, field_schema, field_path) do
+          :ok -> []
+          {:error, errors} when is_list(errors) -> errors
+          {:error, error} -> [error]
+        end
+    end
   end
 
   defp get_nested_schema(schema, []), do: schema

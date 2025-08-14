@@ -1,6 +1,5 @@
 defmodule Raxol.Benchmarks.VisualizationBenchmark do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Performance benchmarking tool for visualization components.
   Provides tools to measure rendering time, memory usage, and optimization effectiveness
@@ -28,8 +27,9 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   * `:cache_test` - Whether to test cache performance (default: true)
   * `:memory_test` - Whether to track memory usage (default: true)
   """
-  def run_benchmark(opts \\ []) do
-    opts = if map?(opts), do: Enum.into(opts, []), else: opts
+  def run_benchmark(opts \\ [])
+  def run_benchmark(opts) when is_map(opts), do: run_benchmark(Enum.into(opts, []))
+  def run_benchmark(opts) when is_list(opts) do
     output_path = Keyword.get(opts, :output_path, "benchmark_results")
     dataset_sizes = Keyword.get(opts, :datasets, [10, 100, 1000, 10_000])
     iterations = Keyword.get(opts, :iterations, 5)
@@ -80,11 +80,13 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       IO.puts("  Benchmarking chart with #{size} data points...")
 
       # Prepare test environment
-      if test_memory do
-        # IO.puts("Starting memory tracking...") # DEBUG
-        # Raxol.RuntimeDebug.start_memory_tracking()
-        # Placeholder for memory tracking return value
-        _result = nil
+      _result = case test_memory do
+        true ->
+          # IO.puts("Starting memory tracking...") # DEBUG
+          # Raxol.RuntimeDebug.start_memory_tracking()
+          # Placeholder for memory tracking return value
+          nil
+        false -> nil
       end
 
       # Create standard bounds for testing
@@ -108,11 +110,10 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
         for i <- 1..iterations do
           # Setup plugin state for each iteration (or before loop if not resetting cache)
           {:ok, _plugin_meta, plugin_state} =
-            if test_cache or i == 1 do
-              # Use existing state if testing cache or first iteration
-              Raxol.Plugins.VisualizationPlugin.init()
-            else
-              Raxol.Plugins.VisualizationPlugin.init()
+            case {test_cache, i} do
+              {true, _} -> Raxol.Plugins.VisualizationPlugin.init()
+              {false, 1} -> Raxol.Plugins.VisualizationPlugin.init()
+              {false, _} -> Raxol.Plugins.VisualizationPlugin.init()
             end
 
           IO.write("    Iteration #{i}/#{iterations}...")
@@ -137,13 +138,13 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
 
       # Collect memory data if requested
       memory_data =
-        if test_memory do
-          # Raxol.RuntimeDebug.get_memory_snapshot()
-          memory_info = nil
-          # Raxol.RuntimeDebug.stop_memory_tracking()
-          memory_info
-        else
-          nil
+        case test_memory do
+          true ->
+            # Raxol.RuntimeDebug.get_memory_snapshot()
+            memory_info = nil
+            # Raxol.RuntimeDebug.stop_memory_tracking()
+            memory_info
+          false -> nil
         end
 
       # Calculate statistics
@@ -176,8 +177,9 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       IO.puts("  Benchmarking treemap with #{size} nodes...")
 
       # Prepare test environment
-      if test_memory do
-        _result = nil
+      _result = case test_memory do
+        true -> nil
+        false -> nil
       end
 
       # Create standard bounds for testing
@@ -201,11 +203,11 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
 
       # Collect memory data if requested
       memory_data =
-        if test_memory do
-          memory_info = nil
-          memory_info
-        else
-          nil
+        case test_memory do
+          true ->
+            memory_info = nil
+            memory_info
+          false -> nil
         end
 
       # Count total nodes including children
@@ -237,10 +239,10 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   defp run_treemap_iterations(data, bounds, iterations, test_cache) do
     for i <- 1..iterations do
       {:ok, _plugin_meta, plugin_state} =
-        if test_cache or i == 1 do
-          Raxol.Plugins.VisualizationPlugin.init()
-        else
-          Raxol.Plugins.VisualizationPlugin.init()
+        case {test_cache, i} do
+          {true, _} -> Raxol.Plugins.VisualizationPlugin.init()
+          {false, 1} -> Raxol.Plugins.VisualizationPlugin.init()
+          {false, _} -> Raxol.Plugins.VisualizationPlugin.init()
         end
 
       IO.write("    Iteration #{i}/#{iterations}...")
@@ -282,14 +284,10 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
     end)
   end
 
-  defp generate_treemap_data(size) do
-    cond do
-      size == 0 -> generate_empty_treemap()
-      size <= 10 -> generate_small_treemap(size)
-      size <= 100 -> generate_medium_treemap(size)
-      true -> generate_large_treemap(size)
-    end
-  end
+  defp generate_treemap_data(0), do: generate_empty_treemap()
+  defp generate_treemap_data(size) when size <= 10, do: generate_small_treemap(size)
+  defp generate_treemap_data(size) when size <= 100, do: generate_medium_treemap(size)
+  defp generate_treemap_data(size), do: generate_large_treemap(size)
 
   defp generate_empty_treemap() do
     %{
@@ -324,7 +322,10 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       children:
         for g <- 1..num_groups do
           # Add an extra item to early groups if there's a remainder
-          actual_items = items_per_group + if g <= remainder, do: 1, else: 0
+          actual_items = case g <= remainder do
+            true -> items_per_group + 1
+            false -> items_per_group
+          end
 
           %{
             name: "Group #{g}",
@@ -398,7 +399,10 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
 
     ## Memory Usage
 
-    #{if Keyword.get(opts, :memory_test, true), do: format_memory_usage(chart_results, treemap_results), else: "*Memory tracking disabled*"}
+    #{case Keyword.get(opts, :memory_test, true) do
+      true -> format_memory_usage(chart_results, treemap_results)
+      false -> "*Memory tracking disabled*"
+    end}
 
     ## Conclusions
 
@@ -428,7 +432,8 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   end
 
   defp format_cache_performance(chart_results, treemap_results, opts) do
-    if Keyword.get(opts, :cache_test, true) do
+    case Keyword.get(opts, :cache_test, true) do
+      true ->
       chart_speedup = calculate_cache_speedup(chart_results)
       treemap_speedup = calculate_cache_speedup(treemap_results)
 
@@ -440,8 +445,8 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
 
       This indicates that the caching system is #{evaluate_cache_effectiveness(chart_speedup, treemap_speedup)}.
       """
-    else
-      "*Cache testing disabled*"
+      false ->
+        "*Cache testing disabled*"
     end
   end
 
@@ -455,7 +460,10 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
          first_time <- Enum.at(result.times, 0),
          rest_times <- Enum.slice(result.times, 1..-1//-1),
          avg_rest_time <- Enum.sum(rest_times) / length(rest_times) do
-      if avg_rest_time > 0, do: first_time / avg_rest_time, else: 1.0
+      case avg_rest_time > 0 do
+        true -> first_time / avg_rest_time
+        false -> 1.0
+      end
     else
       _ -> 1.0
     end
@@ -463,15 +471,14 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
 
   defp evaluate_cache_effectiveness(chart_speedup, treemap_speedup) do
     avg_speedup = (chart_speedup + treemap_speedup) / 2
-
-    cond do
-      avg_speedup >= 5.0 -> "highly effective"
-      avg_speedup >= 2.0 -> "effective"
-      avg_speedup >= 1.5 -> "moderately effective"
-      avg_speedup >= 1.2 -> "slightly effective"
-      true -> "not significantly effective"
-    end
+    classify_cache_effectiveness(avg_speedup)
   end
+
+  defp classify_cache_effectiveness(avg_speedup) when avg_speedup >= 5.0, do: "highly effective"
+  defp classify_cache_effectiveness(avg_speedup) when avg_speedup >= 2.0, do: "effective"
+  defp classify_cache_effectiveness(avg_speedup) when avg_speedup >= 1.5, do: "moderately effective"
+  defp classify_cache_effectiveness(avg_speedup) when avg_speedup >= 1.2, do: "slightly effective"
+  defp classify_cache_effectiveness(_avg_speedup), do: "not significantly effective"
 
   defp format_memory_usage(chart_results, treemap_results) do
     # Extract memory metrics for largest datasets
@@ -481,7 +488,8 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
     chart_memory = largest_chart.memory
     treemap_memory = largest_treemap.memory
 
-    if chart_memory && treemap_memory do
+    case {chart_memory, treemap_memory} do
+      {chart_mem, treemap_mem} when chart_mem != nil and treemap_mem != nil ->
       """
       Memory usage metrics for the largest datasets:
 
@@ -493,18 +501,17 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       - Memory Used: #{format_bytes(treemap_memory.memory_used)}
       - GC Runs: #{treemap_memory.gc_count}
       """
-    else
-      "*Memory data collection failed*"
+      _ ->
+        "*Memory data collection failed*"
     end
   end
 
-  defp format_bytes(bytes) when is_integer(bytes) do
-    cond do
-      bytes >= 1_000_000 -> "#{Float.round(bytes / 1_000_000, 2)} MB"
-      bytes >= 1_000 -> "#{Float.round(bytes / 1_000, 2)} KB"
-      true -> "#{bytes} bytes"
-    end
-  end
+  defp format_bytes(bytes) when is_integer(bytes) and bytes >= 1_000_000,
+    do: "#{Float.round(bytes / 1_000_000, 2)} MB"
+  defp format_bytes(bytes) when is_integer(bytes) and bytes >= 1_000,
+    do: "#{Float.round(bytes / 1_000, 2)} KB"
+  defp format_bytes(bytes) when is_integer(bytes),
+    do: "#{bytes} bytes"
 
   defp format_bytes(_), do: "unknown"
 
@@ -525,9 +532,10 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   defp get_size_extremes(results) do
     sorted = Enum.sort_by(results, & &1.size)
 
-    if length(sorted) >= 2,
-      do: {List.first(sorted), List.last(sorted)},
-      else: nil
+    case length(sorted) >= 2 do
+      true -> {List.first(sorted), List.last(sorted)}
+      false -> nil
+    end
   end
 
   defp analyze_scalability(
@@ -538,24 +546,28 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
        ) do
     chart_efficiency = calculate_efficiency(small_chart, large_chart)
     treemap_efficiency = calculate_efficiency(small_treemap, large_treemap)
-
-    cond do
-      chart_efficiency >= 0.8 && treemap_efficiency >= 0.8 ->
-        "Both chart and treemap visualization components scale very efficiently with larger datasets."
-
-      chart_efficiency >= 0.5 && treemap_efficiency >= 0.5 ->
-        "Both visualizations show good scalability, with sub-linear performance degradation as data size increases."
-
-      chart_efficiency >= 0.5 ->
-        "Chart visualization scales efficiently, but treemap performance could be improved with larger datasets."
-
-      treemap_efficiency >= 0.5 ->
-        "Treemap visualization scales efficiently, but chart performance could be improved with larger datasets."
-
-      true ->
-        "Both visualizations show signs of performance degradation with larger datasets. Additional optimization may be necessary."
-    end
+    
+    classify_performance_analysis(chart_efficiency, treemap_efficiency)
   end
+
+  defp classify_performance_analysis(chart_eff, treemap_eff) 
+       when chart_eff >= 0.8 and treemap_eff >= 0.8,
+       do: "Both chart and treemap visualization components scale very efficiently with larger datasets."
+  
+  defp classify_performance_analysis(chart_eff, treemap_eff) 
+       when chart_eff >= 0.5 and treemap_eff >= 0.5,
+       do: "Both visualizations show good scalability, with sub-linear performance degradation as data size increases."
+  
+  defp classify_performance_analysis(chart_eff, _treemap_eff) 
+       when chart_eff >= 0.5,
+       do: "Chart visualization scales efficiently, but treemap performance could be improved with larger datasets."
+  
+  defp classify_performance_analysis(_chart_eff, treemap_eff) 
+       when treemap_eff >= 0.5,
+       do: "Treemap visualization scales efficiently, but chart performance could be improved with larger datasets."
+  
+  defp classify_performance_analysis(_chart_eff, _treemap_eff),
+       do: "Both visualizations show signs of performance degradation with larger datasets. Additional optimization may be necessary."
 
   defp calculate_efficiency(small, large) do
     size_ratio = large.size / small.size

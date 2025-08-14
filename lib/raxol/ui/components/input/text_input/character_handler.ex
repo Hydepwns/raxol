@@ -1,10 +1,9 @@
 defmodule Raxol.UI.Components.Input.TextInput.CharacterHandler do
   @moduledoc false
 
-  import Raxol.Guards
-
+  
   def handle_character(state, char_key) do
-    with char_str when not nil?(char_str) <- process_char_key(char_key),
+    with char_str when not is_nil(char_str) <- process_char_key(char_key),
          true <- validate_length(state, char_str),
          true <- validate_char(state, char_str) do
       insert_char_at_cursor(state, char_str)
@@ -13,19 +12,20 @@ defmodule Raxol.UI.Components.Input.TextInput.CharacterHandler do
     end
   end
 
-  defp process_char_key(char_key) do
-    cond do
-      binary?(char_key) and String.length(char_key) == 1 and
-          String.printable?(char_key) ->
-        char_key
-
-      integer?(char_key) and char_key >= 32 and char_key <= 126 ->
-        <<char_key::utf8>>
-
-      true ->
-        nil
+  defp process_char_key(char_key) when is_binary(char_key) do
+    if String.length(char_key) == 1 and String.printable?(char_key) do
+      char_key
+    else
+      nil
     end
   end
+
+  defp process_char_key(char_key) 
+       when is_integer(char_key) and char_key >= 32 and char_key <= 126 do
+    <<char_key::utf8>>
+  end
+
+  defp process_char_key(_char_key), do: nil
 
   defp validate_length(state, _char_str) do
     current_value = state.value || ""
@@ -35,7 +35,7 @@ defmodule Raxol.UI.Components.Input.TextInput.CharacterHandler do
 
   defp validate_char(state, char_str) do
     validator = state.validator
-    !function?(validator, 1) || validator.(char_str)
+    !is_function(validator, 1) || validator.(char_str)
   end
 
   defp insert_char_at_cursor(state, char_str) do
@@ -57,7 +57,7 @@ defmodule Raxol.UI.Components.Input.TextInput.CharacterHandler do
   end
 
   defp emit_change_side_effect(state, new_value) do
-    if function?(state.on_change, 1) do
+    if is_function(state.on_change, 1) do
       state.on_change.(new_value)
     end
   end

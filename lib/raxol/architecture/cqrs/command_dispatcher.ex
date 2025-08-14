@@ -631,14 +631,14 @@ defmodule Raxol.Architecture.CQRS.Middleware.AuthorizationMiddleware do
     user_id = Map.get(context, :user_id)
     command_user_id = Map.get(command, :user_id)
 
-    cond do
-      is_nil(user_id) ->
+    case {user_id, command_user_id} do
+      {nil, _} ->
         {:error, :user_not_authenticated}
 
-      user_id != command_user_id ->
+      {uid, cuid} when uid != cuid ->
         {:error, :user_not_authorized}
 
-      true ->
+      {_, _} ->
         :ok
     end
   end

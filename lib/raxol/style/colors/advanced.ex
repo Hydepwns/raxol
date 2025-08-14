@@ -255,13 +255,7 @@ defmodule Raxol.Style.Colors.Advanced do
     c_min = Enum.min([r_prime, g_prime, b_prime])
     delta = c_max - c_min
 
-    h =
-      cond do
-        delta == 0 -> 0
-        c_max == r_prime -> 60 * ((g_prime - b_prime) / delta)
-        c_max == g_prime -> 60 * ((b_prime - r_prime) / delta + 2)
-        c_max == b_prime -> 60 * ((r_prime - g_prime) / delta + 4)
-      end
+    h = calculate_hue(delta, c_max, r_prime, g_prime, b_prime)
 
     # Ensure hue is positive
     h = if h < 0, do: h + 360, else: h
@@ -284,16 +278,7 @@ defmodule Raxol.Style.Colors.Advanced do
     x = c * (1 - abs(:math.fmod(h / 60, 2) - 1))
     m = l - c / 2
 
-    {r_prime, g_prime, b_prime} =
-      cond do
-        h >= 0 and h < 60 -> {c, x, 0}
-        h >= 60 and h < 120 -> {x, c, 0}
-        h >= 120 and h < 180 -> {0, c, x}
-        h >= 180 and h < 240 -> {0, x, c}
-        h >= 240 and h < 300 -> {x, 0, c}
-        h >= 300 and h < 360 -> {c, 0, x}
-        true -> {0, 0, 0}
-      end
+    {r_prime, g_prime, b_prime} = calculate_rgb_prime_from_hue(h, c, x)
 
     r = round((r_prime + m) * 255)
     g = round((g_prime + m) * 255)
@@ -357,20 +342,36 @@ defmodule Raxol.Style.Colors.Advanced do
     %{h: h, s: s, l: l} = rgb_to_hsl(color)
 
     # If lightness is in middle range, push towards extremes
-    adjusted_l =
-      cond do
-        # Lighten mid-tones
-        l > 40 and l < 60 -> l + 20
-        # Darken dark tones
-        l < 40 -> l - 10
-        # Keep extreme values
-        true -> l
-      end
+    adjusted_l = adjust_lightness_for_contrast(l)
 
     hsl_to_rgb({h, s, adjusted_l / 100})
   end
 
   defp maybe_enhance_contrast(color, false), do: color
+
+  defp calculate_hue(0, _c_max, _r_prime, _g_prime, _b_prime), do: 0
+  defp calculate_hue(delta, c_max, r_prime, g_prime, b_prime) when c_max == r_prime do
+    60 * ((g_prime - b_prime) / delta)
+  end
+  defp calculate_hue(delta, c_max, r_prime, g_prime, b_prime) when c_max == g_prime do
+    60 * ((b_prime - r_prime) / delta + 2)
+  end
+  defp calculate_hue(delta, c_max, r_prime, g_prime, b_prime) when c_max == b_prime do
+    60 * ((r_prime - g_prime) / delta + 4)
+  end
+  defp calculate_hue(_delta, _c_max, _r_prime, _g_prime, _b_prime), do: 0
+
+  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 0 and h < 60, do: {c, x, 0}
+  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 60 and h < 120, do: {x, c, 0}
+  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 120 and h < 180, do: {0, c, x}
+  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 180 and h < 240, do: {0, x, c}
+  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 240 and h < 300, do: {x, 0, c}
+  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 300 and h < 360, do: {c, 0, x}
+  defp calculate_rgb_prime_from_hue(_h, _c, _x), do: {0, 0, 0}
+
+  defp adjust_lightness_for_contrast(l) when l > 40 and l < 60, do: l + 20
+  defp adjust_lightness_for_contrast(l) when l < 40, do: l - 10
+  defp adjust_lightness_for_contrast(l), do: l
 
   defp maybe_make_color_blind_safe(color, true) do
     # Ensure sufficient contrast for color blind users

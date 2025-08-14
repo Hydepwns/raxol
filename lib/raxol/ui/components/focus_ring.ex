@@ -16,8 +16,7 @@ defmodule Raxol.UI.Components.FocusRing do
   require Raxol.View.Elements
 
   # Import guards
-  import Raxol.Guards
-
+  
   # Define state struct with enhanced styling options
   defstruct visible: true,
             # {x, y, width, height} of focused element
@@ -50,7 +49,7 @@ defmodule Raxol.UI.Components.FocusRing do
 
   @spec init(map()) :: %__MODULE__{}
   @impl Raxol.UI.Components.Base.Component
-  def init(opts) when map?(opts) do
+  def init(opts) when is_map(opts) do
     # Initialize state from props, merging with defaults
     defaults = %{
       visible: true,
@@ -122,29 +121,33 @@ defmodule Raxol.UI.Components.FocusRing do
           )
 
         # Schedule next animation tick
-        commands =
-          if state.animation != :none and state.visible do
+        commands = case {state.animation, state.visible} do
+          {:none, _} -> []
+          {_, false} -> []
+          {_, true} ->
             # ~60fps
             [schedule({:animation_tick}, 16)]
-          else
-            []
-          end
+        end
 
         {%{state | animation_phase: new_phase, last_tick: current_time},
          commands}
 
       # Allow external configuration updates
-      {:configure, opts} when map?(opts) ->
+      {:configure, opts} when is_map(opts) ->
         new_state = Map.merge(state, opts)
 
         # Start animation if needed
-        commands =
-          if new_state.animation != :none and new_state.visible and
-               (new_state.animation != state.animation or not state.visible) do
+        commands = case {
+          new_state.animation,
+          new_state.visible,
+          new_state.animation != state.animation or not state.visible
+        } do
+          {:none, _, _} -> []
+          {_, false, _} -> []
+          {_, true, false} -> []
+          {_, true, true} ->
             [schedule({:animation_tick}, 16)]
-          else
-            []
-          end
+        end
 
         {new_state, commands}
 
@@ -164,7 +167,10 @@ defmodule Raxol.UI.Components.FocusRing do
         {%{state | high_contrast: enabled}, []}
 
       {:accessibility_reduced_motion, enabled} ->
-        animation = if enabled, do: :none, else: :pulse
+        animation = case enabled do
+          true -> :none
+          false -> :pulse
+        end
         {%{state | animation: animation}, []}
 
       _ ->
@@ -179,37 +185,39 @@ defmodule Raxol.UI.Components.FocusRing do
   def render(state, %{} = props) do
     dsl_result = render_focus_ring(state, props)
     # Result can be nil or a box element map
-    if dsl_result do
-      # Return element map directly
-      dsl_result
-    else
-      # Render nothing if not visible or no position
-      nil
+    case dsl_result do
+      nil ->
+        # Render nothing if not visible or no position
+        nil
+      result ->
+        # Return element map directly
+        result
     end
   end
 
   # --- Internal Render Helper ---
 
   defp render_focus_ring(state, props) do
-    if state.visible and tuple?(state.position) do
-      # Extract position and apply offset
-      {x, y, width, height} = state.position
-      {offset_x, offset_y} = state.offset
+    case {state.visible, is_tuple(state.position)} do
+      {true, true} ->
+        # Extract position and apply offset
+        {x, y, width, height} = state.position
+        {offset_x, offset_y} = state.offset
 
-      # Apply styling based on state, component type, and animation
-      style_attrs = calculate_style_attributes(state, props)
+        # Apply styling based on state, component type, and animation
+        style_attrs = calculate_style_attributes(state, props)
 
-      # Use View Elements box macro
-      Raxol.View.Elements.box x: x + offset_x,
-                              y: y + offset_y,
-                              width: width,
-                              height: height,
-                              style: style_attrs do
-        # Empty block needed as the macro expects it
-      end
-    else
-      # Return nil if not visible or no position
-      nil
+        # Use View Elements box macro
+        Raxol.View.Elements.box x: x + offset_x,
+                                y: y + offset_y,
+                                width: width,
+                                height: height,
+                                style: style_attrs do
+          # Empty block needed as the macro expects it
+        end
+      _ ->
+        # Return nil if not visible or no position
+        nil
     end
   end
 
@@ -236,34 +244,29 @@ defmodule Raxol.UI.Components.FocusRing do
   end
 
   # Determine appropriate color based on context
-  defp determine_color(state, theme) do
-    cond do
-      # High contrast mode always uses high visibility colors
-      state.high_contrast ->
-        :white
-
-      # Component state-based colors
-      state.state == :disabled ->
-        Map.get(theme, :disabled_color, :dark_gray)
-
-      state.state == :active ->
-        Map.get(theme, :active_color, :cyan)
-
-      # Component type-specific colors
-      state.component_type == :button ->
-        Map.get(theme, :button_focus_color, :blue)
-
-      state.component_type == :text_input ->
-        Map.get(theme, :input_focus_color, :green)
-
-      state.component_type == :checkbox ->
-        Map.get(theme, :checkbox_focus_color, :magenta)
-
-      # Default color from state or theme
-      true ->
-        state.color
-    end
+  defp determine_color(%{high_contrast: true}, _theme), do: :white
+  
+  defp determine_color(%{state: :disabled} = _state, theme) do
+    Map.get(theme, :disabled_color, :dark_gray)
   end
+  
+  defp determine_color(%{state: :active} = _state, theme) do
+    Map.get(theme, :active_color, :cyan)
+  end
+  
+  defp determine_color(%{component_type: :button} = _state, theme) do
+    Map.get(theme, :button_focus_color, :blue)
+  end
+  
+  defp determine_color(%{component_type: :text_input} = _state, theme) do
+    Map.get(theme, :input_focus_color, :green)
+  end
+  
+  defp determine_color(%{component_type: :checkbox} = _state, theme) do
+    Map.get(theme, :checkbox_focus_color, :magenta)
+  end
+  
+  defp determine_color(state, _theme), do: state.color
 
   # Get component-specific styling
   defp get_component_specific_style(component_type, component_state) do
@@ -311,11 +314,12 @@ defmodule Raxol.UI.Components.FocusRing do
         phase_percent = state.animation_phase / state.animation_frames
         visible = phase_percent < 0.5
 
-        if visible do
-          %{border_color: color}
-        else
-          # "Invisible" - would use transparency in real impl
-          %{border_color: :black}
+        case visible do
+          true ->
+            %{border_color: color}
+          false ->
+            # "Invisible" - would use transparency in real impl
+            %{border_color: :black}
         end
 
       :glow ->

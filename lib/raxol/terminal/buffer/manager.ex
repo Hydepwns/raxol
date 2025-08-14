@@ -423,58 +423,96 @@ defmodule Raxol.Terminal.Buffer.Manager do
     # Acquire lock
     :ets.insert(state.lock, {:lock, self()})
 
-    try do
-      # Perform operation
-      result = operation.(state)
-      {:reply, {:ok, result}, result}
-    catch
-      kind, reason ->
-        {:reply, {:error, {kind, reason}}, state}
-    after
-      # Release lock
-      :ets.delete(state.lock, :lock)
+    result = safe_execute_operation(operation, state)
+    
+    # Release lock
+    :ets.delete(state.lock, :lock)
+    
+    case result do
+      {:ok, new_state} -> {:reply, {:ok, new_state}, new_state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
     end
+  end
+
+  defp safe_execute_operation(operation, state) do
+    result = operation.(state)
+    {:ok, result}
+  rescue
+    e -> {:error, {:exception, e}}
+  catch
+    kind, reason -> {:error, {kind, reason}}
   end
 
   def handle_call({:write, data, opts}, _from, state) do
-    try do
-      new_buffer = Operations.write(state.active_buffer, data, opts)
+    with {:ok, new_buffer} <- safe_buffer_write(state.active_buffer, data, opts) do
       new_state = update_metrics(%{state | active_buffer: new_buffer}, :writes)
       {:reply, :ok, new_state}
-    catch
-      kind, reason ->
-        {:reply, {:error, {kind, reason}}, state}
+    else
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
     end
+  end
+
+  defp safe_buffer_write(buffer, data, opts) do
+    new_buffer = Operations.write(buffer, data, opts)
+    {:ok, new_buffer}
+  rescue
+    e -> {:error, {:write_exception, e}}
+  catch
+    kind, reason -> {:error, {kind, reason}}
   end
 
   def handle_call({:read, opts}, _from, state) do
-    try do
-      {data, new_buffer} = Operations.read(state.active_buffer, opts)
+    with {:ok, {data, new_buffer}} <- safe_buffer_read(state.active_buffer, opts) do
       new_state = update_metrics(%{state | active_buffer: new_buffer}, :reads)
       {:reply, data, new_state}
-    catch
-      kind, reason ->
-        {:reply, {:error, {kind, reason}}, state}
+    else
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
     end
   end
 
-  def handle_call({:resize, size, _opts}, _from, state) do
-    try do
-      {width, height} = size
-      new_buffer = BufferImpl.resize(state.active_buffer, width, height)
-      new_back_buffer = BufferImpl.resize(state.back_buffer, width, height)
+  defp safe_buffer_read(buffer, opts) do
+    result = Operations.read(buffer, opts)
+    {:ok, result}
+  rescue
+    e -> {:error, {:read_exception, e}}
+  catch
+    kind, reason -> {:error, {kind, reason}}
+  end
 
+  def handle_call({:resize, size, _opts}, _from, state) do
+    with {:ok, {width, height}} <- validate_resize_size(size),
+         {:ok, new_buffer} <- safe_buffer_resize(state.active_buffer, width, height),
+         {:ok, new_back_buffer} <- safe_buffer_resize(state.back_buffer, width, height) do
       new_state = %{
         state
         | active_buffer: new_buffer,
           back_buffer: new_back_buffer
       }
-
       {:reply, :ok, new_state}
-    catch
-      kind, reason ->
-        {:reply, {:error, {kind, reason}}, state}
+    else
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
     end
+  end
+
+  defp validate_resize_size(size) do
+    case size do
+      {width, height} when is_integer(width) and is_integer(height) and width > 0 and height > 0 ->
+        {:ok, {width, height}}
+      _ ->
+        {:error, :invalid_size}
+    end
+  end
+
+  defp safe_buffer_resize(buffer, width, height) do
+    new_buffer = BufferImpl.resize(buffer, width, height)
+    {:ok, new_buffer}
+  rescue
+    e -> {:error, {:resize_exception, e}}
+  catch
+    kind, reason -> {:error, {kind, reason}}
   end
 
   def handle_call({:scroll, lines}, _from, state) do

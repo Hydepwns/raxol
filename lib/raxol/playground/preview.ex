@@ -119,29 +119,14 @@ defmodule Raxol.Playground.Preview do
 
     styled_content = "#{IO.ANSI.bright()}#{prefix}#{content}#{IO.ANSI.reset()}"
 
-    if level <= 2 do
-      underline =
-        String.duplicate(
-          if(level == 1, do: "=", else: "-"),
-          String.length(content) + String.length(prefix)
-        )
-
-      "#{styled_content}\n#{underline}"
-    else
-      styled_content
-    end
+    add_underline_if_needed(styled_content, level, content, prefix)
   end
 
   defp render_label(props) do
     text = Map.get(props, :text, "")
     required = Map.get(props, :required, false)
 
-    label_text =
-      if required do
-        "#{text} #{IO.ANSI.red()}*#{IO.ANSI.reset()}"
-      else
-        text
-      end
+    label_text = format_required_label(text, required)
 
     "#{IO.ANSI.bright()}#{label_text}#{IO.ANSI.reset()}"
   end
@@ -155,27 +140,11 @@ defmodule Raxol.Playground.Preview do
     disabled = Map.get(props, :disabled, false)
     cursor_pos = Map.get(state, :cursor_position, String.length(value))
 
-    display_text =
-      if String.length(value) == 0 and String.length(placeholder) > 0 do
-        "#{IO.ANSI.light_black()}#{placeholder}#{IO.ANSI.reset()}"
-      else
-        # Show cursor position
-        {before, after_cursor} = String.split_at(value, cursor_pos)
-
-        cursor =
-          if disabled, do: "", else: "#{IO.ANSI.reverse()} #{IO.ANSI.reset()}"
-
-        "#{before}#{cursor}#{after_cursor}"
-      end
+    display_text = format_input_display(value, placeholder, cursor_pos, disabled)
 
     padding = max(0, width - String.length(value))
 
-    border_style =
-      if disabled do
-        IO.ANSI.light_black()
-      else
-        IO.ANSI.white()
-      end
+    border_style = get_border_style(disabled)
 
     """
     #{border_style}┌#{"─" |> String.duplicate(width + 2)}┐#{IO.ANSI.reset()}
@@ -190,12 +159,7 @@ defmodule Raxol.Playground.Preview do
     rows = Map.get(props, :rows, 5)
     cols = Map.get(props, :cols, 40)
 
-    lines =
-      if String.length(value) == 0 and String.length(placeholder) > 0 do
-        [IO.ANSI.light_black() <> placeholder <> IO.ANSI.reset()]
-      else
-        String.split(value, "\n")
-      end
+    lines = format_text_area_lines(value, placeholder)
 
     # Pad lines to fill rows
     padded_lines = lines ++ List.duplicate("", max(0, rows - length(lines)))
@@ -231,21 +195,7 @@ defmodule Raxol.Playground.Preview do
 
     result = [top_border, main_line, bottom_border]
 
-    if is_open and length(options) > 0 do
-      option_lines =
-        Enum.with_index(options, fn option, _idx ->
-          marker =
-            if option == selected,
-              do: "#{IO.ANSI.bright()}► #{IO.ANSI.reset()}",
-              else: "  "
-
-          "│ #{marker}#{option}#{String.duplicate(" ", width - String.length("#{marker}#{option}"))} │"
-        end)
-
-      result ++ option_lines ++ [bottom_border]
-    else
-      result
-    end
+    append_option_lines_if_open(result, is_open, options, selected, width, bottom_border)
     |> Enum.join("\n")
   end
 
@@ -273,27 +223,9 @@ defmodule Raxol.Playground.Preview do
     checked = Map.get(state, :checked, Map.get(props, :checked, false))
     disabled = Map.get(props, :disabled, false)
 
-    checkbox =
-      if checked do
-        if disabled do
-          "#{IO.ANSI.light_black()}☑#{IO.ANSI.reset()}"
-        else
-          "#{IO.ANSI.green()}☑#{IO.ANSI.reset()}"
-        end
-      else
-        if disabled do
-          "#{IO.ANSI.light_black()}☐#{IO.ANSI.reset()}"
-        else
-          "☐"
-        end
-      end
+    checkbox = format_checkbox_icon(checked, disabled)
 
-    label_style =
-      if disabled do
-        IO.ANSI.light_black() <> label <> IO.ANSI.reset()
-      else
-        label
-      end
+    label_style = format_disabled_label(label, disabled)
 
     "#{checkbox} #{label_style}"
   end
@@ -303,12 +235,7 @@ defmodule Raxol.Playground.Preview do
     selected = Map.get(state, :selected, Map.get(props, :selected))
 
     Enum.map(options, fn option ->
-      radio =
-        if option == selected do
-          "#{IO.ANSI.green()}◉#{IO.ANSI.reset()}"
-        else
-          "○"
-        end
+      radio = format_radio_icon(option, selected)
 
       "#{radio} #{option}"
     end)

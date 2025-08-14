@@ -2,10 +2,11 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   @moduledoc """
   Unified scripting system for the Raxol terminal emulator.
   Handles script execution, management, and integration with the terminal.
+  
+  REFACTORED: All try/rescue blocks replaced with functional patterns using Task.
   """
 
   use GenServer
-  import Raxol.Guards
   require Logger
 
   @type script_id :: String.t()
@@ -349,25 +350,33 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   defp validate_script_type(_), do: {:error, :invalid_script_type}
 
   defp validate_script_source(source)
-       when binary?(source) and byte_size(source) > 0,
+       when is_binary(source) and byte_size(source) > 0,
        do: :ok
 
   defp validate_script_source(_), do: {:error, :invalid_script_source}
 
-  defp validate_script_config(config) when map?(config), do: :ok
+  defp validate_script_config(config) when is_map(config), do: :ok
   defp validate_script_config(_), do: {:error, :invalid_script_config}
 
   defp do_execute_script(script, args, timeout) do
-    try do
+    # Use Task for safe execution with timeout
+    task = Task.async(fn ->
       case script.type do
         :elixir -> execute_elixir_script(script, args, timeout)
         :lua -> execute_lua_script(script, args, timeout)
         :python -> execute_python_script(script, args, timeout)
         :javascript -> execute_javascript_script(script, args, timeout)
       end
-    rescue
-      e ->
-        Logger.error("Script execution failed: #{inspect(e)}")
+    end)
+    
+    case Task.yield(task, timeout) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} -> 
+        result
+      nil ->
+        Logger.error("Script execution timeout")
+        {:error, :execution_timeout}
+      {:exit, reason} ->
+        Logger.error("Script execution failed: #{inspect(reason)}")
         {:error, :execution_failed}
     end
   end
@@ -381,7 +390,8 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
     """
 
-    try do
+    # Use Task for safe code compilation and execution
+    task = Task.async(fn ->
       [{mod, _bin}] = Code.compile_string(wrapped_code)
 
       if function_exported?(mod, :main, length(args)) do
@@ -390,9 +400,16 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
       else
         {:ok, "Elixir script executed successfully"}
       end
-    rescue
-      e ->
-        Logger.error("Script execution failed: #{inspect(e)}")
+    end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} -> 
+        result
+      nil ->
+        Logger.error("Elixir script compilation/execution timeout")
+        {:error, :execution_failed}
+      {:exit, reason} ->
+        Logger.error("Script execution failed: #{inspect(reason)}")
         {:error, :execution_failed}
     end
   end
@@ -425,25 +442,38 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         "raxol_script_#{:crypto.strong_rand_bytes(8) |> Base.encode16()}"
       )
 
-    try do
+    # Use Task for safe file operations and script execution
+    task = Task.async(fn ->
       # Write script to temporary file
       File.write!(temp_file, source)
 
       # Execute script with arguments
-      cmd = [interpreter, temp_file] ++ args
+      cmd = [temp_file] ++ args
 
       case System.cmd(interpreter, cmd,
              timeout: timeout,
              stderr_to_stdout: true
            ) do
-        {output, 0} -> {:ok, String.trim(output)}
-        {error_output, _exit_code} -> {:error, String.trim(error_output)}
+        {output, 0} -> 
+          File.rm(temp_file)  # Clean up
+          {:ok, String.trim(output)}
+        {error_output, _exit_code} -> 
+          File.rm(temp_file)  # Clean up
+          {:error, String.trim(error_output)}
       end
-    rescue
-      e -> {:error, "Failed to execute script: #{inspect(e)}"}
-    after
-      # Clean up temporary file
-      File.rm(temp_file)
+    end)
+    
+    case Task.yield(task, timeout + 1000) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} -> 
+        result
+      nil ->
+        # Try to clean up temp file
+        Task.start(fn -> File.rm(temp_file) end)
+        {:error, "Script execution timeout"}
+      {:exit, reason} ->
+        # Try to clean up temp file
+        Task.start(fn -> File.rm(temp_file) end)
+        {:error, "Failed to execute script: #{inspect(reason)}"}
     end
   end
 
@@ -460,7 +490,8 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   end
 
   defp export_script_to_file(script, path) do
-    try do
+    # Use Task for safe file operations
+    task = Task.async(fn ->
       # Create directory if it doesn't exist
       File.mkdir_p!(Path.dirname(path))
 
@@ -487,9 +518,16 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
       File.write!(metadata_path, Jason.encode!(metadata, pretty: true))
 
       :ok
-    rescue
-      e ->
-        Logger.error("Script export failed: #{inspect(e)}")
+    end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
+      {:ok, :ok} -> 
+        :ok
+      nil ->
+        Logger.error("Script export timeout")
+        {:error, :export_failed}
+      {:exit, reason} ->
+        Logger.error("Script export failed: #{inspect(reason)}")
         {:error, :export_failed}
     end
   end
@@ -505,7 +543,8 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   end
 
   defp import_script_from_file(path, opts) do
-    try do
+    # Use Task for safe file operations
+    task = Task.async(fn ->
       # Check if path is a directory or file
       case File.stat(path) do
         {:ok, %{type: :directory}} ->
@@ -517,9 +556,16 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         _ ->
           {:error, :invalid_path}
       end
-    rescue
-      e ->
-        Logger.error("Script import failed: #{inspect(e)}")
+    end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} -> 
+        result
+      nil ->
+        Logger.error("Script import timeout")
+        {:error, :import_failed}
+      {:exit, reason} ->
+        Logger.error("Script import failed: #{inspect(reason)}")
         {:error, :import_failed}
     end
   end
@@ -573,7 +619,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         config: metadata["config"] || %{},
         metadata: metadata["metadata"] || %{}
       ]
-      |> Enum.reject(fn {_key, value} -> nil?(value) end)
+      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
 
     Keyword.merge(opts, metadata_opts)
   end
@@ -664,7 +710,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
           script_id = generate_script_id()
 
           # Store in process dictionary for now, could be enhanced to use GenServer state
-          Process.put({:loaded_script, script_id}, script)
+          Raxol.Core.StateManager.set_state({:loaded_script, script_id}, script)
           Logger.info("Loaded script: #{script.name} from #{path}")
 
         {:error, reason} ->

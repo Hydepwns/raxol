@@ -20,15 +20,13 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
         type: :data_provider,
         attrs: %{
           fetch_fn: fn -> fetch_users() end,
-          render: fn %{data: users, loading: loading, error: error} ->
-            cond do
-              loading ->
-                text("Loading users...")
-              error ->
-                text("Error: \#{error}")
-              true ->
-                render_user_list(users)
-            end
+          render: fn
+            %{loading: true} ->
+              text("Loading users...")
+            %{error: error} when not is_nil(error) ->
+              text("Error: \#{error}")
+            %{data: users} ->
+              render_user_list(users)
           end
         }
       }
@@ -44,7 +42,7 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
       }
   """
 
-  alias Raxol.UI.State.Hooks
+  alias Raxol.UI.State.Hooks, as: Hooks
 
   @doc """
   Data provider component that fetches data and provides it via render prop.
@@ -328,14 +326,7 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
                 new_y = event.scroll_y
 
                 # Determine scroll direction
-                direction =
-                  cond do
-                    new_y > scroll_pos.y -> :down
-                    new_y < scroll_pos.y -> :up
-                    new_x > scroll_pos.x -> :right
-                    new_x < scroll_pos.x -> :left
-                    true -> :none
-                  end
+                direction = determine_scroll_direction(new_x, new_y, scroll_pos)
 
                 set_scroll_pos.(%{x: new_x, y: new_y})
                 set_scroll_direction.(direction)
@@ -730,4 +721,18 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
     # Unknown rule passes by default
     true
   end
+
+  defp determine_scroll_direction(new_x, new_y, scroll_pos)
+       when new_y > scroll_pos.y, do: :down
+
+  defp determine_scroll_direction(new_x, new_y, scroll_pos)
+       when new_y < scroll_pos.y, do: :up
+
+  defp determine_scroll_direction(new_x, new_y, scroll_pos)
+       when new_x > scroll_pos.x, do: :right
+
+  defp determine_scroll_direction(new_x, new_y, scroll_pos)
+       when new_x < scroll_pos.x, do: :left
+
+  defp determine_scroll_direction(_new_x, _new_y, _scroll_pos), do: :none
 end

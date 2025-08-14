@@ -9,8 +9,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
 
   alias Raxol.View.Components
 
-  import Raxol.Guards
-
+  
   @doc """
   Renders the multi-line input component with proper styling based on the state.
   Returns a grid of cell data for the visible portion of text.
@@ -58,7 +57,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
         line_len
       )
 
-    if list?(segments) and match?([%{type: :label} | _], segments) do
+    if is_list(segments) and match?([%{type: :label} | _], segments) do
       segments
     else
       process_segments(segments, line_content)
@@ -139,20 +138,53 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
          end_col,
          line_index,
          line_len
+       )
+
+  defp calculate_selection_bounds(
+         start_row,
+         start_col,
+         end_row,
+         end_col,
+         _line_index,
+         _line_len
+       )
+       when start_row == end_row do
+    {min(start_col, end_col), max(start_col, end_col)}
+  end
+
+  defp calculate_selection_bounds(
+         start_row,
+         start_col,
+         _end_row,
+         _end_col,
+         line_index,
+         line_len
+       )
+       when line_index == start_row do
+    {start_col, line_len}
+  end
+
+  defp calculate_selection_bounds(
+         _start_row,
+         _start_col,
+         end_row,
+         end_col,
+         line_index,
+         _line_len
+       )
+       when line_index == end_row do
+    {0, end_col}
+  end
+
+  defp calculate_selection_bounds(
+         _start_row,
+         _start_col,
+         _end_row,
+         _end_col,
+         _line_index,
+         line_len
        ) do
-    cond do
-      start_row == end_row ->
-        {min(start_col, end_col), max(start_col, end_col)}
-
-      line_index == start_row ->
-        {start_col, line_len}
-
-      line_index == end_row ->
-        {0, end_col}
-
-      true ->
-        {0, line_len}
-    end
+    {0, line_len}
   end
 
   defp create_segments(
@@ -164,37 +196,87 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
          safe_cursor_col,
          safe_slice,
          line_len
+       )
+
+  defp create_segments(
+         selection_range,
+         true,
+         line_content,
+         text_style,
+         _cursor_style,
+         _safe_cursor_col,
+         _safe_slice,
+         _line_len
+       )
+       when not is_nil(selection_range) do
+    [{line_content, text_style}]
+  end
+
+  defp create_segments(
+         selection_range,
+         false,
+         line_content,
+         text_style,
+         _cursor_style,
+         _safe_cursor_col,
+         _safe_slice,
+         _line_len
+       )
+       when not is_nil(selection_range) do
+    [{line_content, text_style}]
+  end
+
+  defp create_segments(
+         nil,
+         true,
+         line_content,
+         text_style,
+         cursor_style,
+         safe_cursor_col,
+         safe_slice,
+         line_len
+       )
+       when safe_cursor_col >= line_len do
+    [{line_content, text_style}]
+  end
+
+  defp create_segments(
+         nil,
+         true,
+         line_content,
+         text_style,
+         cursor_style,
+         safe_cursor_col,
+         safe_slice,
+         line_len
        ) do
-    cond do
-      selection_range && cursor_on_this_line ->
-        [{line_content, text_style}]
+    before_cursor = safe_slice.(line_content, 0, safe_cursor_col)
+    cursor_char = safe_slice.(line_content, safe_cursor_col, 1)
 
-      selection_range ->
-        [{line_content, text_style}]
+    after_cursor =
+      safe_slice.(
+        line_content,
+        safe_cursor_col + 1,
+        line_len - safe_cursor_col - 1
+      )
 
-      cursor_on_this_line ->
-        if safe_cursor_col >= line_len do
-          [{line_content, text_style}]
-        else
-          before_cursor = safe_slice.(line_content, 0, safe_cursor_col)
-          cursor_char = safe_slice.(line_content, safe_cursor_col, 1)
+    [
+      {before_cursor, text_style},
+      {cursor_char, cursor_style},
+      {after_cursor, text_style}
+    ]
+  end
 
-          after_cursor =
-            safe_slice.(
-              line_content,
-              safe_cursor_col + 1,
-              line_len - safe_cursor_col - 1
-            )
-
-          [
-            {before_cursor, text_style},
-            {cursor_char, cursor_style},
-            {after_cursor, text_style}
-          ]
-        end
-
-      true ->
-        [{line_content, text_style}]
-    end
+  defp create_segments(
+         nil,
+         false,
+         line_content,
+         text_style,
+         _cursor_style,
+         _safe_cursor_col,
+         _safe_slice,
+         _line_len
+       ) do
+    [{line_content, text_style}]
   end
 end

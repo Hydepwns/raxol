@@ -7,8 +7,7 @@ defmodule Raxol.Terminal.OutputManager do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.OutputBuffer
   require Raxol.Core.Runtime.Log
-  import Raxol.Guards
-
+  
   @control_char_map %{
     "\x00" => "^@",
     "\x01" => "^A",
@@ -188,17 +187,17 @@ defmodule Raxol.Terminal.OutputManager do
   end
 
   defp apply_ansi_pattern({pattern, replacement}, acc)
-       when binary?(replacement) do
+       when is_binary(replacement) do
     String.replace(acc, pattern, replacement)
   end
 
   defp apply_ansi_pattern({pattern, replacement}, acc)
-       when function?(replacement, 1) do
+       when is_function(replacement, 1) do
     Regex.replace(pattern, acc, fn _, a -> replacement.(a) end)
   end
 
   defp apply_ansi_pattern({pattern, replacement}, acc)
-       when function?(replacement, 2) do
+       when is_function(replacement, 2) do
     Regex.replace(pattern, acc, fn _, a, b -> replacement.(a, b) end)
   end
 

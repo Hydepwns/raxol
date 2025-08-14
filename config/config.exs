@@ -102,7 +102,7 @@ config :raxol, :terminal,
   enable_mouse: true
 
 # Configure buffer system
-# Set to :new to use the refactored modular BufferServerRefactored
+# Set to :new to use the refactored modular BufferServer
 # Set to :old to use the original monolithic BufferServer
 config :raxol, :buffer_system, :new
 

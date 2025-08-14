@@ -1,4 +1,12 @@
 defmodule RaxolWeb.ErrorHelpers do
+  @moduledoc """
+  Helper functions for consistent error handling in RaxolWeb.
+
+  This module provides utilities for:
+  - LiveView error handling
+  - Form input sanitization
+  - Safe assign operations
+  """
   require Logger
   import Phoenix.Component, only: [assign: 2, assign: 3]
   import Phoenix.LiveView, only: [put_flash: 3]

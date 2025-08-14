@@ -4,8 +4,7 @@ defmodule Raxol.Terminal.Output.Manager do
   This module handles output events, applies styles and formatting rules, and tracks metrics.
   """
 
-  import Raxol.Guards
-
+  
   @type style :: %{
           foreground: String.t() | nil,
           background: String.t() | nil,
@@ -153,7 +152,7 @@ defmodule Raxol.Terminal.Output.Manager do
   """
   @spec add_style(t(), String.t(), style()) :: t()
   def add_style(%__MODULE__{} = manager, style_name, style)
-      when binary?(style_name) do
+      when is_binary(style_name) do
     %{
       manager
       | style_map: Map.put(manager.style_map, style_name, style),
@@ -167,7 +166,7 @@ defmodule Raxol.Terminal.Output.Manager do
   """
   @spec add_format_rule(t(), format_rule()) :: t()
   def add_format_rule(%__MODULE__{} = manager, rule)
-      when function?(rule, 1) do
+      when is_function(rule, 1) do
     %{
       manager
       | format_rules: [rule | manager.format_rules],
@@ -200,14 +199,12 @@ defmodule Raxol.Terminal.Output.Manager do
          style: style,
          timestamp: timestamp,
          priority: priority
-       }) do
-    cond do
-      not binary?(content) -> :error
-      not binary?(style) -> :error
-      not integer?(timestamp) or timestamp < 0 -> :error
-      not integer?(priority) or priority < 0 -> :error
-      true -> :ok
-    end
+       })
+       when is_binary(content) and
+              is_binary(style) and
+              is_integer(timestamp) and timestamp >= 0 and
+              is_integer(priority) and priority >= 0 do
+    :ok
   end
 
   defp validate_event(_), do: :error

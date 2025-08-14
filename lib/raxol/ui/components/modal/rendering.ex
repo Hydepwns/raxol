@@ -30,20 +30,20 @@ defmodule Raxol.UI.Components.Modal.Rendering do
 
   @doc "Renders the modal content based on type."
   @spec render_content(map()) :: any()
-  def render_content(state) do
-    cond do
-      is_binary(state.content) ->
-        Raxol.View.Elements.label(content: state.content)
+  def render_content(%{content: content} = state) when is_binary(content) do
+    Raxol.View.Elements.label(content: content)
+  end
 
-      state.type in [:prompt, :form] ->
-        render_form_content(state)
+  def render_content(%{type: type} = state) when type in [:prompt, :form] do
+    render_form_content(state)
+  end
 
-      state.content != nil ->
-        state.content
+  def render_content(%{content: content}) when not is_nil(content) do
+    content
+  end
 
-      true ->
-        nil
-    end
+  def render_content(_state) do
+    nil
   end
 
   @doc "Renders modal buttons."

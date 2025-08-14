@@ -1,6 +1,5 @@
 defmodule Raxol.Docs.InteractiveTutorial.Navigation do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles navigation and progress tracking for tutorials.
   """
@@ -42,9 +41,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
   Goes to the next step in the current tutorial.
   """
   def next_step(state) do
-    with tutorial_id when not nil?(tutorial_id) <- state.current_tutorial,
-         step_id when not nil?(step_id) <- state.current_step,
-         tutorial when not nil?(tutorial) <-
+    with tutorial_id when not is_nil(tutorial_id) <- state.current_tutorial,
+         step_id when not is_nil(step_id) <- state.current_step,
+         tutorial when not is_nil(tutorial) <-
            Map.get(state.tutorials, tutorial_id) do
       current_index = Enum.find_index(tutorial.steps, &(&1.id == step_id))
 
@@ -77,9 +76,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
   Goes to the previous step in the current tutorial.
   """
   def previous_step(state) do
-    with tutorial_id when not nil?(tutorial_id) <- state.current_tutorial,
-         step_id when not nil?(step_id) <- state.current_step,
-         tutorial when not nil?(tutorial) <-
+    with tutorial_id when not is_nil(tutorial_id) <- state.current_tutorial,
+         step_id when not is_nil(step_id) <- state.current_step,
+         tutorial when not is_nil(tutorial) <-
            Map.get(state.tutorials, tutorial_id) do
       current_index = Enum.find_index(tutorial.steps, &(&1.id == step_id))
 
@@ -105,8 +104,8 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
   Jumps to a specific step in the current tutorial.
   """
   def jump_to_step(state, step_id) do
-    with tutorial_id when not nil?(tutorial_id) <- state.current_tutorial,
-         tutorial when not nil?(tutorial) <-
+    with tutorial_id when not is_nil(tutorial_id) <- state.current_tutorial,
+         tutorial when not is_nil(tutorial) <-
            Map.get(state.tutorials, tutorial_id),
          true <- Enum.any?(tutorial.steps, &(&1.id == step_id)) do
       updated_state = %{

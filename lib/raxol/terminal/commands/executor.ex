@@ -87,10 +87,10 @@ defmodule Raxol.Terminal.Commands.Executor do
   end
 
   defp get_command_type(final_byte, intermediates_buffer) do
-    cond do
-      final_byte == ?q and intermediates_buffer == " " -> {:ok, :deccusr}
-      final_byte in [?h, ?l] -> {:ok, :mode}
-      true -> find_command_type(final_byte)
+    case {final_byte, intermediates_buffer} do
+      {?q, " "} -> {:ok, :deccusr}
+      {fb, _} when fb in [?h, ?l] -> {:ok, :mode}
+      {fb, _} -> find_command_type(fb)
     end
   end
 

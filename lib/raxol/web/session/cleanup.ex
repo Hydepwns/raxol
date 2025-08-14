@@ -9,8 +9,7 @@ defmodule Raxol.Web.Session.Cleanup do
   import Ecto.Query
   alias Raxol.Web.Session.{Storage, Session}
   alias Raxol.Repo
-  import Raxol.Guards
-
+  
   @doc """
   Initialize the session cleanup system.
   """
@@ -123,6 +122,6 @@ defmodule Raxol.Web.Session.Cleanup do
   defp orphaned?(session) do
     # Check if session is active but has no associated user
     session.status == :active &&
-      (nil?(session.user_id) || session.user_id == "")
+      (is_nil(session.user_id) || session.user_id == "")
   end
 end

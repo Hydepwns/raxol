@@ -134,6 +134,6 @@ defmodule RaxolWeb.Router do
   #   end
   # end
 
-  # Metrics endpoint
-  forward("/metrics", TelemetryMetricsPrometheus.Router)
+  # Metrics endpoint (disabled - dependency removed)
+  # forward("/metrics", TelemetryMetricsPrometheus.Router)
 end

@@ -1,6 +1,5 @@
 defmodule Raxol.Style.Colors.Accessibility do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Provides utilities for color accessibility, focusing on WCAG contrast.
   """
@@ -38,7 +37,7 @@ defmodule Raxol.Style.Colors.Accessibility do
       iex> Raxol.Style.Colors.Accessibility.relative_luminance("#FFFFFF")
       1.0
   """
-  def relative_luminance(color) when binary?(color) do
+  def relative_luminance(color) when is_binary(color) do
     # Allow hex string input for convenience
     case Color.from_hex(color) do
       %Color{} = c -> relative_luminance(c)
@@ -84,10 +83,10 @@ defmodule Raxol.Style.Colors.Accessibility do
       1.3
   """
   def contrast_ratio(color1, color2)
-      when binary?(color1) or binary?(color2) do
+      when is_binary(color1) or is_binary(color2) do
     # Allow hex string input
-    c1 = if binary?(color1), do: Color.from_hex(color1), else: color1
-    c2 = if binary?(color2), do: Color.from_hex(color2), else: color2
+    c1 = if is_binary(color1), do: Color.from_hex(color1), else: color1
+    c2 = if is_binary(color2), do: Color.from_hex(color2), else: color2
     contrast_ratio(c1, c2)
   end
 
@@ -162,11 +161,13 @@ defmodule Raxol.Style.Colors.Accessibility do
       iex> Raxol.Style.Colors.Accessibility.suggest_text_color("#EEEEEE").hex
       "#000000"
   """
-  def suggest_text_color(background) do
-    bg =
-      if binary?(background), do: Color.from_hex(background), else: background
-
+  def suggest_text_color(background) when is_binary(background) do
+    bg = Color.from_hex(background)
     Utilities.best_bw_contrast(bg)
+  end
+
+  def suggest_text_color(background) do
+    Utilities.best_bw_contrast(background)
   end
 
   @doc """
@@ -185,7 +186,7 @@ defmodule Raxol.Style.Colors.Accessibility do
       iex> Raxol.Style.Colors.Accessibility.readable?(color, contrast_color)
       true
   """
-  def suggest_contrast_color(color) when binary?(color) do
+  def suggest_contrast_color(color) when is_binary(color) do
     case Color.from_hex(color) do
       %Color{} = c -> suggest_contrast_color(c)
       # Default to black for invalid base
@@ -228,7 +229,7 @@ defmodule Raxol.Style.Colors.Accessibility do
 
   # @doc false # Silence @doc warning for the first clause
   # Clause for binary (string) input
-  def accessible_color_pair(base_color, level) when binary?(base_color) do
+  def accessible_color_pair(base_color, level) when is_binary(base_color) do
     case Color.from_hex(base_color) do
       # Delegate to Color struct clause
       %Color{} = c ->
@@ -255,27 +256,30 @@ defmodule Raxol.Style.Colors.Accessibility do
     # Call the new helper function
     min_ratio = min_contrast(level)
 
-    if contrast_with_white >= min_ratio do
-      # White text on base_color background
-      {white, base_color}
-    else
-      if contrast_with_black >= min_ratio do
-        # Black text on base_color background
-        {black, base_color}
-      else
-        Raxol.Core.Runtime.Log.debug(
-          "Could not find accessible pair for color: #{inspect(base_color)}"
-        )
-
-        # Could not find a simple black/white contrast pair
-        nil
-      end
-    end
+    choose_accessible_pair(base_color, white, black, contrast_with_white, contrast_with_black, min_ratio)
   end
 
   # Define the missing helper function
   defp min_contrast(:aaa), do: 7.0
   defp min_contrast(_level), do: 4.5
+
+  # Helper functions for pattern matching refactoring
+
+  defp choose_accessible_pair(base_color, white, _black, contrast_with_white, _contrast_with_black, min_ratio)
+       when contrast_with_white >= min_ratio,
+       do: {white, base_color}
+       
+  defp choose_accessible_pair(base_color, _white, black, _contrast_with_white, contrast_with_black, min_ratio)
+       when contrast_with_black >= min_ratio,
+       do: {black, base_color}
+       
+  defp choose_accessible_pair(base_color, _white, _black, _contrast_with_white, _contrast_with_black, _min_ratio) do
+    Raxol.Core.Runtime.Log.debug(
+      "Could not find accessible pair for color: #{inspect(base_color)}"
+    )
+    # Could not find a simple black/white contrast pair
+    nil
+  end
 
   # --- High Contrast Mode Helpers ---
 
@@ -375,11 +379,11 @@ defmodule Raxol.Style.Colors.Accessibility do
           Color.t() | String.t(),
           Color.t() | String.t() | Keyword.t()
         ) :: String.t()
-  def suggest_accessible_color(color, background) when binary?(background) do
+  def suggest_accessible_color(color, background) when is_binary(background) do
     suggest_accessible_color(color, background: background)
   end
 
-  def suggest_accessible_color(color, opts) when list?(opts) do
+  def suggest_accessible_color(color, opts) when is_list(opts) do
     color = normalize_color(color)
     {bg, min_ratio} = extract_options(opts)
 
@@ -389,9 +393,12 @@ defmodule Raxol.Style.Colors.Accessibility do
     end
   end
 
-  defp normalize_color(color) do
-    if binary?(color), do: Color.from_hex(color), else: color
-  end
+  defp normalize_color(color) when is_binary(color), do: Color.from_hex(color)
+  defp normalize_color(color), do: color
+  
+  defp normalize_background(nil), do: Color.from_hex("#FFFFFF")
+  defp normalize_background(background) when is_binary(background), do: Color.from_hex(background)
+  defp normalize_background(background), do: background
 
   defp extract_options(opts) do
     bg = normalize_color(Keyword.get(opts, :background) || "#FFFFFF")
@@ -458,19 +465,14 @@ defmodule Raxol.Style.Colors.Accessibility do
           Color.t() | String.t(),
           Color.t() | String.t() | Keyword.t()
         ) :: map()
-  def generate_accessible_palette(base_color, opts) when list?(opts) do
+  def generate_accessible_palette(base_color, opts) when is_list(opts) do
     # Extract options
     background = Keyword.get(opts, :background)
     level = Keyword.get(opts, :level, :aa)
 
     # Convert colors
-    base =
-      if binary?(base_color), do: Color.from_hex(base_color), else: base_color
-
-    bg =
-      if binary?(background),
-        do: Color.from_hex(background),
-        else: background || Color.from_hex("#FFFFFF")
+    base = normalize_color(base_color)
+    bg = normalize_background(background)
 
     # Generate accessible colors
     text =
@@ -523,13 +525,13 @@ defmodule Raxol.Style.Colors.Accessibility do
   end
 
   def generate_accessible_palette(base_color, background)
-      when binary?(background) do
+      when is_binary(background) do
     generate_accessible_palette(base_color, background: background)
   end
 
   @spec validate_colors(map(), Color.t() | String.t() | Keyword.t()) ::
           {:ok, map()} | {:error, Keyword.t()}
-  def validate_colors(colors, opts) when list?(opts) do
+  def validate_colors(colors, opts) when is_list(opts) do
     bg = extract_background(opts)
     colors_map = normalize_colors_map(colors)
 
@@ -539,7 +541,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     if Enum.empty?(issues), do: {:ok, colors}, else: {:error, issues}
   end
 
-  def validate_colors(colors, background) when binary?(background) do
+  def validate_colors(colors, background) when is_binary(background) do
     validate_colors(colors, background: background)
   end
 
@@ -547,7 +549,7 @@ defmodule Raxol.Style.Colors.Accessibility do
   def get_optimal_text_color(background) do
     # Convert background to Color struct if it's a hex string
     bg =
-      if binary?(background), do: Color.from_hex(background), else: background
+      if is_binary(background), do: Color.from_hex(background), else: background
 
     black = Color.from_hex("#000000")
     white = Color.from_hex("#FFFFFF")
@@ -651,14 +653,14 @@ defmodule Raxol.Style.Colors.Accessibility do
   defp extract_background(opts) do
     background = Keyword.get(opts, :background)
 
-    if binary?(background),
+    if is_binary(background),
       do: Color.from_hex(background),
       else: background || Color.from_hex("#FFFFFF")
   end
 
   defp normalize_colors_map(colors) do
     Map.new(colors, fn {k, v} ->
-      {k, if(binary?(v), do: Color.from_hex(v), else: v)}
+      {k, if(is_binary(v), do: Color.from_hex(v), else: v)}
     end)
   end
 

@@ -174,9 +174,8 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
           line = Keyword.get(meta, :line, 0)
           name_str = to_string(name)
 
-          cond do
-            String.contains?(name_str, "__") and
-                name_str not in ["__MODULE__", "__DIR__", "__ENV__"] ->
+          case validate_function_name(name_str) do
+            {:error, :double_underscores} ->
               {node,
                [
                  {:naming_convention, line, file_path,
@@ -184,7 +183,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
                  | acc
                ]}
 
-            String.match?(name_str, ~r/[A-Z]/) ->
+            {:error, :uppercase} ->
               {node,
                [
                  {:naming_convention, line, file_path,
@@ -192,7 +191,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
                  | acc
                ]}
 
-            true ->
+            :ok ->
               {node, acc}
           end
 
@@ -287,32 +286,29 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     lines
     |> Enum.with_index(1)
     |> Enum.reduce(issues, fn {line, line_num}, acc ->
-      cond do
-        # Check line length
-        String.length(line) > 120 ->
+      case check_line_formatting(line) do
+        {:error, :line_too_long} ->
           [
             {:formatting, line_num, file_path, "Line exceeds 120 characters",
              :info}
             | acc
           ]
 
-        # Check trailing whitespace
-        String.match?(line, ~r/\s+$/) ->
+        {:error, :trailing_whitespace} ->
           [
             {:formatting, line_num, file_path, "Line has trailing whitespace",
              :warning}
             | acc
           ]
 
-        # Check tabs vs spaces
-        String.contains?(line, "\t") ->
+        {:error, :contains_tabs} ->
           [
             {:formatting, line_num, file_path,
              "Line contains tabs (use spaces)", :error}
             | acc
           ]
 
-        true ->
+        :ok ->
           acc
       end
     end)
@@ -525,5 +521,26 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
       |> Enum.map(fn {rec, idx} -> "#{idx}. #{rec}" end)
       |> Enum.join("\n")
     end
+  end
+
+  defp validate_function_name(name_str) 
+       when name_str in ["__MODULE__", "__DIR__", "__ENV__"], do: :ok
+
+  defp validate_function_name(name_str) do
+    case {String.contains?(name_str, "__"), String.match?(name_str, ~r/[A-Z]/)} do
+      {true, _} -> {:error, :double_underscores}
+      {false, true} -> {:error, :uppercase}
+      {false, false} -> :ok
+    end
+  end
+
+  defp check_line_formatting(line) do
+    Enum.find_value([
+      {String.length(line) > 120, {:error, :line_too_long}},
+      {String.match?(line, ~r/\s+$/), {:error, :trailing_whitespace}},
+      {String.contains?(line, "\t"), {:error, :contains_tabs}}
+    ], :ok, fn {condition, result} ->
+      if condition, do: result
+    end)
   end
 end

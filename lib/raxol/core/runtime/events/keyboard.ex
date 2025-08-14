@@ -9,8 +9,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
   """
 
   require Raxol.Core.Runtime.Log
-  import Raxol.Guards
-  alias Raxol.Core.Events.Event
+    alias Raxol.Core.Events.Event
 
   @doc """
   Processes a keyboard event and determines if it should be handled by the application
@@ -29,26 +28,29 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     key = key_data.key
     modifiers = key_data.modifiers || []
 
-    cond do
-      # Check for quit key combination
-      quit_key?(key, modifiers, state.quit_keys) ->
-        {:system, :quit, state}
-
-      # Check for debug toggle key combination
-      debug_toggle_key?(key, modifiers) ->
-        new_debug_mode = not state.debug_mode
-
-        Raxol.Core.Runtime.Log.info(
-          "Debug mode #{if new_debug_mode, do: "enabled", else: "disabled"}"
-        )
-
-        {:system, {:set_debug_mode, new_debug_mode},
-         %{state | debug_mode: new_debug_mode}}
-
-      # Other keyboard handling logic
-      true ->
-        {:application, event, state}
+    case check_system_key_combinations(key, modifiers, state) do
+      {:system, _} = result -> result
+      :not_system -> {:application, event, state}
     end
+  end
+
+  defp check_system_key_combinations(key, modifiers, state) do
+    case {quit_key?(key, modifiers, state.quit_keys), debug_toggle_key?(key, modifiers)} do
+      {true, _} -> {:system, :quit, state}
+      {false, true} -> handle_debug_toggle(state)
+      {false, false} -> :not_system
+    end
+  end
+
+  defp handle_debug_toggle(state) do
+    new_debug_mode = not state.debug_mode
+
+    Raxol.Core.Runtime.Log.info(
+      "Debug mode #{if new_debug_mode, do: "enabled", else: "disabled"}"
+    )
+
+    {:system, {:set_debug_mode, new_debug_mode},
+     %{state | debug_mode: new_debug_mode}}
   end
 
   @doc """
@@ -89,7 +91,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
   `{:ok, action}` if a match is found, `:none` otherwise.
   """
   def check_shortcuts(%Event{type: :key, data: key_data} = _event, shortcuts)
-      when map?(shortcuts) do
+      when is_map(shortcuts) do
     key = key_data.key
     modifiers = key_data.modifiers || []
 
@@ -112,10 +114,10 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
 
   defp matches_quit_key(quit_key, key, modifiers) do
     case quit_key do
-      key_val when atom?(key_val) or integer?(key_val) ->
+      key_val when is_atom(key_val) or is_integer(key_val) ->
         key == key_val
 
-      {key_val, mods} when list?(mods) ->
+      {key_val, mods} when is_list(mods) ->
         key == key_val and modifiers_match?(modifiers, mods)
 
       :ctrl_c ->
@@ -148,11 +150,11 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
 
   defp shortcut_match?(key, modifiers, shortcut) do
     case shortcut do
-      key_val when atom?(key_val) or integer?(key_val) ->
+      key_val when is_atom(key_val) or is_integer(key_val) ->
         key == key_val and
           Enum.all?(modifiers, fn {_, active} -> not active end)
 
-      {key_val, mods} when list?(mods) ->
+      {key_val, mods} when is_list(mods) ->
         key == key_val and modifiers_match?(modifiers, mods)
 
       _ ->
@@ -179,11 +181,11 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     127 => :backspace
   }
 
-  defp get_key_name(key) when integer?(key) and key >= 32 and key <= 126 do
+  defp get_key_name(key) when is_integer(key) and key >= 32 and key <= 126 do
     <<key::utf8>>
   end
 
-  defp get_key_name(key) when atom?(key) do
+  defp get_key_name(key) when is_atom(key) do
     key
   end
 

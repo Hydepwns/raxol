@@ -623,12 +623,18 @@ defmodule Raxol.Config do
   end
 
   defp parse_env_value(value) do
-    cond do
-      value =~ ~r/^\d+$/ -> String.to_integer(value)
-      value =~ ~r/^\d+\.\d+$/ -> String.to_float(value)
-      value in ~w(true false) -> value == "true"
-      true -> value
-    end
+    parsers = [
+      {~r/^\d+$/, &String.to_integer/1},
+      {~r/^\d+\.\d+$/, &String.to_float/1},
+      {~w(true false), fn v -> v == "true" end}
+    ]
+    
+    Enum.find_value(parsers, value, fn
+      {regex, parser} when is_struct(regex, Regex) ->
+        if value =~ regex, do: parser.(value)
+      {list, parser} when is_list(list) ->
+        if value in list, do: parser.(value)
+    end)
   end
 
   defp build_nested_config(env_pairs) do

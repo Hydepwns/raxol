@@ -1,13 +1,12 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
   use ExUnit.Case, async: true
-  import Raxol.Guards
-
+  
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.MultiLineInput.RenderHelper
 
   defp normalize_dimensions(%{width: _, height: _} = dims), do: dims
 
-  defp normalize_dimensions({w, h}) when integer?(w) and integer?(h),
+  defp normalize_dimensions({w, h}) when is_integer(w) and is_integer(h),
     do: %{width: w, height: h}
 
   defp normalize_dimensions(_), do: %{width: 10, height: 5}
@@ -38,8 +37,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
 
   defp extract_style(attrs) do
     cond do
-      list?(attrs) -> Keyword.get(attrs, :style)
-      map?(attrs) -> Map.get(attrs, :style)
+      is_list(attrs) -> Keyword.get(attrs, :style)
+      is_map(attrs) -> Map.get(attrs, :style)
       true -> nil
     end
   end

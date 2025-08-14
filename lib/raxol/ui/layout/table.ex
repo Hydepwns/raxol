@@ -3,8 +3,7 @@ defmodule Raxol.UI.Layout.Table do
   Handles measurement and positioning logic for Table elements within the LayoutEngine.
   """
 
-  import Raxol.Guards
-
+  
   require Raxol.Core.Runtime.Log
 
   @doc """
@@ -91,10 +90,10 @@ defmodule Raxol.UI.Layout.Table do
     max(header_width, data_width) + 2
   end
 
-  defp get_column_value(row, %{key: key}) when function?(key, 1),
+  defp get_column_value(row, %{key: key}) when is_function(key, 1),
     do: key.(row)
 
-  defp get_column_value(row, %{key: key}) when atom?(key),
+  defp get_column_value(row, %{key: key}) when is_atom(key),
     do: Map.get(row, key)
 
   defp get_column_value(_row, _), do: ""

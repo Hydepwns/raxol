@@ -4,8 +4,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   Supports G0, G1, G2, G3 character sets and their switching operations.
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.Terminal.ANSI.CharacterSets.{
     ASCII,
     DEC,
@@ -140,24 +139,25 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   the character if a single shift was active.
   """
   @spec get_active_charset(charset_state()) :: atom()
+  def get_active_charset(%{single_shift: single_shift} = _state)
+      when single_shift != nil do
+    single_shift
+  end
+
+  def get_active_charset(%{active: active} = _state) do
+    active
+  end
+
+  def get_active_charset(%{locked_shift: true, gr: gr} = state) do
+    get_charset_for_gset(state, gr)
+  end
+
+  def get_active_charset(%{gl: gl} = state) do
+    get_charset_for_gset(state, gl)
+  end
+
   def get_active_charset(state) do
-    cond do
-      # If a single shift is active, it takes precedence
-      state.single_shift != nil ->
-        state.single_shift
-
-      # Handle StateManager-style state with :active field
-      Map.has_key?(state, :active) ->
-        state.active
-
-      # Handle CharacterSets-style state with :locked_shift field
-      Map.has_key?(state, :locked_shift) and state.locked_shift ->
-        get_charset_for_gset(state, state.gr)
-
-      # Default: Get the charset designated to GL
-      true ->
-        get_charset_for_gset(state, state.gl)
-    end
+    get_charset_for_gset(state, Map.get(state, :gl, :g0))
   end
 
   defp get_charset_for_gset(state, gset) do
@@ -182,7 +182,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   """
   @spec translate_char(codepoint, charset_state()) ::
           {codepoint(), charset_state()}
-  def translate_char(codepoint, state) when integer?(codepoint) do
+  def translate_char(codepoint, state) when is_integer(codepoint) do
     active_charset = get_active_charset(state)
     charset_atom = module_to_atom(active_charset)
 
@@ -204,7 +204,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   end
 
   # Handle case where arguments are swapped (state, codepoint)
-  def translate_char(state, codepoint) when integer?(codepoint) do
+  def translate_char(state, codepoint) when is_integer(codepoint) do
     translate_char(codepoint, state)
   end
 

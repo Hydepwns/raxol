@@ -41,8 +41,7 @@ defmodule Raxol.Core.Standards.CodeStyle do
       use GenServer
 
       # Import statements (grouped by origin)
-      import Raxol.Guards
-      import Bitwise, only: [band: 2, bor: 2]
+            import Bitwise, only: [band: 2, bor: 2]
 
       # Alias statements (alphabetically ordered)
       alias Raxol.Core.{ErrorHandler, Logger}

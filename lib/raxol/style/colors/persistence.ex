@@ -1,6 +1,5 @@
 defmodule Raxol.Style.Colors.Persistence do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles persistence of color themes and user preferences.
 
@@ -45,14 +44,7 @@ defmodule Raxol.Style.Colors.Persistence do
     theme_json = Jason.encode!(theme, pretty: true)
 
     # Robustly get the theme name (prefer id over name for filename)
-    theme_name =
-      cond do
-        map?(theme) and Map.has_key?(theme, :id) -> theme[:id]
-        map?(theme) and Map.has_key?(theme, "id") -> theme["id"]
-        map?(theme) and Map.has_key?(theme, :name) -> theme[:name]
-        map?(theme) and Map.has_key?(theme, "name") -> theme["name"]
-        true -> raise "Theme missing id or name key"
-      end
+    theme_name = extract_theme_name(theme)
 
     # Save theme to file
     theme_path = Path.join(full_themes_dir, "#{theme_name}.json")
@@ -261,16 +253,32 @@ defmodule Raxol.Style.Colors.Persistence do
   defp to_atom_key(k) when is_binary(k), do: String.to_atom(k)
   defp to_atom_key(k), do: k
 
+  # Helper to extract theme name with preference for id over name
+  defp extract_theme_name(theme) when is_map(theme) and is_map_key(theme, :id), do: theme[:id]
+  defp extract_theme_name(theme) when is_map(theme) and is_map_key(theme, "id"), do: theme["id"]
+  defp extract_theme_name(theme) when is_map(theme) and is_map_key(theme, :name), do: theme[:name]
+  defp extract_theme_name(theme) when is_map(theme) and is_map_key(theme, "name"), do: theme["name"]
+  defp extract_theme_name(_theme), do: raise("Theme missing id or name key")
+
   # Helper to normalize color values in both colors and variants
-  defp normalize_color_value(v) do
-    cond do
-      is_map(v) and Map.has_key?(v, :hex) -> Color.from_hex(v["hex"] || v.hex)
-      is_map(v) and Map.has_key?(v, "hex") -> Color.from_hex(v["hex"])
-      is_binary(v) and String.starts_with?(v, "#") -> Color.from_hex(v)
-      is_struct(v, Color) -> v
-      true -> v
+  defp normalize_color_value(v) when is_map(v) and is_map_key(v, :hex) do
+    Color.from_hex(v["hex"] || v.hex)
+  end
+
+  defp normalize_color_value(v) when is_map(v) and is_map_key(v, "hex") do
+    Color.from_hex(v["hex"])
+  end
+
+  defp normalize_color_value(v) when is_binary(v) do
+    if String.starts_with?(v, "#") do
+      Color.from_hex(v)
+    else
+      v
     end
   end
+
+  defp normalize_color_value(v) when is_struct(v, Color), do: v
+  defp normalize_color_value(v), do: v
 
   # Convert color keys to atoms and values to hex or Color structs
   defp normalize_colors(colors) when is_map(colors) do

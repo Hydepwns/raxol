@@ -1,22 +1,21 @@
 defmodule Raxol.Core.UXRefinementKeyboardTest do
   use ExUnit.Case, async: false
   import Mox
-  import Raxol.Guards
-  require Raxol.Core.Runtime.Log
+    require Raxol.Core.Runtime.Log
 
   # Aliases for mocks will be used directly, e.g., Raxol.Mocks.AccessibilityMock
-  # alias Raxol.Core.Accessibility # Removed
-  alias Raxol.Core.Accessibility.Mock
-  alias Raxol.Core.Events.Manager, as: EventManager
-  # alias Raxol.Core.FocusManager # Removed
-  # alias Raxol.Core.KeyboardShortcuts # Removed
-  alias Raxol.Core.UXRefinement
+  # alias Raxol.Core.Accessibility, as: Accessibility # Removed
+  alias Raxol.Core.Accessibility, as: Accessibility.Mock
+  alias Raxol.Core.Events.Manager, as: Manager, as: EventManager
+  # alias Raxol.Core.FocusManager, as: FocusManager # Removed
+  # alias Raxol.Core.KeyboardShortcuts, as: KeyboardShortcuts # Removed
+  alias Raxol.Core.UXRefinement, as: UXRefinement, as: UXRefinement
   alias Raxol.Core.Events.Event
 
   # alias Raxol.Core.UserPreferences # Not directly used in :meck refactor, keep if other tests need
 
   # Define the mock for KeyboardShortcutsBehaviour (already present)
-  # Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock, for: Raxol.Core.KeyboardShortcutsBehaviour)
+  # Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock, for: Raxol.Core.KeyboardShortcutsRefactoredBehaviour)
   # Mocks for Accessibility and FocusManager are defined in test/support/mocks.ex
 
   setup :verify_on_exit!
@@ -251,7 +250,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
 
       shortcut_callback = Process.get(callback_ref)
 
-      if !function?(shortcut_callback, 0) do
+      if !is_function(shortcut_callback, 0) do
         flunk(
           "Shortcut callback was not captured. KeyboardShortcuts.register_shortcut mock might not have been called correctly."
         )

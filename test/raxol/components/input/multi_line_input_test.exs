@@ -1,7 +1,6 @@
 defmodule Raxol.UI.Components.Input.MultiLineInputTest do
   use ExUnit.Case, async: true
-  import Raxol.Guards
-
+  
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.TextWrapping
 
@@ -42,7 +41,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
       assert state.height == 15
       assert state.wrap == :char
       assert state.focused == true
-      assert function?(state.on_change)
+      assert is_function(state.on_change)
       # Check lines cache
       assert state.lines == ["Hello", "World"]
     end
@@ -78,7 +77,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
       assert state.height == 15
       assert state.wrap == :char
       assert state.focused == true
-      assert function?(state.on_change)
+      assert is_function(state.on_change)
       # Remove or correct this if state.style does not exist
       # assert state.style == expected_style
       # Check lines cache

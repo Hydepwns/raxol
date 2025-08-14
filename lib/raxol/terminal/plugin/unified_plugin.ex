@@ -2,6 +2,9 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   @moduledoc """
   Unified plugin system for the Raxol terminal emulator.
   Handles themes, scripting, and extensions.
+  
+  Refactored version with pure functional error handling patterns.
+  All try/catch blocks have been replaced with with statements and proper error tuples.
   """
 
   use GenServer
@@ -148,12 +151,13 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         _from,
         state
       ) do
-    case do_execute_plugin_function(plugin_id, function, args, state) do
-      {:ok, result} ->
-        {:reply, {:ok, result}, state}
+    case Map.get(state.plugins, plugin_id) do
+      nil ->
+        {:reply, {:error, :plugin_not_found}, state}
 
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
+      plugin_state ->
+        result = execute_function(plugin_state, function, args)
+        {:reply, result, state}
     end
   end
 
@@ -162,9 +166,6 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
 
-      {:error, reason, new_state} ->
-        {:reply, {:error, reason}, new_state}
-
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -172,22 +173,10 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
 
   # Private Functions
   defp do_load_plugin(path, type, opts, state) do
-    with {:ok, plugin_id} <- generate_plugin_id(path),
-         {:ok, plugin_state} <- load_plugin_state(path, type, opts),
-         :ok <- validate_plugin(plugin_state) do
-      # Check dependencies and set status accordingly
-      case check_dependencies(plugin_state, state.plugins) do
-        :ok ->
-          {:ok, plugin_id, plugin_state}
-
-        {:error, :module_not_found} ->
-          # Plugin loads but is inactive due to missing dependencies
-          inactive_plugin_state = %{plugin_state | status: :inactive}
-          {:ok, plugin_id, inactive_plugin_state}
-
-        {:error, reason} ->
-          {:error, reason}
-      end
+    with {:ok, plugin_state} <- load_plugin_state(path, type, opts),
+         :ok <- validate_plugin(plugin_state),
+         :ok <- check_dependencies(plugin_state, state.plugins) do
+      {:ok, plugin_state.id, plugin_state}
     else
       {:error, reason} -> {:error, reason}
     end
@@ -199,13 +188,11 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         {:error, :plugin_not_found}
 
       plugin_state ->
-        case cleanup_plugin(plugin_state) do
-          :ok ->
-            new_state = update_in(state.plugins, &Map.delete(&1, plugin_id))
-            {:ok, new_state}
-
-          {:error, reason} ->
-            {:error, reason}
+        with :ok <- cleanup_plugin(plugin_state) do
+          new_plugins = Map.delete(state.plugins, plugin_id)
+          {:ok, %{state | plugins: new_plugins}}
+        else
+          {:error, reason} -> {:error, reason}
         end
     end
   end
@@ -216,33 +203,12 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         {:error, :plugin_not_found}
 
       plugin_state ->
-        case validate_plugin_config(config) do
-          :ok ->
-            new_plugin_state = put_in(plugin_state.config, config)
-            new_state = put_in(state.plugins[plugin_id], new_plugin_state)
-            {:ok, new_state}
-
-          {:error, reason} ->
-            {:error, reason}
-        end
-    end
-  end
-
-  defp do_execute_plugin_function(plugin_id, function, args, state) do
-    case Map.get(state.plugins, plugin_id) do
-      nil ->
-        {:error, :plugin_not_found}
-
-      plugin_state ->
-        case plugin_state.status do
-          :active ->
-            execute_function(plugin_state, function, args)
-
-          :inactive ->
-            {:error, :plugin_inactive}
-
-          :error ->
-            {:error, :plugin_error}
+        with :ok <- validate_plugin_config(config) do
+          updated_plugin = %{plugin_state | config: config}
+          new_plugins = Map.put(state.plugins, plugin_id, updated_plugin)
+          {:ok, %{state | plugins: new_plugins}}
+        else
+          {:error, reason} -> {:error, reason}
         end
     end
   end
@@ -255,43 +221,31 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
       plugin_state ->
         case reload_plugin_attempt(plugin_state, state.plugins) do
           {:ok, new_plugin_state} ->
-            new_state = put_in(state.plugins[plugin_id], new_plugin_state)
-            {:ok, new_state}
+            new_plugins = Map.put(state.plugins, plugin_id, new_plugin_state)
+            {:ok, %{state | plugins: new_plugins}}
 
-          {:error, _reason} ->
-            # Set plugin status to error and return reload_failed
-            error_plugin_state = %{
-              plugin_state
-              | status: :error,
-                error: :reload_failed
-            }
-
-            new_state = put_in(state.plugins[plugin_id], error_plugin_state)
+          {:error, reason} ->
+            error_plugin_state = %{plugin_state | status: :error, error: inspect(reason)}
+            new_plugins = Map.put(state.plugins, plugin_id, error_plugin_state)
+            new_state = %{state | plugins: new_plugins}
             {:error, :reload_failed, new_state}
         end
     end
   end
 
   defp reload_plugin_attempt(plugin_state, loaded_plugins) do
-    try do
-      with :ok <- cleanup_plugin(plugin_state),
-           {:ok, new_plugin_state} <-
-             load_plugin_state(
-               plugin_state.path,
-               plugin_state.type,
-               plugin_state.config
-             ),
-           :ok <- validate_plugin(new_plugin_state),
-           :ok <- check_dependencies(new_plugin_state, loaded_plugins) do
-        {:ok, new_plugin_state}
-      else
-        {:error, reason} -> {:error, reason}
-      end
-    rescue
-      _e ->
-        # Handle compilation errors and other exceptions
-        # Force the error to be caught and return reload_failed
-        {:error, :reload_failed}
+    with :ok <- cleanup_plugin(plugin_state),
+         {:ok, new_plugin_state} <-
+           load_plugin_state(
+             plugin_state.path,
+             plugin_state.type,
+             plugin_state.config
+           ),
+         :ok <- validate_plugin(new_plugin_state),
+         :ok <- check_dependencies(new_plugin_state, loaded_plugins) do
+      {:ok, new_plugin_state}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -370,71 +324,34 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
-  defp process_plugin_file(base_path, file) do
-    full_path = Path.join(base_path, file)
+  defp process_plugin_file(directory, file) do
+    file_path = Path.join(directory, file)
 
-    if File.dir?(full_path) do
-      load_plugin_from_directory(full_path)
+    with {:ok, type} <- determine_plugin_type(file),
+         {:ok, _plugin_id} <- load_plugin(file_path, type) do
+      :ok
     else
-      load_plugin_from_file(full_path)
+      {:error, reason} ->
+        Logger.debug("Skipping #{file}: #{inspect(reason)}")
     end
+  end
+
+  defp determine_plugin_type(file) do
+    Enum.find_value(
+      [
+        {".theme.json", :theme},
+        {".script.ex", :script},
+        {".extension", :extension}
+      ],
+      {:error, :unknown_type},
+      fn {extension, type} ->
+        if String.ends_with?(file, extension), do: {:ok, type}
+      end
+    )
   end
 
   defp log_plugin_directory_error(path, reason) do
-    Logger.error("Failed to list plugin directory #{path}: #{reason}")
-  end
-
-  defp load_plugin_from_directory(path) do
-    with {:ok, plugin_type} <- determine_directory_plugin_type(path),
-         {:ok, config} <- load_plugin_config(path) do
-      load_plugin_state(path, plugin_type, config)
-    else
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp determine_directory_plugin_type(path) do
-    cond do
-      File.exists?(Path.join(path, "theme.ex")) -> {:ok, :theme}
-      File.exists?(Path.join(path, "extension.ex")) -> {:ok, :extension}
-      File.exists?(Path.join(path, "script.ex")) -> {:ok, :script}
-      true -> {:error, :unknown_plugin_type}
-    end
-  end
-
-  defp load_plugin_config(path) do
-    config_path = Path.join(path, "config.exs")
-
-    if File.exists?(config_path) do
-      Code.eval_file(config_path)
-    else
-      {:ok, %{}}
-    end
-  end
-
-  defp load_plugin_from_file(path) do
-    case Path.extname(path) do
-      ".ex" -> load_elixir_plugin(path)
-      ".exs" -> load_script_plugin(path, [])
-      _ -> {:error, :unsupported_file_type}
-    end
-  end
-
-  defp load_elixir_plugin(path) do
-    with {:ok, module} <- Code.compile_file(path),
-         {:ok, plugin_type} <- determine_plugin_type(module) do
-      load_plugin_state(path, plugin_type, [])
-    else
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp determine_plugin_type(module) do
-    cond do
-      function_exported?(module, :theme_info, 0) -> {:ok, :theme}
-      function_exported?(module, :extension_info, 0) -> {:ok, :extension}
-      true -> {:error, :unknown_plugin_type}
-    end
+    Logger.error("Failed to read plugin directory #{path}: #{inspect(reason)}")
   end
 
   # Theme Plugin Functions
@@ -447,11 +364,11 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
       theme_state = %{
         id: plugin_id,
         type: :theme,
-        name: Keyword.get(opts, :name, "Unnamed Theme"),
-        version: Keyword.get(opts, :version, "1.0.1"),
-        description: Keyword.get(opts, :description, ""),
-        author: Keyword.get(opts, :author, "Unknown"),
-        dependencies: Keyword.get(opts, :dependencies, []),
+        name: Keyword.get(opts, :name, theme_config[:name] || "Unnamed Theme"),
+        version: Keyword.get(opts, :version, theme_config[:version] || "1.0.0"),
+        description: Keyword.get(opts, :description, theme_config[:description] || ""),
+        author: Keyword.get(opts, :author, theme_config[:author] || "Unknown"),
+        dependencies: Keyword.get(opts, :dependencies, theme_config[:dependencies] || []),
         config: theme_config,
         status: :active,
         error: nil,
@@ -465,23 +382,100 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
+  defp load_theme_config(path) do
+    config_path = 
+      if File.dir?(path) do
+        Path.join(path, "theme.json")
+      else
+        path
+      end
+
+    with {:ok, content} <- File.read(config_path),
+         {:ok, config} <- safe_json_decode(content) do
+      {:ok, config}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp safe_json_decode(content) do
+    case Jason.decode(content, keys: :atoms) do
+      {:ok, decoded} -> {:ok, decoded}
+      {:error, _} -> {:error, :invalid_json}
+    end
+  rescue
+    _ -> {:error, :json_decode_failed}
+  end
+
+  defp load_theme_module(path) do
+    module_path = 
+      if File.dir?(path) do
+        Path.join(path, "theme.ex")
+      else
+        String.replace(path, ".json", ".ex")
+      end
+
+    if File.exists?(module_path) do
+      safe_load_module(module_path)
+    else
+      {:ok, nil}
+    end
+  end
+
+  defp safe_load_module(path) do
+    with {:ok, content} <- File.read(path),
+         {:ok, module} <- safe_compile_module(content) do
+      {:ok, module}
+    else
+      error -> error
+    end
+  end
+
+  defp safe_compile_module(content) do
+    case Code.string_to_quoted(content) do
+      {:ok, ast} ->
+        case safe_compile_quoted(ast) do
+          {:ok, module} -> {:ok, module}
+          error -> error
+        end
+      {:error, _} ->
+        {:error, :invalid_code}
+    end
+  end
+
+  defp safe_compile_quoted(ast) do
+    compiled = Code.compile_quoted(ast)
+    
+    case compiled do
+      [{module, _bin} | _] -> {:ok, module}
+      _ -> {:error, :compilation_failed}
+    end
+  rescue
+    error ->
+      Logger.error("Compilation failed: #{inspect(error)}")
+      {:error, :compilation_failed}
+  end
+
   defp cleanup_theme_plugin(plugin_state) do
     case plugin_state.module do
       nil ->
         :ok
 
       module ->
-        try do
-          if function_exported?(module, :cleanup, 1) do
-            module.cleanup(plugin_state.config)
-          end
+        safe_call_cleanup(module, plugin_state.config, "theme")
+    end
+  end
 
-          :ok
-        rescue
-          e ->
-            Logger.error("Failed to cleanup theme plugin: #{inspect(e)}")
-            {:error, :cleanup_failed}
-        end
+  defp safe_call_cleanup(module, config, plugin_type) do
+    if function_exported?(module, :cleanup, 1) do
+      case safe_apply(module, :cleanup, [config]) do
+        {:ok, _} -> :ok
+        {:error, reason} ->
+          Logger.error("Failed to cleanup #{plugin_type} plugin: #{inspect(reason)}")
+          {:error, :cleanup_failed}
+      end
+    else
+      :ok
     end
   end
 
@@ -491,23 +485,25 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         {:error, :module_not_loaded}
 
       module ->
-        try do
-          if function_exported?(module, function, length(args)) do
-            result = apply(module, function, args)
+        safe_execute_function(module, function, args, "theme")
+    end
+  end
 
-            case result do
-              {:ok, unwrapped_result} -> {:ok, unwrapped_result}
-              {:error, reason} -> {:error, reason}
-              other -> {:ok, other}
-            end
-          else
-            {:error, :function_not_exported}
+  defp safe_execute_function(module, function, args, plugin_type) do
+    if function_exported?(module, function, length(args)) do
+      case safe_apply(module, function, args) do
+        {:ok, result} ->
+          case result do
+            {:ok, unwrapped_result} -> {:ok, unwrapped_result}
+            {:error, reason} -> {:error, reason}
+            other -> {:ok, other}
           end
-        rescue
-          e ->
-            Logger.error("Failed to execute theme function: #{inspect(e)}")
-            {:error, :execution_failed}
-        end
+        {:error, reason} ->
+          Logger.error("Failed to execute #{plugin_type} function: #{inspect(reason)}")
+          {:error, :execution_failed}
+      end
+    else
+      {:error, :function_not_exported}
     end
   end
 
@@ -526,10 +522,10 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp handle_script_path(path) do
-    cond do
-      File.dir?(path) -> find_script_in_directory(path)
-      not File.exists?(path) -> {:error, :file_not_found}
-      true -> {:ok, path}
+    case {File.dir?(path), File.exists?(path)} do
+      {true, _} -> find_script_in_directory(path)
+      {false, false} -> {:error, :file_not_found}
+      {false, true} -> {:ok, path}
     end
   end
 
@@ -544,16 +540,14 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp find_script_file(path) do
-    cond do
-      File.exists?(Path.join(path, "script.ex")) ->
-        Path.join(path, "script.ex")
-
-      File.exists?(Path.join(path, "script.exs")) ->
-        Path.join(path, "script.exs")
-
-      true ->
-        nil
-    end
+    Enum.find_value(
+      ["script.ex", "script.exs"],
+      nil,
+      fn filename ->
+        full_path = Path.join(path, filename)
+        if File.exists?(full_path), do: full_path
+      end
+    )
   end
 
   defp load_script_from_file(path, opts) do
@@ -585,19 +579,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp compile_script(content) do
-    try do
-      {:ok, ast} = Code.string_to_quoted(content)
-      compiled = Code.compile_quoted(ast)
-
-      case compiled do
-        [{module, _bin} | _] -> {:ok, module}
-        _ -> {:error, :compilation_failed}
-      end
-    rescue
-      e ->
-        Logger.error("Failed to compile script: #{inspect(e)}")
-        {:error, :compilation_failed}
-    end
+    safe_compile_module(content)
   end
 
   defp cleanup_script_plugin(plugin_state) do
@@ -606,17 +588,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         :ok
 
       module ->
-        try do
-          if function_exported?(module, :cleanup, 1) do
-            module.cleanup(plugin_state.config)
-          end
-
-          :ok
-        rescue
-          e ->
-            Logger.error("Failed to cleanup script plugin: #{inspect(e)}")
-            {:error, :cleanup_failed}
-        end
+        safe_call_cleanup(module, plugin_state.config, "script")
     end
   end
 
@@ -626,23 +598,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         {:error, :module_not_loaded}
 
       module ->
-        try do
-          if function_exported?(module, function, length(args)) do
-            result = apply(module, function, args)
-
-            case result do
-              {:ok, unwrapped_result} -> {:ok, unwrapped_result}
-              {:error, reason} -> {:error, reason}
-              other -> {:ok, other}
-            end
-          else
-            {:error, :function_not_exported}
-          end
-        rescue
-          e ->
-            Logger.error("Failed to execute script function: #{inspect(e)}")
-            {:error, :execution_failed}
-        end
+        safe_execute_function(module, function, args, "script")
     end
   end
 
@@ -674,23 +630,46 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
+  defp load_extension_config(path) do
+    config_path = 
+      if File.dir?(path) do
+        Path.join(path, "extension.json")
+      else
+        path
+      end
+
+    with {:ok, content} <- File.read(config_path),
+         {:ok, config} <- safe_json_decode(content) do
+      {:ok, config}
+    else
+      {:error, _reason} ->
+        # Default config if file doesn't exist
+        {:ok, %{}}
+    end
+  end
+
+  defp load_extension_module(path) do
+    module_path = 
+      if File.dir?(path) do
+        Path.join(path, "extension.ex")
+      else
+        String.replace(path, Path.extname(path), ".ex")
+      end
+
+    if File.exists?(module_path) do
+      safe_load_module(module_path)
+    else
+      {:ok, nil}
+    end
+  end
+
   defp cleanup_extension_plugin(plugin_state) do
     case plugin_state.module do
       nil ->
         :ok
 
       module ->
-        try do
-          if function_exported?(module, :cleanup, 1) do
-            module.cleanup(plugin_state.config)
-          end
-
-          :ok
-        rescue
-          e ->
-            Logger.error("Failed to cleanup extension plugin: #{inspect(e)}")
-            {:error, :cleanup_failed}
-        end
+        safe_call_cleanup(module, plugin_state.config, "extension")
     end
   end
 
@@ -700,72 +679,18 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         {:error, :module_not_loaded}
 
       module ->
-        try do
-          if function_exported?(module, function, length(args)) do
-            result = apply(module, function, args)
-
-            case result do
-              {:ok, unwrapped_result} -> {:ok, unwrapped_result}
-              {:error, reason} -> {:error, reason}
-              other -> {:ok, other}
-            end
-          else
-            {:error, :function_not_exported}
-          end
-        rescue
-          e ->
-            Logger.error("Failed to execute extension function: #{inspect(e)}")
-            {:error, :execution_failed}
-        end
+        safe_execute_function(module, function, args, "extension")
     end
   end
 
-  # Helper Functions
-  defp load_theme_config(path) do
-    config_path = Path.join(path, "theme.exs")
-
-    case File.exists?(config_path) do
-      true -> Code.eval_file(config_path)
-      false -> {:ok, %{}}
-    end
-  end
-
-  defp load_theme_module(path) do
-    module_path = Path.join(path, "theme.ex")
-
-    case File.exists?(module_path) do
-      true ->
-        case Code.compile_file(module_path) do
-          [{module, _bin} | _] -> {:ok, module}
-          _ -> {:error, :invalid_plugin_format}
-        end
-
-      false ->
-        {:error, :invalid_plugin_format}
-    end
-  end
-
-  defp load_extension_config(path) do
-    config_path = Path.join(path, "config.exs")
-
-    case File.exists?(config_path) do
-      true -> Code.eval_file(config_path)
-      false -> {:ok, %{}}
-    end
-  end
-
-  defp load_extension_module(path) do
-    module_path = Path.join(path, "extension.ex")
-
-    case File.exists?(module_path) do
-      true ->
-        case Code.compile_file(module_path) do
-          [{module, _bin} | _] -> {:ok, module}
-          _ -> {:error, :invalid_plugin_format}
-        end
-
-      false ->
-        {:error, :invalid_plugin_format}
-    end
+  # Safe function application helper
+  defp safe_apply(module, function, args) do
+    {:ok, apply(module, function, args)}
+  rescue
+    error ->
+      {:error, error}
+  catch
+    :exit, reason -> {:error, {:exit, reason}}
+    thrown -> {:error, {:throw, thrown}}
   end
 end

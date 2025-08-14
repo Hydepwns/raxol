@@ -214,27 +214,34 @@ defmodule Raxol.Terminal.Extension.FileOperations do
 
   defp infer_extension_type(path) do
     case File.ls(path) do
-      {:ok, files} ->
-        cond do
-          Enum.any?(files, &String.contains?(&1, "theme")) -> :theme
-          Enum.any?(files, &String.contains?(&1, "script")) -> :script
-          Enum.any?(files, &String.contains?(&1, "plugin")) -> :plugin
-          true -> :custom
-        end
-
-      {:error, _reason} ->
-        :custom
+      {:ok, files} -> classify_by_files(files)
+      {:error, _reason} -> :custom
     end
   end
 
+  defp classify_by_files(files) do
+    type_patterns = [
+      {:theme, &String.contains?(&1, "theme")},
+      {:script, &String.contains?(&1, "script")},
+      {:plugin, &String.contains?(&1, "plugin")}
+    ]
+
+    Enum.find_value(type_patterns, :custom, fn {type, predicate} ->
+      if Enum.any?(files, predicate), do: type
+    end)
+  end
+
   defp infer_type_from_module(module) do
-    cond do
-      function_exported?(module, :theme_info, 0) -> :theme
-      function_exported?(module, :script_info, 0) -> :script
-      function_exported?(module, :plugin_info, 0) -> :plugin
-      function_exported?(module, :extension_info, 0) -> :plugin
-      true -> :custom
-    end
+    module_type_checks = [
+      {:theme, :theme_info},
+      {:script, :script_info},
+      {:plugin, :plugin_info},
+      {:plugin, :extension_info}
+    ]
+
+    Enum.find_value(module_type_checks, :custom, fn {type, function} ->
+      if function_exported?(module, function, 0), do: type
+    end)
   end
 
   defp load_extensions_from_directory(path) do

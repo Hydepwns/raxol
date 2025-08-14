@@ -38,7 +38,7 @@ defmodule Raxol.Docs.InteractiveTutorial do
         register_tutorial(tutorial, acc)
       end)
 
-    Process.put(@state_key, state)
+    Raxol.Core.StateManager.set_state(@state_key, state)
     :ok
   end
 
@@ -246,15 +246,15 @@ defmodule Raxol.Docs.InteractiveTutorial do
 
   # Helper function to work with state
   defp with_state(state \\ nil, fun) do
-    current_state = state || Process.get(@state_key) || State.new()
+    current_state = state || Raxol.Core.StateManager.get_state(@state_key) || State.new()
 
     case fun.(current_state) do
       {updated_state, result} ->
-        Process.put(@state_key, updated_state)
+        Raxol.Core.StateManager.set_state(@state_key, updated_state)
         result
 
       updated_state when is_map(updated_state) ->
-        Process.put(@state_key, updated_state)
+        Raxol.Core.StateManager.set_state(@state_key, updated_state)
         updated_state
     end
   end

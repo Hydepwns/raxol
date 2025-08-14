@@ -75,8 +75,7 @@ defmodule Raxol.UI.Layout.Responsive do
       }
   """
 
-  import Raxol.Guards
-  alias Raxol.UI.Layout.{Engine, Flexbox, CSSGrid}
+    alias Raxol.UI.Layout.{Engine, Flexbox, CSSGrid}
 
   # Default breakpoints (column-based for terminals)
   @default_breakpoints %{
@@ -95,7 +94,7 @@ defmodule Raxol.UI.Layout.Responsive do
         space,
         acc
       )
-      when list?(children) do
+      when is_list(children) do
     attrs = Map.get(responsive, :attrs, %{})
 
     # Determine current breakpoint
@@ -134,7 +133,7 @@ defmodule Raxol.UI.Layout.Responsive do
         space,
         acc
       )
-      when list?(children) do
+      when is_list(children) do
     attrs = Map.get(grid, :attrs, %{})
 
     # Determine current breakpoint
@@ -456,7 +455,7 @@ defmodule Raxol.UI.Layout.Responsive do
   end
 
   defp measure_responsive_children(children, space, current_breakpoint) do
-    if length(children) == 0 do
+    if Enum.empty?(children) do
       %{width: 0, height: 0}
     else
       # Apply responsiveness to children and measure

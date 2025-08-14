@@ -4,8 +4,7 @@ defmodule Raxol.Core.Metrics.UnifiedCollectorTest do
   operation, custom, and system metrics collection.
   """
   use ExUnit.Case
-  import Raxol.Guards
-  alias Raxol.Core.Metrics.UnifiedCollector
+    alias Raxol.Core.Metrics.UnifiedCollector
 
   setup do
     {:ok, _pid} = UnifiedCollector.start_link()
@@ -29,11 +28,11 @@ defmodule Raxol.Core.Metrics.UnifiedCollectorTest do
       # Verify values
       frame_time = hd(performance_metrics.frame_time)
       assert frame_time.value == 16
-      assert struct?(frame_time.timestamp, DateTime)
+      assert is_struct(frame_time.timestamp, DateTime)
 
       render_time = hd(performance_metrics.render_time)
       assert render_time.value == 8
-      assert struct?(render_time.timestamp, DateTime)
+      assert is_struct(render_time.timestamp, DateTime)
     end
 
     test "maintains metric history limit" do
@@ -68,11 +67,11 @@ defmodule Raxol.Core.Metrics.UnifiedCollectorTest do
       # Verify values
       memory_usage = hd(resource_metrics.memory_usage)
       assert memory_usage.value == 1024
-      assert struct?(memory_usage.timestamp, DateTime)
+      assert is_struct(memory_usage.timestamp, DateTime)
 
       cpu_usage = hd(resource_metrics.cpu_usage)
       assert cpu_usage.value == 50
-      assert struct?(cpu_usage.timestamp, DateTime)
+      assert is_struct(cpu_usage.timestamp, DateTime)
     end
   end
 
@@ -92,11 +91,11 @@ defmodule Raxol.Core.Metrics.UnifiedCollectorTest do
       # Verify values
       buffer_write = hd(operation_metrics.buffer_write)
       assert buffer_write.value == 5
-      assert struct?(buffer_write.timestamp, DateTime)
+      assert is_struct(buffer_write.timestamp, DateTime)
 
       buffer_read = hd(operation_metrics.buffer_read)
       assert buffer_read.value == 3
-      assert struct?(buffer_read.timestamp, DateTime)
+      assert is_struct(buffer_read.timestamp, DateTime)
     end
   end
 
@@ -116,11 +115,11 @@ defmodule Raxol.Core.Metrics.UnifiedCollectorTest do
       # Verify values
       login_time = hd(custom_metrics["user.login_time"])
       assert login_time.value == 150
-      assert struct?(login_time.timestamp, DateTime)
+      assert is_struct(login_time.timestamp, DateTime)
 
       request_time = hd(custom_metrics["api.request_time"])
       assert request_time.value == 200
-      assert struct?(request_time.timestamp, DateTime)
+      assert is_struct(request_time.timestamp, DateTime)
     end
   end
 

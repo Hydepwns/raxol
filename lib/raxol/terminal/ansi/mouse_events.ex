@@ -455,17 +455,17 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   """
   @spec calculate_drag_state(mouse_state(), map()) ::
           :none | :dragging | :drag_end
-  def calculate_drag_state(state, event) do
-    cond do
-      event.button == :release ->
-        :drag_end
+  def calculate_drag_state(_state, %{button: :release}) do
+    :drag_end
+  end
 
-      state.button_state != :none and event.button != :none ->
-        :dragging
+  def calculate_drag_state(%{button_state: button_state}, %{button: button})
+      when button_state != :none and button != :none do
+    :dragging
+  end
 
-      true ->
-        :none
-    end
+  def calculate_drag_state(_state, _event) do
+    :none
   end
 
   @spec process_basic_event(mouse_state(), integer(), integer(), integer()) ::

@@ -3,8 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerTestHelper do
   Test helper functions for DependencyManager tests.
   """
 
-  import Raxol.Guards
-
+  
   @doc "Creates a complex version requirements structure for testing."
   @spec create_complex_version_requirements(term()) :: term()
   def create_complex_version_requirements(_input), do: %{}
@@ -19,7 +18,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerTestHelper do
 
   @doc "Measures the execution time of a function or operation."
   @spec measure_time((-> any())) :: integer()
-  def measure_time(fun) when function?(fun, 0) do
+  def measure_time(fun) when is_function(fun, 0) do
     start = System.monotonic_time(:microsecond)
     fun.()
     System.monotonic_time(:microsecond) - start
@@ -27,7 +26,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerTestHelper do
 
   @doc "Measures the memory usage of a function or operation."
   @spec measure_memory_usage((-> any())) :: integer()
-  def measure_memory_usage(fun) when function?(fun, 0) do
+  def measure_memory_usage(fun) when is_function(fun, 0) do
     :erlang.garbage_collect()
     {memory_before, _} = :erlang.process_info(self(), :memory)
     fun.()

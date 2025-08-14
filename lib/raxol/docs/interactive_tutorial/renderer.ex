@@ -1,6 +1,5 @@
 defmodule Raxol.Docs.InteractiveTutorial.Renderer do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles rendering of interactive tutorial content.
   """
@@ -18,7 +17,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
         render_metadata(tutorial),
         render_steps(tutorial)
       ]
-      |> Enum.reject(&nil?/1)
+      |> Enum.reject(&is_nil/1)
       |> Enum.join("\n\n")
 
     {:ok, content}
@@ -36,7 +35,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
         render_exercise(step),
         render_hints(step)
       ]
-      |> Enum.reject(&nil?/1)
+      |> Enum.reject(&is_nil/1)
       |> Enum.join("\n\n")
 
     {:ok, content}
@@ -49,7 +48,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
     elements =
       step.interactive_elements
       |> Enum.map(&render_interactive_element/1)
-      |> Enum.reject(&nil?/1)
+      |> Enum.reject(&is_nil/1)
 
     {:ok, elements}
   end
@@ -72,7 +71,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
         render_prerequisites(tutorial),
         render_tags(tutorial)
       ]
-      |> Enum.reject(&nil?/1)
+      |> Enum.reject(&is_nil/1)
       |> Enum.join("\n")
 
     if metadata != "", do: "## Metadata\n#{metadata}", else: nil
@@ -83,7 +82,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
   end
 
   defp render_estimated_time(%Tutorial{estimated_time: time})
-       when integer?(time) do
+       when is_integer(time) do
     "**Estimated Time:** #{time} minutes"
   end
 

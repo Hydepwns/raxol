@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Renderer.View.Components.Text do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles text rendering for the Raxol view system.
   Provides text styling, wrapping, and alignment functionality.
@@ -21,7 +20,7 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
       Text.new("Hello, World!", fg: :red, style: [:bold])
       Text.new("Centered text", align: :center)
   """
-  def new(content, opts \\ []) when binary?(content) do
+  def new(content, opts \\ []) when is_binary(content) do
     %{
       type: :text,
       content: content,

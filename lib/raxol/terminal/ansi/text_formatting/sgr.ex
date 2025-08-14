@@ -58,56 +58,56 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.SGR do
   Handles integer SGR parameters.
   """
   @spec handle_integer_param(integer(), Core.text_style()) :: Core.text_style()
-  def handle_integer_param(code, style) do
-    cond do
-      # Basic attributes
-      code in [1, 2, 3, 4, 5, 7, 8, 9] ->
-        handle_basic_attribute(code, style)
+  def handle_integer_param(code, style)
+      when code in [1, 2, 3, 4, 5, 7, 8, 9] do
+    handle_basic_attribute(code, style)
+  end
 
-      # Advanced attributes
-      code in [51, 52, 53, 54, 55] ->
-        handle_advanced_attribute(code, style)
+  def handle_integer_param(code, style)
+      when code in [51, 52, 53, 54, 55] do
+    handle_advanced_attribute(code, style)
+  end
 
-      # Colors - delegate to Colors module
-      code in [
-        30,
-        31,
-        32,
-        33,
-        34,
-        35,
-        36,
-        37,
-        90,
-        91,
-        92,
-        93,
-        94,
-        95,
-        96,
-        97,
-        40,
-        41,
-        42,
-        43,
-        44,
-        45,
-        46,
-        47,
-        100,
-        101,
-        102,
-        103,
-        104,
-        105,
-        106,
-        107
-      ] ->
-        Colors.handle_integer_color_param(code, style)
+  def handle_integer_param(code, style)
+      when code in [
+             30,
+             31,
+             32,
+             33,
+             34,
+             35,
+             36,
+             37,
+             90,
+             91,
+             92,
+             93,
+             94,
+             95,
+             96,
+             97,
+             40,
+             41,
+             42,
+             43,
+             44,
+             45,
+             46,
+             47,
+             100,
+             101,
+             102,
+             103,
+             104,
+             105,
+             106,
+             107
+           ] do
+    Colors.handle_integer_color_param(code, style)
+  end
 
-      true ->
-        style
-    end
+  def handle_integer_param(_code, style) do
+    style
   end
 
   @doc """

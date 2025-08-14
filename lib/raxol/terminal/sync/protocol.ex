@@ -143,25 +143,19 @@ defmodule Raxol.Terminal.Sync.Protocol do
   end
 
   # Private Functions
+  defp validate_message(message) when not is_map(message) do
+    {:error, :invalid_message}
+  end
+
   defp validate_message(message) do
-    cond do
-      !is_map(message) ->
-        {:error, :invalid_message}
-
-      !Map.has_key?(message, :type) ->
-        {:error, :missing_type}
-
-      !Map.has_key?(message, :component_id) ->
-        {:error, :missing_component_id}
-
-      !Map.has_key?(message, :component_type) ->
-        {:error, :missing_component_type}
-
-      !Map.has_key?(message, :metadata) ->
-        {:error, :missing_metadata}
-
-      true ->
-        :ok
+    with true <- Map.has_key?(message, :type) || {:error, :missing_type},
+         true <- Map.has_key?(message, :component_id) || {:error, :missing_component_id},
+         true <- Map.has_key?(message, :component_type) || {:error, :missing_component_type},
+         true <- Map.has_key?(message, :metadata) || {:error, :missing_metadata} do
+      :ok
+    else
+      {:error, reason} -> {:error, reason}
+      false -> {:error, :unknown_validation_error}
     end
   end
 
@@ -241,31 +235,25 @@ defmodule Raxol.Terminal.Sync.Protocol do
     end
   end
 
-  defp extract_metadata(state) do
-    cond do
-      # If state has metadata field, use it, but ensure :consistency is present
-      Map.has_key?(state, :metadata) ->
-        meta = state.metadata
+  defp extract_metadata(%{metadata: meta}) do
+    %{
+      version: Map.get(meta, :version, 0),
+      consistency: Map.get(meta, :consistency, :eventual)
+    }
+  end
 
-        %{
-          version: Map.get(meta, :version, 0),
-          consistency: Map.get(meta, :consistency, :eventual)
-        }
+  defp extract_metadata(%{version: version} = state) do
+    %{
+      version: version,
+      consistency: Map.get(state, :consistency, :eventual)
+    }
+  end
 
-      # If state has version field directly, create metadata
-      Map.has_key?(state, :version) ->
-        %{
-          version: state.version,
-          consistency: Map.get(state, :consistency, :eventual)
-        }
-
-      # Default metadata
-      true ->
-        %{
-          version: 0,
-          consistency: :eventual
-        }
-    end
+  defp extract_metadata(_state) do
+    %{
+      version: 0,
+      consistency: :eventual
+    }
   end
 
   defp get_default_consistency(:split), do: :strong

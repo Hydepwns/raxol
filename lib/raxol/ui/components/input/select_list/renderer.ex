@@ -3,8 +3,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
   Handles rendering functionality for the SelectList component.
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.UI.Components.Input.SelectList.Pagination
 
   @doc """
@@ -58,7 +57,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         render_pagination_controls(state)
       end
     ]
-    |> Enum.reject(&nil?/1)
+    |> Enum.reject(&is_nil/1)
   end
 
   @doc """
@@ -145,36 +144,27 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
     else
       Enum.with_index(visible_options)
       |> Enum.map(fn {option, index} ->
-        cond do
-          tuple?(option) and tuple_size(option) == 3 ->
-            # {label, value, opt_style}
-            {label, value, opt_style} = option
-
-            render_option(
-              state,
-              label,
-              value,
-              index + state.scroll_offset,
-              opt_style
-            )
-
-          tuple?(option) and tuple_size(option) == 2 ->
-            # {label, value} (value may be a map or any type)
-            {label, value} = option
-            render_option(state, label, value, index + state.scroll_offset, %{})
-
-          true ->
-            # Fallback: render as string
-            render_option(
-              state,
-              to_string(option),
-              nil,
-              index + state.scroll_offset,
-              %{}
-            )
-        end
+        render_option_by_type(option, state, index + state.scroll_offset)
       end)
     end
+  end
+
+  # Helper function to render option based on its type structure
+  defp render_option_by_type({label, value, opt_style}, state, index) 
+       when is_tuple({label, value, opt_style}) and tuple_size({label, value, opt_style}) == 3 do
+    # {label, value, opt_style}
+    render_option(state, label, value, index, opt_style)
+  end
+
+  defp render_option_by_type({label, value}, state, index) 
+       when is_tuple({label, value}) and tuple_size({label, value}) == 2 do
+    # {label, value} (value may be a map or any type)
+    render_option(state, label, value, index, %{})
+  end
+
+  defp render_option_by_type(option, state, index) do
+    # Fallback: render as string
+    render_option(state, to_string(option), nil, index, %{})
   end
 
   @doc """

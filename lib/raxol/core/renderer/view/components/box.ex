@@ -4,8 +4,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
   Provides box model layout with content, padding, border, and margin.
   """
 
-  import Raxol.Guards
-
+  
   @doc """
   Creates a new box view.
 
@@ -147,7 +146,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
   defp get_child_width(child, available_width) do
     case Map.get(child, :width) do
       nil -> available_width
-      width when integer?(width) -> min(width, available_width)
+      width when is_integer(width) -> min(width, available_width)
       :auto -> available_width
       _ -> available_width
     end
@@ -157,7 +156,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     case Map.get(child, :height) do
       # Default height for text-like content
       nil -> 1
-      height when integer?(height) -> min(height, available_height)
+      height when is_integer(height) -> min(height, available_height)
       :auto -> 1
       _ -> 1
     end
@@ -336,15 +335,15 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
   end
 
   # Helper function to normalize spacing values
-  defp normalize_spacing(n) when integer?(n) and n >= 0, do: {n, n, n, n}
-  defp normalize_spacing({n}) when integer?(n) and n >= 0, do: {n, n, n, n}
+  defp normalize_spacing(n) when is_integer(n) and n >= 0, do: {n, n, n, n}
+  defp normalize_spacing({n}) when is_integer(n) and n >= 0, do: {n, n, n, n}
 
   defp normalize_spacing({h, v})
-       when integer?(h) and integer?(v) and h >= 0 and v >= 0,
+       when is_integer(h) and is_integer(v) and h >= 0 and v >= 0,
        do: {h, v, h, v}
 
   defp normalize_spacing({t, r, b, l})
-       when integer?(t) and integer?(r) and integer?(b) and integer?(l) and
+       when is_integer(t) and is_integer(r) and is_integer(b) and is_integer(l) and
               t >= 0 and r >= 0 and b >= 0 and l >= 0,
        do: {t, r, b, l}
 

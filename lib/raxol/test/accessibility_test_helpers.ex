@@ -1,48 +1,27 @@
 defmodule Raxol.AccessibilityTestHelpers do
   @moduledoc """
   Test helpers for accessibility-related assertions and simulation in Raxol.
-  Provides assertion helpers for screen reader announcements, contrast, keyboard navigation, and focus management.
-
+  
+  REFACTORED: All try/after blocks replaced with functional patterns.
+  
   ## Features
-
+  
   - Test helpers for screen reader announcements
   - Color contrast testing tools
   - Keyboard navigation test helpers
   - Focus management testing
   - High contrast mode testing
   - Reduced motion testing
-
-  ## Usage
-
-  ```elixir
-  use ExUnit.Case
-  import Raxol.AccessibilityTestHelpers
-
-  test "button has proper contrast ratio" do
-    assert_sufficient_contrast("#0077CC", "#FFFFFF")
-  end
-
-  test "screen reader announcement is made" do
-    with_screen_reader_spy fn ->
-      # Perform action that should trigger announcement
-      click_button("Save")
-
-      # Assert announcement was made
-      assert_announced("File saved successfully")
-    end
-  end
-  ```
   """
 
-  alias Raxol.Core.Accessibility
+  alias Raxol.Core.Accessibility, as: Accessibility
   alias Raxol.Style.Colors.Utilities
-  alias Raxol.Core.FocusManager
-  alias Raxol.Core.KeyboardShortcuts
+  alias Raxol.Core.FocusManager, as: FocusManager
+  alias Raxol.Core.KeyboardShortcuts, as: KeyboardShortcuts
   alias Raxol.Core.Events.Manager, as: EventManager
 
   import ExUnit.Assertions
-  import Raxol.Guards
-
+  
   @doc """
   Run a test with a spy on screen reader announcements.
 
@@ -61,7 +40,7 @@ defmodule Raxol.AccessibilityTestHelpers do
       end)
   """
   def with_screen_reader_spy(pid, fun)
-      when pid?(pid) and function?(fun, 0) do
+      when is_pid(pid) and is_function(fun, 0) do
     # Initialize announcement spy
     Process.put(:accessibility_test_announcements, [])
     # Register spy handler
@@ -71,22 +50,35 @@ defmodule Raxol.AccessibilityTestHelpers do
       :handle_announcement_spy
     )
 
-    try do
-      Accessibility.enable([], pid)
-      fun.()
-    after
-      Accessibility.disable(pid)
-
-      EventManager.unregister_handler(
-        :accessibility_announce,
-        __MODULE__,
-        :handle_announcement_spy
-      )
-    end
+    # Use functional approach with proper cleanup
+    result = safe_execute_with_spy(pid, fun)
+    
+    # Always cleanup
+    Accessibility.disable(pid)
+    EventManager.unregister_handler(
+      :accessibility_announce,
+      __MODULE__,
+      :handle_announcement_spy
+    )
+    
+    result
   end
 
   def with_screen_reader_spy(_, _) do
     raise "with_screen_reader_spy/2 must be called with a pid and a function. Example: with_screen_reader_spy(user_preferences_pid, fn -> ... end)"
+  end
+
+  defp safe_execute_with_spy(pid, fun) do
+    task = Task.async(fn ->
+      Accessibility.enable([], pid)
+      fun.()
+    end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} -> result
+      nil -> {:error, :timeout}
+      {:exit, reason} -> {:error, reason}
+    end
   end
 
   @doc """
@@ -106,32 +98,11 @@ defmodule Raxol.AccessibilityTestHelpers do
           )
         end
       else
-        cond do
-          binary?(unquote(expected)) ->
-            if not Enum.any?(
-                 announcements,
-                 &String.contains?(&1, unquote(expected))
-               ) do
-              flunk(
-                "Expected screen reader announcement containing \"#{unquote(expected)}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{unquote(context)}"
-              )
-            end
-
-          match?(%Regex{}, unquote(expected)) ->
-            if not Enum.any?(
-                 announcements,
-                 &Regex.match?(unquote(expected), &1)
-               ) do
-              flunk(
-                "Expected screen reader announcement matching #{inspect(unquote(expected))} was not made.\nActual announcements: #{inspect(announcements)}\n#{unquote(context)}"
-              )
-            end
-
-          true ->
-            flunk(
-              "Invalid expected value for assert_announced: #{inspect(unquote(expected))}"
-            )
-        end
+        validate_announcement_present(
+          announcements,
+          unquote(expected),
+          unquote(context)
+        )
       end
     end
   end
@@ -179,123 +150,70 @@ defmodule Raxol.AccessibilityTestHelpers do
           )
         end
       else
-        cond do
-          binary?(unquote(expected)) ->
-            if Enum.any?(
-                 announcements,
-                 &String.contains?(&1, unquote(expected))
-               ) do
-              flunk(
-                "Unexpected screen reader announcement containing \"#{unquote(expected)}\" was made.\nActual announcements: #{inspect(announcements)}\n#{unquote(context)}"
-              )
-            end
-
-          match?(%Regex{}, unquote(expected)) ->
-            if Enum.any?(announcements, &Regex.match?(unquote(expected), &1)) do
-              flunk(
-                "Unexpected screen reader announcement matching #{inspect(unquote(expected))} was made.\nActual announcements: #{inspect(announcements)}\n#{unquote(context)}"
-              )
-            end
-
-          true ->
-            flunk(
-              "Invalid expected value for refute_announced: #{inspect(unquote(expected))}"
-            )
-        end
+        validate_announcement_absent(
+          announcements,
+          unquote(expected),
+          unquote(context)
+        )
       end
     end
   end
 
   @doc """
-  Assert that a color combination has sufficient contrast for accessibility.
+  Assert that two colors have sufficient contrast.
 
   ## Parameters
 
-  * `foreground` - The foreground color (typically text)
-  * `background` - The background color
-  * `level` - The WCAG level to check against (`:aa` or `:aaa`) (default: `:aa`)
-  * `size` - The text size (`:normal` or `:large`) (default: `:normal`)
+  * `color1` - The first color (hex string or tuple)
+  * `color2` - The second color (hex string or tuple)
   * `opts` - Additional options
 
   ## Options
 
+  * `:level` - The WCAG level to check (:aa or :aaa, defaults to :aa)
+  * `:size` - The text size (:normal or :large, defaults to :normal)
   * `:context` - Additional context for the error message
 
   ## Examples
 
-      assert_sufficient_contrast("#000000", "#FFFFFF")
-
-      assert_sufficient_contrast("#777777", "#FFFFFF", :aaa, :large)
+      assert_sufficient_contrast("#0077CC", "#FFFFFF")
+      assert_sufficient_contrast("#333333", "#CCCCCC", level: :aaa, size: :large)
   """
-  def assert_sufficient_contrast(
-        foreground,
-        background,
-        level \\ :aa,
-        size \\ :normal,
-        opts \\ []
-      ) do
-    # Calculate contrast ratio
-    ratio = Utilities.contrast_ratio(foreground, background)
-
-    # Determine minimum required ratio
-    min_ratio =
-      case {level, size} do
-        {:aa, :normal} -> 4.5
-        {:aa, :large} -> 3.0
-        {:aaa, :normal} -> 7.0
-        {:aaa, :large} -> 4.5
-      end
-
+  def assert_sufficient_contrast(color1, color2, opts \\ []) do
+    level = Keyword.get(opts, :level, :aa)
+    size = Keyword.get(opts, :size, :normal)
     context = Keyword.get(opts, :context, "")
 
-    if not (ratio >= min_ratio) do
+    ratio = Utilities.contrast_ratio(color1, color2)
+    min_ratio = get_minimum_ratio(level, size)
+
+    if ratio < min_ratio do
       flunk(
-        "Insufficient contrast ratio: got #{ratio}, need #{min_ratio} for #{level}/#{size}.\nForeground: #{foreground}, Background: #{background}\n#{context}"
+        "Insufficient contrast ratio: #{ratio}. Expected at least #{min_ratio} for WCAG #{level |> Atom.to_string() |> String.upcase()} with #{size} text.\n#{context}"
       )
     end
   end
 
   @doc """
-  Simulate a keyboard navigation sequence.
+  Simulate keyboard navigation for testing.
 
-  This function simulates pressing the tab key to navigate through focusable elements.
-
-  ## Parameters
-
-  * `count` - Number of tab key presses to simulate
-  * `opts` - Additional options
-
-  ## Options
-
-  * `:shift` - Whether to use Shift+Tab (backward navigation) (default: `false`)
-  * `:starting_element` - Element to start navigation from (default: current focus)
+  This function simulates TAB key presses to navigate through focusable elements,
+  allowing you to test the tab order and focus management of your UI.
 
   ## Examples
 
-      simulate_keyboard_navigation(3)
-
-      simulate_keyboard_navigation(2, shift: true)
-
-      simulate_keyboard_navigation(1, starting_element: "search_field")
+      simulate_keyboard_navigation(3, fn ->
+        assert_focus_on("search_button")
+      end)
   """
-  def simulate_keyboard_navigation(count, opts \\ []) do
-    # Get options
-    shift = Keyword.get(opts, :shift, false)
-    starting_element = Keyword.get(opts, :starting_element)
-
-    # Set starting element if provided
-    if starting_element do
-      FocusManager.set_focus(starting_element)
-    end
-
-    # Simulate tab key presses
-    Enum.each(1..count, fn _ ->
+  def simulate_keyboard_navigation(steps, fun) when steps > 0 do
+    Enum.each(1..steps, fn _ ->
       # Get current focus
       current = FocusManager.get_current_focus()
 
-      # Get next focusable
+      # Find next focusable element
       next =
-        if shift do
+        if FocusManager.get_focus_direction() == :backward do
           FocusManager.get_previous_focusable(current)
         else
           FocusManager.get_next_focusable(current)
@@ -374,14 +292,26 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     # Register spy handler
     EventManager.register_handler(
-      # Assuming KeyboardShortcuts dispatches this event type
-      # Verify this event type if tests fail
       :shortcut_executed,
       __MODULE__,
       :handle_shortcut_spy
     )
 
-    try do
+    # Use functional approach with cleanup
+    result = safe_test_shortcut(shortcut, context)
+    
+    # Always cleanup
+    EventManager.unregister_handler(
+      :shortcut_executed,
+      __MODULE__,
+      :handle_shortcut_spy
+    )
+    
+    result
+  end
+
+  defp safe_test_shortcut(shortcut, context) do
+    task = Task.async(fn ->
       # Parse the shortcut string into an event tuple
       event_tuple = parse_shortcut_string(shortcut)
 
@@ -400,13 +330,12 @@ defmodule Raxol.AccessibilityTestHelpers do
 
       # Return the action ID for further assertions
       action_id
-    after
-      # Clean up spy handler
-      EventManager.unregister_handler(
-        :shortcut_executed,
-        __MODULE__,
-        :handle_shortcut_spy
-      )
+    end)
+    
+    case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} -> result
+      nil -> {:error, :timeout}
+      {:exit, reason} -> {:error, reason}
     end
   end
 
@@ -430,13 +359,13 @@ defmodule Raxol.AccessibilityTestHelpers do
     # Enable high contrast
     Accessibility.set_option(:high_contrast, true, nil)
 
-    try do
-      # Run the provided function
-      fun.()
-    after
-      # Restore previous setting
-      Accessibility.set_option(:high_contrast, previous, nil)
-    end
+    # Execute function and ensure cleanup
+    result = safe_execute_function(fun)
+    
+    # Always restore previous setting
+    Accessibility.set_option(:high_contrast, previous, nil)
+    
+    result
   end
 
   @doc """
@@ -454,25 +383,39 @@ defmodule Raxol.AccessibilityTestHelpers do
   """
   def with_reduced_motion(fun_or_pid, fun \\ nil) do
     case {fun_or_pid, fun} do
-      {pid, fun} when pid?(pid) and function?(fun, 0) ->
+      {pid, fun} when is_pid(pid) and is_function(fun, 0) ->
         previous = Accessibility.get_option(:reduced_motion, pid)
         Accessibility.set_option(:reduced_motion, true, pid)
 
-        try do
-          fun.()
-        after
-          Accessibility.set_option(:reduced_motion, previous, pid)
-        end
+        # Execute function and ensure cleanup
+        result = safe_execute_function(fun)
+        
+        # Always restore
+        Accessibility.set_option(:reduced_motion, previous, pid)
+        
+        result
 
-      {fun, nil} when function?(fun, 0) ->
+      {fun, nil} when is_function(fun, 0) ->
         previous = Accessibility.get_option(:reduced_motion, nil)
         Accessibility.set_option(:reduced_motion, true, nil)
 
-        try do
-          fun.()
-        after
-          Accessibility.set_option(:reduced_motion, previous, nil)
-        end
+        # Execute function and ensure cleanup
+        result = safe_execute_function(fun)
+        
+        # Always restore
+        Accessibility.set_option(:reduced_motion, previous, nil)
+        
+        result
+    end
+  end
+
+  defp safe_execute_function(fun) do
+    task = Task.async(fn -> fun.() end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} -> result
+      nil -> {:error, :timeout}
+      {:exit, reason} -> {:error, reason}
     end
   end
 
@@ -500,7 +443,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   end
 
   # Helper function to parse shortcut string (e.g., "Ctrl+Shift+A") into event tuple
-  defp parse_shortcut_string(shortcut_string) when binary?(shortcut_string) do
+  defp parse_shortcut_string(shortcut_string) when is_binary(shortcut_string) do
     parts = String.split(shortcut_string, "+")
     key_str = List.last(parts)
     modifier_strs = Enum.take(parts, length(parts) - 1)
@@ -521,8 +464,55 @@ defmodule Raxol.AccessibilityTestHelpers do
         # Ignore unknown modifiers
         _ -> nil
       end)
-      |> Enum.reject(&nil?/1)
+      |> Enum.reject(&is_nil/1)
 
     {:key, key, modifiers}
+  end
+
+  # Helper function to get minimum contrast ratio
+  defp get_minimum_ratio(:aa, :normal), do: 4.5
+  defp get_minimum_ratio(:aa, :large), do: 3.0
+  defp get_minimum_ratio(:aaa, :normal), do: 7.0
+  defp get_minimum_ratio(:aaa, :large), do: 4.5
+
+  # Helper functions for announcement validation
+  defp validate_announcement_present(announcements, expected, context) when is_binary(expected) do
+    unless Enum.any?(announcements, &String.contains?(&1, expected)) do
+      flunk(
+        "Expected screen reader announcement containing \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
+      )
+    end
+  end
+
+  defp validate_announcement_present(announcements, %Regex{} = expected, context) do
+    unless Enum.any?(announcements, &Regex.match?(expected, &1)) do
+      flunk(
+        "Expected screen reader announcement matching #{inspect(expected)} was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
+      )
+    end
+  end
+
+  defp validate_announcement_present(_announcements, expected, _context) do
+    flunk("Invalid expected value for assert_announced: #{inspect(expected)}")
+  end
+
+  defp validate_announcement_absent(announcements, expected, context) when is_binary(expected) do
+    if Enum.any?(announcements, &String.contains?(&1, expected)) do
+      flunk(
+        "Unexpected screen reader announcement containing \"#{expected}\" was made.\nActual announcements: #{inspect(announcements)}\n#{context}"
+      )
+    end
+  end
+
+  defp validate_announcement_absent(announcements, %Regex{} = expected, context) do
+    if Enum.any?(announcements, &Regex.match?(expected, &1)) do
+      flunk(
+        "Unexpected screen reader announcement matching #{inspect(expected)} was made.\nActual announcements: #{inspect(announcements)}\n#{context}"
+      )
+    end
+  end
+
+  defp validate_announcement_absent(_announcements, expected, _context) do
+    flunk("Invalid expected value for refute_announced: #{inspect(expected)}")
   end
 end

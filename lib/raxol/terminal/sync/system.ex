@@ -196,20 +196,19 @@ defmodule Raxol.Terminal.Sync.System do
   end
 
   defp resolve_conflict(new_metadata, existing_metadata) do
-    cond do
-      new_metadata.consistency == :strong and
-          existing_metadata.consistency == :strong ->
+    case {new_metadata.consistency, existing_metadata.consistency} do
+      {:strong, :strong} ->
         if new_metadata.version > existing_metadata.version,
           do: :use_new,
           else: :keep_existing
 
-      new_metadata.consistency == :strong ->
+      {:strong, _} ->
         :use_new
 
-      existing_metadata.consistency == :strong ->
+      {_, :strong} ->
         :keep_existing
 
-      true ->
+      {_, _} ->
         if new_metadata.version > existing_metadata.version,
           do: :use_new,
           else: :conflict

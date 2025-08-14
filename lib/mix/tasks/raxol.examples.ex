@@ -63,14 +63,14 @@ defmodule Mix.Tasks.Raxol.Examples do
         ]
       )
 
-    cond do
-      opts[:help] ->
+    case {opts[:help], opts[:list], args} do
+      {true, _, _} ->
         Mix.shell().info(@moduledoc)
 
-      opts[:list] ->
+      {_, true, _} ->
         list_examples()
 
-      length(args) == 0 ->
+      {_, _, []} ->
         Mix.shell().error(
           "No example specified. Use --list to see available examples."
         )
@@ -78,8 +78,8 @@ defmodule Mix.Tasks.Raxol.Examples do
         Mix.shell().info("\nUsage: mix raxol.examples <example_name>")
         list_examples()
 
-      true ->
-        run_example(hd(args), opts)
+      {_, _, [example_name | _]} ->
+        run_example(example_name, opts)
     end
   end
 

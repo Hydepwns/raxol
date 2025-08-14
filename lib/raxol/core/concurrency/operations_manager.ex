@@ -433,69 +433,93 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     queue_size = :queue.len(state.operation_queue)
     current_workers = map_size(state.worker_pools)
 
-    cond do
-      # Scale up if high CPU utilization and queue backlog
-      cpu_utilization > 80.0 and queue_size > 100 and
-          current_workers < state.config.max_workers ->
-        scale_worker_pools(state.worker_pools, current_workers + 1)
-        state
+    decide_scaling_action(
+      cpu_utilization,
+      queue_size,
+      current_workers,
+      state
+    )
+  end
 
-      # Scale down if low utilization
-      cpu_utilization < 20.0 and queue_size < 10 and
-          current_workers > state.config.min_workers ->
-        scale_worker_pools(state.worker_pools, current_workers - 1)
-        state
+  defp decide_scaling_action(cpu_util, queue_size, current_workers, state)
+       when cpu_util > 80.0 and queue_size > 100 and
+              current_workers < state.config.max_workers do
+    scale_worker_pools(state.worker_pools, current_workers + 1)
+    state
+  end
 
-      true ->
-        state
-    end
+  defp decide_scaling_action(cpu_util, queue_size, current_workers, state)
+       when cpu_util < 20.0 and queue_size < 10 and
+              current_workers > state.config.min_workers do
+    scale_worker_pools(state.worker_pools, current_workers - 1)
+    state
+  end
+
+  defp decide_scaling_action(_cpu_util, _queue_size, _current_workers, state) do
+    state
   end
 
   defp scale_worker_pools(pools, target_size) do
     current_size = map_size(pools)
+    perform_pool_scaling(pools, current_size, target_size)
+  end
 
-    cond do
-      target_size > current_size ->
-        # Add new worker pools
-        new_pools =
-          for i <- (current_size + 1)..target_size, into: %{} do
-            pool_name = :"worker_pool_#{i}"
-            {:ok, pool_pid} = WorkerPool.start_link(name: pool_name, size: 1)
-            {pool_name, pool_pid}
-          end
+  defp perform_pool_scaling(pools, current_size, target_size)
+       when target_size > current_size do
+    # Add new worker pools
+    new_pools =
+      for i <- (current_size + 1)..target_size, into: %{} do
+        pool_name = :"worker_pool_#{i}"
+        {:ok, pool_pid} = WorkerPool.start_link(name: pool_name, size: 1)
+        {pool_name, pool_pid}
+      end
 
-        Map.merge(pools, new_pools)
+    Map.merge(pools, new_pools)
+  end
 
-      target_size < current_size ->
-        # Remove excess worker pools
-        pools_to_keep = pools |> Enum.take(target_size) |> Map.new()
+  defp perform_pool_scaling(pools, current_size, target_size)
+       when target_size < current_size do
+    # Remove excess worker pools
+    pools_to_keep = pools |> Enum.take(target_size) |> Map.new()
 
-        # Gracefully stop removed pools
-        pools
-        |> Enum.drop(target_size)
-        |> Enum.each(fn {_name, pool_pid} ->
-          WorkerPool.stop(pool_pid)
-        end)
+    # Gracefully stop removed pools
+    pools
+    |> Enum.drop(target_size)
+    |> Enum.each(fn {_name, pool_pid} ->
+      WorkerPool.stop(pool_pid)
+    end)
 
-        pools_to_keep
+    pools_to_keep
+  end
 
-      true ->
-        pools
-    end
+  defp perform_pool_scaling(pools, _current_size, _target_size) do
+    pools
   end
 
   defp update_back_pressure_status(state) do
     queue_size = :queue.len(state.operation_queue)
 
     back_pressure_active =
-      cond do
-        queue_size > state.config.high_water_mark -> true
-        queue_size < state.config.low_water_mark -> false
-        true -> state.back_pressure_active
-      end
+      determine_back_pressure(
+        queue_size,
+        state.config.high_water_mark,
+        state.config.low_water_mark,
+        state.back_pressure_active
+      )
 
     %{state | back_pressure_active: back_pressure_active}
   end
+
+  defp determine_back_pressure(queue_size, high_mark, _low_mark, _current)
+       when queue_size > high_mark,
+       do: true
+
+  defp determine_back_pressure(queue_size, _high_mark, low_mark, _current)
+       when queue_size < low_mark,
+       do: false
+
+  defp determine_back_pressure(_queue_size, _high_mark, _low_mark, current),
+    do: current
 
   defp collect_current_metrics(state) do
     queue_size = :queue.len(state.operation_queue)

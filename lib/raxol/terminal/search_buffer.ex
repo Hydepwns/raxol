@@ -3,8 +3,7 @@ defmodule Raxol.Terminal.SearchBuffer do
   Manages search state, options, matches, and history for terminal search operations.
   """
 
-  import Raxol.Guards
-
+  
   @type match :: %{
           line: integer(),
           start: integer(),
@@ -31,7 +30,7 @@ defmodule Raxol.Terminal.SearchBuffer do
   Starts a new search with the given pattern.
   """
   @spec start_search(t(), String.t()) :: {:ok, t()} | {:error, term()}
-  def start_search(buffer, pattern) when binary?(pattern) do
+  def start_search(buffer, pattern) when is_binary(pattern) do
     if pattern == "" do
       {:error, :empty_pattern}
     else
@@ -87,7 +86,7 @@ defmodule Raxol.Terminal.SearchBuffer do
   Sets the search options.
   """
   @spec set_options(t(), map()) :: t()
-  def set_options(buffer, opts) when map?(opts) do
+  def set_options(buffer, opts) when is_map(opts) do
     %{buffer | options: Map.merge(buffer.options, opts)}
   end
 
@@ -139,7 +138,7 @@ defmodule Raxol.Terminal.SearchBuffer do
   Adds a pattern to the search history.
   """
   @spec add_to_history(t(), String.t()) :: t()
-  def add_to_history(buffer, pattern) when binary?(pattern) do
+  def add_to_history(buffer, pattern) when is_binary(pattern) do
     %{buffer | history: add_pattern_to_history(buffer.history, pattern)}
   end
 

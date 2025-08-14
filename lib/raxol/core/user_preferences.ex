@@ -1,6 +1,5 @@
 defmodule Raxol.Core.UserPreferences do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Manages user preferences for the terminal emulator.
 
@@ -212,7 +211,7 @@ defmodule Raxol.Core.UserPreferences do
     %{state | save_timer: timer_id}
   end
 
-  defp cancel_save_timer(timer_id) when integer?(timer_id) do
+  defp cancel_save_timer(timer_id) when is_integer(timer_id) do
     :ok
   end
 
@@ -251,7 +250,7 @@ defmodule Raxol.Core.UserPreferences do
 
   defp deep_merge(map1, map2) do
     Map.merge(map1, map2, fn _key, val1, val2 ->
-      if map?(val1) and map?(val2) do
+      if is_map(val1) and is_map(val2) do
         deep_merge(val1, val2)
       else
         val2
@@ -259,10 +258,10 @@ defmodule Raxol.Core.UserPreferences do
     end)
   end
 
-  defp normalize_path(path) when atom?(path), do: [path]
-  defp normalize_path(path) when list?(path), do: path
+  defp normalize_path(path) when is_atom(path), do: [path]
+  defp normalize_path(path) when is_list(path), do: path
 
-  defp normalize_path(path) when binary?(path) do
+  defp normalize_path(path) when is_binary(path) do
     String.split(path, ".")
     |> Enum.map(&String.to_existing_atom/1)
   catch
@@ -279,21 +278,23 @@ defmodule Raxol.Core.UserPreferences do
   """
   def get_theme_id(pid_or_name \\ __MODULE__) do
     theme = get([:theme, :active_id], pid_or_name) || get(:theme, pid_or_name)
+    normalize_theme_id(theme)
+  end
 
-    cond do
-      atom?(theme) ->
-        theme
+  defp normalize_theme_id(theme) when is_atom(theme) do
+    theme
+  end
 
-      binary?(theme) ->
-        try do
-          String.to_existing_atom(theme)
-        rescue
-          ArgumentError -> :default
-        end
-
-      true ->
-        :default
+  defp normalize_theme_id(theme) when is_binary(theme) do
+    try do
+      String.to_existing_atom(theme)
+    rescue
+      ArgumentError -> :default
     end
+  end
+
+  defp normalize_theme_id(_theme) do
+    :default
   end
 
   @doc """

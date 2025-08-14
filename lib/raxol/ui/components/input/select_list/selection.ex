@@ -4,8 +4,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
   """
 
   alias Raxol.UI.Components.Input.SelectList.Pagination
-  import Raxol.Guards
-
+  
   @doc """
   Updates selection state based on a selected index.
   Returns updated state and any commands to execute.
@@ -53,14 +52,14 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
     # Add on_select callback if provided and is a function
     commands =
       case Map.get(state, :on_select) do
-        fun when function?(fun, 1) -> [{:callback, fun, [value]} | commands]
+        fun when is_function(fun, 1) -> [{:callback, fun, [value]} | commands]
         _ -> commands
       end
 
     # Add on_change callback if provided and is a function
     commands =
       case Map.get(state, :on_change) do
-        fun when function?(fun, 1) -> [{:callback, fun, [value]} | commands]
+        fun when is_function(fun, 1) -> [{:callback, fun, [value]} | commands]
         _ -> commands
       end
 

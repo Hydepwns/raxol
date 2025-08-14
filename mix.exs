@@ -219,19 +219,19 @@ defmodule Raxol.MixProject do
       {:uuid, "~> 1.1"},
       # TOML configuration
       {:toml, "~> 0.7"},
-      # MIME type detection
-      {:mimerl, "~> 1.4"},
+      # MIME type detection (removed - unused)
+      # {:mimerl, "~> 1.4"},
       # HTTP client
       {:httpoison, "~> 2.2"},
       # Localization
       {:gettext, "~> 0.26"},
-      # DNS clustering
-      {:dns_cluster, "~> 0.1"},
+      # DNS clustering (removed - unused)
+      # {:dns_cluster, "~> 0.1"},
 
       # Telemetry & monitoring
       {:telemetry_metrics, "~> 1.1"},
-      {:telemetry_poller, "~> 1.2"},
-      {:telemetry_metrics_prometheus, "~> 1.1"}
+      {:telemetry_poller, "~> 1.2"}
+      # {:telemetry_metrics_prometheus, "~> 1.1"} # Removed - unused
     ]
   end
 

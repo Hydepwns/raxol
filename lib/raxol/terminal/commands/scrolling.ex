@@ -3,8 +3,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   Handles scrolling operations for the terminal screen buffer.
   """
 
-  import Raxol.Guards
-  alias Raxol.Terminal.ScreenBuffer
+    alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
   require Raxol.Core.Runtime.Log
@@ -17,7 +16,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
         ) :: ScreenBuffer.t()
 
   def scroll_up(buffer, _count, {region_top, region_bottom}, _blank_style)
-      when integer?(region_top) and integer?(region_bottom) and
+      when is_integer(region_top) and is_integer(region_bottom) and
              region_top > region_bottom do
     Raxol.Core.Runtime.Log.debug(
       "Scroll Up: Invalid region (top > bottom). Region: #{inspect({region_top, region_bottom})}. No scroll."
@@ -59,7 +58,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   end
 
   def scroll_up(buffer, _count, _scroll_region, _blank_style)
-      when tuple?(buffer) do
+      when is_tuple(buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -75,7 +74,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
         ) :: ScreenBuffer.t()
 
   def scroll_down(buffer, _count, {region_top, region_bottom}, _blank_style)
-      when integer?(region_top) and integer?(region_bottom) and
+      when is_integer(region_top) and is_integer(region_bottom) and
              region_top > region_bottom do
     Raxol.Core.Runtime.Log.debug(
       "Scroll Down: Invalid region (top > bottom). Region: #{inspect({region_top, region_bottom})}. No scroll."
@@ -115,7 +114,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   end
 
   def scroll_down(buffer, _count, _scroll_region, _blank_style)
-      when tuple?(buffer) do
+      when is_tuple(buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -180,7 +179,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   defp get_scroll_region(buffer, scroll_region) do
     case scroll_region do
       {top, bottom}
-      when integer?(top) and integer?(bottom) and top >= 0 and
+      when is_integer(top) and is_integer(bottom) and top >= 0 and
              bottom <= buffer.height ->
         {top, bottom}
 
@@ -231,17 +230,22 @@ defmodule Raxol.Terminal.Commands.Scrolling do
          width,
          blank_style
        ) do
-    cond do
-      idx >= region_start and idx <= region_end - n ->
-        get_source_line(cells, idx + n, line)
+    select_line_for_shift_up(idx, cells, line, region_start, region_end, n, width, blank_style)
+  end
 
-      idx > region_end - n and idx <= region_end ->
-        # Create empty line for this position
-        List.duplicate(Cell.new(" ", blank_style), width)
+  defp select_line_for_shift_up(idx, cells, line, region_start, region_end, n, _width, _blank_style)
+       when idx >= region_start and idx <= region_end - n do
+    get_source_line(cells, idx + n, line)
+  end
 
-      true ->
-        line
-    end
+  defp select_line_for_shift_up(idx, _cells, _line, _region_start, region_end, n, width, blank_style)
+       when idx > region_end - n and idx <= region_end do
+    # Create empty line for this position
+    List.duplicate(Cell.new(" ", blank_style), width)
+  end
+
+  defp select_line_for_shift_up(_idx, _cells, line, _region_start, _region_end, _n, _width, _blank_style) do
+    line
   end
 
   defp shift_lines_down(
@@ -284,17 +288,22 @@ defmodule Raxol.Terminal.Commands.Scrolling do
          width,
          blank_style
        ) do
-    cond do
-      idx >= region_start + n and idx <= region_end ->
-        get_source_line(cells, idx - n, line)
+    select_line_for_shift_down(idx, cells, line, region_start, region_end, n, width, blank_style)
+  end
 
-      idx >= region_start and idx < region_start + n ->
-        # Create empty line for this position
-        List.duplicate(Cell.new(" ", blank_style), width)
+  defp select_line_for_shift_down(idx, cells, line, region_start, region_end, n, _width, _blank_style)
+       when idx >= region_start + n and idx <= region_end do
+    get_source_line(cells, idx - n, line)
+  end
 
-      true ->
-        line
-    end
+  defp select_line_for_shift_down(idx, _cells, _line, region_start, _region_end, n, width, blank_style)
+       when idx >= region_start and idx < region_start + n do
+    # Create empty line for this position
+    List.duplicate(Cell.new(" ", blank_style), width)
+  end
+
+  defp select_line_for_shift_down(_idx, _cells, line, _region_start, _region_end, _n, _width, _blank_style) do
+    line
   end
 
   defp get_source_line(cells, source_idx, fallback_line) do

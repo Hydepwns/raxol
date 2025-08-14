@@ -10,8 +10,7 @@ defmodule Raxol.Core.Renderer.Color do
   * Terminal background detection
   """
 
-  import Raxol.Guards
-
+  
   @type color :: ansi_16() | ansi_256() | true_color()
   @type ansi_16 ::
           :black
@@ -78,7 +77,7 @@ defmodule Raxol.Core.Renderer.Color do
 
   def to_ansi(:default), do: "\e[39m"
 
-  def to_ansi(color) when atom?(color) do
+  def to_ansi(color) when is_atom(color) do
     if Enum.member?(@ansi_16_atoms, color) do
       code = @ansi_16_map[color]
 
@@ -92,7 +91,7 @@ defmodule Raxol.Core.Renderer.Color do
     end
   end
 
-  def to_ansi(color) when integer?(color) and color in 0..255//1 do
+  def to_ansi(color) when is_integer(color) and color in 0..255//1 do
     "\e[38;5;#{color}m"
   end
 
@@ -118,9 +117,9 @@ defmodule Raxol.Core.Renderer.Color do
 
   def to_bg_ansi(:default), do: "\e[49m"
 
-  def to_bg_ansi(color) when atom?(color) do
+  def to_bg_ansi(color) when is_atom(color) do
     case {Enum.member?(@ansi_16_atoms, color), @ansi_16_map[color]} do
-      {true, code} when not nil?(code) ->
+      {true, code} when not is_nil(code) ->
         if code >= 8 do
           "\e[#{100 + (code - 8)}m"
         else
@@ -132,7 +131,7 @@ defmodule Raxol.Core.Renderer.Color do
     end
   end
 
-  def to_bg_ansi(color) when integer?(color) and color in 0..255//1 do
+  def to_bg_ansi(color) when is_integer(color) and color in 0..255//1 do
     "\e[48;5;#{color}m"
   end
 
@@ -165,15 +164,15 @@ defmodule Raxol.Core.Renderer.Color do
   @doc """
   Creates a color theme map.
   """
-  def create_theme(input) when not map?(input) do
+  def create_theme(input) when not is_map(input) do
     raise ArgumentError, "Theme must be a map"
   end
 
-  def create_theme(%{colors: colors}) when not map?(colors) do
+  def create_theme(%{colors: colors}) when not is_map(colors) do
     raise ArgumentError, "Theme colors must be a map"
   end
 
-  def create_theme(colors) when map?(colors) do
+  def create_theme(colors) when is_map(colors) do
     processed_colors = process_theme_colors(colors)
     default = default_theme()
     %{colors: Map.merge(default.colors, processed_colors)}
@@ -190,7 +189,7 @@ defmodule Raxol.Core.Renderer.Color do
   end
 
   defp process_color_entry({key, value})
-       when atom?(value) and value in @ansi_16_atoms do
+       when is_atom(value) and value in @ansi_16_atoms do
     {key, value}
   end
 
@@ -201,7 +200,7 @@ defmodule Raxol.Core.Renderer.Color do
 
   defp process_color_entry({_key, value}) do
     msg =
-      if binary?(value),
+      if is_binary(value),
         do: "Invalid color in theme: #{value}",
         else: "Invalid color in theme: #{inspect(value)}"
 
@@ -225,7 +224,7 @@ defmodule Raxol.Core.Renderer.Color do
     |> Enum.map(fn {key, color} ->
       case color do
         %Raxol.Style.Colors.Color{r: r, g: g, b: b} -> {key, {r, g, b}}
-        hex when binary?(hex) -> {key, hex_to_rgb(hex)}
+        hex when is_binary(hex) -> {key, hex_to_rgb(hex)}
         other -> {key, other}
       end
     end)
@@ -257,7 +256,7 @@ defmodule Raxol.Core.Renderer.Color do
   @doc """
   Converts a hex color string to RGB.
   """
-  def hex_to_rgb("#" <> hex) when binary?(hex) do
+  def hex_to_rgb("#" <> hex) when is_binary(hex) do
     case String.length(hex) do
       6 -> parse_6_digit_hex(hex)
       3 -> parse_3_digit_hex(hex)
@@ -265,25 +264,25 @@ defmodule Raxol.Core.Renderer.Color do
     end
   end
 
-  def hex_to_rgb(invalid) when binary?(invalid) do
+  def hex_to_rgb(invalid) when is_binary(invalid) do
     raise ArgumentError, "Invalid hex color format"
   end
 
-  defp parse_6_digit_hex(hex) when binary?(hex) do
+  defp parse_6_digit_hex(hex) when is_binary(hex) do
     case parse_hex_components(hex, 2) do
       {:ok, {r, g, b}} -> {r, g, b}
       {:error, _} -> raise ArgumentError, "Invalid hex color format"
     end
   end
 
-  defp parse_3_digit_hex(hex) when binary?(hex) do
+  defp parse_3_digit_hex(hex) when is_binary(hex) do
     case parse_hex_components(hex, 1) do
       {:ok, {r, g, b}} -> {r, g, b}
       {:error, _} -> raise ArgumentError, "Invalid hex color format"
     end
   end
 
-  defp parse_hex_components(hex, size) when binary?(hex) do
+  defp parse_hex_components(hex, size) when is_binary(hex) do
     try do
       case size do
         2 ->
@@ -329,13 +328,9 @@ defmodule Raxol.Core.Renderer.Color do
     raise ArgumentError, "Invalid RGB tuple"
   end
 
-  defp grayscale_to_ansi256(r) do
-    cond do
-      r < 4 -> 16
-      r > 251 -> 231
-      true -> 232 + div(r - 4, 10)
-    end
-  end
+  defp grayscale_to_ansi256(r) when r < 4, do: 16
+  defp grayscale_to_ansi256(r) when r > 251, do: 231
+  defp grayscale_to_ansi256(r), do: 232 + div(r - 4, 10)
 
   defp color_cube_to_ansi256(r, g, b) do
     ir = div(r * 6, 256)

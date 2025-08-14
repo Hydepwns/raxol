@@ -346,25 +346,26 @@ defmodule Raxol.Security.Encryption.Config do
   end
 
   defp validate_policy(policy) do
-    cond do
-      policy.min_key_length < 128 ->
-        {:error, :key_too_short}
-
-      policy.key_rotation_days > 365 ->
-        {:error, :rotation_period_too_long}
-
-      policy.algorithm not in [
-        :aes_256_gcm,
-        :aes_256_cbc,
-        :chacha20_poly1305,
-        :aes_256_ctr
-      ] ->
-        {:error, :unsupported_algorithm}
-
-      true ->
-        :ok
+    with :ok <- validate_key_length(policy.min_key_length),
+         :ok <- validate_rotation_period(policy.key_rotation_days),
+         :ok <- validate_algorithm(policy.algorithm) do
+      :ok
     end
   end
+
+  defp validate_key_length(length) when length < 128, do: {:error, :key_too_short}
+  defp validate_key_length(_length), do: :ok
+
+  defp validate_rotation_period(days) when days > 365, do: {:error, :rotation_period_too_long}
+  defp validate_rotation_period(_days), do: :ok
+
+  defp validate_algorithm(algorithm) when algorithm in [
+    :aes_256_gcm,
+    :aes_256_cbc, 
+    :chacha20_poly1305,
+    :aes_256_ctr
+  ], do: :ok
+  defp validate_algorithm(_algorithm), do: {:error, :unsupported_algorithm}
 
   defp validate_against_profile(params, profile_name, state) do
     profile = Map.get(state.compliance_profiles, profile_name)
@@ -430,13 +431,25 @@ defmodule Raxol.Security.Encryption.Config do
   end
 
   defp determine_classification(attributes) do
-    cond do
-      contains_pii?(attributes) -> :restricted
-      contains_financial?(attributes) -> :confidential
-      attributes[:internal] -> :internal
-      true -> :public
-    end
+    classify_by_content(attributes)
   end
+
+  defp classify_by_content(attributes) do
+    determine_classification_level(attributes)
+  end
+
+  defp determine_classification_level(attributes) when is_map(attributes) do
+    cond_to_pattern_matching({
+      contains_pii?(attributes),
+      contains_financial?(attributes), 
+      Map.get(attributes, :internal, false)
+    })
+  end
+
+  defp cond_to_pattern_matching({true, _, _}), do: :restricted
+  defp cond_to_pattern_matching({_, true, _}), do: :confidential
+  defp cond_to_pattern_matching({_, _, true}), do: :internal
+  defp cond_to_pattern_matching({false, false, false}), do: :public
 
   defp contains_pii?(attributes) do
     pii_indicators = [
@@ -506,6 +519,6 @@ defmodule Raxol.Security.Encryption.Config do
   end
 
   defp get_current_user do
-    Process.get(:current_user, "system")
+    Raxol.Security.UserContext.Server.get_current_user("system")
   end
 end

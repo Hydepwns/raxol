@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Renderer.Layout do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Central layout coordinator for the Raxol renderer system.
 
@@ -20,11 +19,11 @@ defmodule Raxol.Core.Renderer.Layout do
   ## Returns
     A list of positioned elements with absolute coordinates.
   """
-  def apply_layout(view, dimensions) when map?(view) do
+  def apply_layout(view, dimensions) when is_map(view) do
     apply_layout([view], dimensions)
   end
 
-  def apply_layout(views, %{width: width, height: height}) when list?(views) do
+  def apply_layout(views, %{width: width, height: height}) when is_list(views) do
     available_space = {width, height}
 
     views
@@ -32,7 +31,7 @@ defmodule Raxol.Core.Renderer.Layout do
     |> Enum.reject(&is_nil/1)
   end
 
-  def apply_layout(views, {width, height}) when list?(views) do
+  def apply_layout(views, {width, height}) when is_list(views) do
     apply_layout(views, %{width: width, height: height})
   end
 
@@ -166,7 +165,7 @@ defmodule Raxol.Core.Renderer.Layout do
   defp get_view_type(%{type: :checkbox} = checkbox_view),
     do: {:checkbox, checkbox_view}
 
-  defp get_view_type(%{children: children} = view) when list?(children),
+  defp get_view_type(%{children: children} = view) when is_list(children),
     do: {:container, view}
 
   defp get_view_type(view), do: {:unknown, view}
@@ -223,7 +222,7 @@ defmodule Raxol.Core.Renderer.Layout do
       |> Map.put(:position, {content_x, content_y})
       |> Map.put(:size, box_size)
 
-    if list?(children) and children != [] do
+    if is_list(children) and children != [] do
       [
         positioned_box
         | position_children(
@@ -325,17 +324,17 @@ defmodule Raxol.Core.Renderer.Layout do
   end
 
   defp calculate_dimensions({w, h}, _available_width, _available_height)
-       when integer?(w) and integer?(h) do
+       when is_integer(w) and is_integer(h) do
     {max(0, w), max(0, h)}
   end
 
   defp calculate_dimensions({w, :auto}, _available_width, available_height)
-       when integer?(w) do
+       when is_integer(w) do
     {max(0, w), max(0, available_height)}
   end
 
   defp calculate_dimensions({:auto, h}, available_width, _available_height)
-       when integer?(h) do
+       when is_integer(h) do
     {max(0, available_width), max(0, h)}
   end
 

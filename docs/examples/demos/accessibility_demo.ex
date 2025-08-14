@@ -17,10 +17,10 @@ defmodule Raxol.Examples.AccessibilityDemo do
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   alias Raxol.View.Elements, as: UI
-  alias Raxol.Core.Accessibility
-  alias Raxol.Core.FocusManager
+  alias Raxol.Core.AccessibilityRefactored, as: AccessibilityRefactored
+  alias Raxol.Core.FocusManagerRefactored, as: FocusManagerRefactored
   alias Raxol.Core.UserPreferences
-  alias Raxol.Core.UXRefinement
+  alias Raxol.Core.UXRefinementRefactored, as: UXRefinementRefactoredRefactored, as: UXRefinementRefactored
   require Raxol.Core.Renderer.View
   alias Raxol.Core.Renderer.View
 

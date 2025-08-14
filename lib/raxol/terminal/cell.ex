@@ -9,8 +9,7 @@ defmodule Raxol.Terminal.Cell do
   - Cell state
   """
 
-  import Raxol.Guards
-  alias Raxol.Terminal.ANSI.TextFormatting
+    alias Raxol.Terminal.ANSI.TextFormatting
 
   @typedoc """
   Text style for a terminal cell. See `Raxol.Terminal.ANSI.TextFormatting.text_style()` type for details.
@@ -182,7 +181,7 @@ defmodule Raxol.Terminal.Cell do
   end
 
   def merge_style(%__MODULE__{} = cell, style_to_merge)
-      when map?(style_to_merge) do
+      when is_map(style_to_merge) do
     # Handle plain maps by converting to TextFormatting struct first
     style_struct = TextFormatting.new()
     # Apply the attributes from the map
@@ -277,7 +276,7 @@ defmodule Raxol.Terminal.Cell do
 
   """
   def with_attributes(%__MODULE__{} = cell, attributes)
-      when list?(attributes) do
+      when is_list(attributes) do
     # Apply each attribute to the cell's existing style
     new_style =
       Enum.reduce(attributes, cell.style, fn attribute, acc_style ->
@@ -288,7 +287,7 @@ defmodule Raxol.Terminal.Cell do
   end
 
   def with_attributes(%__MODULE__{} = cell, attributes)
-      when map?(attributes) do
+      when is_map(attributes) do
     # When merging a map, use the refined merge_style logic
     merge_style(cell, attributes)
   end
@@ -373,7 +372,7 @@ defmodule Raxol.Terminal.Cell do
   """
   @spec from_map(map()) :: t() | nil
   def from_map(%{char: char_code, style: style} = map)
-      when integer?(char_code) and map?(style) do
+      when is_integer(char_code) and is_map(style) do
     # Convert integer code point back to string for storing in the struct
     char_str = <<char_code::utf8>>
     wide_placeholder = Map.get(map, :wide_placeholder, false)

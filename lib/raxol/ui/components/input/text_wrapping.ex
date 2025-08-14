@@ -3,15 +3,14 @@ defmodule Raxol.UI.Components.Input.TextWrapping do
   Utility functions for text wrapping.
   """
 
-  import Raxol.Guards
-
+  
   @doc """
   Wraps a single line of text by character count using recursion.
 
   Handles multi-byte characters correctly.
   """
   def wrap_line_by_char(line, width)
-      when binary?(line) and integer?(width) and width > 0 do
+      when is_binary(line) and is_integer(width) and width > 0 do
     do_wrap_char(String.graphemes(line), width, [])
   end
 
@@ -38,31 +37,30 @@ defmodule Raxol.UI.Components.Input.TextWrapping do
   Wraps a single line of text by word boundaries.
   """
   def wrap_line_by_word(line, width)
-      when binary?(line) and integer?(width) and width > 0 do
+      when is_binary(line) and is_integer(width) and width > 0 do
     words = String.split(line, " ")
     do_wrap_words(words, width, [], "")
   end
 
   # Private helper for wrap_line_by_word
+  defp do_wrap_words([], _width, lines, ""), do: Enum.reverse(lines)
+  
   defp do_wrap_words([], _width, lines, current_line) do
-    if current_line == "",
-      do: Enum.reverse(lines),
-      else: Enum.reverse([String.trim(current_line) | lines])
+    Enum.reverse([String.trim(current_line) | lines])
   end
 
   defp do_wrap_words([word | rest], width, lines, current_line) do
-    new_line =
-      if current_line == "", do: word, else: current_line <> " " <> word
+    new_line = build_new_line(current_line, word)
 
-    cond do
-      String.length(word) > width ->
+    case categorize_word_fit(word, new_line, width) do
+      :word_too_long ->
         handle_long_word(word, rest, width, lines, current_line)
 
-      String.length(new_line) <= width ->
+      :fits_current_line ->
         # Word fits on the current line
         do_wrap_words(rest, width, lines, new_line)
 
-      true ->
+      :needs_new_line ->
         # Word doesn't fit, start a new line
         do_wrap_words(
           rest,
@@ -73,14 +71,23 @@ defmodule Raxol.UI.Components.Input.TextWrapping do
     end
   end
 
+  defp categorize_word_fit(word, new_line, width) do
+    word_length = String.length(word)
+    new_line_length = String.length(new_line)
+
+    case {word_length > width, new_line_length <= width} do
+      {true, _} -> :word_too_long
+      {false, true} -> :fits_current_line
+      {false, false} -> :needs_new_line
+    end
+  end
+
+  defp build_new_line("", word), do: word
+  defp build_new_line(current_line, word), do: current_line <> " " <> word
+
   defp handle_long_word(word, rest, width, lines, current_line) do
     # 1. Finalize the current line (if it's not empty) and add it to lines.
-    finalized_lines =
-      if current_line == "" do
-        lines
-      else
-        [String.trim(current_line) | lines]
-      end
+    finalized_lines = finalize_current_line(current_line, lines)
 
     # 2. Wrap the long word by character.
     wrapped_word_parts = wrap_line_by_char(word, width)
@@ -101,6 +108,11 @@ defmodule Raxol.UI.Components.Input.TextWrapping do
         #    as the new current line, and the updated lines accumulator.
         do_wrap_words(rest, width, updated_lines, last_part)
     end
+  end
+
+  defp finalize_current_line("", lines), do: lines
+  defp finalize_current_line(current_line, lines) do
+    [String.trim(current_line) | lines]
   end
 
   # do_wrap_words end

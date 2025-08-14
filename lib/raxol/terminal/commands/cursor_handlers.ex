@@ -7,8 +7,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   returning the updated emulator state.
   """
 
-  import Raxol.Guards
-  alias Raxol.Terminal.Emulator
+    alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
 
   require Raxol.Core.Runtime.Log
@@ -365,7 +364,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   defp get_valid_pos_param(params, index, default) do
     case Enum.at(params, index) do
       nil -> default
-      value when integer?(value) and value > 0 -> value
+      value when is_integer(value) and value > 0 -> value
       _ -> default
     end
   end

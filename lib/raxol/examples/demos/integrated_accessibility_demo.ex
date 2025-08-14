@@ -8,7 +8,7 @@ defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
   alias Raxol.Core.Renderer.View
   require Raxol.Core.Renderer.View
   # If this demo uses Accessibility features directly:
-  # alias Raxol.Core.Accessibility
+  # alias Raxol.Core.Accessibility, as: Accessibility
 
   @impl true
   def init(_opts) do

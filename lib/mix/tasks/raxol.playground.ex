@@ -79,35 +79,28 @@ defmodule Mix.Tasks.Raxol.Playground do
         ]
       )
 
-    cond do
-      invalid != [] ->
-        {:error, "Invalid options: #{inspect(invalid)}"}
-
-      opts[:help] ->
-        {:help}
-
-      opts[:demo] ->
-        {:demo}
-
-      opts[:examples] ->
-        {:examples}
-
-      opts[:web] ->
-        web_opts = [
-          port: opts[:port] || 4444,
-          component: opts[:component],
-          theme: opts[:theme]
-        ]
-
-        {:web, web_opts}
-
-      true ->
-        playground_opts = [
-          component: opts[:component],
-          theme: opts[:theme]
-        ]
-
-        {:playground, playground_opts}
+    # Check for invalid options first
+    if invalid != [] do
+      {:error, "Invalid options: #{inspect(invalid)}"}
+    else
+      # Use Enum.find_value to find the first matching option
+      option_handlers = [
+        {fn -> opts[:help] end, fn -> {:help} end},
+        {fn -> opts[:demo] end, fn -> {:demo} end},
+        {fn -> opts[:examples] end, fn -> {:examples} end},
+        {fn -> opts[:web] end, fn ->
+          web_opts = [
+            port: opts[:port] || 4444,
+            component: opts[:component],
+            theme: opts[:theme]
+          ]
+          {:web, web_opts}
+        end}
+      ]
+      
+      Enum.find_value(option_handlers, fn {check, handler} ->
+        if check.(), do: handler.(), else: nil
+      end) || {:playground, [component: opts[:component], theme: opts[:theme]]}
     end
   end
 

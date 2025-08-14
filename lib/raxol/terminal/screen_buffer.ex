@@ -32,8 +32,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   """
 
   @behaviour Raxol.Terminal.ScreenBufferBehaviour
-  import Raxol.Guards
-
+  
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 
@@ -244,7 +243,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   """
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def set_scroll_region(buffer, top, bottom)
-      when integer?(top) and integer?(bottom) do
+      when is_integer(top) and is_integer(bottom) do
     Raxol.Terminal.Buffer.ScrollRegion.set_region(buffer, top, bottom)
   end
 
@@ -525,7 +524,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Scrolls the buffer down by the specified number of lines with additional parameters.
   """
   def scroll_down(buffer, lines, count)
-      when integer?(lines) and integer?(count) do
+      when is_integer(lines) and is_integer(count) do
     Raxol.Terminal.Commands.Scrolling.scroll_down(
       buffer,
       lines,
@@ -535,7 +534,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   # Handle case where lines parameter is a list (from tests)
-  def scroll_down(buffer, _lines, count) when integer?(count) do
+  def scroll_down(buffer, _lines, count) when is_integer(count) do
     Raxol.Terminal.Commands.Scrolling.scroll_down(
       buffer,
       count,

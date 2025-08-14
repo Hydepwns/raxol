@@ -1,6 +1,5 @@
 defmodule Raxol.Style.Colors.Color do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Core color representation and manipulation module.
 
@@ -271,7 +270,7 @@ defmodule Raxol.Style.Colors.Color do
   """
   @spec blend(t(), t(), float()) :: t()
   def blend(%__MODULE__{} = color1, %__MODULE__{} = color2, alpha)
-      when float?(alpha) and alpha >= 0.0 and alpha <= 1.0 do
+      when is_float(alpha) and alpha >= 0.0 and alpha <= 1.0 do
     # Simple linear interpolation for each component
     r = round(color1.r * (1 - alpha) + color2.r * alpha)
     g = round(color1.g * (1 - alpha) + color2.g * alpha)
@@ -301,7 +300,7 @@ defmodule Raxol.Style.Colors.Color do
   """
   @spec alpha_blend(t(), t(), float()) :: t()
   def alpha_blend(%__MODULE__{} = color1, %__MODULE__{} = color2, alpha)
-      when float?(alpha) and alpha >= 0.0 and alpha <= 1.0 do
+      when is_float(alpha) and alpha >= 0.0 and alpha <= 1.0 do
     blend(color1, color2, alpha)
   end
 

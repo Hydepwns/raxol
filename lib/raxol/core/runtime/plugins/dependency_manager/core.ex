@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Core module for managing plugin dependencies and dependency resolution.
   Provides the main public API for dependency checking and load order resolution.
@@ -69,7 +68,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     Enum.group_by(dependencies, fn
       {dep_id, _ver_req} -> dep_id
       {dep_id, _ver_req, _opts} -> dep_id
-      dep_id when binary?(dep_id) -> dep_id
+      dep_id when is_binary(dep_id) -> dep_id
     end)
   end
 
@@ -134,27 +133,52 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
          version_mismatches,
          current_chain
        ) do
-    cond do
-      Enum.any?(missing_version) ->
-        {:error, :missing_version, Enum.reverse(missing_version), current_chain}
+    with :ok <- check_missing_version_error(missing_version, current_chain),
+         :ok <- check_missing_dependencies_error(missing, current_chain),
+         :ok <- check_invalid_version_format_error(invalid_version_format, current_chain),
+         :ok <- check_invalid_version_requirement_error(invalid_version_requirement, current_chain),
+         :ok <- check_version_mismatches_error(version_mismatches, current_chain) do
+      :ok
+    end
+  end
 
-      Enum.any?(missing) ->
-        {:error, :missing_dependencies, Enum.reverse(missing), current_chain}
+  defp check_missing_version_error(missing_version, current_chain) do
+    if Enum.any?(missing_version) do
+      {:error, :missing_version, Enum.reverse(missing_version), current_chain}
+    else
+      :ok
+    end
+  end
 
-      Enum.any?(invalid_version_format) ->
-        {:error, :invalid_version_format, Enum.reverse(invalid_version_format),
-         current_chain}
+  defp check_missing_dependencies_error(missing, current_chain) do
+    if Enum.any?(missing) do
+      {:error, :missing_dependencies, Enum.reverse(missing), current_chain}
+    else
+      :ok
+    end
+  end
 
-      Enum.any?(invalid_version_requirement) ->
-        {:error, :invalid_version_requirement,
-         Enum.reverse(invalid_version_requirement), current_chain}
+  defp check_invalid_version_format_error(invalid_version_format, current_chain) do
+    if Enum.any?(invalid_version_format) do
+      {:error, :invalid_version_format, Enum.reverse(invalid_version_format), current_chain}
+    else
+      :ok
+    end
+  end
 
-      Enum.any?(version_mismatches) ->
-        {:error, :version_mismatch, Enum.reverse(version_mismatches),
-         current_chain}
+  defp check_invalid_version_requirement_error(invalid_version_requirement, current_chain) do
+    if Enum.any?(invalid_version_requirement) do
+      {:error, :invalid_version_requirement, Enum.reverse(invalid_version_requirement), current_chain}
+    else
+      :ok
+    end
+  end
 
-      true ->
-        :ok
+  defp check_version_mismatches_error(version_mismatches, current_chain) do
+    if Enum.any?(version_mismatches) do
+      {:error, :version_mismatch, Enum.reverse(version_mismatches), current_chain}
+    else
+      :ok
     end
   end
 
@@ -170,7 +194,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
     handle_plugin_dependency(dep_id, version_req, loaded_plugins, acc)
   end
 
-  defp process_dependency(dep_id, loaded_plugins, acc) when binary?(dep_id) do
+  defp process_dependency(dep_id, loaded_plugins, acc) when is_binary(dep_id) do
     if Map.has_key?(loaded_plugins, dep_id) do
       acc
     else
@@ -338,7 +362,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
       nil ->
         update_acc(acc, 0, dep_id)
 
-      plugin when map?(plugin) ->
+      plugin when is_map(plugin) ->
         handle_plugin_version(plugin, dep_id, version_req, acc)
 
       _ ->
@@ -389,7 +413,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
           Enum.map(dependencies, fn
             {dep_id, _ver_req} -> dep_id
             {dep_id, _ver_req, _opts} -> dep_id
-            dep_id when binary?(dep_id) -> dep_id
+            dep_id when is_binary(dep_id) -> dep_id
           end)
 
         {:ok, resolved}
@@ -414,9 +438,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   """
   def validate_dependencies(dependencies) do
     case Enum.find(dependencies, fn
-           {dep_id, _ver_req} when binary?(dep_id) -> false
-           {dep_id, _ver_req, _opts} when binary?(dep_id) -> false
-           dep_id when binary?(dep_id) -> false
+           {dep_id, _ver_req} when is_binary(dep_id) -> false
+           {dep_id, _ver_req, _opts} when is_binary(dep_id) -> false
+           dep_id when is_binary(dep_id) -> false
            _ -> true
          end) do
       nil -> :ok

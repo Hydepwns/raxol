@@ -4,8 +4,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
   Responsible for character width, bidirectional text segmentation, and cell creation.
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
@@ -57,7 +56,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
           TextFormatting.text_style()
   def create_cell_style(nil), do: TextFormatting.new()
 
-  def create_cell_style(style) when map?(style) do
+  def create_cell_style(style) when is_map(style) do
     style =
       style
       |> Map.new(fn {k, v} ->

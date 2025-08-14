@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Preferences.Persistence do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles persistence (loading/saving) of user preferences to a file.
   """
@@ -36,7 +35,7 @@ defmodule Raxol.Core.Preferences.Persistence do
         try do
           preferences = :erlang.binary_to_term(binary_data, [:safe])
 
-          if map?(preferences) do
+          if is_map(preferences) do
             {:ok, preferences}
           else
             Raxol.Core.Runtime.Log.error(
@@ -76,7 +75,7 @@ defmodule Raxol.Core.Preferences.Persistence do
     - `:ok` on success.
     - `{:error, reason}` on failure.
   """
-  def save(preferences) when map?(preferences) do
+  def save(preferences) when is_map(preferences) do
     path = preferences_path()
 
     try do

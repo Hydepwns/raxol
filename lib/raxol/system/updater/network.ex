@@ -158,10 +158,10 @@ defmodule Raxol.System.Updater.Network do
   # --- Private Functions ---
 
   defp check_file(path, filename) do
-    cond do
-      Path.basename(path) == filename -> path
-      File.dir?(path) -> find_file_recursive(path, filename)
-      true -> nil
+    case {Path.basename(path) == filename, File.dir?(path)} do
+      {true, _} -> path
+      {false, true} -> find_file_recursive(path, filename)
+      {false, false} -> nil
     end
   end
 

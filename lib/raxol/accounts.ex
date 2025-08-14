@@ -587,11 +587,9 @@ defmodule Raxol.Accounts do
 
   defp get_default_role_id do
     # Get the default "user" role ID
-    role = Repo.get_by(Role, name: @default_role_name)
-
-    cond do
-      is_nil(role) -> nil
-      true -> Map.get(role, :id)
+    case Repo.get_by(Role, name: @default_role_name) do
+      nil -> nil
+      role -> Map.get(role, :id)
     end
   end
 

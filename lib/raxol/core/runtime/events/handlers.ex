@@ -120,11 +120,11 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
   end
 
   defp put_handler(id, handler) do
-    Process.put({:handler, id}, handler)
+    Raxol.Core.Events.Manager.Server.put_handler(id, handler)
   end
 
   defp get_handler(id) do
-    Process.get({:handler, id})
+    Raxol.Core.Events.Manager.Server.get_handler(id)
   end
 
   defp remove_handler(id) do
@@ -132,7 +132,7 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
   end
 
   defp get_all_handlers do
-    Process.get()
+    Raxol.Core.Events.Manager.Server.get_all_handlers()
     |> Enum.filter(fn
       {{:handler, _id}, _value} -> true
       _ -> false

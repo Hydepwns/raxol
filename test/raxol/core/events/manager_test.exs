@@ -5,7 +5,7 @@ defmodule Raxol.Core.Events.ManagerTest do
   """
   use ExUnit.Case, async: false
 
-  alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.Events.Manager, as: Manager, as: EventManager
 
   setup do
     # Initialize event manager for tests
