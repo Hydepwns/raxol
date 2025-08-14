@@ -18,7 +18,6 @@ defmodule Raxol.UI.Components.TextInput do
   ```
   """
 
-  import Raxol.Guards
   alias Raxol.Style
 
   @type t :: map()
@@ -66,7 +65,7 @@ defmodule Raxol.UI.Components.TextInput do
     invalid_message = Keyword.get(opts, :invalid_message, "Invalid input")
 
     # Validate if needed
-    valid = if validation, do: validation.(value), else: true
+    valid = validate_value(validation, value)
 
     # Create the input with merged styles
     %{
@@ -118,189 +117,77 @@ defmodule Raxol.UI.Components.TextInput do
   updated_input = TextInput.handle_key_event(input, {:none, ?a})
   ```
   """
+  def handle_key_event(%{disabled: true} = input, {_meta, key})
+      when key in 32..126//1 do
+    input
+  end
+
   def handle_key_event(input, {_meta, key} = _key_event)
       when key in 32..126//1 do
-    # Only process if not disabled
-    if input.disabled do
-      input
-    else
-      # Get the character being typed
-      char = <<key::utf8>>
-
-      # Check max length
-      if input.max_length && String.length(input.value) >= input.max_length do
-        input
-      else
-        # Insert the character at cursor position
-        {before_cursor, after_cursor} =
-          String.split_at(input.value, input.cursor_pos)
-
-        new_value = before_cursor <> char <> after_cursor
-        new_cursor_pos = input.cursor_pos + 1
-
-        # Update with new value and cursor position
-        updated_input = %{
-          input
-          | value: new_value,
-            cursor_pos: new_cursor_pos,
-            selection: nil
-        }
-
-        # Validate if needed
-        updated_input = validate_input(updated_input)
-
-        # Trigger on_change callback if present
-        if input.on_change do
-          # Return updated input but don't actually call the callback
-          # (that's the responsibility of the application's update function)
-          updated_input
-        else
-          updated_input
-        end
-      end
-    end
+    process_character_input(input, key)
   end
+
+  def handle_key_event(%{disabled: true} = input, {:none, :backspace}),
+    do: input
+
+  def handle_key_event(%{value: ""} = input, {:none, :backspace}), do: input
+  def handle_key_event(%{cursor_pos: 0} = input, {:none, :backspace}), do: input
 
   def handle_key_event(input, {:none, :backspace}) do
-    # Only process if not disabled and there's something to delete
-    if input.disabled || input.value == "" || input.cursor_pos == 0 do
-      input
-    else
-      # Delete the character before cursor
-      {before_cursor, after_cursor} =
-        String.split_at(input.value, input.cursor_pos)
-
-      before_cursor =
-        if String.length(before_cursor) > 0 do
-          {_, bc} = String.split_at(before_cursor, -1)
-          bc
-        else
-          before_cursor
-        end
-
-      new_value = before_cursor <> after_cursor
-      new_cursor_pos = input.cursor_pos - 1
-
-      # Update with new value and cursor position
-      updated_input = %{
-        input
-        | value: new_value,
-          cursor_pos: new_cursor_pos,
-          selection: nil
-      }
-
-      # Validate if needed
-      updated_input = validate_input(updated_input)
-
-      # Trigger on_change callback if present
-      if input.on_change do
-        # Return updated input but don't actually call the callback
-        # (that's the responsibility of the application's update function)
-        updated_input
-      else
-        updated_input
-      end
-    end
+    process_backspace(input)
   end
+
+  def handle_key_event(%{disabled: true} = input, {:none, :delete}), do: input
+  def handle_key_event(%{value: ""} = input, {:none, :delete}), do: input
 
   def handle_key_event(input, {:none, :delete}) do
-    # Only process if not disabled and there's something to delete
-    if input.disabled || input.value == "" ||
-         input.cursor_pos >= String.length(input.value) do
-      input
-    else
-      # Delete the character after cursor
-      {before_cursor, after_cursor} =
-        String.split_at(input.value, input.cursor_pos)
-
-      {_, after_cursor} = String.split_at(after_cursor, 1)
-      new_value = before_cursor <> after_cursor
-
-      # Update with new value (cursor position stays the same)
-      updated_input = %{input | value: new_value, selection: nil}
-
-      # Validate if needed
-      updated_input = validate_input(updated_input)
-
-      # Trigger on_change callback if present
-      if input.on_change do
-        # Return updated input but don't actually call the callback
-        # (that's the responsibility of the application's update function)
-        updated_input
-      else
-        updated_input
-      end
-    end
+    handle_delete_key(input)
   end
+
+  def handle_key_event(%{disabled: true} = input, {:none, :arrow_left}),
+    do: input
+
+  def handle_key_event(%{cursor_pos: 0} = input, {:none, :arrow_left}),
+    do: input
 
   def handle_key_event(input, {:none, :arrow_left}) do
-    # Move cursor left if possible
-    if input.disabled || input.cursor_pos == 0 do
-      input
-    else
-      %{input | cursor_pos: input.cursor_pos - 1, selection: nil}
-    end
+    %{input | cursor_pos: input.cursor_pos - 1, selection: nil}
   end
+
+  def handle_key_event(%{disabled: true} = input, {:none, :arrow_right}),
+    do: input
 
   def handle_key_event(input, {:none, :arrow_right}) do
-    # Move cursor right if possible
-    if input.disabled || input.cursor_pos >= String.length(input.value) do
-      input
-    else
-      %{input | cursor_pos: input.cursor_pos + 1, selection: nil}
-    end
+    handle_arrow_right(input)
   end
+
+  def handle_key_event(%{disabled: true} = input, {:none, :home}), do: input
 
   def handle_key_event(input, {:none, :home}) do
-    # Move cursor to beginning
-    if input.disabled do
-      input
-    else
-      %{input | cursor_pos: 0, selection: nil}
-    end
+    %{input | cursor_pos: 0, selection: nil}
   end
+
+  def handle_key_event(%{disabled: true} = input, {:none, :end}), do: input
 
   def handle_key_event(input, {:none, :end}) do
-    # Move cursor to end
-    if input.disabled do
-      input
-    else
-      %{input | cursor_pos: String.length(input.value), selection: nil}
-    end
+    %{input | cursor_pos: String.length(input.value), selection: nil}
   end
+
+  def handle_key_event(%{disabled: true} = input, {:shift, :arrow_left}),
+    do: input
+
+  def handle_key_event(%{cursor_pos: 0} = input, {:shift, :arrow_left}),
+    do: input
 
   def handle_key_event(input, {:shift, :arrow_left}) do
-    # Extend selection left
-    if input.disabled || input.cursor_pos == 0 do
-      input
-    else
-      new_cursor_pos = input.cursor_pos - 1
-
-      new_selection =
-        case input.selection do
-          nil -> {new_cursor_pos, input.cursor_pos}
-          {anchor, _} -> {anchor, new_cursor_pos}
-        end
-
-      %{input | cursor_pos: new_cursor_pos, selection: new_selection}
-    end
+    extend_selection_left(input)
   end
 
+  def handle_key_event(%{disabled: true} = input, {:shift, :arrow_right}),
+    do: input
+
   def handle_key_event(input, {:shift, :arrow_right}) do
-    # Extend selection right
-    if input.disabled || input.cursor_pos >= String.length(input.value) do
-      input
-    else
-      new_cursor_pos = input.cursor_pos + 1
-
-      new_selection =
-        case input.selection do
-          nil -> {input.cursor_pos, new_cursor_pos}
-          {anchor, _} -> {anchor, new_cursor_pos}
-        end
-
-      %{input | cursor_pos: new_cursor_pos, selection: new_selection}
-    end
+    extend_selection_right(input)
   end
 
   def handle_key_event(input, _key_event) do
@@ -309,6 +196,129 @@ defmodule Raxol.UI.Components.TextInput do
   end
 
   # Private functions
+
+  defp validate_value(nil, _value), do: true
+  defp validate_value(validation, value), do: validation.(value)
+
+  defp process_character_input(input, key) do
+    char = <<key::utf8>>
+
+    input
+    |> check_max_length(char)
+    |> insert_character(char)
+    |> validate_input()
+  end
+
+  defp check_max_length(%{max_length: nil} = input, _char), do: input
+
+  defp check_max_length(%{max_length: max_len, value: value} = input, _char)
+       when byte_size(value) >= max_len,
+       do: :max_length_reached
+
+  defp check_max_length(input, _char), do: input
+
+  defp insert_character(:max_length_reached, _char), do: :max_length_reached
+
+  defp insert_character(input, char) do
+    {before_cursor, after_cursor} =
+      String.split_at(input.value, input.cursor_pos)
+
+    new_value = before_cursor <> char <> after_cursor
+    new_cursor_pos = input.cursor_pos + 1
+
+    %{
+      input
+      | value: new_value,
+        cursor_pos: new_cursor_pos,
+        selection: nil
+    }
+  end
+
+  defp process_backspace(input) do
+    {before_cursor, after_cursor} =
+      String.split_at(input.value, input.cursor_pos)
+
+    before_cursor = trim_last_character(before_cursor)
+    new_value = before_cursor <> after_cursor
+    new_cursor_pos = input.cursor_pos - 1
+
+    %{
+      input
+      | value: new_value,
+        cursor_pos: new_cursor_pos,
+        selection: nil
+    }
+    |> validate_input()
+  end
+
+  defp trim_last_character(""), do: ""
+
+  defp trim_last_character(str) do
+    {_, trimmed} = String.split_at(str, -1)
+    trimmed
+  end
+
+  defp handle_delete_key(input) when input.cursor_pos >= byte_size(input.value),
+    do: input
+
+  defp handle_delete_key(input) do
+    {before_cursor, after_cursor} =
+      String.split_at(input.value, input.cursor_pos)
+
+    {_, after_cursor} = String.split_at(after_cursor, 1)
+    new_value = before_cursor <> after_cursor
+
+    %{input | value: new_value, selection: nil}
+    |> validate_input()
+  end
+
+  defp handle_arrow_right(input)
+       when input.cursor_pos >= byte_size(input.value),
+       do: input
+
+  defp handle_arrow_right(input) do
+    %{input | cursor_pos: input.cursor_pos + 1, selection: nil}
+  end
+
+  defp extend_selection_left(input) do
+    new_cursor_pos = input.cursor_pos - 1
+
+    new_selection =
+      compute_selection(
+        input.selection,
+        new_cursor_pos,
+        input.cursor_pos,
+        :left
+      )
+
+    %{input | cursor_pos: new_cursor_pos, selection: new_selection}
+  end
+
+  defp extend_selection_right(input)
+       when input.cursor_pos >= byte_size(input.value),
+       do: input
+
+  defp extend_selection_right(input) do
+    new_cursor_pos = input.cursor_pos + 1
+
+    new_selection =
+      compute_selection(
+        input.selection,
+        input.cursor_pos,
+        new_cursor_pos,
+        :right
+      )
+
+    %{input | cursor_pos: new_cursor_pos, selection: new_selection}
+  end
+
+  defp compute_selection(nil, start_pos, end_pos, :left),
+    do: {start_pos, end_pos}
+
+  defp compute_selection(nil, start_pos, end_pos, :right),
+    do: {start_pos, end_pos}
+
+  defp compute_selection({anchor, _}, new_pos, _, _), do: {anchor, new_pos}
 
   # defp get_display_text(%{value: "", placeholder: placeholder}) do
   #   placeholder
@@ -322,7 +332,7 @@ defmodule Raxol.UI.Components.TextInput do
   #   value
   # end
 
-  defp get_input_style(style_atom, disabled, valid) when atom?(style_atom) do
+  defp get_input_style(style_atom, disabled, valid) when is_atom(style_atom) do
     base_style =
       Style.new(
         padding: [0, 1],
@@ -331,22 +341,23 @@ defmodule Raxol.UI.Components.TextInput do
       )
 
     # Define state-based styles
-    state_style =
-      cond do
-        # Example disabled style
-        disabled -> Style.new(%{color: :gray, border_color: :dark_gray})
-        # Invalid style
-        !valid -> Style.new(%{border_color: :red})
-        # Default valid style
-        true -> Style.new(%{border_color: :gray})
-      end
+    state_style = determine_state_style(disabled, valid)
 
     # Merge base and state styles
     Style.merge(base_style, state_style)
   end
 
+  defp determine_state_style(true, _valid),
+    do: Style.new(%{color: :gray, border_color: :dark_gray})
+
+  defp determine_state_style(false, false),
+    do: Style.new(%{border_color: :red})
+
+  defp determine_state_style(false, true),
+    do: Style.new(%{border_color: :gray})
+
   defp get_input_style(custom_style, disabled, valid)
-       when map?(custom_style) do
+       when is_map(custom_style) do
     # Define a base style if needed, or assume custom_style provides all defaults
     base_style =
       Style.new(
@@ -359,19 +370,20 @@ defmodule Raxol.UI.Components.TextInput do
     merged_base = Style.merge(base_style, custom_style)
 
     # Define state-based overrides
-    state_override_style =
-      cond do
-        # Example disabled style
-        disabled -> Style.new(%{color: :gray, border_color: :dark_gray})
-        # Invalid style override
-        !valid -> Style.new(%{border_color: :red})
-        # No override needed for valid state if custom_style handles it
-        true -> Style.new(%{})
-      end
+    state_override_style = determine_override_style(disabled, valid)
 
     # Merge the combined base/custom style with state overrides
     Style.merge(merged_base, state_override_style)
   end
+
+  defp determine_override_style(true, _valid),
+    do: Style.new(%{color: :gray, border_color: :dark_gray})
+
+  defp determine_override_style(false, false),
+    do: Style.new(%{border_color: :red})
+
+  defp determine_override_style(false, true),
+    do: Style.new(%{})
 
   defp validate_input(%{validation: nil} = input) do
     %{input | valid: true}
@@ -380,6 +392,68 @@ defmodule Raxol.UI.Components.TextInput do
   defp validate_input(%{validation: validation, value: value} = input) do
     valid = validation.(value)
     %{input | valid: valid}
+  end
+
+  defp validate_input(:max_length_reached), do: :max_length_reached
+
+  defp process_input_with_validation(input, text, nil) do
+    combined_value = input.value <> text
+    new_value = apply_max_length(combined_value, input.max_length)
+
+    %{
+      input
+      | value: new_value,
+        cursor_pos: String.length(new_value)
+    }
+    |> validate_input()
+  end
+
+  defp process_input_with_validation(input, text, validator) do
+    combined_text = input.value <> text
+
+    case validator.(combined_text) do
+      true ->
+        new_value = apply_max_length(combined_text, input.max_length)
+
+        %{
+          input
+          | value: new_value,
+            cursor_pos: String.length(new_value)
+        }
+        |> validate_input()
+
+      false ->
+        handle_invalid_input(input, text, validator)
+    end
+  end
+
+  defp handle_invalid_input(input, text, validator) do
+    filtered_text = filter_text_by_validator(input.value, text, validator)
+    new_value = apply_max_length(filtered_text, input.max_length)
+
+    %{
+      input
+      | value: new_value,
+        cursor_pos: String.length(new_value)
+    }
+  end
+
+  defp filter_text_by_validator(current_value, text, validator) do
+    case validator.("123") do
+      true ->
+        # Numeric validator - filter only digits
+        current_value <> String.replace(text, ~r/[^\d]/, "")
+
+      _ ->
+        # Other validators - reject entirely
+        current_value
+    end
+  end
+
+  defp apply_max_length(text, nil), do: text
+
+  defp apply_max_length(text, max_length) do
+    String.slice(text, 0, max_length)
   end
 
   defp generate_focus_key do
@@ -399,58 +473,8 @@ defmodule Raxol.UI.Components.TextInput do
   def handle_input(%{disabled: true} = input, _text), do: input
 
   def handle_input(input, text) do
-    # Check if there's a validator
     validator = Map.get(input, :validator) || Map.get(input, :validation)
-
-    # If validator exists and text doesn't pass validation, filter or reject
-    if validator && !validator.(input.value <> text) do
-      # Check if this is a numeric validator by testing if it accepts digits
-      is_numeric_validator = validator.("123")
-
-      # Filter the text to only include valid characters
-      filtered_text =
-        if is_numeric_validator do
-          # For numeric validator, filter only digits from the typed text
-          input.value <> String.replace(text, ~r/[^\d]/, "")
-        else
-          # For other validators, reject the typed text entirely if invalid
-          input.value
-        end
-
-      # Apply max_length constraint if present
-      new_value =
-        if input.max_length do
-          String.slice(filtered_text, 0, input.max_length)
-        else
-          filtered_text
-        end
-
-      %{
-        input
-        | value: new_value,
-          cursor_pos: String.length(new_value)
-      }
-    else
-      # Append typed text to existing value
-      combined_value = input.value <> text
-
-      # Apply max_length constraint if present
-      new_value =
-        if input.max_length do
-          String.slice(combined_value, 0, input.max_length)
-        else
-          combined_value
-        end
-
-      updated_input = %{
-        input
-        | value: new_value,
-          cursor_pos: String.length(new_value)
-      }
-
-      # Validate if needed
-      validate_input(updated_input)
-    end
+    process_input_with_validation(input, text, validator)
   end
 
   @doc """

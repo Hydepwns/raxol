@@ -9,13 +9,13 @@ defmodule Raxol.Playground.PropertyEditor do
   @doc """
   Renders an interactive property editor for a component.
   """
-  def render_editor(component, current_props \\ %{}) do
-    if is_nil(component) do
-      "No component selected. Use 'select <id>' to choose a component."
-    else
-      render_component_editor(component, current_props)
-    end
-  end
+  def render_editor(component, current_props \\ %{})
+
+  def render_editor(nil, _current_props),
+    do: "No component selected. Use 'select <id>' to choose a component."
+
+  def render_editor(component, current_props),
+    do: render_component_editor(component, current_props)
 
   @doc """
   Validates and parses a property value based on its type.
@@ -56,12 +56,7 @@ defmodule Raxol.Playground.PropertyEditor do
         end
 
       :atom ->
-        if String.starts_with?(value_string, ":") do
-          atom_name = String.slice(value_string, 1..-1//1)
-          {:ok, String.to_atom(atom_name)}
-        else
-          {:ok, String.to_atom(value_string)}
-        end
+        parse_atom_value(value_string)
 
       :list ->
         parse_list_value(value_string)
@@ -111,12 +106,7 @@ defmodule Raxol.Playground.PropertyEditor do
           "Any value"
       end
 
-    default_text =
-      if default_value do
-        " (default: #{inspect(default_value)})"
-      else
-        ""
-      end
+    default_text = format_default_value(default_value)
 
     "#{help_text}#{default_text}"
   end
@@ -142,59 +132,87 @@ defmodule Raxol.Playground.PropertyEditor do
   @doc """
   Renders property suggestions for tab completion.
   """
-  def get_property_suggestions(component, partial_name \\ "") do
-    if is_nil(component) do
-      []
-    else
-      all_prop_names =
-        (component.default_props || %{})
-        |> Map.keys()
-        |> Enum.map(&to_string/1)
+  def get_property_suggestions(component, partial_name \\ "")
 
-      if partial_name == "" do
-        all_prop_names
-      else
-        Enum.filter(all_prop_names, &String.starts_with?(&1, partial_name))
-      end
-      |> Enum.sort()
-    end
+  def get_property_suggestions(nil, _partial_name), do: []
+
+  def get_property_suggestions(component, partial_name) do
+    all_prop_names =
+      (component.default_props || %{})
+      |> Map.keys()
+      |> Enum.map(&to_string/1)
+
+    filter_property_names(all_prop_names, partial_name)
+    |> Enum.sort()
   end
 
   @doc """
   Renders the property editor UI in terminal format.
   """
+  def render_terminal_editor(nil, _current_props) do
+    """
+    #{IO.ANSI.yellow()}No component selected#{IO.ANSI.reset()}
+
+    Use 'select <component_id>' to choose a component first.
+    """
+  end
+
   def render_terminal_editor(component, current_props) do
-    if is_nil(component) do
-      """
-      #{IO.ANSI.yellow()}No component selected#{IO.ANSI.reset()}
+    properties = get_component_properties(component, current_props)
 
-      Use 'select <component_id>' to choose a component first.
-      """
-    else
-      properties = get_component_properties(component, current_props)
+    header = """
 
-      header = """
+    #{IO.ANSI.bright()}Property Editor - #{component.name}#{IO.ANSI.reset()}
+    #{String.duplicate("─", 50)}
+    """
 
-      #{IO.ANSI.bright()}Property Editor - #{component.name}#{IO.ANSI.reset()}
-      #{String.duplicate("─", 50)}
-      """
+    render_properties_content(header, properties)
+  end
 
-      if Enum.empty?(properties) do
-        header <> "\n(No properties available)"
-      else
-        property_list = Enum.map_join(properties, "\n", &format_property_line/1)
+  # Private Functions
 
-        footer = """
+  defp parse_atom_value(":" <> atom_name) do
+    {:ok, String.to_atom(atom_name)}
+  end
 
-        #{IO.ANSI.light_black()}Commands:#{IO.ANSI.reset()}
-          set <prop> <value>  - Update property
-          reset <prop>        - Reset to default
-          props               - Show this editor
-          preview             - Update preview
-        """
+  defp parse_atom_value(value_string) do
+    {:ok, String.to_atom(value_string)}
+  end
 
-        header <> "\n" <> property_list <> footer
-      end
+  defp format_default_value(nil), do: ""
+
+  defp format_default_value(default_value),
+    do: " (default: #{inspect(default_value)})"
+
+  defp filter_property_names(names, ""), do: names
+
+  defp filter_property_names(names, partial) do
+    Enum.filter(names, &String.starts_with?(&1, partial))
+  end
+
+  defp render_properties_content(header, []) do
+    header <> "\n(No properties available)"
+  end
+
+  defp render_properties_content(header, properties) do
+    property_list = Enum.map_join(properties, "\n", &format_property_line/1)
+
+    footer = """
+
+    #{IO.ANSI.light_black()}Commands:#{IO.ANSI.reset()}
+      set <prop> <value>  - Update property
+      reset <prop>        - Reset to default
+      props               - Show this editor
+      preview             - Update preview
+    """
+
+    header <> "\n" <> property_list <> footer
+  end
+
+  defp apply_parser_if_match(predicate, parser, trimmed) do
+    case predicate.(trimmed) do
+      true -> {:ok, parser.(trimmed)}
+      false -> nil
     end
   end
 
@@ -213,7 +231,7 @@ defmodule Raxol.Playground.PropertyEditor do
     """
   end
 
-  defp render_property_list(properties) when length(properties) == 0 do
+  defp render_property_list([]) do
     "  (No properties available)"
   end
 
@@ -245,35 +263,35 @@ defmodule Raxol.Playground.PropertyEditor do
     "  #{padded_name} #{value_display} #{IO.ANSI.light_black()}(#{type_display})#{IO.ANSI.reset()}"
   end
 
+  defp format_value_display(value)
+       when is_binary(value) and byte_size(value) > 20 do
+    truncated = String.slice(value, 0, 17) <> "..."
+    "\"#{truncated}\""
+  end
+
   defp format_value_display(value) when is_binary(value) do
-    if String.length(value) > 20 do
-      truncated = String.slice(value, 0, 17) <> "..."
-      "\"#{truncated}\""
-    else
-      "\"#{value}\""
-    end
+    "\"#{value}\""
   end
 
   defp format_value_display(value) when is_atom(value) do
     ":#{value}"
   end
 
+  defp format_value_display(value) when is_list(value) and length(value) <= 3 do
+    inspect(value)
+  end
+
   defp format_value_display(value) when is_list(value) do
-    if length(value) <= 3 do
-      inspect(value)
-    else
-      "[#{length(value)} items]"
-    end
+    "[#{length(value)} items]"
+  end
+
+  defp format_value_display(value)
+       when is_map(value) and map_size(value) <= 2 do
+    inspect(value)
   end
 
   defp format_value_display(value) when is_map(value) do
-    count = map_size(value)
-
-    if count <= 2 do
-      inspect(value)
-    else
-      "%{#{count} keys}"
-    end
+    "%{#{map_size(value)} keys}"
   end
 
   defp format_value_display(value) do
@@ -283,29 +301,41 @@ defmodule Raxol.Playground.PropertyEditor do
   defp parse_list_value(value_string) do
     # Simple list parsing for common cases
     trimmed = String.trim(value_string)
+    parse_list_by_format(trimmed)
+  end
 
-    cond do
-      String.starts_with?(trimmed, "[") and String.ends_with?(trimmed, "]") ->
-        # Try to parse as a list literal
-        try do
-          {result, _} = Code.eval_string(trimmed)
+  defp parse_list_by_format("[" <> _ = trimmed) when byte_size(trimmed) >= 2 do
+    case String.ends_with?(trimmed, "]") do
+      true -> parse_bracketed_list(trimmed)
+      false -> parse_unbracketed_list(trimmed)
+    end
+  end
 
-          if is_list(result) do
-            {:ok, result}
-          else
-            {:error, "Not a valid list"}
-          end
-        rescue
-          _ -> parse_simple_list(trimmed)
-        end
+  defp parse_list_by_format(trimmed) when byte_size(trimmed) >= 2 do
+    parse_unbracketed_list(trimmed)
+  end
 
-      String.contains?(trimmed, ",") ->
-        # Parse comma-separated values
+  defp parse_list_by_format(trimmed), do: {:ok, [trimmed]}
+
+  defp parse_bracketed_list(trimmed) do
+    try do
+      {result, _} = Code.eval_string(trimmed)
+      validate_list_result(result)
+    rescue
+      _ -> parse_simple_list(trimmed)
+    end
+  end
+
+  defp validate_list_result(result) when is_list(result), do: {:ok, result}
+  defp validate_list_result(_), do: {:error, "Not a valid list"}
+
+  defp parse_unbracketed_list(trimmed) do
+    case String.contains?(trimmed, ",") do
+      true ->
         items = String.split(trimmed, ",") |> Enum.map(&String.trim/1)
         {:ok, items}
 
-      true ->
-        # Single item list
+      false ->
         {:ok, [trimmed]}
     end
   end
@@ -313,66 +343,69 @@ defmodule Raxol.Playground.PropertyEditor do
   defp parse_simple_list(list_string) do
     # Remove brackets and split by comma
     inner = String.slice(list_string, 1..-2//1) |> String.trim()
+    parse_inner_list(inner)
+  end
 
-    if inner == "" do
-      {:ok, []}
-    else
-      items = String.split(inner, ",") |> Enum.map(&String.trim/1)
-      {:ok, items}
-    end
+  defp parse_inner_list(""), do: {:ok, []}
+
+  defp parse_inner_list(inner) do
+    items = String.split(inner, ",") |> Enum.map(&String.trim/1)
+    {:ok, items}
   end
 
   defp parse_map_value(value_string) do
     trimmed = String.trim(value_string)
+    parse_map_string(trimmed)
+  end
 
-    if String.starts_with?(trimmed, "%{") and String.ends_with?(trimmed, "}") do
-      try do
-        {result, _} = Code.eval_string(trimmed)
-
-        if is_map(result) do
-          {:ok, result}
-        else
-          {:error, "Not a valid map"}
-        end
-      rescue
-        _ -> {:error, "Invalid map syntax"}
-      end
-    else
-      {:error, "Map must start with %{ and end with }"}
+  defp parse_map_string("%{" <> _ = trimmed) do
+    case String.ends_with?(trimmed, "}") do
+      true -> eval_map_string(trimmed)
+      false -> {:error, "Map must start with %{ and end with }"}
     end
   end
+
+  defp parse_map_string(_),
+    do: {:error, "Map must start with %{ and end with }"}
+
+  defp eval_map_string(trimmed) do
+    try do
+      {result, _} = Code.eval_string(trimmed)
+      validate_map_result(result)
+    rescue
+      _ -> {:error, "Invalid map syntax"}
+    end
+  end
+
+  defp validate_map_result(result) when is_map(result), do: {:ok, result}
+  defp validate_map_result(_), do: {:error, "Not a valid map"}
 
   defp intelligent_parse(value_string) do
     trimmed = String.trim(value_string)
-
-    cond do
-      trimmed == "true" ->
-        {:ok, true}
-
-      trimmed == "false" ->
-        {:ok, false}
-
-      trimmed == "nil" ->
-        {:ok, nil}
-
-      String.starts_with?(trimmed, ":") ->
-        {:ok, String.to_atom(String.slice(trimmed, 1..-1//1))}
-
-      String.match?(trimmed, ~r/^\d+$/) ->
-        {:ok, String.to_integer(trimmed)}
-
-      String.match?(trimmed, ~r/^\d+\.\d+$/) ->
-        {:ok, String.to_float(trimmed)}
-
-      String.starts_with?(trimmed, "[") ->
-        parse_list_value(trimmed)
-
-      String.starts_with?(trimmed, "%{") ->
-        parse_map_value(trimmed)
-
-      # Default to string
-      true ->
-        {:ok, trimmed}
-    end
+    parse_by_type(trimmed)
   end
+
+  defp parse_by_type("true"), do: {:ok, true}
+  defp parse_by_type("false"), do: {:ok, false}
+  defp parse_by_type("nil"), do: {:ok, nil}
+
+  defp parse_by_type(":" <> atom_name), do: {:ok, String.to_atom(atom_name)}
+
+  defp parse_by_type(trimmed) do
+    type_parsers = [
+      {&integer_string?/1, &String.to_integer/1},
+      {&float_string?/1, &String.to_float/1},
+      {&list_string?/1, &parse_list_value/1},
+      {&map_string?/1, &parse_map_value/1}
+    ]
+
+    Enum.find_value(type_parsers, {:ok, trimmed}, fn {predicate, parser} ->
+      apply_parser_if_match(predicate, parser, trimmed)
+    end)
+  end
+
+  defp integer_string?(str), do: String.match?(str, ~r/^\d+$/)
+  defp float_string?(str), do: String.match?(str, ~r/^\d+\.\d+$/)
+  defp list_string?(str), do: String.starts_with?(str, "[")
+  defp map_string?(str), do: String.starts_with?(str, "%{")
 end
