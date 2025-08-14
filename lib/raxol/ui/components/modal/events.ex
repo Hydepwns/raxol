@@ -21,59 +21,7 @@ defmodule Raxol.UI.Components.Modal.Events do
       "[DEBUG] handle_visible_event: state.type=#{inspect(state.type)}"
     )
 
-    cond do
-      type == :key and key == "Escape" ->
-        Raxol.Core.Runtime.Log.debug(
-          "[DEBUG] handle_visible_event: Escape pattern matched"
-        )
-
-        # Delegate to update function
-        {:button_click, find_cancel_message(state.buttons)}
-
-      type == :key and key == "Enter" and state.type in [:prompt, :form] ->
-        Raxol.Core.Runtime.Log.debug(
-          "[DEBUG] handle_visible_event: Enter pattern matched"
-        )
-
-        case find_submit_message(state.buttons) do
-          {_label, submit_msg} ->
-            Raxol.Core.Runtime.Log.debug(
-              "[DEBUG] handle_visible_event: found submit message: #{inspect(submit_msg)}"
-            )
-
-            {:button_click, submit_msg}
-
-          nil ->
-            Raxol.Core.Runtime.Log.debug(
-              "[DEBUG] handle_visible_event: no submit message found"
-            )
-
-            nil
-        end
-
-      type == :key and key == "Tab" and shift == false and
-          state.type in [:prompt, :form] ->
-        Raxol.Core.Runtime.Log.debug(
-          "[DEBUG] handle_visible_event: Tab (next) pattern matched"
-        )
-
-        :focus_next_field
-
-      type == :key and key == "Tab" and shift == true and
-          state.type in [:prompt, :form] ->
-        Raxol.Core.Runtime.Log.debug(
-          "[DEBUG] handle_visible_event: Tab (prev) pattern matched"
-        )
-
-        :focus_prev_field
-
-      true ->
-        Raxol.Core.Runtime.Log.debug(
-          "[DEBUG] handle_visible_event: no pattern matched, falling through to catch-all"
-        )
-
-        handle_visible_event_dispatch(event, state)
-    end
+    handle_event_by_type(type, key, shift, state, event)
   end
 
   @doc "Handles visible event dispatch for different event types."
@@ -173,26 +121,7 @@ defmodule Raxol.UI.Components.Modal.Events do
 
     result =
       Enum.find_value(buttons, nil, fn {_label, msg} ->
-        cond do
-          msg == :cancel ->
-            msg
-
-          msg == :form_canceled ->
-            msg
-
-          match?({:cancel, _}, msg) ->
-            msg
-
-          is_atom(msg) and String.ends_with?(Atom.to_string(msg), "cancel") ->
-            msg
-
-          # Handle the case where cancel is just an atom (not a tuple)
-          is_atom(msg) ->
-            msg
-
-          true ->
-            nil
-        end
+        match_cancel_message(msg)
       end)
 
     Raxol.Core.Runtime.Log.debug(
@@ -201,6 +130,78 @@ defmodule Raxol.UI.Components.Modal.Events do
 
     result
   end
+
+  defp handle_event_by_type(:key, "Escape", _shift, state, _event) do
+    Raxol.Core.Runtime.Log.debug(
+      "[DEBUG] handle_visible_event: Escape pattern matched"
+    )
+
+    # Delegate to update function
+    {:button_click, find_cancel_message(state.buttons)}
+  end
+
+  defp handle_event_by_type(:key, "Enter", _shift, state, _event)
+       when state.type in [:prompt, :form] do
+    Raxol.Core.Runtime.Log.debug(
+      "[DEBUG] handle_visible_event: Enter pattern matched"
+    )
+
+    case find_submit_message(state.buttons) do
+      {_label, submit_msg} ->
+        Raxol.Core.Runtime.Log.debug(
+          "[DEBUG] handle_visible_event: found submit message: #{inspect(submit_msg)}"
+        )
+
+        {:button_click, submit_msg}
+
+      nil ->
+        Raxol.Core.Runtime.Log.debug(
+          "[DEBUG] handle_visible_event: no submit message found"
+        )
+
+        nil
+    end
+  end
+
+  defp handle_event_by_type(:key, "Tab", false, state, _event)
+       when state.type in [:prompt, :form] do
+    Raxol.Core.Runtime.Log.debug(
+      "[DEBUG] handle_visible_event: Tab (next) pattern matched"
+    )
+
+    :focus_next_field
+  end
+
+  defp handle_event_by_type(:key, "Tab", true, state, _event)
+       when state.type in [:prompt, :form] do
+    Raxol.Core.Runtime.Log.debug(
+      "[DEBUG] handle_visible_event: Tab (prev) pattern matched"
+    )
+
+    :focus_prev_field
+  end
+
+  defp handle_event_by_type(_type, _key, _shift, state, event) do
+    Raxol.Core.Runtime.Log.debug(
+      "[DEBUG] handle_visible_event: no pattern matched, falling through to catch-all"
+    )
+
+    handle_visible_event_dispatch(event, state)
+  end
+
+  defp match_cancel_message(:cancel), do: :cancel
+  defp match_cancel_message(:form_canceled), do: :form_canceled
+  defp match_cancel_message({:cancel, _} = msg), do: msg
+
+  defp match_cancel_message(msg) when is_atom(msg) do
+    if String.ends_with?(Atom.to_string(msg), "cancel") do
+      msg
+    else
+      msg
+    end
+  end
+
+  defp match_cancel_message(_), do: nil
 
   @doc "Finds submit message from button list."
   @spec find_submit_message(list()) :: {any(), any()} | nil

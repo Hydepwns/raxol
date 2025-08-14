@@ -4,8 +4,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
   """
 
   require Raxol.Core.Runtime.Log
-  import Raxol.Guards
-
+  
   # User-specific config dir
   @layout_file Path.expand("~/.raxol/dashboard_layout.bin")
 
@@ -16,7 +15,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
   `:id`, `:type`, `:title`, `:grid_spec`, `:component_opts`, `:data`.
   """
   @spec save_layout(list(map())) :: :ok | {:error, term()}
-  def save_layout(widgets) when list?(widgets) do
+  def save_layout(widgets) when is_list(widgets) do
     layout_file = @layout_file
 
     try do
@@ -63,42 +62,54 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
   def load_layout do
     layout_file = @layout_file
 
-    if File.exists?(layout_file) do
-      try do
-        case File.read(layout_file) do
-          {:ok, binary_data} ->
-            # Use safe binary_to_term
-            layout_data = :erlang.binary_to_term(binary_data, [:safe])
-
-            Raxol.Core.Runtime.Log.info(
-              "Dashboard layout loaded from #{layout_file}"
-            )
-
-            # Basic validation: is it a list?
-            if list?(layout_data), do: layout_data, else: nil
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.error(
-              "Failed to read dashboard layout file #{layout_file}: #{inspect(reason)}"
-            )
-
-            nil
-        end
-      rescue
-        e ->
-          Raxol.Core.Runtime.Log.error(
-            "Failed to deserialize dashboard layout from #{layout_file}: #{inspect(e)}"
-          )
-
-          nil
-      end
-    else
-      Raxol.Core.Runtime.Log.info(
-        "No saved dashboard layout found at #{layout_file}"
-      )
-
-      # Return nil explicitly if file doesn't exist
-      nil
+    case File.exists?(layout_file) do
+      true -> load_existing_layout(layout_file)
+      false -> handle_missing_layout(layout_file)
     end
+  end
+
+  defp load_existing_layout(layout_file) do
+    try do
+      case File.read(layout_file) do
+        {:ok, binary_data} -> process_layout_data(binary_data, layout_file)
+        {:error, reason} -> handle_read_error(layout_file, reason)
+      end
+    rescue
+      e -> handle_deserialization_error(layout_file, e)
+    end
+  end
+
+  defp process_layout_data(binary_data, layout_file) do
+    layout_data = :erlang.binary_to_term(binary_data, [:safe])
+
+    Raxol.Core.Runtime.Log.info(
+      "Dashboard layout loaded from #{layout_file}"
+    )
+
+    validate_layout_data(layout_data)
+  end
+
+  defp validate_layout_data(layout_data) when is_list(layout_data), do: layout_data
+  defp validate_layout_data(_layout_data), do: nil
+
+  defp handle_read_error(layout_file, reason) do
+    Raxol.Core.Runtime.Log.error(
+      "Failed to read dashboard layout file #{layout_file}: #{inspect(reason)}"
+    )
+    nil
+  end
+
+  defp handle_deserialization_error(layout_file, e) do
+    Raxol.Core.Runtime.Log.error(
+      "Failed to deserialize dashboard layout from #{layout_file}: #{inspect(e)}"
+    )
+    nil
+  end
+
+  defp handle_missing_layout(layout_file) do
+    Raxol.Core.Runtime.Log.info(
+      "No saved dashboard layout found at #{layout_file}"
+    )
+    nil
   end
 end

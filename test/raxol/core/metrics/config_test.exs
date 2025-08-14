@@ -4,8 +4,7 @@ defmodule Raxol.Core.Metrics.ConfigTest do
   default values, and configuration updates.
   """
   use ExUnit.Case, async: false
-  import Raxol.Guards
-  alias Raxol.Core.Metrics.Config
+    alias Raxol.Core.Metrics.Config
 
   setup do
     # Start the Config GenServer
@@ -24,10 +23,10 @@ defmodule Raxol.Core.Metrics.ConfigTest do
   describe "configuration initialization" do
     test "loads default configuration" do
       assert {:ok, config} = Config.get_all()
-      assert map?(config) and Map.has_key?(config, :aggregation_window)
+      assert is_map(config) and Map.has_key?(config, :aggregation_window)
       assert config.aggregation_window == :hour
       assert config.storage_backend == :memory
-      assert list?(config.retention_policies)
+      assert is_list(config.retention_policies)
     end
 
     test "loads custom configuration" do

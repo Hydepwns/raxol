@@ -100,8 +100,7 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
       )
 
     # Create label/percentage texts/elements conditionally
-    percentage_text =
-      if state.show_percentage, do: " #{round(percentage * 100)}%", else: nil
+    percentage_text = get_percentage_text(state.show_percentage, percentage)
 
     label_content = state.label
 
@@ -111,25 +110,7 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
         :above ->
           Raxol.View.Elements.column id: state.id do
             Raxol.View.Elements.row style: %{justify: :space_between} do
-              [
-                if(label_content,
-                  do:
-                    Raxol.View.Elements.label(
-                      content: label_content,
-                      style: label_style
-                    ),
-                  else: nil
-                ),
-                if(percentage_text,
-                  do:
-                    Raxol.View.Elements.label(
-                      content: percentage_text,
-                      style: percentage_style
-                    ),
-                  else: nil
-                )
-              ]
-              |> Enum.reject(&is_nil/1)
+              build_label_row(label_content, label_style, percentage_text, percentage_style)
             end
 
             Raxol.View.Elements.row do
@@ -144,25 +125,7 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
             end
 
             Raxol.View.Elements.row style: %{justify: :space_between} do
-              [
-                if(label_content,
-                  do:
-                    Raxol.View.Elements.label(
-                      content: label_content,
-                      style: label_style
-                    ),
-                  else: nil
-                ),
-                if(percentage_text,
-                  do:
-                    Raxol.View.Elements.label(
-                      content: percentage_text,
-                      style: percentage_style
-                    ),
-                  else: nil
-                )
-              ]
-              |> Enum.reject(&is_nil/1)
+              build_label_row(label_content, label_style, percentage_text, percentage_style)
             end
           end
 
@@ -172,22 +135,8 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
               Raxol.View.Elements.row do
                 [filled_portion, empty_portion]
               end,
-              if(label_content,
-                do:
-                  Raxol.View.Elements.label(
-                    content: label_content,
-                    style: label_style
-                  ),
-                else: nil
-              ),
-              if(percentage_text,
-                do:
-                  Raxol.View.Elements.label(
-                    content: percentage_text,
-                    style: percentage_style
-                  ),
-                else: nil
-              )
+              create_label_element(label_content, label_style),
+              create_label_element(percentage_text, percentage_style)
             ]
             |> Enum.reject(&is_nil/1)
           end
@@ -202,6 +151,25 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
 
   defp clamp(value, min_val, max_val) do
     value |> max(min_val) |> min(max_val)
+  end
+
+  defp get_percentage_text(true, percentage), do: " #{round(percentage * 100)}%"
+  defp get_percentage_text(false, _percentage), do: nil
+
+  defp create_label_element(nil, _style), do: nil
+  defp create_label_element(content, style) do
+    Raxol.View.Elements.label(
+      content: content,
+      style: style
+    )
+  end
+
+  defp build_label_row(label_content, label_style, percentage_text, percentage_style) do
+    [
+      create_label_element(label_content, label_style),
+      create_label_element(percentage_text, percentage_style)
+    ]
+    |> Enum.reject(&is_nil/1)
   end
 
   @doc """

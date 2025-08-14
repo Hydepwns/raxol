@@ -7,8 +7,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   implements robust lifecycle hooks, and supports accessibility/extra props.
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
   alias Raxol.Core.Events.Event
@@ -92,7 +91,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   """
   @impl Raxol.UI.Components.Base.Component
   @spec update(map(), t()) :: {:ok, t(), list()}
-  def update(props, state) when map?(props) do
+  def update(props, state) when is_map(props) do
     # Merge new props into state, with style/theme merged as in other components
     merged_style = Map.merge(state.style || %{}, Map.get(props, :style, %{}))
     merged_theme = Map.merge(state.theme || %{}, Map.get(props, :theme, %{}))
@@ -134,17 +133,17 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     new_checked_state = !state.checked
     new_state = %{state | checked: new_checked_state}
 
-    commands =
-      if function?(state.on_toggle, 1),
-        do:
-          (
-            state.on_toggle.(new_checked_state)
-            []
-          ),
-        else: []
+    commands = execute_toggle_callback(state.on_toggle, new_checked_state)
 
     {:noreply, new_state, commands}
   end
+
+  defp execute_toggle_callback(on_toggle, new_checked_state) when is_function(on_toggle, 1) do
+    on_toggle.(new_checked_state)
+    []
+  end
+
+  defp execute_toggle_callback(_on_toggle, _new_checked_state), do: []
 
   @doc """
   Renders the Checkbox component using the current state and context.
@@ -157,27 +156,14 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     theme_style = Theme.component_style(theme, :checkbox)
     base_style = Map.merge(theme_style, state.style || %{})
 
-    {fg, bg} =
-      cond do
-        state.disabled ->
-          {Map.get(base_style, :disabled_fg, Map.get(base_style, :fg, :gray)),
-           Map.get(base_style, :disabled_bg, Map.get(base_style, :bg, :default))}
-
-        state.focused ->
-          {Map.get(base_style, :focused_fg, Map.get(base_style, :fg, :default)),
-           Map.get(base_style, :focused_bg, Map.get(base_style, :bg, :default))}
-
-        true ->
-          {Map.get(base_style, :fg, :default),
-           Map.get(base_style, :bg, :default)}
-      end
+    {fg, bg} = get_checkbox_colors(state, base_style)
 
     # Support bold/underline/other attrs if present
     attrs =
       Map.take(base_style, [:bold, :underline, :italic])
       |> Map.merge(%{fg: fg, bg: bg})
 
-    check_char = if state.checked, do: "[x]", else: "[ ]"
+    check_char = get_check_character(state.checked)
     label_text = state.label
     # Accessibility: aria_label, required, tooltip as attributes
     extra_attrs =
@@ -186,7 +172,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
         required: state.required,
         tooltip: state.tooltip
       }
-      |> Enum.reject(fn {_k, v} -> nil?(v) or v == false end)
+      |> Enum.reject(fn {_k, v} -> is_nil(v) or v == false end)
       |> Enum.into(%{})
 
     Element.new(
@@ -197,5 +183,23 @@ defmodule Raxol.UI.Components.Input.Checkbox do
         Element.new(:text, %{id: "#{state.id}-label", text: " " <> label_text})
       ]
     )
+  end
+
+  defp get_check_character(true), do: "[x]"
+  defp get_check_character(false), do: "[ ]"
+
+  defp get_checkbox_colors(%{disabled: true}, base_style) do
+    {Map.get(base_style, :disabled_fg, Map.get(base_style, :fg, :gray)),
+     Map.get(base_style, :disabled_bg, Map.get(base_style, :bg, :default))}
+  end
+
+  defp get_checkbox_colors(%{focused: true}, base_style) do
+    {Map.get(base_style, :focused_fg, Map.get(base_style, :fg, :default)),
+     Map.get(base_style, :focused_bg, Map.get(base_style, :bg, :default))}
+  end
+
+  defp get_checkbox_colors(_state, base_style) do
+    {Map.get(base_style, :fg, :default),
+     Map.get(base_style, :bg, :default)}
   end
 end

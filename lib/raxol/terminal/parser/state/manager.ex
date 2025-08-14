@@ -137,131 +137,151 @@ defmodule Raxol.Terminal.Parser.State.Manager do
 
   # State processing functions
 
-  defp process_ground_state(manager, char) do
-    cond do
-      char in @c0_range -> handle_c0_control(manager, char)
-      char in @c1_range -> handle_c1_control(manager, char)
-      char in @printable_range -> handle_printable(manager, char)
-      char in @extended_range -> handle_extended(manager, char)
-      true -> manager
-    end
-  end
+  defp process_ground_state(manager, char) when char in @c0_range,
+    do: handle_c0_control(manager, char)
 
-  defp process_escape_state(manager, char) do
-    cond do
-      char in @c0_range -> handle_c0_control(manager, char)
-      char in @c1_range -> handle_c1_control(manager, char)
-      char in @printable_range -> handle_escape_printable(manager, char)
-      char in @extended_range -> handle_escape_extended(manager, char)
-      true -> manager
-    end
-  end
+  defp process_ground_state(manager, char) when char in @c1_range,
+    do: handle_c1_control(manager, char)
 
-  defp process_csi_entry_state(manager, char) do
-    cond do
-      char in 0x30..0x3F//1 -> set_state(manager, :csi_param)
-      char in 0x20..0x2F//1 -> set_state(manager, :csi_intermediate)
-      char in 0x40..0x7E//1 -> set_state(manager, :ground)
-      true -> set_state(manager, :csi_ignore)
-    end
-  end
+  defp process_ground_state(manager, char) when char in @printable_range,
+    do: handle_printable(manager, char)
 
-  defp process_csi_param_state(manager, char) do
-    cond do
-      char in 0x30..0x3F//1 -> manager
-      char in 0x20..0x2F//1 -> set_state(manager, :csi_intermediate)
-      char in 0x40..0x7E//1 -> set_state(manager, :ground)
-      true -> set_state(manager, :csi_ignore)
-    end
-  end
+  defp process_ground_state(manager, char) when char in @extended_range,
+    do: handle_extended(manager, char)
 
-  defp process_csi_intermediate_state(manager, char) do
-    cond do
-      char in 0x20..0x2F//1 -> manager
-      char in 0x40..0x7E//1 -> set_state(manager, :ground)
-      true -> set_state(manager, :csi_ignore)
-    end
-  end
+  defp process_ground_state(manager, _char), do: manager
 
-  defp process_csi_ignore_state(manager, char) do
-    if char in 0x40..0x7E//1 do
-      set_state(manager, :ground)
-    else
-      manager
-    end
-  end
+  defp process_escape_state(manager, char) when char in @c0_range,
+    do: handle_c0_control(manager, char)
 
-  defp process_osc_string_state(manager, char) do
-    if char == @bel or char == @st do
-      set_state(manager, :ground)
-    else
-      set_osc_buffer(manager, manager.osc_buffer <> <<char>>)
-    end
-  end
+  defp process_escape_state(manager, char) when char in @c1_range,
+    do: handle_c1_control(manager, char)
 
-  defp process_dcs_entry_state(manager, char) do
-    cond do
-      char in 0x30..0x3F//1 -> set_state(manager, :dcs_param)
-      char in 0x20..0x2F//1 -> set_state(manager, :dcs_intermediate)
-      char in 0x40..0x7E//1 -> set_state(manager, :dcs_passthrough)
-      true -> set_state(manager, :ground)
-    end
-  end
+  defp process_escape_state(manager, char) when char in @printable_range,
+    do: handle_escape_printable(manager, char)
 
-  defp process_dcs_param_state(manager, char) do
-    cond do
-      char in 0x30..0x3F//1 -> manager
-      char in 0x20..0x2F//1 -> set_state(manager, :dcs_intermediate)
-      char in 0x40..0x7E//1 -> set_state(manager, :dcs_passthrough)
-      true -> set_state(manager, :ground)
-    end
-  end
+  defp process_escape_state(manager, char) when char in @extended_range,
+    do: handle_escape_extended(manager, char)
 
-  defp process_dcs_intermediate_state(manager, char) do
-    cond do
-      char in 0x20..0x2F//1 -> manager
-      char in 0x40..0x7E//1 -> set_state(manager, :dcs_passthrough)
-      true -> set_state(manager, :ground)
-    end
-  end
+  defp process_escape_state(manager, _char), do: manager
 
-  defp process_dcs_passthrough_state(manager, char) do
-    if char == @st do
-      set_state(manager, :ground)
-    else
-      set_dcs_buffer(manager, manager.dcs_buffer <> <<char>>)
-    end
-  end
+  defp process_csi_entry_state(manager, char) when char in 0x30..0x3F//1,
+    do: set_state(manager, :csi_param)
 
-  defp process_apc_string_state(manager, char) do
-    if char == @bel or char == @st do
-      set_state(manager, :ground)
-    else
-      set_apc_buffer(manager, manager.apc_buffer <> <<char>>)
-    end
-  end
+  defp process_csi_entry_state(manager, char) when char in 0x20..0x2F//1,
+    do: set_state(manager, :csi_intermediate)
 
-  defp process_pm_string_state(manager, char) do
-    if char == @bel or char == @st do
-      set_state(manager, :ground)
-    else
-      set_pm_buffer(manager, manager.pm_buffer <> <<char>>)
-    end
-  end
+  defp process_csi_entry_state(manager, char) when char in 0x40..0x7E//1,
+    do: set_state(manager, :ground)
 
-  defp process_sos_string_state(manager, char) do
-    if char == @bel or char == @st do
-      set_state(manager, :ground)
-    else
-      set_sos_buffer(manager, manager.sos_buffer <> <<char>>)
-    end
-  end
+  defp process_csi_entry_state(manager, _char),
+    do: set_state(manager, :csi_ignore)
+
+  defp process_csi_param_state(manager, char) when char in 0x30..0x3F//1,
+    do: manager
+
+  defp process_csi_param_state(manager, char) when char in 0x20..0x2F//1,
+    do: set_state(manager, :csi_intermediate)
+
+  defp process_csi_param_state(manager, char) when char in 0x40..0x7E//1,
+    do: set_state(manager, :ground)
+
+  defp process_csi_param_state(manager, _char),
+    do: set_state(manager, :csi_ignore)
+
+  defp process_csi_intermediate_state(manager, char) when char in 0x20..0x2F//1,
+    do: manager
+
+  defp process_csi_intermediate_state(manager, char) when char in 0x40..0x7E//1,
+    do: set_state(manager, :ground)
+
+  defp process_csi_intermediate_state(manager, _char),
+    do: set_state(manager, :csi_ignore)
+
+  defp process_csi_ignore_state(manager, char) when char in 0x40..0x7E//1,
+    do: set_state(manager, :ground)
+
+  defp process_csi_ignore_state(manager, _char), do: manager
+
+  defp process_osc_string_state(manager, @bel),
+    do: set_state(manager, :ground)
+
+  defp process_osc_string_state(manager, @st),
+    do: set_state(manager, :ground)
+
+  defp process_osc_string_state(manager, char),
+    do: set_osc_buffer(manager, manager.osc_buffer <> <<char>>)
+
+  defp process_dcs_entry_state(manager, char) when char in 0x30..0x3F//1,
+    do: set_state(manager, :dcs_param)
+
+  defp process_dcs_entry_state(manager, char) when char in 0x20..0x2F//1,
+    do: set_state(manager, :dcs_intermediate)
+
+  defp process_dcs_entry_state(manager, char) when char in 0x40..0x7E//1,
+    do: set_state(manager, :dcs_passthrough)
+
+  defp process_dcs_entry_state(manager, _char),
+    do: set_state(manager, :ground)
+
+  defp process_dcs_param_state(manager, char) when char in 0x30..0x3F//1,
+    do: manager
+
+  defp process_dcs_param_state(manager, char) when char in 0x20..0x2F//1,
+    do: set_state(manager, :dcs_intermediate)
+
+  defp process_dcs_param_state(manager, char) when char in 0x40..0x7E//1,
+    do: set_state(manager, :dcs_passthrough)
+
+  defp process_dcs_param_state(manager, _char),
+    do: set_state(manager, :ground)
+
+  defp process_dcs_intermediate_state(manager, char) when char in 0x20..0x2F//1,
+    do: manager
+
+  defp process_dcs_intermediate_state(manager, char) when char in 0x40..0x7E//1,
+    do: set_state(manager, :dcs_passthrough)
+
+  defp process_dcs_intermediate_state(manager, _char),
+    do: set_state(manager, :ground)
+
+  defp process_dcs_passthrough_state(manager, @st),
+    do: set_state(manager, :ground)
+
+  defp process_dcs_passthrough_state(manager, char),
+    do: set_dcs_buffer(manager, manager.dcs_buffer <> <<char>>)
+
+  defp process_apc_string_state(manager, @bel),
+    do: set_state(manager, :ground)
+
+  defp process_apc_string_state(manager, @st),
+    do: set_state(manager, :ground)
+
+  defp process_apc_string_state(manager, char),
+    do: set_apc_buffer(manager, manager.apc_buffer <> <<char>>)
+
+  defp process_pm_string_state(manager, @bel),
+    do: set_state(manager, :ground)
+
+  defp process_pm_string_state(manager, @st),
+    do: set_state(manager, :ground)
+
+  defp process_pm_string_state(manager, char),
+    do: set_pm_buffer(manager, manager.pm_buffer <> <<char>>)
+
+  defp process_sos_string_state(manager, @bel),
+    do: set_state(manager, :ground)
+
+  defp process_sos_string_state(manager, @st),
+    do: set_state(manager, :ground)
+
+  defp process_sos_string_state(manager, char),
+    do: set_sos_buffer(manager, manager.sos_buffer <> <<char>>)
 
   defp process_string_state(manager, char) do
-    if char == manager.string_terminator do
-      set_state(manager, :ground)
-    else
-      set_string_buffer(manager, manager.string_buffer <> <<char>>)
+    case char do
+      c when c == manager.string_terminator -> set_state(manager, :ground)
+      c -> set_string_buffer(manager, manager.string_buffer <> <<c>>)
     end
   end
 

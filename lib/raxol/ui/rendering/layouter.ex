@@ -3,8 +3,7 @@ defmodule Raxol.UI.Rendering.Layouter do
   Handles layout of UI components.
   """
 
-  import Raxol.Guards
-  require Raxol.Core.Runtime.Log
+    require Raxol.Core.Runtime.Log
 
   @spec layout_tree(diff_result :: any(), new_tree_for_reference :: map() | nil) ::
           map() | any()
@@ -70,7 +69,7 @@ defmodule Raxol.UI.Rendering.Layouter do
   end
 
   defp handle_otherwise_diff(diff_result) do
-    if map?(diff_result) do
+    if is_map(diff_result) do
       Raxol.Core.Runtime.Log.debug(
         "Layout Stage: Input is a map, treating as full layout: #{inspect(diff_result)}"
       )
@@ -89,7 +88,7 @@ defmodule Raxol.UI.Rendering.Layouter do
   defp do_layout_node_and_children(nil, _diff), do: nil
 
   defp do_layout_node_and_children(node_content, _diff_for_this_node)
-       when not map?(node_content) do
+       when not is_map(node_content) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Layout Engine: Encountered non-map node content: #{inspect(node_content)}. Passing through.",
       %{}
@@ -99,7 +98,7 @@ defmodule Raxol.UI.Rendering.Layouter do
   end
 
   defp do_layout_node_and_children(node_content, diff_for_this_node)
-       when map?(node_content) do
+       when is_map(node_content) do
     current_node_actual_content =
       get_current_node_content(node_content, diff_for_this_node)
 
@@ -114,7 +113,7 @@ defmodule Raxol.UI.Rendering.Layouter do
   defp get_current_node_content(node_content, diff_for_this_node) do
     case diff_for_this_node do
       {:replace, new_content_for_this_node}
-      when map?(new_content_for_this_node) ->
+      when is_map(new_content_for_this_node) ->
         new_content_for_this_node
 
       {:replace, _} ->
@@ -158,11 +157,11 @@ defmodule Raxol.UI.Rendering.Layouter do
   end
 
   defp get_children(node) do
-    if map?(node), do: Map.get(node, :children, []), else: []
+    if is_map(node), do: Map.get(node, :children, []), else: []
   end
 
   defp get_node_type(node) do
-    if map?(node), do: Map.get(node, :type, :unknown), else: :unknown
+    if is_map(node), do: Map.get(node, :type, :unknown), else: :unknown
   end
 
   defp update_node_children(node, processed_children) do
@@ -240,7 +239,7 @@ defmodule Raxol.UI.Rendering.Layouter do
   defp process_keyed_child_op({:key_update, key, child_diff}, acc) do
     # Find and update existing child by key
     Enum.map(acc, fn child ->
-      if map?(child) && Map.get(child, :key) == key do
+      if is_map(child) && Map.get(child, :key) == key do
         do_layout_node_and_children(child, child_diff)
       else
         child
@@ -251,7 +250,7 @@ defmodule Raxol.UI.Rendering.Layouter do
   defp process_keyed_child_op({:key_remove, key}, acc) do
     # Remove child with matching key
     Enum.reject(acc, fn child ->
-      map?(child) && Map.get(child, :key) == key
+      is_map(child) && Map.get(child, :key) == key
     end)
   end
 
@@ -259,7 +258,7 @@ defmodule Raxol.UI.Rendering.Layouter do
     # Reorder children according to new key order
     children_by_key =
       Map.new(acc, fn child ->
-        if map?(child), do: {Map.get(child, :key), child}, else: {nil, child}
+        if is_map(child), do: {Map.get(child, :key), child}, else: {nil, child}
       end)
 
     Enum.map(new_keys_ordered, fn key ->
@@ -272,7 +271,7 @@ defmodule Raxol.UI.Rendering.Layouter do
 
   defp path_to_access_path([]), do: []
 
-  defp path_to_access_path(path_indices) when list?(path_indices) do
+  defp path_to_access_path(path_indices) when is_list(path_indices) do
     Enum.reduce(path_indices, [], fn idx, acc ->
       acc ++ [:children, idx]
     end)
@@ -285,7 +284,7 @@ defmodule Raxol.UI.Rendering.Layouter do
       width: 10,
       height: 1,
       node_type:
-        if(map?(node_content),
+        if(is_map(node_content),
           do: Map.get(node_content, :type, :unknown),
           else: :unknown
         ),

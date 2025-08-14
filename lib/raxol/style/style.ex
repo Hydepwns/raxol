@@ -3,8 +3,7 @@ defmodule Raxol.Style do
   Defines style properties for terminal UI elements.
   """
 
-  import Raxol.Guards
-
+  
   @type t :: %__MODULE__{
           layout: Raxol.Style.Layout.t(),
           border: Raxol.Style.Borders.t(),
@@ -43,7 +42,7 @@ defmodule Raxol.Style do
   @doc """
   Creates a new style from a keyword list or map of attributes.
   """
-  def new(attrs) when list?(attrs) do
+  def new(attrs) when is_list(attrs) do
     Enum.reduce(attrs, new(), fn {key, value}, acc ->
       Map.put(acc, key, value)
     end)
@@ -136,7 +135,7 @@ defmodule Raxol.Style do
       bg_ansi
       | decoration_ansi
     ]
-    |> Enum.reject(&nil?/1)
+    |> Enum.reject(&is_nil/1)
 
     # Actual sequence generation (e.g., IO.ANSI...) should happen closer to rendering
   end

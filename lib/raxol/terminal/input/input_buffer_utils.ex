@@ -25,26 +25,32 @@ defmodule Raxol.Terminal.Input.InputBufferUtils do
 
   defp process_word(word, width, {lines, current_line}) do
     word_len = String.length(word)
+    current_line_len = String.length(current_line)
 
-    cond do
-      # Case 1: Word fits perfectly on the current line (or is the first word)
-      current_line == "" && word_len <= width ->
-        {lines, word}
+    process_word_by_fit(word, word_len, width, lines, current_line, current_line_len)
+  end
 
-      # Case 2: Word fits on the current line with a preceding space
-      current_line != "" &&
-          String.length(current_line) + 1 + word_len <= width ->
-        {lines, current_line <> " " <> word}
+  # Case 1: Word fits perfectly on empty current line (first word)
+  defp process_word_by_fit(word, word_len, width, lines, "", _current_line_len)
+       when word_len <= width do
+    {lines, word}
+  end
 
-      # Case 3: Word is too long for *any* line (longer than width)
-      word_len > width ->
-        handle_long_word(word, width, lines, current_line)
+  # Case 2: Word fits on current line with a preceding space
+  defp process_word_by_fit(word, word_len, width, lines, current_line, current_line_len)
+       when current_line != "" and current_line_len + 1 + word_len <= width do
+    {lines, current_line <> " " <> word}
+  end
 
-      # Case 4: Word doesn't fit on current line, start a new line
-      true ->
-        # Add completed line, start new one with word
-        {[current_line | lines], word}
-    end
+  # Case 3: Word is too long for any line (longer than width)
+  defp process_word_by_fit(word, word_len, width, lines, current_line, _current_line_len)
+       when word_len > width do
+    handle_long_word(word, width, lines, current_line)
+  end
+
+  # Case 4: Word doesn't fit on current line, start a new line
+  defp process_word_by_fit(word, _word_len, _width, lines, current_line, _current_line_len) do
+    {[current_line | lines], word}
   end
 
   defp handle_long_word(word, width, lines, current_line) do

@@ -9,8 +9,7 @@ defmodule Raxol.Core.Renderer.Element do
   * Optional children forming a tree structure
   """
 
-  import Raxol.Guards
-
+  
   @type t :: %__MODULE__{
           tag: atom(),
           attributes: [{atom(), term()}],
@@ -31,15 +30,10 @@ defmodule Raxol.Core.Renderer.Element do
   Creates a new element with the given tag and attributes.
   """
   def new(tag, attrs, opts \\ []) do
-    attrs =
-      cond do
-        list?(attrs) -> attrs
-        map?(attrs) -> Map.to_list(attrs)
-        true -> []
-      end
+    attrs = normalize_attributes(attrs)
 
     children = Keyword.get(opts, :do, [])
-    children = if list?(children), do: children, else: [children]
+    children = if is_list(children), do: children, else: [children]
 
     %__MODULE__{
       tag: tag,
@@ -59,7 +53,7 @@ defmodule Raxol.Core.Renderer.Element do
   @doc """
   Adds children to an existing element.
   """
-  def add_children(%__MODULE__{} = element, children) when list?(children) do
+  def add_children(%__MODULE__{} = element, children) when is_list(children) do
     %{element | children: element.children ++ children}
   end
 
@@ -77,4 +71,8 @@ defmodule Raxol.Core.Renderer.Element do
   defp validate_tag(_tag), do: :ok
   defp validate_attributes(_attrs), do: :ok
   defp validate_children(_children), do: :ok
+
+  defp normalize_attributes(attrs) when is_list(attrs), do: attrs
+  defp normalize_attributes(attrs) when is_map(attrs), do: Map.to_list(attrs)
+  defp normalize_attributes(_attrs), do: []
 end

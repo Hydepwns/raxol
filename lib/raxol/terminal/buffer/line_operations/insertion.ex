@@ -3,8 +3,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
   Handles line insertion operations for the screen buffer.
   """
 
-  import Raxol.Guards
-  alias Raxol.Terminal.ScreenBuffer
+    alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
 
   @doc """
@@ -12,7 +11,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
   Lines below the cursor are shifted down, and lines shifted off the bottom are discarded.
   """
   @spec insert_lines(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
-  def insert_lines(buffer, count) when integer?(count) and count > 0 do
+  def insert_lines(buffer, count) when is_integer(count) and count > 0 do
     {_, y} = buffer.cursor_position
 
     # Split the content at the cursor position

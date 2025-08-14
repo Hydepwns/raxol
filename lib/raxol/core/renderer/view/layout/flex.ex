@@ -4,8 +4,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
   Provides row and column layouts with various alignment and justification options.
   """
 
-  import Raxol.Guards
-
+  
   @doc """
   Creates a row layout container that arranges its children horizontally.
 
@@ -66,12 +65,12 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     raw_children = Keyword.get(opts, :children)
 
     processed_children =
-      cond do
-        list?(raw_children) -> raw_children
+      case raw_children do
+        children when is_list(children) -> children
         # Default to empty list if nil
-        nil?(raw_children) -> []
+        nil -> []
         # Wrap single child in a list
-        true -> [raw_children]
+        single_child -> [single_child]
       end
 
     align = Keyword.get(opts, :align, :start)
@@ -306,14 +305,14 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
 
   defp calculate_width(nil, available_width), do: min(50, available_width)
 
-  defp calculate_width(width, available_width) when integer?(width),
+  defp calculate_width(width, available_width) when is_integer(width),
     do: min(width, available_width)
 
   defp calculate_width(_, available_width), do: min(50, available_width)
 
   defp calculate_height(nil, available_height), do: min(1, available_height)
 
-  defp calculate_height(height, available_height) when integer?(height),
+  defp calculate_height(height, available_height) when is_integer(height),
     do: min(height, available_height)
 
   defp calculate_height(_, available_height), do: min(1, available_height)

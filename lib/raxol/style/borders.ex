@@ -1,6 +1,5 @@
 defmodule Raxol.Style.Borders do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Defines border properties for terminal UI elements.
   """
@@ -27,20 +26,20 @@ defmodule Raxol.Style.Borders do
   @doc """
   Creates a new border with the specified values.
   """
-  def new(attrs) when map?(attrs) do
+  def new(attrs) when is_map(attrs) do
     struct(__MODULE__, attrs)
   end
 
   @doc """
   Merges two border structs, with the second overriding the first.
   """
-  def merge(base, override) when map?(base) and map?(override) do
+  def merge(base, override) when is_map(base) and is_map(override) do
     Map.merge(base, override)
   end
 
   def merge(base, override) do
-    base = if map?(base), do: base, else: %{}
-    override = if map?(override), do: override, else: %{}
+    base = if is_map(base), do: base, else: %{}
+    override = if is_map(override), do: override, else: %{}
     Map.merge(base, override)
   end
 end

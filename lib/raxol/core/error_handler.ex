@@ -229,15 +229,10 @@ defmodule Raxol.Core.ErrorHandler do
   def handle_error({:ok, value}, _opts), do: {:ok, value}
 
   def handle_error({:error, _type, _message, _context} = error, opts) do
-    cond do
-      default = Keyword.get(opts, :default) ->
-        {:ok, default}
-
-      handler = Keyword.get(opts, :with) ->
-        handler.(error)
-
-      true ->
-        error
+    case {Keyword.get(opts, :default), Keyword.get(opts, :with)} do
+      {default, _} when default != nil -> {:ok, default}
+      {_, handler} when is_function(handler) -> handler.(error)
+      {nil, nil} -> error
     end
   end
 
@@ -336,15 +331,11 @@ defmodule Raxol.Core.ErrorHandler do
     "[#{operation}] #{format_error_message(error)}"
   end
 
-  defp classify_error(error) do
-    cond do
-      match?(%ArgumentError{}, error) -> :validation
-      match?(%RuntimeError{}, error) -> :runtime
-      match?(%File.Error{}, error) -> :system
-      match?(%Jason.DecodeError{}, error) -> :validation
-      true -> :unknown
-    end
-  end
+  defp classify_error(%ArgumentError{}), do: :validation
+  defp classify_error(%RuntimeError{}), do: :runtime
+  defp classify_error(%File.Error{}), do: :system
+  defp classify_error(%Jason.DecodeError{}), do: :validation
+  defp classify_error(_error), do: :unknown
 
   defp retriable_error?(:exit, {:timeout, _}), do: true
   defp retriable_error?(:exit, {:noproc, _}), do: true

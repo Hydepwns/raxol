@@ -5,8 +5,7 @@ defmodule Raxol.System.Updater.Core do
   use GenServer
 
   require Logger
-  import Raxol.Guards
-
+  
   alias Raxol.System.Updater.{Network, Validation, State}
 
   @github_repo "username/raxol"
@@ -101,7 +100,7 @@ defmodule Raxol.System.Updater.Core do
   end
 
   def update(opts \\ []) do
-    opts = if map?(opts), do: Enum.into(opts, []), else: opts
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     force = Keyword.get(opts, :force, false)
     use_delta = Keyword.get(opts, :use_delta, true)
     version = Keyword.get(opts, :version)
@@ -119,7 +118,7 @@ defmodule Raxol.System.Updater.Core do
   def self_update(version \\ nil, opts \\ []) do
     use_delta = Keyword.get(opts, :use_delta, true)
 
-    if binary?(version) do
+    if is_binary(version) do
       with {:ok, target_version} <- get_update_version(version) do
         case @version == target_version do
           false -> do_version_update(target_version, use_delta)
@@ -292,7 +291,7 @@ defmodule Raxol.System.Updater.Core do
   end
 
   defp get_update_version(version) do
-    if nil?(version) do
+    if is_nil(version) do
       case Network.fetch_latest_version() do
         {:ok, latest} -> {:ok, latest}
         {:error, reason} -> {:error, reason}

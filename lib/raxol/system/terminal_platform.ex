@@ -181,13 +181,26 @@ defmodule Raxol.System.TerminalPlatform do
   # Private helper functions
 
   defp get_terminal_name do
-    cond do
-      System.get_env("TERM_PROGRAM") == "iTerm.app" -> "iTerm2"
-      System.get_env("TERM_PROGRAM") == "Apple_Terminal" -> "Terminal.app"
-      System.get_env("WT_SESSION") != nil -> "Windows Terminal"
-      System.get_env("TERM") == "xterm-256color" -> "xterm"
-      System.get_env("TERM") == "screen-256color" -> "screen"
-      true -> System.get_env("TERM") || "unknown"
+    detect_terminal_by_env()
+  end
+  
+  defp detect_terminal_by_env do
+    case System.get_env("TERM_PROGRAM") do
+      "iTerm.app" -> "iTerm2"
+      "Apple_Terminal" -> "Terminal.app"
+      _ -> detect_by_other_env_vars()
+    end
+  end
+  
+  defp detect_by_other_env_vars do
+    if System.get_env("WT_SESSION") != nil do
+      "Windows Terminal"
+    else
+      case System.get_env("TERM") do
+        "xterm-256color" -> "xterm"
+        "screen-256color" -> "screen"
+        term -> term || "unknown"
+      end
     end
   end
 

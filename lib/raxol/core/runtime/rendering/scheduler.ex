@@ -4,8 +4,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   """
 
   use GenServer
-  import Raxol.Guards
-  alias Raxol.Core.Runtime.Rendering.Engine
+    alias Raxol.Core.Runtime.Rendering.Engine
 
   defmodule State do
     @moduledoc false
@@ -35,7 +34,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
     GenServer.cast(__MODULE__, :disable)
   end
 
-  def set_interval(ms) when integer?(ms) and ms > 0 do
+  def set_interval(ms) when is_integer(ms) and ms > 0 do
     GenServer.cast(__MODULE__, {:set_interval, ms})
   end
 

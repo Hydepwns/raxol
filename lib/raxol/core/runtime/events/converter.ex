@@ -9,8 +9,7 @@ defmodule Raxol.Core.Runtime.Events.Converter do
   """
 
   alias Raxol.Core.Events.Event
-  import Raxol.Guards
-  import Bitwise
+    import Bitwise
 
   @doc """
   Converts a Termbox event to the standardized Raxol event format.
@@ -197,8 +196,8 @@ defmodule Raxol.Core.Runtime.Events.Converter do
 
   defp convert_vscode_key_to_value(key) do
     case key do
-      k when binary?(k) and byte_size(k) == 1 -> :binary.first(k)
-      k when binary?(k) -> k
+      k when is_binary(k) and byte_size(k) == 1 -> :binary.first(k)
+      k when is_binary(k) -> k
       _ -> key
     end
     |> Map.get(@vscode_key_map, key)
@@ -236,7 +235,7 @@ defmodule Raxol.Core.Runtime.Events.Converter do
     ]
   end
 
-  defp parse_vscode_modifiers(mods) when list?(mods) do
+  defp parse_vscode_modifiers(mods) when is_list(mods) do
     ctrl = "ctrl" in mods or "control" in mods
     alt = "alt" in mods or "option" in mods
     shift = "shift" in mods

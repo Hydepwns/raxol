@@ -28,8 +28,7 @@ defmodule Raxol.Test.Visual do
 
   alias Raxol.Test.TestHelper
   alias Raxol.Terminal.Buffer.Operations
-  import Raxol.Guards
-
+  
   defmacro __using__(_opts) do
     quote do
       import Raxol.Test.Visual
@@ -50,7 +49,7 @@ defmodule Raxol.Test.Visual do
     {:ok, component} = Raxol.Test.Unit.setup_isolated_component(module, props)
 
     # Defensive check: ensure component is a map with :module and :state
-    if !(map?(component) and Map.has_key?(component, :module) and
+    if !(is_map(component) and Map.has_key?(component, :module) and
            Map.has_key?(component, :state)) do
       raise ArgumentError,
             "setup_visual_component/2 expected a map with :module and :state keys, got: #{inspect(component)}"
@@ -87,10 +86,10 @@ defmodule Raxol.Test.Visual do
           String.t()
   def capture_render(component_or_map_or_view, opts \\ %{}) do
     opts =
-      cond do
-        is_list(opts) -> Enum.into(opts, %{})
-        is_map(opts) -> opts
-        true -> %{}
+      case opts do
+        opts when is_list(opts) -> Enum.into(opts, %{})
+        opts when is_map(opts) -> opts
+        _ -> %{}
       end
 
     {view_map, width, height, theme} =
@@ -107,17 +106,17 @@ defmodule Raxol.Test.Visual do
   end
 
   defp extract_render_context(component_or_map_or_view, opts) do
-    if view_map?(component_or_map_or_view) do
+    if view_is_map(component_or_map_or_view) do
       extract_render_details_from_view_map(component_or_map_or_view, opts)
     else
       extract_render_details(component_or_map_or_view)
     end
   end
 
-  defp view_map?(map) when map?(map), do: Map.has_key?(map, :type)
-  defp view_map?(_), do: false
+  defp view_is_map(map) when is_map(map), do: Map.has_key?(map, :type)
+  defp view_is_map(_), do: false
 
-  defp ensure_list(item) when list?(item), do: item
+  defp ensure_list(item) when is_list(item), do: item
   defp ensure_list(item), do: [item]
 
   defp apply_layout(elements, width, height) do
@@ -135,7 +134,7 @@ defmodule Raxol.Test.Visual do
   end
 
   defp write_cell_to_buffer({x, y, char, fg, bg, attrs}, buffer) do
-    actual_char = if nil?(char), do: ~c" ", else: char
+    actual_char = if is_nil(char), do: ~c" ", else: char
 
     Operations.write_char(buffer, x, y, actual_char, %{
       foreground: fg,
@@ -218,7 +217,7 @@ defmodule Raxol.Test.Visual do
     |> Enum.find(&(&1 != nil))
   end
 
-  defp extract_render_details(component_or_map) when map?(component_or_map) do
+  defp extract_render_details(component_or_map) when is_map(component_or_map) do
     render_context_from_component = Map.get(component_or_map, :render_context)
     default_ctx = default_render_context()
 
@@ -300,7 +299,7 @@ defmodule Raxol.Test.Visual do
   Takes a function that can make assertions about the rendered output.
   """
   def assert_renders_as(component, assertions)
-      when function?(assertions, 1) do
+      when is_function(assertions, 1) do
     output = capture_render(component)
     assertions.(output)
   end
@@ -347,7 +346,7 @@ defmodule Raxol.Test.Visual do
 
   Verifies responsive behavior and layout adaptability.
   """
-  def test_responsive_rendering(component, sizes) when list?(sizes) do
+  def test_responsive_rendering(component, sizes) when is_list(sizes) do
     Enum.map(sizes, fn {width, height} ->
       # Create an updated render_context for this specific size
       updated_render_context =
@@ -373,7 +372,7 @@ defmodule Raxol.Test.Visual do
 
   Verifies proper style application and theme switching.
   """
-  def test_themed_rendering(component, themes) when map?(themes) do
+  def test_themed_rendering(component, themes) when is_map(themes) do
     Enum.map(themes, fn {name, partial_theme_map} ->
       # Get the original full theme struct from the component's render_context
       original_full_theme_struct = get_in(component.render_context.theme)
@@ -426,7 +425,7 @@ defmodule Raxol.Test.Visual do
   Accepts an optional context map.
   """
   def render_component(component_map, context \\ default_render_context()) do
-    if !(map?(component_map) and Map.has_key?(component_map, :state)) do
+    if !(is_map(component_map) and Map.has_key?(component_map, :state)) do
       raise ArgumentError,
             "render_component/2 expected a map with :module and :state keys, got: #{inspect(component_map)}"
     end

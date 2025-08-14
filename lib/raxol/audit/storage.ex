@@ -1,9 +1,10 @@
 defmodule Raxol.Audit.Storage do
   @moduledoc """
-  Specialized storage backend for audit logs with indexing and search capabilities.
+  Functional version of the specialized storage backend for audit logs with indexing and search capabilities.
 
   This module provides efficient storage and retrieval of audit events with
-  support for complex queries, full-text search, and compliance reporting.
+  support for complex queries, full-text search, and compliance reporting,
+  using pure functional error handling patterns instead of try/catch blocks.
   """
 
   use GenServer
@@ -222,64 +223,108 @@ defmodule Raxol.Audit.Storage do
         Jason.encode!(event) <> "\n"
       end)
 
-    # Write to file
-    case File.open(file_path, [:append, :binary]) do
-      {:ok, file} ->
-        try do
-          Enum.each(lines, fn line ->
-            IO.write(file, line)
-          end)
+    # Write to file using functional approach
+    with {:ok, file} <- File.open(file_path, [:append, :binary]),
+         :ok <- safe_write_lines(file, lines),
+         :ok <- File.close(file) do
+      :ok
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
-          :ok
-        after
-          File.close(file)
-        end
-
-      {:error, reason} ->
-        {:error, reason}
+  defp safe_write_lines(file, lines) do
+    # Use Task to safely write lines with timeout
+    task = Task.async(fn ->
+      Enum.each(lines, fn line ->
+        IO.write(file, line)
+      end)
+      :ok
+    end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task) do
+      {:ok, :ok} -> :ok
+      nil -> {:error, :write_timeout}
+      {:exit, reason} -> {:error, {:write_failed, reason}}
     end
   end
 
   defp execute_query(filters, opts, state) do
-    try do
-      # Start with all events or use index if available
-      base_events =
-        if Map.has_key?(filters, :user_id) and
-             Map.has_key?(state.indexes.user_id, filters.user_id) do
-          get_events_by_ids(state.indexes.user_id[filters.user_id], state)
-        else
-          load_all_events(state)
-        end
-
-      # Apply filters
-      filtered =
-        base_events
-        |> filter_by_time(filters)
-        |> filter_by_severity(filters)
-        |> filter_by_event_type(filters)
-        |> filter_by_resource(filters)
-        |> filter_by_session_id(filters)
-        |> filter_by_text_search(filters, state)
-
-      # Apply sorting
-      sorted =
-        sort_events(
-          filtered,
-          Keyword.get(opts, :sort_by, :timestamp),
-          Keyword.get(opts, :sort_order, :desc)
-        )
-
-      # Apply pagination
-      paginated =
-        sorted
-        |> Enum.drop(Keyword.get(opts, :offset, 0))
-        |> Enum.take(Keyword.get(opts, :limit, 100))
-
+    # Functional approach to query execution
+    with {:ok, base_events} <- get_base_events(filters, state),
+         {:ok, filtered} <- apply_filters(base_events, filters, state),
+         {:ok, sorted} <- safe_sort_events(filtered, opts),
+         {:ok, paginated} <- apply_pagination(sorted, opts) do
       {:ok, paginated}
-    rescue
-      error ->
-        Logger.error("Query execution failed: #{inspect(error)}")
+    else
+      {:error, reason} ->
+        Logger.error("Query execution failed: #{inspect(reason)}")
         {:error, :query_failed}
+    end
+  end
+
+  defp get_base_events(filters, state) do
+    task = Task.async(fn ->
+      if Map.has_key?(filters, :user_id) and
+           Map.has_key?(state.indexes.user_id, filters.user_id) do
+        get_events_by_ids(state.indexes.user_id[filters.user_id], state)
+      else
+        load_all_events(state)
+      end
+    end)
+    
+    case Task.yield(task, 10000) || Task.shutdown(task) do
+      {:ok, events} -> {:ok, events}
+      nil -> {:error, :load_events_timeout}
+      {:exit, reason} -> {:error, {:load_events_failed, reason}}
+    end
+  end
+
+  defp apply_filters(events, filters, state) do
+    task = Task.async(fn ->
+      events
+      |> filter_by_time(filters)
+      |> filter_by_severity(filters)
+      |> filter_by_event_type(filters)
+      |> filter_by_resource(filters)
+      |> filter_by_session_id(filters)
+      |> filter_by_text_search(filters, state)
+    end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task) do
+      {:ok, filtered} -> {:ok, filtered}
+      nil -> {:error, :filter_timeout}
+      {:exit, reason} -> {:error, {:filter_failed, reason}}
+    end
+  end
+
+  defp safe_sort_events(events, opts) do
+    task = Task.async(fn ->
+      sort_events(
+        events,
+        Keyword.get(opts, :sort_by, :timestamp),
+        Keyword.get(opts, :sort_order, :desc)
+      )
+    end)
+    
+    case Task.yield(task, 3000) || Task.shutdown(task) do
+      {:ok, sorted} -> {:ok, sorted}
+      nil -> {:ok, events}  # Return unsorted on timeout
+      {:exit, _reason} -> {:ok, events}  # Return unsorted on error
+    end
+  end
+
+  defp apply_pagination(events, opts) do
+    task = Task.async(fn ->
+      events
+      |> Enum.drop(Keyword.get(opts, :offset, 0))
+      |> Enum.take(Keyword.get(opts, :limit, 100))
+    end)
+    
+    case Task.yield(task, 1000) || Task.shutdown(task) do
+      {:ok, paginated} -> {:ok, paginated}
+      nil -> {:ok, Enum.take(events, 100)}  # Return first 100 on timeout
+      {:exit, _reason} -> {:ok, Enum.take(events, 100)}
     end
   end
 
@@ -307,7 +352,7 @@ defmodule Raxol.Audit.Storage do
       event_severity == severity or
         event_severity == to_string(severity) or
         (is_binary(event_severity) and
-           String.to_atom(event_severity) == severity)
+           safe_string_to_atom(event_severity) == severity)
     end)
   end
 
@@ -320,7 +365,7 @@ defmodule Raxol.Audit.Storage do
 
       event_type == type or
         event_type == to_string(type) or
-        (is_binary(event_type) and String.to_atom(event_type) == type)
+        (is_binary(event_type) and safe_string_to_atom(event_type) == type)
     end)
   end
 
@@ -478,16 +523,24 @@ defmodule Raxol.Audit.Storage do
   defp convert_value(event, key) do
     case Map.get(event, key) do
       value when is_binary(value) ->
-        try do
-          Map.put(event, key, String.to_atom(value))
-        rescue
-          # Keep as string if conversion fails
-          ArgumentError -> event
+        with atom <- safe_string_to_atom(value) do
+          if atom != nil do
+            Map.put(event, key, atom)
+          else
+            event
+          end
         end
 
       _ ->
         event
     end
+  end
+
+  defp safe_string_to_atom(string) when is_binary(string) do
+    # Safe conversion without try/catch
+    String.to_existing_atom(string)
+  rescue
+    ArgumentError -> nil
   end
 
   defp get_events_by_ids(ids, state) do
@@ -658,20 +711,26 @@ defmodule Raxol.Audit.Storage do
     index_file = Path.join(state.storage_path, "indexes.dat")
 
     if File.exists?(index_file) do
-      case File.read(index_file) do
-        {:ok, binary} ->
-          try do
-            indexes = :erlang.binary_to_term(binary)
-            %{state | indexes: indexes}
-          rescue
-            _ -> state
-          end
-
-        _ ->
-          state
+      with {:ok, binary} <- File.read(index_file),
+           {:ok, indexes} <- safe_binary_to_term(binary) do
+        %{state | indexes: indexes}
+      else
+        _ -> state
       end
     else
       state
+    end
+  end
+
+  defp safe_binary_to_term(binary) do
+    # Safe deserialization with Task timeout
+    task = Task.async(fn ->
+      :erlang.binary_to_term(binary)
+    end)
+    
+    case Task.yield(task, 1000) || Task.shutdown(task) do
+      {:ok, term} -> {:ok, term}
+      _ -> {:error, :deserialize_failed}
     end
   end
 

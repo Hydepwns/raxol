@@ -3,8 +3,7 @@ defmodule Raxol.Terminal.Colors do
   Manages terminal colors and color-related operations.
   """
 
-  import Raxol.Guards
-
+  
   @type color :: String.t()
   @type t :: %__MODULE__{
           foreground: color(),
@@ -32,7 +31,7 @@ defmodule Raxol.Terminal.Colors do
   Sets the foreground color.
   """
   @spec set_foreground(t(), color()) :: t()
-  def set_foreground(%__MODULE__{} = colors, color) when binary?(color) do
+  def set_foreground(%__MODULE__{} = colors, color) when is_binary(color) do
     %{colors | foreground: color}
   end
 
@@ -48,7 +47,7 @@ defmodule Raxol.Terminal.Colors do
   Sets the background color.
   """
   @spec set_background(t(), color()) :: t()
-  def set_background(%__MODULE__{} = colors, color) when binary?(color) do
+  def set_background(%__MODULE__{} = colors, color) when is_binary(color) do
     %{colors | background: color}
   end
 
@@ -64,7 +63,7 @@ defmodule Raxol.Terminal.Colors do
   Sets the cursor color.
   """
   @spec set_cursor_color(t(), color()) :: t()
-  def set_cursor_color(%__MODULE__{} = colors, color) when binary?(color) do
+  def set_cursor_color(%__MODULE__{} = colors, color) when is_binary(color) do
     %{colors | cursor_color: color}
   end
 
@@ -81,7 +80,7 @@ defmodule Raxol.Terminal.Colors do
   """
   @spec set_selection_foreground(t(), color()) :: t()
   def set_selection_foreground(%__MODULE__{} = colors, color)
-      when binary?(color) do
+      when is_binary(color) do
     %{colors | selection_foreground: color}
   end
 
@@ -98,7 +97,7 @@ defmodule Raxol.Terminal.Colors do
   """
   @spec set_selection_background(t(), color()) :: t()
   def set_selection_background(%__MODULE__{} = colors, color)
-      when binary?(color) do
+      when is_binary(color) do
     %{colors | selection_background: color}
   end
 

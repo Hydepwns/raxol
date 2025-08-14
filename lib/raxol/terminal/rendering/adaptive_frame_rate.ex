@@ -431,12 +431,19 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     system_load = get_system_load()
     battery_level = get_battery_level()
 
-    cond do
-      system_load > 0.8 -> @text_editing_fps
-      battery_level < 0.2 -> @battery_max_fps
-      true -> state.config.target_fps
-    end
+    calculate_adaptive_fps(system_load, battery_level, state.config.target_fps)
   end
+
+  defp calculate_adaptive_fps(system_load, battery_level, target_fps)
+       when system_load > 0.8,
+       do: @text_editing_fps
+
+  defp calculate_adaptive_fps(_system_load, battery_level, _target_fps)
+       when battery_level < 0.2,
+       do: @battery_max_fps
+
+  defp calculate_adaptive_fps(_system_load, _battery_level, target_fps),
+    do: target_fps
 
   defp content_aware_base_fps(state) do
     case state.content_analyzer.primary_activity do
@@ -737,12 +744,22 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     # Analyze recent changes to determine primary activity
     change_types = Enum.map(recent_changes, &elem(&1, 0))
 
+    analyze_activity_pattern(change_types)
+  end
+
+  defp analyze_activity_pattern(change_types) do
     cond do
-      :animation in change_types -> :animation
-      length(change_types) > 10 -> :high_activity
-      Enum.count(change_types, &(&1 == :text_update)) > 3 -> :text_editing
-      length(change_types) == 0 -> :idle
-      true -> :text_editing
+      :animation in change_types -> 
+        :animation
+      length(change_types) > 10 -> 
+        :high_activity
+      true ->
+        text_update_count = Enum.count(change_types, &(&1 == :text_update))
+        case {text_update_count, change_types} do
+          {count, _} when count > 3 -> :text_editing
+          {_, []} -> :idle
+          _ -> :normal
+        end
     end
   end
 
@@ -830,18 +847,21 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     idle_percentage = Map.get(usage_stats, :idle_time_percentage, 50)
     battery_level = Map.get(usage_stats, :battery_level, 1.0)
 
-    cond do
-      battery_level < 0.2 ->
-        %{power_mode: :eco, max_fps: @eco_max_fps}
-
-      battery_level < 0.5 ->
-        %{power_mode: :battery, max_fps: @battery_max_fps}
-
-      idle_percentage > 70 ->
-        %{power_mode: :balanced, enable_aggressive_idle: true}
-
-      true ->
-        %{power_mode: :performance, max_fps: @high_activity_fps}
-    end
+    determine_power_mode(battery_level, idle_percentage)
   end
+
+  defp determine_power_mode(battery_level, _idle_percentage)
+       when battery_level < 0.2,
+       do: %{power_mode: :eco, max_fps: @eco_max_fps}
+
+  defp determine_power_mode(battery_level, _idle_percentage)
+       when battery_level < 0.5,
+       do: %{power_mode: :battery, max_fps: @battery_max_fps}
+
+  defp determine_power_mode(_battery_level, idle_percentage)
+       when idle_percentage > 70,
+       do: %{power_mode: :balanced, enable_aggressive_idle: true}
+
+  defp determine_power_mode(_battery_level, _idle_percentage),
+    do: %{power_mode: :performance, max_fps: @high_activity_fps}
 end

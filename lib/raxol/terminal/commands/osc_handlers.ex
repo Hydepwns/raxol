@@ -30,14 +30,19 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
   end
 
   defp get_command_group(command) do
-    cond do
-      command in [0, 1, 2, 7, 8, 1337] -> {:window, command}
-      command in [9, 52] -> {:clipboard, command}
-      command in [10, 11, 17, 19] -> {:color, command}
-      command in [12, 50, 112] -> {:cursor, command}
-      command in [4, 51] -> {:standalone, command}
-      true -> :unsupported
-    end
+    command_groups = [
+      {[0, 1, 2, 7, 8, 1337], :window},
+      {[9, 52], :clipboard},
+      {[10, 11, 17, 19], :color},
+      {[12, 50, 112], :cursor},
+      {[4, 51], :standalone}
+    ]
+    
+    result = Enum.find_value(command_groups, fn {commands, group} ->
+      if command in commands, do: {group, command}, else: nil
+    end)
+    
+    result || :unsupported
   end
 
   defp handle_standalone_ops(emulator, command, data) do

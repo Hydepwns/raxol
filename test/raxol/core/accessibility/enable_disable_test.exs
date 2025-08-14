@@ -6,8 +6,8 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
   use ExUnit.Case, async: false
   import Mox
 
-  alias Raxol.Core.Accessibility
-  alias Raxol.Core.AccessibilityTestHelper, as: Helper
+  alias Raxol.Core.Accessibility, as: Accessibility
+  alias Raxol.Core.Accessibility, as: AccessibilityTestHelper, as: Helper
 
   setup :verify_on_exit!
   setup :set_mox_global

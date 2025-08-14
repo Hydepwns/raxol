@@ -5,12 +5,11 @@ defmodule Raxol.Animation.FrameworkTest do
   require Logger
 
   alias Raxol.Animation.Framework
-  alias Raxol.Core.Accessibility
+  alias Raxol.Core.Accessibility, as: Accessibility
   alias Raxol.Core.UserPreferences
   alias Raxol.Test.EventAssertions
   import Raxol.AccessibilityTestHelpers
-  import Raxol.Guards
-
+  
   Logger.debug("Starting FrameworkTest module")
 
   # Helper to wait for animation completion
@@ -123,7 +122,7 @@ defmodule Raxol.Animation.FrameworkTest do
         })
 
       assert animation.name == :test_animation
-      assert map?(animation)
+      assert is_map(animation)
       assert Map.has_key?(animation, :type)
       assert animation.type == :fade
       # Default duration
@@ -147,7 +146,7 @@ defmodule Raxol.Animation.FrameworkTest do
         })
 
       assert animation.name == :custom_animation
-      assert map?(animation)
+      assert is_map(animation)
       assert Map.has_key?(animation, :type)
       assert animation.type == :slide
       assert animation.duration == 500

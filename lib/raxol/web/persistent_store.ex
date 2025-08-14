@@ -461,10 +461,16 @@ defmodule Raxol.Web.PersistentStore do
   end
 
   defp determine_storage_tier(session_state, opts, config) do
-    cond do
-      Keyword.has_key?(opts, :tier) -> Keyword.get(opts, :tier)
-      map_size(session_state) > config.compression_threshold -> :dets
-      true -> :ets
+    case Keyword.get(opts, :tier) do
+      nil ->
+        if map_size(session_state) > config.compression_threshold do
+          :dets
+        else
+          :ets
+        end
+      
+      tier ->
+        tier
     end
   end
 

@@ -1,7 +1,6 @@
 defmodule Raxol.UI.Components.Selection.ListTest do
   use ExUnit.Case, async: true
-  import Raxol.Guards
-
+  
   alias Raxol.UI.Components.Selection.List
   alias Raxol.Core.Events.Event
 
@@ -18,7 +17,7 @@ defmodule Raxol.UI.Components.Selection.ListTest do
       assert Map.get(state, :style) == %{}
       assert Map.get(state, :focused) == false
       assert state.on_select == nil
-      assert function?(state.item_renderer)
+      assert is_function(state.item_renderer)
     end
 
     test ~c"initializes with provided values" do
@@ -215,18 +214,18 @@ defmodule Raxol.UI.Components.Selection.ListTest do
     # Navigate the rendered structure to get the labels
     # rendered = %{type: :box, children: %{type: :column, children: [box1, box2, box3]}}
     column = rendered.children
-    assert map?(column)
+    assert is_map(column)
     assert Map.has_key?(column, :type)
     assert column.type == :column
     boxes = column.children
     assert length(boxes) == 3
 
     Enum.each(Enum.zip(boxes, ["a", "b", "c"]), fn {box, item} ->
-      assert map?(box)
+      assert is_map(box)
       assert Map.has_key?(box, :type)
       assert box.type == :box
       [label] = box.children
-      assert map?(label)
+      assert is_map(label)
       assert Map.has_key?(label, :type)
       assert label.type == :label
       assert Keyword.get(label.attrs, :content) == "Custom: #{item}"

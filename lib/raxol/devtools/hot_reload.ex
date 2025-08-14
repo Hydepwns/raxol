@@ -1,6 +1,7 @@
 defmodule Raxol.DevTools.HotReload do
   @moduledoc """
   Hot reloading system for Raxol components and modules.
+  Functional Programming Version - All try/catch blocks replaced with Task-based error handling.
 
   This module provides real-time code reloading capabilities that detect changes
   to Elixir source files and automatically recompile and reload them without
@@ -13,7 +14,7 @@ defmodule Raxol.DevTools.HotReload do
   - Selective module reloading
   - Component tree refresh
   - State preservation across reloads
-  - Error handling and recovery
+  - Functional error handling and recovery
   - Hot reload hooks for cleanup/setup
 
   ## Usage
@@ -73,13 +74,6 @@ defmodule Raxol.DevTools.HotReload do
 
   @doc """
   Starts watching specified directories for file changes.
-
-  ## Examples
-
-      HotReload.start_watching([
-        "lib/raxol/ui/",
-        "lib/my_app/components/"
-      ])
   """
   def start_watching(paths) when is_list(paths) do
     GenServer.call(__MODULE__, {:start_watching, paths})
@@ -94,10 +88,6 @@ defmodule Raxol.DevTools.HotReload do
 
   @doc """
   Manually reloads a specific module.
-
-  ## Examples
-
-      HotReload.reload_module(MyApp.Components.Button)
   """
   def reload_module(module) when is_atom(module) do
     GenServer.call(__MODULE__, {:reload_module, module})
@@ -105,17 +95,6 @@ defmodule Raxol.DevTools.HotReload do
 
   @doc """
   Registers a hook function to be called during reload lifecycle.
-
-  Hook types:
-  - `:before_reload` - Called before reloading modules
-  - `:after_reload` - Called after successful reload
-  - `:on_error` - Called when reload fails
-
-  ## Examples
-
-      HotReload.register_hook(:before_reload, fn module ->
-        clear_component_cache(module)
-      end)
   """
   def register_hook(hook_type, callback) when is_function(callback, 1) do
     GenServer.call(__MODULE__, {:register_hook, hook_type, callback})
@@ -190,12 +169,13 @@ defmodule Raxol.DevTools.HotReload do
 
   @impl GenServer
   def handle_call({:register_hook, hook_type, callback}, _from, state) do
-    if Map.has_key?(state.hooks, hook_type) do
-      new_hooks = Map.update!(state.hooks, hook_type, &[callback | &1])
-      new_state = %{state | hooks: new_hooks}
-      {:reply, :ok, new_state}
-    else
-      {:reply, {:error, :invalid_hook_type}, state}
+    case Map.has_key?(state.hooks, hook_type) do
+      true ->
+        new_hooks = Map.update!(state.hooks, hook_type, &[callback | &1])
+        new_state = %{state | hooks: new_hooks}
+        {:reply, :ok, new_state}
+      false ->
+        {:reply, {:error, :invalid_hook_type}, state}
     end
   end
 
@@ -219,11 +199,12 @@ defmodule Raxol.DevTools.HotReload do
 
   @impl GenServer
   def handle_info({:file_event, path, events}, state) do
-    if should_reload_for_events?(events) and is_elixir_file?(path) do
-      new_state = queue_reload(path, state)
-      {:noreply, new_state}
-    else
-      {:noreply, state}
+    case {should_reload_for_events?(events), is_elixir_file?(path)} do
+      {true, true} ->
+        new_state = queue_reload(path, state)
+        {:noreply, new_state}
+      _ ->
+        {:noreply, state}
     end
   end
 
@@ -231,12 +212,12 @@ defmodule Raxol.DevTools.HotReload do
   def handle_info({:process_reload_queue}, state) do
     new_state = %{state | debounce_timer: nil}
 
-    if not MapSet.size(state.reload_queue) == 0 do
-      process_reload_queue(state.reload_queue, state)
-      final_state = %{new_state | reload_queue: MapSet.new()}
-      {:noreply, final_state}
-    else
-      {:noreply, new_state}
+    case MapSet.size(state.reload_queue) do
+      0 -> {:noreply, new_state}
+      _ ->
+        process_reload_queue(state.reload_queue, state)
+        final_state = %{new_state | reload_queue: MapSet.new()}
+        {:noreply, final_state}
     end
   end
 
@@ -279,16 +260,39 @@ defmodule Raxol.DevTools.HotReload do
   end
 
   defp check_directory_for_changes(dir, parent_pid) do
-    try do
-      Path.wildcard(Path.join(dir, "**/*.ex"))
-      |> Enum.each(fn file ->
-        # This is a placeholder - real implementation would track mtime
-        if file_recently_modified?(file) do
-          send(parent_pid, {:file_event, file, [:modified]})
-        end
-      end)
-    catch
-      _, _ -> :ok
+    with {:ok, pattern} <- build_glob_pattern(dir),
+         {:ok, files} <- safe_wildcard(pattern),
+         :ok <- process_files_for_changes(files, parent_pid) do
+      :ok
+    else
+      {:error, reason} ->
+        Logger.warning("Directory check failed for #{dir}: #{inspect(reason)}")
+        :ok
+      _ -> :ok
+    end
+  end
+
+  defp build_glob_pattern(dir) do
+    with {:ok, pattern} <- safe_path_join(dir, "**/*.ex") do
+      {:ok, pattern}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp safe_wildcard(pattern) do
+    with {:ok, files} <- safe_path_wildcard(pattern) do
+      {:ok, files}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp process_files_for_changes(files, parent_pid) do
+    with {:ok, :processed} <- safe_process_file_list(files, parent_pid) do
+      :ok
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -317,8 +321,9 @@ defmodule Raxol.DevTools.HotReload do
     new_queue = MapSet.put(state.reload_queue, path)
 
     # Cancel existing timer
-    if state.debounce_timer do
-      Process.cancel_timer(state.debounce_timer)
+    case state.debounce_timer do
+      nil -> :ok
+      timer -> Process.cancel_timer(timer)
     end
 
     # Set new debounce timer
@@ -342,10 +347,9 @@ defmodule Raxol.DevTools.HotReload do
 
     # Preserve state if enabled
     preserved_state =
-      if state.preserve_state do
-        preserve_component_states(modules_to_reload)
-      else
-        %{}
+      case state.preserve_state do
+        true -> preserve_component_states(modules_to_reload)
+        false -> %{}
       end
 
     # Reload modules
@@ -360,107 +364,155 @@ defmodule Raxol.DevTools.HotReload do
         match?({:error, _}, result)
       end)
 
-    if Enum.empty?(errors) do
-      # Restore state if preserved
-      if state.preserve_state and not Enum.empty?(preserved_state) do
-        restore_component_states(preserved_state)
-      end
+    case Enum.empty?(errors) do
+      true ->
+        # Restore state if preserved
+        case {state.preserve_state, Enum.empty?(preserved_state)} do
+          {true, false} -> restore_component_states(preserved_state)
+          _ -> :ok
+        end
 
-      # Execute after_reload hooks
-      execute_hooks(state.hooks.after_reload, modules_to_reload)
+        # Execute after_reload hooks
+        execute_hooks(state.hooks.after_reload, modules_to_reload)
 
-      Logger.info("Successfully reloaded #{length(modules_to_reload)} modules")
-    else
-      # Execute error hooks
-      execute_hooks(state.hooks.on_error, errors)
+        Logger.info("Successfully reloaded #{length(modules_to_reload)} modules")
+      false ->
+        # Execute error hooks
+        execute_hooks(state.hooks.on_error, errors)
 
-      Logger.error(
-        "Reload failed for modules: #{inspect(Enum.map(errors, &elem(&1, 0)))}"
-      )
+        Logger.error(
+          "Reload failed for modules: #{inspect(Enum.map(errors, &elem(&1, 0)))}"
+        )
     end
   end
 
   defp path_to_module(file_path) do
-    # Convert file path to module name
-    # This is a simplified implementation
-    relative_path = Path.relative_to(file_path, File.cwd!())
-
-    case String.split(relative_path, "/") do
-      ["lib" | rest] ->
-        rest
-        |> List.last()
-        |> String.trim_trailing(".ex")
-        |> Macro.camelize()
-        |> then(&Module.concat([&1]))
-
-      _ ->
-        nil
+    with {:ok, cwd} <- safe_get_cwd(),
+         {:ok, relative_path} <- safe_relative_to(file_path, cwd),
+         {:ok, module_name} <- extract_module_from_path(relative_path) do
+      module_name
+    else
+      {:error, _reason} -> nil
+      _ -> nil
     end
-  catch
-    _, _ -> nil
+  end
+
+  defp safe_get_cwd do
+    with {:ok, cwd} <- safe_file_cwd() do
+      {:ok, cwd}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp safe_relative_to(file_path, cwd) do
+    with {:ok, relative_path} <- safe_path_relative_to(file_path, cwd) do
+      {:ok, relative_path}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp extract_module_from_path(relative_path) do
+    with {:ok, path_parts} <- safe_string_split(relative_path, "/"),
+         {:ok, module_name} <- convert_path_to_module(path_parts) do
+      {:ok, module_name}
+    else
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   defp reload_single_module(module, _state) do
-    try do
-      # Get the current module's source file
-      case :code.get_object_code(module) do
-        {^module, _binary, filename} ->
-          # Purge the old version
-          :code.purge(module)
-          :code.delete(module)
-
-          # Recompile and load
-          case :compile.file(to_charlist(filename), [
-                 :return_errors,
-                 :return_warnings
-               ]) do
-            {:ok, ^module, binary, _warnings} ->
-              :code.load_binary(module, filename, binary)
-
-              # Trigger component refresh if it's a UI component
-              if is_component_module?(module) do
-                trigger_component_refresh(module)
-              end
-
-              :ok
-
-            {:error, errors, warnings} ->
-              Logger.error("Compilation errors: #{inspect(errors)}")
-              Logger.warning("Compilation warnings: #{inspect(warnings)}")
-              {:error, :compilation_failed}
-          end
-
-        :error ->
-          {:error, :module_not_found}
+    with {:ok, filename} <- get_module_source_file(module),
+         :ok <- purge_old_module_version(module),
+         {:ok, {binary, warnings}} <- recompile_module(filename, module),
+         :ok <- load_new_module_version(module, filename, binary),
+         :ok <- handle_component_refresh(module) do
+      case length(warnings) do
+        0 -> :ok
+        _ -> Logger.warning("Compilation warnings for #{module}: #{inspect(warnings)}")
       end
-    catch
-      kind, reason ->
-        {:error, {kind, reason}}
+      :ok
+    else
+      {:error, reason} -> {:error, reason}
+      error -> {:error, {:unexpected_reload_error, error}}
+    end
+  end
+
+  defp get_module_source_file(module) do
+    with {:ok, code_result} <- safe_code_get_object_code(module),
+         {:ok, filename} <- extract_filename_from_code_result(code_result, module) do
+      {:ok, filename}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp purge_old_module_version(module) do
+    with {:ok, :purged} <- safe_code_purge(module),
+         {:ok, :deleted} <- safe_code_delete(module) do
+      :ok
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp recompile_module(filename, expected_module) do
+    with {:ok, compile_result} <- safe_compile_file(filename),
+         {:ok, {binary, warnings}} <- validate_compile_result(compile_result, expected_module) do
+      {:ok, {binary, warnings}}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp load_new_module_version(module, filename, binary) do
+    with {:ok, :loaded} <- safe_code_load_binary(module, filename, binary) do
+      :ok
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp handle_component_refresh(module) do
+    with {:ok, :component_checked} <- safe_check_and_refresh_component(module) do
+      :ok
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
   defp execute_hooks(hooks, data) do
     Enum.each(hooks, fn hook ->
-      try do
-        hook.(data)
-      catch
-        kind, reason ->
-          Logger.error(
-            "Hook execution failed: #{inspect(kind)}, #{inspect(reason)}"
-          )
+      case safe_execute_hook(hook, data) do
+        :ok -> :ok
+        {:error, reason} -> 
+          Logger.error("Hook execution failed: #{inspect(reason)}")
       end
     end)
+  end
+
+  defp safe_execute_hook(hook, data) when is_function(hook) do
+    with {:ok, :executed} <- safe_function_call(hook, data) do
+      :ok
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp safe_execute_hook(_hook, _data) do
+    {:error, :invalid_hook}
   end
 
   defp preserve_component_states(modules) do
     # This would integrate with the actual component system
     # to preserve state across reloads
     Enum.reduce(modules, %{}, fn module, acc ->
-      if is_component_module?(module) do
-        state = get_component_state(module)
-        Map.put(acc, module, state)
-      else
-        acc
+      case is_component_module?(module) do
+        true ->
+          state = get_component_state(module)
+          Map.put(acc, module, state)
+        false -> acc
       end
     end)
   end
@@ -472,16 +524,29 @@ defmodule Raxol.DevTools.HotReload do
   end
 
   defp is_component_module?(module) do
-    # Check if module is a UI component
-    try do
-      module.__info__(:functions)
-      |> Enum.any?(fn {func, arity} ->
-        func in [:render, :component] and arity in [1, 2]
-      end)
-    catch
-      _, _ -> false
+    with {:ok, functions} <- safe_get_module_functions(module),
+         true <- has_component_functions?(functions) do
+      true
+    else
+      _ -> false
     end
   end
+
+  defp safe_get_module_functions(module) do
+    with {:ok, functions} <- safe_module_info(module, :functions) do
+      {:ok, functions}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp has_component_functions?(functions) when is_list(functions) do
+    Enum.any?(functions, fn {func, arity} ->
+      func in [:render, :component] and arity in [1, 2]
+    end)
+  end
+
+  defp has_component_functions?(_), do: false
 
   defp get_component_state(_module) do
     # Placeholder - would integrate with component state system
@@ -496,5 +561,249 @@ defmodule Raxol.DevTools.HotReload do
   defp trigger_component_refresh(_module) do
     # Placeholder - would trigger component re-render
     :ok
+  end
+
+  # Functional helper functions replacing try/catch with Task-based error handling
+
+  defp safe_path_join(dir, pattern) do
+    Task.async(fn -> Path.join(dir, pattern) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, reason} -> {:error, {:pattern_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_path_wildcard(pattern) do
+    Task.async(fn -> Path.wildcard(pattern) end)
+    |> Task.yield(1000)
+    |> case do
+      {:ok, files} -> {:ok, files}
+      {:exit, reason} -> {:error, {:wildcard_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_process_file_list(files, parent_pid) do
+    Task.async(fn ->
+      Enum.each(files, fn file ->
+        if file_recently_modified?(file) do
+          send(parent_pid, {:file_event, file, [:modified]})
+        end
+      end)
+      :processed
+    end)
+    |> Task.yield(2000)
+    |> case do
+      {:ok, :processed} -> {:ok, :processed}
+      {:exit, reason} -> {:error, {:file_processing_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_file_cwd do
+    Task.async(fn -> File.cwd!() end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, cwd} -> {:ok, cwd}
+      {:exit, reason} -> {:error, {:cwd_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_path_relative_to(file_path, cwd) do
+    Task.async(fn -> Path.relative_to(file_path, cwd) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, relative_path} -> {:ok, relative_path}
+      {:exit, reason} -> {:error, {:relative_path_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_string_split(string, delimiter) do
+    Task.async(fn -> String.split(string, delimiter) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, parts} -> {:ok, parts}
+      {:exit, reason} -> {:error, {:string_split_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp convert_path_to_module(path_parts) do
+    Task.async(fn ->
+      case path_parts do
+        ["lib" | rest] ->
+          module_name = 
+            rest
+            |> List.last()
+            |> String.trim_trailing(".ex")
+            |> Macro.camelize()
+            |> then(&Module.concat([&1]))
+          module_name
+        _ ->
+          throw(:invalid_path_structure)
+      end
+    end)
+    |> Task.yield(200)
+    |> case do
+      {:ok, module_name} -> {:ok, module_name}
+      {:exit, reason} -> {:error, {:module_extraction_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_code_get_object_code(module) do
+    Task.async(fn -> :code.get_object_code(module) end)
+    |> Task.yield(500)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, reason} -> {:error, {:code_info_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp extract_filename_from_code_result(code_result, module) do
+    case code_result do
+      {^module, _binary, filename} -> {:ok, filename}
+      :error -> {:error, :module_not_found}
+      _ -> {:error, :unexpected_code_result}
+    end
+  end
+
+  defp safe_code_purge(module) do
+    Task.async(fn -> 
+      :code.purge(module)
+      :purged
+    end)
+    |> Task.yield(500)
+    |> case do
+      {:ok, :purged} -> {:ok, :purged}
+      {:exit, reason} -> {:error, {:purge_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_code_delete(module) do
+    Task.async(fn ->
+      :code.delete(module)
+      :deleted
+    end)
+    |> Task.yield(500)
+    |> case do
+      {:ok, :deleted} -> {:ok, :deleted}
+      {:exit, reason} -> {:error, {:delete_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_compile_file(filename) do
+    Task.async(fn ->
+      :compile.file(to_charlist(filename), [:return_errors, :return_warnings])
+    end)
+    |> Task.yield(5000)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, reason} -> {:error, {:compilation_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp validate_compile_result(compile_result, expected_module) do
+    case compile_result do
+      {:ok, ^expected_module, binary, warnings} ->
+        {:ok, {binary, warnings}}
+      {:ok, other_module, _binary, _warnings} ->
+        {:error, {:module_mismatch, {expected_module, other_module}}}
+      {:error, errors, warnings} ->
+        Logger.error("Compilation errors: #{inspect(errors)}")
+        Logger.warning("Compilation warnings: #{inspect(warnings)}")
+        {:error, :compilation_failed}
+      _ ->
+        {:error, :unexpected_compile_result}
+    end
+  end
+
+  defp safe_code_load_binary(module, filename, binary) do
+    Task.async(fn ->
+      :code.load_binary(module, filename, binary)
+      :loaded
+    end)
+    |> Task.yield(1000)
+    |> case do
+      {:ok, :loaded} -> {:ok, :loaded}
+      {:exit, reason} -> {:error, {:load_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_check_and_refresh_component(module) do
+    Task.async(fn ->
+      if is_component_module?(module) do
+        trigger_component_refresh(module)
+      end
+      :component_checked
+    end)
+    |> Task.yield(500)
+    |> case do
+      {:ok, :component_checked} -> {:ok, :component_checked}
+      {:exit, reason} -> {:error, {:component_refresh_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_function_call(function, data) when is_function(function) do
+    Task.async(fn ->
+      function.(data)
+      :executed
+    end)
+    |> Task.yield(1000)
+    |> case do
+      {:ok, :executed} -> {:ok, :executed}
+      {:exit, reason} -> {:error, {:hook_exception, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_module_info(module, info_type) do
+    Task.async(fn -> module.__info__(info_type) end)
+    |> Task.yield(200)
+    |> case do
+      {:ok, info} -> {:ok, info}
+      {:exit, reason} -> {:error, {:module_info_error, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
   end
 end

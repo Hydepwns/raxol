@@ -148,17 +148,15 @@ defmodule Raxol.Tutorials.Runner do
   end
 
   @impl true
-  def handle_call(:show_current, _from, state) do
-    case state.state do
-      :idle ->
-        {:reply,
-         {:error, "No tutorial active. Use 'start <tutorial_id>' to begin."},
-         state}
+  def handle_call(:show_current, _from, %{state: :idle} = state) do
+    {:reply,
+     {:error, "No tutorial active. Use 'start <tutorial_id>' to begin."},
+     state}
+  end
 
-      :in_tutorial ->
-        output = format_current_step(state)
-        {:reply, {:ok, output}, state}
-    end
+  def handle_call(:show_current, _from, %{state: :in_tutorial} = state) do
+    output = format_current_step(state)
+    {:reply, {:ok, output}, state}
   end
 
   @impl true
@@ -197,14 +195,12 @@ defmodule Raxol.Tutorials.Runner do
 
   @impl true
   def handle_call(:run_example, _from, state) do
-    case InteractiveTutorial.get_current_position() do
-      {_tutorial, step} ->
-        result = run_example_code(step.example_code)
-        output = format_example_result(result)
-        {:reply, {:ok, output}, state}
-
-      nil ->
-        {:reply, {:error, "No active step"}, state}
+    with {_tutorial, step} <- InteractiveTutorial.get_current_position(),
+         result = run_example_code(step.example_code),
+         output = format_example_result(result) do
+      {:reply, {:ok, output}, state}
+    else
+      nil -> {:reply, {:error, "No active step"}, state}
     end
   end
 
@@ -435,24 +431,22 @@ defmodule Raxol.Tutorials.Runner do
     """
   end
 
+  defp format_progress(progress, nil), do: "No tutorial currently active."
+
   defp format_progress(progress, current_tutorial) do
-    if current_tutorial do
-      completed_steps = Map.get(progress, {current_tutorial.id, :steps}, [])
-      total_steps = length(current_tutorial.steps)
-      percentage = round(length(completed_steps) / total_steps * 100)
+    completed_steps = Map.get(progress, {current_tutorial.id, :steps}, [])
+    total_steps = length(current_tutorial.steps)
+    percentage = round(length(completed_steps) / total_steps * 100)
 
-      """
-      #{IO.ANSI.bright()}Progress for #{current_tutorial.title}:#{IO.ANSI.reset()}
+    """
+    #{IO.ANSI.bright()}Progress for #{current_tutorial.title}:#{IO.ANSI.reset()}
 
-      Completed: #{length(completed_steps)}/#{total_steps} steps (#{percentage}%)
-      #{format_progress_bar(%{completed_steps: completed_steps, total: total_steps})}
+    Completed: #{length(completed_steps)}/#{total_steps} steps (#{percentage}%)
+    #{format_progress_bar(%{completed_steps: completed_steps, total: total_steps})}
 
-      Completed steps:
-      #{format_completed_steps(completed_steps)}
-      """
-    else
-      "No tutorial currently active."
-    end
+    Completed steps:
+    #{format_completed_steps(completed_steps)}
+    """
   end
 
   defp format_progress_bar(progress) do
@@ -497,10 +491,9 @@ defmodule Raxol.Tutorials.Runner do
     key = {tutorial.id, :steps}
     completed_steps = Map.get(progress, key, [])
 
-    if step in completed_steps do
-      progress
-    else
-      Map.put(progress, key, completed_steps ++ [step])
+    case step in completed_steps do
+      true -> progress
+      false -> Map.put(progress, key, completed_steps ++ [step])
     end
   end
 end

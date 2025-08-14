@@ -3,8 +3,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   Handles screen-related CSI commands.
   """
 
-  import Raxol.Guards
-  alias Raxol.Terminal.Emulator
+    alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.CSIHandlers.SGRHandler
   alias Raxol.Terminal.ScreenBuffer
 
@@ -45,10 +44,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
 
   def handle_command(emulator, params, byte) do
     case Map.get(@command_handlers, byte) do
-      {handler, _description} when atom?(handler) ->
+      {handler, _description} when is_atom(handler) ->
         apply(__MODULE__, handler, [emulator, params])
 
-      {fun, _description} when function?(fun) ->
+      {fun, _description} when is_function(fun) ->
         fun.(emulator, params)
 
       nil ->

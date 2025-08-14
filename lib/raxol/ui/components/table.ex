@@ -321,41 +321,68 @@ defmodule Raxol.UI.Components.Table do
   end
 
   def handle_event({:button_click, button_id}, _context, state) do
-    cond do
-      is_binary(button_id) and String.ends_with?(button_id, "_next_page") ->
-        if state.options.paginate do
-          max_page = ceil(length(state.data) / state.page_size)
-          new_page = min(state.current_page + 1, max_page)
-          {:ok, %{state | current_page: new_page}}
-        else
-          {:ok, state}
+    handle_button_click(button_id, state)
+  end
+
+  defp handle_button_click(button_id, state) when is_binary(button_id) do
+    case categorize_button(button_id) do
+      :next_page -> handle_next_page_click(state)
+      :prev_page -> handle_prev_page_click(state)
+      {:sort, column_id} -> handle_sort_click(column_id, state)
+      :unknown -> {:ok, state}
+    end
+  end
+
+  defp handle_button_click(_button_id, state), do: {:ok, state}
+
+  defp categorize_button(button_id) do
+    Enum.find_value(
+      [
+        {&String.ends_with?(&1, "_next_page"), :next_page},
+        {&String.ends_with?(&1, "_prev_page"), :prev_page},
+        {&String.contains?(&1, "_sort_"), fn id ->
+          column_id = String.replace(id, ~r/.*_sort_/, "") |> String.to_atom()
+          {:sort, column_id}
+        end}
+      ],
+      :unknown,
+      fn {predicate, result} ->
+        if predicate.(button_id) do
+          if is_function(result), do: result.(button_id), else: result
         end
+      end
+    )
+  end
 
-      is_binary(button_id) and String.ends_with?(button_id, "_prev_page") ->
-        if state.options.paginate do
-          new_page = max(state.current_page - 1, 1)
-          {:ok, %{state | current_page: new_page}}
-        else
-          {:ok, state}
-        end
+  defp handle_next_page_click(state) do
+    if state.options.paginate do
+      max_page = ceil(length(state.data) / state.page_size)
+      new_page = min(state.current_page + 1, max_page)
+      {:ok, %{state | current_page: new_page}}
+    else
+      {:ok, state}
+    end
+  end
 
-      is_binary(button_id) and String.contains?(button_id, "_sort_") ->
-        column_id =
-          String.replace(button_id, ~r/.*_sort_/, "") |> String.to_atom()
+  defp handle_prev_page_click(state) do
+    if state.options.paginate do
+      new_page = max(state.current_page - 1, 1)
+      {:ok, %{state | current_page: new_page}}
+    else
+      {:ok, state}
+    end
+  end
 
-        if state.options.sortable do
-          new_direction =
-            if state.sort_by == column_id and state.sort_direction == :asc,
-              do: :desc,
-              else: :asc
+  defp handle_sort_click(column_id, state) do
+    if state.options.sortable do
+      new_direction =
+        if state.sort_by == column_id and state.sort_direction == :asc,
+          do: :desc,
+          else: :asc
 
-          {:ok, %{state | sort_by: column_id, sort_direction: new_direction}}
-        else
-          {:ok, state}
-        end
-
-      true ->
-        {:ok, state}
+      {:ok, %{state | sort_by: column_id, sort_direction: new_direction}}
+    else
+      {:ok, state}
     end
   end
 
@@ -661,12 +688,12 @@ defmodule Raxol.UI.Components.Table do
   end
 
   defp sort_indicator(sort_by, sort_direction, column_id) do
-    cond do
-      sort_by != column_id -> ""
-      sort_direction == :asc -> "↑"
-      sort_direction == :desc -> "↓"
-    end
+    get_sort_indicator(sort_by == column_id, sort_direction)
   end
+
+  defp get_sort_indicator(false, _sort_direction), do: ""
+  defp get_sort_indicator(true, :asc), do: "↑"
+  defp get_sort_indicator(true, :desc), do: "↓"
 
   def render(state) do
     render(state, %{})

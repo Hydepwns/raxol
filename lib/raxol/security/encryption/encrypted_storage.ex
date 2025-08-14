@@ -803,6 +803,6 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
   end
 
   defp get_current_user do
-    Process.get(:current_user, "system")
+    Raxol.Security.UserContext.Server.get_current_user("system")
   end
 end

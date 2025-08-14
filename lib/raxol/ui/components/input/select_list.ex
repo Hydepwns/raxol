@@ -11,8 +11,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
   * Pagination for very large lists
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.UI.Components.Input.SelectList.{
     Search,
     Pagination,
@@ -262,15 +261,14 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   def update(message, state) do
     # If state is an empty map or missing required fields, initialize a default state
-    state =
-      cond do
-        map?(state) and map_size(state) == 0 -> init(%{options: []})
-        not map?(state) -> init(%{options: []})
-        not Map.has_key?(state, :options) -> init(%{options: []})
-        true -> state
-      end
-
+    state = normalize_state(state)
     do_update(message, state)
+  end
+
+  defp normalize_state(state) when not is_map(state), do: init(%{options: []})
+  defp normalize_state(state) when map_size(state) == 0, do: init(%{options: []})
+  defp normalize_state(%{} = state) do
+    if Map.has_key?(state, :options), do: state, else: init(%{options: []})
   end
 
   defp do_update({:update_props, new_props}, state),
@@ -405,7 +403,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
       raise ArgumentError, "SelectList requires :options prop"
     end
 
-    if not list?(props.options) do
+    if not is_list(props.options) do
       raise ArgumentError, "SelectList :options must be a list"
     end
 
@@ -413,45 +411,34 @@ defmodule Raxol.UI.Components.Input.SelectList do
     Enum.each(props.options, &validate_option!/1)
   end
 
-  defp validate_option!(option) do
-    cond do
-      tuple?(option) and tuple_size(option) == 2 ->
-        {label, _value} = option
-        validate_label!(label)
+  defp validate_option!({label, _value}) do
+    validate_label!(label)
+  end
 
-      tuple?(option) and tuple_size(option) == 3 ->
-        {label, _value, style} = option
-        validate_label!(label)
-        validate_style!(style)
+  defp validate_option!({label, _value, style}) do
+    validate_label!(label)
+    validate_style!(style)
+  end
 
-      true ->
-        raise ArgumentError,
-              "SelectList options must be {label, value} or {label, value, style} tuples"
-    end
+  defp validate_option!(_invalid_option) do
+    raise ArgumentError,
+          "SelectList options must be {label, value} or {label, value, style} tuples"
   end
 
   defp validate_label!(label) do
-    if not binary?(label) do
+    if not is_binary(label) do
       raise ArgumentError, "SelectList option labels must be strings"
     end
   end
 
   defp validate_style!(style) do
-    if not map?(style) do
+    if not is_map(style) do
       raise ArgumentError,
             "SelectList option style (third element) must be a map"
     end
   end
 
-  defp ensure_state(state) do
-    # If state is an empty map or missing required fields, initialize a default state
-    cond do
-      map?(state) and map_size(state) == 0 -> init(%{options: []})
-      not map?(state) -> init(%{options: []})
-      not Map.has_key?(state, :options) -> init(%{options: []})
-      true -> state
-    end
-  end
+  defp ensure_state(state), do: normalize_state(state)
 
   defp handle_key_event(key, state) do
     action = classify_key_action(key, state)
@@ -537,7 +524,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
   end
 
   defp single_character?(key) do
-    binary?(key) and byte_size(key) == 1
+    is_binary(key) and byte_size(key) == 1
   end
 
   defp search_enabled_and_focused?(state) do

@@ -4,8 +4,7 @@ defmodule Raxol.UI.Components.Display.Table do
   """
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
-  import Raxol.Guards
-
+  
   # alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
   alias Raxol.View.Elements
@@ -162,12 +161,7 @@ defmodule Raxol.UI.Components.Display.Table do
         {:noreply, updated_state}
 
       {:sort, column} ->
-        new_direction =
-          cond do
-            state.sort_by != column -> :asc
-            state.sort_direction == :asc -> :desc
-            true -> :asc
-          end
+        new_direction = determine_sort_direction(state.sort_by, state.sort_direction, column)
 
         updated_state = %{
           state
@@ -285,7 +279,7 @@ defmodule Raxol.UI.Components.Display.Table do
   # Needs border calculation too if borders take space
   # Corrected: Ensure height is at least 1 if set
   # Adjust for header, ensure min 1
-  defp visible_height(%{max_height: h}) when integer?(h) and h >= 1,
+  defp visible_height(%{max_height: h}) when is_integer(h) and h >= 1,
     do: max(1, h - 1)
 
   # Minimum 1 row if height is set
@@ -301,7 +295,7 @@ defmodule Raxol.UI.Components.Display.Table do
   defp calculate_header_widths(nil), do: []
   defp calculate_header_widths([]), do: []
 
-  defp calculate_header_widths(columns) when list?(columns) do
+  defp calculate_header_widths(columns) when is_list(columns) do
     Enum.map(columns, fn col -> String.length(Map.get(col, :header, "")) end)
   end
 
@@ -311,7 +305,7 @@ defmodule Raxol.UI.Components.Display.Table do
   defp calculate_data_widths([], _columns), do: []
 
   defp calculate_data_widths(data, columns)
-       when list?(data) and list?(columns) do
+       when is_list(data) and is_list(columns) do
     Enum.reduce(data, List.duplicate(0, length(columns)), fn row, acc ->
       Enum.zip_with(acc, columns, fn max_width, col ->
         value = Map.get(row, Map.get(col, :key))
@@ -321,6 +315,10 @@ defmodule Raxol.UI.Components.Display.Table do
   end
 
   defp calculate_data_widths(_, _), do: []
+
+  defp determine_sort_direction(current_sort_by, current_direction, new_column) when current_sort_by != new_column, do: :asc
+  defp determine_sort_direction(_current_sort_by, :asc, _new_column), do: :desc
+  defp determine_sort_direction(_current_sort_by, _current_direction, _new_column), do: :asc
 
   defp process_data(data, state) do
     data
@@ -345,23 +343,23 @@ defmodule Raxol.UI.Components.Display.Table do
   defp sort_data(data, column, direction) do
     Enum.sort_by(data, fn row ->
       value = Map.get(row, column)
-      if direction == :asc, do: value, else: -value
+      case direction do
+        :asc -> value
+        _ -> -value
+      end
     end)
   end
 
   # Helper to get theme style for either Theme type
-  defp get_theme_style(theme, component_type) do
-    cond do
-      struct?(theme, Raxol.UI.Theming.Theme) ->
-        Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
-
-      map?(theme) and Map.has_key?(theme, :component_styles) ->
-        Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
-
-      true ->
-        %{}
-    end
+  defp get_theme_style(%Raxol.UI.Theming.Theme{} = theme, component_type) do
+    Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
   end
+
+  defp get_theme_style(%{component_styles: _} = theme, component_type) do
+    Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
+  end
+
+  defp get_theme_style(_theme, _component_type), do: %{}
 
   defp apply_border_style(style, :none) do
     %{style | border: %{style.border | style: :none, width: 0}}
@@ -379,35 +377,34 @@ defmodule Raxol.UI.Components.Display.Table do
     %{style | border: %{style.border | style: :double, width: 1}}
   end
 
-  defp apply_border_style(style, custom_border) when map?(custom_border) do
+  defp apply_border_style(style, custom_border) when is_map(custom_border) do
     %{style | border: Map.merge(style.border, custom_border)}
   end
 
   defp get_row_styles(state) do
     fn index, _row ->
-      cond do
-        # Selected row style
-        state.selected_row == index ->
-          [bg: :blue, fg: :white]
-
-        # Striped row style
-        state.striped and rem(index, 2) == 1 ->
-          [bg: :bright_black]
-
-        # Default row style
-        true ->
-          []
-      end
+      get_row_style_for_index(state, index)
     end
   end
 
+  defp get_row_style_for_index(%{selected_row: index} = _state, index) do
+    [bg: :blue, fg: :white]
+  end
+
+  defp get_row_style_for_index(%{striped: true} = _state, index) when rem(index, 2) == 1 do
+    [bg: :bright_black]
+  end
+
+  defp get_row_style_for_index(_state, _index), do: []
+
   defp ensure_disabled_focused(element, state) do
-    if map?(element) do
-      element
-      |> Map.put_new(:disabled, Map.get(state, :disabled, false))
-      |> Map.put_new(:focused, Map.get(state, :focused, false))
-    else
-      element
+    case is_map(element) do
+      true ->
+        element
+        |> Map.put_new(:disabled, Map.get(state, :disabled, false))
+        |> Map.put_new(:focused, Map.get(state, :focused, false))
+      false ->
+        element
     end
   end
 
@@ -454,25 +451,28 @@ defmodule Raxol.UI.Components.Display.Table do
   end
 
   defp handle_click(state, {:row, row_index}, attrs) do
-    if Map.get(attrs, :selectable, false) do
+    case Map.get(attrs, :selectable, false) do
+      true ->
       {:noreply, %{state | selected_row: row_index}}
-    else
+      false ->
       {:noreply, state}
     end
   end
 
   defp handle_click(state, {:header, column}, attrs) do
-    if Map.get(attrs, :sortable, false) do
+    case Map.get(attrs, :sortable, false) do
+      true ->
       {:noreply, state, [{:update, {:sort, column}}]}
-    else
+      false ->
       {:noreply, state}
     end
   end
 
   defp handle_input(state, {:filter, term}, attrs) do
-    if Map.get(attrs, :filterable, false) do
+    case Map.get(attrs, :filterable, false) do
+      true ->
       {:noreply, state, [{:update, {:filter, term}}]}
-    else
+      false ->
       {:noreply, state}
     end
   end

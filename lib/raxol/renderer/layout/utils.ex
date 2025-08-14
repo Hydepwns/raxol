@@ -9,8 +9,7 @@ defmodule Raxol.Renderer.Layout.Utils do
   - Panel layout utilities
   """
 
-  import Raxol.Guards
-
+  
   @doc """
   Calculates the size of an element based on its size specification and available space.
 
@@ -23,13 +22,13 @@ defmodule Raxol.Renderer.Layout.Utils do
 
   A tuple {width, height} representing the calculated size.
   """
-  def calculate_size({w, h}, _space) when integer?(w) and integer?(h),
+  def calculate_size({w, h}, _space) when is_integer(w) and is_integer(h),
     do: {max(0, w), max(0, h)}
 
-  def calculate_size({w, :auto}, space) when integer?(w),
+  def calculate_size({w, :auto}, space) when is_integer(w),
     do: {max(0, w), max(0, space.height)}
 
-  def calculate_size({:auto, h}, space) when integer?(h),
+  def calculate_size({:auto, h}, space) when is_integer(h),
     do: {max(0, space.width), max(0, h)}
 
   def calculate_size(:auto, space),
@@ -53,33 +52,33 @@ defmodule Raxol.Renderer.Layout.Utils do
   def ensure_required_keys(child, space, default_type \\ :box) do
     case child do
       %{type: type, position: position, size: size}
-      when not nil?(type) and not nil?(position) and not nil?(size) ->
+      when not is_nil(type) and not is_nil(position) and not is_nil(size) ->
         child
 
       %{type: type, position: position}
-      when not nil?(type) and not nil?(position) ->
+      when not is_nil(type) and not is_nil(position) ->
         Map.put(child, :size, {space.width, space.height})
 
-      %{type: type, size: size} when not nil?(type) and not nil?(size) ->
+      %{type: type, size: size} when not is_nil(type) and not is_nil(size) ->
         Map.put(child, :position, {space.x, space.y})
 
-      %{type: type} when not nil?(type) ->
+      %{type: type} when not is_nil(type) ->
         Map.merge(child, %{
           position: {space.x, space.y},
           size: {space.width, space.height}
         })
 
       %{position: position, size: size}
-      when not nil?(position) and not nil?(size) ->
+      when not is_nil(position) and not is_nil(size) ->
         Map.put(child, :type, default_type)
 
-      %{position: position} when not nil?(position) ->
+      %{position: position} when not is_nil(position) ->
         Map.merge(child, %{
           type: default_type,
           size: {space.width, space.height}
         })
 
-      %{size: size} when not nil?(size) ->
+      %{size: size} when not is_nil(size) ->
         Map.merge(child, %{
           type: default_type,
           position: {space.x, space.y}
@@ -128,7 +127,7 @@ defmodule Raxol.Renderer.Layout.Utils do
         else
           Enum.flat_map(list, fn child_node ->
             case child_node do
-              %{type: type} when not nil?(type) ->
+              %{type: type} when not is_nil(type) ->
                 [ensure_required_keys(child_node, space, type)]
 
               _ ->
@@ -138,7 +137,7 @@ defmodule Raxol.Renderer.Layout.Utils do
         end
 
       # Handle map with type
-      %{type: type} = child_map when not nil?(type) ->
+      %{type: type} = child_map when not is_nil(type) ->
         [ensure_required_keys(child_map, space, type)]
 
       # Handle map without type

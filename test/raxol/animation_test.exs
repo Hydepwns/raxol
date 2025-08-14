@@ -4,7 +4,7 @@ defmodule Raxol.AnimationTest do
   import Raxol.AccessibilityTestHelpers
 
   alias Raxol.Animation.{Framework, Animation, StateManager}
-  alias Raxol.Core.Accessibility
+  alias Raxol.Core.Accessibility, as: Accessibility
   alias Raxol.Core.UserPreferences
 
   # Helper to wait for animation completion

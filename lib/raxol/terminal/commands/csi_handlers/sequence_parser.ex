@@ -7,34 +7,23 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.SequenceParser do
   Parses a cursor sequence and returns the handler and parameters.
   """
   def parse_cursor_sequence(sequence) when is_list(sequence) do
-    cond do
-      parse_position_sequence(sequence) != :error ->
-        parse_position_sequence(sequence)
-
-      parse_movement_sequence(sequence) != :error ->
-        parse_movement_sequence(sequence)
-
-      parse_screen_sequence(sequence) != :error ->
-        parse_screen_sequence(sequence)
-
-      parse_scroll_sequence(sequence) != :error ->
-        parse_scroll_sequence(sequence)
-
-      parse_attribute_sequence(sequence) != :error ->
-        parse_attribute_sequence(sequence)
-
-      parse_device_sequence(sequence) != :error ->
-        parse_device_sequence(sequence)
-
-      parse_charset_sequence(sequence) != :error ->
-        parse_charset_sequence(sequence)
-
-      parse_save_restore_sequence(sequence) != :error ->
-        parse_save_restore_sequence(sequence)
-
-      true ->
-        {:error, :unknown_sequence, sequence}
-    end
+    parsers = [
+      &parse_position_sequence/1,
+      &parse_movement_sequence/1,
+      &parse_screen_sequence/1,
+      &parse_scroll_sequence/1,
+      &parse_attribute_sequence/1,
+      &parse_device_sequence/1,
+      &parse_charset_sequence/1,
+      &parse_save_restore_sequence/1
+    ]
+    
+    Enum.find_value(parsers, {:error, :unknown_sequence, sequence}, fn parser ->
+      case parser.(sequence) do
+        :error -> nil
+        result -> result
+      end
+    end)
   end
 
   def parse_cursor_sequence(_), do: :error

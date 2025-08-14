@@ -5,8 +5,8 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   """
   use ExUnit.Case, async: false
 
-  alias Raxol.Core.Accessibility.ThemeIntegration
-  alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.Accessibility, as: Accessibility.ThemeIntegration
+  alias Raxol.Core.Events.Manager, as: Manager, as: EventManager
   alias Raxol.Core.UserPreferences
 
   setup do

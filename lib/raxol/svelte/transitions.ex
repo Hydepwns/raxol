@@ -377,14 +377,13 @@ defmodule Raxol.Svelte.Animator do
   defp apply_easing(t, :bounce) do
     n1 = 7.5625
     d1 = 2.75
-
-    cond do
-      t < 1 / d1 -> n1 * t * t
-      t < 2 / d1 -> n1 * (t - 1.5 / d1) * (t - 1.5 / d1) + 0.75
-      t < 2.5 / d1 -> n1 * (t - 2.25 / d1) * (t - 2.25 / d1) + 0.9375
-      true -> n1 * (t - 2.625 / d1) * (t - 2.625 / d1) + 0.984375
-    end
+    calculate_bounce(t, n1, d1)
   end
+  
+  defp calculate_bounce(t, n1, d1) when t < 1 / d1, do: n1 * t * t
+  defp calculate_bounce(t, n1, d1) when t < 2 / d1, do: n1 * (t - 1.5 / d1) * (t - 1.5 / d1) + 0.75
+  defp calculate_bounce(t, n1, d1) when t < 2.5 / d1, do: n1 * (t - 2.25 / d1) * (t - 2.25 / d1) + 0.9375
+  defp calculate_bounce(t, n1, d1), do: n1 * (t - 2.625 / d1) * (t - 2.625 / d1) + 0.984375
 
   defp interpolate(from, to, progress) when is_number(from) and is_number(to) do
     from + (to - from) * progress

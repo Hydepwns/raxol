@@ -5,8 +5,7 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
   """
   use ExUnit.Case, async: false
   import ExUnit.CaptureLog
-  import Raxol.Guards
-
+  
   alias Raxol.Core.Runtime.Lifecycle
   alias Raxol.Core.Runtime.Application
 
@@ -99,7 +98,7 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
 
     test "start_application uses app_name from module if available" do
       {:ok, pid} = Lifecycle.start_application(TestApp, [])
-      assert pid?(pid)
+      assert is_pid(pid)
       assert Process.alive?(pid)
     end
 

@@ -7,8 +7,7 @@ defmodule Raxol.Plugins.Lifecycle do
   """
 
   require Raxol.Core.Runtime.Log
-  import Raxol.Guards
-
+  
   alias Raxol.Plugins.{PluginConfig, Manager.Core}
 
   alias Raxol.Plugins.Lifecycle.{
@@ -28,7 +27,7 @@ defmodule Raxol.Plugins.Lifecycle do
   @spec load_plugin(Core.t(), atom(), map()) ::
           {:ok, Core.t()} | {:error, String.t()}
   def load_plugin(%Core{} = manager, module, config \\ %{})
-      when atom?(module) do
+      when is_atom(module) do
     plugin_name = Initialization.get_plugin_id_from_metadata(module)
 
     case load_plugin_internal(manager, plugin_name, module, config) do
@@ -81,7 +80,7 @@ defmodule Raxol.Plugins.Lifecycle do
   """
   @spec load_plugins(Core.t(), list(atom())) ::
           {:ok, Core.t()} | {:error, String.t()}
-  def load_plugins(%Core{} = manager, modules) when list?(modules) do
+  def load_plugins(%Core{} = manager, modules) when is_list(modules) do
     module_configs = prepare_module_configs(modules)
 
     with {:ok, initialized_plugins} <-
@@ -150,7 +149,7 @@ defmodule Raxol.Plugins.Lifecycle do
   """
   @spec unload_plugin(Core.t(), String.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
-  def unload_plugin(%Core{} = manager, name) when binary?(name) do
+  def unload_plugin(%Core{} = manager, name) when is_binary(name) do
     plugin_key = Dependencies.normalize_plugin_key(name)
 
     case Map.get(manager.plugins, plugin_key) do
@@ -230,7 +229,7 @@ defmodule Raxol.Plugins.Lifecycle do
   """
   @spec enable_plugin(Core.t(), String.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
-  def enable_plugin(%Core{} = manager, name) when binary?(name) do
+  def enable_plugin(%Core{} = manager, name) when is_binary(name) do
     with {:ok, plugin} <- get_plugin(manager, name),
          :ok <- check_plugin_dependencies(plugin, manager),
          {:ok, updated_config} <-
@@ -266,7 +265,7 @@ defmodule Raxol.Plugins.Lifecycle do
   """
   @spec disable_plugin(Core.t(), String.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
-  def disable_plugin(%Core{} = manager, name) when binary?(name) do
+  def disable_plugin(%Core{} = manager, name) when is_binary(name) do
     case get_plugin(manager, name) do
       {:ok, plugin} ->
         {:ok, updated_config} =
@@ -362,7 +361,7 @@ defmodule Raxol.Plugins.Lifecycle do
         else: plugin_name
 
     case Enum.find(initialized_plugins, &(&1.name == plugin_name_str)) do
-      plugin when not nil?(plugin) ->
+      plugin when not is_nil(plugin) ->
         plugin_key = Dependencies.normalize_plugin_key(plugin.name)
         updated_plugins = Map.put(acc_manager.plugins, plugin_key, plugin)
 

@@ -9,8 +9,7 @@ defmodule Raxol.UI.Layout.Panels do
   * Panel-specific spacing and constraints
   """
 
-  import Raxol.Guards
-  import Kernel, except: [nil?: 1]
+    # All Kernel functions are now available
 
   alias Raxol.UI.Layout.Engine
   require Raxol.Core.Runtime.Log
@@ -98,10 +97,10 @@ defmodule Raxol.UI.Layout.Panels do
       nil ->
         []
 
-      c when list?(c) ->
+      c when is_list(c) ->
         c
 
-      c when map?(c) ->
+      c when is_map(c) ->
         [c]
 
       _ ->
@@ -180,7 +179,7 @@ defmodule Raxol.UI.Layout.Panels do
   end
 
   defp determine_base_width(children_size, available_space, explicit_width) do
-    if children_size.width == 0 and nil?(explicit_width) do
+    if children_size.width == 0 and is_nil(explicit_width) do
       available_space.width
     else
       # Add borders
@@ -189,7 +188,7 @@ defmodule Raxol.UI.Layout.Panels do
   end
 
   defp determine_base_height(children_size, available_space, explicit_height) do
-    if children_size.height == 0 and nil?(explicit_height) do
+    if children_size.height == 0 and is_nil(explicit_height) do
       available_space.height
     else
       # Add borders

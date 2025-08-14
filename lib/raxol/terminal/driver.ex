@@ -355,33 +355,40 @@ defmodule Raxol.Terminal.Driver do
   end
 
   defp get_terminal_size do
-    cond do
-      Mix.env() == :test ->
-        {:ok, 80, 24}
+    determine_terminal_size()
+  end
 
-      not real_tty?() ->
+  defp determine_terminal_size do
+    if Mix.env() == :test do
+      {:ok, 80, 24}
+    else
+      if real_tty?() do
+        get_termbox_size()
+      else
         stty_size_fallback()
+      end
+    end
+  end
 
-      true ->
-        try do
-          width =
-            if @termbox2_available,
-              do: apply(:termbox2_nif, :tb_width, []),
-              else: 80
+  defp get_termbox_size do
+    try do
+      width =
+        if @termbox2_available,
+          do: apply(:termbox2_nif, :tb_width, []),
+          else: 80
 
-          height =
-            if @termbox2_available,
-              do: apply(:termbox2_nif, :tb_height, []),
-              else: 24
+      height =
+        if @termbox2_available,
+          do: apply(:termbox2_nif, :tb_height, []),
+          else: 24
 
-          if width > 0 and height > 0 do
-            {:ok, width, height}
-          else
-            stty_size_fallback()
-          end
-        rescue
-          _ -> stty_size_fallback()
-        end
+      if width > 0 and height > 0 do
+        {:ok, width, height}
+      else
+        stty_size_fallback()
+      end
+    rescue
+      _ -> stty_size_fallback()
     end
   end
 
@@ -471,37 +478,20 @@ defmodule Raxol.Terminal.Driver do
     }
 
     # Character or Special Key
-    cond do
-      # Printable character (key_code is 0 or matches char_code for some keys)
-      char_code > 0 ->
-        Map.put(data, :char, <<char_code::utf8>>)
-
-      # Special keys based on simulated key_codes
-      key_code == 65 ->
-        Map.put(data, :key, :up)
-
-      key_code == 66 ->
-        Map.put(data, :key, :down)
-
-      key_code == 67 ->
-        Map.put(data, :key, :right)
-
-      key_code == 68 ->
-        Map.put(data, :key, :left)
-
-      key_code == 265 ->
-        Map.put(data, :key, :f1)
-
-      key_code == 266 ->
-        Map.put(data, :key, :f2)
-
-      # Add other special key translations here if needed
-
-      # Unknown key
-      true ->
-        Map.put(data, :key, :unknown)
-    end
+    translate_key_or_char(data, char_code, key_code)
   end
+
+  defp translate_key_or_char(data, char_code, key_code) when char_code > 0 do
+    Map.put(data, :char, <<char_code::utf8>>)
+  end
+
+  defp translate_key_or_char(data, _char_code, 65), do: Map.put(data, :key, :up)
+  defp translate_key_or_char(data, _char_code, 66), do: Map.put(data, :key, :down)
+  defp translate_key_or_char(data, _char_code, 67), do: Map.put(data, :key, :right)
+  defp translate_key_or_char(data, _char_code, 68), do: Map.put(data, :key, :left)
+  defp translate_key_or_char(data, _char_code, 265), do: Map.put(data, :key, :f1)
+  defp translate_key_or_char(data, _char_code, 266), do: Map.put(data, :key, :f2)
+  defp translate_key_or_char(data, _char_code, _key_code), do: Map.put(data, :key, :unknown)
 
   # Helper for mouse button translation
   defp translate_mouse_button(btn_code) do

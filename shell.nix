@@ -1,24 +1,9 @@
 { pkgs ? import <nixpkgs> {} }:
 
 let
-  # Use specific nixpkgs version for reproducibility
-  pinnedPkgs = import (pkgs.fetchFromGitHub {
-    owner = "NixOS";
-    repo = "nixpkgs";
-    rev = "24.11";
-    sha256 = "sha256-CqCX4JG7UiHvkrBTpYC3wcEurvbtTADLbo3Ns2CEoL8=";
-  }) {};
-
-  # Erlang/Elixir setup
-  erlang = pinnedPkgs.beam.interpreters.erlang_25.override {
-    enableHipe = true;
-    enableDebugInfo = true;
-  };
-  elixir = pinnedPkgs.beam.packages.erlang_25.elixir_1_17;
-
   # Core dependencies
-  buildInputs = with pinnedPkgs; [
-    erlang elixir
+  buildInputs = with pkgs; [
+    elixir
     # Build essentials
     gcc gnumake cmake pkg-config
     # Database
@@ -31,18 +16,14 @@ let
     python3Packages.pip python3Packages.setuptools python3Packages.wheel
   ];
 
-in pinnedPkgs.mkShell {
+in pkgs.mkShell {
   inherit buildInputs;
 
   shellHook = ''
     echo "Setting up Raxol development environment..."
     
     # Environment setup
-    export PATH="${erlang}/bin:${elixir}/bin:${pinnedPkgs.imagemagick}/bin:$PATH"
-    export ERLANG_PATH=${erlang}
-    export ELIXIR_PATH=${elixir}
-    export ERL_EI_INCLUDE_DIR="${erlang}/lib/erlang/usr/include"
-    export ERL_EI_LIBDIR="${erlang}/lib/erlang/usr/lib"
+    export PATH="${pkgs.elixir}/bin:${pkgs.imagemagick}/bin:$PATH"
     export MIX_ENV=dev
     
     # PostgreSQL setup

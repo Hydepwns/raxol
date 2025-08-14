@@ -686,12 +686,7 @@ defmodule Raxol.Audit.Events do
         opts
       )
       when is_list(opts) do
-    change_type =
-      cond do
-        is_nil(old_value) && not is_nil(new_value) -> :create
-        not is_nil(old_value) && is_nil(new_value) -> :delete
-        true -> :update
-      end
+    change_type = determine_change_type(old_value, new_value)
 
     %ConfigurationChangeEvent{
       event_id: generate_event_id(),
@@ -752,4 +747,10 @@ defmodule Raxol.Audit.Events do
       {:error, {:missing_required_fields, missing}}
     end
   end
+  
+  # Helper functions for pattern matching refactoring
+
+  defp determine_change_type(nil, new_value) when not is_nil(new_value), do: :create
+  defp determine_change_type(old_value, nil) when not is_nil(old_value), do: :delete
+  defp determine_change_type(_old_value, _new_value), do: :update
 end

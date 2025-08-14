@@ -122,18 +122,20 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   @impl Raxol.UI.Components.Base.Component
   # Correct arity
   def render(state, %{} = _props) do
-    display_text =
-      if state.value == "" and not state.focused,
-        do: state.placeholder,
-        else: state.value
+    display_text = case {state.value == "", state.focused} do
+      {true, false} -> state.placeholder
+      _ -> state.value
+    end
 
     # Placeholder color handling
-    text_color =
-      if state.value == "" and not state.focused, do: :gray, else: :white
+    text_color = case {state.value == "", state.focused} do
+      {true, false} -> :gray
+      _ -> :white
+    end
 
     # Render with cursor if focused
-    rendered_content =
-      if state.focused do
+    rendered_content = case state.focused do
+      true ->
         before = String.slice(display_text, 0, state.cursor_pos)
 
         after_cursor =
@@ -149,9 +151,9 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
           Raxol.View.Elements.label(content: "|"),
           Raxol.View.Elements.label(content: after_cursor)
         ]
-      else
+      false ->
         Raxol.View.Elements.label(content: display_text)
-      end
+    end
 
     dsl_result =
       Raxol.View.Elements.box id: state.id,
@@ -168,7 +170,10 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
 
   defp handle_key_event(key_data, state) do
     msg = map_key_to_message(key_data)
-    if msg, do: update(msg, state), else: {state, []}
+    case msg do
+      nil -> {state, []}
+      message -> update(message, state)
+    end
   end
 
   defp map_key_to_message(%{key: k, modifiers: []})
@@ -196,7 +201,10 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
 
     new_cursor_pos = state.cursor_pos + 1
     new_state = %{state | value: new_value, cursor_pos: new_cursor_pos}
-    commands = if state.on_change, do: [{state.on_change, new_value}], else: []
+    commands = case state.on_change do
+      nil -> []
+      callback -> [{callback, new_value}]
+    end
     {new_state, commands}
   end
 
@@ -213,43 +221,51 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   end
 
   defp backspace(state) do
-    if state.cursor_pos > 0 do
-      new_value =
-        String.slice(state.value, 0, max(0, state.cursor_pos - 1)) <>
-          String.slice(state.value, max(0, state.cursor_pos)..-1//1)
+    case state.cursor_pos > 0 do
+      true ->
+        new_value =
+          String.slice(state.value, 0, max(0, state.cursor_pos - 1)) <>
+            String.slice(state.value, max(0, state.cursor_pos)..-1//1)
 
-      new_cursor_pos = state.cursor_pos - 1
-      new_state = %{state | value: new_value, cursor_pos: new_cursor_pos}
+        new_cursor_pos = state.cursor_pos - 1
+        new_state = %{state | value: new_value, cursor_pos: new_cursor_pos}
 
-      commands =
-        if state.on_change, do: [{state.on_change, new_value}], else: []
+        commands = case state.on_change do
+          nil -> []
+          callback -> [{callback, new_value}]
+        end
 
-      {new_state, commands}
-    else
-      {state, []}
+        {new_state, commands}
+      false ->
+        {state, []}
     end
   end
 
   defp delete(state) do
-    if state.cursor_pos < String.length(state.value) do
-      new_value =
-        String.slice(state.value, 0, state.cursor_pos) <>
-          String.slice(state.value, max(0, state.cursor_pos + 1)..-1//1)
+    case state.cursor_pos < String.length(state.value) do
+      true ->
+        new_value =
+          String.slice(state.value, 0, state.cursor_pos) <>
+            String.slice(state.value, max(0, state.cursor_pos + 1)..-1//1)
 
-      new_state = %{state | value: new_value}
+        new_state = %{state | value: new_value}
 
-      commands =
-        if state.on_change, do: [{state.on_change, new_value}], else: []
+        commands = case state.on_change do
+          nil -> []
+          callback -> [{callback, new_value}]
+        end
 
-      {new_state, commands}
-    else
-      {state, []}
+        {new_state, commands}
+      false ->
+        {state, []}
     end
   end
 
   defp submit(state) do
-    commands =
-      if state.on_submit, do: [{state.on_submit, state.value}], else: []
+    commands = case state.on_submit do
+      nil -> []
+      callback -> [{callback, state.value}]
+    end
 
     {state, commands}
   end

@@ -51,33 +51,24 @@ defmodule Raxol.Events.TerminalCreatedEvent do
     required = [:terminal_id, :user_id, :width, :height, :working_directory]
     missing = Enum.filter(required, &(Map.get(event, &1) == nil))
 
-    if Enum.empty?(missing) do
-      :ok
-    else
-      {:error, {:missing_required_fields, missing}}
+    case Enum.empty?(missing) do
+      true -> :ok
+      false -> {:error, {:missing_required_fields, missing}}
     end
   end
 
-  defp validate_dimensions(event) do
-    cond do
-      event.width < 20 or event.width > 300 ->
-        {:error, {:invalid_width, event.width}}
+  defp validate_dimensions(event) when event.width < 20 or event.width > 300,
+    do: {:error, {:invalid_width, event.width}}
+    
+  defp validate_dimensions(event) when event.height < 5 or event.height > 100,
+    do: {:error, {:invalid_height, event.height}}
+    
+  defp validate_dimensions(_event), do: :ok
 
-      event.height < 5 or event.height > 100 ->
-        {:error, {:invalid_height, event.height}}
-
-      true ->
-        :ok
-    end
-  end
-
-  defp validate_user_id(event) do
-    if is_binary(event.user_id) and String.length(event.user_id) > 0 do
-      :ok
-    else
-      {:error, :invalid_user_id}
-    end
-  end
+  defp validate_user_id(%{user_id: user_id}) when is_binary(user_id) and byte_size(user_id) > 0,
+    do: :ok
+  defp validate_user_id(_event),
+    do: {:error, :invalid_user_id}
 end
 
 defmodule Raxol.Events.TerminalConfiguredEvent do
@@ -126,20 +117,16 @@ defmodule Raxol.Events.TerminalConfiguredEvent do
     required = [:terminal_id, :user_id, :changes, :version]
     missing = Enum.filter(required, &(Map.get(event, &1) == nil))
 
-    if Enum.empty?(missing) do
-      :ok
-    else
-      {:error, {:missing_required_fields, missing}}
+    case Enum.empty?(missing) do
+      true -> :ok
+      false -> {:error, {:missing_required_fields, missing}}
     end
   end
 
-  defp validate_changes(event) do
-    if is_list(event.changes) and length(event.changes) > 0 do
-      :ok
-    else
-      {:error, :no_changes_specified}
-    end
-  end
+  defp validate_changes(%{changes: changes}) when is_list(changes) and length(changes) > 0,
+    do: :ok
+  defp validate_changes(_event),
+    do: {:error, :no_changes_specified}
 end
 
 defmodule Raxol.Events.TerminalInputReceivedEvent do
@@ -192,38 +179,27 @@ defmodule Raxol.Events.TerminalInputReceivedEvent do
 
     missing = Enum.filter(required, &(Map.get(event, &1) == nil))
 
-    if Enum.empty?(missing) do
-      :ok
-    else
-      {:error, {:missing_required_fields, missing}}
+    case Enum.empty?(missing) do
+      true -> :ok
+      false -> {:error, {:missing_required_fields, missing}}
     end
   end
 
-  defp validate_input_type(event) do
-    valid_types = [:text, :keypress, :paste, :control_sequence]
+  defp validate_input_type(%{input_type: type}) when type in [:text, :keypress, :paste, :control_sequence],
+    do: :ok
+  defp validate_input_type(%{input_type: type}),
+    do: {:error, {:invalid_input_type, type}}
 
-    if event.input_type in valid_types do
-      :ok
-    else
-      {:error, {:invalid_input_type, event.input_type}}
-    end
-  end
-
-  defp validate_input_data(event) do
-    cond do
-      is_nil(event.input_data) ->
-        {:error, :input_data_required}
-
-      not is_binary(event.input_data) ->
-        {:error, :input_data_must_be_string}
-
-      byte_size(event.input_data) > 10_000 ->
-        {:error, :input_data_too_large}
-
-      true ->
-        :ok
-    end
-  end
+  defp validate_input_data(%{input_data: nil}),
+    do: {:error, :input_data_required}
+    
+  defp validate_input_data(event) when not is_binary(event.input_data),
+    do: {:error, :input_data_must_be_string}
+    
+  defp validate_input_data(event) when byte_size(event.input_data) > 10_000,
+    do: {:error, :input_data_too_large}
+    
+  defp validate_input_data(_event), do: :ok
 end
 
 defmodule Raxol.Events.TerminalOutputGeneratedEvent do
@@ -276,22 +252,16 @@ defmodule Raxol.Events.TerminalOutputGeneratedEvent do
     required = [:terminal_id, :output_data, :output_type, :sequence_number]
     missing = Enum.filter(required, &(Map.get(event, &1) == nil))
 
-    if Enum.empty?(missing) do
-      :ok
-    else
-      {:error, {:missing_required_fields, missing}}
+    case Enum.empty?(missing) do
+      true -> :ok
+      false -> {:error, {:missing_required_fields, missing}}
     end
   end
 
-  defp validate_output_type(event) do
-    valid_types = [:stdout, :stderr, :control_sequence, :bell]
-
-    if event.output_type in valid_types do
-      :ok
-    else
-      {:error, {:invalid_output_type, event.output_type}}
-    end
-  end
+  defp validate_output_type(%{output_type: type}) when type in [:stdout, :stderr, :control_sequence, :bell],
+    do: :ok
+  defp validate_output_type(%{output_type: type}),
+    do: {:error, {:invalid_output_type, type}}
 end
 
 defmodule Raxol.Events.TerminalThemeAppliedEvent do
@@ -356,31 +326,27 @@ defmodule Raxol.Events.TerminalThemeAppliedEvent do
     required = [:terminal_id, :user_id, :theme_id, :theme_name, :color_scheme]
     missing = Enum.filter(required, &(Map.get(event, &1) == nil))
 
-    if Enum.empty?(missing) do
-      :ok
-    else
-      {:error, {:missing_required_fields, missing}}
+    case Enum.empty?(missing) do
+      true -> :ok
+      false -> {:error, {:missing_required_fields, missing}}
     end
   end
 
-  defp validate_color_scheme(event) do
-    if is_map(event.color_scheme) do
-      required_colors = [:background, :foreground]
+  defp validate_color_scheme(%{color_scheme: color_scheme}) when is_map(color_scheme) do
+    required_colors = [:background, :foreground]
 
-      missing_colors =
-        Enum.filter(required_colors, fn color ->
-          not Map.has_key?(event.color_scheme, color)
-        end)
+    missing_colors =
+      Enum.filter(required_colors, fn color ->
+        not Map.has_key?(color_scheme, color)
+      end)
 
-      if Enum.empty?(missing_colors) do
-        validate_color_values(event.color_scheme)
-      else
-        {:error, {:missing_colors, missing_colors}}
-      end
-    else
-      {:error, :invalid_color_scheme_format}
+    case Enum.empty?(missing_colors) do
+      true -> validate_color_values(color_scheme)
+      false -> {:error, {:missing_colors, missing_colors}}
     end
   end
+  defp validate_color_scheme(_event),
+    do: {:error, :invalid_color_scheme_format}
 
   defp validate_color_values(color_scheme) do
     invalid_colors =
@@ -389,10 +355,9 @@ defmodule Raxol.Events.TerminalThemeAppliedEvent do
         not is_valid_color?(value)
       end)
 
-    if Enum.empty?(invalid_colors) do
-      :ok
-    else
-      {:error, {:invalid_color_values, invalid_colors}}
+    case Enum.empty?(invalid_colors) do
+      true -> :ok
+      false -> {:error, {:invalid_color_values, invalid_colors}}
     end
   end
 
@@ -467,10 +432,9 @@ defmodule Raxol.Events.TerminalClosedEvent do
     required = [:terminal_id, :user_id, :close_reason, :closed_at]
     missing = Enum.filter(required, &(Map.get(event, &1) == nil))
 
-    if Enum.empty?(missing) do
-      :ok
-    else
-      {:error, {:missing_required_fields, missing}}
+    case Enum.empty?(missing) do
+      true -> :ok
+      false -> {:error, {:missing_required_fields, missing}}
     end
   end
 
@@ -483,10 +447,9 @@ defmodule Raxol.Events.TerminalClosedEvent do
       :process_terminated
     ]
 
-    if event.close_reason in valid_reasons do
-      :ok
-    else
-      {:error, {:invalid_close_reason, event.close_reason}}
+    case event.close_reason in valid_reasons do
+      true -> :ok
+      false -> {:error, {:invalid_close_reason, event.close_reason}}
     end
   end
 end
@@ -551,10 +514,9 @@ defmodule Raxol.Events.TerminalErrorOccurredEvent do
     required = [:terminal_id, :user_id, :error_type, :error_message, :context]
     missing = Enum.filter(required, &(Map.get(event, &1) == nil))
 
-    if Enum.empty?(missing) do
-      :ok
-    else
-      {:error, {:missing_required_fields, missing}}
+    case Enum.empty?(missing) do
+      true -> :ok
+      false -> {:error, {:missing_required_fields, missing}}
     end
   end
 
@@ -567,10 +529,9 @@ defmodule Raxol.Events.TerminalErrorOccurredEvent do
       :resource_error
     ]
 
-    if event.error_type in valid_types do
-      :ok
-    else
-      {:error, {:invalid_error_type, event.error_type}}
+    case event.error_type in valid_types do
+      true -> :ok
+      false -> {:error, {:invalid_error_type, event.error_type}}
     end
   end
 end

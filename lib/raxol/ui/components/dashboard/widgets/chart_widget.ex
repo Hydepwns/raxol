@@ -8,8 +8,7 @@ defmodule Raxol.UI.Components.Dashboard.Widgets.ChartWidget do
   # --- State ---
 
   defstruct [:id, :config, :data, :component_opts]
-  import Raxol.Guards
-
+  
   # --- Lifecycle / State Management ---
 
   @spec init(keyword()) :: map()
@@ -57,11 +56,11 @@ defmodule Raxol.UI.Components.Dashboard.Widgets.ChartWidget do
 
   # --- Private Helpers ---
 
-  defp chart_opts(component_opts_map) when map?(component_opts_map) do
+  defp chart_opts(component_opts_map) when is_map(component_opts_map) do
     Keyword.new(component_opts_map)
   end
 
-  defp chart_opts(component_opts_list) when list?(component_opts_list) do
+  defp chart_opts(component_opts_list) when is_list(component_opts_list) do
     component_opts_list
   end
 

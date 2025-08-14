@@ -400,7 +400,7 @@ defmodule Raxol.Audit.StorageTest do
       assert length(results) == 1
 
       {:ok, results} = Storage.query(%{text_search: "nonexistent term"})
-      assert length(results) == 0
+      assert Enum.empty?(results)
     end
   end
 

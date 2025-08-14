@@ -104,7 +104,7 @@ defmodule Raxol.UI.Components.Button do
       Style.new(
         padding: get_padding_for_size(size),
         align: :center,
-        width: if(full_width, do: :fill, else: :auto),
+        width: get_width_for_full_width(full_width),
         border: Borders.new(%{style: :rounded})
       )
 
@@ -114,14 +114,7 @@ defmodule Raxol.UI.Components.Button do
     combined_style =
       Style.merge(base_style, Style.merge(color_style, size_style))
 
-    if disabled do
-      Style.merge(
-        combined_style,
-        Style.new(%{color: :gray, background: :dark_gray})
-      )
-    else
-      combined_style
-    end
+    apply_disabled_style(combined_style, disabled)
   end
 
   defp get_button_style(custom_style, size, full_width, disabled)
@@ -130,21 +123,14 @@ defmodule Raxol.UI.Components.Button do
       Style.new(
         padding: get_padding_for_size(size),
         align: :center,
-        width: if(full_width, do: :fill, else: :auto),
+        width: get_width_for_full_width(full_width),
         border: Borders.new(%{style: :rounded})
       )
 
     custom_style_struct = Style.new(custom_style)
     combined_style = Style.merge(base_style, custom_style_struct)
 
-    if disabled do
-      Style.merge(
-        combined_style,
-        Style.new(%{color: :gray, background: :dark_gray})
-      )
-    else
-      combined_style
-    end
+    apply_disabled_style(combined_style, disabled)
   end
 
   defp get_color_style(:primary) do
@@ -187,15 +173,24 @@ defmodule Raxol.UI.Components.Button do
     :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
   end
 
-  defp get_button_content(button) do
-    # Combine icon and label if icon exists
-    if button.icon do
-      # Assuming icon is an atom representing the icon character/name
-      # You might need a helper to convert icon atom to string/char
-      "#{Atom.to_string(button.icon)} #{button.label}"
-    else
-      button.label
-    end
+  defp get_width_for_full_width(true), do: :fill
+  defp get_width_for_full_width(false), do: :auto
+
+  defp apply_disabled_style(style, true) do
+    Style.merge(
+      style,
+      Style.new(%{color: :gray, background: :dark_gray})
+    )
+  end
+
+  defp apply_disabled_style(style, false), do: style
+
+  defp get_button_content(%{icon: nil, label: label}), do: label
+  
+  defp get_button_content(%{icon: icon, label: label}) do
+    # Assuming icon is an atom representing the icon character/name
+    # You might need a helper to convert icon atom to string/char
+    "#{Atom.to_string(icon)} #{label}"
   end
 
   @doc """

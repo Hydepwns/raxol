@@ -64,30 +64,17 @@ defmodule Raxol.Plugins.EventHandler.Common do
         acc,
         result_handler
       ) do
-    cond do
-      not is_map(plugin) ->
+    with :ok <- validate_plugin_map(plugin),
+         :ok <- validate_plugin_enabled(plugin),
+         :ok <- validate_plugin_callback(plugin, callback_name, required_arity) do
+      execute_plugin_callback(plugin, callback_name, args, acc, result_handler)
+    else
+      {:error, :invalid_plugin} ->
         log_invalid_plugin(plugin)
         {:cont, acc}
-
-      not Map.get(plugin, :enabled, false) ->
+      
+      _other ->
         {:cont, acc}
-
-      not has_required_callback?(plugin, callback_name, required_arity) ->
-        {:cont, acc}
-
-      true ->
-        try do
-          # Get the plugin from the manager
-          plugin_instance = Core.get_plugin(acc.manager, plugin.name)
-          # Prepend the plugin instance to the args
-          full_args = [plugin_instance | args]
-          result = apply(plugin.module, callback_name, full_args)
-          result_handler.(acc, plugin, callback_name, result)
-        rescue
-          error ->
-            log_plugin_crash(plugin, callback_name, error)
-            {:cont, acc}
-        end
     end
   end
 
@@ -124,15 +111,43 @@ defmodule Raxol.Plugins.EventHandler.Common do
   Extracts plugin state from a plugin struct.
   """
   @spec extract_plugin_state(plugin()) :: map()
-  def extract_plugin_state(plugin) when is_map(plugin) do
-    cond do
-      Map.has_key?(plugin, :state) -> plugin.state
-      Map.has_key?(plugin, :plugin_state) -> plugin.plugin_state
-      true -> %{}
+  def extract_plugin_state(%{state: state}), do: state
+  def extract_plugin_state(%{plugin_state: state}), do: state
+  def extract_plugin_state(plugin) when is_map(plugin), do: %{}
+
+  def extract_plugin_state(_), do: %{}
+
+  # Helper functions for plugin validation
+  defp validate_plugin_map(plugin) when not is_map(plugin), do: {:error, :invalid_plugin}
+  defp validate_plugin_map(_plugin), do: :ok
+
+  defp validate_plugin_enabled(%{enabled: true}), do: :ok
+  defp validate_plugin_enabled(plugin) do
+    if Map.get(plugin, :enabled, false), do: :ok, else: {:error, :disabled}
+  end
+
+  defp validate_plugin_callback(plugin, callback_name, required_arity) do
+    if has_required_callback?(plugin, callback_name, required_arity) do
+      :ok
+    else
+      {:error, :missing_callback}
     end
   end
 
-  def extract_plugin_state(_), do: %{}
+  defp execute_plugin_callback(plugin, callback_name, args, acc, result_handler) do
+    try do
+      # Get the plugin from the manager
+      plugin_instance = Core.get_plugin(acc.manager, plugin.name)
+      # Prepend the plugin instance to the args
+      full_args = [plugin_instance | args]
+      result = apply(plugin.module, callback_name, full_args)
+      result_handler.(acc, plugin, callback_name, result)
+    rescue
+      error ->
+        log_plugin_crash(plugin, callback_name, error)
+        {:cont, acc}
+    end
+  end
 
   @doc """
   Logs an error from a plugin.

@@ -108,14 +108,16 @@ defmodule Raxol.Security.Auditor do
   """
   def validate_sql_query(query, params \\ []) do
     # Check query structure
-    if contains_sql_injection?(query) do
-      {:error, :critical, "SQL injection pattern detected"}
-    else
-      # Validate parameters
-      case validate_sql_params(params) do
-        :ok -> {:ok, {query, params}}
-        error -> error
-      end
+    case contains_sql_injection?(query) do
+      true ->
+        {:error, :critical, "SQL injection pattern detected"}
+
+      false ->
+        # Validate parameters
+        case validate_sql_params(params) do
+          :ok -> {:ok, {query, params}}
+          error -> error
+        end
     end
   end
 
@@ -130,22 +132,16 @@ defmodule Raxol.Security.Auditor do
     key = "rate_limit:#{identifier}:#{action}"
     current_count = get_rate_count(key)
 
-    if current_count >= limit do
-      {:error, :medium, "Rate limit exceeded"}
-    else
-      increment_rate_count(key, window)
-      {:ok, :allowed}
-    end
+    check_and_update_rate_limit(current_count, limit, key, window)
   end
 
   @doc """
   Validates CSRF tokens.
   """
   def validate_csrf_token(session_token, request_token) do
-    if secure_compare(session_token, request_token) do
-      {:ok, :valid}
-    else
-      {:error, :high, "Invalid CSRF token"}
+    case secure_compare(session_token, request_token) do
+      true -> {:ok, :valid}
+      false -> {:error, :high, "Invalid CSRF token"}
     end
   end
 
@@ -174,11 +170,7 @@ defmodule Raxol.Security.Auditor do
         end
       end)
 
-    if Enum.empty?(errors) do
-      {:ok, :secure}
-    else
-      {:error, :medium, "Security headers issues: #{inspect(errors)}"}
-    end
+    validate_header_errors(errors)
   end
 
   @doc """
@@ -257,26 +249,23 @@ defmodule Raxol.Security.Auditor do
   end
 
   defp check_patterns(input, :sql) do
-    if contains_sql_injection?(input) do
-      {:error, :critical, "SQL injection pattern detected"}
-    else
-      {:ok, input}
+    case contains_sql_injection?(input) do
+      true -> {:error, :critical, "SQL injection pattern detected"}
+      false -> {:ok, input}
     end
   end
 
   defp check_patterns(input, :html) do
-    if contains_xss?(input) do
-      {:error, :high, "XSS pattern detected"}
-    else
-      {:ok, input}
+    case contains_xss?(input) do
+      true -> {:error, :high, "XSS pattern detected"}
+      false -> {:ok, input}
     end
   end
 
   defp check_patterns(input, :path) do
-    if contains_path_traversal?(input) do
-      {:error, :high, "Path traversal pattern detected"}
-    else
-      {:ok, input}
+    case contains_path_traversal?(input) do
+      true -> {:error, :high, "Path traversal pattern detected"}
+      false -> {:ok, input}
     end
   end
 
@@ -325,38 +314,34 @@ defmodule Raxol.Security.Auditor do
 
   defp sanitize_input(input, _, _), do: {:ok, input}
 
+  defp validate_username(username) when byte_size(username) < 3 do
+    {:error, :low, "Username too short"}
+  end
+
+  defp validate_username(username) when byte_size(username) > 50 do
+    {:error, :low, "Username too long"}
+  end
+
   defp validate_username(username) do
-    cond do
-      String.length(username) < 3 ->
-        {:error, :low, "Username too short"}
-
-      String.length(username) > 50 ->
-        {:error, :low, "Username too long"}
-
-      not Regex.match?(~r/^[a-zA-Z0-9_.-]+$/, username) ->
-        {:error, :medium, "Invalid username format"}
-
-      true ->
-        {:ok, username}
+    if Regex.match?(~r/^[a-zA-Z0-9_.-]+$/, username) do
+      {:ok, username}
+    else
+      {:error, :medium, "Invalid username format"}
     end
   end
 
+  defp validate_password(password) when byte_size(password) < 8 do
+    {:error, :medium, "Password too short"}
+  end
+
   defp validate_password(password) do
-    cond do
-      String.length(password) < 8 ->
-        {:error, :medium, "Password too short"}
-
-      not Regex.match?(~r/[A-Z]/, password) ->
-        {:error, :low, "Password must contain uppercase"}
-
-      not Regex.match?(~r/[a-z]/, password) ->
-        {:error, :low, "Password must contain lowercase"}
-
-      not Regex.match?(~r/[0-9]/, password) ->
-        {:error, :low, "Password must contain numbers"}
-
-      true ->
-        {:ok, password}
+    with true <- Regex.match?(~r/[A-Z]/, password) || {:error, :low, "Password must contain uppercase"},
+         true <- Regex.match?(~r/[a-z]/, password) || {:error, :low, "Password must contain lowercase"},
+         true <- Regex.match?(~r/[0-9]/, password) || {:error, :low, "Password must contain numbers"} do
+      {:ok, password}
+    else
+      {:error, level, message} -> {:error, level, message}
+      false -> {:error, :low, "Password validation failed"}
     end
   end
 
@@ -568,5 +553,40 @@ defmodule Raxol.Security.Auditor do
   defp audit_dependencies do
     # Check for vulnerable dependencies
     {:ok, :dependencies_secure}
+  end
+
+  ## Helper functions for refactored code
+
+  defp check_and_update_rate_limit(current_count, limit, _key, _window) when current_count >= limit do
+    {:error, :medium, "Rate limit exceeded"}
+  end
+
+  defp check_and_update_rate_limit(_current_count, _limit, key, window) do
+    increment_rate_count(key, window)
+    {:ok, :allowed}
+  end
+
+  defp validate_header_errors([]) do
+    {:ok, :secure}
+  end
+
+  defp validate_header_errors(errors) do
+    {:error, :medium, "Security headers issues: #{inspect(errors)}"}
+  end
+
+  defp process_audit_results([]) do
+    {:ok, :all_passed}
+  end
+
+  defp process_audit_results(failures) do
+    {:error, :audit_failed, failures}
+  end
+
+  defp validate_input_length(input, max_length) when byte_size(input) <= max_length do
+    {:ok, input}
+  end
+
+  defp validate_input_length(_input, _max_length) do
+    {:error, :low, "Input exceeds maximum length"}
   end
 end

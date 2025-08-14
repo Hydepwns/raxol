@@ -16,60 +16,70 @@ defmodule Raxol.Application do
       %{}
     )
 
-    children =
-      if Mix.env() == :test do
-        # Use mock version for tests
-        [
-          # Use a mock version of the Terminal.Driver if in test env
-          {Raxol.Test.MockApplicationSupervisor, []}
-        ]
-      else
-        # Use real version for dev/prod
-        [
-          # Start the Ecto Repo
-          Raxol.Repo,
-          # Start Phoenix PubSub
-          {Phoenix.PubSub, name: Raxol.PubSub},
-          # Start the RaxolWeb Endpoint
-          RaxolWeb.Endpoint,
-          # Start RaxolWeb Telemetry
-          RaxolWeb.Telemetry,
-          # Start Rate Limit Manager
-          RaxolWeb.RateLimitManager,
-          # Start the Dynamic Supervisor for Raxol applications
-          Raxol.DynamicSupervisor,
-          # Start the ErrorRecovery GenServer
-          Raxol.Core.ErrorRecovery,
-          # Start the UserPreferences GenServer
-          Raxol.Core.UserPreferences,
-          # Start the Performance Profiler
-          Raxol.Core.Performance.Profiler,
-          # Start the Performance Monitor
-          Raxol.Core.Performance.Monitor,
-          # Start the Terminal Sync System
-          {Raxol.Terminal.Sync.System, []},
-          # Start the Terminal Supervisor
-          {Raxol.Terminal.Supervisor, []}
-        ] ++
-          if IO.ANSI.enabled?() do
-            [
-              # Start the Terminal Driver only if in a TTY
-              {Raxol.Terminal.Driver, nil}
-            ]
-          else
-            Raxol.Core.Runtime.Log.warning_with_context(
-              "[Raxol.Application] Not attached to a TTY. Terminal driver will not be started.",
-              %{}
-            )
-
-            []
-          end
-      end
+    children = get_children_for_env(Mix.env())
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Raxol.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp get_children_for_env(:test) do
+    # Use mock version for tests
+    [
+      # Use a mock version of the Terminal.Driver if in test env
+      {Raxol.Test.MockApplicationSupervisor, []}
+    ]
+  end
+
+  defp get_children_for_env(_env) do
+    # Use real version for dev/prod
+    core_children = [
+      # Start the Ecto Repo
+      Raxol.Repo,
+      # Start Phoenix PubSub
+      {Phoenix.PubSub, name: Raxol.PubSub},
+      # Start the RaxolWeb Endpoint
+      RaxolWeb.Endpoint,
+      # Start RaxolWeb Telemetry
+      RaxolWeb.Telemetry,
+      # Start Rate Limit Manager
+      RaxolWeb.RateLimitManager,
+      # Start the Dynamic Supervisor for Raxol applications
+      Raxol.DynamicSupervisor,
+      # Start the ErrorRecovery GenServer
+      Raxol.Core.ErrorRecovery,
+      # Start the UserPreferences GenServer
+      Raxol.Core.UserPreferences,
+      # Start the Performance Profiler
+      Raxol.Core.Performance.Profiler,
+      # Start the Performance Monitor
+      Raxol.Core.Performance.Monitor,
+      # Start the Terminal Sync System
+      {Raxol.Terminal.Sync.System, []},
+      # Start the Terminal Supervisor
+      {Raxol.Terminal.Supervisor, []}
+    ]
+
+    core_children ++ get_terminal_driver_children()
+  end
+
+  defp get_terminal_driver_children do
+    case IO.ANSI.enabled?() do
+      true ->
+        [
+          # Start the Terminal Driver only if in a TTY
+          {Raxol.Terminal.Driver, nil}
+        ]
+
+      false ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[Raxol.Application] Not attached to a TTY. Terminal driver will not be started.",
+          %{}
+        )
+
+        []
+    end
   end
 end
 

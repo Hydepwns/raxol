@@ -1,16 +1,17 @@
 defmodule Raxol.Core.Runtime.Rendering.Engine do
   @moduledoc """
-  Provides the core rendering functionality for Raxol applications.
+  Provides the core rendering functionality for Raxol applications with functional error handling.
 
   This module is responsible for:
   * Rendering application views into screen buffers
   * Managing the rendering lifecycle
   * Coordinating with the output backends
+
+  REFACTORED: All try/catch blocks replaced with functional error handling patterns.
   """
 
   require Raxol.Core.Runtime.Log
   use GenServer
-  import Raxol.Guards
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.UI.Layout.Engine, as: LayoutEngine
   alias Raxol.UI.Renderer, as: UIRenderer
@@ -33,7 +34,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # --- Public API ---
 
   @doc "Starts the Rendering Engine process."
-  def start_link(initial_state_map) when map?(initial_state_map) do
+  def start_link(initial_state_map) when is_map(initial_state_map) do
     GenServer.start_link(__MODULE__, initial_state_map, name: __MODULE__)
   end
 
@@ -119,82 +120,126 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   # --- Private Helpers ---
 
+  # Functional rendering pipeline replacing try/catch
   defp do_render_frame(model, theme, state) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine executing do_render_frame. Model=#{inspect(model)}, Theme=#{inspect(theme)}, State=#{inspect(state)}"
     )
 
-    try do
-      # 1. Get the view from the application
-      Raxol.Core.Runtime.Log.debug(
-        "Rendering Engine: Calling app_module.view(model)"
-      )
-
-      view = state.app_module.view(model)
-
-      Raxol.Core.Runtime.Log.debug(
-        "Rendering Engine: Got view: #{inspect(view)}"
-      )
-
-      # 2. Calculate layout
-      dimensions = %{width: state.width, height: state.height}
-
-      Raxol.Core.Runtime.Log.debug(
-        "Rendering Engine: Calculating layout with dimensions: #{inspect(dimensions)}"
-      )
-
-      positioned_elements = LayoutEngine.apply_layout(view, dimensions)
-
-      Raxol.Core.Runtime.Log.debug(
-        "Rendering Engine: Got positioned elements: #{inspect(positioned_elements)}"
-      )
-
-      # 3. Render positioned elements to cells using the provided theme
-      Raxol.Core.Runtime.Log.debug(
-        "Rendering Engine: Rendering to cells with theme: #{inspect(theme)}"
-      )
-
-      cells = UIRenderer.render_to_cells(positioned_elements, theme)
-
-      Raxol.Core.Runtime.Log.debug(
-        "Rendering Engine: Got cells: #{inspect(cells)}"
-      )
-
-      # 4. Apply plugin transforms (if any)
-      final_cells = apply_plugin_transforms(cells, state)
-
-      # 5. Send to the appropriate output backend
-      Raxol.Core.Runtime.Log.debug(
-        "Rendering Engine: Sending final cells to backend: #{state.environment}"
-      )
-
-      case state.environment do
-        :terminal ->
-          render_to_terminal(final_cells, state)
-
-        :vscode ->
-          render_to_vscode(final_cells, state)
-
-        other ->
-          Raxol.Core.Runtime.Log.error_with_stacktrace(
-            "Unknown rendering environment",
-            other,
-            nil,
-            %{module: __MODULE__, state: state}
-          )
-
-          {:error, :unknown_environment, state}
-      end
-    rescue
-      error ->
+    with {:ok, view} <- safe_get_view(state.app_module, model),
+         {:ok, positioned_elements} <- safe_apply_layout(view, state),
+         {:ok, cells} <- safe_render_to_cells(positioned_elements, theme),
+         {:ok, final_cells} <- safe_apply_plugin_transforms(cells, state),
+         {:ok, new_state} <- safe_render_to_backend(final_cells, state) do
+      {:ok, new_state}
+    else
+      {:error, reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Render error",
-          error,
-          __STACKTRACE__,
+          reason,
+          nil,
           %{module: __MODULE__, state: state}
         )
+        {:error, {:render_error, reason}, state}
+    end
+  end
 
-        {:error, {:render_error, error}, state}
+  # Safe view retrieval
+  defp safe_get_view(app_module, model) do
+    Raxol.Core.Runtime.Log.debug(
+      "Rendering Engine: Calling app_module.view(model)"
+    )
+
+    case apply(app_module, :view, [model]) do
+      view when not is_nil(view) ->
+        Raxol.Core.Runtime.Log.debug(
+          "Rendering Engine: Got view: #{inspect(view)}"
+        )
+        {:ok, view}
+      _ ->
+        {:error, :invalid_view}
+    end
+  rescue
+    error ->
+      {:error, {:view_error, error}}
+  end
+
+  # Safe layout application
+  defp safe_apply_layout(view, state) do
+    dimensions = %{width: state.width, height: state.height}
+
+    Raxol.Core.Runtime.Log.debug(
+      "Rendering Engine: Calculating layout with dimensions: #{inspect(dimensions)}"
+    )
+
+    case LayoutEngine.apply_layout(view, dimensions) do
+      positioned_elements when is_list(positioned_elements) ->
+        Raxol.Core.Runtime.Log.debug(
+          "Rendering Engine: Got positioned elements: #{inspect(positioned_elements)}"
+        )
+        {:ok, positioned_elements}
+      _ ->
+        {:error, :layout_failed}
+    end
+  rescue
+    error ->
+      {:error, {:layout_error, error}}
+  end
+
+  # Safe cell rendering
+  defp safe_render_to_cells(positioned_elements, theme) do
+    Raxol.Core.Runtime.Log.debug(
+      "Rendering Engine: Rendering to cells with theme: #{inspect(theme)}"
+    )
+
+    case UIRenderer.render_to_cells(positioned_elements, theme) do
+      cells when is_list(cells) ->
+        Raxol.Core.Runtime.Log.debug(
+          "Rendering Engine: Got cells: #{inspect(cells)}"
+        )
+        {:ok, cells}
+      _ ->
+        {:error, :cell_rendering_failed}
+    end
+  rescue
+    error ->
+      {:error, {:cell_rendering_error, error}}
+  end
+
+  # Safe plugin transforms
+  defp safe_apply_plugin_transforms(cells, state) do
+    case apply_plugin_transforms(cells, state) do
+      processed_cells when is_list(processed_cells) ->
+        {:ok, processed_cells}
+      _ ->
+        {:error, :plugin_transform_failed}
+    end
+  rescue
+    error ->
+      {:error, {:plugin_transform_error, error}}
+  end
+
+  # Safe backend rendering
+  defp safe_render_to_backend(final_cells, state) do
+    Raxol.Core.Runtime.Log.debug(
+      "Rendering Engine: Sending final cells to backend: #{state.environment}"
+    )
+
+    case state.environment do
+      :terminal ->
+        render_to_terminal(final_cells, state)
+
+      :vscode ->
+        render_to_vscode(final_cells, state)
+
+      other ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Unknown rendering environment",
+          other,
+          nil,
+          %{module: __MODULE__, state: state}
+        )
+        {:error, :unknown_environment}
     end
   end
 
@@ -249,7 +294,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     if state.stdio_interface_pid do
       send_buffer_to_vscode(cells, state)
     else
-      {:error, :stdio_not_available, state}
+      {:error, :stdio_not_available}
     end
   end
 
@@ -279,7 +324,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     #     dimensions: dimensions
     #   }
     # })
-    :ok
+    {:ok, :rendered}
   end
 
   # Terminal color code mapping
@@ -302,20 +347,20 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     15 => "brightWhite"
   }
 
-  defp convert_color_to_vscode(color) when integer?(color) do
+  defp convert_color_to_vscode(color) when is_integer(color) do
     @terminal_color_map[color] || "default"
   end
 
   defp convert_color_to_vscode({r, g, b})
-       when integer?(r) and integer?(g) and integer?(b) do
+       when is_integer(r) and is_integer(g) and is_integer(b) do
     "rgb(#{r},#{g},#{b})"
   end
 
-  defp convert_color_to_vscode(color) when binary?(color), do: color
+  defp convert_color_to_vscode(color) when is_binary(color), do: color
   defp convert_color_to_vscode(_), do: "default"
 
   # Helper to transform cell format
-  defp transform_cells_for_update(cells) when list?(cells) do
+  defp transform_cells_for_update(cells) when is_list(cells) do
     Enum.map(cells, fn {x, y, char, fg, bg, attrs_list} ->
       # Simpler version: Assume format is correct, remove case
       attrs_map = Enum.into(attrs_list || [], %{}, fn atom -> {atom, true} end)
@@ -383,39 +428,57 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end
   end
 
-  # Helper function to get plugin manager from dispatcher
+  # Functional wrapper for dispatcher plugin manager retrieval
   defp get_plugin_manager_from_dispatcher(dispatcher_pid)
-       when pid?(dispatcher_pid) do
-    try do
-      case GenServer.call(dispatcher_pid, :get_plugin_manager, 5000) do
-        {:ok, plugin_manager} -> {:ok, plugin_manager}
-        {:error, reason} -> {:error, reason}
-        _ -> {:error, :unexpected_response}
-      end
-    rescue
-      e ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Rendering Engine: Error getting plugin manager from dispatcher",
-          e,
-          nil,
-          %{dispatcher_pid: dispatcher_pid}
-        )
-
-        {:error, :dispatcher_error}
+       when is_pid(dispatcher_pid) do
+    with {:ok, response} <- safe_genserver_call(dispatcher_pid, :get_plugin_manager, 5000),
+         {:ok, plugin_manager} <- validate_plugin_manager_response(response) do
+      {:ok, plugin_manager}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
   defp get_plugin_manager_from_dispatcher(_), do: {:error, :invalid_dispatcher}
 
+  # Safe GenServer call wrapper
+  defp safe_genserver_call(pid, message, timeout) do
+    case GenServer.call(pid, message, timeout) do
+      response -> {:ok, response}
+    end
+  rescue
+    error ->
+      Raxol.Core.Runtime.Log.error_with_stacktrace(
+        "Rendering Engine: Error getting plugin manager from dispatcher",
+        error,
+        nil,
+        %{dispatcher_pid: pid}
+      )
+      {:error, :dispatcher_error}
+  end
+
+  # Validate plugin manager response
+  defp validate_plugin_manager_response({:ok, plugin_manager}) do
+    {:ok, plugin_manager}
+  end
+
+  defp validate_plugin_manager_response({:error, reason}) do
+    {:error, reason}
+  end
+
+  defp validate_plugin_manager_response(_) do
+    {:error, :unexpected_response}
+  end
+
   # Helper function to execute plugin commands (like escape sequences)
   defp execute_plugin_commands(commands)
-       when list?(commands) and length(commands) > 0 do
+       when is_list(commands) and length(commands) > 0 do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Executing #{length(commands)} plugin commands"
     )
 
     Enum.each(commands, fn command ->
-      if binary?(command) do
+      if is_binary(command) do
         # Write escape sequences or other commands directly to output
         IO.write(command)
       else
@@ -427,19 +490,33 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end)
   end
 
-  # Helper function to update plugin manager state in dispatcher
+  defp execute_plugin_commands(_), do: :ok
+
+  # Functional wrapper for dispatcher plugin manager updates
   defp update_plugin_manager_in_dispatcher(dispatcher_pid, updated_manager)
-       when pid?(dispatcher_pid) do
-    try do
-      GenServer.cast(dispatcher_pid, {:update_plugin_manager, updated_manager})
-    rescue
-      e ->
+       when is_pid(dispatcher_pid) do
+    with :ok <- safe_genserver_cast(dispatcher_pid, {:update_plugin_manager, updated_manager}) do
+      :ok
+    else
+      {:error, reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Rendering Engine: Error updating plugin manager in dispatcher",
-          e,
+          reason,
           nil,
           %{dispatcher_pid: dispatcher_pid}
         )
+        {:error, reason}
     end
+  end
+
+  defp update_plugin_manager_in_dispatcher(_, _), do: {:error, :invalid_dispatcher}
+
+  # Safe GenServer cast wrapper
+  defp safe_genserver_cast(pid, message) do
+    GenServer.cast(pid, message)
+    :ok
+  rescue
+    error ->
+      {:error, error}
   end
 end

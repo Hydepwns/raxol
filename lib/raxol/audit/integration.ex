@@ -266,14 +266,12 @@ defmodule Raxol.Audit.Integration do
     Enum.any?(escalation_patterns, &Regex.match?(&1, command))
   end
 
-  defp detect_elevation_type(command) do
-    cond do
-      String.starts_with?(command, "sudo") -> :sudo
-      String.starts_with?(command, "su") -> :su
-      String.starts_with?(command, "doas") -> :doas
-      true -> :other
-    end
-  end
+  # Helper functions for pattern matching refactoring
+  
+  defp detect_elevation_type("sudo" <> _rest), do: :sudo
+  defp detect_elevation_type("su" <> _rest), do: :su
+  defp detect_elevation_type("doas" <> _rest), do: :doas
+  defp detect_elevation_type(_command), do: :other
 
   defp sensitive_file?(path) do
     sensitive_patterns = [
@@ -292,23 +290,24 @@ defmodule Raxol.Audit.Integration do
   end
 
   defp classify_file(path) do
-    cond do
-      sensitive_file?(path) -> :restricted
-      String.contains?(path, "config") -> :confidential
-      String.contains?(path, "log") -> :internal
-      true -> :public
+    case {sensitive_file?(path), String.contains?(path, "config"), String.contains?(path, "log")} do
+      {true, _, _} -> :restricted
+      {false, true, _} -> :confidential
+      {false, false, true} -> :internal
+      {false, false, false} -> :public
     end
   end
 
-  defp classify_content(content) do
-    cond do
-      content == nil -> :public
-      String.contains?(content, "password") -> :restricted
-      String.contains?(content, "token") -> :restricted
-      String.contains?(content, "key") -> :confidential
-      true -> :public
+  defp classify_content(nil), do: :public
+  defp classify_content(content) when is_binary(content) do
+    case {String.contains?(content, "password"), String.contains?(content, "token"), String.contains?(content, "key")} do
+      {true, _, _} -> :restricted
+      {false, true, _} -> :restricted
+      {false, false, true} -> :confidential
+      {false, false, false} -> :public
     end
   end
+  defp classify_content(_content), do: :public
 
   defp critical_resource?(%{type: type}) do
     type in ["admin", "system", "security", "audit"]

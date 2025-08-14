@@ -10,8 +10,8 @@ defmodule Raxol.Animation.Lifecycle do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Core.Accessibility
-  alias Raxol.Animation.StateManager
+  alias Raxol.Core.Accessibility, as: Accessibility
+  alias Raxol.Animation.StateManager, as: StateManager
   alias Raxol.Animation.Accessibility, as: AnimAccessibility
   alias Raxol.Animation.PathManager
 

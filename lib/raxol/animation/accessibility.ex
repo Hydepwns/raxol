@@ -66,16 +66,16 @@ defmodule Raxol.Animation.Accessibility do
   The adapted animation definition
   """
   def adapt_animation(animation, reduced_motion, cognitive_accessibility) do
-    cond do
-      reduced_motion ->
+    case {reduced_motion, cognitive_accessibility} do
+      {true, _} ->
         # Reduced motion takes precedence - disable animation
         adapt_for_reduced_motion(animation)
 
-      cognitive_accessibility ->
+      {false, true} ->
         # Only apply cognitive accessibility if reduced motion is not enabled
         adapt_for_cognitive_accessibility(animation)
 
-      true ->
+      {false, false} ->
         # No adaptation needed
         animation
     end

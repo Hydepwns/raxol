@@ -1,6 +1,5 @@
 defmodule Raxol.Animation.PathManager do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Manages animation target paths and state structure utilities.
 
@@ -26,14 +25,14 @@ defmodule Raxol.Animation.PathManager do
         # Already fully qualified
         animation_def
 
-      [property] when atom?(property) or binary?(property) ->
+      [property] when is_atom(property) or is_binary(property) ->
         Map.put(animation_def, :target_path, [
           :elements,
           to_string(element_id),
           property
         ])
 
-      path when list?(path) ->
+      path when is_list(path) ->
         qualify_path(animation_def, path, element_id)
 
       _ ->
@@ -47,7 +46,7 @@ defmodule Raxol.Animation.PathManager do
   def qualify_path(animation_def, path, element_id) do
     case path do
       [:elements, id | _] ->
-        id_str = if binary?(id), do: id, else: to_string(id)
+        id_str = if is_binary(id), do: id, else: to_string(id)
         elem_id_str = to_string(element_id)
 
         if id == element_id or id_str == elem_id_str do
@@ -72,7 +71,7 @@ defmodule Raxol.Animation.PathManager do
   @doc """
   Set a value in a nested state structure at the specified path.
   """
-  def set_in_state(state, path, value) when list?(path) do
+  def set_in_state(state, path, value) when is_list(path) do
     case path do
       [] ->
         state

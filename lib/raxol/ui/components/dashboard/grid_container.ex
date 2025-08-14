@@ -6,8 +6,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   """
 
   require Raxol.Core.Runtime.Log
-  import Raxol.Guards
-
+  
   # Default grid dimensions and gap
   @default_cols 12
   @default_rows 12
@@ -45,7 +44,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   end
 
   # Handle other non-map inputs
-  def resolve_grid_params(invalid_input) when not map?(invalid_input) do
+  def resolve_grid_params(invalid_input) when not is_map(invalid_input) do
     Raxol.Core.Runtime.Log.warning(
       "Invalid input to resolve_grid_params: #{inspect(invalid_input)}"
     )
@@ -61,7 +60,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
 
     # If we have breakpoints defined, try to find the most appropriate one
     # based on the current parent width
-    if map?(grid_config[:breakpoints]) and map?(grid_config[:parent_bounds]) do
+    if is_map(grid_config[:breakpoints]) and is_map(grid_config[:parent_bounds]) do
       current_width = grid_config.parent_bounds.width
       breakpoints = grid_config.breakpoints
 
@@ -75,22 +74,14 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
            Map.get(bpconfig, :cols, cols), Map.get(bpconfig, :rows, rows)}
         end)
         # Sort by max_width (putting :infinity last)
-        |> Enum.sort_by(fn {max_width, _c, _r} ->
-          if max_width == :infinity, do: 1_000_000, else: max_width
-        end)
+        |> Enum.sort_by(&sort_by_max_width/1)
 
       # Find the first breakpoint where width <= max_width or the last one if none match
       Enum.reduce_while(
         breakpoint_values,
         %{cols: cols, rows: rows},
         fn {max_width, bp_cols, bp_rows}, acc ->
-          if max_width == :infinity or current_width <= max_width do
-            # We found a matching breakpoint, use its values
-            {:halt, %{cols: bp_cols, rows: bp_rows}}
-          else
-            # Keep looking
-            {:cont, acc}
-          end
+          check_breakpoint_match(max_width, current_width, bp_cols, bp_rows, acc)
         end
       )
     else
@@ -127,7 +118,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   end
 
   def calculate_widget_bounds(_widget_config, invalid_grid_config)
-      when not map?(invalid_grid_config) do
+      when not is_map(invalid_grid_config) do
     Raxol.Core.Runtime.Log.error(
       "Invalid grid_config in calculate_widget_bounds: #{inspect(invalid_grid_config)}"
     )
@@ -148,21 +139,12 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     %{x: 0, y: 0, width: 10, height: 10}
   end
 
-  def calculate_widget_bounds(_widget_config, %{} = grid_config)
-      when not map_key?(grid_config, :parent_bounds) do
-    Raxol.Core.Runtime.Log.warning(
-      "calculate_widget_bounds received grid_config without parent_bounds: #{inspect(grid_config)}"
-    )
-
-    %{x: 0, y: 0, width: 10, height: 10}
-  end
-
-  # Original function with guard
+  # Original function with guard - should come first
   def calculate_widget_bounds(
         widget_config,
         %{parent_bounds: parent_bounds} = grid_config
       )
-      when map?(parent_bounds) do
+      when is_map(parent_bounds) do
     # --- Log the grid_config RECEIVED --- >
     Raxol.Core.Runtime.Log.debug(
       "[GridContainer.calculate_widget_bounds] Received: widget_id=#{Map.get(widget_config, :id, :unknown)}, grid_config=#{inspect(grid_config)}"
@@ -176,8 +158,8 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     gap = grid_config[:gap] || @default_gap
 
     # Check if width or height are invalid (non-numeric values like :ok)
-    if not number?(parent_bounds[:width]) or
-         not number?(parent_bounds[:height]) do
+    if not is_number(parent_bounds[:width]) or
+         not is_number(parent_bounds[:height]) do
       Raxol.Core.Runtime.Log.error(
         "Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(parent_bounds[:width])}, container_height=#{inspect(parent_bounds[:height])}"
       )
@@ -203,11 +185,11 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
       # --- End Debug Logging ---
 
       # Validate parent_bounds values
-      if !(map?(parent_bounds) and
-             number?(Map.get(parent_bounds, :x)) and
-             number?(Map.get(parent_bounds, :y)) and
-             number?(container_width) and
-             number?(container_height)) do
+      if !(is_map(parent_bounds) and
+             is_number(Map.get(parent_bounds, :x)) and
+             is_number(Map.get(parent_bounds, :y)) and
+             is_number(container_width) and
+             is_number(container_height)) do
         Raxol.Core.Runtime.Log.error(
           "Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(container_width)}, container_height=#{inspect(container_height)}"
         )
@@ -223,22 +205,12 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
         row_start = max(1, grid_spec.row)
 
         # Handle both width/height and col_span/row_span naming conventions
-        width_cells =
-          cond do
-            Map.has_key?(grid_spec, :width) -> max(1, grid_spec.width)
-            Map.has_key?(grid_spec, :col_span) -> max(1, grid_spec.col_span)
-            true -> 1
-          end
+        width_cells = get_width_cells(grid_spec)
 
-        height_cells =
-          cond do
-            Map.has_key?(grid_spec, :height) -> max(1, grid_spec.height)
-            Map.has_key?(grid_spec, :row_span) -> max(1, grid_spec.row_span)
-            true -> 1
-          end
+        height_cells = get_height_cells(grid_spec)
 
         # Validate cell dimensions
-        if !(number?(cell_width) and number?(cell_height)) do
+        if !(is_number(cell_width) and is_number(cell_height)) do
           Raxol.Core.Runtime.Log.error(
             "Invalid cell dimensions in calculate_widget_bounds: width=#{inspect(cell_width)}, height=#{inspect(cell_height)}"
           )
@@ -267,6 +239,15 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
       end
     end
   end
+  
+  # Catch-all clause for maps without parent_bounds
+  def calculate_widget_bounds(_widget_config, %{} = grid_config) do
+    Raxol.Core.Runtime.Log.warning(
+      "calculate_widget_bounds received grid_config without parent_bounds: #{inspect(grid_config)}"
+    )
+    
+    %{x: 0, y: 0, width: 10, height: 10}
+  end
 
   @spec get_cell_dimensions(any()) :: {integer(), integer()}
   @doc """
@@ -290,7 +271,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   end
 
   # Handle other non-map inputs
-  def get_cell_dimensions(invalid_input) when not map?(invalid_input) do
+  def get_cell_dimensions(invalid_input) when not is_map(invalid_input) do
     Raxol.Core.Runtime.Log.error(
       "Invalid input to get_cell_dimensions: #{inspect(invalid_input)}"
     )
@@ -309,19 +290,9 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     {10, 10}
   end
 
-  def get_cell_dimensions(%{} = grid_config)
-      when not map_key?(grid_config, :parent_bounds) do
-    Raxol.Core.Runtime.Log.warning(
-      "get_cell_dimensions received grid_config without parent_bounds: #{inspect(grid_config)}"
-    )
-
-    # Return sensible defaults
-    {10, 10}
-  end
-
   # Original function with guard to ensure parent_bounds exists and is a map
   def get_cell_dimensions(%{parent_bounds: parent_bounds} = grid_config)
-      when map?(parent_bounds) do
+      when is_map(parent_bounds) do
     # Extract grid parameters with defaults
     # Resolve cols/rows based on breakpoints and parent width
     %{cols: cols, rows: rows} = resolve_grid_params(grid_config)
@@ -329,10 +300,10 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
 
     # Check for required width/height fields in parent_bounds
     with true <-
-           map_key?(parent_bounds, :width) and
-             map_key?(parent_bounds, :height),
+           Map.has_key?(parent_bounds, :width) and
+             Map.has_key?(parent_bounds, :height),
          true <-
-           number?(parent_bounds.width) and number?(parent_bounds.height) do
+           is_number(parent_bounds.width) and is_number(parent_bounds.height) do
       container_width = parent_bounds.width
       container_height = parent_bounds.height
 
@@ -345,11 +316,8 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
       available_height = max(0, container_height - total_vertical_gap)
 
       # Calculate base cell dimensions (use floating-point division and round)
-      cell_width =
-        if cols > 0, do: round(available_width / cols), else: available_width
-
-      cell_height =
-        if rows > 0, do: round(available_height / rows), else: available_height
+      cell_width = calculate_cell_width(cols, available_width)
+      cell_height = calculate_cell_height(rows, available_height)
 
       {cell_width, cell_height}
     else
@@ -362,4 +330,64 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
         {10, 10}
     end
   end
+  
+  # Catch-all clause for maps without parent_bounds
+  def get_cell_dimensions(%{} = grid_config) do
+    Raxol.Core.Runtime.Log.warning(
+      "get_cell_dimensions received grid_config without parent_bounds: #{inspect(grid_config)}"
+    )
+    
+    # Return sensible defaults
+    {10, 10}
+  end
+
+  defp get_width_cells(grid_spec) when is_map_key(grid_spec, :width) do
+    max(1, grid_spec.width)
+  end
+
+  defp get_width_cells(grid_spec) when is_map_key(grid_spec, :col_span) do
+    max(1, grid_spec.col_span)
+  end
+
+  defp get_width_cells(_grid_spec), do: 1
+
+  defp get_height_cells(grid_spec) when is_map_key(grid_spec, :height) do
+    max(1, grid_spec.height)
+  end
+
+  defp get_height_cells(grid_spec) when is_map_key(grid_spec, :row_span) do
+    max(1, grid_spec.row_span)
+  end
+
+  defp get_height_cells(_grid_spec), do: 1
+
+  # Helper functions for pattern matching refactoring
+
+  defp sort_by_max_width({:infinity, _c, _r}), do: 1_000_000
+  defp sort_by_max_width({max_width, _c, _r}), do: max_width
+
+  defp check_breakpoint_match(:infinity, _current_width, bp_cols, bp_rows, _acc) do
+    {:halt, %{cols: bp_cols, rows: bp_rows}}
+  end
+
+  defp check_breakpoint_match(max_width, current_width, bp_cols, bp_rows, acc) 
+       when current_width <= max_width do
+    {:halt, %{cols: bp_cols, rows: bp_rows}}
+  end
+
+  defp check_breakpoint_match(_max_width, _current_width, _bp_cols, _bp_rows, acc) do
+    {:cont, acc}
+  end
+
+  defp calculate_cell_width(cols, available_width) when cols > 0 do
+    round(available_width / cols)
+  end
+
+  defp calculate_cell_width(_cols, available_width), do: available_width
+
+  defp calculate_cell_height(rows, available_height) when rows > 0 do
+    round(available_height / rows)
+  end
+
+  defp calculate_cell_height(_rows, available_height), do: available_height
 end

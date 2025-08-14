@@ -27,34 +27,33 @@ defmodule Raxol.UI.Components.Modal.Core do
   end
 
   # Helper to initialize form state based on props
-  defp initialize_form_state(state, props) do
-    cond do
-      state.type == :prompt ->
-        # Get initial value for prompt
-        initial_value = Map.get(props, :input_value, "")
-        # Treat prompt as a single-field form
-        field = %{
-          id: :prompt_input,
-          type: :text_input,
-          label: state.content || "Value:",
-          value: initial_value,
-          props: %{},
-          validate: Map.get(props, :validate)
-        }
+  defp initialize_form_state(%{type: :prompt} = state, props) do
+    # Get initial value for prompt
+    initial_value = Map.get(props, :input_value, "")
+    # Treat prompt as a single-field form
+    field = %{
+      id: :prompt_input,
+      type: :text_input,
+      label: state.content || "Value:",
+      value: initial_value,
+      props: %{},
+      validate: Map.get(props, :validate)
+    }
 
-        %{
-          state
-          | form_state: %{fields: [normalize_field(field)], focus_index: 0},
-            content: nil
-        }
+    %{
+      state
+      | form_state: %{fields: [normalize_field(field)], focus_index: 0},
+        content: nil
+    }
+  end
 
-      state.type == :form ->
-        fields = Map.get(props, :fields, []) |> Enum.map(&normalize_field/1)
-        %{state | form_state: %{fields: fields, focus_index: 0}}
+  defp initialize_form_state(%{type: :form} = state, props) do
+    fields = Map.get(props, :fields, []) |> Enum.map(&normalize_field/1)
+    %{state | form_state: %{fields: fields, focus_index: 0}}
+  end
 
-      true ->
-        state
-    end
+  defp initialize_form_state(state, _props) do
+    state
   end
 
   # Ensure basic field structure including :error

@@ -429,32 +429,65 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
         last_col_exceeded,
         auto_wrap_mode
       ) do
-    cond do
-      last_col_exceeded and auto_wrap_mode ->
-        # For autowrap, stay at current position for writing
-        # and advance cursor to next line, column 0
-        write_y = current_y + 1
+    do_calculate_position(
+      {current_x, current_y},
+      buffer_width,
+      char_width,
+      last_col_exceeded,
+      auto_wrap_mode
+    )
+  end
 
-        {current_x, current_y, 0, write_y,
-         auto_wrap_mode and char_width >= buffer_width}
+  # Last column exceeded with auto-wrap
+  defp do_calculate_position(
+         {current_x, current_y},
+         buffer_width,
+         char_width,
+         true,
+         true
+       ) do
+    # For autowrap, stay at current position for writing
+    # and advance cursor to next line, column 0
+    write_y = current_y + 1
+    {current_x, current_y, 0, write_y, char_width >= buffer_width}
+  end
 
-      last_col_exceeded and not auto_wrap_mode ->
-        write_x = buffer_width - 1
-        write_y = current_y
-        next_cursor_x = buffer_width - 1
-        next_cursor_y = current_y
-        next_flag = true
-        {write_x, write_y, next_cursor_x, next_cursor_y, next_flag}
+  # Last column exceeded without auto-wrap
+  defp do_calculate_position(
+         {current_x, current_y},
+         buffer_width,
+         _char_width,
+         true,
+         false
+       ) do
+    write_x = buffer_width - 1
+    write_y = current_y
+    next_cursor_x = buffer_width - 1
+    next_cursor_y = current_y
+    next_flag = true
+    {write_x, write_y, next_cursor_x, next_cursor_y, next_flag}
+  end
 
-      current_x + char_width < buffer_width ->
-        {current_x, current_y, current_x + char_width, current_y, false}
+  # Current position + char width fits within buffer
+  defp do_calculate_position(
+         {current_x, current_y},
+         buffer_width,
+         char_width,
+         _last_col_exceeded,
+         _auto_wrap_mode
+       )
+       when current_x + char_width < buffer_width do
+    {current_x, current_y, current_x + char_width, current_y, false}
+  end
 
-      true ->
-        if auto_wrap_mode do
-          {current_x, current_y, buffer_width - 1, current_y, true}
-        else
-          {current_x, current_y, buffer_width - 1, current_y, true}
-        end
-    end
+  # Default case - at or beyond buffer edge
+  defp do_calculate_position(
+         {current_x, current_y},
+         buffer_width,
+         _char_width,
+         _last_col_exceeded,
+         _auto_wrap_mode
+       ) do
+    {current_x, current_y, buffer_width - 1, current_y, true}
   end
 end

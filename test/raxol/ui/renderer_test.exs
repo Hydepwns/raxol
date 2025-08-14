@@ -4,7 +4,6 @@ defmodule Raxol.UI.RendererTest do
   alias Raxol.UI.Renderer
   alias Raxol.UI.Theming.Theme
   alias Raxol.Core.UserPreferences
-  import Raxol.Test.Visual.Assertions
 
   # Helper function to find cells at a specific coordinate
   defp find_cell(cells, x, y) do

@@ -78,14 +78,14 @@ defmodule Raxol.UI.Components.Modal do
       "Modal #{Map.get(state, :id, nil)} received message: #{inspect(msg)}"
     )
 
-    if state.visible do
-      Raxol.Core.Runtime.Log.debug(
-        "Modal is visible, calling handle_visible_update with msg: #{inspect(msg)}"
-      )
-
-      handle_visible_update(msg, state)
-    else
-      handle_hidden_update(msg, state)
+    case state.visible do
+      true ->
+        Raxol.Core.Runtime.Log.debug(
+          "Modal is visible, calling handle_visible_update with msg: #{inspect(msg)}"
+        )
+        handle_visible_update(msg, state)
+      false ->
+        handle_hidden_update(msg, state)
     end
   end
 
@@ -122,10 +122,9 @@ defmodule Raxol.UI.Components.Modal do
       "[DEBUG] handle_button_click_msg called with submit message: #{inspect(original_msg)} and state.visible=#{inspect(state.visible)}"
     )
 
-    if state.type == :prompt do
-      State.handle_prompt_submission(state, original_msg)
-    else
-      State.handle_form_submission(state, original_msg)
+    case state.type do
+      :prompt -> State.handle_prompt_submission(state, original_msg)
+      _ -> State.handle_form_submission(state, original_msg)
     end
   end
 
@@ -152,25 +151,26 @@ defmodule Raxol.UI.Components.Modal do
       "Modal #{Map.get(state, :id, nil)} received event: #{inspect(event)} with state.type: #{inspect(state.type)}"
     )
 
-    if state.visible do
-      case Events.handle_visible_event(event, state) do
-        {:button_click, msg} ->
-          update({:button_click, msg}, state)
+    case state.visible do
+      true ->
+        case Events.handle_visible_event(event, state) do
+          {:button_click, msg} ->
+            update({:button_click, msg}, state)
 
-        :focus_next_field ->
-          update(:focus_next_field, state)
+          :focus_next_field ->
+            update(:focus_next_field, state)
 
-        :focus_prev_field ->
-          update(:focus_prev_field, state)
+          :focus_prev_field ->
+            update(:focus_prev_field, state)
 
-        {:input_changed, value} ->
-          update({:input_changed, value}, state)
+          {:input_changed, value} ->
+            update({:input_changed, value}, state)
 
-        nil ->
-          {state, []}
-      end
-    else
-      {state, []}
+          nil ->
+            {state, []}
+        end
+      false ->
+        {state, []}
     end
   end
 
@@ -179,10 +179,9 @@ defmodule Raxol.UI.Components.Modal do
   @impl Raxol.UI.Components.Base.Component
   @spec render(map(), map()) :: any()
   def render(state, %{} = _props) do
-    if state.visible do
-      Rendering.render_modal_content(state)
-    else
-      nil
+    case state.visible do
+      true -> Rendering.render_modal_content(state)
+      false -> nil
     end
   end
 

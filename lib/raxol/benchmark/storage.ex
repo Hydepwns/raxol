@@ -27,9 +27,7 @@ defmodule Raxol.Benchmark.Storage do
     save_summary(suite_name, results, duration, timestamp)
 
     # Update baseline if requested
-    if should_update_baseline?(suite_name) do
-      update_baseline(suite_name, results)
-    end
+    maybe_update_baseline(suite_name, results)
 
     :ok
   end
@@ -73,10 +71,9 @@ defmodule Raxol.Benchmark.Storage do
   def load_baseline(suite_name) do
     path = baseline_path(suite_name)
 
-    if File.exists?(path) do
-      deserialize_baseline(File.read!(path))
-    else
-      nil
+    case File.exists?(path) do
+      true -> deserialize_baseline(File.read!(path))
+      false -> nil
     end
   end
 
@@ -107,10 +104,9 @@ defmodule Raxol.Benchmark.Storage do
   def load_snapshot(version) do
     path = snapshot_path(version)
 
-    if File.exists?(path) do
-      :erlang.binary_to_term(File.read!(path))
-    else
-      nil
+    case File.exists?(path) do
+      true -> :erlang.binary_to_term(File.read!(path))
+      false -> nil
     end
   end
 
@@ -204,6 +200,13 @@ defmodule Raxol.Benchmark.Storage do
     }
   end
 
+  defp maybe_update_baseline(suite_name, results) do
+    case should_update_baseline?(suite_name) do
+      true -> update_baseline(suite_name, results)
+      false -> :ok
+    end
+  end
+
   defp should_update_baseline?(suite_name) do
     # Check if baseline update was requested via environment variable
     System.get_env("UPDATE_BASELINE") == "true" ||
@@ -221,11 +224,15 @@ defmodule Raxol.Benchmark.Storage do
   defp backup_baseline(suite_name) do
     current_path = baseline_path(suite_name)
 
-    if File.exists?(current_path) do
-      backup_path =
-        "#{current_path}.backup.#{DateTime.utc_now() |> DateTime.to_unix()}"
+    case File.exists?(current_path) do
+      true ->
+        backup_path =
+          "#{current_path}.backup.#{DateTime.utc_now() |> DateTime.to_unix()}"
 
-      File.rename!(current_path, backup_path)
+        File.rename!(current_path, backup_path)
+
+      false ->
+        :ok
     end
   end
 
@@ -250,10 +257,9 @@ defmodule Raxol.Benchmark.Storage do
   defp list_result_files(suite_name) do
     suite_dir = Path.join(@storage_path, suite_name)
 
-    if File.dir?(suite_dir) do
-      Path.wildcard(Path.join(suite_dir, "*.benchee"))
-    else
-      []
+    case File.dir?(suite_dir) do
+      true -> Path.wildcard(Path.join(suite_dir, "*.benchee"))
+      false -> []
     end
   end
 

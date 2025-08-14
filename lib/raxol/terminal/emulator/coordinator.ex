@@ -5,8 +5,7 @@ defmodule Raxol.Terminal.Emulator.Coordinator do
   was previously embedded in the main Emulator module.
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.Terminal.{
     ScreenBuffer,
     Emulator.Constructors,
@@ -58,15 +57,15 @@ defmodule Raxol.Terminal.Emulator.Coordinator do
   Validates terminal dimensions.
   """
   def validate_dimensions(width, height) do
-    cond do
-      width < 1 or height < 1 ->
+    case {width, height} do
+      {w, h} when w < 1 or h < 1 ->
         {:error, :invalid_dimensions}
 
-      width > 1000 or height > 1000 ->
+      {w, h} when w > 1000 or h > 1000 ->
         {:error, :dimensions_too_large}
 
-      true ->
-        {:ok, {width, height}}
+      {w, h} ->
+        {:ok, {w, h}}
     end
   end
 
@@ -102,7 +101,7 @@ defmodule Raxol.Terminal.Emulator.Coordinator do
   defp get_width(%{width: width}) when is_integer(width), do: width
 
   defp get_width(%{screen_buffer: screen_buffer})
-       when not nil?(screen_buffer) do
+       when not is_nil(screen_buffer) do
     ScreenBuffer.get_width(screen_buffer)
   end
 
@@ -112,7 +111,7 @@ defmodule Raxol.Terminal.Emulator.Coordinator do
   defp get_height(%{height: height}) when is_integer(height), do: height
 
   defp get_height(%{screen_buffer: screen_buffer})
-       when not nil?(screen_buffer) do
+       when not is_nil(screen_buffer) do
     ScreenBuffer.get_height(screen_buffer)
   end
 

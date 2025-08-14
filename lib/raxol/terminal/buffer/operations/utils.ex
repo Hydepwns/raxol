@@ -3,14 +3,13 @@ defmodule Raxol.Terminal.Buffer.Operations.Utils do
   Utility operations for terminal buffers including buffer creation, resizing, and cell operations.
   """
 
-  import Raxol.Guards
-  alias Raxol.Terminal.Buffer.Cell
+    alias Raxol.Terminal.Buffer.Cell
 
   @doc """
   Resizes the buffer to the specified dimensions.
   """
   def resize(buffer, rows, cols)
-      when list?(buffer) and is_integer(rows) and is_integer(cols) do
+      when is_list(buffer) and is_integer(rows) and is_integer(cols) do
     rows = max(1, rows)
     cols = max(1, cols)
     copy_and_resize_rows(buffer, rows, cols)
@@ -107,7 +106,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Utils do
         ) ::
           Cell.t()
   def get_cell(buffer, x, y)
-      when list?(buffer) and is_integer(x) and is_integer(y) do
+      when is_list(buffer) and is_integer(x) and is_integer(y) do
     case get_in(buffer, [Access.at(y), Access.at(x)]) do
       nil -> Cell.new()
       cell -> cell
@@ -145,7 +144,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Utils do
           non_neg_integer(),
           Cell.t()
         ) :: Raxol.Terminal.ScreenBuffer.t()
-  def fill_region(buffer, x, y, width, height, cell) when list?(buffer) do
+  def fill_region(buffer, x, y, width, height, cell) when is_list(buffer) do
     buffer
     |> Enum.with_index()
     |> Enum.map(fn {row, row_y} ->

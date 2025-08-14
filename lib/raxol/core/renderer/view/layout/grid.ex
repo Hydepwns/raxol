@@ -4,8 +4,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
   Provides functionality for creating and managing grid layouts with customizable columns and rows.
   """
 
-  import Raxol.Guards
-
+  
   @doc """
   Creates a new grid layout.
 
@@ -85,10 +84,10 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
 
   defp calculate_column_sizes(columns, total_width, gap) do
     case columns do
-      n when integer?(n) ->
+      n when is_integer(n) ->
         calculate_equal_columns(n, total_width, gap)
 
-      sizes when list?(sizes) ->
+      sizes when is_list(sizes) ->
         calculate_custom_columns(sizes, total_width, gap)
     end
   end
@@ -109,8 +108,8 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
 
   defp calculate_row_sizes(rows, total_height, gap) do
     case rows do
-      n when integer?(n) -> calculate_equal_rows(n, total_height, gap)
-      sizes when list?(sizes) -> calculate_custom_rows(sizes, total_height, gap)
+      n when is_integer(n) -> calculate_equal_rows(n, total_height, gap)
+      sizes when is_list(sizes) -> calculate_custom_rows(sizes, total_height, gap)
     end
   end
 
@@ -334,12 +333,12 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     raw_children = Keyword.get(opts, :children)
 
     processed_children_list =
-      cond do
-        list?(raw_children) -> raw_children
+      case raw_children do
+        children when is_list(children) -> children
         # Default to empty list if nil
-        nil?(raw_children) -> []
+        nil -> []
         # Wrap single child in a list
-        true -> [raw_children]
+        single_child -> [single_child]
       end
 
     columns = Keyword.get(opts, :columns, 1)
@@ -391,7 +390,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end
   end
 
-  defp validate_children_structure(children) when list?(children) do
+  defp validate_children_structure(children) when is_list(children) do
     invalid_children = Enum.filter(children, &(!valid_child_structure?(&1)))
 
     if Enum.empty?(invalid_children) do
@@ -404,7 +403,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
   defp validate_children_structure(_), do: {:error, "Children must be a list"}
 
   defp valid_child_structure?(child) do
-    map?(child) and Map.has_key?(child, :type)
+    is_map(child) and Map.has_key?(child, :type)
   end
 
   defp validate_grid_positions(children) do
@@ -425,7 +424,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end
   end
 
-  defp valid_position?(col, row) when integer?(col) and integer?(row) do
+  defp valid_position?(col, row) when is_integer(col) and is_integer(row) do
     col >= 0 and row >= 0
   end
 

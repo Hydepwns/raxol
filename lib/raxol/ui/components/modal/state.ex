@@ -15,7 +15,8 @@ defmodule Raxol.UI.Components.Modal.State do
     validated_fields = Enum.map(state.form_state.fields, &validate_field/1)
     has_errors = Enum.any?(validated_fields, &(&1.error != nil))
 
-    if has_errors do
+    case has_errors do
+      true ->
       Raxol.Core.Runtime.Log.debug(
         "[DEBUG] handle_form_submission found errors: #{inspect(validated_fields)}"
       )
@@ -34,7 +35,7 @@ defmodule Raxol.UI.Components.Modal.State do
       )
 
       result
-    else
+      false ->
       form_values = extract_form_values(validated_fields)
       cleared_fields = Enum.map(validated_fields, &Map.put(&1, :error, nil))
       new_form_state = %{state.form_state | fields: cleared_fields}
@@ -64,9 +65,10 @@ defmodule Raxol.UI.Components.Modal.State do
   @spec handle_prompt_submission(map(), any()) :: {map(), list()}
   def handle_prompt_submission(state, original_msg) do
     # If there are fields, validate as form
-    if length(state.form_state.fields) > 0 do
+    case length(state.form_state.fields) do
+      count when count > 0 ->
       handle_form_submission(state, original_msg)
-    else
+      0 ->
       # No fields: just hide and send command
       new_state = %Raxol.UI.Components.Modal{state | visible: false}
 
@@ -94,10 +96,11 @@ defmodule Raxol.UI.Components.Modal.State do
   def update_field_value(state, field_id, new_value) do
     updated_fields =
       Enum.map(state.form_state.fields, fn field ->
-        if field.id == field_id do
+        case field.id == field_id do
+          true ->
           # Clear error on update
           %{field | value: new_value, error: nil}
-        else
+          false ->
           field
         end
       end)
@@ -115,20 +118,21 @@ defmodule Raxol.UI.Components.Modal.State do
       "[DEBUG] change_focus called with direction=#{inspect(direction)}, field_count=#{inspect(field_count)}, current_index=#{inspect(state.form_state.focus_index)}"
     )
 
-    if field_count > 0 do
-      new_index =
-        rem(state.form_state.focus_index + direction + field_count, field_count)
+    case field_count do
+      count when count > 0 ->
+        new_index =
+          rem(state.form_state.focus_index + direction + field_count, field_count)
 
-      new_form_state = %{state.form_state | focus_index: new_index}
-      new_state = %Raxol.UI.Components.Modal{state | form_state: new_form_state}
+        new_form_state = %{state.form_state | focus_index: new_index}
+        new_state = %Raxol.UI.Components.Modal{state | form_state: new_form_state}
 
-      Raxol.Core.Runtime.Log.debug(
-        "[DEBUG] change_focus returning new_index=#{inspect(new_index)}, new_state.form_state.focus_index=#{inspect(new_state.form_state.focus_index)}"
-      )
+        Raxol.Core.Runtime.Log.debug(
+          "[DEBUG] change_focus returning new_index=#{inspect(new_index)}, new_state.form_state.focus_index=#{inspect(new_state.form_state.focus_index)}"
+        )
 
-      {new_state, [set_focus_command(new_state)]}
-    else
-      {state, []}
+        {new_state, [set_focus_command(new_state)]}
+      0 ->
+        {state, []}
     end
   end
 
@@ -137,23 +141,25 @@ defmodule Raxol.UI.Components.Modal.State do
   def set_focus_command(state) do
     field_count = length(state.form_state.fields)
 
-    if field_count > 0 do
-      current_field =
-        Enum.at(state.form_state.fields, state.form_state.focus_index)
+    case field_count do
+      count when count > 0 ->
+        current_field =
+          Enum.at(state.form_state.fields, state.form_state.focus_index)
 
-      field_id = get_field_full_id(current_field, state)
-      {:set_focus, field_id}
-    else
-      {:set_focus, state.id}
+        field_id = get_field_full_id(current_field, state)
+        {:set_focus, field_id}
+      0 ->
+        {:set_focus, state.id}
     end
   end
 
   @doc "Gets field full ID with modal prefix if modal has ID."
   @spec get_field_full_id(map(), map()) :: any()
   def get_field_full_id(field, state) do
-    if Map.get(state, :id, nil),
-      do: "#{Map.get(state, :id, nil)}.#{field.id}",
-      else: field.id
+    case Map.get(state, :id, nil) do
+      nil -> field.id
+      id -> "#{id}.#{field.id}"
+    end
   end
 
   # Validate a single field based on its :validate rule
@@ -182,12 +188,13 @@ defmodule Raxol.UI.Components.Modal.State do
           true
       end
 
-    if valid? do
-      # Clear any previous error
-      %{field | error: nil}
-    else
-      # Basic error message, could be configurable
-      %{field | error: "Invalid input"}
+    case valid? do
+      true ->
+        # Clear any previous error
+        %{field | error: nil}
+      false ->
+        # Basic error message, could be configurable
+        %{field | error: "Invalid input"}
     end
   end
 

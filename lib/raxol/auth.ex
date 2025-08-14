@@ -399,24 +399,41 @@ defmodule Raxol.Auth do
   Authenticates a user with the given password.
   """
   def authenticate_user_password(user, password) do
-    cond do
-      not user.active ->
-        {:error, :user_inactive}
-
-      user.locked_until &&
-          DateTime.compare(user.locked_until, DateTime.utc_now()) == :gt ->
-        {:error, :user_locked}
-
-      verify_password(password, user.password_hash) ->
-        # Update last login and reset failed attempts
-        update_user_login_success(user)
-
-      true ->
-        # Increment failed login attempts
-        update_user_login_failure(user)
-        {:error, :invalid_credentials}
+    with :ok <- validate_user_status(user),
+         :ok <- validate_user_not_locked(user),
+         :ok <- validate_password(password, user.password_hash) do
+      update_user_login_success(user)
+    else
+      error -> handle_authentication_error(error, user)
     end
   end
+
+  defp validate_user_status(%{active: false}), do: {:error, :user_inactive}
+  defp validate_user_status(_user), do: :ok
+
+  defp validate_user_not_locked(%{locked_until: nil}), do: :ok
+  defp validate_user_not_locked(%{locked_until: locked_until}) do
+    if DateTime.compare(locked_until, DateTime.utc_now()) == :gt do
+      {:error, :user_locked}
+    else
+      :ok
+    end
+  end
+
+  defp validate_password(password, password_hash) do
+    if verify_password(password, password_hash) do
+      :ok
+    else
+      {:error, :invalid_credentials}
+    end
+  end
+
+  defp handle_authentication_error({:error, :invalid_credentials}, user) do
+    update_user_login_failure(user)
+    {:error, :invalid_credentials}
+  end
+
+  defp handle_authentication_error(error, _user), do: error
 
   defp verify_password(password, password_hash) do
     # Use Bcrypt for password verification
@@ -475,11 +492,9 @@ defmodule Raxol.Auth do
 
   defp get_default_role_id do
     # Get the default "user" role ID
-    role = Repo.get_by(Role, name: "user")
-
-    cond do
-      is_nil(role) -> nil
-      true -> Map.get(role, :id)
+    case Repo.get_by(Role, name: "user") do
+      nil -> nil
+      role -> Map.get(role, :id)
     end
   end
 end

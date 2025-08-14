@@ -5,8 +5,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
   """
   use ExUnit.Case, async: false
   import Raxol.Test.TestHelper
-  import Raxol.Guards
-
+  
   alias Raxol.Core.Runtime.Plugins.{CommandHelper, CommandRegistry}
   alias Raxol.Core.Runtime.Plugins.State, as: ManagerState
 
@@ -205,7 +204,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
           table
         )
 
-      table = if map?(result), do: result, else: table
+      table = if is_map(result), do: result, else: table
 
       # Verify using CommandRegistry lookup
       assert {:ok,
@@ -216,7 +215,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
                  "test_cmd"
                )
 
-      assert function?(handler, 2)
+      assert is_function(handler, 2)
     end
 
     test "unregister_plugin_commands removes commands from the registry", %{
@@ -230,7 +229,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
           table
         )
 
-      table = if map?(result), do: result, else: table
+      table = if is_map(result), do: result, else: table
 
       assert {:ok, _} =
                CommandRegistry.lookup_command(
@@ -304,7 +303,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
                  "dupe_cmd"
                )
 
-      assert function?(handler, 2)
+      assert is_function(handler, 2)
     end
 
     test "register_plugin_commands handles invalid command specifications", %{
@@ -341,7 +340,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
                  "valid_cmd"
                )
 
-      assert function?(handler, 2)
+      assert is_function(handler, 2)
 
       # Use a string with a space to check invalid name
       assert {:error, :not_found} =
@@ -381,7 +380,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
       ]
 
       results = Task.await_many(tasks, 5000)
-      assert Enum.all?(results, &map?/1)
+      assert Enum.all?(results, &is_map/1)
 
       # At least one result should have the command registered
       found =
@@ -395,7 +394,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
               plugin in [
                 Raxol.Core.Runtime.Plugins.CommandsTest.ConcurrentPlugin1,
                 Raxol.Core.Runtime.Plugins.CommandsTest.ConcurrentPlugin2
-              ] and function?(handler, 2)
+              ] and is_function(handler, 2)
 
             _ ->
               false

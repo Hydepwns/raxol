@@ -1,26 +1,9 @@
 defmodule Raxol.Security.Encryption.EncryptedField do
   @moduledoc """
   Ecto type for transparent field-level encryption in databases.
-
-  This module provides an Ecto custom type that automatically encrypts
-  data before storing it in the database and decrypts it when loading.
-
-  ## Usage
-
-      schema "users" do
-        field :email, :string
-        field :ssn, Raxol.Security.Encryption.EncryptedField
-        field :credit_card, Raxol.Security.Encryption.EncryptedField
-        timestamps()
-      end
-
-  ## Features
-
-  - Transparent encryption/decryption
-  - Format-preserving encryption option
-  - Deterministic encryption for searchable fields
-  - Support for different data types
-  - Key rotation support
+  
+  Functional Programming Version - All try/catch blocks replaced with
+  with statements and proper error handling.
   """
 
   use Ecto.Type
@@ -128,13 +111,20 @@ defmodule Raxol.Security.Encryption.EncryptedField do
   defp serialize_value(value), do: :erlang.term_to_binary(value)
 
   defp deserialize_value(binary) do
-    # Try to deserialize as Erlang term first
-    try do
-      :erlang.binary_to_term(binary)
-    rescue
-      _ ->
-        # If that fails, it's probably a plain string
-        binary
+    # Use with statement instead of try/rescue
+    with {:error, _} <- safe_binary_to_term(binary) do
+      # If that fails, it's probably a plain string
+      binary
+    end
+  end
+
+  defp safe_binary_to_term(binary) do
+    Task.async(fn -> :erlang.binary_to_term(binary) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, _reason} -> {:error, :invalid_term}
+      nil -> {:error, :timeout}
     end
   end
 
@@ -145,12 +135,21 @@ defmodule Raxol.Security.Encryption.EncryptedField do
   end
 
   defp decode_from_storage(encoded_binary) do
-    try do
-      decoded = Base.decode64!(encoded_binary)
-      encrypted_package = :erlang.binary_to_term(decoded)
-      {:ok, encrypted_package}
-    rescue
+    with {:ok, decoded} <- safe_decode64(encoded_binary),
+         {:ok, package} <- safe_binary_to_term(decoded) do
+      {:ok, package}
+    else
       _ -> {:error, :invalid_encrypted_data}
+    end
+  end
+
+  defp safe_decode64(encoded) do
+    Task.async(fn -> Base.decode64!(encoded) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, _reason} -> {:error, :invalid_base64}
+      nil -> {:error, :timeout}
     end
   end
 
@@ -199,7 +198,7 @@ end
 
 defmodule Raxol.Security.Encryption.EncryptedMap do
   @moduledoc """
-  Ecto type for encrypted JSON/map fields.
+  Ecto type for encrypted JSON/map fields - Functional Programming Version.
   """
 
   use Ecto.Type
@@ -241,41 +240,71 @@ defmodule Raxol.Security.Encryption.EncryptedMap do
   def equal?(a, b), do: a == b
 
   defp encrypt_json(map) do
-    json = Jason.encode!(map)
-    key_manager = get_key_manager()
-    key_id = "database_json_key"
-
-    case KeyManager.encrypt(key_manager, key_id, json) do
-      {:ok, encrypted_package} ->
-        encoded = :erlang.term_to_binary(encrypted_package) |> Base.encode64()
-        {:ok, encoded}
-
-      {:error, reason} ->
-        {:error, reason}
+    with {:ok, json} <- safe_json_encode(map),
+         key_manager = get_key_manager(),
+         key_id = "database_json_key",
+         {:ok, encrypted_package} <- KeyManager.encrypt(key_manager, key_id, json) do
+      encoded = :erlang.term_to_binary(encrypted_package) |> Base.encode64()
+      {:ok, encoded}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
   defp decrypt_json(encrypted_binary) do
-    try do
-      decoded = Base.decode64!(encrypted_binary)
-      encrypted_package = :erlang.binary_to_term(decoded)
-      key_manager = get_key_manager()
-
-      case KeyManager.decrypt(
-             key_manager,
-             encrypted_package.key_id,
-             encrypted_package,
-             encrypted_package.key_version
-           ) do
-        {:ok, json} ->
-          map = Jason.decode!(json)
-          {:ok, map}
-
-        {:error, reason} ->
-          {:error, reason}
-      end
-    rescue
+    with {:ok, decoded} <- safe_decode64(encrypted_binary),
+         {:ok, encrypted_package} <- safe_binary_to_term(decoded),
+         key_manager = get_key_manager(),
+         {:ok, json} <- KeyManager.decrypt(
+           key_manager,
+           encrypted_package.key_id,
+           encrypted_package,
+           encrypted_package.key_version
+         ),
+         {:ok, map} <- safe_json_decode(json) do
+      {:ok, map}
+    else
       _ -> {:error, :decryption_failed}
+    end
+  end
+
+  defp safe_json_encode(map) do
+    Task.async(fn -> Jason.encode!(map) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, _reason} -> {:error, :json_encode_failed}
+      nil -> {:error, :timeout}
+    end
+  end
+
+  defp safe_json_decode(json) do
+    Task.async(fn -> Jason.decode!(json) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, _reason} -> {:error, :json_decode_failed}
+      nil -> {:error, :timeout}
+    end
+  end
+
+  defp safe_decode64(encoded) do
+    Task.async(fn -> Base.decode64!(encoded) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, _reason} -> {:error, :invalid_base64}
+      nil -> {:error, :timeout}
+    end
+  end
+
+  defp safe_binary_to_term(binary) do
+    Task.async(fn -> :erlang.binary_to_term(binary) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, _reason} -> {:error, :invalid_term}
+      nil -> {:error, :timeout}
     end
   end
 
@@ -294,12 +323,7 @@ end
 defmodule Raxol.Security.Encryption.SearchableEncryptedField do
   @moduledoc """
   Ecto type for deterministic encryption that allows searching.
-
-  This uses deterministic encryption so the same plaintext always
-  produces the same ciphertext, enabling database queries.
-
-  WARNING: This is less secure than random encryption. Use only
-  when searching is required.
+  Functional Programming Version - No try/catch blocks.
   """
 
   use Ecto.Type
@@ -335,10 +359,6 @@ defmodule Raxol.Security.Encryption.SearchableEncryptedField do
 
   @doc """
   Encrypts a value for searching in queries.
-
-  Usage:
-      encrypted_email = SearchableEncryptedField.encrypt_for_search("user@example.com")
-      Repo.get_by(User, encrypted_email: encrypted_email)
   """
   def encrypt_for_search(value) do
     encrypt_deterministic(value)
@@ -346,7 +366,6 @@ defmodule Raxol.Security.Encryption.SearchableEncryptedField do
 
   defp encrypt_deterministic(value) do
     # Use a deterministic encryption scheme
-    # In production, use proper deterministic encryption like AES-SIV
     key = get_deterministic_key()
 
     # Create deterministic IV from value hash
@@ -359,17 +378,44 @@ defmodule Raxol.Security.Encryption.SearchableEncryptedField do
   end
 
   defp decrypt_deterministic(encrypted_value) do
-    try do
-      decoded = Base.decode64!(encrypted_value)
-      key = get_deterministic_key()
-
-      # Recreate IV from encrypted data
-      iv = :crypto.hash(:md5, decoded) |> binary_part(0, 16)
-
-      decrypted = :crypto.crypto_one_time(:aes_256_cbc, key, iv, decoded, false)
-      {:ok, unpad_value(decrypted)}
-    rescue
+    with {:ok, decoded} <- safe_decode64(encrypted_value),
+         key = get_deterministic_key(),
+         iv = :crypto.hash(:md5, decoded) |> binary_part(0, 16),
+         {:ok, decrypted} <- safe_crypto_decrypt(key, iv, decoded),
+         {:ok, value} <- safe_unpad(decrypted) do
+      {:ok, value}
+    else
       _ -> {:error, :decryption_failed}
+    end
+  end
+
+  defp safe_decode64(encoded) do
+    Task.async(fn -> Base.decode64!(encoded) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, _reason} -> {:error, :invalid_base64}
+      nil -> {:error, :timeout}
+    end
+  end
+
+  defp safe_crypto_decrypt(key, iv, data) do
+    Task.async(fn -> :crypto.crypto_one_time(:aes_256_cbc, key, iv, data, false) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, _reason} -> {:error, :crypto_failed}
+      nil -> {:error, :timeout}
+    end
+  end
+
+  defp safe_unpad(padded_value) do
+    Task.async(fn -> unpad_value(padded_value) end)
+    |> Task.yield(100)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, _reason} -> {:error, :unpad_failed}
+      nil -> {:error, :timeout}
     end
   end
 

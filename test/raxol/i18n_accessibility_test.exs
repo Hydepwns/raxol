@@ -1,5 +1,5 @@
 # Define the stub module directly in the test file
-# defmodule Raxol.Core.AccessibilityStub do
+# defmodule Raxol.Core.AccessibilityRefactoredStub do
 #   @moduledoc false
 #   require Mox # Explicitly require Mox
 #   use Mox
@@ -39,7 +39,7 @@ defmodule Raxol.I18nAccessibilityTest do
   # import RaxolWeb.Gettext # No longer needed, I18n module has its own logic
 
   # Alias the core I18n module
-  alias Raxol.Core.I18n
+  alias Raxol.Core.I18n, as: I18n, as: I18n
   # AccessibilityMock is defined via Mox.defmock below
 
   # NOTE (2024-05-02): Still investigating persistent Mox compilation error:

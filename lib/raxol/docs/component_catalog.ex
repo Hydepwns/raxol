@@ -1,6 +1,5 @@
 defmodule Raxol.Docs.ComponentCatalog do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Visual component catalog for Raxol documentation.
 
@@ -19,7 +18,8 @@ defmodule Raxol.Docs.ComponentCatalog do
 
   # Ensure all component source modules are located under `lib/raxol/ui/components/`
   # and are correctly referenced by the catalog data in `lib/raxol/docs/catalog_data/`.
-  # (Original concern about `lib/raxol/components/` seems resolved as this path is not actively used).
+  # (Original concern about `lib/raxol/components/` seems resolved as this path is not
+  # actively used).
 
   # Component category
   defmodule Category do
@@ -86,7 +86,7 @@ defmodule Raxol.Docs.ComponentCatalog do
   """
   def init do
     catalog = build_catalog()
-    Process.put(@catalog_key, catalog)
+    Raxol.Core.StateManager.set_state(@catalog_key, catalog)
     :ok
   end
 
@@ -256,7 +256,7 @@ defmodule Raxol.Docs.ComponentCatalog do
       # Fetch the actual components
       related_ids
       |> Enum.map(&get_component/1)
-      |> Enum.reject(&nil?/1)
+      |> Enum.reject(&is_nil/1)
     else
       []
     end
@@ -265,7 +265,7 @@ defmodule Raxol.Docs.ComponentCatalog do
   # Private helpers
 
   defp get_catalog do
-    Process.get(@catalog_key) || build_catalog()
+    Raxol.Core.StateManager.get_state(@catalog_key) || build_catalog()
   end
 
   defp build_catalog do
@@ -381,7 +381,7 @@ defmodule Raxol.Docs.ComponentCatalog do
   defp parse_prop_descriptions(nil), do: %{}
 
   defp parse_prop_descriptions({_, _line, _sigs, %{"en" => docstring}, _meta})
-       when binary?(docstring) do
+       when is_binary(docstring) do
     Regex.scan(~r/^\s*\*\s*`:(?<name>\w+)`\s*-\s*(?<desc>.*)$/m, docstring)
     |> Enum.reduce(%{}, fn [_, name, desc], acc ->
       Map.put(acc, String.to_atom(name), String.trim(desc))
@@ -399,7 +399,7 @@ defmodule Raxol.Docs.ComponentCatalog do
         introspected_desc = Map.get(introspected_descs, prop.name)
 
         if introspected_desc &&
-             (nil?(prop.description) || prop.description == "") do
+             (is_nil(prop.description) || prop.description == "") do
           %{prop | description: introspected_desc}
         else
           # Keep the static property data
@@ -410,7 +410,7 @@ defmodule Raxol.Docs.ComponentCatalog do
   end
 
   # Helper to fetch introspectable data from a module
-  defp fetch_introspected_data(module) when atom?(module) do
+  defp fetch_introspected_data(module) when is_atom(module) do
     # Ensure the module is loaded before fetching docs
     Code.ensure_loaded?(module)
 

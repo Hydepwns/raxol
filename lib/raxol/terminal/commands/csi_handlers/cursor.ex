@@ -3,8 +3,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
   Handles CSI cursor control sequences.
   """
 
-  import Raxol.Guards
-  alias Raxol.Terminal.Emulator.Struct, as: Emulator
+    alias Raxol.Terminal.Emulator.Struct, as: Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.BufferManager
 
@@ -186,7 +185,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
   defp get_valid_non_neg_param(params, index, default) do
     case Enum.at(params, index) do
       nil -> default
-      value when integer?(value) and value >= 0 -> value
+      value when is_integer(value) and value >= 0 -> value
       _ -> default
     end
   end
@@ -194,7 +193,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
   defp get_valid_pos_param(params, index, default) do
     case Enum.at(params, index) do
       nil -> default
-      value when integer?(value) and value > 0 -> value
+      value when is_integer(value) and value > 0 -> value
       _ -> default
     end
   end

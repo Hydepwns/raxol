@@ -184,11 +184,14 @@ defmodule Mix.Tasks.Benchmark do
   end
 
   defp determine_suites(opts) do
-    cond do
-      opts[:all] ->
+    case {opts[:all], opts[:suite]} do
+      {true, _} ->
         @all_suites
 
-      opts[:suite] ->
+      {_, nil} ->
+        []
+
+      {_, _} ->
         # Handle multiple --suite options
         opts
         |> Keyword.get_values(:suite)
@@ -196,9 +199,6 @@ defmodule Mix.Tasks.Benchmark do
         |> Enum.map(&String.trim/1)
         |> Enum.filter(&(&1 in @all_suites))
         |> Enum.uniq()
-
-      true ->
-        []
     end
   end
 
@@ -340,24 +340,24 @@ defmodule Mix.Tasks.Benchmark do
 
   @dialyzer {:no_return, format_time: 1}
   defp format_time(microseconds) when is_number(microseconds) do
-    cond do
-      microseconds < 1_000 -> "#{microseconds}μs"
-      microseconds < 1_000_000 -> "#{Float.round(microseconds / 1_000, 2)}ms"
-      true -> "#{Float.round(microseconds / 1_000_000, 2)}s"
-    end
+    format_time_unit(microseconds)
   end
+
+  defp format_time_unit(us) when us < 1_000, do: "#{us}μs"
+  defp format_time_unit(us) when us < 1_000_000, do: "#{Float.round(us / 1_000, 2)}ms"
+  defp format_time_unit(us), do: "#{Float.round(us / 1_000_000, 2)}s"
 
   defp format_time(_), do: "N/A"
 
   @dialyzer {:no_return, format_memory: 1}
   defp format_memory(bytes) when is_number(bytes) do
-    cond do
-      bytes < 1_024 -> "#{bytes}B"
-      bytes < 1_048_576 -> "#{Float.round(bytes / 1_024, 2)}KB"
-      bytes < 1_073_741_824 -> "#{Float.round(bytes / 1_048_576, 2)}MB"
-      true -> "#{Float.round(bytes / 1_073_741_824, 2)}GB"
-    end
+    format_memory_unit(bytes)
   end
+
+  defp format_memory_unit(b) when b < 1_024, do: "#{b}B"
+  defp format_memory_unit(b) when b < 1_048_576, do: "#{Float.round(b / 1_024, 2)}KB"
+  defp format_memory_unit(b) when b < 1_073_741_824, do: "#{Float.round(b / 1_048_576, 2)}MB"
+  defp format_memory_unit(b), do: "#{Float.round(b / 1_073_741_824, 2)}GB"
 
   defp format_memory(_), do: "N/A"
 

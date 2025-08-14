@@ -166,13 +166,7 @@ defmodule Raxol.UI.Components.Selection.List do
     content = state.item_renderer.(item_data)
 
     # Ensure display_content is always a valid element or list of elements
-    display_content =
-      cond do
-        is_binary(content) -> Raxol.View.Elements.label(content: content)
-        is_map(content) and Map.has_key?(content, :type) -> content
-        # Default fallback
-        true -> Raxol.View.Elements.label(content: to_string(content))
-      end
+    display_content = format_display_content(content)
 
     # Pass as list
     Raxol.View.Elements.box style: style do
@@ -212,11 +206,23 @@ defmodule Raxol.UI.Components.Selection.List do
   end
 
   defp adjust_scroll(index, offset, height) do
-    cond do
-      index < offset -> index
-      index >= offset + height -> index - height + 1
-      true -> offset
-    end
+    calculate_scroll_offset(index, offset, height)
+  end
+
+  defp calculate_scroll_offset(index, offset, _height) when index < offset, do: index
+  defp calculate_scroll_offset(index, offset, height) when index >= offset + height, do: index - height + 1
+  defp calculate_scroll_offset(_index, offset, _height), do: offset
+
+  defp format_display_content(content) when is_binary(content) do
+    Raxol.View.Elements.label(content: content)
+  end
+
+  defp format_display_content(content) when is_map(content) and is_map_key(content, :type) do
+    content
+  end
+
+  defp format_display_content(content) do
+    Raxol.View.Elements.label(content: to_string(content))
   end
 
   # Default item renderer just converts to string

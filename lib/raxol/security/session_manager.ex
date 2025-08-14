@@ -150,27 +150,7 @@ defmodule Raxol.Security.SessionManager do
         {:reply, {:error, :invalid_session}, state}
 
       session ->
-        cond do
-          not secure_token_compare(session.token, token) ->
-            Logger.warning("Invalid token for session #{session_id}")
-            {:reply, {:error, :invalid_token}, state}
-
-          expired?(session) ->
-            invalidate_session_internal(session_id)
-            {:reply, {:error, :session_expired}, state}
-
-          true ->
-            # Update last activity
-            touch_session_internal(session_id)
-
-            {:reply,
-             {:ok,
-              %{
-                user_id: session.user_id,
-                metadata: session.metadata,
-                expires_at: session.expires_at
-              }}, state}
-        end
+        validate_session_token_and_expiry(session, token, session_id, state)
     end
   end
 
@@ -242,6 +222,30 @@ defmodule Raxol.Security.SessionManager do
   end
 
   # Private functions
+
+  defp validate_session_token_and_expiry(session, token, session_id, state) do
+    with true <- secure_token_compare(session.token, token),
+         false <- expired?(session) do
+      # Update last activity
+      touch_session_internal(session_id)
+
+      {:reply,
+       {:ok,
+        %{
+          user_id: session.user_id,
+          metadata: session.metadata,
+          expires_at: session.expires_at
+        }}, state}
+    else
+      false ->
+        Logger.warning("Invalid token for session #{session_id}")
+        {:reply, {:error, :invalid_token}, state}
+
+      true ->
+        invalidate_session_internal(session_id)
+        {:reply, {:error, :session_expired}, state}
+    end
+  end
 
   defp create_new_session(user_id, opts, state) do
     now = DateTime.utc_now()

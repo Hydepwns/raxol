@@ -29,8 +29,7 @@ defmodule Raxol.Test.Integration do
       end
   """
 
-  import Raxol.Guards
-
+  
   # Delegation to focused modules
   alias Raxol.Test.Integration.{
     HierarchySetup,
@@ -64,7 +63,7 @@ defmodule Raxol.Test.Integration do
   3. Configures component relationships
   4. Establishes test monitoring
   """
-  def setup_test_scenario(components) when map?(components) do
+  def setup_test_scenario(components) when is_map(components) do
     ComponentManagement.setup_test_scenario(components)
   end
 

@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles load order resolution for plugin dependencies using Tarjan's algorithm.
   Provides efficient cycle detection and topological sorting of dependencies.
@@ -148,13 +147,16 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
     end
   end
 
-  defp get_neighbor_type(neighbor, graph, idx, on_stk) do
-    cond do
-      not Map.has_key?(graph, neighbor) -> :missing
-      not Map.has_key?(idx, neighbor) -> :unvisited
-      MapSet.member?(on_stk, neighbor) -> :on_stack
-      true -> :visited
-    end
+  defp get_neighbor_type(neighbor, graph, _idx, _on_stk) when not is_map_key(graph, neighbor) do
+    :missing
+  end
+
+  defp get_neighbor_type(neighbor, _graph, idx, _on_stk) when not is_map_key(idx, neighbor) do
+    :unvisited
+  end
+
+  defp get_neighbor_type(neighbor, _graph, _idx, on_stk) do
+    if MapSet.member?(on_stk, neighbor), do: :on_stack, else: :visited
   end
 
   defp process_unvisited_neighbor(neighbor, %{
@@ -194,10 +196,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
   end
 
   defp validate_component(component, on_stk) do
-    if !(list?(component) and Enum.all?(component, &atom?/1)),
+    if !(is_list(component) and Enum.all?(component, &is_atom/1)),
       do: raise("Component must be a list of atoms")
 
-    if not struct?(on_stk, MapSet), do: raise("on_stk must be a MapSet")
+    if not is_struct(on_stk, MapSet), do: raise("on_stk must be a MapSet")
   end
 
   defp handle_component(component, idx, low, comp, new_stack, on_stk, i, graph) do
@@ -292,7 +294,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
 
   defp remove_from_stack(component, on_stk) do
     Enum.reduce(component, on_stk, fn elem, acc ->
-      if not struct?(acc, MapSet), do: raise("Accumulator must be a MapSet")
+      if not is_struct(acc, MapSet), do: raise("Accumulator must be a MapSet")
       MapSet.delete(acc, elem)
     end)
   end

@@ -23,28 +23,18 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
   end
 
   defp handle_byte(emulator, parser_state, byte, rest) do
-    cond do
-      param_byte?(byte) ->
-        handle_param_byte(emulator, parser_state, byte, rest)
-
-      byte == ?; ->
-        handle_separator(emulator, parser_state, rest)
-
-      intermediate_byte?(byte) ->
-        handle_intermediate_byte(emulator, parser_state, byte, rest)
-
-      final_byte?(byte) ->
-        handle_final_byte(emulator, parser_state, byte, rest)
-
-      can_sub?(byte) ->
-        handle_can_sub(emulator, parser_state, rest)
-
-      ignored_byte?(byte) ->
-        handle_ignored_byte(emulator, parser_state, byte, rest)
-
-      true ->
-        handle_unhandled_byte(emulator, parser_state, byte, rest)
-    end
+    byte_handlers = [
+      {&param_byte?/1, fn -> handle_param_byte(emulator, parser_state, byte, rest) end},
+      {fn b -> b == ?; end, fn -> handle_separator(emulator, parser_state, rest) end},
+      {&intermediate_byte?/1, fn -> handle_intermediate_byte(emulator, parser_state, byte, rest) end},
+      {&final_byte?/1, fn -> handle_final_byte(emulator, parser_state, byte, rest) end},
+      {&can_sub?/1, fn -> handle_can_sub(emulator, parser_state, rest) end},
+      {&ignored_byte?/1, fn -> handle_ignored_byte(emulator, parser_state, byte, rest) end}
+    ]
+    
+    Enum.find_value(byte_handlers, fn {check, handler} ->
+      if check.(byte), do: handler.(), else: nil
+    end) || handle_unhandled_byte(emulator, parser_state, byte, rest)
   end
 
   defp param_byte?(byte), do: byte >= ?0 and byte <= ?9

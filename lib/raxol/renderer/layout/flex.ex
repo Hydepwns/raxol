@@ -9,8 +9,7 @@ defmodule Raxol.Renderer.Layout.Flex do
   - Child size calculations
   """
 
-  import Raxol.Guards
-
+  
   @doc """
   Processes a flex element and returns positioned children.
 
@@ -56,7 +55,7 @@ defmodule Raxol.Renderer.Layout.Flex do
   defp calculate_child_sizes(children) do
     Enum.map(children, fn child ->
       case Map.get(child, :size) do
-        {w, h} when integer?(w) and integer?(h) and w >= 0 and h >= 0 -> {w, h}
+        {w, h} when is_integer(w) and is_integer(h) and w >= 0 and h >= 0 -> {w, h}
         _ -> {1, 1}
       end
     end)

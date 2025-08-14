@@ -52,8 +52,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
       }
   """
 
-  import Raxol.Guards
-  alias Raxol.UI.Layout.Engine
+    alias Raxol.UI.Layout.Engine
 
   # Grid track definition
   defmodule Track do
@@ -101,7 +100,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
         space,
         acc
       )
-      when list?(children) do
+      when is_list(children) do
     attrs = Map.get(grid, :attrs, %{})
 
     # Parse grid properties
@@ -173,7 +172,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
         %{type: :css_grid, children: children} = grid,
         available_space
       )
-      when list?(children) do
+      when is_list(children) do
     attrs = Map.get(grid, :attrs, %{})
     grid_props = parse_grid_properties(attrs)
 
@@ -300,12 +299,16 @@ defmodule Raxol.UI.Layout.CSSGrid do
 
   defp expand_repeat_notation(tracks) do
     Enum.flat_map(tracks, fn track ->
-      if String.starts_with?(track, "repeat(") do
-        expand_repeat(track)
-      else
-        [track]
-      end
+      expand_track_notation(track)
     end)
+  end
+
+  defp expand_track_notation("repeat(" <> _ = track) do
+    expand_repeat(track)
+  end
+
+  defp expand_track_notation(track) do
+    [track]
   end
 
   defp expand_repeat(repeat_str) do
@@ -320,19 +323,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
         count_str = String.trim(count_str)
         pattern = String.trim(pattern)
 
-        cond do
-          count_str == "auto-fit" or count_str == "auto-fill" ->
-            # For now, expand to a reasonable number of tracks
-            # In a real implementation, this would be calculated based on available space
-            List.duplicate(pattern, 5)
-
-          true ->
-            case Integer.parse(count_str) do
-              {count, ""} -> List.duplicate(pattern, count)
-              # Invalid repeat, return as-is
-              _ -> [repeat_str]
-            end
-        end
+        expand_by_count_type(count_str, pattern, repeat_str)
 
       # Invalid repeat syntax
       _ ->
@@ -340,40 +331,142 @@ defmodule Raxol.UI.Layout.CSSGrid do
     end
   end
 
+  defp expand_by_count_type("auto-fit", pattern, _repeat_str) do
+    # For now, expand to a reasonable number of tracks
+    # In a real implementation, this would be calculated based on available space
+    List.duplicate(pattern, 5)
+  end
+
+  defp expand_by_count_type("auto-fill", pattern, _repeat_str) do
+    # For now, expand to a reasonable number of tracks
+    # In a real implementation, this would be calculated based on available space
+    List.duplicate(pattern, 5)
+  end
+
+  defp expand_by_count_type(count_str, pattern, repeat_str) do
+    case Integer.parse(count_str) do
+      {count, ""} -> List.duplicate(pattern, count)
+      # Invalid repeat, return as-is
+      _ -> [repeat_str]
+    end
+  end
+
   defp parse_track(track_str, available_size) do
-    cond do
-      String.ends_with?(track_str, "fr") ->
-        {value, "fr"} = Float.parse(track_str)
-        Track.new(:fr, value)
+    parse_track_by_type(track_str, available_size)
+  end
 
-      String.ends_with?(track_str, "px") ->
-        {value, "px"} = Integer.parse(track_str)
-        Track.new(:fixed, value)
+  defp parse_track_by_type(track_str, available_size) when is_binary(track_str) do
+    case track_str do
+      "auto" -> Track.new(:auto, 0)
+      "min-content" -> Track.new(:min_content, 0)
+      "max-content" -> Track.new(:max_content, 0)
+      _ -> parse_track_by_suffix(track_str, available_size)
+    end
+  end
 
-      String.ends_with?(track_str, "%") ->
-        {value, "%"} = Float.parse(track_str)
-        Track.new(:fixed, div(available_size * trunc(value), 100))
-
-      track_str == "auto" ->
-        Track.new(:auto, 0)
-
-      track_str == "min-content" ->
-        Track.new(:min_content, 0)
-
-      track_str == "max-content" ->
-        Track.new(:max_content, 0)
-
-      String.starts_with?(track_str, "minmax(") ->
-        parse_minmax_track(track_str, available_size)
-
-      true ->
-        # Try to parse as integer (assume pixels)
-        case Integer.parse(track_str) do
-          {value, ""} -> Track.new(:fixed, value)
-          # Fallback
-          _ -> Track.new(:auto, 0)
+  defp parse_track_by_suffix(track_str, available_size) do
+    with {:ok, result} <- try_parse_fr_track(track_str) do
+      result
+    else
+      :error ->
+        with {:ok, result} <- try_parse_px_track(track_str) do
+          result
+        else
+          :error ->
+            with {:ok, result} <- try_parse_percent_track(track_str, available_size) do
+              result
+            else
+              :error ->
+                with {:ok, result} <- try_parse_minmax_track(track_str, available_size) do
+                  result
+                else
+                  :error -> parse_fallback_track(track_str)
+                end
+            end
         end
     end
+  end
+
+  defp try_parse_fr_track(track_str) do
+    case String.ends_with?(track_str, "fr") do
+      true -> {:ok, parse_fr_track(track_str)}
+      false -> :error
+    end
+  end
+
+  defp try_parse_px_track(track_str) do
+    case String.ends_with?(track_str, "px") do
+      true -> {:ok, parse_px_track(track_str)}
+      false -> :error
+    end
+  end
+
+  defp try_parse_percent_track(track_str, available_size) do
+    case String.ends_with?(track_str, "%") do
+      true -> {:ok, parse_percent_track(track_str, available_size)}
+      false -> :error
+    end
+  end
+
+  defp try_parse_minmax_track(track_str, available_size) do
+    case String.starts_with?(track_str, "minmax(") do
+      true -> {:ok, parse_minmax_track(track_str, available_size)}
+      false -> :error
+    end
+  end
+
+  defp parse_track_by_type(_track_str, _available_size), do: Track.new(:auto, 0)
+
+  defp parse_fr_track(track_str) do
+    {value, "fr"} = Float.parse(track_str)
+    Track.new(:fr, value)
+  end
+
+  defp parse_px_track(track_str) do
+    {value, "px"} = Integer.parse(track_str)
+    Track.new(:fixed, value)
+  end
+
+  defp parse_percent_track(track_str, available_size) do
+    {value, "%"} = Float.parse(track_str)
+    Track.new(:fixed, div(available_size * trunc(value), 100))
+  end
+
+  defp parse_keyword_track("auto"), do: Track.new(:auto, 0)
+  defp parse_keyword_track("min-content"), do: Track.new(:min_content, 0)
+  defp parse_keyword_track("max-content"), do: Track.new(:max_content, 0)
+
+  defp parse_fallback_track(track_str) do
+    case Integer.parse(track_str) do
+      {value, ""} -> Track.new(:fixed, value)
+      _ -> Track.new(:auto, 0)
+    end
+  end
+
+  defp determine_cell_placement(grid_area, _grid_row, _grid_column, areas, _row_tracks, _column_tracks) 
+       when not is_nil(grid_area) and is_map_key(areas, grid_area) do
+    area = areas[grid_area]
+
+    Cell.new(
+      # Convert to 1-based
+      area.min_row + 1,
+      area.min_col + 1,
+      area.max_row - area.min_row + 1,
+      area.max_col - area.min_col + 1,
+      grid_area
+    )
+  end
+
+  defp determine_cell_placement(_grid_area, grid_row, grid_column, _areas, row_tracks, column_tracks) 
+       when not is_nil(grid_row) or not is_nil(grid_column) do
+    {row, row_span} = parse_grid_line(grid_row, length(row_tracks))
+    {col, col_span} = parse_grid_line(grid_column, length(column_tracks))
+    Cell.new(row, col, row_span, col_span)
+  end
+
+  defp determine_cell_placement(_grid_area, _grid_row, _grid_column, _areas, _row_tracks, _column_tracks) do
+    # Will be auto-placed
+    nil
   end
 
   defp parse_minmax_track(minmax_str, available_size) do
@@ -412,27 +505,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
       area_names
       |> Enum.with_index()
       |> Enum.reduce(acc, fn {area_name, col}, inner_acc ->
-        if area_name != "." do
-          # Track the bounds of each named area
-          current =
-            Map.get(inner_acc, area_name, %{
-              min_row: row,
-              max_row: row,
-              min_col: col,
-              max_col: col
-            })
-
-          updated = %{
-            min_row: min(current.min_row, row),
-            max_row: max(current.max_row, row),
-            min_col: min(current.min_col, col),
-            max_col: max(current.max_col, col)
-          }
-
-          Map.put(inner_acc, area_name, updated)
-        else
-          inner_acc
-        end
+        update_area_bounds(area_name, row, col, inner_acc)
       end)
     end)
   end
@@ -459,38 +532,9 @@ defmodule Raxol.UI.Layout.CSSGrid do
       dims = Engine.measure_element(child, content_space)
 
       # Determine cell placement
-      cell =
-        cond do
-          grid_area != nil and Map.has_key?(areas, grid_area) ->
-            area = areas[grid_area]
+      cell = determine_cell_placement(grid_area, grid_row, grid_column, areas, row_tracks, column_tracks)
 
-            Cell.new(
-              # Convert to 1-based
-              area.min_row + 1,
-              area.min_col + 1,
-              area.max_row - area.min_row + 1,
-              area.max_col - area.min_col + 1,
-              grid_area
-            )
-
-          grid_row != nil or grid_column != nil ->
-            {row, row_span} = parse_grid_line(grid_row, length(row_tracks))
-
-            {col, col_span} =
-              parse_grid_line(grid_column, length(column_tracks))
-
-            Cell.new(row, col, row_span, col_span)
-
-          true ->
-            # Will be auto-placed
-            nil
-        end
-
-      if cell do
-        [Item.new(child, cell, dims, false) | acc]
-      else
-        [Item.new(child, nil, dims, true) | acc]
-      end
+      create_grid_item(child, cell, dims, acc)
     end)
     |> Enum.reverse()
   end
@@ -505,16 +549,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
       [start_str, end_str] ->
         start_num = parse_line_number(start_str, track_count)
 
-        if String.starts_with?(String.trim(end_str), "span") do
-          span_str =
-            String.trim(end_str) |> String.trim_leading("span") |> String.trim()
-
-          {span, ""} = Integer.parse(span_str)
-          {start_num, span}
-        else
-          end_num = parse_line_number(end_str, track_count)
-          {start_num, end_num - start_num}
-        end
+        parse_grid_line_end(start_num, end_str, track_count)
 
       _ ->
         {1, 1}
@@ -625,15 +660,15 @@ defmodule Raxol.UI.Layout.CSSGrid do
   end
 
   defp find_next_available_row(grid, row, col, col_count, row_count)
+       when row <= row_count and col > col_count do
+    find_next_available_row(grid, row + 1, 1, col_count, row_count)
+  end
+
+  defp find_next_available_row(grid, row, col, col_count, row_count)
        when row <= row_count do
-    if col > col_count do
-      find_next_available_row(grid, row + 1, 1, col_count, row_count)
-    else
-      if is_cell_available(grid, row, col) do
-        {row, col}
-      else
-        find_next_available_row(grid, row, col + 1, col_count, row_count)
-      end
+    case is_cell_available(grid, row, col) do
+      true -> {row, col}
+      false -> find_next_available_row(grid, row, col + 1, col_count, row_count)
     end
   end
 
@@ -643,15 +678,15 @@ defmodule Raxol.UI.Layout.CSSGrid do
   end
 
   defp find_next_available_column(grid, row, col, col_count, row_count)
+       when col <= col_count and row > row_count do
+    find_next_available_column(grid, 1, col + 1, col_count, row_count)
+  end
+
+  defp find_next_available_column(grid, row, col, col_count, row_count)
        when col <= col_count do
-    if row > row_count do
-      find_next_available_column(grid, 1, col + 1, col_count, row_count)
-    else
-      if is_cell_available(grid, row, col) do
-        {row, col}
-      else
-        find_next_available_column(grid, row + 1, col, col_count, row_count)
-      end
+    case is_cell_available(grid, row, col) do
+      true -> {row, col}
+      false -> find_next_available_column(grid, row + 1, col, col_count, row_count)
     end
   end
 
@@ -660,19 +695,18 @@ defmodule Raxol.UI.Layout.CSSGrid do
     nil
   end
 
-  defp is_cell_available(grid, row, col) do
-    if row > 0 and row <= length(grid) and col > 0 do
-      row_data = Enum.at(grid, row - 1)
-
-      if col <= length(row_data) do
-        not Enum.at(row_data, col - 1)
-      else
-        true
-      end
-    else
-      false
-    end
+  defp is_cell_available(grid, row, col) when row > 0 and row <= length(grid) and col > 0 do
+    row_data = Enum.at(grid, row - 1)
+    check_column_availability(row_data, col)
   end
+
+  defp is_cell_available(_grid, _row, _col), do: false
+
+  defp check_column_availability(row_data, col) when col <= length(row_data) do
+    not Enum.at(row_data, col - 1)
+  end
+
+  defp check_column_availability(_row_data, _col), do: true
 
   defp size_tracks(items, column_tracks, row_tracks, content_space, grid_props) do
     # Size columns
@@ -923,5 +957,52 @@ defmodule Raxol.UI.Layout.CSSGrid do
       end)
 
     positions
+  end
+
+  ## Helper functions for refactored code
+
+  defp update_area_bounds(".", _row, _col, acc), do: acc
+
+  defp update_area_bounds(area_name, row, col, acc) do
+    # Track the bounds of each named area
+    current =
+      Map.get(acc, area_name, %{
+        min_row: row,
+        max_row: row,
+        min_col: col,
+        max_col: col
+      })
+
+    updated = %{
+      min_row: min(current.min_row, row),
+      max_row: max(current.max_row, row),
+      min_col: min(current.min_col, col),
+      max_col: max(current.max_col, col)
+    }
+
+    Map.put(acc, area_name, updated)
+  end
+
+  defp create_grid_item(child, nil, dims, acc) do
+    [Item.new(child, nil, dims, true) | acc]
+  end
+
+  defp create_grid_item(child, cell, dims, acc) do
+    [Item.new(child, cell, dims, false) | acc]
+  end
+
+  defp parse_grid_line_end(start_num, end_str, track_count) do
+    trimmed = String.trim(end_str)
+    
+    case String.starts_with?(trimmed, "span") do
+      true ->
+        span_str = trimmed |> String.trim_leading("span") |> String.trim()
+        {span, ""} = Integer.parse(span_str)
+        {start_num, span}
+
+      false ->
+        end_num = parse_line_number(end_str, track_count)
+        {start_num, end_num - start_num}
+    end
   end
 end

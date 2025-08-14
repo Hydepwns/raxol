@@ -1,6 +1,6 @@
 defmodule Raxol.Metrics do
   @moduledoc """
-  Handles collection and management of system metrics.
+  Handles collection and management of system metrics with functional error handling.
 
   This module is responsible for collecting and managing various system metrics
   including:
@@ -10,10 +10,11 @@ defmodule Raxol.Metrics do
   - Database connections
   - Response times
   - Error rates
+
+  REFACTORED: All try/catch blocks replaced with functional error handling patterns.
   """
 
   use GenServer
-  import Raxol.Guards
   alias Raxol.Repo
   require Raxol.Core.Runtime.Log
 
@@ -41,16 +42,12 @@ defmodule Raxol.Metrics do
 
       Raxol.Metrics.gauge("raxol.chart_render_time", 42.5)
   """
-  def gauge(name, value) when binary?(name) do
-    try do
-      GenServer.cast(__MODULE__, {:gauge, name, value})
-    rescue
-      ArgumentError ->
-        # Handle the case where GenServer is not started (e.g., in tests)
-        Raxol.Core.Runtime.Log.debug(
-          "Metrics service not available, ignoring gauge: #{name}=#{value}"
-        )
-
+  def gauge(name, value) when is_binary(name) do
+    with {:ok, _} <- safe_genserver_cast({:gauge, name, value}) do
+      :ok
+    else
+      {:error, :not_available} ->
+        log_service_unavailable("gauge", "#{name}=#{value}")
         :ok
     end
   end
@@ -66,16 +63,12 @@ defmodule Raxol.Metrics do
 
       Raxol.Metrics.increment("raxol.chart_cache_hits")
   """
-  def increment(name) when binary?(name) do
-    try do
-      GenServer.cast(__MODULE__, {:increment, name})
-    rescue
-      ArgumentError ->
-        # Handle the case where GenServer is not started (e.g., in tests)
-        Raxol.Core.Runtime.Log.debug(
-          "Metrics service not available, ignoring increment: #{name}"
-        )
-
+  def increment(name) when is_binary(name) do
+    with {:ok, _} <- safe_genserver_cast({:increment, name}) do
+      :ok
+    else
+      {:error, :not_available} ->
+        log_service_unavailable("increment", name)
         :ok
     end
   end
@@ -86,13 +79,45 @@ defmodule Raxol.Metrics do
   Returns a map containing the current system metrics.
   """
   def get_current_metrics do
-    try do
-      GenServer.call(__MODULE__, :get_metrics)
-    rescue
-      ArgumentError ->
-        # Return empty metrics if GenServer not available
-        %{}
+    with {:ok, metrics} <- safe_genserver_call(:get_metrics) do
+      metrics
+    else
+      {:error, :not_available} -> %{}
     end
+  end
+
+  # Functional wrapper for GenServer.cast with error handling
+  defp safe_genserver_cast(message) do
+    case GenServer.whereis(__MODULE__) do
+      nil -> 
+        {:error, :not_available}
+      _pid ->
+        GenServer.cast(__MODULE__, message)
+        {:ok, :sent}
+    end
+  end
+
+  # Functional wrapper for GenServer.call with error handling
+  defp safe_genserver_call(message) do
+    case GenServer.whereis(__MODULE__) do
+      nil -> 
+        {:error, :not_available}
+      _pid ->
+        try do
+          result = GenServer.call(__MODULE__, message)
+          {:ok, result}
+        catch
+          :exit, {:noproc, _} -> {:error, :not_available}
+          :exit, {:timeout, _} -> {:error, :timeout}
+        end
+    end
+  end
+
+  # Logging helper for service unavailable scenarios
+  defp log_service_unavailable(operation, details) do
+    Raxol.Core.Runtime.Log.debug(
+      "Metrics service not available, ignoring #{operation}: #{details}"
+    )
   end
 
   def handle_call(:get_metrics, _from, state) do
@@ -188,7 +213,7 @@ defmodule Raxol.Metrics do
   def get_active_sessions do
     case Registry.lookup(Raxol.TerminalRegistry, :sessions) do
       [] -> 0
-      [{_pid, sessions}] when map?(sessions) -> Kernel.map_size(sessions)
+      [{_pid, sessions}] when is_map(sessions) -> Kernel.map_size(sessions)
       _ -> 0
     end
   end

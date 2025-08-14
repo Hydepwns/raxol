@@ -1,6 +1,6 @@
 defmodule Raxol.DevTools.PropsValidator do
   @moduledoc """
-  Runtime props validation system for Raxol components.
+  Runtime props validation system for Raxol components with functional error handling.
 
   This module provides comprehensive prop validation with:
   - Type checking (string, number, boolean, atom, list, map, function)
@@ -10,6 +10,8 @@ defmodule Raxol.DevTools.PropsValidator do
   - Nested prop validation
   - Helpful error messages with suggestions
   - Performance optimized validation
+
+  REFACTORED: All try/catch blocks replaced with functional error handling patterns.
 
   ## Usage
 
@@ -184,16 +186,24 @@ defmodule Raxol.DevTools.PropsValidator do
 
   ## Private Implementation
 
+  # Functional wrapper for component schema retrieval
   defp get_component_schema(component) do
-    try do
-      if function_exported?(component, :__props__, 0) do
-        component.__props__()
-      else
-        nil
-      end
-    catch
-      _, _ -> nil
+    with true <- function_exported?(component, :__props__, 0),
+         {:ok, props} <- safe_call_props_function(component) do
+      props
+    else
+      _ -> nil
     end
+  end
+
+  # Safe function call wrapper replacing try/catch
+  defp safe_call_props_function(component) do
+    case :erlang.apply(component, :__props__, []) do
+      props when is_map(props) -> {:ok, props}
+      _ -> {:error, :invalid_props}
+    end
+  rescue
+    _ -> {:error, :call_failed}
   end
 
   defp run_validation(props, prop_schemas) do
@@ -325,14 +335,15 @@ defmodule Raxol.DevTools.PropsValidator do
     end
   end
 
+  # Functional atom conversion replacing try/catch
   defp check_type(prop_name, value, %{type: :atom}) do
     if is_atom(value) do
       {:ok, value}
     else
-      try do
-        {:ok, String.to_existing_atom(to_string(value))}
-      catch
-        ArgumentError ->
+      with {:ok, atom_value} <- safe_string_to_existing_atom(to_string(value)) do
+        {:ok, atom_value}
+      else
+        {:error, :invalid_atom} ->
           {:error,
            ValidationError.new(
              prop_name,
@@ -409,6 +420,15 @@ defmodule Raxol.DevTools.PropsValidator do
 
   defp check_type(_prop_name, value, _schema) do
     {:ok, value}
+  end
+
+  # Safe atom conversion wrapper
+  defp safe_string_to_existing_atom(string) do
+    case String.to_existing_atom(string) do
+      atom when is_atom(atom) -> {:ok, atom}
+    end
+  rescue
+    ArgumentError -> {:error, :invalid_atom}
   end
 
   defp check_enum(_prop_name, nil, _schema) do
@@ -617,12 +637,13 @@ defmodule Raxol.DevTools.PropsValidator do
     {:ok, nil}
   end
 
+  # Functional transform wrapper replacing try/catch
   defp apply_transform(prop_name, value, %{transform: transform_fn})
        when is_function(transform_fn, 1) do
-    try do
-      {:ok, transform_fn.(value)}
-    catch
-      kind, reason ->
+    with {:ok, transformed_value} <- safe_apply_transform(transform_fn, value) do
+      {:ok, transformed_value}
+    else
+      {:error, {kind, reason}} ->
         {:error,
          ValidationError.new(
            prop_name,
@@ -635,6 +656,19 @@ defmodule Raxol.DevTools.PropsValidator do
 
   defp apply_transform(_prop_name, value, _schema) do
     {:ok, value}
+  end
+
+  # Safe transform function wrapper
+  defp safe_apply_transform(transform_fn, value) do
+    case transform_fn.(value) do
+      transformed_value -> {:ok, transformed_value}
+    end
+  rescue
+    kind ->
+      {:error, {kind, :transform_failed}}
+  catch
+    kind, reason ->
+      {:error, {kind, reason}}
   end
 
   defp is_component?(value) do

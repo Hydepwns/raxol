@@ -4,8 +4,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   Handles cursor movement, positioning, and blink operations.
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.Terminal.Emulator
 
   @type emulator :: Emulator.t()
@@ -17,7 +16,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   def move_cursor_forward(emulator, count) do
     cursor = emulator.cursor
 
-    if pid?(cursor) do
+    if is_pid(cursor) do
       GenServer.call(cursor, {:move_forward, count})
     end
 
@@ -31,7 +30,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   def move_cursor_back(emulator, count) do
     cursor = emulator.cursor
 
-    if pid?(cursor) do
+    if is_pid(cursor) do
       GenServer.call(cursor, {:move_back, count})
     end
 
@@ -50,7 +49,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   def move_cursor_down(emulator, count) do
     cursor = emulator.cursor
 
-    if pid?(cursor) do
+    if is_pid(cursor) do
       GenServer.call(cursor, {:move_down, count})
     end
 
@@ -69,7 +68,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   def move_cursor_up(emulator, count) do
     cursor = emulator.cursor
 
-    if pid?(cursor) do
+    if is_pid(cursor) do
       GenServer.call(cursor, {:move_up, count})
     end
 
@@ -171,7 +170,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   def set_blink_rate(emulator, rate) do
     cursor = emulator.cursor
 
-    if pid?(cursor) do
+    if is_pid(cursor) do
       # Set blink rate in cursor manager
       GenServer.call(cursor, {:set_blink_rate, rate})
 

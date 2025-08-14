@@ -3,8 +3,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   Handles the parsing logic for Sixel graphics data streams within a DCS sequence.
   """
 
-  import Raxol.Guards
-
+  
   require Raxol.Core.Runtime.Log
   require Logger
 
@@ -44,7 +43,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
 
   @spec parse(binary(), ParserState.t()) ::
           {:ok, ParserState.t()} | {:error, atom()}
-  def parse(data, state) when binary?(data) do
+  def parse(data, state) when is_binary(data) do
     Logger.debug(
       "SixelParser: Incoming palette color 1 is #{inspect(Map.get(state.palette, 1, :not_found))}"
     )
@@ -259,7 +258,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
     )
 
     case SixelPatternMap.get_pattern(char_byte) do
-      pattern_int when integer?(pattern_int) ->
+      pattern_int when is_integer(pattern_int) ->
         Logger.debug(
           "SixelParser: Got pattern #{pattern_int} for character #{char_byte}"
         )

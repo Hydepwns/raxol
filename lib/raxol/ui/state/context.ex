@@ -41,7 +41,7 @@ defmodule Raxol.UI.State.Context do
       end
   """
 
-  alias Raxol.UI.State.Store
+  alias Raxol.UI.State.Store, as: Store
 
   # Context definition structure
   defmodule ContextDef do

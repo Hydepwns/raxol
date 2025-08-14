@@ -15,7 +15,7 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
       last_flush: DateTime.utc_now()
     }
 
-    Process.put(@metrics_key, metrics_state)
+    Raxol.Cloud.Monitoring.Server.init_metrics(metrics_state)
     :ok
   end
 
@@ -55,7 +55,7 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
       end
 
     # Update metrics state
-    Process.put(@metrics_key, %{
+    Raxol.Cloud.Monitoring.Server.update_metrics(%{
       metrics_state
       | metrics: updated_metrics,
         batch: updated_batch,
@@ -122,7 +122,7 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
   end
 
   defp get_metrics_state() do
-    Process.get(@metrics_key) ||
+    Raxol.Cloud.Monitoring.Server.get_metrics() ||
       %{metrics: %{}, config: %{}, batch: [], last_flush: DateTime.utc_now()}
   end
 

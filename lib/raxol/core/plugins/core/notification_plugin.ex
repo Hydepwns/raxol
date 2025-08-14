@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Core plugin responsible for handling notifications (:notify).
   Relies on an implementation of Raxol.System.Interaction for OS interactions.
@@ -51,7 +50,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   @impl Raxol.Core.Runtime.Plugins.Plugin
   # Handle :notify command. Expects [title_string, message_string] as args.
   def handle_command(:notify, [title, message], state)
-      when binary?(title) and binary?(message) do
+      when is_binary(title) and is_binary(message) do
     interaction_mod = state.interaction_module
     data_map = %{title: title, message: message}
     handle_notify(interaction_mod, data_map, state)
@@ -260,7 +259,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   @doc """
   Wrapper for handle_command/2 for backward compatibility. Delegates to handle_command/3 if possible.
   """
-  def handle_command([a, b], state) when binary?(a) and binary?(b) do
+  def handle_command([a, b], state) when is_binary(a) and is_binary(b) do
     handle_command(:notify, [a, b], state)
   end
 

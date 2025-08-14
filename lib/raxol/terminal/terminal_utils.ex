@@ -5,8 +5,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   """
 
   require Raxol.Core.Runtime.Log
-  import Raxol.Guards
-
+  
   # Check if termbox2_nif is available at compile time
   @termbox2_available Code.ensure_loaded?(:termbox2_nif)
 
@@ -104,9 +103,9 @@ defmodule Raxol.Terminal.TerminalUtils do
           {:ok, pos_integer(), pos_integer()} | {:error, term()}
   def detect_with_io(io_facade) do
     try do
-      with {:ok, width} when integer?(width) and width > 0 <-
+      with {:ok, width} when is_integer(width) and width > 0 <-
              apply(io_facade, :columns, []),
-           {:ok, height} when integer?(height) and height > 0 <-
+           {:ok, height} when is_integer(height) and height > 0 <-
              apply(io_facade, :rows, []) do
         {:ok, width, height}
       else
@@ -148,7 +147,7 @@ defmodule Raxol.Terminal.TerminalUtils do
     height =
       if @termbox2_available, do: apply(:termbox2_nif, :tb_height, []), else: 0
 
-    if integer?(width) and integer?(height) and width > 0 and height > 0 do
+    if is_integer(width) and is_integer(height) and width > 0 and height > 0 do
       {:ok, width, height}
     else
       error = {:error, :invalid_termbox_dimensions}

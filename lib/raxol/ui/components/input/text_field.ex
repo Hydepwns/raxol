@@ -4,8 +4,7 @@ defmodule Raxol.UI.Components.Input.TextField do
 
   It supports validation, placeholders, masks, and styling.
   """
-  import Raxol.Guards
-  alias Raxol.Core.Renderer.Element
+    alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
 
   @behaviour Raxol.UI.Components.Base.Component
@@ -141,14 +140,12 @@ defmodule Raxol.UI.Components.Input.TextField do
   @spec handle_event(map(), term(), map()) ::
           {:noreply, map()} | {:noreply, map(), any()}
   @impl Raxol.UI.Components.Base.Component
-  def handle_event(state, {:keypress, key, modifiers}, context) do
-    _context = context
+  def handle_event(%{disabled: true} = state, {:keypress, _key, _modifiers}, _context) do
+    {:noreply, state}
+  end
 
-    if state.disabled do
-      {:noreply, state}
-    else
-      handle_keypress(state, key, modifiers, context)
-    end
+  def handle_event(state, {:keypress, key, modifiers}, context) do
+    handle_keypress(state, key, modifiers, context)
   end
 
   def handle_event(state, {:focus}, _context) do
@@ -168,7 +165,7 @@ defmodule Raxol.UI.Components.Input.TextField do
     {:noreply, state}
   end
 
-  defp handle_keypress(state, key, _modifiers, context) when binary?(key) do
+  defp handle_keypress(state, key, _modifiers, context) when is_binary(key) do
     _context = context
     # Insert character
     {left, right} = String.split_at(state.value, state.cursor_pos)
@@ -193,51 +190,52 @@ defmodule Raxol.UI.Components.Input.TextField do
      }}
   end
 
+  defp handle_keypress(%{cursor_pos: 0} = state, :backspace, _modifiers, _context) do
+    {:noreply, state}
+  end
+
   defp handle_keypress(state, :backspace, _modifiers, _context) do
-    if state.cursor_pos > 0 do
-      {left, right} = String.split_at(state.value, state.cursor_pos)
-      new_value = String.slice(left, 0, String.length(left) - 1) <> right
-      new_cursor_pos = state.cursor_pos - 1
-      width = Map.get(state, :width, 20)
+    {left, right} = String.split_at(state.value, state.cursor_pos)
+    new_value = String.slice(left, 0, String.length(left) - 1) <> right
+    new_cursor_pos = state.cursor_pos - 1
+    width = Map.get(state, :width, 20)
 
-      new_scroll_offset =
-        adjust_scroll_offset(
-          new_cursor_pos,
-          width,
-          new_value,
-          state.scroll_offset
-        )
+    new_scroll_offset =
+      adjust_scroll_offset(
+        new_cursor_pos,
+        width,
+        new_value,
+        state.scroll_offset
+      )
 
-      {:noreply,
-       %{
-         state
-         | value: new_value,
-           cursor_pos: new_cursor_pos,
-           scroll_offset: new_scroll_offset
-       }}
-    else
-      {:noreply, state}
-    end
+    {:noreply,
+     %{
+       state
+       | value: new_value,
+         cursor_pos: new_cursor_pos,
+         scroll_offset: new_scroll_offset
+     }}
+  end
+
+  defp handle_keypress(state, :delete, _modifiers, _context) 
+       when state.cursor_pos >= byte_size(state.value) do
+    {:noreply, state}
   end
 
   defp handle_keypress(state, :delete, _modifiers, _context) do
-    if state.cursor_pos < String.length(state.value) do
-      {left, right} = String.split_at(state.value, state.cursor_pos)
-      new_value = left <> String.slice(right, 1, String.length(right) - 1)
-      width = Map.get(state, :width, 20)
+    {left, right} = String.split_at(state.value, state.cursor_pos)
+    new_value = left <> String.slice(right, 1, String.length(right) - 1)
+    width = Map.get(state, :width, 20)
 
-      new_scroll_offset =
-        adjust_scroll_offset(
-          state.cursor_pos,
-          width,
-          new_value,
-          state.scroll_offset
-        )
+    new_scroll_offset =
+      adjust_scroll_offset(
+        state.cursor_pos,
+        width,
+        new_value,
+        state.scroll_offset
+      )
 
-      {:noreply, %{state | value: new_value, scroll_offset: new_scroll_offset}}
-    else
-      {:noreply, state}
-    end
+    {:noreply, %{state | value: new_value, scroll_offset: new_scroll_offset}}
   end
 
   defp handle_keypress(state, :arrow_left, _modifiers, _context) do
@@ -334,33 +332,34 @@ defmodule Raxol.UI.Components.Input.TextField do
   end
 
   defp get_visible_value(state) do
-    display_value =
-      if state.secret,
-        do: String.duplicate("•", String.length(state.value)),
-        else: state.value
-
-    showing_placeholder =
-      String.length(display_value) == 0 && !state.focused &&
-        state.placeholder != ""
-
-    final_value =
-      if showing_placeholder do
-        state.placeholder
-      else
-        display_value
-      end
-
+    display_value = get_display_value(state.secret, state.value)
+    showing_placeholder = should_show_placeholder(display_value, state.focused, state.placeholder)
+    final_value = get_final_value(showing_placeholder, state.placeholder, display_value)
+    
     width = Map.get(state, :width, 20)
     scroll_offset = state.scroll_offset || 0
-
-    visible_value =
-      if showing_placeholder do
-        String.slice(final_value, 0, width)
-      else
-        String.slice(final_value, scroll_offset, width)
-      end
-
+    
+    visible_value = slice_visible_value(showing_placeholder, final_value, scroll_offset, width)
+    
     {visible_value, showing_placeholder}
+  end
+
+  defp get_display_value(true, value), do: String.duplicate("•", String.length(value))
+  defp get_display_value(false, value), do: value
+
+  defp should_show_placeholder(display_value, focused, placeholder) do
+    String.length(display_value) == 0 && !focused && placeholder != ""
+  end
+
+  defp get_final_value(true, placeholder, _display_value), do: placeholder
+  defp get_final_value(false, _placeholder, display_value), do: display_value
+
+  defp slice_visible_value(true, final_value, _scroll_offset, width) do
+    String.slice(final_value, 0, width)
+  end
+
+  defp slice_visible_value(false, final_value, scroll_offset, width) do
+    String.slice(final_value, scroll_offset, width)
   end
 
   defp build_text_children(
@@ -369,16 +368,19 @@ defmodule Raxol.UI.Components.Input.TextField do
          showing_placeholder,
          merged_style
        ) do
-    cond do
-      showing_placeholder ->
-        build_placeholder_children(visible_value, merged_style)
+    select_text_children(showing_placeholder, state.focused, state, visible_value, merged_style)
+  end
 
-      state.focused ->
-        build_focused_children(state, visible_value, merged_style)
+  defp select_text_children(true, _focused, _state, visible_value, merged_style) do
+    build_placeholder_children(visible_value, merged_style)
+  end
 
-      true ->
-        build_normal_children(visible_value)
-    end
+  defp select_text_children(false, true, state, visible_value, merged_style) do
+    build_focused_children(state, visible_value, merged_style)
+  end
+
+  defp select_text_children(false, false, _state, visible_value, _merged_style) do
+    build_normal_children(visible_value)
   end
 
   defp build_placeholder_children(visible_value, merged_style) do
@@ -430,18 +432,21 @@ defmodule Raxol.UI.Components.Input.TextField do
 
   # Helper to keep the cursor visible in the window
   defp adjust_scroll_offset(cursor_pos, width, value, scroll_offset) do
-    cond do
-      cursor_pos < scroll_offset ->
-        cursor_pos
-
-      cursor_pos > scroll_offset + width - 1 ->
-        cursor_pos - width + 1
-
-      String.length(value) - scroll_offset < width ->
-        max(0, String.length(value) - width)
-
-      true ->
-        scroll_offset
-    end
+    calculate_new_scroll_offset(cursor_pos, width, value, scroll_offset)
   end
+
+  defp calculate_new_scroll_offset(cursor_pos, _width, _value, scroll_offset)
+       when cursor_pos < scroll_offset,
+       do: cursor_pos
+
+  defp calculate_new_scroll_offset(cursor_pos, width, _value, scroll_offset)
+       when cursor_pos > scroll_offset + width - 1,
+       do: cursor_pos - width + 1
+
+  defp calculate_new_scroll_offset(_cursor_pos, width, value, scroll_offset)
+       when byte_size(value) - scroll_offset < width,
+       do: max(0, String.length(value) - width)
+
+  defp calculate_new_scroll_offset(_cursor_pos, _width, _value, scroll_offset),
+    do: scroll_offset
 end

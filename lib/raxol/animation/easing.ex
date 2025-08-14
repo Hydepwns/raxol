@@ -1,6 +1,5 @@
 defmodule Raxol.Animation.Easing do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Provides standard easing functions for animations.
   """
@@ -154,23 +153,22 @@ defmodule Raxol.Animation.Easing do
   def calculate_value(:ease_in_bounce, t),
     do: 1 - calculate_value(:ease_out_bounce, 1 - t)
 
+  def calculate_value(:ease_out_bounce, t) when t < 1 / 2.75,
+    do: 7.5625 * t * t
+    
+  def calculate_value(:ease_out_bounce, t) when t < 2 / 2.75 do
+    t_minus_1 = t - 1.5 / 2.75
+    7.5625 * t_minus_1 * t_minus_1 + 0.75
+  end
+  
+  def calculate_value(:ease_out_bounce, t) when t < 2.5 / 2.75 do
+    t_minus_1 = t - 2.25 / 2.75
+    7.5625 * t_minus_1 * t_minus_1 + 0.9375
+  end
+  
   def calculate_value(:ease_out_bounce, t) do
-    cond do
-      t < 1 / 2.75 ->
-        7.5625 * t * t
-
-      t < 2 / 2.75 ->
-        t_minus_1 = t - 1.5 / 2.75
-        7.5625 * t_minus_1 * t_minus_1 + 0.75
-
-      t < 2.5 / 2.75 ->
-        t_minus_1 = t - 2.25 / 2.75
-        7.5625 * t_minus_1 * t_minus_1 + 0.9375
-
-      true ->
-        t_minus_1 = t - 2.625 / 2.75
-        7.5625 * t_minus_1 * t_minus_1 + 0.984375
-    end
+    t_minus_1 = t - 2.625 / 2.75
+    7.5625 * t_minus_1 * t_minus_1 + 0.984375
   end
 
   def calculate_value(:ease_in_out_bounce, t) do
@@ -182,76 +180,45 @@ defmodule Raxol.Animation.Easing do
   end
 
   # Elastic easing functions - tuned to match test expectations
+  def calculate_value(:ease_in_elastic, 0.0), do: 0.0
+  def calculate_value(:ease_in_elastic, t) when t == 1.0 or 1.0 - t == 0.0, do: 1.0
+  def calculate_value(:ease_in_elastic, 0.5), do: -0.015625
   def calculate_value(:ease_in_elastic, t) do
-    cond do
-      t == 0.0 ->
-        0.0
-
-      t == 1.0 or 1.0 - t == 0.0 ->
-        1.0
-
-      t == 0.5 ->
-        -0.015625
-
-      true ->
-        # Clamp result to [0.0, 1.0] for other values
-        result = if t < 0.7, do: t * t * :math.sin(t * 10), else: t * 1.4 - 0.4
-        min(1.0, max(0.0, result))
-    end
+    # Clamp result to [0.0, 1.0] for other values
+    result = if t < 0.7, do: t * t * :math.sin(t * 10), else: t * 1.4 - 0.4
+    min(1.0, max(0.0, result))
   end
 
+  def calculate_value(:ease_out_elastic, 0.0), do: 0.0
+  def calculate_value(:ease_out_elastic, t) when t == 1.0 or 1.0 - t == 0.0, do: 1.0
+  def calculate_value(:ease_out_elastic, 0.5), do: 1.015625
   def calculate_value(:ease_out_elastic, t) do
-    cond do
-      t == 0.0 ->
-        0.0
+    # Ensure result always stays in [0.0, 1.0]
+    result =
+      if t > 0.3,
+        do: 1.0 - (1.0 - t) * (1.0 - t) * :math.sin((1.0 - t) * 10),
+        else: t * 1.4
 
-      t == 1.0 or 1.0 - t == 0.0 ->
-        1.0
-
-      t == 0.5 ->
-        1.015625
-
-      true ->
-        # Ensure result always stays in [0.0, 1.0]
-        result =
-          if t > 0.3,
-            do: 1.0 - (1.0 - t) * (1.0 - t) * :math.sin((1.0 - t) * 10),
-            else: t * 1.4
-
-        min(1.0, max(0.0, result))
-    end
+    min(1.0, max(0.0, result))
   end
 
+  def calculate_value(:ease_in_out_elastic, 0.0), do: 0.0
+  def calculate_value(:ease_in_out_elastic, t) when t == 1.0 or 1.0 - t == 0.0, do: 1.0
+  def calculate_value(:ease_in_out_elastic, 0.25), do: -0.0078125
+  def calculate_value(:ease_in_out_elastic, 0.5), do: 0.5
+  def calculate_value(:ease_in_out_elastic, 0.75), do: 1.0078125
   def calculate_value(:ease_in_out_elastic, t) do
-    cond do
-      t == 0.0 ->
-        0.0
+    result =
+      if t < 0.5 do
+        # First half (in)
+        t * 2 * t * :math.sin(t * 10) / 2
+      else
+        # Second half (out)
+        0.5 +
+          (1.0 - (1.0 - t) * 2 * (1.0 - t) * :math.sin((1.0 - t) * 10) / 2)
+      end
 
-      t == 1.0 or 1.0 - t == 0.0 ->
-        1.0
-
-      t == 0.25 ->
-        -0.0078125
-
-      t == 0.5 ->
-        0.5
-
-      t == 0.75 ->
-        1.0078125
-
-      true ->
-        result =
-          if t < 0.5 do
-            # First half (in)
-            t * 2 * t * :math.sin(t * 10) / 2
-          else
-            # Second half (out)
-            0.5 +
-              (1.0 - (1.0 - t) * 2 * (1.0 - t) * :math.sin((1.0 - t) * 10) / 2)
-          end
-
-        min(1.0, max(0.0, result))
-    end
+    min(1.0, max(0.0, result))
   end
 
   # Standard easing functions (defaults to quadratic)
@@ -263,7 +230,7 @@ defmodule Raxol.Animation.Easing do
 
   # Default fallback
   # Default to linear if unknown
-  def calculate_value(_, t) when float?(t), do: t
+  def calculate_value(_, t) when is_float(t), do: t
   # Fallback for invalid input
   def calculate_value(_, _), do: 0.0
 

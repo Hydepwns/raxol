@@ -1,6 +1,7 @@
 defmodule Raxol.Database.ConnectionManager do
   @moduledoc """
   Manages database connections and provides retry logic for Postgres errors.
+  Functional Programming Version - All try/catch blocks replaced with Task-based error handling.
 
   This module:
   - Handles graceful connection retries
@@ -48,18 +49,13 @@ defmodule Raxol.Database.ConnectionManager do
   """
   @spec healthy?() :: boolean()
   def healthy? do
-    try do
-      # Simple query to check connection
-      # If query succeeds, connection is healthy
-      # Errors are handled by the rescue clause
-      {:ok, _} = Repo.custom_query("SELECT 1")
+    with {:ok, _} <- safe_health_check() do
       true
-    rescue
-      error ->
+    else
+      {:error, error} ->
         Raxol.Core.Runtime.Log.error(
           "Database connection check failed with exception: #{inspect(error)}"
         )
-
         false
     end
   end
@@ -72,25 +68,20 @@ defmodule Raxol.Database.ConnectionManager do
   @spec ensure_connection() :: :ok
   def ensure_connection do
     if Process.whereis(Repo) do
-      try do
-        # Check if connection is working
-        if healthy?() do
-          Raxol.Core.Runtime.Log.info("Database connection is healthy")
-        else
-          # Try to restart the connection
+      with {:ok, :healthy} <- safe_connection_check() do
+        Raxol.Core.Runtime.Log.info("Database connection is healthy")
+      else
+        {:error, :unhealthy} ->
           Raxol.Core.Runtime.Log.warning_with_context(
             "Database connection is unhealthy, attempting to restart...",
             %{}
           )
-
           restart_connection()
-        end
-      rescue
-        e ->
-          Raxol.Core.Runtime.Log.error(
-            "Error checking database connection: #{inspect(e)}"
-          )
 
+        {:error, error} ->
+          Raxol.Core.Runtime.Log.error(
+            "Error checking database connection: #{inspect(error)}"
+          )
           restart_connection()
       end
     else
@@ -114,20 +105,12 @@ defmodule Raxol.Database.ConnectionManager do
       )
 
       # Close existing connections in the pool
-      try do
-        # Use custom_query instead of query to avoid exceptions
-        # Execute query to close connections
-        # Errors are handled by the rescue clause
-        {:ok, _} =
-          Repo.custom_query(
-            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid()"
-          )
-
+      with {:ok, _} <- safe_close_connections() do
         Raxol.Core.Runtime.Log.info("Successfully closed existing connections")
-      rescue
-        e ->
+      else
+        {:error, error} ->
           Raxol.Core.Runtime.Log.error(
-            "Exception closing existing connections: #{inspect(e)}"
+            "Exception closing existing connections: #{inspect(error)}"
           )
       end
 
@@ -147,11 +130,10 @@ defmodule Raxol.Database.ConnectionManager do
   # Private functions
 
   defp retry_operation(operation, attempt, max_retries, retry_delay_ms) do
-    try do
-      result = operation.()
+    with {:ok, result} <- safe_execute_operation(operation) do
       {:ok, result}
-    rescue
-      e in Postgrex.Error ->
+    else
+      {:error, %Postgrex.Error{} = e} ->
         handle_postgrex_error(
           e,
           operation,
@@ -160,9 +142,9 @@ defmodule Raxol.Database.ConnectionManager do
           retry_delay_ms
         )
 
-      e ->
+      {:error, error} ->
         Raxol.Core.Runtime.Log.error(
-          "Database operation failed with error: #{inspect(e)}"
+          "Database operation failed with error: #{inspect(error)}"
         )
 
         if attempt < max_retries do
@@ -177,7 +159,7 @@ defmodule Raxol.Database.ConnectionManager do
             "Operation failed after #{max_retries} attempts"
           )
 
-          {:error, e}
+          {:error, error}
         end
     end
   end
@@ -255,6 +237,67 @@ defmodule Raxol.Database.ConnectionManager do
       end
 
       {:error, error}
+    end
+  end
+
+  # Functional helper functions replacing try/catch with Task-based error handling
+
+  defp safe_health_check do
+    Task.async(fn -> Repo.custom_query("SELECT 1") end)
+    |> Task.yield(5000)
+    |> case do
+      {:ok, result} -> result
+      {:exit, reason} -> {:error, {:health_check_failed, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_connection_check do
+    Task.async(fn ->
+      if healthy?() do
+        :healthy
+      else
+        :unhealthy
+      end
+    end)
+    |> Task.yield(3000)
+    |> case do
+      {:ok, :healthy} -> {:ok, :healthy}
+      {:ok, :unhealthy} -> {:error, :unhealthy}
+      {:exit, reason} -> {:error, {:connection_check_failed, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_close_connections do
+    Task.async(fn ->
+      Repo.custom_query(
+        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid()"
+      )
+    end)
+    |> Task.yield(10000)
+    |> case do
+      {:ok, result} -> result
+      {:exit, reason} -> {:error, {:close_connections_failed, reason}}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
+    end
+  end
+
+  defp safe_execute_operation(operation) do
+    Task.async(fn -> operation.() end)
+    |> Task.yield(30000)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:exit, reason} -> {:error, reason}
+      nil ->
+        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        {:error, :timeout}
     end
   end
 end

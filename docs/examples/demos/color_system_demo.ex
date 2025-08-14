@@ -10,8 +10,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
   alias Raxol.UI.Theming.Theme
   alias Raxol.Style.Colors.{Color, Utilities}
   alias Raxol.Style.Colors.Adaptive
-  import Raxol.Guards
-
+  
   defstruct theme: nil
 
 
@@ -168,7 +167,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
   defp render_color_list(colors) do
     colors
     |> Enum.map(fn {name, color} ->
-      hex = if struct?(color, Color), do: color.hex, else: inspect(color)
+      hex = if is_struct(color, Color), do: color.hex, else: inspect(color)
       "  #{name}: #{hex}"
     end)
   end

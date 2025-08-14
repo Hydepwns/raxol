@@ -1,6 +1,5 @@
 defmodule Raxol.Terminal.Config.Schema do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Schema definitions for terminal configuration.
 
@@ -141,10 +140,10 @@ defmodule Raxol.Terminal.Config.Schema do
   # Private function to retrieve type from nested schema
   defp get_type_from_path(_schema, []), do: nil
 
-  defp get_type_from_path(schema, [key | rest]) when map?(schema) do
+  defp get_type_from_path(schema, [key | rest]) when is_map(schema) do
     case Map.get(schema, key) do
       nil -> nil
-      value when map?(value) -> get_type_from_path(value, rest)
+      value when is_map(value) -> get_type_from_path(value, rest)
       value -> if rest == [], do: value, else: nil
     end
   end

@@ -1,6 +1,5 @@
 defmodule Raxol.Terminal.Input.Processor do
-  import Raxol.Guards
-
+  
   alias Raxol.Terminal.Input.Event.{MouseEvent, KeyEvent}
 
   @moduledoc """
@@ -28,16 +27,7 @@ defmodule Raxol.Terminal.Input.Processor do
     case input do
       # Mouse events or key events with escape sequences
       <<27, ?[, rest::binary>> ->
-        cond do
-          Regex.match?(~r/^\d+;\d+;\d+;\d+M$/, rest) ->
-            parse_mouse_event(input)
-
-          Regex.match?(~r/^\d+;\d+;\d+;\d+;\d+;\d+M$/, rest) ->
-            parse_mouse_event(input)
-
-          true ->
-            parse_key_event(input)
-        end
+        parse_escape_sequence(input, rest)
 
       # Regular single character
       <<char::utf8>> when char < 128 ->
@@ -67,16 +57,21 @@ defmodule Raxol.Terminal.Input.Processor do
     end
   end
 
+  defp parse_escape_sequence(input, rest) do
+    case {Regex.match?(~r/^\d+;\d+;\d+;\d+M$/, rest), 
+          Regex.match?(~r/^\d+;\d+;\d+;\d+;\d+;\d+M$/, rest)} do
+      {true, _} -> parse_mouse_event(input)
+      {_, true} -> parse_mouse_event(input)
+      _ -> parse_key_event(input)
+    end
+  end
+
   defp parse_mouse_sequence(rest) do
-    cond do
-      Regex.match?(~r/^\d+;\d+;\d+;\d+M$/, rest) ->
-        parse_simple_mouse_event(rest)
-
-      Regex.match?(~r/^\d+;\d+;\d+;\d+;\d+;\d+M$/, rest) ->
-        parse_complex_mouse_event(rest)
-
-      true ->
-        {:error, :invalid_mouse_sequence}
+    case {Regex.match?(~r/^\d+;\d+;\d+;\d+M$/, rest),
+          Regex.match?(~r/^\d+;\d+;\d+;\d+;\d+;\d+M$/, rest)} do
+      {true, _} -> parse_simple_mouse_event(rest)
+      {_, true} -> parse_complex_mouse_event(rest)
+      _ -> {:error, :invalid_mouse_sequence}
     end
   end
 
@@ -129,24 +124,17 @@ defmodule Raxol.Terminal.Input.Processor do
   @doc """
   Parses key event sequences.
   """
-  def parse_key_event(input) do
-    cond do
-      function_key?(input) ->
-        parse_function_key(input)
-
-      modifier_key?(input) ->
-        parse_modifier_key(input)
-
-      simple_modifier_key?(input) ->
-        parse_simple_modifier_key(input)
-
-      single_char?(input) ->
-        parse_single_char(input)
-
-      true ->
-        parse_unknown_input(input)
+  def parse_key_event(input) when is_binary(input) do
+    case {function_key?(input), modifier_key?(input), simple_modifier_key?(input), single_char?(input)} do
+      {true, _, _, _} -> parse_function_key(input)
+      {_, true, _, _} -> parse_modifier_key(input)
+      {_, _, true, _} -> parse_simple_modifier_key(input)
+      {_, _, _, true} -> parse_single_char(input)
+      _ -> parse_unknown_input(input)
     end
   end
+
+  def parse_key_event(input), do: parse_unknown_input(input)
 
   defp function_key?(input) do
     input in ["\e[A", "\e[B", "\e[C", "\e[D"]
@@ -303,16 +291,19 @@ defmodule Raxol.Terminal.Input.Processor do
     # This is a simplification for the test's expected output
     prefix = 2
 
-    mod_code =
-      cond do
-        :ctrl in modifiers and :shift in modifiers -> 5
-        :ctrl in modifiers -> 5
-        :shift in modifiers -> 2
-        :alt in modifiers -> 3
-        true -> 1
-      end
+    mod_code = calculate_modifier_code(modifiers)
 
     {mod_code, prefix}
+  end
+
+  defp calculate_modifier_code(modifiers) do
+    case {:ctrl in modifiers, :shift in modifiers, :alt in modifiers} do
+      {true, true, _} -> 5  # ctrl + shift
+      {true, false, _} -> 5  # ctrl only
+      {false, true, _} -> 2  # shift only
+      {false, false, true} -> 3  # alt only
+      _ -> 1  # no modifiers
+    end
   end
 
   defp mouse_action_from_code("0"), do: :press
@@ -323,7 +314,7 @@ defmodule Raxol.Terminal.Input.Processor do
 
   defp map_key_event(key, modifiers) do
     case {key, modifiers} do
-      {char, []} when binary?(char) and byte_size(char) == 1 ->
+      {char, []} when is_binary(char) and byte_size(char) == 1 ->
         {:ok, char}
 
       _ ->

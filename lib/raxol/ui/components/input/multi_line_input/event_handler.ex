@@ -27,25 +27,30 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
 
   # Routes events to appropriate handlers based on event type and data
   defp route_event(event, state) do
-    cond do
-      key_event?(event) ->
-        handle_key_event(event, state)
-
-      mouse_event?(event) ->
-        handle_mouse_event(event, state)
-
-      system_event?(event) ->
-        handle_system_event(event, state)
-
-      special_key_event?(event) ->
-        handle_special_key_event(event, state)
-
-      key_down_event?(event) ->
-        handle_key_down_event(event, state)
-
-      true ->
-        handle_unhandled_event(event, state)
+    case categorize_event(event) do
+      :key_event -> handle_key_event(event, state)
+      :mouse_event -> handle_mouse_event(event, state)
+      :system_event -> handle_system_event(event, state)
+      :special_key_event -> handle_special_key_event(event, state)
+      :key_down_event -> handle_key_down_event(event, state)
+      :unhandled -> handle_unhandled_event(event, state)
     end
+  end
+
+  defp categorize_event(event) do
+    Enum.find_value(
+      [
+        {&key_event?/1, :key_event},
+        {&mouse_event?/1, :mouse_event},
+        {&system_event?/1, :system_event},
+        {&special_key_event?/1, :special_key_event},
+        {&key_down_event?/1, :key_down_event}
+      ],
+      :unhandled,
+      fn {predicate, result} ->
+        if predicate.(event), do: result
+      end
+    )
   end
 
   defp key_event?(%Event{type: :key, data: %{state: state}})
@@ -109,19 +114,26 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
        do: handle_special_case_shift_arrow(event, state)
 
   defp handle_key_down_event(%Event{type: :key_down, data: data} = event, state) do
-    cond do
-      navigation_key?(data) ->
-        handle_navigation_key_down(event, data, state)
-
-      input_key?(data) ->
-        handle_input_key_down(event, data, state)
-
-      special_key?(data) ->
-        handle_special_key_down(event, data, state)
-
-      true ->
-        handle_unhandled_event(event, state)
+    case categorize_key_data(data) do
+      :navigation -> handle_navigation_key_down(event, data, state)
+      :input -> handle_input_key_down(event, data, state)
+      :special -> handle_special_key_down(event, data, state)
+      :unhandled -> handle_unhandled_event(event, state)
     end
+  end
+
+  defp categorize_key_data(data) do
+    Enum.find_value(
+      [
+        {&navigation_key?/1, :navigation},
+        {&input_key?/1, :input},
+        {&special_key?/1, :special}
+      ],
+      :unhandled,
+      fn {predicate, result} ->
+        if predicate.(data), do: result
+      end
+    )
   end
 
   defp navigation_key?(%{key: key}) when key in [:up, :down, :left, :right],
@@ -193,39 +205,36 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
 
   # Maps key and modifier combinations to update messages
   defp map_key_to_message(key, modifiers) do
-    cond do
-      # Basic input handling
-      basic_input?(key, modifiers) ->
-        handle_basic_input(key, modifiers)
-
-      # Navigation without modifiers
-      basic_navigation?(key, modifiers) ->
-        handle_basic_navigation(key, modifiers)
-
-      # Ctrl navigation
-      ctrl_navigation?(key, modifiers) ->
-        handle_ctrl_navigation(key, modifiers)
-
-      # Shift selection
-      shift_selection?(key, modifiers) ->
-        handle_shift_selection(key, modifiers)
-
-      # Ctrl+Shift selection
-      ctrl_shift_selection?(key, modifiers) ->
-        handle_ctrl_shift_selection(key, modifiers)
-
-      # Special Ctrl commands
-      special_ctrl_command?(key, modifiers) ->
-        handle_special_ctrl_command(key, modifiers)
-
-      # Unhandled combination
-      true ->
+    case categorize_key_combination(key, modifiers) do
+      :basic_input -> handle_basic_input(key, modifiers)
+      :basic_navigation -> handle_basic_navigation(key, modifiers)
+      :ctrl_navigation -> handle_ctrl_navigation(key, modifiers)
+      :shift_selection -> handle_shift_selection(key, modifiers)
+      :ctrl_shift_selection -> handle_ctrl_shift_selection(key, modifiers)
+      :special_ctrl_command -> handle_special_ctrl_command(key, modifiers)
+      :unhandled ->
         Raxol.Core.Runtime.Log.debug(
           "Unhandled key combination: #{inspect(key)} with modifiers #{inspect(modifiers)}"
         )
-
         nil
     end
+  end
+
+  defp categorize_key_combination(key, modifiers) do
+    Enum.find_value(
+      [
+        {&basic_input?/2, :basic_input},
+        {&basic_navigation?/2, :basic_navigation},
+        {&ctrl_navigation?/2, :ctrl_navigation},
+        {&shift_selection?/2, :shift_selection},
+        {&ctrl_shift_selection?/2, :ctrl_shift_selection},
+        {&special_ctrl_command?/2, :special_ctrl_command}
+      ],
+      :unhandled,
+      fn {predicate, result} ->
+        if predicate.(key, modifiers), do: result
+      end
+    )
   end
 
   defp basic_input?(key, modifiers),

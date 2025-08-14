@@ -6,8 +6,7 @@ defmodule Raxol.Terminal.ConfigManager do
 
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
-  import Raxol.Guards
-
+  
   @doc """
   Gets a specific configuration value.
   Returns the configuration value or nil if not found.
@@ -94,40 +93,38 @@ defmodule Raxol.Terminal.ConfigManager do
 
   # Private Functions
 
-  defp validate_behavior(behavior) do
-    cond do
-      !map?(behavior) ->
-        {:error, "Behavior must be a map"}
-
-      !integer?(behavior.scrollback_limit) or behavior.scrollback_limit < 0 ->
-        {:error, "Invalid scrollback limit"}
-
-      true ->
-        :ok
-    end
+  defp validate_behavior(behavior) when not is_map(behavior) do
+    {:error, "Behavior must be a map"}
   end
 
+  defp validate_behavior(%{scrollback_limit: limit}) 
+       when not is_integer(limit) or limit < 0 do
+    {:error, "Invalid scrollback limit"}
+  end
+
+  defp validate_behavior(_behavior), do: :ok
+
   defp validate_memory_limit(limit) do
-    if integer?(limit) and limit >= 0 do
+    if is_integer(limit) and limit >= 0 do
       :ok
     else
       {:error, "Invalid memory limit"}
     end
   end
 
-  defp validate_rendering(rendering) do
-    cond do
-      !map?(rendering) ->
-        {:error, "Rendering must be a map"}
-
-      !boolean?(rendering.antialiasing) ->
-        {:error, "Antialiasing must be a boolean"}
-
-      !integer?(rendering.font_size) or rendering.font_size < 1 ->
-        {:error, "Invalid font size"}
-
-      true ->
-        :ok
-    end
+  defp validate_rendering(rendering) when not is_map(rendering) do
+    {:error, "Rendering must be a map"}
   end
+
+  defp validate_rendering(%{antialiasing: antialiasing}) 
+       when not is_boolean(antialiasing) do
+    {:error, "Antialiasing must be a boolean"}
+  end
+
+  defp validate_rendering(%{font_size: font_size}) 
+       when not is_integer(font_size) or font_size < 1 do
+    {:error, "Invalid font size"}
+  end
+
+  defp validate_rendering(_rendering), do: :ok
 end

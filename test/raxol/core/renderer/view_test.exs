@@ -1,4 +1,3 @@
-import Raxol.Guards
 
 defmodule Raxol.Core.Renderer.ViewTest do
   @moduledoc """
@@ -12,7 +11,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
   describe "new/2" do
     test "creates a basic view" do
       view = View.new(:text, content: "Hello")
-      assert map?(view)
+      assert is_map(view)
       assert Map.has_key?(view, :type)
       assert view.type == :text
       assert view.content == "Hello"
@@ -197,8 +196,8 @@ defmodule Raxol.Core.Renderer.ViewTest do
       b = Enum.find(result_list, &(&1.content == "B"))
 
       # Add checks for nil in case find fails
-      refute nil?(a)
-      refute nil?(b)
+      refute is_nil(a)
+      refute is_nil(b)
 
       assert a.position == {0, 0}
       assert b.position == {1, 0}
@@ -223,10 +222,10 @@ defmodule Raxol.Core.Renderer.ViewTest do
       three = Enum.find(result_list, &(&1.content == "3"))
       four = Enum.find(result_list, &(&1.content == "4"))
 
-      refute nil?(one)
-      refute nil?(two)
-      refute nil?(three)
-      refute nil?(four)
+      refute is_nil(one)
+      refute is_nil(two)
+      refute is_nil(three)
+      refute is_nil(four)
 
       assert one.position == {0, 0}
       assert two.position == {0, 1.0}
@@ -258,7 +257,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
       # Find the single child content view
       content = Enum.find(result_list, &(&1.content == "Content"))
 
-      refute nil?(content)
+      refute is_nil(content)
       assert content.position == {-1, -1}
     end
 
@@ -342,10 +341,10 @@ defmodule Raxol.Core.Renderer.ViewTest do
       a = Enum.find(result_list, &(&1.content == "A"))
       b = Enum.find(result_list, &(&1.content == "B"))
 
-      refute nil?(a)
+      refute is_nil(a)
       assert a.position == {0, 0}
 
-      refute nil?(b)
+      refute is_nil(b)
       # Expect B to wrap to the next line y=1
       assert b.position == {0, 1}
     end
@@ -367,9 +366,9 @@ defmodule Raxol.Core.Renderer.ViewTest do
       b = Enum.find(result_list, &(&1.content == "B"))
       c = Enum.find(result_list, &(&1.content == "C"))
 
-      refute nil?(a)
-      refute nil?(b)
-      refute nil?(c)
+      refute is_nil(a)
+      refute is_nil(b)
+      refute is_nil(c)
 
       assert a.position == {0, 0}
       assert b.position == {0, 1}

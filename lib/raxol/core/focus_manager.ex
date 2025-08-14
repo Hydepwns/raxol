@@ -1,285 +1,109 @@
 defmodule Raxol.Core.FocusManager do
-  import Raxol.Guards
-
-  @behaviour Raxol.Core.FocusManager.Behaviour
   @moduledoc """
-  Focus management system for Raxol terminal UI applications.
-
-  This module provides utilities for managing focus between interactive components:
-  - Tab-based keyboard navigation
-  - Focus history tracking
-  - Focus ring rendering
-  - Screen reader announcements
-
-  ## Usage
-
-  ```elixir
-  # Register focusable components in your view
-  FocusManager.register_focusable("search_input", 1)
-  FocusManager.register_focusable("submit_button", 2)
-
-  # Initialize the focus manager with the first focusable element
-  FocusManager.set_initial_focus("search_input")
-  ```
+  Refactored FocusManager that delegates to GenServer implementation.
+  
+  This module provides the same API as the original FocusManager but uses
+  a supervised GenServer instead of the Process dictionary for state management.
+  
+  ## Migration Notice
+  This module is a drop-in replacement for `Raxol.Core.FocusManager`.
+  All functions maintain backward compatibility while providing improved
+  fault tolerance and functional programming patterns.
+  
+  ## Benefits over Process Dictionary
+  - Supervised state management with fault tolerance
+  - Pure functional transformations
+  - Better debugging and testing capabilities
+  - Clear separation of concerns
+  - No global state pollution
   """
 
-  alias Raxol.Core.Events.Manager, as: EventManager
+  @behaviour Raxol.Core.FocusManager.Behaviour
+
+  alias Raxol.Core.FocusManager.Server
+
+  @doc """
+  Ensures the FocusManager server is started.
+  Called automatically when using any function.
+  """
+  def ensure_started do
+    case Process.whereis(Server) do
+      nil ->
+        {:ok, _pid} = Server.start_link()
+        :ok
+      _pid ->
+        :ok
+    end
+  end
 
   @doc """
   Register a focusable component with the focus manager.
-
-  ## Parameters
-
-  * `component_id` - Unique identifier for the component
-  * `tab_index` - Tab order index (lower numbers are focused first)
-  * `opts` - Additional options
-
-  ## Options
-
-  * `:group` - Focus group name for grouped navigation (default: `:default`)
-  * `:disabled` - Whether the component is initially disabled (default: `false`)
-  * `:announce` - Announcement text for screen readers when focused (default: `nil`)
-
-  ## Examples
-
-      iex> FocusManager.register_focusable("search_input", 1)
-      :ok
-
-      iex> FocusManager.register_focusable("submit_button", 2, group: :form_actions)
-      :ok
   """
   @impl Raxol.Core.FocusManager.Behaviour
   def register_focusable(component_id, tab_index, opts \\ []) do
-    group = Keyword.get(opts, :group, :default)
-    disabled = Keyword.get(opts, :disabled, false)
-    announce = Keyword.get(opts, :announce, nil)
-
-    focusables = get_focusables()
-
-    focusable = %{
-      id: component_id,
-      tab_index: tab_index,
-      group: group,
-      disabled: disabled,
-      announce: announce
-    }
-
-    updated_focusables =
-      Map.update(
-        focusables,
-        group,
-        [focusable],
-        fn existing -> [focusable | existing] |> sort_by_tab_index() end
-      )
-
-    Process.put(:focus_manager_focusables, updated_focusables)
-    :ok
+    ensure_started()
+    Server.register_focusable(component_id, tab_index, opts)
   end
 
   @doc """
   Unregister a focusable component.
-
-  ## Examples
-
-      iex> FocusManager.unregister_focusable("search_input")
-      :ok
   """
   @impl Raxol.Core.FocusManager.Behaviour
   def unregister_focusable(component_id) do
-    focusables = get_focusables()
-
-    updated_focusables =
-      focusables
-      |> Enum.map(fn {group, components} ->
-        updated_components =
-          Enum.reject(components, fn c -> c.id == component_id end)
-
-        {group, updated_components}
-      end)
-      |> Enum.into(%{})
-
-    Process.put(:focus_manager_focusables, updated_focusables)
-    :ok
+    ensure_started()
+    Server.unregister_focusable(component_id)
   end
 
   @doc """
   Set the initial focus to a specific component.
-
-  ## Examples
-
-      iex> FocusManager.set_initial_focus("search_input")
-      :ok
   """
   @impl Raxol.Core.FocusManager.Behaviour
   def set_initial_focus(component_id) do
-    focus_state = get_focus_state()
-
-    if not map_key?(focus_state, :active_element) ||
-         focus_state.active_element != component_id do
-      set_focus(component_id)
-    else
-      :ok
-    end
+    ensure_started()
+    Server.set_initial_focus(component_id)
   end
 
   @doc """
   Set focus to a specific component.
-
-  ## Examples
-
-      iex> FocusManager.set_focus("submit_button")
-      :ok
   """
   @impl Raxol.Core.FocusManager.Behaviour
   def set_focus(component_id) do
-    focus_state = get_focus_state()
-    old_focus = focus_state[:active_element]
-
-    # Only update if focus is changing
-    if old_focus != component_id do
-      # Find the component
-      focusables = get_focusables()
-      component = find_component(focusables, component_id)
-
-      if component do
-        # Update focus history
-        history = focus_state[:focus_history] || []
-        updated_history = [old_focus | history] |> Enum.take(10)
-
-        # Update focus state
-        updated_focus_state = %{
-          active_element: component_id,
-          focus_history: updated_history,
-          last_group: component.group
-        }
-
-        Process.put(:focus_manager_state, updated_focus_state)
-
-        # Send focus change event
-        EventManager.dispatch({:focus_change, old_focus, component_id})
-
-        # Announce focus change if configured
-        if component.announce do
-          announce_focus_change(component.announce)
-        end
-      end
-    end
-
-    :ok
+    ensure_started()
+    Server.set_focus(component_id)
   end
 
   @doc """
   Move focus to the next focusable element.
-
-  ## Options
-
-  * `:group` - Only navigate within this group (default: `nil` - use current group)
-  * `:wrap` - Wrap around to first element when at the end (default: `true`)
-
-  ## Examples
-
-      iex> FocusManager.focus_next()
-      :ok
-
-      iex> FocusManager.focus_next(group: :form_actions)
-      :ok
   """
   @impl Raxol.Core.FocusManager.Behaviour
   def focus_next(opts \\ []) do
-    focus_state = get_focus_state()
-    current_focus = focus_state[:active_element]
-
-    if current_focus do
-      group_opt = Keyword.get(opts, :group, nil)
-      wrap = Keyword.get(opts, :wrap, true)
-
-      # Determine the group to navigate within
-      group =
-        cond do
-          group_opt != nil -> group_opt
-          focus_state[:last_group] != nil -> focus_state[:last_group]
-          true -> :default
-        end
-
-      focusables = get_focusables()
-      components = Map.get(focusables, group, [])
-      current_index = Enum.find_index(components, &(&1.id == current_focus))
-
-      next_index = calculate_next_index(current_index, components, wrap)
-
-      next_component = Enum.at(components, next_index)
-      if next_component, do: set_focus(next_component.id), else: :ok
-    else
-      :ok
-    end
+    ensure_started()
+    Server.focus_next(opts)
   end
 
   @doc """
   Move focus to the previous focusable element.
-
-  ## Options
-
-  * `:group` - Only navigate within this group (default: `nil` - use current group)
-  * `:wrap` - Wrap around to last element when at the beginning (default: `true`)
-
-  ## Examples
-
-      iex> FocusManager.focus_previous()
-      :ok
   """
   @impl Raxol.Core.FocusManager.Behaviour
   def focus_previous(opts \\ []) do
-    focus_state = get_focus_state()
-    current_focus = focus_state[:active_element]
-
-    if current_focus do
-      group_opt = Keyword.get(opts, :group, nil)
-      wrap = Keyword.get(opts, :wrap, true)
-
-      # Determine the group to navigate within
-      group =
-        cond do
-          group_opt != nil -> group_opt
-          focus_state[:last_group] != nil -> focus_state[:last_group]
-          true -> :default
-        end
-
-      focusables = get_focusables()
-      group_components = Map.get(focusables, group, [])
-
-      current_index = calculate_current_index(group_components, current_focus)
-
-      prev_component =
-        find_prev_enabled_component(group_components, current_index, wrap)
-
-      if prev_component do
-        set_focus(prev_component.id)
-      end
-    end
-
-    :ok
+    ensure_started()
+    Server.focus_previous(opts)
   end
 
   @doc """
   Get the ID of the currently focused element.
-
-  ## Examples
-
-      iex> FocusManager.set_initial_focus("my_button")
-      iex> FocusManager.get_focused_element()
-      "my_button"
   """
   @impl Raxol.Core.FocusManager.Behaviour
   def get_focused_element do
-    get_focus_state()[:active_element]
+    ensure_started()
+    Server.get_focused_element()
   end
 
   @doc """
   Alias for get_focused_element/0.
   """
   @impl Raxol.Core.FocusManager.Behaviour
-  @spec get_current_focus() :: String.t() | nil
-  def get_current_focus() do
+  def get_current_focus do
     get_focused_element()
   end
 
@@ -287,365 +111,80 @@ defmodule Raxol.Core.FocusManager do
   Gets the focus history.
   """
   @impl Raxol.Core.FocusManager.Behaviour
-  def get_focus_history() do
-    get_focus_state()[:focus_history] || []
+  def get_focus_history do
+    ensure_started()
+    Server.get_focus_history()
   end
 
   @doc """
   Get the next focusable element after the given one.
-  (Placeholder implementation - mirrors focus_next logic)
   """
   @impl Raxol.Core.FocusManager.Behaviour
-  @spec get_next_focusable(String.t() | nil) :: String.t() | nil
   def get_next_focusable(current_focus_id) do
-    focus_state = get_focus_state()
-
-    # Determine the group to navigate within (use default if needed)
-    group = focus_state[:last_group] || :default
-
-    focusables = get_focusables()
-    group_components = Map.get(focusables, group, [])
-
-    # Find the index of the current component
-    current_index =
-      if current_focus_id do
-        Enum.find_index(group_components, fn c -> c.id == current_focus_id end) ||
-          -1
-      else
-        # Start from beginning if current_focus_id is nil
-        -1
-      end
-
-    # Find the next enabled component (wrapping)
-    next_component =
-      find_next_enabled_component(group_components, current_index, true)
-
-    if next_component do
-      next_component.id
-    else
-      nil
-    end
+    ensure_started()
+    Server.get_next_focusable(current_focus_id)
   end
 
   @doc """
   Get the previous focusable element before the given one.
-  Mirrors the logic of `get_next_focusable/1` but searches backwards.
   """
   @impl Raxol.Core.FocusManager.Behaviour
-  @spec get_previous_focusable(String.t() | nil) :: String.t() | nil
   def get_previous_focusable(current_focus_id) do
-    focus_state = get_focus_state()
-
-    # Determine the group to navigate within (use default if needed)
-    group = focus_state[:last_group] || :default
-
-    focusables = get_focusables()
-    group_components = Map.get(focusables, group, [])
-
-    # Find the index of the current component
-    current_index =
-      if current_focus_id do
-        Enum.find_index(group_components, fn c -> c.id == current_focus_id end) ||
-          -1
-      else
-        # Start from end if current_focus_id is nil (or not found)
-        # Use length to indicate starting search from the wrap-around point
-        length(group_components)
-      end
-
-    # Find the previous enabled component (wrapping)
-    prev_component =
-      find_prev_enabled_component(group_components, current_index, true)
-
-    if prev_component do
-      prev_component.id
-    else
-      nil
-    end
+    ensure_started()
+    Server.get_previous_focusable(current_focus_id)
   end
 
   @doc """
   Check if a component has focus.
-
-  ## Examples
-
-      iex> FocusManager.has_focus?("search_input")
-      true
   """
   @impl Raxol.Core.FocusManager.Behaviour
   def has_focus?(component_id) do
-    get_focused_element() == component_id
+    ensure_started()
+    Server.has_focus?(component_id)
   end
 
   @doc """
   Return to the previously focused element.
-
-  ## Examples
-
-      iex> FocusManager.return_to_previous()
-      :ok
   """
   @impl Raxol.Core.FocusManager.Behaviour
   def return_to_previous do
-    focus_state = get_focus_state()
-    history = focus_state[:focus_history] || []
-
-    case history do
-      [prev | rest] when binary?(prev) ->
-        # Update focus state
-        updated_focus_state = %{
-          active_element: prev,
-          focus_history: rest,
-          last_group: focus_state[:last_group]
-        }
-
-        Process.put(:focus_manager_state, updated_focus_state)
-
-        # Send focus change event
-        EventManager.dispatch(
-          {:focus_change, focus_state[:active_element], prev}
-        )
-
-        # Announce focus change if configured
-        component = find_component_by_id(prev)
-
-        if component && component.announce do
-          announce_focus_change(component.announce)
-        end
-
-      _ ->
-        :ok
-    end
-
-    :ok
+    ensure_started()
+    Server.return_to_previous()
   end
 
   @doc """
   Enable a previously disabled focusable component.
-
-  ## Examples
-
-      iex> FocusManager.enable_component("submit_button")
-      :ok
   """
   @impl Raxol.Core.FocusManager.Behaviour
   def enable_component(component_id) do
-    update_component_state(component_id, :disabled, false)
+    ensure_started()
+    Server.enable_component(component_id)
   end
 
   @doc """
   Disable a focusable component, preventing it from receiving focus.
-
-  ## Examples
-
-      iex> FocusManager.disable_component("submit_button")
-      :ok
   """
   @impl Raxol.Core.FocusManager.Behaviour
   def disable_component(component_id) do
-    update_component_state(component_id, :disabled, true)
-
-    # If this component is currently focused, move focus elsewhere
-    if has_focus?(component_id) do
-      focus_next()
-    end
-
-    :ok
+    ensure_started()
+    Server.disable_component(component_id)
   end
 
   @doc """
   Register a handler function to be called when focus changes.
-
-  The handler function should accept two arguments: `old_focus` and `new_focus`.
-  (Placeholder implementation)
   """
   @impl Raxol.Core.FocusManager.Behaviour
-  @spec register_focus_change_handler((String.t() | nil, String.t() | nil ->
-                                         any())) :: :ok
-  def register_focus_change_handler(handler_fun)
-      when function?(handler_fun, 2) do
-    handlers = Process.get(:focus_manager_change_handlers, [])
-    updated_handlers = [handler_fun | handlers]
-    Process.put(:focus_manager_change_handlers, updated_handlers)
-    :ok
+  def register_focus_change_handler(handler_fun) when is_function(handler_fun, 2) do
+    ensure_started()
+    Server.register_focus_change_handler(handler_fun)
   end
 
   @doc """
   Unregister a focus change handler function.
-  (Placeholder implementation)
   """
   @impl Raxol.Core.FocusManager.Behaviour
-  @spec unregister_focus_change_handler((String.t() | nil, String.t() | nil ->
-                                           any())) :: :ok
-  def unregister_focus_change_handler(handler_fun)
-      when function?(handler_fun, 2) do
-    handlers = Process.get(:focus_manager_change_handlers, [])
-    updated_handlers = List.delete(handlers, handler_fun)
-    Process.put(:focus_manager_change_handlers, updated_handlers)
-    :ok
-  end
-
-  # Private functions
-
-  defp get_focusables do
-    Process.get(:focus_manager_focusables) || %{}
-  end
-
-  defp get_focus_state do
-    Process.get(:focus_manager_state) || %{}
-  end
-
-  defp sort_by_tab_index(components) do
-    Enum.sort_by(components, & &1.tab_index)
-  end
-
-  defp find_component(focusables, component_id) do
-    focusables
-    |> Map.values()
-    |> List.flatten()
-    |> Enum.find(fn c -> c.id == component_id end)
-  end
-
-  defp find_component_by_id(component_id) do
-    focusables = get_focusables()
-    find_component(focusables, component_id)
-  end
-
-  defp find_next_enabled_component(components, current_index, wrap) do
-    component_count = length(components)
-
-    if component_count == 0 do
-      nil
-    else
-      # Start searching from the next index
-      start_index = rem(current_index + 1, component_count)
-
-      # Search for the next enabled component
-      find_enabled_component_from_index(
-        components,
-        start_index,
-        1,
-        component_count,
-        wrap
-      )
-    end
-  end
-
-  defp find_prev_enabled_component(components, current_index, wrap) do
-    component_count = length(components)
-
-    if component_count == 0 do
-      nil
-    else
-      # Start searching from the previous index
-      start_index =
-        calculate_prev_start_index(current_index, component_count, wrap)
-
-      # Search for the previous enabled component
-      find_enabled_component_from_index(
-        components,
-        start_index,
-        -1,
-        component_count,
-        wrap
-      )
-    end
-  end
-
-  defp find_enabled_component_from_index(
-         components,
-         start_index,
-         step,
-         count,
-         wrap
-       ) do
-    # Early return for invalid indices
-    if start_index < 0 || start_index >= count do
-      nil
-    else
-      search_enabled_component(components, start_index, step, count, wrap)
-    end
-  end
-
-  defp search_enabled_component(components, start_index, step, count, wrap) do
-    Enum.reduce_while(0..(count - 1), nil, fn i, _acc ->
-      index = rem(start_index + i * step + count, count)
-      component = Enum.at(components, index)
-
-      cond do
-        # Found an enabled component
-        component && !component.disabled ->
-          {:halt, component}
-
-        # Reached the boundary and no wrapping
-        (i == count - 1 && !wrap) || i == count - 1 ->
-          {:halt, nil}
-
-        # Continue searching
-        true ->
-          {:cont, nil}
-      end
-    end)
-  end
-
-  defp update_component_state(component_id, field, value) do
-    focusables = get_focusables()
-
-    updated_focusables =
-      focusables
-      |> Enum.map(fn {group, components} ->
-        updated_components =
-          Enum.map(
-            components,
-            &update_component_if_match(&1, component_id, field, value)
-          )
-
-        {group, updated_components}
-      end)
-      |> Enum.into(%{})
-
-    Process.put(:focus_manager_focusables, updated_focusables)
-    :ok
-  end
-
-  defp update_component_if_match(component, component_id, field, value) do
-    if component.id == component_id,
-      do: Map.put(component, field, value),
-      else: component
-  end
-
-  defp announce_focus_change(message) do
-    # Send to accessibility announcement system
-    # This is a placeholder for the actual implementation
-    EventManager.dispatch({:accessibility_announce, message})
-    :ok
-  end
-
-  defp calculate_next_index(current_index, components, wrap) do
-    cond do
-      current_index == nil -> 0
-      current_index + 1 < length(components) -> current_index + 1
-      wrap -> 0
-      true -> current_index
-    end
-  end
-
-  defp calculate_current_index(group_components, current_focus) do
-    current_component =
-      Enum.find(group_components, fn c -> c.id == current_focus end)
-
-    if current_component do
-      Enum.find_index(group_components, fn c -> c.id == current_focus end)
-    else
-      -1
-    end
-  end
-
-  defp calculate_prev_start_index(current_index, component_count, wrap) do
-    cond do
-      current_index <= 0 && wrap -> component_count - 1
-      current_index <= 0 -> -1
-      true -> current_index - 1
-    end
+  def unregister_focus_change_handler(handler_fun) when is_function(handler_fun, 2) do
+    ensure_started()
+    Server.unregister_focus_change_handler(handler_fun)
   end
 end

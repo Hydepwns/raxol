@@ -198,18 +198,23 @@ defmodule Raxol.Terminal.Config.AnimationCache do
     * `animation_path` - Path to the animation file
   """
   def preload_animation(animation_path) do
-    cond do
-      not File.exists?(animation_path) ->
-        {:error, :file_not_found}
+    preload_animation_with_validation(animation_path, File.exists?(animation_path))
+  end
 
-      animation_type = determine_animation_type(animation_path) ->
+  defp preload_animation_with_validation(_animation_path, false) do
+    {:error, :file_not_found}
+  end
+
+  defp preload_animation_with_validation(animation_path, true) do
+    case determine_animation_type(animation_path) do
+      nil ->
+        {:error, :unsupported_animation_type}
+
+      animation_type ->
         case cache_animation(animation_path, animation_type) do
           :ok -> {:ok, animation_type}
           error -> error
         end
-
-      true ->
-        {:error, :unsupported_animation_type}
     end
   end
 

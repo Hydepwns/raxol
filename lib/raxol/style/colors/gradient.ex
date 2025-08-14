@@ -34,8 +34,7 @@ defmodule Raxol.Style.Colors.Gradient do
   ```
   """
 
-  import Raxol.Guards
-
+  
   defstruct [
     # List of color stops
     :colors,
@@ -71,7 +70,7 @@ defmodule Raxol.Style.Colors.Gradient do
       5
   """
   def linear(%Color{} = start_color, %Color{} = end_color, steps)
-      when integer?(steps) and steps >= 2 do
+      when is_integer(steps) and steps >= 2 do
     colors = generate_gradient_colors(start_color, end_color, steps)
 
     %__MODULE__{
@@ -101,8 +100,8 @@ defmodule Raxol.Style.Colors.Gradient do
       10
   """
   def multi_stop(color_stops, steps)
-      when list?(color_stops) and length(color_stops) >= 2 and
-             integer?(steps) and steps >= 2 do
+      when is_list(color_stops) and length(color_stops) >= 2 and
+             is_integer(steps) and steps >= 2 do
     # Calculate how many steps to allocate for each segment
     segment_count = length(color_stops) - 1
 
@@ -145,7 +144,7 @@ defmodule Raxol.Style.Colors.Gradient do
       iex> length(gradient.colors)
       6
   """
-  def rainbow(steps) when integer?(steps) and steps >= 2 do
+  def rainbow(steps) when is_integer(steps) and steps >= 2 do
     # Create a list of rainbow colors
     rainbow_colors = [
       # Red
@@ -182,7 +181,7 @@ defmodule Raxol.Style.Colors.Gradient do
       iex> length(gradient.colors)
       5
   """
-  def heat_map(steps) when integer?(steps) and steps >= 2 do
+  def heat_map(steps) when is_integer(steps) and steps >= 2 do
     # Create a list of heat map colors from cool to hot
     heat_colors = [
       # Blue (coldest)
@@ -220,7 +219,7 @@ defmodule Raxol.Style.Colors.Gradient do
       "#800080"  # Purple (mix of red and blue)
   """
   def at_position(%__MODULE__{colors: colors}, position)
-      when float?(position) and position >= 0.0 and position <= 1.0 do
+      when is_float(position) and position >= 0.0 and position <= 1.0 do
     # Determine the index based on position
     index =
       if position == 1.0 do
@@ -268,7 +267,7 @@ defmodule Raxol.Style.Colors.Gradient do
       iex> Raxol.Style.Colors.Gradient.apply_to_text(gradient, "Hello")
       "\e[38;2;255;0;0mH\e[0m\e[38;2;191;0;64me\e[0m\e[38;2;128;0;128ml\e[0m\e[38;2;64;0;191ml\e[0m\e[38;2;0;0;255mo\e[0m"
   """
-  def apply_to_text(%__MODULE__{colors: colors}, text) when binary?(text) do
+  def apply_to_text(%__MODULE__{colors: colors}, text) when is_binary(text) do
     # Split the text into graphemes
     graphemes = String.graphemes(text)
 

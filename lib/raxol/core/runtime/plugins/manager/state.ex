@@ -3,8 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.State do
   Handles plugin state management operations - getting, setting, and updating plugin states.
   """
 
-  import Raxol.Guards
-  require Raxol.Core.Runtime.Log
+    require Raxol.Core.Runtime.Log
 
   @type plugin_id :: String.t()
   @type state :: map()
@@ -38,7 +37,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.State do
   """
   @spec update_plugin(state(), plugin_id(), function()) :: result()
   def update_plugin(state, plugin_id, update_fun)
-      when function?(update_fun, 1) do
+      when is_function(update_fun, 1) do
     case Map.get(state.plugins, plugin_id) do
       nil ->
         {:error, {:plugin_not_found, plugin_id}}

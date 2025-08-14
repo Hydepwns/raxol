@@ -1,6 +1,5 @@
 defmodule Raxol.Docs.InteractiveTutorial.State do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Manages the state of the interactive tutorial system.
   """
@@ -51,11 +50,11 @@ defmodule Raxol.Docs.InteractiveTutorial.State do
   Gets the current step from the state.
   """
   def get_current_step(%__MODULE__{} = state) do
-    with tutorial_id when not nil?(tutorial_id) <- state.current_tutorial,
-         step_id when not nil?(step_id) <- state.current_step,
-         tutorial when not nil?(tutorial) <-
+    with tutorial_id when not is_nil(tutorial_id) <- state.current_tutorial,
+         step_id when not is_nil(step_id) <- state.current_step,
+         tutorial when not is_nil(tutorial) <-
            Map.get(state.tutorials, tutorial_id),
-         step when not nil?(step) <-
+         step when not is_nil(step) <-
            Enum.find(tutorial.steps, &(&1.id == step_id)) do
       step
     else

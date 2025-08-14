@@ -9,7 +9,8 @@ defmodule RaxolWeb.Telemetry do
   @impl Supervisor
   def init(_arg) do
     children = [
-      {TelemetryMetricsPrometheus, metrics: metrics()},
+      # TelemetryMetricsPrometheus removed - add back if needed
+      # {TelemetryMetricsPrometheus, metrics: metrics()},
       {:telemetry_poller, measurements: periodic_measurements(), period: 10_000}
     ]
 

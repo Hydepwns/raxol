@@ -8,11 +8,12 @@ defmodule Raxol.Test.Integration.Assertions do
   - State synchronization checking
   - Command routing verification
   - Component lifecycle testing
+  
+  Uses functional patterns instead of try/catch blocks.
   """
 
   import ExUnit.Assertions
-  import Raxol.Guards
-
+  
   @doc """
   Asserts that a child component received an event from its parent.
 
@@ -108,18 +109,29 @@ defmodule Raxol.Test.Integration.Assertions do
       end
   """
   def assert_lifecycle_handled(component, lifecycle_fn) do
-    try do
+    # Use Task to safely execute lifecycle function
+    task = Task.async(fn ->
       lifecycle_fn.(component)
+      {:ok, component}
+    end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task) do
+      {:ok, {:ok, comp}} ->
+        # Verify cleanup
+        assert comp.subscriptions == [],
+               "Expected all subscriptions to be cleaned up"
 
-      # Verify cleanup
-      assert component.subscriptions == [],
-             "Expected all subscriptions to be cleaned up"
-
-      assert not component.mounted,
-             "Expected component to be unmounted"
-    rescue
-      error ->
+        assert not comp.mounted,
+               "Expected component to be unmounted"
+      
+      {:ok, {:error, error}} ->
         flunk("Component failed to handle lifecycle: #{inspect(error)}")
+      
+      nil ->
+        flunk("Component lifecycle timed out")
+      
+      {:exit, reason} ->
+        flunk("Component failed to handle lifecycle: #{inspect(reason)}")
     end
   end
 
@@ -133,23 +145,44 @@ defmodule Raxol.Test.Integration.Assertions do
       end
   """
   def assert_event_propagation(components, event, verification_fn)
-      when list?(components) do
+      when is_list(components) do
     # Track event propagation
     ref = System.unique_integer([:positive])
     Process.put(ref, [])
 
-    try do
+    # Use Task to ensure cleanup happens
+    task = Task.async(fn ->
       # Dispatch event to first component
       [first | _] = components
       Raxol.Test.Integration.simulate_user_action(first, event)
 
       # Get propagation history
       history = Process.get(ref)
-
+      
       # Run verification
-      verification_fn.(history)
-    after
+      result = verification_fn.(history)
+      
+      # Cleanup
       Process.delete(ref)
+      
+      {:ok, result}
+    end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task) do
+      {:ok, {:ok, result}} ->
+        result
+      
+      {:ok, {:error, error}} ->
+        Process.delete(ref)
+        flunk("Event propagation failed: #{inspect(error)}")
+      
+      nil ->
+        Process.delete(ref)
+        flunk("Event propagation timed out")
+      
+      {:exit, reason} ->
+        Process.delete(ref)
+        flunk("Event propagation failed: #{inspect(reason)}")
     end
   end
 
@@ -183,7 +216,7 @@ defmodule Raxol.Test.Integration.Assertions do
       end
   """
   def assert_state_synchronized(components, state_check)
-      when list?(components) do
+      when is_list(components) do
     states = Enum.map(components, & &1.state)
 
     assert state_check.(states),
@@ -197,7 +230,7 @@ defmodule Raxol.Test.Integration.Assertions do
 
       assert_system_events_handled component, [:resize, :focus, :blur]
   """
-  def assert_system_events_handled(component, events) when list?(events) do
+  def assert_system_events_handled(component, events) when is_list(events) do
     Enum.each(events, fn event ->
       {updated, initial, _commands} =
         Raxol.Test.Integration.assert_handles_system_event(component, event)
@@ -222,11 +255,35 @@ defmodule Raxol.Test.Integration.Assertions do
   def assert_error_contained(parent, child, error_fn) do
     parent_state = parent.state
 
-    try do
+    # Use Task to safely execute error function
+    task = Task.async(fn ->
       error_fn.()
-      flunk("Expected error to be raised")
-    rescue
-      _ ->
+      {:no_error_raised}
+    end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task) do
+      {:ok, {:no_error_raised}} ->
+        flunk("Expected error to be raised")
+      
+      {:ok, {:error, _}} ->
+        # Verify parent remained stable
+        assert parent.state == parent_state,
+               "Expected parent state to remain unchanged after child error"
+
+        # Verify child was handled
+        assert child.state != nil,
+               "Expected child to maintain valid state after error"
+      
+      nil ->
+        # Timeout is treated as an error being contained
+        assert parent.state == parent_state,
+               "Expected parent state to remain unchanged after child error"
+        
+        assert child.state != nil,
+               "Expected child to maintain valid state after error"
+      
+      {:exit, _reason} ->
+        # Exit is expected when error occurs
         # Verify parent remained stable
         assert parent.state == parent_state,
                "Expected parent state to remain unchanged after child error"

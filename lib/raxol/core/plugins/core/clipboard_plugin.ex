@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Provides clipboard read/write commands and delegates to a configured system clipboard implementation.
   """
@@ -31,7 +30,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
         [content],
         %{clipboard_impl: clipboard_impl} = _state
       )
-      when binary?(content) do
+      when is_binary(content) do
     case clipboard_impl.copy(content) do
       :ok ->
         {:ok, "Content copied to clipboard"}
@@ -68,7 +67,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   """
   @spec handle_clipboard_command(list(), map()) ::
           {:ok, map(), any()} | {:error, any(), map()}
-  def handle_clipboard_command([content], state) when binary?(content) do
+  def handle_clipboard_command([content], state) when is_binary(content) do
     handle_command(:clipboard_write, [content], state)
   end
 

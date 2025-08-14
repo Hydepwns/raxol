@@ -15,15 +15,16 @@ defmodule Raxol.Auth.Plug do
   def call(conn, _opts) do
     user_id = get_session(conn, :user_id)
 
-    cond do
-      _user = conn.assigns[:current_user] ->
+    case conn.assigns[:current_user] do
+      nil ->
+        case user_id && Accounts.get_user(user_id) do
+          user when is_map(user) ->
+            assign(conn, :current_user, user)
+          _ ->
+            assign(conn, :current_user, nil)
+        end
+      _user ->
         conn
-
-      user = user_id && Accounts.get_user(user_id) ->
-        assign(conn, :current_user, user)
-
-      true ->
-        assign(conn, :current_user, nil)
     end
   end
 

@@ -36,11 +36,11 @@ defmodule Raxol.UI.Universal do
   Universal context - works like React Context or Svelte Context.
   """
   def provide_context(key, value) do
-    Process.put({:raxol_context, key}, value)
+    Raxol.UI.State.Management.Server.set_context(key, value)
   end
 
   def use_context(key, default \\ nil) do
-    Process.get({:raxol_context, key}, default)
+    Raxol.UI.State.Management.Server.get_context(key, default)
   end
 
   @doc """
@@ -93,7 +93,7 @@ defmodule Raxol.UI.Universal do
   """
   defmacro render_universal_slot(name, fallback \\ nil) do
     quote do
-      case Process.get({:raxol_slot, unquote(name)}) do
+      case Raxol.UI.State.Management.Server.get_slot(unquote(name)) do
         nil -> unquote(fallback)
         slot_content when is_function(slot_content) -> slot_content.()
         slot_content -> slot_content
@@ -102,7 +102,7 @@ defmodule Raxol.UI.Universal do
   end
 
   def provide_slot(name, content) do
-    Process.put({:raxol_slot, name}, content)
+    Raxol.UI.State.Management.Server.set_slot(name, content)
   end
 
   @doc """

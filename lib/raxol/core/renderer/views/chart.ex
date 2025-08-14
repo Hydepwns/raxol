@@ -1,7 +1,6 @@
 defmodule Raxol.Core.Renderer.Views.Chart do
   require Raxol.Core.Renderer.View
-  import Raxol.Guards
-
+  
   @moduledoc """
   Chart view component for data visualization.
 
@@ -319,18 +318,20 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     draw_bresenham_with_params(params)
   end
 
-  defp draw_bresenham_with_params(%{canvas: canvas, depth: depth} = params) do
-    cond do
-      depth > 10_000 -> canvas
-      out_of_bounds?(canvas, params) -> canvas
-      reached_end?(params) -> mark_point(canvas, params)
-      true -> draw_bresenham_step(params)
+  defp draw_bresenham_with_params(%{canvas: canvas, depth: depth} = _params) 
+       when depth > 10_000, do: canvas
+
+  defp draw_bresenham_with_params(%{canvas: canvas} = params) do
+    case {out_of_bounds?(canvas, params), reached_end?(params)} do
+      {true, _} -> canvas
+      {false, true} -> mark_point(canvas, params)
+      {false, false} -> draw_bresenham_step(params)
     end
   end
 
   defp out_of_bounds?(canvas, %{x: x, y: y}) do
-    x < 0 or y < 0 or nil?(Enum.at(canvas, y)) or
-      nil?(Enum.at(Enum.at(canvas, y), x))
+    x < 0 or y < 0 or is_nil(Enum.at(canvas, y)) or
+      is_nil(Enum.at(Enum.at(canvas, y), x))
   end
 
   defp reached_end?(%{x: x, y: y, x2: x2, y2: y2}) do
@@ -423,28 +424,28 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   defp fit_sparkline_chars(chars, width) do
     char_count = length(chars)
 
-    cond do
-      char_count < width ->
+    case Integer.compare(char_count, width) do
+      :lt ->
         # Pad with spaces if not enough chars
         chars ++ List.duplicate(" ", width - char_count)
 
-      char_count > width ->
+      :gt ->
         # Truncate if too many chars
         Enum.take(chars, width)
 
-      true ->
+      :eq ->
         # Return as-is if just right
         chars
     end
   end
 
   defp create_vertical_bar(bar_height, total_height)
-       when integer?(bar_height) and integer?(total_height) do
+       when is_integer(bar_height) and is_integer(total_height) do
     build_bar_string(bar_height, total_height, :vertical)
   end
 
   defp create_horizontal_bar(bar_width, total_width)
-       when integer?(bar_width) and integer?(total_width) do
+       when is_integer(bar_width) and is_integer(total_width) do
     build_bar_string(bar_width, total_width, :horizontal)
   end
 

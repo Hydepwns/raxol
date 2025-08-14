@@ -4,8 +4,7 @@ defmodule Raxol.Core.Config.ManagerTest do
   persistence, and error handling of configuration values.
   """
   use ExUnit.Case, async: false
-  import Raxol.Guards
-  alias Raxol.Core.Config.Manager
+    alias Raxol.Core.Config.Manager
 
   # Helper functions to call Manager using PID instead of registered name
   defp manager_get(pid, key, default \\ nil) do
@@ -93,7 +92,7 @@ defmodule Raxol.Core.Config.ManagerTest do
   describe "configuration loading" do
     test "loads configuration from file", %{pid: pid} do
       assert {:ok, _} = manager_reload(pid)
-      assert map?(manager_get_all(pid))
+      assert is_map(manager_get_all(pid))
     end
 
     test "handles missing configuration file" do
@@ -136,7 +135,7 @@ defmodule Raxol.Core.Config.ManagerTest do
       assert {:ok, _} = manager_reload(pid)
       # Access the nested config structure
       terminal_config = manager_get(pid, :terminal)
-      assert integer?(terminal_config.width)
+      assert is_integer(terminal_config.width)
     end
 
     test "returns default value for missing key", %{pid: pid} do
@@ -146,7 +145,7 @@ defmodule Raxol.Core.Config.ManagerTest do
     test "gets all configuration values", %{pid: pid} do
       assert {:ok, _} = manager_reload(pid)
       config = manager_get_all(pid)
-      assert map?(config)
+      assert is_map(config)
       assert Map.has_key?(config, :terminal)
       assert Map.has_key?(config, :buffer)
       assert Map.has_key?(config, :renderer)

@@ -11,15 +11,14 @@ defmodule Raxol.System.Clipboard do
 
   @behaviour Raxol.Core.Clipboard.Behaviour
 
-  import Raxol.Guards
-  require Raxol.Core.Runtime.Log
+    require Raxol.Core.Runtime.Log
 
   @doc """
   Copies the given text to the system clipboard.
   """
   @impl Raxol.Core.Clipboard.Behaviour
   @spec copy(String.t()) :: :ok | {:error, atom() | String.t()}
-  def copy(text) when binary?(text) do
+  def copy(text) when is_binary(text) do
     case :os.type() do
       {:unix, :darwin} -> copy_macos(text)
       {:unix, _} -> copy_linux(text)

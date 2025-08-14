@@ -7,8 +7,7 @@ defmodule Raxol.Terminal.Commands.Parser do
   sequence parameter strings.
   """
 
-  import Raxol.Guards
-
+  
   @doc """
   Parses a raw parameter string buffer into a list of integers or nil values.
 
@@ -39,7 +38,7 @@ defmodule Raxol.Terminal.Commands.Parser do
 
   defp parse_single_param(""), do: nil
 
-  defp parse_single_param(param) when binary?(param) do
+  defp parse_single_param(param) when is_binary(param) do
     case String.contains?(param, ":") do
       true ->
         param
@@ -119,7 +118,7 @@ defmodule Raxol.Terminal.Commands.Parser do
       {:ok, %{type: :osc, command: 0, params: ["title"]}}
   """
   @spec parse(String.t()) :: {:ok, map()} | {:error, String.t()}
-  def parse(command) when binary?(command) do
+  def parse(command) when is_binary(command) do
     # For now, return a basic structure
     # This is a simplified implementation
     case command do

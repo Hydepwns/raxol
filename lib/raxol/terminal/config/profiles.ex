@@ -1,6 +1,5 @@
 defmodule Raxol.Terminal.Config.Profiles do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Terminal configuration profile management.
 
@@ -177,20 +176,20 @@ defmodule Raxol.Terminal.Config.Profiles do
     Path.join(@profiles_dir, "#{name}#{@profile_ext}")
   end
 
-  defp validate_profile_name(name) when binary?(name) do
-    cond do
-      String.length(name) < 1 ->
-        {:error, "Profile name can't be empty"}
+  defp validate_profile_name(name) when is_binary(name) and byte_size(name) < 1 do
+    {:error, "Profile name can't be empty"}
+  end
 
-      String.length(name) > 64 ->
-        {:error, "Profile name too long (maximum 64 characters)"}
+  defp validate_profile_name(name) when is_binary(name) and byte_size(name) > 64 do
+    {:error, "Profile name too long (maximum 64 characters)"}
+  end
 
-      String.match?(name, ~r/^[a-zA-Z0-9_\-. ]+$/) ->
-        :ok
-
-      true ->
-        {:error,
-         "Profile name contains invalid characters (allowed: letters, numbers, spaces, underscores, hyphens, periods)"}
+  defp validate_profile_name(name) when is_binary(name) do
+    if String.match?(name, ~r/^[a-zA-Z0-9_\-. ]+$/) do
+      :ok
+    else
+      {:error,
+       "Profile name contains invalid characters (allowed: letters, numbers, spaces, underscores, hyphens, periods)"}
     end
   end
 

@@ -1,4 +1,3 @@
-import Raxol.Guards
 
 defmodule Raxol.Core.Renderer.Views.TableTest do
   @moduledoc """
@@ -190,9 +189,9 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       assert state.columns == props.columns
       assert state.data == props.data
       assert state.border == props.border
-      assert list?(state.columns)
+      assert is_list(state.columns)
       assert length(state.columns) > 0
-      assert list?(state.data)
+      assert is_list(state.data)
     end
 
     test "renders table with different border styles" do

@@ -202,20 +202,7 @@ defmodule Raxol.Animation.CSSTransitions do
   defp extract_property([]), do: {:all, []}
 
   defp extract_duration([duration_str | rest]) do
-    cond do
-      String.ends_with?(duration_str, "ms") ->
-        {duration_str |> String.trim_trailing("ms") |> String.to_integer(),
-         rest}
-
-      String.ends_with?(duration_str, "s") ->
-        {((duration_str |> String.trim_trailing("s") |> String.to_float()) *
-            1000)
-         |> round(), rest}
-
-      true ->
-        # Default duration, put back the item
-        {300, [duration_str | rest]}
-    end
+    parse_duration_value(duration_str, rest)
   end
 
   defp extract_duration([]), do: {300, []}
@@ -255,18 +242,7 @@ defmodule Raxol.Animation.CSSTransitions do
   defp extract_easing([]), do: {:linear, []}
 
   defp extract_delay([delay_str | rest]) do
-    cond do
-      String.ends_with?(delay_str, "ms") ->
-        {delay_str |> String.trim_trailing("ms") |> String.to_integer(), rest}
-
-      String.ends_with?(delay_str, "s") ->
-        {((delay_str |> String.trim_trailing("s") |> String.to_float()) * 1000)
-         |> round(), rest}
-
-      true ->
-        # Default delay, put back the item
-        {0, [delay_str | rest]}
-    end
+    parse_delay_value(delay_str, rest)
   end
 
   defp extract_delay([]), do: {0, []}
@@ -363,23 +339,7 @@ defmodule Raxol.Animation.CSSTransitions do
   defp find_keyframe_range(keyframes, progress) do
     keyframes
     |> Enum.reduce_while(nil, fn {keyframe_progress, properties}, acc ->
-      cond do
-        keyframe_progress == progress ->
-          {:halt, {keyframe_progress, properties}}
-
-        keyframe_progress > progress and acc != nil ->
-          {prev_progress, prev_properties} = acc
-
-          local_progress =
-            (progress - prev_progress) / (keyframe_progress - prev_progress)
-
-          {:halt,
-           {{prev_progress, prev_properties}, {keyframe_progress, properties},
-            local_progress}}
-
-        true ->
-          {:cont, {keyframe_progress, properties}}
-      end
+      check_keyframe_match(keyframe_progress, properties, progress, acc)
     end)
   end
 
@@ -534,4 +494,62 @@ defmodule Raxol.Animation.CSSTransitions do
   defp get_default_transform_value(:scale), do: 1.0
   defp get_default_transform_value(:rotate), do: 0.0
   defp get_default_transform_value(_), do: 0.0
+
+  # Helper functions for pattern matching refactoring
+
+  # Duration parsing with pattern matching
+  defp parse_duration_value(duration_str, rest) when is_binary(duration_str) do
+    case String.ends_with?(duration_str, "ms") do
+      true ->
+        {duration_str |> String.trim_trailing("ms") |> String.to_integer(), rest}
+      false ->
+        parse_duration_seconds_or_default(duration_str, rest)
+    end
+  end
+  defp parse_duration_value(duration_str, rest), do: {300, [duration_str | rest]}
+
+  defp parse_duration_seconds_or_default(duration_str, rest) do
+    case String.ends_with?(duration_str, "s") do
+      true ->
+        {((duration_str |> String.trim_trailing("s") |> String.to_float()) * 1000) |> round(), rest}
+      false ->
+        {300, [duration_str | rest]}
+    end
+  end
+
+  # Delay parsing with pattern matching
+  defp parse_delay_value(delay_str, rest) when is_binary(delay_str) do
+    case String.ends_with?(delay_str, "ms") do
+      true ->
+        {delay_str |> String.trim_trailing("ms") |> String.to_integer(), rest}
+      false ->
+        parse_delay_seconds_or_default(delay_str, rest)
+    end
+  end
+  defp parse_delay_value(delay_str, rest), do: {0, [delay_str | rest]}
+
+  defp parse_delay_seconds_or_default(delay_str, rest) do
+    case String.ends_with?(delay_str, "s") do
+      true ->
+        {((delay_str |> String.trim_trailing("s") |> String.to_float()) * 1000) |> round(), rest}
+      false ->
+        {0, [delay_str | rest]}
+    end
+  end
+
+  defp check_keyframe_match(keyframe_progress, properties, progress, _acc) 
+       when keyframe_progress == progress,
+       do: {:halt, {keyframe_progress, properties}}
+
+  defp check_keyframe_match(keyframe_progress, properties, progress, acc) 
+       when keyframe_progress > progress and acc != nil do
+    {prev_progress, prev_properties} = acc
+    local_progress = (progress - prev_progress) / (keyframe_progress - prev_progress)
+    
+    {:halt,
+     {{prev_progress, prev_properties}, {keyframe_progress, properties}, local_progress}}
+  end
+
+  defp check_keyframe_match(keyframe_progress, properties, _progress, _acc),
+       do: {:cont, {keyframe_progress, properties}}
 end

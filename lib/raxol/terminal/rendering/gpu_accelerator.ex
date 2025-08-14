@@ -340,12 +340,14 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   ## Private Implementation
 
   defp determine_backend(:auto) do
-    cond do
-      metal_available?() -> :metal
-      vulkan_available?() -> :vulkan
-      # Fallback to software rendering
-      true -> :software
-    end
+    backends = [
+      {&metal_available?/0, :metal},
+      {&vulkan_available?/0, :vulkan}
+    ]
+    
+    Enum.find_value(backends, :software, fn {check, backend} ->
+      if check.(), do: backend, else: nil
+    end)
   end
 
   defp determine_backend(backend), do: backend

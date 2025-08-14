@@ -190,15 +190,16 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
   Validates command handler requirements.
   """
   def validate_handler(handler_module) do
-    cond do
-      not Code.ensure_loaded?(handler_module) ->
-        {:error, :handler_not_loaded}
-
-      not function_exported?(handler_module, :handle, 2) ->
-        {:error, :missing_handle_function}
-
-      true ->
-        :ok
+    with true <- Code.ensure_loaded?(handler_module),
+         true <- function_exported?(handler_module, :handle, 2) do
+      :ok
+    else
+      false ->
+        if not Code.ensure_loaded?(handler_module) do
+          {:error, :handler_not_loaded}
+        else
+          {:error, :missing_handle_function}
+        end
     end
   end
 

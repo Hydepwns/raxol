@@ -4,8 +4,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   This module handles operations like clearing the screen, lines, and regions.
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
@@ -63,10 +62,10 @@ defmodule Raxol.Terminal.Buffer.Eraser do
          empty_cell,
          width
        ) do
-    cond do
-      line_row < row -> List.duplicate(empty_cell, width)
-      line_row == row -> clear_line_to_position(line, col, empty_cell)
-      true -> line
+    case {line_row < row, line_row == row} do
+      {true, _} -> List.duplicate(empty_cell, width)
+      {false, true} -> clear_line_to_position(line, col, empty_cell)
+      {false, false} -> line
     end
   end
 
@@ -332,7 +331,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     )
   end
 
-  def clear_screen(buffer, _style) when tuple?(buffer) do
+  def clear_screen(buffer, _style) when is_tuple(buffer) do
     raise ArgumentError,
           "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
@@ -356,7 +355,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
       %{__struct__: _} = buffer ->
         handle_erase_in_line(buffer, cursor_pos, type, style)
 
-      _ when tuple?(buffer) ->
+      _ when is_tuple(buffer) ->
         raise ArgumentError,
               "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
     end
@@ -402,7 +401,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
       %{__struct__: _} = buffer ->
         handle_erase_in_display(buffer, cursor_pos, type, style)
 
-      _ when tuple?(buffer) ->
+      _ when is_tuple(buffer) ->
         raise ArgumentError,
               "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
     end

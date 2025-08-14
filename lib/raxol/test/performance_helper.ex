@@ -140,13 +140,9 @@ defmodule Raxol.Test.PerformanceHelper do
     """
   end
 
-  defp format_time(time) do
-    cond do
-      time >= 1_000_000 -> "#{time / 1_000_000} s"
-      time >= 1_000 -> "#{time / 1_000} ms"
-      true -> "#{time} μs"
-    end
-  end
+  defp format_time(time) when time >= 1_000_000, do: "#{time / 1_000_000} s"
+  defp format_time(time) when time >= 1_000, do: "#{time / 1_000} ms"
+  defp format_time(time), do: "#{time} μs"
 
   @doc """
   Measures the execution time of an operation.

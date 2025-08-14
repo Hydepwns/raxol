@@ -3,8 +3,7 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
   Core edge computing functionality and state management.
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.Cloud.EdgeComputing.{Cache, Queue, SyncManager}
 
   # Edge computing state
@@ -59,7 +58,7 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
   Initializes the edge computing system.
   """
   def init(opts \\ []) do
-    opts = if map?(opts), do: Enum.into(opts, []), else: opts
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     state = State.new()
 
     # Override defaults with provided options
@@ -81,7 +80,7 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
     state = %{state | resources: get_resource_info()}
 
     # Store state
-    Process.put(@edge_key, state)
+    Raxol.Cloud.EdgeComputing.Server.set_state(state)
 
     # Initialize cache, queue and sync manager
     Cache.init(state.config)
@@ -98,7 +97,7 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
   Updates the edge computing configuration.
   """
   def update_config(state \\ nil, config) do
-    config = if map?(config), do: Enum.into(config, []), else: config
+    config = if is_map(config), do: Enum.into(config, []), else: config
 
     with_state(state, fn s ->
       # Merge new config with existing config
@@ -177,12 +176,12 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
   end
 
   def get_state do
-    Process.get(@edge_key) || State.new()
+    Raxol.Cloud.EdgeComputing.Server.get_state() || State.new()
   end
 
   def with_state(arg1, arg2 \\ nil) do
     {state, fun} =
-      if function?(arg1) do
+      if is_function(arg1) do
         {get_state(), arg1}
       else
         {arg1 || get_state(), arg2}
@@ -190,9 +189,9 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
 
     result = fun.(state)
 
-    if map?(result) and Map.has_key?(result, :mode) do
+    if is_map(result) and Map.has_key?(result, :mode) do
       # If a state map is returned, update the state
-      Process.put(@edge_key, result)
+      Raxol.Cloud.EdgeComputing.Server.set_state(result)
       result
     else
       # Otherwise just return the result

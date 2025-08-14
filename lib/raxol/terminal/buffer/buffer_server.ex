@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Buffer.BufferServerRefactored do
+defmodule Raxol.Terminal.Buffer.BufferServer do
   @moduledoc """
   Refactored GenServer-based buffer server for true concurrent shared buffer access.
 
@@ -22,26 +22,26 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactored do
   ## Usage
 
       # Start a buffer server
-      {:ok, pid} = BufferServerRefactored.start_link(width: 80, height: 24)
+      {:ok, pid} = BufferServer.start_link(width: 80, height: 24)
 
       # Write to buffer (asynchronous)
-      BufferServerRefactored.set_cell(pid, 0, 0, cell)
+      BufferServer.set_cell(pid, 0, 0, cell)
 
       # Read from buffer (synchronous)
-      cell = BufferServerRefactored.get_cell(pid, 0, 0)
+      cell = BufferServer.get_cell(pid, 0, 0)
 
       # Batch multiple operations
-      BufferServerRefactored.batch_operations(pid, [
+      BufferServer.batch_operations(pid, [
         {:set_cell, 0, 0, cell1},
         {:set_cell, 1, 0, cell2},
         {:write_string, 0, 1, "Hello"}
       ])
 
       # Flush to ensure all writes are completed
-      BufferServerRefactored.flush(pid)
+      BufferServer.flush(pid)
 
       # Perform atomic operations
-      BufferServerRefactored.atomic_operation(pid, fn buffer ->
+      BufferServer.atomic_operation(pid, fn buffer ->
         # Multiple operations in a single atomic transaction
         buffer
         |> Buffer.set_cell(0, 0, cell1)
@@ -60,7 +60,7 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactored do
   @type t :: pid()
 
   defmodule State do
-    @moduledoc "State for the BufferServerRefactored GenServer"
+    @moduledoc "State for the BufferServer GenServer"
 
     defstruct [
       :buffer,

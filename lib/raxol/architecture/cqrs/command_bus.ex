@@ -417,17 +417,18 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     # Check circuit breaker
     handler_module = Map.get(state.handlers, command.__struct__)
 
-    if handler_module &&
-         is_circuit_breaker_open?(state.circuit_breakers, handler_module) do
-      {:error, :circuit_breaker_open, state}
-    else
-      # Execute through middleware pipeline
-      case execute_through_middleware(
-             command,
-             handler_module,
-             state.middleware_stack,
-             state
-           ) do
+    case check_handler_availability(handler_module, state.circuit_breakers) do
+      :open ->
+        {:error, :circuit_breaker_open, state}
+
+      :available ->
+        # Execute through middleware pipeline
+        case execute_through_middleware(
+               command,
+               handler_module,
+               state.middleware_stack,
+               state
+             ) do
         {:ok, result} ->
           # Record success metrics
           execution_time = System.monotonic_time(:microsecond) - start_time
@@ -518,14 +519,15 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
   end
 
   defp validate_command_handler(handler_module) do
-    if Code.ensure_loaded?(handler_module) do
-      if function_exported?(handler_module, :handle, 2) do
-        :ok
-      else
-        {:error, :missing_handle_function}
-      end
-    else
-      {:error, :handler_not_found}
+    case Code.ensure_loaded?(handler_module) do
+      true ->
+        case function_exported?(handler_module, :handle, 2) do
+          true -> :ok
+          false -> {:error, :missing_handle_function}
+        end
+
+      false ->
+        {:error, :handler_not_found}
     end
   end
 
@@ -551,17 +553,10 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
 
   defp record_command_success(state, command, execution_time) do
     # Update metrics
-    new_state =
-      if state.config.enable_metrics do
-        update_metrics(state, command, :success, execution_time)
-      else
-        state
-      end
+    new_state = update_metrics_if_enabled(state, command, :success, execution_time)
 
     # Update audit log
-    if state.config.enable_auditing do
-      audit_command(state, command, :success, execution_time)
-    end
+    audit_if_enabled(state, command, :success, execution_time)
 
     new_state
   end
@@ -576,26 +571,13 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     # Update metrics
     new_state =
       %{state | circuit_breakers: new_circuit_breakers}
-      |> then(fn s ->
-        if state.config.enable_metrics do
-          update_metrics(s, command, :failure, execution_time)
-        else
-          s
-        end
-      end)
+      |> update_metrics_if_enabled(command, :failure, execution_time)
 
     # Add to retry queue if retriable
-    final_state =
-      if is_retriable_error?(reason) do
-        add_to_retry_queue(new_state, command, reason)
-      else
-        add_to_dead_letter_queue(new_state, command, reason)
-      end
+    final_state = queue_failed_command(new_state, command, reason)
 
     # Update audit log
-    if state.config.enable_auditing do
-      audit_command(final_state, command, {:failure, reason}, execution_time)
-    end
+    audit_if_enabled(final_state, command, {:failure, reason}, execution_time)
 
     final_state
   end
@@ -950,6 +932,65 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
       }
     else
       %{metrics_disabled: true}
+    end
+  end
+
+  ## Helper functions for refactored code
+
+  defp get_metrics_if_enabled(%{enable_metrics: true}, metrics_collector) do
+    get_metrics_from_collector(metrics_collector)
+  end
+
+  defp get_metrics_if_enabled(_config, _metrics_collector) do
+    %{metrics_disabled: true}
+  end
+
+  defp check_handler_availability(nil, _circuit_breakers), do: :available
+  
+  defp check_handler_availability(handler_module, circuit_breakers) do
+    case is_circuit_breaker_open?(circuit_breakers, handler_module) do
+      true -> :open
+      false -> :available
+    end
+  end
+
+  defp execute_handler_if_present(nil, _context) do
+    {:error, :no_handler_registered}
+  end
+
+  defp execute_handler_if_present(handler_module, context) do
+    execute_command_handler(
+      handler_module,
+      context.command,
+      context
+    )
+  end
+
+  defp update_metrics_if_enabled(%{config: %{enable_metrics: true}} = state, command, status, execution_time) do
+    update_metrics(state, command, status, execution_time)
+  end
+
+  defp update_metrics_if_enabled(state, _command, _status, _execution_time) do
+    state
+  end
+
+  defp update_metrics_if_enabled(state, command, status, execution_time) when is_map(state) do
+    case state.config[:enable_metrics] do
+      true -> update_metrics(state, command, status, execution_time)
+      _ -> state
+    end
+  end
+
+  defp audit_if_enabled(%{config: %{enable_auditing: true}} = state, command, result, execution_time) do
+    audit_command(state, command, result, execution_time)
+  end
+
+  defp audit_if_enabled(_state, _command, _result, _execution_time), do: :ok
+
+  defp queue_failed_command(state, command, reason) do
+    case is_retriable_error?(reason) do
+      true -> add_to_retry_queue(state, command, reason)
+      false -> add_to_dead_letter_queue(state, command, reason)
     end
   end
 end

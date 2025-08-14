@@ -9,8 +9,7 @@ defmodule Raxol.Renderer.Layout.Scroll do
   - Scrollbar thumb positioning
   """
 
-  import Raxol.Guards
-
+  
   @doc """
   Processes a scroll element and returns positioned children with scrollbars.
 
@@ -25,7 +24,7 @@ defmodule Raxol.Renderer.Layout.Scroll do
   A list of positioned elements including scrollbars.
   """
   def process_scroll_element(%{children: children} = scroll_map, space, acc)
-      when list?(children) do
+      when is_list(children) do
     scroll_config = extract_scroll_config(scroll_map, space)
 
     scrolled_children =

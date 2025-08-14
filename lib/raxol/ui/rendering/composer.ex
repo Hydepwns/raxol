@@ -3,8 +3,7 @@ defmodule Raxol.UI.Rendering.Composer do
   Handles composition of UI rendering trees.
   """
 
-  import Raxol.Guards
-  require Raxol.Core.Runtime.Log
+    require Raxol.Core.Runtime.Log
 
   @doc """
   Composes a render tree or command list from the layout tree.
@@ -30,7 +29,7 @@ defmodule Raxol.UI.Rendering.Composer do
 
   # Renamed and modified do_compose_node to be recursive and diff-aware
   defp do_compose_recursive(current_layout_node, previous_composed_node)
-       when map?(current_layout_node) do
+       when is_map(current_layout_node) do
     if can_reuse_previous_node?(current_layout_node, previous_composed_node) do
       log_reuse_previous_node(current_layout_node)
       previous_composed_node
@@ -41,7 +40,7 @@ defmodule Raxol.UI.Rendering.Composer do
   end
 
   defp do_compose_recursive(current_layout_node, _previous_composed_node)
-       when not map?(current_layout_node) do
+       when not is_map(current_layout_node) do
     Raxol.Core.Runtime.Log.debug(
       "Composition Stage: Passing through non-map primitive node: #{inspect(current_layout_node)}"
     )
@@ -58,9 +57,9 @@ defmodule Raxol.UI.Rendering.Composer do
   end
 
   defp can_reuse_previous_node?(current_layout_node, previous_composed_node) do
-    map?(current_layout_node[:layout_attrs]) &&
+    is_map(current_layout_node[:layout_attrs]) &&
       current_layout_node[:layout_attrs][:processed_with_diff] == :no_change &&
-      map?(previous_composed_node) &&
+      is_map(previous_composed_node) &&
       current_layout_node_type(current_layout_node) ==
         previous_composed_node[:original_type]
   end
@@ -100,11 +99,11 @@ defmodule Raxol.UI.Rendering.Composer do
   end
 
   defp current_layout_node_type(node) do
-    if map?(node), do: Map.get(node, :type, nil), else: nil
+    if is_map(node), do: Map.get(node, :type, nil), else: nil
   end
 
   defp get_previous_child(previous_composed_node, idx) do
-    if map?(previous_composed_node) && previous_composed_node[:children] do
+    if is_map(previous_composed_node) && previous_composed_node[:children] do
       Enum.at(previous_composed_node[:children], idx)
     else
       nil
@@ -112,33 +111,53 @@ defmodule Raxol.UI.Rendering.Composer do
   end
 
   defp log_recomposition_reason(current_layout_node, previous_composed_node) do
-    if map?(previous_composed_node) do
-      cond do
-        not map?(current_layout_node[:layout_attrs]) ->
-          Raxol.Core.Runtime.Log.debug(
-            "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - missing layout_attrs."
-          )
-
-        current_layout_node[:layout_attrs][:processed_with_diff] != :no_change ->
-          Raxol.Core.Runtime.Log.debug(
-            "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - diff type: #{current_layout_node[:layout_attrs][:processed_with_diff]}"
-          )
-
-        current_layout_node_type(current_layout_node) !=
-            previous_composed_node[:original_type] ->
-          Raxol.Core.Runtime.Log.debug(
-            "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} vs prev #{previous_composed_node[:original_type]} - type mismatch."
-          )
-
-        true ->
-          Raxol.Core.Runtime.Log.debug(
-            "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - other reason or first time."
-          )
-      end
+    if is_map(previous_composed_node) do
+      log_recomposition_for_map(current_layout_node, previous_composed_node)
     else
       Raxol.Core.Runtime.Log.debug(
         "Composition Stage: Composing new node (no valid previous) for type: #{current_layout_node_type(current_layout_node)}"
       )
+    end
+  end
+
+  defp log_recomposition_for_map(current_layout_node, previous_composed_node) do
+    reason = determine_recomposition_reason(current_layout_node, previous_composed_node)
+    
+    message = case reason do
+      :missing_layout_attrs ->
+        "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - missing layout_attrs."
+      
+      {:diff_change, diff_type} ->
+        "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - diff type: #{diff_type}"
+      
+      {:type_mismatch, prev_type} ->
+        "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} vs prev #{prev_type} - type mismatch."
+      
+      :other ->
+        "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - other reason or first time."
+    end
+    
+    Raxol.Core.Runtime.Log.debug(message)
+  end
+
+  defp determine_recomposition_reason(current_layout_node, previous_composed_node) do
+    layout_attrs = current_layout_node[:layout_attrs]
+    
+    case {is_map(layout_attrs), 
+          layout_attrs && layout_attrs[:processed_with_diff],
+          current_layout_node_type(current_layout_node),
+          previous_composed_node[:original_type]} do
+      {false, _, _, _} ->
+        :missing_layout_attrs
+      
+      {true, diff, _, _} when diff != :no_change ->
+        {:diff_change, diff}
+      
+      {true, :no_change, current_type, prev_type} when current_type != prev_type ->
+        {:type_mismatch, prev_type}
+      
+      _ ->
+        :other
     end
   end
 end

@@ -3,8 +3,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Text do
   Handles text operations for terminal buffers including character and string writing.
   """
 
-  import Raxol.Guards
-  alias Raxol.Terminal.Buffer.Cell
+    alias Raxol.Terminal.Buffer.Cell
 
   @doc """
   Writes a character to the buffer at the specified position.
@@ -18,7 +17,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Text do
 
   # Handle list buffers - this should only be used for internal operations
   def write_char(buffer, x, y, char, style)
-      when list?(buffer) and is_integer(x) and is_integer(y) and
+      when is_list(buffer) and is_integer(x) and is_integer(y) and
              is_binary(char) and is_map(style) do
     new_buffer =
       buffer
@@ -144,7 +143,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Text do
   Inserts the specified number of blank characters at the cursor position.
   """
   def insert_chars(buffer, count)
-      when list?(buffer) and is_integer(count) and count > 0 do
+      when is_list(buffer) and is_integer(count) and count > 0 do
     # Insert blank characters at cursor position
     buffer
     |> Enum.map(fn row ->
@@ -159,7 +158,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Text do
   Deletes the specified number of characters at the cursor position.
   """
   def delete_chars(buffer, count)
-      when list?(buffer) and is_integer(count) and count > 0 do
+      when is_list(buffer) and is_integer(count) and count > 0 do
     # Delete characters at cursor position
     buffer
     |> Enum.map(fn row ->

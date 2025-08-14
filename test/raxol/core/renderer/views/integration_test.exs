@@ -1,4 +1,3 @@
-import Raxol.Guards
 
 defmodule Raxol.Core.Renderer.Views.IntegrationTest do
   use ExUnit.Case, async: true
@@ -449,7 +448,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       # Selected index is 0
       selected_data_row_map = Enum.at(data_row_maps, 0)
 
-      assert map?(selected_data_row_map),
+      assert is_map(selected_data_row_map),
              "Selected data row map not found or not a map"
 
       assert selected_data_row_map.type == :row
@@ -458,7 +457,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       # Verify selected row has expected structure
       assert selected_data_row_map.type == :row
-      assert list?(selected_data_row_map.children)
+      assert is_list(selected_data_row_map.children)
       assert length(selected_data_row_map.children) > 0
 
       # Verify selected row has expected content
@@ -583,7 +582,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       rendered_layout = Layout.apply_layout(view, context)
 
       # Verify outer border
-      assert map?(rendered_layout),
+      assert is_map(rendered_layout),
              "Layout.apply_layout should return a single map for a root border. Got: #{inspect(rendered_layout)}"
 
       assert rendered_layout.type == :border
@@ -602,7 +601,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       assert length(table.data) == 3
 
       # Verify table content
-      assert list?(table.children) and table.children != [],
+      assert is_list(table.children) and table.children != [],
              "Table children (rows) should not be empty"
 
       [header, separator_row | data_rows] = table.children
@@ -658,17 +657,17 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       # Get the rendered layout as a map, not a list
       rendered_layout = Layout.apply_layout(view, context)
 
-      assert map?(rendered_layout),
+      assert is_map(rendered_layout),
              "Layout.apply_layout (wide context) should return a single map for a root grid. Got: #{inspect(rendered_layout)}"
 
       # Verify grid structure
       assert rendered_layout.type == :grid
-      assert list?(rendered_layout.children)
+      assert is_list(rendered_layout.children)
       assert length(rendered_layout.children) == 3
 
       # Verify each chart in the grid
       Enum.each(rendered_layout.children, fn chart_as_box ->
-        assert map?(chart_as_box)
+        assert is_map(chart_as_box)
         assert chart_as_box.type == :box
       end)
 
@@ -679,14 +678,14 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       rendered_layout_narrow = Layout.apply_layout(view, context_narrow)
 
       # Verify grid structure with narrow width
-      assert map?(rendered_layout_narrow),
+      assert is_map(rendered_layout_narrow),
              "Layout.apply_layout (narrow context) should return a single map for a root grid. Got: #{inspect(rendered_layout_narrow)}"
 
       assert rendered_layout_narrow.type == :grid
 
       # Verify charts are properly scaled down
       Enum.each(rendered_layout_narrow.children, fn chart_as_box ->
-        assert map?(chart_as_box)
+        assert is_map(chart_as_box)
         assert chart_as_box.type == :box
       end)
     end
@@ -763,7 +762,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       rendered_layout = Layout.apply_layout(view, context)
 
       # Check outer border properties
-      assert map?(rendered_layout),
+      assert is_map(rendered_layout),
              "Layout.apply_layout should return a single map for a root border. Got: #{inspect(rendered_layout)}"
 
       assert rendered_layout.type == :border
@@ -790,7 +789,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       assert table_view.border == :none
 
       # Now access table's children (rows)
-      assert list?(table_view.children) and table_view.children != [],
+      assert is_list(table_view.children) and table_view.children != [],
              "Table should have rendered rows as children"
 
       # This is the list of [header_row, separator_row, data_row1, ...]

@@ -1,4 +1,3 @@
-import Raxol.Guards
 
 defmodule Raxol.Core.Renderer.Views.ChartTest do
   @moduledoc """
@@ -31,7 +30,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
           height: 10
         )
 
-      assert map?(view)
+      assert is_map(view)
       assert Map.has_key?(view, :type)
       assert view.type == :box
       assert view.children != nil
@@ -47,7 +46,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
           height: 10
         )
 
-      assert map?(view)
+      assert is_map(view)
       assert Map.has_key?(view, :type)
       assert view.type == :box
       assert view.children != nil
@@ -68,14 +67,14 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
           show_legend: false
         )
 
-      assert map?(view)
+      assert is_map(view)
       assert Map.has_key?(view, :type)
       assert view.type == :box
 
       # The sparkline returns a single text view, not a list
       text_view = view.children
       assert text_view != nil
-      assert map?(text_view)
+      assert is_map(text_view)
       assert text_view.type == :text
       assert text_view.content != nil
 
@@ -101,7 +100,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         )
 
       content = view
-      assert map?(content)
+      assert is_map(content)
       assert Map.has_key?(content, :type)
       assert content.type == :box
     end
@@ -118,7 +117,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         )
 
       content = view
-      assert map?(content)
+      assert is_map(content)
       assert Map.has_key?(content, :type)
       assert content.type == :box
     end
@@ -132,8 +131,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       end
     end
 
-    defp process_children(children) when list?(children) do
-      if Enum.all?(children, &list?/1) do
+    defp process_children(children) when is_list(children) do
+      if Enum.all?(children, &is_list/1) do
         children
         |> List.flatten()
         |> Enum.flat_map(&find_all_text_children/1)
@@ -158,8 +157,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         )
 
       bars = find_all_text_children(view)
-      assert Enum.any?(bars, fn bar -> map?(bar) and bar.fg == :blue end)
-      assert Enum.any?(bars, fn bar -> map?(bar) and bar.fg == :red end)
+      assert Enum.any?(bars, fn bar -> is_map(bar) and bar.fg == :blue end)
+      assert Enum.any?(bars, fn bar -> is_map(bar) and bar.fg == :red end)
     end
   end
 
@@ -203,7 +202,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       content = view
       points = find_all_text_children(content)
       # Check for at least 2 points
-      assert Enum.count(points, &(map?(&1) and &1.content == "•")) >= 2
+      assert Enum.count(points, &(is_map(&1) and &1.content == "•")) >= 2
     end
 
     test "applies colors to lines" do
@@ -225,8 +224,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       # Find points (represented by •) and check colors
       content = view
       points = find_all_text_children(content)
-      assert Enum.any?(points, &(map?(&1) and &1.fg == :blue))
-      assert Enum.any?(points, &(map?(&1) and &1.fg == :red))
+      assert Enum.any?(points, &(is_map(&1) and &1.fg == :blue))
+      assert Enum.any?(points, &(is_map(&1) and &1.fg == :red))
     end
   end
 
@@ -248,7 +247,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         )
 
       # Add assertions to verify min/max impact if possible
-      assert map?(view)
+      assert is_map(view)
       assert Map.has_key?(view, :type)
       assert view != nil
     end
@@ -264,7 +263,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         )
 
       # Verify the structure returned for empty data
-      assert map?(view)
+      assert is_map(view)
       assert Map.has_key?(view, :type)
       assert view.type == :box
 
@@ -280,7 +279,7 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
             children
         end
 
-      assert map?(flex_view)
+      assert is_map(flex_view)
       assert Map.has_key?(flex_view, :type)
       assert flex_view.type == :flex
       assert flex_view.children == []

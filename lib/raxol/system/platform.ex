@@ -321,24 +321,26 @@ defmodule Raxol.System.Platform do
 
   defp detect_macos_terminal do
     # Try to determine the specific terminal app being used
-    cond do
-      System.get_env("TERM_PROGRAM") == "iTerm.app" -> "iTerm2"
-      System.get_env("TERM_PROGRAM") == "Apple_Terminal" -> "Terminal.app"
-      System.get_env("TERM_PROGRAM") == "vscode" -> "VS Code"
-      System.get_env("KITTY_WINDOW_ID") != nil -> "Kitty"
-      System.get_env("ALACRITTY_LOG") != nil -> "Alacritty"
-      true -> "unknown"
+    case {System.get_env("TERM_PROGRAM"), System.get_env("KITTY_WINDOW_ID"), System.get_env("ALACRITTY_LOG")} do
+      {"iTerm.app", _, _} -> "iTerm2"
+      {"Apple_Terminal", _, _} -> "Terminal.app" 
+      {"vscode", _, _} -> "VS Code"
+      {_, kitty_id, _} when kitty_id != nil -> "Kitty"
+      {_, _, alacritty_log} when alacritty_log != nil -> "Alacritty"
+      _ -> "unknown"
     end
   end
 
   defp detect_linux_distribution do
-    cond do
-      File.exists?("/etc/debian_version") -> "Debian/Ubuntu"
-      File.exists?("/etc/redhat-release") -> "RHEL/Fedora/CentOS"
-      File.exists?("/etc/arch-release") -> "Arch"
-      File.exists?("/etc/SuSE-release") -> "SuSE"
-      File.exists?("/etc/alpine-release") -> "Alpine"
-      true -> "unknown"
+    case {File.exists?("/etc/debian_version"), File.exists?("/etc/redhat-release"), 
+          File.exists?("/etc/arch-release"), File.exists?("/etc/SuSE-release"),
+          File.exists?("/etc/alpine-release")} do
+      {true, _, _, _, _} -> "Debian/Ubuntu"
+      {_, true, _, _, _} -> "RHEL/Fedora/CentOS"
+      {_, _, true, _, _} -> "Arch"
+      {_, _, _, true, _} -> "SuSE"
+      {_, _, _, _, true} -> "Alpine"
+      _ -> "unknown"
     end
   end
 
@@ -363,27 +365,31 @@ defmodule Raxol.System.Platform do
   end
 
   defp detect_windows_console_type do
-    cond do
-      System.get_env("WT_SESSION") != nil ->
+    case {System.get_env("WT_SESSION"), System.get_env("TERM_PROGRAM"), 
+          System.get_env("CMDER_ROOT"), System.get_env("PROMPT"), 
+          System.get_env("PSModulePath")} do
+      {wt, _, _, _, _} when wt != nil ->
         "Windows Terminal"
-
-      System.get_env("TERM_PROGRAM") == "vscode" ->
+        
+      {_, "vscode", _, _, _} ->
         "VS Code"
-
-      System.get_env("CMDER_ROOT") != nil ->
+        
+      {_, _, cmder, _, _} when cmder != nil ->
         "Cmder"
-
-      System.get_env("PROMPT") != nil &&
-          String.contains?(System.get_env("PROMPT") || "", "$P$G") ->
-        "Command Prompt"
-
-      System.get_env("PSModulePath") != nil ->
+        
+      {_, _, _, prompt, _} when prompt != nil ->
+        if String.contains?(prompt, "$P$G"), do: "Command Prompt", else: determine_by_psmodule(System.get_env("PSModulePath"))
+        
+      {_, _, _, _, psmodule} when psmodule != nil ->
         "PowerShell"
-
-      true ->
+        
+      _ ->
         "unknown"
     end
   end
+
+  defp determine_by_psmodule(nil), do: "unknown"
+  defp determine_by_psmodule(_psmodule), do: "PowerShell"
 
   defp detect_linux_clipboard_support do
     case System.cmd("which", ["xclip"], stderr_to_stdout: true) do

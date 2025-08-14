@@ -547,24 +547,14 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     update_count = metrics.operation_counts.updates
     compression_count = metrics.operation_counts.compressions
 
-    # Determine if we need to optimize based on performance patterns
-    cond do
-      # If updates are slow, reduce compression overhead
-      avg_update_time > 50 and compression_count > 0 ->
-        optimize_for_speed(state, metrics)
+    # Determine optimization strategy based on performance patterns
+    optimization_pattern = {
+      avg_update_time > 50 and compression_count > 0,
+      compression_count < update_count * 0.1,
+      avg_compression_time > 100
+    }
 
-      # If memory usage is high, increase compression
-      compression_count < update_count * 0.1 ->
-        optimize_for_memory(state, metrics)
-
-      # If compression is too slow, reduce compression level
-      avg_compression_time > 100 ->
-        reduce_compression_level(state)
-
-      # If everything is working well, fine-tune based on patterns
-      true ->
-        fine_tune_compression(state, metrics)
-    end
+    apply_optimization_strategy(state, metrics, optimization_pattern)
   end
 
   defp calculate_average_time(times)
@@ -617,15 +607,40 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     avg_recent_update = calculate_average_time(updates)
     avg_recent_compression = calculate_average_time(compressions)
 
-    cond do
-      avg_recent_update > 30 ->
-        %{state | level: Kernel.max(state.level - 1, 1)}
+    apply_fine_tuning_adjustment(state, avg_recent_update, avg_recent_compression)
+  end
 
-      avg_recent_compression < 20 ->
-        %{state | level: Kernel.min(state.level + 1, 9)}
+  # Pattern matching for optimization strategies
+  defp apply_optimization_strategy(state, metrics, {true, _, _}) do
+    # If updates are slow, reduce compression overhead
+    optimize_for_speed(state, metrics)
+  end
 
-      true ->
-        state
-    end
+  defp apply_optimization_strategy(state, metrics, {_, true, _}) do
+    # If memory usage is high, increase compression
+    optimize_for_memory(state, metrics)
+  end
+
+  defp apply_optimization_strategy(state, _metrics, {_, _, true}) do
+    # If compression is too slow, reduce compression level
+    reduce_compression_level(state)
+  end
+
+  defp apply_optimization_strategy(state, metrics, {false, false, false}) do
+    # If everything is working well, fine-tune based on patterns
+    fine_tune_compression(state, metrics)
+  end
+
+  # Pattern matching for fine-tuning adjustments
+  defp apply_fine_tuning_adjustment(state, avg_update, _avg_compression) when avg_update > 30 do
+    %{state | level: Kernel.max(state.level - 1, 1)}
+  end
+
+  defp apply_fine_tuning_adjustment(state, _avg_update, avg_compression) when avg_compression < 20 do
+    %{state | level: Kernel.min(state.level + 1, 9)}
+  end
+
+  defp apply_fine_tuning_adjustment(state, _avg_update, _avg_compression) do
+    state
   end
 end

@@ -1,6 +1,5 @@
 defmodule Raxol.Benchmarks.Performance.Validation do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Validation functions for Raxol performance benchmarks.
   """
@@ -77,14 +76,10 @@ defmodule Raxol.Benchmarks.Performance.Validation do
     if total > 0, do: passed / total * 100, else: 0
   end
 
-  defp determine_status(pass_percentage) do
-    cond do
-      pass_percentage >= 95 -> :excellent
-      pass_percentage >= 80 -> :good
-      pass_percentage >= 60 -> :acceptable
-      true -> :failed
-    end
-  end
+  defp determine_status(pass_percentage) when pass_percentage >= 95, do: :excellent
+  defp determine_status(pass_percentage) when pass_percentage >= 80, do: :good
+  defp determine_status(pass_percentage) when pass_percentage >= 60, do: :acceptable
+  defp determine_status(_pass_percentage), do: :failed
 
   @doc """
   Retrieves baseline performance metrics for the current platform.
@@ -181,29 +176,32 @@ defmodule Raxol.Benchmarks.Performance.Validation do
       result_value = Map.get(results, metric)
       baseline_value = Map.get(baseline, metric)
 
-      validation_result =
-        cond do
-          nil?(result_value) ->
-            %{status: :skip, message: "Metric not measured"}
-
-          nil?(baseline_value) ->
-            %{status: :skip, message: "No baseline for comparison"}
-
-          comparator.(result_value, baseline_value) ->
-            %{
-              status: :pass,
-              message: "#{label}: #{result_value} (baseline: #{baseline_value})"
-            }
-
-          true ->
-            %{
-              status: :fail,
-              message: "#{label}: #{result_value} (baseline: #{baseline_value})"
-            }
-        end
+      validation_result = validate_metric_value(result_value, baseline_value, comparator, label)
 
       {metric, validation_result}
     end)
     |> Enum.into(%{})
+  end
+
+  # Helper functions for pattern matching refactoring
+
+  defp validate_metric_value(nil, _baseline_value, _comparator, _label),
+    do: %{status: :skip, message: "Metric not measured"}
+
+  defp validate_metric_value(_result_value, nil, _comparator, _label),
+    do: %{status: :skip, message: "No baseline for comparison"}
+
+  defp validate_metric_value(result_value, baseline_value, comparator, label) do
+    if comparator.(result_value, baseline_value) do
+      %{
+        status: :pass,
+        message: "#{label}: #{result_value} (baseline: #{baseline_value})"
+      }
+    else
+      %{
+        status: :fail,
+        message: "#{label}: #{result_value} (baseline: #{baseline_value})"
+      }
+    end
   end
 end

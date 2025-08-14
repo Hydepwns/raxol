@@ -295,43 +295,7 @@ defmodule Raxol.Web.SessionBridge do
       "Process #{inspect(pid)} disconnected from session #{state.session_id}"
     )
 
-    cond do
-      pid == state.terminal_pid ->
-        # Terminal disconnected - session continues in web mode
-        new_state = %{state | terminal_pid: nil, current_interface: :web}
-        broadcast_event(state.session_id, {:terminal_disconnected, pid})
-        {:noreply, new_state}
-
-      MapSet.member?(state.web_pids, pid) ->
-        # Web client disconnected
-        new_web_pids = MapSet.delete(state.web_pids, pid)
-
-        new_interface =
-          if MapSet.size(new_web_pids) == 0 and state.terminal_pid,
-            do: :terminal,
-            else: state.current_interface
-
-        new_state = %{
-          state
-          | web_pids: new_web_pids,
-            current_interface: new_interface,
-            subscription_refs: Map.delete(state.subscription_refs, pid)
-        }
-
-        broadcast_event(state.session_id, {:web_client_disconnected, pid})
-
-        # If no clients remain, schedule cleanup
-        if MapSet.size(new_web_pids) == 0 and is_nil(state.terminal_pid) do
-          # 30 second grace period
-          Process.send_after(self(), :cleanup_session, 30_000)
-        end
-
-        {:noreply, new_state}
-
-      true ->
-        # Unknown process disconnected
-        {:noreply, state}
-    end
+    handle_process_down(pid, state)
   end
 
   @impl GenServer
@@ -417,5 +381,49 @@ defmodule Raxol.Web.SessionBridge do
       },
       timestamp: DateTime.utc_now()
     }
+  end
+
+  # Helper for handling process down events
+  defp handle_process_down(pid, state) when pid == state.terminal_pid do
+    # Terminal disconnected - session continues in web mode
+    new_state = %{state | terminal_pid: nil, current_interface: :web}
+    broadcast_event(state.session_id, {:terminal_disconnected, pid})
+    {:noreply, new_state}
+  end
+
+  defp handle_process_down(pid, state) do
+    if MapSet.member?(state.web_pids, pid) do
+      handle_web_client_disconnect(pid, state)
+    else
+      # Unknown process disconnected
+      {:noreply, state}
+    end
+  end
+
+  defp handle_web_client_disconnect(pid, state) do
+    # Web client disconnected
+    new_web_pids = MapSet.delete(state.web_pids, pid)
+
+    new_interface =
+      if MapSet.size(new_web_pids) == 0 and state.terminal_pid,
+        do: :terminal,
+        else: state.current_interface
+
+    new_state = %{
+      state
+      | web_pids: new_web_pids,
+        current_interface: new_interface,
+        subscription_refs: Map.delete(state.subscription_refs, pid)
+    }
+
+    broadcast_event(state.session_id, {:web_client_disconnected, pid})
+
+    # If no clients remain, schedule cleanup
+    if MapSet.size(new_web_pids) == 0 and is_nil(state.terminal_pid) do
+      # 30 second grace period
+      Process.send_after(self(), :cleanup_session, 30_000)
+    end
+
+    {:noreply, new_state}
   end
 end

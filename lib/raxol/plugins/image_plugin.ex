@@ -1,6 +1,5 @@
 defmodule Raxol.Plugins.ImagePlugin do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Plugin that enables displaying images in the terminal using the iTerm2 image protocol.
   Supports various image formats and provides options for image display.
@@ -212,10 +211,12 @@ defmodule Raxol.Plugins.ImagePlugin do
   end
 
   defp get_dimension(params, dimension) do
-    cond do
-      map?(params) -> Map.get(params, dimension, 0)
-      tuple?(params) -> elem(params, if(dimension == :width, do: 0, else: 1))
-      true -> 0
+    case {params, dimension} do
+      {params, :width} when is_map(params) -> Map.get(params, :width, 0)
+      {params, :height} when is_map(params) -> Map.get(params, :height, 0)
+      {params, :width} when is_tuple(params) -> elem(params, 0)
+      {params, :height} when is_tuple(params) -> elem(params, 1)
+      _ -> 0
     end
   end
 

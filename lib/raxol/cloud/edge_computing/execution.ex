@@ -3,8 +3,7 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
   Function execution logic for edge computing.
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.Cloud.EdgeComputing.{Core, Queue}
 
   @doc """
@@ -23,8 +22,8 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
       iex> execute(fn -> process_data(data) end)
       {:ok, result}
   """
-  def execute(func, opts \\ []) when function?(func, 0) do
-    opts = if map?(opts), do: Enum.into(opts, []), else: opts
+  def execute(func, opts \\ []) when is_function(func, 0) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     state = Core.get_state()
 
     execute_location = determine_execution_location(state, opts)
@@ -57,37 +56,28 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
     force_edge = Keyword.get(opts, :force_edge, false)
     force_cloud = Keyword.get(opts, :force_cloud, false)
 
-    cond do
-      # Check forced options
-      force_edge ->
-        :edge
-
-      force_cloud ->
-        :cloud
-
+    case {force_edge, force_cloud, state.mode, state.cloud_status} do
+      # Check forced options first
+      {true, _, _, _} -> :edge
+      {_, true, _, _} -> :cloud
+      
       # Check configured mode
-      state.mode == :edge_only ->
-        :edge
-
-      state.mode == :cloud_only ->
-        :cloud
-
-      # If hybrid, check cloud status
-      state.mode == :hybrid and state.cloud_status != :connected ->
-        :edge
-
-      # If hybrid, check if function is prioritized for edge
-      state.mode == :hybrid and prioritized_for_edge?(opts[:function_name]) ->
-        :edge
-
-      # If hybrid, check resource availability for optimal execution
-      state.mode == :hybrid ->
-        :hybrid
-
-      # Default to edge
-      true ->
-        :edge
+      {false, false, :edge_only, _} -> :edge
+      {false, false, :cloud_only, _} -> :cloud
+      
+      # Hybrid mode logic
+      {false, false, :hybrid, cloud_status} when cloud_status != :connected -> :edge
+      {false, false, :hybrid, :connected} -> determine_hybrid_location(opts[:function_name])
+      
+      # Default fallback
+      _ -> :edge
     end
+  end
+  
+  # Helper functions for pattern matching refactoring
+  
+  defp determine_hybrid_location(function_name) do
+    if prioritized_for_edge?(function_name), do: :edge, else: :hybrid
   end
 
   defp prioritized_for_edge?(function_name) do

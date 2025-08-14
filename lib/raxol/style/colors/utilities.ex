@@ -9,8 +9,7 @@ defmodule Raxol.Style.Colors.Utilities do
   conversions.
   """
 
-  import Raxol.Guards
-
+  
   @doc """
   Calculates the relative luminance of a color according to WCAG 2.0.
 
@@ -178,11 +177,7 @@ defmodule Raxol.Style.Colors.Utilities do
     ratio_black = contrast_ratio(background, black)
     ratio_white = contrast_ratio(background, white)
 
-    cond do
-      ratio_white >= min_ratio and ratio_white >= ratio_black -> white
-      ratio_black >= min_ratio -> black
-      true -> if ratio_white > ratio_black, do: white, else: black
-    end
+    select_best_contrast(ratio_white, ratio_black, min_ratio, white, black)
   end
 
   @doc """
@@ -218,13 +213,7 @@ defmodule Raxol.Style.Colors.Utilities do
         d = max - min
         s = if l > 0.5, do: d / (2 - max - min), else: d / (max + min)
 
-        h =
-          cond do
-            max == r -> (g - b) / d + if g < b, do: 6, else: 0
-            max == g -> (b - r) / d + 2
-            max == b -> (r - g) / d + 4
-          end
-          |> Kernel.*(60)
+        h = calculate_hue(r, g, b, max, d) * 60
 
         {h, s}
       end
@@ -245,7 +234,7 @@ defmodule Raxol.Style.Colors.Utilities do
 
   A tuple {r, g, b} where each component is in the range 0-255
   """
-  def hsl_to_rgb(h, s, l) when number?(h) and number?(s) and number?(l) do
+  def hsl_to_rgb(h, s, l) when is_number(h) and is_number(s) and is_number(l) do
     h = rem(h + 360, 360)
     s = max(0, min(1, s))
     l = max(0, min(1, l))
@@ -254,15 +243,7 @@ defmodule Raxol.Style.Colors.Utilities do
     x = c * (1 - abs(rem(trunc(h / 60), 2) - 1))
     m = l - c / 2
 
-    {r1, g1, b1} =
-      cond do
-        h < 60 -> {c, x, 0}
-        h < 120 -> {x, c, 0}
-        h < 180 -> {0, c, x}
-        h < 240 -> {0, x, c}
-        h < 300 -> {x, 0, c}
-        true -> {c, 0, x}
-      end
+    {r1, g1, b1} = hue_to_rgb_components(h, c, x)
 
     {
       round((r1 + m) * 255),
@@ -376,4 +357,35 @@ defmodule Raxol.Style.Colors.Utilities do
         b: min(255, round(color.b + (255 - color.b) * factor))
     }
   end
+
+  # Helper functions for pattern matching refactoring
+
+  defp select_best_contrast(ratio_white, ratio_black, min_ratio, white, black) 
+       when ratio_white >= min_ratio and ratio_white >= ratio_black,
+       do: white
+  
+  defp select_best_contrast(_ratio_white, ratio_black, min_ratio, _white, black) 
+       when ratio_black >= min_ratio,
+       do: black
+  
+  defp select_best_contrast(ratio_white, ratio_black, _min_ratio, white, black) do
+    if ratio_white > ratio_black, do: white, else: black
+  end
+
+  defp calculate_hue(r, g, b, max, d) when max == r do
+    (g - b) / d + if g < b, do: 6, else: 0
+  end
+  defp calculate_hue(r, g, b, max, d) when max == g do
+    (b - r) / d + 2
+  end
+  defp calculate_hue(r, g, b, max, d) when max == b do
+    (r - g) / d + 4
+  end
+
+  defp hue_to_rgb_components(h, c, x) when h < 60, do: {c, x, 0}
+  defp hue_to_rgb_components(h, c, x) when h < 120, do: {x, c, 0}
+  defp hue_to_rgb_components(h, c, x) when h < 180, do: {0, c, x}
+  defp hue_to_rgb_components(h, c, x) when h < 240, do: {0, x, c}
+  defp hue_to_rgb_components(h, c, x) when h < 300, do: {x, 0, c}
+  defp hue_to_rgb_components(_h, c, x), do: {c, 0, x}
 end

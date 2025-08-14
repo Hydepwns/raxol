@@ -109,23 +109,27 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Colors do
   """
   @spec handle_integer_color_param(integer(), Core.text_style()) ::
           Core.text_style()
-  def handle_integer_color_param(code, style) do
-    cond do
-      # Colors
-      code in [30, 31, 32, 33, 34, 35, 36, 37] ->
-        %{style | foreground: ansi_code_to_color_name(code - 30)}
+  def handle_integer_color_param(code, style)
+      when code in [30, 31, 32, 33, 34, 35, 36, 37] do
+    %{style | foreground: ansi_code_to_color_name(code - 30)}
+  end
 
-      code in [90, 91, 92, 93, 94, 95, 96, 97] ->
-        %{style | foreground: ansi_code_to_color_name(code - 90)}
+  def handle_integer_color_param(code, style)
+      when code in [90, 91, 92, 93, 94, 95, 96, 97] do
+    %{style | foreground: ansi_code_to_color_name(code - 90)}
+  end
 
-      code in [40, 41, 42, 43, 44, 45, 46, 47] ->
-        %{style | background: ansi_code_to_color_name(code - 40)}
+  def handle_integer_color_param(code, style)
+      when code in [40, 41, 42, 43, 44, 45, 46, 47] do
+    %{style | background: ansi_code_to_color_name(code - 40)}
+  end
 
-      code in [100, 101, 102, 103, 104, 105, 106, 107] ->
-        %{style | background: ansi_code_to_color_name(code - 100)}
+  def handle_integer_color_param(code, style)
+      when code in [100, 101, 102, 103, 104, 105, 106, 107] do
+    %{style | background: ansi_code_to_color_name(code - 100)}
+  end
 
-      true ->
-        style
-    end
+  def handle_integer_color_param(_code, style) do
+    style
   end
 end

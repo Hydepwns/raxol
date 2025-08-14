@@ -8,8 +8,7 @@ defmodule Raxol.Database do
   - Handles database errors gracefully
   """
 
-  import Raxol.Guards
-  alias Raxol.Database.ConnectionManager
+    alias Raxol.Database.ConnectionManager
   alias Raxol.Repo
 
   @doc """
@@ -24,7 +23,7 @@ defmodule Raxol.Database do
   - `{:ok, result}` - Operation succeeded
   - `{:error, reason}` - Operation failed after retries
   """
-  def safe_query(fun) when function?(fun, 0) do
+  def safe_query(fun) when is_function(fun, 0) do
     ConnectionManager.with_retries(fun)
   end
 
@@ -156,7 +155,7 @@ defmodule Raxol.Database do
   - `{:ok, result}` - Transaction succeeded
   - `{:error, reason}` - Transaction failed
   """
-  def transaction(fun) when function?(fun, 0) do
+  def transaction(fun) when is_function(fun, 0) do
     safe_query(fn -> Repo.transaction(fun) end)
     |> case do
       {:ok, {:ok, result}} -> {:ok, result}

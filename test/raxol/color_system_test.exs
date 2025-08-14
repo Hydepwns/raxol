@@ -2,7 +2,7 @@ defmodule Raxol.ColorSystemTest do
   use ExUnit.Case, async: false
   import Raxol.AccessibilityTestHelpers
 
-  alias Raxol.Core.Accessibility
+  alias Raxol.Core.Accessibility, as: Accessibility
   alias Raxol.Core.UserPreferences
   alias Raxol.Style.Colors.PaletteManager, as: PaletteManager
   alias Raxol.Style.Colors.System, as: ColorSystem

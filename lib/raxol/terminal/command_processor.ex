@@ -4,8 +4,7 @@ defmodule Raxol.Terminal.CommandProcessor do
   This module is responsible for parsing, validating, and executing terminal commands.
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.Terminal.Commands.{
     Executor,
     Parser,
@@ -21,7 +20,7 @@ defmodule Raxol.Terminal.CommandProcessor do
   """
   @spec process_command(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, String.t()}
-  def process_command(emulator, command) when binary?(command) do
+  def process_command(emulator, command) when is_binary(command) do
     case Parser.parse(command) do
       {:ok, parsed_command} ->
         execute_command(emulator, parsed_command)

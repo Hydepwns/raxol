@@ -5,8 +5,7 @@ defmodule Raxol.Terminal.Buffer.Initializer do
   their dimensions and properties.
   """
 
-  import Raxol.Guards
-  require Raxol.Core.Runtime.Log
+    require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ScreenBuffer
@@ -43,7 +42,7 @@ defmodule Raxol.Terminal.Buffer.Initializer do
   """
   @spec validate_dimension(integer(), non_neg_integer()) :: non_neg_integer()
   def validate_dimension(dimension, _default)
-      when integer?(dimension) and dimension > 0 do
+      when is_integer(dimension) and dimension > 0 do
     dimension
   end
 

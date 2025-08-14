@@ -10,8 +10,7 @@ defmodule Raxol.Terminal.ModeState do
   """
 
   require Raxol.Core.Runtime.Log
-  import Raxol.Guards
-
+  
   # DEC Private Mode codes and their corresponding mode atoms
   @dec_private_modes %{
     # Cursor Keys Mode
@@ -99,7 +98,7 @@ defmodule Raxol.Terminal.ModeState do
   Looks up a DEC private mode code and returns the corresponding mode atom.
   """
   @spec lookup_private(integer()) :: atom() | nil
-  def lookup_private(code) when integer?(code) do
+  def lookup_private(code) when is_integer(code) do
     Map.get(@dec_private_modes, code)
   end
 
@@ -107,7 +106,7 @@ defmodule Raxol.Terminal.ModeState do
   Looks up a standard mode code and returns the corresponding mode atom.
   """
   @spec lookup_standard(integer()) :: atom() | nil
-  def lookup_standard(code) when integer?(code) do
+  def lookup_standard(code) when is_integer(code) do
     Map.get(@standard_modes, code)
   end
 
@@ -123,15 +122,22 @@ defmodule Raxol.Terminal.ModeState do
   """
   @spec mode_enabled?(t(), atom()) :: boolean()
   def mode_enabled?(state, mode) do
-    cond do
-      basic_mode?(mode) -> check_basic_mode(state, mode)
-      mouse_mode?(mode) -> check_mouse_mode(state, mode)
-      column_mode?(mode) -> check_column_mode(state, mode)
-      alt_screen_mode?(mode) -> check_alt_screen_mode(state, mode)
-      mode == :decckm -> state.cursor_keys_mode == :application
-      true -> false
+    case categorize_mode(mode) do
+      :basic -> check_basic_mode(state, mode)
+      :mouse -> check_mouse_mode(state, mode)
+      :column -> check_column_mode(state, mode)
+      :alt_screen -> check_alt_screen_mode(state, mode)
+      :decckm -> state.cursor_keys_mode == :application
+      :unknown -> false
     end
   end
+
+  defp categorize_mode(:decckm), do: :decckm
+  defp categorize_mode(mode) when mode in [:dectcem, :decawm, :decom, :irm, :lnm, :decscnm, :decarm, :decinlm, :focus_events, :bracketed_paste], do: :basic
+  defp categorize_mode(mode) when mode in [:mouse_report_x10, :mouse_report_cell_motion, :mouse_report_sgr], do: :mouse
+  defp categorize_mode(mode) when mode in [:deccolm_80, :deccolm_132], do: :column
+  defp categorize_mode(mode) when mode in [:alt_screen_buffer, :dec_alt_screen, :dec_alt_screen_save], do: :alt_screen
+  defp categorize_mode(_mode), do: :unknown
 
   defp basic_mode?(mode) do
     mode in [
@@ -215,12 +221,12 @@ defmodule Raxol.Terminal.ModeState do
   """
   @spec set_mode(t(), atom()) :: t()
   def set_mode(state, mode) do
-    cond do
-      basic_mode?(mode) -> set_basic_mode(state, mode)
-      mouse_mode?(mode) -> set_mouse_mode(state, mode)
-      column_mode?(mode) -> set_column_mode(state, mode)
-      mode == :decckm -> %{state | cursor_keys_mode: :application}
-      true -> state
+    case categorize_mode(mode) do
+      :basic -> set_basic_mode(state, mode)
+      :mouse -> set_mouse_mode(state, mode)
+      :column -> set_column_mode(state, mode)
+      :decckm -> %{state | cursor_keys_mode: :application}
+      :unknown -> state
     end
   end
 
@@ -273,12 +279,12 @@ defmodule Raxol.Terminal.ModeState do
   """
   @spec reset_mode(t(), atom()) :: t()
   def reset_mode(state, mode) do
-    cond do
-      basic_mode?(mode) -> reset_basic_mode(state, mode)
-      mouse_mode?(mode) -> reset_mouse_mode(state)
-      column_mode?(mode) -> reset_column_mode(state)
-      mode == :decckm -> %{state | cursor_keys_mode: :normal}
-      true -> state
+    case categorize_mode(mode) do
+      :basic -> reset_basic_mode(state, mode)
+      :mouse -> reset_mouse_mode(state)
+      :column -> reset_column_mode(state)
+      :decckm -> %{state | cursor_keys_mode: :normal}
+      :unknown -> state
     end
   end
 

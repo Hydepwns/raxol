@@ -1,6 +1,5 @@
 defmodule Raxol.Terminal.ANSI.SixelGraphics do
-  import Raxol.Guards
-  require Logger
+    require Logger
 
   @moduledoc """
   Sixel graphics support for terminal rendering.
@@ -79,7 +78,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   """
   @spec new(non_neg_integer(), non_neg_integer()) :: t()
   def new(width, height)
-      when integer?(width) and integer?(height) and width > 0 and height > 0 do
+      when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
     %__MODULE__{width: width, height: height}
   end
 
@@ -96,7 +95,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   The updated image with new data.
   """
   @spec set_data(t(), binary()) :: t()
-  def set_data(image, data) when binary?(data) do
+  def set_data(image, data) when is_binary(data) do
     %{image | data: data}
   end
 
@@ -129,7 +128,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   The updated image with new palette.
   """
   @spec set_palette(t(), map()) :: t()
-  def set_palette(image, palette) when map?(palette) do
+  def set_palette(image, palette) when is_map(palette) do
     %{image | palette: palette}
   end
 
@@ -164,7 +163,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   """
   @spec set_scale(t(), non_neg_integer(), non_neg_integer()) :: t()
   def set_scale(image, x_scale, y_scale)
-      when integer?(x_scale) and integer?(y_scale) and x_scale > 0 and
+      when is_integer(x_scale) and is_integer(y_scale) and x_scale > 0 and
              y_scale > 0 do
     %{image | scale: {x_scale, y_scale}}
   end
@@ -200,7 +199,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   """
   @spec set_position(t(), non_neg_integer(), non_neg_integer()) :: t()
   def set_position(image, x, y)
-      when integer?(x) and integer?(y) and x >= 0 and y >= 0 do
+      when is_integer(x) and is_integer(y) and x >= 0 and y >= 0 do
     %{image | position: {x, y}}
   end
 
@@ -248,7 +247,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   A new `t:Raxol.Terminal.ANSI.SixelGraphics.t/0` struct with the decoded image data.
   """
   @spec decode(binary()) :: t()
-  def decode(data) when binary?(data) do
+  def decode(data) when is_binary(data) do
     %__MODULE__{}
   end
 
@@ -277,7 +276,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   A tuple containing the updated state and a response.
   """
   @spec process_sequence(t(), binary()) :: {t(), :ok | {:error, atom()}}
-  def process_sequence(state, data) when binary?(data) do
+  def process_sequence(state, data) when is_binary(data) do
     Logger.debug(
       "SixelGraphics: process_sequence called with data: #{inspect(data)}"
     )

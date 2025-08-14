@@ -4,7 +4,7 @@ defmodule Raxol.Property.UIComponentTest do
 
   alias Raxol.UI.Components.{Button, TextInput, Select, List}
   alias Raxol.UI.Layout.{Flexbox, Grid}
-  alias Raxol.UI.State.Store
+  alias Raxol.UI.State.Store, as: Store
 
   describe "Button component properties" do
     property "button renders with any valid text" do

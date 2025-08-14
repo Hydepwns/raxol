@@ -1,7 +1,6 @@
 # Health implementation for monitoring
 defmodule Raxol.Cloud.Monitoring.Health do
-  import Raxol.Guards
-
+  
   @moduledoc false
 
   # Process dictionary key for health
@@ -15,12 +14,12 @@ defmodule Raxol.Cloud.Monitoring.Health do
       config: config
     }
 
-    Process.put(@health_key, health_state)
+    Raxol.Cloud.Monitoring.Server.init_health(health_state)
     :ok
   end
 
   def check(opts \\ []) do
-    opts = if map?(opts), do: Enum.into(opts, []), else: opts
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     health_state = get_health_state()
 
     components_to_check =
@@ -49,7 +48,7 @@ defmodule Raxol.Cloud.Monitoring.Health do
         components: Map.merge(health_state.components, component_results)
     }
 
-    Process.put(@health_key, updated_health_state)
+    Raxol.Cloud.Monitoring.Server.update_health(updated_health_state)
 
     %{
       status: status,
@@ -64,7 +63,7 @@ defmodule Raxol.Cloud.Monitoring.Health do
   end
 
   defp get_health_state() do
-    Process.get(@health_key) ||
+    Raxol.Cloud.Monitoring.Server.get_health() ||
       %{status: :unknown, last_check: nil, components: %{}, config: %{}}
   end
 

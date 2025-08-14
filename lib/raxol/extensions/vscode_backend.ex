@@ -354,15 +354,18 @@ defmodule Raxol.Extensions.VSCodeBackend do
     complexity
   end
 
+  # Helper functions for pattern matching refactoring
+
   defp determine_component_type(ast) do
     content = Macro.to_string(ast)
-
-    cond do
-      String.contains?(content, "GenServer") -> :genserver
-      String.contains?(content, "@behaviour") -> :behaviour
-      String.contains?(content, "Supervisor") -> :supervisor
-      String.contains?(content, "Application") -> :application
-      true -> :module
+    
+    case {String.contains?(content, "GenServer"), String.contains?(content, "@behaviour"),
+          String.contains?(content, "Supervisor"), String.contains?(content, "Application")} do
+      {true, _, _, _} -> :genserver
+      {false, true, _, _} -> :behaviour
+      {false, false, true, _} -> :supervisor
+      {false, false, false, true} -> :application
+      {false, false, false, false} -> :module
     end
   end
 

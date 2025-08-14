@@ -4,8 +4,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
   Provides sophisticated version constraint handling with support for complex requirements.
   """
 
-  import Raxol.Guards
-
+  
   @doc """
   Checks if a version satisfies a version requirement.
 
@@ -73,7 +72,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
       iex> Version.parse_version_requirement(">= 1.0.0 || >= 2.0.0")
       {:ok, {:or, [">= 1.0.0", ">= 2.0.0"]}}
   """
-  def parse_version_requirement(requirement) when binary?(requirement) do
+  def parse_version_requirement(requirement) when is_binary(requirement) do
     # Handle complex version requirements
     case String.split(requirement, "||") do
       [single_req] ->

@@ -109,20 +109,7 @@ defmodule Raxol.AI.ServiceAdapter do
     max_length = Map.get(options, :max_tokens, 100)
     downcase_prompt = String.downcase(prompt)
 
-    response =
-      cond do
-        String.contains?(downcase_prompt, "error") ->
-          "Error handling implementation needed"
-
-        String.contains?(downcase_prompt, "performance") ->
-          "Consider optimizing rendering cycles"
-
-        String.contains?(downcase_prompt, "suggest") ->
-          "Here are some suggestions: 1. Optimize state management 2. Implement caching"
-
-        true ->
-          "AI-generated response for: #{String.slice(prompt, 0, max_length)}"
-      end
+    response = generate_mock_response(downcase_prompt, prompt, max_length)
 
     {:ok, response}
   end
@@ -287,64 +274,50 @@ defmodule Raxol.AI.ServiceAdapter do
     lines = String.split(response, "\n")
 
     Enum.reduce(lines, [], fn line, acc ->
-      cond do
-        String.contains?(line, ["slow", "performance", "bottleneck"]) ->
-          [
-            %{
-              type: :performance,
-              severity: :medium,
-              description: String.trim(line),
-              suggestion: extract_suggestion(line)
-            }
-            | acc
-          ]
-
-        String.contains?(line, ["memory", "leak", "allocation"]) ->
-          [
-            %{
-              type: :memory,
-              severity: :high,
-              description: String.trim(line),
-              suggestion: extract_suggestion(line)
-            }
-            | acc
-          ]
-
-        String.contains?(line, ["state", "update", "render"]) ->
-          [
-            %{
-              type: :rendering,
-              severity: :medium,
-              description: String.trim(line),
-              suggestion: extract_suggestion(line)
-            }
-            | acc
-          ]
-
-        true ->
-          acc
-      end
+      classify_analysis_line(line, acc)
     end)
     |> Enum.reverse()
   end
 
   defp extract_suggestion(line) do
-    # Extract actionable suggestions from the analysis line
-    cond do
-      String.contains?(line, "cache") ->
-        "Implement caching mechanism"
+    patterns = [
+      {~r/cache/i, "Implement caching mechanism"},
+      {~r/virtual/i, "Consider virtual scrolling"},
+      {~r/memoiz/i, "Add memoization for expensive operations"},
+      {~r/batch/i, "Batch operations for better performance"}
+    ]
 
-      String.contains?(line, "virtual") ->
-        "Consider virtual scrolling"
+    Enum.find_value(patterns, "Review and optimize this area", fn {pattern, suggestion} ->
+      if line =~ pattern, do: suggestion
+    end)
+  end
 
-      String.contains?(line, "memoiz") ->
-        "Add memoization for expensive operations"
+  # Helper functions for pattern matching refactoring
 
-      String.contains?(line, "batch") ->
-        "Batch operations for better performance"
+  defp generate_mock_response(downcase_prompt, prompt, max_length) do
+    response_patterns = [
+      {~r/error/, "Error handling implementation needed"},
+      {~r/performance/, "Consider optimizing rendering cycles"},
+      {~r/suggest/, "Here are some suggestions: 1. Optimize state management 2. Implement caching"}
+    ]
 
-      true ->
-        "Review and optimize this area"
+    Enum.find_value(response_patterns, "AI-generated response for: #{String.slice(prompt, 0, max_length)}", fn {pattern, response} ->
+      if downcase_prompt =~ pattern, do: response
+    end)
+  end
+
+  defp classify_analysis_line(line, acc) do
+    classifications = [
+      {~r/(slow|performance|bottleneck)/i, :performance, :medium},
+      {~r/(memory|leak|allocation)/i, :memory, :high},
+      {~r/(state|update|render)/i, :rendering, :medium}
+    ]
+
+    case Enum.find(classifications, fn {pattern, _type, _severity} -> line =~ pattern end) do
+      {_pattern, type, severity} ->
+        [%{type: type, severity: severity, description: String.trim(line), suggestion: extract_suggestion(line)} | acc]
+      nil ->
+        acc
     end
   end
 end

@@ -1,6 +1,5 @@
 defmodule Raxol.Cloud.Config do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Configuration management for Raxol cloud integrations.
 
@@ -411,13 +410,17 @@ defmodule Raxol.Cloud.Config do
     :ok
   end
 
+  # Helper functions for pattern matching refactoring
+  
   defp convert_env_value(key, value) do
-    cond do
-      interval_key?(key) -> String.to_integer(value)
-      rate_key?(key) -> String.to_float(value)
-      boolean_value?(value) -> value == "true"
-      mode_key?(key) -> String.to_atom(value)
-      true -> value
+    cond_key = {interval_key?(key), rate_key?(key), boolean_value?(value), mode_key?(key)}
+    
+    case cond_key do
+      {true, _, _, _} -> String.to_integer(value)
+      {false, true, _, _} -> String.to_float(value)
+      {false, false, true, _} -> value == "true"
+      {false, false, false, true} -> String.to_atom(value)
+      {false, false, false, false} -> value
     end
   end
 
@@ -478,7 +481,7 @@ defmodule Raxol.Cloud.Config do
     |> Enum.into(%{})
   end
 
-  defp atomize_keys(list) when list?(list) do
+  defp atomize_keys(list) when is_list(list) do
     Enum.map(list, &atomize_keys/1)
   end
 

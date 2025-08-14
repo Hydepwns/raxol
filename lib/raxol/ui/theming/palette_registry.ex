@@ -6,8 +6,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
   that can be used with the Colors.convert_to_palette/2 function.
   """
 
-  import Raxol.Guards
-  use GenServer
+    use GenServer
   require Logger
 
   @type palette_name :: atom()
@@ -33,7 +32,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
       iex> register(:my_palette, [{0, {0, 0, 0}}, {1, {255, 255, 255}}])
       :ok
   """
-  def register(name, colors) when atom?(name) and list?(colors) do
+  def register(name, colors) when is_atom(name) and is_list(colors) do
     GenServer.call(__MODULE__, {:register, name, colors})
   end
 
@@ -45,7 +44,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
       iex> unregister(:my_palette)
       :ok
   """
-  def unregister(name) when atom?(name) do
+  def unregister(name) when is_atom(name) do
     GenServer.call(__MODULE__, {:unregister, name})
   end
 
@@ -60,7 +59,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
       iex> get(:nonexistent)
       {:error, :not_found}
   """
-  def get(name) when atom?(name) do
+  def get(name) when is_atom(name) do
     GenServer.call(__MODULE__, {:get, name})
   end
 
@@ -87,7 +86,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
       iex> exists?(:nonexistent)
       false
   """
-  def exists?(name) when atom?(name) do
+  def exists?(name) when is_atom(name) do
     GenServer.call(__MODULE__, {:exists?, name})
   end
 
@@ -99,7 +98,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
       iex> update(:my_palette, [{0, {0, 0, 0}}, {1, {128, 128, 128}}])
       :ok
   """
-  def update(name, colors) when atom?(name) and list?(colors) do
+  def update(name, colors) when is_atom(name) and is_list(colors) do
     GenServer.call(__MODULE__, {:update, name, colors})
   end
 

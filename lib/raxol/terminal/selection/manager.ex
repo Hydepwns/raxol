@@ -3,8 +3,7 @@ defmodule Raxol.Terminal.Selection.Manager do
   Manages text selection operations in the terminal.
   """
 
-  import Raxol.Guards
-
+  
   defstruct start_pos: nil,
             end_pos: nil,
             active: false,
@@ -34,7 +33,7 @@ defmodule Raxol.Terminal.Selection.Manager do
   Starts a new selection at the given position.
   """
   def start_selection(%__MODULE__{} = state, pos, mode \\ :normal)
-      when tuple?(pos) and tuple_size(pos) == 2 and
+      when is_tuple(pos) and tuple_size(pos) == 2 and
              mode in [:normal, :word, :line] do
     %{state | start_pos: pos, end_pos: pos, active: true, mode: mode}
   end
@@ -43,7 +42,7 @@ defmodule Raxol.Terminal.Selection.Manager do
   Updates the selection end position.
   """
   def update_selection(%__MODULE__{} = state, pos)
-      when tuple?(pos) and tuple_size(pos) == 2 do
+      when is_tuple(pos) and tuple_size(pos) == 2 do
     if state.active do
       %{state | end_pos: pos}
     else
@@ -73,7 +72,7 @@ defmodule Raxol.Terminal.Selection.Manager do
   Checks if a position is within the current selection.
   """
   def position_in_selection?(%__MODULE__{} = state, pos)
-      when tuple?(pos) and tuple_size(pos) == 2 do
+      when is_tuple(pos) and tuple_size(pos) == 2 do
     if state.active and state.start_pos and state.end_pos do
       {start_x, start_y} = state.start_pos
       {end_x, end_y} = state.end_pos
@@ -84,23 +83,7 @@ defmodule Raxol.Terminal.Selection.Manager do
         y == start_y and x >= min(start_x, end_x) and x <= max(start_x, end_x)
       else
         # Multi-line selection
-        cond do
-          # First line
-          y == start_y ->
-            x >= start_x
-
-          # Last line
-          y == end_y ->
-            x <= end_x
-
-          # Middle lines
-          y > start_y and y < end_y ->
-            true
-
-          # Outside selection
-          true ->
-            false
-        end
+        check_multiline_position(y, x, start_y, end_y, start_x, end_x)
       end
     else
       false
@@ -158,19 +141,30 @@ defmodule Raxol.Terminal.Selection.Manager do
     |> Enum.slice(start_y..end_y)
     |> Enum.with_index()
     |> Enum.map_join("\n", fn {line, idx} ->
-      cond do
-        # First line
-        idx == 0 ->
-          String.slice(line, start_x..-1)
-
-        # Last line
-        idx == end_y - start_y ->
-          String.slice(line, 0..end_x)
-
-        # Middle lines
-        true ->
-          line
-      end
+      slice_line_by_index(line, idx, end_y - start_y, start_x, end_x)
     end)
   end
+
+  defp check_multiline_position(y, x, start_y, end_y, start_x, end_x)
+       when y == start_y, do: x >= start_x
+
+  defp check_multiline_position(y, x, start_y, end_y, start_x, end_x)
+       when y == end_y, do: x <= end_x
+
+  defp check_multiline_position(y, x, start_y, end_y, start_x, end_x)
+       when y > start_y and y < end_y, do: true
+
+  defp check_multiline_position(_y, _x, _start_y, _end_y, _start_x, _end_x),
+    do: false
+
+  defp slice_line_by_index(line, 0, _last_index, start_x, _end_x) do
+    String.slice(line, start_x..-1)
+  end
+
+  defp slice_line_by_index(line, idx, last_index, _start_x, end_x)
+       when idx == last_index do
+    String.slice(line, 0..end_x)
+  end
+
+  defp slice_line_by_index(line, _idx, _last_index, _start_x, _end_x), do: line
 end

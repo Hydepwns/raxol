@@ -1,9 +1,9 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   @moduledoc """
   Manages command registration and execution for plugins.
+  
+  REFACTORED: All try/rescue/catch blocks replaced with functional patterns.
   """
-
-  import Raxol.Guards
 
   @behaviour Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
 
@@ -38,7 +38,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
 
     # Store the command in the table
     case table_name do
-      table when map?(table) ->
+      table when is_map(table) ->
         # If table is a map, store commands by namespace
         namespace_commands = Map.get(table, namespace, [])
 
@@ -58,7 +58,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
   def unregister_command(table_name, namespace, command_name) do
     case table_name do
-      table when map?(table) ->
+      table when is_map(table) ->
         namespace_commands = Map.get(table, namespace, [])
 
         updated_commands =
@@ -81,7 +81,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
   def lookup_command(table_name, namespace, command_name) do
     case table_name do
-      table when map?(table) ->
+      table when is_map(table) ->
         namespace_commands = Map.get(table, namespace, [])
 
         case Enum.find(namespace_commands, fn {name, _, _} ->
@@ -107,7 +107,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
   def unregister_commands_by_module(table_name, module) do
     case table_name do
-      table when map?(table) ->
+      table when is_map(table) ->
         # Remove all commands for this module
         updated_table = Map.delete(table, module)
         {:ok, updated_table}
@@ -188,63 +188,100 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   end
 
   defp register_commands(commands, plugin_module, plugin_state, command_table) do
-    try do
-      new_commands =
-        Enum.map(commands, fn {name, handler, metadata} ->
-          wrapped_handler = wrap_handler(handler, plugin_state)
-          {name, wrapped_handler, metadata}
-        end)
-
+    with {:ok, new_commands} <- safe_map_commands(commands, plugin_state) do
       updated_table = Map.put(command_table, plugin_module, new_commands)
       {:ok, updated_table}
-    rescue
-      e ->
+    else
+      {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
-          "Failed to register commands: #{inspect(e)}"
+          "Failed to register commands: #{inspect(reason)}"
         )
-
         {:error, :registration_failed}
     end
   end
 
+  defp safe_map_commands(commands, plugin_state) do
+    # Use Task to safely map commands with error isolation
+    task = Task.async(fn ->
+      Enum.map(commands, fn {name, handler, metadata} ->
+        wrapped_handler = wrap_handler(handler, plugin_state)
+        {name, wrapped_handler, metadata}
+      end)
+    end)
+    
+    case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
+      {:ok, new_commands} -> {:ok, new_commands}
+      nil -> {:error, :mapping_timeout}
+      {:exit, reason} -> {:error, {:mapping_failed, reason}}
+    end
+  end
+
   defp unregister_commands(_commands, command_table, plugin_module) do
-    try do
-      updated_table = Map.delete(command_table, plugin_module)
-      {:ok, updated_table}
-    rescue
-      e ->
+    # Use functional approach for safe deletion
+    task = Task.async(fn ->
+      Map.delete(command_table, plugin_module)
+    end)
+    
+    case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
+      {:ok, updated_table} -> 
+        {:ok, updated_table}
+      nil -> 
         Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Failed to unregister commands",
-          e,
+          "Failed to unregister commands - timeout",
+          :timeout,
           nil,
           %{plugin_module: plugin_module, module: __MODULE__}
         )
-
+        {:error, :unregistration_failed}
+      {:exit, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Failed to unregister commands",
+          reason,
+          nil,
+          %{plugin_module: plugin_module, module: __MODULE__}
+        )
         {:error, :unregistration_failed}
     end
   end
 
   defp wrap_handler(handler, plugin_state) do
     fn args, context ->
-      try do
-        handler.(args, Map.put(context, :plugin_state, plugin_state))
-      rescue
-        e ->
-          Raxol.Core.Runtime.Log.error_with_stacktrace(
-            "Command execution failed",
-            e,
-            nil,
-            %{plugin_state: plugin_state, module: __MODULE__}
-          )
+      safe_execute_handler(handler, args, Map.put(context, :plugin_state, plugin_state))
+    end
+  end
 
-          {:error, {:execution_failed, Exception.message(e)}}
-      end
+  defp safe_execute_handler(handler, args, context) do
+    # Use Task for safe execution with error isolation
+    task = Task.async(fn ->
+      handler.(args, context)
+    end)
+    
+    case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} -> 
+        result
+      nil ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Command execution timeout",
+          :timeout,
+          nil,
+          %{plugin_state: context.plugin_state, module: __MODULE__}
+        )
+        {:error, {:execution_failed, "Command execution timeout"}}
+      {:exit, reason} ->
+        error_msg = format_error_message(reason)
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Command execution failed",
+          reason,
+          nil,
+          %{plugin_state: context.plugin_state, module: __MODULE__}
+        )
+        {:error, {:execution_failed, error_msg}}
     end
   end
 
   defp get_plugin_commands(plugin_module) do
     case plugin_module.commands() do
-      commands when list?(commands) -> {:ok, commands}
+      commands when is_list(commands) -> {:ok, commands}
       _ -> {:error, :invalid_commands}
     end
   end
@@ -266,26 +303,27 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   end
 
   defp validate_command_handler(handler) do
-    if function?(handler, 2),
+    if is_function(handler, 2),
       do: :ok,
       else: {:error, :invalid_command_handler}
   end
 
   defp validate_command_metadata(metadata) do
-    cond do
-      not map?(metadata) -> {:error, :invalid_metadata}
-      not valid_metadata_fields?(metadata) -> {:error, :invalid_metadata_fields}
-      true -> :ok
+    with true <- is_map(metadata),
+         true <- valid_metadata_fields?(metadata) do
+      :ok
+    else
+      false -> {:error, :invalid_metadata_fields}
     end
   end
 
   defp valid_metadata_fields?(metadata) do
     Enum.all?(metadata, fn {key, value} ->
       case key do
-        :description -> binary?(value)
-        :usage -> binary?(value)
-        :aliases -> list?(value) and Enum.all?(value, &binary?/1)
-        :timeout -> integer?(value) and value > 0
+        :description -> is_binary(value)
+        :usage -> is_binary(value)
+        :aliases -> is_list(value) and Enum.all?(value, &is_binary/1)
+        :timeout -> is_integer(value) and value > 0
         _ -> false
       end
     end)
@@ -299,21 +337,32 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
       metadata: metadata
     }
 
-    try do
-      Task.await(Task.async(fn -> handler.(args, context) end), timeout)
-    catch
-      :exit, {:timeout, _} ->
+    # Use Task.async/yield instead of Task.await with try/catch
+    task = Task.async(fn -> handler.(args, context) end)
+    
+    case Task.yield(task, timeout) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} ->
+        result
+      
+      nil ->
+        # Timeout occurred
         {:error, :command_timeout}
-
-      _kind, reason ->
+      
+      {:exit, reason} ->
+        # Task crashed
+        error_msg = format_error_message(reason)
         Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Command execution failed in Task.await",
+          "Command execution failed in Task",
           reason,
           nil,
           %{args: args, module: __MODULE__}
         )
-
-        {:error, {:execution_failed, Exception.message(reason)}}
+        {:error, {:execution_failed, error_msg}}
     end
   end
+
+  defp format_error_message(reason) when is_binary(reason), do: reason
+  defp format_error_message(%{message: msg}), do: msg
+  defp format_error_message({:timeout, _}), do: "Command execution timeout"
+  defp format_error_message(reason), do: inspect(reason)
 end

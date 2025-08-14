@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Metrics.Config do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Configuration management for the Raxol metrics system.
 
@@ -73,7 +72,7 @@ defmodule Raxol.Core.Metrics.Config do
   @doc """
   Updates the configuration with the given key-value pairs.
   """
-  def update(config_updates) when map?(config_updates) do
+  def update(config_updates) when is_map(config_updates) do
     GenServer.call(__MODULE__, {:update, config_updates})
   end
 
@@ -227,23 +226,23 @@ defmodule Raxol.Core.Metrics.Config do
   defp validate_setting(:enabled_metrics, value),
     do: validate_enabled_metrics(value)
 
-  defp validate_retention_period(period) when integer?(period) and period > 0,
+  defp validate_retention_period(period) when is_integer(period) and period > 0,
     do: :ok
 
   defp validate_retention_period(_), do: {:error, :invalid_retention_period}
 
-  defp validate_max_samples(samples) when integer?(samples) and samples > 0,
+  defp validate_max_samples(samples) when is_integer(samples) and samples > 0,
     do: :ok
 
   defp validate_max_samples(_), do: {:error, :invalid_max_samples}
 
   defp validate_flush_interval(interval)
-       when integer?(interval) and interval > 0,
+       when is_integer(interval) and interval > 0,
        do: :ok
 
   defp validate_flush_interval(_), do: {:error, :invalid_flush_interval}
 
-  defp validate_enabled_metrics(metrics) when list?(metrics) do
+  defp validate_enabled_metrics(metrics) when is_list(metrics) do
     if Enum.all?(
          metrics,
          &(&1 in [:performance, :resource, :operation, :system, :custom])
@@ -268,7 +267,7 @@ defmodule Raxol.Core.Metrics.Config do
 
   defp validate_storage_backend(_), do: {:error, :invalid_storage_backend}
 
-  defp validate_retention_policies(policies) when list?(policies) do
+  defp validate_retention_policies(policies) when is_list(policies) do
     if Enum.all?(policies, &valid_retention_policy?/1) do
       :ok
     else
@@ -279,7 +278,7 @@ defmodule Raxol.Core.Metrics.Config do
   defp validate_retention_policies(_), do: {:error, :invalid_retention_policies}
 
   defp valid_retention_policy?(%{metric: metric, duration: duration})
-       when binary?(metric) and binary?(duration) do
+       when is_binary(metric) and is_binary(duration) do
     # Basic validation - duration should be in format like "7d", "24h", etc.
     String.match?(duration, ~r/^\d+[dhms]$/)
   end

@@ -54,23 +54,24 @@ defmodule Raxol.UI.BorderRenderer do
   @doc """
   Renders box borders with proper styling.
   """
+  def render_box_borders(x, y, 1, 1, _border_chars, style) do
+    {fg, bg, style_attrs} = extract_style_attributes(style)
+    [{x, y, " ", fg, bg, style_attrs}]
+  end
+
   def render_box_borders(x, y, width, height, border_chars, style) do
     {fg, bg, style_attrs} = extract_style_attributes(style)
 
-    if width == 1 and height == 1 do
-      [{x, y, " ", fg, bg, style_attrs}]
-    else
-      generate_border_cells(
-        x,
-        y,
-        width,
-        height,
-        border_chars,
-        fg,
-        bg,
-        style_attrs
-      )
-    end
+    generate_border_cells(
+      x,
+      y,
+      width,
+      height,
+      border_chars,
+      fg,
+      bg,
+      style_attrs
+    )
   end
 
   defp extract_style_attributes(style) do
@@ -86,7 +87,11 @@ defmodule Raxol.UI.BorderRenderer do
         _ -> :single
       end
 
-    style_attrs = if border_type != :none, do: [border_type], else: []
+    style_attrs = 
+      case border_type do
+        :none -> []
+        _ -> [border_type]
+      end
 
     {fg, bg, style_attrs}
   end
@@ -154,10 +159,16 @@ defmodule Raxol.UI.BorderRenderer do
   end
 
   defp get_border_position(i, j, x, y, width, height) do
-    char_x = if i == width - 1, do: x + width - 1, else: x + i
-    char_y = if j == height - 1, do: y + height - 1, else: y + j
+    char_x = get_border_x_position(i, x, width)
+    char_y = get_border_y_position(j, y, height)
     {char_x, char_y}
   end
+
+  defp get_border_x_position(i, x, width) when i == width - 1, do: x + width - 1
+  defp get_border_x_position(i, x, _width), do: x + i
+
+  defp get_border_y_position(j, y, height) when j == height - 1, do: y + height - 1
+  defp get_border_y_position(j, y, _height), do: y + j
 
   @doc """
   Renders horizontal line.

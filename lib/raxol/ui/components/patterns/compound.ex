@@ -84,12 +84,14 @@ defmodule Raxol.UI.Components.Patterns.Compound do
       render_fn: fn props, _context ->
         accordion_type = Map.get(props, :type, :single)
 
-        default_value =
-          Map.get(
-            props,
-            :default_value,
-            if(accordion_type == :single, do: nil, else: [])
-          )
+        default_value = Map.get(
+          props,
+          :default_value,
+          case accordion_type do
+            :single -> nil
+            _ -> []
+          end
+        )
 
         collapsible = Map.get(props, :collapsible, true)
         on_value_change = Map.get(props, :on_value_change)
@@ -102,10 +104,10 @@ defmodule Raxol.UI.Components.Patterns.Compound do
               Hooks.use_state(default_value)
 
             :multiple ->
-              default_set =
-                if is_list(default_value),
-                  do: MapSet.new(default_value),
-                  else: MapSet.new()
+              default_set = case is_list(default_value) do
+                true -> MapSet.new(default_value)
+                false -> MapSet.new()
+              end
 
               Hooks.use_state(default_set)
           end
@@ -116,28 +118,34 @@ defmodule Raxol.UI.Components.Patterns.Compound do
             fn item_value ->
               case accordion_type do
                 :single ->
-                  new_value =
-                    if expanded_items == item_value do
-                      if collapsible, do: nil, else: item_value
-                    else
+                  new_value = case expanded_items == item_value do
+                    true ->
+                      case collapsible do
+                        true -> nil
+                        false -> item_value
+                      end
+                    false ->
                       item_value
-                    end
+                  end
 
                   set_expanded_items.(new_value)
-                  if on_value_change, do: on_value_change.(new_value)
+                  case on_value_change do
+                    nil -> nil
+                    callback -> callback.(new_value)
+                  end
 
                 :multiple ->
-                  new_set =
-                    if MapSet.member?(expanded_items, item_value) do
-                      MapSet.delete(expanded_items, item_value)
-                    else
-                      MapSet.put(expanded_items, item_value)
-                    end
+                  new_set = case MapSet.member?(expanded_items, item_value) do
+                    true -> MapSet.delete(expanded_items, item_value)
+                    false -> MapSet.put(expanded_items, item_value)
+                  end
 
                   set_expanded_items.(new_set)
 
-                  if on_value_change,
-                    do: on_value_change.(MapSet.to_list(new_set))
+                  case on_value_change do
+                    nil -> nil
+                    callback -> callback.(MapSet.to_list(new_set))
+                  end
               end
             end,
             [accordion_type, expanded_items, collapsible, on_value_change]
@@ -175,43 +183,43 @@ defmodule Raxol.UI.Components.Patterns.Compound do
         disabled = Map.get(props, :disabled, false)
         children = Map.get(props, :children, [])
 
-        if value do
-          # Get accordion context
-          accordion_context = Hooks.use_context(:accordion_context)
+        case value do
+          nil ->
+            %{
+              type: :text,
+              attrs: %{content: "Error: accordion_item requires :value prop"}
+            }
+          _ ->
+            # Get accordion context
+            accordion_context = Hooks.use_context(:accordion_context)
 
-          # Determine if this item is expanded
-          is_expanded =
-            case accordion_context.accordion_type do
-              :single ->
-                accordion_context.expanded_items == value
+            # Determine if this item is expanded
+            is_expanded =
+              case accordion_context.accordion_type do
+                :single ->
+                  accordion_context.expanded_items == value
 
-              :multiple ->
-                MapSet.member?(accordion_context.expanded_items, value)
-            end
+                :multiple ->
+                  MapSet.member?(accordion_context.expanded_items, value)
+              end
 
-          # Create item context
-          item_context = %{
-            value: value,
-            is_expanded: is_expanded,
-            disabled: disabled,
-            toggle:
-              if(disabled,
-                do: fn -> :ok end,
-                else: fn -> accordion_context.toggle_item.(value) end
-              )
-          }
+            # Create item context
+            item_context = %{
+              value: value,
+              is_expanded: is_expanded,
+              disabled: disabled,
+              toggle: case disabled do
+                true -> fn -> :ok end
+                false -> fn -> accordion_context.toggle_item.(value) end
+              end
+            }
 
-          # Provide item context to children
-          Context.create_provider(
-            Context.create_context(item_context, :accordion_item_context),
-            item_context,
-            children
-          )
-        else
-          %{
-            type: :text,
-            attrs: %{content: "Error: accordion_item requires :value prop"}
-          }
+            # Provide item context to children
+            Context.create_provider(
+              Context.create_context(item_context, :accordion_item_context),
+              item_context,
+              children
+            )
         end
       end
     }
@@ -241,14 +249,15 @@ defmodule Raxol.UI.Components.Patterns.Compound do
               align_items: :center,
               justify_content: :space_between,
               padding: 10,
-              background:
-                if(item_context.is_expanded,
-                  do: :primary_light,
-                  else: :transparent
-                ),
+              background: case item_context.is_expanded do
+                true -> :primary_light
+                false -> :transparent
+              end,
               border: :none,
-              cursor:
-                if(item_context.disabled, do: :not_allowed, else: :pointer)
+              cursor: case item_context.disabled do
+                true -> :not_allowed
+                false -> :pointer
+              end
             }
           },
           children:
@@ -257,7 +266,10 @@ defmodule Raxol.UI.Components.Patterns.Compound do
                 %{
                   type: :text,
                   attrs: %{
-                    content: if(item_context.is_expanded, do: "−", else: "+"),
+                    content: case item_context.is_expanded do
+                      true -> "−"
+                      false -> "+"
+                    end,
                     style: %{font_weight: :bold}
                   }
                 }

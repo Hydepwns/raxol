@@ -21,8 +21,7 @@ defmodule Raxol.UI.Components.Display.Progress do
   # alias Raxol.View.Style
   # alias Raxol.View.Fragment
 
-  import Raxol.Guards
-
+  
   @behaviour Component
 
   @type props :: %{
@@ -125,10 +124,11 @@ defmodule Raxol.UI.Components.Display.Progress do
     now = System.monotonic_time(:millisecond)
     time_diff = now - state.last_update
 
-    if state.animated and time_diff >= @animation_speed do
+    case {state.animated, time_diff >= @animation_speed} do
+      {true, true} ->
       new_frame = rem(state.animation_frame + 1, length(@animation_chars))
       %{state | animation_frame: new_frame, last_update: now}
-    else
+      _ ->
       # No animation update needed
       state
     end
@@ -168,12 +168,12 @@ defmodule Raxol.UI.Components.Display.Progress do
         state.animation_frame
       )
 
-    percentage_text =
-      if state.show_percentage do
+    percentage_text = case state.show_percentage do
+      true ->
         percent_str = "#{floor(progress * 100)}%"
         padding = div(width - String.length(percent_str), 2)
         String.duplicate(" ", max(0, padding)) <> percent_str
-      else
+      false ->
         ""
       end
 
@@ -183,7 +183,7 @@ defmodule Raxol.UI.Components.Display.Progress do
         aria_label: state.aria_label,
         tooltip: state.tooltip
       }
-      |> Enum.reject(fn {_k, v} -> nil?(v) end)
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
       |> Enum.into(%{})
 
     # Elements list
@@ -226,8 +226,8 @@ defmodule Raxol.UI.Components.Display.Progress do
 
     # Add percentage text if needed
     # Use state.show_percentage
-    progress_elements =
-      if state.show_percentage do
+    progress_elements = case state.show_percentage do
+      true ->
         text_element = %{
           type: :text,
           x: 1,
@@ -242,14 +242,15 @@ defmodule Raxol.UI.Components.Display.Progress do
 
         # Prepend text element
         [text_element | progress_elements]
-      else
+      false ->
         progress_elements
       end
 
     # Add label if provided
     # Use state.label
-    progress_elements =
-      if label = state.label do
+    progress_elements = case state.label do
+      nil -> progress_elements
+      label ->
         label_element = %{
           type: :text,
           x: 0,
@@ -265,9 +266,7 @@ defmodule Raxol.UI.Components.Display.Progress do
 
         # Prepend label element
         [label_element | progress_elements]
-      else
-        progress_elements
-      end
+    end
 
     # Return the list of elements
     progress_elements
@@ -319,28 +318,32 @@ defmodule Raxol.UI.Components.Display.Progress do
     empty_part = String.duplicate(" ", empty_width)
 
     # If animated and not complete, add animation character at the edge
-    if animated && filled_width < total_width do
+    case {animated, filled_width < total_width} do
+      {true, true} ->
       # Calculate animation character
       animation_char = Enum.at(@animation_chars, animation_frame)
 
       # Insert animation character at the transition point
       # Instead of String.slice(empty_part, 1..-1//-1), use String.slice(empty_part, 1, String.length(empty_part) - 1)
-      trail =
-        if empty_width > 0,
-          do: String.slice(empty_part, 1, String.length(empty_part) - 1),
-          else: ""
+      trail = case empty_width > 0 do
+        true -> String.slice(empty_part, 1, String.length(empty_part) - 1)
+        false -> ""
+      end
 
       filled_part <> animation_char <> trail
-    else
+      _ ->
       # No animation
       filled_part <> empty_part
     end
   end
 
   # Deep merge helper for nested maps (used for theme)
-  defp deep_merge(map1, map2) when map?(map1) and map?(map2) do
+  defp deep_merge(map1, map2) when is_map(map1) and is_map(map2) do
     Map.merge(map1, map2, fn _k, v1, v2 ->
-      if map?(v1) and map?(v2), do: deep_merge(v1, v2), else: v2
+      case {is_map(v1), is_map(v2)} do
+        {true, true} -> deep_merge(v1, v2)
+        _ -> v2
+      end
     end)
   end
 

@@ -9,8 +9,7 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
   - Mode management
   """
 
-  import Raxol.Guards
-
+  
   alias Raxol.Terminal.{
     ANSI.SequenceHandlers,
     ANSI.SGRProcessor,
@@ -303,7 +302,7 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
     # Also update the cursor manager - use non-blocking cast for better performance
     cursor = emulator.cursor
 
-    if pid?(cursor) do
+    if is_pid(cursor) do
       GenServer.cast(cursor, {:set_visibility, visible})
     end
 

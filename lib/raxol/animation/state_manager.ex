@@ -1,109 +1,211 @@
 defmodule Raxol.Animation.StateManager do
   @moduledoc """
-  Manages the state for the Raxol Animation Framework.
-
-  This module encapsulates the storage and retrieval of animation settings,
-  definitions, and active instances, currently using the process dictionary.
+  Refactored StateManager that delegates to GenServer implementation.
+  
+  This module provides the same API as the original Animation.StateManager but uses
+  a supervised GenServer instead of the Process dictionary for state management.
+  
+  ## Migration Notice
+  This module is a drop-in replacement for `Raxol.Animation.StateManager`.
+  All functions maintain backward compatibility while providing improved
+  fault tolerance and functional programming patterns.
+  
+  ## Benefits over Process Dictionary
+  - Supervised state management with fault tolerance
+  - Pure functional transformations
+  - Better debugging and testing capabilities
+  - Clear separation of concerns
+  - No global state pollution
+  - Support for batch operations for better performance
   """
 
   require Raxol.Core.Runtime.Log
+  alias Raxol.Animation.StateServer
 
-  @settings_key :animation_framework_settings
-  @animations_key :animation_framework_animations
-  @active_animations_key :animation_framework_active_animations
+  @doc """
+  Ensures the Animation StateServer is started.
+  Called automatically when using any function.
+  """
+  def ensure_started do
+    case Process.whereis(StateServer) do
+      nil ->
+        {:ok, _pid} = StateServer.start_link()
+        :ok
+      _pid ->
+        :ok
+    end
+  end
 
   @doc """
   Initializes the animation state storage.
+  
+  This function provides backward compatibility with the original StateManager.
+  It delegates to the GenServer implementation.
   """
   def init(settings) do
-    Process.put(@settings_key, settings)
-    Process.put(@animations_key, %{})
-    Process.put(@active_animations_key, %{})
-    :ok
+    ensure_started()
+    StateServer.init_state(settings)
   end
 
   @doc """
   Retrieves the animation framework settings.
+  
+  Returns the current animation settings from the GenServer state.
   """
   def get_settings do
-    Process.get(@settings_key, %{})
+    ensure_started()
+    StateServer.get_settings()
   end
 
   @doc """
   Stores an animation definition.
+  
+  The animation must have a `name` field which will be used as the key.
   """
   def put_animation(animation) do
-    animations = Process.get(@animations_key, %{})
-    updated_animations = Map.put(animations, animation.name, animation)
-    Process.put(@animations_key, updated_animations)
+    ensure_started()
+    StateServer.put_animation(animation)
   end
 
   @doc """
   Retrieves an animation definition by name.
+  
+  Returns `nil` if no animation with the given name exists.
   """
   def get_animation(animation_name) do
-    Process.get(@animations_key, %{})
-    |> Map.get(animation_name)
+    ensure_started()
+    StateServer.get_animation(animation_name)
   end
 
   @doc """
   Stores an active animation instance for a given element.
+  
+  ## Parameters
+  - `element_id`: The ID of the element being animated
+  - `animation_name`: The name of the animation
+  - `instance`: The animation instance data
   """
   def put_active_animation(element_id, animation_name, instance) do
-    active_animations = Process.get(@active_animations_key, %{})
-    element_animations = Map.get(active_animations, element_id, %{})
-
-    updated_element_animations =
-      Map.put(element_animations, animation_name, instance)
-
-    updated_active_animations =
-      Map.put(active_animations, element_id, updated_element_animations)
-
-    Process.put(@active_animations_key, updated_active_animations)
+    ensure_started()
+    StateServer.put_active_animation(element_id, animation_name, instance)
   end
 
   @doc """
-  Retrieves all active animations. Returns a map of `{element_id, %{animation_name => instance}}`.
+  Retrieves all active animations.
+  
+  Returns a map of `{element_id, %{animation_name => instance}}`.
   """
   def get_active_animations do
-    Process.get(@active_animations_key, %{})
+    ensure_started()
+    StateServer.get_active_animations()
   end
 
   @doc """
   Retrieves a specific active animation instance for a given element and animation name.
+  
+  Returns `nil` if no matching animation is found.
   """
   def get_active_animation(element_id, animation_name) do
-    active_animations = get_active_animations()
-    element_animations = Map.get(active_animations, element_id, %{})
-    Map.get(element_animations, animation_name)
+    ensure_started()
+    StateServer.get_active_animation(element_id, animation_name)
   end
 
   @doc """
   Removes a completed or stopped animation instance for a specific element.
+  
+  This is typically called when an animation completes or is cancelled.
   """
   def remove_active_animation(element_id, animation_name) do
-    active_animations = get_active_animations()
-    element_animations = Map.get(active_animations, element_id, %{})
-    updated_element_animations = Map.delete(element_animations, animation_name)
-
-    updated_active_animations =
-      if map_size(updated_element_animations) == 0 do
-        Map.delete(active_animations, element_id)
-      else
-        Map.put(active_animations, element_id, updated_element_animations)
-      end
-
-    Process.put(@active_animations_key, updated_active_animations)
-    :ok
+    ensure_started()
+    StateServer.remove_active_animation(element_id, animation_name)
   end
 
   @doc """
   Clears all animation state (used primarily for testing or reset).
+  
+  WARNING: This will remove all animation definitions and active animations.
+  Use with caution in production environments.
   """
   def clear_all do
-    Process.delete(@settings_key)
-    Process.delete(@animations_key)
-    Process.delete(@active_animations_key)
-    :ok
+    ensure_started()
+    StateServer.clear_all()
+  end
+
+  # Additional helper functions for enhanced functionality
+
+  @doc """
+  Batch updates multiple active animations at once.
+  
+  This is more efficient than multiple individual calls when updating
+  many animations in a single frame.
+  
+  ## Parameters
+  - `updates`: A list of update operations, each being either:
+    - `{:put, element_id, animation_name, instance}` to add/update an animation
+    - `{:remove, element_id, animation_name}` to remove an animation
+  
+  ## Example
+  ```elixir
+  StateManager.batch_update_active_animations([
+    {:put, "elem1", "fade", %{opacity: 0.5}},
+    {:put, "elem2", "slide", %{x: 100}},
+    {:remove, "elem3", "rotate"}
+  ])
+  ```
+  """
+  def batch_update_active_animations(updates) when is_list(updates) do
+    ensure_started()
+    StateServer.batch_update_active_animations(updates)
+  end
+
+  @doc """
+  Gets all animations for a specific element.
+  
+  Returns a map of animation_name => instance for the given element,
+  or an empty map if the element has no active animations.
+  """
+  def get_element_animations(element_id) do
+    ensure_started()
+    all_animations = StateServer.get_active_animations()
+    Map.get(all_animations, element_id, %{})
+  end
+
+  @doc """
+  Checks if an element has any active animations.
+  """
+  def has_active_animations?(element_id) do
+    element_animations = get_element_animations(element_id)
+    map_size(element_animations) > 0
+  end
+
+  @doc """
+  Removes all animations for a specific element.
+  
+  This is useful when an element is being destroyed or reset.
+  """
+  def remove_element_animations(element_id) do
+    ensure_started()
+    StateServer.remove_element_animations(element_id)
+  end
+
+  @doc """
+  Gets the count of active animations across all elements.
+  """
+  def count_active_animations do
+    ensure_started()
+    all_animations = StateServer.get_active_animations()
+    
+    Enum.reduce(all_animations, 0, fn {_element_id, animations}, acc ->
+      acc + map_size(animations)
+    end)
+  end
+
+  @doc """
+  Lists all element IDs that have active animations.
+  """
+  def list_animated_elements do
+    ensure_started()
+    all_animations = StateServer.get_active_animations()
+    Map.keys(all_animations)
   end
 end

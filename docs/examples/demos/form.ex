@@ -13,8 +13,7 @@ defmodule Raxol.Examples.FormDemo do
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   alias Raxol.View.Elements, as: UI
-  import Raxol.Guards
-
+  
   defstruct form_data: %{username: "", password: ""}, submitted: false, id: :form_example
 
   @doc """

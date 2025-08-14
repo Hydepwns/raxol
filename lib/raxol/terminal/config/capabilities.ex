@@ -1,6 +1,5 @@
 defmodule Raxol.Terminal.Config.Capabilities do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Terminal capability detection and management.
 
@@ -190,31 +189,32 @@ defmodule Raxol.Terminal.Config.Capabilities do
       _ ->
         # Get the TERM environment variable
         term = adapter_module.get_env("TERM")
+        detect_colors_from_term(term, adapter_module)
+    end
+  end
 
-        cond do
-          term == "xterm-256color" ->
-            256
+  defp detect_colors_from_term("xterm-256color", _adapter_module), do: 256
+  defp detect_colors_from_term(term, adapter_module) when is_binary(term) do
+    case {String.contains?(term, "256"), String.contains?(term, "color")} do
+      {true, _} -> 256
+      {_, true} -> 16
+      _ -> fallback_tput_colors(adapter_module)
+    end
+  end
+  defp detect_colors_from_term(_, adapter_module), do: fallback_tput_colors(adapter_module)
 
-          binary?(term) && String.contains?(term, "256") ->
-            256
-
-          binary?(term) && String.contains?(term, "color") ->
-            16
-
-          true ->
-            # Try to get from tput if available
-            case adapter_module.cmd("tput", ["colors"], stderr_to_stdout: true) do
-              {colors, 0} ->
-                case String.trim(colors) do
-                  "-1" -> 0
-                  num -> String.to_integer(num)
-                end
-
-              # Default fallback
-              _ ->
-                8
-            end
+  defp fallback_tput_colors(adapter_module) do
+    # Try to get from tput if available
+    case adapter_module.cmd("tput", ["colors"], stderr_to_stdout: true) do
+      {colors, 0} ->
+        case String.trim(colors) do
+          "-1" -> 0
+          num -> String.to_integer(num)
         end
+
+      # Default fallback
+      _ ->
+        8
     end
   rescue
     # Default fallback on any error
@@ -232,26 +232,27 @@ defmodule Raxol.Terminal.Config.Capabilities do
   defp detect_unicode_support(adapter_module) do
     # Get the LANG environment variable
     lang = adapter_module.get_env("LANG")
-
-    cond do
-      binary?(lang) && String.contains?(lang, "UTF-8") -> true
-      binary?(lang) && String.contains?(lang, "utf8") -> true
-      true -> false
-    end
+    check_utf8_support(lang)
   end
+
+  defp check_utf8_support(lang) when is_binary(lang) do
+    String.contains?(lang, "UTF-8") || String.contains?(lang, "utf8")
+  end
+  defp check_utf8_support(_lang), do: false
 
   defp detect_mouse_support(adapter_module) do
     # Simple heuristic - most modern terminal emulators support mouse
     # Get the TERM environment variable
     term = adapter_module.get_env("TERM")
-
-    cond do
-      binary?(term) && String.contains?(term, "xterm") -> true
-      binary?(term) && String.contains?(term, "screen") -> true
-      binary?(term) && String.contains?(term, "tmux") -> true
-      true -> false
-    end
+    check_mouse_capable_terminal(term)
   end
+
+  defp check_mouse_capable_terminal(term) when is_binary(term) do
+    String.contains?(term, "xterm") || 
+    String.contains?(term, "screen") || 
+    String.contains?(term, "tmux")
+  end
+  defp check_mouse_capable_terminal(_term), do: false
 
   defp detect_clipboard_support(adapter_module) do
     # Check if in GUI environment
@@ -271,23 +272,22 @@ defmodule Raxol.Terminal.Config.Capabilities do
 
   defp detect_color_mode(adapter_module) do
     colors = detect_color_support(adapter_module)
-
-    cond do
-      colors >= 16_777_216 -> :truecolor
-      colors >= 256 -> :extended
-      colors >= 16 -> :basic
-      colors >= 8 -> :basic
-      true -> :none
-    end
+    classify_color_mode(colors)
   end
+
+  defp classify_color_mode(colors) when colors >= 16_777_216, do: :truecolor
+  defp classify_color_mode(colors) when colors >= 256, do: :extended
+  defp classify_color_mode(colors) when colors >= 16, do: :basic
+  defp classify_color_mode(colors) when colors >= 8, do: :basic
+  defp classify_color_mode(_colors), do: :none
 
   # Recursively merge capabilities into configuration
   defp deep_merge_capabilities(config, capabilities)
-       when map?(config) and map?(capabilities) do
+       when is_map(config) and is_map(capabilities) do
     Map.merge(config, capabilities, fn
       # If both values are maps, merge them recursively
       _, config_value, capability_value
-      when map?(config_value) and map?(capability_value) ->
+      when is_map(config_value) and is_map(capability_value) ->
         deep_merge_capabilities(config_value, capability_value)
 
       # For any other case, keep the config value (don't override explicit configuration)

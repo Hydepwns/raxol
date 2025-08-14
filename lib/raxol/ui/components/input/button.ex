@@ -143,7 +143,11 @@ defmodule Raxol.UI.Components.Input.Button do
       },
       events: [
         Raxol.Core.Events.Event.new(:click, fn ->
-          if button.on_click && !button.disabled, do: button.on_click.()
+          case {button.on_click, button.disabled} do
+            {nil, _} -> nil
+            {_, true} -> nil
+            {callback, false} -> callback.()
+          end
         end)
       ]
     }
@@ -201,11 +205,17 @@ defmodule Raxol.UI.Components.Input.Button do
         %Raxol.Core.Events.Event{type: :keypress, data: %{key: key}},
         _context
       ) do
-    if button.disabled or (key != :space and key != :enter) do
-      :passthrough
-    else
-      if button.on_click, do: button.on_click.()
-      {:handled, button}
+    case {button.disabled, key} do
+      {true, _} ->
+        :passthrough
+      {false, key} when key in [:space, :enter] ->
+        case button.on_click do
+          nil -> nil
+          callback -> callback.()
+        end
+        {:handled, button}
+      {false, _} ->
+        :passthrough
     end
   end
 
@@ -217,14 +227,18 @@ defmodule Raxol.UI.Components.Input.Button do
         },
         _context
       ) do
-    if button.disabled do
-      {:handled, button}
-    else
-      if button.on_click, do: button.on_click.()
-      updated_button = %{button | pressed: true}
+    case button.disabled do
+      true ->
+        {:handled, button}
+      false ->
+        case button.on_click do
+          nil -> nil
+          callback -> callback.()
+        end
+        updated_button = %{button | pressed: true}
 
-      {:update, updated_button,
-       [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
+        {:update, updated_button,
+         [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
     end
   end
 
@@ -242,25 +256,29 @@ defmodule Raxol.UI.Components.Input.Button do
   def errors(button) do
     errors = %{}
 
-    errors =
-      if button.role in [:default, :primary, :secondary],
-        do: errors,
-        else: Map.put(errors, :role, "Invalid role")
+    errors = case button.role in [:default, :primary, :secondary] do
+      true -> errors
+      false -> Map.put(errors, :role, "Invalid role")
+    end
 
     errors
   end
 
   # Private helper for handling click events
   defp handle_click_event(button) do
-    if button.disabled do
-      {:handled, button}
-    else
-      if button.on_click, do: button.on_click.()
-      updated_button = %{button | pressed: true}
-      updated_button = %{updated_button | errors: errors(updated_button)}
+    case button.disabled do
+      true ->
+        {:handled, button}
+      false ->
+        case button.on_click do
+          nil -> nil
+          callback -> callback.()
+        end
+        updated_button = %{button | pressed: true}
+        updated_button = %{updated_button | errors: errors(updated_button)}
 
-      {:update, updated_button,
-       [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
+        {:update, updated_button,
+         [{:dispatch_to_parent, %Raxol.Core.Events.Event{type: :button_pressed}}]}
     end
   end
 
@@ -286,12 +304,12 @@ defmodule Raxol.UI.Components.Input.Button do
     # Calculate available space for the base label
     available_label_width = max(max_width - padding, 1)
 
-    truncated_label =
-      if String.length(base_label) > available_label_width do
+    truncated_label = case String.length(base_label) > available_label_width do
+      true ->
         String.slice(base_label, 0, available_label_width)
-      else
+      false ->
         base_label
-      end
+    end
 
     # Store the truncated base label for rendering
     button = Map.put(button, :_truncated_label, truncated_label)
@@ -308,91 +326,105 @@ defmodule Raxol.UI.Components.Input.Button do
        })
        when is_binary(truncated_label) do
     # Apply focus decorations to the truncated base label
-    if focused, do: "> #{truncated_label} <", else: truncated_label
+    case focused do
+      true -> "> #{truncated_label} <"
+      false -> truncated_label
+    end
   end
 
   defp build_display_label(button) do
-    if button.focused, do: "> #{button.label} <", else: button.label
+    case button.focused do
+      true -> "> #{button.label} <"
+      false -> button.label
+    end
   end
 
-  defp resolve_colors(button, style) do
+  defp resolve_colors(%{disabled: true} = _button, style) do
     default_fg = Map.get(style, :fg, :default)
     default_bg = Map.get(style, :bg, :default)
+    get_disabled_colors(style, default_fg, default_bg)
+  end
 
-    cond do
-      button.disabled ->
-        get_disabled_colors(style, default_fg, default_bg)
+  defp resolve_colors(%{focused: true} = _button, style) do
+    default_fg = Map.get(style, :fg, :default)
+    default_bg = Map.get(style, :bg, :default)
+    get_focused_colors(style, default_fg, default_bg)
+  end
 
-      button.focused ->
-        get_focused_colors(style, default_fg, default_bg)
+  defp resolve_colors(%{role: :primary} = _button, style) do
+    default_fg = Map.get(style, :fg, :default)
+    default_bg = Map.get(style, :bg, :default)
+    get_primary_colors(style, default_fg, default_bg)
+  end
 
-      button.role == :primary ->
-        get_primary_colors(style, default_fg, default_bg)
+  defp resolve_colors(%{role: :secondary} = _button, style) do
+    default_fg = Map.get(style, :fg, :default)
+    default_bg = Map.get(style, :bg, :default)
+    get_secondary_colors(style, default_fg, default_bg)
+  end
 
-      button.role == :secondary ->
-        get_secondary_colors(style, default_fg, default_bg)
-
-      true ->
-        {default_fg, default_bg}
-    end
+  defp resolve_colors(_button, style) do
+    default_fg = Map.get(style, :fg, :default)
+    default_bg = Map.get(style, :bg, :default)
+    {default_fg, default_bg}
   end
 
   defp get_disabled_colors(style, default_fg, default_bg) do
     # If there's an explicit fg in the style, it should override disabled_fg
-    fg =
-      if Map.has_key?(style, :fg),
-        do: Map.get(style, :fg),
-        else: Map.get(style, :disabled_fg, default_fg)
+    fg = case Map.has_key?(style, :fg) do
+      true -> Map.get(style, :fg)
+      false -> Map.get(style, :disabled_fg, default_fg)
+    end
 
-    bg =
-      if Map.has_key?(style, :bg),
-        do: Map.get(style, :bg),
-        else: Map.get(style, :disabled_bg, default_bg)
+    bg = case Map.has_key?(style, :bg) do
+      true -> Map.get(style, :bg)
+      false -> Map.get(style, :disabled_bg, default_bg)
+    end
 
     {fg, bg}
   end
 
   defp get_focused_colors(style, default_fg, default_bg) do
     # If there's an explicit fg in the style, it should override focused_fg
-    fg =
-      if Map.has_key?(style, :fg),
-        do: Map.get(style, :fg),
-        else: Map.get(style, :focused_fg, default_fg)
+    fg = case Map.has_key?(style, :fg) do
+      true -> Map.get(style, :fg)
+      false -> Map.get(style, :focused_fg, default_fg)
+    end
 
-    bg =
-      if Map.has_key?(style, :bg),
-        do: Map.get(style, :bg),
-        else: Map.get(style, :focused_bg, default_bg)
+    bg = case Map.has_key?(style, :bg) do
+      true -> Map.get(style, :bg)
+      false -> Map.get(style, :focused_bg, default_bg)
+    end
 
     {fg, bg}
   end
 
   defp get_primary_colors(style, default_fg, default_bg) do
     # If there's an explicit fg in the style, it should override primary_fg
-    fg =
-      if Map.has_key?(style, :fg),
-        do: Map.get(style, :fg),
-        else: Map.get(style, :primary_fg, default_fg)
+    fg = case Map.has_key?(style, :fg) do
+      true -> Map.get(style, :fg)
+      false -> Map.get(style, :primary_fg, default_fg)
+    end
 
-    bg =
-      if Map.has_key?(style, :bg),
-        do: Map.get(style, :bg),
-        else: Map.get(style, :primary_bg, default_bg)
+    bg = case Map.has_key?(style, :bg) do
+      true -> Map.get(style, :bg)
+      false -> Map.get(style, :primary_bg, default_bg)
+    end
 
     {fg, bg}
   end
 
   defp get_secondary_colors(style, default_fg, default_bg) do
     # If there's an explicit fg in the style, it should override secondary_fg
-    fg =
-      if Map.has_key?(style, :fg),
-        do: Map.get(style, :fg),
-        else: Map.get(style, :secondary_fg, default_fg)
+    fg = case Map.has_key?(style, :fg) do
+      true -> Map.get(style, :fg)
+      false -> Map.get(style, :secondary_fg, default_fg)
+    end
 
-    bg =
-      if Map.has_key?(style, :bg),
-        do: Map.get(style, :bg),
-        else: Map.get(style, :secondary_bg, default_bg)
+    bg = case Map.has_key?(style, :bg) do
+      true -> Map.get(style, :bg)
+      false -> Map.get(style, :secondary_bg, default_bg)
+    end
 
     {fg, bg}
   end

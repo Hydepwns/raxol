@@ -1,5 +1,4 @@
 alias Raxol.Style.Colors.Color
-import Raxol.Guards
 
 defmodule Raxol.Style.Colors.HSL do
   @moduledoc """
@@ -18,8 +17,8 @@ defmodule Raxol.Style.Colors.HSL do
   @spec rgb_to_hsl(integer(), integer(), integer()) ::
           {float(), float(), float()}
   def rgb_to_hsl(r, g, b)
-      when integer?(r) and r >= 0 and r <= 255 and integer?(g) and g >= 0 and
-             g <= 255 and integer?(b) and b >= 0 and b <= 255 do
+      when is_integer(r) and r >= 0 and r <= 255 and is_integer(g) and g >= 0 and
+             g <= 255 and is_integer(b) and b >= 0 and b <= 255 do
     r_norm = r / 255
     g_norm = g / 255
     b_norm = b / 255
@@ -35,17 +34,14 @@ defmodule Raxol.Style.Colors.HSL do
     {h, s, l}
   end
 
-  defp _calculate_hue(r, g, b, max, delta) do
-    hue =
-      cond do
-        # Achromatic
-        delta == +0.0 -> +0.0
-        max == r -> 60.0 * rem(round((g - b) / delta), 6)
-        max == g -> 60.0 * ((b - r) / delta + 2.0)
-        # max == b
-        true -> 60.0 * ((r - g) / delta + 4.0)
-      end
-
+  # Helper functions for pattern matching refactoring
+  
+  defp _calculate_hue(_r, _g, _b, _max, delta) when delta == +0.0, do: normalize_hue(+0.0)
+  defp _calculate_hue(r, g, b, max, delta) when max == r, do: normalize_hue(60.0 * rem(round((g - b) / delta), 6))
+  defp _calculate_hue(r, g, b, max, delta) when max == g, do: normalize_hue(60.0 * ((b - r) / delta + 2.0))
+  defp _calculate_hue(r, g, b, _max, delta), do: normalize_hue(60.0 * ((r - g) / delta + 4.0))
+  
+  defp normalize_hue(hue) do
     # Ensure hue is always positive
     if hue < 0,
       do: hue + 360.0,
@@ -66,24 +62,14 @@ defmodule Raxol.Style.Colors.HSL do
   @spec hsl_to_rgb(number(), float(), float()) ::
           {integer(), integer(), integer()}
   def hsl_to_rgb(h, s, l)
-      when number?(h) and h >= 0 and h < 360 and float?(s) and s >= 0.0 and
-             s <= 1.0 and float?(l) and l >= 0.0 and l <= 1.0 do
+      when is_number(h) and h >= 0 and h < 360 and is_float(s) and s >= 0.0 and
+             s <= 1.0 and is_float(l) and l >= 0.0 and l <= 1.0 do
     c = (1.0 - abs(2.0 * l - 1.0)) * s
     h_prime = h / 60.0
     x = c * (1.0 - abs(:math.fmod(h_prime, 2.0) - 1.0))
     m = l - c / 2.0
 
-    {r_prime, g_prime, b_prime} =
-      cond do
-        h_prime >= 0.0 and h_prime < 1.0 -> {c, x, 0.0}
-        h_prime >= 1.0 and h_prime < 2.0 -> {x, c, 0.0}
-        h_prime >= 2.0 and h_prime < 3.0 -> {0.0, c, x}
-        h_prime >= 3.0 and h_prime < 4.0 -> {0.0, x, c}
-        h_prime >= 4.0 and h_prime < 5.0 -> {x, 0.0, c}
-        h_prime >= 5.0 and h_prime < 6.0 -> {c, 0.0, x}
-        # Should not happen with valid h
-        true -> {0.0, 0.0, 0.0}
-      end
+    {r_prime, g_prime, b_prime} = calculate_rgb_prime(h_prime, c, x)
 
     r = round((r_prime + m) * 255)
     g = round((g_prime + m) * 255)
@@ -106,7 +92,7 @@ defmodule Raxol.Style.Colors.HSL do
   - A Color struct representing the rotated color
   """
   @spec rotate_hue(Color.t(), number()) :: Color.t()
-  def rotate_hue(%Color{} = color, degrees) when number?(degrees) do
+  def rotate_hue(%Color{} = color, degrees) when is_number(degrees) do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     # Ensure calculations are float, then fix rem args: use round/1
     new_h = rem(round(h + degrees + 360.0), 360)
@@ -128,7 +114,7 @@ defmodule Raxol.Style.Colors.HSL do
   """
   @spec lighten(Color.t(), float()) :: Color.t()
   def lighten(%Color{} = color, amount)
-      when float?(amount) and amount >= 0.0 do
+      when is_float(amount) and amount >= 0.0 do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_l = min(l + amount, 1.0)
     {r, g, b} = hsl_to_rgb(h, s, new_l)
@@ -149,7 +135,7 @@ defmodule Raxol.Style.Colors.HSL do
   """
   @spec darken(Color.t(), float()) :: Color.t()
   def darken(%Color{} = color, amount)
-      when float?(amount) and amount >= 0.0 do
+      when is_float(amount) and amount >= 0.0 do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_l = max(l - amount, 0.0)
     {r, g, b} = hsl_to_rgb(h, s, new_l)
@@ -170,7 +156,7 @@ defmodule Raxol.Style.Colors.HSL do
   """
   @spec saturate(Color.t(), float()) :: Color.t()
   def saturate(%Color{} = color, amount)
-      when float?(amount) and amount >= 0.0 do
+      when is_float(amount) and amount >= 0.0 do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_s = min(s + amount, 1.0)
     {r, g, b} = hsl_to_rgb(h, new_s, l)
@@ -191,10 +177,18 @@ defmodule Raxol.Style.Colors.HSL do
   """
   @spec desaturate(Color.t(), float()) :: Color.t()
   def desaturate(%Color{} = color, amount)
-      when float?(amount) and amount >= 0.0 do
+      when is_float(amount) and amount >= 0.0 do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_s = max(s - amount, 0.0)
     {r, g, b} = hsl_to_rgb(h, new_s, l)
     %Color{color | r: r, g: g, b: b}
   end
+
+  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 0.0 and h_prime < 1.0, do: {c, x, 0.0}
+  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 1.0 and h_prime < 2.0, do: {x, c, 0.0}
+  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 2.0 and h_prime < 3.0, do: {0.0, c, x}
+  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 3.0 and h_prime < 4.0, do: {0.0, x, c}
+  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 4.0 and h_prime < 5.0, do: {x, 0.0, c}
+  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 5.0 and h_prime < 6.0, do: {c, 0.0, x}
+  defp calculate_rgb_prime(_h_prime, _c, _x), do: {0.0, 0.0, 0.0}
 end

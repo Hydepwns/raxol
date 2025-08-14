@@ -3,8 +3,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
   Manages character set state and operations.
   """
 
-  import Raxol.Guards
-
+  
   @type charset ::
           :us_ascii
           | :dec_special_graphics
@@ -211,7 +210,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
   Translates a character using the active character set.
   Returns {codepoint, new_state} as expected by the tests.
   """
-  def translate_char(codepoint, state) when integer?(codepoint) do
+  def translate_char(codepoint, state) when is_integer(codepoint) do
     active_charset = get_active(state)
     single_shift = get_single_shift(state)
 
@@ -245,7 +244,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
   Returns :ok if valid, or {:error, reason} if invalid.
   """
 
-  def validate_state(state) when map?(state) do
+  def validate_state(state) when is_map(state) do
     required_keys = [:active, :single_shift, :g0, :g1, :g2, :g3, :gl, :gr]
 
     case Enum.all?(required_keys, &Map.has_key?(state, &1)) do

@@ -1,11 +1,10 @@
 defmodule Raxol.Core.Accessibility.Preferences do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Manages accessibility preferences and settings.
   """
 
-  alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.Events.Manager, as: Manager, as: EventManager
   alias Raxol.Core.UserPreferences
   require Raxol.Core.Runtime.Log
 
@@ -31,12 +30,12 @@ defmodule Raxol.Core.Accessibility.Preferences do
     # Pass the list path directly
     value = UserPreferences.get(pref_key(key), target_pid_or_name)
     # Explicitly check for nil before applying default, to handle false values
-    if nil?(value) do
+    if is_nil(value) do
       default
     else
       # If the value is a process name, return the default instead
       case value do
-        pid_or_name when atom?(pid_or_name) or pid?(pid_or_name) -> default
+        pid_or_name when is_atom(pid_or_name) or is_pid(pid_or_name) -> default
         _ -> value
       end
     end
@@ -96,7 +95,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
       :ok
   """
   def set_option(key, value, user_preferences_pid_or_name \\ nil)
-      when atom?(key) do
+      when is_atom(key) do
     # Use our existing functions for specific settings when available
     case key do
       # Pass the pid_or_name down to the specific setters
@@ -129,7 +128,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
       :ok
   """
   def set_high_contrast(enabled, user_preferences_pid_or_name \\ nil)
-      when boolean?(enabled) do
+      when is_boolean(enabled) do
     target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
     set_pref(:high_contrast, enabled, target_pid_or_name)
 
@@ -157,7 +156,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
       :ok
   """
   def set_reduced_motion(enabled, user_preferences_pid_or_name \\ nil)
-      when boolean?(enabled) do
+      when is_boolean(enabled) do
     target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
     set_pref(:reduced_motion, enabled, target_pid_or_name)
 
@@ -185,7 +184,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
       :ok
   """
   def set_large_text(enabled, user_preferences_pid_or_name \\ nil)
-      when boolean?(enabled) do
+      when is_boolean(enabled) do
     target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
     set_pref(:large_text, enabled, target_pid_or_name)
 

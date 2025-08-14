@@ -5,8 +5,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   """
 
   require Raxol.Core.Runtime.Log
-  import Raxol.Guards
-
+  
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Modes.Types.ModeTypes
 
@@ -206,7 +205,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     new_mode_manager = %{emulator.mode_manager | cursor_visible: value}
 
     # Update cursor manager if it's a PID
-    if pid?(emulator.cursor) do
+    if is_pid(emulator.cursor) do
       GenServer.call(emulator.cursor, {:set_visibility, value})
     end
 

@@ -4,8 +4,7 @@ defmodule Raxol.Terminal.HistoryBuffer do
   This module handles the storage and retrieval of command history.
   """
 
-  import Raxol.Guards
-
+  
   @type t :: %__MODULE__{
           commands: list(String.t()),
           position: integer(),
@@ -26,7 +25,7 @@ defmodule Raxol.Terminal.HistoryBuffer do
   Adds a command to the history buffer.
   """
   @spec add_command(t(), String.t()) :: t()
-  def add_command(buffer, command) when binary?(command) and command != "" do
+  def add_command(buffer, command) when is_binary(command) and command != "" do
     commands = [command | buffer.commands]
     commands = Enum.take(commands, buffer.max_size)
     %{buffer | commands: commands, position: 0}

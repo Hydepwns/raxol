@@ -1,7 +1,6 @@
 defmodule Raxol.Core.Accessibility.Announcements do
   use Agent
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles screen reader announcements and announcement queue management.
   """
@@ -49,8 +48,8 @@ defmodule Raxol.Core.Accessibility.Announcements do
       :ok
   """
   def announce(message, opts \\ [], user_preferences_pid_or_name)
-      when binary?(message) do
-    if nil?(user_preferences_pid_or_name) do
+      when is_binary(message) do
+    if is_nil(user_preferences_pid_or_name) do
       raise "Accessibility.Announcements.announce/3 must be called with a user_preferences_pid_or_name."
     end
 
@@ -62,51 +61,25 @@ defmodule Raxol.Core.Accessibility.Announcements do
   end
 
   defp should_announce?(user_preferences_pid_or_name) do
-    disabled = Process.get(:accessibility_disabled) == true
-    silenced = get_silence_setting(user_preferences_pid_or_name)
-
-    screen_reader_enabled =
-      get_screen_reader_setting(user_preferences_pid_or_name)
-
-    not disabled and not silenced and screen_reader_enabled != false
+    # Delegate to the GenServer for state checking
+    alias Raxol.Core.Accessibility.Server
+    Server.should_announce?(user_preferences_pid_or_name)
   end
 
   defp process_announcement(message, opts, user_preferences_pid_or_name) do
-    priority = Keyword.get(opts, :priority, :normal)
-    interrupt = Keyword.get(opts, :interrupt, false)
-
+    # Delegate to the GenServer for announcement processing
+    alias Raxol.Core.Accessibility.Server
+    
     announcement = %{
       message: message,
-      priority: priority,
+      priority: Keyword.get(opts, :priority, :normal),
       timestamp: System.monotonic_time(:millisecond),
-      interrupt: interrupt
+      interrupt: Keyword.get(opts, :interrupt, false)
     }
 
-    key = {:accessibility_announcements, user_preferences_pid_or_name}
-    current_queue = Process.get(key, [])
-
-    require Raxol.Core.Runtime.Log
-
-    Raxol.Core.Runtime.Log.debug(
-      "Announcements.announce storing with key: #{inspect(key)}, current_queue: #{inspect(current_queue)}"
-    )
-
-    updated_queue =
-      if announcement.interrupt,
-        do: [announcement],
-        else: insert_by_priority(current_queue, announcement, priority)
-
-    Process.put(key, updated_queue)
-
-    legacy_queue = Process.get(:accessibility_announcements, [])
-    Process.put(:accessibility_announcements, [announcement | legacy_queue])
-
-    Raxol.Core.Runtime.Log.debug(
-      "Announcements.announce stored announcement: #{inspect(announcement)}"
-    )
-
+    Server.add_announcement(announcement, user_preferences_pid_or_name)
+    
     send_announcement_to_subscribers(message)
-
     EventManager.dispatch({:accessibility_announce, message})
   end
 
@@ -121,38 +94,9 @@ defmodule Raxol.Core.Accessibility.Announcements do
       "Button clicked"
   """
   def get_next_announcement(user_preferences_pid_or_name) do
-    key =
-      if user_preferences_pid_or_name do
-        {:accessibility_announcements, user_preferences_pid_or_name}
-      else
-        :accessibility_announcements
-      end
-
-    queue = Process.get(key) || []
-
-    require Raxol.Core.Runtime.Log
-
-    Raxol.Core.Runtime.Log.debug(
-      "Announcements.get_next_announcement looking for key: #{inspect(key)}, queue: #{inspect(queue)}"
-    )
-
-    case queue do
-      [] ->
-        Raxol.Core.Runtime.Log.debug(
-          "Announcements.get_next_announcement returning nil (empty queue)"
-        )
-
-        nil
-
-      [next | rest] ->
-        Process.put(key, rest)
-
-        Raxol.Core.Runtime.Log.debug(
-          "Announcements.get_next_announcement returning: #{inspect(next.message)}"
-        )
-
-        next.message
-    end
+    # Delegate to the GenServer for queue management
+    alias Raxol.Core.Accessibility.Server
+    Server.get_next_announcement(user_preferences_pid_or_name)
   end
 
   @doc """
@@ -164,30 +108,12 @@ defmodule Raxol.Core.Accessibility.Announcements do
       :ok
   """
   def clear_announcements do
-    # Clear global announcements
-    Process.put(:accessibility_announcements, [])
-
-    # Clear all user-specific announcement queues
-    # Get all process dictionary keys that match the pattern {:accessibility_announcements, _}
-    all_keys = Process.get() |> Enum.map(&elem(&1, 0))
-
-    announcement_keys =
-      all_keys
-      |> Enum.filter(fn key ->
-        case key do
-          {:accessibility_announcements, _} -> true
-          _ -> false
-        end
-      end)
-
-    # Clear each user-specific queue
-    Enum.each(announcement_keys, fn key ->
-      Process.put(key, [])
-    end)
-
+    # Delegate to the GenServer for clearing all announcements
+    alias Raxol.Core.Accessibility.Server
+    Server.clear_all_announcements()
+    
     # Send announcements_cleared messages to subscribers
     send_clear_message_to_subscribers()
-
     :ok
   end
 
@@ -200,8 +126,9 @@ defmodule Raxol.Core.Accessibility.Announcements do
       :ok
   """
   def clear_announcements(user_preferences_pid_or_name) do
-    key = {:accessibility_announcements, user_preferences_pid_or_name}
-    Process.put(key, [])
+    # Delegate to the GenServer for clearing user-specific announcements
+    alias Raxol.Core.Accessibility.Server
+    Server.clear_announcements(user_preferences_pid_or_name)
     :ok
   end
 

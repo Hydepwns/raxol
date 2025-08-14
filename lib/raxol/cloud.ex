@@ -1,8 +1,7 @@
 defmodule Raxol.Cloud do
   @moduledoc "Cloud integration system for Raxol applications."
 
-  import Raxol.Guards
-  alias Raxol.Cloud.Config
+    alias Raxol.Cloud.Config
   alias Raxol.Cloud.Core
   alias Raxol.Cloud.EdgeComputing
 
@@ -30,7 +29,7 @@ defmodule Raxol.Cloud do
   # Monitoring operations (consolidated)
   def monitor(action, args \\ nil, opts \\ []) do
     case action do
-      :metric when binary?(args) ->
+      :metric when is_binary(args) ->
         Core.record_metric(args, opts[:value] || 1, opts)
 
       :error ->
@@ -39,7 +38,7 @@ defmodule Raxol.Cloud do
       :health ->
         Core.run_health_check(opts)
 
-      :alert when atom?(args) ->
+      :alert when is_atom(args) ->
         Core.trigger_alert(args, opts[:data] || %{}, opts)
     end
   end

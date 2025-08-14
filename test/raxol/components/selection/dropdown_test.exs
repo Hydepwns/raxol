@@ -1,7 +1,6 @@
 defmodule Raxol.UI.Components.Selection.DropdownTest do
   use ExUnit.Case, async: true
-  import Raxol.Guards
-
+  
   alias Raxol.UI.Components.Selection.Dropdown
   alias Raxol.UI.Components.Selection.List
   alias Raxol.Core.Events.Event
@@ -19,7 +18,7 @@ defmodule Raxol.UI.Components.Selection.DropdownTest do
       assert Map.get(state, :focused) == false
       assert Map.get(state, :on_change) == nil
       # Check list state initialized
-      assert struct?(Map.get(state, :list_state), List)
+      assert is_struct(Map.get(state, :list_state), List)
       assert Map.get(Map.get(state, :list_state), :items) == []
     end
 

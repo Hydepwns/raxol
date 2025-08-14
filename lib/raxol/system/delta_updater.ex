@@ -6,8 +6,7 @@ defmodule Raxol.System.DeltaUpdater do
   require Raxol.Core.Runtime.Log
   # Called via adapter now
   alias Raxol.System.DeltaUpdaterSystemAdapterImpl
-  import Raxol.Guards
-
+  
   defp system_adapter do
     Application.get_env(:raxol, :system_adapter, DeltaUpdaterSystemAdapterImpl)
   end
@@ -128,7 +127,7 @@ defmodule Raxol.System.DeltaUpdater do
 
     exe = exe_path_env || List.first(argv)
 
-    if nil?(exe) do
+    if is_nil(exe) do
       # Return error tuple
       {:error, :cannot_determine_executable_path}
     else

@@ -5,8 +5,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   and reordering of nodes, supporting both keyed and non-keyed children.
   """
 
-  import Raxol.Guards
-  import Kernel, except: [nil?: 1]
+    # All Kernel functions are now available
 
   require Raxol.Core.Runtime.Log
 
@@ -69,13 +68,13 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   defp do_diff_trees(_old, new, _path), do: {:replace, new}
 
   # Helper to check if a list of children is consistently keyed
-  defp are_children_consistently_keyed?(children) when list?(children) do
+  defp are_children_consistently_keyed?(children) when is_list(children) do
     if Enum.empty?(children) do
       # An empty list is vacuously considered keyed
       true
     else
       Enum.all?(children, fn
-        child when map?(child) -> Map.has_key?(child, :key)
+        child when is_map(child) -> Map.has_key?(child, :key)
         _non_map_child -> false
       end)
     end
@@ -85,7 +84,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
 
   defp validate_child_has_key!(nil, _list_name), do: :ok
 
-  defp validate_child_has_key!(child, list_name) when not map?(child) do
+  defp validate_child_has_key!(child, list_name) when not is_map(child) do
     Raxol.Core.Runtime.Log.warning(
       "Keyed diffing expected map child in #{list_name}, got: #{inspect(child)}. Problems may occur."
     )
@@ -120,7 +119,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
             diff_for_child_at_idx -> {idx, diff_for_child_at_idx}
           end
       end)
-      |> Enum.reject(&nil?/1)
+      |> Enum.reject(&is_nil/1)
 
     if child_diffs == [] do
       # We need to return the unchanged tree, but we only have the children here
@@ -244,25 +243,34 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
     old_keys_ordered = Enum.map(old_children_list || [], & &1[:key])
     order_changed = old_keys_ordered != new_keys_ordered
 
-    cond do
-      !has_structural_changes && !order_changed ->
-        :no_change
+    select_keyed_diff_result(
+      has_structural_changes,
+      order_changed,
+      ops,
+      new_keys_ordered,
+      path_to_parent
+    )
+  end
 
-      !has_structural_changes && order_changed ->
-        {:update, path_to_parent,
-         %{type: :keyed_children, ops: [{:key_reorder, new_keys_ordered}]}}
+  defp select_keyed_diff_result(false, false, _ops, _new_keys_ordered, _path_to_parent) do
+    :no_change
+  end
 
-      true ->
-        # Partition ops so that :key_reorder is always last
-        {_reorder_ops, other_ops} =
-          Enum.split_with(ops, fn
-            {:key_reorder, _} -> true
-            _ -> false
-          end)
+  defp select_keyed_diff_result(false, true, _ops, new_keys_ordered, path_to_parent) do
+    {:update, path_to_parent,
+     %{type: :keyed_children, ops: [{:key_reorder, new_keys_ordered}]}}
+  end
 
-        all_ops = other_ops ++ [{:key_reorder, new_keys_ordered}]
-        {:update, path_to_parent, %{type: :keyed_children, ops: all_ops}}
-    end
+  defp select_keyed_diff_result(true, _order_changed, ops, new_keys_ordered, path_to_parent) do
+    # Partition ops so that :key_reorder is always last
+    {_reorder_ops, other_ops} =
+      Enum.split_with(ops, fn
+        {:key_reorder, _} -> true
+        _ -> false
+      end)
+
+    all_ops = other_ops ++ [{:key_reorder, new_keys_ordered}]
+    {:update, path_to_parent, %{type: :keyed_children, ops: all_ops}}
   end
 
   # Zips two lists, padding with nil if lengths differ

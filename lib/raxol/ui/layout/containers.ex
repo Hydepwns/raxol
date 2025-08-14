@@ -9,8 +9,7 @@ defmodule Raxol.UI.Layout.Containers do
   * Gap and alignment handling
   """
 
-  import Raxol.Guards
-  alias Raxol.UI.Layout.Engine
+    alias Raxol.UI.Layout.Engine
 
   @doc """
   Processes a row element, calculating layout for it and its children.
@@ -26,7 +25,7 @@ defmodule Raxol.UI.Layout.Containers do
   A list of positioned elements with absolute coordinates.
   """
   def process_row(%{type: :row, children: children} = row, space, acc)
-      when list?(children) do
+      when is_list(children) do
     # Get attrs with default empty map if not present
     attrs = Map.get(row, :attrs, %{})
 
@@ -135,7 +134,7 @@ defmodule Raxol.UI.Layout.Containers do
         space,
         acc
       )
-      when list?(children) do
+      when is_list(children) do
     # Get attrs with default empty map if not present
     attrs = Map.get(column, :attrs, %{})
 
@@ -242,7 +241,7 @@ defmodule Raxol.UI.Layout.Containers do
         %{type: :row, attrs: _attrs, children: children},
         available_space
       )
-      when list?(children) do
+      when is_list(children) do
     # Skip if no children
     if children == [] do
       %{width: 0, height: 0}
@@ -291,7 +290,7 @@ defmodule Raxol.UI.Layout.Containers do
         %{type: :column, attrs: _attrs, children: children},
         available_space
       )
-      when list?(children) do
+      when is_list(children) do
     # Skip if no children
     if children == [] do
       %{width: 0, height: 0}

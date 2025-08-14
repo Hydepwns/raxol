@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Preferences.Store do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Handles storage and retrieval of user preferences.
   """
@@ -14,7 +13,7 @@ defmodule Raxol.Core.Preferences.Store do
   # Make public
   def save_to_preferences(config) do
     # Convert struct to map if necessary
-    config_map = if struct?(config), do: Map.from_struct(config), else: config
+    config_map = if is_struct(config), do: Map.from_struct(config), else: config
 
     pref_data =
       Map.take(config_map, [

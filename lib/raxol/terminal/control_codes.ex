@@ -160,39 +160,12 @@ defmodule Raxol.Terminal.ControlCodes do
         :line_feed_mode
       )
 
-    final_cursor =
-      cond do
-        is_pid(moved_cursor) ->
-          if line_feed_mode do
-            # LNM ON: move to column 0 (carriage return behavior)
-            GenServer.call(moved_cursor, {:move_to_column, 0})
-          else
-            # LNM OFF: stay at same column position
-            GenServer.call(moved_cursor, {:move_to_column, current_col})
-          end
-
-          moved_cursor
-
-        is_map(moved_cursor) ->
-          if Map.has_key?(moved_cursor, :row) and
-               Map.has_key?(moved_cursor, :col) do
-            if line_feed_mode do
-              # LNM ON: move to column 0 (carriage return behavior)
-              Raxol.Terminal.Cursor.Manager.move_to_column(moved_cursor, 0)
-            else
-              # LNM OFF: stay at same column position
-              Raxol.Terminal.Cursor.Manager.move_to_column(
-                moved_cursor,
-                current_col
-              )
-            end
-          else
-            cursor
-          end
-
-        true ->
-          cursor
-      end
+    final_cursor = apply_line_feed_cursor_adjustment(
+      moved_cursor,
+      cursor,
+      current_col,
+      line_feed_mode
+    )
 
     log_cursor_position(final_cursor)
     %{emulator | cursor: final_cursor}
@@ -591,5 +564,25 @@ defmodule Raxol.Terminal.ControlCodes do
       emulator
       | charset_state: %{emulator.charset_state | gr: :g3}
     }
+  end
+
+  # Helper function for line feed cursor adjustment
+  defp apply_line_feed_cursor_adjustment(moved_cursor, cursor, current_col, line_feed_mode) when is_pid(moved_cursor) do
+    target_col = if line_feed_mode, do: 0, else: current_col
+    GenServer.call(moved_cursor, {:move_to_column, target_col})
+    moved_cursor
+  end
+
+  defp apply_line_feed_cursor_adjustment(moved_cursor, cursor, current_col, line_feed_mode) when is_map(moved_cursor) do
+    if Map.has_key?(moved_cursor, :row) and Map.has_key?(moved_cursor, :col) do
+      target_col = if line_feed_mode, do: 0, else: current_col
+      Raxol.Terminal.Cursor.Manager.move_to_column(moved_cursor, target_col)
+    else
+      cursor
+    end
+  end
+
+  defp apply_line_feed_cursor_adjustment(_moved_cursor, cursor, _current_col, _line_feed_mode) do
+    cursor
   end
 end

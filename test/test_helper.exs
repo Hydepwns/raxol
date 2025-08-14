@@ -187,7 +187,7 @@ Mox.defmock(Raxol.Mocks.FocusManagerMock,
 )
 
 Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
-  for: Raxol.Core.KeyboardShortcutsBehaviour
+  for: Raxol.Core.KeyboardShortcutsRefactoredBehaviour
 )
 
 # Clipboard assertions are automatically loaded via elixirc_paths

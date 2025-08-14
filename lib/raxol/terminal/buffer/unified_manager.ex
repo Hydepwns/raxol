@@ -8,8 +8,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   use GenServer
   require Logger
   require Raxol.Core.Runtime.Log
-  import Raxol.Guards
-
+  
   alias Raxol.Terminal.{
     ScreenBuffer,
     Buffer.Scroll,
@@ -102,7 +101,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     * `{:ok, pid}` - The process ID of the started buffer manager
   """
   def start_link(opts \\ []) do
-    opts = if map?(opts), do: Enum.into(opts, []), else: opts
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     name = Keyword.get(opts, :name)
     gen_server_opts = Keyword.delete(opts, :name)
 
@@ -137,7 +136,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, cell}` - The cell at the specified position
   """
-  def get_cell(pid, x, y) when pid?(pid) do
+  def get_cell(pid, x, y) when is_pid(pid) do
     GenServer.call(pid, {:get_cell, x, y})
   end
 
@@ -153,7 +152,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def set_cell(pid, x, y, cell) when pid?(pid) do
+  def set_cell(pid, x, y, cell) when is_pid(pid) do
     GenServer.call(pid, {:set_cell, x, y, cell})
   end
 
@@ -171,7 +170,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def fill_region(pid, x, y, width, height, cell) when pid?(pid) do
+  def fill_region(pid, x, y, width, height, cell) when is_pid(pid) do
     GenServer.call(pid, {:fill_region, x, y, width, height, cell})
   end
 
@@ -189,7 +188,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def scroll_region(pid, x, y, width, height, amount) when pid?(pid) do
+  def scroll_region(pid, x, y, width, height, amount) when is_pid(pid) do
     GenServer.call(pid, {:scroll_region, x, y, width, height, amount})
   end
 
@@ -202,7 +201,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   ## Returns
     * `{:ok, new_state}` - The updated buffer manager state
   """
-  def clear(pid) when pid?(pid) do
+  def clear(pid) when is_pid(pid) do
     GenServer.call(pid, :clear)
   end
 

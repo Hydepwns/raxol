@@ -1,6 +1,5 @@
 defmodule Raxol.Style.Colors.PaletteManager do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Manages color palette generation and scale creation with accessibility considerations.
   """
@@ -18,7 +17,7 @@ defmodule Raxol.Style.Colors.PaletteManager do
   """
   @spec generate_scale(String.t(), pos_integer()) :: [String.t()]
   def generate_scale(base_color, steps)
-      when binary?(base_color) and steps > 0 do
+      when is_binary(base_color) and steps > 0 do
     # Convert hex to HSL for easier manipulation
     {h, s, l} = hex_to_hsl(base_color)
 
@@ -75,14 +74,20 @@ defmodule Raxol.Style.Colors.PaletteManager do
       else: delta / (max_val + min_val)
   end
 
-  defp calculate_hue(r, g, b, max_val, delta) do
-    h =
-      cond do
-        max_val == r -> (g - b) / delta * 60
-        max_val == g -> ((b - r) / delta + 2) * 60
-        max_val == b -> ((r - g) / delta + 4) * 60
-      end
-
+  # Helper functions for pattern matching refactoring
+  
+  defp calculate_hue(r, g, b, max_val, delta) when max_val == r do
+    h = (g - b) / delta * 60
+    if h < 0, do: h + 360, else: h
+  end
+  
+  defp calculate_hue(r, g, b, max_val, delta) when max_val == g do
+    h = ((b - r) / delta + 2) * 60
+    if h < 0, do: h + 360, else: h
+  end
+  
+  defp calculate_hue(r, g, b, max_val, delta) when max_val == b do
+    h = ((r - g) / delta + 4) * 60
     if h < 0, do: h + 360, else: h
   end
 
@@ -111,16 +116,12 @@ defmodule Raxol.Style.Colors.PaletteManager do
     c * (1 - abs(rem(trunc(h / 60), 2) - 1))
   end
 
-  defp hsl_rgb_components(h, c, x) do
-    cond do
-      h < 60 -> {c, x, 0}
-      h < 120 -> {x, c, 0}
-      h < 180 -> {0, c, x}
-      h < 240 -> {0, x, c}
-      h < 300 -> {x, 0, c}
-      true -> {c, 0, x}
-    end
-  end
+  defp hsl_rgb_components(h, c, x) when h < 60, do: {c, x, 0}
+  defp hsl_rgb_components(h, c, x) when h < 120, do: {x, c, 0}
+  defp hsl_rgb_components(h, c, x) when h < 180, do: {0, c, x}
+  defp hsl_rgb_components(h, c, x) when h < 240, do: {0, x, c}
+  defp hsl_rgb_components(h, c, x) when h < 300, do: {x, 0, c}
+  defp hsl_rgb_components(_h, c, x), do: {c, 0, x}
 
   defp rgb_to_hex(r, g, b) do
     "#" <>

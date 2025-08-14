@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Runtime.Application do
-  import Raxol.Guards
-
+  
   @moduledoc """
   Defines the behaviour for Raxol applications following The Elm Architecture (TEA).
 
@@ -160,14 +159,14 @@ defmodule Raxol.Core.Runtime.Application do
 
       # Helper functions
       def command(cmd), do: Command.new(cmd)
-      def batch(cmds) when list?(cmds), do: Command.batch(cmds)
+      def batch(cmds) when is_list(cmds), do: Command.batch(cmds)
 
-      def subscribe_to_events(events) when list?(events) do
+      def subscribe_to_events(events) when is_list(events) do
         Subscription.events(events)
       end
 
       def subscribe_interval(interval, msg) do
-        if integer?(interval) and interval > 0 do
+        if is_integer(interval) and interval > 0 do
           Subscription.interval(interval, msg)
         else
           {:error, :invalid_argument}
@@ -192,7 +191,7 @@ defmodule Raxol.Core.Runtime.Application do
   """
   @spec delegate_init(module(), context()) ::
           {model(), list(Command.t())} | {:error, term()}
-  def delegate_init(app_module, context) when atom?(app_module) do
+  def delegate_init(app_module, context) when is_atom(app_module) do
     alias Raxol.Core.Runtime.Log
     require Logger
 
@@ -246,10 +245,10 @@ defmodule Raxol.Core.Runtime.Application do
 
   defp normalize_init_result(app_module, result) do
     case result do
-      {model, commands} when map?(model) and list?(commands) ->
+      {model, commands} when is_map(model) and is_list(commands) ->
         {:ok, {model, commands}}
 
-      model when map?(model) ->
+      model when is_map(model) ->
         # If only model is returned, default to no commands
         {:ok, {model, []}}
 
@@ -269,7 +268,7 @@ defmodule Raxol.Core.Runtime.Application do
   @spec delegate_update(module(), message(), model()) ::
           {model(), list(Command.t())} | {:error, term()}
   def delegate_update(app_module, message, current_model)
-      when atom?(app_module) do
+      when is_atom(app_module) do
     with true <- function_exported?(app_module, :update, 2),
          {:ok, result} <-
            safely_call_update(app_module, message, current_model),
@@ -299,7 +298,7 @@ defmodule Raxol.Core.Runtime.Application do
 
   defp normalize_update_result(app_module, result, message, current_model) do
     case result do
-      {new_model, commands} when map?(new_model) and list?(commands) ->
+      {new_model, commands} when is_map(new_model) and is_list(commands) ->
         {:ok, {new_model, commands}}
 
       invalid_return ->
@@ -432,13 +431,13 @@ defmodule Raxol.Core.Runtime.Application do
   def update(app_module, message, model) do
     if function_exported?(app_module, :update, 2) do
       case app_module.update(message, model) do
-        {updated_model, commands} when list?(commands) ->
+        {updated_model, commands} when is_list(commands) ->
           {updated_model, commands}
 
         {updated_model, command} ->
           {updated_model, [command]}
 
-        updated_model when map?(updated_model) ->
+        updated_model when is_map(updated_model) ->
           {updated_model, []}
 
         # Allow returning only commands? Maybe not standard TEA.

@@ -529,11 +529,20 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Core do
         _ -> String.length(text)
       end
 
-    cond do
-      style.double_width -> base_width * 2
-      style.double_height != :none -> base_width
-      true -> base_width
-    end
+    calculate_width_with_style(base_width, style)
+  end
+
+  defp calculate_width_with_style(base_width, %{double_width: true}) do
+    base_width * 2
+  end
+
+  defp calculate_width_with_style(base_width, %{double_height: height})
+       when height != :none do
+    base_width
+  end
+
+  defp calculate_width_with_style(base_width, _style) do
+    base_width
   end
 
   @doc """

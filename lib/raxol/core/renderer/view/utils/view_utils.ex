@@ -3,8 +3,7 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
   Provides utility functions for common view operations in the Raxol view system.
   """
 
-  import Raxol.Guards
-
+  
   @doc """
   Normalizes spacing values for padding and margin.
   Accepts various input formats and converts them to a standardized format.
@@ -15,7 +14,7 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
       normalize_spacing({10, 20})    # {10, 20, 10, 20}
       normalize_spacing({1, 2, 3, 4}) # {1, 2, 3, 4}
   """
-  def normalize_spacing(spacing) when integer?(spacing) do
+  def normalize_spacing(spacing) when is_integer(spacing) do
     if spacing < 0 do
       raise ArgumentError, "Padding must be a positive integer or tuple"
     end
@@ -64,7 +63,7 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
       normalize_margin({10, 20})    # {10, 20, 10, 20}
       normalize_margin({1, 2, 3, 4}) # {1, 2, 3, 4}
   """
-  def normalize_margin(spacing) when integer?(spacing) do
+  def normalize_margin(spacing) when is_integer(spacing) do
     if spacing < 0 do
       raise ArgumentError, "Margin must be a positive integer or tuple"
     end
@@ -138,7 +137,7 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
 
   defp apply_foreground(text, nil), do: text
 
-  defp apply_foreground(text, color) when atom?(color) do
+  defp apply_foreground(text, color) when is_atom(color) do
     code = color_to_code(color)
     "\e[38;5;#{code}m#{text}\e[39m"
   end
@@ -149,7 +148,7 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
 
   defp apply_background(text, nil), do: text
 
-  defp apply_background(text, color) when atom?(color) do
+  defp apply_background(text, color) when is_atom(color) do
     code = color_to_code(color)
     "\e[48;5;#{code}m#{text}\e[49m"
   end
@@ -210,10 +209,10 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
   end
 
   defp calculate_dimension(min, max, available) do
-    cond do
-      min && available < min -> min
-      max && available > max -> max
-      true -> available
+    case {min, max, available} do
+      {min, _max, available} when not is_nil(min) and available < min -> min
+      {_min, max, available} when not is_nil(max) and available > max -> max
+      {_min, _max, available} -> available
     end
   end
 

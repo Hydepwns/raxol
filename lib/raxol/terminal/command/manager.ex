@@ -7,8 +7,7 @@ defmodule Raxol.Terminal.Command.Manager do
   This module is responsible for handling command parsing, validation, and execution.
   """
 
-  import Raxol.Guards
-  alias Raxol.Terminal.{Emulator, Command}
+    alias Raxol.Terminal.{Emulator, Command}
   require Raxol.Core.Runtime.Log
 
   defstruct command_buffer: "",
@@ -87,7 +86,7 @@ defmodule Raxol.Terminal.Command.Manager do
     GenServer.call(pid, :get_command_history)
   end
 
-  def add_to_history(pid, command) when binary?(command) do
+  def add_to_history(pid, command) when is_binary(command) do
     GenServer.call(pid, {:add_to_history, command})
   end
 
@@ -158,7 +157,7 @@ defmodule Raxol.Terminal.Command.Manager do
 
   @impl GenServer
   def handle_call({:add_to_history, command}, _from, state)
-      when binary?(command) do
+      when is_binary(command) do
     new_state = add_to_history_state(state, command)
     {:reply, :ok, new_state}
   end
@@ -206,7 +205,7 @@ defmodule Raxol.Terminal.Command.Manager do
   Updates the command buffer.
   """
   def update_command_buffer(%Raxol.Terminal.Command{} = state, new_buffer)
-      when binary?(new_buffer) do
+      when is_binary(new_buffer) do
     %{state | command_buffer: new_buffer}
   end
 
@@ -214,7 +213,7 @@ defmodule Raxol.Terminal.Command.Manager do
   Adds a command to the history.
   """
   def add_to_history_state(%Raxol.Terminal.Command{} = state, command)
-      when binary?(command) do
+      when is_binary(command) do
     new_history = state.history ++ [command]
     max_history = state.max_history || 100
 
@@ -323,7 +322,7 @@ defmodule Raxol.Terminal.Command.Manager do
   Gets a command from history by index.
   """
   def get_history_command(%Raxol.Terminal.Command{} = state, index)
-      when integer?(index) do
+      when is_integer(index) do
     if index >= 0 and index < length(state.history) do
       {:ok, Enum.at(state.history, index)}
     else
@@ -335,7 +334,7 @@ defmodule Raxol.Terminal.Command.Manager do
   Searches command history for a matching command.
   """
   def search_history(%Raxol.Terminal.Command{} = state, pattern)
-      when binary?(pattern) do
+      when is_binary(pattern) do
     matches = Enum.filter(state.history, &String.contains?(&1, pattern))
     if Enum.empty?(matches), do: {:error, :not_found}, else: {:ok, matches}
   end
@@ -375,7 +374,7 @@ defmodule Raxol.Terminal.Command.Manager do
 
   # Private helper functions
 
-  defp parse_command(command) when binary?(command) do
+  defp parse_command(command) when is_binary(command) do
     # Split command into name and arguments
     [cmd | args] = String.split(command)
     {:ok, {cmd, args}}

@@ -89,12 +89,12 @@ defmodule Raxol.Benchmark.Reporter do
     end
   end
 
-  defp calculate_trends(historical_data) do
-    if length(historical_data) < 2 do
-      %{trend: "insufficient_data"}
-    else
-      %{trend: "stable", direction: "neutral"}
-    end
+  defp calculate_trends(historical_data) when length(historical_data) < 2 do
+    %{trend: "insufficient_data"}
+  end
+
+  defp calculate_trends(_historical_data) do
+    %{trend: "stable", direction: "neutral"}
   end
 
   defp generate_alerts(_historical_data) do
@@ -269,25 +269,13 @@ defmodule Raxol.Benchmark.Reporter do
     print_performance_highlights(report_data.performance_metrics)
 
     # Regressions
-    if length(report_data.regressions) > 0 do
-      IO.puts("\n⚠️  PERFORMANCE REGRESSIONS")
-      IO.puts("=" |> String.duplicate(70))
-      print_regressions(report_data.regressions)
-    end
+    print_regressions_section(report_data.regressions)
 
     # Improvements
-    if length(report_data.improvements) > 0 do
-      IO.puts("\n✅ PERFORMANCE IMPROVEMENTS")
-      IO.puts("=" |> String.duplicate(70))
-      print_improvements(report_data.improvements)
-    end
+    print_improvements_section(report_data.improvements)
 
     # Recommendations
-    if length(report_data.recommendations) > 0 do
-      IO.puts("\n💡 RECOMMENDATIONS")
-      IO.puts("=" |> String.duplicate(70))
-      print_recommendations(report_data.recommendations)
-    end
+    print_recommendations_section(report_data.recommendations)
 
     # Detailed Results
     IO.puts("\n📈 DETAILED RESULTS")
@@ -535,6 +523,30 @@ defmodule Raxol.Benchmark.Reporter do
   end
 
   # Print helpers for console output
+
+  defp print_regressions_section([]), do: :ok
+
+  defp print_regressions_section(regressions) do
+    IO.puts("\n⚠️  PERFORMANCE REGRESSIONS")
+    IO.puts("=" |> String.duplicate(70))
+    print_regressions(regressions)
+  end
+
+  defp print_improvements_section([]), do: :ok
+
+  defp print_improvements_section(improvements) do
+    IO.puts("\n✅ PERFORMANCE IMPROVEMENTS")
+    IO.puts("=" |> String.duplicate(70))
+    print_improvements(improvements)
+  end
+
+  defp print_recommendations_section([]), do: :ok
+
+  defp print_recommendations_section(recommendations) do
+    IO.puts("\n💡 RECOMMENDATIONS")
+    IO.puts("=" |> String.duplicate(70))
+    print_recommendations(recommendations)
+  end
 
   defp print_summary(summary) do
     IO.puts("Total Benchmarks: #{summary.total_benchmarks}")

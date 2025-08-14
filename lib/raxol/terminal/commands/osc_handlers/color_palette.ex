@@ -14,8 +14,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
   - rgb(r%,g%,b%) (percentage, 0-100%)
   """
 
-  import Raxol.Guards
-  alias Raxol.Terminal.Emulator
+    alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
   @spec handle_4(Emulator.t(), String.t()) ::
@@ -56,19 +55,15 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
   end
 
   defp parse_color_spec(spec) do
-    cond do
-      String.starts_with?(spec, "rgb:") ->
-        parse_rgb_hex(spec)
-
-      String.starts_with?(spec, "#") ->
-        parse_hex_color(spec)
-
-      String.starts_with?(spec, "rgb(") ->
-        parse_rgb_decimal(spec)
-
-      true ->
-        {:error, :unsupported_format}
-    end
+    color_parsers = [
+      {&String.starts_with?(&1, "rgb:"), &parse_rgb_hex/1},
+      {&String.starts_with?(&1, "#"), &parse_hex_color/1},
+      {&String.starts_with?(&1, "rgb("), &parse_rgb_decimal/1}
+    ]
+    
+    Enum.find_value(color_parsers, {:error, :unsupported_format}, fn {check, parser} ->
+      if check.(spec), do: parser.(spec), else: nil
+    end)
   end
 
   defp parse_rgb_hex(spec) do
@@ -108,7 +103,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
 
   defp parse_rgb_decimal("rgb(" <> rest) do
     case String.trim_trailing(rest, ")") do
-      rest when binary?(rest) -> parse_rgb_components(rest)
+      rest when is_binary(rest) -> parse_rgb_components(rest)
       _ -> {:error, :invalid_format}
     end
   end

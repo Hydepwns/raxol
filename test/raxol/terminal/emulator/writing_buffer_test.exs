@@ -255,7 +255,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       # With height=1, no scrollback is generated
       scrollback_lines = buffer_after_wrap.scrollback
 
-      assert length(scrollback_lines) == 0,
+      assert Enum.empty?(scrollback_lines),
              "No scrollback expected with height=1"
 
       # Check cursor position and flag  

@@ -479,23 +479,24 @@ defmodule Raxol.Terminal.Integration.Renderer do
     end
   end
 
-  defp validate_dimensions(width, height) do
-    cond do
-      width <= 0 ->
-        {:error, {:invalid_width, width}}
+  defp validate_dimensions(width, height) when width <= 0 do
+    {:error, {:invalid_width, width}}
+  end
 
-      height <= 0 ->
-        {:error, {:invalid_height, height}}
+  defp validate_dimensions(width, height) when height <= 0 do
+    {:error, {:invalid_height, height}}
+  end
 
-      width > 1000 ->
-        {:error, {:width_too_large, width}}
+  defp validate_dimensions(width, height) when width > 1000 do
+    {:error, {:width_too_large, width}}
+  end
 
-      height > 1000 ->
-        {:error, {:height_too_large, height}}
+  defp validate_dimensions(width, height) when height > 1000 do
+    {:error, {:height_too_large, height}}
+  end
 
-      true ->
-        :ok
-    end
+  defp validate_dimensions(_width, _height) do
+    :ok
   end
 
   defp validate_theme(theme) when is_map(theme) do

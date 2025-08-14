@@ -170,10 +170,9 @@ defmodule Raxol.Handlers.UpdateTerminalHandler do
   end
 
   defp validate_version(current_config, expected_version) do
-    if current_config.version == expected_version do
-      :ok
-    else
-      {:error, :version_mismatch}
+    case current_config.version == expected_version do
+      true -> :ok
+      false -> {:error, :version_mismatch}
     end
   end
 
@@ -417,10 +416,9 @@ defmodule Raxol.Handlers.CloseTerminalHandler do
   end
 
   defp validate_version(terminal_state, expected_version) do
-    if terminal_state.version == expected_version do
-      :ok
-    else
-      {:error, :version_mismatch}
+    case terminal_state.version == expected_version do
+      true -> :ok
+      false -> {:error, :version_mismatch}
     end
   end
 
@@ -431,6 +429,8 @@ defmodule Raxol.Handlers.CloseTerminalHandler do
     end
   end
 
+  defp save_session_if_requested(_terminal_process, false), do: {:ok, false}
+
   defp save_session_if_requested(terminal_process, true) do
     case GenServer.call(terminal_process, :save_session) do
       :ok -> {:ok, true}
@@ -438,8 +438,6 @@ defmodule Raxol.Handlers.CloseTerminalHandler do
       {:error, _reason} -> {:ok, false}
     end
   end
-
-  defp save_session_if_requested(_terminal_process, false), do: {:ok, false}
 
   defp terminate_terminal_process(terminal_process) do
     case GenServer.stop(terminal_process, :normal, 5000) do
@@ -547,10 +545,9 @@ defmodule Raxol.Handlers.ApplyThemeHandler do
   end
 
   defp validate_version(terminal_state, expected_version) do
-    if terminal_state.version == expected_version do
-      :ok
-    else
-      {:error, :version_mismatch}
+    case terminal_state.version == expected_version do
+      true -> :ok
+      false -> {:error, :version_mismatch}
     end
   end
 
@@ -591,10 +588,9 @@ defmodule Raxol.Handlers.ApplyThemeHandler do
   defp merge_accessibility_options(base_options, overrides, high_contrast) do
     merged = Map.merge(base_options || %{}, overrides || %{})
 
-    if high_contrast do
-      Map.put(merged, :high_contrast_mode, true)
-    else
-      merged
+    case high_contrast do
+      true -> Map.put(merged, :high_contrast_mode, true)
+      false -> merged
     end
   end
 
