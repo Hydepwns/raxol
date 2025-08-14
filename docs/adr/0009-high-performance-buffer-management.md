@@ -38,12 +38,12 @@ Implement a modular, high-performance buffer management architecture using speci
 
 ### Core Buffer Architecture
 
-#### 1. **Modular Buffer Server** (`lib/raxol/terminal/buffer/buffer_server_refactored.ex`)
+#### 1. **Modular Buffer Server** (`lib/raxol/terminal/buffer/buffer_server.ex`)
 
 Refactored GenServer-based buffer with delegated responsibilities:
 
 ```elixir
-defmodule Raxol.Terminal.Buffer.BufferServerRefactored do
+defmodule Raxol.Terminal.Buffer.BufferServer do
   # Delegated modules for specialized concerns
   alias Raxol.Terminal.Buffer.{
     OperationProcessor,  # Handles operation processing and batching
@@ -327,7 +327,7 @@ end
 
 ## References
 
-- [BufferServerRefactored Implementation](../../lib/raxol/terminal/buffer/buffer_server_refactored.ex)
+- [BufferServer Implementation](../../lib/raxol/terminal/buffer/buffer_server.ex)
 - [Damage Tracker](../../lib/raxol/terminal/buffer/damage_tracker.ex)
 - [Buffer Manager](../../lib/raxol/terminal/buffer/manager.ex)
 - [Performance Benchmarks](../../lib/raxol/benchmarks/visualization_benchmark.ex)

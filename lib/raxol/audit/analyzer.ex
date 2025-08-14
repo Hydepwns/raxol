@@ -136,13 +136,7 @@ defmodule Raxol.Audit.Analyzer do
     # Add event to recent events queue
     new_recent = :queue.in(event, state.recent_events)
 
-    new_recent =
-      if :queue.len(new_recent) > 1000 do
-        {_, trimmed} = :queue.out(new_recent)
-        trimmed
-      else
-        new_recent
-      end
+    new_recent = trim_queue_if_needed(new_recent, 1000)
 
     # Run detection rules
     detections = run_detection_rules(event, state.detection_rules, state)
@@ -178,9 +172,7 @@ defmodule Raxol.Audit.Analyzer do
     }
 
     # Trigger alerts if needed
-    if should_alert?(analysis_result) do
-      send_security_alert(analysis_result, state)
-    end
+    maybe_send_alert(analysis_result, state)
 
     {analysis_result, new_state}
   end
@@ -224,49 +216,13 @@ defmodule Raxol.Audit.Analyzer do
     anomalies = []
 
     # Check for unusual time of activity
-    anomalies =
-      if unusual_time?(event, state) do
-        [
-          %{
-            type: :unusual_time,
-            severity: :low,
-            details: "Activity at unusual hour"
-          }
-          | anomalies
-        ]
-      else
-        anomalies
-      end
+    anomalies = add_time_anomaly_if_needed(anomalies, event, state)
 
     # Check for unusual location
-    anomalies =
-      if unusual_location?(event, state) do
-        [
-          %{
-            type: :unusual_location,
-            severity: :medium,
-            details: "Access from new location"
-          }
-          | anomalies
-        ]
-      else
-        anomalies
-      end
+    anomalies = add_location_anomaly_if_needed(anomalies, event, state)
 
     # Check for unusual behavior pattern
-    anomalies =
-      if unusual_behavior?(event, state) do
-        [
-          %{
-            type: :unusual_behavior,
-            severity: :high,
-            details: "Behavior deviates from baseline"
-          }
-          | anomalies
-        ]
-      else
-        anomalies
-      end
+    anomalies = add_behavior_anomaly_if_needed(anomalies, event, state)
 
     anomalies
   end
@@ -282,19 +238,7 @@ defmodule Raxol.Audit.Analyzer do
       end)
 
     correlations_with_auth =
-      if failed_auth_count > 5 do
-        [
-          %{
-            type: :brute_force_attempt,
-            severity: :high,
-            event_count: failed_auth_count,
-            details: "Multiple failed authentication attempts detected"
-          }
-          | correlations
-        ]
-      else
-        correlations
-      end
+      add_brute_force_correlation(correlations, failed_auth_count)
 
     # Check for data exfiltration pattern
     data_access_events =
@@ -302,26 +246,10 @@ defmodule Raxol.Audit.Analyzer do
         Map.get(e, :operation) in [:read, :export]
       end)
 
-    if length(data_access_events) > 10 do
-      total_records =
-        Enum.sum(Enum.map(data_access_events, &Map.get(&1, :records_count, 0)))
-
-      if total_records > 1000 do
-        [
-          %{
-            type: :potential_data_exfiltration,
-            severity: :critical,
-            records_accessed: total_records,
-            details: "Large volume of data accessed in short time"
-          }
-          | correlations_with_auth
-        ]
-      else
-        correlations_with_auth
-      end
-    else
-      correlations_with_auth
-    end
+    check_and_add_exfiltration_pattern(
+      correlations_with_auth,
+      data_access_events
+    )
   end
 
   defp detect_attack_patterns(events, _state) do
@@ -334,20 +262,7 @@ defmodule Raxol.Audit.Analyzer do
           String.contains?(Map.get(e, :command, ""), ["sudo", "su", "chmod"])
       end)
 
-    patterns_with_priv =
-      if length(priv_events) > 3 do
-        [
-          %{
-            type: :privilege_escalation_attempt,
-            severity: :critical,
-            event_count: length(priv_events),
-            details: "Multiple privilege escalation attempts detected"
-          }
-          | patterns
-        ]
-      else
-        patterns
-      end
+    patterns_with_priv = add_privilege_escalation_pattern(patterns, priv_events)
 
     # Check for reconnaissance patterns
     recon_commands = [
@@ -366,19 +281,7 @@ defmodule Raxol.Audit.Analyzer do
         Enum.any?(recon_commands, &String.contains?(command, &1))
       end)
 
-    if length(recon_events) > 5 do
-      [
-        %{
-          type: :reconnaissance_activity,
-          severity: :medium,
-          event_count: length(recon_events),
-          details: "System reconnaissance activity detected"
-        }
-        | patterns_with_priv
-      ]
-    else
-      patterns_with_priv
-    end
+    add_reconnaissance_pattern(patterns_with_priv, recon_events)
   end
 
   defp analyze_data_flow(events, _state) do
@@ -394,19 +297,7 @@ defmodule Raxol.Audit.Analyzer do
         |> Enum.uniq()
         |> length()
 
-      if resources_accessed > 50 do
-        [
-          %{
-            type: :excessive_resource_access,
-            user_id: user_id,
-            severity: :medium,
-            resources_count: resources_accessed,
-            details: "User accessed unusually high number of resources"
-          }
-        ]
-      else
-        []
-      end
+      check_excessive_resource_access(user_id, resources_accessed)
     end)
   end
 
@@ -437,18 +328,15 @@ defmodule Raxol.Audit.Analyzer do
     hour not in usual_hours
   end
 
+  defp unusual_location?(%{ip_address: nil}, _state), do: false
+
   defp unusual_location?(event, state) do
+    user_id = Map.get(event, :user_id)
+    user_profile = Map.get(state.user_profiles, user_id, %{})
+    known_ips = Map.get(user_profile, :known_ips, MapSet.new())
     ip = Map.get(event, :ip_address)
 
-    if ip == nil do
-      false
-    else
-      user_id = Map.get(event, :user_id)
-      user_profile = Map.get(state.user_profiles, user_id, %{})
-      known_ips = Map.get(user_profile, :known_ips, MapSet.new())
-
-      not MapSet.member?(known_ips, ip)
-    end
+    not MapSet.member?(known_ips, ip)
   end
 
   defp unusual_behavior?(event, state) do
@@ -503,29 +391,9 @@ defmodule Raxol.Audit.Analyzer do
     critical_detection = Enum.any?(detections, &(&1.severity == :critical))
     high_detection = Enum.any?(detections, &(&1.severity == :high))
 
-    actions =
-      if critical_detection do
-        [
-          :immediate_investigation,
-          :notify_security_team,
-          :consider_blocking | actions
-        ]
-      else
-        actions
-      end
-
-    actions =
-      if high_detection do
-        [:investigate, :increase_monitoring | actions]
-      else
-        actions
-      end
-
-    if length(anomalies) > 3 do
-      [:review_user_activity | actions]
-    else
-      actions
-    end
+    actions = add_critical_actions(actions, critical_detection)
+    actions = add_high_priority_actions(actions, high_detection)
+    add_anomaly_review_if_needed(actions, anomalies)
   end
 
   defp should_alert?(analysis_result) do
@@ -544,49 +412,32 @@ defmodule Raxol.Audit.Analyzer do
     end)
   end
 
+  defp update_user_profile(%{user_id: nil}, profiles), do: profiles
+
   defp update_user_profile(event, profiles) do
     user_id = Map.get(event, :user_id)
 
-    if user_id == nil do
-      profiles
-    else
-      profile =
-        Map.get(profiles, user_id, %{
-          usual_hours: MapSet.new(),
-          known_ips: MapSet.new(),
-          common_events: [],
-          behavior_baseline: %{}
-        })
+    profile =
+      Map.get(profiles, user_id, %{
+        usual_hours: MapSet.new(),
+        known_ips: MapSet.new(),
+        common_events: [],
+        behavior_baseline: %{}
+      })
 
-      # Update profile with new data
-      hour =
-        event.timestamp
-        |> DateTime.from_unix!(:millisecond)
-        |> Map.get(:hour)
+    # Update profile with new data
+    hour =
+      event.timestamp
+      |> DateTime.from_unix!(:millisecond)
+      |> Map.get(:hour)
 
-      updated_profile =
-        profile
-        |> Map.update!(:usual_hours, &MapSet.put(&1, hour))
-        |> Map.update!(:known_ips, fn ips ->
-          if ip = Map.get(event, :ip_address) do
-            MapSet.put(ips, ip)
-          else
-            ips
-          end
-        end)
-        |> Map.update!(:common_events, fn events ->
-          event_type = Map.get(event, :event_type)
+    updated_profile =
+      profile
+      |> Map.update!(:usual_hours, &MapSet.put(&1, hour))
+      |> Map.update!(:known_ips, &update_known_ips(&1, event))
+      |> Map.update!(:common_events, &update_common_events(&1, event))
 
-          if event_type in events do
-            events
-          else
-            # Keep last 20 event types
-            [event_type | Enum.take(events, 19)]
-          end
-        end)
-
-      Map.put(profiles, user_id, updated_profile)
-    end
+    Map.put(profiles, user_id, updated_profile)
   end
 
   defp analyze_recent_patterns(state) do
@@ -594,10 +445,7 @@ defmodule Raxol.Audit.Analyzer do
 
     # Analyze patterns in recent events
     patterns = detect_attack_patterns(recent_list, state)
-
-    if length(patterns) > 0 do
-      Logger.warning("Patterns detected in recent events: #{inspect(patterns)}")
-    end
+    log_patterns_if_found(patterns)
 
     state
   end
@@ -620,14 +468,7 @@ defmodule Raxol.Audit.Analyzer do
         Map.get(e, :severity) == :high
       end)
 
-    threat_level =
-      cond do
-        critical_events > 5 -> :critical
-        critical_events > 0 -> :high
-        high_events > 10 -> :high
-        high_events > 5 -> :medium
-        true -> :low
-      end
+    threat_level = determine_threat_level(critical_events, high_events)
 
     %{
       threat_level: threat_level,
@@ -778,4 +619,223 @@ defmodule Raxol.Audit.Analyzer do
       resource: Map.get(event, :resource_id)
     }
   end
+
+  # Helper functions for pattern matching refactoring
+
+  defp determine_threat_level(critical_events, _high_events)
+       when critical_events > 5,
+       do: :critical
+
+  defp determine_threat_level(critical_events, _high_events)
+       when critical_events > 0,
+       do: :high
+
+  defp determine_threat_level(_critical_events, high_events)
+       when high_events > 10,
+       do: :high
+
+  defp determine_threat_level(_critical_events, high_events)
+       when high_events > 5,
+       do: :medium
+
+  defp determine_threat_level(_critical_events, _high_events), do: :low
+
+  defp trim_queue_if_needed(queue, max_length) do
+    case :queue.len(queue) > max_length do
+      true ->
+        {_, trimmed} = :queue.out(queue)
+        trimmed
+
+      false ->
+        queue
+    end
+  end
+
+  defp maybe_send_alert(analysis_result, state) do
+    case should_alert?(analysis_result) do
+      true -> send_security_alert(analysis_result, state)
+      false -> :ok
+    end
+  end
+
+  defp add_time_anomaly_if_needed(anomalies, event, state) do
+    case unusual_time?(event, state) do
+      true ->
+        [
+          %{
+            type: :unusual_time,
+            severity: :low,
+            details: "Activity at unusual hour"
+          }
+          | anomalies
+        ]
+
+      false ->
+        anomalies
+    end
+  end
+
+  defp add_location_anomaly_if_needed(anomalies, event, state) do
+    case unusual_location?(event, state) do
+      true ->
+        [
+          %{
+            type: :unusual_location,
+            severity: :medium,
+            details: "Access from new location"
+          }
+          | anomalies
+        ]
+
+      false ->
+        anomalies
+    end
+  end
+
+  defp add_behavior_anomaly_if_needed(anomalies, event, state) do
+    case unusual_behavior?(event, state) do
+      true ->
+        [
+          %{
+            type: :unusual_behavior,
+            severity: :high,
+            details: "Behavior deviates from baseline"
+          }
+          | anomalies
+        ]
+
+      false ->
+        anomalies
+    end
+  end
+
+  defp add_brute_force_correlation(correlations, failed_auth_count)
+       when failed_auth_count > 5 do
+    [
+      %{
+        type: :brute_force_attempt,
+        severity: :high,
+        event_count: failed_auth_count,
+        details: "Multiple failed authentication attempts detected"
+      }
+      | correlations
+    ]
+  end
+
+  defp add_brute_force_correlation(correlations, _failed_auth_count),
+    do: correlations
+
+  defp check_and_add_exfiltration_pattern(correlations, data_access_events)
+       when length(data_access_events) > 10 do
+    total_records =
+      Enum.sum(Enum.map(data_access_events, &Map.get(&1, :records_count, 0)))
+
+    add_exfiltration_if_high_volume(correlations, total_records)
+  end
+
+  defp check_and_add_exfiltration_pattern(correlations, _data_access_events),
+    do: correlations
+
+  defp add_exfiltration_if_high_volume(correlations, total_records)
+       when total_records > 1000 do
+    [
+      %{
+        type: :potential_data_exfiltration,
+        severity: :critical,
+        records_accessed: total_records,
+        details: "Large volume of data accessed in short time"
+      }
+      | correlations
+    ]
+  end
+
+  defp add_exfiltration_if_high_volume(correlations, _total_records),
+    do: correlations
+
+  defp add_critical_actions(actions, true) do
+    [
+      :immediate_investigation,
+      :notify_security_team,
+      :consider_blocking | actions
+    ]
+  end
+
+  defp add_critical_actions(actions, false), do: actions
+
+  defp add_high_priority_actions(actions, true) do
+    [:investigate, :increase_monitoring | actions]
+  end
+
+  defp add_high_priority_actions(actions, false), do: actions
+
+  defp add_anomaly_review_if_needed(actions, anomalies)
+       when length(anomalies) > 3 do
+    [:review_user_activity | actions]
+  end
+
+  defp add_anomaly_review_if_needed(actions, _anomalies), do: actions
+
+  defp update_known_ips(ips, %{ip_address: nil}), do: ips
+  defp update_known_ips(ips, %{ip_address: ip}), do: MapSet.put(ips, ip)
+
+  defp update_common_events(events, event) do
+    event_type = Map.get(event, :event_type)
+
+    case event_type in events do
+      true -> events
+      # Keep last 20 event types
+      false -> [event_type | Enum.take(events, 19)]
+    end
+  end
+
+  defp log_patterns_if_found([]), do: :ok
+
+  defp log_patterns_if_found(patterns) do
+    Logger.warning("Patterns detected in recent events: #{inspect(patterns)}")
+  end
+
+  defp add_privilege_escalation_pattern(patterns, priv_events)
+       when length(priv_events) > 3 do
+    [
+      %{
+        type: :privilege_escalation_attempt,
+        severity: :critical,
+        event_count: length(priv_events),
+        details: "Multiple privilege escalation attempts detected"
+      }
+      | patterns
+    ]
+  end
+
+  defp add_privilege_escalation_pattern(patterns, _priv_events), do: patterns
+
+  defp add_reconnaissance_pattern(patterns, recon_events)
+       when length(recon_events) > 5 do
+    [
+      %{
+        type: :reconnaissance_activity,
+        severity: :medium,
+        event_count: length(recon_events),
+        details: "System reconnaissance activity detected"
+      }
+      | patterns
+    ]
+  end
+
+  defp add_reconnaissance_pattern(patterns, _recon_events), do: patterns
+
+  defp check_excessive_resource_access(user_id, resources_accessed)
+       when resources_accessed > 50 do
+    [
+      %{
+        type: :excessive_resource_access,
+        user_id: user_id,
+        severity: :medium,
+        resources_count: resources_accessed,
+        details: "User accessed unusually high number of resources"
+      }
+    ]
+  end
+
+  defp check_excessive_resource_access(_user_id, _resources_accessed), do: []
 end
