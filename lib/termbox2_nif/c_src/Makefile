@@ -21,7 +21,7 @@ ERL_CFLAGS ?= -I$(ERL_EI_INCLUDE_DIR)
 ERL_LDFLAGS ?= -L$(ERL_EI_LIBDIR) -lei
 
 # Set C-specific compile and linker flags
-CFLAGS ?= -O2 -Wall -Wextra -Wno-unused-parameter -std=c99 -Itermbox2
+CFLAGS ?= -O2 -Wall -Wextra -Wno-unused-parameter -std=c99 -fPIC -Itermbox2
 LDFLAGS ?= -shared
 
 # Set platform-specific compile and linker flags
