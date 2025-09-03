@@ -63,6 +63,16 @@ end
 def compute_value(fun) do
   ErrorHandling.safe_call_with_default(fun, 0)
 end
+
+# Good - Safe GenServer calls
+def get_server_state(server) do
+  ErrorHandling.safe_genserver_call(server, :get_state)
+end
+
+# Good - Binary operations
+def load_config(binary_data) do
+  ErrorHandling.safe_deserialize(binary_data)
+end
 ```
 
 ## Patterns to Avoid
@@ -116,15 +126,22 @@ def execute_effect(effect_fn) do
 end
 ```
 
-### Binary Deserialization
+### Binary Operations
 
 ```elixir
-# Use safe deserialization helper
+# Safe deserialization from file
 def load_from_file(path) do
-  with {:ok, binary} <- File.read(path),
-       {:ok, term} <- ErrorHandling.safe_deserialize(binary) do
-    {:ok, term}
-  end
+  ErrorHandling.safe_read_term(path)
+end
+
+# Safe serialization to file  
+def save_to_file(path, data) do
+  ErrorHandling.safe_write_term(path, data)
+end
+
+# Safe binary deserialization
+def load_config(binary_data) do
+  ErrorHandling.safe_deserialize(binary_data)
 end
 ```
 
@@ -135,6 +152,30 @@ end
 def call_optional_callback(module, callback, args) do
   ErrorHandling.safe_callback(module, callback, args)
 end
+
+# Safe module function calls
+def call_module_function(module, function, args) do
+  ErrorHandling.safe_apply(module, function, args)
+end
+```
+
+### GenServer Operations
+
+```elixir
+# Safe GenServer calls with timeout handling
+def get_server_data(server) do
+  ErrorHandling.safe_genserver_call(server, :get_data, 5000)
+end
+
+# Handle server unavailability gracefully
+def update_server(server, data) do
+  case ErrorHandling.safe_genserver_call(server, {:update, data}) do
+    {:ok, result} -> result
+    {:error, :not_available} -> {:error, "Server not available"}
+    {:error, :timeout} -> {:error, "Request timed out"}
+    {:error, reason} -> {:error, reason}
+  end
+end
 ```
 
 ### Arithmetic Operations
@@ -143,6 +184,50 @@ end
 # Handle nil values gracefully
 def increment_counter(value) do
   ErrorHandling.safe_arithmetic(fn x -> x + 1 end, value, 0)
+end
+
+# Safe percentage calculations
+def calculate_percentage(part, total) do
+  ErrorHandling.safe_arithmetic(fn _ -> 
+    if total > 0, do: (part / total) * 100, else: 0
+  end, part, 0)
+end
+```
+
+### Batch Operations
+
+```elixir
+# Execute multiple operations safely
+def process_batch(operations) do
+  ErrorHandling.safe_batch(operations)
+end
+
+# Execute operations in sequence, stop on first error
+def process_sequence(operations) do
+  ErrorHandling.safe_sequence(operations)
+end
+```
+
+### Resource Management
+
+```elixir
+# Ensure cleanup is called
+def with_database_connection(fun) do
+  ErrorHandling.with_cleanup(
+    fn -> 
+      {:ok, conn} = Database.connect()
+      {:ok, conn}
+    end,
+    fn conn -> Database.close(conn) end
+  )
+end
+
+# Always execute cleanup regardless of outcome
+def critical_operation_with_cleanup(fun) do
+  ErrorHandling.ensure_cleanup(
+    fn -> perform_operation() end,
+    fn -> release_resources() end
+  )
 end
 ```
 
@@ -224,6 +309,59 @@ ErrorHandling.safe_call_with_logging(
   fn -> operation() end,
   "Operation failed"
 )
+```
+
+### Converting Try/Catch with Cleanup
+
+#### Before:
+```elixir
+resource = nil
+try do
+  resource = acquire_resource()
+  process_resource(resource)
+after
+  if resource, do: release_resource(resource)
+end
+```
+
+#### After:
+```elixir
+ErrorHandling.with_cleanup(
+  fn -> 
+    resource = acquire_resource()
+    {:ok, process_resource(resource)}
+  end,
+  fn _resource -> release_resource(resource) end
+)
+```
+
+### Converting Batch Operations
+
+#### Before:
+```elixir
+results = []
+errors = []
+
+for operation <- operations do
+  try do
+    result = operation.()
+    results = [result | results]
+  rescue
+    error -> errors = [error | errors]
+  end
+end
+```
+
+#### After:
+```elixir
+# For collecting all results
+results = ErrorHandling.safe_batch(operations)
+
+# Or for stopping on first error
+case ErrorHandling.safe_sequence(operations) do
+  {:ok, results} -> process_results(results)
+  {:error, reason} -> handle_error(reason)
+end
 ```
 
 ### Converting Complex Try/Catch

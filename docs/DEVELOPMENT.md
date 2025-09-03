@@ -31,6 +31,12 @@ This guide explains how to set up and work with the Raxol development environmen
 - **Module**: `Raxol.Security.SessionManager` - Secure session management
 - **Module**: `Raxol.Security.InputValidator` - Schema-based input validation
 
+### Functional Programming Standards (v1.1.0)
+- **Module**: `Raxol.Core.ErrorHandling` - Functional error handling with Result types
+- **Guide**: `docs/ERROR_HANDLING_GUIDE.md` - Comprehensive error handling patterns
+- **Migration**: `docs/guides/FUNCTIONAL_PROGRAMMING_MIGRATION.md` - Migration from imperative patterns
+- **Performance**: 7 hot-path caches with 30-70% improvements
+
 ### Code Standards
 - **Module**: `Raxol.Core.Standards.CodeStyle` - Coding standards and patterns
 - **Module**: `Raxol.Core.Standards.ConsistencyChecker` - Automated consistency checking
@@ -215,7 +221,59 @@ When contributing to Raxol:
 2. Run tests before submitting: `mix test`
 3. Check code quality: `mix credo`
 4. Update documentation if needed
-5. Follow the existing code style
+5. Follow functional programming patterns (see guides below)
+
+### Functional Programming Best Practices
+
+**Error Handling Patterns** (Required for all new code):
+
+```elixir
+# ✅ Use Result types with explicit error handling
+alias Raxol.Core.ErrorHandling
+
+def process_data(input) do
+  with {:ok, validated} <- ErrorHandling.safe_call(fn -> validate(input) end),
+       {:ok, transformed} <- ErrorHandling.safe_call(fn -> transform(validated) end),
+       {:ok, result} <- ErrorHandling.safe_call(fn -> save(transformed) end) do
+    {:ok, result}
+  end
+end
+
+# ✅ Use safe wrappers for external operations  
+def call_external_service(params) do
+  ErrorHandling.safe_genserver_call(ServiceManager, {:call, params}, 5000)
+end
+
+# ✅ Use functional composition for pipelines
+def process_pipeline(data) do
+  data
+  |> ErrorHandling.safe_call(&validate_input/1)
+  |> ErrorHandling.flat_map(&ErrorHandling.safe_call(fn input -> process(input) end))
+  |> ErrorHandling.map(&format_output/1)
+end
+
+# ❌ Avoid try/catch for control flow
+def old_pattern(data) do
+  try do
+    result = risky_operation(data)
+    {:ok, result}
+  rescue
+    error -> {:error, error}
+  end
+end
+```
+
+**Performance Guidelines**:
+- Use caching for expensive computations (see existing cache modules)
+- Implement damage tracking for UI operations  
+- Prefer streams over lists for large datasets
+- Profile hot paths and add performance caches when needed
+
+**Code Organization**:
+- Group related functions in modules with clear responsibilities
+- Use `@spec` types for all public functions
+- Document complex error handling flows
+- Test both happy path and error scenarios
 
 ## Advanced Usage
 
