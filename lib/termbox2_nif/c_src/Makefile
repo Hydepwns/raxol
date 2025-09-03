@@ -31,8 +31,8 @@ ifeq ($(shell uname),Darwin)
 endif
 
 # Set source and object files
-SRC = termbox2_nif.c termbox2/termbox_impl.c
-OBJ = termbox2_nif.o termbox2/termbox_impl.o
+SRC = termbox2_nif.c termbox_impl.c
+OBJ = termbox2_nif.o termbox_impl.o
 
 # Set target library name
 TARGET = termbox2_nif.so
@@ -44,8 +44,8 @@ all: $(TARGET)
 termbox2_nif.o: termbox2_nif.c
 	$(CC) $(CFLAGS) $(ERL_CFLAGS) -I. -c $< -o $@
 
-# Compile termbox2/termbox_impl.c
-termbox2/termbox_impl.o: termbox2/termbox_impl.c
+# Compile termbox_impl.c
+termbox_impl.o: termbox_impl.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Link object files into shared library
