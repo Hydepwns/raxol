@@ -3,7 +3,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerTestHelper do
   Test helper functions for DependencyManager tests.
   """
 
-  
   @doc "Creates a complex version requirements structure for testing."
   @spec create_complex_version_requirements(term()) :: term()
   def create_complex_version_requirements(_input), do: %{}

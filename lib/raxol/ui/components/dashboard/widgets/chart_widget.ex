@@ -8,7 +8,7 @@ defmodule Raxol.UI.Components.Dashboard.Widgets.ChartWidget do
   # --- State ---
 
   defstruct [:id, :config, :data, :component_opts]
-  
+
   # --- Lifecycle / State Management ---
 
   @spec init(keyword()) :: map()

@@ -49,12 +49,12 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
 
       result =
         case Raxol.Core.ErrorHandling.safe_call(fn ->
-          case operation do
-            {module, function, args} -> apply(module, function, args)
-            fun when is_function(fun) -> fun.()
-            _ -> {:error, :invalid_operation}
-          end
-        end) do
+               case operation do
+                 {module, function, args} -> apply(module, function, args)
+                 fun when is_function(fun) -> fun.()
+                 _ -> {:error, :invalid_operation}
+               end
+             end) do
           {:ok, result} -> result
           {:error, {error, _stacktrace}} -> {:error, {:execution_error, error}}
         end
@@ -427,7 +427,8 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
 
   defp scale_pool(new_size, current_size, state) when new_size < current_size do
     # Scale down
-    {workers_to_keep, workers_to_terminate} = Enum.split(state.workers, new_size)
+    {workers_to_keep, workers_to_terminate} =
+      Enum.split(state.workers, new_size)
 
     # Stop excess workers gracefully
     Enum.each(workers_to_terminate, fn worker_pid ->
@@ -461,8 +462,9 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
   end
 
   defp classify_worker_crash(worker_pid, state) do
-    worker_location = {worker_pid in state.workers, worker_pid in state.overflow_workers}
-    
+    worker_location =
+      {worker_pid in state.workers, worker_pid in state.overflow_workers}
+
     case worker_location do
       {true, _} -> :permanent_worker
       {false, true} -> :overflow_worker

@@ -56,6 +56,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
       {:error, :timeout} ->
         Logger.error("Write operation timed out, using fallback")
         {:error, :timeout}
+
       error ->
         error
     end
@@ -72,6 +73,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
       {:error, :timeout} ->
         Logger.error("Read operation timed out")
         {:error, :timeout}
+
       error ->
         error
     end
@@ -126,15 +128,19 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
          {:ok, result, new_state} <- execute_safe_write(data, opts, state) do
       {:reply, {:ok, result}, new_state}
     else
-      {:error, :input_too_large} -> 
+      {:error, :input_too_large} ->
         {:reply, {:error, :input_too_large}, state}
+
       {:error, :circuit_open} ->
         handle_fallback_write(data, opts, state)
+
       {:error, :circuit_failure, message} ->
         handle_write_error(data, opts, message, state, from)
-      {:error, reason} -> 
+
+      {:error, reason} ->
         handle_write_exception(reason, state)
-      error -> 
+
+      error ->
         handle_write_exception({:unexpected_error, error}, state)
     end
   end
@@ -162,11 +168,14 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
          {:ok, new_state} <- execute_safe_resize(width, height, state) do
       {:reply, :ok, new_state}
     else
-      {:error, reason} when reason in [:invalid_dimensions, :dimensions_too_large] ->
+      {:error, reason}
+      when reason in [:invalid_dimensions, :dimensions_too_large] ->
         {:reply, {:error, reason}, state}
+
       {:error, reason} ->
         Logger.error("Resize failed: #{inspect(reason)}")
         {:reply, {:error, reason}, increment_error_count(state)}
+
       error ->
         handle_resize_exception(error, state)
     end
@@ -232,22 +241,25 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   # Private helper functions
 
   defp ensure_pid(pid) when is_pid(pid), do: {:ok, pid}
+
   defp ensure_pid(name) when is_atom(name) do
     case Process.whereis(name) do
       nil -> {:error, :process_not_found}
       pid -> {:ok, pid}
     end
   end
+
   defp ensure_pid(_), do: {:error, :invalid_pid}
 
   defp safe_start_manager(opts) do
     manager_opts = Keyword.take(opts, [:width, :height, :scrollback_size])
-    
+
     case Manager.start_link(manager_opts) do
-      {:ok, pid} -> 
+      {:ok, pid} ->
         Process.monitor(pid)
         {:ok, pid}
-      {:error, reason} -> 
+
+      {:error, reason} ->
         {:error, reason}
     end
   end
@@ -255,15 +267,15 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   defp build_initial_state(manager_pid, opts) do
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)
-    
+
     fallback_buffer = BufferImpl.new(width, height)
-    
+
     circuit_breaker =
       ErrorRecovery.circuit_breaker_init(
         threshold: @circuit_breaker_threshold,
         timeout: @circuit_breaker_timeout
       )
-    
+
     state = %__MODULE__{
       manager_pid: manager_pid,
       circuit_breaker: circuit_breaker,
@@ -277,7 +289,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
         recoveries: 0
       }
     }
-    
+
     {:ok, state}
   end
 
@@ -300,9 +312,10 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp execute_safe_write(data, opts, state) do
-    with {:ok, breaker_result} <- safe_circuit_breaker_call(:buffer_write, fn ->
-           perform_write(state.manager_pid, data, opts)
-         end) do
+    with {:ok, breaker_result} <-
+           safe_circuit_breaker_call(:buffer_write, fn ->
+             perform_write(state.manager_pid, data, opts)
+           end) do
       case breaker_result do
         {:ok, result} ->
           new_stats = Map.update(state.stats, :writes, 1, &(&1 + 1))
@@ -315,12 +328,12 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
 
         {:error, :circuit_failure, message, _metadata} ->
           {:error, :circuit_failure, message}
-          
+
         other ->
           {:error, {:unexpected_breaker_result, other}}
       end
     else
-      {:error, reason} -> 
+      {:error, reason} ->
         {:error, {:write_exception, reason}}
     end
   end
@@ -343,11 +356,12 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp execute_safe_read(opts, state) do
-    with {:ok, retry_result} <- safe_retry_call(
-           fn -> perform_read(state.manager_pid, opts) end,
-           max_attempts: @retry_attempts,
-           backoff: @retry_backoff
-         ) do
+    with {:ok, retry_result} <-
+           safe_retry_call(
+             fn -> perform_read(state.manager_pid, opts) end,
+             max_attempts: @retry_attempts,
+             backoff: @retry_backoff
+           ) do
       case retry_result do
         {:ok, result} ->
           new_stats = Map.update(state.stats, :reads, 1, &(&1 + 1))
@@ -357,7 +371,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
           {:error, reason}
       end
     else
-      {:error, reason} -> 
+      {:error, reason} ->
         {:error, {:read_exception, reason}}
     end
   end
@@ -380,11 +394,13 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
 
   defp validate_dimensions(width, height) do
     case {width, height} do
-      {w, h} when w <= 0 or h <= 0 -> 
+      {w, h} when w <= 0 or h <= 0 ->
         {:error, :invalid_dimensions}
-      {w, h} when w > 10_000 or h > 10_000 -> 
+
+      {w, h} when w > 10_000 or h > 10_000 ->
         {:error, :dimensions_too_large}
-      {_, _} -> 
+
+      {_, _} ->
         {:ok, :valid}
     end
   end
@@ -401,7 +417,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
           {:error, reason}
       end
     else
-      {:error, reason} -> 
+      {:error, reason} ->
         {:error, {:resize_exception, reason}}
     end
   end
@@ -427,7 +443,8 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp perform_write(manager_pid, data, opts) do
-    with {:ok, result} <- safe_genserver_call(manager_pid, {:write, data, opts}, 5_000) do
+    with {:ok, result} <-
+           safe_genserver_call(manager_pid, {:write, data, opts}, 5_000) do
       case result do
         :ok -> {:ok, :written}
         error -> error
@@ -526,11 +543,12 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
     Logger.warning("Write error: #{inspect(reason)}, attempting retry")
 
     # Retry with exponential backoff
-    with {:ok, retry_result} <- safe_retry_call(
-           fn -> perform_write(state.manager_pid, data, opts) end,
-           max_attempts: @retry_attempts,
-           backoff: @retry_backoff
-         ) do
+    with {:ok, retry_result} <-
+           safe_retry_call(
+             fn -> perform_write(state.manager_pid, data, opts) end,
+             max_attempts: @retry_attempts,
+             backoff: @retry_backoff
+           ) do
       case retry_result do
         {:ok, result} ->
           new_stats = Map.update(state.stats, :writes, 1, &(&1 + 1))

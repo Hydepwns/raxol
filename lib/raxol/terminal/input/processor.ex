@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Input.Processor do
-  
   alias Raxol.Terminal.Input.Event.{MouseEvent, KeyEvent}
 
   @moduledoc """
@@ -58,7 +57,7 @@ defmodule Raxol.Terminal.Input.Processor do
   end
 
   defp parse_escape_sequence(input, rest) do
-    case {Regex.match?(~r/^\d+;\d+;\d+;\d+M$/, rest), 
+    case {Regex.match?(~r/^\d+;\d+;\d+;\d+M$/, rest),
           Regex.match?(~r/^\d+;\d+;\d+;\d+;\d+;\d+M$/, rest)} do
       {true, _} -> parse_mouse_event(input)
       {_, true} -> parse_mouse_event(input)
@@ -125,7 +124,8 @@ defmodule Raxol.Terminal.Input.Processor do
   Parses key event sequences.
   """
   def parse_key_event(input) when is_binary(input) do
-    case {function_key?(input), modifier_key?(input), simple_modifier_key?(input), single_char?(input)} do
+    case {function_key?(input), modifier_key?(input),
+          simple_modifier_key?(input), single_char?(input)} do
       {true, _, _, _} -> parse_function_key(input)
       {_, true, _, _} -> parse_modifier_key(input)
       {_, _, true, _} -> parse_simple_modifier_key(input)
@@ -298,11 +298,16 @@ defmodule Raxol.Terminal.Input.Processor do
 
   defp calculate_modifier_code(modifiers) do
     case {:ctrl in modifiers, :shift in modifiers, :alt in modifiers} do
-      {true, true, _} -> 5  # ctrl + shift
-      {true, false, _} -> 5  # ctrl only
-      {false, true, _} -> 2  # shift only
-      {false, false, true} -> 3  # alt only
-      _ -> 1  # no modifiers
+      # ctrl + shift
+      {true, true, _} -> 5
+      # ctrl only
+      {true, false, _} -> 5
+      # shift only
+      {false, true, _} -> 2
+      # alt only
+      {false, false, true} -> 3
+      # no modifiers
+      _ -> 1
     end
   end
 

@@ -29,6 +29,7 @@ defmodule RaxolWeb.ErrorHelpers do
     case Raxol.Core.ErrorHandling.safe_call(value_fn) do
       {:ok, value} ->
         assign(socket, key, value)
+
       {:error, error} ->
         Logger.error("Error assigning #{key}: #{inspect(error)}")
         assign(socket, key, nil)

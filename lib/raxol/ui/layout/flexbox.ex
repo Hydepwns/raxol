@@ -32,7 +32,7 @@ defmodule Raxol.UI.Layout.Flexbox do
       }
   """
 
-    alias Raxol.UI.Layout.Engine
+  alias Raxol.UI.Layout.Engine
 
   @type t :: %{
           type: :flexbox,

@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Renderer.View.Components.Text do
-  
   @moduledoc """
   Handles text rendering for the Raxol view system.
   Provides text styling, wrapping, and alignment functionality.

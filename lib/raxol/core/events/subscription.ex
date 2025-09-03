@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Events.Subscription do
-  
   @moduledoc """
   Provides helpers for managing event subscriptions.
 

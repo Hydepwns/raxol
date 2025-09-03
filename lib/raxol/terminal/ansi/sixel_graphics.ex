@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ANSI.SixelGraphics do
-    require Logger
+  require Logger
 
   @moduledoc """
   Sixel graphics support for terminal rendering.

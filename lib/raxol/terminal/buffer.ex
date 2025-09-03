@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Buffer do
   Manages the terminal buffer state and operations.
   """
 
-  
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.{Cell, Operations}
 

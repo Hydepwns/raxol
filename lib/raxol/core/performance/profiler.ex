@@ -400,7 +400,7 @@ defmodule Raxol.Core.Performance.Profiler do
         end
 
         result
-      
+
       {:error, {kind, error, stacktrace}} ->
         if trace, do: stop_tracing()
         :erlang.raise(kind, error, stacktrace)

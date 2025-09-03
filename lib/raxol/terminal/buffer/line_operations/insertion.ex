@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
   Handles line insertion operations for the screen buffer.
   """
 
-    alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
 
   @doc """

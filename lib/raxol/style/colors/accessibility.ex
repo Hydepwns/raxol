@@ -1,5 +1,4 @@
 defmodule Raxol.Style.Colors.Accessibility do
-  
   @moduledoc """
   Provides utilities for color accessibility, focusing on WCAG contrast.
   """
@@ -256,7 +255,14 @@ defmodule Raxol.Style.Colors.Accessibility do
     # Call the new helper function
     min_ratio = min_contrast(level)
 
-    choose_accessible_pair(base_color, white, black, contrast_with_white, contrast_with_black, min_ratio)
+    choose_accessible_pair(
+      base_color,
+      white,
+      black,
+      contrast_with_white,
+      contrast_with_black,
+      min_ratio
+    )
   end
 
   # Define the missing helper function
@@ -265,18 +271,40 @@ defmodule Raxol.Style.Colors.Accessibility do
 
   # Helper functions for pattern matching refactoring
 
-  defp choose_accessible_pair(base_color, white, _black, contrast_with_white, _contrast_with_black, min_ratio)
+  defp choose_accessible_pair(
+         base_color,
+         white,
+         _black,
+         contrast_with_white,
+         _contrast_with_black,
+         min_ratio
+       )
        when contrast_with_white >= min_ratio,
        do: {white, base_color}
-       
-  defp choose_accessible_pair(base_color, _white, black, _contrast_with_white, contrast_with_black, min_ratio)
+
+  defp choose_accessible_pair(
+         base_color,
+         _white,
+         black,
+         _contrast_with_white,
+         contrast_with_black,
+         min_ratio
+       )
        when contrast_with_black >= min_ratio,
        do: {black, base_color}
-       
-  defp choose_accessible_pair(base_color, _white, _black, _contrast_with_white, _contrast_with_black, _min_ratio) do
+
+  defp choose_accessible_pair(
+         base_color,
+         _white,
+         _black,
+         _contrast_with_white,
+         _contrast_with_black,
+         _min_ratio
+       ) do
     Raxol.Core.Runtime.Log.debug(
       "Could not find accessible pair for color: #{inspect(base_color)}"
     )
+
     # Could not find a simple black/white contrast pair
     nil
   end
@@ -395,9 +423,12 @@ defmodule Raxol.Style.Colors.Accessibility do
 
   defp normalize_color(color) when is_binary(color), do: Color.from_hex(color)
   defp normalize_color(color), do: color
-  
+
   defp normalize_background(nil), do: Color.from_hex("#FFFFFF")
-  defp normalize_background(background) when is_binary(background), do: Color.from_hex(background)
+
+  defp normalize_background(background) when is_binary(background),
+    do: Color.from_hex(background)
+
   defp normalize_background(background), do: background
 
   defp extract_options(opts) do

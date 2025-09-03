@@ -299,8 +299,8 @@ defmodule Raxol.Terminal.Extension.Manager do
 
   defp apply_event_handler(event, args) do
     case ErrorHandling.safe_call(fn ->
-      event.handler.(args)
-    end) do
+           event.handler.(args)
+         end) do
       {:ok, result} -> result
       {:error, e} -> {:error, {:event_handler_error, e}}
     end
@@ -308,8 +308,8 @@ defmodule Raxol.Terminal.Extension.Manager do
 
   defp apply_command_handler(command, args) do
     case ErrorHandling.safe_call(fn ->
-      command.handler.(args)
-    end) do
+           command.handler.(args)
+         end) do
       {:ok, result} -> result
       {:error, e} -> {:error, {:command_handler_error, e}}
     end

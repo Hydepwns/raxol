@@ -7,7 +7,7 @@ defmodule Raxol.System.DeltaUpdater do
   # Called via adapter now
   alias Raxol.System.DeltaUpdaterSystemAdapterImpl
   alias Raxol.Core.ErrorHandling
-  
+
   defp system_adapter do
     Application.get_env(:raxol, :system_adapter, DeltaUpdaterSystemAdapterImpl)
   end

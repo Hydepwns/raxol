@@ -143,9 +143,9 @@ defmodule Mix.Tasks.Raxol.CheckConsistency do
 
   defp fix_issue(%{type: :formatting, file: file}) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      System.cmd("mix", ["format", file])
-      :ok
-    end) do
+           System.cmd("mix", ["format", file])
+           :ok
+         end) do
       {:ok, :ok} -> :ok
       {:error, _} -> {:error, "Failed to run mix format"}
     end

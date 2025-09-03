@@ -3,7 +3,6 @@ defmodule Raxol.Core.Runtime.Plugins.CellProcessor do
   This module is responsible for processing cells in the Raxol runtime.
   """
 
-  
   @doc """
   Process a cell with the given data.
   """

@@ -48,12 +48,14 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
   @spec process_sequence(String.t(), list(String.t())) :: window_event() | nil
   def process_sequence(sequence, params) do
     case ErrorHandling.safe_call(fn ->
-      case get_sequence_handler(sequence) do
-        nil -> nil
-        handler -> handler.(params)
-      end
-    end) do
-      {:ok, result} -> result
+           case get_sequence_handler(sequence) do
+             nil -> nil
+             handler -> handler.(params)
+           end
+         end) do
+      {:ok, result} ->
+        result
+
       {:error, e} ->
         handle_sequence_error(sequence, params, e, nil)
     end
@@ -65,12 +67,22 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
 
   defp handle_sequence_error(sequence, params, error, stacktrace) do
     case ErrorHandling.safe_call(fn ->
-      Monitor.record_error(sequence, "Window event error: #{inspect(error)}", %{
-        params: params,
-        stacktrace: (if stacktrace, do: Exception.format_stacktrace(stacktrace), else: nil)
-      })
-    end) do
-      {:ok, _} -> :ok
+           Monitor.record_error(
+             sequence,
+             "Window event error: #{inspect(error)}",
+             %{
+               params: params,
+               stacktrace:
+                 if(stacktrace,
+                   do: Exception.format_stacktrace(stacktrace),
+                   else: nil
+                 )
+             }
+           )
+         end) do
+      {:ok, _} ->
+        :ok
+
       {:error, e} ->
         Monitor.record_error(
           sequence,

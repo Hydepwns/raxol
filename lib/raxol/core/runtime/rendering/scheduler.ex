@@ -4,7 +4,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   """
 
   use GenServer
-    alias Raxol.Core.Runtime.Rendering.Engine
+  alias Raxol.Core.Runtime.Rendering.Engine
 
   defmodule State do
     @moduledoc false

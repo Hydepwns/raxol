@@ -10,7 +10,7 @@ defmodule Raxol.Core.Renderer.Manager do
   """
 
   use GenServer
-  
+
   alias Raxol.Core.Renderer.Buffer
   alias Raxol.Core.Events.Manager, as: Manager
   alias Raxol.Core.Runtime.ComponentManager

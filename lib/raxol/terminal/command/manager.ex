@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Command.Manager do
   This module is responsible for handling command parsing, validation, and execution.
   """
 
-    alias Raxol.Terminal.{Emulator, Command}
+  alias Raxol.Terminal.{Emulator, Command}
   require Raxol.Core.Runtime.Log
 
   defstruct command_buffer: "",
@@ -377,9 +377,9 @@ defmodule Raxol.Terminal.Command.Manager do
   defp parse_command(command) when is_binary(command) do
     # Split command into name and arguments with functional error handling
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      [cmd | args] = String.split(command)
-      {cmd, args}
-    end) do
+           [cmd | args] = String.split(command)
+           {cmd, args}
+         end) do
       {:ok, result} -> {:ok, result}
       {:error, _} -> {:error, :invalid_command}
     end

@@ -3,7 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.State do
   Handles plugin state management operations - getting, setting, and updating plugin states.
   """
 
-    require Raxol.Core.Runtime.Log
+  require Raxol.Core.Runtime.Log
 
   @type plugin_id :: String.t()
   @type state :: map()
@@ -48,6 +48,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.State do
             updated_plugins = Map.put(state.plugins, plugin_id, updated_plugin)
             updated_state = %{state | plugins: updated_plugins}
             {:ok, updated_state}
+
           {:error, error} ->
             Raxol.Core.Runtime.Log.error_with_stacktrace(
               "Failed to update plugin #{plugin_id}",

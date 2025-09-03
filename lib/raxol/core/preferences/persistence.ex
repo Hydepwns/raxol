@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Preferences.Persistence do
-  
   @moduledoc """
   Handles persistence (loading/saving) of user preferences to a file.
   """
@@ -36,15 +35,19 @@ defmodule Raxol.Core.Preferences.Persistence do
         case ErrorHandling.safe_deserialize(binary_data) do
           {:ok, preferences} when is_map(preferences) ->
             {:ok, preferences}
+
           {:ok, _} ->
             Raxol.Core.Runtime.Log.error(
               "Preferences file content is not a map: #{path}"
             )
+
             {:error, :invalid_format}
+
           {:error, _} ->
             Raxol.Core.Runtime.Log.error(
               "Failed to decode preferences file #{path}"
             )
+
             {:error, :decoding_failed}
         end
 
@@ -73,11 +76,14 @@ defmodule Raxol.Core.Preferences.Persistence do
     path = preferences_path()
 
     case ErrorHandling.safe_write_term(path, preferences) do
-      {:ok, :ok} -> :ok
+      {:ok, :ok} ->
+        :ok
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "Failed to save preferences to #{path}: #{inspect(reason)}"
         )
+
         {:error, reason}
     end
   end

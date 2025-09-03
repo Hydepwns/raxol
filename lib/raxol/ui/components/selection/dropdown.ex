@@ -103,10 +103,11 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
       :toggle_expand ->
         new_state = %{state | expanded: !state.expanded}
         # Update focus on nested list when expanding/collapsing
-        list_focus_msg = case new_state.expanded do
-          true -> :focus
-          false -> :blur
-        end
+        list_focus_msg =
+          case new_state.expanded do
+            true -> :focus
+            false -> :blur
+          end
 
         {list_state, list_cmds} =
           List.update(list_focus_msg, new_state.list_state)
@@ -117,10 +118,11 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
         # Item selected in the list, update dropdown state and collapse
         new_state = %{state | selected_option: selected_item, expanded: false}
 
-        commands = case state.on_change do
-          nil -> []
-          callback -> [{callback, selected_item}]
-        end
+        commands =
+          case state.on_change do
+            nil -> []
+            callback -> [{callback, selected_item}]
+          end
 
         {new_state, commands}
 
@@ -161,14 +163,15 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
       _ ->
         case state.expanded do
           true ->
-          # Forward event to the list component using handle_event/3
-          {new_list_state, list_cmds} =
-            List.handle_event(event, %{}, state.list_state)
+            # Forward event to the list component using handle_event/3
+            {new_list_state, list_cmds} =
+              List.handle_event(event, %{}, state.list_state)
 
-          {%{state | list_state: new_list_state}, list_cmds}
+            {%{state | list_state: new_list_state}, list_cmds}
+
           false ->
-          # Handle other keys for collapsed dropdown if needed
-          {state, []}
+            # Handle other keys for collapsed dropdown if needed
+            {state, []}
         end
     end
   end
@@ -196,11 +199,13 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
   @spec render(__MODULE__.t(), map()) :: any()
   @impl Raxol.UI.Components.Base.Component
   def render(state, %{} = _props) do
-    dsl_result = case state.expanded do
-      true ->
-        render_expanded(state)
-      false ->
-        render_collapsed(state)
+    dsl_result =
+      case state.expanded do
+        true ->
+          render_expanded(state)
+
+        false ->
+          render_collapsed(state)
       end
 
     # Return the element structure directly

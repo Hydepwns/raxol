@@ -1,5 +1,4 @@
 defmodule Raxol.Plugins.ClipboardPlugin do
-  
   @moduledoc """
   Plugin for clipboard operations in Raxol.
   """

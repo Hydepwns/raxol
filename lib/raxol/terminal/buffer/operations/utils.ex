@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Utils do
   Utility operations for terminal buffers including buffer creation, resizing, and cell operations.
   """
 
-    alias Raxol.Terminal.Buffer.Cell
+  alias Raxol.Terminal.Buffer.Cell
 
   @doc """
   Resizes the buffer to the specified dimensions.

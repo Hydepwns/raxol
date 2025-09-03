@@ -235,13 +235,15 @@ defmodule Raxol.Audit.Storage do
 
   defp safe_write_lines(file, lines) do
     # Use Task to safely write lines with timeout
-    task = Task.async(fn ->
-      Enum.each(lines, fn line ->
-        IO.write(file, line)
+    task =
+      Task.async(fn ->
+        Enum.each(lines, fn line ->
+          IO.write(file, line)
+        end)
+
+        :ok
       end)
-      :ok
-    end)
-    
+
     case Task.yield(task, 5000) || Task.shutdown(task) do
       {:ok, :ok} -> :ok
       nil -> {:error, :write_timeout}
@@ -264,15 +266,16 @@ defmodule Raxol.Audit.Storage do
   end
 
   defp get_base_events(filters, state) do
-    task = Task.async(fn ->
-      if Map.has_key?(filters, :user_id) and
-           Map.has_key?(state.indexes.user_id, filters.user_id) do
-        get_events_by_ids(state.indexes.user_id[filters.user_id], state)
-      else
-        load_all_events(state)
-      end
-    end)
-    
+    task =
+      Task.async(fn ->
+        if Map.has_key?(filters, :user_id) and
+             Map.has_key?(state.indexes.user_id, filters.user_id) do
+          get_events_by_ids(state.indexes.user_id[filters.user_id], state)
+        else
+          load_all_events(state)
+        end
+      end)
+
     case Task.yield(task, 10000) || Task.shutdown(task) do
       {:ok, events} -> {:ok, events}
       nil -> {:error, :load_events_timeout}
@@ -281,16 +284,17 @@ defmodule Raxol.Audit.Storage do
   end
 
   defp apply_filters(events, filters, state) do
-    task = Task.async(fn ->
-      events
-      |> filter_by_time(filters)
-      |> filter_by_severity(filters)
-      |> filter_by_event_type(filters)
-      |> filter_by_resource(filters)
-      |> filter_by_session_id(filters)
-      |> filter_by_text_search(filters, state)
-    end)
-    
+    task =
+      Task.async(fn ->
+        events
+        |> filter_by_time(filters)
+        |> filter_by_severity(filters)
+        |> filter_by_event_type(filters)
+        |> filter_by_resource(filters)
+        |> filter_by_session_id(filters)
+        |> filter_by_text_search(filters, state)
+      end)
+
     case Task.yield(task, 5000) || Task.shutdown(task) do
       {:ok, filtered} -> {:ok, filtered}
       nil -> {:error, :filter_timeout}
@@ -299,31 +303,36 @@ defmodule Raxol.Audit.Storage do
   end
 
   defp safe_sort_events(events, opts) do
-    task = Task.async(fn ->
-      sort_events(
-        events,
-        Keyword.get(opts, :sort_by, :timestamp),
-        Keyword.get(opts, :sort_order, :desc)
-      )
-    end)
-    
+    task =
+      Task.async(fn ->
+        sort_events(
+          events,
+          Keyword.get(opts, :sort_by, :timestamp),
+          Keyword.get(opts, :sort_order, :desc)
+        )
+      end)
+
     case Task.yield(task, 3000) || Task.shutdown(task) do
       {:ok, sorted} -> {:ok, sorted}
-      nil -> {:ok, events}  # Return unsorted on timeout
-      {:exit, _reason} -> {:ok, events}  # Return unsorted on error
+      # Return unsorted on timeout
+      nil -> {:ok, events}
+      # Return unsorted on error
+      {:exit, _reason} -> {:ok, events}
     end
   end
 
   defp apply_pagination(events, opts) do
-    task = Task.async(fn ->
-      events
-      |> Enum.drop(Keyword.get(opts, :offset, 0))
-      |> Enum.take(Keyword.get(opts, :limit, 100))
-    end)
-    
+    task =
+      Task.async(fn ->
+        events
+        |> Enum.drop(Keyword.get(opts, :offset, 0))
+        |> Enum.take(Keyword.get(opts, :limit, 100))
+      end)
+
     case Task.yield(task, 1000) || Task.shutdown(task) do
       {:ok, paginated} -> {:ok, paginated}
-      nil -> {:ok, Enum.take(events, 100)}  # Return first 100 on timeout
+      # Return first 100 on timeout
+      nil -> {:ok, Enum.take(events, 100)}
       {:exit, _reason} -> {:ok, Enum.take(events, 100)}
     end
   end
@@ -539,8 +548,8 @@ defmodule Raxol.Audit.Storage do
   defp safe_string_to_atom(string) when is_binary(string) do
     # Safe conversion without try/catch
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      String.to_existing_atom(string)
-    end) do
+           String.to_existing_atom(string)
+         end) do
       {:ok, result} -> result
       {:error, _} -> nil
     end
@@ -727,10 +736,11 @@ defmodule Raxol.Audit.Storage do
 
   defp safe_binary_to_term(binary) do
     # Safe deserialization with Task timeout
-    task = Task.async(fn ->
-      :erlang.binary_to_term(binary)
-    end)
-    
+    task =
+      Task.async(fn ->
+        :erlang.binary_to_term(binary)
+      end)
+
     case Task.yield(task, 1000) || Task.shutdown(task) do
       {:ok, term} -> {:ok, term}
       _ -> {:error, :deserialize_failed}

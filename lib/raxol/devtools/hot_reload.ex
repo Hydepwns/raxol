@@ -174,6 +174,7 @@ defmodule Raxol.DevTools.HotReload do
         new_hooks = Map.update!(state.hooks, hook_type, &[callback | &1])
         new_state = %{state | hooks: new_hooks}
         {:reply, :ok, new_state}
+
       false ->
         {:reply, {:error, :invalid_hook_type}, state}
     end
@@ -203,6 +204,7 @@ defmodule Raxol.DevTools.HotReload do
       {true, true} ->
         new_state = queue_reload(path, state)
         {:noreply, new_state}
+
       _ ->
         {:noreply, state}
     end
@@ -213,7 +215,9 @@ defmodule Raxol.DevTools.HotReload do
     new_state = %{state | debounce_timer: nil}
 
     case MapSet.size(state.reload_queue) do
-      0 -> {:noreply, new_state}
+      0 ->
+        {:noreply, new_state}
+
       _ ->
         process_reload_queue(state.reload_queue, state)
         final_state = %{new_state | reload_queue: MapSet.new()}
@@ -268,7 +272,9 @@ defmodule Raxol.DevTools.HotReload do
       {:error, reason} ->
         Logger.warning("Directory check failed for #{dir}: #{inspect(reason)}")
         :ok
-      _ -> :ok
+
+      _ ->
+        :ok
     end
   end
 
@@ -375,7 +381,10 @@ defmodule Raxol.DevTools.HotReload do
         # Execute after_reload hooks
         execute_hooks(state.hooks.after_reload, modules_to_reload)
 
-        Logger.info("Successfully reloaded #{length(modules_to_reload)} modules")
+        Logger.info(
+          "Successfully reloaded #{length(modules_to_reload)} modules"
+        )
+
       false ->
         # Execute error hooks
         execute_hooks(state.hooks.on_error, errors)
@@ -429,9 +438,15 @@ defmodule Raxol.DevTools.HotReload do
          :ok <- load_new_module_version(module, filename, binary),
          :ok <- handle_component_refresh(module) do
       case length(warnings) do
-        0 -> :ok
-        _ -> Logger.warning("Compilation warnings for #{module}: #{inspect(warnings)}")
+        0 ->
+          :ok
+
+        _ ->
+          Logger.warning(
+            "Compilation warnings for #{module}: #{inspect(warnings)}"
+          )
       end
+
       :ok
     else
       {:error, reason} -> {:error, reason}
@@ -441,7 +456,8 @@ defmodule Raxol.DevTools.HotReload do
 
   defp get_module_source_file(module) do
     with {:ok, code_result} <- safe_code_get_object_code(module),
-         {:ok, filename} <- extract_filename_from_code_result(code_result, module) do
+         {:ok, filename} <-
+           extract_filename_from_code_result(code_result, module) do
       {:ok, filename}
     else
       {:error, reason} -> {:error, reason}
@@ -459,7 +475,8 @@ defmodule Raxol.DevTools.HotReload do
 
   defp recompile_module(filename, expected_module) do
     with {:ok, compile_result} <- safe_compile_file(filename),
-         {:ok, {binary, warnings}} <- validate_compile_result(compile_result, expected_module) do
+         {:ok, {binary, warnings}} <-
+           validate_compile_result(compile_result, expected_module) do
       {:ok, {binary, warnings}}
     else
       {:error, reason} -> {:error, reason}
@@ -485,8 +502,10 @@ defmodule Raxol.DevTools.HotReload do
   defp execute_hooks(hooks, data) do
     Enum.each(hooks, fn hook ->
       case safe_execute_hook(hook, data) do
-        :ok -> :ok
-        {:error, reason} -> 
+        :ok ->
+          :ok
+
+        {:error, reason} ->
           Logger.error("Hook execution failed: #{inspect(reason)}")
       end
     end)
@@ -512,7 +531,9 @@ defmodule Raxol.DevTools.HotReload do
         true ->
           state = get_component_state(module)
           Map.put(acc, module, state)
-        false -> acc
+
+        false ->
+          acc
       end
     end)
   end
@@ -569,8 +590,12 @@ defmodule Raxol.DevTools.HotReload do
     Task.async(fn -> Path.join(dir, pattern) end)
     |> Task.yield(100)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:pattern_error, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:pattern_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -581,8 +606,12 @@ defmodule Raxol.DevTools.HotReload do
     Task.async(fn -> Path.wildcard(pattern) end)
     |> Task.yield(1000)
     |> case do
-      {:ok, files} -> {:ok, files}
-      {:exit, reason} -> {:error, {:wildcard_error, reason}}
+      {:ok, files} ->
+        {:ok, files}
+
+      {:exit, reason} ->
+        {:error, {:wildcard_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -596,12 +625,17 @@ defmodule Raxol.DevTools.HotReload do
           send(parent_pid, {:file_event, file, [:modified]})
         end
       end)
+
       :processed
     end)
     |> Task.yield(2000)
     |> case do
-      {:ok, :processed} -> {:ok, :processed}
-      {:exit, reason} -> {:error, {:file_processing_error, reason}}
+      {:ok, :processed} ->
+        {:ok, :processed}
+
+      {:exit, reason} ->
+        {:error, {:file_processing_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -612,8 +646,12 @@ defmodule Raxol.DevTools.HotReload do
     Task.async(fn -> File.cwd!() end)
     |> Task.yield(100)
     |> case do
-      {:ok, cwd} -> {:ok, cwd}
-      {:exit, reason} -> {:error, {:cwd_error, reason}}
+      {:ok, cwd} ->
+        {:ok, cwd}
+
+      {:exit, reason} ->
+        {:error, {:cwd_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -624,8 +662,12 @@ defmodule Raxol.DevTools.HotReload do
     Task.async(fn -> Path.relative_to(file_path, cwd) end)
     |> Task.yield(100)
     |> case do
-      {:ok, relative_path} -> {:ok, relative_path}
-      {:exit, reason} -> {:error, {:relative_path_error, reason}}
+      {:ok, relative_path} ->
+        {:ok, relative_path}
+
+      {:exit, reason} ->
+        {:error, {:relative_path_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -636,8 +678,12 @@ defmodule Raxol.DevTools.HotReload do
     Task.async(fn -> String.split(string, delimiter) end)
     |> Task.yield(100)
     |> case do
-      {:ok, parts} -> {:ok, parts}
-      {:exit, reason} -> {:error, {:string_split_error, reason}}
+      {:ok, parts} ->
+        {:ok, parts}
+
+      {:exit, reason} ->
+        {:error, {:string_split_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -648,21 +694,27 @@ defmodule Raxol.DevTools.HotReload do
     Task.async(fn ->
       case path_parts do
         ["lib" | rest] ->
-          module_name = 
+          module_name =
             rest
             |> List.last()
             |> String.trim_trailing(".ex")
             |> Macro.camelize()
             |> then(&Module.concat([&1]))
+
           module_name
+
         _ ->
           throw(:invalid_path_structure)
       end
     end)
     |> Task.yield(200)
     |> case do
-      {:ok, module_name} -> {:ok, module_name}
-      {:exit, reason} -> {:error, {:module_extraction_error, reason}}
+      {:ok, module_name} ->
+        {:ok, module_name}
+
+      {:exit, reason} ->
+        {:error, {:module_extraction_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -673,8 +725,12 @@ defmodule Raxol.DevTools.HotReload do
     Task.async(fn -> :code.get_object_code(module) end)
     |> Task.yield(500)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:code_info_error, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:code_info_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -690,14 +746,18 @@ defmodule Raxol.DevTools.HotReload do
   end
 
   defp safe_code_purge(module) do
-    Task.async(fn -> 
+    Task.async(fn ->
       :code.purge(module)
       :purged
     end)
     |> Task.yield(500)
     |> case do
-      {:ok, :purged} -> {:ok, :purged}
-      {:exit, reason} -> {:error, {:purge_error, reason}}
+      {:ok, :purged} ->
+        {:ok, :purged}
+
+      {:exit, reason} ->
+        {:error, {:purge_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -711,8 +771,12 @@ defmodule Raxol.DevTools.HotReload do
     end)
     |> Task.yield(500)
     |> case do
-      {:ok, :deleted} -> {:ok, :deleted}
-      {:exit, reason} -> {:error, {:delete_error, reason}}
+      {:ok, :deleted} ->
+        {:ok, :deleted}
+
+      {:exit, reason} ->
+        {:error, {:delete_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -725,8 +789,12 @@ defmodule Raxol.DevTools.HotReload do
     end)
     |> Task.yield(5000)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:compilation_error, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:compilation_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -737,12 +805,15 @@ defmodule Raxol.DevTools.HotReload do
     case compile_result do
       {:ok, ^expected_module, binary, warnings} ->
         {:ok, {binary, warnings}}
+
       {:ok, other_module, _binary, _warnings} ->
         {:error, {:module_mismatch, {expected_module, other_module}}}
+
       {:error, errors, warnings} ->
         Logger.error("Compilation errors: #{inspect(errors)}")
         Logger.warning("Compilation warnings: #{inspect(warnings)}")
         {:error, :compilation_failed}
+
       _ ->
         {:error, :unexpected_compile_result}
     end
@@ -755,8 +826,12 @@ defmodule Raxol.DevTools.HotReload do
     end)
     |> Task.yield(1000)
     |> case do
-      {:ok, :loaded} -> {:ok, :loaded}
-      {:exit, reason} -> {:error, {:load_error, reason}}
+      {:ok, :loaded} ->
+        {:ok, :loaded}
+
+      {:exit, reason} ->
+        {:error, {:load_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -768,12 +843,17 @@ defmodule Raxol.DevTools.HotReload do
       if is_component_module?(module) do
         trigger_component_refresh(module)
       end
+
       :component_checked
     end)
     |> Task.yield(500)
     |> case do
-      {:ok, :component_checked} -> {:ok, :component_checked}
-      {:exit, reason} -> {:error, {:component_refresh_error, reason}}
+      {:ok, :component_checked} ->
+        {:ok, :component_checked}
+
+      {:exit, reason} ->
+        {:error, {:component_refresh_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -787,8 +867,12 @@ defmodule Raxol.DevTools.HotReload do
     end)
     |> Task.yield(1000)
     |> case do
-      {:ok, :executed} -> {:ok, :executed}
-      {:exit, reason} -> {:error, {:hook_exception, reason}}
+      {:ok, :executed} ->
+        {:ok, :executed}
+
+      {:exit, reason} ->
+        {:error, {:hook_exception, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -799,8 +883,12 @@ defmodule Raxol.DevTools.HotReload do
     Task.async(fn -> module.__info__(info_type) end)
     |> Task.yield(200)
     |> case do
-      {:ok, info} -> {:ok, info}
-      {:exit, reason} -> {:error, {:module_info_error, reason}}
+      {:ok, info} ->
+        {:ok, info}
+
+      {:exit, reason} ->
+        {:error, {:module_info_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}

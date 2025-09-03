@@ -3,7 +3,6 @@ defmodule Raxol.UI.Layout.Table do
   Handles measurement and positioning logic for Table elements within the LayoutEngine.
   """
 
-  
   require Raxol.Core.Runtime.Log
 
   @doc """

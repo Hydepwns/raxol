@@ -1,41 +1,42 @@
 defmodule Raxol.System.Updater.State do
   @moduledoc """
   Refactored System Updater State module with GenServer-based state management.
-  
+
   This module provides backward compatibility while eliminating Process dictionary usage.
   All state is now managed through the Updater.State.Server GenServer.
-  
+
   ## Migration Notes
-  
+
   This module replaces direct Process dictionary usage with supervised GenServer state.
   The API remains the same, but the implementation is now OTP-compliant and more robust.
-  
+
   ## Features Maintained
-  
+
   * Update settings management
   * Progress tracking for active updates
   * Update history and statistics
   * Error tracking and logging
   * Auto-update configuration
   """
-  
+
   alias Raxol.System.Updater.State.Server
-  
+
   @deprecated "Use Raxol.System.Updater.State instead of Raxol.System.Updater.State"
-  
+
   @update_settings_file "~/.raxol/update_settings.json"
-  
+
   # Ensure server is started
   defp ensure_server_started do
     case Process.whereis(Server) do
       nil ->
         {:ok, _pid} = Server.start_link()
         :ok
+
       _pid ->
         :ok
     end
   end
-  
+
   @doc """
   Get the current update settings.
   """
@@ -43,7 +44,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.get_update_settings()
   end
-  
+
   @doc """
   Set the update settings.
   """
@@ -51,7 +52,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.set_update_settings(settings)
   end
-  
+
   @doc """
   Get the update history.
   """
@@ -59,7 +60,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.get_update_history()
   end
-  
+
   @doc """
   Clear the update history.
   """
@@ -67,7 +68,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.clear_update_history()
   end
-  
+
   @doc """
   Get the current update progress (0-100).
   """
@@ -75,7 +76,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.get_update_progress()
   end
-  
+
   @doc """
   Set the update progress.
   """
@@ -83,7 +84,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.set_update_progress(progress)
   end
-  
+
   @doc """
   Cancel the current update operation.
   """
@@ -91,7 +92,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.cancel_update()
   end
-  
+
   @doc """
   Get any error from the last update attempt.
   """
@@ -99,7 +100,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.get_update_error()
   end
-  
+
   @doc """
   Set an update error.
   """
@@ -107,7 +108,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.set_update_error(error)
   end
-  
+
   @doc """
   Clear any update error.
   """
@@ -115,7 +116,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.clear_update_error()
   end
-  
+
   @doc """
   Get the update log.
   """
@@ -123,7 +124,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.get_update_log()
   end
-  
+
   @doc """
   Clear the update log.
   """
@@ -131,7 +132,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.clear_update_log()
   end
-  
+
   @doc """
   Log an update message.
   """
@@ -139,7 +140,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.log_update(message)
   end
-  
+
   @doc """
   Get update statistics.
   """
@@ -147,7 +148,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.get_update_stats()
   end
-  
+
   @doc """
   Clear update statistics.
   """
@@ -155,7 +156,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.clear_update_stats()
   end
-  
+
   @doc """
   Update the statistics.
   """
@@ -163,7 +164,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.update_stats(stats)
   end
-  
+
   @doc """
   Enable or disable automatic update checking.
   """
@@ -171,7 +172,7 @@ defmodule Raxol.System.Updater.State do
     ensure_server_started()
     Server.set_auto_check(enabled)
   end
-  
+
   @doc """
   Returns the default update settings.
   This is provided for backward compatibility.
@@ -180,15 +181,18 @@ defmodule Raxol.System.Updater.State do
   def default_update_settings do
     %{
       auto_update: true,
-      check_interval: 24 * 60 * 60,  # 24 hours in seconds
+      # 24 hours in seconds
+      check_interval: 24 * 60 * 60,
       update_channel: :stable,
       notify_on_update: true,
       download_path: System.get_env("HOME") <> "/.raxol/downloads",
       backup_path: System.get_env("HOME") <> "/.raxol/backups",
       max_backups: 5,
       retry_count: 3,
-      retry_delay: 5,  # seconds
-      timeout: 300,  # seconds
+      # seconds
+      retry_delay: 5,
+      # seconds
+      timeout: 300,
       verify_checksums: true,
       require_confirmation: true
     }

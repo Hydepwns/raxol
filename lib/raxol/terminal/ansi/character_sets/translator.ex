@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   Handles character set translations and mappings.
   """
 
-  
   @doc """
   Translates a character using the active character set.
   """

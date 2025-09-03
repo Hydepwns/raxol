@@ -75,7 +75,7 @@ defmodule Raxol.UI.Layout.Responsive do
       }
   """
 
-    alias Raxol.UI.Layout.{Engine, Flexbox, CSSGrid}
+  alias Raxol.UI.Layout.{Engine, Flexbox, CSSGrid}
 
   # Default breakpoints (column-based for terminals)
   @default_breakpoints %{

@@ -157,12 +157,12 @@ defmodule Raxol.Terminal.Input.Buffer do
 
           callback ->
             case Raxol.Core.ErrorHandling.safe_call(fn ->
-              # Call callback for each event synchronously
-              # This ensures the callback completes before we schedule the delayed stop
-              Enum.each(events, fn event ->
-                callback.(event)
-              end)
-            end) do
+                   # Call callback for each event synchronously
+                   # This ensures the callback completes before we schedule the delayed stop
+                   Enum.each(events, fn event ->
+                     callback.(event)
+                   end)
+                 end) do
               {:ok, _result} -> {:ok, new_state}
               {:error, _reason} -> {:ok, new_state}
             end

@@ -1,5 +1,4 @@
 defmodule Raxol.Docs.InteractiveTutorial.Renderer do
-  
   @moduledoc """
   Handles rendering of interactive tutorial content.
   """

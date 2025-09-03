@@ -1026,10 +1026,10 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
 
   defp deserialize_session(data) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      session_map = :erlang.binary_to_term(data, [:safe])
-      session = struct(Session, session_map)
-      session
-    end) do
+           session_map = :erlang.binary_to_term(data, [:safe])
+           session = struct(Session, session_map)
+           session
+         end) do
       {:ok, session} -> {:ok, session}
       {:error, reason} -> {:error, reason}
     end

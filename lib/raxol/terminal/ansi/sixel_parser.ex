@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   Handles the parsing logic for Sixel graphics data streams within a DCS sequence.
   """
 
-  
   require Raxol.Core.Runtime.Log
   require Logger
 
@@ -345,19 +344,22 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
     case Regex.run(~r/^([0-9;]*)(.*)/s, input_binary) do
       [_full_match, param_section, rest_of_binary] when param_section != "" ->
         case Raxol.Core.ErrorHandling.safe_call(fn ->
-          params =
-            param_section
-            |> String.split(";", trim: false)
-            |> Enum.map(fn
-              "" -> 0
-              str -> String.to_integer(str)
-            end)
+               params =
+                 param_section
+                 |> String.split(";", trim: false)
+                 |> Enum.map(fn
+                   "" -> 0
+                   str -> String.to_integer(str)
+                 end)
 
-          {:ok, params, rest_of_binary}
-        end) do
-          {:ok, result} -> result
+               {:ok, params, rest_of_binary}
+             end) do
+          {:ok, result} ->
+            result
+
           {:error, reason} ->
-            {:error, {"Invalid integer parameter in '#{param_section}'", reason},
+            {:error,
+             {"Invalid integer parameter in '#{param_section}'", reason},
              input_binary}
         end
 

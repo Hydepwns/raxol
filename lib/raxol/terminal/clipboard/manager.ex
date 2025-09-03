@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Clipboard.Manager do
   Manages clipboard operations for the terminal, including copying and pasting text.
   """
 
-  
   defstruct [:content, :mode]
 
   @type t :: %__MODULE__{

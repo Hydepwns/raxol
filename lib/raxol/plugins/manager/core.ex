@@ -5,7 +5,7 @@ defmodule Raxol.Plugins.Manager.Core do
   """
 
   require Raxol.Core.Runtime.Log
-  
+
   alias Raxol.Plugins.{
     Plugin,
     PluginConfig

@@ -7,7 +7,6 @@ defmodule Raxol.Terminal.Commands.Parser do
   sequence parameter strings.
   """
 
-  
   @doc """
   Parses a raw parameter string buffer into a list of integers or nil values.
 

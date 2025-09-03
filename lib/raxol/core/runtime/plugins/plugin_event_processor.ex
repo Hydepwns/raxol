@@ -154,7 +154,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
          plugin_states,
          command_table
        ) do
-    case Raxol.Core.ErrorHandling.safe_call(fn -> plugin_module.handle_event(event, plugin_state) end) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           plugin_module.handle_event(event, plugin_state)
+         end) do
       {:ok, {:ok, updated_plugin_state}} ->
         updated_states =
           Map.put(plugin_states, plugin_id, updated_plugin_state)

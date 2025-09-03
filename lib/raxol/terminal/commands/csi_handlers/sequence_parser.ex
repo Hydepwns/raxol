@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.SequenceParser do
       &parse_charset_sequence/1,
       &parse_save_restore_sequence/1
     ]
-    
+
     Enum.find_value(parsers, {:error, :unknown_sequence, sequence}, fn parser ->
       case parser.(sequence) do
         :error -> nil

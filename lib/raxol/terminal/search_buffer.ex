@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.SearchBuffer do
   Manages search state, options, matches, and history for terminal search operations.
   """
 
-  
   @type match :: %{
           line: integer(),
           start: integer(),

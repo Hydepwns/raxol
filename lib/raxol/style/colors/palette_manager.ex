@@ -1,5 +1,4 @@
 defmodule Raxol.Style.Colors.PaletteManager do
-  
   @moduledoc """
   Manages color palette generation and scale creation with accessibility considerations.
   """
@@ -75,17 +74,17 @@ defmodule Raxol.Style.Colors.PaletteManager do
   end
 
   # Helper functions for pattern matching refactoring
-  
+
   defp calculate_hue(r, g, b, max_val, delta) when max_val == r do
     h = (g - b) / delta * 60
     if h < 0, do: h + 360, else: h
   end
-  
+
   defp calculate_hue(r, g, b, max_val, delta) when max_val == g do
     h = ((b - r) / delta + 2) * 60
     if h < 0, do: h + 360, else: h
   end
-  
+
   defp calculate_hue(r, g, b, max_val, delta) when max_val == b do
     h = ((r - g) / delta + 4) * 60
     if h < 0, do: h + 360, else: h

@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Renderer.Layout do
-  
   @moduledoc """
   Central layout coordinator for the Raxol renderer system.
 
@@ -23,7 +22,8 @@ defmodule Raxol.Core.Renderer.Layout do
     apply_layout([view], dimensions)
   end
 
-  def apply_layout(views, %{width: width, height: height}) when is_list(views) do
+  def apply_layout(views, %{width: width, height: height})
+      when is_list(views) do
     available_space = {width, height}
 
     views

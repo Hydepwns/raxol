@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Commands.ParameterValidation do
   @moduledoc false
 
-    require Raxol.Core.Runtime.Log
+  require Raxol.Core.Runtime.Log
 
   @spec get_valid_param(
           list(integer() | nil),
@@ -74,8 +74,12 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
     10
   end
 
-  defp validate_coordinate(value, _max) when is_integer(value) and value < 0, do: 0
-  defp validate_coordinate(value, max) when is_integer(value) and value > max, do: max
+  defp validate_coordinate(value, _max) when is_integer(value) and value < 0,
+    do: 0
+
+  defp validate_coordinate(value, max) when is_integer(value) and value > max,
+    do: max
+
   defp validate_coordinate(value, _max) when is_integer(value), do: value
   defp validate_coordinate(_value, _max), do: 0
 

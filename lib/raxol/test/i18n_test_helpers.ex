@@ -34,15 +34,16 @@ defmodule Raxol.I18nTestHelpers do
   def with_locale(locale, fun) when is_binary(locale) and is_function(fun, 0) do
     original_locale = Gettext.get_locale()
 
-    result = ErrorHandling.ensure_cleanup(
-      fn ->
-        Gettext.set_locale(locale)
-        fun.()
-      end,
-      fn ->
-        Gettext.set_locale(original_locale)
-      end
-    )
+    result =
+      ErrorHandling.ensure_cleanup(
+        fn ->
+          Gettext.set_locale(locale)
+          fun.()
+        end,
+        fn ->
+          Gettext.set_locale(original_locale)
+        end
+      )
 
     case result do
       {:ok, value} -> value

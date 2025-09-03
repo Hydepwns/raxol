@@ -128,12 +128,14 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   @spec process_sequence(String.t(), list(String.t())) :: window_event() | nil
   def process_sequence(sequence, params) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      case Map.get(@sequence_handlers, sequence) do
-        nil -> nil
-        handler -> handler.(params)
-      end
-    end) do
-      {:ok, result} -> result
+           case Map.get(@sequence_handlers, sequence) do
+             nil -> nil
+             handler -> handler.(params)
+           end
+         end) do
+      {:ok, result} ->
+        result
+
       {:error, reason} ->
         Monitor.record_error(
           sequence,
@@ -142,6 +144,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
             params: params
           }
         )
+
         nil
     end
   end

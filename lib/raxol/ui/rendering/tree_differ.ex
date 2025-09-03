@@ -5,7 +5,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   and reordering of nodes, supporting both keyed and non-keyed children.
   """
 
-    # All Kernel functions are now available
+  # All Kernel functions are now available
 
   require Raxol.Core.Runtime.Log
 
@@ -252,16 +252,34 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
     )
   end
 
-  defp select_keyed_diff_result(false, false, _ops, _new_keys_ordered, _path_to_parent) do
+  defp select_keyed_diff_result(
+         false,
+         false,
+         _ops,
+         _new_keys_ordered,
+         _path_to_parent
+       ) do
     :no_change
   end
 
-  defp select_keyed_diff_result(false, true, _ops, new_keys_ordered, path_to_parent) do
+  defp select_keyed_diff_result(
+         false,
+         true,
+         _ops,
+         new_keys_ordered,
+         path_to_parent
+       ) do
     {:update, path_to_parent,
      %{type: :keyed_children, ops: [{:key_reorder, new_keys_ordered}]}}
   end
 
-  defp select_keyed_diff_result(true, _order_changed, ops, new_keys_ordered, path_to_parent) do
+  defp select_keyed_diff_result(
+         true,
+         _order_changed,
+         ops,
+         new_keys_ordered,
+         path_to_parent
+       ) do
     # Partition ops so that :key_reorder is always last
     {_reorder_ops, other_ops} =
       Enum.split_with(ops, fn

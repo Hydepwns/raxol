@@ -485,15 +485,19 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
                     case ErrorHandling.safe_call(fn -> on_submit.(values) end) do
                       {:ok, _} ->
                         set_is_submitting.(false)
+
                       {:error, {kind, reason}} ->
                         set_errors.(%{
                           _form: "Submit failed: #{inspect({kind, reason})}"
                         })
+
                         set_is_submitting.(false)
+
                       {:error, reason} ->
                         set_errors.(%{
                           _form: "Submit failed: #{inspect(reason)}"
                         })
+
                         set_is_submitting.(false)
                     end
                   end)
@@ -727,16 +731,20 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
   end
 
   defp determine_scroll_direction(new_x, new_y, scroll_pos)
-       when new_y > scroll_pos.y, do: :down
+       when new_y > scroll_pos.y,
+       do: :down
 
   defp determine_scroll_direction(new_x, new_y, scroll_pos)
-       when new_y < scroll_pos.y, do: :up
+       when new_y < scroll_pos.y,
+       do: :up
 
   defp determine_scroll_direction(new_x, new_y, scroll_pos)
-       when new_x > scroll_pos.x, do: :right
+       when new_x > scroll_pos.x,
+       do: :right
 
   defp determine_scroll_direction(new_x, new_y, scroll_pos)
-       when new_x < scroll_pos.x, do: :left
+       when new_x < scroll_pos.x,
+       do: :left
 
   defp determine_scroll_direction(_new_x, _new_y, _scroll_pos), do: :none
 end

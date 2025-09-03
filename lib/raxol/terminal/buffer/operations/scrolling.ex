@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   Handles scrolling operations for terminal buffers including scroll up/down and line insertion/deletion.
   """
 
-    alias Raxol.Terminal.Buffer.Cell
+  alias Raxol.Terminal.Buffer.Cell
 
   @doc """
   Checks if scrolling is needed and performs it if necessary.

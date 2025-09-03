@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   Supports G0, G1, G2, G3 character sets and their switching operations.
   """
 
-  
   alias Raxol.Terminal.ANSI.CharacterSets.{
     ASCII,
     DEC,

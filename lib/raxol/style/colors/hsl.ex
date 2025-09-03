@@ -35,12 +35,19 @@ defmodule Raxol.Style.Colors.HSL do
   end
 
   # Helper functions for pattern matching refactoring
-  
-  defp _calculate_hue(_r, _g, _b, _max, delta) when delta == +0.0, do: normalize_hue(+0.0)
-  defp _calculate_hue(r, g, b, max, delta) when max == r, do: normalize_hue(60.0 * rem(round((g - b) / delta), 6))
-  defp _calculate_hue(r, g, b, max, delta) when max == g, do: normalize_hue(60.0 * ((b - r) / delta + 2.0))
-  defp _calculate_hue(r, g, b, _max, delta), do: normalize_hue(60.0 * ((r - g) / delta + 4.0))
-  
+
+  defp _calculate_hue(_r, _g, _b, _max, delta) when delta == +0.0,
+    do: normalize_hue(+0.0)
+
+  defp _calculate_hue(r, g, b, max, delta) when max == r,
+    do: normalize_hue(60.0 * rem(round((g - b) / delta), 6))
+
+  defp _calculate_hue(r, g, b, max, delta) when max == g,
+    do: normalize_hue(60.0 * ((b - r) / delta + 2.0))
+
+  defp _calculate_hue(r, g, b, _max, delta),
+    do: normalize_hue(60.0 * ((r - g) / delta + 4.0))
+
   defp normalize_hue(hue) do
     # Ensure hue is always positive
     if hue < 0,
@@ -184,11 +191,23 @@ defmodule Raxol.Style.Colors.HSL do
     %Color{color | r: r, g: g, b: b}
   end
 
-  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 0.0 and h_prime < 1.0, do: {c, x, 0.0}
-  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 1.0 and h_prime < 2.0, do: {x, c, 0.0}
-  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 2.0 and h_prime < 3.0, do: {0.0, c, x}
-  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 3.0 and h_prime < 4.0, do: {0.0, x, c}
-  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 4.0 and h_prime < 5.0, do: {x, 0.0, c}
-  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 5.0 and h_prime < 6.0, do: {c, 0.0, x}
+  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 0.0 and h_prime < 1.0,
+    do: {c, x, 0.0}
+
+  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 1.0 and h_prime < 2.0,
+    do: {x, c, 0.0}
+
+  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 2.0 and h_prime < 3.0,
+    do: {0.0, c, x}
+
+  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 3.0 and h_prime < 4.0,
+    do: {0.0, x, c}
+
+  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 4.0 and h_prime < 5.0,
+    do: {x, 0.0, c}
+
+  defp calculate_rgb_prime(h_prime, c, x) when h_prime >= 5.0 and h_prime < 6.0,
+    do: {c, 0.0, x}
+
   defp calculate_rgb_prime(_h_prime, _c, _x), do: {0.0, 0.0, 0.0}
 end

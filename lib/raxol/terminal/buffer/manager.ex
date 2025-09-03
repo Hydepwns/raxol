@@ -425,10 +425,10 @@ defmodule Raxol.Terminal.Buffer.Manager do
     :ets.insert(state.lock, {:lock, self()})
 
     result = safe_execute_operation(operation, state)
-    
+
     # Release lock
     :ets.delete(state.lock, :lock)
-    
+
     case result do
       {:ok, new_state} -> {:reply, {:ok, new_state}, new_state}
       {:error, reason} -> {:reply, {:error, reason}, state}
@@ -470,7 +470,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   def handle_call({:read, opts}, _from, state) do
-    with {:ok, {data, new_buffer}} <- safe_buffer_read(state.active_buffer, opts) do
+    with {:ok, {data, new_buffer}} <-
+           safe_buffer_read(state.active_buffer, opts) do
       new_state = update_metrics(%{state | active_buffer: new_buffer}, :reads)
       {:reply, data, new_state}
     else
@@ -493,13 +494,16 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   def handle_call({:resize, size, _opts}, _from, state) do
     with {:ok, {width, height}} <- validate_resize_size(size),
-         {:ok, new_buffer} <- safe_buffer_resize(state.active_buffer, width, height),
-         {:ok, new_back_buffer} <- safe_buffer_resize(state.back_buffer, width, height) do
+         {:ok, new_buffer} <-
+           safe_buffer_resize(state.active_buffer, width, height),
+         {:ok, new_back_buffer} <-
+           safe_buffer_resize(state.back_buffer, width, height) do
       new_state = %{
         state
         | active_buffer: new_buffer,
           back_buffer: new_back_buffer
       }
+
       {:reply, :ok, new_state}
     else
       {:error, reason} ->
@@ -509,8 +513,10 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   defp validate_resize_size(size) do
     case size do
-      {width, height} when is_integer(width) and is_integer(height) and width > 0 and height > 0 ->
+      {width, height}
+      when is_integer(width) and is_integer(height) and width > 0 and height > 0 ->
         {:ok, {width, height}}
+
       _ ->
         {:error, :invalid_size}
     end

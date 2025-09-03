@@ -9,7 +9,6 @@ defmodule Raxol.Renderer.Layout.Utils do
   - Panel layout utilities
   """
 
-  
   @doc """
   Calculates the size of an element based on its size specification and available space.
 

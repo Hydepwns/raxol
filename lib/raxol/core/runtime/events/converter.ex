@@ -9,7 +9,7 @@ defmodule Raxol.Core.Runtime.Events.Converter do
   """
 
   alias Raxol.Core.Events.Event
-    import Bitwise
+  import Bitwise
 
   @doc """
   Converts a Termbox event to the standardized Raxol event format.

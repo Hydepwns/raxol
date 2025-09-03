@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.ModeState do
   """
 
   require Raxol.Core.Runtime.Log
-  
+
   # DEC Private Mode codes and their corresponding mode atoms
   @dec_private_modes %{
     # Cursor Keys Mode
@@ -133,10 +133,37 @@ defmodule Raxol.Terminal.ModeState do
   end
 
   defp categorize_mode(:decckm), do: :decckm
-  defp categorize_mode(mode) when mode in [:dectcem, :decawm, :decom, :irm, :lnm, :decscnm, :decarm, :decinlm, :focus_events, :bracketed_paste], do: :basic
-  defp categorize_mode(mode) when mode in [:mouse_report_x10, :mouse_report_cell_motion, :mouse_report_sgr], do: :mouse
-  defp categorize_mode(mode) when mode in [:deccolm_80, :deccolm_132], do: :column
-  defp categorize_mode(mode) when mode in [:alt_screen_buffer, :dec_alt_screen, :dec_alt_screen_save], do: :alt_screen
+
+  defp categorize_mode(mode)
+       when mode in [
+              :dectcem,
+              :decawm,
+              :decom,
+              :irm,
+              :lnm,
+              :decscnm,
+              :decarm,
+              :decinlm,
+              :focus_events,
+              :bracketed_paste
+            ],
+       do: :basic
+
+  defp categorize_mode(mode)
+       when mode in [
+              :mouse_report_x10,
+              :mouse_report_cell_motion,
+              :mouse_report_sgr
+            ],
+       do: :mouse
+
+  defp categorize_mode(mode) when mode in [:deccolm_80, :deccolm_132],
+    do: :column
+
+  defp categorize_mode(mode)
+       when mode in [:alt_screen_buffer, :dec_alt_screen, :dec_alt_screen_save],
+       do: :alt_screen
+
   defp categorize_mode(_mode), do: :unknown
 
   defp basic_mode?(mode) do

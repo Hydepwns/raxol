@@ -83,7 +83,9 @@ defmodule Raxol.UI.Components.Modal do
         Raxol.Core.Runtime.Log.debug(
           "Modal is visible, calling handle_visible_update with msg: #{inspect(msg)}"
         )
+
         handle_visible_update(msg, state)
+
       false ->
         handle_hidden_update(msg, state)
     end
@@ -169,6 +171,7 @@ defmodule Raxol.UI.Components.Modal do
           nil ->
             {state, []}
         end
+
       false ->
         {state, []}
     end

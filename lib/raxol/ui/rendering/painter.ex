@@ -3,7 +3,7 @@ defmodule Raxol.UI.Rendering.Painter do
   Handles painting of UI components to the terminal.
   """
 
-    require Raxol.Core.Runtime.Log
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Paints the render tree into draw commands or buffer updates.

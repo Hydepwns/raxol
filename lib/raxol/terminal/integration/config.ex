@@ -175,17 +175,23 @@ defmodule Raxol.Terminal.Integration.Config do
     end
   end
 
-  defp validate_behavior_map(behavior) when not is_map(behavior), do: {:error, :invalid_behavior_config}
+  defp validate_behavior_map(behavior) when not is_map(behavior),
+    do: {:error, :invalid_behavior_config}
+
   defp validate_behavior_map(_behavior), do: :ok
 
-  defp validate_scrollback_limit(%{scrollback_limit: limit}) when not is_integer(limit) or limit < 0 do
+  defp validate_scrollback_limit(%{scrollback_limit: limit})
+       when not is_integer(limit) or limit < 0 do
     {:error, :invalid_scrollback_limit}
   end
+
   defp validate_scrollback_limit(_behavior), do: :ok
 
-  defp validate_command_history_setting(%{enable_command_history: setting}) when not is_boolean(setting) do
+  defp validate_command_history_setting(%{enable_command_history: setting})
+       when not is_boolean(setting) do
     {:error, :invalid_command_history_setting}
   end
+
   defp validate_command_history_setting(_behavior), do: :ok
 
   defp validate_memory_limit(memory_limit) do
@@ -205,17 +211,25 @@ defmodule Raxol.Terminal.Integration.Config do
     end
   end
 
-  defp validate_rendering_map(rendering) when not is_map(rendering), do: {:error, :invalid_rendering_config}
+  defp validate_rendering_map(rendering) when not is_map(rendering),
+    do: {:error, :invalid_rendering_config}
+
   defp validate_rendering_map(_rendering), do: :ok
 
-  defp validate_fps(%{fps: fps}) when not is_integer(fps) or fps < 1, do: {:error, :invalid_fps}
+  defp validate_fps(%{fps: fps}) when not is_integer(fps) or fps < 1,
+    do: {:error, :invalid_fps}
+
   defp validate_fps(_rendering), do: :ok
 
-  defp validate_theme(%{theme: theme}) when not is_map(theme), do: {:error, :invalid_theme}
+  defp validate_theme(%{theme: theme}) when not is_map(theme),
+    do: {:error, :invalid_theme}
+
   defp validate_theme(_rendering), do: :ok
 
-  defp validate_font_settings(%{font_settings: font_settings}) when not is_map(font_settings) do
+  defp validate_font_settings(%{font_settings: font_settings})
+       when not is_map(font_settings) do
     {:error, :invalid_font_settings}
   end
+
   defp validate_font_settings(_rendering), do: :ok
 end

@@ -4,7 +4,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
   """
 
   require Raxol.Core.Runtime.Log
-  
+
   @doc """
   Cleans up file watching resources.
   Returns the updated state.
@@ -58,8 +58,8 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
 
   defp try_get_genserver_state(pid) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      {:ok, :sys.get_state(pid)}
-    end) do
+           {:ok, :sys.get_state(pid)}
+         end) do
       {:ok, result} -> result
       {:error, {:exit, _}} -> :not_genserver
       {:error, {:error, _}} -> :not_genserver

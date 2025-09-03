@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Runtime.Lifecycle do
-  
   @moduledoc "Manages the application lifecycle, including startup, shutdown, and terminal interaction."
 
   use GenServer
@@ -399,8 +398,12 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
       # Using GenServer.stop as a generic way to try and stop it if it's a GenServer.
       # This might produce an error if it's already stopped or not a GenServer.
-      case Raxol.Core.ErrorHandling.safe_call(fn -> GenServer.stop(state.plugin_manager, :shutdown, :infinity) end) do
-        {:ok, _result} -> :ok
+      case Raxol.Core.ErrorHandling.safe_call(fn ->
+             GenServer.stop(state.plugin_manager, :shutdown, :infinity)
+           end) do
+        {:ok, _result} ->
+          :ok
+
         {:error, _reason} ->
           Raxol.Core.Runtime.Log.warning_with_context(
             "[#{__MODULE__}] Terminate: Failed to explicitly stop PluginManager #{inspect(state.plugin_manager)}, it might have already stopped.",
@@ -532,14 +535,16 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   def handle_cleanup(context) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      # Log cleanup operation
-      Logger.info("[Lifecycle] Cleaning up for app: #{context.app_name}")
-      Logger.info("[Lifecycle] Cleanup completed")
+           # Log cleanup operation
+           Logger.info("[Lifecycle] Cleaning up for app: #{context.app_name}")
+           Logger.info("[Lifecycle] Cleanup completed")
 
-      # Cleanup is handled by individual components
-      :ok
-    end) do
-      {:ok, result} -> result
+           # Cleanup is handled by individual components
+           :ok
+         end) do
+      {:ok, result} ->
+        result
+
       {:error, error} ->
         Logger.error("Cleanup failed: #{inspect(error)}")
         {:error, :cleanup_failed}

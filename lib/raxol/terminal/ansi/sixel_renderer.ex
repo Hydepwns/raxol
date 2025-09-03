@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.ANSI.SixelRenderer do
-  
   @moduledoc """
   Handles rendering Sixel graphics data from a pixel buffer.
   """

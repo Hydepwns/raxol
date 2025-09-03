@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Config.Capabilities do
-  
   @moduledoc """
   Terminal capability detection and management.
 
@@ -141,41 +140,45 @@ defmodule Raxol.Terminal.Config.Capabilities do
 
   defp detect_width(adapter_module) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      case adapter_module.get_env("COLUMNS") do
-        nil ->
-          # Try to get from tput if available
-          case adapter_module.cmd("tput", ["cols"], stderr_to_stdout: true) do
-            {cols, 0} -> String.to_integer(String.trim(cols))
-            # Default fallback
-            _ -> 80
-          end
+           case adapter_module.get_env("COLUMNS") do
+             nil ->
+               # Try to get from tput if available
+               case adapter_module.cmd("tput", ["cols"], stderr_to_stdout: true) do
+                 {cols, 0} -> String.to_integer(String.trim(cols))
+                 # Default fallback
+                 _ -> 80
+               end
 
-        cols ->
-          String.to_integer(cols)
-      end
-    end) do
+             cols ->
+               String.to_integer(cols)
+           end
+         end) do
       {:ok, width} -> width
-      {:error, _reason} -> 80  # Default fallback on any error
+      # Default fallback on any error
+      {:error, _reason} -> 80
     end
   end
 
   defp detect_height(adapter_module) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      case adapter_module.get_env("LINES") do
-        nil ->
-          # Try to get from tput if available
-          case adapter_module.cmd("tput", ["lines"], stderr_to_stdout: true) do
-            {lines, 0} -> String.to_integer(String.trim(lines))
-            # Default fallback
-            _ -> 24
-          end
+           case adapter_module.get_env("LINES") do
+             nil ->
+               # Try to get from tput if available
+               case adapter_module.cmd("tput", ["lines"],
+                      stderr_to_stdout: true
+                    ) do
+                 {lines, 0} -> String.to_integer(String.trim(lines))
+                 # Default fallback
+                 _ -> 24
+               end
 
-        lines ->
-          String.to_integer(lines)
-      end
-    end) do
+             lines ->
+               String.to_integer(lines)
+           end
+         end) do
       {:ok, height} -> height
-      {:error, _reason} -> 24  # Default fallback on any error
+      # Default fallback on any error
+      {:error, _reason} -> 24
     end
   end
 
@@ -198,6 +201,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
   end
 
   defp detect_colors_from_term("xterm-256color", _adapter_module), do: 256
+
   defp detect_colors_from_term(term, adapter_module) when is_binary(term) do
     case {String.contains?(term, "256"), String.contains?(term, "color")} do
       {true, _} -> 256
@@ -205,25 +209,28 @@ defmodule Raxol.Terminal.Config.Capabilities do
       _ -> fallback_tput_colors(adapter_module)
     end
   end
-  defp detect_colors_from_term(_, adapter_module), do: fallback_tput_colors(adapter_module)
+
+  defp detect_colors_from_term(_, adapter_module),
+    do: fallback_tput_colors(adapter_module)
 
   defp fallback_tput_colors(adapter_module) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      # Try to get from tput if available
-      case adapter_module.cmd("tput", ["colors"], stderr_to_stdout: true) do
-        {colors, 0} ->
-          case String.trim(colors) do
-            "-1" -> 0
-            num -> String.to_integer(num)
-          end
+           # Try to get from tput if available
+           case adapter_module.cmd("tput", ["colors"], stderr_to_stdout: true) do
+             {colors, 0} ->
+               case String.trim(colors) do
+                 "-1" -> 0
+                 num -> String.to_integer(num)
+               end
 
-        # Default fallback
-        _ ->
-          8
-      end
-    end) do
+             # Default fallback
+             _ ->
+               8
+           end
+         end) do
       {:ok, colors} -> colors
-      {:error, _reason} -> 8  # Default fallback on any error
+      # Default fallback on any error
+      {:error, _reason} -> 8
     end
   end
 
@@ -244,6 +251,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
   defp check_utf8_support(lang) when is_binary(lang) do
     String.contains?(lang, "UTF-8") || String.contains?(lang, "utf8")
   end
+
   defp check_utf8_support(_lang), do: false
 
   defp detect_mouse_support(adapter_module) do
@@ -254,10 +262,11 @@ defmodule Raxol.Terminal.Config.Capabilities do
   end
 
   defp check_mouse_capable_terminal(term) when is_binary(term) do
-    String.contains?(term, "xterm") || 
-    String.contains?(term, "screen") || 
-    String.contains?(term, "tmux")
+    String.contains?(term, "xterm") ||
+      String.contains?(term, "screen") ||
+      String.contains?(term, "tmux")
   end
+
   defp check_mouse_capable_terminal(_term), do: false
 
   defp detect_clipboard_support(adapter_module) do

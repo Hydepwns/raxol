@@ -17,47 +17,48 @@ defmodule Raxol.UI.Components.Modal.State do
 
     case has_errors do
       true ->
-      Raxol.Core.Runtime.Log.debug(
-        "[DEBUG] handle_form_submission found errors: #{inspect(validated_fields)}"
-      )
+        Raxol.Core.Runtime.Log.debug(
+          "[DEBUG] handle_form_submission found errors: #{inspect(validated_fields)}"
+        )
 
-      new_form_state = %{state.form_state | fields: validated_fields}
+        new_form_state = %{state.form_state | fields: validated_fields}
 
-      result =
-        {%Raxol.UI.Components.Modal{
-           state
-           | form_state: new_form_state,
-             visible: true
-         }, []}
+        result =
+          {%Raxol.UI.Components.Modal{
+             state
+             | form_state: new_form_state,
+               visible: true
+           }, []}
 
-      Raxol.Core.Runtime.Log.debug(
-        "[DEBUG] handle_form_submission returning (errors): #{inspect(result)}"
-      )
+        Raxol.Core.Runtime.Log.debug(
+          "[DEBUG] handle_form_submission returning (errors): #{inspect(result)}"
+        )
 
-      result
+        result
+
       false ->
-      form_values = extract_form_values(validated_fields)
-      cleared_fields = Enum.map(validated_fields, &Map.put(&1, :error, nil))
-      new_form_state = %{state.form_state | fields: cleared_fields}
+        form_values = extract_form_values(validated_fields)
+        cleared_fields = Enum.map(validated_fields, &Map.put(&1, :error, nil))
+        new_form_state = %{state.form_state | fields: cleared_fields}
 
-      new_state = %Raxol.UI.Components.Modal{
-        state
-        | visible: false,
-          form_state: new_form_state
-      }
+        new_state = %Raxol.UI.Components.Modal{
+          state
+          | visible: false,
+            form_state: new_form_state
+        }
 
-      send(
-        self(),
-        {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
-      )
+        send(
+          self(),
+          {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+        )
 
-      result = {new_state, [{original_msg, form_values}]}
+        result = {new_state, [{original_msg, form_values}]}
 
-      Raxol.Core.Runtime.Log.debug(
-        "[DEBUG] handle_form_submission returning (success): #{inspect(result)}"
-      )
+        Raxol.Core.Runtime.Log.debug(
+          "[DEBUG] handle_form_submission returning (success): #{inspect(result)}"
+        )
 
-      result
+        result
     end
   end
 
@@ -67,17 +68,18 @@ defmodule Raxol.UI.Components.Modal.State do
     # If there are fields, validate as form
     case length(state.form_state.fields) do
       count when count > 0 ->
-      handle_form_submission(state, original_msg)
+        handle_form_submission(state, original_msg)
+
       0 ->
-      # No fields: just hide and send command
-      new_state = %Raxol.UI.Components.Modal{state | visible: false}
+        # No fields: just hide and send command
+        new_state = %Raxol.UI.Components.Modal{state | visible: false}
 
-      send(
-        self(),
-        {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
-      )
+        send(
+          self(),
+          {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+        )
 
-      {new_state, [{original_msg, %{}}]}
+        {new_state, [{original_msg, %{}}]}
     end
   end
 
@@ -98,10 +100,11 @@ defmodule Raxol.UI.Components.Modal.State do
       Enum.map(state.form_state.fields, fn field ->
         case field.id == field_id do
           true ->
-          # Clear error on update
-          %{field | value: new_value, error: nil}
+            # Clear error on update
+            %{field | value: new_value, error: nil}
+
           false ->
-          field
+            field
         end
       end)
 
@@ -121,16 +124,24 @@ defmodule Raxol.UI.Components.Modal.State do
     case field_count do
       count when count > 0 ->
         new_index =
-          rem(state.form_state.focus_index + direction + field_count, field_count)
+          rem(
+            state.form_state.focus_index + direction + field_count,
+            field_count
+          )
 
         new_form_state = %{state.form_state | focus_index: new_index}
-        new_state = %Raxol.UI.Components.Modal{state | form_state: new_form_state}
+
+        new_state = %Raxol.UI.Components.Modal{
+          state
+          | form_state: new_form_state
+        }
 
         Raxol.Core.Runtime.Log.debug(
           "[DEBUG] change_focus returning new_index=#{inspect(new_index)}, new_state.form_state.focus_index=#{inspect(new_state.form_state.focus_index)}"
         )
 
         {new_state, [set_focus_command(new_state)]}
+
       0 ->
         {state, []}
     end
@@ -148,6 +159,7 @@ defmodule Raxol.UI.Components.Modal.State do
 
         field_id = get_field_full_id(current_field, state)
         {:set_focus, field_id}
+
       0 ->
         {:set_focus, state.id}
     end
@@ -192,6 +204,7 @@ defmodule Raxol.UI.Components.Modal.State do
       true ->
         # Clear any previous error
         %{field | error: nil}
+
       false ->
         # Basic error message, could be configurable
         %{field | error: "Invalid input"}

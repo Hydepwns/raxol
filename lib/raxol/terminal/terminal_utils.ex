@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.TerminalUtils do
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Core.ErrorHandling
-  
+
   # Check if termbox2_nif is available at compile time
   @termbox2_available Code.ensure_loaded?(:termbox2_nif)
 
@@ -104,28 +104,35 @@ defmodule Raxol.Terminal.TerminalUtils do
           {:ok, pos_integer(), pos_integer()} | {:error, term()}
   def detect_with_io(io_facade) do
     case ErrorHandling.safe_call(fn ->
-      with {:ok, width} when is_integer(width) and width > 0 <-
-             apply(io_facade, :columns, []),
-           {:ok, height} when is_integer(height) and height > 0 <-
-             apply(io_facade, :rows, []) do
-        {:ok, width, height}
-      else
-        {:error, reason} ->
-          Raxol.Core.Runtime.Log.debug(
-            "io.columns/rows error: #{inspect(reason)}"
-          )
-          {:error, reason}
+           with {:ok, width} when is_integer(width) and width > 0 <-
+                  apply(io_facade, :columns, []),
+                {:ok, height} when is_integer(height) and height > 0 <-
+                  apply(io_facade, :rows, []) do
+             {:ok, width, height}
+           else
+             {:error, reason} ->
+               Raxol.Core.Runtime.Log.debug(
+                 "io.columns/rows error: #{inspect(reason)}"
+               )
 
-        other ->
-          Raxol.Core.Runtime.Log.debug(
-            "io.columns/rows unexpected return: #{inspect(other)}"
-          )
-          {:error, :invalid_response}
-      end
-    end) do
-      {:ok, result} -> result
+               {:error, reason}
+
+             other ->
+               Raxol.Core.Runtime.Log.debug(
+                 "io.columns/rows unexpected return: #{inspect(other)}"
+               )
+
+               {:error, :invalid_response}
+           end
+         end) do
+      {:ok, result} ->
+        result
+
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.debug("Error in detect_with_io: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.debug(
+          "Error in detect_with_io: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -164,31 +171,38 @@ defmodule Raxol.Terminal.TerminalUtils do
           {:ok, pos_integer(), pos_integer()} | {:error, term()}
   def detect_with_stty do
     case ErrorHandling.safe_call(fn ->
-      case System.cmd("stty", ["size"]) do
-        {output, 0} ->
-          output = String.trim(output)
+           case System.cmd("stty", ["size"]) do
+             {output, 0} ->
+               output = String.trim(output)
 
-          case String.split(output) do
-            [rows, cols] ->
-              {:ok, String.to_integer(cols), String.to_integer(rows)}
+               case String.split(output) do
+                 [rows, cols] ->
+                   {:ok, String.to_integer(cols), String.to_integer(rows)}
 
-            _ ->
-              Raxol.Core.Runtime.Log.debug(
-                "Unexpected stty output format: #{inspect(output)}"
-              )
-              {:error, :invalid_format}
-          end
+                 _ ->
+                   Raxol.Core.Runtime.Log.debug(
+                     "Unexpected stty output format: #{inspect(output)}"
+                   )
 
-        {output, code} ->
-          Raxol.Core.Runtime.Log.debug(
-            "stty exited with code #{code}: #{inspect(output)}"
-          )
-          {:error, {:exit_code, code}}
-      end
-    end) do
-      {:ok, result} -> result
+                   {:error, :invalid_format}
+               end
+
+             {output, code} ->
+               Raxol.Core.Runtime.Log.debug(
+                 "stty exited with code #{code}: #{inspect(output)}"
+               )
+
+               {:error, {:exit_code, code}}
+           end
+         end) do
+      {:ok, result} ->
+        result
+
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.debug("Error in detect_with_stty: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.debug(
+          "Error in detect_with_stty: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end

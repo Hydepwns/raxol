@@ -91,25 +91,28 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   @spec parse_mouse_sequence(String.t()) :: mouse_event() | nil
   def parse_mouse_sequence(sequence) do
     case ErrorHandling.safe_call(fn ->
-      case sequence do
-        <<27, 77, button, x, y>> ->
-          # Decode coordinates: they are encoded as x+32, y+32
-          decoded_x = x - 32
-          decoded_y = y - 32
-          parse_mouse_event(button, decoded_x, decoded_y)
+           case sequence do
+             <<27, 77, button, x, y>> ->
+               # Decode coordinates: they are encoded as x+32, y+32
+               decoded_x = x - 32
+               decoded_y = y - 32
+               parse_mouse_event(button, decoded_x, decoded_y)
 
-        <<"\e[<", rest::binary>> ->
-          parse_sgr_mouse_event(rest)
+             <<"\e[<", rest::binary>> ->
+               parse_sgr_mouse_event(rest)
 
-        _ ->
-          nil
-      end
-    end) do
-      {:ok, result} -> result
+             _ ->
+               nil
+           end
+         end) do
+      {:ok, result} ->
+        result
+
       {:error, e} ->
         Monitor.record_error("", "Mouse sequence parse error: #{inspect(e)}", %{
           sequence: sequence
         })
+
         nil
     end
   end
@@ -120,17 +123,20 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   @spec parse_focus_sequence(String.t()) :: focus_event() | nil
   def parse_focus_sequence(sequence) do
     case ErrorHandling.safe_call(fn ->
-      case sequence do
-        "\e[I" -> :focus_in
-        "\e[O" -> :focus_out
-        _ -> nil
-      end
-    end) do
-      {:ok, result} -> result
+           case sequence do
+             "\e[I" -> :focus_in
+             "\e[O" -> :focus_out
+             _ -> nil
+           end
+         end) do
+      {:ok, result} ->
+        result
+
       {:error, e} ->
         Monitor.record_error("", "Focus sequence parse error: #{inspect(e)}", %{
           sequence: sequence
         })
+
         nil
     end
   end

@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
-  
   @moduledoc """
   Handles load order resolution for plugin dependencies using Tarjan's algorithm.
   Provides efficient cycle detection and topological sorting of dependencies.
@@ -147,11 +146,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
     end
   end
 
-  defp get_neighbor_type(neighbor, graph, _idx, _on_stk) when not is_map_key(graph, neighbor) do
+  defp get_neighbor_type(neighbor, graph, _idx, _on_stk)
+       when not is_map_key(graph, neighbor) do
     :missing
   end
 
-  defp get_neighbor_type(neighbor, _graph, idx, _on_stk) when not is_map_key(idx, neighbor) do
+  defp get_neighbor_type(neighbor, _graph, idx, _on_stk)
+       when not is_map_key(idx, neighbor) do
     :unvisited
   end
 

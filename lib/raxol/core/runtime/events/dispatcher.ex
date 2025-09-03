@@ -16,7 +16,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   alias Raxol.Core.Events.Event
   alias Raxol.Core.UserPreferences
   alias Raxol.Core.ErrorHandling
-  
+
   @registry_name :raxol_event_subscriptions
 
   defmodule State do
@@ -77,9 +77,11 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   """
   def dispatch_event(event, state) do
     case ErrorHandling.safe_call(fn ->
-      do_dispatch_event(event, state)
-    end) do
-      {:ok, result} -> result
+           do_dispatch_event(event, state)
+         end) do
+      {:ok, result} ->
+        result
+
       {:error, error} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Error dispatching event",
@@ -87,6 +89,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
           nil,
           %{module: __MODULE__, event: event, state: state}
         )
+
         {:error, {:dispatch_error, error}, state}
     end
   end
@@ -356,8 +359,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     context = build_command_context(state)
 
     case ErrorHandling.safe_call(fn ->
-      process_commands(commands, context, state.command_module)
-    end) do
+           process_commands(commands, context, state.command_module)
+         end) do
       {:ok, _} -> :ok
       {:error, error} -> log_command_process_error(error)
     end

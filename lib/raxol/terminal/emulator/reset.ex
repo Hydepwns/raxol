@@ -169,7 +169,8 @@ defmodule Raxol.Terminal.Emulator.Reset do
       pid when is_pid(pid) ->
         case Raxol.Core.ErrorHandling.safe_genserver_call(pid, :stop) do
           {:ok, _result} -> :ok
-          {:error, _reason} -> :ok  # Already stopped or unavailable
+          # Already stopped or unavailable
+          {:error, _reason} -> :ok
         end
 
         %{emulator | field => nil}

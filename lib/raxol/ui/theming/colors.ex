@@ -13,7 +13,7 @@ defmodule Raxol.UI.Theming.Colors do
   - Accessibility checks
   """
 
-    alias Raxol.Style.Colors.{Color, Utilities}
+  alias Raxol.Style.Colors.{Color, Utilities}
   # alias Raxol.UI.Theming.PaletteRegistry # Removed unused alias
 
   # Format: "#RRGGBB" or "#RRGGBBAA"

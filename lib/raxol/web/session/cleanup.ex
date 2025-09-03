@@ -9,7 +9,7 @@ defmodule Raxol.Web.Session.Cleanup do
   import Ecto.Query
   alias Raxol.Web.Session.{Storage, Session}
   alias Raxol.Repo
-  
+
   @doc """
   Initialize the session cleanup system.
   """

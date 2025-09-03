@@ -47,7 +47,7 @@ defmodule Raxol.DevTools.PropsValidator do
   """
 
   require Logger
-  
+
   alias Raxol.Core.ErrorHandling
 
   defmodule ValidationError do

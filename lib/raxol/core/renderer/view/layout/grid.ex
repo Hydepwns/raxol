@@ -4,7 +4,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
   Provides functionality for creating and managing grid layouts with customizable columns and rows.
   """
 
-  
   @doc """
   Creates a new grid layout.
 
@@ -108,8 +107,11 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
 
   defp calculate_row_sizes(rows, total_height, gap) do
     case rows do
-      n when is_integer(n) -> calculate_equal_rows(n, total_height, gap)
-      sizes when is_list(sizes) -> calculate_custom_rows(sizes, total_height, gap)
+      n when is_integer(n) ->
+        calculate_equal_rows(n, total_height, gap)
+
+      sizes when is_list(sizes) ->
+        calculate_custom_rows(sizes, total_height, gap)
     end
   end
 

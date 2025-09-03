@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Main do
       {&screen_command?/1, :screen},
       {&device_command?/1, :device}
     ]
-    
+
     Enum.find_value(command_checkers, nil, fn {checker, type} ->
       if checker.(byte), do: {type, byte}, else: nil
     end)

@@ -6,7 +6,7 @@ defmodule Raxol.Test.AssertionHelpers do
 
   import ExUnit.Assertions
   alias Raxol.Core.ErrorHandling
-  
+
   @doc """
   Asserts that a component's state matches expected values.
   """
@@ -49,6 +49,7 @@ defmodule Raxol.Test.AssertionHelpers do
     case ErrorHandling.safe_call(error_fn) do
       {:ok, _} ->
         flunk("Expected an error to be handled")
+
       {:error, error} ->
         assert component.state != nil,
                "Component state was corrupted after error"

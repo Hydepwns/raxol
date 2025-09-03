@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.CommandProcessor do
   This module is responsible for parsing, validating, and executing terminal commands.
   """
 
-  
   alias Raxol.Terminal.Commands.{
     Executor,
     Parser,

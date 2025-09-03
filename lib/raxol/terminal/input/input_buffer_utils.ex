@@ -27,7 +27,14 @@ defmodule Raxol.Terminal.Input.InputBufferUtils do
     word_len = String.length(word)
     current_line_len = String.length(current_line)
 
-    process_word_by_fit(word, word_len, width, lines, current_line, current_line_len)
+    process_word_by_fit(
+      word,
+      word_len,
+      width,
+      lines,
+      current_line,
+      current_line_len
+    )
   end
 
   # Case 1: Word fits perfectly on empty current line (first word)
@@ -37,19 +44,40 @@ defmodule Raxol.Terminal.Input.InputBufferUtils do
   end
 
   # Case 2: Word fits on current line with a preceding space
-  defp process_word_by_fit(word, word_len, width, lines, current_line, current_line_len)
+  defp process_word_by_fit(
+         word,
+         word_len,
+         width,
+         lines,
+         current_line,
+         current_line_len
+       )
        when current_line != "" and current_line_len + 1 + word_len <= width do
     {lines, current_line <> " " <> word}
   end
 
   # Case 3: Word is too long for any line (longer than width)
-  defp process_word_by_fit(word, word_len, width, lines, current_line, _current_line_len)
+  defp process_word_by_fit(
+         word,
+         word_len,
+         width,
+         lines,
+         current_line,
+         _current_line_len
+       )
        when word_len > width do
     handle_long_word(word, width, lines, current_line)
   end
 
   # Case 4: Word doesn't fit on current line, start a new line
-  defp process_word_by_fit(word, _word_len, _width, lines, current_line, _current_line_len) do
+  defp process_word_by_fit(
+         word,
+         _word_len,
+         _width,
+         lines,
+         current_line,
+         _current_line_len
+       ) do
     {[current_line | lines], word}
   end
 

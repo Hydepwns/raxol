@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
-  
   @moduledoc """
   Handles OSC 4 (Color Palette Set/Query) commands.
 

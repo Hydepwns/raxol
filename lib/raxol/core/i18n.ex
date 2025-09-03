@@ -1,42 +1,42 @@
 defmodule Raxol.Core.I18n do
   @moduledoc """
   Refactored internationalization module using GenServer for state management.
-  
+
   This module provides the same API as the original I18n module but delegates
   all state management to a supervised GenServer, eliminating Process dictionary usage.
-  
+
   ## Migration Guide
-  
+
   1. Add the I18n.Server to your supervision tree:
-  
+
       children = [
         {Raxol.Core.I18n.Server, name: Raxol.Core.I18n.Server, config: config}
       ]
       
   2. Replace `Raxol.Core.I18n` with `Raxol.Core.I18n` in your code
-  
+
   3. All API calls remain the same
   """
-  
+
   alias Raxol.Core.I18n.Server
-  
+
   @server Raxol.Core.I18n.Server
-  
+
   @doc """
   Initialize the i18n framework.
-  
+
   Now initializes the GenServer state instead of Process dictionary.
   """
   def init(config \\ []) do
     ensure_server_started(config)
     Server.init_i18n(@server, config)
   end
-  
+
   @doc """
   Get a translated string for the given key.
-  
+
   ## Examples
-  
+
       iex> I18n.t("welcome_message")
       "Welcome!"
       
@@ -47,12 +47,12 @@ defmodule Raxol.Core.I18n do
     ensure_server_started()
     Server.t(@server, key, bindings)
   end
-  
+
   @doc """
   Set the current locale.
-  
+
   ## Examples
-  
+
       iex> I18n.set_locale("fr")
       :ok
       
@@ -63,12 +63,12 @@ defmodule Raxol.Core.I18n do
     ensure_server_started()
     Server.set_locale(@server, locale)
   end
-  
+
   @doc """
   Get the current locale.
-  
+
   ## Examples
-  
+
       iex> I18n.get_locale()
       "en"
   """
@@ -76,12 +76,12 @@ defmodule Raxol.Core.I18n do
     ensure_server_started()
     Server.get_locale(@server)
   end
-  
+
   @doc """
   Check if the current locale is right-to-left.
-  
+
   ## Examples
-  
+
       iex> I18n.set_locale("ar")
       iex> I18n.rtl?()
       true
@@ -94,12 +94,12 @@ defmodule Raxol.Core.I18n do
     ensure_server_started()
     Server.rtl?(@server)
   end
-  
+
   @doc """
   Format a currency amount according to the current locale.
-  
+
   ## Examples
-  
+
       iex> I18n.format_currency(1234.56, "USD")
       "$1,234.56"
       
@@ -112,12 +112,12 @@ defmodule Raxol.Core.I18n do
     ensure_server_started()
     Server.format_currency(@server, amount, currency_code)
   end
-  
+
   @doc """
   Format a datetime according to the current locale.
-  
+
   ## Examples
-  
+
       iex> dt = DateTime.utc_now()
       iex> I18n.format_datetime(dt)
       "December 12, 2025 at 3:45 PM"
@@ -126,10 +126,10 @@ defmodule Raxol.Core.I18n do
     ensure_server_started()
     Server.format_datetime(@server, datetime)
   end
-  
+
   @doc """
   Handle locale changed events.
-  
+
   This is now handled internally by the server.
   """
   def handle_locale_changed({:locale_changed, _old, _new} = event) do
@@ -138,21 +138,23 @@ defmodule Raxol.Core.I18n do
     _ = event
     :ok
   end
-  
+
   @doc """
   Clean up i18n resources.
-  
+
   With GenServer, cleanup happens automatically when the server stops.
   """
   def cleanup do
     case Process.whereis(@server) do
-      nil -> :ok
-      pid -> 
+      nil ->
+        :ok
+
+      pid ->
         GenServer.stop(pid, :normal, 5000)
         :ok
     end
   end
-  
+
   @doc """
   Get all available locales.
   """
@@ -160,12 +162,12 @@ defmodule Raxol.Core.I18n do
     ensure_server_started()
     Server.available_locales(@server)
   end
-  
+
   @doc """
   Add or update translations for a locale.
-  
+
   ## Examples
-  
+
       iex> I18n.add_translations("en", %{
       ...>   "new_key" => "New translation",
       ...>   "another_key" => "Another translation"
@@ -176,16 +178,16 @@ defmodule Raxol.Core.I18n do
     ensure_server_started()
     Server.add_translations(@server, locale, translations)
   end
-  
+
   # Private Functions
-  
+
   defp ensure_server_started(config \\ %{}) do
     case Process.whereis(@server) do
       nil ->
         # Start the server if not running
         {:ok, _pid} = Server.start_link(name: @server, config: config)
         :ok
-      
+
       _pid ->
         :ok
     end

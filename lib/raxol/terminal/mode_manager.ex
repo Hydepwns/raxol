@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.ModeManager do
 
   alias Raxol.Terminal.Modes.Types.ModeTypes
   alias Raxol.Terminal.ModeManager.{SavedState}
-  
+
   @type mode :: atom()
 
   defstruct cursor_visible: true,

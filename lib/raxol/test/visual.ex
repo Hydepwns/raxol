@@ -28,7 +28,7 @@ defmodule Raxol.Test.Visual do
 
   alias Raxol.Test.TestHelper
   alias Raxol.Terminal.Buffer.Operations
-  
+
   defmacro __using__(_opts) do
     quote do
       import Raxol.Test.Visual

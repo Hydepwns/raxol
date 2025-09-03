@@ -12,7 +12,7 @@ defmodule Raxol.Test.Visual.Assertions do
 
   import ExUnit.Assertions
   alias Raxol.Test.Visual
-  
+
   @doc """
   Asserts that a component's rendered output matches the expected snapshot.
 

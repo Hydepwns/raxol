@@ -198,7 +198,10 @@ defmodule Raxol.Terminal.Config.AnimationCache do
     * `animation_path` - Path to the animation file
   """
   def preload_animation(animation_path) do
-    preload_animation_with_validation(animation_path, File.exists?(animation_path))
+    preload_animation_with_validation(
+      animation_path,
+      File.exists?(animation_path)
+    )
   end
 
   defp preload_animation_with_validation(_animation_path, false) do

@@ -254,23 +254,27 @@ defmodule Raxol.Config.Loader do
   defp normalize_string_value(value) do
     case value do
       # Boolean strings
-      "true" -> true
-      "false" -> false
-      
+      "true" ->
+        true
+
+      "false" ->
+        false
+
       # Environment variable references
       "${" <> rest ->
         case String.ends_with?(rest, "}") do
           true ->
             var_name = String.slice(rest, 0..-2//1)
             System.get_env(var_name, value)
+
           false ->
             value
         end
-      
+
       # File paths
       "~/" <> _rest ->
         Path.expand(value)
-      
+
       # Numeric strings - check patterns
       _ ->
         parse_numeric_string(value)
@@ -281,10 +285,10 @@ defmodule Raxol.Config.Loader do
     cond do
       Regex.match?(~r/^\d+$/, value) ->
         String.to_integer(value)
-      
+
       Regex.match?(~r/^\d+\.\d+$/, value) ->
         String.to_float(value)
-      
+
       true ->
         value
     end

@@ -10,7 +10,6 @@ defmodule Raxol.Core.Renderer.Color do
   * Terminal background detection
   """
 
-  
   @type color :: ansi_16() | ansi_256() | true_color()
   @type ansi_16 ::
           :black
@@ -284,25 +283,25 @@ defmodule Raxol.Core.Renderer.Color do
 
   defp parse_hex_components(hex, size) when is_binary(hex) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      case size do
-        2 ->
-          <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
+           case size do
+             2 ->
+               <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
 
-          {:ok,
-           {String.to_integer(r, 16), String.to_integer(g, 16),
-            String.to_integer(b, 16)}}
+               {:ok,
+                {String.to_integer(r, 16), String.to_integer(g, 16),
+                 String.to_integer(b, 16)}}
 
-        1 ->
-          <<r::binary-size(1), g::binary-size(1), b::binary-size(1)>> = hex
+             1 ->
+               <<r::binary-size(1), g::binary-size(1), b::binary-size(1)>> = hex
 
-          {:ok,
-           {
-             String.to_integer(r <> r, 16),
-             String.to_integer(g <> g, 16),
-             String.to_integer(b <> b, 16)
-           }}
-      end
-    end) do
+               {:ok,
+                {
+                  String.to_integer(r <> r, 16),
+                  String.to_integer(g <> g, 16),
+                  String.to_integer(b <> b, 16)
+                }}
+           end
+         end) do
       {:ok, result} -> result
       {:error, _} -> {:error, :invalid_hex}
     end

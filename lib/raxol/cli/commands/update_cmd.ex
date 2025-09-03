@@ -1,5 +1,4 @@
 defmodule Raxol.CLI.Commands.UpdateCmd do
-  
   @moduledoc """
   CLI command for managing Raxol updates.
 
@@ -82,11 +81,23 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
 
   defp handle_command(opts) do
     case {opts[:help], opts[:auto], opts[:check], opts[:delta_info]} do
-      {true, _, _, _} -> print_help()
-      {false, auto, _, _} when auto != nil -> handle_auto_check(auto)
-      {false, nil, true, _} -> check_for_updates(force: opts[:force])
-      {false, nil, false, true} -> show_delta_info(opts[:version], force: opts[:force])
-      {false, nil, false, false} -> perform_update(opts[:version], force: opts[:force], use_delta: !opts[:no_delta])
+      {true, _, _, _} ->
+        print_help()
+
+      {false, auto, _, _} when auto != nil ->
+        handle_auto_check(auto)
+
+      {false, nil, true, _} ->
+        check_for_updates(force: opts[:force])
+
+      {false, nil, false, true} ->
+        show_delta_info(opts[:version], force: opts[:force])
+
+      {false, nil, false, false} ->
+        perform_update(opts[:version],
+          force: opts[:force],
+          use_delta: !opts[:no_delta]
+        )
     end
   end
 
