@@ -43,6 +43,7 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
   """
 
   alias Raxol.UI.State.Hooks, as: Hooks
+  alias Raxol.Core.ErrorHandling
 
   @doc """
   Data provider component that fetches data and provides it via render prop.
@@ -481,15 +482,18 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
                   set_is_submitting.(true)
 
                   Task.start(fn ->
-                    try do
-                      on_submit.(values)
-                      set_is_submitting.(false)
-                    catch
-                      kind, reason ->
+                    case ErrorHandling.safe_call(fn -> on_submit.(values) end) do
+                      {:ok, _} ->
+                        set_is_submitting.(false)
+                      {:error, {kind, reason}} ->
                         set_errors.(%{
                           _form: "Submit failed: #{inspect({kind, reason})}"
                         })
-
+                        set_is_submitting.(false)
+                      {:error, reason} ->
+                        set_errors.(%{
+                          _form: "Submit failed: #{inspect(reason)}"
+                        })
                         set_is_submitting.(false)
                     end
                   end)

@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.Buffer.Helpers do
       # Mark as processing
       new_queue = OperationQueue.mark_processing(state.operation_queue)
 
-      try do
+      case Raxol.Core.ErrorHandling.safe_call(fn ->
         # Get a batch of operations to process
         {operations_to_process, remaining_queue} =
           OperationQueue.get_batch(new_queue, new_queue.batch_size)
@@ -86,8 +86,9 @@ defmodule Raxol.Terminal.Buffer.Helpers do
             operation_queue: final_queue,
             metrics: new_metrics
         }
-      catch
-        _kind, reason ->
+      end) do
+        {:ok, result} -> result
+        {:error, reason} ->
           Logger.error("Error processing batch operations: #{inspect(reason)}")
           # Always reset processing flag, even on error
           final_queue =

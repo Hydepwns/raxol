@@ -281,10 +281,13 @@ defmodule Raxol.Core.Performance.Optimizer do
         # Fallback to simple connection management
         case get_or_create_connection(pool_name) do
           {:ok, conn} ->
-            try do
-              fun.(conn)
-            after
-              return_connection(pool_name, conn)
+            case Raxol.Core.ErrorHandling.safe_call(fn -> fun.(conn) end) do
+              {:ok, result} ->
+                return_connection(pool_name, conn)
+                result
+              {:error, reason} ->
+                return_connection(pool_name, conn)
+                {:error, reason}
             end
             
           {:error, reason} ->

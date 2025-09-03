@@ -385,11 +385,12 @@ defmodule Raxol.Animation.Gestures.Server do
     if length(handler_list) > 0 do
       Task.start(fn ->
         Enum.each(handler_list, fn handler ->
-          try do
+          case Raxol.Core.ErrorHandling.safe_call(fn ->
             handler.(gesture_data)
-          catch
-            kind, reason ->
-              Logger.warning("Gesture handler failed: #{inspect(kind)}, #{inspect(reason)}")
+          end) do
+            {:ok, _result} -> :ok
+            {:error, reason} ->
+              Logger.warning("Gesture handler failed: #{inspect(reason)}")
           end
         end)
       end)

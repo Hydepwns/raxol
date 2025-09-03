@@ -226,10 +226,11 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
         ScreenBuffer.new(width, height)
 
       {buf, w, h} when w > 0 and h > 0 ->
-        try do
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
           ScreenBuffer.resize(buf, w, h)
-        rescue
-          _ -> ScreenBuffer.new(w, h)
+        end) do
+          {:ok, resized_buffer} -> resized_buffer
+          {:error, _reason} -> ScreenBuffer.new(w, h)
         end
 
       _ ->

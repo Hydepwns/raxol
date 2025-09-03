@@ -8,6 +8,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   require Logger
 
   alias Raxol.Core.ErrorRecovery
+  alias Raxol.Core.ErrorHandling
   alias Raxol.Terminal.Emulator.Telemetry
 
   # 1MB max input
@@ -290,27 +291,32 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   defp safe_genserver_call(pid, message) do
     with true <- Process.alive?(pid) do
-      result = GenServer.call(pid, message)
-      {:ok, result}
+      ErrorHandling.safe_call(fn ->
+        GenServer.call(pid, message)
+      end)
+      |> case do
+        {:ok, result} -> {:ok, result}
+        {:error, {:exit, reason}} -> {:error, {:genserver_exit, reason}}
+        {:error, reason} -> {:error, {:call_exception, reason}}
+      end
     else
       false -> {:error, :process_dead}
     end
-  rescue
-    e -> {:error, {:call_exception, e}}
-  catch
-    :exit, reason -> {:error, {:genserver_exit, reason}}
-    error -> {:error, {:genserver_error, error}}
   end
 
   defp perform_input_chunking(input) do
-    with {:ok, validated_input} <- validate_input(input) do
-      chunks = chunk_input(validated_input)
-      {:ok, chunks}
+    ErrorHandling.safe_call(fn ->
+      with {:ok, validated_input} <- validate_input(input) do
+        chunks = chunk_input(validated_input)
+        {:ok, chunks}
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} -> 
+        Logger.error("Exception in input chunking: #{inspect(reason)}")
+        {:error, {:chunking_exception, reason}}
     end
-  rescue
-    e ->
-      Logger.error("Exception in input chunking: #{inspect(e)}")
-      {:error, {:chunking_exception, e}}
   end
 
   defp validate_input(input) when is_binary(input), do: {:ok, input}
@@ -334,11 +340,15 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp process_chunk(chunk, state) do
-    # Placeholder for actual chunk processing
-    # This would call into the actual emulator logic
-    {:ok, Map.put(state, :last_chunk, chunk)}
-  rescue
-    e -> {:error, {:chunk_processing_error, e}}
+    ErrorHandling.safe_call(fn ->
+      # Placeholder for actual chunk processing
+      # This would call into the actual emulator logic
+      {:ok, Map.put(state, :last_chunk, chunk)}
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, {:chunk_processing_error, reason}}
+    end
   end
 
   defp update_state_safely(state, new_emulator_state) do
@@ -348,10 +358,14 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp safe_state_update(state, key, value) do
-    updated = Map.put(state, key, value)
-    {:ok, updated}
-  rescue
-    e -> {:error, {:state_update_error, e}}
+    ErrorHandling.safe_call(fn ->
+      updated = Map.put(state, key, value)
+      {:ok, updated}
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, {:state_update_error, reason}}
+    end
   end
 
   defp perform_sequence_validation(sequence) do
@@ -364,19 +378,27 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp perform_sequence_application(sequence, emulator_state) do
-    # Placeholder for sequence application logic
-    {:ok, Map.put(emulator_state, :last_sequence, sequence)}
-  rescue
-    e ->
-      Logger.error("Exception applying sequence: #{inspect(e)}")
-      {:error, {:application_exception, e}}
+    ErrorHandling.safe_call(fn ->
+      # Placeholder for sequence application logic
+      {:ok, Map.put(emulator_state, :last_sequence, sequence)}
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} ->
+        Logger.error("Exception applying sequence: #{inspect(reason)}")
+        {:error, {:application_exception, reason}}
+    end
   end
 
   defp perform_resize(emulator_state, width, height) do
-    # Placeholder for resize logic
-    {:ok, Map.merge(emulator_state, %{width: width, height: height})}
-  rescue
-    e -> {:error, {:resize_exception, e}}
+    ErrorHandling.safe_call(fn ->
+      # Placeholder for resize logic
+      {:ok, Map.merge(emulator_state, %{width: width, height: height})}
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, {:resize_exception, reason}}
+    end
   end
 
   defp create_initial_emulator_state(opts) do
@@ -462,10 +484,10 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp safe_state_copy(emulator_state) do
-    # Create a safe copy of the state
-    Map.new(emulator_state)
-  rescue
-    _ -> %{}
+    ErrorHandling.safe_call_with_default(fn ->
+      # Create a safe copy of the state
+      Map.new(emulator_state)
+    end, %{})
   end
 
   defp determine_health_status(%{error_stats: %{total_errors: 0}}), do: :healthy
@@ -481,10 +503,14 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp perform_restore(checkpoint) do
-    # Restore from checkpoint
-    {:ok, Map.new(checkpoint)}
-  rescue
-    e -> {:error, {:restore_error, e}}
+    ErrorHandling.safe_call(fn ->
+      # Restore from checkpoint
+      {:ok, Map.new(checkpoint)}
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, {:restore_error, reason}}
+    end
   end
 
   defp perform_health_check(state) do

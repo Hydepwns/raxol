@@ -100,30 +100,18 @@ defmodule Raxol.Core.ErrorHandler do
          retries_left,
          retry_delay
        ) do
-    try do
-      case fun.() do
-        {:ok, _} = result -> result
-        {:error, _} = error -> error
-        result -> {:ok, result}
-      end
-    rescue
-      error ->
+    case Raxol.Core.ErrorHandling.safe_call(fun) do
+      {:ok, result} ->
+        case result do
+          {:ok, _} = ok_result -> ok_result
+          {:error, _} = error_result -> error_result
+          value -> {:ok, value}
+        end
+      
+      {:error, {error, stacktrace}} ->
         handle_rescued_error(
           operation,
           error,
-          context,
-          severity,
-          fallback,
-          retries_left,
-          retry_delay,
-          fun
-        )
-    catch
-      kind, reason ->
-        handle_caught_error(
-          operation,
-          kind,
-          reason,
           context,
           severity,
           fallback,

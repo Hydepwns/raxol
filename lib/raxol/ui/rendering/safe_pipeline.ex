@@ -12,6 +12,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   import Raxol.Core.ErrorHandler
   import Raxol.Core.Performance.Profiler
   alias Raxol.Core.ErrorRecovery
+  alias Raxol.Core.ErrorHandling
   alias Raxol.UI.Rendering.Pipeline
 
   # Target 60 FPS
@@ -58,11 +59,15 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   Safely renders a frame with automatic error recovery.
   """
   def render(pid \\ __MODULE__, scene) do
-    GenServer.call(pid, {:render, scene}, @render_timeout * 2)
-  catch
-    :exit, {:timeout, _} ->
-      Logger.warning("Render timeout, using cached frame")
-      {:ok, :cached}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      GenServer.call(pid, {:render, scene}, @render_timeout * 2)
+    end) do
+      {:ok, result} -> result
+      {:error, {:exit, {:timeout, _}}} ->
+        Logger.warning("Render timeout, using cached frame")
+        {:ok, :cached}
+      {:error, error} -> {:error, error}
+    end
   end
 
   @doc """
@@ -272,13 +277,18 @@ defmodule Raxol.UI.Rendering.SafePipeline do
         scene
       end
 
-    case GenServer.call(pipeline, {:render, optimized_scene}, @render_timeout) do
-      {:ok, result} -> {:ok, result}
-      error -> error
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      GenServer.call(pipeline, {:render, optimized_scene}, @render_timeout)
+    end) do
+      {:ok, result} ->
+        case result do
+          {:ok, _} = ok_result -> ok_result
+          error -> error
+        end
+      {:error, {:exit, {:timeout, _}}} -> {:error, :render_timeout}
+      {:error, {:exit, {:noproc, _}}} -> {:error, :pipeline_dead}
+      {:error, error} -> {:error, error}
     end
-  catch
-    :exit, {:timeout, _} -> {:error, :render_timeout}
-    :exit, {:noproc, _} -> {:error, :pipeline_dead}
   end
 
   defp handle_render_error(scene, reason, from, state) do
@@ -310,13 +320,12 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   end
 
   defp use_fallback_renderer(scene, state) do
-    try do
-      result = state.fallback_renderer.(scene)
-      {:ok, result, state}
-    rescue
-      e ->
-        Logger.error("Fallback renderer failed: #{inspect(e)}")
-        {:error, :fallback_failed, state}
+    case ErrorHandling.safe_call_with_logging(
+      fn -> state.fallback_renderer.(scene) end,
+      "Fallback renderer failed"
+    ) do
+      {:ok, result} -> {:ok, result, state}
+      {:error, _} -> {:error, :fallback_failed, state}
     end
   end
 
@@ -343,13 +352,15 @@ defmodule Raxol.UI.Rendering.SafePipeline do
 
   defp perform_animation(animation, opts, %{pipeline: pipeline} = state)
        when is_pid(pipeline) do
-    try do
-      GenServer.cast(pipeline, {:animate, animation, opts})
-      {:ok, state}
-    catch
-      _, reason ->
-        Logger.error("Animation failed: #{inspect(reason)}")
-        {:error, reason}
+    case ErrorHandling.safe_call_with_logging(
+      fn ->
+        GenServer.cast(pipeline, {:animate, animation, opts})
+        :ok
+      end,
+      "Animation failed"
+    ) do
+      {:ok, _} -> {:ok, state}
+      {:error, reason} -> {:error, reason}
     end
   end
 

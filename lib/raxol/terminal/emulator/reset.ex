@@ -167,10 +167,9 @@ defmodule Raxol.Terminal.Emulator.Reset do
   defp stop_process(emulator, field) do
     case Map.get(emulator, field) do
       pid when is_pid(pid) ->
-        try do
-          GenServer.stop(pid, :normal, 5000)
-        catch
-          :exit, _ -> :ok
+        case Raxol.Core.ErrorHandling.safe_genserver_call(pid, :stop) do
+          {:ok, _result} -> :ok
+          {:error, _reason} -> :ok  # Already stopped or unavailable
         end
 
         %{emulator | field => nil}

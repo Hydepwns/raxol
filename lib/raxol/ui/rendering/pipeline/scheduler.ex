@@ -6,6 +6,7 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
 
   require Logger
   alias Raxol.UI.Rendering.Pipeline.Stages
+  alias Raxol.Core.ErrorHandling
 
   @type state :: map()
   @type diff_result :: term()
@@ -111,14 +112,12 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   defp commit_to_renderer(painted_output, renderer_module) do
     renderer = renderer_module || Raxol.UI.Rendering.Renderer
 
-    try do
-      renderer.render(painted_output)
-
-      Logger.debug(
-        "Pipeline: Committed output to renderer #{inspect(renderer)}"
-      )
-    rescue
-      error ->
+    case ErrorHandling.safe_call(fn -> renderer.render(painted_output) end) do
+      {:ok, _} ->
+        Logger.debug(
+          "Pipeline: Committed output to renderer #{inspect(renderer)}"
+        )
+      {:error, error} ->
         Logger.error(
           "Pipeline: Failed to commit to renderer: #{inspect(error)}"
         )

@@ -10,6 +10,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
   use GenServer
 
   alias Raxol.AI.{ContentGeneration, PerformanceOptimization}
+  alias Raxol.Core.ErrorHandling
   require Logger
 
   @json_start_marker "RAXOL-JSON-BEGIN"
@@ -136,17 +137,15 @@ defmodule Raxol.Extensions.VSCodeBackend do
   Lists available components in the project.
   """
   def list_components do
-    try do
-      # Find all .ex files that look like components
-      components =
-        Path.wildcard("lib/**/*.ex")
-        |> Enum.filter(&component_file?/1)
-        |> Enum.map(&analyze_component_file/1)
-        |> Enum.filter(& &1)
-
-      {:ok, components}
-    rescue
-      error -> {:error, "Failed to list components: #{inspect(error)}"}
+    case ErrorHandling.safe_call(fn ->
+           # Find all .ex files that look like components
+           Path.wildcard("lib/**/*.ex")
+           |> Enum.filter(&component_file?/1)
+           |> Enum.map(&analyze_component_file/1)
+           |> Enum.filter(& &1)
+         end) do
+      {:ok, components} -> {:ok, components}
+      {:error, error} -> {:error, "Failed to list components: #{inspect(error)}"}
     end
   end
 
@@ -287,19 +286,20 @@ defmodule Raxol.Extensions.VSCodeBackend do
   end
 
   defp analyze_component_file(file_path) do
-    try do
-      content = File.read!(file_path)
-      {:ok, ast} = Code.string_to_quoted(content)
+    case ErrorHandling.safe_call(fn ->
+           content = File.read!(file_path)
+           {:ok, ast} = Code.string_to_quoted(content)
 
-      %{
-        file_path: file_path,
-        module_name: extract_module_name(ast),
-        type: determine_component_type(ast),
-        functions: length(extract_functions(ast)),
-        complexity: calculate_complexity(ast)
-      }
-    rescue
-      _ -> nil
+           %{
+             file_path: file_path,
+             module_name: extract_module_name(ast),
+             type: determine_component_type(ast),
+             functions: length(extract_functions(ast)),
+             complexity: calculate_complexity(ast)
+           }
+         end) do
+      {:ok, result} -> result
+      {:error, _} -> nil
     end
   end
 

@@ -12,6 +12,7 @@ defmodule Raxol.UI.State.Hooks do
   """
   
   alias Raxol.UI.State.Management.Server
+  alias Raxol.Core.ErrorHandling
   require Logger
   
   # Ensure server is started
@@ -82,23 +83,21 @@ defmodule Raxol.UI.State.Hooks do
       cleanup_key = {hook_id, :cleanup}
       case Server.get_hook_state(component_id, cleanup_key) do
         cleanup_fn when is_function(cleanup_fn, 0) ->
-          try do
-            cleanup_fn.()
-          catch
-            kind, reason ->
-              Logger.warning("Effect cleanup failed: #{inspect(kind)}, #{inspect(reason)}")
-          end
+          ErrorHandling.safe_call_with_logging(
+            cleanup_fn,
+            "Effect cleanup failed"
+          )
         _ ->
           :ok
       end
       
       # Run new effect
-      cleanup = try do
-        effect_fn.()
-      catch
-        kind, reason ->
-          Logger.error("Effect failed: #{inspect(kind)}, #{inspect(reason)}")
-          nil
+      cleanup = case ErrorHandling.safe_call_with_logging(
+        effect_fn,
+        "Effect failed"
+      ) do
+        {:ok, result} -> result
+        {:error, _} -> nil
       end
       
       # Store new dependencies and cleanup
@@ -131,12 +130,12 @@ defmodule Raxol.UI.State.Hooks do
     
     if dependencies_changed?(prev_deps, dependencies) do
       # Recompute value
-      new_value = try do
-        compute_fn.()
-      catch
-        kind, reason ->
-          Logger.error("Memo computation failed: #{inspect(kind)}, #{inspect(reason)}")
-          nil
+      new_value = case ErrorHandling.safe_call_with_logging(
+        compute_fn,
+        "Memo computation failed"
+      ) do
+        {:ok, result} -> result
+        {:error, _} -> nil
       end
       
       Server.set_hook_state(component_id, deps_key, dependencies)
@@ -227,12 +226,12 @@ defmodule Raxol.UI.State.Hooks do
     
     # Return state and dispatch function
     dispatch = fn action ->
-      new_state = try do
-        reducer_fn.(current_state, action)
-      catch
-        kind, reason ->
-          Logger.error("Reducer failed: #{inspect(kind)}, #{inspect(reason)}")
-          current_state
+      new_state = case ErrorHandling.safe_call_with_logging(
+        fn -> reducer_fn.(current_state, action) end,
+        "Reducer failed"
+      ) do
+        {:ok, result} -> result
+        {:error, _} -> current_state
       end
       
       Server.set_hook_state(component_id, hook_id, new_state)
@@ -307,13 +306,18 @@ defmodule Raxol.UI.State.Hooks do
     prev_id = Server.get_component_id()
     prev_context = Server.get_render_context()
     
-    try do
-      Server.set_component_id(component_id)
-      Server.set_render_context(%{hook_index: 0})
-      fun.()
-    after
-      Server.set_component_id(prev_id)
-      Server.set_render_context(prev_context)
-    end
+    # Use ensure_cleanup to guarantee context restoration
+    ErrorHandling.ensure_cleanup(
+      fn ->
+        Server.set_component_id(component_id)
+        Server.set_render_context(%{hook_index: 0})
+        fun.()
+      end,
+      fn ->
+        Server.set_component_id(prev_id)
+        Server.set_render_context(prev_context)
+      end
+    )
+    |> ErrorHandling.unwrap_or(nil)
   end
 end

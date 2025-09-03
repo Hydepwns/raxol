@@ -8,6 +8,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   require Logger
 
   alias Raxol.Core.ErrorRecovery
+  alias Raxol.Core.ErrorHandling
   alias Raxol.Terminal.Buffer.Manager
   alias Raxol.Terminal.Buffer.Manager.BufferImpl
 
@@ -326,10 +327,13 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
 
   defp safe_circuit_breaker_call(name, fun) do
     # Wrap the circuit breaker call to handle any exceptions
-    result = ErrorRecovery.with_circuit_breaker(name, fun)
-    {:ok, result}
-  rescue
-    e -> {:error, {:circuit_breaker_exception, e}}
+    ErrorHandling.safe_call(fn ->
+      ErrorRecovery.with_circuit_breaker(name, fun)
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, reason} -> {:error, {:circuit_breaker_exception, reason}}
+    end
   end
 
   defp handle_write_exception(reason, state) do
@@ -359,10 +363,13 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp safe_retry_call(fun, opts) do
-    result = ErrorRecovery.with_retry(fun, opts)
-    {:ok, result}
-  rescue
-    e -> {:error, {:retry_exception, e}}
+    ErrorHandling.safe_call(fn ->
+      ErrorRecovery.with_retry(fun, opts)
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, reason} -> {:error, {:retry_exception, reason}}
+    end
   end
 
   defp handle_read_exception(reason, state) do
@@ -400,10 +407,13 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp perform_resize_safe(manager_pid, width, height) do
-    result = perform_resize(manager_pid, width, height)
-    {:ok, result}
-  rescue
-    e -> {:error, {:resize_rescue, e}}
+    ErrorHandling.safe_call(fn ->
+      perform_resize(manager_pid, width, height)
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, reason} -> {:error, {:resize_rescue, reason}}
+    end
   end
 
   defp handle_resize_exception(reason, state) do
@@ -432,25 +442,31 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
     # Use Process.alive? to check before calling
     with true <- Process.alive?(pid),
          {:ok, _ref} <- safe_monitor_setup(pid) do
-      result = GenServer.call(pid, message, timeout)
-      {:ok, result}
+      ErrorHandling.safe_call(fn ->
+        GenServer.call(pid, message, timeout)
+      end)
+      |> case do
+        {:ok, result} -> {:ok, result}
+        {:error, {:exit, {:timeout, _}}} -> {:error, :timeout}
+        {:error, {:exit, {:noproc, _}}} -> {:error, :manager_dead}
+        {:error, {kind, reason}} -> {:error, {:call_caught, {kind, reason}}}
+        {:error, reason} -> {:error, {:call_exception, reason}}
+      end
     else
       false -> {:error, :manager_dead}
       {:error, reason} -> {:error, reason}
     end
-  rescue
-    e -> {:error, {:call_exception, e}}
-  catch
-    :exit, {:timeout, _} -> {:error, :timeout}
-    :exit, {:noproc, _} -> {:error, :manager_dead}
-    kind, reason -> {:error, {:call_caught, {kind, reason}}}
   end
 
   defp safe_monitor_setup(pid) do
-    _ref = Process.monitor(pid)
-    {:ok, :monitored}
-  rescue
-    e -> {:error, {:monitor_exception, e}}
+    ErrorHandling.safe_call(fn ->
+      Process.monitor(pid)
+      :monitored
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, reason} -> {:error, {:monitor_exception, reason}}
+    end
   end
 
   defp perform_read(nil, _opts) do
@@ -480,14 +496,16 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp safe_manager_resize(manager_pid, width, height) do
-    result = Manager.resize(manager_pid, {width, height})
-    {:ok, result}
-  rescue
-    e -> {:error, {:resize_exception, e}}
-  catch
-    :exit, {:timeout, _} -> {:error, :timeout}
-    :exit, {:noproc, _} -> {:error, :manager_dead}
-    kind, reason -> {:error, {:resize_caught, {kind, reason}}}
+    ErrorHandling.safe_call(fn ->
+      Manager.resize(manager_pid, {width, height})
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, {:exit, {:timeout, _}}} -> {:error, :timeout}
+      {:error, {:exit, {:noproc, _}}} -> {:error, :manager_dead}
+      {:error, {kind, reason}} -> {:error, {:resize_caught, {kind, reason}}}
+      {:error, reason} -> {:error, {:resize_exception, reason}}
+    end
   end
 
   defp handle_fallback_write(data, _opts, state) do
@@ -545,10 +563,14 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp safe_monitor_process(pid) do
-    Process.monitor(pid)
-    {:ok, pid}
-  rescue
-    e -> {:error, {:monitor_failed, e}}
+    ErrorHandling.safe_call(fn ->
+      Process.monitor(pid)
+      pid
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, reason} -> {:error, {:monitor_failed, reason}}
+    end
   end
 
   defp increment_error_count(state) do

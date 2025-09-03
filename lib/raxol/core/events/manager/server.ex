@@ -408,14 +408,13 @@ defmodule Raxol.Core.Events.Manager.Server do
     )
     
     Enum.each(handlers, fn {module, function, _priority} ->
-      try do
-        Raxol.Core.Runtime.Log.debug(
-          "Calling handler: #{inspect(module)}.#{inspect(function)}"
-        )
-        apply(module, function, [event])
-      rescue
-        error ->
-          Logger.error("Event handler #{module}.#{function} failed: #{inspect(error)}")
+      case Raxol.Core.ErrorHandling.safe_apply(module, function, [event]) do
+        {:ok, _result} -> 
+          Raxol.Core.Runtime.Log.debug(
+            "Successfully called handler: #{inspect(module)}.#{inspect(function)}"
+          )
+        {:error, reason} ->
+          Logger.error("Event handler #{module}.#{function} failed: #{inspect(reason)}")
       end
     end)
     

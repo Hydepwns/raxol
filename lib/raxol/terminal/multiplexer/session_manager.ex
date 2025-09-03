@@ -895,31 +895,34 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
   end
 
   defp load_sessions(storage) do
-    case storage.type do
-      :file ->
-        sessions_file = Path.join(storage.path, "sessions.json")
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      case storage.type do
+        :file ->
+          sessions_file = Path.join(storage.path, "sessions.json")
 
-        if File.exists?(sessions_file) do
-          sessions_file
-          |> File.read!()
-          |> Jason.decode!()
-          |> Enum.map(fn {id, session_data} ->
-            {id, atomize_keys(session_data)}
-          end)
-          |> Map.new()
-        else
+          if File.exists?(sessions_file) do
+            sessions_file
+            |> File.read!()
+            |> Jason.decode!()
+            |> Enum.map(fn {id, session_data} ->
+              {id, atomize_keys(session_data)}
+            end)
+            |> Map.new()
+          else
+            %{}
+          end
+
+        :ets ->
+          :ets.tab2list(storage.table) |> Map.new()
+
+        :database ->
+          # Would load from database
           %{}
-        end
-
-      :ets ->
-        :ets.tab2list(storage.table) |> Map.new()
-
-      :database ->
-        # Would load from database
-        %{}
+      end
+    end) do
+      {:ok, sessions} -> sessions
+      {:error, _reason} -> %{}
     end
-  rescue
-    _ -> %{}
   end
 
   defp save_all_sessions(state) do
@@ -927,30 +930,33 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
       state.sessions
       |> Enum.filter(fn {_id, session} -> session.status != :dead end)
 
-    case state.session_storage.type do
-      :file ->
-        sessions_file = Path.join(state.session_storage.path, "sessions.json")
-        json_data = Jason.encode!(sessions_to_save)
-        File.write!(sessions_file, json_data)
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      case state.session_storage.type do
+        :file ->
+          sessions_file = Path.join(state.session_storage.path, "sessions.json")
+          json_data = Jason.encode!(sessions_to_save)
+          File.write!(sessions_file, json_data)
 
-      :ets ->
-        # Clear and repopulate ETS table
-        :ets.delete_all_objects(state.session_storage.table)
+        :ets ->
+          # Clear and repopulate ETS table
+          :ets.delete_all_objects(state.session_storage.table)
 
-        Enum.each(sessions_to_save, fn {id, session} ->
-          :ets.insert(state.session_storage.table, {id, session})
-        end)
+          Enum.each(sessions_to_save, fn {id, session} ->
+            :ets.insert(state.session_storage.table, {id, session})
+          end)
 
-      :database ->
-        # Would save to database
-        :ok
+        :database ->
+          # Would save to database
+          :ok
+      end
+      
+      length(sessions_to_save)
+    end) do
+      {:ok, count} -> count
+      {:error, reason} ->
+        Logger.error("Failed to save sessions: #{inspect(reason)}")
+        0
     end
-
-    length(sessions_to_save)
-  rescue
-    error ->
-      Logger.error("Failed to save sessions: #{inspect(error)}")
-      0
   end
 
   ## Event System

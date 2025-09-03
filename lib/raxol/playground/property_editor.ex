@@ -6,6 +6,8 @@ defmodule Raxol.Playground.PropertyEditor do
   with type validation and real-time preview updates.
   """
 
+  alias Raxol.Core.ErrorHandling
+
   @doc """
   Renders an interactive property editor for a component.
   """
@@ -318,11 +320,12 @@ defmodule Raxol.Playground.PropertyEditor do
   defp parse_list_by_format(trimmed), do: {:ok, [trimmed]}
 
   defp parse_bracketed_list(trimmed) do
-    try do
+    case ErrorHandling.safe_call(fn ->
       {result, _} = Code.eval_string(trimmed)
       validate_list_result(result)
-    rescue
-      _ -> parse_simple_list(trimmed)
+    end) do
+      {:ok, result} -> result
+      {:error, _} -> parse_simple_list(trimmed)
     end
   end
 
@@ -369,11 +372,12 @@ defmodule Raxol.Playground.PropertyEditor do
     do: {:error, "Map must start with %{ and end with }"}
 
   defp eval_map_string(trimmed) do
-    try do
+    case ErrorHandling.safe_call(fn ->
       {result, _} = Code.eval_string(trimmed)
       validate_map_result(result)
-    rescue
-      _ -> {:error, "Invalid map syntax"}
+    end) do
+      {:ok, result} -> result
+      {:error, _} -> {:error, "Invalid map syntax"}
     end
   end
 

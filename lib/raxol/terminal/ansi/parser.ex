@@ -24,18 +24,16 @@ defmodule Raxol.Terminal.ANSI.Parser do
   """
   @spec parse(String.t()) :: list(sequence())
   def parse(input) do
-    try do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
       state = StateMachine.new()
       {_state, sequences} = StateMachine.process(state, input)
       Monitor.record_sequence(input)
       sequences
-    rescue
-      e ->
-        Monitor.record_error(input, "Parse error: #{inspect(e)}", %{
-          stacktrace: Exception.format_stacktrace(__STACKTRACE__)
-        })
-
-        log_parse_error(e, input)
+    end) do
+      {:ok, sequences} -> sequences
+      {:error, reason} ->
+        Monitor.record_error(input, "Parse error: #{inspect(reason)}", %{})
+        log_parse_error(reason, input)
         []
     end
   end

@@ -193,12 +193,13 @@ defmodule Raxol.Core do
   @spec get_application_status(pid() | atom()) ::
           {:ok, map()} | {:error, term()}
   def get_application_status(pid_or_name) do
-    case GenServer.call(pid_or_name, :get_status, 5000) do
-      {:ok, status} -> {:ok, status}
-      {:error, reason} -> {:error, reason}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      GenServer.call(pid_or_name, :get_status, 5000)
+    end) do
+      {:ok, {:ok, status}} -> {:ok, status}
+      {:ok, {:error, reason}} -> {:error, reason}
+      {:error, _} -> {:error, :not_found}
     end
-  rescue
-    _ -> {:error, :not_found}
   end
 
   # ============================================================================

@@ -6,6 +6,7 @@ defmodule Raxol.System.DeltaUpdater do
   require Raxol.Core.Runtime.Log
   # Called via adapter now
   alias Raxol.System.DeltaUpdaterSystemAdapterImpl
+  alias Raxol.Core.ErrorHandling
   
   defp system_adapter do
     Application.get_env(:raxol, :system_adapter, DeltaUpdaterSystemAdapterImpl)
@@ -49,11 +50,10 @@ defmodule Raxol.System.DeltaUpdater do
          tmp_dir_path =
            Path.join(base_tmp_dir, "raxol_update_#{random_suffix}"),
          :ok <- system_adapter().file_mkdir_p(tmp_dir_path) do
-      try do
-        perform_update(tmp_dir_path, delta_url, target_version)
-      after
-        system_adapter().file_rm_rf(tmp_dir_path)
-      end
+      ErrorHandling.ensure_cleanup(
+        fn -> perform_update(tmp_dir_path, delta_url, target_version) end,
+        fn -> system_adapter().file_rm_rf(tmp_dir_path) end
+      )
     else
       {:error, reason} -> {:error, reason}
     end
@@ -196,12 +196,10 @@ defmodule Raxol.System.DeltaUpdater do
 
     case system_adapter().http_get(url) do
       {:ok, body} ->
-        # Assuming body is a string that needs decoding
-        try do
-          releases = Jason.decode!(body)
-          {:ok, releases}
-        rescue
-          Jason.DecodeError -> {:error, :json_decode_error}
+        # Safely decode JSON using functional error handling
+        case ErrorHandling.safe_call(fn -> Jason.decode!(body) end) do
+          {:ok, releases} -> {:ok, releases}
+          {:error, _} -> {:error, :json_decode_error}
         end
 
       {:error, {:http_error, status_code, _body}} ->

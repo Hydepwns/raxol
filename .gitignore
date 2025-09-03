@@ -31,7 +31,7 @@ erl_crash.dump
 *.ez
 
 # Claude Code configuration directory
-.claude/
+#.claude/
 
 # Ignore package tarball (built via "mix hex.build").
 raxol-*.tar
@@ -115,6 +115,3 @@ bench/output/
 bench/results/**/*.benchee
 bench/results/**/*_summary.json
 bench/snapshots/
-
-# Claude AI artifacts
-# .claude/

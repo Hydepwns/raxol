@@ -17,6 +17,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   alias Raxol.Terminal.Buffer.{Operations, DamageTracker}
   alias Raxol.Terminal.MemoryManager
   alias Raxol.Terminal.Integration.Renderer
+  alias Raxol.Core.ErrorHandling
 
   @behaviour Behaviour
 
@@ -435,12 +436,15 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   defp safe_execute_operation(operation, state) do
-    result = operation.(state)
-    {:ok, result}
-  rescue
-    e -> {:error, {:exception, e}}
-  catch
-    kind, reason -> {:error, {kind, reason}}
+    ErrorHandling.safe_call(fn ->
+      operation.(state)
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, reason}} -> {:error, {:throw, reason}}
+      {:error, reason} -> {:error, {:exception, reason}}
+    end
   end
 
   def handle_call({:write, data, opts}, _from, state) do
@@ -454,12 +458,15 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   defp safe_buffer_write(buffer, data, opts) do
-    new_buffer = Operations.write(buffer, data, opts)
-    {:ok, new_buffer}
-  rescue
-    e -> {:error, {:write_exception, e}}
-  catch
-    kind, reason -> {:error, {kind, reason}}
+    ErrorHandling.safe_call(fn ->
+      Operations.write(buffer, data, opts)
+    end)
+    |> case do
+      {:ok, new_buffer} -> {:ok, new_buffer}
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, reason}} -> {:error, {:throw, reason}}
+      {:error, reason} -> {:error, {:write_exception, reason}}
+    end
   end
 
   def handle_call({:read, opts}, _from, state) do
@@ -473,12 +480,15 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   defp safe_buffer_read(buffer, opts) do
-    result = Operations.read(buffer, opts)
-    {:ok, result}
-  rescue
-    e -> {:error, {:read_exception, e}}
-  catch
-    kind, reason -> {:error, {kind, reason}}
+    ErrorHandling.safe_call(fn ->
+      Operations.read(buffer, opts)
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, reason}} -> {:error, {:throw, reason}}
+      {:error, reason} -> {:error, {:read_exception, reason}}
+    end
   end
 
   def handle_call({:resize, size, _opts}, _from, state) do
@@ -507,12 +517,15 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   defp safe_buffer_resize(buffer, width, height) do
-    new_buffer = BufferImpl.resize(buffer, width, height)
-    {:ok, new_buffer}
-  rescue
-    e -> {:error, {:resize_exception, e}}
-  catch
-    kind, reason -> {:error, {kind, reason}}
+    ErrorHandling.safe_call(fn ->
+      BufferImpl.resize(buffer, width, height)
+    end)
+    |> case do
+      {:ok, new_buffer} -> {:ok, new_buffer}
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, reason}} -> {:error, {:throw, reason}}
+      {:error, reason} -> {:error, {:resize_exception, reason}}
+    end
   end
 
   def handle_call({:scroll, lines}, _from, state) do

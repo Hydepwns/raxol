@@ -43,13 +43,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.State do
         {:error, {:plugin_not_found, plugin_id}}
 
       plugin ->
-        try do
-          updated_plugin = update_fun.(plugin)
-          updated_plugins = Map.put(state.plugins, plugin_id, updated_plugin)
-          updated_state = %{state | plugins: updated_plugins}
-          {:ok, updated_state}
-        rescue
-          error ->
+        case Raxol.Core.ErrorHandling.safe_call(fn -> update_fun.(plugin) end) do
+          {:ok, updated_plugin} ->
+            updated_plugins = Map.put(state.plugins, plugin_id, updated_plugin)
+            updated_state = %{state | plugins: updated_plugins}
+            {:ok, updated_state}
+          {:error, error} ->
             Raxol.Core.Runtime.Log.error_with_stacktrace(
               "Failed to update plugin #{plugin_id}",
               error,

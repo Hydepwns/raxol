@@ -429,16 +429,14 @@ defmodule Raxol.Core.KeyboardShortcuts.Server do
     
     if shortcut && shortcut.callback do
       # Execute callback
-      try do
-        shortcut.callback.()
-        
-        # Announce if accessibility is enabled
-        if Accessibility.enabled?() && shortcut.description != "" do
-          Accessibility.announce(shortcut.description, priority: :high)
-        end
-      rescue
-        error ->
-          Logger.error("Shortcut callback failed: #{inspect(error)}")
+      case Raxol.Core.ErrorHandling.safe_call(shortcut.callback) do
+        {:ok, _result} -> 
+          # Announce if accessibility is enabled
+          if Accessibility.enabled?() && shortcut.description != "" do
+            Accessibility.announce(shortcut.description, priority: :high)
+          end
+        {:error, reason} ->
+          Logger.error("Shortcut callback failed: #{inspect(reason)}")
       end
     end
   end

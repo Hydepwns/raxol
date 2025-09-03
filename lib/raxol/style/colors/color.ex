@@ -81,14 +81,15 @@ defmodule Raxol.Style.Colors.Color do
   """
   @spec from_hex(String.t()) :: t() | {:error, :invalid_hex}
   def from_hex(hex_string) when is_binary(hex_string) do
-    try do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
       case Formats.from_hex(hex_string) do
         {r, g, b} -> from_rgb(r, g, b)
         {r, g, b, a} -> from_rgba(r, g, b, a)
         {:error, :invalid_hex} = err -> err
       end
-    rescue
-      ArgumentError -> {:error, :invalid_hex}
+    end) do
+      {:ok, result} -> result
+      {:error, _reason} -> {:error, :invalid_hex}
     end
   end
 

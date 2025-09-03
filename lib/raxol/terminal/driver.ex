@@ -371,7 +371,7 @@ defmodule Raxol.Terminal.Driver do
   end
 
   defp get_termbox_size do
-    try do
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       width =
         if @termbox2_available,
           do: apply(:termbox2_nif, :tb_width, []),
@@ -387,8 +387,10 @@ defmodule Raxol.Terminal.Driver do
       else
         stty_size_fallback()
       end
-    rescue
-      _ -> stty_size_fallback()
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, _reason} -> stty_size_fallback()
     end
   end
 
@@ -423,39 +425,40 @@ defmodule Raxol.Terminal.Driver do
 
   # --- Event translation from rrex_termbox v2.0.1 NIF ---
   defp translate_termbox_event(event_map) do
-    # Handle event structure from rrex_termbox v2.0.1 NIF
-    case event_map do
-      %{type: :key, key: key_code, char: char_code, mod: mod_code} ->
-        # Translate key_code, char_code, mod_code to Raxol's key event format
-        translated_key = translate_key(key_code, char_code, mod_code)
-        event = %Event{type: :key, data: translated_key}
-        {:ok, event}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      # Handle event structure from rrex_termbox v2.0.1 NIF
+      case event_map do
+        %{type: :key, key: key_code, char: char_code, mod: mod_code} ->
+          # Translate key_code, char_code, mod_code to Raxol's key event format
+          translated_key = translate_key(key_code, char_code, mod_code)
+          event = %Event{type: :key, data: translated_key}
+          {:ok, event}
 
-      %{type: :resize, width: w, height: h} ->
-        event = %Event{type: :resize, data: %{width: w, height: h}}
-        {:ok, event}
+        %{type: :resize, width: w, height: h} ->
+          event = %Event{type: :resize, data: %{width: w, height: h}}
+          {:ok, event}
 
-      %{type: :mouse, x: x, y: y, button: btn_code} ->
-        # Translate rrex_termbox mouse button codes and potentially event types
-        translated_button = translate_mouse_button(btn_code)
-        # Add button info to the data
-        event = %Event{
-          type: :mouse,
-          data: %{x: x, y: y, button: translated_button}
-        }
+        %{type: :mouse, x: x, y: y, button: btn_code} ->
+          # Translate rrex_termbox mouse button codes and potentially event types
+          translated_button = translate_mouse_button(btn_code)
+          # Add button info to the data
+          event = %Event{
+            type: :mouse,
+            data: %{x: x, y: y, button: translated_button}
+          }
 
-        {:ok, event}
+          {:ok, event}
 
-      # Add cases for other event types rrex_termbox might send
+        # Add cases for other event types rrex_termbox might send
 
-      _other ->
-        # Raxol.Core.Runtime.Log.debug("Ignoring unknown termbox event type: #{inspect(event_map)}")
-        :ignore
+        _other ->
+          # Raxol.Core.Runtime.Log.debug("Ignoring unknown termbox event type: #{inspect(event_map)}")
+          :ignore
+      end
+    end) do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, reason}
     end
-  catch
-    # Catch potential errors during translation
-    type, reason ->
-      {:error, {type, reason, Exception.format_stacktrace(__STACKTRACE__)}}
   end
 
   # Helper for key translation

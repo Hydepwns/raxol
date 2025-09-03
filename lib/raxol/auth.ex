@@ -436,10 +436,13 @@ defmodule Raxol.Auth do
   defp handle_authentication_error(error, _user), do: error
 
   defp verify_password(password, password_hash) do
-    # Use Bcrypt for password verification
-    Bcrypt.verify_pass(password, password_hash)
-  rescue
-    _ -> false
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      # Use Bcrypt for password verification
+      Bcrypt.verify_pass(password, password_hash)
+    end) do
+      {:ok, result} -> result
+      {:error, _reason} -> false
+    end
   end
 
   defp update_user_login_success(user) do

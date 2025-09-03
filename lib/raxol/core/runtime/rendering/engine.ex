@@ -16,6 +16,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   alias Raxol.UI.Layout.Engine, as: LayoutEngine
   alias Raxol.UI.Renderer, as: UIRenderer
   alias Raxol.UI.Theming.Theme
+  alias Raxol.Core.ErrorHandling
 
   defmodule State do
     @moduledoc false
@@ -144,27 +145,30 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end
   end
 
-  # Safe view retrieval
+  # Safe view retrieval using functional error handling
   defp safe_get_view(app_module, model) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Calling app_module.view(model)"
     )
 
-    case apply(app_module, :view, [model]) do
-      view when not is_nil(view) ->
-        Raxol.Core.Runtime.Log.debug(
-          "Rendering Engine: Got view: #{inspect(view)}"
-        )
-        {:ok, view}
-      _ ->
-        {:error, :invalid_view}
+    ErrorHandling.safe_call(fn ->
+      case apply(app_module, :view, [model]) do
+        view when not is_nil(view) ->
+          Raxol.Core.Runtime.Log.debug(
+            "Rendering Engine: Got view: #{inspect(view)}"
+          )
+          {:ok, view}
+        _ ->
+          {:error, :invalid_view}
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, {:view_error, reason}}
     end
-  rescue
-    error ->
-      {:error, {:view_error, error}}
   end
 
-  # Safe layout application
+  # Safe layout application using functional error handling
   defp safe_apply_layout(view, state) do
     dimensions = %{width: state.width, height: state.height}
 
@@ -172,51 +176,60 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       "Rendering Engine: Calculating layout with dimensions: #{inspect(dimensions)}"
     )
 
-    case LayoutEngine.apply_layout(view, dimensions) do
-      positioned_elements when is_list(positioned_elements) ->
-        Raxol.Core.Runtime.Log.debug(
-          "Rendering Engine: Got positioned elements: #{inspect(positioned_elements)}"
-        )
-        {:ok, positioned_elements}
-      _ ->
-        {:error, :layout_failed}
+    ErrorHandling.safe_call(fn ->
+      case LayoutEngine.apply_layout(view, dimensions) do
+        positioned_elements when is_list(positioned_elements) ->
+          Raxol.Core.Runtime.Log.debug(
+            "Rendering Engine: Got positioned elements: #{inspect(positioned_elements)}"
+          )
+          {:ok, positioned_elements}
+        _ ->
+          {:error, :layout_failed}
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, {:layout_error, reason}}
     end
-  rescue
-    error ->
-      {:error, {:layout_error, error}}
   end
 
-  # Safe cell rendering
+  # Safe cell rendering using functional error handling
   defp safe_render_to_cells(positioned_elements, theme) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Rendering to cells with theme: #{inspect(theme)}"
     )
 
-    case UIRenderer.render_to_cells(positioned_elements, theme) do
-      cells when is_list(cells) ->
-        Raxol.Core.Runtime.Log.debug(
-          "Rendering Engine: Got cells: #{inspect(cells)}"
-        )
-        {:ok, cells}
-      _ ->
-        {:error, :cell_rendering_failed}
+    ErrorHandling.safe_call(fn ->
+      case UIRenderer.render_to_cells(positioned_elements, theme) do
+        cells when is_list(cells) ->
+          Raxol.Core.Runtime.Log.debug(
+            "Rendering Engine: Got cells: #{inspect(cells)}"
+          )
+          {:ok, cells}
+        _ ->
+          {:error, :cell_rendering_failed}
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, {:cell_rendering_error, reason}}
     end
-  rescue
-    error ->
-      {:error, {:cell_rendering_error, error}}
   end
 
-  # Safe plugin transforms
+  # Safe plugin transforms using functional error handling
   defp safe_apply_plugin_transforms(cells, state) do
-    case apply_plugin_transforms(cells, state) do
-      processed_cells when is_list(processed_cells) ->
-        {:ok, processed_cells}
-      _ ->
-        {:error, :plugin_transform_failed}
+    ErrorHandling.safe_call(fn ->
+      case apply_plugin_transforms(cells, state) do
+        processed_cells when is_list(processed_cells) ->
+          {:ok, processed_cells}
+        _ ->
+          {:error, :plugin_transform_failed}
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, {:plugin_transform_error, reason}}
     end
-  rescue
-    error ->
-      {:error, {:plugin_transform_error, error}}
   end
 
   # Safe backend rendering
@@ -441,20 +454,22 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   defp get_plugin_manager_from_dispatcher(_), do: {:error, :invalid_dispatcher}
 
-  # Safe GenServer call wrapper
+  # Safe GenServer call wrapper using functional error handling
   defp safe_genserver_call(pid, message, timeout) do
-    case GenServer.call(pid, message, timeout) do
-      response -> {:ok, response}
+    ErrorHandling.safe_call(fn ->
+      GenServer.call(pid, message, timeout)
+    end)
+    |> case do
+      {:ok, response} -> {:ok, response}
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Rendering Engine: Error getting plugin manager from dispatcher",
+          reason,
+          nil,
+          %{dispatcher_pid: pid}
+        )
+        {:error, :dispatcher_error}
     end
-  rescue
-    error ->
-      Raxol.Core.Runtime.Log.error_with_stacktrace(
-        "Rendering Engine: Error getting plugin manager from dispatcher",
-        error,
-        nil,
-        %{dispatcher_pid: pid}
-      )
-      {:error, :dispatcher_error}
   end
 
   # Validate plugin manager response
@@ -511,12 +526,11 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   defp update_plugin_manager_in_dispatcher(_, _), do: {:error, :invalid_dispatcher}
 
-  # Safe GenServer cast wrapper
+  # Safe GenServer cast wrapper using functional error handling
   defp safe_genserver_cast(pid, message) do
-    GenServer.cast(pid, message)
-    :ok
-  rescue
-    error ->
-      {:error, error}
+    ErrorHandling.safe_call(fn ->
+      GenServer.cast(pid, message)
+      :ok
+    end)
   end
 end

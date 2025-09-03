@@ -584,10 +584,9 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
     map = Map.get(@charset_tables, charset, %{})
     codepoint = Map.get(map, char, char)
 
-    try do
-      <<codepoint::utf8>>
-    rescue
-      ArgumentError ->
+    case Raxol.Core.ErrorHandling.safe_call(fn -> <<codepoint::utf8>> end) do
+      {:ok, result} -> result
+      {:error, _reason} ->
         # Fallback for invalid codepoints
         Raxol.Core.Runtime.Log.warning_with_context(
           "Invalid codepoint #{codepoint} in charset #{charset}",

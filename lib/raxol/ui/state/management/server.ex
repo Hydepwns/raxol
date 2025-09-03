@@ -17,6 +17,7 @@ defmodule Raxol.UI.State.Management.Server do
   """
   
   use GenServer
+  alias Raxol.Core.ErrorHandling
   require Logger
   
   # Client API
@@ -370,12 +371,12 @@ defmodule Raxol.UI.State.Management.Server do
   
   defp apply_reducers(action, data, reducers) do
     Enum.reduce(reducers, data, fn reducer_fn, acc_data ->
-      try do
-        reducer_fn.(action, acc_data)
-      catch
-        kind, reason ->
-          Logger.error("Error in reducer: #{inspect(kind)}, #{inspect(reason)}")
-          acc_data
+      case ErrorHandling.safe_call_with_logging(
+        fn -> reducer_fn.(action, acc_data) end,
+        "Error in reducer"
+      ) do
+        {:ok, result} -> result
+        {:error, _} -> acc_data
       end
     end)
   end
@@ -423,12 +424,10 @@ defmodule Raxol.UI.State.Management.Server do
   end
   
   defp execute_callback(callback, value) do
-    try do
-      callback.(value)
-    catch
-      kind, reason ->
-        Logger.error("Error in subscriber callback: #{inspect(kind)}, #{inspect(reason)}")
-    end
+    ErrorHandling.safe_call_with_logging(
+      fn -> callback.(value) end,
+      "Error in subscriber callback"
+    )
   end
   
   defp path_affects_subscription?(changed_path, subscription_path) do

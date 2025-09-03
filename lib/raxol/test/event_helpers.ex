@@ -5,6 +5,7 @@ defmodule Raxol.Test.EventHelpers do
   """
 
   alias Raxol.Core.Events.Event
+  alias Raxol.Core.ErrorHandling
   import ExUnit.Assertions
 
   @doc """
@@ -85,14 +86,15 @@ defmodule Raxol.Test.EventHelpers do
   Verifies that error handling works properly between components.
   """
   def assert_error_contained(parent, child, error_fn) do
-    try do
-      error_fn.()
-      flunk("Expected an error but none was raised")
-    rescue
-      e ->
+    case ErrorHandling.safe_call(error_fn) do
+      {:ok, _} ->
+        flunk("Expected an error but none was raised")
+      {:error, %RuntimeError{} = e} ->
         assert parent.state != nil
         assert child.state != nil
         assert e.__struct__ == RuntimeError
+      {:error, _other} ->
+        flunk("Expected a RuntimeError but got a different error type")
     end
   end
 end

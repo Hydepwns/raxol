@@ -115,58 +115,22 @@ defmodule Raxol.AI.ServiceAdapter do
   end
 
   defp local_generate_content(prompt, options) do
-    # Implementation for local AI service
-    # This would call a local LLM server or use a local model
-    case HTTPoison.post(
-           "http://localhost:8080/v1/completions",
-           Jason.encode!(%{
-             prompt: prompt,
-             max_tokens: Map.get(options, :max_tokens, 100),
-             temperature: Map.get(options, :temperature, 0.7)
-           }),
-           [{"Content-Type", "application/json"}]
-         ) do
-      {:ok, %{status_code: 200, body: body}} ->
-        case Jason.decode(body) do
-          {:ok, %{"choices" => [%{"text" => text} | _]}} -> {:ok, text}
-          _ -> {:error, :invalid_response}
-        end
-
-      {:ok, %{status_code: status}} ->
-        {:error, {:http_error, status}}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  rescue
-    _ -> {:error, :service_unavailable}
-  end
-
-  defp openai_generate_content(prompt, options) do
-    # Implementation for OpenAI API
-    api_key = Application.get_env(:raxol, :openai_api_key)
-
-    if api_key do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      # Implementation for local AI service  
+      # This would call a local LLM server or use a local model
       case HTTPoison.post(
-             "https://api.openai.com/v1/completions",
+             "http://localhost:8080/v1/completions",
              Jason.encode!(%{
-               model: "gpt-3.5-turbo-instruct",
                prompt: prompt,
                max_tokens: Map.get(options, :max_tokens, 100),
                temperature: Map.get(options, :temperature, 0.7)
              }),
-             [
-               {"Content-Type", "application/json"},
-               {"Authorization", "Bearer #{api_key}"}
-             ]
+             [{"Content-Type", "application/json"}]
            ) do
         {:ok, %{status_code: 200, body: body}} ->
           case Jason.decode(body) do
-            {:ok, %{"choices" => [%{"text" => text} | _]}} ->
-              {:ok, String.trim(text)}
-
-            _ ->
-              {:error, :invalid_response}
+            {:ok, %{"choices" => [%{"text" => text} | _]}} -> {:ok, text}
+            _ -> {:error, :invalid_response}
           end
 
         {:ok, %{status_code: status}} ->
@@ -175,51 +139,96 @@ defmodule Raxol.AI.ServiceAdapter do
         {:error, reason} ->
           {:error, reason}
       end
-    else
-      {:error, :api_key_not_configured}
+    end) do
+      {:ok, result} -> result
+      {:error, _reason} -> {:error, :service_unavailable}
     end
-  rescue
-    _ -> {:error, :service_unavailable}
+  end
+
+  defp openai_generate_content(prompt, options) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      # Implementation for OpenAI API
+      api_key = Application.get_env(:raxol, :openai_api_key)
+
+      if api_key do
+        case HTTPoison.post(
+               "https://api.openai.com/v1/completions",
+               Jason.encode!(%{
+                 model: "gpt-3.5-turbo-instruct",
+                 prompt: prompt,
+                 max_tokens: Map.get(options, :max_tokens, 100),
+                 temperature: Map.get(options, :temperature, 0.7)
+               }),
+               [
+                 {"Content-Type", "application/json"},
+                 {"Authorization", "Bearer #{api_key}"}
+               ]
+             ) do
+          {:ok, %{status_code: 200, body: body}} ->
+            case Jason.decode(body) do
+              {:ok, %{"choices" => [%{"text" => text} | _]}} ->
+                {:ok, String.trim(text)}
+
+              _ ->
+                {:error, :invalid_response}
+            end
+
+          {:ok, %{status_code: status}} ->
+            {:error, {:http_error, status}}
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+      else
+        {:error, :api_key_not_configured}
+      end
+    end) do
+      {:ok, result} -> result
+      {:error, _reason} -> {:error, :service_unavailable}
+    end
   end
 
   defp anthropic_generate_content(prompt, options) do
-    # Implementation for Anthropic Claude API
-    api_key = Application.get_env(:raxol, :anthropic_api_key)
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      # Implementation for Anthropic Claude API
+      api_key = Application.get_env(:raxol, :anthropic_api_key)
 
-    if api_key do
-      case HTTPoison.post(
-             "https://api.anthropic.com/v1/messages",
-             Jason.encode!(%{
-               model: "claude-3-haiku-20240307",
-               max_tokens: Map.get(options, :max_tokens, 100),
-               messages: [%{role: "user", content: prompt}]
-             }),
-             [
-               {"Content-Type", "application/json"},
-               {"x-api-key", api_key},
-               {"anthropic-version", "2023-06-01"}
-             ]
-           ) do
-        {:ok, %{status_code: 200, body: body}} ->
-          case Jason.decode(body) do
-            {:ok, %{"content" => [%{"text" => text} | _]}} ->
-              {:ok, String.trim(text)}
+      if api_key do
+        case HTTPoison.post(
+               "https://api.anthropic.com/v1/messages",
+               Jason.encode!(%{
+                 model: "claude-3-haiku-20240307",
+                 max_tokens: Map.get(options, :max_tokens, 100),
+                 messages: [%{role: "user", content: prompt}]
+               }),
+               [
+                 {"Content-Type", "application/json"},
+                 {"x-api-key", api_key},
+                 {"anthropic-version", "2023-06-01"}
+               ]
+             ) do
+          {:ok, %{status_code: 200, body: body}} ->
+            case Jason.decode(body) do
+              {:ok, %{"content" => [%{"text" => text} | _]}} ->
+                {:ok, String.trim(text)}
 
-            _ ->
-              {:error, :invalid_response}
-          end
+              _ ->
+                {:error, :invalid_response}
+            end
 
-        {:ok, %{status_code: status}} ->
-          {:error, {:http_error, status}}
+          {:ok, %{status_code: status}} ->
+            {:error, {:http_error, status}}
 
-        {:error, reason} ->
-          {:error, reason}
+          {:error, reason} ->
+            {:error, reason}
+        end
+      else
+        {:error, :api_key_not_configured}
       end
-    else
-      {:error, :api_key_not_configured}
+    end) do
+      {:ok, result} -> result
+      {:error, _reason} -> {:error, :service_unavailable}
     end
-  rescue
-    _ -> {:error, :service_unavailable}
   end
 
   defp build_suggestion_prompt(input, context) do

@@ -261,15 +261,16 @@ defmodule Raxol.Core.Config.Manager do
 
   defp load_config_file(file, env) do
     if File.exists?(file) do
-      try do
+      case Raxol.Core.ErrorHandling.safe_call(fn ->
         {config, _binding} = Code.eval_file(file)
 
         case get_in(config, [env]) do
           nil -> {:ok, %{}}
           env_config -> {:ok, env_config}
         end
-      rescue
-        e ->
+      end) do
+        {:ok, result} -> result
+        {:error, {e, _stacktrace}} ->
           Logger.error("Failed to load config file: #{inspect(e)}")
           {:error, :invalid_config_file}
       end
