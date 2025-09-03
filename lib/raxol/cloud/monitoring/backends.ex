@@ -6,7 +6,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   platforms, allowing Raxol applications to send metrics, logs, and traces
   to external services.
   """
-  
+
   alias Raxol.Core.ErrorHandling
   require Logger
 
@@ -118,7 +118,10 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     # This would use prometheus_ex functions
     # :prometheus_gauge.set(metric_name, tags, value)
     # For now, store in process dictionary as placeholder
-    Raxol.Cloud.Monitoring.Server.put_prometheus_metric(metric_name, {value, tags})
+    Raxol.Cloud.Monitoring.Server.put_prometheus_metric(
+      metric_name,
+      {value, tags}
+    )
   end
 
   # DataDog backend implementation
@@ -281,8 +284,11 @@ defmodule Raxol.Cloud.Monitoring.Backends do
 
   defp validate_grafana_config(nil, _), do: {:error, :url_required}
   defp validate_grafana_config(_, nil), do: {:error, :api_key_required}
-  defp validate_grafana_config(url, api_key) 
-       when is_binary(url) and is_binary(api_key), do: {:ok, {url, api_key}}
+
+  defp validate_grafana_config(url, api_key)
+       when is_binary(url) and is_binary(api_key),
+       do: {:ok, {url, api_key}}
+
   defp validate_grafana_config(_, _), do: {:error, :url_and_api_key_required}
 
   defp send_grafana_metrics(metrics) do
@@ -333,7 +339,10 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   end
 
   defp validate_handler(nil), do: {:error, :handler_required}
-  defp validate_handler(handler) when is_function(handler, 2), do: {:ok, handler}
+
+  defp validate_handler(handler) when is_function(handler, 2),
+    do: {:ok, handler}
+
   defp validate_handler(_), do: {:error, :invalid_handler}
 
   defp send_custom_metrics(metrics) do
@@ -351,7 +360,10 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   end
 
   defp validate_metrics_handler(nil), do: {:error, :handler_not_configured}
-  defp validate_metrics_handler(handler) when is_function(handler, 1), do: {:ok, handler}
+
+  defp validate_metrics_handler(handler) when is_function(handler, 1),
+    do: {:ok, handler}
+
   defp validate_metrics_handler(_), do: {:error, :invalid_handler}
 
   defp send_custom_logs(logs) do
@@ -369,7 +381,10 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   end
 
   defp validate_logs_handler(nil), do: {:error, :handler_not_configured}
-  defp validate_logs_handler(handler) when is_function(handler, 1), do: {:ok, handler}
+
+  defp validate_logs_handler(handler) when is_function(handler, 1),
+    do: {:ok, handler}
+
   defp validate_logs_handler(_), do: {:error, :invalid_handler}
 
   # Format functions for different backends

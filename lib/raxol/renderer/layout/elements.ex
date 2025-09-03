@@ -9,7 +9,6 @@ defmodule Raxol.Renderer.Layout.Elements do
   - Border and box elements
   """
 
-  
   # Default styles
   @default_style %{fg: :white, bg: :black}
   @default_button_style %{fg: :white, bg: :blue}

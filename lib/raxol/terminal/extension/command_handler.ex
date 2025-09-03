@@ -51,9 +51,11 @@ defmodule Raxol.Terminal.Extension.CommandHandler do
 
   defp execute_module_command(module, type, command, args) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      execute_by_type(module, type, command, args)
-    end) do
-      {:ok, result} -> result
+           execute_by_type(module, type, command, args)
+         end) do
+      {:ok, result} ->
+        result
+
       {:error, reason} ->
         Logger.error("Command execution failed: #{inspect(reason)}")
         {:error, :command_execution_failed}

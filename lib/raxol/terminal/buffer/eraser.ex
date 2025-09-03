@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   This module handles operations like clearing the screen, lines, and regions.
   """
 
-  
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting

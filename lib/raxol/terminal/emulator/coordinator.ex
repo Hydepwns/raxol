@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.Emulator.Coordinator do
   was previously embedded in the main Emulator module.
   """
 
-  
   alias Raxol.Terminal.{
     ScreenBuffer,
     Emulator.Constructors,

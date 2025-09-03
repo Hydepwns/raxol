@@ -780,9 +780,12 @@ defmodule Raxol.Storage.EventStorage.Disk do
 
     case File.read(index_file) do
       {:ok, binary_data} ->
-        ErrorHandling.safe_call_with_default(fn ->
-          :erlang.binary_to_term(binary_data)
-        end, %{})
+        ErrorHandling.safe_call_with_default(
+          fn ->
+            :erlang.binary_to_term(binary_data)
+          end,
+          %{}
+        )
 
       {:error, :enoent} ->
         %{}

@@ -98,7 +98,7 @@ defmodule Mix.Tasks.Benchmark.Visualization do
       {"--large", :large},
       {"--production", :production}
     ]
-    
+
     Enum.find_value(size_mappings, :small, fn {flag, size} ->
       if flag in args, do: size, else: nil
     end)

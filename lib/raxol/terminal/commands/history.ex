@@ -1,7 +1,6 @@
 defmodule Raxol.Terminal.Commands.History do
   @moduledoc false
 
-  
   @type command_history :: [String.t()]
   @type command_history_config :: %{
           max_size: non_neg_integer(),

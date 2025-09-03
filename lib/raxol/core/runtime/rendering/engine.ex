@@ -141,6 +141,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
           nil,
           %{module: __MODULE__, state: state}
         )
+
         {:error, {:render_error, reason}, state}
     end
   end
@@ -157,7 +158,9 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
           Raxol.Core.Runtime.Log.debug(
             "Rendering Engine: Got view: #{inspect(view)}"
           )
+
           {:ok, view}
+
         _ ->
           {:error, :invalid_view}
       end
@@ -182,7 +185,9 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
           Raxol.Core.Runtime.Log.debug(
             "Rendering Engine: Got positioned elements: #{inspect(positioned_elements)}"
           )
+
           {:ok, positioned_elements}
+
         _ ->
           {:error, :layout_failed}
       end
@@ -205,7 +210,9 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
           Raxol.Core.Runtime.Log.debug(
             "Rendering Engine: Got cells: #{inspect(cells)}"
           )
+
           {:ok, cells}
+
         _ ->
           {:error, :cell_rendering_failed}
       end
@@ -222,6 +229,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       case apply_plugin_transforms(cells, state) do
         processed_cells when is_list(processed_cells) ->
           {:ok, processed_cells}
+
         _ ->
           {:error, :plugin_transform_failed}
       end
@@ -252,6 +260,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
           nil,
           %{module: __MODULE__, state: state}
         )
+
         {:error, :unknown_environment}
     end
   end
@@ -444,7 +453,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # Functional wrapper for dispatcher plugin manager retrieval
   defp get_plugin_manager_from_dispatcher(dispatcher_pid)
        when is_pid(dispatcher_pid) do
-    with {:ok, response} <- safe_genserver_call(dispatcher_pid, :get_plugin_manager, 5000),
+    with {:ok, response} <-
+           safe_genserver_call(dispatcher_pid, :get_plugin_manager, 5000),
          {:ok, plugin_manager} <- validate_plugin_manager_response(response) do
       {:ok, plugin_manager}
     else
@@ -460,7 +470,9 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       GenServer.call(pid, message, timeout)
     end)
     |> case do
-      {:ok, response} -> {:ok, response}
+      {:ok, response} ->
+        {:ok, response}
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Rendering Engine: Error getting plugin manager from dispatcher",
@@ -468,6 +480,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
           nil,
           %{dispatcher_pid: pid}
         )
+
         {:error, :dispatcher_error}
     end
   end
@@ -510,7 +523,11 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # Functional wrapper for dispatcher plugin manager updates
   defp update_plugin_manager_in_dispatcher(dispatcher_pid, updated_manager)
        when is_pid(dispatcher_pid) do
-    with :ok <- safe_genserver_cast(dispatcher_pid, {:update_plugin_manager, updated_manager}) do
+    with :ok <-
+           safe_genserver_cast(
+             dispatcher_pid,
+             {:update_plugin_manager, updated_manager}
+           ) do
       :ok
     else
       {:error, reason} ->
@@ -520,11 +537,13 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
           nil,
           %{dispatcher_pid: dispatcher_pid}
         )
+
         {:error, reason}
     end
   end
 
-  defp update_plugin_manager_in_dispatcher(_, _), do: {:error, :invalid_dispatcher}
+  defp update_plugin_manager_in_dispatcher(_, _),
+    do: {:error, :invalid_dispatcher}
 
   # Safe GenServer cast wrapper using functional error handling
   defp safe_genserver_cast(pid, message) do

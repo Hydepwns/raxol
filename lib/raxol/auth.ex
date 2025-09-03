@@ -412,6 +412,7 @@ defmodule Raxol.Auth do
   defp validate_user_status(_user), do: :ok
 
   defp validate_user_not_locked(%{locked_until: nil}), do: :ok
+
   defp validate_user_not_locked(%{locked_until: locked_until}) do
     if DateTime.compare(locked_until, DateTime.utc_now()) == :gt do
       {:error, :user_locked}
@@ -437,9 +438,9 @@ defmodule Raxol.Auth do
 
   defp verify_password(password, password_hash) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      # Use Bcrypt for password verification
-      Bcrypt.verify_pass(password, password_hash)
-    end) do
+           # Use Bcrypt for password verification
+           Bcrypt.verify_pass(password, password_hash)
+         end) do
       {:ok, result} -> result
       {:error, _reason} -> false
     end

@@ -135,9 +135,11 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
           error_component.(enhanced_props)
         else
           case Raxol.Core.ErrorHandling.safe_call(fn ->
-            component_module.render(enhanced_props, context)
-          end) do
-            {:ok, result} -> result
+                 component_module.render(enhanced_props, context)
+               end) do
+            {:ok, result} ->
+              result
+
             {:error, {reason, stacktrace}} ->
               error_info = %{
                 kind: :error,

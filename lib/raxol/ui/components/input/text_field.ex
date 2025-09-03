@@ -4,7 +4,7 @@ defmodule Raxol.UI.Components.Input.TextField do
 
   It supports validation, placeholders, masks, and styling.
   """
-    alias Raxol.Core.Renderer.Element
+  alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
 
   @behaviour Raxol.UI.Components.Base.Component
@@ -140,7 +140,11 @@ defmodule Raxol.UI.Components.Input.TextField do
   @spec handle_event(map(), term(), map()) ::
           {:noreply, map()} | {:noreply, map(), any()}
   @impl Raxol.UI.Components.Base.Component
-  def handle_event(%{disabled: true} = state, {:keypress, _key, _modifiers}, _context) do
+  def handle_event(
+        %{disabled: true} = state,
+        {:keypress, _key, _modifiers},
+        _context
+      ) do
     {:noreply, state}
   end
 
@@ -190,7 +194,12 @@ defmodule Raxol.UI.Components.Input.TextField do
      }}
   end
 
-  defp handle_keypress(%{cursor_pos: 0} = state, :backspace, _modifiers, _context) do
+  defp handle_keypress(
+         %{cursor_pos: 0} = state,
+         :backspace,
+         _modifiers,
+         _context
+       ) do
     {:noreply, state}
   end
 
@@ -217,7 +226,7 @@ defmodule Raxol.UI.Components.Input.TextField do
      }}
   end
 
-  defp handle_keypress(state, :delete, _modifiers, _context) 
+  defp handle_keypress(state, :delete, _modifiers, _context)
        when state.cursor_pos >= byte_size(state.value) do
     {:noreply, state}
   end
@@ -333,18 +342,30 @@ defmodule Raxol.UI.Components.Input.TextField do
 
   defp get_visible_value(state) do
     display_value = get_display_value(state.secret, state.value)
-    showing_placeholder = should_show_placeholder(display_value, state.focused, state.placeholder)
-    final_value = get_final_value(showing_placeholder, state.placeholder, display_value)
-    
+
+    showing_placeholder =
+      should_show_placeholder(display_value, state.focused, state.placeholder)
+
+    final_value =
+      get_final_value(showing_placeholder, state.placeholder, display_value)
+
     width = Map.get(state, :width, 20)
     scroll_offset = state.scroll_offset || 0
-    
-    visible_value = slice_visible_value(showing_placeholder, final_value, scroll_offset, width)
-    
+
+    visible_value =
+      slice_visible_value(
+        showing_placeholder,
+        final_value,
+        scroll_offset,
+        width
+      )
+
     {visible_value, showing_placeholder}
   end
 
-  defp get_display_value(true, value), do: String.duplicate("•", String.length(value))
+  defp get_display_value(true, value),
+    do: String.duplicate("•", String.length(value))
+
   defp get_display_value(false, value), do: value
 
   defp should_show_placeholder(display_value, focused, placeholder) do
@@ -368,7 +389,13 @@ defmodule Raxol.UI.Components.Input.TextField do
          showing_placeholder,
          merged_style
        ) do
-    select_text_children(showing_placeholder, state.focused, state, visible_value, merged_style)
+    select_text_children(
+      showing_placeholder,
+      state.focused,
+      state,
+      visible_value,
+      merged_style
+    )
   end
 
   defp select_text_children(true, _focused, _state, visible_value, merged_style) do

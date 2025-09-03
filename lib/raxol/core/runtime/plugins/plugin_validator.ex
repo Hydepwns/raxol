@@ -222,7 +222,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   end
 
   defp get_plugin_metadata(plugin_module) do
-    with {:exported?, true} <- {:exported?, function_exported?(plugin_module, :metadata, 0)},
+    with {:exported?, true} <-
+           {:exported?, function_exported?(plugin_module, :metadata, 0)},
          {:ok, metadata} <- safe_call_metadata(plugin_module) do
       {:ok, metadata}
     else
@@ -234,7 +235,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   defp safe_call_metadata(plugin_module) do
     # Use Task for timeout and error isolation
     task = Task.async(fn -> plugin_module.metadata() end)
-    
+
     case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
       {:ok, metadata} when is_map(metadata) -> {:ok, metadata}
       {:ok, _} -> {:error, :invalid_metadata_format}
@@ -366,10 +367,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   end
 
   defp safe_measure_init_time(plugin_module) do
-    task = Task.async(fn ->
-      :timer.tc(fn -> plugin_module.init(%{}) end)
-    end)
-    
+    task =
+      Task.async(fn ->
+        :timer.tc(fn -> plugin_module.init(%{}) end)
+      end)
+
     case Task.yield(task, 6000) || Task.shutdown(task, :brutal_kill) do
       {:ok, {time, _result}} -> {:ok, time}
       nil -> {:error, :init_timeout}
@@ -392,7 +394,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   end
 
   defp get_plugin_dependencies(plugin_module) do
-    with {:exported?, true} <- {:exported?, function_exported?(plugin_module, :dependencies, 0)},
+    with {:exported?, true} <-
+           {:exported?, function_exported?(plugin_module, :dependencies, 0)},
          {:ok, deps} <- safe_call_dependencies(plugin_module) do
       {:ok, deps}
     else
@@ -403,7 +406,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
 
   defp safe_call_dependencies(plugin_module) do
     task = Task.async(fn -> plugin_module.dependencies() end)
-    
+
     case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
       {:ok, deps} when is_list(deps) -> {:ok, deps}
       {:ok, _} -> {:error, :invalid_dependencies_format}
@@ -461,7 +464,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
 
   defp safe_module_info(module, info_type) do
     task = Task.async(fn -> module.module_info(info_type) end)
-    
+
     case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
       {:ok, info} -> {:ok, info}
       _ -> {:error, :module_info_failed}
@@ -476,10 +479,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   end
 
   defp safe_beam_chunks(source) do
-    task = Task.async(fn ->
-      :beam_lib.chunks(source, [:abstract_code])
-    end)
-    
+    task =
+      Task.async(fn ->
+        :beam_lib.chunks(source, [:abstract_code])
+      end)
+
     case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
       {:ok, result} -> {:ok, result}
       _ -> {:error, :beam_chunks_failed}
@@ -490,6 +494,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
     case chunks do
       {:ok, {^plugin_module, [abstract_code: {:raw_abstract_v1, forms}]}} ->
         {:ok, forms}
+
       _ ->
         {:error, :invalid_chunks}
     end
@@ -516,7 +521,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
 
   defp safe_get_module_path(plugin_module) do
     task = Task.async(fn -> :code.which(plugin_module) end)
-    
+
     case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
       {:ok, path} when is_list(path) -> {:ok, path}
       {:ok, _} -> {:error, :module_path_not_found}

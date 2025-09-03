@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Runtime.Application do
-  
   @moduledoc """
   Defines the behaviour for Raxol applications following The Elm Architecture (TEA).
 
@@ -224,15 +223,17 @@ defmodule Raxol.Core.Runtime.Application do
 
   defp safely_call_init(app_module, context) do
     case ErrorHandling.safe_call(fn ->
-      result = app_module.init(context)
+           result = app_module.init(context)
 
-      Raxol.Core.Runtime.Log.debug(
-        "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned: #{inspect(result)}"
-      )
+           Raxol.Core.Runtime.Log.debug(
+             "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned: #{inspect(result)}"
+           )
 
-      result
-    end) do
-      {:ok, result} -> {:ok, result}
+           result
+         end) do
+      {:ok, result} ->
+        {:ok, result}
+
       {:error, error} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "[#{__MODULE__}] Error executing #{inspect(app_module)}.init/1",
@@ -240,6 +241,7 @@ defmodule Raxol.Core.Runtime.Application do
           nil,
           %{module: __MODULE__, app_module: app_module}
         )
+
         {:error, {:init_failed, error}}
     end
   end
@@ -288,9 +290,11 @@ defmodule Raxol.Core.Runtime.Application do
 
   defp safely_call_update(app_module, message, current_model) do
     case ErrorHandling.safe_call(fn ->
-      app_module.update(message, current_model)
-    end) do
-      {:ok, result} -> {:ok, result}
+           app_module.update(message, current_model)
+         end) do
+      {:ok, result} ->
+        {:ok, result}
+
       {:error, error} ->
         log_update_error(app_module, error, message, current_model)
         {:error, {:update_failed, error}}

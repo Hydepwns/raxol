@@ -134,10 +134,11 @@ defmodule Raxol.Terminal.Extension.LifecycleManager do
     case extension.module do
       {:ok, module} ->
         result = Raxol.Core.ErrorHandling.safe_callback(module, :init, [])
-        
+
         case result do
           {:ok, _} ->
             {:ok, extension}
+
           {:error, reason} ->
             Logger.error("Extension initialization failed: #{inspect(reason)}")
             {:error, :initialization_failed}
@@ -152,10 +153,11 @@ defmodule Raxol.Terminal.Extension.LifecycleManager do
     case extension.module do
       {:ok, module} ->
         result = Raxol.Core.ErrorHandling.safe_callback(module, :cleanup, [])
-        
+
         case result do
           {:ok, _} ->
             {:ok, extension}
+
           {:error, reason} ->
             Logger.error("Extension cleanup failed: #{inspect(reason)}")
             {:error, :cleanup_failed}
@@ -172,6 +174,7 @@ defmodule Raxol.Terminal.Extension.LifecycleManager do
         case Raxol.Core.ErrorHandling.safe_callback(module, :cleanup, []) do
           {:error, reason} ->
             Logger.error("Extension cleanup failed: #{inspect(reason)}")
+
           _ ->
             :ok
         end

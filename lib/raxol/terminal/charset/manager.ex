@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Charset.Manager do
   Manages terminal character sets and encoding operations.
   """
 
-  
   alias Raxol.Terminal.Charset.{Maps, Operations}
 
   defstruct g_sets: %{

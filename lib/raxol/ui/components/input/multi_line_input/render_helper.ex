@@ -9,7 +9,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
 
   alias Raxol.View.Components
 
-  
   @doc """
   Renders the multi-line input component with proper styling based on the state.
   Returns a grid of cell data for the visible portion of text.

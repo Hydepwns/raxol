@@ -1,5 +1,4 @@
 defmodule Raxol.Plugins.PluginConfig do
-  
   @moduledoc """
   Handles persistence of plugin configurations.
   Stores and loads plugin configurations from disk.

@@ -31,10 +31,11 @@ defmodule Raxol.Core.Metrics do
 
   defp safe_start_unified_collector(options) do
     # Use Task to safely start the collector with timeout
-    task = Task.async(fn ->
-      Raxol.Core.Metrics.UnifiedCollector.start_link(options)
-    end)
-    
+    task =
+      Task.async(fn ->
+        Raxol.Core.Metrics.UnifiedCollector.start_link(options)
+      end)
+
     case Task.yield(task, 5000) || Task.shutdown(task) do
       {:ok, {:ok, pid}} -> {:ok, pid}
       {:ok, {:error, reason}} -> {:error, {:collector_start_failed, reason}}
@@ -44,28 +45,44 @@ defmodule Raxol.Core.Metrics do
   end
 
   defp safe_init_aggregator(options) do
-    task = Task.async(fn ->
-      Raxol.Core.Metrics.Aggregator.init(options)
-    end)
-    
+    task =
+      Task.async(fn ->
+        Raxol.Core.Metrics.Aggregator.init(options)
+      end)
+
     case Task.yield(task, 3000) || Task.shutdown(task) do
-      {:ok, :ok} -> :ok
-      {:ok, result} when result != :ok -> {:error, {:aggregator_init_failed, result}}
-      nil -> {:error, :aggregator_init_timeout}
-      {:exit, reason} -> {:error, {:aggregator_init_exit, reason}}
+      {:ok, :ok} ->
+        :ok
+
+      {:ok, result} when result != :ok ->
+        {:error, {:aggregator_init_failed, result}}
+
+      nil ->
+        {:error, :aggregator_init_timeout}
+
+      {:exit, reason} ->
+        {:error, {:aggregator_init_exit, reason}}
     end
   end
 
   defp safe_init_alert_manager(options) do
-    task = Task.async(fn ->
-      Raxol.Core.Metrics.AlertManager.init(options)
-    end)
-    
+    task =
+      Task.async(fn ->
+        Raxol.Core.Metrics.AlertManager.init(options)
+      end)
+
     case Task.yield(task, 3000) || Task.shutdown(task) do
-      {:ok, :ok} -> :ok
-      {:ok, result} when result != :ok -> {:error, {:alert_manager_init_failed, result}}
-      nil -> {:error, :alert_manager_init_timeout}
-      {:exit, reason} -> {:error, {:alert_manager_init_exit, reason}}
+      {:ok, :ok} ->
+        :ok
+
+      {:ok, result} when result != :ok ->
+        {:error, {:alert_manager_init_failed, result}}
+
+      nil ->
+        {:error, :alert_manager_init_timeout}
+
+      {:exit, reason} ->
+        {:error, {:alert_manager_init_exit, reason}}
     end
   end
 
@@ -101,30 +118,38 @@ defmodule Raxol.Core.Metrics do
   end
 
   defp safe_record_to_collector(name, value, tags) do
-    task = Task.async(fn ->
-      Raxol.Core.Metrics.UnifiedCollector.record_metric(name, :custom, value,
-        tags: tags
-      )
-    end)
-    
+    task =
+      Task.async(fn ->
+        Raxol.Core.Metrics.UnifiedCollector.record_metric(name, :custom, value,
+          tags: tags
+        )
+      end)
+
     case Task.yield(task, 1000) || Task.shutdown(task) do
       {:ok, :ok} -> :ok
-      {:ok, _other} -> :ok  # Accept any successful response
-      nil -> :ok  # Don't fail on timeout - metrics are non-critical
-      {:exit, _reason} -> :ok  # Continue even if collector fails
+      # Accept any successful response
+      {:ok, _other} -> :ok
+      # Don't fail on timeout - metrics are non-critical
+      nil -> :ok
+      # Continue even if collector fails
+      {:exit, _reason} -> :ok
     end
   end
 
   defp safe_record_to_aggregator(name, value, tags) do
-    task = Task.async(fn ->
-      Raxol.Core.Metrics.Aggregator.record(name, value, tags)
-    end)
-    
+    task =
+      Task.async(fn ->
+        Raxol.Core.Metrics.Aggregator.record(name, value, tags)
+      end)
+
     case Task.yield(task, 1000) || Task.shutdown(task) do
       {:ok, :ok} -> :ok
-      {:ok, _other} -> :ok  # Accept any successful response
-      nil -> :ok  # Don't fail on timeout - metrics are non-critical
-      {:exit, _reason} -> :ok  # Continue even if aggregator fails
+      # Accept any successful response
+      {:ok, _other} -> :ok
+      # Don't fail on timeout - metrics are non-critical
+      nil -> :ok
+      # Continue even if aggregator fails
+      {:exit, _reason} -> :ok
     end
   end
 
@@ -146,10 +171,11 @@ defmodule Raxol.Core.Metrics do
   end
 
   defp safe_get_all_metrics do
-    task = Task.async(fn ->
-      Raxol.Core.Metrics.UnifiedCollector.get_all_metrics()
-    end)
-    
+    task =
+      Task.async(fn ->
+        Raxol.Core.Metrics.UnifiedCollector.get_all_metrics()
+      end)
+
     case Task.yield(task, 2000) || Task.shutdown(task) do
       {:ok, metrics} when is_map(metrics) -> {:ok, metrics}
       {:ok, other} -> {:ok, normalize_metrics(other)}
@@ -188,26 +214,30 @@ defmodule Raxol.Core.Metrics do
   end
 
   defp safe_clear_collector_metrics do
-    task = Task.async(fn ->
-      Raxol.Core.Metrics.UnifiedCollector.clear_metrics()
-    end)
-    
+    task =
+      Task.async(fn ->
+        Raxol.Core.Metrics.UnifiedCollector.clear_metrics()
+      end)
+
     case Task.yield(task, 2000) || Task.shutdown(task) do
       {:ok, :ok} -> :ok
-      {:ok, _} -> :ok  # Accept any successful response
+      # Accept any successful response
+      {:ok, _} -> :ok
       nil -> {:error, :clear_collector_timeout}
       {:exit, reason} -> {:error, {:clear_collector_exit, reason}}
     end
   end
 
   defp safe_clear_aggregator do
-    task = Task.async(fn ->
-      Raxol.Core.Metrics.Aggregator.clear()
-    end)
-    
+    task =
+      Task.async(fn ->
+        Raxol.Core.Metrics.Aggregator.clear()
+      end)
+
     case Task.yield(task, 2000) || Task.shutdown(task) do
       {:ok, :ok} -> :ok
-      {:ok, _} -> :ok  # Accept any successful response
+      # Accept any successful response
+      {:ok, _} -> :ok
       nil -> {:error, :clear_aggregator_timeout}
       {:exit, reason} -> {:error, {:clear_aggregator_exit, reason}}
     end

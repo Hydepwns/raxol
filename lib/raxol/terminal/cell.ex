@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.Cell do
   - Cell state
   """
 
-    alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.ANSI.TextFormatting
 
   @typedoc """
   Text style for a terminal cell. See `Raxol.Terminal.ANSI.TextFormatting.text_style()` type for details.

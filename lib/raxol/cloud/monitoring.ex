@@ -1,17 +1,17 @@
 defmodule Raxol.Cloud.Monitoring do
   @moduledoc """
   Refactored Cloud Monitoring module with GenServer-based state management.
-  
+
   This module provides backward compatibility while eliminating Process dictionary usage.
   All state is now managed through the Cloud.Monitoring.Server GenServer.
-  
+
   ## Migration Notes
-  
+
   This module replaces direct Process dictionary usage with supervised GenServer state.
   The API remains the same, but the implementation is now OTP-compliant and more robust.
-  
+
   ## Features Maintained
-  
+
   * Performance monitoring and metrics collection
   * Error and exception tracking
   * Resource usage tracking
@@ -19,27 +19,28 @@ defmodule Raxol.Cloud.Monitoring do
   * Alerting and notification system
   * Integration with popular monitoring services
   """
-  
+
   alias Raxol.Cloud.Monitoring.Server
-  
+
   @deprecated "Use Raxol.Cloud.Monitoring instead of Raxol.Cloud.Monitoring"
-  
+
   # Ensure server is started
   defp ensure_server_started do
     case Process.whereis(Server) do
       nil ->
         {:ok, _pid} = Server.start_link()
         :ok
+
       _pid ->
         :ok
     end
   end
-  
+
   @doc """
   Initializes the monitoring system.
-  
+
   ## Options
-  
+
   * `:active` - Whether monitoring should be active on start (default: true)
   * `:metrics_interval` - Interval in ms between metrics collection (default: 10000)
   * `:health_check_interval` - Interval in ms between health checks (default: 60000)
@@ -47,9 +48,9 @@ defmodule Raxol.Cloud.Monitoring do
   * `:metrics_batch_size` - Number of metrics to batch before sending (default: 100)
   * `:backends` - List of monitoring service backends to use (default: [])
   * `:alert_thresholds` - Map of alert thresholds
-  
+
   ## Examples
-  
+
       iex> init(metrics_interval: 5000, backends: [:datadog, :prometheus])
       :ok
   """
@@ -57,7 +58,7 @@ defmodule Raxol.Cloud.Monitoring do
     ensure_server_started()
     Server.init_monitoring(opts)
   end
-  
+
   @doc """
   Updates the monitoring configuration.
   """
@@ -65,7 +66,7 @@ defmodule Raxol.Cloud.Monitoring do
     ensure_server_started()
     Server.update_config(config)
   end
-  
+
   @doc """
   Starts the monitoring system if it's not already active.
   """
@@ -73,7 +74,7 @@ defmodule Raxol.Cloud.Monitoring do
     ensure_server_started()
     Server.start_monitoring()
   end
-  
+
   @doc """
   Stops the monitoring system.
   """
@@ -81,18 +82,18 @@ defmodule Raxol.Cloud.Monitoring do
     ensure_server_started()
     Server.stop_monitoring()
   end
-  
+
   @doc """
   Records a metric with the given name and value.
-  
+
   ## Options
-  
+
   * `:tags` - List of tags to associate with the metric
   * `:timestamp` - Custom timestamp for the metric (default: current time)
   * `:source` - Source of the metric (default: :application)
-  
+
   ## Examples
-  
+
       iex> record_metric("response_time", 123, tags: ["api", "users"], source: :api)
       :ok
   """
@@ -101,12 +102,12 @@ defmodule Raxol.Cloud.Monitoring do
     Server.record_metric(name, value, opts)
     :ok
   end
-  
+
   @doc """
   Records a batch of metrics.
-  
+
   ## Examples
-  
+
       iex> record_metrics([
       ...>   {"cpu_usage", 0.75, [source: :system]},
       ...>   {"memory_usage", 0.5, [source: :system]}
@@ -118,19 +119,19 @@ defmodule Raxol.Cloud.Monitoring do
     Server.record_metrics(metrics)
     :ok
   end
-  
+
   @doc """
   Records an error or exception.
-  
+
   ## Options
-  
+
   * `:context` - Additional context information about the error
   * `:severity` - Severity level (:debug, :info, :warning, :error, :critical)
   * `:tags` - List of tags to associate with the error
   * `:timestamp` - Custom timestamp for the error (default: current time)
-  
+
   ## Examples
-  
+
       iex> record_error(%RuntimeError{message: "Connection failed"},
       ...>   context: %{user_id: 123}, severity: :error)
       :ok
@@ -140,17 +141,17 @@ defmodule Raxol.Cloud.Monitoring do
     Server.record_error(error, opts)
     :ok
   end
-  
+
   @doc """
   Runs a health check on the system.
-  
+
   ## Options
-  
+
   * `:components` - List of components to check (default: all)
   * `:timeout` - Timeout for health checks in milliseconds (default: 5000)
-  
+
   ## Examples
-  
+
       iex> run_health_check(components: [:database, :api])
       {:ok, %{status: :healthy, components: %{database: :healthy, api: :healthy}}}
   """
@@ -158,17 +159,17 @@ defmodule Raxol.Cloud.Monitoring do
     ensure_server_started()
     Server.run_health_check(opts)
   end
-  
+
   @doc """
   Triggers an alert with the given type and data.
-  
+
   ## Options
-  
+
   * `:severity` - Severity level of the alert (default: :warning)
   * `:notify` - Whether to send notifications (default: true)
-  
+
   ## Examples
-  
+
       iex> trigger_alert(:high_cpu_usage, %{value: 0.95}, severity: :critical)
       :ok
   """
@@ -177,7 +178,7 @@ defmodule Raxol.Cloud.Monitoring do
     Server.trigger_alert(type, data, opts)
     :ok
   end
-  
+
   @doc """
   Gets the current monitoring status.
   """
@@ -185,19 +186,19 @@ defmodule Raxol.Cloud.Monitoring do
     ensure_server_started()
     Server.get_status()
   end
-  
+
   @doc """
   Gets recent metrics for the specified metric name.
-  
+
   ## Options
-  
+
   * `:limit` - Maximum number of metrics to return (default: 100)
   * `:since` - Only return metrics since this timestamp (default: 1 hour ago)
   * `:until` - Only return metrics until this timestamp (default: now)
   * `:tags` - Filter metrics by tags
-  
+
   ## Examples
-  
+
       iex> get_metrics("response_time", limit: 10, tags: ["api"])
       [%{name: "response_time", value: 123, timestamp: ~U[2023-01-01 12:00:00Z], tags: ["api"]}]
   """
@@ -205,20 +206,20 @@ defmodule Raxol.Cloud.Monitoring do
     ensure_server_started()
     Server.get_metrics(name, opts)
   end
-  
+
   @doc """
   Gets recent errors.
-  
+
   ## Options
-  
+
   * `:limit` - Maximum number of errors to return (default: 100)
   * `:since` - Only return errors since this timestamp (default: 1 day ago)
   * `:until` - Only return errors until this timestamp (default: now)
   * `:severity` - Filter errors by severity
   * `:tags` - Filter errors by tags
-  
+
   ## Examples
-  
+
       iex> get_errors(limit: 10, severity: :critical)
       [%{error: %RuntimeError{...}, severity: :critical, ...}]
   """
@@ -226,20 +227,20 @@ defmodule Raxol.Cloud.Monitoring do
     ensure_server_started()
     Server.get_errors(opts)
   end
-  
+
   @doc """
   Gets recent alerts.
-  
+
   ## Options
-  
+
   * `:limit` - Maximum number of alerts to return (default: 100)
   * `:since` - Only return alerts since this timestamp (default: 1 day ago)
   * `:until` - Only return alerts until this timestamp (default: now)
   * `:type` - Filter alerts by type
   * `:severity` - Filter alerts by severity
-  
+
   ## Examples
-  
+
       iex> get_alerts(limit: 10, severity: :critical)
       [%{type: :high_cpu_usage, severity: :critical, ...}]
   """

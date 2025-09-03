@@ -8,7 +8,7 @@ defmodule Raxol.Database do
   - Handles database errors gracefully
   """
 
-    alias Raxol.Database.ConnectionManager
+  alias Raxol.Database.ConnectionManager
   alias Raxol.Repo
 
   @doc """

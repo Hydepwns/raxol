@@ -72,7 +72,12 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
     initial_config = Keyword.get(opts, :config, @default_config)
-    initial_state = %{@default_state | config: Map.merge(@default_config, initial_config)}
+
+    initial_state = %{
+      @default_state
+      | config: Map.merge(@default_config, initial_config)
+    }
+
     GenServer.start_link(__MODULE__, initial_state, name: name)
   end
 
@@ -94,8 +99,18 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
   @doc """
   Registers a component's position for spatial navigation.
   """
-  def register_component_position(server \\ __MODULE__, component_id, x, y, width, height) do
-    GenServer.call(server, {:register_component_position, component_id, x, y, width, height})
+  def register_component_position(
+        server \\ __MODULE__,
+        component_id,
+        x,
+        y,
+        width,
+        height
+      ) do
+    GenServer.call(
+      server,
+      {:register_component_position, component_id, x, y, width, height}
+    )
   end
 
   @doc """
@@ -199,7 +214,11 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
   end
 
   @impl GenServer
-  def handle_call({:register_component_position, component_id, x, y, width, height}, _from, state) do
+  def handle_call(
+        {:register_component_position, component_id, x, y, width, height},
+        _from,
+        state
+      ) do
     position_data = %{
       id: component_id,
       x: x,
@@ -209,18 +228,22 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
       center_x: x + div(width, 2),
       center_y: y + div(height, 2)
     }
-    
+
     new_spatial_map = Map.put(state.spatial_map, component_id, position_data)
     new_state = %{state | spatial_map: new_spatial_map}
     {:reply, :ok, new_state}
   end
 
   @impl GenServer
-  def handle_call({:define_navigation_path, from_id, direction, to_id}, _from, state) do
+  def handle_call(
+        {:define_navigation_path, from_id, direction, to_id},
+        _from,
+        state
+      ) do
     from_paths = Map.get(state.navigation_paths, from_id, %{})
     updated_from_paths = Map.put(from_paths, direction, to_id)
     new_nav_paths = Map.put(state.navigation_paths, from_id, updated_from_paths)
-    
+
     new_state = %{state | navigation_paths: new_nav_paths}
     {:reply, :ok, new_state}
   end
@@ -228,31 +251,35 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
   @impl GenServer
   def handle_call({:register_to_group, component_id, group_name}, _from, state) do
     group_members = Map.get(state.groups, group_name, [])
-    
-    updated_members = 
+
+    updated_members =
       if component_id in group_members do
         group_members
       else
         [component_id | group_members]
       end
-    
+
     new_groups = Map.put(state.groups, group_name, updated_members)
     new_state = %{state | groups: new_groups}
     {:reply, :ok, new_state}
   end
 
   @impl GenServer
-  def handle_call({:unregister_from_group, component_id, group_name}, _from, state) do
+  def handle_call(
+        {:unregister_from_group, component_id, group_name},
+        _from,
+        state
+      ) do
     group_members = Map.get(state.groups, group_name, [])
     updated_members = List.delete(group_members, component_id)
-    
-    new_groups = 
+
+    new_groups =
       if updated_members == [] do
         Map.delete(state.groups, group_name)
       else
         Map.put(state.groups, group_name, updated_members)
       end
-    
+
     new_state = %{state | groups: new_groups}
     {:reply, :ok, new_state}
   end
@@ -269,7 +296,7 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
     case state.focus_stack do
       [] ->
         {:reply, nil, state}
-      
+
       [component_id | rest] ->
         new_state = %{state | focus_stack: rest}
         # Set focus to the popped component
@@ -311,11 +338,12 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
 
   # Private Helper Functions
 
-  defp process_keyboard_event({:keyboard, key_data}, state) when is_map(key_data) do
+  defp process_keyboard_event({:keyboard, key_data}, state)
+       when is_map(key_data) do
     config = state.config
     key = key_data[:key]
     modifiers = key_data[:modifiers] || []
-    
+
     case {key, modifiers, config} do
       # Tab navigation
       {k, mods, %{tab_navigation: true, next_key: k}} ->
@@ -325,7 +353,7 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
         else
           handle_next_navigation(state)
         end
-      
+
       {k, mods, %{tab_navigation: true, previous_key: k}} ->
         if :shift in mods do
           handle_previous_navigation(state)
@@ -333,15 +361,16 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
           # This is key without shift, so ignore for previous navigation
           {:noreply, state}
         end
-      
+
       # Arrow navigation
-      {k, _mods, %{arrow_navigation: true}} when k in [:up, :down, :left, :right] ->
+      {k, _mods, %{arrow_navigation: true}}
+      when k in [:up, :down, :left, :right] ->
         handle_arrow_navigation(k, state)
-      
+
       # Vim navigation
       {k, _mods, %{vim_keys: true}} when k in [:h, :j, :k, :l] ->
         handle_vim_navigation(k, state)
-      
+
       # Activation
       {k, _mods, %{activate_keys: activate_keys}} ->
         if k in activate_keys do
@@ -349,11 +378,11 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
         else
           :ok
         end
-      
+
       # Dismiss/Back
       {k, _mods, %{dismiss_key: k}} ->
         handle_dismiss(state)
-      
+
       _ ->
         :ok
     end
@@ -371,7 +400,7 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
 
   defp handle_arrow_navigation(direction, state) do
     current_focus = FocusManager.get_focused_element()
-    
+
     if current_focus && state.config.spatial_navigation do
       next_component = find_spatial_neighbor(current_focus, direction, state)
       if next_component, do: FocusManager.set_focus(next_component)
@@ -386,18 +415,20 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
   end
 
   defp handle_vim_navigation(key, state) do
-    direction = case key do
-      :h -> :left
-      :j -> :down
-      :k -> :up
-      :l -> :right
-    end
-    
+    direction =
+      case key do
+        :h -> :left
+        :j -> :down
+        :k -> :up
+        :l -> :right
+      end
+
     handle_arrow_navigation(direction, state)
   end
 
   defp handle_activation do
     current_focus = FocusManager.get_focused_element()
+
     if current_focus do
       EventManager.dispatch({:activate, %{component_id: current_focus}})
     end
@@ -409,7 +440,7 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
       [] ->
         # No stack, dispatch dismiss event
         EventManager.dispatch({:dismiss, %{}})
-      
+
       [prev | _rest] ->
         # Return to previous focus
         FocusManager.set_focus(prev)
@@ -422,7 +453,7 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
       nil ->
         # Fall back to spatial calculation
         calculate_spatial_neighbor(current_id, direction, state.spatial_map)
-      
+
       target_id ->
         target_id
     end
@@ -432,7 +463,7 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
     case Map.get(spatial_map, current_id) do
       nil ->
         nil
-      
+
       current_pos ->
         # Find the closest component in the given direction
         spatial_map
@@ -440,9 +471,12 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
         |> Enum.filter(fn {_id, pos} ->
           is_in_direction?(current_pos, pos, direction)
         end)
-        |> Enum.min_by(fn {_id, pos} ->
-          distance(current_pos, pos)
-        end, fn -> {nil, nil} end)
+        |> Enum.min_by(
+          fn {_id, pos} ->
+            distance(current_pos, pos)
+          end,
+          fn -> {nil, nil} end
+        )
         |> elem(0)
     end
   end

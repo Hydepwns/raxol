@@ -1,15 +1,15 @@
 defmodule Raxol.Core.KeyboardShortcuts do
   @moduledoc """
   Refactored KeyboardShortcuts that delegates to GenServer implementation.
-  
+
   This module provides the same API as the original KeyboardShortcuts but uses
   a supervised GenServer instead of the Process dictionary for state management.
-  
+
   ## Migration Notice
   This module is a drop-in replacement for `Raxol.Core.KeyboardShortcuts`.
   All functions maintain backward compatibility while providing improved
   fault tolerance and functional programming patterns.
-  
+
   ## Benefits over Process Dictionary
   - Supervised state management with fault tolerance
   - Pure functional shortcut resolution
@@ -32,6 +32,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
       nil ->
         {:ok, _pid} = Server.start_link()
         :ok
+
       _pid ->
         :ok
     end
@@ -40,32 +41,41 @@ defmodule Raxol.Core.KeyboardShortcuts do
   @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Initialize the keyboard shortcuts manager.
-  
+
   This function sets up the necessary state for managing keyboard shortcuts
   and registers event handlers for keyboard events.
   """
   def init do
     ensure_started()
     Server.init_shortcuts()
-    
+
     # Register this module's handler with EventManager
-    EventManager.register_handler(:keyboard_event, __MODULE__, :handle_keyboard_event)
+    EventManager.register_handler(
+      :keyboard_event,
+      __MODULE__,
+      :handle_keyboard_event
+    )
+
     :ok
   end
 
   @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Clean up the keyboard shortcuts manager.
-  
+
   This function cleans up any resources used by the keyboard shortcuts manager
   and unregisters event handlers.
   """
   def cleanup do
     ensure_started()
-    
+
     # Unregister event handler
-    EventManager.unregister_handler(:keyboard_event, __MODULE__, :handle_keyboard_event)
-    
+    EventManager.unregister_handler(
+      :keyboard_event,
+      __MODULE__,
+      :handle_keyboard_event
+    )
+
     # Clear all shortcuts
     Server.clear_all()
     :ok
@@ -74,13 +84,13 @@ defmodule Raxol.Core.KeyboardShortcuts do
   @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Register a keyboard shortcut with a callback function.
-  
+
   ## Parameters
   - `shortcut` - The keyboard shortcut string (e.g., "Ctrl+S", "Alt+F4")
   - `name` - A unique identifier for the shortcut (atom or string)
   - `callback` - A function to be called when the shortcut is triggered
   - `opts` - Options for the shortcut
-  
+
   ## Options
   - `:context` - The context in which this shortcut is active (default: `:global`)
   - `:description` - A description of what the shortcut does
@@ -89,19 +99,26 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def register_shortcut(shortcut, name, callback, opts \\ []) do
     ensure_started()
-    
+
     case Server.register_shortcut(shortcut, name, callback, opts) do
-      :ok -> :ok
-      {:error, :conflict} -> 
+      :ok ->
+        :ok
+
+      {:error, :conflict} ->
         # For backward compatibility, silently override on conflict
-        Server.register_shortcut(shortcut, name, callback, Keyword.put(opts, :override, true))
+        Server.register_shortcut(
+          shortcut,
+          name,
+          callback,
+          Keyword.put(opts, :override, true)
+        )
     end
   end
 
   @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Unregister a keyboard shortcut.
-  
+
   ## Parameters
   - `shortcut` - The keyboard shortcut string to unregister
   - `context` - The context from which to unregister (default: `:global`)
@@ -114,7 +131,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Set the active context for shortcuts.
-  
+
   Context-specific shortcuts will only be active when their context is set.
   """
   def set_active_context(context) do
@@ -125,7 +142,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Get all shortcuts for a specific context.
-  
+
   Returns a map of shortcut definitions for the given context.
   """
   def get_shortcuts_for_context(context \\ :global) do
@@ -136,7 +153,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Show help text for available shortcuts.
-  
+
   Displays formatted help text for all available shortcuts in the current context.
   """
   def show_shortcuts_help do
@@ -148,7 +165,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
   @doc """
   Handle keyboard events.
-  
+
   This function is called by the EventManager when keyboard events occur.
   """
   def handle_keyboard_event(event) do
@@ -201,13 +218,14 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
   @doc """
   Set conflict resolution strategy.
-  
+
   ## Strategies
   - `:first` - Keep the first registered shortcut
   - `:last` - Keep the last registered shortcut
   - `:priority` - Use priority to resolve conflicts
   """
-  def set_conflict_resolution(strategy) when strategy in [:first, :last, :priority] do
+  def set_conflict_resolution(strategy)
+      when strategy in [:first, :last, :priority] do
     ensure_started()
     Server.set_conflict_resolution(strategy)
   end
@@ -230,7 +248,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
   @doc """
   Register a batch of shortcuts at once.
-  
+
   ## Example
   ```elixir
   register_batch([
@@ -242,15 +260,15 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def register_batch(shortcuts) when is_list(shortcuts) do
     ensure_started()
-    
+
     Enum.each(shortcuts, fn
       {shortcut, name, callback} ->
         register_shortcut(shortcut, name, callback)
-      
+
       {shortcut, name, callback, opts} ->
         register_shortcut(shortcut, name, callback, opts)
     end)
-    
+
     :ok
   end
 
@@ -260,11 +278,11 @@ defmodule Raxol.Core.KeyboardShortcuts do
   def shortcut_registered?(shortcut, context \\ :global) do
     ensure_started()
     shortcuts = Server.get_shortcuts_for_context(context)
-    
+
     # Parse the shortcut to get the key
     parsed = parse_shortcut_string(shortcut)
     key = shortcut_key(parsed)
-    
+
     Map.has_key?(shortcuts, key)
   end
 
@@ -273,19 +291,20 @@ defmodule Raxol.Core.KeyboardShortcuts do
   defp parse_shortcut_string(shortcut) when is_binary(shortcut) do
     parts = String.split(shortcut, "+")
     {modifiers, [key]} = Enum.split(parts, -1)
-    
-    modifiers = Enum.map(modifiers, fn mod ->
-      case String.downcase(mod) do
-        "ctrl" -> :ctrl
-        "control" -> :ctrl
-        "alt" -> :alt
-        "shift" -> :shift
-        "cmd" -> :cmd
-        "command" -> :cmd
-        _ -> String.to_atom(String.downcase(mod))
-      end
-    end)
-    
+
+    modifiers =
+      Enum.map(modifiers, fn mod ->
+        case String.downcase(mod) do
+          "ctrl" -> :ctrl
+          "control" -> :ctrl
+          "alt" -> :alt
+          "shift" -> :shift
+          "cmd" -> :cmd
+          "command" -> :cmd
+          _ -> String.to_atom(String.downcase(mod))
+        end
+      end)
+
     %{
       modifiers: Enum.sort(modifiers),
       key: String.to_atom(String.downcase(key))

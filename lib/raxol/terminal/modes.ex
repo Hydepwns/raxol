@@ -6,7 +6,6 @@ defmodule Raxol.Terminal.Modes do
   escape sequences, and handling terminal state transitions.
   """
 
-  
   @type mode :: :insert | :replace | :visual | :command | :normal
   @type mode_state :: %{mode => boolean()}
 

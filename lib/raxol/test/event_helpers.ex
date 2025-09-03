@@ -89,10 +89,12 @@ defmodule Raxol.Test.EventHelpers do
     case ErrorHandling.safe_call(error_fn) do
       {:ok, _} ->
         flunk("Expected an error but none was raised")
+
       {:error, %RuntimeError{} = e} ->
         assert parent.state != nil
         assert child.state != nil
         assert e.__struct__ == RuntimeError
+
       {:error, _other} ->
         flunk("Expected a RuntimeError but got a different error type")
     end

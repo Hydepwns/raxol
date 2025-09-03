@@ -107,7 +107,7 @@ defmodule Raxol.Core.ErrorHandler do
           {:error, _} = error_result -> error_result
           value -> {:ok, value}
         end
-      
+
       {:error, {error, stacktrace}} ->
         handle_rescued_error(
           operation,

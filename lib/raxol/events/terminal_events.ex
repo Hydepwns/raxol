@@ -59,14 +59,16 @@ defmodule Raxol.Events.TerminalCreatedEvent do
 
   defp validate_dimensions(event) when event.width < 20 or event.width > 300,
     do: {:error, {:invalid_width, event.width}}
-    
+
   defp validate_dimensions(event) when event.height < 5 or event.height > 100,
     do: {:error, {:invalid_height, event.height}}
-    
+
   defp validate_dimensions(_event), do: :ok
 
-  defp validate_user_id(%{user_id: user_id}) when is_binary(user_id) and byte_size(user_id) > 0,
-    do: :ok
+  defp validate_user_id(%{user_id: user_id})
+       when is_binary(user_id) and byte_size(user_id) > 0,
+       do: :ok
+
   defp validate_user_id(_event),
     do: {:error, :invalid_user_id}
 end
@@ -123,8 +125,10 @@ defmodule Raxol.Events.TerminalConfiguredEvent do
     end
   end
 
-  defp validate_changes(%{changes: changes}) when is_list(changes) and length(changes) > 0,
-    do: :ok
+  defp validate_changes(%{changes: changes})
+       when is_list(changes) and length(changes) > 0,
+       do: :ok
+
   defp validate_changes(_event),
     do: {:error, :no_changes_specified}
 end
@@ -185,20 +189,22 @@ defmodule Raxol.Events.TerminalInputReceivedEvent do
     end
   end
 
-  defp validate_input_type(%{input_type: type}) when type in [:text, :keypress, :paste, :control_sequence],
-    do: :ok
+  defp validate_input_type(%{input_type: type})
+       when type in [:text, :keypress, :paste, :control_sequence],
+       do: :ok
+
   defp validate_input_type(%{input_type: type}),
     do: {:error, {:invalid_input_type, type}}
 
   defp validate_input_data(%{input_data: nil}),
     do: {:error, :input_data_required}
-    
+
   defp validate_input_data(event) when not is_binary(event.input_data),
     do: {:error, :input_data_must_be_string}
-    
+
   defp validate_input_data(event) when byte_size(event.input_data) > 10_000,
     do: {:error, :input_data_too_large}
-    
+
   defp validate_input_data(_event), do: :ok
 end
 
@@ -258,8 +264,10 @@ defmodule Raxol.Events.TerminalOutputGeneratedEvent do
     end
   end
 
-  defp validate_output_type(%{output_type: type}) when type in [:stdout, :stderr, :control_sequence, :bell],
-    do: :ok
+  defp validate_output_type(%{output_type: type})
+       when type in [:stdout, :stderr, :control_sequence, :bell],
+       do: :ok
+
   defp validate_output_type(%{output_type: type}),
     do: {:error, {:invalid_output_type, type}}
 end
@@ -332,7 +340,8 @@ defmodule Raxol.Events.TerminalThemeAppliedEvent do
     end
   end
 
-  defp validate_color_scheme(%{color_scheme: color_scheme}) when is_map(color_scheme) do
+  defp validate_color_scheme(%{color_scheme: color_scheme})
+       when is_map(color_scheme) do
     required_colors = [:background, :foreground]
 
     missing_colors =
@@ -345,6 +354,7 @@ defmodule Raxol.Events.TerminalThemeAppliedEvent do
       false -> {:error, {:missing_colors, missing_colors}}
     end
   end
+
   defp validate_color_scheme(_event),
     do: {:error, :invalid_color_scheme_format}
 

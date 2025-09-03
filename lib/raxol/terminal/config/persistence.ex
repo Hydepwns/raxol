@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Config.Persistence do
-  
   @moduledoc """
   Handles persistence and migration of terminal configurations.
   """
@@ -31,11 +30,14 @@ defmodule Raxol.Terminal.Config.Persistence do
 
     case File.read(storage_path) do
       {:ok, binary} ->
-        case Raxol.Core.ErrorHandling.safe_call(fn -> :erlang.binary_to_term(binary) end) do
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
+               :erlang.binary_to_term(binary)
+             end) do
           {:ok, config} ->
             with :ok <- Validator.validate_config(config) do
               {:ok, config}
             end
+
           {:error, _reason} ->
             {:error, :invalid_config_data}
         end

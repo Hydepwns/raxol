@@ -1,5 +1,4 @@
 defmodule Raxol.Plugins.Visualization.ChartRenderer do
-  
   @moduledoc """
   Handles rendering logic for chart visualizations within the VisualizationPlugin.
   """
@@ -34,15 +33,17 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
       DrawingUtils.draw_box_with_text("!", bounds)
     else
       case Raxol.Core.ErrorHandling.safe_call(fn ->
-        # First, sample the data if it's too large
-        sampled_data = sample_chart_data(data)
-        # Log if sampling occurred
-        log_sampling(data, sampled_data)
+             # First, sample the data if it's too large
+             sampled_data = sample_chart_data(data)
+             # Log if sampling occurred
+             log_sampling(data, sampled_data)
 
-        # Draw the chart with sampled data
-        draw_tui_bar_chart(sampled_data, title, bounds)
-      end) do
-        {:ok, result} -> result
+             # Draw the chart with sampled data
+             draw_tui_bar_chart(sampled_data, title, bounds)
+           end) do
+        {:ok, result} ->
+          result
+
         {:error, reason} ->
           Raxol.Core.Runtime.Log.error(
             "[ChartRenderer] Error rendering chart: #{inspect(reason)}"

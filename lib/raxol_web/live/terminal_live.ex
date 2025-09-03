@@ -15,7 +15,7 @@ defmodule RaxolWeb.TerminalLive do
   alias RaxolWeb.Presence
   alias Phoenix.PubSub
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-  
+
   @impl Phoenix.LiveView
   def mount(_params, session, socket) do
     # In test environment, always use connected mode to ensure assigns are available

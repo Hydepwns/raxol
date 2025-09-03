@@ -5,7 +5,7 @@ defmodule Raxol.System.Updater.Core do
   use GenServer
 
   require Logger
-  
+
   alias Raxol.System.Updater.{Network, Validation, State}
   alias Raxol.Core.ErrorHandling
 

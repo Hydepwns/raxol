@@ -59,7 +59,12 @@ defmodule Raxol.Core.Events.Manager.Server do
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
     config = Keyword.get(opts, :config, @default_config)
-    initial_state = %{@default_state | config: Map.merge(@default_config, config)}
+
+    initial_state = %{
+      @default_state
+      | config: Map.merge(@default_config, config)
+    }
+
     GenServer.start_link(__MODULE__, initial_state, name: name)
   end
 
@@ -72,7 +77,7 @@ defmodule Raxol.Core.Events.Manager.Server do
 
   @doc """
   Registers an event handler with optional priority.
-  
+
   ## Parameters
   - `event_type` - The type of event to handle
   - `module` - The module containing the handler function
@@ -80,10 +85,20 @@ defmodule Raxol.Core.Events.Manager.Server do
   - `opts` - Options including:
     - `:priority` - Handler priority (default: 50, lower = higher priority)
   """
-  def register_handler(server \\ __MODULE__, event_type, module, function, opts \\ [])
+  def register_handler(
+        server \\ __MODULE__,
+        event_type,
+        module,
+        function,
+        opts \\ []
+      )
       when is_atom(event_type) and is_atom(module) and is_atom(function) do
     priority = Keyword.get(opts, :priority, 50)
-    GenServer.call(server, {:register_handler, event_type, module, function, priority})
+
+    GenServer.call(
+      server,
+      {:register_handler, event_type, module, function, priority}
+    )
   end
 
   @doc """
@@ -96,22 +111,23 @@ defmodule Raxol.Core.Events.Manager.Server do
 
   @doc """
   Subscribes to events with optional filters.
-  
+
   ## Parameters
   - `event_types` - List of event types to subscribe to
   - `opts` - Optional filters and options
-  
+
   ## Returns
   - `{:ok, ref}` - Subscription reference for later unsubscribe
   """
-  def subscribe(server \\ __MODULE__, event_types, opts \\ []) when is_list(event_types) do
+  def subscribe(server \\ __MODULE__, event_types, opts \\ [])
+      when is_list(event_types) do
     GenServer.call(server, {:subscribe, self(), event_types, opts})
   end
 
   @doc """
   Subscribes a specific process to events.
   """
-  def subscribe_pid(server \\ __MODULE__, pid, event_types, opts \\ []) 
+  def subscribe_pid(server \\ __MODULE__, pid, event_types, opts \\ [])
       when is_pid(pid) and is_list(event_types) do
     GenServer.call(server, {:subscribe, pid, event_types, opts})
   end
@@ -125,7 +141,7 @@ defmodule Raxol.Core.Events.Manager.Server do
 
   @doc """
   Dispatches an event to all registered handlers and subscribers.
-  
+
   This is an asynchronous operation - use dispatch_sync for synchronous dispatch.
   """
   def dispatch(server \\ __MODULE__, event) do
@@ -217,14 +233,20 @@ defmodule Raxol.Core.Events.Manager.Server do
   end
 
   @impl GenServer
-  def handle_call({:register_handler, event_type, module, function, priority}, _from, state) do
+  def handle_call(
+        {:register_handler, event_type, module, function, priority},
+        _from,
+        state
+      ) do
     handler = {module, function, priority}
-    
+
     current_handlers = Map.get(state.handlers, event_type, [])
-    
+
     # Check if handler already exists
-    updated_handlers = 
-      if Enum.any?(current_handlers, fn {m, f, _p} -> m == module && f == function end) do
+    updated_handlers =
+      if Enum.any?(current_handlers, fn {m, f, _p} ->
+           m == module && f == function
+         end) do
         # Update priority if handler exists
         current_handlers
         |> Enum.reject(fn {m, f, _p} -> m == module && f == function end)
@@ -233,27 +255,33 @@ defmodule Raxol.Core.Events.Manager.Server do
         [handler | current_handlers]
       end
       |> Enum.sort_by(fn {_m, _f, p} -> p end)
-    
+
     new_handlers = Map.put(state.handlers, event_type, updated_handlers)
     new_state = %{state | handlers: new_handlers}
-    
+
     {:reply, :ok, new_state}
   end
 
   @impl GenServer
-  def handle_call({:unregister_handler, event_type, module, function}, _from, state) do
+  def handle_call(
+        {:unregister_handler, event_type, module, function},
+        _from,
+        state
+      ) do
     current_handlers = Map.get(state.handlers, event_type, [])
-    
-    updated_handlers = 
-      Enum.reject(current_handlers, fn {m, f, _p} -> m == module && f == function end)
-    
-    new_handlers = 
+
+    updated_handlers =
+      Enum.reject(current_handlers, fn {m, f, _p} ->
+        m == module && f == function
+      end)
+
+    new_handlers =
       if updated_handlers == [] do
         Map.delete(state.handlers, event_type)
       else
         Map.put(state.handlers, event_type, updated_handlers)
       end
-    
+
     new_state = %{state | handlers: new_handlers}
     {:reply, :ok, new_state}
   end
@@ -261,21 +289,26 @@ defmodule Raxol.Core.Events.Manager.Server do
   @impl GenServer
   def handle_call({:subscribe, pid, event_types, opts}, _from, state) do
     ref = System.unique_integer([:positive])
-    
+
     # Monitor the subscribing process
     monitor_ref = Process.monitor(pid)
-    
+
     subscription = %{
       pid: pid,
       event_types: event_types,
       filters: opts,
       monitor_ref: monitor_ref
     }
-    
+
     new_subscriptions = Map.put(state.subscriptions, ref, subscription)
     new_monitors = Map.put(state.monitors, monitor_ref, ref)
-    
-    new_state = %{state | subscriptions: new_subscriptions, monitors: new_monitors}
+
+    new_state = %{
+      state
+      | subscriptions: new_subscriptions,
+        monitors: new_monitors
+    }
+
     {:reply, {:ok, ref}, new_state}
   end
 
@@ -284,15 +317,20 @@ defmodule Raxol.Core.Events.Manager.Server do
     case Map.get(state.subscriptions, ref) do
       nil ->
         {:reply, {:error, :not_found}, state}
-      
+
       subscription ->
         # Stop monitoring
         Process.demonitor(subscription.monitor_ref, [:flush])
-        
+
         new_subscriptions = Map.delete(state.subscriptions, ref)
         new_monitors = Map.delete(state.monitors, subscription.monitor_ref)
-        
-        new_state = %{state | subscriptions: new_subscriptions, monitors: new_monitors}
+
+        new_state = %{
+          state
+          | subscriptions: new_subscriptions,
+            monitors: new_monitors
+        }
+
         {:reply, :ok, new_state}
     end
   end
@@ -315,13 +353,13 @@ defmodule Raxol.Core.Events.Manager.Server do
 
   @impl GenServer
   def handle_call({:get_event_history, limit}, _from, state) do
-    history = 
+    history =
       if limit do
         Enum.take(state.event_history, limit)
       else
         state.event_history
       end
-    
+
     {:reply, history, state}
   end
 
@@ -337,7 +375,7 @@ defmodule Raxol.Core.Events.Manager.Server do
     Enum.each(state.subscriptions, fn {_ref, sub} ->
       Process.demonitor(sub.monitor_ref, [:flush])
     end)
-    
+
     new_state = %{state | subscriptions: %{}, monitors: %{}}
     {:reply, :ok, new_state}
   end
@@ -365,7 +403,7 @@ defmodule Raxol.Core.Events.Manager.Server do
     Enum.each(state.subscriptions, fn {_ref, subscription} ->
       send(subscription.pid, {:event, event})
     end)
-    
+
     new_state = maybe_record_event(state, event)
     {:noreply, new_state}
   end
@@ -376,12 +414,17 @@ defmodule Raxol.Core.Events.Manager.Server do
     case Map.get(state.monitors, monitor_ref) do
       nil ->
         {:noreply, state}
-      
+
       subscription_ref ->
         new_subscriptions = Map.delete(state.subscriptions, subscription_ref)
         new_monitors = Map.delete(state.monitors, monitor_ref)
-        
-        new_state = %{state | subscriptions: new_subscriptions, monitors: new_monitors}
+
+        new_state = %{
+          state
+          | subscriptions: new_subscriptions,
+            monitors: new_monitors
+        }
+
         {:noreply, new_state}
     end
   end
@@ -395,36 +438,40 @@ defmodule Raxol.Core.Events.Manager.Server do
 
   defp do_dispatch(state, event) do
     event_type = extract_event_type(event)
-    
+
     Raxol.Core.Runtime.Log.debug(
       "EventManager.Server dispatching event: #{inspect(event)}, type: #{inspect(event_type)}"
     )
-    
+
     # Execute handlers in priority order
     handlers = Map.get(state.handlers, event_type, [])
-    
+
     Raxol.Core.Runtime.Log.debug(
       "Found #{length(handlers)} handlers for event type #{inspect(event_type)}"
     )
-    
+
     Enum.each(handlers, fn {module, function, _priority} ->
       case Raxol.Core.ErrorHandling.safe_apply(module, function, [event]) do
-        {:ok, _result} -> 
+        {:ok, _result} ->
           Raxol.Core.Runtime.Log.debug(
             "Successfully called handler: #{inspect(module)}.#{inspect(function)}"
           )
+
         {:error, reason} ->
-          Logger.error("Event handler #{module}.#{function} failed: #{inspect(reason)}")
+          Logger.error(
+            "Event handler #{module}.#{function} failed: #{inspect(reason)}"
+          )
       end
     end)
-    
+
     # Notify matching subscribers
     Enum.each(state.subscriptions, fn {_ref, subscription} ->
-      if event_type in subscription.event_types && matches_filters?(event, subscription.filters) do
+      if event_type in subscription.event_types &&
+           matches_filters?(event, subscription.filters) do
         send(subscription.pid, {:event, event})
       end
     end)
-    
+
     maybe_record_event(state, event)
   end
 
@@ -438,7 +485,8 @@ defmodule Raxol.Core.Events.Manager.Server do
     end
   end
 
-  defp extract_event_type(event) when is_tuple(event) and tuple_size(event) > 0 do
+  defp extract_event_type(event)
+       when is_tuple(event) and tuple_size(event) > 0 do
     elem(event, 0)
   end
 
@@ -450,9 +498,10 @@ defmodule Raxol.Core.Events.Manager.Server do
   defp matches_filters?(event, filters) do
     Enum.all?(filters, fn {key, value} ->
       case event do
-        {_type, data} when is_map(data) -> 
+        {_type, data} when is_map(data) ->
           Map.get(data, key) == value
-        _ -> 
+
+        _ ->
           false
       end
     end)

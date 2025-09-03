@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorParser do
   Handles parsing of color specifications in various formats.
   """
 
-  
   @doc """
   Parses a color specification string into an RGB tuple.
   """
@@ -14,7 +13,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorParser do
       {"#", &parse_hex_color/1},
       {"rgb(", &parse_rgb_decimal/1}
     ]
-    
+
     Enum.find_value(parsers, {:error, :unsupported_format}, fn {prefix, parser} ->
       if String.starts_with?(spec, prefix), do: parser.(spec), else: nil
     end)

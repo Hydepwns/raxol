@@ -24,7 +24,6 @@ defmodule Raxol.Terminal.StyleBuffer do
           height: non_neg_integer()
         }
 
-  
   defstruct current_style: %{
               foreground: nil,
               background: nil,

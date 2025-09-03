@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Events.Event do
-  
   @moduledoc """
   Defines the structure for events in the Raxol system, providing a standardized format
   for key presses, mouse actions, and other UI events that components need to process.

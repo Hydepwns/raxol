@@ -140,7 +140,7 @@ defmodule Raxol.Core.ErrorRecovery do
       case safe_execute(full_fn) do
         {:ok, result} ->
           {:ok, result}
-        
+
         {:error, _type, _msg, _context} = error ->
           mark_feature_degraded(feature, error)
           safe_execute(degraded_fn)
@@ -164,20 +164,27 @@ defmodule Raxol.Core.ErrorRecovery do
   """
   def with_cleanup(fun, cleanup_fun) do
     result = safe_execute(fun)
-    
-    cleanup_result = safe_cleanup(cleanup_fun, 
-      case result do
-        {:ok, value} -> value
-        _ -> nil
-      end
-    )
-    
+
+    cleanup_result =
+      safe_cleanup(
+        cleanup_fun,
+        case result do
+          {:ok, value} -> value
+          _ -> nil
+        end
+      )
+
     case {result, cleanup_result} do
-      {{:ok, value}, :ok} -> 
+      {{:ok, value}, :ok} ->
         {:ok, value}
+
       {{:ok, value}, {:error, cleanup_error}} ->
-        Logger.warning("Cleanup failed after successful operation: #{inspect(cleanup_error)}")
+        Logger.warning(
+          "Cleanup failed after successful operation: #{inspect(cleanup_error)}"
+        )
+
         {:ok, value}
+
       {error, _} ->
         error
     end
@@ -197,6 +204,7 @@ defmodule Raxol.Core.ErrorRecovery do
       {:error, :timeout} ->
         {:error, :bulkhead_timeout, "Could not acquire resource from pool",
          %{pool: pool_name}}
+
       error ->
         error
     end
@@ -263,14 +271,15 @@ defmodule Raxol.Core.ErrorRecovery do
       {:ok, result} ->
         GenServer.call(__MODULE__, {:record_success, circuit_name})
         {:ok, result}
-      
+
       error ->
         GenServer.call(__MODULE__, {:record_failure, circuit_name})
-        
+
         case error do
           {:error, _type, msg, context} ->
             {:error, :circuit_failure, msg,
              Map.put(context, :circuit, circuit_name)}
+
           _ ->
             {:error, :circuit_failure, "Circuit execution failed",
              %{circuit: circuit_name, original_error: error}}
@@ -350,48 +359,57 @@ defmodule Raxol.Core.ErrorRecovery do
   end
 
   defp safe_execute(fun) when is_function(fun, 0) do
-    task = Task.async(fn ->
-      fun.()
-    end)
-    
+    task =
+      Task.async(fn ->
+        fun.()
+      end)
+
     # Default timeout of 5 seconds
     case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, result} -> 
+      {:ok, result} ->
         {:ok, result}
-      nil -> 
+
+      nil ->
         {:error, :execution_timeout, "Function execution timed out", %{}}
-      {:exit, reason} -> 
+
+      {:exit, reason} ->
         {:error, :execution_failed, format_error(reason), %{reason: reason}}
     end
   end
 
   defp safe_execute_with_arg(fun, arg) when is_function(fun, 1) do
-    task = Task.async(fn ->
-      fun.(arg)
-    end)
-    
+    task =
+      Task.async(fn ->
+        fun.(arg)
+      end)
+
     case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, result} -> 
+      {:ok, result} ->
         {:ok, result}
-      nil -> 
+
+      nil ->
         {:error, :execution_timeout, "Function execution timed out", %{}}
-      {:exit, reason} -> 
+
+      {:exit, reason} ->
         {:error, :execution_failed, format_error(reason), %{reason: reason}}
     end
   end
 
   defp safe_cleanup(cleanup_fun, resource) do
-    task = Task.async(fn ->
-      cleanup_fun.(resource)
-    end)
-    
+    task =
+      Task.async(fn ->
+        cleanup_fun.(resource)
+      end)
+
     case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, _} -> 
+      {:ok, _} ->
         :ok
-      nil -> 
+
+      nil ->
         Logger.error("Cleanup timed out")
         {:error, :cleanup_timeout}
-      {:exit, reason} -> 
+
+      {:exit, reason} ->
         Logger.error("Cleanup failed: #{inspect(reason)}")
         {:error, {:cleanup_failed, reason}}
     end

@@ -749,12 +749,15 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
 
   defp analyze_activity_pattern(change_types) do
     cond do
-      :animation in change_types -> 
+      :animation in change_types ->
         :animation
-      length(change_types) > 10 -> 
+
+      length(change_types) > 10 ->
         :high_activity
+
       true ->
         text_update_count = Enum.count(change_types, &(&1 == :text_update))
+
         case {text_update_count, change_types} do
           {count, _} when count > 3 -> :text_editing
           {_, []} -> :idle

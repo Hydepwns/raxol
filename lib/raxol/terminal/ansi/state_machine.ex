@@ -7,17 +7,68 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
   require Raxol.Core.Runtime.Log
 
   # Guard macros for ANSI byte classification
-  defmacro param_byte?(byte), do: quote(do: unquote(byte) >= ?0 and unquote(byte) <= ?9)
-  defmacro intermediate_byte?(byte), do: quote(do: unquote(byte) >= 0x20 and unquote(byte) <= 0x2F)
+  defmacro param_byte?(byte),
+    do: quote(do: unquote(byte) >= ?0 and unquote(byte) <= ?9)
+
+  defmacro intermediate_byte?(byte),
+    do: quote(do: unquote(byte) >= 0x20 and unquote(byte) <= 0x2F)
+
   defmacro csi_final_byte?(byte) do
     quote do
       unquote(byte) in [
-        ?@, ?A, ?B, ?C, ?D, ?E, ?F, ?G, ?H, ?I, ?J, ?K, ?L, ?M, ?P, ?S,
-        ?T, ?X, ?Z, ?`, ?a, ?b, ?c, ?d, ?e, ?f, ?g, ?h, ?j, ?k, ?l, ?m,
-        ?n, ?o, ?p, ?q, ?r, ?s, ?t, ?u, ?v, ?w, ?x, ?y, ?z, ?{, ?|, ?}, ?~
+        ?@,
+        ?A,
+        ?B,
+        ?C,
+        ?D,
+        ?E,
+        ?F,
+        ?G,
+        ?H,
+        ?I,
+        ?J,
+        ?K,
+        ?L,
+        ?M,
+        ?P,
+        ?S,
+        ?T,
+        ?X,
+        ?Z,
+        ?`,
+        ?a,
+        ?b,
+        ?c,
+        ?d,
+        ?e,
+        ?f,
+        ?g,
+        ?h,
+        ?j,
+        ?k,
+        ?l,
+        ?m,
+        ?n,
+        ?o,
+        ?p,
+        ?q,
+        ?r,
+        ?s,
+        ?t,
+        ?u,
+        ?v,
+        ?w,
+        ?x,
+        ?y,
+        ?z,
+        ?{,
+        ?|,
+        ?},
+        ?~
       ]
     end
   end
+
   defmacro cancel_byte?(byte), do: quote(do: unquote(byte) in [0x18, 0x1A])
 
   @type state ::
@@ -171,71 +222,72 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
         {:continue, %{state | state: :ground}}
 
       # Only emit escape sequences for specific valid escape characters
-      b when b in [
-        ?@,
-        ?A,
-        ?B,
-        ?C,
-        ?D,
-        ?E,
-        ?F,
-        ?G,
-        ?H,
-        ?I,
-        ?J,
-        ?K,
-        ?L,
-        ?M,
-        ?N,
-        ?O,
-        ?P,
-        ?Q,
-        ?R,
-        ?S,
-        ?T,
-        ?U,
-        ?V,
-        ?W,
-        ?X,
-        ?Y,
-        ?Z,
-        ?[,
-        ?\\,
-        ?],
-        ?^,
-        ?_,
-        ?`,
-        ?a,
-        ?b,
-        ?c,
-        ?d,
-        ?e,
-        ?f,
-        ?g,
-        ?h,
-        ?i,
-        ?j,
-        ?k,
-        ?l,
-        ?m,
-        ?n,
-        ?o,
-        ?p,
-        ?q,
-        ?r,
-        ?s,
-        ?t,
-        ?u,
-        ?v,
-        ?w,
-        ?x,
-        ?y,
-        ?z,
-        ?{,
-        ?|,
-        ?},
-        ?~
-      ] ->
+      b
+      when b in [
+             ?@,
+             ?A,
+             ?B,
+             ?C,
+             ?D,
+             ?E,
+             ?F,
+             ?G,
+             ?H,
+             ?I,
+             ?J,
+             ?K,
+             ?L,
+             ?M,
+             ?N,
+             ?O,
+             ?P,
+             ?Q,
+             ?R,
+             ?S,
+             ?T,
+             ?U,
+             ?V,
+             ?W,
+             ?X,
+             ?Y,
+             ?Z,
+             ?[,
+             ?\\,
+             ?],
+             ?^,
+             ?_,
+             ?`,
+             ?a,
+             ?b,
+             ?c,
+             ?d,
+             ?e,
+             ?f,
+             ?g,
+             ?h,
+             ?i,
+             ?j,
+             ?k,
+             ?l,
+             ?m,
+             ?n,
+             ?o,
+             ?p,
+             ?q,
+             ?r,
+             ?s,
+             ?t,
+             ?u,
+             ?v,
+             ?w,
+             ?x,
+             ?y,
+             ?z,
+             ?{,
+             ?|,
+             ?},
+             ?~
+           ] ->
         create_escape_sequence(state, byte)
 
       _ ->
@@ -266,7 +318,8 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
         {:continue, %{state | state: :csi_param, params_buffer: <<b>>}}
 
       b when intermediate_byte?(b) ->
-        {:continue, %{state | state: :csi_intermediate, intermediates_buffer: <<b>>}}
+        {:continue,
+         %{state | state: :csi_intermediate, intermediates_buffer: <<b>>}}
 
       b when csi_final_byte?(b) ->
         {:emit, %{state | state: :ground},
@@ -281,11 +334,13 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
 
       b when cancel_byte?(b) ->
         # On cancel, reset buffers and return to ground state
-        {:continue, %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
+        {:continue,
+         %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
 
       _ ->
         # On any other invalid byte, transition to ignore state to consume the invalid sequence
-        {:continue, %{state | state: :ignore, params_buffer: "", intermediates_buffer: ""}}
+        {:continue,
+         %{state | state: :ignore, params_buffer: "", intermediates_buffer: ""}}
     end
   end
 
@@ -299,36 +354,42 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
         {:continue, %{state | params_buffer: state.params_buffer <> <<b>>}}
 
       b when intermediate_byte?(b) ->
-        {:continue, %{state | state: :csi_intermediate, intermediates_buffer: <<b>>}}
+        {:continue,
+         %{state | state: :csi_intermediate, intermediates_buffer: <<b>>}}
 
       b when csi_final_byte?(b) ->
         emit_csi_sequence(state, b)
 
       b when cancel_byte?(b) ->
         # On cancel, reset buffers and return to ground state
-        {:continue, %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
+        {:continue,
+         %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
 
       _ ->
         # On any other invalid byte, transition to ignore state to consume the invalid sequence
-        {:continue, %{state | state: :ignore, params_buffer: "", intermediates_buffer: ""}}
+        {:continue,
+         %{state | state: :ignore, params_buffer: "", intermediates_buffer: ""}}
     end
   end
 
   defp handle_csi_intermediate_state(state, byte) do
     case byte do
       b when intermediate_byte?(b) ->
-        {:continue, %{state | intermediates_buffer: state.intermediates_buffer <> <<b>>}}
+        {:continue,
+         %{state | intermediates_buffer: state.intermediates_buffer <> <<b>>}}
 
       b when csi_final_byte?(b) ->
         emit_csi_sequence(state, b)
 
       b when cancel_byte?(b) ->
         # On cancel, reset buffers and return to ground state
-        {:continue, %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
+        {:continue,
+         %{state | state: :ground, params_buffer: "", intermediates_buffer: ""}}
 
       _ ->
         # On any other invalid byte, transition to ignore state to consume the invalid sequence
-        {:continue, %{state | state: :ignore, params_buffer: "", intermediates_buffer: ""}}
+        {:continue,
+         %{state | state: :ignore, params_buffer: "", intermediates_buffer: ""}}
     end
   end
 
@@ -417,5 +478,4 @@ defmodule Raxol.Terminal.ANSI.StateMachine do
        text: Enum.join(rest, ";")
      }}
   end
-
 end

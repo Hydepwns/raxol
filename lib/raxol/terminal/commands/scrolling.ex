@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   Handles scrolling operations for the terminal screen buffer.
   """
 
-    alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
   require Raxol.Core.Runtime.Log
@@ -230,21 +230,57 @@ defmodule Raxol.Terminal.Commands.Scrolling do
          width,
          blank_style
        ) do
-    select_line_for_shift_up(idx, cells, line, region_start, region_end, n, width, blank_style)
+    select_line_for_shift_up(
+      idx,
+      cells,
+      line,
+      region_start,
+      region_end,
+      n,
+      width,
+      blank_style
+    )
   end
 
-  defp select_line_for_shift_up(idx, cells, line, region_start, region_end, n, _width, _blank_style)
+  defp select_line_for_shift_up(
+         idx,
+         cells,
+         line,
+         region_start,
+         region_end,
+         n,
+         _width,
+         _blank_style
+       )
        when idx >= region_start and idx <= region_end - n do
     get_source_line(cells, idx + n, line)
   end
 
-  defp select_line_for_shift_up(idx, _cells, _line, _region_start, region_end, n, width, blank_style)
+  defp select_line_for_shift_up(
+         idx,
+         _cells,
+         _line,
+         _region_start,
+         region_end,
+         n,
+         width,
+         blank_style
+       )
        when idx > region_end - n and idx <= region_end do
     # Create empty line for this position
     List.duplicate(Cell.new(" ", blank_style), width)
   end
 
-  defp select_line_for_shift_up(_idx, _cells, line, _region_start, _region_end, _n, _width, _blank_style) do
+  defp select_line_for_shift_up(
+         _idx,
+         _cells,
+         line,
+         _region_start,
+         _region_end,
+         _n,
+         _width,
+         _blank_style
+       ) do
     line
   end
 
@@ -288,21 +324,57 @@ defmodule Raxol.Terminal.Commands.Scrolling do
          width,
          blank_style
        ) do
-    select_line_for_shift_down(idx, cells, line, region_start, region_end, n, width, blank_style)
+    select_line_for_shift_down(
+      idx,
+      cells,
+      line,
+      region_start,
+      region_end,
+      n,
+      width,
+      blank_style
+    )
   end
 
-  defp select_line_for_shift_down(idx, cells, line, region_start, region_end, n, _width, _blank_style)
+  defp select_line_for_shift_down(
+         idx,
+         cells,
+         line,
+         region_start,
+         region_end,
+         n,
+         _width,
+         _blank_style
+       )
        when idx >= region_start + n and idx <= region_end do
     get_source_line(cells, idx - n, line)
   end
 
-  defp select_line_for_shift_down(idx, _cells, _line, region_start, _region_end, n, width, blank_style)
+  defp select_line_for_shift_down(
+         idx,
+         _cells,
+         _line,
+         region_start,
+         _region_end,
+         n,
+         width,
+         blank_style
+       )
        when idx >= region_start and idx < region_start + n do
     # Create empty line for this position
     List.duplicate(Cell.new(" ", blank_style), width)
   end
 
-  defp select_line_for_shift_down(_idx, _cells, line, _region_start, _region_end, _n, _width, _blank_style) do
+  defp select_line_for_shift_down(
+         _idx,
+         _cells,
+         line,
+         _region_start,
+         _region_end,
+         _n,
+         _width,
+         _blank_style
+       ) do
     line
   end
 

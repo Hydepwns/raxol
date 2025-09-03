@@ -93,8 +93,16 @@ defmodule Raxol.Animation.StateServer do
   @doc """
   Stores an active animation instance for a given element.
   """
-  def put_active_animation(server \\ __MODULE__, element_id, animation_name, instance) do
-    GenServer.call(server, {:put_active_animation, element_id, animation_name, instance})
+  def put_active_animation(
+        server \\ __MODULE__,
+        element_id,
+        animation_name,
+        instance
+      ) do
+    GenServer.call(
+      server,
+      {:put_active_animation, element_id, animation_name, instance}
+    )
   end
 
   @doc """
@@ -116,7 +124,10 @@ defmodule Raxol.Animation.StateServer do
   Removes a completed or stopped animation instance for a specific element.
   """
   def remove_active_animation(server \\ __MODULE__, element_id, animation_name) do
-    GenServer.call(server, {:remove_active_animation, element_id, animation_name})
+    GenServer.call(
+      server,
+      {:remove_active_animation, element_id, animation_name}
+    )
   end
 
   @doc """
@@ -156,17 +167,19 @@ defmodule Raxol.Animation.StateServer do
       animations: %{},
       active_animations: %{}
     }
+
     {:ok, initial_state}
   end
 
   @impl GenServer
   def handle_call({:init_state, settings}, _from, state) do
     new_state = %{
-      state |
-      settings: settings,
-      animations: %{},
-      active_animations: %{}
+      state
+      | settings: settings,
+        animations: %{},
+        active_animations: %{}
     }
+
     {:reply, :ok, new_state}
   end
 
@@ -200,11 +213,19 @@ defmodule Raxol.Animation.StateServer do
   end
 
   @impl GenServer
-  def handle_call({:put_active_animation, element_id, animation_name, instance}, _from, state) do
+  def handle_call(
+        {:put_active_animation, element_id, animation_name, instance},
+        _from,
+        state
+      ) do
     element_animations = Map.get(state.active_animations, element_id, %{})
-    updated_element_animations = Map.put(element_animations, animation_name, instance)
-    updated_active_animations = Map.put(state.active_animations, element_id, updated_element_animations)
-    
+
+    updated_element_animations =
+      Map.put(element_animations, animation_name, instance)
+
+    updated_active_animations =
+      Map.put(state.active_animations, element_id, updated_element_animations)
+
     new_state = %{state | active_animations: updated_active_animations}
     {:reply, :ok, new_state}
   end
@@ -215,17 +236,25 @@ defmodule Raxol.Animation.StateServer do
   end
 
   @impl GenServer
-  def handle_call({:get_active_animation, element_id, animation_name}, _from, state) do
-    animation = 
+  def handle_call(
+        {:get_active_animation, element_id, animation_name},
+        _from,
+        state
+      ) do
+    animation =
       state.active_animations
       |> Map.get(element_id, %{})
       |> Map.get(animation_name)
-    
+
     {:reply, animation, state}
   end
 
   @impl GenServer
-  def handle_call({:remove_active_animation, element_id, animation_name}, _from, state) do
+  def handle_call(
+        {:remove_active_animation, element_id, animation_name},
+        _from,
+        state
+      ) do
     new_state = do_remove_active_animation(state, element_id, animation_name)
     {:reply, :ok, new_state}
   end
@@ -259,14 +288,14 @@ defmodule Raxol.Animation.StateServer do
   defp do_remove_active_animation(state, element_id, animation_name) do
     element_animations = Map.get(state.active_animations, element_id, %{})
     updated_element_animations = Map.delete(element_animations, animation_name)
-    
+
     updated_active_animations =
       if map_size(updated_element_animations) == 0 do
         Map.delete(state.active_animations, element_id)
       else
         Map.put(state.active_animations, element_id, updated_element_animations)
       end
-    
+
     %{state | active_animations: updated_active_animations}
   end
 
@@ -276,25 +305,30 @@ defmodule Raxol.Animation.StateServer do
         case update do
           {:put, element_id, animation_name, instance} ->
             element_animations = Map.get(acc, element_id, %{})
-            updated_element_animations = Map.put(element_animations, animation_name, instance)
+
+            updated_element_animations =
+              Map.put(element_animations, animation_name, instance)
+
             Map.put(acc, element_id, updated_element_animations)
-          
+
           {:remove, element_id, animation_name} ->
             element_animations = Map.get(acc, element_id, %{})
-            updated_element_animations = Map.delete(element_animations, animation_name)
-            
+
+            updated_element_animations =
+              Map.delete(element_animations, animation_name)
+
             if map_size(updated_element_animations) == 0 do
               Map.delete(acc, element_id)
             else
               Map.put(acc, element_id, updated_element_animations)
             end
-          
+
           _ ->
             Logger.warning("Unknown batch update operation: #{inspect(update)}")
             acc
         end
       end)
-    
+
     %{state | active_animations: updated_active_animations}
   end
 end

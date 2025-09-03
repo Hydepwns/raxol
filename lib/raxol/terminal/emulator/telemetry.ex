@@ -1,13 +1,13 @@
 defmodule Raxol.Terminal.Emulator.Telemetry do
   @moduledoc """
   Telemetry instrumentation for the terminal emulator.
-  
+
   Provides comprehensive error tracking and performance monitoring
   for terminal emulation operations.
   """
-  
+
   require Logger
-  
+
   @emulator_events [
     [:raxol, :emulator, :input, :start],
     [:raxol, :emulator, :input, :stop],
@@ -26,28 +26,29 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
     [:raxol, :emulator, :checkpoint, :created],
     [:raxol, :emulator, :checkpoint, :restored]
   ]
-  
+
   @doc """
   Lists all emulator telemetry events.
   """
   def events, do: @emulator_events
-  
+
   @doc """
   Attaches default telemetry handlers for logging.
   """
   def attach_default_handlers do
     handlers = [
       {[:raxol, :emulator, :input, :exception], &handle_input_exception/4},
-      {[:raxol, :emulator, :sequence, :exception], &handle_sequence_exception/4},
+      {[:raxol, :emulator, :sequence, :exception],
+       &handle_sequence_exception/4},
       {[:raxol, :emulator, :resize, :exception], &handle_resize_exception/4},
       {[:raxol, :emulator, :error, :recorded], &handle_error_recorded/4},
       {[:raxol, :emulator, :recovery, :failed], &handle_recovery_failed/4},
       {[:raxol, :emulator, :health, :check], &handle_health_check/4}
     ]
-    
+
     Enum.each(handlers, fn {event, handler} ->
       handler_id = "#{__MODULE__}-#{Enum.join(event, "-")}"
-      
+
       :telemetry.attach(
         handler_id,
         event,
@@ -56,53 +57,55 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       )
     end)
   end
-  
+
   @doc """
   Executes a function with telemetry instrumentation.
   """
   def span(event_prefix, metadata, fun) do
     start_metadata = Map.put(metadata, :start_time, System.monotonic_time())
-    
+
     :telemetry.execute(
       event_prefix ++ [:start],
       %{system_time: System.system_time()},
       start_metadata
     )
-    
+
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      fun.()
-    end) do
+           fun.()
+         end) do
       {:ok, result} ->
-        stop_metadata = Map.merge(start_metadata, %{
-          duration: System.monotonic_time() - start_metadata.start_time,
-          result: :ok
-        })
-        
+        stop_metadata =
+          Map.merge(start_metadata, %{
+            duration: System.monotonic_time() - start_metadata.start_time,
+            result: :ok
+          })
+
         :telemetry.execute(
           event_prefix ++ [:stop],
           %{duration: stop_metadata.duration},
           stop_metadata
         )
-        
+
         result
-      
+
       {:error, {exception, stacktrace}} ->
-        exception_metadata = Map.merge(start_metadata, %{
-          duration: System.monotonic_time() - start_metadata.start_time,
-          exception: exception,
-          stacktrace: stacktrace
-        })
-        
+        exception_metadata =
+          Map.merge(start_metadata, %{
+            duration: System.monotonic_time() - start_metadata.start_time,
+            exception: exception,
+            stacktrace: stacktrace
+          })
+
         :telemetry.execute(
           event_prefix ++ [:exception],
           %{duration: exception_metadata.duration},
           exception_metadata
         )
-        
+
         reraise exception, stacktrace
     end
   end
-  
+
   @doc """
   Records an error event.
   """
@@ -117,7 +120,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       })
     )
   end
-  
+
   @doc """
   Records a recovery attempt.
   """
@@ -128,7 +131,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       Map.put(metadata, :timestamp, DateTime.utc_now())
     )
   end
-  
+
   @doc """
   Records a successful recovery.
   """
@@ -139,7 +142,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       Map.put(metadata, :timestamp, DateTime.utc_now())
     )
   end
-  
+
   @doc """
   Records a failed recovery.
   """
@@ -153,7 +156,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       })
     )
   end
-  
+
   @doc """
   Records a health check.
   """
@@ -167,7 +170,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       })
     )
   end
-  
+
   @doc """
   Records checkpoint creation.
   """
@@ -178,7 +181,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       Map.put(metadata, :timestamp, DateTime.utc_now())
     )
   end
-  
+
   @doc """
   Records checkpoint restoration.
   """
@@ -189,9 +192,9 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       Map.put(metadata, :timestamp, DateTime.utc_now())
     )
   end
-  
+
   # Private handler functions
-  
+
   defp handle_input_exception(_event, measurements, metadata, _config) do
     Logger.error("""
     Emulator input processing exception:
@@ -200,7 +203,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       Metadata: #{inspect(Map.drop(metadata, [:exception, :stacktrace]))}
     """)
   end
-  
+
   defp handle_sequence_exception(_event, measurements, metadata, _config) do
     Logger.error("""
     Emulator sequence handling exception:
@@ -209,7 +212,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       Sequence: #{inspect(metadata[:sequence])}
     """)
   end
-  
+
   defp handle_resize_exception(_event, measurements, metadata, _config) do
     Logger.error("""
     Emulator resize exception:
@@ -218,7 +221,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       Dimensions: #{metadata[:width]}x#{metadata[:height]}
     """)
   end
-  
+
   defp handle_error_recorded(_event, _measurements, metadata, _config) do
     Logger.warning("""
     Emulator error recorded:
@@ -227,7 +230,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       Timestamp: #{metadata[:timestamp]}
     """)
   end
-  
+
   defp handle_recovery_failed(_event, _measurements, metadata, _config) do
     Logger.error("""
     Emulator recovery failed:
@@ -235,7 +238,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       Timestamp: #{metadata[:timestamp]}
     """)
   end
-  
+
   defp handle_health_check(_event, measurements, metadata, _config) do
     if metadata[:status] != :healthy do
       Logger.info("""
@@ -245,12 +248,13 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       """)
     end
   end
-  
+
   defp format_duration(nil), do: "N/A"
+
   defp format_duration(duration) when is_integer(duration) do
     "#{System.convert_time_unit(duration, :native, :microsecond)} μs"
   end
-  
+
   defp status_to_number(:healthy), do: 0
   defp status_to_number(:degraded), do: 1
   defp status_to_number(:critical), do: 2

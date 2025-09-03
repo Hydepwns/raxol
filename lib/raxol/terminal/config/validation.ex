@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Config.Validation do
-  
   @moduledoc """
   Validation logic for terminal configuration.
 

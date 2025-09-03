@@ -1,5 +1,4 @@
 defmodule Raxol.Plugins.Visualization.TreemapRenderer do
-  
   @moduledoc """
   Handles rendering logic for treemap visualizations within the VisualizationPlugin.
   Uses a squarified layout algorithm.
@@ -39,15 +38,17 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
       end
     else
       case Raxol.Core.ErrorHandling.safe_call(fn ->
-        # Calculate layout
-        # Default to 1 if root value missing
-        total_value = Map.get(data, :value, 1)
-        node_rects = layout_treemap_nodes(data, bounds, 0, total_value)
+             # Calculate layout
+             # Default to 1 if root value missing
+             total_value = Map.get(data, :value, 1)
+             node_rects = layout_treemap_nodes(data, bounds, 0, total_value)
 
-        # Draw the nodes based on the calculated rectangles
-        draw_treemap_nodes(node_rects, title, bounds)
-      end) do
-        {:ok, result} -> result
+             # Draw the nodes based on the calculated rectangles
+             draw_treemap_nodes(node_rects, title, bounds)
+           end) do
+        {:ok, result} ->
+          result
+
         {:error, reason} ->
           Raxol.Core.Runtime.Log.error(
             "[TreemapRenderer] Error rendering treemap: #{inspect(reason)}"

@@ -103,7 +103,7 @@ defmodule Raxol.Core.Accessibility.Server do
 
   @doc """
   Makes an announcement for screen readers.
-  
+
   ## Options
   - `:priority` - Priority level (:high, :medium, :low) default: :medium
   - `:interrupt` - Whether to interrupt current announcement default: false
@@ -123,7 +123,8 @@ defmodule Raxol.Core.Accessibility.Server do
   @doc """
   Sets high contrast mode.
   """
-  def set_high_contrast(server \\ __MODULE__, enabled) when is_boolean(enabled) do
+  def set_high_contrast(server \\ __MODULE__, enabled)
+      when is_boolean(enabled) do
     GenServer.call(server, {:set_preference, :high_contrast, enabled})
   end
 
@@ -137,7 +138,8 @@ defmodule Raxol.Core.Accessibility.Server do
   @doc """
   Sets reduced motion mode.
   """
-  def set_reduced_motion(server \\ __MODULE__, enabled) when is_boolean(enabled) do
+  def set_reduced_motion(server \\ __MODULE__, enabled)
+      when is_boolean(enabled) do
     GenServer.call(server, {:set_preference, :reduced_motion, enabled})
   end
 
@@ -165,7 +167,8 @@ defmodule Raxol.Core.Accessibility.Server do
   @doc """
   Sets screen reader support.
   """
-  def set_screen_reader(server \\ __MODULE__, enabled) when is_boolean(enabled) do
+  def set_screen_reader(server \\ __MODULE__, enabled)
+      when is_boolean(enabled) do
     GenServer.call(server, {:set_preference, :screen_reader, enabled})
   end
 
@@ -179,7 +182,8 @@ defmodule Raxol.Core.Accessibility.Server do
   @doc """
   Sets keyboard focus indicators.
   """
-  def set_keyboard_focus(server \\ __MODULE__, enabled) when is_boolean(enabled) do
+  def set_keyboard_focus(server \\ __MODULE__, enabled)
+      when is_boolean(enabled) do
     GenServer.call(server, {:set_preference, :keyboard_focus, enabled})
   end
 
@@ -228,7 +232,8 @@ defmodule Raxol.Core.Accessibility.Server do
   @doc """
   Sets the announcement callback function.
   """
-  def set_announcement_callback(server \\ __MODULE__, callback) when is_function(callback, 1) do
+  def set_announcement_callback(server \\ __MODULE__, callback)
+      when is_function(callback, 1) do
     GenServer.call(server, {:set_announcement_callback, callback})
   end
 
@@ -256,33 +261,33 @@ defmodule Raxol.Core.Accessibility.Server do
   @impl GenServer
   def handle_call({:enable, options, user_preferences_pid}, _from, state) do
     preferences = merge_preferences(state.preferences, options)
-    
+
     new_state = %{
-      state |
-      enabled: true,
-      preferences: preferences,
-      user_preferences_pid: user_preferences_pid
+      state
+      | enabled: true,
+        preferences: preferences,
+        user_preferences_pid: user_preferences_pid
     }
-    
+
     # Register event handlers
     register_event_handlers()
-    
+
     # Dispatch accessibility enabled event
     EventManager.dispatch({:accessibility_enabled, preferences})
-    
+
     {:reply, :ok, new_state}
   end
 
   @impl GenServer
   def handle_call(:disable, _from, state) do
     new_state = %{state | enabled: false}
-    
+
     # Unregister event handlers
     unregister_event_handlers()
-    
+
     # Dispatch accessibility disabled event
     EventManager.dispatch(:accessibility_disabled)
-    
+
     {:reply, :ok, new_state}
   end
 
@@ -295,10 +300,10 @@ defmodule Raxol.Core.Accessibility.Server do
   def handle_call({:set_preference, key, value}, _from, state) do
     new_preferences = Map.put(state.preferences, key, value)
     new_state = %{state | preferences: new_preferences}
-    
+
     # Dispatch preference change event
     EventManager.dispatch({:accessibility_preference_changed, key, value})
-    
+
     {:reply, :ok, new_state}
   end
 
@@ -341,13 +346,13 @@ defmodule Raxol.Core.Accessibility.Server do
 
   @impl GenServer
   def handle_call({:get_announcement_history, limit}, _from, state) do
-    history = 
+    history =
       if limit do
         Enum.take(state.announcements.history, limit)
       else
         state.announcements.history
       end
-    
+
     {:reply, history, state}
   end
 
@@ -380,10 +385,10 @@ defmodule Raxol.Core.Accessibility.Server do
     if state.enabled && state.preferences.screen_reader do
       # Get metadata for the new focus
       metadata = Map.get(state.metadata, new_focus, %{})
-      
+
       # Create announcement based on metadata
       announcement = create_focus_announcement(new_focus, metadata)
-      
+
       # Announce the focus change
       new_state = process_announcement(state, announcement, priority: :high)
       {:noreply, new_state}
@@ -400,33 +405,62 @@ defmodule Raxol.Core.Accessibility.Server do
   end
 
   defp register_event_handlers do
-    EventManager.register_handler(:focus_change, __MODULE__, :handle_focus_change_event)
-    EventManager.register_handler(:preference_changed, __MODULE__, :handle_preference_changed_event)
-    EventManager.register_handler(:theme_changed, __MODULE__, :handle_theme_changed_event)
+    EventManager.register_handler(
+      :focus_change,
+      __MODULE__,
+      :handle_focus_change_event
+    )
+
+    EventManager.register_handler(
+      :preference_changed,
+      __MODULE__,
+      :handle_preference_changed_event
+    )
+
+    EventManager.register_handler(
+      :theme_changed,
+      __MODULE__,
+      :handle_theme_changed_event
+    )
   end
 
   defp unregister_event_handlers do
-    EventManager.unregister_handler(:focus_change, __MODULE__, :handle_focus_change_event)
-    EventManager.unregister_handler(:preference_changed, __MODULE__, :handle_preference_changed_event)
-    EventManager.unregister_handler(:theme_changed, __MODULE__, :handle_theme_changed_event)
+    EventManager.unregister_handler(
+      :focus_change,
+      __MODULE__,
+      :handle_focus_change_event
+    )
+
+    EventManager.unregister_handler(
+      :preference_changed,
+      __MODULE__,
+      :handle_preference_changed_event
+    )
+
+    EventManager.unregister_handler(
+      :theme_changed,
+      __MODULE__,
+      :handle_theme_changed_event
+    )
   end
 
   defp process_announcement(state, message, opts) do
-    if state.enabled && state.preferences.screen_reader && !state.preferences.silence_announcements do
+    if state.enabled && state.preferences.screen_reader &&
+         !state.preferences.silence_announcements do
       priority = Keyword.get(opts, :priority, :medium)
       interrupt = Keyword.get(opts, :interrupt, false)
-      
+
       announcement = %{
         message: message,
         priority: priority,
         timestamp: DateTime.utc_now(),
         opts: opts
       }
-      
+
       # Add to history
       new_history = [announcement | state.announcements.history]
       limited_history = Enum.take(new_history, state.announcements.max_history)
-      
+
       # Process announcement
       if interrupt || Enum.empty?(state.announcements.queue) do
         # Immediate announcement
@@ -436,12 +470,12 @@ defmodule Raxol.Core.Accessibility.Server do
         new_queue = insert_by_priority(state.announcements.queue, announcement)
         process_queue(new_queue, state.announcement_callback)
       end
-      
+
       new_announcements = %{
-        state.announcements |
-        history: limited_history
+        state.announcements
+        | history: limited_history
       }
-      
+
       %{state | announcements: new_announcements}
     else
       state
@@ -453,18 +487,19 @@ defmodule Raxol.Core.Accessibility.Server do
     if callback do
       callback.(announcement.message)
     end
-    
+
     # Dispatch event for other systems
     EventManager.dispatch({:screen_reader_announcement, announcement.message})
   end
 
   defp insert_by_priority(queue, announcement) do
-    priority_value = case announcement.priority do
-      :high -> 1
-      :medium -> 2
-      :low -> 3
-    end
-    
+    priority_value =
+      case announcement.priority do
+        :high -> 1
+        :medium -> 2
+        :low -> 3
+      end
+
     Enum.sort_by([announcement | queue], fn a ->
       case a.priority do
         :high -> 1
@@ -475,6 +510,7 @@ defmodule Raxol.Core.Accessibility.Server do
   end
 
   defp process_queue([], _callback), do: :ok
+
   defp process_queue([announcement | _rest], callback) do
     deliver_announcement(announcement, callback)
   end
@@ -483,10 +519,10 @@ defmodule Raxol.Core.Accessibility.Server do
     label = Map.get(metadata, :label, component_id)
     role = Map.get(metadata, :role, "element")
     description = Map.get(metadata, :description, "")
-    
+
     parts = [label, role]
     parts = if description != "", do: parts ++ [description], else: parts
-    
+
     Enum.join(parts, ", ")
   end
 

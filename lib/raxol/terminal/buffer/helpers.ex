@@ -58,36 +58,41 @@ defmodule Raxol.Terminal.Buffer.Helpers do
       new_queue = OperationQueue.mark_processing(state.operation_queue)
 
       case Raxol.Core.ErrorHandling.safe_call(fn ->
-        # Get a batch of operations to process
-        {operations_to_process, remaining_queue} =
-          OperationQueue.get_batch(new_queue, new_queue.batch_size)
+             # Get a batch of operations to process
+             {operations_to_process, remaining_queue} =
+               OperationQueue.get_batch(new_queue, new_queue.batch_size)
 
-        # Track start time for metrics
-        start_time = System.monotonic_time()
+             # Track start time for metrics
+             start_time = System.monotonic_time()
 
-        # Process the operations
-        new_buffer =
-          OperationProcessor.process_batch(operations_to_process, state.buffer)
+             # Process the operations
+             new_buffer =
+               OperationProcessor.process_batch(
+                 operations_to_process,
+                 state.buffer
+               )
 
-        # Update metrics based on operation types
-        new_metrics =
-          update_metrics_for_operations(
-            operations_to_process,
-            state.metrics,
-            start_time
-          )
+             # Update metrics based on operation types
+             new_metrics =
+               update_metrics_for_operations(
+                 operations_to_process,
+                 state.metrics,
+                 start_time
+               )
 
-        # Update state
-        final_queue = OperationQueue.mark_not_processing(remaining_queue)
+             # Update state
+             final_queue = OperationQueue.mark_not_processing(remaining_queue)
 
-        %{
-          state
-          | buffer: new_buffer,
-            operation_queue: final_queue,
-            metrics: new_metrics
-        }
-      end) do
-        {:ok, result} -> result
+             %{
+               state
+               | buffer: new_buffer,
+                 operation_queue: final_queue,
+                 metrics: new_metrics
+             }
+           end) do
+        {:ok, result} ->
+          result
+
         {:error, reason} ->
           Logger.error("Error processing batch operations: #{inspect(reason)}")
           # Always reset processing flag, even on error

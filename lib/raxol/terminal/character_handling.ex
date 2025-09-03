@@ -99,7 +99,7 @@ defmodule Raxol.Terminal.CharacterHandling do
       {fn c -> char_in_ranges(c, rtl_ranges()) end, :RTL},
       {fn c -> char_in_ranges(c, ltr_ranges()) end, :LTR}
     ]
-    
+
     Enum.find_value(bidi_checks, :NEUTRAL, fn {check, type} ->
       if check.(char), do: type, else: nil
     end)

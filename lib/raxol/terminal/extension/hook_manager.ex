@@ -111,9 +111,11 @@ defmodule Raxol.Terminal.Extension.HookManager do
     Enum.map(callbacks, fn callback ->
       Task.async(fn ->
         case Raxol.Core.ErrorHandling.safe_call(fn ->
-          callback.fun.(args)
-        end) do
-          {:ok, result} -> result
+               callback.fun.(args)
+             end) do
+          {:ok, result} ->
+            result
+
           {:error, reason} ->
             Logger.error("Hook execution failed: #{inspect(reason)}")
             {:error, :hook_execution_failed}

@@ -267,7 +267,7 @@ defmodule Raxol.Audit.Integration do
   end
 
   # Helper functions for pattern matching refactoring
-  
+
   defp detect_elevation_type("sudo" <> _rest), do: :sudo
   defp detect_elevation_type("su" <> _rest), do: :su
   defp detect_elevation_type("doas" <> _rest), do: :doas
@@ -290,7 +290,8 @@ defmodule Raxol.Audit.Integration do
   end
 
   defp classify_file(path) do
-    case {sensitive_file?(path), String.contains?(path, "config"), String.contains?(path, "log")} do
+    case {sensitive_file?(path), String.contains?(path, "config"),
+          String.contains?(path, "log")} do
       {true, _, _} -> :restricted
       {false, true, _} -> :confidential
       {false, false, true} -> :internal
@@ -299,14 +300,18 @@ defmodule Raxol.Audit.Integration do
   end
 
   defp classify_content(nil), do: :public
+
   defp classify_content(content) when is_binary(content) do
-    case {String.contains?(content, "password"), String.contains?(content, "token"), String.contains?(content, "key")} do
+    case {String.contains?(content, "password"),
+          String.contains?(content, "token"),
+          String.contains?(content, "key")} do
       {true, _, _} -> :restricted
       {false, true, _} -> :restricted
       {false, false, true} -> :confidential
       {false, false, false} -> :public
     end
   end
+
   defp classify_content(_content), do: :public
 
   defp critical_resource?(%{type: type}) do

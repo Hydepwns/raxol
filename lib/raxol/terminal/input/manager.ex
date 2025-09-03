@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Input.Manager do
-  
   @moduledoc """
   Manages terminal input processing including character input, key events, and input mode handling.
   This module is responsible for processing all input events and converting them into appropriate

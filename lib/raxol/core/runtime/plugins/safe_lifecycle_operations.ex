@@ -177,9 +177,9 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
 
   defp load_plugin_module(plugin_id) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      # Placeholder for actual module loading
-      String.to_atom("Elixir.Plugin.#{plugin_id}")
-    end) do
+           # Placeholder for actual module loading
+           String.to_atom("Elixir.Plugin.#{plugin_id}")
+         end) do
       {:ok, module} -> {:ok, module}
       {:error, _reason} -> {:error, "Module not found"}
     end

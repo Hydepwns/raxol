@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   @moduledoc """
   Manages command registration and execution for plugins.
-  
+
   REFACTORED: All try/rescue/catch blocks replaced with functional patterns.
   """
 
@@ -196,19 +196,21 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
         Raxol.Core.Runtime.Log.error(
           "Failed to register commands: #{inspect(reason)}"
         )
+
         {:error, :registration_failed}
     end
   end
 
   defp safe_map_commands(commands, plugin_state) do
     # Use Task to safely map commands with error isolation
-    task = Task.async(fn ->
-      Enum.map(commands, fn {name, handler, metadata} ->
-        wrapped_handler = wrap_handler(handler, plugin_state)
-        {name, wrapped_handler, metadata}
+    task =
+      Task.async(fn ->
+        Enum.map(commands, fn {name, handler, metadata} ->
+          wrapped_handler = wrap_handler(handler, plugin_state)
+          {name, wrapped_handler, metadata}
+        end)
       end)
-    end)
-    
+
     case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
       {:ok, new_commands} -> {:ok, new_commands}
       nil -> {:error, :mapping_timeout}
@@ -218,21 +220,25 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
 
   defp unregister_commands(_commands, command_table, plugin_module) do
     # Use functional approach for safe deletion
-    task = Task.async(fn ->
-      Map.delete(command_table, plugin_module)
-    end)
-    
+    task =
+      Task.async(fn ->
+        Map.delete(command_table, plugin_module)
+      end)
+
     case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
-      {:ok, updated_table} -> 
+      {:ok, updated_table} ->
         {:ok, updated_table}
-      nil -> 
+
+      nil ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Failed to unregister commands - timeout",
           :timeout,
           nil,
           %{plugin_module: plugin_module, module: __MODULE__}
         )
+
         {:error, :unregistration_failed}
+
       {:exit, reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Failed to unregister commands",
@@ -240,25 +246,32 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
           nil,
           %{plugin_module: plugin_module, module: __MODULE__}
         )
+
         {:error, :unregistration_failed}
     end
   end
 
   defp wrap_handler(handler, plugin_state) do
     fn args, context ->
-      safe_execute_handler(handler, args, Map.put(context, :plugin_state, plugin_state))
+      safe_execute_handler(
+        handler,
+        args,
+        Map.put(context, :plugin_state, plugin_state)
+      )
     end
   end
 
   defp safe_execute_handler(handler, args, context) do
     # Use Task for safe execution with error isolation
-    task = Task.async(fn ->
-      handler.(args, context)
-    end)
-    
+    task =
+      Task.async(fn ->
+        handler.(args, context)
+      end)
+
     case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, result} -> 
+      {:ok, result} ->
         result
+
       nil ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Command execution timeout",
@@ -266,15 +279,19 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
           nil,
           %{plugin_state: context.plugin_state, module: __MODULE__}
         )
+
         {:error, {:execution_failed, "Command execution timeout"}}
+
       {:exit, reason} ->
         error_msg = format_error_message(reason)
+
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Command execution failed",
           reason,
           nil,
           %{plugin_state: context.plugin_state, module: __MODULE__}
         )
+
         {:error, {:execution_failed, error_msg}}
     end
   end
@@ -339,24 +356,26 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
 
     # Use Task.async/yield instead of Task.await with try/catch
     task = Task.async(fn -> handler.(args, context) end)
-    
+
     case Task.yield(task, timeout) || Task.shutdown(task, :brutal_kill) do
       {:ok, result} ->
         result
-      
+
       nil ->
         # Timeout occurred
         {:error, :command_timeout}
-      
+
       {:exit, reason} ->
         # Task crashed
         error_msg = format_error_message(reason)
+
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Command execution failed in Task",
           reason,
           nil,
           %{args: args, module: __MODULE__}
         )
+
         {:error, {:execution_failed, error_msg}}
     end
   end

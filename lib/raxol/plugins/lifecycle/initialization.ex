@@ -46,8 +46,7 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
       :ok
     else
       false ->
-        case {Code.ensure_loaded?(module), 
-              function_exported?(module, :init, 1), 
+        case {Code.ensure_loaded?(module), function_exported?(module, :init, 1),
               function_exported?(module, :cleanup, 1)} do
           {false, _, _} -> {:error, :module_not_found}
           {true, false, _} -> {:error, :missing_init}

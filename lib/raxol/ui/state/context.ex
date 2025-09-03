@@ -188,14 +188,14 @@ defmodule Raxol.UI.State.Context do
       context_value = use_context(render_context, context_def.name)
 
       case ErrorHandling.safe_call_with_logging(
-        fn ->
-          rendered_element = render_fn.(context_value)
-          # Process the rendered element
-          alias Raxol.UI.Layout.Engine
-          Engine.process_element(rendered_element, render_context, acc)
-        end,
-        "Error in context consumer render function"
-      ) do
+             fn ->
+               rendered_element = render_fn.(context_value)
+               # Process the rendered element
+               alias Raxol.UI.Layout.Engine
+               Engine.process_element(rendered_element, render_context, acc)
+             end,
+             "Error in context consumer render function"
+           ) do
         {:ok, result} -> result
         {:error, _} -> acc
       end

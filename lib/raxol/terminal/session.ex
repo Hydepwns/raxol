@@ -3,9 +3,9 @@ defmodule Raxol.Terminal.Session do
   Terminal session module.
 
   This module manages terminal sessions with pure functional patterns.
-  
+
   REFACTORED: All try/rescue blocks replaced with functional error handling.
-  
+
   Features:
   - Session lifecycle
   - Input/output handling
@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.Session do
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
   alias Raxol.Terminal.Session.Storage
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-  
+
   @type t :: %__MODULE__{
           id: String.t(),
           emulator: EmulatorStruct.t(),
@@ -301,65 +301,71 @@ defmodule Raxol.Terminal.Session do
   # Safe execution functions using Task
 
   defp safe_get_screen_buffer(emulator, width, height) do
-    task = Task.async(fn ->
-      # Access main buffer directly since we know new emulators default to main buffer
-      emulator.main_screen_buffer
-    end)
-    
+    task =
+      Task.async(fn ->
+        # Access main buffer directly since we know new emulators default to main buffer
+        emulator.main_screen_buffer
+      end)
+
     case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
-      {:ok, buffer} when not is_nil(buffer) -> 
+      {:ok, buffer} when not is_nil(buffer) ->
         buffer
-      _ -> 
+
+      _ ->
         ScreenBuffer.new(width, height)
     end
   end
 
   defp safe_register_session(id, state) do
-    task = Task.async(fn ->
-      Raxol.Terminal.Registry.register(id, state)
-    end)
-    
+    task =
+      Task.async(fn ->
+        Raxol.Terminal.Registry.register(id, state)
+      end)
+
     case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
-      {:ok, _} -> 
+      {:ok, _} ->
         :ok
+
       _ ->
         Raxol.Core.Runtime.Log.error(
           "Failed to register session: timeout or error"
         )
+
         :ok
     end
   end
 
   defp safe_process_input(state, input) do
-    task = Task.async(fn ->
-      case EmulatorStruct.process_input(state.emulator, input) do
-        {new_emulator, _output}
-        when is_struct(new_emulator, EmulatorStruct) ->
-          %{state | emulator: new_emulator}
+    task =
+      Task.async(fn ->
+        case EmulatorStruct.process_input(state.emulator, input) do
+          {new_emulator, _output}
+          when is_struct(new_emulator, EmulatorStruct) ->
+            %{state | emulator: new_emulator}
 
-        _ ->
-          state
-      end
-    end)
-    
+          _ ->
+            state
+        end
+      end)
+
     case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, new_state} -> 
+      {:ok, new_state} ->
         new_state
-      _ -> 
+
+      _ ->
         state
     end
   end
 
   defp safe_save_session_async(state) do
-    task = Task.async(fn ->
-      Storage.save_session(state)
-    end)
-    
+    task =
+      Task.async(fn ->
+        Storage.save_session(state)
+      end)
+
     case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
       {:ok, :ok} ->
-        Raxol.Core.Runtime.Log.info(
-          "Session saved successfully: #{state.id}"
-        )
+        Raxol.Core.Runtime.Log.info("Session saved successfully: #{state.id}")
 
       {:ok, {:error, reason}} ->
         Raxol.Core.Runtime.Log.error(
@@ -375,20 +381,25 @@ defmodule Raxol.Terminal.Session do
 
   defp safe_save_session_sync(state) do
     Raxol.Core.Runtime.Log.info("Calling Storage.save_session...")
-    
-    task = Task.async(fn ->
-      Storage.save_session(state)
-    end)
-    
+
+    task =
+      Task.async(fn ->
+        Storage.save_session(state)
+      end)
+
     case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
       {:ok, result} ->
         Raxol.Core.Runtime.Log.info(
           "Storage.save_session completed with result: #{inspect(result)}"
         )
+
         result
-        
+
       _ ->
-        Raxol.Core.Runtime.Log.error("Exception in save_session: timeout or crash")
+        Raxol.Core.Runtime.Log.error(
+          "Exception in save_session: timeout or crash"
+        )
+
         {:error, :save_failed}
     end
   end

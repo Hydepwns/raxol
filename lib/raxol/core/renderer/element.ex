@@ -9,7 +9,6 @@ defmodule Raxol.Core.Renderer.Element do
   * Optional children forming a tree structure
   """
 
-  
   @type t :: %__MODULE__{
           tag: atom(),
           attributes: [{atom(), term()}],

@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Buffer.LineEditor do
   Provides functionality for line editing operations in the terminal buffer.
   """
 
-    alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 

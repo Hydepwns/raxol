@@ -9,7 +9,7 @@ defmodule Raxol.UI.Layout.Containers do
   * Gap and alignment handling
   """
 
-    alias Raxol.UI.Layout.Engine
+  alias Raxol.UI.Layout.Engine
 
   @doc """
   Processes a row element, calculating layout for it and its children.

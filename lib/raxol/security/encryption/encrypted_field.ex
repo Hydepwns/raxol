@@ -1,7 +1,7 @@
 defmodule Raxol.Security.Encryption.EncryptedField do
   @moduledoc """
   Ecto type for transparent field-level encryption in databases.
-  
+
   Functional Programming Version - All try/catch blocks replaced with
   with statements and proper error handling.
   """
@@ -243,7 +243,8 @@ defmodule Raxol.Security.Encryption.EncryptedMap do
     with {:ok, json} <- safe_json_encode(map),
          key_manager = get_key_manager(),
          key_id = "database_json_key",
-         {:ok, encrypted_package} <- KeyManager.encrypt(key_manager, key_id, json) do
+         {:ok, encrypted_package} <-
+           KeyManager.encrypt(key_manager, key_id, json) do
       encoded = :erlang.term_to_binary(encrypted_package) |> Base.encode64()
       {:ok, encoded}
     else
@@ -255,12 +256,13 @@ defmodule Raxol.Security.Encryption.EncryptedMap do
     with {:ok, decoded} <- safe_decode64(encrypted_binary),
          {:ok, encrypted_package} <- safe_binary_to_term(decoded),
          key_manager = get_key_manager(),
-         {:ok, json} <- KeyManager.decrypt(
-           key_manager,
-           encrypted_package.key_id,
-           encrypted_package,
-           encrypted_package.key_version
-         ),
+         {:ok, json} <-
+           KeyManager.decrypt(
+             key_manager,
+             encrypted_package.key_id,
+             encrypted_package,
+             encrypted_package.key_version
+           ),
          {:ok, map} <- safe_json_decode(json) do
       {:ok, map}
     else
@@ -400,7 +402,9 @@ defmodule Raxol.Security.Encryption.SearchableEncryptedField do
   end
 
   defp safe_crypto_decrypt(key, iv, data) do
-    Task.async(fn -> :crypto.crypto_one_time(:aes_256_cbc, key, iv, data, false) end)
+    Task.async(fn ->
+      :crypto.crypto_one_time(:aes_256_cbc, key, iv, data, false)
+    end)
     |> Task.yield(100)
     |> case do
       {:ok, result} -> {:ok, result}

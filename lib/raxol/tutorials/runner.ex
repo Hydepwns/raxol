@@ -151,8 +151,7 @@ defmodule Raxol.Tutorials.Runner do
   @impl true
   def handle_call(:show_current, _from, %{state: :idle} = state) do
     {:reply,
-     {:error, "No tutorial active. Use 'start <tutorial_id>' to begin."},
-     state}
+     {:error, "No tutorial active. Use 'start <tutorial_id>' to begin."}, state}
   end
 
   def handle_call(:show_current, _from, %{state: :in_tutorial} = state) do

@@ -1,15 +1,15 @@
 defmodule Raxol.Core.Accessibility do
   @moduledoc """
   Refactored Accessibility module that delegates to the unified GenServer.
-  
+
   This module provides the same API as the original Accessibility module but uses
   a supervised GenServer instead of the Process dictionary for state management.
-  
+
   ## Migration Notice
   This module is a drop-in replacement for `Raxol.Core.Accessibility`.
   All functions maintain backward compatibility while providing improved
   fault tolerance and functional programming patterns.
-  
+
   ## Benefits over Process Dictionary
   - Unified state management across all accessibility features
   - Supervised state with fault tolerance
@@ -17,7 +17,7 @@ defmodule Raxol.Core.Accessibility do
   - Announcement queuing with priority
   - Better debugging and testing capabilities
   - No global state pollution
-  
+
   ## Consolidated Modules
   This refactored version consolidates functionality from:
   - `Raxol.Core.Accessibility`
@@ -38,6 +38,7 @@ defmodule Raxol.Core.Accessibility do
       nil ->
         {:ok, _pid} = Server.start_link()
         :ok
+
       _pid ->
         :ok
     end
@@ -45,7 +46,7 @@ defmodule Raxol.Core.Accessibility do
 
   @doc """
   Enable accessibility features with the given options.
-  
+
   ## Options
   - `:high_contrast` - Enable high contrast mode (default: `false`)
   - `:reduced_motion` - Enable reduced motion (default: `false`)
@@ -77,7 +78,7 @@ defmodule Raxol.Core.Accessibility do
 
   @doc """
   Make an announcement for screen readers.
-  
+
   ## Options
   - `:priority` - Priority level (:high, :medium, :low) default: :medium
   - `:interrupt` - Whether to interrupt current announcement default: false
@@ -207,7 +208,7 @@ defmodule Raxol.Core.Accessibility do
 
   @doc """
   Set accessibility metadata for a component.
-  
+
   ## Metadata fields
   - `:label` - Accessible label for the component
   - `:role` - ARIA role (button, navigation, etc.)
@@ -278,7 +279,10 @@ defmodule Raxol.Core.Accessibility do
   def announce_value_change(component_id, old_value, new_value) do
     metadata = get_metadata(component_id) || %{}
     label = Map.get(metadata, :label, component_id)
-    announce("#{label} changed from #{old_value} to #{new_value}", priority: :medium)
+
+    announce("#{label} changed from #{old_value} to #{new_value}",
+      priority: :medium
+    )
   end
 
   @doc """
@@ -287,12 +291,12 @@ defmodule Raxol.Core.Accessibility do
   def any_feature_active? do
     ensure_started()
     prefs = Server.get_preferences()
-    
-    prefs.high_contrast || 
-    prefs.reduced_motion || 
-    prefs.large_text || 
-    prefs.screen_reader || 
-    prefs.keyboard_focus
+
+    prefs.high_contrast ||
+      prefs.reduced_motion ||
+      prefs.large_text ||
+      prefs.screen_reader ||
+      prefs.keyboard_focus
   end
 
   @doc """

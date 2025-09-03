@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Configuration do
-  
   @moduledoc """
   Configuration management for the terminal emulator.
   """

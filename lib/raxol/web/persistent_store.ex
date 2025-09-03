@@ -469,7 +469,7 @@ defmodule Raxol.Web.PersistentStore do
         else
           :ets
         end
-      
+
       tier ->
         tier
     end
@@ -740,9 +740,12 @@ defmodule Raxol.Web.PersistentStore do
   defp count_database_sessions do
     if database_available?() do
       # Simple count - in practice might be cached
-      ErrorHandling.safe_call_with_default(fn ->
-        Repo.aggregate(Raxol.Web.Session.Session, :count, :id)
-      end, 0)
+      ErrorHandling.safe_call_with_default(
+        fn ->
+          Repo.aggregate(Raxol.Web.Session.Session, :count, :id)
+        end,
+        0
+      )
     else
       0
     end

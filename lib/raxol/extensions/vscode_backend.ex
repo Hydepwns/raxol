@@ -144,8 +144,11 @@ defmodule Raxol.Extensions.VSCodeBackend do
            |> Enum.map(&analyze_component_file/1)
            |> Enum.filter(& &1)
          end) do
-      {:ok, components} -> {:ok, components}
-      {:error, error} -> {:error, "Failed to list components: #{inspect(error)}"}
+      {:ok, components} ->
+        {:ok, components}
+
+      {:error, error} ->
+        {:error, "Failed to list components: #{inspect(error)}"}
     end
   end
 
@@ -358,9 +361,11 @@ defmodule Raxol.Extensions.VSCodeBackend do
 
   defp determine_component_type(ast) do
     content = Macro.to_string(ast)
-    
-    case {String.contains?(content, "GenServer"), String.contains?(content, "@behaviour"),
-          String.contains?(content, "Supervisor"), String.contains?(content, "Application")} do
+
+    case {String.contains?(content, "GenServer"),
+          String.contains?(content, "@behaviour"),
+          String.contains?(content, "Supervisor"),
+          String.contains?(content, "Application")} do
       {true, _, _, _} -> :genserver
       {false, true, _, _} -> :behaviour
       {false, false, true, _} -> :supervisor

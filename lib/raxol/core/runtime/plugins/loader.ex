@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Runtime.Plugins.Loader do
-  
   @moduledoc """
   Manages plugin loading operations.
   """
@@ -230,18 +229,18 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   """
   def behaviour_implemented?(module, behaviour) do
     case ErrorHandling.safe_call(fn ->
-      # Check if the module has the behaviour attribute
-      module_info = module.module_info(:attributes)
-      behaviours = Keyword.get_values(module_info, :behaviour)
+           # Check if the module has the behaviour attribute
+           module_info = module.module_info(:attributes)
+           behaviours = Keyword.get_values(module_info, :behaviour)
 
-      if behaviour in behaviours do
-        true
-      else
-        # Fallback: check if the module has the required callbacks
-        # This is a simplified check - in a real implementation you'd check all callbacks
-        function_exported?(module, :plugin_info, 0)
-      end
-    end) do
+           if behaviour in behaviours do
+             true
+           else
+             # Fallback: check if the module has the required callbacks
+             # This is a simplified check - in a real implementation you'd check all callbacks
+             function_exported?(module, :plugin_info, 0)
+           end
+         end) do
       {:ok, result} -> result
       {:error, _} -> false
     end
@@ -264,14 +263,14 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
       false ->
         # Assume it's a module name
         case ErrorHandling.safe_call(fn ->
-          module = String.to_existing_atom(id)
+               module = String.to_existing_atom(id)
 
-          if Code.ensure_loaded(module) == {:module, module} do
-            {:ok, module}
-          else
-            {:error, :module_not_found}
-          end
-        end) do
+               if Code.ensure_loaded(module) == {:module, module} do
+                 {:ok, module}
+               else
+                 {:error, :module_not_found}
+               end
+             end) do
           {:ok, result} -> result
           {:error, _} -> {:error, :module_not_found}
         end

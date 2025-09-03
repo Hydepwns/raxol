@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   """
 
   require Raxol.Core.Runtime.Log
-  
+
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Modes.Types.ModeTypes
 

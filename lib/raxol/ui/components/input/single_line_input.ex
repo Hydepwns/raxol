@@ -122,38 +122,42 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   @impl Raxol.UI.Components.Base.Component
   # Correct arity
   def render(state, %{} = _props) do
-    display_text = case {state.value == "", state.focused} do
-      {true, false} -> state.placeholder
-      _ -> state.value
-    end
+    display_text =
+      case {state.value == "", state.focused} do
+        {true, false} -> state.placeholder
+        _ -> state.value
+      end
 
     # Placeholder color handling
-    text_color = case {state.value == "", state.focused} do
-      {true, false} -> :gray
-      _ -> :white
-    end
+    text_color =
+      case {state.value == "", state.focused} do
+        {true, false} -> :gray
+        _ -> :white
+      end
 
     # Render with cursor if focused
-    rendered_content = case state.focused do
-      true ->
-        before = String.slice(display_text, 0, state.cursor_pos)
+    rendered_content =
+      case state.focused do
+        true ->
+          before = String.slice(display_text, 0, state.cursor_pos)
 
-        after_cursor =
-          String.slice(
-            display_text,
-            state.cursor_pos,
-            String.length(display_text)
-          )
+          after_cursor =
+            String.slice(
+              display_text,
+              state.cursor_pos,
+              String.length(display_text)
+            )
 
-        # Use simple characters, assume fixed width font
-        [
-          Raxol.View.Elements.label(content: before),
-          Raxol.View.Elements.label(content: "|"),
-          Raxol.View.Elements.label(content: after_cursor)
-        ]
-      false ->
-        Raxol.View.Elements.label(content: display_text)
-    end
+          # Use simple characters, assume fixed width font
+          [
+            Raxol.View.Elements.label(content: before),
+            Raxol.View.Elements.label(content: "|"),
+            Raxol.View.Elements.label(content: after_cursor)
+          ]
+
+        false ->
+          Raxol.View.Elements.label(content: display_text)
+      end
 
     dsl_result =
       Raxol.View.Elements.box id: state.id,
@@ -170,6 +174,7 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
 
   defp handle_key_event(key_data, state) do
     msg = map_key_to_message(key_data)
+
     case msg do
       nil -> {state, []}
       message -> update(message, state)
@@ -201,10 +206,13 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
 
     new_cursor_pos = state.cursor_pos + 1
     new_state = %{state | value: new_value, cursor_pos: new_cursor_pos}
-    commands = case state.on_change do
-      nil -> []
-      callback -> [{callback, new_value}]
-    end
+
+    commands =
+      case state.on_change do
+        nil -> []
+        callback -> [{callback, new_value}]
+      end
+
     {new_state, commands}
   end
 
@@ -230,12 +238,14 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
         new_cursor_pos = state.cursor_pos - 1
         new_state = %{state | value: new_value, cursor_pos: new_cursor_pos}
 
-        commands = case state.on_change do
-          nil -> []
-          callback -> [{callback, new_value}]
-        end
+        commands =
+          case state.on_change do
+            nil -> []
+            callback -> [{callback, new_value}]
+          end
 
         {new_state, commands}
+
       false ->
         {state, []}
     end
@@ -250,22 +260,25 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
 
         new_state = %{state | value: new_value}
 
-        commands = case state.on_change do
-          nil -> []
-          callback -> [{callback, new_value}]
-        end
+        commands =
+          case state.on_change do
+            nil -> []
+            callback -> [{callback, new_value}]
+          end
 
         {new_state, commands}
+
       false ->
         {state, []}
     end
   end
 
   defp submit(state) do
-    commands = case state.on_submit do
-      nil -> []
-      callback -> [{callback, state.value}]
-    end
+    commands =
+      case state.on_submit do
+        nil -> []
+        callback -> [{callback, state.value}]
+      end
 
     {state, commands}
   end

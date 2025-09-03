@@ -3,7 +3,6 @@ defmodule Raxol.UI.Components.Input.TextWrapping do
   Utility functions for text wrapping.
   """
 
-  
   @doc """
   Wraps a single line of text by character count using recursion.
 
@@ -44,7 +43,7 @@ defmodule Raxol.UI.Components.Input.TextWrapping do
 
   # Private helper for wrap_line_by_word
   defp do_wrap_words([], _width, lines, ""), do: Enum.reverse(lines)
-  
+
   defp do_wrap_words([], _width, lines, current_line) do
     Enum.reverse([String.trim(current_line) | lines])
   end
@@ -111,6 +110,7 @@ defmodule Raxol.UI.Components.Input.TextWrapping do
   end
 
   defp finalize_current_line("", lines), do: lines
+
   defp finalize_current_line(current_line, lines) do
     [String.trim(current_line) | lines]
   end

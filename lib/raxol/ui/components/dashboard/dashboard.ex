@@ -11,7 +11,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
   alias Raxol.View.Elements, as: UI
   # Add alias
   alias Raxol.UI.Components.Dashboard.LayoutPersistence
-  
+
   # --- Model ---
   defmodule Model do
     @moduledoc """

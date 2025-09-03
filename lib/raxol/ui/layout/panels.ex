@@ -9,7 +9,7 @@ defmodule Raxol.UI.Layout.Panels do
   * Panel-specific spacing and constraints
   """
 
-    # All Kernel functions are now available
+  # All Kernel functions are now available
 
   alias Raxol.UI.Layout.Engine
   require Raxol.Core.Runtime.Log

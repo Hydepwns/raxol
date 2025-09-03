@@ -4,7 +4,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
   Provides row and column layouts with various alignment and justification options.
   """
 
-  
   @doc """
   Creates a row layout container that arranges its children horizontally.
 

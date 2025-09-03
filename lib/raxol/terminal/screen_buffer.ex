@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   """
 
   @behaviour Raxol.Terminal.ScreenBufferBehaviour
-  
+
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 

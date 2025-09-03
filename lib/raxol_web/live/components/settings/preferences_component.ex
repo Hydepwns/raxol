@@ -86,31 +86,33 @@ defmodule RaxolWeb.Settings.PreferencesComponent do
 
   defp sanitize_preferences_params(params) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      font_size = String.to_integer(params["font_size"])
-      scrollback_size = String.to_integer(params["scrollback_size"])
+           font_size = String.to_integer(params["font_size"])
+           scrollback_size = String.to_integer(params["scrollback_size"])
 
-      with :ok <- validate_font_size(font_size),
-           :ok <- validate_scrollback_size(scrollback_size) do
-        {:ok,
-         %{
-           "font_size" => font_size,
-           "font_family" => String.trim(params["font_family"]),
-           "scrollback_size" => scrollback_size
-         }}
-      end
-    end) do
+           with :ok <- validate_font_size(font_size),
+                :ok <- validate_scrollback_size(scrollback_size) do
+             {:ok,
+              %{
+                "font_size" => font_size,
+                "font_family" => String.trim(params["font_family"]),
+                "scrollback_size" => scrollback_size
+              }}
+           end
+         end) do
       {:ok, result} -> result
       {:error, _reason} -> {:error, "Invalid numeric values"}
     end
   end
-  
+
   defp validate_font_size(size) when size < 8 or size > 24 do
     {:error, "Font size must be between 8 and 24"}
   end
+
   defp validate_font_size(_size), do: :ok
-  
+
   defp validate_scrollback_size(size) when size < 100 or size > 10_000 do
     {:error, "Scrollback size must be between 100 and 10_000"}
   end
+
   defp validate_scrollback_size(_size), do: :ok
 end

@@ -194,8 +194,8 @@ defmodule Raxol.Core do
           {:ok, map()} | {:error, term()}
   def get_application_status(pid_or_name) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-      GenServer.call(pid_or_name, :get_status, 5000)
-    end) do
+           GenServer.call(pid_or_name, :get_status, 5000)
+         end) do
       {:ok, {:ok, status}} -> {:ok, status}
       {:ok, {:error, reason}} -> {:error, reason}
       {:error, _} -> {:error, :not_found}

@@ -186,7 +186,7 @@ defmodule Raxol.UI.Components.Button do
   defp apply_disabled_style(style, false), do: style
 
   defp get_button_content(%{icon: nil, label: label}), do: label
-  
+
   defp get_button_content(%{icon: icon, label: label}) do
     # Assuming icon is an atom representing the icon character/name
     # You might need a helper to convert icon atom to string/char

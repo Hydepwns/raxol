@@ -321,9 +321,9 @@ defmodule Raxol.Playground.PropertyEditor do
 
   defp parse_bracketed_list(trimmed) do
     case ErrorHandling.safe_call(fn ->
-      {result, _} = Code.eval_string(trimmed)
-      validate_list_result(result)
-    end) do
+           {result, _} = Code.eval_string(trimmed)
+           validate_list_result(result)
+         end) do
       {:ok, result} -> result
       {:error, _} -> parse_simple_list(trimmed)
     end
@@ -373,9 +373,9 @@ defmodule Raxol.Playground.PropertyEditor do
 
   defp eval_map_string(trimmed) do
     case ErrorHandling.safe_call(fn ->
-      {result, _} = Code.eval_string(trimmed)
-      validate_map_result(result)
-    end) do
+           {result, _} = Code.eval_string(trimmed)
+           validate_map_result(result)
+         end) do
       {:ok, result} -> result
       {:error, _} -> {:error, "Invalid map syntax"}
     end

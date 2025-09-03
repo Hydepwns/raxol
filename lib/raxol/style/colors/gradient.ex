@@ -34,7 +34,6 @@ defmodule Raxol.Style.Colors.Gradient do
   ```
   """
 
-  
   defstruct [
     # List of color stops
     :colors,

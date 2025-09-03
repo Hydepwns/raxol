@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.MemoryManager do
   """
 
   use GenServer
-  
+
   @type t :: %__MODULE__{
           max_memory: non_neg_integer(),
           current_memory: non_neg_integer(),

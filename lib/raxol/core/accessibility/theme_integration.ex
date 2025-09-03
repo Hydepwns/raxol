@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Accessibility.ThemeIntegration do
-  
   @moduledoc """
   Manages the integration between accessibility settings and the active theme.
 

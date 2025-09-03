@@ -6,7 +6,6 @@ defmodule Raxol.Terminal.HistoryBuffer do
 
   alias Raxol.Core.ErrorHandling
 
-  
   @type t :: %__MODULE__{
           commands: list(String.t()),
           position: integer(),
@@ -148,8 +147,8 @@ defmodule Raxol.Terminal.HistoryBuffer do
   @spec save_to_file(t(), String.t()) :: :ok | {:error, String.t()}
   def save_to_file(buffer, file_path) do
     case ErrorHandling.safe_call(fn ->
-      File.write(file_path, Enum.join(buffer.commands, "\n"))
-    end) do
+           File.write(file_path, Enum.join(buffer.commands, "\n"))
+         end) do
       {:ok, result} -> result
       {:error, reason} -> {:error, "Failed to save history: #{inspect(reason)}"}
     end
@@ -161,16 +160,16 @@ defmodule Raxol.Terminal.HistoryBuffer do
   @spec load_from_file(t(), String.t()) :: {:ok, t()} | {:error, String.t()}
   def load_from_file(buffer, file_path) do
     case ErrorHandling.safe_call(fn ->
-      case File.read(file_path) do
-        {:ok, content} ->
-          commands = String.split(content, "\n", trim: true)
-          commands = Enum.take(commands, buffer.max_size)
-          {:ok, %{buffer | commands: commands, position: 0}}
+           case File.read(file_path) do
+             {:ok, content} ->
+               commands = String.split(content, "\n", trim: true)
+               commands = Enum.take(commands, buffer.max_size)
+               {:ok, %{buffer | commands: commands, position: 0}}
 
-        {:error, reason} ->
-          {:error, "Failed to read file: #{inspect(reason)}"}
-      end
-    end) do
+             {:error, reason} ->
+               {:error, "Failed to read file: #{inspect(reason)}"}
+           end
+         end) do
       {:ok, result} -> result
       {:error, reason} -> {:error, "Failed to load history: #{inspect(reason)}"}
     end

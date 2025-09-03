@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.OutputManager do
   alias Raxol.Terminal.OutputBuffer
   alias Raxol.Core.ErrorHandling
   require Raxol.Core.Runtime.Log
-  
+
   @control_char_map %{
     "\x00" => "^@",
     "\x01" => "^A",

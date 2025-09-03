@@ -3,7 +3,6 @@ defmodule Raxol.Style do
   Defines style properties for terminal UI elements.
   """
 
-  
   @type t :: %__MODULE__{
           layout: Raxol.Style.Layout.t(),
           border: Raxol.Style.Borders.t(),

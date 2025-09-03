@@ -206,16 +206,29 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
   # Maps key and modifier combinations to update messages
   defp map_key_to_message(key, modifiers) do
     case categorize_key_combination(key, modifiers) do
-      :basic_input -> handle_basic_input(key, modifiers)
-      :basic_navigation -> handle_basic_navigation(key, modifiers)
-      :ctrl_navigation -> handle_ctrl_navigation(key, modifiers)
-      :shift_selection -> handle_shift_selection(key, modifiers)
-      :ctrl_shift_selection -> handle_ctrl_shift_selection(key, modifiers)
-      :special_ctrl_command -> handle_special_ctrl_command(key, modifiers)
+      :basic_input ->
+        handle_basic_input(key, modifiers)
+
+      :basic_navigation ->
+        handle_basic_navigation(key, modifiers)
+
+      :ctrl_navigation ->
+        handle_ctrl_navigation(key, modifiers)
+
+      :shift_selection ->
+        handle_shift_selection(key, modifiers)
+
+      :ctrl_shift_selection ->
+        handle_ctrl_shift_selection(key, modifiers)
+
+      :special_ctrl_command ->
+        handle_special_ctrl_command(key, modifiers)
+
       :unhandled ->
         Raxol.Core.Runtime.Log.debug(
           "Unhandled key combination: #{inspect(key)} with modifiers #{inspect(modifiers)}"
         )
+
         nil
     end
   end

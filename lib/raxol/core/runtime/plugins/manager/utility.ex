@@ -116,9 +116,11 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Utility do
           {:ok, term()} | {:error, term()}
   def call_plugin_hook(plugin_name, hook_name, args, plugin_state) do
     case ErrorHandling.safe_call(fn ->
-      apply(plugin_state.module, hook_name, [plugin_state | args])
-    end) do
-      {:ok, result} -> {:ok, result}
+           apply(plugin_state.module, hook_name, [plugin_state | args])
+         end) do
+      {:ok, result} ->
+        {:ok, result}
+
       {:error, error} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Plugin hook #{hook_name} failed for #{plugin_name}",
@@ -126,6 +128,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Utility do
           nil,
           %{module: __MODULE__, plugin: plugin_name, hook: hook_name}
         )
+
         {:error, error}
     end
   end
@@ -153,22 +156,24 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Utility do
   @spec handle_event(state(), map()) :: {:ok, state()} | {:error, term()}
   def handle_event(state, event) do
     case ErrorHandling.safe_call(fn ->
-      updated_metadata = process_event_metadata(state.metadata, event)
-      updated_states = process_event_states(state.plugin_states, event)
+           updated_metadata = process_event_metadata(state.metadata, event)
+           updated_states = process_event_states(state.plugin_states, event)
 
-      updated_table =
-        process_event_commands(state.command_registry_table, event)
+           updated_table =
+             process_event_commands(state.command_registry_table, event)
 
-      updated_state = %{
-        state
-        | metadata: updated_metadata,
-          plugin_states: updated_states,
-          command_registry_table: updated_table
-      }
+           updated_state = %{
+             state
+             | metadata: updated_metadata,
+               plugin_states: updated_states,
+               command_registry_table: updated_table
+           }
 
-      {:ok, updated_state}
-    end) do
-      {:ok, result} -> result
+           {:ok, updated_state}
+         end) do
+      {:ok, result} ->
+        result
+
       {:error, error} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Failed to handle event in plugin manager",
@@ -176,6 +181,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Utility do
           nil,
           %{module: __MODULE__, event: event}
         )
+
         {:error, error}
     end
   end

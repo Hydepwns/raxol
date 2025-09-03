@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Cursor do
   Handles CSI cursor control sequences.
   """
 
-    alias Raxol.Terminal.Emulator.Struct, as: Emulator
+  alias Raxol.Terminal.Emulator.Struct, as: Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.BufferManager
 

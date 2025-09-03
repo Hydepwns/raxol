@@ -3,7 +3,6 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
   Function execution logic for edge computing.
   """
 
-  
   alias Raxol.Cloud.EdgeComputing.{Core, Queue}
   alias Raxol.Core.ErrorHandling
 
@@ -59,24 +58,34 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
 
     case {force_edge, force_cloud, state.mode, state.cloud_status} do
       # Check forced options first
-      {true, _, _, _} -> :edge
-      {_, true, _, _} -> :cloud
-      
+      {true, _, _, _} ->
+        :edge
+
+      {_, true, _, _} ->
+        :cloud
+
       # Check configured mode
-      {false, false, :edge_only, _} -> :edge
-      {false, false, :cloud_only, _} -> :cloud
-      
+      {false, false, :edge_only, _} ->
+        :edge
+
+      {false, false, :cloud_only, _} ->
+        :cloud
+
       # Hybrid mode logic
-      {false, false, :hybrid, cloud_status} when cloud_status != :connected -> :edge
-      {false, false, :hybrid, :connected} -> determine_hybrid_location(opts[:function_name])
-      
+      {false, false, :hybrid, cloud_status} when cloud_status != :connected ->
+        :edge
+
+      {false, false, :hybrid, :connected} ->
+        determine_hybrid_location(opts[:function_name])
+
       # Default fallback
-      _ -> :edge
+      _ ->
+        :edge
     end
   end
-  
+
   # Helper functions for pattern matching refactoring
-  
+
   defp determine_hybrid_location(function_name) do
     if prioritized_for_edge?(function_name), do: :edge, else: :hybrid
   end
@@ -97,13 +106,17 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
     task = Task.async(func)
 
     case ErrorHandling.safe_call(fn -> Task.await(task, timeout) end) do
-      {:ok, result} -> {:ok, result}
+      {:ok, result} ->
+        {:ok, result}
+
       {:error, {:exit, {:timeout, _}}} ->
         _ = Task.shutdown(task)
         {:error, :timeout}
+
       {:error, {kind, reason}} ->
         _ = Task.shutdown(task)
         {:error, {kind, reason}}
+
       {:error, reason} ->
         _ = Task.shutdown(task)
         {:error, reason}
@@ -124,7 +137,9 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
              _result = func.()
              :ok
            end) do
-        {:ok, result} -> {:ok, result}
+        {:ok, result} ->
+          {:ok, result}
+
         {:error, _} ->
           # In a real implementation, we would track attempts
           {:ok, :retry}

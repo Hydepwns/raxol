@@ -1,5 +1,4 @@
 defmodule Raxol.Docs.InteractiveTutorial.Validation do
-  
   @moduledoc """
   Handles validation of tutorial exercises and user input.
   """
@@ -19,9 +18,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
       {false, false} -> do_validate(step.exercise, solution)
     end
   end
-  
+
   # Helper functions for pattern matching refactoring
-  
+
   defp validate_with_custom_function(validation_fn, solution) do
     if validation_fn.(solution) do
       {:ok, "Solution is correct!"}
@@ -61,9 +60,14 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   """
   def validate_syntax(code) when is_binary(code) do
     case ErrorHandling.safe_call(fn -> Code.string_to_quoted!(code) end) do
-      {:ok, _} -> {:ok, "Code syntax is valid"}
-      {:error, %SyntaxError{description: description}} -> {:error, "Syntax error: #{description}"}
-      {:error, _} -> {:error, "Syntax error: Invalid code"}
+      {:ok, _} ->
+        {:ok, "Code syntax is valid"}
+
+      {:error, %SyntaxError{description: description}} ->
+        {:error, "Syntax error: #{description}"}
+
+      {:error, _} ->
+        {:error, "Syntax error: Invalid code"}
     end
   end
 
@@ -72,10 +76,17 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   """
   def validate_execution(code) when is_binary(code) do
     case ErrorHandling.safe_call(fn -> Code.eval_string(code) end) do
-      {:ok, {result, _}} -> {:ok, "Code executed successfully", result}
-      {:error, %RuntimeError{message: message}} -> {:error, "Runtime error: #{message}"}
-      {:error, %CompileError{description: description}} -> {:error, "Compilation error: #{description}"}
-      {:error, _} -> {:error, "Code execution failed"}
+      {:ok, {result, _}} ->
+        {:ok, "Code executed successfully", result}
+
+      {:error, %RuntimeError{message: message}} ->
+        {:error, "Runtime error: #{message}"}
+
+      {:error, %CompileError{description: description}} ->
+        {:error, "Compilation error: #{description}"}
+
+      {:error, _} ->
+        {:error, "Code execution failed"}
     end
   end
 

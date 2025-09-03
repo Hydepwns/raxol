@@ -6,7 +6,6 @@ defmodule Raxol.UI.Components.Base do
   including common validation, styling, and event handling patterns.
   """
 
-  
   @type state :: map()
 
   @doc """

@@ -345,7 +345,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
       {&metal_available?/0, :metal},
       {&vulkan_available?/0, :vulkan}
     ]
-    
+
     Enum.find_value(backends, :software, fn {check, backend} ->
       if check.(), do: backend, else: nil
     end)
@@ -406,14 +406,14 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   defp initialize_metal(config) do
     case ErrorHandling.safe_call(fn ->
-      # This would be actual Metal API calls through NIFs
-      # For now, we simulate the initialization
-      device = create_metal_device(config)
-      queue = create_metal_command_queue(device)
-      pipeline = create_metal_render_pipeline(device, config)
+           # This would be actual Metal API calls through NIFs
+           # For now, we simulate the initialization
+           device = create_metal_device(config)
+           queue = create_metal_command_queue(device)
+           pipeline = create_metal_render_pipeline(device, config)
 
-      {:ok, device, queue, pipeline}
-    end) do
+           {:ok, device, queue, pipeline}
+         end) do
       {:ok, result} -> result
       {:error, reason} -> {:error, reason}
     end
@@ -421,13 +421,13 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   defp initialize_vulkan(config) do
     case ErrorHandling.safe_call(fn ->
-      # This would be actual Vulkan API calls through NIFs
-      device = create_vulkan_device(config)
-      queue = create_vulkan_queue(device)
-      pipeline = create_vulkan_pipeline(device, config)
+           # This would be actual Vulkan API calls through NIFs
+           device = create_vulkan_device(config)
+           queue = create_vulkan_queue(device)
+           pipeline = create_vulkan_pipeline(device, config)
 
-      {:ok, device, queue, pipeline}
-    end) do
+           {:ok, device, queue, pipeline}
+         end) do
       {:ok, result} -> result
       {:error, reason} -> {:error, reason}
     end

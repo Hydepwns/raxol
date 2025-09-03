@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Config.Profiles do
-  
   @moduledoc """
   Terminal configuration profile management.
 
@@ -176,11 +175,13 @@ defmodule Raxol.Terminal.Config.Profiles do
     Path.join(@profiles_dir, "#{name}#{@profile_ext}")
   end
 
-  defp validate_profile_name(name) when is_binary(name) and byte_size(name) < 1 do
+  defp validate_profile_name(name)
+       when is_binary(name) and byte_size(name) < 1 do
     {:error, "Profile name can't be empty"}
   end
 
-  defp validate_profile_name(name) when is_binary(name) and byte_size(name) > 64 do
+  defp validate_profile_name(name)
+       when is_binary(name) and byte_size(name) > 64 do
     {:error, "Profile name too long (maximum 64 characters)"}
   end
 

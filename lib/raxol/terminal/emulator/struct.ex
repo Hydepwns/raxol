@@ -11,23 +11,28 @@ defmodule Raxol.Terminal.Emulator.Struct do
     cursor
   end
 
-  defp call_cursor_operation(cursor, {:move_to, col, row, width, height}) when is_map(cursor) do
+  defp call_cursor_operation(cursor, {:move_to, col, row, width, height})
+       when is_map(cursor) do
     Raxol.Terminal.Cursor.Manager.move_to(cursor, row, col, width, height)
   end
 
-  defp call_cursor_operation(cursor, {:move_up, lines, width, height}) when is_map(cursor) do
+  defp call_cursor_operation(cursor, {:move_up, lines, width, height})
+       when is_map(cursor) do
     Raxol.Terminal.Cursor.Manager.move_up(cursor, lines, width, height)
   end
 
-  defp call_cursor_operation(cursor, {:move_down, lines, width, height}) when is_map(cursor) do
+  defp call_cursor_operation(cursor, {:move_down, lines, width, height})
+       when is_map(cursor) do
     Raxol.Terminal.Cursor.Manager.move_down(cursor, lines, width, height)
   end
 
-  defp call_cursor_operation(cursor, {:move_right, cols, width, height}) when is_map(cursor) do
+  defp call_cursor_operation(cursor, {:move_right, cols, width, height})
+       when is_map(cursor) do
     Raxol.Terminal.Cursor.Manager.move_right(cursor, cols, width, height)
   end
 
-  defp call_cursor_operation(cursor, {:move_left, cols, width, height}) when is_map(cursor) do
+  defp call_cursor_operation(cursor, {:move_left, cols, width, height})
+       when is_map(cursor) do
     Raxol.Terminal.Cursor.Manager.move_left(cursor, cols, width, height)
   end
 
@@ -35,7 +40,8 @@ defmodule Raxol.Terminal.Emulator.Struct do
     Raxol.Terminal.Cursor.Manager.move_to_line_start(cursor)
   end
 
-  defp call_cursor_operation(cursor, {:move_to_column, column, width, height}) when is_map(cursor) do
+  defp call_cursor_operation(cursor, {:move_to_column, column, width, height})
+       when is_map(cursor) do
     Raxol.Terminal.Cursor.Manager.move_to_column(cursor, column, width, height)
   end
 
@@ -272,10 +278,11 @@ defmodule Raxol.Terminal.Emulator.Struct do
     row = max(0, min(row, emulator.height - 1))
     col = max(0, min(col, emulator.width - 1))
 
-    moved_cursor = call_cursor_operation(
-      emulator.cursor,
-      {:move_to, col, row, emulator.width, emulator.height}
-    )
+    moved_cursor =
+      call_cursor_operation(
+        emulator.cursor,
+        {:move_to, col, row, emulator.width, emulator.height}
+      )
 
     %{emulator | cursor: moved_cursor}
   end
@@ -285,10 +292,11 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec move_cursor_up(t(), integer(), integer(), integer()) :: t()
   def move_cursor_up(emulator, lines, _width, _height) do
-    moved_cursor = call_cursor_operation(
-      emulator.cursor,
-      {:move_up, lines, emulator.width, emulator.height}
-    )
+    moved_cursor =
+      call_cursor_operation(
+        emulator.cursor,
+        {:move_up, lines, emulator.width, emulator.height}
+      )
 
     %{emulator | cursor: moved_cursor}
   end
@@ -298,10 +306,11 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec move_cursor_down(t(), integer(), integer(), integer()) :: t()
   def move_cursor_down(emulator, lines, _width, _height) do
-    moved_cursor = call_cursor_operation(
-      emulator.cursor,
-      {:move_down, lines, emulator.width, emulator.height}
-    )
+    moved_cursor =
+      call_cursor_operation(
+        emulator.cursor,
+        {:move_down, lines, emulator.width, emulator.height}
+      )
 
     %{emulator | cursor: moved_cursor}
   end
@@ -311,10 +320,11 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec move_cursor_right(t(), integer(), integer(), integer()) :: t()
   def move_cursor_right(emulator, cols, _width, _height) do
-    moved_cursor = call_cursor_operation(
-      emulator.cursor,
-      {:move_right, cols, emulator.width, emulator.height}
-    )
+    moved_cursor =
+      call_cursor_operation(
+        emulator.cursor,
+        {:move_right, cols, emulator.width, emulator.height}
+      )
 
     %{emulator | cursor: moved_cursor}
   end
@@ -324,10 +334,11 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec move_cursor_left(t(), integer(), integer(), integer()) :: t()
   def move_cursor_left(emulator, cols, _width, _height) do
-    moved_cursor = call_cursor_operation(
-      emulator.cursor,
-      {:move_left, cols, emulator.width, emulator.height}
-    )
+    moved_cursor =
+      call_cursor_operation(
+        emulator.cursor,
+        {:move_left, cols, emulator.width, emulator.height}
+      )
 
     %{emulator | cursor: moved_cursor}
   end
@@ -337,10 +348,11 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec move_cursor_to_line_start(t()) :: t()
   def move_cursor_to_line_start(emulator) do
-    moved_cursor = call_cursor_operation(
-      emulator.cursor,
-      :move_to_line_start
-    )
+    moved_cursor =
+      call_cursor_operation(
+        emulator.cursor,
+        :move_to_line_start
+      )
 
     %{emulator | cursor: moved_cursor}
   end
@@ -350,10 +362,11 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec move_cursor_to_column(t(), integer(), integer(), integer()) :: t()
   def move_cursor_to_column(emulator, column, _width, _height) do
-    moved_cursor = call_cursor_operation(
-      emulator.cursor,
-      {:move_to_column, column, emulator.width, emulator.height}
-    )
+    moved_cursor =
+      call_cursor_operation(
+        emulator.cursor,
+        {:move_to_column, column, emulator.width, emulator.height}
+      )
 
     %{emulator | cursor: moved_cursor}
   end
@@ -363,10 +376,11 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec move_cursor_to(t(), {integer(), integer()}, integer(), integer()) :: t()
   def move_cursor_to(emulator, {row, col}, _width, _height) do
-    moved_cursor = call_cursor_operation(
-      emulator.cursor,
-      {:move_to, col, row, emulator.width, emulator.height}
-    )
+    moved_cursor =
+      call_cursor_operation(
+        emulator.cursor,
+        {:move_to, col, row, emulator.width, emulator.height}
+      )
 
     %{emulator | cursor: moved_cursor}
   end

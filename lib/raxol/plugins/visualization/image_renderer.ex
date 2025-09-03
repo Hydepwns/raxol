@@ -1,5 +1,4 @@
 defmodule Raxol.Plugins.Visualization.ImageRenderer do
-  
   @moduledoc """
   Handles rendering logic for image visualization within the VisualizationPlugin.
   Supports both sixel and kitty protocols for terminal image rendering.
@@ -33,17 +32,20 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
       []
     else
       case ErrorHandling.safe_call(fn ->
-        case protocol do
-          :sixel -> render_sixel(data, bounds, opts)
-          :kitty -> render_kitty(data, bounds, opts)
-          _ -> draw_placeholder(data, title, bounds)
-        end
-      end) do
-        {:ok, result} -> result
+             case protocol do
+               :sixel -> render_sixel(data, bounds, opts)
+               :kitty -> render_kitty(data, bounds, opts)
+               _ -> draw_placeholder(data, title, bounds)
+             end
+           end) do
+        {:ok, result} ->
+          result
+
         {:error, e} ->
           Raxol.Core.Runtime.Log.error(
             "[ImageRenderer] Error rendering image: #{inspect(e)}"
           )
+
           DrawingUtils.draw_box_with_text("[Render Error]", bounds)
       end
     end
@@ -133,8 +135,8 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   defp decode_image(data) do
     # Use Mogrify to decode image data
     case ErrorHandling.safe_call(fn ->
-      Mogrify.open(data)
-    end) do
+           Mogrify.open(data)
+         end) do
       {:ok, image} -> {:ok, image}
       {:error, e} -> {:error, Exception.message(e)}
     end
