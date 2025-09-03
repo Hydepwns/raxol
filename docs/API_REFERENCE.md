@@ -12,12 +12,151 @@ tags: [api, reference, documentation, framework]
 Complete API documentation for the Raxol terminal framework with examples.
 
 ## Table of Contents
+- [Error Handling (v1.1.0)](#error-handling-v110)
 - [Core Modules](#core-modules)
 - [Components](#components)
 - [Terminal Emulator](#terminal-emulator)
 - [Event System](#event-system)
 - [Plugin System](#plugin-system)
 - [Utilities](#utilities)
+
+---
+
+## Error Handling (v1.1.0)
+
+### Raxol.Core.ErrorHandling
+
+Functional error handling module with Result types and safe execution patterns.
+
+#### Core Functions
+
+```elixir
+# Safe function execution
+@spec safe_call((-> any())) :: {:ok, any()} | {:error, any()}
+def safe_call(fun)
+
+# Safe execution with fallback value
+@spec safe_call_with_default((-> any()), any()) :: any()
+def safe_call_with_default(fun, default)
+
+# Safe execution with logging
+@spec safe_call_with_logging((-> any()), String.t()) :: {:ok, any()} | {:error, any()}
+def safe_call_with_logging(fun, context)
+
+# Safe execution with detailed error info
+@spec safe_call_with_info((-> any())) :: {:ok, any()} | {:error, {atom(), any(), list()}}
+def safe_call_with_info(fun)
+```
+
+#### GenServer Operations
+
+```elixir
+# Safe GenServer calls with timeout handling
+@spec safe_genserver_call(GenServer.server(), any(), timeout()) :: {:ok, any()} | {:error, any()}
+def safe_genserver_call(server, message, timeout \\ 5000)
+```
+
+#### Module Operations
+
+```elixir
+# Safe module function calls
+@spec safe_apply(module(), atom(), list()) :: {:ok, any()} | {:error, any()}
+def safe_apply(module, function, args)
+
+# Safe optional callback execution  
+@spec safe_callback(module(), atom(), list()) :: {:ok, any()} | {:error, any()}
+def safe_callback(module, function, args)
+```
+
+#### Binary Operations
+
+```elixir
+# Safe serialization/deserialization
+@spec safe_serialize(term()) :: {:ok, binary()} | {:error, any()}
+def safe_serialize(term)
+
+@spec safe_deserialize(binary()) :: {:ok, term()} | {:error, any()}  
+def safe_deserialize(binary)
+
+# Safe file operations
+@spec safe_read_term(Path.t()) :: {:ok, term()} | {:error, any()}
+def safe_read_term(path)
+
+@spec safe_write_term(Path.t(), term()) :: {:ok, :ok} | {:error, any()}
+def safe_write_term(path, term)
+```
+
+#### Pipeline Helpers
+
+```elixir
+# Result type transformations
+@spec map(result(a), (a -> b)) :: result(b)
+def map({:ok, value}, fun)
+
+@spec flat_map(result(a), (a -> result(b))) :: result(b)
+def flat_map({:ok, value}, fun)
+
+# Result unwrapping
+@spec unwrap_or(result(a), a) :: a
+def unwrap_or(result, default)
+
+@spec unwrap_or_else(result(a), (-> a)) :: a
+def unwrap_or_else(result, fun)
+```
+
+#### Batch Operations
+
+```elixir
+# Execute multiple operations
+@spec safe_batch([(-> any())]) :: [result(any())]
+def safe_batch(functions)
+
+# Execute in sequence, stop on first error
+@spec safe_sequence([(-> any())]) :: {:ok, [any()]} | {:error, any()}
+def safe_sequence(functions)
+```
+
+#### Resource Management
+
+```elixir
+# Cleanup after operation
+@spec with_cleanup((-> result(a)), (a -> any())) :: result(a)
+def with_cleanup(main_fun, cleanup_fun)
+
+# Always execute cleanup
+@spec ensure_cleanup((-> any()), (-> any())) :: result(any())
+def ensure_cleanup(main_fun, cleanup_fun)
+```
+
+#### Usage Examples
+
+```elixir
+alias Raxol.Core.ErrorHandling
+
+# Basic error handling
+case ErrorHandling.safe_call(fn -> risky_operation() end) do
+  {:ok, result} -> handle_success(result)
+  {:error, reason} -> handle_error(reason)
+end
+
+# Pipeline with error propagation
+def process_data(input) do
+  with {:ok, validated} <- ErrorHandling.safe_call(fn -> validate(input) end),
+       {:ok, transformed} <- ErrorHandling.safe_call(fn -> transform(validated) end),
+       {:ok, saved} <- ErrorHandling.safe_call(fn -> save(transformed) end) do
+    {:ok, saved}
+  end
+end
+
+# Safe GenServer interaction
+def update_state(server, data) do
+  case ErrorHandling.safe_genserver_call(server, {:update, data}) do
+    {:ok, new_state} -> {:ok, new_state}
+    {:error, :not_available} -> {:error, "Server not available"}
+    {:error, :timeout} -> {:error, "Request timed out"}
+  end
+end
+```
 
 ---
 
