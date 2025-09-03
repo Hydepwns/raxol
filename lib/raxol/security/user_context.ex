@@ -115,17 +115,27 @@ defmodule Raxol.Security.UserContext do
   """
   def with_user(user_id, fun) do
     ensure_server_started()
-    previous_user = Server.get_current_user()
     
-    try do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      previous_user = Server.get_current_user()
       Server.set_current_user(user_id)
-      fun.()
-    after
+      
+      result = fun.()
+      
+      # Restore previous user context
       if previous_user == "system" do
         Server.clear_current_user()
       else
         Server.set_current_user(previous_user)
       end
+      
+      result
+    end) do
+      {:ok, result} -> result
+      {:error, reason} -> 
+        # Attempt to clear current user on error
+        Server.clear_current_user()
+        {:error, reason}
     end
   end
 end

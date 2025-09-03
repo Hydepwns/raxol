@@ -16,6 +16,7 @@ defmodule Raxol.UI.State.Streams do
   """
 
   alias Raxol.UI.State.Store, as: Store
+  alias Raxol.Core.ErrorHandling
 
   require Logger
 
@@ -306,27 +307,35 @@ defmodule Raxol.UI.State.Streams do
   end
 
   defp safe_get_store_state(path, store) do
-    case Process.whereis(store) do
-      nil -> {:error, :store_not_found}
-      _pid ->
-        {:ok, Store.get_state(path, store)}
+    ErrorHandling.safe_call(fn ->
+      case Process.whereis(store) do
+        nil -> {:error, :store_not_found}
+        _pid ->
+          {:ok, Store.get_state(path, store)}
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, reason}
     end
-  rescue
-    error -> {:error, error}
   end
 
   defp subscribe_to_store_safely(path, observer, store) do
-    Store.subscribe(
-      path,
-      fn new_value ->
-        safe_apply(observer.next, new_value)
-      end,
-      store
-    )
-  rescue
-    error ->
-      Logger.error("Store subscription failed: #{inspect(error)}")
-      fn -> :ok end
+    ErrorHandling.safe_call(fn ->
+      Store.subscribe(
+        path,
+        fn new_value ->
+          safe_apply(observer.next, new_value)
+        end,
+        store
+      )
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, error} ->
+        Logger.error("Store subscription failed: #{inspect(error)}")
+        fn -> :ok end
+    end
   end
 
   @doc """
@@ -694,27 +703,33 @@ defmodule Raxol.UI.State.Streams do
   
   @doc false
   def safe_apply(fun, arg \\ nil) when is_function(fun) do
-    arity = :erlang.fun_info(fun, :arity) |> elem(1)
-    
-    case arity do
-      0 -> {:ok, fun.()}
-      1 -> {:ok, fun.(arg)}
-      _ -> {:error, :invalid_function_arity}
+    ErrorHandling.safe_call(fn ->
+      arity = :erlang.fun_info(fun, :arity) |> elem(1)
+      
+      case arity do
+        0 -> {:ok, fun.()}
+        1 -> {:ok, fun.(arg)}
+        _ -> {:error, :invalid_function_arity}
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, thrown}} -> {:error, {:throw, thrown}}
+      {:error, error} -> {:error, error}
     end
-  rescue
-    error -> {:error, error}
-  catch
-    :exit, reason -> {:error, {:exit, reason}}
-    thrown -> {:error, {:throw, thrown}}
   end
 
   @doc false
   def safe_apply_2(fun, arg1, arg2) when is_function(fun, 2) do
-    {:ok, fun.(arg1, arg2)}
-  rescue
-    error -> {:error, error}
-  catch
-    :exit, reason -> {:error, {:exit, reason}}
-    thrown -> {:error, {:throw, thrown}}
+    ErrorHandling.safe_call(fn ->
+      fun.(arg1, arg2)
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, thrown}} -> {:error, {:throw, thrown}}
+      {:error, error} -> {:error, error}
+    end
   end
 end

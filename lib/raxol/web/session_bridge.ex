@@ -39,6 +39,7 @@ defmodule Raxol.Web.SessionBridge do
   use GenServer
   alias Phoenix.PubSub
   alias Raxol.Web.{PersistentStore, StateSynchronizer}
+  alias Raxol.Core.ErrorHandling
 
   require Logger
 
@@ -320,7 +321,7 @@ defmodule Raxol.Web.SessionBridge do
   defp capture_terminal_state(terminal_pid) do
     # In a real implementation, this would communicate with the terminal session
     # to extract current state (buffer content, cursor position, history, etc.)
-    try do
+    case ErrorHandling.safe_call(fn ->
       case GenServer.call(terminal_pid, :get_full_state, 5000) do
         {:ok, terminal_state} ->
           %{
@@ -339,8 +340,9 @@ defmodule Raxol.Web.SessionBridge do
           Logger.warning("Failed to capture terminal state: #{inspect(reason)}")
           default_session_state()
       end
-    rescue
-      error ->
+    end) do
+      {:ok, result} -> result
+      {:error, error} ->
         Logger.warning("Error capturing terminal state: #{inspect(error)}")
         default_session_state()
     end
@@ -348,11 +350,11 @@ defmodule Raxol.Web.SessionBridge do
 
   defp apply_state_to_terminal(terminal_pid, session_state) do
     # In a real implementation, this would restore the terminal state
-    try do
+    case ErrorHandling.safe_call(fn ->
       GenServer.call(terminal_pid, {:restore_state, session_state}, 5000)
-      :ok
-    rescue
-      error ->
+    end) do
+      {:ok, _} -> :ok
+      {:error, error} ->
         Logger.error("Failed to restore terminal state: #{inspect(error)}")
         {:error, :restore_failed}
     end

@@ -68,6 +68,7 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   require Logger
 
   alias Raxol.UI.Events.ScrollTracker
+  alias Raxol.Core.ErrorHandling
   # Performance alias will be added when memory management is needed
   alias Raxol.Core.Accessibility, as: Accessibility
 
@@ -1042,18 +1043,16 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   """
   def create_ecto_loader(repo, queryable, _opts \\ []) do
     fn start_index, count ->
-      try do
-        import Ecto.Query
+      case ErrorHandling.safe_call(fn ->
+             import Ecto.Query
 
-        items =
-          queryable
-          |> limit(^count)
-          |> offset(^start_index)
-          |> repo.all()
-
-        {:ok, items}
-      rescue
-        error -> {:error, error}
+             queryable
+             |> limit(^count)
+             |> offset(^start_index)
+             |> repo.all()
+           end) do
+        {:ok, items} -> {:ok, items}
+        {:error, error} -> {:error, error}
       end
     end
   end
@@ -1138,6 +1137,10 @@ defmodule Raxol.UI.Components.VirtualScrolling do
 
   defp apply_or_reset_filter(state, nil), do: reset_filter(state)
   defp apply_or_reset_filter(state, filter_fn), do: apply_filter(state, filter_fn)
+
+  # Missing function implementations
+  defp reset_filter(state), do: state
+  defp apply_filter(state, _filter_fn), do: state
 
   defp handle_search_matches([], _query, state), do: state
 

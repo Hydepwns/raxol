@@ -42,6 +42,7 @@ defmodule Raxol.UI.State.Context do
   """
 
   alias Raxol.UI.State.Store, as: Store
+  alias Raxol.Core.ErrorHandling
 
   # Context definition structure
   defmodule ContextDef do
@@ -186,21 +187,17 @@ defmodule Raxol.UI.State.Context do
     if context_def && render_fn do
       context_value = use_context(render_context, context_def.name)
 
-      try do
-        rendered_element = render_fn.(context_value)
-
-        # Process the rendered element
-        alias Raxol.UI.Layout.Engine
-        Engine.process_element(rendered_element, render_context, acc)
-      catch
-        kind, reason ->
-          require Logger
-
-          Logger.error(
-            "Error in context consumer render function: #{inspect(kind)}, #{inspect(reason)}"
-          )
-
-          acc
+      case ErrorHandling.safe_call_with_logging(
+        fn ->
+          rendered_element = render_fn.(context_value)
+          # Process the rendered element
+          alias Raxol.UI.Layout.Engine
+          Engine.process_element(rendered_element, render_context, acc)
+        end,
+        "Error in context consumer render function"
+      ) do
+        {:ok, result} -> result
+        {:error, _} -> acc
       end
     else
       acc
@@ -327,16 +324,10 @@ defmodule Raxol.UI.State.Context do
     subscribers = Store.get_state([:context_subscribers, context_name], [])
 
     Enum.each(subscribers, fn {_subscriber_id, callback_fn} ->
-      try do
-        callback_fn.(new_value)
-      catch
-        kind, reason ->
-          require Logger
-
-          Logger.error(
-            "Error in context subscriber callback: #{inspect(kind)}, #{inspect(reason)}"
-          )
-      end
+      ErrorHandling.safe_call_with_logging(
+        fn -> callback_fn.(new_value) end,
+        "Error in context subscriber callback"
+      )
     end)
   end
 

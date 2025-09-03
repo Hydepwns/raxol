@@ -301,61 +301,67 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp safe_serialize_style(%Raxol.Terminal.ANSI.TextFormatting.Core{} = style) do
-    {:ok, %{
-      bold: style.bold,
-      italic: style.italic,
-      underline: style.underline,
-      blink: style.blink,
-      reverse: style.reverse,
-      foreground: style.foreground,
-      background: style.background,
-      double_width: Map.get(style, :double_width, false),
-      double_height: Map.get(style, :double_height, false),
-      faint: Map.get(style, :faint, false),
-      conceal: Map.get(style, :conceal, false),
-      strikethrough: Map.get(style, :strikethrough, false),
-      fraktur: Map.get(style, :fraktur, false),
-      double_underline: Map.get(style, :double_underline, false),
-      framed: Map.get(style, :framed, false),
-      encircled: Map.get(style, :encircled, false),
-      overlined: Map.get(style, :overlined, false),
-      hyperlink: Map.get(style, :hyperlink)
-    }}
-  rescue
-    error ->
-      Raxol.Core.Runtime.Log.error(
-        "Style serialization exception: #{inspect(error)}"
-      )
-      {:error, {:style_serialization_exception, error}}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      {:ok, %{
+        bold: style.bold,
+        italic: style.italic,
+        underline: style.underline,
+        blink: style.blink,
+        reverse: style.reverse,
+        foreground: style.foreground,
+        background: style.background,
+        double_width: Map.get(style, :double_width, false),
+        double_height: Map.get(style, :double_height, false),
+        faint: Map.get(style, :faint, false),
+        conceal: Map.get(style, :conceal, false),
+        strikethrough: Map.get(style, :strikethrough, false),
+        fraktur: Map.get(style, :fraktur, false),
+        double_underline: Map.get(style, :double_underline, false),
+        framed: Map.get(style, :framed, false),
+        encircled: Map.get(style, :encircled, false),
+        overlined: Map.get(style, :overlined, false),
+        hyperlink: Map.get(style, :hyperlink)
+      }}
+    end) do
+      {:ok, result} -> result
+      {:error, {error, _stacktrace}} ->
+        Raxol.Core.Runtime.Log.error(
+          "Style serialization exception: #{inspect(error)}"
+        )
+        {:error, {:style_serialization_exception, error}}
+    end
   end
 
   defp safe_serialize_style(%Raxol.Terminal.ANSI.TextFormatting{} = style) do
-    {:ok, %{
-      bold: style.bold,
-      italic: style.italic,
-      underline: style.underline,
-      blink: style.blink,
-      reverse: style.reverse,
-      foreground: style.foreground,
-      background: style.background,
-      double_width: Map.get(style, :double_width, false),
-      double_height: Map.get(style, :double_height, false),
-      faint: Map.get(style, :faint, false),
-      conceal: Map.get(style, :conceal, false),
-      strikethrough: Map.get(style, :strikethrough, false),
-      fraktur: Map.get(style, :fraktur, false),
-      double_underline: Map.get(style, :double_underline, false),
-      framed: Map.get(style, :framed, false),
-      encircled: Map.get(style, :encircled, false),
-      overlined: Map.get(style, :overlined, false),
-      hyperlink: Map.get(style, :hyperlink)
-    }}
-  rescue
-    error ->
-      Raxol.Core.Runtime.Log.error(
-        "Style serialization exception: #{inspect(error)}"
-      )
-      {:error, {:style_serialization_exception, error}}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      {:ok, %{
+        bold: style.bold,
+        italic: style.italic,
+        underline: style.underline,
+        blink: style.blink,
+        reverse: style.reverse,
+        foreground: style.foreground,
+        background: style.background,
+        double_width: Map.get(style, :double_width, false),
+        double_height: Map.get(style, :double_height, false),
+        faint: Map.get(style, :faint, false),
+        conceal: Map.get(style, :conceal, false),
+        strikethrough: Map.get(style, :strikethrough, false),
+        fraktur: Map.get(style, :fraktur, false),
+        double_underline: Map.get(style, :double_underline, false),
+        framed: Map.get(style, :framed, false),
+        encircled: Map.get(style, :encircled, false),
+        overlined: Map.get(style, :overlined, false),
+        hyperlink: Map.get(style, :hyperlink)
+      }}
+    end) do
+      {:ok, result} -> result
+      {:error, {error, _stacktrace}} ->
+        Raxol.Core.Runtime.Log.error(
+          "Style serialization exception: #{inspect(error)}"
+        )
+        {:error, {:style_serialization_exception, error}}
+    end
   end
 
   defp safe_serialize_style(nil) do
@@ -603,34 +609,37 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp safe_deserialize_style(style_data) when is_map(style_data) do
-    style = %Raxol.Terminal.ANSI.TextFormatting.Core{
-      bold: Map.get(style_data, :bold, false),
-      italic: Map.get(style_data, :italic, false),
-      underline: Map.get(style_data, :underline, false),
-      blink: Map.get(style_data, :blink, false),
-      reverse: Map.get(style_data, :reverse, false),
-      foreground: Map.get(style_data, :foreground),
-      background: Map.get(style_data, :background),
-      double_width: Map.get(style_data, :double_width, false),
-      double_height: Map.get(style_data, :double_height, false),
-      faint: Map.get(style_data, :faint, false),
-      conceal: Map.get(style_data, :conceal, false),
-      strikethrough: Map.get(style_data, :strikethrough, false),
-      fraktur: Map.get(style_data, :fraktur, false),
-      double_underline: Map.get(style_data, :double_underline, false),
-      framed: Map.get(style_data, :framed, false),
-      encircled: Map.get(style_data, :encircled, false),
-      overlined: Map.get(style_data, :overlined, false),
-      hyperlink: Map.get(style_data, :hyperlink)
-    }
-    
-    {:ok, style}
-  rescue
-    error ->
-      Raxol.Core.Runtime.Log.warning(
-        "Style deserialization exception: #{inspect(error)}"
-      )
-      {:ok, Raxol.Terminal.ANSI.TextFormatting.Core.new()}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      style = %Raxol.Terminal.ANSI.TextFormatting.Core{
+        bold: Map.get(style_data, :bold, false),
+        italic: Map.get(style_data, :italic, false),
+        underline: Map.get(style_data, :underline, false),
+        blink: Map.get(style_data, :blink, false),
+        reverse: Map.get(style_data, :reverse, false),
+        foreground: Map.get(style_data, :foreground),
+        background: Map.get(style_data, :background),
+        double_width: Map.get(style_data, :double_width, false),
+        double_height: Map.get(style_data, :double_height, false),
+        faint: Map.get(style_data, :faint, false),
+        conceal: Map.get(style_data, :conceal, false),
+        strikethrough: Map.get(style_data, :strikethrough, false),
+        fraktur: Map.get(style_data, :fraktur, false),
+        double_underline: Map.get(style_data, :double_underline, false),
+        framed: Map.get(style_data, :framed, false),
+        encircled: Map.get(style_data, :encircled, false),
+        overlined: Map.get(style_data, :overlined, false),
+        hyperlink: Map.get(style_data, :hyperlink)
+      }
+      
+      {:ok, style}
+    end) do
+      {:ok, result} -> result
+      {:error, {error, _stacktrace}} ->
+        Raxol.Core.Runtime.Log.warning(
+          "Style deserialization exception: #{inspect(error)}"
+        )
+        {:ok, Raxol.Terminal.ANSI.TextFormatting.Core.new()}
+    end
   end
 
   defp safe_deserialize_style(nil) do

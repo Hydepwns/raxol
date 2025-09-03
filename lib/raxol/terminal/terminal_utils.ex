@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   """
 
   require Raxol.Core.Runtime.Log
+  alias Raxol.Core.ErrorHandling
   
   # Check if termbox2_nif is available at compile time
   @termbox2_available Code.ensure_loaded?(:termbox2_nif)
@@ -102,7 +103,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   @spec detect_with_io(atom()) ::
           {:ok, pos_integer(), pos_integer()} | {:error, term()}
   def detect_with_io(io_facade) do
-    try do
+    case ErrorHandling.safe_call(fn ->
       with {:ok, width} when is_integer(width) and width > 0 <-
              apply(io_facade, :columns, []),
            {:ok, height} when is_integer(height) and height > 0 <-
@@ -113,20 +114,19 @@ defmodule Raxol.Terminal.TerminalUtils do
           Raxol.Core.Runtime.Log.debug(
             "io.columns/rows error: #{inspect(reason)}"
           )
-
           {:error, reason}
 
         other ->
           Raxol.Core.Runtime.Log.debug(
             "io.columns/rows unexpected return: #{inspect(other)}"
           )
-
           {:error, :invalid_response}
       end
-    rescue
-      e ->
-        Raxol.Core.Runtime.Log.debug("Error in detect_with_io: #{inspect(e)}")
-        {:error, e}
+    end) do
+      {:ok, result} -> result
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.debug("Error in detect_with_io: #{inspect(reason)}")
+        {:error, reason}
     end
   end
 
@@ -163,7 +163,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   @spec detect_with_stty() ::
           {:ok, pos_integer(), pos_integer()} | {:error, term()}
   def detect_with_stty do
-    try do
+    case ErrorHandling.safe_call(fn ->
       case System.cmd("stty", ["size"]) do
         {output, 0} ->
           output = String.trim(output)
@@ -176,7 +176,6 @@ defmodule Raxol.Terminal.TerminalUtils do
               Raxol.Core.Runtime.Log.debug(
                 "Unexpected stty output format: #{inspect(output)}"
               )
-
               {:error, :invalid_format}
           end
 
@@ -184,13 +183,13 @@ defmodule Raxol.Terminal.TerminalUtils do
           Raxol.Core.Runtime.Log.debug(
             "stty exited with code #{code}: #{inspect(output)}"
           )
-
           {:error, {:exit_code, code}}
       end
-    rescue
-      e ->
-        Raxol.Core.Runtime.Log.debug("Error in detect_with_stty: #{inspect(e)}")
-        {:error, e}
+    end) do
+      {:ok, result} -> result
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.debug("Error in detect_with_stty: #{inspect(reason)}")
+        {:error, reason}
     end
   end
 

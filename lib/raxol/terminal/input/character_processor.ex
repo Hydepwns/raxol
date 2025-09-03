@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   alias Raxol.Terminal.ModeManager
 
   require Raxol.Core.Runtime.Log
+  alias Raxol.Core.ErrorHandling
 
   @doc """
   Processes a single character codepoint.
@@ -277,7 +278,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   end
 
   defp get_cursor_position_safe(cursor) do
-    try do
+    case ErrorHandling.safe_call(fn ->
       case cursor do
         cursor when is_pid(cursor) ->
           position = Raxol.Terminal.Cursor.Manager.get_position(cursor)
@@ -290,10 +291,9 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
           log_cursor_debug("unknown cursor type", cursor)
           {0, 0}
       end
-    rescue
-      _e ->
-        # ERROR: Failed to get cursor position: #{inspect(e)}
-        {0, 0}
+    end) do
+      {:ok, result} -> result
+      {:error, _} -> {0, 0}
     end
   end
 
@@ -317,7 +317,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   end
 
   defp write_character(emulator, char_codepoint, opts) do
-    try do
+    case ErrorHandling.safe_call(fn ->
       {translated_char, _new_charset_state} =
         CharacterSets.translate_char(char_codepoint, emulator.charset_state)
 
@@ -372,11 +372,12 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
         # First, let the emulator scroll, then write the character to the new line
         emulator
       end
-    rescue
-      exception ->
-        # ERROR in write_character/3: #{inspect(exception)}\n#{Exception.format(:error, exception, __STACKTRACE__)}
-
-        reraise(exception, __STACKTRACE__)
+    end) do
+      {:ok, result} -> result
+      {:error, exception} ->
+        # ERROR in write_character/3: #{inspect(exception)}
+        Raxol.Core.Runtime.Log.error("write_character failed: #{inspect(exception)}")
+        emulator
     end
   end
 

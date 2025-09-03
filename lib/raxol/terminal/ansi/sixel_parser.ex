@@ -344,7 +344,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   def consume_integer_params(input_binary) do
     case Regex.run(~r/^([0-9;]*)(.*)/s, input_binary) do
       [_full_match, param_section, rest_of_binary] when param_section != "" ->
-        try do
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
           params =
             param_section
             |> String.split(";", trim: false)
@@ -354,9 +354,10 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
             end)
 
           {:ok, params, rest_of_binary}
-        rescue
-          e in ArgumentError ->
-            {:error, {"Invalid integer parameter in '#{param_section}'", e},
+        end) do
+          {:ok, result} -> result
+          {:error, reason} ->
+            {:error, {"Invalid integer parameter in '#{param_section}'", reason},
              input_binary}
         end
 

@@ -12,6 +12,7 @@ defmodule Raxol.UI.State.Store do
   """
   
   alias Raxol.UI.State.Management.Server
+  alias Raxol.Core.ErrorHandling
   require Logger
   
   # Store state structure (for compatibility)
@@ -224,16 +225,18 @@ defmodule Raxol.UI.State.Store do
     # Get current value, apply function, then update
     current_value = get_state(path_list, store)
     
-    # Safely handle arithmetic operations
-    new_value = try do
-      fun.(current_value)
-    rescue
-      ArithmeticError ->
+    # Safely handle arithmetic operations using functional error handling
+    new_value = case ErrorHandling.safe_call(fn -> fun.(current_value) end) do
+      {:ok, result} -> result
+      {:error, %ArithmeticError{}} ->
         case current_value do
-          nil -> fun.(0)
-          n when is_number(n) -> fun.(n)
-          _ -> fun.(0)
+          nil -> ErrorHandling.safe_call_with_default(fn -> fun.(0) end, 0)
+          n when is_number(n) -> ErrorHandling.safe_call_with_default(fn -> fun.(n) end, n)
+          _ -> ErrorHandling.safe_call_with_default(fn -> fun.(0) end, 0)
         end
+      {:error, _} ->
+        # Fallback to original value on any other error
+        current_value
     end
     
     update_state(path_list, new_value, store)

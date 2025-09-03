@@ -4,6 +4,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
   """
 
   require Raxol.Core.Runtime.Log
+  alias Raxol.Core.ErrorHandling
   
   # User-specific config dir
   @layout_file Path.expand("~/.raxol/dashboard_layout.bin")
@@ -18,7 +19,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
   def save_layout(widgets) when is_list(widgets) do
     layout_file = @layout_file
 
-    try do
+    case ErrorHandling.safe_call(fn ->
       :ok = File.mkdir_p(Path.dirname(layout_file))
 
       layout_data =
@@ -33,24 +34,21 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
           Raxol.Core.Runtime.Log.info(
             "Dashboard layout saved to #{layout_file}"
           )
-
           :ok
 
         {:error, reason} ->
           Raxol.Core.Runtime.Log.error(
             "Failed to save dashboard layout to #{layout_file}: #{inspect(reason)}"
           )
-
           {:error, reason}
       end
-    rescue
-      e ->
+    end) do
+      {:ok, result} -> result
+      {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
-          "Failed to save dashboard layout to #{layout_file}: #{inspect(e)}"
+          "Failed to save dashboard layout to #{layout_file}: #{inspect(reason)}"
         )
-
-        # Consider wrapping the specific exception
-        {:error, {:exception, e}}
+        {:error, reason}
     end
   end
 
@@ -69,13 +67,14 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
   end
 
   defp load_existing_layout(layout_file) do
-    try do
+    case ErrorHandling.safe_call(fn ->
       case File.read(layout_file) do
         {:ok, binary_data} -> process_layout_data(binary_data, layout_file)
         {:error, reason} -> handle_read_error(layout_file, reason)
       end
-    rescue
-      e -> handle_deserialization_error(layout_file, e)
+    end) do
+      {:ok, result} -> result
+      {:error, reason} -> handle_deserialization_error(layout_file, reason)
     end
   end
 

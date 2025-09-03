@@ -48,17 +48,15 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
       start_time = System.monotonic_time(:microsecond)
 
       result =
-        try do
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
           case operation do
             {module, function, args} -> apply(module, function, args)
             fun when is_function(fun) -> fun.()
             _ -> {:error, :invalid_operation}
           end
-        rescue
-          error -> {:error, {:execution_error, error}}
-        catch
-          :exit, reason -> {:error, {:exit, reason}}
-          error -> {:error, {:catch, error}}
+        end) do
+          {:ok, result} -> result
+          {:error, {error, _stacktrace}} -> {:error, {:execution_error, error}}
         end
 
       end_time = System.monotonic_time(:microsecond)

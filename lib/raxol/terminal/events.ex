@@ -85,11 +85,12 @@ defmodule Raxol.Terminal.Events do
   def handle_cast({:trigger_click, position}, state) do
     # Call all registered click handlers
     Enum.each(state.click_handlers, fn {_ref, handler} ->
-      try do
+      case Raxol.Core.ErrorHandling.safe_call(fn ->
         handler.(position)
-      rescue
-        error ->
-          Logger.error("Click handler error: #{inspect(error)}")
+      end) do
+        {:ok, _result} -> :ok
+        {:error, reason} ->
+          Logger.error("Click handler error: #{inspect(reason)}")
       end
     end)
 

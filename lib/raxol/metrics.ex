@@ -103,13 +103,7 @@ defmodule Raxol.Metrics do
       nil -> 
         {:error, :not_available}
       _pid ->
-        try do
-          result = GenServer.call(__MODULE__, message)
-          {:ok, result}
-        catch
-          :exit, {:noproc, _} -> {:error, :not_available}
-          :exit, {:timeout, _} -> {:error, :timeout}
-        end
+        Raxol.Core.ErrorHandling.safe_genserver_call(__MODULE__, message)
     end
   end
 

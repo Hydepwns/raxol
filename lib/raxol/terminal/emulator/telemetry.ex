@@ -69,27 +69,28 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
       start_metadata
     )
     
-    try do
-      result = fun.()
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      fun.()
+    end) do
+      {:ok, result} ->
+        stop_metadata = Map.merge(start_metadata, %{
+          duration: System.monotonic_time() - start_metadata.start_time,
+          result: :ok
+        })
+        
+        :telemetry.execute(
+          event_prefix ++ [:stop],
+          %{duration: stop_metadata.duration},
+          stop_metadata
+        )
+        
+        result
       
-      stop_metadata = Map.merge(start_metadata, %{
-        duration: System.monotonic_time() - start_metadata.start_time,
-        result: :ok
-      })
-      
-      :telemetry.execute(
-        event_prefix ++ [:stop],
-        %{duration: stop_metadata.duration},
-        stop_metadata
-      )
-      
-      result
-    rescue
-      exception ->
+      {:error, {exception, stacktrace}} ->
         exception_metadata = Map.merge(start_metadata, %{
           duration: System.monotonic_time() - start_metadata.start_time,
           exception: exception,
-          stacktrace: __STACKTRACE__
+          stacktrace: stacktrace
         })
         
         :telemetry.execute(
@@ -98,7 +99,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
           exception_metadata
         )
         
-        reraise exception, __STACKTRACE__
+        reraise exception, stacktrace
     end
   end
   

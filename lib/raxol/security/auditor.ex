@@ -407,10 +407,13 @@ defmodule Raxol.Security.Auditor do
   defp safe_param?(_), do: false
 
   defp get_rate_count(key) do
-    # Mock implementation - would use ETS or Redis
-    :ets.lookup_element(:rate_limits, key, 2)
-  rescue
-    ArgumentError -> 0
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      # Mock implementation - would use ETS or Redis
+      :ets.lookup_element(:rate_limits, key, 2)
+    end) do
+      {:ok, count} -> count
+      {:error, _reason} -> 0
+    end
   end
 
   defp increment_rate_count(key, window) do

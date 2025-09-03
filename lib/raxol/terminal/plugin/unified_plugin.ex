@@ -9,6 +9,8 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
 
   use GenServer
   require Logger
+  
+  alias Raxol.Core.ErrorHandling
 
   # Types
   @type plugin_id :: String.t()
@@ -399,12 +401,16 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp safe_json_decode(content) do
-    case Jason.decode(content, keys: :atoms) do
-      {:ok, decoded} -> {:ok, decoded}
-      {:error, _} -> {:error, :invalid_json}
+    ErrorHandling.safe_call(fn ->
+      case Jason.decode(content, keys: :atoms) do
+        {:ok, decoded} -> {:ok, decoded}
+        {:error, _} -> {:error, :invalid_json}
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, _} -> {:error, :json_decode_failed}
     end
-  rescue
-    _ -> {:error, :json_decode_failed}
   end
 
   defp load_theme_module(path) do
@@ -446,14 +452,18 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   defp safe_compile_quoted(ast) do
     compiled = Code.compile_quoted(ast)
     
-    case compiled do
-      [{module, _bin} | _] -> {:ok, module}
-      _ -> {:error, :compilation_failed}
+    ErrorHandling.safe_call(fn ->
+      case compiled do
+        [{module, _bin} | _] -> {:ok, module}
+        _ -> {:error, :compilation_failed}
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, error} ->
+        Logger.error("Compilation failed: #{inspect(error)}")
+        {:error, :compilation_failed}
     end
-  rescue
-    error ->
-      Logger.error("Compilation failed: #{inspect(error)}")
-      {:error, :compilation_failed}
   end
 
   defp cleanup_theme_plugin(plugin_state) do
@@ -683,14 +693,16 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
-  # Safe function application helper
+  # Safe function application helper using functional error handling
   defp safe_apply(module, function, args) do
-    {:ok, apply(module, function, args)}
-  rescue
-    error ->
-      {:error, error}
-  catch
-    :exit, reason -> {:error, {:exit, reason}}
-    thrown -> {:error, {:throw, thrown}}
+    ErrorHandling.safe_call(fn ->
+      apply(module, function, args)
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, thrown}} -> {:error, {:throw, thrown}}
+      {:error, error} -> {:error, error}
+    end
   end
 end

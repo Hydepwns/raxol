@@ -37,6 +37,7 @@ defmodule Raxol.Web.PersistentStore do
   # Database functionality - aliases
   # alias Raxol.Web.Session.Session  # Unused - commented out
   alias Raxol.Repo
+  alias Raxol.Core.ErrorHandling
 
   # Check if database functionality is available at runtime.
   defp database_available? do
@@ -739,11 +740,9 @@ defmodule Raxol.Web.PersistentStore do
   defp count_database_sessions do
     if database_available?() do
       # Simple count - in practice might be cached
-      try do
+      ErrorHandling.safe_call_with_default(fn ->
         Repo.aggregate(Raxol.Web.Session.Session, :count, :id)
-      rescue
-        _ -> 0
-      end
+      end, 0)
     else
       0
     end

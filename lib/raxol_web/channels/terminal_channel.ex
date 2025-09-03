@@ -317,11 +317,11 @@ defmodule RaxolWeb.TerminalChannel do
   defp validate_input_data(_), do: {:error, :invalid_input}
 
   defp process_input_safely(emulator, data) do
-    try do
-      {:ok, emulator_module().process_input(emulator, data)}
-    rescue
-      _error ->
-        {:error, :processing_failed}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      emulator_module().process_input(emulator, data)
+    end) do
+      {:ok, result} -> {:ok, result}
+      {:error, _reason} -> {:error, :processing_failed}
     end
   end
 

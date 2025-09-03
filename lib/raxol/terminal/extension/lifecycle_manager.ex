@@ -133,15 +133,13 @@ defmodule Raxol.Terminal.Extension.LifecycleManager do
   defp initialize_extension(extension) do
     case extension.module do
       {:ok, module} ->
-        try do
-          if function_exported?(module, :init, 0) do
-            module.init()
-          end
-
-          {:ok, extension}
-        rescue
-          e ->
-            Logger.error("Extension initialization failed: #{inspect(e)}")
+        result = Raxol.Core.ErrorHandling.safe_callback(module, :init, [])
+        
+        case result do
+          {:ok, _} ->
+            {:ok, extension}
+          {:error, reason} ->
+            Logger.error("Extension initialization failed: #{inspect(reason)}")
             {:error, :initialization_failed}
         end
 
@@ -153,15 +151,13 @@ defmodule Raxol.Terminal.Extension.LifecycleManager do
   defp deinitialize_extension(extension) do
     case extension.module do
       {:ok, module} ->
-        try do
-          if function_exported?(module, :cleanup, 0) do
-            module.cleanup()
-          end
-
-          {:ok, extension}
-        rescue
-          e ->
-            Logger.error("Extension cleanup failed: #{inspect(e)}")
+        result = Raxol.Core.ErrorHandling.safe_callback(module, :cleanup, [])
+        
+        case result do
+          {:ok, _} ->
+            {:ok, extension}
+          {:error, reason} ->
+            Logger.error("Extension cleanup failed: #{inspect(reason)}")
             {:error, :cleanup_failed}
         end
 
@@ -173,13 +169,11 @@ defmodule Raxol.Terminal.Extension.LifecycleManager do
   defp cleanup_extension(extension) do
     case extension.module do
       {:ok, module} ->
-        try do
-          if function_exported?(module, :cleanup, 0) do
-            module.cleanup()
-          end
-        rescue
-          e ->
-            Logger.error("Extension cleanup failed: #{inspect(e)}")
+        case Raxol.Core.ErrorHandling.safe_callback(module, :cleanup, []) do
+          {:error, reason} ->
+            Logger.error("Extension cleanup failed: #{inspect(reason)}")
+          _ ->
+            :ok
         end
 
       _ ->

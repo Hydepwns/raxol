@@ -85,7 +85,7 @@ defmodule RaxolWeb.Settings.PreferencesComponent do
   end
 
   defp sanitize_preferences_params(params) do
-    try do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
       font_size = String.to_integer(params["font_size"])
       scrollback_size = String.to_integer(params["scrollback_size"])
 
@@ -98,8 +98,9 @@ defmodule RaxolWeb.Settings.PreferencesComponent do
            "scrollback_size" => scrollback_size
          }}
       end
-    rescue
-      _ -> {:error, "Invalid numeric values"}
+    end) do
+      {:ok, result} -> result
+      {:error, _reason} -> {:error, "Invalid numeric values"}
     end
   end
   

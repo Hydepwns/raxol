@@ -10,6 +10,7 @@ defmodule Raxol.Tutorials.Runner do
   require Logger
 
   alias Raxol.Docs.InteractiveTutorial
+  alias Raxol.Core.ErrorHandling
   # Tutorial runner functionality - aliases will be added as needed
 
   defstruct [
@@ -477,13 +478,12 @@ defmodule Raxol.Tutorials.Runner do
   defp run_example_code(nil), do: {:error, "No example code available"}
 
   defp run_example_code(code) do
-    try do
-      # Create a safe evaluation context
-      {result, _binding} = Code.eval_string(code, [], __ENV__)
-      {:ok, result}
-    rescue
-      error ->
-        {:error, Exception.format(:error, error, __STACKTRACE__)}
+    case ErrorHandling.safe_call(fn ->
+           # Create a safe evaluation context
+           Code.eval_string(code, [], __ENV__)
+         end) do
+      {:ok, {result, _binding}} -> {:ok, result}
+      {:error, error} -> {:error, Exception.format(:error, error, [])}
     end
   end
 

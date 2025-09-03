@@ -174,12 +174,13 @@ defmodule Raxol.Svelte.ComponentState.Server do
     temp_state = %{state | process_slots: process_slots}
     
     # Execute function
-    result = try do
+    result = case Raxol.Core.ErrorHandling.safe_call(fn ->
       fun.()
-    catch
-      kind, reason ->
-        Logger.error("Error in with_slots function: #{inspect(kind)}, #{inspect(reason)}")
-        {:error, {kind, reason}}
+    end) do
+      {:ok, result} -> result
+      {:error, {reason, stacktrace}} ->
+        Logger.error("Error in with_slots function: #{inspect(reason)}, #{inspect(stacktrace)}")
+        {:error, {reason, stacktrace}}
     end
     
     # Restore previous slots

@@ -81,12 +81,9 @@ defmodule Raxol.Cloud.EdgeComputing do
     
     # In a real implementation, this would check mode and execute accordingly
     # For now, we execute locally and return
-    try do
-      result = func.()
-      {:ok, result}
-    rescue
-      error ->
-        {:error, error}
+    case Raxol.Core.ErrorHandling.safe_call(func) do
+      {:ok, result} -> {:ok, result}
+      {:error, error} -> {:error, error}
     end
   end
   
@@ -264,17 +261,6 @@ defmodule Raxol.Cloud.EdgeComputing do
     def clear_cache, do: Raxol.Cloud.EdgeComputing.clear_cache()
   end
   
-  # Delegated Execution module functions
-  defmodule Execution do
-    @moduledoc false
-    
-    def execute(func, opts), do: Raxol.Cloud.EdgeComputing.execute(func, opts)
-  end
-  
-  # Delegated Connection module functions
-  defmodule Connection do
-    @moduledoc false
-    
-    def check_connection, do: Raxol.Cloud.EdgeComputing.check_connection()
-  end
+  # Module delegation is handled by separate files in edge_computing/ directory
+  # Removed duplicate module definitions to fix compilation
 end

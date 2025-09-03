@@ -538,9 +538,12 @@ defmodule Raxol.Audit.Storage do
 
   defp safe_string_to_atom(string) when is_binary(string) do
     # Safe conversion without try/catch
-    String.to_existing_atom(string)
-  rescue
-    ArgumentError -> nil
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      String.to_existing_atom(string)
+    end) do
+      {:ok, result} -> result
+      {:error, _} -> nil
+    end
   end
 
   defp get_events_by_ids(ids, state) do

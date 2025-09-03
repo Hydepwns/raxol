@@ -283,7 +283,7 @@ defmodule Raxol.Core.Renderer.Color do
   end
 
   defp parse_hex_components(hex, size) when is_binary(hex) do
-    try do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
       case size do
         2 ->
           <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
@@ -302,8 +302,9 @@ defmodule Raxol.Core.Renderer.Color do
              String.to_integer(b <> b, 16)
            }}
       end
-    rescue
-      _ -> {:error, :invalid_hex}
+    end) do
+      {:ok, result} -> result
+      {:error, _} -> {:error, :invalid_hex}
     end
   end
 

@@ -5,6 +5,7 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
 
   
   alias Raxol.Cloud.EdgeComputing.{Core, Queue}
+  alias Raxol.Core.ErrorHandling
 
   @doc """
   Executes a function at the edge or in the cloud based on current mode and conditions.
@@ -95,17 +96,17 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
 
     task = Task.async(func)
 
-    try do
-      result = Task.await(task, timeout)
-      {:ok, result}
-    catch
-      :exit, {:timeout, _} ->
+    case ErrorHandling.safe_call(fn -> Task.await(task, timeout) end) do
+      {:ok, result} -> {:ok, result}
+      {:error, {:exit, {:timeout, _}}} ->
         _ = Task.shutdown(task)
         {:error, :timeout}
-
-      kind, reason ->
+      {:error, {kind, reason}} ->
         _ = Task.shutdown(task)
         {:error, {kind, reason}}
+      {:error, reason} ->
+        _ = Task.shutdown(task)
+        {:error, reason}
     end
   end
 
@@ -118,14 +119,15 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
     # Check if we're connected to the cloud
     if state.cloud_status == :connected do
       # Execute the function in the cloud
-      try do
-        # Simulate cloud execution
-        _result = func.()
-        :ok
-      rescue
-        _ ->
+      case ErrorHandling.safe_call(fn ->
+             # Simulate cloud execution
+             _result = func.()
+             :ok
+           end) do
+        {:ok, result} -> {:ok, result}
+        {:error, _} ->
           # In a real implementation, we would track attempts
-          :retry
+          {:ok, :retry}
       end
     else
       # We're offline, queue the operation for later

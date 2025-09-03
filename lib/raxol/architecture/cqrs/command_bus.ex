@@ -501,20 +501,21 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
   end
 
   defp execute_command_handler(handler_module, command, context) do
-    try do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
       case apply(handler_module, :handle, [command, context]) do
         {:ok, result} -> {:ok, result}
         {:error, reason} -> {:error, reason}
         # Assume success if not explicitly error
         result -> {:ok, result}
       end
-    catch
-      kind, reason ->
+    end) do
+      {:ok, {:ok, result}} -> {:ok, result}
+      {:ok, {:error, reason}} -> {:error, reason}
+      {:error, reason} ->
         Logger.error(
-          "Command handler #{inspect(handler_module)} failed: #{inspect(kind)} #{inspect(reason)}"
+          "Command handler #{inspect(handler_module)} failed: #{inspect(reason)}"
         )
-
-        {:error, {kind, reason}}
+        {:error, reason}
     end
   end
 

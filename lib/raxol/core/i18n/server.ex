@@ -16,6 +16,7 @@ defmodule Raxol.Core.I18n.Server do
   use GenServer
   
   alias Cldr
+  alias Raxol.Core.ErrorHandling
   
   defstruct [
     :config,
@@ -153,10 +154,11 @@ defmodule Raxol.Core.I18n.Server do
       key
     
     # Use EEx to evaluate the template with bindings
-    translated = try do
+    translated = case ErrorHandling.safe_call(fn ->
       EEx.eval_string(template, bindings: bindings)
-    rescue
-      _ -> template
+    end) do
+      {:ok, result} -> result
+      {:error, _} -> template
     end
     
     {:reply, translated, state}
@@ -198,7 +200,7 @@ defmodule Raxol.Core.I18n.Server do
   @impl GenServer
   def handle_call({:format_currency, amount, currency_code}, _from, state) 
       when is_number(amount) and is_binary(currency_code) do
-    formatted = try do
+    formatted = case ErrorHandling.safe_call(fn ->
       case Cldr.Number.to_string(amount,
              currency: currency_code,
              backend: Raxol.Cldr,
@@ -207,8 +209,9 @@ defmodule Raxol.Core.I18n.Server do
         {:ok, formatted} -> formatted
         {:error, _} -> "#{currency_code} #{amount}"
       end
-    rescue
-      _ -> "#{currency_code} #{amount}"
+    end) do
+      {:ok, result} -> result
+      {:error, _} -> "#{currency_code} #{amount}"
     end
     
     {:reply, formatted, state}
@@ -217,7 +220,7 @@ defmodule Raxol.Core.I18n.Server do
   @impl GenServer
   def handle_call({:format_datetime, datetime}, _from, state) 
       when is_struct(datetime, DateTime) do
-    formatted = try do
+    formatted = case ErrorHandling.safe_call(fn ->
       case Cldr.DateTime.to_string(datetime, 
              backend: Raxol.Cldr, 
              locale: state.current_locale
@@ -225,8 +228,9 @@ defmodule Raxol.Core.I18n.Server do
         {:ok, formatted} -> formatted
         {:error, _} -> DateTime.to_string(datetime)
       end
-    rescue
-      _ -> DateTime.to_string(datetime)
+    end) do
+      {:ok, result} -> result
+      {:error, _} -> DateTime.to_string(datetime)
     end
     
     {:reply, formatted, state}

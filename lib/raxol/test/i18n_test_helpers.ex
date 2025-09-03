@@ -18,6 +18,7 @@ defmodule Raxol.I18nTestHelpers do
   import Raxol.AccessibilityTestHelpers
 
   alias Raxol.Core.I18n, as: I18n
+  alias Raxol.Core.ErrorHandling
 
   @doc """
   Executes the given function with a specific locale set.
@@ -33,11 +34,19 @@ defmodule Raxol.I18nTestHelpers do
   def with_locale(locale, fun) when is_binary(locale) and is_function(fun, 0) do
     original_locale = Gettext.get_locale()
 
-    try do
-      Gettext.set_locale(locale)
-      fun.()
-    after
-      Gettext.set_locale(original_locale)
+    result = ErrorHandling.ensure_cleanup(
+      fn ->
+        Gettext.set_locale(locale)
+        fun.()
+      end,
+      fn ->
+        Gettext.set_locale(original_locale)
+      end
+    )
+
+    case result do
+      {:ok, value} -> value
+      {:error, _} -> :error
     end
   end
 

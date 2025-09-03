@@ -38,7 +38,7 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
         []
       end
     else
-      try do
+      case Raxol.Core.ErrorHandling.safe_call(fn ->
         # Calculate layout
         # Default to 1 if root value missing
         total_value = Map.get(data, :value, 1)
@@ -46,12 +46,11 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
 
         # Draw the nodes based on the calculated rectangles
         draw_treemap_nodes(node_rects, title, bounds)
-      rescue
-        e ->
-          stacktrace = __STACKTRACE__
-
+      end) do
+        {:ok, result} -> result
+        {:error, reason} ->
           Raxol.Core.Runtime.Log.error(
-            "[TreemapRenderer] Error rendering treemap: #{inspect(e)}\nStacktrace: #{inspect(stacktrace)}"
+            "[TreemapRenderer] Error rendering treemap: #{inspect(reason)}"
           )
 
           DrawingUtils.draw_box_with_text("[Render Error]", bounds)

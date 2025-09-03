@@ -6,7 +6,7 @@ defmodule Raxol.Playground.Preview do
   generating terminal output that shows how the component will appear.
   """
 
-  # Remove unused aliases
+  alias Raxol.Core.ErrorHandling
 
   @doc """
   Generates a preview of a component with given props and state.
@@ -18,8 +18,15 @@ defmodule Raxol.Playground.Preview do
     # Apply theme
     themed_props = apply_theme(props, theme)
 
-    # Generate preview content
-    try do
+    # Generate preview content safely
+    case render_component(component, themed_props, state) do
+      {:ok, content} -> content
+      {:error, error} -> render_error(component, error)
+    end
+  end
+
+  defp render_component(component, themed_props, state) do
+    ErrorHandling.safe_call(fn ->
       case component.module do
         # Text Components
         Raxol.UI.Text ->
@@ -90,10 +97,7 @@ defmodule Raxol.Playground.Preview do
         _ ->
           render_generic(component, themed_props, state)
       end
-    rescue
-      error ->
-        render_error(component, error)
-    end
+    end)
   end
 
   # Text Component Renderers
@@ -624,5 +628,97 @@ defmodule Raxol.Playground.Preview do
       end)
 
     "│#{Enum.join(padded_cells, "│")}│"
+  end
+  
+  # Missing helper functions for input components
+  
+  defp get_border_style(disabled) do
+    if disabled, do: IO.ANSI.light_black(), else: ""
+  end
+  
+  defp format_input_display(value, placeholder, cursor_pos, disabled) do
+    display_text = if value == "", do: placeholder, else: value
+    
+    if disabled do
+      "#{IO.ANSI.light_black()}#{display_text}#{IO.ANSI.reset()}"
+    else
+      # Add cursor indicator
+      if cursor_pos <= String.length(value) do
+        {before, after_cursor} = String.split_at(value, cursor_pos)
+        "#{before}│#{after_cursor}"
+      else
+        "#{display_text}│"
+      end
+    end
+  end
+  
+  defp format_text_area_lines(value, placeholder) do
+    if value == "" do
+      [placeholder]
+    else
+      String.split(value, "\n")
+    end
+  end
+  
+  defp append_option_lines_if_open(result, false, _options, _selected, _width, _bottom_border), do: result
+  defp append_option_lines_if_open(result, true, options, selected, width, _bottom_border) do
+    option_lines = 
+      Enum.map(options, fn option ->
+        prefix = if option == selected, do: "✓", else: " "
+        option_str = " #{prefix} #{option}"
+        padding = String.duplicate(" ", width - String.length(option_str) + 1)
+        "│#{option_str}#{padding}│"
+      end)
+    
+    # Remove the original bottom border and add options with new bottom border
+    result_without_bottom = List.delete_at(result, -1)
+    new_bottom = "└" <> String.duplicate("─", width + 2) <> "┘"
+    
+    result_without_bottom ++ option_lines ++ [new_bottom]
+  end
+  
+  defp format_radio_icon(option, selected) do
+    if option == selected do
+      "#{IO.ANSI.green()}◉#{IO.ANSI.reset()}"
+    else
+      "○"
+    end
+  end
+  
+  defp format_required_label(text, required) do
+    if required do
+      "#{text} #{IO.ANSI.red()}*#{IO.ANSI.reset()}"
+    else
+      text
+    end
+  end
+  
+  defp add_underline_if_needed(styled_content, level, content, _prefix) when level <= 2 do
+    underline_char = if level == 1, do: "═", else: "─"
+    underline = String.duplicate(underline_char, String.length(content))
+    "#{styled_content}\n#{underline}"
+  end
+  defp add_underline_if_needed(styled_content, _level, _content, _prefix), do: styled_content
+  
+  defp format_disabled_label(label, disabled) do
+    if disabled do
+      "#{IO.ANSI.light_black()}#{label}#{IO.ANSI.reset()}"
+    else
+      label
+    end
+  end
+  
+  defp format_checkbox_icon(checked, disabled) do
+    icon = if checked, do: "✓", else: " "
+    
+    if disabled do
+      "#{IO.ANSI.light_black()}[#{icon}]#{IO.ANSI.reset()}"
+    else
+      if checked do
+        "#{IO.ANSI.green()}[#{icon}]#{IO.ANSI.reset()}"
+      else
+        "[#{icon}]"
+      end
+    end
   end
 end

@@ -34,16 +34,14 @@ defmodule RaxolWeb.InputSanitizer do
   @spec sanitize_form_input(map(), [atom()]) ::
           {:ok, map()} | {:error, :invalid_input}
   def sanitize_form_input(params, allowed_fields) do
-    try do
-      sanitized =
-        params
-        |> Map.take(allowed_fields)
-        |> Enum.map(fn {key, value} -> {key, sanitize_string_value(value)} end)
-        |> Map.new()
-
-      {:ok, sanitized}
-    rescue
-      _ -> {:error, :invalid_input}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      params
+      |> Map.take(allowed_fields)
+      |> Enum.map(fn {key, value} -> {key, sanitize_string_value(value)} end)
+      |> Map.new()
+    end) do
+      {:ok, sanitized} -> {:ok, sanitized}
+      {:error, _reason} -> {:error, :invalid_input}
     end
   end
 

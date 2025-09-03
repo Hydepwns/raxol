@@ -4,6 +4,7 @@ defmodule Raxol.Core.Preferences.Persistence do
   Handles persistence (loading/saving) of user preferences to a file.
   """
   require Raxol.Core.Runtime.Log
+  alias Raxol.Core.ErrorHandling
 
   @default_filename "user_preferences.bin"
 
@@ -32,25 +33,18 @@ defmodule Raxol.Core.Preferences.Persistence do
 
     case File.read(path) do
       {:ok, binary_data} ->
-        try do
-          preferences = :erlang.binary_to_term(binary_data, [:safe])
-
-          if is_map(preferences) do
+        case ErrorHandling.safe_deserialize(binary_data) do
+          {:ok, preferences} when is_map(preferences) ->
             {:ok, preferences}
-          else
+          {:ok, _} ->
             Raxol.Core.Runtime.Log.error(
               "Preferences file content is not a map: #{path}"
             )
-
             {:error, :invalid_format}
-          end
-        rescue
-          # Catches errors during binary_to_term (e.g., corrupt data)
-          error ->
+          {:error, _} ->
             Raxol.Core.Runtime.Log.error(
-              "Failed to decode preferences file #{path}: #{inspect(error)}"
+              "Failed to decode preferences file #{path}"
             )
-
             {:error, :decoding_failed}
         end
 
@@ -78,23 +72,13 @@ defmodule Raxol.Core.Preferences.Persistence do
   def save(preferences) when is_map(preferences) do
     path = preferences_path()
 
-    try do
-      binary_data = :erlang.term_to_binary(preferences)
-      File.write(path, binary_data)
-    rescue
-      error ->
+    case ErrorHandling.safe_write_term(path, preferences) do
+      {:ok, :ok} -> :ok
+      {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
-          "Failed to encode preferences for saving: #{inspect(error)}"
+          "Failed to save preferences to #{path}: #{inspect(reason)}"
         )
-
-        {:error, :encoding_failed}
-    catch
-      :exit, reason ->
-        Raxol.Core.Runtime.Log.error(
-          "Failed to write preferences file #{path}: #{inspect(reason)}"
-        )
-
-        {:error, :write_failed}
+        {:error, reason}
     end
   end
 end

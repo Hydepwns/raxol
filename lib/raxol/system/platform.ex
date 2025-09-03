@@ -259,12 +259,15 @@ defmodule Raxol.System.Platform do
   # Platform version detection
 
   defp get_macos_version do
-    case System.cmd("sw_vers", ["-productVersion"], stderr_to_stdout: true) do
-      {version, 0} -> String.trim(version)
-      _ -> "unknown"
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      case System.cmd("sw_vers", ["-productVersion"], stderr_to_stdout: true) do
+        {version, 0} -> String.trim(version)
+        _ -> "unknown"
+      end
+    end) do
+      {:ok, result} -> result
+      {:error, _} -> "unknown"
     end
-  rescue
-    _ -> "unknown"
   end
 
   defp get_linux_version do
@@ -287,36 +290,42 @@ defmodule Raxol.System.Platform do
   end
 
   defp get_windows_version do
-    case System.cmd("cmd", ["/c", "ver"], stderr_to_stdout: true) do
-      {output, 0} ->
-        output
-        |> String.trim()
-        |> String.split("[")
-        |> List.last()
-        |> String.trim_trailing("]")
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      case System.cmd("cmd", ["/c", "ver"], stderr_to_stdout: true) do
+        {output, 0} ->
+          output
+          |> String.trim()
+          |> String.split("[")
+          |> List.last()
+          |> String.trim_trailing("]")
 
-      _ ->
-        "unknown"
+        _ ->
+          "unknown"
+      end
+    end) do
+      {:ok, result} -> result
+      {:error, _} -> "unknown"
     end
-  rescue
-    _ -> "unknown"
   end
 
   # Platform-specific detection helpers
 
   defp apple_silicon? do
-    case :os.type() do
-      {:unix, :darwin} ->
-        case System.cmd("uname", ["-m"], stderr_to_stdout: true) do
-          {"arm64\n", 0} -> true
-          _ -> false
-        end
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      case :os.type() do
+        {:unix, :darwin} ->
+          case System.cmd("uname", ["-m"], stderr_to_stdout: true) do
+            {"arm64\n", 0} -> true
+            _ -> false
+          end
 
-      _ ->
-        false
+        _ ->
+          false
+      end
+    end) do
+      {:ok, result} -> result
+      {:error, _} -> false
     end
-  rescue
-    _ -> false
   end
 
   defp detect_macos_terminal do
@@ -392,18 +401,21 @@ defmodule Raxol.System.Platform do
   defp determine_by_psmodule(_psmodule), do: "PowerShell"
 
   defp detect_linux_clipboard_support do
-    case System.cmd("which", ["xclip"], stderr_to_stdout: true) do
-      {_, 0} ->
-        true
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      case System.cmd("which", ["xclip"], stderr_to_stdout: true) do
+        {_, 0} ->
+          true
 
-      _ ->
-        case System.cmd("which", ["wl-copy"], stderr_to_stdout: true) do
-          {_, 0} -> true
-          _ -> false
-        end
+        _ ->
+          case System.cmd("which", ["wl-copy"], stderr_to_stdout: true) do
+            {_, 0} -> true
+            _ -> false
+          end
+      end
+    end) do
+      {:ok, result} -> result
+      {:error, _} -> false
     end
-  rescue
-    _ -> false
   end
 
   defp detect_windows_true_color do

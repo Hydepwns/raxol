@@ -91,10 +91,11 @@ defmodule Raxol.Cloud.Integrations do
     start_time = :os.system_time(:millisecond)
 
     result =
-      try do
+      case Raxol.Core.ErrorHandling.safe_call(fn ->
         EdgeComputing.execute(fun, opts)
-      rescue
-        error ->
+      end) do
+        {:ok, result} -> result
+        {:error, error} ->
           Monitoring.record_error(error,
             context: %{
               operation: :execute,

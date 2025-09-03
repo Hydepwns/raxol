@@ -31,14 +31,13 @@ defmodule Raxol.Terminal.Config.Persistence do
 
     case File.read(storage_path) do
       {:ok, binary} ->
-        try do
-          config = :erlang.binary_to_term(binary)
-
-          with :ok <- Validator.validate_config(config) do
-            {:ok, config}
-          end
-        rescue
-          _ -> {:error, :invalid_config_data}
+        case Raxol.Core.ErrorHandling.safe_call(fn -> :erlang.binary_to_term(binary) end) do
+          {:ok, config} ->
+            with :ok <- Validator.validate_config(config) do
+              {:ok, config}
+            end
+          {:error, _reason} ->
+            {:error, :invalid_config_data}
         end
 
       {:error, reason} ->

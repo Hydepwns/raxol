@@ -366,12 +366,13 @@ defmodule Raxol.Cloud.EdgeComputing.Server do
     
     case operation.type do
       :function ->
-        try do
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
           func = operation.data.function
           _result = func.()
           :ok
-        rescue
-          _ ->
+        end) do
+          {:ok, result} -> result
+          {:error, _reason} ->
             if operation.attempts >= config.retry_limit do
               :failed
             else

@@ -33,7 +33,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
 
       DrawingUtils.draw_box_with_text("!", bounds)
     else
-      try do
+      case Raxol.Core.ErrorHandling.safe_call(fn ->
         # First, sample the data if it's too large
         sampled_data = sample_chart_data(data)
         # Log if sampling occurred
@@ -41,12 +41,11 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
 
         # Draw the chart with sampled data
         draw_tui_bar_chart(sampled_data, title, bounds)
-      rescue
-        e ->
-          stacktrace = __STACKTRACE__
-
+      end) do
+        {:ok, result} -> result
+        {:error, reason} ->
           Raxol.Core.Runtime.Log.error(
-            "[ChartRenderer] Error rendering chart: #{inspect(e)}\nStacktrace: #{inspect(stacktrace)}"
+            "[ChartRenderer] Error rendering chart: #{inspect(reason)}"
           )
 
           DrawingUtils.draw_box_with_text("[Render Error]", bounds)

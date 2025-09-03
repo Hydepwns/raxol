@@ -195,38 +195,32 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Lifecycle do
 
   defp load_plugin_by_module_wrapper(_state, module, config) do
     # Actually initialize the plugin to test for init crashes
-    if module == nil do
-      {:error, :invalid_module}
-    else
-      try do
-        case module.init(config) do
-          {:ok, plugin_state} ->
-            plugin = %{
-              id: inspect(module),
-              module: module,
-              config: config,
-              state: plugin_state,
-              status: :loaded
-            }
+    with {:valid_module, true} <- {:valid_module, module != nil},
+         {:ok, plugin_result} <- Raxol.Core.ErrorHandling.safe_call(fn -> module.init(config) end) do
+      case plugin_result do
+        {:ok, plugin_state} ->
+          plugin = %{
+            id: inspect(module),
+            module: module,
+            config: config,
+            state: plugin_state,
+            status: :loaded
+          }
 
-            {:ok, plugin}
+          {:ok, plugin}
 
-          {:error, reason} ->
-            {:error, reason}
+        {:error, reason} ->
+          {:error, reason}
 
-          _ ->
-            {:error, :invalid_init_response}
-        end
-      rescue
-        error ->
-          {:error, {:init_crash, error}}
-      catch
-        :exit, reason ->
-          {:error, {:init_exit, reason}}
-
-        :throw, reason ->
-          {:error, {:init_throw, reason}}
+        _ ->
+          {:error, :invalid_init_response}
       end
+    else
+      {:valid_module, false} ->
+        {:error, :invalid_module}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 

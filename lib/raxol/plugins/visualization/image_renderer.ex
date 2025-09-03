@@ -8,6 +8,7 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Cell
   alias Raxol.Plugins.Visualization.DrawingUtils
+  alias Raxol.Core.ErrorHandling
 
   @doc """
   Public entry point for rendering image content.
@@ -31,20 +32,18 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
 
       []
     else
-      try do
+      case ErrorHandling.safe_call(fn ->
         case protocol do
           :sixel -> render_sixel(data, bounds, opts)
           :kitty -> render_kitty(data, bounds, opts)
           _ -> draw_placeholder(data, title, bounds)
         end
-      rescue
-        e ->
-          stacktrace = __STACKTRACE__
-
+      end) do
+        {:ok, result} -> result
+        {:error, e} ->
           Raxol.Core.Runtime.Log.error(
-            "[ImageRenderer] Error rendering image: #{inspect(e)}\nStacktrace: #{inspect(stacktrace)}"
+            "[ImageRenderer] Error rendering image: #{inspect(e)}"
           )
-
           DrawingUtils.draw_box_with_text("[Render Error]", bounds)
       end
     end
@@ -133,11 +132,11 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
 
   defp decode_image(data) do
     # Use Mogrify to decode image data
-    try do
-      image = Mogrify.open(data)
-      {:ok, image}
-    rescue
-      e -> {:error, Exception.message(e)}
+    case ErrorHandling.safe_call(fn ->
+      Mogrify.open(data)
+    end) do
+      {:ok, image} -> {:ok, image}
+      {:error, e} -> {:error, Exception.message(e)}
     end
   end
 

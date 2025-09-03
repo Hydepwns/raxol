@@ -7,6 +7,7 @@ defmodule Raxol.Storage.EventStorage do
   """
 
   alias Raxol.Architecture.EventSourcing.{Event, EventStream}
+  alias Raxol.Core.ErrorHandling
 
   @type event :: Event.t()
   @type stream_name :: String.t()
@@ -358,22 +359,27 @@ defmodule Raxol.Storage.EventStorage.Memory do
         {:ok, [], state}
 
       _ ->
-        # Process all events in batch
-        {event_ids, final_state} =
-          Enum.reduce(events, {[], state}, fn event, {acc_ids, acc_state} ->
-            case do_append_event(event, stream_name, acc_state) do
-              {:ok, event_id, new_state} ->
-                {[event_id | acc_ids], new_state}
+        # Process all events in batch using functional error handling
+        ErrorHandling.safe_call(fn ->
+          {event_ids, final_state} =
+            Enum.reduce(events, {[], state}, fn event, {acc_ids, acc_state} ->
+              case do_append_event(event, stream_name, acc_state) do
+                {:ok, event_id, new_state} ->
+                  {[event_id | acc_ids], new_state}
 
-              {:error, reason} ->
-                throw({:error, reason})
-            end
-          end)
+                {:error, reason} ->
+                  throw({:error, reason})
+              end
+            end)
 
-        {:ok, Enum.reverse(event_ids), final_state}
+          {:ok, Enum.reverse(event_ids), final_state}
+        end)
+        |> case do
+          {:ok, result} -> result
+          {:error, {:throw, {:error, reason}}} -> {:error, reason}
+          {:error, reason} -> {:error, reason}
+        end
     end
-  catch
-    {:error, reason} -> {:error, reason}
   end
 
   defp get_or_create_stream(stream_name, streams) do
@@ -638,22 +644,27 @@ defmodule Raxol.Storage.EventStorage.Disk do
         {:ok, [], state}
 
       _ ->
-        # Process all events in batch
-        {event_ids, final_state} =
-          Enum.reduce(events, {[], state}, fn event, {acc_ids, acc_state} ->
-            case do_append_event(event, stream_name, acc_state) do
-              {:ok, event_id, new_state} ->
-                {[event_id | acc_ids], new_state}
+        # Process all events in batch using functional error handling
+        ErrorHandling.safe_call(fn ->
+          {event_ids, final_state} =
+            Enum.reduce(events, {[], state}, fn event, {acc_ids, acc_state} ->
+              case do_append_event(event, stream_name, acc_state) do
+                {:ok, event_id, new_state} ->
+                  {[event_id | acc_ids], new_state}
 
-              {:error, reason} ->
-                throw({:error, reason})
-            end
-          end)
+                {:error, reason} ->
+                  throw({:error, reason})
+              end
+            end)
 
-        {:ok, Enum.reverse(event_ids), final_state}
+          {:ok, Enum.reverse(event_ids), final_state}
+        end)
+        |> case do
+          {:ok, result} -> result
+          {:error, {:throw, {:error, reason}}} -> {:error, reason}
+          {:error, reason} -> {:error, reason}
+        end
     end
-  catch
-    {:error, reason} -> {:error, reason}
   end
 
   defp write_event_to_disk(event, stream_name, state) do
@@ -736,11 +747,13 @@ defmodule Raxol.Storage.EventStorage.Disk do
 
     case File.read(file_path) do
       {:ok, binary_data} ->
-        try do
+        ErrorHandling.safe_call(fn ->
           snapshot = :erlang.binary_to_term(binary_data)
           {:ok, snapshot}
-        rescue
-          _ -> {:error, :corrupt_snapshot}
+        end)
+        |> case do
+          {:ok, result} -> result
+          {:error, _} -> {:error, :corrupt_snapshot}
         end
 
       {:error, :enoent} ->
@@ -767,11 +780,9 @@ defmodule Raxol.Storage.EventStorage.Disk do
 
     case File.read(index_file) do
       {:ok, binary_data} ->
-        try do
+        ErrorHandling.safe_call_with_default(fn ->
           :erlang.binary_to_term(binary_data)
-        rescue
-          _ -> %{}
-        end
+        end, %{})
 
       {:error, :enoent} ->
         %{}

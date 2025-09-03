@@ -190,7 +190,7 @@ defmodule Raxol.Plugins.CellProcessor do
          placeholder_cell,
          emulator_state
        ) do
-    try do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
       handle_cells_result =
         plugin.__struct__.handle_cells(placeholder_cell, emulator_state, plugin)
 
@@ -199,11 +199,12 @@ defmodule Raxol.Plugins.CellProcessor do
         plugin_name,
         handle_cells_result
       )
-    rescue
-      e ->
+    end) do
+      {:ok, result} -> result
+      {:error, reason} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "[CellProcessor.process] RESCUED Error calling #{plugin_name}.handle_cells: #{inspect(e)}. Placeholder was: #{inspect(placeholder_cell)}",
-          e,
+          "[CellProcessor.process] Error calling #{plugin_name}.handle_cells: #{inspect(reason)}. Placeholder was: #{inspect(placeholder_cell)}",
+          reason,
           nil,
           %{plugin_name: plugin_name, placeholder_cell: placeholder_cell}
         )

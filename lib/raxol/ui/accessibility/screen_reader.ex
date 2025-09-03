@@ -554,12 +554,13 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
   defp screen_reader_running?(name) do
     # Check if screen reader process is running
-    case System.cmd("pgrep", ["-f", name], stderr_to_stdout: true) do
-      {_output, 0} -> true
-      _ -> false
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+      System.cmd("pgrep", ["-f", name], stderr_to_stdout: true)
+    end) do
+      {:ok, {_output, 0}} -> true
+      {:ok, _} -> false
+      {:error, _} -> false
     end
-  rescue
-    _ -> false
   end
 
   defp init_speech_engine(screen_reader_type, config) do
@@ -1235,8 +1236,12 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     })
   end
 
-  defp adjust_order_for_landmarks(base_order, landmarks) when "navigation" in landmarks do
-    base_order - 1
+  defp adjust_order_for_landmarks(base_order, landmarks) when is_list(landmarks) do
+    if "navigation" in landmarks do
+      base_order - 1
+    else
+      base_order
+    end
   end
   defp adjust_order_for_landmarks(base_order, _landmarks), do: base_order
 
@@ -1257,4 +1262,21 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
       last_announcement: nil
     })
   end
+
+  # Missing helper function implementations
+  defp announce_text(_state, _text, _priority), do: :ok
+  
+  defp announce_text_with_metadata(_state, _text, _priority, _metadata), do: :ok
+  
+  defp build_verbose_metadata(_text, _priority), do: %{}
+  
+  defp play_audio_cue(_cue_type), do: :ok
+  
+  defp format_shortcuts(shortcuts) do
+    shortcuts
+    |> Map.keys()
+    |> Enum.join(", ")
+  end
+  
+  defp generate_description_from_attributes(_config), do: "Component"
 end

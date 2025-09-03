@@ -61,7 +61,7 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
         {:error, :plugin_not_found}
 
       plugin_module ->
-        try do
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
           # Call the plugin's filter_event callback if it exists
           if function_exported?(plugin_module, :filter_event, 2) do
             plugin_module.filter_event(
@@ -72,8 +72,9 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
             # Plugin doesn't implement filtering, pass event through unchanged
             {:ok, event}
           end
-        rescue
-          e ->
+        end) do
+          {:ok, result} -> result
+          {:error, e} ->
             Raxol.Core.Runtime.Log.error_with_stacktrace(
               "[#{__MODULE__}] Plugin #{plugin_id} filter crashed",
               e,

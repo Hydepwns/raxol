@@ -14,7 +14,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
     case Raxol.Core.Runtime.Plugins.Manager.get_plugin(plugin_id) do
       {:ok, _plugin} ->
         # Attempt to reload the plugin
-        try do
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
           # First unload the plugin
           # unload_plugin uses GenServer.cast and always returns :ok
           Raxol.Core.Runtime.Plugins.Manager.unload_plugin(plugin_id)
@@ -49,12 +49,13 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
 
               {:error, {:reload_failed, reason}}
           end
-        rescue
-          e ->
+        end) do
+          {:ok, result} -> result
+          {:error, e} ->
             Raxol.Core.Runtime.Log.error_with_stacktrace(
               "[#{__MODULE__}] Error during plugin reload #{plugin_id}",
               e,
-              __STACKTRACE__,
+              nil,
               %{module: __MODULE__, plugin_id: plugin_id, path: path}
             )
 
