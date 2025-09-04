@@ -40,6 +40,9 @@ TARGET = termbox2_nif.so
 # Default target
 all: $(TARGET)
 
+# Ensure all object files are rebuilt every time
+.PHONY: all clean $(OBJ)
+
 # Compile termbox2_nif.c
 termbox2_nif.o: termbox2_nif.c
 	$(CC) $(CFLAGS) $(ERL_CFLAGS) -I. -c $< -o $@
@@ -62,5 +65,3 @@ $(TARGET): $(OBJ)
 # Clean build artifacts
 clean:
 	rm -f $(OBJ) $(TARGET)
-
-.PHONY: all clean

@@ -124,7 +124,7 @@ defmodule Raxol.Core.Performance.Caches.ComponentRenderCache do
   """
   @spec invalidate_component(module(), map() | :all) :: :ok
   def invalidate_component(component_module, state_or_all \\ :all) do
-    pattern = build_invalidation_pattern(component_module, state_or_all)
+    _pattern = build_invalidation_pattern(component_module, state_or_all)
     # Note: In a real implementation, we'd need access to the ETS table directly
     # or add an invalidation method to ETSCacheManager
     emit_telemetry(:invalidate, %{component: component_module})

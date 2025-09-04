@@ -211,7 +211,7 @@ defmodule Raxol.UI.Components.TextInput do
 
   defp check_max_length(%{max_length: nil} = input, _char), do: input
 
-  defp check_max_length(%{max_length: max_len, value: value} = input, _char)
+  defp check_max_length(%{max_length: max_len, value: value} = _input, _char)
        when byte_size(value) >= max_len,
        do: :max_length_reached
 
@@ -347,15 +347,6 @@ defmodule Raxol.UI.Components.TextInput do
     Style.merge(base_style, state_style)
   end
 
-  defp determine_state_style(true, _valid),
-    do: Style.new(%{color: :gray, border_color: :dark_gray})
-
-  defp determine_state_style(false, false),
-    do: Style.new(%{border_color: :red})
-
-  defp determine_state_style(false, true),
-    do: Style.new(%{border_color: :gray})
-
   defp get_input_style(custom_style, disabled, valid)
        when is_map(custom_style) do
     # Define a base style if needed, or assume custom_style provides all defaults
@@ -375,6 +366,15 @@ defmodule Raxol.UI.Components.TextInput do
     # Merge the combined base/custom style with state overrides
     Style.merge(merged_base, state_override_style)
   end
+
+  defp determine_state_style(true, _valid),
+    do: Style.new(%{color: :gray, border_color: :dark_gray})
+
+  defp determine_state_style(false, false),
+    do: Style.new(%{border_color: :red})
+
+  defp determine_state_style(false, true),
+    do: Style.new(%{border_color: :gray})
 
   defp determine_override_style(true, _valid),
     do: Style.new(%{color: :gray, border_color: :dark_gray})
