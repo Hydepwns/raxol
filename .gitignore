@@ -30,6 +30,12 @@ erl_crash.dump
 # Also ignore archive artifacts (built via "mix archive.build").
 *.ez
 
+# NIF compilation artifacts
+lib/termbox2_nif/c_src/*.o
+lib/termbox2_nif/c_src/*.so
+lib/termbox2_nif/priv/*.so
+priv/termbox2_nif.so
+
 # Claude Code configuration directory
 .claude/
 
