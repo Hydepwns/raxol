@@ -1,5 +1,4 @@
 defmodule Raxol.Plugins.Visualization.DrawingUtils do
-  
   @moduledoc """
   Utility functions for drawing basic shapes and text onto a cell grid.
   Used by visualization renderers.
@@ -58,7 +57,8 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   end
 
   defp get_border_char(current_y, current_x, y, x, max_y, max_x, grid) do
-    case {corner?(current_y, current_x, y, x, max_y, max_x), edge?(current_y, current_x, y, x, max_y, max_x)} do
+    case {corner?(current_y, current_x, y, x, max_y, max_x),
+          edge?(current_y, current_x, y, x, max_y, max_x)} do
       {true, _} ->
         get_corner_char(current_y, current_x, y, x)
 

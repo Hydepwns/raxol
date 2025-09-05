@@ -2,7 +2,7 @@ defmodule Raxol.Test.WindowTestHelper do
   @moduledoc """
   Helper functions for window-related tests.
   """
-  
+
   @doc """
   Creates a test emulator with default window state.
   """

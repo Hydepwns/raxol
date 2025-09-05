@@ -46,8 +46,7 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
       :ok
     else
       false ->
-        case {Code.ensure_loaded?(module), 
-              function_exported?(module, :init, 1), 
+        case {Code.ensure_loaded?(module), function_exported?(module, :init, 1),
               function_exported?(module, :cleanup, 1)} do
           {false, _, _} -> {:error, :module_not_found}
           {true, false, _} -> {:error, :missing_init}
@@ -65,26 +64,24 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
   def validate_config_structure(_), do: {:error, :invalid_config}
 
   def initialize_plugin(module, config) do
-    try do
-      case module.init(config) do
-        {:ok, plugin_state} ->
-          if is_struct(plugin_state) and
-               (plugin_state.__struct__ == Raxol.Plugins.Plugin or
-                  function_exported?(plugin_state.__struct__, :__struct__, 0)) do
-            {:ok, plugin_state}
-          else
-            plugin = create_plugin_struct(module, config, plugin_state)
-            {:ok, plugin}
-          end
+    case Raxol.Core.ErrorHandling.safe_call(fn -> module.init(config) end) do
+      {:ok, {:ok, plugin_state}} ->
+        if is_struct(plugin_state) and
+             (plugin_state.__struct__ == Raxol.Plugins.Plugin or
+                function_exported?(plugin_state.__struct__, :__struct__, 0)) do
+          {:ok, plugin_state}
+        else
+          plugin = create_plugin_struct(module, config, plugin_state)
+          {:ok, plugin}
+        end
 
-        {:error, reason} ->
-          {:error, reason}
+      {:ok, {:error, reason}} ->
+        {:error, reason}
 
-        other ->
-          {:error, {:invalid_init_return, other}}
-      end
-    rescue
-      _error ->
+      {:ok, other} ->
+        {:error, {:invalid_init_return, other}}
+
+      {:error, _error} ->
         # Logging should be handled by caller
         {:error, :init_failed}
     end

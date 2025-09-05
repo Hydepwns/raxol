@@ -6,7 +6,7 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
 
   use GenServer
   require Raxol.Core.Runtime.Log
-  
+
   # Public API
 
   @doc """

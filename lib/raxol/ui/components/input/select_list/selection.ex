@@ -4,7 +4,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
   """
 
   alias Raxol.UI.Components.Input.SelectList.Pagination
-  
+
   @doc """
   Updates selection state based on a selected index.
   Returns updated state and any commands to execute.

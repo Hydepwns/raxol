@@ -11,6 +11,7 @@ defmodule Raxol.Animation.Lifecycle do
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Core.Accessibility, as: Accessibility
+  alias Raxol.Core.ErrorHandling
   alias Raxol.Animation.StateManager, as: StateManager
   alias Raxol.Animation.Accessibility, as: AnimAccessibility
   alias Raxol.Animation.PathManager
@@ -153,14 +154,10 @@ defmodule Raxol.Animation.Lifecycle do
       instance ->
         # Call on_complete callback if provided
         if instance.on_complete do
-          try do
-            instance.on_complete.(instance.context)
-          rescue
-            e ->
-              Raxol.Core.Runtime.Log.error(
-                "Error in animation on_complete callback: #{inspect(e)}"
-              )
-          end
+          ErrorHandling.safe_call_with_logging(
+            fn -> instance.on_complete.(instance.context) end,
+            "Error in animation on_complete callback"
+          )
         end
 
         # Remove from active animations
@@ -190,14 +187,10 @@ defmodule Raxol.Animation.Lifecycle do
       ) do
     # Call on_complete callback if provided
     if instance.on_complete do
-      try do
-        instance.on_complete.(instance.context)
-      rescue
-        e ->
-          Raxol.Core.Runtime.Log.error(
-            "Error in animation on_complete callback: #{inspect(e)}"
-          )
-      end
+      ErrorHandling.safe_call_with_logging(
+        fn -> instance.on_complete.(instance.context) end,
+        "Error in animation on_complete callback"
+      )
     end
 
     # Send completion message to notify_pid

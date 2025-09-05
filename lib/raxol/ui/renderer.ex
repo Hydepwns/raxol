@@ -64,7 +64,8 @@ defmodule Raxol.UI.Renderer do
     end
   end
 
-  defp render_validated_element(%{visible: false}, _theme, _parent_style), do: []
+  defp render_validated_element(%{visible: false}, _theme, _parent_style),
+    do: []
 
   defp render_validated_element(valid_element, theme, parent_style) do
     # Calculate dimensions if missing, especially for text elements
@@ -84,10 +85,10 @@ defmodule Raxol.UI.Renderer do
   defp calculate_element_dimensions(%{type: :text} = element) do
     # Calculate text dimensions if missing
     text = Map.get(element, :text, "")
-    
+
     width = get_text_width(element, text)
     height = get_text_height(element)
-    
+
     Map.merge(element, %{width: width, height: height})
   end
 
@@ -105,12 +106,12 @@ defmodule Raxol.UI.Renderer do
   # --- Element Validation ---
 
   defp validate_element(nil), do: {:error, :nil_element}
-  
-  defp validate_element(element) when not is_map(element), do: {:error, :invalid_element}
-  
+
+  defp validate_element(element) when not is_map(element),
+    do: {:error, :invalid_element}
+
   defp validate_element(element) do
-    case {Map.has_key?(element, :type),
-          Map.get(element, :width, 0) >= 0,
+    case {Map.has_key?(element, :type), Map.get(element, :width, 0) >= 0,
           Map.get(element, :height, 0) >= 0} do
       {false, _, _} -> {:error, :missing_type}
       {true, false, _} -> {:error, :negative_width}

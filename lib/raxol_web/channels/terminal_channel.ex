@@ -17,7 +17,7 @@ defmodule RaxolWeb.TerminalChannel do
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
   require Logger
-  
+
   # Rate limiting configuration
   @rate_limit_per_second 100
   # 10KB max input size
@@ -285,12 +285,14 @@ defmodule RaxolWeb.TerminalChannel do
     check_rate_limit_status(key, count, timestamp, now)
   end
 
-  defp check_rate_limit_status(key, _count, timestamp, now) when now - timestamp >= 1 do
+  defp check_rate_limit_status(key, _count, timestamp, now)
+       when now - timestamp >= 1 do
     :ets.insert(:rate_limit_table, {key, 1, now})
     :ok
   end
 
-  defp check_rate_limit_status(_key, count, _timestamp, _now) when count >= @rate_limit_per_second do
+  defp check_rate_limit_status(_key, count, _timestamp, _now)
+       when count >= @rate_limit_per_second do
     {:error, :rate_limited}
   end
 
@@ -317,11 +319,11 @@ defmodule RaxolWeb.TerminalChannel do
   defp validate_input_data(_), do: {:error, :invalid_input}
 
   defp process_input_safely(emulator, data) do
-    try do
-      {:ok, emulator_module().process_input(emulator, data)}
-    rescue
-      _error ->
-        {:error, :processing_failed}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           emulator_module().process_input(emulator, data)
+         end) do
+      {:ok, result} -> {:ok, result}
+      {:error, _reason} -> {:error, :processing_failed}
     end
   end
 

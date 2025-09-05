@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Metrics.Config do
-  
   @moduledoc """
   Configuration management for the Raxol metrics system.
 

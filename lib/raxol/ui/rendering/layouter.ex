@@ -3,7 +3,7 @@ defmodule Raxol.UI.Rendering.Layouter do
   Handles layout of UI components.
   """
 
-    require Raxol.Core.Runtime.Log
+  require Raxol.Core.Runtime.Log
 
   @spec layout_tree(diff_result :: any(), new_tree_for_reference :: map() | nil) ::
           map() | any()

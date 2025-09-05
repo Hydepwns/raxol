@@ -6,7 +6,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
   that can be used with the Colors.convert_to_palette/2 function.
   """
 
-    use GenServer
+  use GenServer
   require Logger
 
   @type palette_name :: atom()

@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Runtime.Plugins.Loader do
-  
   @moduledoc """
   Manages plugin loading operations.
   """
@@ -7,6 +6,8 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   use GenServer
   require Logger
   @behaviour Raxol.Core.Runtime.Plugins.LoaderBehaviour
+
+  alias Raxol.Core.ErrorHandling
 
   defstruct [
     :loaded_plugins,
@@ -227,20 +228,21 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   Checks if a module implements the given behaviour.
   """
   def behaviour_implemented?(module, behaviour) do
-    try do
-      # Check if the module has the behaviour attribute
-      module_info = module.module_info(:attributes)
-      behaviours = Keyword.get_values(module_info, :behaviour)
+    case ErrorHandling.safe_call(fn ->
+           # Check if the module has the behaviour attribute
+           module_info = module.module_info(:attributes)
+           behaviours = Keyword.get_values(module_info, :behaviour)
 
-      if behaviour in behaviours do
-        true
-      else
-        # Fallback: check if the module has the required callbacks
-        # This is a simplified check - in a real implementation you'd check all callbacks
-        function_exported?(module, :plugin_info, 0)
-      end
-    rescue
-      _ -> false
+           if behaviour in behaviours do
+             true
+           else
+             # Fallback: check if the module has the required callbacks
+             # This is a simplified check - in a real implementation you'd check all callbacks
+             function_exported?(module, :plugin_info, 0)
+           end
+         end) do
+      {:ok, result} -> result
+      {:error, _} -> false
     end
   end
 
@@ -260,16 +262,17 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
       false ->
         # Assume it's a module name
-        try do
-          module = String.to_existing_atom(id)
+        case ErrorHandling.safe_call(fn ->
+               module = String.to_existing_atom(id)
 
-          if Code.ensure_loaded(module) == {:module, module} do
-            {:ok, module}
-          else
-            {:error, :module_not_found}
-          end
-        rescue
-          ArgumentError -> {:error, :module_not_found}
+               if Code.ensure_loaded(module) == {:module, module} do
+                 {:ok, module}
+               else
+                 {:error, :module_not_found}
+               end
+             end) do
+          {:ok, result} -> result
+          {:error, _} -> {:error, :module_not_found}
         end
     end
   end

@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
   Manages character set state and operations.
   """
 
-  
   @type charset ::
           :us_ascii
           | :dec_special_graphics

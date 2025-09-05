@@ -68,6 +68,7 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   require Logger
 
   alias Raxol.UI.Events.ScrollTracker
+  alias Raxol.Core.ErrorHandling
   # Performance alias will be added when memory management is needed
   alias Raxol.Core.Accessibility, as: Accessibility
 
@@ -351,7 +352,8 @@ defmodule Raxol.UI.Components.VirtualScrolling do
     smooth = Map.get(options, :smooth, false)
     clamped_position = max(0, min(position, get_max_scroll_position(state)))
 
-    new_scroll_state = build_scroll_state(state.scroll_state, clamped_position, smooth)
+    new_scroll_state =
+      build_scroll_state(state.scroll_state, clamped_position, smooth)
 
     updated_state =
       %{state | scroll_state: new_scroll_state}
@@ -550,6 +552,7 @@ defmodule Raxol.UI.Components.VirtualScrolling do
       start_time: System.monotonic_time(:millisecond)
     }
   end
+
   defp init_performance_monitor(_config), do: %{enabled: false}
 
   defp init_accessibility_controller(%{accessibility_enabled: true} = _config) do
@@ -560,13 +563,15 @@ defmodule Raxol.UI.Components.VirtualScrolling do
       keyboard_navigation: true
     }
   end
+
   defp init_accessibility_controller(_config), do: %{enabled: false}
 
   defp calculate_visible_range(state) do
     scroll_top = state.scroll_state.position
     viewport_height = state.viewport.height
 
-    {start_index, end_index} = calculate_range_by_height_type(state, scroll_top, viewport_height)
+    {start_index, end_index} =
+      calculate_range_by_height_type(state, scroll_top, viewport_height)
 
     # Add buffer items
     buffer_size = state.config.buffer_size
@@ -620,19 +625,51 @@ defmodule Raxol.UI.Components.VirtualScrolling do
     position = get_item_position(state, mid)
     height = get_item_height(state, mid)
 
-    search_next_position(state, low, high, mid, position, height, target_position)
+    search_next_position(
+      state,
+      low,
+      high,
+      mid,
+      position,
+      height,
+      target_position
+    )
   end
 
-  defp search_next_position(_state, _low, _high, mid, position, height, target_position)
+  defp search_next_position(
+         _state,
+         _low,
+         _high,
+         mid,
+         position,
+         height,
+         target_position
+       )
        when position <= target_position and position + height > target_position,
        do: mid
 
-  defp search_next_position(state, _low, high, mid, position, height, target_position)
+  defp search_next_position(
+         state,
+         _low,
+         high,
+         mid,
+         position,
+         height,
+         target_position
+       )
        when position + height <= target_position,
        do: binary_search_position(state, mid + 1, high, target_position)
 
-  defp search_next_position(state, low, _high, mid, _position, _height, target_position),
-    do: binary_search_position(state, low, mid - 1, target_position)
+  defp search_next_position(
+         state,
+         low,
+         _high,
+         mid,
+         _position,
+         _height,
+         target_position
+       ),
+       do: binary_search_position(state, low, mid - 1, target_position)
 
   defp binary_search_position(_state, _low, _high, _target_position), do: 0
 
@@ -655,6 +692,7 @@ defmodule Raxol.UI.Components.VirtualScrolling do
     0..index
     |> Enum.reduce(0, fn i, acc -> acc + get_item_height(state, i) end)
   end
+
   defp get_item_position(state, index) do
     index * state.config.item_height
   end
@@ -732,7 +770,8 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   end
 
   defp recalculate_total_height(state) do
-    total_height = calculate_total_height_by_type(state.config.item_height, state)
+    total_height =
+      calculate_total_height_by_type(state.config.item_height, state)
 
     new_height_cache = %{
       state.height_cache
@@ -742,7 +781,10 @@ defmodule Raxol.UI.Components.VirtualScrolling do
     %{state | height_cache: new_height_cache}
   end
 
-  defp calculate_position_for_index(%{config: %{item_height: :variable}} = state, index) do
+  defp calculate_position_for_index(
+         %{config: %{item_height: :variable}} = state,
+         index
+       ) do
     get_item_position(state, index)
   end
 
@@ -754,19 +796,41 @@ defmodule Raxol.UI.Components.VirtualScrolling do
     max(0, state.height_cache.total_estimated_height - state.viewport.height)
   end
 
-  defp maybe_trigger_infinite_scroll(%{infinite_scroll: %{enabled: false}} = state), do: state
-  defp maybe_trigger_infinite_scroll(%{infinite_scroll: %{has_more: false}} = state), do: state
-  defp maybe_trigger_infinite_scroll(%{infinite_scroll: %{loading: true}} = state), do: state
+  defp maybe_trigger_infinite_scroll(
+         %{infinite_scroll: %{enabled: false}} = state
+       ),
+       do: state
+
+  defp maybe_trigger_infinite_scroll(
+         %{infinite_scroll: %{has_more: false}} = state
+       ),
+       do: state
+
+  defp maybe_trigger_infinite_scroll(
+         %{infinite_scroll: %{loading: true}} = state
+       ),
+       do: state
+
   defp maybe_trigger_infinite_scroll(state) do
     # Check if near bottom
     scroll_position = state.scroll_state.position
     max_scroll = get_max_scroll_position(state)
     threshold = state.infinite_scroll.threshold
 
-    check_and_trigger_infinite_load(state, scroll_position, max_scroll, threshold)
+    check_and_trigger_infinite_load(
+      state,
+      scroll_position,
+      max_scroll,
+      threshold
+    )
   end
 
-  defp check_and_trigger_infinite_load(state, scroll_position, max_scroll, threshold)
+  defp check_and_trigger_infinite_load(
+         state,
+         scroll_position,
+         max_scroll,
+         threshold
+       )
        when scroll_position >= max_scroll - threshold do
     # Trigger load more
     Task.start(fn ->
@@ -785,7 +849,14 @@ defmodule Raxol.UI.Components.VirtualScrolling do
     new_infinite_scroll = %{state.infinite_scroll | loading: true}
     %{state | infinite_scroll: new_infinite_scroll}
   end
-  defp check_and_trigger_infinite_load(state, _scroll_position, _max_scroll, _threshold), do: state
+
+  defp check_and_trigger_infinite_load(
+         state,
+         _scroll_position,
+         _max_scroll,
+         _threshold
+       ),
+       do: state
 
   defp cleanup_item_cache(item_cache, visible_range) do
     # Keep items in visible range + some extra buffer
@@ -861,9 +932,12 @@ defmodule Raxol.UI.Components.VirtualScrolling do
     |> Enum.sort()
   end
 
-  defp calculate_performance_stats(%{performance_monitor: %{enabled: false}} = _state) do
+  defp calculate_performance_stats(
+         %{performance_monitor: %{enabled: false}} = _state
+       ) do
     %{performance_monitoring: false}
   end
+
   defp calculate_performance_stats(state) do
     now = System.monotonic_time(:millisecond)
     elapsed = now - state.performance_monitor.start_time
@@ -872,15 +946,15 @@ defmodule Raxol.UI.Components.VirtualScrolling do
       state.performance_monitor.cache_hits +
         state.performance_monitor.cache_misses
 
-    cache_hit_rate = calculate_cache_hit_rate(state.performance_monitor, cache_total)
+    cache_hit_rate =
+      calculate_cache_hit_rate(state.performance_monitor, cache_total)
 
     %{
       rendered_items: state.performance_monitor.render_count,
       cache_hit_rate: cache_hit_rate,
       scroll_fps: calculate_scroll_fps(state.performance_monitor.frame_times),
       memory_usage: :erlang.memory(:total),
-      render_time_ms:
-        elapsed / max(1, state.performance_monitor.render_count),
+      render_time_ms: elapsed / max(1, state.performance_monitor.render_count),
       total_items: state.config.item_count,
       cached_items: map_size(state.item_cache.items)
     }
@@ -1042,18 +1116,16 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   """
   def create_ecto_loader(repo, queryable, _opts \\ []) do
     fn start_index, count ->
-      try do
-        import Ecto.Query
+      case ErrorHandling.safe_call(fn ->
+             import Ecto.Query
 
-        items =
-          queryable
-          |> limit(^count)
-          |> offset(^start_index)
-          |> repo.all()
-
-        {:ok, items}
-      rescue
-        error -> {:error, error}
+             queryable
+             |> limit(^count)
+             |> offset(^start_index)
+             |> repo.all()
+           end) do
+        {:ok, items} -> {:ok, items}
+        {:error, error} -> {:error, error}
       end
     end
   end
@@ -1072,7 +1144,10 @@ defmodule Raxol.UI.Components.VirtualScrolling do
 
   defp calculate_content_height(length, base) when length > 200, do: base * 3
   defp calculate_content_height(length, base) when length > 100, do: base * 2
-  defp calculate_content_height(length, base) when length > 50, do: round(base * 1.5)
+
+  defp calculate_content_height(length, base) when length > 50,
+    do: round(base * 1.5)
+
   defp calculate_content_height(_length, base), do: base
 
   @doc """
@@ -1087,7 +1162,11 @@ defmodule Raxol.UI.Components.VirtualScrolling do
 
   ## Helper functions for refactored code
 
-  defp announce_scroll_if_enabled(%{accessibility_enabled: true}, index, item_count) do
+  defp announce_scroll_if_enabled(
+         %{accessibility_enabled: true},
+         index,
+         item_count
+       ) do
     Accessibility.announce("Scrolled to item #{index + 1} of #{item_count}")
   end
 
@@ -1118,11 +1197,21 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   defp get_item_height_estimate(:variable), do: 50
   defp get_item_height_estimate(height), do: height
 
-  defp calculate_range_by_height_type(:variable, state, scroll_top, viewport_height) do
+  defp calculate_range_by_height_type(
+         :variable,
+         state,
+         scroll_top,
+         viewport_height
+       ) do
     calculate_variable_height_range(state, scroll_top, viewport_height)
   end
 
-  defp calculate_range_by_height_type(_item_height, state, scroll_top, viewport_height) do
+  defp calculate_range_by_height_type(
+         _item_height,
+         state,
+         scroll_top,
+         viewport_height
+       ) do
     calculate_fixed_height_range(state, scroll_top, viewport_height)
   end
 
@@ -1137,14 +1226,24 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   end
 
   defp apply_or_reset_filter(state, nil), do: reset_filter(state)
-  defp apply_or_reset_filter(state, filter_fn), do: apply_filter(state, filter_fn)
+
+  defp apply_or_reset_filter(state, filter_fn),
+    do: apply_filter(state, filter_fn)
+
+  # Missing function implementations
+  defp reset_filter(state), do: state
+  defp apply_filter(state, _filter_fn), do: state
 
   defp handle_search_matches([], _query, state), do: state
 
   defp handle_search_matches(matches, query, state) do
     first_match = hd(matches)
     # Scroll to first match
-    GenServer.cast(self(), {:scroll_to_index, first_match, %{alignment: :center}})
+    GenServer.cast(
+      self(),
+      {:scroll_to_index, first_match, %{alignment: :center}}
+    )
+
     %{state | search_state: %{query: query, matches: matches, current_index: 0}}
   end
 
@@ -1155,7 +1254,9 @@ defmodule Raxol.UI.Components.VirtualScrolling do
       |> Map.values()
       |> Enum.sum()
 
-    unknown_count = state.config.item_count - map_size(state.height_cache.measured)
+    unknown_count =
+      state.config.item_count - map_size(state.height_cache.measured)
+
     estimated_remaining = unknown_count * state.height_cache.estimated
 
     known_height + estimated_remaining
@@ -1166,11 +1267,12 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   end
 
   # Helper functions for refactored code
-  
-  defp validate_and_scroll_to_index(state, index, _options) 
+
+  defp validate_and_scroll_to_index(state, index, _options)
        when index < 0 or index >= state.config.item_count do
     {:reply, {:error, :index_out_of_bounds}, state}
   end
+
   defp validate_and_scroll_to_index(state, index, options) do
     target_position = calculate_position_for_index(state, index)
     # :start, :center, :end
@@ -1199,11 +1301,15 @@ defmodule Raxol.UI.Components.VirtualScrolling do
     {:reply, :ok, updated_state}
   end
 
-  defp announce_scroll_if_enabled(%{config: %{accessibility_enabled: true}} = state, index) do
+  defp announce_scroll_if_enabled(
+         %{config: %{accessibility_enabled: true}} = state,
+         index
+       ) do
     Accessibility.announce(
       "Scrolled to item #{index + 1} of #{state.config.item_count}"
     )
   end
+
   defp announce_scroll_if_enabled(_state, _index), do: :ok
 
   defp build_scroll_state(scroll_state, clamped_position, true) do
@@ -1215,21 +1321,27 @@ defmodule Raxol.UI.Components.VirtualScrolling do
         target_position: clamped_position
     }
   end
+
   defp build_scroll_state(scroll_state, clamped_position, false) do
     %{scroll_state | position: clamped_position}
   end
 
-  defp update_height_cache_for_invalidation(%{config: %{item_height: :variable}} = state, indices) do
+  defp update_height_cache_for_invalidation(
+         %{config: %{item_height: :variable}} = state,
+         indices
+       ) do
     measured =
       Enum.reduce(indices, state.height_cache.measured, &Map.delete(&2, &1))
 
     %{state.height_cache | measured: measured}
   end
+
   defp update_height_cache_for_invalidation(state, _indices) do
     state.height_cache
   end
 
   defp apply_filter_function(_state, nil), do: []
+
   defp apply_filter_function(state, filter_fn) do
     0..(state.config.item_count - 1)
     |> Enum.filter(fn index ->
@@ -1240,6 +1352,7 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   end
 
   defp scroll_to_first_match(state, []), do: state
+
   defp scroll_to_first_match(updated_state, matches) do
     first_match = List.first(matches)
 
@@ -1256,9 +1369,14 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   defp get_estimated_height(:variable), do: 50
   defp get_estimated_height(item_height), do: item_height
 
-  defp calculate_range_by_height_type(%{config: %{item_height: :variable}} = state, scroll_top, viewport_height) do
+  defp calculate_range_by_height_type(
+         %{config: %{item_height: :variable}} = state,
+         scroll_top,
+         viewport_height
+       ) do
     calculate_variable_height_range(state, scroll_top, viewport_height)
   end
+
   defp calculate_range_by_height_type(state, scroll_top, viewport_height) do
     calculate_fixed_height_range(state, scroll_top, viewport_height)
   end
@@ -1267,42 +1385,57 @@ defmodule Raxol.UI.Components.VirtualScrolling do
        when position < target_position do
     find_end_index_recursive(state, index + 1, target_position)
   end
+
   defp process_end_index_position(_state, index, _position, _target_position) do
     max(0, index - 1)
   end
 
   # Additional helper functions for if statement refactoring
-  
-  defp log_cache_cleanup(original_items, cleaned_items) 
+
+  defp log_cache_cleanup(original_items, cleaned_items)
        when map_size(cleaned_items) < map_size(original_items) do
     Logger.debug(
       "Cleaned cache: #{map_size(original_items)} -> #{map_size(cleaned_items)} items"
     )
   end
+
   defp log_cache_cleanup(_original_items, _cleaned_items), do: :ok
 
-  defp perform_search_by_config(%{search_config: %{search_entire_dataset: true}} = state, 
-                                query, search_fn, loaded_matches) do
+  defp perform_search_by_config(
+         %{search_config: %{search_entire_dataset: true}} = state,
+         query,
+         search_fn,
+         loaded_matches
+       ) do
     search_entire_dataset(state, query, search_fn, loaded_matches)
   end
+
   defp perform_search_by_config(_state, _query, _search_fn, loaded_matches) do
     loaded_matches
   end
 
   defp calculate_cache_hit_rate(_performance_monitor, 0), do: 0.0
+
   defp calculate_cache_hit_rate(performance_monitor, cache_total) do
     performance_monitor.cache_hits / cache_total
   end
 
-  defp calculate_fps_from_times(recent_times) when length(recent_times) < 2, do: 0.0
+  defp calculate_fps_from_times(recent_times) when length(recent_times) < 2,
+    do: 0.0
+
   defp calculate_fps_from_times(recent_times) do
     time_diff = List.first(recent_times) - List.last(recent_times)
     frame_count = length(recent_times) - 1
     1000.0 * frame_count / max(1, time_diff)
   end
 
-  defp maybe_measure_heights(%{config: %{item_height: :variable}} = state, indices, items) do
+  defp maybe_measure_heights(
+         %{config: %{item_height: :variable}} = state,
+         indices,
+         items
+       ) do
     measure_and_cache_heights(state, indices, items)
   end
+
   defp maybe_measure_heights(state, _indices, _items), do: state
 end

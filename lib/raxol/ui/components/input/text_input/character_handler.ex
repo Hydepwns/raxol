@@ -1,7 +1,6 @@
 defmodule Raxol.UI.Components.Input.TextInput.CharacterHandler do
   @moduledoc false
 
-  
   def handle_character(state, char_key) do
     with char_str when not is_nil(char_str) <- process_char_key(char_key),
          true <- validate_length(state, char_str),
@@ -20,7 +19,7 @@ defmodule Raxol.UI.Components.Input.TextInput.CharacterHandler do
     end
   end
 
-  defp process_char_key(char_key) 
+  defp process_char_key(char_key)
        when is_integer(char_key) and char_key >= 32 and char_key <= 126 do
     <<char_key::utf8>>
   end

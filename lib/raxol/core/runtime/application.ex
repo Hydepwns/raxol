@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Runtime.Application do
-  
   @moduledoc """
   Defines the behaviour for Raxol applications following The Elm Architecture (TEA).
 
@@ -86,6 +85,7 @@ defmodule Raxol.Core.Runtime.Application do
   @type element :: Raxol.Core.Renderer.Element.t()
 
   require Raxol.Core.Runtime.Log
+  alias Raxol.Core.ErrorHandling
 
   @doc """
   Initializes the application state.
@@ -222,16 +222,19 @@ defmodule Raxol.Core.Runtime.Application do
   # Private helper functions for delegate_init
 
   defp safely_call_init(app_module, context) do
-    try do
-      result = app_module.init(context)
+    case ErrorHandling.safe_call(fn ->
+           result = app_module.init(context)
 
-      Raxol.Core.Runtime.Log.debug(
-        "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned: #{inspect(result)}"
-      )
+           Raxol.Core.Runtime.Log.debug(
+             "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned: #{inspect(result)}"
+           )
 
-      {:ok, result}
-    rescue
-      error ->
+           result
+         end) do
+      {:ok, result} ->
+        {:ok, result}
+
+      {:error, error} ->
         Raxol.Core.Runtime.Log.error_with_stacktrace(
           "[#{__MODULE__}] Error executing #{inspect(app_module)}.init/1",
           error,
@@ -286,11 +289,13 @@ defmodule Raxol.Core.Runtime.Application do
   end
 
   defp safely_call_update(app_module, message, current_model) do
-    try do
-      result = app_module.update(message, current_model)
-      {:ok, result}
-    rescue
-      error ->
+    case ErrorHandling.safe_call(fn ->
+           app_module.update(message, current_model)
+         end) do
+      {:ok, result} ->
+        {:ok, result}
+
+      {:error, error} ->
         log_update_error(app_module, error, message, current_model)
         {:error, {:update_failed, error}}
     end

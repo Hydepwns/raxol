@@ -11,7 +11,6 @@ defmodule Raxol.UI.Components.Input.SelectList do
   * Pagination for very large lists
   """
 
-  
   alias Raxol.UI.Components.Input.SelectList.{
     Search,
     Pagination,
@@ -266,7 +265,10 @@ defmodule Raxol.UI.Components.Input.SelectList do
   end
 
   defp normalize_state(state) when not is_map(state), do: init(%{options: []})
-  defp normalize_state(state) when map_size(state) == 0, do: init(%{options: []})
+
+  defp normalize_state(state) when map_size(state) == 0,
+    do: init(%{options: []})
+
   defp normalize_state(%{} = state) do
     if Map.has_key?(state, :options), do: state, else: init(%{options: []})
   end

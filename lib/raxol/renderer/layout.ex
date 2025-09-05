@@ -1,5 +1,5 @@
 defmodule Raxol.Renderer.Layout do
-    import Kernel, except: [to_string: 1]
+  import Kernel, except: [to_string: 1]
   require Raxol.Core.Renderer.View
 
   @moduledoc """
@@ -188,21 +188,21 @@ defmodule Raxol.Renderer.Layout do
   end
 
   def process_children(_other, _space, acc), do: acc
-  
+
   # Helper to normalize child nodes
   defp normalize_child_node(child_node, space) when is_map(child_node) do
     if Map.has_key?(child_node, :type) and Map.has_key?(child_node, :position) and
-       Map.has_key?(child_node, :size) do
+         Map.has_key?(child_node, :size) do
       child_node
     else
       ensure_required_keys(child_node, space, :box)
     end
   end
-  
+
   defp normalize_child_node(child_node, space) when is_list(child_node) do
     process_children(child_node, space, [])
   end
-  
+
   defp normalize_child_node(child_node, space) do
     ensure_required_keys(child_node, space, :box)
   end

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Buffer.Callbacks do
   @moduledoc """
   GenServer callbacks for the buffer server - Functional Programming Version.
-  
+
   This module replaces all try/catch blocks with functional error handling
   using with statements and proper error tuples.
   """
@@ -48,9 +48,7 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
         memory_usage: memory_usage
       }
 
-      Logger.debug(
-        "BufferServer started with dimensions #{width}x#{height}"
-      )
+      Logger.debug("BufferServer started with dimensions #{width}x#{height}")
 
       {:ok, state}
     end
@@ -92,6 +90,7 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
             Logger.error(
               "Error processing flush operations: #{inspect(reason)}"
             )
+
             state
         end
       end
@@ -195,8 +194,12 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
     Task.async(fn -> Content.get_cell(buffer, x, y) end)
     |> Task.yield(1000)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:exit, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:exit, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -234,8 +237,12 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
     end)
     |> Task.yield(5000)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:exit, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:exit, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -246,8 +253,12 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
     Task.async(fn -> operation.(buffer) end)
     |> Task.yield(2000)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:exit, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:exit, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -258,8 +269,12 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
     Task.async(fn -> Content.write_char(buffer, x, y, cell.char, cell) end)
     |> Task.yield(1000)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:exit, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:exit, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}

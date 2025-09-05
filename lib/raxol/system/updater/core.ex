@@ -5,8 +5,9 @@ defmodule Raxol.System.Updater.Core do
   use GenServer
 
   require Logger
-  
+
   alias Raxol.System.Updater.{Network, Validation, State}
+  alias Raxol.Core.ErrorHandling
 
   @github_repo "username/raxol"
   @version Mix.Project.config()[:version]
@@ -105,12 +106,15 @@ defmodule Raxol.System.Updater.Core do
     use_delta = Keyword.get(opts, :use_delta, true)
     version = Keyword.get(opts, :version)
 
-    try do
+    ErrorHandling.safe_call(fn ->
       with {:ok, target_version} <- get_target_version(version, force) do
         apply_target_update(target_version, use_delta)
       end
-    catch
-      {:no_update, v} -> {:no_update, v}
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, {:throw, {:no_update, v}}} -> {:no_update, v}
+      {:error, {:throw, {:error, reason}}} -> {:error, reason}
       {:error, reason} -> {:error, reason}
     end
   end
@@ -118,18 +122,23 @@ defmodule Raxol.System.Updater.Core do
   def self_update(version \\ nil, opts \\ []) do
     use_delta = Keyword.get(opts, :use_delta, true)
 
-    if is_binary(version) do
-      with {:ok, target_version} <- get_update_version(version) do
-        case @version == target_version do
-          false -> do_version_update(target_version, use_delta)
-          true -> {:no_update, @version}
+    ErrorHandling.safe_call(fn ->
+      if is_binary(version) do
+        with {:ok, target_version} <- get_update_version(version) do
+          case @version == target_version do
+            false -> do_version_update(target_version, use_delta)
+            true -> {:no_update, @version}
+          end
         end
+      else
+        {:error, "Not running as a compiled binary"}
       end
-    else
-      {:error, "Not running as a compiled binary"}
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, {:throw, {:error, reason}}} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
     end
-  catch
-    {:error, reason} -> {:error, reason}
   end
 
   def notify_if_update_available do
@@ -317,31 +326,37 @@ defmodule Raxol.System.Updater.Core do
     _ = File.rm_rf(tmp_dir)
     :ok = File.mkdir_p(tmp_dir)
 
-    try do
-      # Download the update
-      archive_path = Path.join(tmp_dir, "update.#{ext}")
-      :ok = Network.download_file(url, archive_path)
+    ErrorHandling.ensure_cleanup(
+      fn ->
+        # Download the update
+        archive_path = Path.join(tmp_dir, "update.#{ext}")
+        :ok = Network.download_file(url, archive_path)
 
-      # Extract the update
-      :ok = Network.extract_archive(archive_path, tmp_dir, ext)
+        # Extract the update
+        :ok = Network.extract_archive(archive_path, tmp_dir, ext)
 
-      # Get the current executable path
-      current_exe =
-        System.get_env("BURRITO_EXECUTABLE_PATH") ||
-          System.argv() |> List.first()
+        # Get the current executable path
+        current_exe =
+          System.get_env("BURRITO_EXECUTABLE_PATH") ||
+            System.argv() |> List.first()
 
-      # Find the new executable in the extracted files
-      new_exe = Network.find_executable(tmp_dir, platform)
+        # Find the new executable in the extracted files
+        new_exe = Network.find_executable(tmp_dir, platform)
 
-      # Apply the update by replacing the current executable
-      apply_update(current_exe, new_exe, platform)
+        # Apply the update by replacing the current executable
+        apply_update(current_exe, new_exe, platform)
 
-      :ok
-    catch
+        :ok
+      end,
+      fn ->
+        # Clean up temporary files
+        _ = File.rm_rf(tmp_dir)
+      end
+    )
+    |> case do
+      {:ok, result} -> result
+      {:error, {:throw, {:error, reason}}} -> {:error, reason}
       {:error, reason} -> {:error, reason}
-    after
-      # Clean up temporary files
-      _ = File.rm_rf(tmp_dir)
     end
   end
 

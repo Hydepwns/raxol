@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Config.Utils do
-  
   @moduledoc """
   Utility functions for handling terminal configuration maps.
   """

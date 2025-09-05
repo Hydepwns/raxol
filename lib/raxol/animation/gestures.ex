@@ -1,35 +1,37 @@
 defmodule Raxol.Animation.Gestures do
   @moduledoc """
   Refactored gesture-driven interactions with GenServer-based state management.
-  
+
   This module provides the same gesture detection and animation functionality
   as the original but uses supervised state management instead of Process dictionary.
-  
+
   ## Migration Notes
-  
+
   Gesture state tracking has been moved to Animation.Gestures.Server,
   eliminating Process dictionary usage while maintaining full functionality.
   """
-  
+
   alias Raxol.Animation.Gestures.Server
   alias Raxol.Animation.Physics.Vector
-  
+
   @type position :: {integer(), integer()}
-  @type gesture_type :: :swipe | :tap | :long_press | :drag | :pinch | :multi_tap
+  @type gesture_type ::
+          :swipe | :tap | :long_press | :drag | :pinch | :multi_tap
   @type direction :: :up | :down | :left | :right
   @type handler :: (map() -> any())
-  
+
   # Ensure server is started
   defp ensure_server_started do
     case Process.whereis(Server) do
       nil ->
         {:ok, _pid} = Server.start_link()
         :ok
+
       _pid ->
         :ok
     end
   end
-  
+
   @doc """
   Initializes the gesture system.
   """
@@ -37,12 +39,12 @@ defmodule Raxol.Animation.Gestures do
     ensure_server_started()
     Server.init_gestures()
   end
-  
+
   @doc """
   Registers a handler for a specific gesture type.
-  
+
   ## Examples
-  
+
       iex> register_handler(:swipe, fn %{direction: :left} -> handle_left_swipe() end)
       :ok
   """
@@ -50,7 +52,7 @@ defmodule Raxol.Animation.Gestures do
     ensure_server_started()
     Server.register_handler(gesture_type, handler)
   end
-  
+
   @doc """
   Handles a touch/mouse down event.
   """
@@ -58,7 +60,7 @@ defmodule Raxol.Animation.Gestures do
     ensure_server_started()
     Server.touch_down(position, time)
   end
-  
+
   @doc """
   Handles a touch/mouse move event.
   """
@@ -66,7 +68,7 @@ defmodule Raxol.Animation.Gestures do
     ensure_server_started()
     Server.touch_move(position, time)
   end
-  
+
   @doc """
   Handles a touch/mouse up event.
   """
@@ -74,7 +76,7 @@ defmodule Raxol.Animation.Gestures do
     ensure_server_started()
     Server.touch_up(position, time)
   end
-  
+
   @doc """
   Gets the current gesture state.
   """
@@ -82,7 +84,7 @@ defmodule Raxol.Animation.Gestures do
     ensure_server_started()
     Server.get_state()
   end
-  
+
   @doc """
   Updates all active animations.
   """
@@ -90,19 +92,20 @@ defmodule Raxol.Animation.Gestures do
     ensure_server_started()
     Server.update_animations(delta_time)
   end
-  
+
   @doc """
   Gets all animation objects for rendering.
   """
   def get_animation_objects do
     ensure_server_started()
+
     case Server.get_animation_objects() do
       {_state, objects} -> objects
       objects when is_list(objects) -> objects
       _ -> []
     end
   end
-  
+
   @doc """
   Clears all gesture handlers.
   """
@@ -111,27 +114,28 @@ defmodule Raxol.Animation.Gestures do
     # Re-initialize to clear handlers
     Server.init_gestures()
   end
-  
+
   @doc """
   Gets information about active animations.
   """
   def animation_info do
     ensure_server_started()
     state = Server.get_state()
-    
+
     %{
       active_count: length(state.active_animations),
-      animations: Enum.map(state.active_animations, fn anim ->
-        %{
-          id: anim.id,
-          type: anim.type,
-          elapsed: System.monotonic_time(:millisecond) - anim.start_time,
-          duration: anim.duration
-        }
-      end)
+      animations:
+        Enum.map(state.active_animations, fn anim ->
+          %{
+            id: anim.id,
+            type: anim.type,
+            elapsed: System.monotonic_time(:millisecond) - anim.start_time,
+            duration: anim.duration
+          }
+        end)
     }
   end
-  
+
   @doc """
   Checks if any gestures are currently active.
   """
@@ -140,7 +144,7 @@ defmodule Raxol.Animation.Gestures do
     state = Server.get_state()
     state.active
   end
-  
+
   @doc """
   Gets the current velocity of active gesture.
   """
@@ -149,12 +153,12 @@ defmodule Raxol.Animation.Gestures do
     state = Server.get_state()
     state.velocity || %Vector{x: 0, y: 0}
   end
-  
+
   @doc """
   Registers multiple handlers at once.
-  
+
   ## Examples
-  
+
       iex> register_handlers(%{
       ...>   swipe: fn data -> handle_swipe(data) end,
       ...>   tap: fn data -> handle_tap(data) end
@@ -163,114 +167,116 @@ defmodule Raxol.Animation.Gestures do
   """
   def register_handlers(handler_map) when is_map(handler_map) do
     ensure_server_started()
-    
+
     Enum.each(handler_map, fn {gesture_type, handler} ->
       Server.register_handler(gesture_type, handler)
     end)
-    
+
     :ok
   end
-  
+
   @doc """
   Simulates a gesture sequence for testing.
-  
+
   ## Examples
-  
+
       iex> simulate_swipe({10, 10}, {50, 10}, 200)
       :ok
   """
   def simulate_swipe(start_pos, end_pos, duration_ms \\ 200) do
     ensure_server_started()
     start_time = System.monotonic_time(:millisecond)
-    
+
     # Touch down
     Server.touch_down(start_pos, start_time)
-    
+
     # Simulate movement
     {start_x, start_y} = start_pos
     {end_x, end_y} = end_pos
-    
+
     steps = 5
     step_duration = div(duration_ms, steps)
-    
+
     Enum.each(1..steps, fn step ->
       progress = step / steps
       current_x = round(start_x + (end_x - start_x) * progress)
       current_y = round(start_y + (end_y - start_y) * progress)
       current_time = start_time + step * step_duration
-      
+
       Server.touch_move({current_x, current_y}, current_time)
     end)
-    
+
     # Touch up
     end_time = start_time + duration_ms
     Server.touch_up(end_pos, end_time)
-    
+
     :ok
   end
-  
+
   @doc """
   Simulates a tap gesture for testing.
   """
   def simulate_tap(position, duration_ms \\ 50) do
     ensure_server_started()
     start_time = System.monotonic_time(:millisecond)
-    
+
     Server.touch_down(position, start_time)
     Server.touch_up(position, start_time + duration_ms)
-    
+
     :ok
   end
-  
+
   @doc """
   Simulates a long press gesture for testing.
   """
   def simulate_long_press(position, duration_ms \\ 600) do
     ensure_server_started()
     start_time = System.monotonic_time(:millisecond)
-    
+
     Server.touch_down(position, start_time)
     # No movement for long press
     Server.touch_up(position, start_time + duration_ms)
-    
+
     :ok
   end
-  
+
   # Utility functions for gesture analysis
-  
+
   @doc """
   Calculates the distance between two positions.
   """
   def distance({x1, y1}, {x2, y2}) do
     :math.sqrt(:math.pow(x2 - x1, 2) + :math.pow(y2 - y1, 2))
   end
-  
+
   @doc """
   Calculates the direction from one position to another.
   """
   def direction({x1, y1}, {x2, y2}) do
     dx = x2 - x1
     dy = y2 - y1
-    
+
     if abs(dx) > abs(dy) do
       if dx > 0, do: :right, else: :left
     else
       if dy > 0, do: :down, else: :up
     end
   end
-  
+
   @doc """
   Calculates velocity between two positions over time.
   """
   def velocity({x1, y1}, {x2, y2}, time_diff_ms) do
     return_zero = %Vector{x: 0, y: 0}
-    
+
     if time_diff_ms <= 0 do
       return_zero
     else
       %Vector{
-        x: (x2 - x1) / time_diff_ms * 1000,  # px/second
-        y: (y2 - y1) / time_diff_ms * 1000   # px/second
+        # px/second
+        x: (x2 - x1) / time_diff_ms * 1000,
+        # px/second
+        y: (y2 - y1) / time_diff_ms * 1000
       }
     end
   end

@@ -7,7 +7,6 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   implements robust lifecycle hooks, and supports accessibility/extra props.
   """
 
-  
   alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
   alias Raxol.Core.Events.Event
@@ -138,7 +137,8 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     {:noreply, new_state, commands}
   end
 
-  defp execute_toggle_callback(on_toggle, new_checked_state) when is_function(on_toggle, 1) do
+  defp execute_toggle_callback(on_toggle, new_checked_state)
+       when is_function(on_toggle, 1) do
     on_toggle.(new_checked_state)
     []
   end
@@ -199,7 +199,6 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   end
 
   defp get_checkbox_colors(_state, base_style) do
-    {Map.get(base_style, :fg, :default),
-     Map.get(base_style, :bg, :default)}
+    {Map.get(base_style, :fg, :default), Map.get(base_style, :bg, :default)}
   end
 end

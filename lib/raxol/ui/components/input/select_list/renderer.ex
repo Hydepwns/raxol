@@ -3,7 +3,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
   Handles rendering functionality for the SelectList component.
   """
 
-  
   alias Raxol.UI.Components.Input.SelectList.Pagination
 
   @doc """
@@ -150,13 +149,14 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
   end
 
   # Helper function to render option based on its type structure
-  defp render_option_by_type({label, value, opt_style}, state, index) 
-       when is_tuple({label, value, opt_style}) and tuple_size({label, value, opt_style}) == 3 do
+  defp render_option_by_type({label, value, opt_style}, state, index)
+       when is_tuple({label, value, opt_style}) and
+              tuple_size({label, value, opt_style}) == 3 do
     # {label, value, opt_style}
     render_option(state, label, value, index, opt_style)
   end
 
-  defp render_option_by_type({label, value}, state, index) 
+  defp render_option_by_type({label, value}, state, index)
        when is_tuple({label, value}) and tuple_size({label, value}) == 2 do
     # {label, value} (value may be a map or any type)
     render_option(state, label, value, index, %{})

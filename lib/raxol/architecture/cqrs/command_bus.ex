@@ -429,21 +429,21 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
                state.middleware_stack,
                state
              ) do
-        {:ok, result} ->
-          # Record success metrics
-          execution_time = System.monotonic_time(:microsecond) - start_time
-          new_state = record_command_success(state, command, execution_time)
-          {:ok, result, new_state}
+          {:ok, result} ->
+            # Record success metrics
+            execution_time = System.monotonic_time(:microsecond) - start_time
+            new_state = record_command_success(state, command, execution_time)
+            {:ok, result, new_state}
 
-        {:error, reason} ->
-          # Handle command failure
-          execution_time = System.monotonic_time(:microsecond) - start_time
+          {:error, reason} ->
+            # Handle command failure
+            execution_time = System.monotonic_time(:microsecond) - start_time
 
-          new_state =
-            handle_command_failure(state, command, reason, execution_time)
+            new_state =
+              handle_command_failure(state, command, reason, execution_time)
 
-          {:error, reason, new_state}
-      end
+            {:error, reason, new_state}
+        end
     end
   end
 
@@ -501,20 +501,26 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
   end
 
   defp execute_command_handler(handler_module, command, context) do
-    try do
-      case apply(handler_module, :handle, [command, context]) do
-        {:ok, result} -> {:ok, result}
-        {:error, reason} -> {:error, reason}
-        # Assume success if not explicitly error
-        result -> {:ok, result}
-      end
-    catch
-      kind, reason ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           case apply(handler_module, :handle, [command, context]) do
+             {:ok, result} -> {:ok, result}
+             {:error, reason} -> {:error, reason}
+             # Assume success if not explicitly error
+             result -> {:ok, result}
+           end
+         end) do
+      {:ok, {:ok, result}} ->
+        {:ok, result}
+
+      {:ok, {:error, reason}} ->
+        {:error, reason}
+
+      {:error, reason} ->
         Logger.error(
-          "Command handler #{inspect(handler_module)} failed: #{inspect(kind)} #{inspect(reason)}"
+          "Command handler #{inspect(handler_module)} failed: #{inspect(reason)}"
         )
 
-        {:error, {kind, reason}}
+        {:error, reason}
     end
   end
 
@@ -553,7 +559,8 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
 
   defp record_command_success(state, command, execution_time) do
     # Update metrics
-    new_state = update_metrics_if_enabled(state, command, :success, execution_time)
+    new_state =
+      update_metrics_if_enabled(state, command, :success, execution_time)
 
     # Update audit log
     audit_if_enabled(state, command, :success, execution_time)
@@ -946,7 +953,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
   end
 
   defp check_handler_availability(nil, _circuit_breakers), do: :available
-  
+
   defp check_handler_availability(handler_module, circuit_breakers) do
     case is_circuit_breaker_open?(circuit_breakers, handler_module) do
       true -> :open
@@ -966,7 +973,12 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     )
   end
 
-  defp update_metrics_if_enabled(%{config: %{enable_metrics: true}} = state, command, status, execution_time) do
+  defp update_metrics_if_enabled(
+         %{config: %{enable_metrics: true}} = state,
+         command,
+         status,
+         execution_time
+       ) do
     update_metrics(state, command, status, execution_time)
   end
 
@@ -974,14 +986,20 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     state
   end
 
-  defp update_metrics_if_enabled(state, command, status, execution_time) when is_map(state) do
+  defp update_metrics_if_enabled(state, command, status, execution_time)
+       when is_map(state) do
     case state.config[:enable_metrics] do
       true -> update_metrics(state, command, status, execution_time)
       _ -> state
     end
   end
 
-  defp audit_if_enabled(%{config: %{enable_auditing: true}} = state, command, result, execution_time) do
+  defp audit_if_enabled(
+         %{config: %{enable_auditing: true}} = state,
+         command,
+         result,
+         execution_time
+       ) do
     audit_command(state, command, result, execution_time)
   end
 

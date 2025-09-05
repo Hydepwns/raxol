@@ -1,5 +1,4 @@
 defmodule Raxol.Style.Borders do
-  
   @moduledoc """
   Defines border properties for terminal UI elements.
   """

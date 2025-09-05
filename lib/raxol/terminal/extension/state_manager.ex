@@ -236,11 +236,12 @@ defmodule Raxol.Terminal.Extension.StateManager do
     config_path = Path.join(path, @config_file)
 
     if File.exists?(config_path) do
-      try do
-        {config, _} = Code.eval_file(config_path)
-        Map.merge(default_config, config)
-      rescue
-        _ -> default_config
+      case Raxol.Core.ErrorHandling.safe_call(fn ->
+             {config, _} = Code.eval_file(config_path)
+             Map.merge(default_config, config)
+           end) do
+        {:ok, merged_config} -> merged_config
+        {:error, _reason} -> default_config
       end
     else
       default_config

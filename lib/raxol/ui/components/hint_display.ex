@@ -1,5 +1,4 @@
 defmodule Raxol.UI.Components.HintDisplay do
-  
   @moduledoc """
   Displays contextual hints and keyboard shortcuts.
   """

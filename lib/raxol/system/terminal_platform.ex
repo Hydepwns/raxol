@@ -183,7 +183,7 @@ defmodule Raxol.System.TerminalPlatform do
   defp get_terminal_name do
     detect_terminal_by_env()
   end
-  
+
   defp detect_terminal_by_env do
     case System.get_env("TERM_PROGRAM") do
       "iTerm.app" -> "iTerm2"
@@ -191,7 +191,7 @@ defmodule Raxol.System.TerminalPlatform do
       _ -> detect_by_other_env_vars()
     end
   end
-  
+
   defp detect_by_other_env_vars do
     if System.get_env("WT_SESSION") != nil do
       "Windows Terminal"

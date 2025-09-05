@@ -1,7 +1,7 @@
 defmodule Raxol.UI.State.Streams do
   @moduledoc """
   Reactive streams system for real-time data flow in Raxol UI.
-  
+
   Refactored version with pure functional error handling patterns.
   All try/catch blocks have been replaced with with statements and proper error tuples.
 
@@ -16,6 +16,7 @@ defmodule Raxol.UI.State.Streams do
   """
 
   alias Raxol.UI.State.Store, as: Store
+  alias Raxol.Core.ErrorHandling
 
   require Logger
 
@@ -215,11 +216,13 @@ defmodule Raxol.UI.State.Streams do
   end
 
   defp emit_list_safely(list, observer) do
-    result = 
+    result =
       list
       |> Enum.reduce_while(:ok, fn item, _acc ->
         case safe_apply(observer.next, item) do
-          {:ok, _} -> {:cont, :ok}
+          {:ok, _} ->
+            {:cont, :ok}
+
           {:error, reason} ->
             safe_apply(observer.error, {:error, reason})
             {:halt, {:error, reason}}
@@ -275,6 +278,7 @@ defmodule Raxol.UI.State.Streams do
       {:ok, pid} =
         Task.start(fn ->
           :timer.sleep(milliseconds)
+
           with {:ok, _} <- safe_apply(observer.next, value) do
             safe_apply(observer.complete)
           else
@@ -306,27 +310,39 @@ defmodule Raxol.UI.State.Streams do
   end
 
   defp safe_get_store_state(path, store) do
-    case Process.whereis(store) do
-      nil -> {:error, :store_not_found}
-      _pid ->
-        {:ok, Store.get_state(path, store)}
+    ErrorHandling.safe_call(fn ->
+      case Process.whereis(store) do
+        nil ->
+          {:error, :store_not_found}
+
+        _pid ->
+          {:ok, Store.get_state(path, store)}
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, reason}
     end
-  rescue
-    error -> {:error, error}
   end
 
   defp subscribe_to_store_safely(path, observer, store) do
-    Store.subscribe(
-      path,
-      fn new_value ->
-        safe_apply(observer.next, new_value)
-      end,
-      store
-    )
-  rescue
-    error ->
-      Logger.error("Store subscription failed: #{inspect(error)}")
-      fn -> :ok end
+    ErrorHandling.safe_call(fn ->
+      Store.subscribe(
+        path,
+        fn new_value ->
+          safe_apply(observer.next, new_value)
+        end,
+        store
+      )
+    end)
+    |> case do
+      {:ok, result} ->
+        result
+
+      {:error, error} ->
+        Logger.error("Store subscription failed: #{inspect(error)}")
+        fn -> :ok end
+    end
   end
 
   @doc """
@@ -385,6 +401,7 @@ defmodule Raxol.UI.State.Streams do
               if should_emit do
                 safe_apply(observer.next, value)
               end
+
               :ok
             else
               {:error, reason} ->
@@ -521,6 +538,7 @@ defmodule Raxol.UI.State.Streams do
       if state.last_value != nil do
         Raxol.UI.State.Streams.safe_apply(state.observer.next, state.last_value)
       end
+
       {:noreply, %{state | timer: nil, last_value: nil}}
     end
   end
@@ -532,7 +550,8 @@ defmodule Raxol.UI.State.Streams do
       when is_function(reducer_fn, 2) do
     Observable.new(fn observer ->
       accumulator = :atomics.new(1, [])
-      :atomics.put(accumulator, 1, 0)  # Use as a reference holder
+      # Use as a reference holder
+      :atomics.put(accumulator, 1, 0)
       acc_ref = make_ref()
       Process.put({:stream_accumulator, acc_ref}, initial)
 
@@ -540,7 +559,7 @@ defmodule Raxol.UI.State.Streams do
         Observer.new(
           fn value ->
             current_acc = Process.get({:stream_accumulator, acc_ref})
-            
+
             with {:ok, new_acc} <- safe_apply_2(reducer_fn, current_acc, value) do
               Process.put({:stream_accumulator, acc_ref}, new_acc)
               :ok
@@ -568,9 +587,9 @@ defmodule Raxol.UI.State.Streams do
   def combine_latest(observables) when is_list(observables) do
     Observable.new(fn observer ->
       {:ok, combiner} = CombinerServer.start_link(observables, observer)
-      
+
       # Subscribe to all observables
-      subscriptions = 
+      subscriptions =
         observables
         |> Enum.with_index()
         |> Enum.map(fn {obs, index} ->
@@ -613,13 +632,14 @@ defmodule Raxol.UI.State.Streams do
 
     @impl GenServer
     def init({count, observer}) do
-      {:ok, %{
-        values: List.duplicate(nil, count),
-        has_value: List.duplicate(false, count),
-        completed: List.duplicate(false, count),
-        observer: observer,
-        errored: false
-      }}
+      {:ok,
+       %{
+         values: List.duplicate(nil, count),
+         has_value: List.duplicate(false, count),
+         completed: List.duplicate(false, count),
+         observer: observer,
+         errored: false
+       }}
     end
 
     @impl GenServer
@@ -627,12 +647,12 @@ defmodule Raxol.UI.State.Streams do
       if not state.errored do
         new_values = List.replace_at(state.values, index, value)
         new_has_value = List.replace_at(state.has_value, index, true)
-        
+
         # Emit if all streams have emitted at least once
         if Enum.all?(new_has_value) do
           Raxol.UI.State.Streams.safe_apply(state.observer.next, new_values)
         end
-        
+
         {:noreply, %{state | values: new_values, has_value: new_has_value}}
       else
         {:noreply, state}
@@ -652,11 +672,11 @@ defmodule Raxol.UI.State.Streams do
     @impl GenServer
     def handle_cast({:complete, index}, state) do
       new_completed = List.replace_at(state.completed, index, true)
-      
+
       if Enum.all?(new_completed) and not state.errored do
         Raxol.UI.State.Streams.safe_apply(state.observer.complete)
       end
-      
+
       {:noreply, %{state | completed: new_completed}}
     end
   end
@@ -665,7 +685,7 @@ defmodule Raxol.UI.State.Streams do
   Subscribes to an observable with an observer or simple next function.
   """
   def subscribe(%Observable{} = observable, observer_or_fn) do
-    observer = 
+    observer =
       case observer_or_fn do
         %Observer{} = obs -> obs
         fun when is_function(fun, 1) -> Observer.new(fun)
@@ -691,30 +711,36 @@ defmodule Raxol.UI.State.Streams do
   end
 
   ## Helper functions for safe function application
-  
+
   @doc false
   def safe_apply(fun, arg \\ nil) when is_function(fun) do
-    arity = :erlang.fun_info(fun, :arity) |> elem(1)
-    
-    case arity do
-      0 -> {:ok, fun.()}
-      1 -> {:ok, fun.(arg)}
-      _ -> {:error, :invalid_function_arity}
+    ErrorHandling.safe_call(fn ->
+      arity = :erlang.fun_info(fun, :arity) |> elem(1)
+
+      case arity do
+        0 -> {:ok, fun.()}
+        1 -> {:ok, fun.(arg)}
+        _ -> {:error, :invalid_function_arity}
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, thrown}} -> {:error, {:throw, thrown}}
+      {:error, error} -> {:error, error}
     end
-  rescue
-    error -> {:error, error}
-  catch
-    :exit, reason -> {:error, {:exit, reason}}
-    thrown -> {:error, {:throw, thrown}}
   end
 
   @doc false
   def safe_apply_2(fun, arg1, arg2) when is_function(fun, 2) do
-    {:ok, fun.(arg1, arg2)}
-  rescue
-    error -> {:error, error}
-  catch
-    :exit, reason -> {:error, {:exit, reason}}
-    thrown -> {:error, {:throw, thrown}}
+    ErrorHandling.safe_call(fn ->
+      fun.(arg1, arg2)
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, thrown}} -> {:error, {:throw, thrown}}
+      {:error, error} -> {:error, error}
+    end
   end
 end

@@ -361,51 +361,49 @@ defmodule Raxol.Core.Performance.Profiler do
     # Enable tracing if requested
     if trace, do: start_tracing()
 
-    # Execute the function
-    try do
-      result = fun.()
+    # Execute the function with functional error handling
+    case Raxol.Core.ErrorHandling.safe_call_with_info(fun) do
+      {:ok, result} ->
+        # Collect final metrics
+        end_time = System.monotonic_time(:microsecond)
+        gc_after = :erlang.statistics(:garbage_collection)
+        {:memory, memory_after} = Process.info(self(), :memory)
+        {reductions_after, _} = :erlang.statistics(:reductions)
 
-      # Collect final metrics
-      end_time = System.monotonic_time(:microsecond)
-      gc_after = :erlang.statistics(:garbage_collection)
-      {:memory, memory_after} = Process.info(self(), :memory)
-      {reductions_after, _} = :erlang.statistics(:reductions)
-
-      # Stop tracing
-      if trace, do: stop_tracing()
-
-      # Build metrics
-      metrics = %Metrics{
-        operation: operation,
-        start_time: start_time,
-        end_time: end_time,
-        duration_us: end_time - start_time,
-        memory_before: memory_before,
-        memory_after: memory_after,
-        memory_delta: memory_after - memory_before,
-        gc_before: elem(gc_before, 0),
-        gc_after: elem(gc_after, 0),
-        gc_runs: elem(gc_after, 0) - elem(gc_before, 0),
-        reductions: reductions_after - reductions_before,
-        metadata: metadata
-      }
-
-      # Record the profile
-      GenServer.call(__MODULE__, {:record_profile, metrics})
-
-      # Log if slow
-      # > 1 second
-      if metrics.duration_us > 1_000_000 do
-        Logger.warning(
-          "[Performance] Slow operation #{operation}: #{metrics.duration_us / 1_000_000}s"
-        )
-      end
-
-      result
-    rescue
-      error ->
+        # Stop tracing
         if trace, do: stop_tracing()
-        reraise error, __STACKTRACE__
+
+        # Build metrics
+        metrics = %Metrics{
+          operation: operation,
+          start_time: start_time,
+          end_time: end_time,
+          duration_us: end_time - start_time,
+          memory_before: memory_before,
+          memory_after: memory_after,
+          memory_delta: memory_after - memory_before,
+          gc_before: elem(gc_before, 0),
+          gc_after: elem(gc_after, 0),
+          gc_runs: elem(gc_after, 0) - elem(gc_before, 0),
+          reductions: reductions_after - reductions_before,
+          metadata: metadata
+        }
+
+        # Record the profile
+        GenServer.call(__MODULE__, {:record_profile, metrics})
+
+        # Log if slow (> 1 second)
+        if metrics.duration_us > 1_000_000 do
+          Logger.warning(
+            "[Performance] Slow operation #{operation}: #{metrics.duration_us / 1_000_000}s"
+          )
+        end
+
+        result
+
+      {:error, {kind, error, stacktrace}} ->
+        if trace, do: stop_tracing()
+        :erlang.raise(kind, error, stacktrace)
     end
   end
 

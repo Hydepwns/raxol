@@ -10,7 +10,7 @@ defmodule Raxol.ComponentTestHelpers do
   """
 
   alias Raxol.Test.Unit
-  
+
   @doc """
   Simulates a sequence of events on a component.
 

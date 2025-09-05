@@ -100,10 +100,11 @@ defmodule Raxol.Core.CompilerState do
 
   defp safe_create_table(name, opts) do
     # Use Task to isolate potential crashes and handle race conditions
-    task = Task.async(fn ->
-      :ets.new(name, opts)
-      :ok
-    end)
+    task =
+      Task.async(fn ->
+        :ets.new(name, opts)
+        :ok
+      end)
 
     case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
       {:ok, :ok} ->
@@ -119,15 +120,18 @@ defmodule Raxol.Core.CompilerState do
 
       {:exit, reason} ->
         # Unexpected error - check table existence as fallback
-        if table_exists?(name), do: :ok, else: {:error, {:creation_error, reason}}
+        if table_exists?(name),
+          do: :ok,
+          else: {:error, {:creation_error, reason}}
     end
   end
 
   defp perform_safe_lookup(table, key) do
     # Use Task to isolate potential ETS crashes
-    task = Task.async(fn ->
-      :ets.lookup(table, key)
-    end)
+    task =
+      Task.async(fn ->
+        :ets.lookup(table, key)
+      end)
 
     case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
       {:ok, result} ->
@@ -147,9 +151,10 @@ defmodule Raxol.Core.CompilerState do
 
   defp perform_safe_insert(table, data) do
     # Use Task to isolate potential ETS crashes
-    task = Task.async(fn ->
-      :ets.insert(table, data)
-    end)
+    task =
+      Task.async(fn ->
+        :ets.insert(table, data)
+      end)
 
     case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
       {:ok, true} ->
@@ -169,9 +174,10 @@ defmodule Raxol.Core.CompilerState do
 
   defp perform_safe_delete(table, key) do
     # Use Task to isolate potential ETS crashes
-    task = Task.async(fn ->
-      :ets.delete(table, key)
-    end)
+    task =
+      Task.async(fn ->
+        :ets.delete(table, key)
+      end)
 
     case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
       {:ok, true} ->
@@ -191,9 +197,10 @@ defmodule Raxol.Core.CompilerState do
 
   defp perform_safe_delete_table(table) do
     # Use Task to isolate potential ETS crashes
-    task = Task.async(fn ->
-      :ets.delete(table)
-    end)
+    task =
+      Task.async(fn ->
+        :ets.delete(table)
+      end)
 
     case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do
       {:ok, true} ->

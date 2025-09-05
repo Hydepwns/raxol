@@ -3,7 +3,6 @@ defmodule Raxol.Style.Layout do
   Handles layout styling for Raxol components.
   """
 
-  
   @type t :: %__MODULE__{
           margin:
             {non_neg_integer(), non_neg_integer(), non_neg_integer(),

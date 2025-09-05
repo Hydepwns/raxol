@@ -747,10 +747,14 @@ defmodule Raxol.Audit.Events do
       {:error, {:missing_required_fields, missing}}
     end
   end
-  
+
   # Helper functions for pattern matching refactoring
 
-  defp determine_change_type(nil, new_value) when not is_nil(new_value), do: :create
-  defp determine_change_type(old_value, nil) when not is_nil(old_value), do: :delete
+  defp determine_change_type(nil, new_value) when not is_nil(new_value),
+    do: :create
+
+  defp determine_change_type(old_value, nil) when not is_nil(old_value),
+    do: :delete
+
   defp determine_change_type(_old_value, _new_value), do: :update
 end

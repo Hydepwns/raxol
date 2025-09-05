@@ -13,10 +13,10 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
     updated_cells = erase_in_line_cells(buffer.cells, mode, row, col)
     %{buffer | cells: updated_cells}
   end
-  
+
   def erase_in_line(buffer, mode, cursor) when is_list(buffer) do
     {row, col} = get_cursor_position(cursor)
-    
+
     case mode do
       0 -> erase_from_cursor_to_line_end(buffer, row, col)
       1 -> erase_from_line_start_to_cursor(buffer, row, col)
@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
       _ -> buffer
     end
   end
-  
+
   def erase_in_line(buffer, _mode, _cursor), do: buffer
 
   @doc """
@@ -313,12 +313,14 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
     end)
   end
 
-  defp process_line_for_cursor_end(line, line_row, target_row, _col) when line_row < target_row,
-    do: line
-  
-  defp process_line_for_cursor_end(line, line_row, target_row, col) when line_row == target_row,
-    do: map_cells_from_column(line, col)
-  
+  defp process_line_for_cursor_end(line, line_row, target_row, _col)
+       when line_row < target_row,
+       do: line
+
+  defp process_line_for_cursor_end(line, line_row, target_row, col)
+       when line_row == target_row,
+       do: map_cells_from_column(line, col)
+
   defp process_line_for_cursor_end(line, _line_row, _target_row, _col),
     do: List.duplicate(Cell.new(" "), length(line))
 
@@ -330,12 +332,14 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
     end)
   end
 
-  defp process_line_for_cursor_start(line, line_row, row, _col) when line_row > row,
-    do: line
-  
-  defp process_line_for_cursor_start(line, line_row, row, col) when line_row == row,
-    do: map_cells_up_to_column(line, col)
-  
+  defp process_line_for_cursor_start(line, line_row, row, _col)
+       when line_row > row,
+       do: line
+
+  defp process_line_for_cursor_start(line, line_row, row, col)
+       when line_row == row,
+       do: map_cells_up_to_column(line, col)
+
   defp process_line_for_cursor_start(line, _line_row, _row, _col),
     do: List.duplicate(Cell.new(" "), length(line))
 

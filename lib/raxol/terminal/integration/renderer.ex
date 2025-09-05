@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
   alias Raxol.Terminal.Integration.State
   alias Raxol.Terminal.Buffer.Manager
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  alias Raxol.Core.ErrorHandling
   require Logger
 
   @doc """
@@ -24,41 +25,43 @@ defmodule Raxol.Terminal.Integration.Renderer do
     else
       IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_init()")
 
-      try do
-        raw_init_result = :termbox2_nif.tb_init()
+      case ErrorHandling.safe_call(fn ->
+             raw_init_result = :termbox2_nif.tb_init()
 
-        case raw_init_result do
-          0 ->
-            IO.puts("[Renderer] :termbox2_nif.tb_init() returned 0 (success)")
-            :ok
+             case raw_init_result do
+               0 ->
+                 IO.puts(
+                   "[Renderer] :termbox2_nif.tb_init() returned 0 (success)"
+                 )
 
-          int_val when is_integer(int_val) ->
-            Logger.warning(
-              "Terminal integration renderer failed to initialize: #{inspect(int_val)}",
-              %{error: int_val}
-            )
+                 :ok
 
-            {:error, {:init_failed_with_code, int_val}}
+               int_val when is_integer(int_val) ->
+                 Logger.warning(
+                   "Terminal integration renderer failed to initialize: #{inspect(int_val)}",
+                   %{error: int_val}
+                 )
 
-          other ->
-            Logger.error(
-              "[Renderer] Termbox2 NIF tb_init() returned unexpected value: #{inspect(other)}"
-            )
+                 {:error, {:init_failed_with_code, int_val}}
 
-            {:error, {:init_failed_unexpected_return, other}}
-        end
-      catch
-        kind, reason ->
-          tb_stacktrace = __STACKTRACE__
+               other ->
+                 Logger.error(
+                   "[Renderer] Termbox2 NIF tb_init() returned unexpected value: #{inspect(other)}"
+                 )
 
+                 {:error, {:init_failed_unexpected_return, other}}
+             end
+           end) do
+        {:ok, result} ->
+          result
+
+        {:error, reason} ->
           Logger.error("""
           [Renderer] Caught exception/exit during :termbox2_nif.tb_init() call.
-          Kind: #{inspect(kind)}
           Reason: #{inspect(reason)}
-          Stacktrace: #{inspect(tb_stacktrace)}
           """)
 
-          {:error, {:init_failed_exception, kind, reason}}
+          {:error, {:init_failed_exception, reason}}
       end
     end
   end
@@ -79,22 +82,21 @@ defmodule Raxol.Terminal.Integration.Renderer do
     else
       IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_shutdown()")
 
-      try do
-        :termbox2_nif.tb_shutdown()
-        IO.puts("[Renderer] :termbox2_nif.tb_shutdown() called.")
-        :ok
-      catch
-        kind, reason ->
-          tb_stacktrace = __STACKTRACE__
+      case ErrorHandling.safe_call(fn ->
+             :termbox2_nif.tb_shutdown()
+             IO.puts("[Renderer] :termbox2_nif.tb_shutdown() called.")
+             :ok
+           end) do
+        {:ok, result} ->
+          result
 
+        {:error, reason} ->
           Logger.error("""
           [Renderer] Caught exception/exit during :termbox2_nif.tb_shutdown() call.
-          Kind: #{inspect(kind)}
           Reason: #{inspect(reason)}
-          Stacktrace: #{inspect(tb_stacktrace)}
           """)
 
-          {:error, {:shutdown_failed_exception, kind, reason}}
+          {:error, {:shutdown_failed_exception, reason}}
       end
     end
   end

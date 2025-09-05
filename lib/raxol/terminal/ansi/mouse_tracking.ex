@@ -5,7 +5,8 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   """
 
   import Bitwise
-    alias Raxol.Terminal.ANSI.Monitor
+  alias Raxol.Terminal.ANSI.Monitor
+  alias Raxol.Core.ErrorHandling
 
   @type mouse_button :: :left | :middle | :right | :wheel_up | :wheel_down
   @type mouse_action :: :press | :release | :move | :drag
@@ -89,25 +90,27 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   """
   @spec parse_mouse_sequence(String.t()) :: mouse_event() | nil
   def parse_mouse_sequence(sequence) do
-    try do
-      case sequence do
-        <<27, 77, button, x, y>> ->
-          # Decode coordinates: they are encoded as x+32, y+32
-          decoded_x = x - 32
-          decoded_y = y - 32
-          parse_mouse_event(button, decoded_x, decoded_y)
+    case ErrorHandling.safe_call(fn ->
+           case sequence do
+             <<27, 77, button, x, y>> ->
+               # Decode coordinates: they are encoded as x+32, y+32
+               decoded_x = x - 32
+               decoded_y = y - 32
+               parse_mouse_event(button, decoded_x, decoded_y)
 
-        <<"\e[<", rest::binary>> ->
-          parse_sgr_mouse_event(rest)
+             <<"\e[<", rest::binary>> ->
+               parse_sgr_mouse_event(rest)
 
-        _ ->
-          nil
-      end
-    rescue
-      e ->
+             _ ->
+               nil
+           end
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, e} ->
         Monitor.record_error("", "Mouse sequence parse error: #{inspect(e)}", %{
-          sequence: sequence,
-          stacktrace: Exception.format_stacktrace(__STACKTRACE__)
+          sequence: sequence
         })
 
         nil
@@ -119,17 +122,19 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
   """
   @spec parse_focus_sequence(String.t()) :: focus_event() | nil
   def parse_focus_sequence(sequence) do
-    try do
-      case sequence do
-        "\e[I" -> :focus_in
-        "\e[O" -> :focus_out
-        _ -> nil
-      end
-    rescue
-      e ->
+    case ErrorHandling.safe_call(fn ->
+           case sequence do
+             "\e[I" -> :focus_in
+             "\e[O" -> :focus_out
+             _ -> nil
+           end
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, e} ->
         Monitor.record_error("", "Focus sequence parse error: #{inspect(e)}", %{
-          sequence: sequence,
-          stacktrace: Exception.format_stacktrace(__STACKTRACE__)
+          sequence: sequence
         })
 
         nil

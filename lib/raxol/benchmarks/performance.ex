@@ -1,5 +1,4 @@
 defmodule Raxol.Benchmarks.Performance do
-  
   @moduledoc """
   Performance benchmarking and validation tools for Raxol.
 

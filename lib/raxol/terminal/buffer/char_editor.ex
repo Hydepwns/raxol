@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Buffer.CharEditor do
-  
   @moduledoc """
   Manages terminal character editing operations.
   """

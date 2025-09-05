@@ -13,7 +13,7 @@ defmodule Raxol.UI.Components.Dashboard.WidgetContainer do
   require Raxol.View.Elements
   # Use UI alias
   alias Raxol.View.Elements, as: UI
-  
+
   # --- Component Behaviour Placeholders ---
 
   @spec init(map()) :: map()

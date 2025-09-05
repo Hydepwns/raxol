@@ -4,7 +4,6 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
   Provides box model layout with content, padding, border, and margin.
   """
 
-  
   @doc """
   Creates a new box view.
 

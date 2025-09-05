@@ -52,7 +52,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
       }
   """
 
-    alias Raxol.UI.Layout.Engine
+  alias Raxol.UI.Layout.Engine
 
   # Grid track definition
   defmodule Track do
@@ -355,7 +355,8 @@ defmodule Raxol.UI.Layout.CSSGrid do
     parse_track_by_type(track_str, available_size)
   end
 
-  defp parse_track_by_type(track_str, available_size) when is_binary(track_str) do
+  defp parse_track_by_type(track_str, available_size)
+       when is_binary(track_str) do
     case track_str do
       "auto" -> Track.new(:auto, 0)
       "min-content" -> Track.new(:min_content, 0)
@@ -373,11 +374,13 @@ defmodule Raxol.UI.Layout.CSSGrid do
           result
         else
           :error ->
-            with {:ok, result} <- try_parse_percent_track(track_str, available_size) do
+            with {:ok, result} <-
+                   try_parse_percent_track(track_str, available_size) do
               result
             else
               :error ->
-                with {:ok, result} <- try_parse_minmax_track(track_str, available_size) do
+                with {:ok, result} <-
+                       try_parse_minmax_track(track_str, available_size) do
                   result
                 else
                   :error -> parse_fallback_track(track_str)
@@ -443,7 +446,14 @@ defmodule Raxol.UI.Layout.CSSGrid do
     end
   end
 
-  defp determine_cell_placement(grid_area, _grid_row, _grid_column, areas, _row_tracks, _column_tracks) 
+  defp determine_cell_placement(
+         grid_area,
+         _grid_row,
+         _grid_column,
+         areas,
+         _row_tracks,
+         _column_tracks
+       )
        when not is_nil(grid_area) and is_map_key(areas, grid_area) do
     area = areas[grid_area]
 
@@ -457,14 +467,28 @@ defmodule Raxol.UI.Layout.CSSGrid do
     )
   end
 
-  defp determine_cell_placement(_grid_area, grid_row, grid_column, _areas, row_tracks, column_tracks) 
+  defp determine_cell_placement(
+         _grid_area,
+         grid_row,
+         grid_column,
+         _areas,
+         row_tracks,
+         column_tracks
+       )
        when not is_nil(grid_row) or not is_nil(grid_column) do
     {row, row_span} = parse_grid_line(grid_row, length(row_tracks))
     {col, col_span} = parse_grid_line(grid_column, length(column_tracks))
     Cell.new(row, col, row_span, col_span)
   end
 
-  defp determine_cell_placement(_grid_area, _grid_row, _grid_column, _areas, _row_tracks, _column_tracks) do
+  defp determine_cell_placement(
+         _grid_area,
+         _grid_row,
+         _grid_column,
+         _areas,
+         _row_tracks,
+         _column_tracks
+       ) do
     # Will be auto-placed
     nil
   end
@@ -532,7 +556,15 @@ defmodule Raxol.UI.Layout.CSSGrid do
       dims = Engine.measure_element(child, content_space)
 
       # Determine cell placement
-      cell = determine_cell_placement(grid_area, grid_row, grid_column, areas, row_tracks, column_tracks)
+      cell =
+        determine_cell_placement(
+          grid_area,
+          grid_row,
+          grid_column,
+          areas,
+          row_tracks,
+          column_tracks
+        )
 
       create_grid_item(child, cell, dims, acc)
     end)
@@ -685,8 +717,11 @@ defmodule Raxol.UI.Layout.CSSGrid do
   defp find_next_available_column(grid, row, col, col_count, row_count)
        when col <= col_count do
     case is_cell_available(grid, row, col) do
-      true -> {row, col}
-      false -> find_next_available_column(grid, row + 1, col, col_count, row_count)
+      true ->
+        {row, col}
+
+      false ->
+        find_next_available_column(grid, row + 1, col, col_count, row_count)
     end
   end
 
@@ -695,7 +730,8 @@ defmodule Raxol.UI.Layout.CSSGrid do
     nil
   end
 
-  defp is_cell_available(grid, row, col) when row > 0 and row <= length(grid) and col > 0 do
+  defp is_cell_available(grid, row, col)
+       when row > 0 and row <= length(grid) and col > 0 do
     row_data = Enum.at(grid, row - 1)
     check_column_availability(row_data, col)
   end
@@ -993,7 +1029,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
 
   defp parse_grid_line_end(start_num, end_str, track_count) do
     trimmed = String.trim(end_str)
-    
+
     case String.starts_with?(trimmed, "span") do
       true ->
         span_str = trimmed |> String.trim_leading("span") |> String.trim()

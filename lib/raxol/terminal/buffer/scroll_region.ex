@@ -54,13 +54,13 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
           ScreenBuffer.t()
   def set_region(buffer, top, bottom) when top < 0 or bottom < 0,
     do: %{buffer | scroll_region: nil, scroll_position: 0}
-  
+
   def set_region(buffer, top, bottom) when top > bottom,
     do: %{buffer | scroll_region: nil, scroll_position: 0}
-  
+
   def set_region(buffer, top, bottom) when bottom >= buffer.height,
     do: %{buffer | scroll_region: nil, scroll_position: 0}
-  
+
   def set_region(buffer, top, bottom),
     do: %{buffer | scroll_region: {top, bottom}, scroll_position: top}
 
@@ -450,9 +450,10 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
          scroll_end,
          lines,
          empty_line
-       ) when idx <= scroll_end - lines,
+       )
+       when idx <= scroll_end - lines,
        do: get_moved_line(cells, idx, lines, :up, empty_line)
-       
+
   defp transform_line_for_up_scroll(
          idx,
          _cells,
@@ -460,9 +461,10 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
          scroll_end,
          _lines,
          empty_line
-       ) when idx <= scroll_end,
+       )
+       when idx <= scroll_end,
        do: empty_line
-       
+
   defp transform_line_for_up_scroll(
          idx,
          cells,
@@ -480,9 +482,10 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
          _scroll_end,
          lines,
          empty_line
-       ) when idx < scroll_start + lines,
+       )
+       when idx < scroll_start + lines,
        do: empty_line
-       
+
   defp transform_line_for_down_scroll(
          idx,
          cells,
@@ -490,9 +493,10 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
          scroll_end,
          lines,
          empty_line
-       ) when idx <= scroll_end,
+       )
+       when idx <= scroll_end,
        do: get_moved_line(cells, idx, lines, :down, empty_line)
-       
+
   defp transform_line_for_down_scroll(
          idx,
          cells,

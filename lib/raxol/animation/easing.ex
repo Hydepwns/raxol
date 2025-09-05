@@ -1,5 +1,4 @@
 defmodule Raxol.Animation.Easing do
-  
   @moduledoc """
   Provides standard easing functions for animations.
   """
@@ -155,17 +154,17 @@ defmodule Raxol.Animation.Easing do
 
   def calculate_value(:ease_out_bounce, t) when t < 1 / 2.75,
     do: 7.5625 * t * t
-    
+
   def calculate_value(:ease_out_bounce, t) when t < 2 / 2.75 do
     t_minus_1 = t - 1.5 / 2.75
     7.5625 * t_minus_1 * t_minus_1 + 0.75
   end
-  
+
   def calculate_value(:ease_out_bounce, t) when t < 2.5 / 2.75 do
     t_minus_1 = t - 2.25 / 2.75
     7.5625 * t_minus_1 * t_minus_1 + 0.9375
   end
-  
+
   def calculate_value(:ease_out_bounce, t) do
     t_minus_1 = t - 2.625 / 2.75
     7.5625 * t_minus_1 * t_minus_1 + 0.984375
@@ -181,8 +180,12 @@ defmodule Raxol.Animation.Easing do
 
   # Elastic easing functions - tuned to match test expectations
   def calculate_value(:ease_in_elastic, 0.0), do: 0.0
-  def calculate_value(:ease_in_elastic, t) when t == 1.0 or 1.0 - t == 0.0, do: 1.0
+
+  def calculate_value(:ease_in_elastic, t) when t == 1.0 or 1.0 - t == 0.0,
+    do: 1.0
+
   def calculate_value(:ease_in_elastic, 0.5), do: -0.015625
+
   def calculate_value(:ease_in_elastic, t) do
     # Clamp result to [0.0, 1.0] for other values
     result = if t < 0.7, do: t * t * :math.sin(t * 10), else: t * 1.4 - 0.4
@@ -190,8 +193,12 @@ defmodule Raxol.Animation.Easing do
   end
 
   def calculate_value(:ease_out_elastic, 0.0), do: 0.0
-  def calculate_value(:ease_out_elastic, t) when t == 1.0 or 1.0 - t == 0.0, do: 1.0
+
+  def calculate_value(:ease_out_elastic, t) when t == 1.0 or 1.0 - t == 0.0,
+    do: 1.0
+
   def calculate_value(:ease_out_elastic, 0.5), do: 1.015625
+
   def calculate_value(:ease_out_elastic, t) do
     # Ensure result always stays in [0.0, 1.0]
     result =
@@ -203,10 +210,14 @@ defmodule Raxol.Animation.Easing do
   end
 
   def calculate_value(:ease_in_out_elastic, 0.0), do: 0.0
-  def calculate_value(:ease_in_out_elastic, t) when t == 1.0 or 1.0 - t == 0.0, do: 1.0
+
+  def calculate_value(:ease_in_out_elastic, t) when t == 1.0 or 1.0 - t == 0.0,
+    do: 1.0
+
   def calculate_value(:ease_in_out_elastic, 0.25), do: -0.0078125
   def calculate_value(:ease_in_out_elastic, 0.5), do: 0.5
   def calculate_value(:ease_in_out_elastic, 0.75), do: 1.0078125
+
   def calculate_value(:ease_in_out_elastic, t) do
     result =
       if t < 0.5 do

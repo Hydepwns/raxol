@@ -1,6 +1,6 @@
 defmodule Raxol.Core.Accessibility.Announcements do
   use Agent
-  
+
   @moduledoc """
   Handles screen reader announcements and announcement queue management.
   """
@@ -69,7 +69,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
   defp process_announcement(message, opts, user_preferences_pid_or_name) do
     # Delegate to the GenServer for announcement processing
     alias Raxol.Core.Accessibility.Server
-    
+
     announcement = %{
       message: message,
       priority: Keyword.get(opts, :priority, :normal),
@@ -78,7 +78,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
     }
 
     Server.add_announcement(announcement, user_preferences_pid_or_name)
-    
+
     send_announcement_to_subscribers(message)
     EventManager.dispatch({:accessibility_announce, message})
   end
@@ -111,7 +111,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
     # Delegate to the GenServer for clearing all announcements
     alias Raxol.Core.Accessibility.Server
     Server.clear_all_announcements()
-    
+
     # Send announcements_cleared messages to subscribers
     send_clear_message_to_subscribers()
     :ok

@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   alias Raxol.Terminal.ModeManager
 
   require Raxol.Core.Runtime.Log
+  alias Raxol.Core.ErrorHandling
 
   @doc """
   Processes a single character codepoint.
@@ -277,23 +278,22 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   end
 
   defp get_cursor_position_safe(cursor) do
-    try do
-      case cursor do
-        cursor when is_pid(cursor) ->
-          position = Raxol.Terminal.Cursor.Manager.get_position(cursor)
-          position
+    case ErrorHandling.safe_call(fn ->
+           case cursor do
+             cursor when is_pid(cursor) ->
+               position = Raxol.Terminal.Cursor.Manager.get_position(cursor)
+               position
 
-        cursor when is_map(cursor) ->
-          Raxol.Terminal.Cursor.Manager.get_position(cursor)
+             cursor when is_map(cursor) ->
+               Raxol.Terminal.Cursor.Manager.get_position(cursor)
 
-        _ ->
-          log_cursor_debug("unknown cursor type", cursor)
-          {0, 0}
-      end
-    rescue
-      _e ->
-        # ERROR: Failed to get cursor position: #{inspect(e)}
-        {0, 0}
+             _ ->
+               log_cursor_debug("unknown cursor type", cursor)
+               {0, 0}
+           end
+         end) do
+      {:ok, result} -> result
+      {:error, _} -> {0, 0}
     end
   end
 
@@ -317,66 +317,76 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   end
 
   defp write_character(emulator, char_codepoint, opts) do
-    try do
-      {translated_char, _new_charset_state} =
-        CharacterSets.translate_char(char_codepoint, emulator.charset_state)
+    case ErrorHandling.safe_call(fn ->
+           {translated_char, _new_charset_state} =
+             CharacterSets.translate_char(
+               char_codepoint,
+               emulator.charset_state
+             )
 
-      _active_charset_module =
-        CharacterSets.get_active_charset(emulator.charset_state)
+           _active_charset_module =
+             CharacterSets.get_active_charset(emulator.charset_state)
 
-      translated_char_str = <<translated_char::utf8>>
+           translated_char_str = <<translated_char::utf8>>
 
-      if not is_binary(translated_char_str) do
+           if not is_binary(translated_char_str) do
+             Raxol.Core.Runtime.Log.error(
+               "Expected translated_char to be a string, got: #{inspect(translated_char_str)}"
+             )
+           end
+
+           buffer_height = get_buffer_height(emulator)
+
+           {write_col, write_row, _next_cursor_col, _next_cursor_row,
+            _next_last_col_exceeded} =
+             calculate_positions(
+               emulator,
+               get_buffer_width(emulator),
+               char_codepoint
+             )
+
+           # Check if autowrap would cause an out-of-bounds write
+           _auto_wrap_mode =
+             ModeManager.mode_enabled?(emulator.mode_manager, :decawm)
+
+           if write_row < buffer_height do
+             buffer_for_write = Emulator.get_screen_buffer(emulator)
+             # When writing the cell, use opts directly as the style argument
+             # For example, if the function is write_char(buffer, x, y, char, style), pass opts as style
+             buffer_after_write =
+               Operations.write_char(
+                 buffer_for_write,
+                 write_col,
+                 write_row,
+                 translated_char_str,
+                 opts
+               )
+
+             emulator =
+               Emulator.update_active_buffer(emulator, buffer_after_write)
+
+             emulator
+           else
+             Raxol.Core.Runtime.Log.warning_with_context(
+               "Attempted write out of bounds (row=#{write_row}, height=#{buffer_height}), handling autowrap after scroll.",
+               %{}
+             )
+
+             # For autowrap that would go out of bounds, we need to write the character after scrolling
+             # First, let the emulator scroll, then write the character to the new line
+             emulator
+           end
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, exception} ->
+        # ERROR in write_character/3: #{inspect(exception)}
         Raxol.Core.Runtime.Log.error(
-          "Expected translated_char to be a string, got: #{inspect(translated_char_str)}"
+          "write_character failed: #{inspect(exception)}"
         )
-      end
-
-      buffer_height = get_buffer_height(emulator)
-
-      {write_col, write_row, _next_cursor_col, _next_cursor_row,
-       _next_last_col_exceeded} =
-        calculate_positions(
-          emulator,
-          get_buffer_width(emulator),
-          char_codepoint
-        )
-
-      # Check if autowrap would cause an out-of-bounds write
-      _auto_wrap_mode =
-        ModeManager.mode_enabled?(emulator.mode_manager, :decawm)
-
-      if write_row < buffer_height do
-        buffer_for_write = Emulator.get_screen_buffer(emulator)
-        # When writing the cell, use opts directly as the style argument
-        # For example, if the function is write_char(buffer, x, y, char, style), pass opts as style
-        buffer_after_write =
-          Operations.write_char(
-            buffer_for_write,
-            write_col,
-            write_row,
-            translated_char_str,
-            opts
-          )
-
-        emulator = Emulator.update_active_buffer(emulator, buffer_after_write)
 
         emulator
-      else
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Attempted write out of bounds (row=#{write_row}, height=#{buffer_height}), handling autowrap after scroll.",
-          %{}
-        )
-
-        # For autowrap that would go out of bounds, we need to write the character after scrolling
-        # First, let the emulator scroll, then write the character to the new line
-        emulator
-      end
-    rescue
-      exception ->
-        # ERROR in write_character/3: #{inspect(exception)}\n#{Exception.format(:error, exception, __STACKTRACE__)}
-
-        reraise(exception, __STACKTRACE__)
     end
   end
 

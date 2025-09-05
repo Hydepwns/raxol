@@ -8,7 +8,7 @@ defmodule Raxol.UI.Layout.Engine do
   * Managing the layout pipeline
   """
 
-    require Raxol.Core.Runtime.Log
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.UI.Layout.{
     Grid,

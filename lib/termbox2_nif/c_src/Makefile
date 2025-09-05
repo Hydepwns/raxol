@@ -21,7 +21,7 @@ ERL_CFLAGS ?= -I$(ERL_EI_INCLUDE_DIR)
 ERL_LDFLAGS ?= -L$(ERL_EI_LIBDIR) -lei
 
 # Set C-specific compile and linker flags
-CFLAGS ?= -O2 -Wall -Wextra -Wno-unused-parameter -std=c99 -Itermbox2
+CFLAGS ?= -O2 -Wall -Wextra -Wno-unused-parameter -std=c99 -fPIC -Itermbox2
 LDFLAGS ?= -shared
 
 # Set platform-specific compile and linker flags
@@ -31,8 +31,8 @@ ifeq ($(shell uname),Darwin)
 endif
 
 # Set source and object files
-SRC = termbox2_nif.c termbox2/termbox_impl.c
-OBJ = termbox2_nif.o termbox2/termbox_impl.o
+SRC = termbox2_nif.c termbox_impl.c
+OBJ = termbox2_nif.o termbox_impl.o
 
 # Set target library name
 TARGET = termbox2_nif.so
@@ -40,12 +40,15 @@ TARGET = termbox2_nif.so
 # Default target
 all: $(TARGET)
 
+# Ensure all object files are rebuilt every time
+.PHONY: all clean $(OBJ)
+
 # Compile termbox2_nif.c
 termbox2_nif.o: termbox2_nif.c
 	$(CC) $(CFLAGS) $(ERL_CFLAGS) -I. -c $< -o $@
 
-# Compile termbox2/termbox_impl.c
-termbox2/termbox_impl.o: termbox2/termbox_impl.c
+# Compile termbox_impl.c
+termbox_impl.o: termbox_impl.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Link object files into shared library
@@ -62,5 +65,3 @@ $(TARGET): $(OBJ)
 # Clean build artifacts
 clean:
 	rm -f $(OBJ) $(TARGET)
-
-.PHONY: all clean

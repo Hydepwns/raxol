@@ -12,13 +12,16 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Cache do
   @spec get(String.t(), atom()) ::
           {:ok, any()} | {:error, :cache_miss | :cache_unavailable | any()}
   def get(key, namespace) do
-    case Raxol.Terminal.Cache.System.get(key, namespace: namespace) do
-      {:ok, value} -> {:ok, value}
-      {:error, :not_found} -> {:error, :cache_miss}
-      {:error, reason} -> {:error, reason}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           case Raxol.Terminal.Cache.System.get(key, namespace: namespace) do
+             {:ok, value} -> {:ok, value}
+             {:error, :not_found} -> {:error, :cache_miss}
+             {:error, reason} -> {:error, reason}
+           end
+         end) do
+      {:ok, result} -> result
+      {:error, _} -> {:error, :cache_unavailable}
     end
-  rescue
-    _ -> {:error, :cache_unavailable}
   end
 
   @doc """
@@ -26,12 +29,17 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Cache do
   """
   @spec put(String.t(), any(), atom()) :: {:ok, any()} | {:error, any()}
   def put(key, value, namespace) do
-    case Raxol.Terminal.Cache.System.put(key, value, namespace: namespace) do
-      :ok -> {:ok, value}
-      {:error, reason} -> {:error, reason}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           case Raxol.Terminal.Cache.System.put(key, value,
+                  namespace: namespace
+                ) do
+             :ok -> {:ok, value}
+             {:error, reason} -> {:error, reason}
+           end
+         end) do
+      {:ok, result} -> result
+      {:error, _} -> {:error, :cache_unavailable}
     end
-  rescue
-    _ -> {:error, :cache_unavailable}
   end
 
   @doc """
@@ -39,12 +47,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Cache do
   """
   @spec clear(atom()) :: :ok | {:error, any()}
   def clear(namespace) do
-    case Raxol.Terminal.Cache.System.clear(namespace: namespace) do
-      :ok -> :ok
-      {:error, reason} -> {:error, reason}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           case Raxol.Terminal.Cache.System.clear(namespace: namespace) do
+             :ok -> :ok
+             {:error, reason} -> {:error, reason}
+           end
+         end) do
+      {:ok, result} -> result
+      {:error, _} -> {:error, :cache_unavailable}
     end
-  rescue
-    _ -> {:error, :cache_unavailable}
   end
 
   @doc """
@@ -52,12 +63,17 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Cache do
   """
   @spec invalidate(String.t(), atom()) :: :ok | {:error, any()}
   def invalidate(key, namespace) do
-    case Raxol.Terminal.Cache.System.invalidate(key, namespace: namespace) do
-      :ok -> :ok
-      {:error, reason} -> {:error, reason}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           case Raxol.Terminal.Cache.System.invalidate(key,
+                  namespace: namespace
+                ) do
+             :ok -> :ok
+             {:error, reason} -> {:error, reason}
+           end
+         end) do
+      {:ok, result} -> result
+      {:error, _} -> {:error, :cache_unavailable}
     end
-  rescue
-    _ -> {:error, :cache_unavailable}
   end
 
   @doc """

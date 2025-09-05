@@ -6,8 +6,9 @@ defmodule Raxol.Terminal.OutputManager do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.OutputBuffer
+  alias Raxol.Core.ErrorHandling
   require Raxol.Core.Runtime.Log
-  
+
   @control_char_map %{
     "\x00" => "^@",
     "\x01" => "^A",
@@ -303,20 +304,21 @@ defmodule Raxol.Terminal.OutputManager do
   defp format_control_char(char) do
     case Map.get(@control_char_map, char) do
       nil ->
-        try do
-          if byte_size(char) == 1 do
-            <<c::utf8>> = char
+        case ErrorHandling.safe_call(fn ->
+               if byte_size(char) == 1 do
+                 <<c::utf8>> = char
 
-            if c < 32 do
-              "\\x#{:io_lib.format("~2.16.0b", [c])}"
-            else
-              char
-            end
-          else
-            char
-          end
-        rescue
-          _ -> char
+                 if c < 32 do
+                   "\\x#{:io_lib.format("~2.16.0b", [c])}"
+                 else
+                   char
+                 end
+               else
+                 char
+               end
+             end) do
+          {:ok, result} -> result
+          {:error, _} -> char
         end
 
       formatted ->

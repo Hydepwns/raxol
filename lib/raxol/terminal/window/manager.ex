@@ -1,15 +1,15 @@
 defmodule Raxol.Terminal.Window.Manager do
   @moduledoc """
   Refactored Window.Manager that delegates to GenServer implementation.
-  
+
   This module provides the same API as the original Terminal.Window.Manager but uses
   a supervised GenServer instead of the Process dictionary for state management.
-  
+
   ## Migration Notice
   This module is a drop-in replacement for `Raxol.Terminal.Window.Manager`.
   All functions maintain backward compatibility while providing improved
   fault tolerance and functional programming patterns.
-  
+
   ## Benefits over Process Dictionary
   - Supervised state management with fault tolerance
   - Pure functional window management
@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.Window.Manager do
   - Spatial navigation mapping
   - Better debugging and testing capabilities
   - No global state pollution
-  
+
   ## New Features
   - Window Z-ordering for proper stacking
   - Spatial position tracking for navigation
@@ -40,6 +40,7 @@ defmodule Raxol.Terminal.Window.Manager do
       nil ->
         {:ok, _pid} = Server.start_link()
         :ok
+
       _pid ->
         :ok
     end
@@ -291,6 +292,7 @@ defmodule Raxol.Terminal.Window.Manager do
   """
   def window_exists?(window_id) do
     ensure_started()
+
     case Server.get_window(window_id) do
       {:ok, _} -> true
       {:error, :not_found} -> false

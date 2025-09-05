@@ -115,111 +115,120 @@ defmodule Raxol.AI.ServiceAdapter do
   end
 
   defp local_generate_content(prompt, options) do
-    # Implementation for local AI service
-    # This would call a local LLM server or use a local model
-    case HTTPoison.post(
-           "http://localhost:8080/v1/completions",
-           Jason.encode!(%{
-             prompt: prompt,
-             max_tokens: Map.get(options, :max_tokens, 100),
-             temperature: Map.get(options, :temperature, 0.7)
-           }),
-           [{"Content-Type", "application/json"}]
-         ) do
-      {:ok, %{status_code: 200, body: body}} ->
-        case Jason.decode(body) do
-          {:ok, %{"choices" => [%{"text" => text} | _]}} -> {:ok, text}
-          _ -> {:error, :invalid_response}
-        end
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           # Implementation for local AI service  
+           # This would call a local LLM server or use a local model
+           case HTTPoison.post(
+                  "http://localhost:8080/v1/completions",
+                  Jason.encode!(%{
+                    prompt: prompt,
+                    max_tokens: Map.get(options, :max_tokens, 100),
+                    temperature: Map.get(options, :temperature, 0.7)
+                  }),
+                  [{"Content-Type", "application/json"}]
+                ) do
+             {:ok, %{status_code: 200, body: body}} ->
+               case Jason.decode(body) do
+                 {:ok, %{"choices" => [%{"text" => text} | _]}} -> {:ok, text}
+                 _ -> {:error, :invalid_response}
+               end
 
-      {:ok, %{status_code: status}} ->
-        {:error, {:http_error, status}}
+             {:ok, %{status_code: status}} ->
+               {:error, {:http_error, status}}
 
-      {:error, reason} ->
-        {:error, reason}
+             {:error, reason} ->
+               {:error, reason}
+           end
+         end) do
+      {:ok, result} -> result
+      {:error, _reason} -> {:error, :service_unavailable}
     end
-  rescue
-    _ -> {:error, :service_unavailable}
   end
 
   defp openai_generate_content(prompt, options) do
-    # Implementation for OpenAI API
-    api_key = Application.get_env(:raxol, :openai_api_key)
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           # Implementation for OpenAI API
+           api_key = Application.get_env(:raxol, :openai_api_key)
 
-    if api_key do
-      case HTTPoison.post(
-             "https://api.openai.com/v1/completions",
-             Jason.encode!(%{
-               model: "gpt-3.5-turbo-instruct",
-               prompt: prompt,
-               max_tokens: Map.get(options, :max_tokens, 100),
-               temperature: Map.get(options, :temperature, 0.7)
-             }),
-             [
-               {"Content-Type", "application/json"},
-               {"Authorization", "Bearer #{api_key}"}
-             ]
-           ) do
-        {:ok, %{status_code: 200, body: body}} ->
-          case Jason.decode(body) do
-            {:ok, %{"choices" => [%{"text" => text} | _]}} ->
-              {:ok, String.trim(text)}
+           if api_key do
+             case HTTPoison.post(
+                    "https://api.openai.com/v1/completions",
+                    Jason.encode!(%{
+                      model: "gpt-3.5-turbo-instruct",
+                      prompt: prompt,
+                      max_tokens: Map.get(options, :max_tokens, 100),
+                      temperature: Map.get(options, :temperature, 0.7)
+                    }),
+                    [
+                      {"Content-Type", "application/json"},
+                      {"Authorization", "Bearer #{api_key}"}
+                    ]
+                  ) do
+               {:ok, %{status_code: 200, body: body}} ->
+                 case Jason.decode(body) do
+                   {:ok, %{"choices" => [%{"text" => text} | _]}} ->
+                     {:ok, String.trim(text)}
 
-            _ ->
-              {:error, :invalid_response}
-          end
+                   _ ->
+                     {:error, :invalid_response}
+                 end
 
-        {:ok, %{status_code: status}} ->
-          {:error, {:http_error, status}}
+               {:ok, %{status_code: status}} ->
+                 {:error, {:http_error, status}}
 
-        {:error, reason} ->
-          {:error, reason}
-      end
-    else
-      {:error, :api_key_not_configured}
+               {:error, reason} ->
+                 {:error, reason}
+             end
+           else
+             {:error, :api_key_not_configured}
+           end
+         end) do
+      {:ok, result} -> result
+      {:error, _reason} -> {:error, :service_unavailable}
     end
-  rescue
-    _ -> {:error, :service_unavailable}
   end
 
   defp anthropic_generate_content(prompt, options) do
-    # Implementation for Anthropic Claude API
-    api_key = Application.get_env(:raxol, :anthropic_api_key)
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           # Implementation for Anthropic Claude API
+           api_key = Application.get_env(:raxol, :anthropic_api_key)
 
-    if api_key do
-      case HTTPoison.post(
-             "https://api.anthropic.com/v1/messages",
-             Jason.encode!(%{
-               model: "claude-3-haiku-20240307",
-               max_tokens: Map.get(options, :max_tokens, 100),
-               messages: [%{role: "user", content: prompt}]
-             }),
-             [
-               {"Content-Type", "application/json"},
-               {"x-api-key", api_key},
-               {"anthropic-version", "2023-06-01"}
-             ]
-           ) do
-        {:ok, %{status_code: 200, body: body}} ->
-          case Jason.decode(body) do
-            {:ok, %{"content" => [%{"text" => text} | _]}} ->
-              {:ok, String.trim(text)}
+           if api_key do
+             case HTTPoison.post(
+                    "https://api.anthropic.com/v1/messages",
+                    Jason.encode!(%{
+                      model: "claude-3-haiku-20240307",
+                      max_tokens: Map.get(options, :max_tokens, 100),
+                      messages: [%{role: "user", content: prompt}]
+                    }),
+                    [
+                      {"Content-Type", "application/json"},
+                      {"x-api-key", api_key},
+                      {"anthropic-version", "2023-06-01"}
+                    ]
+                  ) do
+               {:ok, %{status_code: 200, body: body}} ->
+                 case Jason.decode(body) do
+                   {:ok, %{"content" => [%{"text" => text} | _]}} ->
+                     {:ok, String.trim(text)}
 
-            _ ->
-              {:error, :invalid_response}
-          end
+                   _ ->
+                     {:error, :invalid_response}
+                 end
 
-        {:ok, %{status_code: status}} ->
-          {:error, {:http_error, status}}
+               {:ok, %{status_code: status}} ->
+                 {:error, {:http_error, status}}
 
-        {:error, reason} ->
-          {:error, reason}
-      end
-    else
-      {:error, :api_key_not_configured}
+               {:error, reason} ->
+                 {:error, reason}
+             end
+           else
+             {:error, :api_key_not_configured}
+           end
+         end) do
+      {:ok, result} -> result
+      {:error, _reason} -> {:error, :service_unavailable}
     end
-  rescue
-    _ -> {:error, :service_unavailable}
   end
 
   defp build_suggestion_prompt(input, context) do
@@ -287,7 +296,8 @@ defmodule Raxol.AI.ServiceAdapter do
       {~r/batch/i, "Batch operations for better performance"}
     ]
 
-    Enum.find_value(patterns, "Review and optimize this area", fn {pattern, suggestion} ->
+    Enum.find_value(patterns, "Review and optimize this area", fn {pattern,
+                                                                   suggestion} ->
       if line =~ pattern, do: suggestion
     end)
   end
@@ -298,12 +308,17 @@ defmodule Raxol.AI.ServiceAdapter do
     response_patterns = [
       {~r/error/, "Error handling implementation needed"},
       {~r/performance/, "Consider optimizing rendering cycles"},
-      {~r/suggest/, "Here are some suggestions: 1. Optimize state management 2. Implement caching"}
+      {~r/suggest/,
+       "Here are some suggestions: 1. Optimize state management 2. Implement caching"}
     ]
 
-    Enum.find_value(response_patterns, "AI-generated response for: #{String.slice(prompt, 0, max_length)}", fn {pattern, response} ->
-      if downcase_prompt =~ pattern, do: response
-    end)
+    Enum.find_value(
+      response_patterns,
+      "AI-generated response for: #{String.slice(prompt, 0, max_length)}",
+      fn {pattern, response} ->
+        if downcase_prompt =~ pattern, do: response
+      end
+    )
   end
 
   defp classify_analysis_line(line, acc) do
@@ -313,9 +328,20 @@ defmodule Raxol.AI.ServiceAdapter do
       {~r/(state|update|render)/i, :rendering, :medium}
     ]
 
-    case Enum.find(classifications, fn {pattern, _type, _severity} -> line =~ pattern end) do
+    case Enum.find(classifications, fn {pattern, _type, _severity} ->
+           line =~ pattern
+         end) do
       {_pattern, type, severity} ->
-        [%{type: type, severity: severity, description: String.trim(line), suggestion: extract_suggestion(line)} | acc]
+        [
+          %{
+            type: type,
+            severity: severity,
+            description: String.trim(line),
+            suggestion: extract_suggestion(line)
+          }
+          | acc
+        ]
+
       nil ->
         acc
     end

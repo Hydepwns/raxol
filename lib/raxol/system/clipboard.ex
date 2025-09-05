@@ -11,7 +11,7 @@ defmodule Raxol.System.Clipboard do
 
   @behaviour Raxol.Core.Clipboard.Behaviour
 
-    require Raxol.Core.Runtime.Log
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Copies the given text to the system clipboard.

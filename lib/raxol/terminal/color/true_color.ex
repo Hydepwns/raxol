@@ -654,9 +654,11 @@ defmodule Raxol.Terminal.Color.TrueColor do
   defp calculate_hue(max_val, delta, r, g, b) when max_val == r do
     rem((g - b) / delta + if(g < b, do: 6, else: 0), 6)
   end
+
   defp calculate_hue(max_val, delta, r, g, b) when max_val == g do
     (b - r) / delta + 2
   end
+
   defp calculate_hue(max_val, delta, r, g, b) when max_val == b do
     (r - g) / delta + 4
   end
@@ -769,29 +771,41 @@ defmodule Raxol.Terminal.Color.TrueColor do
   end
 
   # Red/Bright Red
-  defp map_to_ansi_color(r, g, b, brightness) when r > 128 and g < 128 and b < 128 do
+  defp map_to_ansi_color(r, g, b, brightness)
+       when r > 128 and g < 128 and b < 128 do
     if brightness > 128, do: 91, else: 31
   end
+
   # Green/Bright Green  
-  defp map_to_ansi_color(r, g, b, brightness) when r < 128 and g > 128 and b < 128 do
+  defp map_to_ansi_color(r, g, b, brightness)
+       when r < 128 and g > 128 and b < 128 do
     if brightness > 128, do: 92, else: 32
   end
+
   # Blue/Bright Blue
-  defp map_to_ansi_color(r, g, b, brightness) when r < 128 and g < 128 and b > 128 do
+  defp map_to_ansi_color(r, g, b, brightness)
+       when r < 128 and g < 128 and b > 128 do
     if brightness > 128, do: 94, else: 34
   end
+
   # Yellow/Bright Yellow
-  defp map_to_ansi_color(r, g, b, brightness) when r > 128 and g > 128 and b < 128 do
+  defp map_to_ansi_color(r, g, b, brightness)
+       when r > 128 and g > 128 and b < 128 do
     if brightness > 128, do: 93, else: 33
   end
+
   # Magenta/Bright Magenta
-  defp map_to_ansi_color(r, g, b, brightness) when r > 128 and g < 128 and b > 128 do
+  defp map_to_ansi_color(r, g, b, brightness)
+       when r > 128 and g < 128 and b > 128 do
     if brightness > 128, do: 95, else: 35
   end
+
   # Cyan/Bright Cyan
-  defp map_to_ansi_color(r, g, b, brightness) when r < 128 and g > 128 and b > 128 do
+  defp map_to_ansi_color(r, g, b, brightness)
+       when r < 128 and g > 128 and b > 128 do
     if brightness > 128, do: 96, else: 36
   end
+
   # Black
   defp map_to_ansi_color(_r, _g, _b, brightness) when brightness < 64, do: 30
   # White

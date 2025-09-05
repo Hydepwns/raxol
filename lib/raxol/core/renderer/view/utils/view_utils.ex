@@ -3,7 +3,6 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
   Provides utility functions for common view operations in the Raxol view system.
   """
 
-  
   @doc """
   Normalizes spacing values for padding and margin.
   Accepts various input formats and converts them to a standardized format.

@@ -7,6 +7,8 @@ defmodule Raxol.Terminal.Plugin.Manager do
   - Plugin configuration and state management
   """
 
+  alias Raxol.Core.ErrorHandling
+
   @type plugin :: %{
           name: String.t(),
           version: String.t(),
@@ -216,10 +218,9 @@ defmodule Raxol.Terminal.Plugin.Manager do
   end
 
   defp apply_hook(hook, args) do
-    try do
-      hook.callback.(args)
-    rescue
-      e -> {:error, {:hook_error, e}}
+    case ErrorHandling.safe_call(fn -> hook.callback.(args) end) do
+      {:ok, result} -> result
+      {:error, e} -> {:error, {:hook_error, e}}
     end
   end
 

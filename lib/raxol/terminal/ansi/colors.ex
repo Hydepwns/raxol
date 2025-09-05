@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.ANSI.Colors do
   Handles color parsing, setting, and management for terminal text.
   """
 
-  
   @type color ::
           :black | :red | :green | :yellow | :blue | :magenta | :cyan | :white
   @type color_mode :: :normal | :bright | :dim

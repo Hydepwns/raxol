@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.Mouse.Manager do
   movement, and wheel events.
   """
 
-  
   defstruct [
     :enabled,
     :mode,

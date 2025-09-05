@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Buffer.State do
-  
   @moduledoc """
   Handles state management and accessors for the Raxol.Terminal.ScreenBuffer.
   Includes resizing, getting dimensions, accessing cells/lines, managing scroll regions,

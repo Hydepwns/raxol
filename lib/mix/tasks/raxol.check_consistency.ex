@@ -142,10 +142,13 @@ defmodule Mix.Tasks.Raxol.CheckConsistency do
   defp fixable?(_), do: false
 
   defp fix_issue(%{type: :formatting, file: file}) do
-    System.cmd("mix", ["format", file])
-    :ok
-  rescue
-    _ -> {:error, "Failed to run mix format"}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           System.cmd("mix", ["format", file])
+           :ok
+         end) do
+      {:ok, :ok} -> :ok
+      {:error, _} -> {:error, "Failed to run mix format"}
+    end
   end
 
   defp fix_issue(%{type: :trailing_whitespace, file: file, line: line}) do

@@ -344,7 +344,10 @@ defmodule Mix.Tasks.Benchmark do
   end
 
   defp format_time_unit(us) when us < 1_000, do: "#{us}μs"
-  defp format_time_unit(us) when us < 1_000_000, do: "#{Float.round(us / 1_000, 2)}ms"
+
+  defp format_time_unit(us) when us < 1_000_000,
+    do: "#{Float.round(us / 1_000, 2)}ms"
+
   defp format_time_unit(us), do: "#{Float.round(us / 1_000_000, 2)}s"
 
   defp format_time(_), do: "N/A"
@@ -355,8 +358,13 @@ defmodule Mix.Tasks.Benchmark do
   end
 
   defp format_memory_unit(b) when b < 1_024, do: "#{b}B"
-  defp format_memory_unit(b) when b < 1_048_576, do: "#{Float.round(b / 1_024, 2)}KB"
-  defp format_memory_unit(b) when b < 1_073_741_824, do: "#{Float.round(b / 1_048_576, 2)}MB"
+
+  defp format_memory_unit(b) when b < 1_048_576,
+    do: "#{Float.round(b / 1_024, 2)}KB"
+
+  defp format_memory_unit(b) when b < 1_073_741_824,
+    do: "#{Float.round(b / 1_048_576, 2)}MB"
+
   defp format_memory_unit(b), do: "#{Float.round(b / 1_073_741_824, 2)}GB"
 
   defp format_memory(_), do: "N/A"

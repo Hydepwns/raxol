@@ -4,6 +4,7 @@ defmodule Raxol.Terminal.Extension.FileOperations do
   """
 
   require Logger
+  alias Raxol.Core.ErrorHandling
 
   @manifest_file "extension.json"
 
@@ -11,39 +12,42 @@ defmodule Raxol.Terminal.Extension.FileOperations do
   Exports an extension to a file or directory.
   """
   def export_extension(extension, path) do
-    try do
-      # Create export directory if it doesn't exist
-      export_dir = Path.dirname(path)
-      File.mkdir_p!(export_dir)
+    case ErrorHandling.safe_call(fn ->
+           # Create export directory if it doesn't exist
+           export_dir = Path.dirname(path)
+           File.mkdir_p!(export_dir)
 
-      # Export manifest
-      manifest_path = path
+           # Export manifest
+           manifest_path = path
 
-      manifest = %{
-        "name" => extension.name,
-        "version" => extension.version,
-        "description" => extension.description,
-        "author" => extension.author,
-        "license" => extension.license,
-        "type" => Atom.to_string(extension.type),
-        "dependencies" => extension.dependencies,
-        "hooks" => extension.hooks,
-        "commands" => extension.commands,
-        "metadata" => extension.config
-      }
+           manifest = %{
+             "name" => extension.name,
+             "version" => extension.version,
+             "description" => extension.description,
+             "author" => extension.author,
+             "license" => extension.license,
+             "type" => Atom.to_string(extension.type),
+             "dependencies" => extension.dependencies,
+             "hooks" => extension.hooks,
+             "commands" => extension.commands,
+             "metadata" => extension.config
+           }
 
-      File.write!(manifest_path, Jason.encode!(manifest, pretty: true))
+           File.write!(manifest_path, Jason.encode!(manifest, pretty: true))
 
-      # Only copy source files if export path is a directory
-      unless String.ends_with?(path, ".json") do
-        if extension.path && File.exists?(extension.path) do
-          copy_extension_files(extension.path, path)
-        end
-      end
+           # Only copy source files if export path is a directory
+           unless String.ends_with?(path, ".json") do
+             if extension.path && File.exists?(extension.path) do
+               copy_extension_files(extension.path, path)
+             end
+           end
 
-      :ok
-    rescue
-      e ->
+           :ok
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, e} ->
         Logger.error("Extension export failed: #{inspect(e)}")
         {:error, :export_failed}
     end
@@ -53,20 +57,23 @@ defmodule Raxol.Terminal.Extension.FileOperations do
   Imports an extension from a file or directory.
   """
   def import_extension_from_path(path, opts) do
-    try do
-      # Check if path is a directory or file
-      case File.stat(path) do
-        {:ok, %{type: :directory}} ->
-          import_extension_from_directory(path, opts)
+    case ErrorHandling.safe_call(fn ->
+           # Check if path is a directory or file
+           case File.stat(path) do
+             {:ok, %{type: :directory}} ->
+               import_extension_from_directory(path, opts)
 
-        {:ok, %{type: :regular}} ->
-          import_extension_from_file(path, opts)
+             {:ok, %{type: :regular}} ->
+               import_extension_from_file(path, opts)
 
-        _ ->
-          {:error, :invalid_path}
-      end
-    rescue
-      e ->
+             _ ->
+               {:error, :invalid_path}
+           end
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, e} ->
         Logger.error("Extension import failed: #{inspect(e)}")
         {:error, :import_failed}
     end

@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.ANSI.TerminalState do
-  
   @moduledoc """
   Manages terminal state operations for ANSI escape sequences.
   """

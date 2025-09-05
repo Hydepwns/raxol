@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.Output.Manager do
   This module handles output events, applies styles and formatting rules, and tracks metrics.
   """
 
-  
   @type style :: %{
           foreground: String.t() | nil,
           background: String.t() | nil,

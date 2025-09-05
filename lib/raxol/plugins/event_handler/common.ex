@@ -72,7 +72,7 @@ defmodule Raxol.Plugins.EventHandler.Common do
       {:error, :invalid_plugin} ->
         log_invalid_plugin(plugin)
         {:cont, acc}
-      
+
       _other ->
         {:cont, acc}
     end
@@ -118,10 +118,13 @@ defmodule Raxol.Plugins.EventHandler.Common do
   def extract_plugin_state(_), do: %{}
 
   # Helper functions for plugin validation
-  defp validate_plugin_map(plugin) when not is_map(plugin), do: {:error, :invalid_plugin}
+  defp validate_plugin_map(plugin) when not is_map(plugin),
+    do: {:error, :invalid_plugin}
+
   defp validate_plugin_map(_plugin), do: :ok
 
   defp validate_plugin_enabled(%{enabled: true}), do: :ok
+
   defp validate_plugin_enabled(plugin) do
     if Map.get(plugin, :enabled, false), do: :ok, else: {:error, :disabled}
   end
@@ -135,15 +138,18 @@ defmodule Raxol.Plugins.EventHandler.Common do
   end
 
   defp execute_plugin_callback(plugin, callback_name, args, acc, result_handler) do
-    try do
-      # Get the plugin from the manager
-      plugin_instance = Core.get_plugin(acc.manager, plugin.name)
-      # Prepend the plugin instance to the args
-      full_args = [plugin_instance | args]
-      result = apply(plugin.module, callback_name, full_args)
-      result_handler.(acc, plugin, callback_name, result)
-    rescue
-      error ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           # Get the plugin from the manager
+           plugin_instance = Core.get_plugin(acc.manager, plugin.name)
+           # Prepend the plugin instance to the args
+           full_args = [plugin_instance | args]
+           result = apply(plugin.module, callback_name, full_args)
+           result_handler.(acc, plugin, callback_name, result)
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, error} ->
         log_plugin_crash(plugin, callback_name, error)
         {:cont, acc}
     end

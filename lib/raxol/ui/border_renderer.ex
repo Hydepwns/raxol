@@ -87,7 +87,7 @@ defmodule Raxol.UI.BorderRenderer do
         _ -> :single
       end
 
-    style_attrs = 
+    style_attrs =
       case border_type do
         :none -> []
         _ -> [border_type]
@@ -167,7 +167,9 @@ defmodule Raxol.UI.BorderRenderer do
   defp get_border_x_position(i, x, width) when i == width - 1, do: x + width - 1
   defp get_border_x_position(i, x, _width), do: x + i
 
-  defp get_border_y_position(j, y, height) when j == height - 1, do: y + height - 1
+  defp get_border_y_position(j, y, height) when j == height - 1,
+    do: y + height - 1
+
   defp get_border_y_position(j, y, _height), do: y + j
 
   @doc """

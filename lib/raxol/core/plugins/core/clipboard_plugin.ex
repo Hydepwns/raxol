@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
-  
   @moduledoc """
   Provides clipboard read/write commands and delegates to a configured system clipboard implementation.
   """

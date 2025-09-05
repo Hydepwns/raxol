@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Config do
   """
 
   alias Raxol.Terminal.Config.{Validator, Persistence}
-  
+
   defstruct [
     :version,
     :width,

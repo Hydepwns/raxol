@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.ConfigManager do
 
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
-  
+
   @doc """
   Gets a specific configuration value.
   Returns the configuration value or nil if not found.
@@ -97,7 +97,7 @@ defmodule Raxol.Terminal.ConfigManager do
     {:error, "Behavior must be a map"}
   end
 
-  defp validate_behavior(%{scrollback_limit: limit}) 
+  defp validate_behavior(%{scrollback_limit: limit})
        when not is_integer(limit) or limit < 0 do
     {:error, "Invalid scrollback limit"}
   end
@@ -116,12 +116,12 @@ defmodule Raxol.Terminal.ConfigManager do
     {:error, "Rendering must be a map"}
   end
 
-  defp validate_rendering(%{antialiasing: antialiasing}) 
+  defp validate_rendering(%{antialiasing: antialiasing})
        when not is_boolean(antialiasing) do
     {:error, "Antialiasing must be a boolean"}
   end
 
-  defp validate_rendering(%{font_size: font_size}) 
+  defp validate_rendering(%{font_size: font_size})
        when not is_integer(font_size) or font_size < 1 do
     {:error, "Invalid font size"}
   end

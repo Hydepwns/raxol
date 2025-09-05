@@ -127,19 +127,21 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   """
   @spec process_sequence(String.t(), list(String.t())) :: window_event() | nil
   def process_sequence(sequence, params) do
-    try do
-      case Map.get(@sequence_handlers, sequence) do
-        nil -> nil
-        handler -> handler.(params)
-      end
-    rescue
-      e ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           case Map.get(@sequence_handlers, sequence) do
+             nil -> nil
+             handler -> handler.(params)
+           end
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, reason} ->
         Monitor.record_error(
           sequence,
-          "Window manipulation error: #{inspect(e)}",
+          "Window manipulation error: #{inspect(reason)}",
           %{
-            params: params,
-            stacktrace: Exception.format_stacktrace(__STACKTRACE__)
+            params: params
           }
         )
 

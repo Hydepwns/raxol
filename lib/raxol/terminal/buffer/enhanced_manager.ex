@@ -607,7 +607,11 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     avg_recent_update = calculate_average_time(updates)
     avg_recent_compression = calculate_average_time(compressions)
 
-    apply_fine_tuning_adjustment(state, avg_recent_update, avg_recent_compression)
+    apply_fine_tuning_adjustment(
+      state,
+      avg_recent_update,
+      avg_recent_compression
+    )
   end
 
   # Pattern matching for optimization strategies
@@ -632,11 +636,13 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   end
 
   # Pattern matching for fine-tuning adjustments
-  defp apply_fine_tuning_adjustment(state, avg_update, _avg_compression) when avg_update > 30 do
+  defp apply_fine_tuning_adjustment(state, avg_update, _avg_compression)
+       when avg_update > 30 do
     %{state | level: Kernel.max(state.level - 1, 1)}
   end
 
-  defp apply_fine_tuning_adjustment(state, _avg_update, avg_compression) when avg_compression < 20 do
+  defp apply_fine_tuning_adjustment(state, _avg_update, avg_compression)
+       when avg_compression < 20 do
     %{state | level: Kernel.min(state.level + 1, 9)}
   end
 

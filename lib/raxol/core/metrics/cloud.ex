@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Metrics.Cloud do
-  
   @moduledoc """
   Cloud integration for the Raxol metrics system.
 

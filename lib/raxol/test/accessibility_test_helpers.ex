@@ -1,11 +1,11 @@
 defmodule Raxol.AccessibilityTestHelpers do
   @moduledoc """
   Test helpers for accessibility-related assertions and simulation in Raxol.
-  
+
   REFACTORED: All try/after blocks replaced with functional patterns.
-  
+
   ## Features
-  
+
   - Test helpers for screen reader announcements
   - Color contrast testing tools
   - Keyboard navigation test helpers
@@ -21,7 +21,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   alias Raxol.Core.Events.Manager, as: EventManager
 
   import ExUnit.Assertions
-  
+
   @doc """
   Run a test with a spy on screen reader announcements.
 
@@ -52,15 +52,16 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     # Use functional approach with proper cleanup
     result = safe_execute_with_spy(pid, fun)
-    
+
     # Always cleanup
     Accessibility.disable(pid)
+
     EventManager.unregister_handler(
       :accessibility_announce,
       __MODULE__,
       :handle_announcement_spy
     )
-    
+
     result
   end
 
@@ -69,11 +70,12 @@ defmodule Raxol.AccessibilityTestHelpers do
   end
 
   defp safe_execute_with_spy(pid, fun) do
-    task = Task.async(fn ->
-      Accessibility.enable([], pid)
-      fun.()
-    end)
-    
+    task =
+      Task.async(fn ->
+        Accessibility.enable([], pid)
+        fun.()
+      end)
+
     case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
       {:ok, result} -> result
       nil -> {:error, :timeout}
@@ -299,39 +301,40 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     # Use functional approach with cleanup
     result = safe_test_shortcut(shortcut, context)
-    
+
     # Always cleanup
     EventManager.unregister_handler(
       :shortcut_executed,
       __MODULE__,
       :handle_shortcut_spy
     )
-    
+
     result
   end
 
   defp safe_test_shortcut(shortcut, context) do
-    task = Task.async(fn ->
-      # Parse the shortcut string into an event tuple
-      event_tuple = parse_shortcut_string(shortcut)
+    task =
+      Task.async(fn ->
+        # Parse the shortcut string into an event tuple
+        event_tuple = parse_shortcut_string(shortcut)
 
-      # Dispatch the keyboard event to simulate pressing the keys
-      EventManager.dispatch({:keyboard_event, event_tuple})
+        # Dispatch the keyboard event to simulate pressing the keys
+        EventManager.dispatch({:keyboard_event, event_tuple})
 
-      # Check if action was executed
-      executed = Process.get(:shortcut_action_executed, false)
-      action_id = Process.get(:shortcut_action_id)
+        # Check if action was executed
+        executed = Process.get(:shortcut_action_executed, false)
+        action_id = Process.get(:shortcut_action_id)
 
-      if !executed do
-        flunk(
-          "Keyboard shortcut \"#{shortcut}\" did not trigger any action.\n#{context}"
-        )
-      end
+        if !executed do
+          flunk(
+            "Keyboard shortcut \"#{shortcut}\" did not trigger any action.\n#{context}"
+          )
+        end
 
-      # Return the action ID for further assertions
-      action_id
-    end)
-    
+        # Return the action ID for further assertions
+        action_id
+      end)
+
     case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
       {:ok, result} -> result
       nil -> {:error, :timeout}
@@ -361,10 +364,10 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     # Execute function and ensure cleanup
     result = safe_execute_function(fun)
-    
+
     # Always restore previous setting
     Accessibility.set_option(:high_contrast, previous, nil)
-    
+
     result
   end
 
@@ -389,10 +392,10 @@ defmodule Raxol.AccessibilityTestHelpers do
 
         # Execute function and ensure cleanup
         result = safe_execute_function(fun)
-        
+
         # Always restore
         Accessibility.set_option(:reduced_motion, previous, pid)
-        
+
         result
 
       {fun, nil} when is_function(fun, 0) ->
@@ -401,17 +404,17 @@ defmodule Raxol.AccessibilityTestHelpers do
 
         # Execute function and ensure cleanup
         result = safe_execute_function(fun)
-        
+
         # Always restore
         Accessibility.set_option(:reduced_motion, previous, nil)
-        
+
         result
     end
   end
 
   defp safe_execute_function(fun) do
     task = Task.async(fn -> fun.() end)
-    
+
     case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
       {:ok, result} -> result
       nil -> {:error, :timeout}
@@ -476,7 +479,8 @@ defmodule Raxol.AccessibilityTestHelpers do
   defp get_minimum_ratio(:aaa, :large), do: 4.5
 
   # Helper functions for announcement validation
-  defp validate_announcement_present(announcements, expected, context) when is_binary(expected) do
+  defp validate_announcement_present(announcements, expected, context)
+       when is_binary(expected) do
     unless Enum.any?(announcements, &String.contains?(&1, expected)) do
       flunk(
         "Expected screen reader announcement containing \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
@@ -484,7 +488,11 @@ defmodule Raxol.AccessibilityTestHelpers do
     end
   end
 
-  defp validate_announcement_present(announcements, %Regex{} = expected, context) do
+  defp validate_announcement_present(
+         announcements,
+         %Regex{} = expected,
+         context
+       ) do
     unless Enum.any?(announcements, &Regex.match?(expected, &1)) do
       flunk(
         "Expected screen reader announcement matching #{inspect(expected)} was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
@@ -496,7 +504,8 @@ defmodule Raxol.AccessibilityTestHelpers do
     flunk("Invalid expected value for assert_announced: #{inspect(expected)}")
   end
 
-  defp validate_announcement_absent(announcements, expected, context) when is_binary(expected) do
+  defp validate_announcement_absent(announcements, expected, context)
+       when is_binary(expected) do
     if Enum.any?(announcements, &String.contains?(&1, expected)) do
       flunk(
         "Unexpected screen reader announcement containing \"#{expected}\" was made.\nActual announcements: #{inspect(announcements)}\n#{context}"

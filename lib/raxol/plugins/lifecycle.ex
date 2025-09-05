@@ -7,7 +7,7 @@ defmodule Raxol.Plugins.Lifecycle do
   """
 
   require Raxol.Core.Runtime.Log
-  
+
   alias Raxol.Plugins.{PluginConfig, Manager.Core}
 
   alias Raxol.Plugins.Lifecycle.{

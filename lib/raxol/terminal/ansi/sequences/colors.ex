@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.ANSI.Sequences.Colors do
-  
   @moduledoc """
   ANSI Color Sequence Handler.
 

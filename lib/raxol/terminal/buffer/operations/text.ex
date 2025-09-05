@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Text do
   Handles text operations for terminal buffers including character and string writing.
   """
 
-    alias Raxol.Terminal.Buffer.Cell
+  alias Raxol.Terminal.Buffer.Cell
 
   @doc """
   Writes a character to the buffer at the specified position.
