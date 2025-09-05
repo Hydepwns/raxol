@@ -200,12 +200,11 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
   # Private Functions
 
   defp validate_palette(colors) do
-    if Enum.all?(colors, &valid_palette_color?/1) do
-      :ok
-    else
-      {:error, :invalid_color_format}
-    end
+    validate_all_colors(Enum.all?(colors, &valid_palette_color?/1))
   end
+
+  defp validate_all_colors(true), do: :ok
+  defp validate_all_colors(false), do: {:error, :invalid_color_format}
 
   defp valid_palette_color?({index, {r, g, b}})
        when is_integer(index) and

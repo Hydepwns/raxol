@@ -641,11 +641,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
       c_norm = c / 255.0
 
       # Apply gamma correction
-      if c_norm <= 0.03928 do
-        c_norm / 12.92
-      else
-        :math.pow((c_norm + 0.055) / 1.055, 2.4)
-      end
+      apply_gamma_correction(c_norm)
     end)
     |> then(fn [r_lin, g_lin, b_lin] ->
       # Calculate relative luminance
@@ -654,17 +650,19 @@ defmodule Raxol.UI.Accessibility.HighContrast do
   end
 
   defp get_required_ratio(compliance_level, large_text) do
-    if large_text do
-      @large_text_ratios[compliance_level]
-    else
-      @wcag_ratios[compliance_level]
-    end
+    get_ratio_for_text_size(large_text, compliance_level)
   end
 
+  defp get_ratio_for_text_size(true, compliance_level), do: @large_text_ratios[compliance_level]
+  defp get_ratio_for_text_size(false, compliance_level), do: @wcag_ratios[compliance_level]
+
   defp get_achieved_compliance_level(ratio, large_text) do
-    ratios = if large_text, do: @large_text_ratios, else: @wcag_ratios
+    ratios = get_ratios_for_text_size(large_text)
     determine_compliance_from_ratio(ratio, ratios)
   end
+
+  defp get_ratios_for_text_size(true), do: @large_text_ratios
+  defp get_ratios_for_text_size(false), do: @wcag_ratios
 
   defp generate_contrast_recommendations(current_ratio, required_ratio) do
     improvement_needed = required_ratio / current_ratio
@@ -903,11 +901,15 @@ defmodule Raxol.UI.Accessibility.HighContrast do
   end
 
   defp init_ambient_light_sensor(config) do
-    if config.ambient_light_adjustment do
-      %{enabled: true, last_reading: 0.5, adjustment_factor: 1.0}
-    else
-      %{enabled: false}
-    end
+    init_ambient_light_sensor_with_config(config.ambient_light_adjustment)
+  end
+
+  defp init_ambient_light_sensor_with_config(true) do
+    %{enabled: true, last_reading: 0.5, adjustment_factor: 1.0}
+  end
+  
+  defp init_ambient_light_sensor_with_config(false) do
+    %{enabled: false}
   end
 
   defp init_compliance_validator(level) do

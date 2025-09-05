@@ -127,11 +127,7 @@ defmodule Mix.Tasks.Compile.ElixirMake do
 
   @doc false
   def run(args) do
-    if function_exported?(Mix, :ensure_application!, 1) do
-      Mix.ensure_application!(:inets)
-      Mix.ensure_application!(:ssl)
-      Mix.ensure_application!(:crypto)
-    end
+    ensure_applications_if_available(function_exported?(Mix, :ensure_application!, 1))
 
     config = Mix.Project.config()
     app = config[:app]
@@ -175,11 +171,11 @@ defmodule Mix.Tasks.Compile.ElixirMake do
           recover =
             case message do
               {:unavailable_target, current_target, _description} ->
-                if function_exported?(precompiler, :unavailable_target, 1) do
-                  precompiler.unavailable_target(current_target)
-                else
-                  :compile
-                end
+                handle_unavailable_target(
+                  function_exported?(precompiler, :unavailable_target, 1),
+                  precompiler,
+                  current_target
+                )
 
               _ ->
                 Mix.shell().error("""
@@ -214,11 +210,15 @@ defmodule Mix.Tasks.Compile.ElixirMake do
     config = Mix.Project.config()
     {clean_targets, config} = Keyword.pop(config, :make_clean)
 
-    if clean_targets do
-      config
-      |> Keyword.put(:make_targets, clean_targets)
-      |> ElixirMake.Compiler.make([])
-    end
+    clean_with_targets(clean_targets, config)
+  end
+
+  defp clean_with_targets(nil, _config), do: :ok
+
+  defp clean_with_targets(clean_targets, config) do
+    config
+    |> Keyword.put(:make_targets, clean_targets)
+    |> ElixirMake.Compiler.make([])
   end
 
   defp pre_release?(version) do
@@ -249,5 +249,21 @@ defmodule Mix.Tasks.Compile.ElixirMake do
       {:error, msg} ->
         {:error, msg}
     end
+  end
+
+  defp ensure_applications_if_available(true) do
+    Mix.ensure_application!(:inets)
+    Mix.ensure_application!(:ssl)
+    Mix.ensure_application!(:crypto)
+  end
+
+  defp ensure_applications_if_available(false), do: :ok
+
+  defp handle_unavailable_target(true, precompiler, current_target) do
+    precompiler.unavailable_target(current_target)
+  end
+
+  defp handle_unavailable_target(false, _precompiler, _current_target) do
+    :compile
   end
 end

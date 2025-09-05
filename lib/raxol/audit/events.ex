@@ -505,15 +505,7 @@ defmodule Raxol.Audit.Events do
     metadata = Keyword.get(opts, :metadata, %{})
 
     # Add export_format to metadata if operation is export
-    metadata =
-      if operation == :export do
-        case Keyword.get(opts, :export_format) do
-          nil -> metadata
-          format -> Map.put(metadata, :export_format, format)
-        end
-      else
-        metadata
-      end
+    metadata = add_export_format(metadata, operation, opts)
 
     %DataAccessEvent{
       event_id: generate_event_id(),
@@ -541,22 +533,7 @@ defmodule Raxol.Audit.Events do
     metadata = Keyword.get(opts, :metadata, %{})
 
     # Add elevation_type to metadata if action is privilege_escalation
-    metadata =
-      if action == :privilege_escalation do
-        metadata =
-          case Keyword.get(opts, :elevation_type) do
-            nil -> metadata
-            elev_type -> Map.put(metadata, :elevation_type, elev_type)
-          end
-
-        # Also add target_user to metadata if provided
-        case Keyword.get(opts, :target_user) do
-          nil -> metadata
-          user -> Map.put(metadata, :target_user, user)
-        end
-      else
-        metadata
-      end
+    metadata = add_privilege_escalation_metadata(metadata, action, opts)
 
     %TerminalAuditEvent{
       event_id: generate_event_id(),
@@ -741,10 +718,9 @@ defmodule Raxol.Audit.Events do
   def validate_required(event, fields) do
     missing = Enum.filter(fields, &(Map.get(event, &1) == nil))
 
-    if Enum.empty?(missing) do
-      :ok
-    else
-      {:error, {:missing_required_fields, missing}}
+    case Enum.empty?(missing) do
+      true -> :ok
+      false -> {:error, {:missing_required_fields, missing}}
     end
   end
 
@@ -757,4 +733,30 @@ defmodule Raxol.Audit.Events do
     do: :delete
 
   defp determine_change_type(_old_value, _new_value), do: :update
+
+  # Helper functions for metadata handling
+  defp add_export_format(metadata, :export, opts) do
+    case Keyword.get(opts, :export_format) do
+      nil -> metadata
+      format -> Map.put(metadata, :export_format, format)
+    end
+  end
+
+  defp add_export_format(metadata, _operation, _opts), do: metadata
+
+  defp add_privilege_escalation_metadata(metadata, :privilege_escalation, opts) do
+    metadata =
+      case Keyword.get(opts, :elevation_type) do
+        nil -> metadata
+        elev_type -> Map.put(metadata, :elevation_type, elev_type)
+      end
+
+    # Also add target_user to metadata if provided
+    case Keyword.get(opts, :target_user) do
+      nil -> metadata
+      user -> Map.put(metadata, :target_user, user)
+    end
+  end
+
+  defp add_privilege_escalation_metadata(metadata, _action, _opts), do: metadata
 end

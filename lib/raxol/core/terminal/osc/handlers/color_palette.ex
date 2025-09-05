@@ -59,7 +59,8 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
       [index_str, spec] ->
         case Integer.parse(index_str) do
           {index, ""} when index >= 0 and index <= 255 ->
-            if spec == "?", do: {:query, index}, else: {:set, index, spec}
+            is_query = spec == "?"
+            parse_command_type(is_query, index, spec)
 
           {_index, ""} ->
             {:error, {:invalid_index, index_str}}
@@ -95,73 +96,32 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   end
 
   defp parse_rgb_colon(spec) do
-    if String.starts_with?(spec, "rgb:") do
-      case String.split(String.trim_leading(spec, "rgb:"), "/", parts: 3) do
-        [r_hex, g_hex, b_hex] ->
-          parse_and_validate_rgb({r_hex, g_hex, b_hex})
-
-        _ ->
-          :no_match
-      end
-    else
-      :no_match
-    end
+    starts_with_rgb = String.starts_with?(spec, "rgb:")
+    parse_rgb_colon_by_prefix(starts_with_rgb, spec)
   end
 
   defp parse_hex6(spec) do
-    if String.starts_with?(spec, "#") and byte_size(spec) == 7 do
-      r_hex = String.slice(spec, 1..2)
-      g_hex = String.slice(spec, 3..4)
-      b_hex = String.slice(spec, 5..6)
-
-      parse_and_validate_rgb({r_hex, g_hex, b_hex})
-    else
-      :no_match
-    end
+    is_hex6_format = String.starts_with?(spec, "#") and byte_size(spec) == 7
+    parse_hex6_by_format(is_hex6_format, spec)
   end
 
   defp parse_hex3(spec) do
-    if String.starts_with?(spec, "#") and byte_size(spec) == 4 do
-      r1 = String.slice(spec, 1..1)
-      g1 = String.slice(spec, 2..2)
-      b1 = String.slice(spec, 3..3)
-
-      parse_and_validate_rgb({r1 <> r1, g1 <> g1, b1 <> b1})
-    else
-      :no_match
-    end
+    is_hex3_format = String.starts_with?(spec, "#") and byte_size(spec) == 4
+    parse_hex3_by_format(is_hex3_format, spec)
   end
 
   defp parse_rgb_decimal(spec) do
-    if String.match?(spec, ~r/^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/) do
-      case Regex.run(~r/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/, spec,
-             capture: :all_but_first
-           ) do
-        [r_str, g_str, b_str] ->
-          parse_and_validate_decimal({r_str, g_str, b_str})
+    matches_decimal_format =
+      String.match?(spec, ~r/^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/)
 
-        _ ->
-          :no_match
-      end
-    else
-      :no_match
-    end
+    parse_rgb_decimal_by_format(matches_decimal_format, spec)
   end
 
   defp parse_rgb_percent(spec) do
-    if String.match?(spec, ~r/^rgb\(\s*\d+%\s*,\s*\d+%\s*,\s*\d+%\s*\)$/) do
-      case Regex.run(~r/rgb\(\s*(\d+)%\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/, spec,
-             capture: :all_but_first
-           ) do
-        [r_str, g_str, b_str] ->
-          parse_and_validate_percent({r_str, g_str, b_str})
+    matches_percent_format =
+      String.match?(spec, ~r/^rgb\(\s*\d+%\s*,\s*\d+%\s*,\s*\d+%\s*\)$/)
 
-        _ ->
-          :no_match
-      end
-    else
-      :no_match
-    end
+    parse_rgb_percent_by_format(matches_percent_format, spec)
   end
 
   defp parse_and_validate_decimal({r_str, g_str, b_str}) do
@@ -206,8 +166,13 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   # Parses hex color component (1-4 digits), scales to 0-255 appropriately
   defp parse_component(hex_str) do
     len = byte_size(hex_str)
-    if len < 1 or len > 4, do: :error
+    valid_length = len >= 1 and len <= 4
+    parse_component_by_length_validity(valid_length, hex_str, len)
+  end
 
+  defp parse_component_by_length_validity(false, _hex_str, _len), do: :error
+
+  defp parse_component_by_length_validity(true, hex_str, len) do
     case Integer.parse(hex_str, 16) do
       {val, ""} ->
         scaled_val =
@@ -250,4 +215,69 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   end
 
   defp get_palette_color(_palette, _index), do: {:error, :invalid_color_index}
+
+  ## Helper Functions for Pattern Matching
+
+  defp parse_command_type(true, index, _spec), do: {:query, index}
+  defp parse_command_type(false, index, spec), do: {:set, index, spec}
+
+  defp parse_rgb_colon_by_prefix(true, spec) do
+    case String.split(String.trim_leading(spec, "rgb:"), "/", parts: 3) do
+      [r_hex, g_hex, b_hex] ->
+        parse_and_validate_rgb({r_hex, g_hex, b_hex})
+
+      _ ->
+        :no_match
+    end
+  end
+
+  defp parse_rgb_colon_by_prefix(false, _spec), do: :no_match
+
+  defp parse_hex6_by_format(true, spec) do
+    r_hex = String.slice(spec, 1..2)
+    g_hex = String.slice(spec, 3..4)
+    b_hex = String.slice(spec, 5..6)
+
+    parse_and_validate_rgb({r_hex, g_hex, b_hex})
+  end
+
+  defp parse_hex6_by_format(false, _spec), do: :no_match
+
+  defp parse_hex3_by_format(true, spec) do
+    r1 = String.slice(spec, 1..1)
+    g1 = String.slice(spec, 2..2)
+    b1 = String.slice(spec, 3..3)
+
+    parse_and_validate_rgb({r1 <> r1, g1 <> g1, b1 <> b1})
+  end
+
+  defp parse_hex3_by_format(false, _spec), do: :no_match
+
+  defp parse_rgb_decimal_by_format(true, spec) do
+    case Regex.run(~r/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/, spec,
+           capture: :all_but_first
+         ) do
+      [r_str, g_str, b_str] ->
+        parse_and_validate_decimal({r_str, g_str, b_str})
+
+      _ ->
+        :no_match
+    end
+  end
+
+  defp parse_rgb_decimal_by_format(false, _spec), do: :no_match
+
+  defp parse_rgb_percent_by_format(true, spec) do
+    case Regex.run(~r/rgb\(\s*(\d+)%\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/, spec,
+           capture: :all_but_first
+         ) do
+      [r_str, g_str, b_str] ->
+        parse_and_validate_percent({r_str, g_str, b_str})
+
+      _ ->
+        :no_match
+    end
+  end
+
+  defp parse_rgb_percent_by_format(false, _spec), do: :no_match
 end

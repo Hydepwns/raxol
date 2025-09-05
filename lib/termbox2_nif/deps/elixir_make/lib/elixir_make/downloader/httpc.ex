@@ -12,21 +12,9 @@ defmodule ElixirMake.Downloader.Httpc do
     {:ok, _} = Application.ensure_all_started(:ssl)
     {:ok, _} = Application.ensure_all_started(:public_key)
 
-    if proxy = System.get_env("HTTP_PROXY") || System.get_env("http_proxy") do
-      Mix.shell().info("Using HTTP_PROXY: #{proxy}")
-      %{host: host, port: port} = URI.parse(proxy)
+    setup_http_proxy(System.get_env("HTTP_PROXY") || System.get_env("http_proxy"))
 
-      :httpc.set_options([{:proxy, {{String.to_charlist(host), port}, []}}])
-    end
-
-    if proxy = System.get_env("HTTPS_PROXY") || System.get_env("https_proxy") do
-      Mix.shell().info("Using HTTPS_PROXY: #{proxy}")
-      %{host: host, port: port} = URI.parse(proxy)
-
-      :httpc.set_options([
-        {:https_proxy, {{String.to_charlist(host), port}, []}}
-      ])
-    end
+    setup_https_proxy(System.get_env("HTTPS_PROXY") || System.get_env("https_proxy"))
 
     # https://erlef.github.io/security-wg/secure_coding_and_deployment_hardening/inets
     # TODO: This may no longer be necessary from Erlang/OTP 25.0 or later.
@@ -73,14 +61,35 @@ defmodule ElixirMake.Downloader.Httpc do
   end
 
   defp otp_cacerts do
-    if System.otp_release() >= "25" do
-      # cacerts_get/0 raises if no certs found
-      try do
-        :public_key.cacerts_get()
-      rescue
-        _ -> nil
-      end
+    get_cacerts_if_supported(System.otp_release())
+  end
+
+  defp get_cacerts_if_supported(otp_version) when otp_version >= "25" do
+    # cacerts_get/0 raises if no certs found
+    try do
+      :public_key.cacerts_get()
+    rescue
+      _ -> nil
     end
+  end
+  defp get_cacerts_if_supported(_otp_version), do: nil
+
+  defp setup_http_proxy(nil), do: :ok
+  defp setup_http_proxy(proxy) do
+    Mix.shell().info("Using HTTP_PROXY: #{proxy}")
+    %{host: host, port: port} = URI.parse(proxy)
+
+    :httpc.set_options([{:proxy, {{String.to_charlist(host), port}, []}}])
+  end
+
+  defp setup_https_proxy(nil), do: :ok
+  defp setup_https_proxy(proxy) do
+    Mix.shell().info("Using HTTPS_PROXY: #{proxy}")
+    %{host: host, port: port} = URI.parse(proxy)
+
+    :httpc.set_options([
+      {:https_proxy, {{String.to_charlist(host), port}, []}}
+    ])
   end
 
   defp warn_no_cacerts do

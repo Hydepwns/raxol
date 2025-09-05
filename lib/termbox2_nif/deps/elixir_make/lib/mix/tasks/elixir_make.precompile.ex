@@ -20,11 +20,7 @@ defmodule Mix.Tasks.ElixirMake.Precompile do
 
   @impl true
   def run(args) do
-    if function_exported?(Mix, :ensure_application!, 1) do
-      Mix.ensure_application!(:inets)
-      Mix.ensure_application!(:ssl)
-      Mix.ensure_application!(:crypto)
-    end
+    ensure_applications_if_available(function_exported?(Mix, :ensure_application!, 1))
 
     config = Mix.Project.config()
     paths = config[:make_precompiler_priv_paths] || ["."]
@@ -45,9 +41,11 @@ defmodule Mix.Tasks.ElixirMake.Precompile do
               precompiled_artefacts =
                 create_precompiled_archive(config, target, paths)
 
-              if function_exported?(precompiler, :post_precompile_target, 1) do
-                precompiler.post_precompile_target(target)
-              end
+              call_post_precompile_target_if_available(
+                function_exported?(precompiler, :post_precompile_target, 1),
+                precompiler,
+                target
+              )
 
               Artefact.write_checksum_for_target!(precompiled_artefacts)
 
@@ -60,11 +58,7 @@ defmodule Mix.Tasks.ElixirMake.Precompile do
 
       Artefact.write_checksums!(precompiled_artefacts)
 
-      if function_exported?(precompiler, :post_precompile, 0) do
-        precompiler.post_precompile()
-      else
-        :ok
-      end
+      call_post_precompile_if_available(function_exported?(precompiler, :post_precompile, 0), precompiler)
     after
       app_priv = Path.join(Mix.Project.app_path(config), "priv")
 
@@ -102,4 +96,21 @@ defmodule Mix.Tasks.ElixirMake.Precompile do
 
     artefact
   end
+
+  defp ensure_applications_if_available(true) do
+    Mix.ensure_application!(:inets)
+    Mix.ensure_application!(:ssl)
+    Mix.ensure_application!(:crypto)
+  end
+
+  defp ensure_applications_if_available(false), do: :ok
+
+  defp call_post_precompile_target_if_available(true, precompiler, target) do
+    precompiler.post_precompile_target(target)
+  end
+
+  defp call_post_precompile_target_if_available(false, _precompiler, _target), do: :ok
+
+  defp call_post_precompile_if_available(true, precompiler), do: precompiler.post_precompile()
+  defp call_post_precompile_if_available(false, _precompiler), do: :ok
 end

@@ -4,6 +4,11 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
   Provides functionality for creating and managing grid layouts with customizable columns and rows.
   """
 
+  defp validate_columns(columns) when is_integer(columns) and columns < 1 do
+    raise ArgumentError, "Grid must have at least 1 column"
+  end
+  defp validate_columns(_), do: :ok
+
   @doc """
   Creates a new grid layout.
 
@@ -26,9 +31,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     provided_rows = Keyword.get(opts, :rows)
 
     # Validate columns
-    if is_integer(columns) and columns < 1 do
-      raise ArgumentError, "Grid must have at least 1 column"
-    end
+    validate_columns(columns)
 
     # Calculate required rows if not provided
     rows =
@@ -322,12 +325,13 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     valid_col = col >= 0 and col < length(grid.columns)
     valid_row = row >= 0 and row < length(grid.rows)
 
-    if valid_col and valid_row do
-      # Add child with position information
-      child_with_pos = Map.put(child, :grid_position, {col, row})
-      %{grid | children: [child_with_pos | grid.children]}
-    else
-      grid
+    case {valid_col, valid_row} do
+      {true, true} ->
+        # Add child with position information
+        child_with_pos = Map.put(child, :grid_position, {col, row})
+        %{grid | children: [child_with_pos | grid.children]}
+      _ ->
+        grid
     end
   end
 
@@ -395,10 +399,9 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
   defp validate_children_structure(children) when is_list(children) do
     invalid_children = Enum.filter(children, &(!valid_child_structure?(&1)))
 
-    if Enum.empty?(invalid_children) do
-      :ok
-    else
-      {:error, "Invalid child structure found: #{inspect(invalid_children)}"}
+    case Enum.empty?(invalid_children) do
+      true -> :ok
+      false -> {:error, "Invalid child structure found: #{inspect(invalid_children)}"}
     end
   end
 
@@ -419,10 +422,9 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
            end).()
       end)
 
-    if Enum.empty?(invalid_positions) do
-      :ok
-    else
-      {:error, "Invalid grid positions found: #{inspect(invalid_positions)}"}
+    case Enum.empty?(invalid_positions) do
+      true -> :ok
+      false -> {:error, "Invalid grid positions found: #{inspect(invalid_positions)}"}
     end
   end
 
@@ -440,10 +442,9 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
 
     unique_positions = Enum.uniq(positions)
 
-    if length(positions) == length(unique_positions) do
-      :ok
-    else
-      {:error, "Duplicate grid positions found"}
+    case length(positions) == length(unique_positions) do
+      true -> :ok
+      false -> {:error, "Duplicate grid positions found"}
     end
   end
 

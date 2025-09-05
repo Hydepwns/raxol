@@ -76,14 +76,15 @@ defmodule Raxol.Terminal.MemoryManager do
   """
   def check_and_cleanup(state) do
     current_memory = calculate_memory_usage(state)
-
-    if current_memory > state.memory_limit do
-      # Perform cleanup
-      cleanup_memory(state)
-    else
-      state
-    end
+    handle_memory_check(current_memory > state.memory_limit, state)
   end
+
+  defp handle_memory_check(true, state) do
+    # Perform cleanup
+    cleanup_memory(state)
+  end
+
+  defp handle_memory_check(false, state), do: state
 
   @doc """
   Estimates memory usage for the given state.

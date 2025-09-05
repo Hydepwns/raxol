@@ -226,12 +226,7 @@ defmodule Raxol.Config do
         state = load_all_sources(initial_state, opts)
 
         # Start file watcher if in dev mode
-        state =
-          if Mix.env() == :dev do
-            start_file_watcher(state)
-          else
-            state
-          end
+        state = handle_dev_mode_setup(Mix.env() == :dev, state)
 
         # Validate configuration
         {:ok, :valid} = validate_config(state.config, state.schemas)
@@ -315,7 +310,7 @@ defmodule Raxol.Config do
 
   @impl true
   def handle_call({:source, key}, _from, state) do
-    keys = if is_atom(key), do: [key], else: key
+    keys = normalize_key_to_list(key)
     source = get_nested(state.sources, keys)
     {:reply, source, state}
   end
@@ -338,6 +333,33 @@ defmodule Raxol.Config do
   end
 
   # Private functions
+
+  # Pattern matching helper functions for refactored if statements
+
+  # Handle dev mode setup instead of if statement
+  defp handle_dev_mode_setup(true, state), do: start_file_watcher(state)
+  defp handle_dev_mode_setup(false, state), do: state
+
+  # Normalize key to list instead of if statement
+  defp normalize_key_to_list(key) when is_atom(key), do: [key]
+  defp normalize_key_to_list(key), do: key
+
+  # Handle source marking instead of if statement
+  defp handle_source_marking(true, acc, key, value, source) do
+    Map.put(acc, key, mark_sources(value, source))
+  end
+
+  defp handle_source_marking(false, acc, key, _value, source) do
+    Map.put(acc, key, source)
+  end
+
+  # Handle regex match instead of if statement
+  defp handle_regex_match(true, parser, value), do: parser.(value)
+  defp handle_regex_match(false, _parser, _value), do: nil
+
+  # Handle list match instead of if statement
+  defp handle_list_match(true, parser, value), do: parser.(value)
+  defp handle_list_match(false, _parser, _value), do: nil
 
   defp get_nested(map, keys) do
     Enum.reduce(keys, map, fn key, acc ->
@@ -566,11 +588,7 @@ defmodule Raxol.Config do
 
   defp mark_sources(config, source) when is_map(config) do
     Enum.reduce(config, %{}, fn {key, value}, acc ->
-      if is_map(value) do
-        Map.put(acc, key, mark_sources(value, source))
-      else
-        Map.put(acc, key, source)
-      end
+      handle_source_marking(is_map(value), acc, key, value, source)
     end)
   end
 
@@ -631,10 +649,10 @@ defmodule Raxol.Config do
 
     Enum.find_value(parsers, value, fn
       {regex, parser} when is_struct(regex, Regex) ->
-        if value =~ regex, do: parser.(value)
+        handle_regex_match(value =~ regex, parser, value)
 
       {list, parser} when is_list(list) ->
-        if value in list, do: parser.(value)
+        handle_list_match(value in list, parser, value)
     end)
   end
 

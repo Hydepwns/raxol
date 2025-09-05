@@ -5,8 +5,11 @@ defmodule RaxolWeb.MonitoringLive do
   @impl Phoenix.LiveView
   @dialyzer {:nowarn_function, mount: 3}
   def mount(_params, _session, socket) do
-    if connected?(socket) do
-      _ = :timer.send_interval(5000, :update_metrics)
+    case connected?(socket) do
+      true ->
+        _ = :timer.send_interval(5000, :update_metrics)
+      false ->
+        :ok
     end
 
     {:ok,

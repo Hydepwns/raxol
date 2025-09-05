@@ -40,13 +40,11 @@ defmodule Mix.Tasks.Raxol.CheckConsistency do
       {:ok, report} ->
         filtered_report = filter_by_severity(report, opts.severity)
 
-        if opts.auto_fix do
-          apply_fixes(filtered_report)
-        end
+        apply_auto_fixes(opts.auto_fix, filtered_report)
 
         output_report(filtered_report, opts.format)
 
-        exit_code = if Enum.empty?(filtered_report.issues), do: 0, else: 1
+        exit_code = get_exit_code(Enum.empty?(filtered_report.issues))
         System.at_exit(fn _ -> exit({:shutdown, exit_code}) end)
 
       {:error, reason} ->
@@ -106,11 +104,7 @@ defmodule Mix.Tasks.Raxol.CheckConsistency do
     output = ConsistencyChecker.generate_report(report)
     IO.puts(output)
 
-    if length(report.issues) > 0 do
-      Mix.shell().info("\nFound #{length(report.issues)} consistency issues")
-    else
-      Mix.shell().info("\n✓ No consistency issues found!")
-    end
+    output_issue_summary(length(report.issues))
   end
 
   defp apply_fixes(report) do
@@ -224,5 +218,22 @@ defmodule Mix.Tasks.Raxol.CheckConsistency do
       </div>
       """
     end)
+  end
+
+  defp apply_auto_fixes(false, _report), do: :ok
+
+  defp apply_auto_fixes(true, report) do
+    apply_fixes(report)
+  end
+
+  defp get_exit_code(true), do: 0
+  defp get_exit_code(false), do: 1
+
+  defp output_issue_summary(0) do
+    Mix.shell().info("\n✓ No consistency issues found!")
+  end
+
+  defp output_issue_summary(count) do
+    Mix.shell().info("\nFound #{count} consistency issues")
   end
 end

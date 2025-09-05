@@ -58,7 +58,7 @@ defmodule Raxol.Style do
   defp extract_layout_attrs(map) do
     [:padding, :margin, :width, :height, :alignment, :overflow]
     |> Enum.reduce(%{}, fn key, acc ->
-      if Map.has_key?(map, key), do: Map.put(acc, key, map[key]), else: acc
+      maybe_put_key(Map.has_key?(map, key), acc, key, map[key])
     end)
   end
 
@@ -114,15 +114,8 @@ defmodule Raxol.Style do
   Converts style properties to ANSI escape sequences (currently just numeric codes).
   """
   def to_ansi(style) do
-    fg_ansi =
-      if style.color,
-        do: Colors.Color.to_ansi(style.color, :foreground),
-        else: nil
-
-    bg_ansi =
-      if style.background,
-        do: Colors.Color.to_ansi(style.background, :background),
-        else: nil
+    fg_ansi = maybe_convert_color_to_ansi(style.color, :foreground)
+    bg_ansi = maybe_convert_color_to_ansi(style.background, :background)
 
     decoration_ansi =
       Enum.map(style.decorations, fn dec ->
@@ -213,4 +206,10 @@ defmodule Raxol.Style do
       _ -> false
     end
   end
+
+  defp maybe_put_key(true, acc, key, value), do: Map.put(acc, key, value)
+  defp maybe_put_key(false, acc, _key, _value), do: acc
+
+  defp maybe_convert_color_to_ansi(nil, _type), do: nil
+  defp maybe_convert_color_to_ansi(color, type), do: Colors.Color.to_ansi(color, type)
 end

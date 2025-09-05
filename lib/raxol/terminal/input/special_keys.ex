@@ -204,21 +204,27 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
 
   defp calculate_modifiers(state) do
     modifier_value =
-      if(state.ctrl, do: 1, else: 0) +
-        if(state.alt, do: 2, else: 0) +
-        if(state.shift, do: 4, else: 0) +
-        if state.meta, do: 8, else: 0
+      bool_to_int(state.ctrl, 1) +
+        bool_to_int(state.alt, 2) +
+        bool_to_int(state.shift, 4) +
+        bool_to_int(state.meta, 8)
 
-    if modifier_value > 0, do: "#{modifier_value};", else: ""
+    format_modifier_value(modifier_value)
   end
+
+  defp bool_to_int(true, value), do: value
+  defp bool_to_int(false, _value), do: 0
+
+  defp format_modifier_value(0), do: ""
+  defp format_modifier_value(value), do: "#{value};"
 
   defp calculate_modifier_code(state) do
     code =
-      if(state.ctrl, do: 1, else: 0) +
-        if(state.shift, do: 2, else: 0) +
-        if(state.alt, do: 4, else: 0) +
-        if state.meta, do: 8, else: 0
+      bool_to_int(state.ctrl, 1) +
+        bool_to_int(state.shift, 2) +
+        bool_to_int(state.alt, 4) +
+        bool_to_int(state.meta, 8)
 
-    if code > 0, do: "#{code};", else: ""
+    format_modifier_value(code)
   end
 end

@@ -20,7 +20,7 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
   end
 
   def record(name, value, opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = normalize_to_keyword(opts)
     metrics_state = get_metrics_state()
 
     # Create metric entry
@@ -46,13 +46,11 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
 
     # Check if we need to flush the batch
     {updated_batch, updated_last_flush} =
-      if length(updated_batch) >= metrics_state.config.metrics_batch_size do
-        # Flush batch to backends
-        flush_metrics(updated_batch, metrics_state.config)
-        {[], DateTime.utc_now()}
-      else
-        {updated_batch, metrics_state.last_flush}
-      end
+      check_and_flush_batch(
+        length(updated_batch) >= metrics_state.config.metrics_batch_size,
+        updated_batch,
+        metrics_state
+      )
 
     # Update metrics state
     Raxol.Cloud.Monitoring.Server.update_metrics(%{
@@ -76,7 +74,7 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
   end
 
   defp normalize_opts(opts) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = normalize_to_keyword(opts)
 
     %{
       limit: Keyword.get(opts, :limit, 100),
@@ -152,5 +150,20 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
   defp send_to_cloudwatch(_batch) do
     # FEAT: This would use AWS SDK to send metrics to CloudWatch
     :ok
+  end
+
+  # Helper functions to eliminate if statements
+
+  defp normalize_to_keyword(opts) when is_map(opts), do: Enum.into(opts, [])
+  defp normalize_to_keyword(opts), do: opts
+
+  defp check_and_flush_batch(true, updated_batch, metrics_state) do
+    # Flush batch to backends
+    flush_metrics(updated_batch, metrics_state.config)
+    {[], DateTime.utc_now()}
+  end
+
+  defp check_and_flush_batch(false, updated_batch, metrics_state) do
+    {updated_batch, metrics_state.last_flush}
   end
 end

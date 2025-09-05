@@ -128,16 +128,18 @@ defmodule Raxol.System.TerminalPlatform do
     features = []
 
     features =
-      if String.contains?(term, "256") ||
-           term_program in ["iTerm.app", "vscode"],
-         do: [:colors_256 | features],
-         else: features
+      add_256_color_feature(
+        String.contains?(term, "256") ||
+          term_program in ["iTerm.app", "vscode"],
+        features
+      )
 
     features =
-      if term_program in ["iTerm.app", "vscode"] ||
-           term_emulator == "JetBrains-JediTerm",
-         do: [:true_color | features],
-         else: features
+      add_true_color_feature(
+        term_program in ["iTerm.app", "vscode"] ||
+          term_emulator == "JetBrains-JediTerm",
+        features
+      )
 
     features
   end
@@ -146,36 +148,38 @@ defmodule Raxol.System.TerminalPlatform do
     term_program = System.get_env("TERM_PROGRAM") || ""
     term_emulator = System.get_env("TERM_EMULATOR") || ""
 
-    if term_program in ["iTerm.app", "vscode"] ||
-         term_emulator == "JetBrains-JediTerm",
-       do: [:mouse],
-       else: []
+    has_mouse =
+      term_program in ["iTerm.app", "vscode"] ||
+        term_emulator == "JetBrains-JediTerm"
+
+    feature_list(has_mouse, :mouse)
   end
 
   defp detect_title_feature do
     term_program = System.get_env("TERM_PROGRAM") || ""
     term_emulator = System.get_env("TERM_EMULATOR") || ""
 
-    if term_program in ["iTerm.app", "vscode", "Apple_Terminal"] ||
-         term_emulator == "JetBrains-JediTerm",
-       do: [:title],
-       else: []
+    has_title =
+      term_program in ["iTerm.app", "vscode", "Apple_Terminal"] ||
+        term_emulator == "JetBrains-JediTerm"
+
+    feature_list(has_title, :title)
   end
 
   defp detect_unicode_feature do
-    if supports_unicode?(), do: [:unicode], else: []
+    feature_list(supports_unicode?(), :unicode)
   end
 
   defp detect_clipboard_feature do
-    if supports_clipboard?(), do: [:clipboard], else: []
+    feature_list(supports_clipboard?(), :clipboard)
   end
 
   defp detect_bracketed_paste_feature do
-    if supports_bracketed_paste?(), do: [:bracketed_paste], else: []
+    feature_list(supports_bracketed_paste?(), :bracketed_paste)
   end
 
   defp detect_focus_feature do
-    if supports_focus?(), do: [:focus], else: []
+    feature_list(supports_focus?(), :focus)
   end
 
   # Private helper functions
@@ -193,14 +197,16 @@ defmodule Raxol.System.TerminalPlatform do
   end
 
   defp detect_by_other_env_vars do
-    if System.get_env("WT_SESSION") != nil do
-      "Windows Terminal"
-    else
-      case System.get_env("TERM") do
-        "xterm-256color" -> "xterm"
-        "screen-256color" -> "screen"
-        term -> term || "unknown"
-      end
+    detect_terminal_type(System.get_env("WT_SESSION") != nil)
+  end
+
+  defp detect_terminal_type(true), do: "Windows Terminal"
+
+  defp detect_terminal_type(false) do
+    case System.get_env("TERM") do
+      "xterm-256color" -> "xterm"
+      "screen-256color" -> "screen"
+      term -> term || "unknown"
     end
   end
 
@@ -216,7 +222,7 @@ defmodule Raxol.System.TerminalPlatform do
     %{
       basic: true,
       true_color: :true_color in get_supported_features(),
-      palette: if(supports_256_colors?(), do: "xterm-256color", else: "default")
+      palette: get_color_palette(supports_256_colors?())
     }
   end
 
@@ -309,4 +315,17 @@ defmodule Raxol.System.TerminalPlatform do
     term_program = System.get_env("TERM_PROGRAM") || ""
     term_program in ["iTerm.app", "vscode"]
   end
+
+  # Helper functions for refactored if statements
+  defp add_256_color_feature(true, features), do: [:colors_256 | features]
+  defp add_256_color_feature(false, features), do: features
+
+  defp add_true_color_feature(true, features), do: [:true_color | features]
+  defp add_true_color_feature(false, features), do: features
+
+  defp feature_list(true, feature), do: [feature]
+  defp feature_list(false, _feature), do: []
+
+  defp get_color_palette(true), do: "xterm-256color"
+  defp get_color_palette(false), do: "default"
 end

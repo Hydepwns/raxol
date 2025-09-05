@@ -2,8 +2,6 @@
 defmodule Raxol.Cloud.Monitoring.Alerts do
   @moduledoc false
 
-  # Process dictionary key for alerts
-  @alerts_key :raxol_monitoring_alerts
 
   def init(config) do
     alerts_state = %{
@@ -15,17 +13,21 @@ defmodule Raxol.Cloud.Monitoring.Alerts do
   end
 
   def process(alert, opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = normalize_opts(opts)
     alerts_state = get_alerts_state()
 
     # Check if we should notify
     notify = Keyword.get(opts, :notify, true)
 
-    if notify do
-      # Send notifications
-      send_notifications(alert, alerts_state.config)
-    end
+    handle_notification(notify, alert, alerts_state.config)
+    :ok
+  end
 
+  defp handle_notification(true, alert, config) do
+    send_notifications(alert, config)
+  end
+
+  defp handle_notification(false, _alert, _config) do
     :ok
   end
 
@@ -39,4 +41,7 @@ defmodule Raxol.Cloud.Monitoring.Alerts do
     # Send notifications
     :ok
   end
+
+  defp normalize_opts(opts) when is_map(opts), do: Enum.into(opts, [])
+  defp normalize_opts(opts), do: opts
 end

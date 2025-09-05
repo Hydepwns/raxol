@@ -641,13 +641,12 @@ defmodule Raxol.UI.Layout.CSSGrid do
 
     # Mark occupied cells
     Enum.reduce(items, grid, fn item, acc ->
-      if item.cell do
-        mark_occupied_cells(acc, item.cell)
-      else
-        acc
-      end
+      mark_cells_if_present(item.cell, acc)
     end)
   end
+
+  defp mark_cells_if_present(nil, acc), do: acc
+  defp mark_cells_if_present(cell, acc), do: mark_occupied_cells(acc, cell)
 
   defp mark_occupied_cells(grid, cell) do
     for {row, r} <- Enum.with_index(grid) do
@@ -655,15 +654,21 @@ defmodule Raxol.UI.Layout.CSSGrid do
         row_idx = r + 1
         col_idx = c + 1
 
-        if row_idx >= cell.row and row_idx < cell.row + cell.row_span and
-             col_idx >= cell.column and col_idx < cell.column + cell.column_span do
-          true
-        else
+        cell_occupies_position(
+          cell_intersects(row_idx, col_idx, cell),
           occupied
-        end
+        )
       end
     end
   end
+
+  defp cell_intersects(row_idx, col_idx, cell) do
+    row_idx >= cell.row and row_idx < cell.row + cell.row_span and
+      col_idx >= cell.column and col_idx < cell.column + cell.column_span
+  end
+
+  defp cell_occupies_position(true, _occupied), do: true
+  defp cell_occupies_position(false, occupied), do: occupied
 
   defp find_auto_placement(_item, occupancy, flow, col_count, row_count) do
     # Find first available position based on flow direction
@@ -790,11 +795,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
     # Second pass: distribute remaining space to fr tracks
     used_space =
       Enum.reduce(first_pass_tracks, 0, fn track, acc ->
-        if track.type == :fr do
-          acc
-        else
-          acc + track.value
-        end
+        accumulate_non_fr_space(track.type == :fr, track.value, acc)
       end)
 
     # Account for gaps
@@ -808,45 +809,45 @@ defmodule Raxol.UI.Layout.CSSGrid do
 
     total_fr =
       Enum.reduce(first_pass_tracks, 0, fn track, acc ->
-        if track.type == :fr do
-          acc + track.value
-        else
-          acc
-        end
+        accumulate_fr_space(track.type == :fr, track.value, acc)
       end)
 
     # Final pass: assign sizes to fr tracks
     fr_unit_size =
-      if total_fr > 0 do
-        remaining_space / total_fr
-      else
-        0
-      end
+      calculate_fr_unit_size(total_fr > 0, remaining_space, total_fr)
 
     Enum.map(first_pass_tracks, fn track ->
-      if track.type == :fr do
-        %{track | value: track.value * fr_unit_size, type: :fixed}
-      else
-        track
-      end
+      finalize_track_size(track.type == :fr, track, fr_unit_size)
     end)
   end
+
+  defp accumulate_non_fr_space(true, _value, acc), do: acc
+  defp accumulate_non_fr_space(false, value, acc), do: acc + value
+
+  defp accumulate_fr_space(true, value, acc), do: acc + value
+  defp accumulate_fr_space(false, _value, acc), do: acc
+
+  defp calculate_fr_unit_size(true, remaining_space, total_fr),
+    do: remaining_space / total_fr
+
+  defp calculate_fr_unit_size(false, _remaining_space, _total_fr), do: 0
+
+  defp finalize_track_size(true, track, fr_unit_size) do
+    %{track | value: track.value * fr_unit_size, type: :fixed}
+  end
+
+  defp finalize_track_size(false, track, _fr_unit_size), do: track
 
   defp calculate_auto_track_size(track, items, direction) do
     # Auto tracks size to fit their content
     max_size =
       Enum.reduce(items, 0, fn item, acc ->
-        if item.cell and track_intersects_item(track, item, direction) do
-          size =
-            case direction do
-              :column -> item.dimensions.width
-              :row -> item.dimensions.height
-            end
-
-          max(acc, size)
-        else
+        calculate_item_contribution(
+          item.cell && track_intersects_item(track, item, direction),
+          item,
+          direction,
           acc
-        end
+        )
       end)
 
     %{track | value: max_size, type: :fixed}
@@ -856,41 +857,42 @@ defmodule Raxol.UI.Layout.CSSGrid do
     # Min-content is the smallest size that doesn't cause overflow
     min_size =
       Enum.reduce(items, 0, fn item, acc ->
-        if item.cell and track_intersects_item(track, item, direction) do
-          # For simplicity, use the item's natural size
-          size =
-            case direction do
-              :column -> item.dimensions.width
-              :row -> item.dimensions.height
-            end
-
-          max(acc, size)
-        else
+        calculate_item_contribution(
+          item.cell && track_intersects_item(track, item, direction),
+          item,
+          direction,
           acc
-        end
+        )
       end)
 
     %{track | value: min_size, type: :fixed}
   end
 
   defp calculate_max_content_track_size(track, items, direction) do
-    # Max-content is the largest size the content could take
+    # Max-content is the largest size without breaking content
     max_size =
       Enum.reduce(items, 0, fn item, acc ->
-        if item.cell and track_intersects_item(track, item, direction) do
-          size =
-            case direction do
-              :column -> item.dimensions.width
-              :row -> item.dimensions.height
-            end
-
-          max(acc, size)
-        else
+        calculate_item_contribution(
+          item.cell && track_intersects_item(track, item, direction),
+          item,
+          direction,
           acc
-        end
+        )
       end)
 
     %{track | value: max_size, type: :fixed}
+  end
+
+  defp calculate_item_contribution(false, _item, _direction, acc), do: acc
+
+  defp calculate_item_contribution(true, item, direction, acc) do
+    size =
+      case direction do
+        :column -> item.dimensions.width
+        :row -> item.dimensions.height
+      end
+
+    max(acc, size)
   end
 
   defp calculate_minmax_track_size(track, items, direction) do
@@ -929,59 +931,130 @@ defmodule Raxol.UI.Layout.CSSGrid do
 
     # Position each item
     Enum.map(items, fn item ->
-      if item.cell do
-        # Get track positions for this item
-        start_col = item.cell.column
-        end_col = start_col + item.cell.column_span - 1
-        start_row = item.cell.row
-        end_row = start_row + item.cell.row_span - 1
-
-        # Calculate item bounds
-        x = Enum.at(column_positions, start_col - 1, content_space.x)
-
-        width =
-          if end_col <= length(column_positions) do
-            end_x =
-              Enum.at(column_positions, end_col - 1, x) +
-                Enum.at(column_tracks, end_col - 1, %{value: 0}).value
-
-            end_x - x
-          else
-            Enum.at(column_tracks, start_col - 1, %{value: 50}).value
-          end
-
-        y = Enum.at(row_positions, start_row - 1, content_space.y)
-
-        height =
-          if end_row <= length(row_positions) do
-            end_y =
-              Enum.at(row_positions, end_row - 1, y) +
-                Enum.at(row_tracks, end_row - 1, %{value: 0}).value
-
-            end_y - y
-          else
-            Enum.at(row_tracks, start_row - 1, %{value: 20}).value
-          end
-
-        child_space = %{
-          x: x,
-          y: y,
-          width: width,
-          height: height
-        }
-
-        {item.child, child_space}
-      else
-        # Item without placement - place at origin
-        {item.child,
-         %{
-           x: content_space.x,
-           y: content_space.y,
-           width: item.dimensions.width,
-           height: item.dimensions.height
-         }}
-      end
+      position_grid_item(
+        item.cell,
+        item,
+        column_positions,
+        column_tracks,
+        row_positions,
+        row_tracks,
+        content_space
+      )
     end)
+  end
+
+  defp position_grid_item(
+         nil,
+         item,
+         _column_positions,
+         _column_tracks,
+         _row_positions,
+         _row_tracks,
+         _content_space
+       ) do
+    item
+  end
+
+  defp position_grid_item(
+         cell,
+         item,
+         column_positions,
+         column_tracks,
+         row_positions,
+         row_tracks,
+         content_space
+       ) do
+    # Get track positions for this item
+    start_col = item.cell.column
+    end_col = start_col + item.cell.column_span - 1
+    start_row = item.cell.row
+    end_row = start_row + item.cell.row_span - 1
+
+    # Calculate item bounds
+    x = Enum.at(column_positions, start_col - 1, content_space.x)
+
+    width =
+      calculate_item_width(
+        end_col <= length(column_positions),
+        end_col,
+        column_positions,
+        column_tracks,
+        x,
+        start_col
+      )
+
+    y = Enum.at(row_positions, start_row - 1, content_space.y)
+
+    height =
+      calculate_item_height(
+        end_row <= length(row_positions),
+        end_row,
+        row_positions,
+        row_tracks,
+        y,
+        start_row
+      )
+
+    child_space = %{
+      x: x,
+      y: y,
+      width: width,
+      height: height
+    }
+
+    {item.child, child_space}
+  end
+
+  defp calculate_item_width(
+         true,
+         end_col,
+         column_positions,
+         column_tracks,
+         x,
+         _start_col
+       ) do
+    end_x =
+      Enum.at(column_positions, end_col - 1, x) +
+        Enum.at(column_tracks, end_col - 1, %{value: 0}).value
+
+    end_x - x
+  end
+
+  defp calculate_item_width(
+         false,
+         _end_col,
+         _column_positions,
+         column_tracks,
+         _x,
+         start_col
+       ) do
+    Enum.at(column_tracks, start_col - 1, %{value: 50}).value
+  end
+
+  defp calculate_item_height(
+         true,
+         end_row,
+         row_positions,
+         row_tracks,
+         y,
+         _start_row
+       ) do
+    end_y =
+      Enum.at(row_positions, end_row - 1, y) +
+        Enum.at(row_tracks, end_row - 1, %{value: 0}).value
+
+    end_y - y
+  end
+
+  defp calculate_item_height(
+         false,
+         _end_row,
+         _row_positions,
+         row_tracks,
+         _y,
+         start_row
+       ) do
+    Enum.at(row_tracks, start_row - 1, %{value: 20}).value
   end
 
   defp calculate_track_positions(tracks, start_pos, gap) do

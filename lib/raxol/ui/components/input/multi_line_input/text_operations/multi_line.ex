@@ -51,16 +51,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations.MultiLine do
     lines_before = Enum.slice(lines_list, 0, start_row)
 
     new_middle_lines =
-      if replacement == "" do
-        # When replacement is empty, join the first and last line parts
-        if first_line_part == "" and last_line_part == "" do
-          []
-        else
-          [first_line_part <> last_line_part]
-        end
-      else
-        [first_line_part <> replacement <> last_line_part]
-      end
+      build_middle_lines_by_replacement(
+        replacement,
+        first_line_part,
+        last_line_part
+      )
 
     lines_after =
       Enum.slice(lines_list, end_row + 1, length(lines_list) - (end_row + 1))
@@ -87,20 +82,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations.MultiLine do
   def insert_multi_line_text(lines_list, row, col, text) do
     lines = String.split(text, "\n")
 
-    if length(lines) == 1 do
-      line = Selection.get_line(lines_list, row)
-      line_length = String.length(line)
-      col = Utils.clamp(col, 0, line_length)
-
-      before = String.slice(line, 0, col)
-      after_part = String.slice(line, col, line_length - col)
-      new_line = before <> text <> after_part
-
-      new_lines = List.replace_at(lines_list, row, new_line)
-      {Enum.join(new_lines, "\n"), ""}
-    else
-      handle_multi_line_insertion(lines_list, row, col, lines)
-    end
+    handle_insertion_by_line_count(
+      length(lines) == 1,
+      lines_list,
+      row,
+      col,
+      text,
+      lines
+    )
   end
 
   defp handle_multi_line_insertion(lines_list, row, col, [
@@ -150,5 +139,49 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations.MultiLine do
 
         {Enum.join(new_lines, "\n"), ""}
     end
+  end
+
+  # Pattern matching helpers to eliminate if statements
+  defp build_middle_lines_by_replacement("", first_line_part, last_line_part) do
+    # When replacement is empty, join the first and last line parts
+    build_empty_replacement_lines(
+      first_line_part == "" and last_line_part == "",
+      first_line_part,
+      last_line_part
+    )
+  end
+
+  defp build_middle_lines_by_replacement(
+         replacement,
+         first_line_part,
+         last_line_part
+       ) do
+    [first_line_part <> replacement <> last_line_part]
+  end
+
+  defp build_empty_replacement_lines(true, _first_line_part, _last_line_part),
+    do: []
+
+  defp build_empty_replacement_lines(false, first_line_part, last_line_part) do
+    [first_line_part <> last_line_part]
+  end
+
+  defp handle_insertion_by_line_count(true, lines_list, row, col, text, _lines) do
+    # Single line insertion
+    line = Selection.get_line(lines_list, row)
+    line_length = String.length(line)
+    col = Utils.clamp(col, 0, line_length)
+
+    before = String.slice(line, 0, col)
+    after_part = String.slice(line, col, line_length - col)
+    new_line = before <> text <> after_part
+
+    new_lines = List.replace_at(lines_list, row, new_line)
+    {Enum.join(new_lines, "\n"), ""}
+  end
+
+  defp handle_insertion_by_line_count(false, lines_list, row, col, _text, lines) do
+    # Multi-line insertion
+    handle_multi_line_insertion(lines_list, row, col, lines)
   end
 end

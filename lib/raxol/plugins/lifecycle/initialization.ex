@@ -66,14 +66,7 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
   def initialize_plugin(module, config) do
     case Raxol.Core.ErrorHandling.safe_call(fn -> module.init(config) end) do
       {:ok, {:ok, plugin_state}} ->
-        if is_struct(plugin_state) and
-             (plugin_state.__struct__ == Raxol.Plugins.Plugin or
-                function_exported?(plugin_state.__struct__, :__struct__, 0)) do
-          {:ok, plugin_state}
-        else
-          plugin = create_plugin_struct(module, config, plugin_state)
-          {:ok, plugin}
-        end
+        handle_plugin_state_creation(plugin_state, module, config)
 
       {:ok, {:error, reason}} ->
         {:error, reason}
@@ -87,58 +80,119 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
     end
   end
 
+  defp handle_plugin_state_creation(plugin_state, module, config) do
+    case is_valid_plugin_struct(plugin_state) do
+      true ->
+        {:ok, plugin_state}
+
+      false ->
+        plugin = create_plugin_struct(module, config, plugin_state)
+        {:ok, plugin}
+    end
+  end
+
+  defp is_valid_plugin_struct(plugin_state) when is_struct(plugin_state) do
+    plugin_state.__struct__ == Raxol.Plugins.Plugin or
+      function_exported?(plugin_state.__struct__, :__struct__, 0)
+  end
+
+  defp is_valid_plugin_struct(_plugin_state), do: false
+
+  defp normalize_plugin_state(plugin_state) when is_struct(plugin_state),
+    do: %{}
+
+  defp normalize_plugin_state(plugin_state), do: plugin_state
+
+  defp create_base_plugin(
+         true,
+         module,
+         plugin_name,
+         metadata,
+         config,
+         normalized_state
+       ) do
+    struct(module, %{
+      name: plugin_name,
+      version: Map.get(metadata, :version, "1.0.1"),
+      description: Map.get(metadata, :description, "Plugin for #{module}"),
+      enabled: true,
+      config: config,
+      dependencies: Map.get(metadata, :dependencies, []),
+      api_version: Map.get(metadata, :api_version, get_api_version()),
+      state: normalized_state
+    })
+  end
+
+  defp create_base_plugin(
+         false,
+         module,
+         plugin_name,
+         metadata,
+         config,
+         normalized_state
+       ) do
+    %Raxol.Plugins.Plugin{
+      name: plugin_name,
+      version: Map.get(metadata, :version, "1.0.1"),
+      description: Map.get(metadata, :description, "Plugin for #{module}"),
+      enabled: true,
+      config: config,
+      dependencies: Map.get(metadata, :dependencies, []),
+      api_version: Map.get(metadata, :api_version, get_api_version()),
+      module: module,
+      state: normalized_state
+    }
+  end
+
   def create_plugin_struct(module, config, plugin_state) do
     metadata = get_plugin_metadata(module)
-    normalized_state = if is_struct(plugin_state), do: %{}, else: plugin_state
+    normalized_state = normalize_plugin_state(plugin_state)
     has_struct = function_exported?(module, :__struct__, 0)
     plugin_name = Map.get(metadata, :name, get_plugin_name(module))
 
     base_plugin =
-      if has_struct do
-        struct(module, %{
-          name: plugin_name,
-          version: Map.get(metadata, :version, "1.0.1"),
-          description: Map.get(metadata, :description, "Plugin for #{module}"),
-          enabled: true,
-          config: config,
-          dependencies: Map.get(metadata, :dependencies, []),
-          api_version: Map.get(metadata, :api_version, get_api_version()),
-          state: normalized_state
-        })
-      else
-        %Raxol.Plugins.Plugin{
-          name: plugin_name,
-          version: Map.get(metadata, :version, "1.0.1"),
-          description: Map.get(metadata, :description, "Plugin for #{module}"),
-          enabled: true,
-          config: config,
-          dependencies: Map.get(metadata, :dependencies, []),
-          api_version: Map.get(metadata, :api_version, get_api_version()),
-          module: module,
-          state: normalized_state
-        }
-      end
+      create_base_plugin(
+        has_struct,
+        module,
+        plugin_name,
+        metadata,
+        config,
+        normalized_state
+      )
 
-    if is_map(plugin_state) and not is_struct(plugin_state) do
-      merged_plugin = Map.merge(base_plugin, plugin_state)
+    finalize_plugin_struct(plugin_state, base_plugin)
+  end
 
-      if Map.get(merged_plugin, :name) == nil do
-        Map.put(merged_plugin, :name, base_plugin.name)
-      else
-        merged_plugin
-      end
-    else
-      base_plugin
+  defp finalize_plugin_struct(plugin_state, base_plugin)
+       when is_map(plugin_state) do
+    case is_struct(plugin_state) do
+      true ->
+        base_plugin
+
+      false ->
+        merged_plugin = Map.merge(base_plugin, plugin_state)
+        ensure_plugin_has_name(merged_plugin, base_plugin.name)
+    end
+  end
+
+  defp finalize_plugin_struct(_plugin_state, base_plugin), do: base_plugin
+
+  defp ensure_plugin_has_name(merged_plugin, fallback_name) do
+    case Map.get(merged_plugin, :name) do
+      nil -> Map.put(merged_plugin, :name, fallback_name)
+      _name -> merged_plugin
     end
   end
 
   def get_plugin_metadata(module) do
-    if function_exported?(module, :get_metadata, 0) do
-      module.get_metadata()
-    else
-      %{}
-    end
+    call_metadata_if_available(
+      function_exported?(module, :get_metadata, 0),
+      module
+    )
   end
+
+  defp call_metadata_if_available(true, module), do: module.get_metadata()
+  defp call_metadata_if_available(false, _module), do: %{}
 
   def validate_plugin_state(plugin) do
     case validate_required_fields(plugin) do
@@ -150,8 +204,13 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
   def validate_required_fields(plugin) do
     required_fields = [:name, :version, :enabled, :config, :api_version]
     missing = Enum.filter(required_fields, &(Map.get(plugin, &1) == nil))
-    if Enum.empty?(missing), do: :ok, else: {:error, {:missing_fields, missing}}
+    check_missing_fields(Enum.empty?(missing), missing)
   end
+
+  defp check_missing_fields(true, _missing), do: :ok
+
+  defp check_missing_fields(false, missing),
+    do: {:error, {:missing_fields, missing}}
 
   def validate_field_types(plugin) do
     with :ok <- Validation.validate_string_field(plugin.name, :name),
@@ -202,31 +261,34 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
   end
 
   def get_default_config(module) do
-    if function_exported?(module, :get_metadata, 0) do
-      case module.get_metadata() do
-        %{default_config: dc} when is_map(dc) -> dc
-        _ -> %{}
-      end
-    else
-      %{}
+    extract_default_config(function_exported?(module, :get_metadata, 0), module)
+  end
+
+  defp extract_default_config(true, module) do
+    case module.get_metadata() do
+      %{default_config: dc} when is_map(dc) -> dc
+      _ -> %{}
     end
   end
+
+  defp extract_default_config(false, _module), do: %{}
 
   def get_plugin_id_from_metadata(module) do
     Code.ensure_loaded(module)
+    extract_plugin_id(function_exported?(module, :get_metadata, 0), module)
+  end
 
-    if function_exported?(module, :get_metadata, 0) do
-      metadata = module.get_metadata()
+  defp extract_plugin_id(true, module) do
+    metadata = module.get_metadata()
 
-      case metadata do
-        %{name: name} when is_binary(name) -> name
-        %{id: id} when is_atom(id) -> Atom.to_string(id)
-        _ -> get_plugin_name(module)
-      end
-    else
-      get_plugin_name(module)
+    case metadata do
+      %{name: name} when is_binary(name) -> name
+      %{id: id} when is_atom(id) -> Atom.to_string(id)
+      _ -> get_plugin_name(module)
     end
   end
+
+  defp extract_plugin_id(false, module), do: get_plugin_name(module)
 
   def initialize_all_plugins_with_configs(manager, module_configs) do
     Enum.reduce_while(module_configs, {:ok, []}, fn {module, config},

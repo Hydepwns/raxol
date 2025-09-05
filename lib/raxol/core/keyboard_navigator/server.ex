@@ -252,12 +252,7 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
   def handle_call({:register_to_group, component_id, group_name}, _from, state) do
     group_members = Map.get(state.groups, group_name, [])
 
-    updated_members =
-      if component_id in group_members do
-        group_members
-      else
-        [component_id | group_members]
-      end
+    updated_members = add_component_to_group(component_id, group_members)
 
     new_groups = Map.put(state.groups, group_name, updated_members)
     new_state = %{state | groups: new_groups}
@@ -273,12 +268,7 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
     group_members = Map.get(state.groups, group_name, [])
     updated_members = List.delete(group_members, component_id)
 
-    new_groups =
-      if updated_members == [] do
-        Map.delete(state.groups, group_name)
-      else
-        Map.put(state.groups, group_name, updated_members)
-      end
+    new_groups = update_group_members(state.groups, group_name, updated_members)
 
     new_state = %{state | groups: new_groups}
     {:reply, :ok, new_state}
@@ -347,20 +337,10 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
     case {key, modifiers, config} do
       # Tab navigation
       {k, mods, %{tab_navigation: true, next_key: k}} ->
-        if :shift in mods do
-          # This is actually shift+key, so ignore for next navigation
-          {:noreply, state}
-        else
-          handle_next_navigation(state)
-        end
+        handle_tab_navigation(:next, mods, state)
 
       {k, mods, %{tab_navigation: true, previous_key: k}} ->
-        if :shift in mods do
-          handle_previous_navigation(state)
-        else
-          # This is key without shift, so ignore for previous navigation
-          {:noreply, state}
-        end
+        handle_tab_navigation(:previous, mods, state)
 
       # Arrow navigation
       {k, _mods, %{arrow_navigation: true}}
@@ -373,11 +353,7 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
 
       # Activation
       {k, _mods, %{activate_keys: activate_keys}} ->
-        if k in activate_keys do
-          handle_activation()
-        else
-          :ok
-        end
+        handle_activation_key(k, activate_keys)
 
       # Dismiss/Back
       {k, _mods, %{dismiss_key: k}} ->
@@ -400,19 +376,26 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
 
   defp handle_arrow_navigation(direction, state) do
     current_focus = FocusManager.get_focused_element()
+    handle_arrow_with_focus(current_focus, direction, state)
+  end
 
-    if current_focus && state.config.spatial_navigation do
-      next_component = find_spatial_neighbor(current_focus, direction, state)
-      if next_component, do: FocusManager.set_focus(next_component)
-    else
-      # Fallback to regular navigation
-      case direction do
-        d when d in [:down, :right] -> FocusManager.focus_next()
-        d when d in [:up, :left] -> FocusManager.focus_previous()
-        _ -> :ok
-      end
+  defp handle_arrow_with_focus(current_focus, direction, state)
+       when is_binary(current_focus) and state.config.spatial_navigation do
+    next_component = find_spatial_neighbor(current_focus, direction, state)
+    focus_if_present(next_component)
+  end
+
+  defp handle_arrow_with_focus(_current_focus, direction, _state) do
+    # Fallback to regular navigation
+    case direction do
+      d when d in [:down, :right] -> FocusManager.focus_next()
+      d when d in [:up, :left] -> FocusManager.focus_previous()
+      _ -> :ok
     end
   end
+
+  defp focus_if_present(nil), do: :ok
+  defp focus_if_present(component_id), do: FocusManager.set_focus(component_id)
 
   defp handle_vim_navigation(key, state) do
     direction =
@@ -428,10 +411,13 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
 
   defp handle_activation do
     current_focus = FocusManager.get_focused_element()
+    dispatch_activation_if_focused(current_focus)
+  end
 
-    if current_focus do
-      EventManager.dispatch({:activate, %{component_id: current_focus}})
-    end
+  defp dispatch_activation_if_focused(nil), do: :ok
+
+  defp dispatch_activation_if_focused(current_focus) do
+    EventManager.dispatch({:activate, %{component_id: current_focus}})
   end
 
   defp handle_dismiss(state) do
@@ -494,5 +480,45 @@ defmodule Raxol.Core.KeyboardNavigator.Server do
     dx = pos1.center_x - pos2.center_x
     dy = pos1.center_y - pos2.center_y
     :math.sqrt(dx * dx + dy * dy)
+  end
+
+  # Helper functions for if statement elimination
+
+  defp add_component_to_group(component_id, group_members) do
+    case component_id in group_members do
+      true -> group_members
+      false -> [component_id | group_members]
+    end
+  end
+
+  defp update_group_members(groups, group_name, []) do
+    Map.delete(groups, group_name)
+  end
+
+  defp update_group_members(groups, group_name, updated_members) do
+    Map.put(groups, group_name, updated_members)
+  end
+
+  defp handle_tab_navigation(:next, mods, state) do
+    case :shift in mods do
+      # Shift+key, ignore for next navigation
+      true -> {:noreply, state}
+      false -> handle_next_navigation(state)
+    end
+  end
+
+  defp handle_tab_navigation(:previous, mods, state) do
+    case :shift in mods do
+      true -> handle_previous_navigation(state)
+      # Key without shift, ignore for previous navigation
+      false -> {:noreply, state}
+    end
+  end
+
+  defp handle_activation_key(key, activate_keys) do
+    case key in activate_keys do
+      true -> handle_activation()
+      false -> :ok
+    end
   end
 end

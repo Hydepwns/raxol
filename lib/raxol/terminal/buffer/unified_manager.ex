@@ -118,11 +118,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
         _ -> __MODULE__
       end
 
-    if valid_name do
-      GenServer.start_link(__MODULE__, gen_server_opts, name: valid_name)
-    else
-      GenServer.start_link(__MODULE__, gen_server_opts)
-    end
+    start_genserver_with_name(valid_name, gen_server_opts)
   end
 
   @doc """
@@ -222,28 +218,30 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
   def resize(%__MODULE__{} = state, width, height) do
     # Validate dimensions
-    if width <= 0 or height <= 0 do
-      {:error, :invalid_dimensions}
-    else
-      # Resize buffers
-      new_active_buffer =
-        ScreenBuffer.resize(state.active_buffer, height, width)
+    case validate_dimensions(width, height) do
+      :valid ->
+        # Resize buffers
+        new_active_buffer =
+          ScreenBuffer.resize(state.active_buffer, height, width)
 
-      new_back_buffer = ScreenBuffer.resize(state.back_buffer, height, width)
+        new_back_buffer = ScreenBuffer.resize(state.back_buffer, height, width)
 
-      # Clear the resized buffers to ensure they start with empty content
-      new_active_buffer = ScreenBuffer.clear(new_active_buffer, nil)
-      new_back_buffer = ScreenBuffer.clear(new_back_buffer, nil)
+        # Clear the resized buffers to ensure they start with empty content
+        new_active_buffer = ScreenBuffer.clear(new_active_buffer, nil)
+        new_back_buffer = ScreenBuffer.clear(new_back_buffer, nil)
 
-      new_state = %{
-        state
-        | active_buffer: new_active_buffer,
-          back_buffer: new_back_buffer,
-          width: width,
-          height: height
-      }
+        new_state = %{
+          state
+          | active_buffer: new_active_buffer,
+            back_buffer: new_back_buffer,
+            width: width,
+            height: height
+        }
 
-      {:ok, new_state}
+        {:ok, new_state}
+
+      :invalid ->
+        {:error, :invalid_dimensions}
     end
   end
 
@@ -544,18 +542,22 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   defp validate_and_set_cell(state, x, y, cell) do
-    if CellOperations.coordinates_valid_for_set?(state, x, y) do
-      new_cell = CellOperations.create_cell_from_input(cell)
+    coordinates_valid = CellOperations.coordinates_valid_for_set?(state, x, y)
+    process_cell_setting(coordinates_valid, state, x, y, cell)
+  end
 
-      new_active_buffer =
-        CellOperations.update_buffer_cell(state.active_buffer, x, y, new_cell)
+  defp process_cell_setting(false, _state, _x, _y, _cell),
+    do: {:error, :invalid_coordinates}
 
-      new_state = %{state | active_buffer: new_active_buffer}
-      new_state = Memory.update_memory_usage(new_state)
-      {:ok, new_state}
-    else
-      {:error, :invalid_coordinates}
-    end
+  defp process_cell_setting(true, state, x, y, cell) do
+    new_cell = CellOperations.create_cell_from_input(cell)
+
+    new_active_buffer =
+      CellOperations.update_buffer_cell(state.active_buffer, x, y, new_cell)
+
+    new_state = %{state | active_buffer: new_active_buffer}
+    new_state = Memory.update_memory_usage(new_state)
+    {:ok, new_state}
   end
 
   # Private function to update state with commands (including config updates)
@@ -575,27 +577,30 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   # Handle individual command updates
   defp update_single_command(state, %{width: width, height: height} = _config) do
     # Update dimensions and resize buffers if needed
-    if width != state.width or height != state.height do
-      # Resize buffers
-      new_active_buffer =
-        ScreenBuffer.resize(state.active_buffer, height, width)
+    dimensions_changed = width != state.width or height != state.height
+    handle_dimension_update(dimensions_changed, state, width, height)
+  end
 
-      new_back_buffer = ScreenBuffer.resize(state.back_buffer, height, width)
+  defp handle_dimension_update(false, state, _width, _height), do: {:ok, state}
 
-      # Clear cache since buffer dimensions changed
-      Cache.clear(:buffer)
+  defp handle_dimension_update(true, state, width, height) do
+    # Resize buffers
+    new_active_buffer =
+      ScreenBuffer.resize(state.active_buffer, height, width)
 
-      {:ok,
-       %{
-         state
-         | width: width,
-           height: height,
-           active_buffer: new_active_buffer,
-           back_buffer: new_back_buffer
-       }}
-    else
-      {:ok, state}
-    end
+    new_back_buffer = ScreenBuffer.resize(state.back_buffer, height, width)
+
+    # Clear cache since buffer dimensions changed
+    Cache.clear(:buffer)
+
+    {:ok,
+     %{
+       state
+       | width: width,
+         height: height,
+         active_buffer: new_active_buffer,
+         back_buffer: new_back_buffer
+     }}
   end
 
   defp update_single_command(state, %{scrollback_limit: limit}) do
@@ -663,17 +668,8 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       y = start_y
 
       # Only write if within buffer bounds
-      if x < buffer.width and y < buffer.height do
-        # Convert Buffer.Cell to proper style format for ScreenBuffer
-        style = %{
-          foreground: cell.foreground,
-          background: cell.background
-        }
-
-        ScreenBuffer.write_char(acc_buffer, x, y, cell.char, style)
-      else
-        acc_buffer
-      end
+      within_bounds = x < buffer.width and y < buffer.height
+      write_cell_if_in_bounds(within_bounds, acc_buffer, x, y, cell)
     end)
   end
 
@@ -715,23 +711,55 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   defp process_fill_region(state, x, y, width, height, cell) do
-    if Region.region_valid?(state, x, y, width, height) do
-      new_active_buffer =
-        Region.fill_region_with_cell(
-          state.active_buffer,
-          x,
-          y,
-          width,
-          height,
-          cell
-        )
+    region_valid = Region.region_valid?(state, x, y, width, height)
+    handle_fill_region(region_valid, state, x, y, width, height, cell)
+  end
 
-      new_state = %{state | active_buffer: new_active_buffer}
-      new_state = Memory.update_memory_usage(new_state)
-      Cache.invalidate_region(x, y, width, height, :buffer)
-      {:ok, new_state}
-    else
-      {:error, :invalid_region}
-    end
+  defp handle_fill_region(false, _state, _x, _y, _width, _height, _cell) do
+    {:error, :invalid_region}
+  end
+
+  defp handle_fill_region(true, state, x, y, width, height, cell) do
+    new_active_buffer =
+      Region.fill_region_with_cell(
+        state.active_buffer,
+        x,
+        y,
+        width,
+        height,
+        cell
+      )
+
+    new_state = %{state | active_buffer: new_active_buffer}
+    new_state = Memory.update_memory_usage(new_state)
+    Cache.invalidate_region(x, y, width, height, :buffer)
+    {:ok, new_state}
+  end
+
+  # Missing helper functions
+
+  defp start_genserver_with_name(nil, opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  defp start_genserver_with_name(name, opts) do
+    GenServer.start_link(__MODULE__, opts, name: name)
+  end
+
+  defp validate_dimensions(width, height) when width > 0 and height > 0,
+    do: :valid
+
+  defp validate_dimensions(_width, _height), do: :invalid
+
+  defp write_cell_if_in_bounds(false, acc_buffer, _x, _y, _cell), do: acc_buffer
+
+  defp write_cell_if_in_bounds(true, acc_buffer, x, y, cell) do
+    # Convert Buffer.Cell to proper style format for ScreenBuffer
+    style = %{
+      foreground: cell.foreground,
+      background: cell.background
+    }
+
+    ScreenBuffer.write_char(acc_buffer, x, y, cell.char, style)
   end
 end

@@ -464,16 +464,17 @@ defmodule Raxol.Web.PersistentStore do
   defp determine_storage_tier(session_state, opts, config) do
     case Keyword.get(opts, :tier) do
       nil ->
-        if map_size(session_state) > config.compression_threshold do
-          :dets
-        else
-          :ets
-        end
+        select_tier_by_size(
+          map_size(session_state) > config.compression_threshold
+        )
 
       tier ->
         tier
     end
   end
+
+  defp select_tier_by_size(true), do: :dets
+  defp select_tier_by_size(false), do: :ets
 
   defp store_in_ets(session_id, session_state, ets_table) do
     enhanced_state = put_in(session_state.metadata.tier, :ets)
@@ -486,54 +487,62 @@ defmodule Raxol.Web.PersistentStore do
 
     # Compress large states
     final_state =
-      if map_size(enhanced_state) > config.compression_threshold do
-        compress_session_state(enhanced_state)
-      else
+      apply_session_compression(
+        map_size(enhanced_state) > config.compression_threshold,
         enhanced_state
-      end
+      )
 
     :dets.insert(dets_table, {session_id, final_state})
     :ok
   end
 
-  defp store_in_database(session_id, session_state, _config) do
-    if database_available?() do
-      # Store in database using Ecto
-      attrs = %{
-        id: session_id,
-        user_id: Map.get(session_state, :user_id, "unknown"),
-        status: :active,
-        created_at: Map.get(session_state, :created_at, DateTime.utc_now()),
-        last_active: DateTime.utc_now(),
-        metadata: Map.take(session_state, [:state, :metadata])
-      }
+  defp store_in_database(session_id, session_state, config) do
+    execute_database_store(
+      database_available?(),
+      session_id,
+      session_state,
+      config
+    )
+  end
 
-      # Try to find existing session first
-      case Repo.get_by(Raxol.Web.Session.Session, session_id: session_id) do
-        nil ->
-          # Insert new session
-          %Raxol.Web.Session.Session{}
-          |> Raxol.Web.Session.Session.changeset(attrs)
-          |> Repo.insert()
-          |> case do
-            {:ok, _session} -> :ok
-            {:error, reason} -> {:error, reason}
-          end
+  defp execute_database_store(false, _session_id, _session_state, _config) do
+    # Database not available - skip database storage
+    Logger.debug("Database not available, skipping database storage")
+    :ok
+  end
 
-        existing_session ->
-          # Update existing session
-          existing_session
-          |> Raxol.Web.Session.Session.changeset(attrs)
-          |> Repo.update()
-          |> case do
-            {:ok, _session} -> :ok
-            {:error, reason} -> {:error, reason}
-          end
-      end
-    else
-      # Database not available - skip database storage
-      Logger.debug("Database not available, skipping database storage")
-      :ok
+  defp execute_database_store(true, session_id, session_state, _config) do
+    # Store in database using Ecto
+    attrs = %{
+      id: session_id,
+      user_id: Map.get(session_state, :user_id, "unknown"),
+      status: :active,
+      created_at: Map.get(session_state, :created_at, DateTime.utc_now()),
+      last_active: DateTime.utc_now(),
+      metadata: Map.take(session_state, [:state, :metadata])
+    }
+
+    # Try to find existing session first
+    case Repo.get_by(Raxol.Web.Session.Session, session_id: session_id) do
+      nil ->
+        # Insert new session
+        %Raxol.Web.Session.Session{}
+        |> Raxol.Web.Session.Session.changeset(attrs)
+        |> Repo.insert()
+        |> case do
+          {:ok, _session} -> :ok
+          {:error, reason} -> {:error, reason}
+        end
+
+      existing_session ->
+        # Update existing session
+        existing_session
+        |> Raxol.Web.Session.Session.changeset(attrs)
+        |> Repo.update()
+        |> case do
+          {:ok, _session} -> :ok
+          {:error, reason} -> {:error, reason}
+        end
     end
   end
 
@@ -547,7 +556,9 @@ defmodule Raxol.Web.PersistentStore do
              state.config
            ) do
       # Store in database async
-      spawn(fn -> store_in_database(session_id, session_state, state.config) end)
+      spawn(fn ->
+        store_in_database(session_id, session_state, state.config)
+      end)
 
       :ok
     end
@@ -573,30 +584,32 @@ defmodule Raxol.Web.PersistentStore do
   end
 
   defp get_from_database(session_id) do
-    if database_available?() do
-      case Repo.get(Raxol.Web.Session.Session, session_id) do
-        nil ->
-          {:error, :not_found}
+    execute_database_get(database_available?(), session_id)
+  end
 
-        session ->
-          # Convert database record to session state format
-          session_state = %{
-            session_id: session.id,
-            user_id: session.user_id,
-            created_at: session.created_at,
-            updated_at: session.updated_at,
-            state: get_in(session.metadata, ["state"]) || %{},
-            metadata:
-              Map.merge(
-                get_in(session.metadata, ["metadata"]) || %{},
-                %{tier: :database}
-              )
-          }
+  defp execute_database_get(false, _session_id), do: {:error, :not_found}
 
-          {:ok, session_state}
-      end
-    else
-      {:error, :not_found}
+  defp execute_database_get(true, session_id) do
+    case Repo.get(Raxol.Web.Session.Session, session_id) do
+      nil ->
+        {:error, :not_found}
+
+      session ->
+        # Convert database record to session state format
+        session_state = %{
+          session_id: session.id,
+          user_id: session.user_id,
+          created_at: session.created_at,
+          updated_at: session.updated_at,
+          state: get_in(session.metadata, ["state"]) || %{},
+          metadata:
+            Map.merge(
+              get_in(session.metadata, ["metadata"]) || %{},
+              %{tier: :database}
+            )
+        }
+
+        {:ok, session_state}
     end
   end
 
@@ -604,6 +617,9 @@ defmodule Raxol.Web.PersistentStore do
     # Simple compression - in practice might use :zlib
     put_in(session_state.metadata.compressed, true)
   end
+
+  defp apply_session_compression(true, state), do: compress_session_state(state)
+  defp apply_session_compression(false, state), do: state
 
   defp decompress_session_state(session_state) do
     # Simple decompression - in practice might use :zlib
@@ -701,53 +717,67 @@ defmodule Raxol.Web.PersistentStore do
   defp cleanup_lru_sessions(ets_table, max_entries) do
     current_size = :ets.info(ets_table, :size)
 
-    if current_size > max_entries do
-      # Get all sessions with their last access time
-      sessions =
-        :ets.foldl(
-          fn {session_id, session_state}, acc ->
-            last_access =
-              get_in(session_state, [:metadata, :last_access]) ||
-                DateTime.utc_now()
+    perform_lru_cleanup(
+      current_size > max_entries,
+      ets_table,
+      current_size,
+      max_entries
+    )
+  end
 
-            [{session_id, last_access} | acc]
-          end,
-          [],
-          ets_table
-        )
+  defp perform_lru_cleanup(false, _ets_table, _current_size, _max_entries),
+    do: :ok
 
-      # Sort by last access and remove oldest
-      sessions
-      |> Enum.sort_by(fn {_id, last_access} -> last_access end)
-      |> Enum.take(current_size - max_entries)
-      |> Enum.each(fn {session_id, _} ->
-        :ets.delete(ets_table, session_id)
-      end)
-    end
+  defp perform_lru_cleanup(true, ets_table, current_size, max_entries) do
+    # Get all sessions with their last access time
+    sessions =
+      :ets.foldl(
+        fn {session_id, session_state}, acc ->
+          last_access =
+            get_in(session_state, [:metadata, :last_access]) ||
+              DateTime.utc_now()
+
+          [{session_id, last_access} | acc]
+        end,
+        [],
+        ets_table
+      )
+
+    # Sort by last access and remove oldest
+    sessions
+    |> Enum.sort_by(fn {_id, last_access} -> last_access end)
+    |> Enum.take(current_size - max_entries)
+    |> Enum.each(fn {session_id, _} ->
+      :ets.delete(ets_table, session_id)
+    end)
   end
 
   defp delete_from_database(session_id) do
-    if database_available?() do
-      case Repo.get(Raxol.Web.Session.Session, session_id) do
-        nil -> :ok
-        session -> Repo.delete(session)
-      end
-    else
-      :ok
+    execute_database_delete(database_available?(), session_id)
+  end
+
+  defp execute_database_delete(false, _session_id), do: :ok
+
+  defp execute_database_delete(true, session_id) do
+    case Repo.get(Raxol.Web.Session.Session, session_id) do
+      nil -> :ok
+      session -> Repo.delete(session)
     end
   end
 
   defp count_database_sessions do
-    if database_available?() do
-      # Simple count - in practice might be cached
-      ErrorHandling.safe_call_with_default(
-        fn ->
-          Repo.aggregate(Raxol.Web.Session.Session, :count, :id)
-        end,
-        0
-      )
-    else
+    execute_database_count(database_available?())
+  end
+
+  defp execute_database_count(false), do: 0
+
+  defp execute_database_count(true) do
+    # Simple count - in practice might be cached
+    ErrorHandling.safe_call_with_default(
+      fn ->
+        Repo.aggregate(Raxol.Web.Session.Session, :count, :id)
+      end,
       0
-    end
+    )
   end
 end

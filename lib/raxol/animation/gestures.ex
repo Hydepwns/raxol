@@ -151,7 +151,7 @@ defmodule Raxol.Animation.Gestures do
   def current_velocity do
     ensure_server_started()
     state = Server.get_state()
-    state.velocity || %Vector{x: 0, y: 0}
+    state.velocity || %{x: 0, y: 0}
   end
 
   @doc """
@@ -255,29 +255,38 @@ defmodule Raxol.Animation.Gestures do
   def direction({x1, y1}, {x2, y2}) do
     dx = x2 - x1
     dy = y2 - y1
-
-    if abs(dx) > abs(dy) do
-      if dx > 0, do: :right, else: :left
-    else
-      if dy > 0, do: :down, else: :up
-    end
+    calculate_direction(abs(dx) > abs(dy), dx, dy)
   end
+
+  defp calculate_direction(true, dx, _dy) do
+    determine_horizontal_direction(dx > 0)
+  end
+  defp calculate_direction(false, _dx, dy) do
+    determine_vertical_direction(dy > 0)
+  end
+
+  defp determine_horizontal_direction(true), do: :right
+  defp determine_horizontal_direction(false), do: :left
+
+  defp determine_vertical_direction(true), do: :down
+  defp determine_vertical_direction(false), do: :up
 
   @doc """
   Calculates velocity between two positions over time.
   """
   def velocity({x1, y1}, {x2, y2}, time_diff_ms) do
-    return_zero = %Vector{x: 0, y: 0}
+    calculate_velocity(time_diff_ms <= 0, x1, y1, x2, y2, time_diff_ms)
+  end
 
-    if time_diff_ms <= 0 do
-      return_zero
-    else
-      %Vector{
-        # px/second
-        x: (x2 - x1) / time_diff_ms * 1000,
-        # px/second
-        y: (y2 - y1) / time_diff_ms * 1000
-      }
-    end
+  defp calculate_velocity(true, _x1, _y1, _x2, _y2, _time_diff_ms) do
+    %{x: 0, y: 0}
+  end
+  defp calculate_velocity(false, x1, y1, x2, y2, time_diff_ms) do
+    %{
+      # px/second
+      x: (x2 - x1) / time_diff_ms * 1000,
+      # px/second
+      y: (y2 - y1) / time_diff_ms * 1000
+    }
   end
 end

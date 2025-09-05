@@ -71,7 +71,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   defp clear_line_to_position(line, col, empty_cell) do
     Enum.with_index(line)
     |> Enum.map(fn {cell, cell_col} ->
-      if cell_col <= col, do: empty_cell, else: cell
+      replace_cell_if_at_or_before_col(cell, cell_col, col, empty_cell)
     end)
   end
 
@@ -121,15 +121,14 @@ defmodule Raxol.Terminal.Buffer.Eraser do
 
     new_cells =
       Enum.reduce(y..(y + height - 1), buffer.cells, fn row, cells ->
-        if row < buffer.height do
-          List.update_at(
-            cells,
-            row,
-            &clear_line_segment(&1, x, width, empty_cell)
-          )
-        else
-          cells
-        end
+        update_cells_if_row_in_bounds(
+          row,
+          buffer.height,
+          cells,
+          x,
+          width,
+          empty_cell
+        )
       end)
 
     %{buffer | cells: new_cells}
@@ -154,11 +153,13 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     cells =
       Enum.with_index(cells)
       |> Enum.map(fn {line, line_row} ->
-        if line_row > row or (line_row == row and col > 0) do
-          clear_display_line_from_position(line, line_row, row, col, empty_cell)
-        else
-          line
-        end
+        clear_line_if_meets_display_criteria(
+          line,
+          line_row,
+          row,
+          col,
+          empty_cell
+        )
       end)
 
     %{buffer | cells: cells}
@@ -167,11 +168,14 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   defp clear_display_line_from_position(line, line_row, row, col, empty_cell) do
     Enum.with_index(line)
     |> Enum.map(fn {cell, cell_col} ->
-      if line_row > row or (line_row == row and cell_col >= col) do
+      replace_cell_if_meets_position_criteria(
+        cell,
+        line_row,
+        row,
+        cell_col,
+        col,
         empty_cell
-      else
-        cell
-      end
+      )
     end)
   end
 
@@ -194,11 +198,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     cells =
       Enum.with_index(cells)
       |> Enum.map(fn {line, line_row} ->
-        if line_row == row do
-          clear_line_from_position(line, col, empty_cell)
-        else
-          line
-        end
+        clear_line_if_at_target_row(line, line_row, row, col, empty_cell)
       end)
 
     %{buffer | cells: cells}
@@ -207,11 +207,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   defp clear_line_from_position(line, col, empty_cell) do
     Enum.with_index(line)
     |> Enum.map(fn {cell, cell_col} ->
-      if cell_col >= col do
-        empty_cell
-      else
-        cell
-      end
+      replace_cell_if_at_or_after_col(cell, cell_col, col, empty_cell)
     end)
   end
 
@@ -271,18 +267,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     # Clear from cursor to end of line
     buffer = clear_region(buffer, col, row, buffer.width - col, 1, style)
     # Clear all lines below
-    if row + 1 < buffer.height do
-      clear_region(
-        buffer,
-        0,
-        row + 1,
-        buffer.width,
-        buffer.height - (row + 1),
-        style
-      )
-    else
-      buffer
-    end
+    clear_lines_below_if_needed(buffer, row, style)
   end
 
   @doc """
@@ -298,12 +283,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     style = style || TextFormatting.new()
 
     # Clear all lines before the cursor's line
-    buffer =
-      if row > 0 do
-        clear_region(buffer, 0, 0, buffer.width, row, style)
-      else
-        buffer
-      end
+    buffer = clear_lines_above_if_needed(buffer, row, style)
 
     # Clear from start of cursor's line up to and including cursor position
     clear_region(buffer, 0, row, col + 1, 1, style)
@@ -447,38 +427,12 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           non_neg_integer()
         ) :: ScreenBuffer.t()
   def erase_chars(buffer, row, col, count) do
-    if row < buffer.height do
-      case buffer.cells do
-        nil ->
-          # Return buffer unchanged if cells is nil
-          buffer
-
-        cells ->
-          line = Enum.at(cells, row, [])
-          new_line = erase_chars_in_line(line, col, count, buffer.default_style)
-          new_cells = List.replace_at(cells, row, new_line)
-          %{buffer | cells: new_cells}
-      end
-    else
-      buffer
-    end
+    erase_chars_if_row_valid(buffer, row, col, count)
   end
 
   defp erase_chars_in_line(line, col, count, _default_style) do
     line_length = length(line)
-
-    if col >= line_length do
-      line
-    else
-      # Get the part before the cursor
-      before_cursor = Enum.take(line, col)
-
-      # Get the part after the erased characters
-      after_erased = Enum.drop(line, col + count)
-
-      # Combine: before cursor + remaining text (shifted left)
-      before_cursor ++ after_erased
-    end
+    do_erase_chars_in_line(col >= line_length, line, col, count)
   end
 
   @doc """
@@ -556,11 +510,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   end
 
   defp update_cell_if_in_bounds(line, col, empty_cell, line_length) do
-    if col < line_length do
-      List.update_at(line, col, fn _ -> empty_cell end)
-    else
-      line
-    end
+    do_update_cell_if_in_bounds(col < line_length, line, col, empty_cell)
   end
 
   defp create_empty_line(width, style) do
@@ -585,5 +535,164 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @spec clear_scrollback(ScreenBuffer.t()) :: ScreenBuffer.t()
   def clear_scrollback(buffer) do
     %{buffer | scrollback: []}
+  end
+
+  # Helper functions to eliminate if statements
+
+  defp replace_cell_if_at_or_before_col(cell, cell_col, col, empty_cell)
+       when cell_col <= col do
+    empty_cell
+  end
+
+  defp replace_cell_if_at_or_before_col(cell, _cell_col, _col, _empty_cell),
+    do: cell
+
+  defp update_cells_if_row_in_bounds(
+         row,
+         height,
+         cells,
+         _x,
+         _width,
+         _empty_cell
+       )
+       when row >= height do
+    cells
+  end
+
+  defp update_cells_if_row_in_bounds(row, _height, cells, x, width, empty_cell) do
+    List.update_at(cells, row, &clear_line_segment(&1, x, width, empty_cell))
+  end
+
+  defp clear_line_if_meets_display_criteria(
+         line,
+         line_row,
+         row,
+         col,
+         empty_cell
+       ) do
+    do_clear_line_if_meets_display_criteria(
+      line_row > row or (line_row == row and col > 0),
+      line,
+      line_row,
+      row,
+      col,
+      empty_cell
+    )
+  end
+
+  defp do_clear_line_if_meets_display_criteria(
+         true,
+         line,
+         line_row,
+         row,
+         col,
+         empty_cell
+       ) do
+    clear_display_line_from_position(line, line_row, row, col, empty_cell)
+  end
+
+  defp do_clear_line_if_meets_display_criteria(
+         false,
+         line,
+         _line_row,
+         _row,
+         _col,
+         _empty_cell
+       ) do
+    line
+  end
+
+  defp replace_cell_if_meets_position_criteria(
+         cell,
+         line_row,
+         row,
+         cell_col,
+         col,
+         empty_cell
+       ) do
+    do_replace_cell_if_meets_position_criteria(
+      line_row > row or (line_row == row and cell_col >= col),
+      cell,
+      empty_cell
+    )
+  end
+
+  defp do_replace_cell_if_meets_position_criteria(true, _cell, empty_cell),
+    do: empty_cell
+
+  defp do_replace_cell_if_meets_position_criteria(false, cell, _empty_cell),
+    do: cell
+
+  defp clear_line_if_at_target_row(line, line_row, row, col, empty_cell)
+       when line_row == row do
+    clear_line_from_position(line, col, empty_cell)
+  end
+
+  defp clear_line_if_at_target_row(line, _line_row, _row, _col, _empty_cell),
+    do: line
+
+  defp replace_cell_if_at_or_after_col(cell, cell_col, col, empty_cell)
+       when cell_col >= col do
+    empty_cell
+  end
+
+  defp replace_cell_if_at_or_after_col(cell, _cell_col, _col, _empty_cell),
+    do: cell
+
+  defp clear_lines_below_if_needed(buffer, row, style)
+       when row + 1 >= buffer.height do
+    buffer
+  end
+
+  defp clear_lines_below_if_needed(buffer, row, style) do
+    clear_region(
+      buffer,
+      0,
+      row + 1,
+      buffer.width,
+      buffer.height - (row + 1),
+      style
+    )
+  end
+
+  defp clear_lines_above_if_needed(buffer, 0, _style), do: buffer
+
+  defp clear_lines_above_if_needed(buffer, row, style) do
+    clear_region(buffer, 0, 0, buffer.width, row, style)
+  end
+
+  defp erase_chars_if_row_valid(buffer, row, _col, _count)
+       when row >= buffer.height do
+    buffer
+  end
+
+  defp erase_chars_if_row_valid(buffer, row, col, count) do
+    case buffer.cells do
+      nil ->
+        buffer
+
+      cells ->
+        line = Enum.at(cells, row, [])
+        new_line = erase_chars_in_line(line, col, count, buffer.default_style)
+        new_cells = List.replace_at(cells, row, new_line)
+        %{buffer | cells: new_cells}
+    end
+  end
+
+  defp do_erase_chars_in_line(true, line, _col, _count), do: line
+
+  defp do_erase_chars_in_line(false, line, col, count) do
+    # Get the part before the cursor
+    before_cursor = Enum.take(line, col)
+    # Get the part after the erased characters
+    after_erased = Enum.drop(line, col + count)
+    # Combine: before cursor + remaining text (shifted left)
+    before_cursor ++ after_erased
+  end
+
+  defp do_update_cell_if_in_bounds(false, line, _col, _empty_cell), do: line
+
+  defp do_update_cell_if_in_bounds(true, line, col, empty_cell) do
+    List.update_at(line, col, fn _ -> empty_cell end)
   end
 end

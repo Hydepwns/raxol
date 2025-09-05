@@ -38,16 +38,20 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   Appends data to the buffer, handling escape sequences appropriately.
   """
   def append(%__MODULE__{} = buffer, data) when is_binary(data) do
-    if buffer.escape_sequence_mode do
-      handle_escape_sequence(buffer, data)
-    else
-      case data do
-        "\e" ->
-          %{buffer | escape_sequence_mode: true, escape_sequence: "\e"}
+    process_append_data(buffer.escape_sequence_mode, buffer, data)
+  end
 
-        _ ->
-          append_to_contents(buffer, data)
-      end
+  defp process_append_data(true, buffer, data) do
+    handle_escape_sequence(buffer, data)
+  end
+
+  defp process_append_data(false, buffer, data) do
+    case data do
+      "\e" ->
+        %{buffer | escape_sequence_mode: true, escape_sequence: "\e"}
+
+      _ ->
+        append_to_contents(buffer, data)
     end
   end
 
@@ -134,25 +138,29 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   Uses graphemes to handle multi-byte characters correctly.
   """
   def backspace(%__MODULE__{contents: contents} = buffer) do
-    if String.length(contents) > 0 do
-      new_contents =
-        contents |> String.graphemes() |> Enum.drop(-1) |> Enum.join()
+    perform_backspace(String.length(contents) > 0, contents, buffer)
+  end
 
-      %{buffer | contents: new_contents}
-    else
-      buffer
-    end
+  defp perform_backspace(false, _contents, buffer), do: buffer
+
+  defp perform_backspace(true, contents, buffer) do
+    new_contents =
+      contents |> String.graphemes() |> Enum.drop(-1) |> Enum.join()
+
+    %{buffer | contents: new_contents}
   end
 
   @doc """
   Removes the first character from the buffer.
   """
   def delete_first(%__MODULE__{} = buffer) do
-    if String.length(buffer.contents) > 0 do
-      %{buffer | contents: String.slice(buffer.contents, 1..-1//1)}
-    else
-      buffer
-    end
+    perform_delete_first(String.length(buffer.contents) > 0, buffer)
+  end
+
+  defp perform_delete_first(false, buffer), do: buffer
+
+  defp perform_delete_first(true, buffer) do
+    %{buffer | contents: String.slice(buffer.contents, 1..-1//1)}
   end
 
   @doc """
@@ -163,10 +171,15 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     content_len = String.length(buffer.contents)
     _char_len = String.length(char)
 
-    if position < 0 or position > content_len do
-      raise ArgumentError, "Position out of bounds"
-    end
+    validate_position_and_insert(position, content_len, buffer, char)
+  end
 
+  defp validate_position_and_insert(position, content_len, _buffer, _char)
+       when position < 0 or position > content_len do
+    raise ArgumentError, "Position out of bounds"
+  end
+
+  defp validate_position_and_insert(position, _content_len, buffer, char) do
     # Ensure positive step
     new_contents =
       String.slice(buffer.contents, 0, position) <>
@@ -185,10 +198,15 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     content_len = String.length(buffer.contents)
     _char_len = String.length(char)
 
-    if position < 0 or position >= content_len do
-      raise ArgumentError, "Position out of bounds"
-    end
+    validate_position_and_replace(position, content_len, buffer, char)
+  end
 
+  defp validate_position_and_replace(position, content_len, _buffer, _char)
+       when position < 0 or position >= content_len do
+    raise ArgumentError, "Position out of bounds"
+  end
+
+  defp validate_position_and_replace(position, _content_len, buffer, char) do
     # Calculate slices carefully
     prefix = String.slice(buffer.contents, 0, position)
     # Ensure positive step
@@ -236,37 +254,47 @@ defmodule Raxol.Terminal.Input.InputBuffer do
        ) do
     content_len = String.length(new_contents)
 
-    if content_len <= buffer.max_size do
-      %{buffer | contents: new_contents}
-    else
-      case buffer.overflow_mode do
-        :truncate ->
-          final_contents =
-            select_content_for_overflow(
-              new_contents,
-              content_len,
-              buffer.max_size,
-              operation,
-              :truncate
-            )
+    handle_buffer_size(
+      content_len <= buffer.max_size,
+      buffer,
+      new_contents,
+      content_len,
+      operation
+    )
+  end
 
-          %{buffer | contents: final_contents}
+  defp handle_buffer_size(true, buffer, new_contents, _content_len, _operation) do
+    %{buffer | contents: new_contents}
+  end
 
-        :error ->
-          raise RuntimeError, "Buffer overflow"
+  defp handle_buffer_size(false, buffer, new_contents, content_len, operation) do
+    case buffer.overflow_mode do
+      :truncate ->
+        final_contents =
+          select_content_for_overflow(
+            new_contents,
+            content_len,
+            buffer.max_size,
+            operation,
+            :truncate
+          )
 
-        :wrap ->
-          final_contents =
-            select_content_for_overflow(
-              new_contents,
-              content_len,
-              buffer.max_size,
-              operation,
-              :wrap
-            )
+        %{buffer | contents: final_contents}
 
-          %{buffer | contents: final_contents}
-      end
+      :error ->
+        raise RuntimeError, "Buffer overflow"
+
+      :wrap ->
+        final_contents =
+          select_content_for_overflow(
+            new_contents,
+            content_len,
+            buffer.max_size,
+            operation,
+            :wrap
+          )
+
+        %{buffer | contents: final_contents}
     end
   end
 
@@ -293,34 +321,36 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   end
 
   def handle_resize(%__MODULE__{} = buffer, new_width) do
-    if new_width <= 0 do
+    perform_resize(new_width <= 0, buffer, new_width)
+  end
+
+  defp perform_resize(true, buffer, _new_width), do: buffer
+
+  defp perform_resize(false, buffer, new_width) do
+    {original_logical_line_index, original_pos_in_line} =
+      InputBufferUtils.find_logical_position(
+        buffer.contents,
+        buffer.cursor_pos
+      )
+
+    {new_contents, line_mapping} =
+      wrap_contents_with_mapping(buffer.contents, new_width)
+
+    new_cursor_pos =
+      InputBufferUtils.calculate_new_cursor_pos_v2(
+        line_mapping,
+        String.split(new_contents, "\n"),
+        original_logical_line_index,
+        original_pos_in_line,
+        new_contents
+      )
+
+    %{
       buffer
-    else
-      {original_logical_line_index, original_pos_in_line} =
-        InputBufferUtils.find_logical_position(
-          buffer.contents,
-          buffer.cursor_pos
-        )
-
-      {new_contents, line_mapping} =
-        wrap_contents_with_mapping(buffer.contents, new_width)
-
-      new_cursor_pos =
-        InputBufferUtils.calculate_new_cursor_pos_v2(
-          line_mapping,
-          String.split(new_contents, "\n"),
-          original_logical_line_index,
-          original_pos_in_line,
-          new_contents
-        )
-
-      %{
-        buffer
-        | contents: new_contents,
-          width: new_width,
-          cursor_pos: new_cursor_pos
-      }
-    end
+      | contents: new_contents,
+        width: new_width,
+        cursor_pos: new_cursor_pos
+    }
   end
 
   defp wrap_contents_with_mapping(contents, new_width) do

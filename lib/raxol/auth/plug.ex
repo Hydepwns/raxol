@@ -78,21 +78,22 @@ defmodule Raxol.Auth.Plug do
     user = conn.assigns.current_user
 
     # Permission checking is currently disabled - Raxol.Accounts.has_permission?/3 needs implementation
-    if Accounts.has_permission?(user, module, action) do
-      Raxol.Core.Runtime.Log.debug(
-        "Skipping permission check for #{inspect(module)}.#{action} - has_permission? not implemented."
-      )
+    case Accounts.has_permission?(user, module, action) do
+      true ->
+        Raxol.Core.Runtime.Log.debug(
+          "Skipping permission check for #{inspect(module)}.#{action} - has_permission? not implemented."
+        )
+        conn
 
-      conn
-    else
-      Raxol.Core.Runtime.Log.warning(
-        "Authorization failed for user #{user.id} on #{inspect(module)}.#{action}"
-      )
+      false ->
+        Raxol.Core.Runtime.Log.warning(
+          "Authorization failed for user #{user.id} on #{inspect(module)}.#{action}"
+        )
 
-      conn
-      |> put_status(:forbidden)
-      |> text("Forbidden")
-      |> halt()
+        conn
+        |> put_status(:forbidden)
+        |> text("Forbidden")
+        |> halt()
     end
   end
 
@@ -100,13 +101,15 @@ defmodule Raxol.Auth.Plug do
   Checks if the current user is logged in.
   """
   def require_authenticated_user(conn, _opts) do
-    if conn.assigns[:current_user] do
-      conn
-    else
-      conn
-      |> put_flash(:error, "You must be logged in to access this page")
-      |> redirect(to: "/login")
-      |> halt()
+    case conn.assigns[:current_user] do
+      nil ->
+        conn
+        |> put_flash(:error, "You must be logged in to access this page")
+        |> redirect(to: "/login")
+        |> halt()
+        
+      _user ->
+        conn
     end
   end
 end

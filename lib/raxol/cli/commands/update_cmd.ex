@@ -137,13 +137,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
     _force = Keyword.get(opts, :force, false)
     use_delta = Keyword.get(opts, :use_delta, true)
 
-    check_result =
-      if is_nil(version) do
-        IO.puts("Checking for updates...")
-        Updater.check_for_updates(opts)
-      else
-        {:update_available, version}
-      end
+    check_result = get_check_result(version, opts)
 
     case check_result do
       {:update_available, update_version} ->
@@ -159,7 +153,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
 
   defp do_update(version, use_delta) do
     IO.puts(
-      "Updating to version v#{version} #{if use_delta, do: "(with delta updates if available)...", else: "(using full update)..."}"
+      "Updating to version v#{version} #{get_update_message(use_delta)}"
     )
 
     case Updater.self_update(version, use_delta: use_delta) do
@@ -179,28 +173,8 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   end
 
   defp show_delta_info(version, opts) do
-    # If no specific version is provided, check for latest
-    if is_nil(version) do
-      IO.puts("Checking for updates...")
-
-      case Updater.check_for_updates(opts) do
-        {:update_available, latest_version} ->
-          check_delta_for_version(latest_version)
-
-        {:no_update, current_version} ->
-          IO.puts(
-            success_msg("Raxol is already up to date (v#{current_version})")
-          )
-
-          IO.puts("No delta update information available.")
-
-        {:error, reason} ->
-          IO.puts(error_msg("Error checking for updates: #{reason}"))
-      end
-    else
-      # Check delta info for the specified version
-      check_delta_for_version(version)
-    end
+    # Check delta info based on whether version is provided
+    handle_delta_info_check(version, opts)
   end
 
   defp check_delta_for_version(version) do
@@ -239,6 +213,39 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
 
   defp error_msg(text) do
     "\e[31m#{text}\e[0m"
+  end
+
+  defp get_check_result(version, _opts) when version != nil, do: {:update_available, version}
+  defp get_check_result(nil, opts) do
+    IO.puts("Checking for updates...")
+    Updater.check_for_updates(opts)
+  end
+
+  defp get_update_message(true), do: "(with delta updates if available)..."
+  defp get_update_message(false), do: "(using full update)..."
+
+  defp handle_delta_info_check(nil, opts) do
+    IO.puts("Checking for updates...")
+
+    case Updater.check_for_updates(opts) do
+      {:update_available, latest_version} ->
+        check_delta_for_version(latest_version)
+
+      {:no_update, current_version} ->
+        IO.puts(
+          success_msg("Raxol is already up to date (v#{current_version})")
+        )
+
+        IO.puts("No delta update information available.")
+
+      {:error, reason} ->
+        IO.puts(error_msg("Error checking for updates: #{reason}"))
+    end
+  end
+  
+  defp handle_delta_info_check(version, _opts) do
+    # Check delta info for the specified version
+    check_delta_for_version(version)
   end
 
   defp print_help do

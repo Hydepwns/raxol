@@ -71,27 +71,37 @@ defmodule Raxol.Svelte.Transitions do
     quote do
       # Apply transitions during element lifecycle
       defp apply_transition(element, :enter, transition_name, params) do
-        if transition_fn = @transitions[transition_name] do
-          transition_fn.(element, Map.put(params, :direction, :enter))
-        else
-          Raxol.Svelte.Transitions.Builtin.apply_builtin_transition(
-            element,
-            transition_name,
-            Map.put(params, :direction, :enter)
-          )
-        end
+        transition_fn = @transitions[transition_name]
+        handle_enter_transition(transition_fn, element, transition_name, params)
+      end
+
+      defp handle_enter_transition(nil, element, transition_name, params) do
+        Raxol.Svelte.Transitions.Builtin.apply_builtin_transition(
+          element,
+          transition_name,
+          Map.put(params, :direction, :enter)
+        )
+      end
+
+      defp handle_enter_transition(transition_fn, element, _transition_name, params) do
+        transition_fn.(element, Map.put(params, :direction, :enter))
       end
 
       defp apply_transition(element, :exit, transition_name, params) do
-        if transition_fn = @transitions[transition_name] do
-          transition_fn.(element, Map.put(params, :direction, :exit))
-        else
-          Raxol.Svelte.Transitions.Builtin.apply_builtin_transition(
-            element,
-            transition_name,
-            Map.put(params, :direction, :exit)
-          )
-        end
+        transition_fn = @transitions[transition_name]
+        handle_exit_transition(transition_fn, element, transition_name, params)
+      end
+
+      defp handle_exit_transition(nil, element, transition_name, params) do
+        Raxol.Svelte.Transitions.Builtin.apply_builtin_transition(
+          element,
+          transition_name,
+          Map.put(params, :direction, :exit)
+        )
+      end
+
+      defp handle_exit_transition(transition_fn, element, _transition_name, params) do
+        transition_fn.(element, Map.put(params, :direction, :exit))
       end
     end
   end
@@ -329,14 +339,18 @@ defmodule Raxol.Svelte.Animator do
     apply_animation_frame(state.element, current_props)
 
     # Check if animation is complete
-    if animation_complete?(state.keyframes, elapsed) do
-      # Animation finished
-      {:stop, :normal, %{state | active: false}}
-    else
-      # Schedule next frame
-      schedule_frame()
-      {:noreply, state}
-    end
+    handle_animation_progress(animation_complete?(state.keyframes, elapsed), state)
+  end
+
+  defp handle_animation_progress(true, state) do
+    # Animation finished
+    {:stop, :normal, %{state | active: false}}
+  end
+
+  defp handle_animation_progress(false, state) do
+    # Schedule next frame
+    schedule_frame()
+    {:noreply, state}
   end
 
   @impl GenServer
@@ -351,15 +365,19 @@ defmodule Raxol.Svelte.Animator do
 
   defp calculate_current_properties(keyframes, elapsed) do
     Enum.map(keyframes, fn {property, from, to, duration, easing, delay} ->
-      if elapsed >= delay do
-        progress = min((elapsed - delay) / duration, 1.0)
-        eased_progress = apply_easing(progress, easing)
-        current_value = interpolate(from, to, eased_progress)
-        {property, current_value}
-      else
-        {property, from}
-      end
+      calculate_keyframe_property(elapsed >= delay, property, from, to, duration, easing, delay, elapsed)
     end)
+  end
+
+  defp calculate_keyframe_property(false, property, from, _to, _duration, _easing, _delay, _elapsed) do
+    {property, from}
+  end
+
+  defp calculate_keyframe_property(true, property, from, to, duration, easing, delay, elapsed) do
+    progress = min((elapsed - delay) / duration, 1.0)
+    eased_progress = apply_easing(progress, easing)
+    current_value = interpolate(from, to, eased_progress)
+    {property, current_value}
   end
 
   defp apply_easing(t, :linear), do: t
@@ -367,11 +385,15 @@ defmodule Raxol.Svelte.Animator do
   defp apply_easing(t, :ease_out), do: 1 - (1 - t) * (1 - t)
 
   defp apply_easing(t, :ease_in_out) do
-    if t < 0.5 do
-      2 * t * t
-    else
-      1 - :math.pow(-2 * t + 2, 2) / 2
-    end
+    apply_ease_in_out(t < 0.5, t)
+  end
+
+  defp apply_ease_in_out(true, t) do
+    2 * t * t
+  end
+
+  defp apply_ease_in_out(false, t) do
+    1 - :math.pow(-2 * t + 2, 2) / 2
   end
 
   defp apply_easing(t, :bounce) do

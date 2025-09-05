@@ -68,32 +68,36 @@ defmodule Raxol.Database.ConnectionManager do
   """
   @spec ensure_connection() :: :ok
   def ensure_connection do
-    if Process.whereis(Repo) do
-      with {:ok, :healthy} <- safe_connection_check() do
-        Raxol.Core.Runtime.Log.info("Database connection is healthy")
-      else
-        {:error, :unhealthy} ->
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "Database connection is unhealthy, attempting to restart...",
-            %{}
-          )
-
-          restart_connection()
-
-        {:error, error} ->
-          Raxol.Core.Runtime.Log.error(
-            "Error checking database connection: #{inspect(error)}"
-          )
-
-          restart_connection()
-      end
-    else
-      Raxol.Core.Runtime.Log.warning(
-        "Repo process not found, database may not be started"
-      )
-    end
-
+    repo_process_exists = !!Process.whereis(Repo)
+    handle_connection_check(repo_process_exists)
     :ok
+  end
+
+  defp handle_connection_check(false) do
+    Raxol.Core.Runtime.Log.warning(
+      "Repo process not found, database may not be started"
+    )
+  end
+
+  defp handle_connection_check(true) do
+    with {:ok, :healthy} <- safe_connection_check() do
+      Raxol.Core.Runtime.Log.info("Database connection is healthy")
+    else
+      {:error, :unhealthy} ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Database connection is unhealthy, attempting to restart...",
+          %{}
+        )
+
+        restart_connection()
+
+      {:error, error} ->
+        Raxol.Core.Runtime.Log.error(
+          "Error checking database connection: #{inspect(error)}"
+        )
+
+        restart_connection()
+    end
   end
 
   @doc """
@@ -102,32 +106,37 @@ defmodule Raxol.Database.ConnectionManager do
   @spec restart_connection() :: :ok
   def restart_connection do
     # Only attempt restart if the Repo process exists
-    if Process.whereis(Repo) do
-      Raxol.Core.Runtime.Log.info(
-        "Attempting to restart database connection..."
-      )
+    repo_process_exists = !!Process.whereis(Repo)
+    handle_connection_restart(repo_process_exists)
+    :ok
+  end
 
-      # Close existing connections in the pool
-      with {:ok, _} <- safe_close_connections() do
-        Raxol.Core.Runtime.Log.info("Successfully closed existing connections")
-      else
-        {:error, error} ->
-          Raxol.Core.Runtime.Log.error(
-            "Exception closing existing connections: #{inspect(error)}"
-          )
-      end
+  defp handle_connection_restart(false), do: :ok
 
-      # Check connection again
-      if healthy?() do
-        Raxol.Core.Runtime.Log.info(
-          "Database connection successfully restarted"
+  defp handle_connection_restart(true) do
+    Raxol.Core.Runtime.Log.info("Attempting to restart database connection...")
+
+    # Close existing connections in the pool
+    with {:ok, _} <- safe_close_connections() do
+      Raxol.Core.Runtime.Log.info("Successfully closed existing connections")
+    else
+      {:error, error} ->
+        Raxol.Core.Runtime.Log.error(
+          "Exception closing existing connections: #{inspect(error)}"
         )
-      else
-        Raxol.Core.Runtime.Log.error("Failed to restart database connection")
-      end
     end
 
-    :ok
+    # Check connection again
+    connection_healthy = healthy?()
+    log_restart_result(connection_healthy)
+  end
+
+  defp log_restart_result(true) do
+    Raxol.Core.Runtime.Log.info("Database connection successfully restarted")
+  end
+
+  defp log_restart_result(false) do
+    Raxol.Core.Runtime.Log.error("Failed to restart database connection")
   end
 
   # Private functions
@@ -150,20 +159,16 @@ defmodule Raxol.Database.ConnectionManager do
           "Database operation failed with error: #{inspect(error)}"
         )
 
-        if attempt < max_retries do
-          Raxol.Core.Runtime.Log.info(
-            "Retrying operation (attempt #{attempt + 1}/#{max_retries})..."
-          )
+        can_retry = attempt < max_retries
 
-          Process.sleep(retry_delay_ms)
-          retry_operation(operation, attempt + 1, max_retries, retry_delay_ms)
-        else
-          Raxol.Core.Runtime.Log.error(
-            "Operation failed after #{max_retries} attempts"
-          )
-
-          {:error, error}
-        end
+        handle_retry_decision(
+          can_retry,
+          error,
+          operation,
+          attempt,
+          max_retries,
+          retry_delay_ms
+        )
     end
   end
 
@@ -218,29 +223,17 @@ defmodule Raxol.Database.ConnectionManager do
         _ -> false
       end
 
-    if retryable and attempt < max_retries do
-      # Exponential backoff for connection errors
-      backoff_ms = retry_delay_ms * :math.pow(2, attempt)
+    can_retry_postgrex = retryable and attempt < max_retries
 
-      Raxol.Core.Runtime.Log.info(
-        "Retrying operation after #{backoff_ms}ms (attempt #{attempt + 1}/#{max_retries})..."
-      )
-
-      Process.sleep(round(backoff_ms))
-      retry_operation(operation, attempt + 1, max_retries, retry_delay_ms)
-    else
-      if not retryable do
-        Raxol.Core.Runtime.Log.error(
-          "Non-retryable Postgres error, giving up immediately"
-        )
-      else
-        Raxol.Core.Runtime.Log.error(
-          "Operation failed after #{max_retries} attempts"
-        )
-      end
-
-      {:error, error}
-    end
+    handle_postgrex_retry(
+      can_retry_postgrex,
+      retryable,
+      error,
+      operation,
+      attempt,
+      max_retries,
+      retry_delay_ms
+    )
   end
 
   # Functional helper functions replacing try/catch with Task-based error handling
@@ -263,11 +256,7 @@ defmodule Raxol.Database.ConnectionManager do
 
   defp safe_connection_check do
     Task.async(fn ->
-      if healthy?() do
-        :healthy
-      else
-        :unhealthy
-      end
+      determine_health_status(healthy?())
     end)
     |> Task.yield(3000)
     |> case do
@@ -319,6 +308,84 @@ defmodule Raxol.Database.ConnectionManager do
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
+    end
+  end
+
+  ## Helper Functions for Pattern Matching
+
+  defp handle_retry_decision(
+         false,
+         error,
+         _operation,
+         _attempt,
+         _max_retries,
+         _retry_delay_ms
+       ) do
+    {:error, error}
+  end
+
+  defp handle_retry_decision(
+         true,
+         _error,
+         operation,
+         attempt,
+         max_retries,
+         retry_delay_ms
+       ) do
+    Process.sleep(retry_delay_ms)
+    retry_operation(operation, attempt + 1, max_retries, retry_delay_ms)
+  end
+
+  defp handle_postgrex_retry(
+         false,
+         false,
+         error,
+         _operation,
+         _attempt,
+         _max_retries,
+         _retry_delay_ms
+       ) do
+    Raxol.Core.Runtime.Log.error(
+      "Non-retryable Postgrex error, giving up: #{inspect(error)}"
+    )
+
+    {:error, error}
+  end
+
+  defp handle_postgrex_retry(
+         false,
+         true,
+         error,
+         _operation,
+         _attempt,
+         _max_retries,
+         _retry_delay_ms
+       ) do
+    Raxol.Core.Runtime.Log.error(
+      "Max retries exceeded for Postgrex error: #{inspect(error)}"
+    )
+
+    {:error, error}
+  end
+
+  defp handle_postgrex_retry(
+         true,
+         true,
+         _error,
+         operation,
+         attempt,
+         max_retries,
+         retry_delay_ms
+       ) do
+    Raxol.Core.Runtime.Log.info("Retrying operation due to retryable error...")
+    Process.sleep(retry_delay_ms)
+    retry_operation(operation, attempt + 1, max_retries, retry_delay_ms)
+  end
+
+  defp determine_health_status(health_result) do
+    case health_result do
+      true -> :healthy
+      false -> :unhealthy
     end
   end
 end

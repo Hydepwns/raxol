@@ -165,10 +165,9 @@ defmodule Raxol.Core.Supervisor do
             {:error, {server, :not_started}}
 
           pid when is_pid(pid) ->
-            if Process.alive?(pid) do
-              {:ok, server}
-            else
-              {:error, {server, :not_alive}}
+            case Process.alive?(pid) do
+              true -> {:ok, server}
+              false -> {:error, {server, :not_alive}}
             end
         end
       end)
@@ -179,10 +178,9 @@ defmodule Raxol.Core.Supervisor do
         _ -> false
       end)
 
-    if length(errors) == 0 do
-      :ok
-    else
-      {:error, errors}
+    case length(errors) do
+      0 -> :ok
+      _ -> {:error, errors}
     end
   end
 
@@ -219,10 +217,9 @@ defmodule Raxol.Core.Supervisor do
             :not_started
 
           pid when is_pid(pid) ->
-            if Process.alive?(pid) do
-              :running
-            else
-              :dead
+            case Process.alive?(pid) do
+              true -> :running
+              false -> :dead
             end
         end
 

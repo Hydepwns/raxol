@@ -142,14 +142,15 @@ defmodule Raxol.Plugins.ImagePlugin do
   end
 
   defp handle_image_placeholder(plugin) do
-    if plugin.sequence_just_generated do
-      Raxol.Core.Runtime.Log.debug(
-        "[ImagePlugin.handle_cells] sequence_just_generated=true. Resetting flag and declining."
-      )
+    case plugin.sequence_just_generated do
+      true ->
+        Raxol.Core.Runtime.Log.debug(
+          "[ImagePlugin.handle_cells] sequence_just_generated=true. Resetting flag and declining."
+        )
 
-      {:cont, %{plugin | sequence_just_generated: false}}
-    else
-      generate_and_return_sequence(plugin)
+        {:cont, %{plugin | sequence_just_generated: false}}
+      false ->
+        generate_and_return_sequence(plugin)
     end
   end
 

@@ -23,14 +23,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
   end
 
   defp stop_file_watcher(state) do
-    if should_stop_file_watcher?(state) do
-      Raxol.Core.Runtime.Log.debug(
-        "[#{__MODULE__}] Stopping file watcher (PID: #{inspect(state.file_watcher_pid)})."
-      )
-
-      stop_watcher_process(state.file_watcher_pid)
-    end
-
+    execute_file_watcher_stop(should_stop_file_watcher?(state), state)
     state
   end
 
@@ -40,11 +33,10 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
   end
 
   defp stop_watcher_process(pid) do
-    if :erlang.function_exported(:sys, :get_state, 1) do
-      stop_genserver_or_process(pid)
-    else
-      Process.exit(pid, :normal)
-    end
+    handle_watcher_process_stop(
+      :erlang.function_exported(:sys, :get_state, 1),
+      pid
+    )
   end
 
   defp stop_genserver_or_process(pid) do
@@ -68,10 +60,26 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
   end
 
   defp cancel_file_event_timer(state) do
-    if state.file_event_timer do
-      Process.cancel_timer(state.file_event_timer)
-    end
-
+    cancel_timer_if_present(state.file_event_timer)
     state
   end
+
+  # Helper functions for if-statement elimination
+  defp execute_file_watcher_stop(false, _state), do: :ok
+
+  defp execute_file_watcher_stop(true, state) do
+    Raxol.Core.Runtime.Log.debug(
+      "[#{__MODULE__}] Stopping file watcher (PID: #{inspect(state.file_watcher_pid)})."
+    )
+
+    stop_watcher_process(state.file_watcher_pid)
+  end
+
+  defp handle_watcher_process_stop(true, pid),
+    do: stop_genserver_or_process(pid)
+
+  defp handle_watcher_process_stop(false, pid), do: Process.exit(pid, :normal)
+
+  defp cancel_timer_if_present(nil), do: :ok
+  defp cancel_timer_if_present(timer), do: Process.cancel_timer(timer)
 end

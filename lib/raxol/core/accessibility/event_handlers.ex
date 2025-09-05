@@ -23,25 +23,28 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
       "EventHandlers.handle_focus_change called with: #{inspect(new_element)}, prefs: #{inspect(user_preferences_pid_or_name)}"
     )
 
-    if Preferences.get_option(:screen_reader, user_preferences_pid_or_name) do
-      # Get accessible name/label for the element if metadata exists
-      announcement = Metadata.get_accessible_name(new_element)
+    case Preferences.get_option(:screen_reader, user_preferences_pid_or_name) do
+      true ->
+        # Get accessible name/label for the element if metadata exists
+        announcement = Metadata.get_accessible_name(new_element)
 
-      Raxol.Core.Runtime.Log.debug("Got announcement: #{inspect(announcement)}")
+        Raxol.Core.Runtime.Log.debug("Got announcement: #{inspect(announcement)}")
 
-      if announcement do
-        Announcements.announce(announcement, [], user_preferences_pid_or_name)
+        case announcement do
+          nil -> :ok
+          ann ->
+            Announcements.announce(ann, [], user_preferences_pid_or_name)
+            Raxol.Core.Runtime.Log.debug(
+              "Announcement made: #{inspect(ann)}"
+            )
+        end
 
+        Raxol.Core.Runtime.Log.debug("Focus changed to: #{inspect(new_element)}")
+        
+      false ->
         Raxol.Core.Runtime.Log.debug(
-          "Announcement made: #{inspect(announcement)}"
+          "Screen reader disabled for: #{inspect(user_preferences_pid_or_name)}"
         )
-      end
-
-      Raxol.Core.Runtime.Log.debug("Focus changed to: #{inspect(new_element)}")
-    else
-      Raxol.Core.Runtime.Log.debug(
-        "Screen reader disabled for: #{inspect(user_preferences_pid_or_name)}"
-      )
     end
 
     :ok
@@ -98,9 +101,10 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
       ) do
     # Ensure we always have a valid user preferences argument
     user_prefs =
-      if user_preferences_pid_or_name,
-        do: user_preferences_pid_or_name,
-        else: Raxol.Core.UserPreferences
+      case user_preferences_pid_or_name do
+        nil -> Raxol.Core.UserPreferences
+        prefs -> prefs
+      end
 
     case event do
       {:theme_changed, %{theme: theme}} when is_map(theme) ->
@@ -130,11 +134,14 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
   end
 
   # Add String.Chars protocol implementation for Theme
-  if Code.ensure_loaded?(Raxol.UI.Theming.Theme) do
-    defimpl String.Chars, for: Raxol.UI.Theming.Theme do
-      def to_string(theme) do
-        "Theme: #{theme.name}"
+  case Code.ensure_loaded?(Raxol.UI.Theming.Theme) do
+    true ->
+      defimpl String.Chars, for: Raxol.UI.Theming.Theme do
+        def to_string(theme) do
+          "Theme: #{theme.name}"
+        end
       end
-    end
+    false ->
+      :ok
   end
 end

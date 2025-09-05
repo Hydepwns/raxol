@@ -215,40 +215,50 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   defp initialize_app_model(app_module, initial_model_args) do
-    if function_exported?(app_module, :init, 1) do
-      case app_module.init(initial_model_args) do
-        {:ok, model} ->
-          {:ok, model}
+    init_function_exported = function_exported?(app_module, :init, 1)
 
-        {_, model} ->
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "[#{__MODULE__}] #{inspect(app_module)}.init returned a tuple, using model: #{inspect(model)}",
-            %{}
-          )
+    handle_app_model_initialization(
+      init_function_exported,
+      app_module,
+      initial_model_args
+    )
+  end
 
-          {:ok, model}
+  defp handle_app_model_initialization(false, app_module, _initial_model_args) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] #{inspect(app_module)}.init/1 not exported. Using empty model."
+    )
 
-        model when is_map(model) ->
-          Raxol.Core.Runtime.Log.info(
-            "[#{__MODULE__}] #{inspect(app_module)}.init returned a map directly, using model: #{inspect(model)}"
-          )
+    {:ok, %{}}
+  end
 
-          {:ok, model}
+  defp handle_app_model_initialization(true, app_module, initial_model_args) do
+    case app_module.init(initial_model_args) do
+      {:ok, model} ->
+        {:ok, model}
 
-        _ ->
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "[#{__MODULE__}] #{inspect(app_module)}.init(#{inspect(initial_model_args)}) did not return {:ok, model} or a map. Using empty model.",
-            %{}
-          )
+      {_, model} ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[#{__MODULE__}] #{inspect(app_module)}.init returned a tuple, using model: #{inspect(model)}",
+          %{}
+        )
 
-          {:ok, %{}}
-      end
-    else
-      Raxol.Core.Runtime.Log.info(
-        "[#{__MODULE__}] #{inspect(app_module)}.init/1 not exported. Using empty model."
-      )
+        {:ok, model}
 
-      {:ok, %{}}
+      model when is_map(model) ->
+        Raxol.Core.Runtime.Log.info(
+          "[#{__MODULE__}] #{inspect(app_module)}.init returned a map directly, using model: #{inspect(model)}"
+        )
+
+        {:ok, model}
+
+      _ ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[#{__MODULE__}] #{inspect(app_module)}.init(#{inspect(initial_model_args)}) did not return {:ok, model} or a map. Using empty model.",
+          %{}
+        )
+
+        {:ok, %{}}
     end
   end
 
@@ -294,13 +304,20 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   defp maybe_process_initial_commands(state = %State{}) do
-    if state.dispatcher_ready && state.plugin_manager_ready &&
-         Enum.any?(state.initial_commands) do
-      process_initial_commands(state)
-    else
-      log_waiting_status(state)
-      state
-    end
+    ready_to_process =
+      state.dispatcher_ready && state.plugin_manager_ready &&
+        Enum.any?(state.initial_commands)
+
+    handle_initial_commands_processing(ready_to_process, state)
+  end
+
+  defp handle_initial_commands_processing(true, state) do
+    process_initial_commands(state)
+  end
+
+  defp handle_initial_commands_processing(false, state) do
+    log_waiting_status(state)
+    state
   end
 
   defp process_initial_commands(state) do
@@ -319,37 +336,47 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   defp execute_initial_command(command, context) do
-    if match?(%Raxol.Core.Runtime.Command{}, command) do
-      Raxol.Core.Runtime.Command.execute(command, context)
-    else
-      Raxol.Core.Runtime.Log.error(
-        "Invalid initial command found: #{inspect(command)}. Expected %Raxol.Core.Runtime.Command{}."
-      )
-    end
+    is_valid_command = match?(%Raxol.Core.Runtime.Command{}, command)
+    handle_command_execution(is_valid_command, command, context)
+  end
+
+  defp handle_command_execution(true, command, context) do
+    Raxol.Core.Runtime.Command.execute(command, context)
+  end
+
+  defp handle_command_execution(false, command, _context) do
+    Raxol.Core.Runtime.Log.error(
+      "Invalid initial command found: #{inspect(command)}. Expected %Raxol.Core.Runtime.Command{}."
+    )
   end
 
   defp log_waiting_status(state) do
-    if Enum.any?(state.initial_commands) do
-      case {state.dispatcher_ready, state.plugin_manager_ready} do
-        {false, false} ->
-          Raxol.Core.Runtime.Log.info(
-            "Waiting for Dispatcher and PluginManager to be ready before processing initial commands."
-          )
+    has_initial_commands = Enum.any?(state.initial_commands)
+    log_if_has_commands(has_initial_commands, state)
+  end
 
-        {false, true} ->
-          Raxol.Core.Runtime.Log.info(
-            "Waiting for Dispatcher to be ready before processing initial commands."
-          )
+  defp log_if_has_commands(false, _state), do: :ok
 
-        {true, false} ->
-          Raxol.Core.Runtime.Log.info(
-            "Waiting for PluginManager to be ready before processing initial commands."
-          )
+  defp log_if_has_commands(true, state) do
+    case {state.dispatcher_ready, state.plugin_manager_ready} do
+      {false, false} ->
+        Raxol.Core.Runtime.Log.info(
+          "Waiting for Dispatcher and PluginManager to be ready before processing initial commands."
+        )
 
-        {true, true} ->
-          # Both are ready - no logging needed
-          :ok
-      end
+      {false, true} ->
+        Raxol.Core.Runtime.Log.info(
+          "Waiting for Dispatcher to be ready before processing initial commands."
+        )
+
+      {true, false} ->
+        Raxol.Core.Runtime.Log.info(
+          "Waiting for PluginManager to be ready before processing initial commands."
+        )
+
+      {true, true} ->
+        # Both are ready - no logging needed
+        :ok
     end
   end
 
@@ -391,40 +418,13 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
     # Ensure PluginManager is stopped if not already by :shutdown cast
     # This is a fallback, proper shutdown should happen in handle_cast(:shutdown, ...)
-    if state.plugin_manager && Process.alive?(state.plugin_manager) do
-      Raxol.Core.Runtime.Log.info_with_context(
-        "[#{__MODULE__}] Terminate: Ensuring PluginManager PID #{inspect(state.plugin_manager)} is stopped."
-      )
+    plugin_manager_alive =
+      state.plugin_manager && Process.alive?(state.plugin_manager)
 
-      # Using GenServer.stop as a generic way to try and stop it if it's a GenServer.
-      # This might produce an error if it's already stopped or not a GenServer.
-      case Raxol.Core.ErrorHandling.safe_call(fn ->
-             GenServer.stop(state.plugin_manager, :shutdown, :infinity)
-           end) do
-        {:ok, _result} ->
-          :ok
+    handle_plugin_manager_cleanup(plugin_manager_alive, state)
 
-        {:error, _reason} ->
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "[#{__MODULE__}] Terminate: Failed to explicitly stop PluginManager #{inspect(state.plugin_manager)}, it might have already stopped.",
-            %{}
-          )
-      end
-    end
-
-    if state.command_registry_table do
-      case CompilerState.safe_delete_table(state.command_registry_table) do
-        :ok ->
-          Raxol.Core.Runtime.Log.debug(
-            "[#{__MODULE__}] Deleted ETS table: #{inspect(state.command_registry_table)}"
-          )
-
-        {:error, :table_not_found} ->
-          Raxol.Core.Runtime.Log.debug(
-            "[#{__MODULE__}] ETS table #{inspect(state.command_registry_table)} not found or already deleted."
-          )
-      end
-    end
+    has_registry_table = !!state.command_registry_table
+    handle_registry_table_cleanup(has_registry_table, state)
 
     :ok
   end
@@ -440,11 +440,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   @spec get_app_name(atom()) :: String.t()
   def get_app_name(app_module) when is_atom(app_module) do
     # Try to call app_name/0 on the module if it exists
-    if function_exported?(app_module, :app_name, 0) do
-      app_module.app_name()
-    else
-      :default
-    end
+    app_name_exported = function_exported?(app_module, :app_name, 0)
+    get_app_name_by_export(app_name_exported, app_module)
   end
 
   # === Compatibility Wrappers ===
@@ -550,4 +547,48 @@ defmodule Raxol.Core.Runtime.Lifecycle do
         {:error, :cleanup_failed}
     end
   end
+
+  ## Helper Functions for Pattern Matching
+
+  defp handle_plugin_manager_cleanup(false, _state), do: :ok
+
+  defp handle_plugin_manager_cleanup(true, state) do
+    Raxol.Core.Runtime.Log.info_with_context(
+      "[#{__MODULE__}] Terminate: Ensuring PluginManager PID #{inspect(state.plugin_manager)} is stopped."
+    )
+
+    # Using GenServer.stop as a generic way to try and stop it if it's a GenServer.
+    # This might produce an error if it's already stopped or not a GenServer.
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           GenServer.stop(state.plugin_manager, :shutdown, :infinity)
+         end) do
+      {:ok, _result} ->
+        :ok
+
+      {:error, _reason} ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[#{__MODULE__}] Terminate: Failed to explicitly stop PluginManager #{inspect(state.plugin_manager)}, it might have already stopped.",
+          %{}
+        )
+    end
+  end
+
+  defp handle_registry_table_cleanup(false, _state), do: :ok
+
+  defp handle_registry_table_cleanup(true, state) do
+    case CompilerState.safe_delete_table(state.command_registry_table) do
+      :ok ->
+        Raxol.Core.Runtime.Log.debug(
+          "[#{__MODULE__}] Deleted ETS table: #{inspect(state.command_registry_table)}"
+        )
+
+      {:error, :table_not_found} ->
+        Raxol.Core.Runtime.Log.debug(
+          "[#{__MODULE__}] ETS table #{inspect(state.command_registry_table)} not found or already deleted."
+        )
+    end
+  end
+
+  defp get_app_name_by_export(false, _app_module), do: :default
+  defp get_app_name_by_export(true, app_module), do: app_module.app_name()
 end

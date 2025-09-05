@@ -21,41 +21,11 @@ defmodule Raxol.Test.IntegrationHelper do
     components = Keyword.get(opts, :components, [:metrics, :buffer, :renderer])
     state = %{}
 
-    state =
-      if :metrics in components do
-        metrics_state =
-          Raxol.Test.MetricsHelper.setup_metrics_test(
-            Keyword.get(opts, :metrics_opts, [])
-          )
+    state = setup_metrics_component(components, opts, state)
 
-        Map.put(state, :metrics, metrics_state)
-      else
-        state
-      end
+    state = setup_buffer_component(components, opts, state)
 
-    state =
-      if :buffer in components do
-        buffer_state =
-          Raxol.Test.BufferHelper.setup_buffer_test(
-            Keyword.get(opts, :buffer_opts, [])
-          )
-
-        Map.put(state, :buffer, buffer_state)
-      else
-        state
-      end
-
-    state =
-      if :renderer in components do
-        renderer_state =
-          Raxol.Test.RendererHelper.setup_renderer_test(
-            Keyword.get(opts, :renderer_opts, [])
-          )
-
-        Map.put(state, :renderer, renderer_state)
-      else
-        state
-      end
+    state = setup_renderer_component(components, opts, state)
 
     {:ok, state}
   end
@@ -67,17 +37,11 @@ defmodule Raxol.Test.IntegrationHelper do
     * `state` - The test state returned by `setup_integration_test/1`
   """
   def cleanup_integration_test(state) do
-    if state.metrics do
-      Raxol.Test.MetricsHelper.cleanup_metrics_test(state.metrics)
-    end
+    cleanup_metrics_component(state.metrics)
 
-    if state.buffer do
-      Raxol.Test.BufferHelper.cleanup_buffer_test(state.buffer)
-    end
+    cleanup_buffer_component(state.buffer)
 
-    if state.renderer do
-      Raxol.Test.RendererHelper.cleanup_renderer_test(state.renderer)
-    end
+    cleanup_renderer_component(state.renderer)
   end
 
   @doc """
@@ -260,19 +224,7 @@ defmodule Raxol.Test.IntegrationHelper do
         :ok
 
       {:error, _} ->
-        if System.monotonic_time(:millisecond) >= end_time do
-          {:error, :timeout}
-        else
-          Process.sleep(check_interval)
-
-          wait_for_components_loop(
-            state,
-            conditions,
-            opts,
-            check_interval,
-            end_time
-          )
-        end
+        handle_wait_timeout(System.monotonic_time(:millisecond) >= end_time, state, conditions, opts, check_interval, end_time)
     end
   end
 
@@ -346,5 +298,69 @@ defmodule Raxol.Test.IntegrationHelper do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  # Helper functions for pattern matching refactoring
+  
+  defp setup_metrics_component(components, opts, state) do
+    case :metrics in components do
+      true ->
+        metrics_state =
+          Raxol.Test.MetricsHelper.setup_metrics_test(
+            Keyword.get(opts, :metrics_opts, [])
+          )
+        Map.put(state, :metrics, metrics_state)
+      false ->
+        state
+    end
+  end
+
+  defp setup_buffer_component(components, opts, state) do
+    case :buffer in components do
+      true ->
+        buffer_state =
+          Raxol.Test.BufferHelper.setup_buffer_test(
+            Keyword.get(opts, :buffer_opts, [])
+          )
+        Map.put(state, :buffer, buffer_state)
+      false ->
+        state
+    end
+  end
+
+  defp setup_renderer_component(components, opts, state) do
+    case :renderer in components do
+      true ->
+        renderer_state =
+          Raxol.Test.RendererHelper.setup_renderer_test(
+            Keyword.get(opts, :renderer_opts, [])
+          )
+        Map.put(state, :renderer, renderer_state)
+      false ->
+        state
+    end
+  end
+
+  defp cleanup_metrics_component(nil), do: :ok
+  defp cleanup_metrics_component(metrics_state) do
+    Raxol.Test.MetricsHelper.cleanup_metrics_test(metrics_state)
+  end
+
+  defp cleanup_buffer_component(nil), do: :ok
+  defp cleanup_buffer_component(buffer_state) do
+    Raxol.Test.BufferHelper.cleanup_buffer_test(buffer_state)
+  end
+
+  defp cleanup_renderer_component(nil), do: :ok
+  defp cleanup_renderer_component(renderer_state) do
+    Raxol.Test.RendererHelper.cleanup_renderer_test(renderer_state)
+  end
+
+  defp handle_wait_timeout(true, _state, _conditions, _opts, _check_interval, _end_time) do
+    {:error, :timeout}
+  end
+  defp handle_wait_timeout(false, state, conditions, opts, check_interval, end_time) do
+    Process.sleep(check_interval)
+    wait_for_components_loop(state, conditions, opts, check_interval, end_time)
   end
 end

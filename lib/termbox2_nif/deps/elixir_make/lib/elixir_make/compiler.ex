@@ -56,9 +56,7 @@ defmodule ElixirMake.Compiler do
     # the user wants to copy it. If priv already existed and was
     # written to it, then it won't be copied if build_embedded is
     # set to true.
-    if not priv? and File.dir?("priv") do
-      Mix.Project.build_structure()
-    end
+    maybe_build_structure(not priv? and File.dir?("priv"))
 
     {:ok, []}
   end
@@ -82,13 +80,7 @@ defmodule ElixirMake.Compiler do
 
     custom_args = Keyword.get(config, :make_args, [])
 
-    if String.contains?(cwd, " ") do
-      IO.warn("""
-      the absolute path to the Makefile for this project contains spaces. \
-      Make might not work properly if spaces are present in the path. \
-      The absolute path is: #{inspect(cwd)}
-      """)
-    end
+    maybe_warn_about_spaces(String.contains?(cwd, " "), cwd)
 
     base = exec |> Path.basename() |> Path.rootname()
     args = args_for_makefile(base, makefile) ++ targets ++ custom_args
@@ -114,9 +106,7 @@ defmodule ElixirMake.Compiler do
       env: env
     ]
 
-    if verbose? do
-      print_verbose_info(exec, args)
-    end
+    maybe_print_verbose_info(verbose?, exec, args)
 
     {%IO.Stream{}, status} = System.cmd(find_executable(exec), args, opts)
     status
@@ -181,7 +171,7 @@ defmodule ElixirMake.Compiler do
   defp print_verbose_info(exec, args) do
     args =
       Enum.map_join(args, " ", fn arg ->
-        if String.contains?(arg, " "), do: inspect(arg), else: arg
+        format_arg_with_spaces(String.contains?(arg, " "), arg)
       end)
 
     Mix.shell().info("Compiling with make: #{exec} #{args}")
@@ -232,4 +222,23 @@ defmodule ElixirMake.Compiler do
   defp env(var, default) do
     System.get_env(var) || default
   end
+
+  defp maybe_build_structure(true), do: Mix.Project.build_structure()
+  defp maybe_build_structure(false), do: :ok
+
+  defp maybe_warn_about_spaces(true, cwd) do
+    IO.warn("""
+    the absolute path to the Makefile for this project contains spaces. \
+    Make might not work properly if spaces are present in the path. \
+    The absolute path is: #{inspect(cwd)}
+    """)
+  end
+
+  defp maybe_warn_about_spaces(false, _cwd), do: :ok
+
+  defp maybe_print_verbose_info(true, exec, args), do: print_verbose_info(exec, args)
+  defp maybe_print_verbose_info(false, _exec, _args), do: :ok
+
+  defp format_arg_with_spaces(true, arg), do: inspect(arg)
+  defp format_arg_with_spaces(false, arg), do: arg
 end

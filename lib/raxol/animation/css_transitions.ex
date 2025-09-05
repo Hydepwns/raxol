@@ -159,32 +159,118 @@ defmodule Raxol.Animation.CSSTransitions do
   def apply_transitions(new_style, element_id, previous_style \\ %{}) do
     transition_spec = Map.get(new_style, :transition)
 
-    if transition_spec do
-      transitions = parse_transition(transition_spec)
+    apply_transition_spec(
+      transition_spec,
+      new_style,
+      element_id,
+      previous_style
+    )
+  end
 
-      Enum.each(transitions, fn transition ->
-        property = transition.property
+  defp apply_transition_spec(nil, new_style, _element_id, _previous_style),
+    do: new_style
 
-        if property == :all or Map.has_key?(new_style, property) do
-          old_value =
-            Map.get(previous_style, property, get_default_value(property))
+  defp apply_transition_spec(
+         transition_spec,
+         new_style,
+         element_id,
+         previous_style
+       ) do
+    transitions = parse_transition(transition_spec)
 
-          new_value = Map.get(new_style, property)
+    Enum.each(transitions, fn transition ->
+      property = transition.property
 
-          if old_value != new_value do
-            create_property_transition(
-              element_id,
-              property,
-              old_value,
-              new_value,
-              transition
-            )
-          end
-        end
-      end)
-    end
+      process_property_transition(
+        property,
+        transition,
+        new_style,
+        element_id,
+        previous_style
+      )
+    end)
 
     new_style
+  end
+
+  defp process_property_transition(
+         :all,
+         transition,
+         new_style,
+         element_id,
+         previous_style
+       ) do
+    create_transition_if_changed(
+      transition,
+      new_style,
+      element_id,
+      previous_style
+    )
+  end
+
+  defp process_property_transition(
+         property,
+         transition,
+         new_style,
+         element_id,
+         previous_style
+       ) do
+    case Map.has_key?(new_style, property) do
+      true ->
+        create_transition_if_changed(
+          transition,
+          new_style,
+          element_id,
+          previous_style
+        )
+
+      false ->
+        :ok
+    end
+  end
+
+  defp create_transition_if_changed(
+         transition,
+         new_style,
+         element_id,
+         previous_style
+       ) do
+    property = transition.property
+    old_value = Map.get(previous_style, property, get_default_value(property))
+    new_value = Map.get(new_style, property)
+
+    create_transition_for_values(
+      old_value,
+      new_value,
+      element_id,
+      property,
+      transition
+    )
+  end
+
+  defp create_transition_for_values(
+         same_value,
+         same_value,
+         _element_id,
+         _property,
+         _transition
+       ),
+       do: :ok
+
+  defp create_transition_for_values(
+         old_value,
+         new_value,
+         element_id,
+         property,
+         transition
+       ) do
+    create_property_transition(
+      element_id,
+      property,
+      old_value,
+      new_value,
+      transition
+    )
   end
 
   # Private helper functions
@@ -231,12 +317,7 @@ defmodule Raxol.Animation.CSSTransitions do
         _ -> {:linear, [easing_str | rest]}
       end
 
-    if is_tuple(easing_atom) do
-      # Return the tuple (easing, rest)
-      easing_atom
-    else
-      {easing_atom, rest}
-    end
+    handle_easing_result(is_tuple(easing_atom), easing_atom, rest)
   end
 
   defp extract_easing([]), do: {:linear, []}
@@ -280,11 +361,7 @@ defmodule Raxol.Animation.CSSTransitions do
         _ -> {:normal, [direction | rest]}
       end
 
-    if is_tuple(direction_atom) do
-      direction_atom
-    else
-      {direction_atom, rest}
-    end
+    handle_direction_result(is_tuple(direction_atom), direction_atom, rest)
   end
 
   defp extract_direction([]), do: {:normal, []}
@@ -300,11 +377,7 @@ defmodule Raxol.Animation.CSSTransitions do
         _ -> {:none, [mode | rest]}
       end
 
-    if is_tuple(mode_atom) do
-      mode_atom
-    else
-      {mode_atom, rest}
-    end
+    handle_mode_result(is_tuple(mode_atom), mode_atom, rest)
   end
 
   defp extract_fill_mode([]), do: {:none, []}
@@ -379,13 +452,13 @@ defmodule Raxol.Animation.CSSTransitions do
 
       _ ->
         # For non-interpolable strings, switch at 50% progress
-        if progress < 0.5, do: from_value, else: to_value
+        switch_at_midpoint(progress, from_value, to_value)
     end
   end
 
   defp interpolate_value(from_value, to_value, progress) do
     # For non-numeric values, switch at 50% progress
-    if progress < 0.5, do: from_value, else: to_value
+    switch_at_midpoint(progress, from_value, to_value)
   end
 
   defp parse_transform("translateX(" <> rest) do
@@ -471,15 +544,7 @@ defmodule Raxol.Animation.CSSTransitions do
     })
 
     # Start the animation after delay
-    if transition.delay > 0 do
-      Process.send_after(
-        self(),
-        {:start_delayed_animation, animation_name, element_id},
-        transition.delay
-      )
-    else
-      Framework.start_animation(animation_name, element_id)
-    end
+    schedule_or_start_animation(transition.delay, animation_name, element_id)
   end
 
   defp get_default_value(:opacity), do: 1.0
@@ -499,53 +564,71 @@ defmodule Raxol.Animation.CSSTransitions do
 
   # Duration parsing with pattern matching
   defp parse_duration_value(duration_str, rest) when is_binary(duration_str) do
-    case String.ends_with?(duration_str, "ms") do
-      true ->
-        {duration_str |> String.trim_trailing("ms") |> String.to_integer(),
-         rest}
-
-      false ->
-        parse_duration_seconds_or_default(duration_str, rest)
-    end
+    parse_duration_by_suffix(
+      String.ends_with?(duration_str, "ms"),
+      duration_str,
+      rest
+    )
   end
 
   defp parse_duration_value(duration_str, rest),
     do: {300, [duration_str | rest]}
 
-  defp parse_duration_seconds_or_default(duration_str, rest) do
-    case String.ends_with?(duration_str, "s") do
-      true ->
-        {((duration_str |> String.trim_trailing("s") |> String.to_float()) *
-            1000)
-         |> round(), rest}
+  defp parse_duration_by_suffix(true, duration_str, rest) do
+    {duration_str |> String.trim_trailing("ms") |> String.to_integer(), rest}
+  end
 
-      false ->
-        {300, [duration_str | rest]}
-    end
+  defp parse_duration_by_suffix(false, duration_str, rest) do
+    parse_duration_seconds_or_default(duration_str, rest)
+  end
+
+  defp parse_duration_seconds_or_default(duration_str, rest) do
+    parse_seconds_suffix(
+      String.ends_with?(duration_str, "s"),
+      duration_str,
+      rest
+    )
+  end
+
+  defp parse_seconds_suffix(true, duration_str, rest) do
+    {((duration_str |> String.trim_trailing("s") |> String.to_float()) * 1000)
+     |> round(), rest}
+  end
+
+  defp parse_seconds_suffix(false, duration_str, rest) do
+    {300, [duration_str | rest]}
   end
 
   # Delay parsing with pattern matching
   defp parse_delay_value(delay_str, rest) when is_binary(delay_str) do
-    case String.ends_with?(delay_str, "ms") do
-      true ->
-        {delay_str |> String.trim_trailing("ms") |> String.to_integer(), rest}
-
-      false ->
-        parse_delay_seconds_or_default(delay_str, rest)
-    end
+    parse_delay_by_suffix(String.ends_with?(delay_str, "ms"), delay_str, rest)
   end
 
   defp parse_delay_value(delay_str, rest), do: {0, [delay_str | rest]}
 
-  defp parse_delay_seconds_or_default(delay_str, rest) do
-    case String.ends_with?(delay_str, "s") do
-      true ->
-        {((delay_str |> String.trim_trailing("s") |> String.to_float()) * 1000)
-         |> round(), rest}
+  defp parse_delay_by_suffix(true, delay_str, rest) do
+    {delay_str |> String.trim_trailing("ms") |> String.to_integer(), rest}
+  end
 
-      false ->
-        {0, [delay_str | rest]}
-    end
+  defp parse_delay_by_suffix(false, delay_str, rest) do
+    parse_delay_seconds_or_default(delay_str, rest)
+  end
+
+  defp parse_delay_seconds_or_default(delay_str, rest) do
+    parse_delay_seconds_suffix(
+      String.ends_with?(delay_str, "s"),
+      delay_str,
+      rest
+    )
+  end
+
+  defp parse_delay_seconds_suffix(true, delay_str, rest) do
+    {((delay_str |> String.trim_trailing("s") |> String.to_float()) * 1000)
+     |> round(), rest}
+  end
+
+  defp parse_delay_seconds_suffix(false, delay_str, rest) do
+    {0, [delay_str | rest]}
   end
 
   defp check_keyframe_match(keyframe_progress, properties, progress, _acc)
@@ -566,4 +649,35 @@ defmodule Raxol.Animation.CSSTransitions do
 
   defp check_keyframe_match(keyframe_progress, properties, _progress, _acc),
     do: {:cont, {keyframe_progress, properties}}
+
+  # Helper functions for refactored if statements
+  defp handle_easing_result(true, easing_tuple, _rest), do: easing_tuple
+  defp handle_easing_result(false, easing_atom, rest), do: {easing_atom, rest}
+
+  defp handle_direction_result(true, direction_tuple, _rest),
+    do: direction_tuple
+
+  defp handle_direction_result(false, direction_atom, rest),
+    do: {direction_atom, rest}
+
+  defp handle_mode_result(true, mode_tuple, _rest), do: mode_tuple
+  defp handle_mode_result(false, mode_atom, rest), do: {mode_atom, rest}
+
+  defp switch_at_midpoint(progress, from_value, _to_value) when progress < 0.5,
+    do: from_value
+
+  defp switch_at_midpoint(_progress, _from_value, to_value), do: to_value
+
+  defp schedule_or_start_animation(delay, animation_name, element_id)
+       when delay > 0 do
+    Process.send_after(
+      self(),
+      {:start_delayed_animation, animation_name, element_id},
+      delay
+    )
+  end
+
+  defp schedule_or_start_animation(_delay, animation_name, element_id) do
+    Framework.start_animation(animation_name, element_id)
+  end
 end

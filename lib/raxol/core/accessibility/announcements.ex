@@ -6,7 +6,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
   """
 
   alias Raxol.Core.Events.Manager, as: EventManager
-  require Raxol.Core.Runtime.Log
+  # require Raxol.Core.Runtime.Log  # Commented out due to missing module
 
   # Start the Agent for global subscription storage
   def start_link(_opts) do
@@ -49,15 +49,19 @@ defmodule Raxol.Core.Accessibility.Announcements do
   """
   def announce(message, opts \\ [], user_preferences_pid_or_name)
       when is_binary(message) do
-    if is_nil(user_preferences_pid_or_name) do
-      raise "Accessibility.Announcements.announce/3 must be called with a user_preferences_pid_or_name."
-    end
-
-    if should_announce?(user_preferences_pid_or_name) do
-      process_announcement(message, opts, user_preferences_pid_or_name)
-    end
-
+    validate_user_preferences(user_preferences_pid_or_name)
+    handle_announcement(should_announce?(user_preferences_pid_or_name), message, opts, user_preferences_pid_or_name)
     :ok
+  end
+
+  defp validate_user_preferences(nil) do
+    raise "Accessibility.Announcements.announce/3 must be called with a user_preferences_pid_or_name."
+  end
+  defp validate_user_preferences(_user_preferences_pid_or_name), do: :ok
+
+  defp handle_announcement(false, _message, _opts, _user_preferences_pid_or_name), do: :ok
+  defp handle_announcement(true, message, opts, user_preferences_pid_or_name) do
+    process_announcement(message, opts, user_preferences_pid_or_name)
   end
 
   defp should_announce?(user_preferences_pid_or_name) do
@@ -170,9 +174,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
     subscriptions = get_subscriptions()
 
     Enum.each(subscriptions, fn {ref, pid} ->
-      if Process.alive?(pid) do
-        send(pid, {:announcement_added, ref, message})
-      end
+      send_to_alive_process(Process.alive?(pid), pid, {:announcement_added, ref, message})
     end)
   end
 
@@ -180,9 +182,12 @@ defmodule Raxol.Core.Accessibility.Announcements do
     subscriptions = get_subscriptions()
 
     Enum.each(subscriptions, fn {ref, pid} ->
-      if Process.alive?(pid) do
-        send(pid, {:announcements_cleared, ref})
-      end
+      send_to_alive_process(Process.alive?(pid), pid, {:announcements_cleared, ref})
     end)
+  end
+
+  defp send_to_alive_process(false, _pid, _message), do: :ok
+  defp send_to_alive_process(true, pid, message) do
+    send(pid, message)
   end
 end

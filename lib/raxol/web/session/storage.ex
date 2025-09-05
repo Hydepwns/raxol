@@ -36,24 +36,7 @@ defmodule Raxol.Web.Session.Storage do
     :ets.insert(@table_name, {session.id, session})
 
     # Skip database operations in test environment
-    if function_exported?(Mix, :env, 0) and Mix.env() == :test do
-      {:ok, session}
-    else
-      # Store in database for persistence
-      case Repo.get(Session, session.id) do
-        nil ->
-          # Create new session
-          %Session{}
-          |> Session.changeset(Map.from_struct(session))
-          |> Repo.insert()
-
-        existing ->
-          # Update existing session
-          existing
-          |> Session.changeset(Map.from_struct(session))
-          |> Repo.update()
-      end
-    end
+    handle_database_store(is_test_env(), session)
   end
 
   @doc """
@@ -66,15 +49,7 @@ defmodule Raxol.Web.Session.Storage do
         {:ok, session}
 
       [] ->
-        if function_exported?(Mix, :env, 0) and Mix.env() == :test do
-          {:error, :not_found}
-        else
-          # Try database
-          case Repo.get(Session, session_id) do
-            nil -> {:error, :not_found}
-            session -> {:ok, session}
-          end
-        end
+        handle_database_get(is_test_env(), session_id)
     end
   end
 
@@ -105,13 +80,7 @@ defmodule Raxol.Web.Session.Storage do
     :ets.delete(@table_name, session_id)
 
     # Skip database operations in test environment
-    unless function_exported?(Mix, :env, 0) and Mix.env() == :test do
-      # Delete from database
-      case Repo.get(Session, session_id) do
-        nil -> :ok
-        session -> Repo.delete(session)
-      end
-    end
+    handle_database_delete(is_test_env(), session_id)
 
     :ok
   end
@@ -123,5 +92,50 @@ defmodule Raxol.Web.Session.Storage do
     :ets.tab2list(@table_name)
     |> Enum.filter(fn {_id, session} -> session.status == :active end)
     |> Enum.map(fn {_id, session} -> session end)
+  end
+
+  # Helper functions to eliminate if/unless statements
+
+  defp is_test_env do
+    function_exported?(Mix, :env, 0) and Mix.env() == :test
+  end
+
+  defp handle_database_store(true, session), do: {:ok, session}
+
+  defp handle_database_store(false, session) do
+    # Store in database for persistence
+    case Repo.get(Session, session.id) do
+      nil ->
+        # Create new session
+        %Session{}
+        |> Session.changeset(Map.from_struct(session))
+        |> Repo.insert()
+
+      existing ->
+        # Update existing session
+        existing
+        |> Session.changeset(Map.from_struct(session))
+        |> Repo.update()
+    end
+  end
+
+  defp handle_database_get(true, _session_id), do: {:error, :not_found}
+
+  defp handle_database_get(false, session_id) do
+    # Try database
+    case Repo.get(Session, session_id) do
+      nil -> {:error, :not_found}
+      session -> {:ok, session}
+    end
+  end
+
+  defp handle_database_delete(true, _session_id), do: :ok
+
+  defp handle_database_delete(false, session_id) do
+    # Delete from database
+    case Repo.get(Session, session_id) do
+      nil -> :ok
+      session -> Repo.delete(session)
+    end
   end
 end

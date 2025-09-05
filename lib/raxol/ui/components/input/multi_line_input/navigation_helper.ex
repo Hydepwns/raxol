@@ -46,23 +46,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   def move_cursor(state, :left) do
     {row, col} = state.cursor_pos
 
-    if col > 0 do
-      # Simple case: move cursor left within the current line
-      new_state = %{state | desired_col: col - 1}
-      move_cursor(new_state, {row, col - 1})
-    else
-      # At beginning of line, try to move to end of previous line
-      if row > 0 do
-        prev_row = row - 1
-        lines = state.lines
-        prev_line_length = String.length(Enum.at(lines, prev_row, ""))
-        new_state = %{state | desired_col: prev_line_length}
-        move_cursor(new_state, {prev_row, prev_line_length})
-      else
-        # Already at document start, no change
-        state
-      end
-    end
+    move_cursor_left_within_line_or_previous(state, row, col)
   end
 
   def move_cursor(state, :right) do
@@ -71,21 +55,13 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     current_line = Enum.at(lines, row, "")
     current_line_length = String.length(current_line)
 
-    if col < current_line_length do
-      # Simple case: move cursor right within the current line
-      new_state = %{state | desired_col: col + 1}
-      move_cursor(new_state, {row, col + 1})
-    else
-      # At end of line, try to move to beginning of next line
-      if row < length(lines) - 1 do
-        next_row = row + 1
-        new_state = %{state | desired_col: 0}
-        move_cursor(new_state, {next_row, 0})
-      else
-        # Already at document end, no change
-        state
-      end
-    end
+    move_cursor_right_within_line_or_next(
+      state,
+      row,
+      col,
+      lines,
+      current_line_length
+    )
   end
 
   def move_cursor(state, :up) do
@@ -160,34 +136,36 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     {current_row, current_col} = state.cursor_pos
 
     # If at start of doc, do nothing
-    if current_row == 0 and current_col == 0 do
-      state
-    else
-      # Combine lines up to cursor for easier searching
-      flat_index = TextHelper.pos_to_index(lines, {current_row, current_col})
-      text_before_cursor = String.slice(state.value, 0, flat_index)
+    case at_document_start?(current_row, current_col) do
+      true ->
+        state
 
-      # Find the start of the previous word (regex for non-whitespace preceded by whitespace or start)
-      # This is a simplified regex; a more robust one would handle punctuation.
-      case :binary.match(text_before_cursor, ~r/\S+$/, [
-             :global,
-             :capture_original
-           ]) do
-        # No non-whitespace found before cursor (e.g., only spaces)
-        [] ->
-          # Move to beginning of the current line if possible
-          move_cursor(state, {current_row, 0})
+      false ->
+        # Combine lines up to cursor for easier searching
+        flat_index = TextHelper.pos_to_index(lines, {current_row, current_col})
+        text_before_cursor = String.slice(state.value, 0, flat_index)
 
-        matches ->
-          # Find the last match (closest non-whitespace sequence)
-          last_match = List.last(matches)
-          start_of_word_index = elem(last_match, 1)
+        # Find the start of the previous word (regex for non-whitespace preceded by whitespace or start)
+        # This is a simplified regex; a more robust one would handle punctuation.
+        case :binary.match(text_before_cursor, ~r/\S+$/, [
+               :global,
+               :capture_original
+             ]) do
+          # No non-whitespace found before cursor (e.g., only spaces)
+          [] ->
+            # Move to beginning of the current line if possible
+            move_cursor(state, {current_row, 0})
 
-          # Convert flat index back to {row, col}
-          # This is inefficient, a dedicated index_to_pos helper would be better
-          new_pos = index_to_pos(lines, start_of_word_index)
-          move_cursor(state, new_pos)
-      end
+          matches ->
+            # Find the last match (closest non-whitespace sequence)
+            last_match = List.last(matches)
+            start_of_word_index = elem(last_match, 1)
+
+            # Convert flat index back to {row, col}
+            # This is inefficient, a dedicated index_to_pos helper would be better
+            new_pos = index_to_pos(lines, start_of_word_index)
+            move_cursor(state, new_pos)
+        end
     end
   end
 
@@ -239,15 +217,13 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     line_length = String.length(line)
     end_of_line_index = current_index + line_length
 
-    if target_index <= end_of_line_index do
-      # Target is within this line
-      col = target_index - current_index
-      {row, col}
-    else
-      # Target is after this line, continue to next
-      next_index = end_of_line_index + if rest == [], do: 0, else: 1
-      find_position(rest, target_index, row + 1, next_index)
-    end
+    find_position_in_line_or_continue(
+      target_index,
+      end_of_line_index,
+      current_index,
+      row,
+      rest
+    )
   end
 
   # Moves cursor up or down by one page (component height)
@@ -347,11 +323,12 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
         start_index = TextHelper.pos_to_index(state.lines, start_pos)
         end_index = TextHelper.pos_to_index(state.lines, end_pos)
 
-        if start_index <= end_index do
-          {start_pos, end_pos}
-        else
-          {end_pos, start_pos}
-        end
+        normalize_selection_positions(
+          start_index,
+          end_index,
+          start_pos,
+          end_pos
+        )
     end
   end
 
@@ -366,12 +343,124 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
 
       {{start_row, _}, {end_row, _}} ->
         # Ensure start_row <= end_row (normalize)
-        {min_row, max_row} =
-          if start_row <= end_row,
-            do: {start_row, end_row},
-            else: {end_row, start_row}
+        {min_row, max_row} = normalize_row_range(start_row, end_row)
 
         line_index >= min_row && line_index <= max_row
     end
+  end
+
+  ## Helper functions for refactored if statements
+
+  defp move_cursor_left_within_line_or_previous(state, row, col) when col > 0 do
+    # Simple case: move cursor left within the current line
+    new_state = %{state | desired_col: col - 1}
+    move_cursor(new_state, {row, col - 1})
+  end
+
+  defp move_cursor_left_within_line_or_previous(state, row, _col) do
+    # At beginning of line, try to move to end of previous line
+    move_to_previous_line_end(state, row)
+  end
+
+  defp move_to_previous_line_end(state, row) when row > 0 do
+    prev_row = row - 1
+    lines = state.lines
+    prev_line_length = String.length(Enum.at(lines, prev_row, ""))
+    new_state = %{state | desired_col: prev_line_length}
+    move_cursor(new_state, {prev_row, prev_line_length})
+  end
+
+  defp move_to_previous_line_end(state, _row) do
+    # Already at document start, no change
+    state
+  end
+
+  defp move_cursor_right_within_line_or_next(
+         state,
+         row,
+         col,
+         lines,
+         current_line_length
+       )
+       when col < current_line_length do
+    # Simple case: move cursor right within the current line
+    new_state = %{state | desired_col: col + 1}
+    move_cursor(new_state, {row, col + 1})
+  end
+
+  defp move_cursor_right_within_line_or_next(
+         state,
+         row,
+         _col,
+         lines,
+         _current_line_length
+       ) do
+    # At end of line, try to move to beginning of next line
+    move_to_next_line_start(state, row, lines)
+  end
+
+  defp move_to_next_line_start(state, row, lines)
+       when row < length(lines) - 1 do
+    next_row = row + 1
+    new_state = %{state | desired_col: 0}
+    move_cursor(new_state, {next_row, 0})
+  end
+
+  defp move_to_next_line_start(state, _row, _lines) do
+    # Already at document end, no change
+    state
+  end
+
+  defp at_document_start?(0, 0), do: true
+  defp at_document_start?(_row, _col), do: false
+
+  defp find_position_in_line_or_continue(
+         target_index,
+         end_of_line_index,
+         current_index,
+         row,
+         rest
+       )
+       when target_index <= end_of_line_index do
+    # Target is within this line
+    col = target_index - current_index
+    {row, col}
+  end
+
+  defp find_position_in_line_or_continue(
+         target_index,
+         end_of_line_index,
+         _current_index,
+         row,
+         rest
+       ) do
+    # Target is after this line, continue to next
+    next_index = end_of_line_index + calculate_newline_offset(rest)
+    find_position(rest, target_index, row + 1, next_index)
+  end
+
+  defp calculate_newline_offset([]), do: 0
+  defp calculate_newline_offset(_rest), do: 1
+
+  defp normalize_selection_positions(start_index, end_index, start_pos, end_pos)
+       when start_index <= end_index do
+    {start_pos, end_pos}
+  end
+
+  defp normalize_selection_positions(
+         _start_index,
+         _end_index,
+         start_pos,
+         end_pos
+       ) do
+    {end_pos, start_pos}
+  end
+
+  defp normalize_row_range(start_row, end_row) when start_row <= end_row do
+    {start_row, end_row}
+  end
+
+  defp normalize_row_range(start_row, end_row) do
+    {end_row, start_row}
   end
 end

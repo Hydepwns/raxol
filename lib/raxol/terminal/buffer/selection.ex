@@ -116,20 +116,25 @@ defmodule Raxol.Terminal.Buffer.Selection do
         ) :: String.t()
   def get_text_in_region(buffer, start_x, start_y, end_x, end_y) do
     # Check if coordinates are out of bounds
-    if out_of_bounds?(buffer, start_x, start_y, end_x, end_y) do
-      ""
-    else
-      # Ensure start coordinates are less than or equal to end coordinates
-      {start_x, end_x} = {min(start_x, end_x), max(start_x, end_x)}
-      {start_y, end_y} = {min(start_y, end_y), max(start_y, end_y)}
-
-      # Handle empty region (same start and end coordinates)
-      if start_x == end_x and start_y == end_y do
+    case out_of_bounds?(buffer, start_x, start_y, end_x, end_y) do
+      true ->
         ""
-      else
-        extract_region_text(buffer, start_x, start_y, end_x, end_y)
-      end
+      false ->
+        # Ensure start coordinates are less than or equal to end coordinates
+        {start_x, end_x} = {min(start_x, end_x), max(start_x, end_x)}
+        {start_y, end_y} = {min(start_y, end_y), max(start_y, end_y)}
+
+        # Handle empty region (same start and end coordinates)
+        handle_region_extraction(buffer, start_x, start_y, end_x, end_y)
     end
+  end
+
+  defp handle_region_extraction(buffer, start_x, start_y, end_x, end_y) when start_x == end_x and start_y == end_y do
+    ""
+  end
+
+  defp handle_region_extraction(buffer, start_x, start_y, end_x, end_y) do
+    extract_region_text(buffer, start_x, start_y, end_x, end_y)
   end
 
   defp out_of_bounds?(buffer, start_x, start_y, end_x, end_y) do
@@ -152,7 +157,7 @@ defmodule Raxol.Terminal.Buffer.Selection do
             chars =
               for x <- start_x..end_x do
                 cell = Enum.at(line, x)
-                if cell, do: cell.char, else: " "
+                get_cell_char(cell)
               end
 
             Enum.join(chars)
@@ -198,11 +203,19 @@ defmodule Raxol.Terminal.Buffer.Selection do
   def get_end_position(buffer) do
     case buffer.selection do
       {start_x, start_y, end_x, end_y} ->
-        if start_x == end_x and start_y == end_y, do: nil, else: {end_x, end_y}
+        get_position_if_different(start_x, start_y, end_x, end_y)
 
       nil ->
         nil
     end
+  end
+
+  defp get_position_if_different(start_x, start_y, end_x, end_y) when start_x == end_x and start_y == end_y do
+    nil
+  end
+
+  defp get_position_if_different(_start_x, _start_y, end_x, end_y) do
+    {end_x, end_y}
   end
 
   @doc """
@@ -225,4 +238,7 @@ defmodule Raxol.Terminal.Buffer.Selection do
       {:error, e} -> {:error, e}
     end
   end
+
+  defp get_cell_char(nil), do: " "
+  defp get_cell_char(cell), do: cell.char
 end

@@ -95,9 +95,10 @@ defmodule Raxol.Renderer.Layout do
       %{type: type} = el ->
         process_function = @element_processors[type]
 
-        if process_function,
-          do: apply(__MODULE__, process_function, [el, space, acc]),
-          else: acc
+        case process_function do
+          nil -> acc
+          func -> apply(__MODULE__, func, [el, space, acc])
+        end
 
       _ ->
         acc
@@ -177,11 +178,10 @@ defmodule Raxol.Renderer.Layout do
 
   def process_children(child, space, acc) when is_map(child) do
     normalized_child =
-      if Map.has_key?(child, :type) and Map.has_key?(child, :position) and
+      case Map.has_key?(child, :type) and Map.has_key?(child, :position) and
            Map.has_key?(child, :size) do
-        child
-      else
-        ensure_required_keys(child, space, :box)
+        true -> child
+        false -> ensure_required_keys(child, space, :box)
       end
 
     process_element(normalized_child, space, acc)
@@ -191,11 +191,10 @@ defmodule Raxol.Renderer.Layout do
 
   # Helper to normalize child nodes
   defp normalize_child_node(child_node, space) when is_map(child_node) do
-    if Map.has_key?(child_node, :type) and Map.has_key?(child_node, :position) and
+    case Map.has_key?(child_node, :type) and Map.has_key?(child_node, :position) and
          Map.has_key?(child_node, :size) do
-      child_node
-    else
-      ensure_required_keys(child_node, space, :box)
+      true -> child_node
+      false -> ensure_required_keys(child_node, space, :box)
     end
   end
 

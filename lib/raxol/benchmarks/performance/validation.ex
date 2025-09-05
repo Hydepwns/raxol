@@ -72,8 +72,11 @@ defmodule Raxol.Benchmarks.Performance.Validation do
   end
 
   defp calculate_pass_percentage(passed, total) do
-    if total > 0, do: passed / total * 100, else: 0
+    get_pass_percentage(passed, total)
   end
+
+  defp get_pass_percentage(passed, total) when total > 0, do: passed / total * 100
+  defp get_pass_percentage(_passed, _total), do: 0
 
   defp determine_status(pass_percentage) when pass_percentage >= 95,
     do: :excellent
@@ -97,20 +100,29 @@ defmodule Raxol.Benchmarks.Performance.Validation do
     platform_file =
       Path.join("priv/baseline_metrics", "#{platform}_baseline.json")
 
-    baseline =
-      if File.exists?(platform_file) do
-        platform_file
-        |> File.read!()
-        |> Jason.decode!(keys: :atoms)
-      else
-        # Fall back to default baseline
-        Path.join("priv/baseline_metrics", "default_baseline.json")
-        |> File.read!()
-        |> Jason.decode!(keys: :atoms)
-      end
+    baseline = load_baseline_file(platform_file)
 
     baseline
   end
+
+  defp load_baseline_file(platform_file) when true do
+    load_platform_or_default_baseline(File.exists?(platform_file), platform_file)
+  end
+
+  defp load_platform_or_default_baseline(true, platform_file) do
+    platform_file
+    |> File.read!()
+    |> Jason.decode!(keys: :atoms)
+  end
+  defp load_platform_or_default_baseline(false, _platform_file) do
+    # Fall back to default baseline
+    Path.join("priv/baseline_metrics", "default_baseline.json")
+    |> File.read!()
+    |> Jason.decode!(keys: :atoms)
+  end
+
+  defp validate_memory_leak(true), do: %{status: :fail, message: "Memory leak detected", detected: true}
+  defp validate_memory_leak(_), do: %{status: :pass, message: "No memory leak detected", detected: false}
 
   # Private helper functions
 
@@ -151,12 +163,7 @@ defmodule Raxol.Benchmarks.Performance.Validation do
     ]
 
     # Add memory leak validation
-    leak_validation =
-      if results[:memory_leak_detected] do
-        %{status: :fail, message: "Memory leak detected", detected: true}
-      else
-        %{status: :pass, message: "No memory leak detected", detected: false}
-      end
+    leak_validation = validate_memory_leak(results[:memory_leak_detected])
 
     regular_validations = validate_metric_list(results, baseline, metrics)
     Map.put(regular_validations, :memory_leak_detected, leak_validation)
@@ -197,16 +204,19 @@ defmodule Raxol.Benchmarks.Performance.Validation do
     do: %{status: :skip, message: "No baseline for comparison"}
 
   defp validate_metric_value(result_value, baseline_value, comparator, label) do
-    if comparator.(result_value, baseline_value) do
-      %{
-        status: :pass,
-        message: "#{label}: #{result_value} (baseline: #{baseline_value})"
-      }
-    else
-      %{
-        status: :fail,
-        message: "#{label}: #{result_value} (baseline: #{baseline_value})"
-      }
-    end
+    create_validation_result(comparator.(result_value, baseline_value), label, result_value, baseline_value)
+  end
+
+  defp create_validation_result(true, label, result_value, baseline_value) do
+    %{
+      status: :pass,
+      message: "#{label}: #{result_value} (baseline: #{baseline_value})"
+    }
+  end
+  defp create_validation_result(false, label, result_value, baseline_value) do
+    %{
+      status: :fail,
+      message: "#{label}: #{result_value} (baseline: #{baseline_value})"
+    }
   end
 end

@@ -129,19 +129,7 @@ defmodule Raxol.Core.Performance.Memoization.Server do
 
       {value, timestamp} ->
         # Cache hit - check if expired
-        if expired?(timestamp, state.ttl) do
-          # Expired - recompute
-          value = fun.()
-          new_timestamp = System.monotonic_time(:millisecond)
-          cache = Map.put(state.cache, cache_key, {value, new_timestamp})
-
-          updated_state = %{state | cache: cache, misses: state.misses + 1}
-
-          {:reply, value, updated_state}
-        else
-          # Valid cache hit
-          {:reply, value, %{state | hits: state.hits + 1}}
-        end
+        handle_cache_hit(expired?(timestamp, state.ttl), value, timestamp, cache_key, fun, state)
     end
   end
 
@@ -154,13 +142,7 @@ defmodule Raxol.Core.Performance.Memoization.Server do
         {:reply, :miss, %{state | misses: state.misses + 1}}
 
       {value, timestamp} ->
-        if expired?(timestamp, state.ttl) do
-          # Expired - remove from cache
-          cache = Map.delete(state.cache, cache_key)
-          {:reply, :miss, %{state | cache: cache, misses: state.misses + 1}}
-        else
-          {:reply, {:ok, value}, %{state | hits: state.hits + 1}}
-        end
+        handle_get_cache_hit(expired?(timestamp, state.ttl), value, cache_key, state)
     end
   end
 
@@ -213,12 +195,7 @@ defmodule Raxol.Core.Performance.Memoization.Server do
     stats = %{
       hits: state.hits,
       misses: state.misses,
-      hit_rate:
-        if state.hits + state.misses > 0 do
-          state.hits / (state.hits + state.misses) * 100
-        else
-          0.0
-        end,
+      hit_rate: calculate_hit_rate(state.hits + state.misses > 0, state.hits, state.misses),
       total_entries: total_entries,
       processes_count: processes_count
     }
@@ -244,16 +221,7 @@ defmodule Raxol.Core.Performance.Memoization.Server do
     # Remove expired entries
     now = System.monotonic_time(:millisecond)
 
-    cache =
-      if state.ttl != :infinity do
-        state.cache
-        |> Enum.reject(fn {_, {_, timestamp}} ->
-          expired?(timestamp, state.ttl)
-        end)
-        |> Enum.into(%{})
-      else
-        state.cache
-      end
+    cache = cleanup_expired_entries(state.ttl != :infinity, state.cache, state.ttl)
 
     # Schedule next cleanup
     schedule_cleanup()
@@ -264,12 +232,14 @@ defmodule Raxol.Core.Performance.Memoization.Server do
   # Private helpers
 
   defp ensure_monitored(pid, state) do
-    if Map.has_key?(state.monitors, pid) do
-      state
-    else
-      ref = Process.monitor(pid)
-      %{state | monitors: Map.put(state.monitors, pid, ref)}
-    end
+    ensure_monitoring(Map.has_key?(state.monitors, pid), pid, state)
+  end
+
+  defp ensure_monitoring(true, _pid, state), do: state
+
+  defp ensure_monitoring(false, pid, state) do
+    ref = Process.monitor(pid)
+    %{state | monitors: Map.put(state.monitors, pid, ref)}
   end
 
   defp expired?(_timestamp, :infinity), do: false
@@ -285,23 +255,65 @@ defmodule Raxol.Core.Performance.Memoization.Server do
       cache
       |> Enum.filter(fn {{p, _}, _} -> p == pid end)
 
-    if length(process_entries) > max_entries do
-      # Evict oldest entries
-      entries_to_keep =
-        process_entries
-        |> Enum.sort_by(fn {_, {_, timestamp}} -> timestamp end, :desc)
-        |> Enum.take(max_entries)
-        |> Enum.into(%{})
-
-      # Remove all entries for this process and add back the ones to keep
-      cache
-      |> Enum.reject(fn {{p, _}, _} -> p == pid end)
-      |> Enum.into(%{})
-      |> Map.merge(entries_to_keep)
-    else
-      cache
-    end
+    handle_eviction(length(process_entries) > max_entries, cache, pid, process_entries, max_entries)
   end
+
+  defp handle_cache_hit(true, _value, _timestamp, cache_key, fun, state) do
+    # Expired - recompute
+    value = fun.()
+    new_timestamp = System.monotonic_time(:millisecond)
+    cache = Map.put(state.cache, cache_key, {value, new_timestamp})
+    updated_state = %{state | cache: cache, misses: state.misses + 1}
+    {:reply, value, updated_state}
+  end
+
+  defp handle_cache_hit(false, value, _timestamp, _cache_key, _fun, state) do
+    # Valid cache hit
+    {:reply, value, %{state | hits: state.hits + 1}}
+  end
+
+  defp handle_get_cache_hit(true, _value, cache_key, state) do
+    # Expired - remove from cache
+    cache = Map.delete(state.cache, cache_key)
+    {:reply, :miss, %{state | cache: cache, misses: state.misses + 1}}
+  end
+
+  defp handle_get_cache_hit(false, value, _cache_key, state) do
+    {:reply, {:ok, value}, %{state | hits: state.hits + 1}}
+  end
+
+  defp calculate_hit_rate(true, hits, misses) do
+    hits / (hits + misses) * 100
+  end
+
+  defp calculate_hit_rate(false, _hits, _misses), do: 0.0
+
+  defp cleanup_expired_entries(true, cache, ttl) do
+    cache
+    |> Enum.reject(fn {_, {_, timestamp}} ->
+      expired?(timestamp, ttl)
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp cleanup_expired_entries(false, cache, _ttl), do: cache
+
+  defp handle_eviction(true, cache, pid, process_entries, max_entries) do
+    # Evict oldest entries
+    entries_to_keep =
+      process_entries
+      |> Enum.sort_by(fn {_, {_, timestamp}} -> timestamp end, :desc)
+      |> Enum.take(max_entries)
+      |> Enum.into(%{})
+
+    # Remove all entries for this process and add back the ones to keep
+    cache
+    |> Enum.reject(fn {{p, _}, _} -> p == pid end)
+    |> Enum.into(%{})
+    |> Map.merge(entries_to_keep)
+  end
+
+  defp handle_eviction(false, cache, _pid, _process_entries, _max_entries), do: cache
 
   defp schedule_cleanup do
     Process.send_after(self(), :cleanup, 60_000)

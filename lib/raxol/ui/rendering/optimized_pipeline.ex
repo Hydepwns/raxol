@@ -32,45 +32,49 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
 
   # Caching macro
   defmacro cached(name, opts, do: block) do
-    if opts[:ttl] == :infinity do
-      quote do
-        cache_key = {unquote(name), unquote(opts[:key])}
+    generate_cache_code(opts[:ttl], name, opts, block)
+  end
 
-        case Raxol.UI.State.Management.Server.get_cache(cache_key) do
-          {result, _timestamp} ->
-            result
+  defp generate_cache_code(:infinity, name, opts, block) do
+    quote do
+      cache_key = {unquote(name), unquote(opts[:key])}
 
-          _ ->
-            result = unquote(block)
+      case Raxol.UI.State.Management.Server.get_cache(cache_key) do
+        {result, _timestamp} ->
+          result
 
-            Raxol.UI.State.Management.Server.set_cache(
-              cache_key,
-              {result, System.monotonic_time(:millisecond)}
-            )
+        _ ->
+          result = unquote(block)
 
-            result
-        end
+          Raxol.UI.State.Management.Server.set_cache(
+            cache_key,
+            {result, System.monotonic_time(:millisecond)}
+          )
+
+          result
       end
-    else
-      quote do
-        cache_key = {unquote(name), unquote(opts[:key])}
-        ttl = unquote(opts[:ttl])
-        current_time = System.monotonic_time(:millisecond)
+    end
+  end
 
-        case Raxol.UI.State.Management.Server.get_cache(cache_key) do
-          {result, timestamp} when current_time - timestamp < ttl ->
-            result
+  defp generate_cache_code(_ttl, name, opts, block) do
+    quote do
+      cache_key = {unquote(name), unquote(opts[:key])}
+      ttl = unquote(opts[:ttl])
+      current_time = System.monotonic_time(:millisecond)
 
-          _ ->
-            result = unquote(block)
+      case Raxol.UI.State.Management.Server.get_cache(cache_key) do
+        {result, timestamp} when current_time - timestamp < ttl ->
+          result
 
-            Raxol.UI.State.Management.Server.set_cache(
-              cache_key,
-              {result, current_time}
-            )
+        _ ->
+          result = unquote(block)
 
-            result
-        end
+          Raxol.UI.State.Management.Server.set_cache(
+            cache_key,
+            {result, current_time}
+          )
+
+          result
       end
     end
   end
@@ -159,12 +163,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
     new_queue = :queue.in({tree, timestamp}, state.render_queue)
 
     # Mark dirty regions based on quick diff
-    dirty_regions =
-      if state.current_tree do
-        calculate_dirty_regions(state.current_tree, tree)
-      else
-        [:full_screen]
-      end
+    dirty_regions = determine_dirty_regions(state.current_tree, tree)
 
     {:noreply,
      %{
@@ -185,11 +184,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
       Map.put(
         state.stats,
         :avg_frame_time,
-        if state.stats.total_frames > 0 do
-          state.stats.total_time / state.stats.total_frames
-        else
-          0
-        end
+        calculate_average_frame_time(state.stats)
       )
 
     {:reply, stats, state}
@@ -201,15 +196,11 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
 
     # Check if we should skip this frame
     new_state =
-      if should_skip_frame?(state, start_time) do
-        %{state | skip_counter: state.skip_counter + 1}
-      else
-        # Execute optimized render
-        state
-        |> coalesce_updates()
-        |> execute_render(:scheduled)
-        |> update_stats(start_time)
-      end
+      process_frame_tick(
+        should_skip_frame?(state, start_time),
+        state,
+        start_time
+      )
 
     # Schedule next tick
     schedule_render_tick()
@@ -273,27 +264,35 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   end
 
   defp execute_render(state, render_type) do
-    if state.current_tree && state.current_tree != state.previous_tree do
-      profile :optimized_render, metadata: %{type: render_type} do
-        # Use dirty regions to minimize work
-        case state.dirty_regions do
-          [:full_screen] ->
-            render_full_screen(state)
+    execute_render_if_needed(
+      state.current_tree && state.current_tree != state.previous_tree,
+      state,
+      render_type
+    )
+  end
 
-          regions when is_list(regions) ->
-            render_dirty_regions(state, regions)
-        end
+  defp execute_render_if_needed(false, state, _render_type) do
+    state
+  end
+
+  defp execute_render_if_needed(true, state, render_type) do
+    profile :optimized_render, metadata: %{type: render_type} do
+      # Use dirty regions to minimize work
+      case state.dirty_regions do
+        [:full_screen] ->
+          render_full_screen(state)
+
+        regions when is_list(regions) ->
+          render_dirty_regions(state, regions)
       end
-
-      %{
-        state
-        | dirty_regions: [],
-          skip_counter: 0,
-          last_frame_time: System.monotonic_time(:millisecond)
-      }
-    else
-      state
     end
+
+    %{
+      state
+      | dirty_regions: [],
+        skip_counter: 0,
+        last_frame_time: System.monotonic_time(:millisecond)
+    }
   end
 
   defp render_full_screen(state) do
@@ -348,12 +347,13 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   defp merge_dirty_regions(existing, new) do
     # Optimize by merging overlapping regions
     all_regions = existing ++ new
+    merge_regions_by_content(all_regions)
+  end
 
-    if :full_screen in all_regions do
-      [:full_screen]
-    else
-      # Simple deduplication for now
-      Enum.uniq(all_regions)
+  defp merge_regions_by_content(all_regions) do
+    case :full_screen in all_regions do
+      true -> [:full_screen]
+      false -> Enum.uniq(all_regions)
     end
   end
 
@@ -388,9 +388,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
     }
 
     # Log if frame took too long
-    if frame_time > state.frame_budget_ms * 1.5 do
-      Logger.warning("[Render] Slow frame: #{frame_time}ms")
-    end
+    log_slow_frame(frame_time, state.frame_budget_ms)
 
     %{state | stats: new_stats}
   end
@@ -437,4 +435,38 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
       fragment_shader: "compiled_fragment_shader"
     }
   end
+
+  # Helper functions for refactored if statements
+
+  defp determine_dirty_regions(nil, _tree) do
+    [:full_screen]
+  end
+
+  defp determine_dirty_regions(current_tree, tree) do
+    calculate_dirty_regions(current_tree, tree)
+  end
+
+  defp calculate_average_frame_time(%{total_frames: 0}), do: 0
+
+  defp calculate_average_frame_time(%{total_frames: frames, total_time: time}),
+    do: time / frames
+
+  defp process_frame_tick(true, state, _start_time) do
+    %{state | skip_counter: state.skip_counter + 1}
+  end
+
+  defp process_frame_tick(false, state, start_time) do
+    # Execute optimized render
+    state
+    |> coalesce_updates()
+    |> execute_render(:scheduled)
+    |> update_stats(start_time)
+  end
+
+  defp log_slow_frame(frame_time, budget_ms)
+       when frame_time > budget_ms * 1.5 do
+    Logger.warning("[Render] Slow frame: #{frame_time}ms")
+  end
+
+  defp log_slow_frame(_frame_time, _budget_ms), do: :ok
 end

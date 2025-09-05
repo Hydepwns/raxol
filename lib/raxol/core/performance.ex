@@ -144,20 +144,22 @@ defmodule Raxol.Core.Performance do
 
   defp safe_get_collector_metrics do
     with {:ok, collector} <- safe_get_collector() do
-      if collector do
-        metrics = %{
-          fps: safe_get_fps(collector),
-          avg_frame_time: safe_get_avg_frame_time(collector)
-        }
-
-        {:ok, metrics}
-      else
-        {:ok, %{}}
-      end
+      extract_collector_metrics(collector)
     else
       # Return empty metrics on error
       _ -> {:ok, %{}}
     end
+  end
+
+  defp extract_collector_metrics(nil), do: {:ok, %{}}
+
+  defp extract_collector_metrics(collector) do
+    metrics = %{
+      fps: safe_get_fps(collector),
+      avg_frame_time: safe_get_avg_frame_time(collector)
+    }
+
+    {:ok, metrics}
   end
 
   defp safe_get_collector do

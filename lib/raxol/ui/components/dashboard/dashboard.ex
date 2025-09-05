@@ -74,31 +74,10 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
 
     # If we have loaded widgets, use them - otherwise use defaults
     # Check if loaded_widgets is a non-empty list
-    widgets =
-      if is_list(loaded_widgets) && loaded_widgets != [] do
-        Raxol.Core.Runtime.Log.info(
-          "Initializing dashboard from saved layout with #{length(loaded_widgets)} widgets"
-        )
-
-        loaded_widgets
-      else
-        Raxol.Core.Runtime.Log.info(
-          "No saved layout found, initializing dashboard with #{length(default_widgets)} default widgets"
-        )
-
-        default_widgets
-      end
+    widgets = select_widgets(loaded_widgets, default_widgets)
 
     # Verify widgets are valid before initializing
-    if validate_widgets(widgets) do
-      {:ok, %Model{widgets: widgets, grid_config: grid_config}}
-    else
-      Raxol.Core.Runtime.Log.error(
-        "Invalid widget configurations in saved layout, using defaults"
-      )
-
-      {:ok, %Model{widgets: default_widgets, grid_config: grid_config}}
-    end
+    create_model_with_validation(validate_widgets(widgets), widgets, default_widgets, grid_config)
   end
 
   @spec validate_widgets(list() | nil) :: boolean()
@@ -130,6 +109,56 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
   def validate_widgets([]), do: true
   # Handle nil case
   def validate_widgets(nil), do: false
+
+  defp select_widgets(loaded_widgets, default_widgets) when is_list(loaded_widgets) and loaded_widgets != [] do
+    Raxol.Core.Runtime.Log.info(
+      "Initializing dashboard from saved layout with #{length(loaded_widgets)} widgets"
+    )
+
+    loaded_widgets
+  end
+
+  defp select_widgets(_loaded_widgets, default_widgets) do
+    Raxol.Core.Runtime.Log.info(
+      "No saved layout found, initializing dashboard with #{length(default_widgets)} default widgets"
+    )
+
+    default_widgets
+  end
+
+  defp create_model_with_validation(true, widgets, _default_widgets, grid_config) do
+    {:ok, %Model{widgets: widgets, grid_config: grid_config}}
+  end
+
+  defp create_model_with_validation(false, _widgets, default_widgets, grid_config) do
+    Raxol.Core.Runtime.Log.error(
+      "Invalid widget configurations in saved layout, using defaults"
+    )
+
+    {:ok, %Model{widgets: default_widgets, grid_config: grid_config}}
+  end
+
+  defp render_widget_with_module(nil, _widget_state, widget_id) do
+    # Error case: widget state doesn't specify its module
+    UI.box title: "Error" do
+      UI.label(
+        content: "Error: Module missing for widget #{widget_id}"
+      )
+    end
+  end
+
+  defp render_widget_with_module(widget_module, widget_state, widget_id) do
+    # Place the widget in its container (placeholder for grid_item)
+    UI.box title:
+             Map.get(widget_state, :title, "Widget #{widget_id}"),
+           border: :rounded,
+           # Add some margin for spacing
+           style: %{margin: 1} do
+      # Recursively render the child widget
+      # Passing down relevant props or an empty map if none needed
+      widget_module.render(widget_state, %{})
+    end
+  end
 
   @spec update(term(), Model.t()) :: {Model.t(), list()}
   @impl Raxol.UI.Components.Base.Component
@@ -203,25 +232,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
             # Need module to call render
             widget_module = Map.get(widget_state, :module)
 
-            if widget_module do
-              # Place the widget in its container (placeholder for grid_item)
-              UI.box title:
-                       Map.get(widget_state, :title, "Widget #{widget_id}"),
-                     border: :rounded,
-                     # Add some margin for spacing
-                     style: %{margin: 1} do
-                # Recursively render the child widget
-                # Passing down relevant props or an empty map if none needed
-                widget_module.render(widget_state, %{})
-              end
-            else
-              # Error case: widget state doesn't specify its module
-              UI.box title: "Error" do
-                UI.label(
-                  content: "Error: Module missing for widget #{widget_id}"
-                )
-              end
-            end
+            render_widget_with_module(widget_module, widget_state, widget_id)
 
           :error ->
             # Error case: widget ID from layout not found in widget state map

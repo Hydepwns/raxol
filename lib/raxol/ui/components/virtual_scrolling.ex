@@ -964,34 +964,11 @@ defmodule Raxol.UI.Components.VirtualScrolling do
 
   defp calculate_scroll_fps(frame_times) do
     recent_times = Enum.take(frame_times, 10)
-
-    if length(recent_times) >= 2 do
-      time_diff = List.first(recent_times) - List.last(recent_times)
-      frame_count = length(recent_times) - 1
-      1000.0 * frame_count / max(1, time_diff)
-    else
-      0.0
-    end
+    calculate_fps_from_times(recent_times)
   end
 
   defp update_performance_metrics(state) do
-    if state.performance_monitor.enabled do
-      now = System.monotonic_time(:millisecond)
-
-      new_frame_times = [
-        now | Enum.take(state.performance_monitor.frame_times, 20)
-      ]
-
-      new_monitor = %{
-        state.performance_monitor
-        | frame_times: new_frame_times,
-          render_count: state.performance_monitor.render_count + 1
-      }
-
-      %{state | performance_monitor: new_monitor}
-    else
-      state
-    end
+    execute_performance_update(state.performance_monitor.enabled, state)
   end
 
   ## Handle async messages
@@ -1008,11 +985,7 @@ defmodule Raxol.UI.Components.VirtualScrolling do
 
     # Measure heights if variable height mode
     updated_state =
-      if state.config.item_height == :variable do
-        measure_and_cache_heights(state, indices, items)
-      else
-        state
-      end
+      handle_height_measurement(state.config.item_height, state, indices, items)
 
     new_item_cache = %{
       updated_state.item_cache
@@ -1085,23 +1058,64 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   defp default_height_measurer(_item, _index), do: 50
 
   defp measure_and_cache_heights(state, indices, items) do
-    if state.height_cache.cache_enabled do
-      measurements =
-        Enum.zip(indices, items)
-        |> Enum.map(fn {index, item} ->
-          height = state.height_cache.measure_callback.(item, index)
-          {index, height}
-        end)
-        |> Map.new()
+    perform_height_caching(
+      state.height_cache.cache_enabled,
+      state,
+      indices,
+      items
+    )
+  end
 
-      new_measured = Map.merge(state.height_cache.measured, measurements)
-      new_height_cache = %{state.height_cache | measured: new_measured}
+  # Helper functions for if-statement elimination
+  defp calculate_fps_from_times(recent_times) when length(recent_times) >= 2 do
+    time_diff = List.first(recent_times) - List.last(recent_times)
+    frame_count = length(recent_times) - 1
+    1000.0 * frame_count / max(1, time_diff)
+  end
 
-      %{state | height_cache: new_height_cache}
-      |> recalculate_total_height()
-    else
-      state
-    end
+  defp calculate_fps_from_times(_recent_times), do: 0.0
+
+  defp execute_performance_update(false, state), do: state
+
+  defp execute_performance_update(true, state) do
+    now = System.monotonic_time(:millisecond)
+
+    new_frame_times = [
+      now | Enum.take(state.performance_monitor.frame_times, 20)
+    ]
+
+    new_monitor = %{
+      state.performance_monitor
+      | frame_times: new_frame_times,
+        render_count: state.performance_monitor.render_count + 1
+    }
+
+    %{state | performance_monitor: new_monitor}
+  end
+
+  defp handle_height_measurement(:variable, state, indices, items) do
+    measure_and_cache_heights(state, indices, items)
+  end
+
+  defp handle_height_measurement(_height_mode, state, _indices, _items),
+    do: state
+
+  defp perform_height_caching(false, state, _indices, _items), do: state
+
+  defp perform_height_caching(true, state, indices, items) do
+    measurements =
+      Enum.zip(indices, items)
+      |> Enum.map(fn {index, item} ->
+        height = state.height_cache.measure_callback.(item, index)
+        {index, height}
+      end)
+      |> Map.new()
+
+    new_measured = Map.merge(state.height_cache.measured, measurements)
+    new_height_cache = %{state.height_cache | measured: new_measured}
+
+    %{state | height_cache: new_height_cache}
+    |> recalculate_total_height()
   end
 
   defp handle_scroll_event(scroll_data) do

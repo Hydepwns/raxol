@@ -81,47 +81,55 @@ defmodule Raxol.Terminal.Driver do
     }
 
     # Initialize terminal in raw mode only if attached to a TTY
-    if Mix.env() != :test do
-      if real_tty?() do
+    case {Mix.env(), real_tty?(), dispatcher_pid} do
+      {:test, _, nil} ->
+        Raxol.Core.Runtime.Log.info(
+          "[Driver] Test environment detected, sending driver_ready event"
+        )
+
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[Driver] No dispatcher_pid provided, skipping driver_ready and initial resize event",
+          %{}
+        )
+
+        state = %{state | termbox_state: :initialized}
+        {:ok, state}
+
+      {:test, _, pid} ->
+        Raxol.Core.Runtime.Log.info(
+          "[Driver] Test environment detected, sending driver_ready event"
+        )
+
+        send(pid, {:driver_ready, self()})
+
+        Raxol.Core.Runtime.Log.info(
+          "[Driver] Sending initial resize event to dispatcher_pid: #{inspect(pid)}"
+        )
+
+        send_initial_resize_event(pid)
+        state = %{state | termbox_state: :initialized}
+        {:ok, state}
+
+      {_, true, _} ->
         Raxol.Core.Runtime.Log.debug(
           "[TerminalDriver] TTY detected, calling Termbox2Nif.tb_init()..."
         )
 
         _ =
-          if @termbox2_available,
-            do: apply(:termbox2_nif, :tb_init, []),
-            else: :ok
-      else
+          case @termbox2_available do
+            true -> apply(:termbox2_nif, :tb_init, [])
+            false -> :ok
+          end
+
+        {:ok, state}
+
+      {_, false, _} ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "Not attached to a TTY. Skipping Termbox2Nif.tb_init(). Terminal features will be disabled.",
           %{}
         )
-      end
 
-      {:ok, state}
-    else
-      Raxol.Core.Runtime.Log.info(
-        "[Driver] Test environment detected, sending driver_ready event"
-      )
-
-      if dispatcher_pid do
-        send(dispatcher_pid, {:driver_ready, self()})
-        # Send initial resize event for test environment
-        Raxol.Core.Runtime.Log.info(
-          "[Driver] Sending initial resize event to dispatcher_pid: #{inspect(dispatcher_pid)}"
-        )
-
-        send_initial_resize_event(dispatcher_pid)
-      else
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[Driver] No dispatcher_pid provided, skipping driver_ready and initial resize event",
-          %{}
-        )
-      end
-
-      # In test mode, set termbox_state to :initialized so we can handle test events
-      state = %{state | termbox_state: :initialized}
-      {:ok, state}
+        {:ok, state}
     end
   end
 
@@ -163,16 +171,9 @@ defmodule Raxol.Terminal.Driver do
     case translate_termbox_event(event_map) do
       {:ok, %Event{} = event} ->
         # Only send if dispatcher_pid is known
-        if dispatcher_pid do
-          if Mix.env() == :test do
-            Raxol.Core.Runtime.Log.debug(
-              "[Driver] Sending event in test mode: #{inspect(event)} to #{inspect(dispatcher_pid)}"
-            )
-
-            send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
-          else
-            GenServer.cast(dispatcher_pid, {:dispatch, event})
-          end
+        case dispatcher_pid do
+          nil -> :ok
+          pid -> send_event_to_dispatcher(pid, event)
         end
 
         {:noreply, state}
@@ -267,9 +268,7 @@ defmodule Raxol.Terminal.Driver do
   end
 
   defp handle_termbox_recovery(reason, state) do
-    case if @termbox2_available,
-           do: apply(:termbox2_nif, :tb_shutdown, []),
-           else: :ok do
+    case terminate_termbox() do
       :ok ->
         case initialize_termbox() do
           :ok ->
@@ -295,13 +294,19 @@ defmodule Raxol.Terminal.Driver do
   def terminate(_reason, %{termbox_state: :initialized} = _state) do
     Raxol.Core.Runtime.Log.info("Terminal Driver terminating.")
     # Only attempt shutdown if not in test environment
-    if Mix.env() != :test do
-      if real_tty?() do
+    case {Mix.env(), real_tty?()} do
+      {:test, _} ->
+        :ok
+
+      {_, false} ->
+        :ok
+
+      {_, true} ->
         _ =
-          if @termbox2_available,
-            do: apply(:termbox2_nif, :tb_shutdown, []),
-            else: :ok
-      end
+          case @termbox2_available do
+            true -> apply(:termbox2_nif, :tb_shutdown, [])
+            false -> :ok
+          end
     end
 
     :ok
@@ -319,11 +324,19 @@ defmodule Raxol.Terminal.Driver do
   Processes a terminal title change event.
   """
   def process_title_change(title, state) when is_binary(title) do
-    if Mix.env() != :test and real_tty?() do
-      _ =
-        if @termbox2_available,
-          do: apply(:termbox2_nif, :tb_set_title, [title]),
-          else: :ok
+    case {Mix.env(), real_tty?()} do
+      {:test, _} ->
+        :ok
+
+      {_, false} ->
+        :ok
+
+      {_, true} ->
+        _ =
+          case @termbox2_available do
+            true -> apply(:termbox2_nif, :tb_set_title, [title])
+            false -> :ok
+          end
     end
 
     {:noreply, state}
@@ -334,11 +347,19 @@ defmodule Raxol.Terminal.Driver do
   """
   def process_position_change(x, y, state)
       when is_integer(x) and is_integer(y) do
-    if Mix.env() != :test and real_tty?() do
-      _ =
-        if @termbox2_available,
-          do: apply(:termbox2_nif, :tb_set_position, [x, y]),
-          else: :ok
+    case {Mix.env(), real_tty?()} do
+      {:test, _} ->
+        :ok
+
+      {_, false} ->
+        :ok
+
+      {_, true} ->
+        _ =
+          case @termbox2_available do
+            true -> apply(:termbox2_nif, :tb_set_position, [x, y])
+            false -> :ok
+          end
     end
 
     {:noreply, state}
@@ -346,8 +367,103 @@ defmodule Raxol.Terminal.Driver do
 
   # --- Private Helpers ---
 
+  defp init_test_environment(state, dispatcher_pid) do
+    Raxol.Core.Runtime.Log.info(
+      "[Driver] Test environment detected, sending driver_ready event"
+    )
+
+    case dispatcher_pid do
+      nil ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[Driver] No dispatcher_pid provided, skipping driver_ready and initial resize event",
+          %{}
+        )
+
+      pid ->
+        send(pid, {:driver_ready, self()})
+        # Send initial resize event for test environment
+        Raxol.Core.Runtime.Log.info(
+          "[Driver] Sending initial resize event to dispatcher_pid: #{inspect(pid)}"
+        )
+
+        send_initial_resize_event(pid)
+    end
+
+    # In test mode, set termbox_state to :initialized so we can handle test events
+    state = %{state | termbox_state: :initialized}
+    {:ok, state}
+  end
+
+  defp init_production_environment(state) do
+    case real_tty?() do
+      true ->
+        Raxol.Core.Runtime.Log.debug(
+          "[TerminalDriver] TTY detected, calling Termbox2Nif.tb_init()..."
+        )
+
+        _ = call_termbox_init()
+
+      false ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Not attached to a TTY. Skipping Termbox2Nif.tb_init(). Terminal features will be disabled.",
+          %{}
+        )
+    end
+
+    {:ok, state}
+  end
+
+  defp send_event_to_dispatcher(dispatcher_pid, event) do
+    case Mix.env() do
+      :test ->
+        Raxol.Core.Runtime.Log.debug(
+          "[Driver] Sending event in test mode: #{inspect(event)} to #{inspect(dispatcher_pid)}"
+        )
+
+        send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
+
+      _ ->
+        GenServer.cast(dispatcher_pid, {:dispatch, event})
+    end
+  end
+
+  defp call_termbox_init do
+    case @termbox2_available do
+      true -> apply(:termbox2_nif, :tb_init, [])
+      false -> 0
+    end
+  end
+
+  defp terminate_termbox do
+    case @termbox2_available do
+      true -> apply(:termbox2_nif, :tb_shutdown, [])
+      false -> :ok
+    end
+  end
+
+  defp apply_termbox_function(function, args) do
+    case @termbox2_available do
+      true -> apply(:termbox2_nif, function, args)
+      false -> :ok
+    end
+  end
+
+  defp get_termbox_width do
+    case @termbox2_available do
+      true -> apply(:termbox2_nif, :tb_width, [])
+      false -> 80
+    end
+  end
+
+  defp get_termbox_height do
+    case @termbox2_available do
+      true -> apply(:termbox2_nif, :tb_height, [])
+      false -> 24
+    end
+  end
+
   defp initialize_termbox do
-    case if @termbox2_available, do: apply(:termbox2_nif, :tb_init, []), else: 0 do
+    case call_termbox_init() do
       0 -> :ok
       -1 -> {:error, :init_failed}
       other -> {:error, {:unexpected_result, other}}
@@ -359,33 +475,21 @@ defmodule Raxol.Terminal.Driver do
   end
 
   defp determine_terminal_size do
-    if Mix.env() == :test do
-      {:ok, 80, 24}
-    else
-      if real_tty?() do
-        get_termbox_size()
-      else
-        stty_size_fallback()
-      end
+    case {Mix.env(), real_tty?()} do
+      {:test, _} -> {:ok, 80, 24}
+      {_, true} -> get_termbox_size()
+      {_, false} -> stty_size_fallback()
     end
   end
 
   defp get_termbox_size do
     Raxol.Core.ErrorHandling.safe_call(fn ->
-      width =
-        if @termbox2_available,
-          do: apply(:termbox2_nif, :tb_width, []),
-          else: 80
+      width = get_termbox_width()
+      height = get_termbox_height()
 
-      height =
-        if @termbox2_available,
-          do: apply(:termbox2_nif, :tb_height, []),
-          else: 24
-
-      if width > 0 and height > 0 do
-        {:ok, width, height}
-      else
-        stty_size_fallback()
+      case {width > 0, height > 0} do
+        {true, true} -> {:ok, width, height}
+        _ -> stty_size_fallback()
       end
     end)
     |> case do
@@ -412,14 +516,16 @@ defmodule Raxol.Terminal.Driver do
     event = %Event{type: :resize, data: %{width: width, height: height}}
 
     # In test mode, send directly to the test process
-    if Mix.env() == :test do
-      Raxol.Core.Runtime.Log.info(
-        "[Driver] Sending resize event in test mode: #{inspect(event)}"
-      )
+    case Mix.env() do
+      :test ->
+        Raxol.Core.Runtime.Log.info(
+          "[Driver] Sending resize event in test mode: #{inspect(event)}"
+        )
 
-      send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
-    else
-      GenServer.cast(dispatcher_pid, {:dispatch, event})
+        send(dispatcher_pid, {:"$gen_cast", {:dispatch, event}})
+
+      _ ->
+        GenServer.cast(dispatcher_pid, {:dispatch, event})
     end
   end
 

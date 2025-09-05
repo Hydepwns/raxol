@@ -530,10 +530,7 @@ defmodule Raxol.Playground.Examples do
   defp run_step_by_step_example(example, steps) do
     # Select the initial component
     Raxol.Playground.select_component(example.component_id)
-
-    if Map.has_key?(example, :initial_props) do
-      Raxol.Playground.update_props(example.initial_props)
-    end
+    setup_initial_props(Map.has_key?(example, :initial_props), example)
 
     Enum.with_index(steps, 1)
     |> Enum.each(fn {step, index} ->
@@ -558,9 +555,7 @@ defmodule Raxol.Playground.Examples do
           :ok
       end
 
-      if step.action != :complete do
-        IO.gets("\nPress Enter to continue...")
-      end
+      handle_step_continuation(step.action != :complete)
     end)
   end
 
@@ -579,9 +574,7 @@ defmodule Raxol.Playground.Examples do
       {:ok, preview} = Raxol.Playground.get_preview()
       IO.puts("\n#{preview}")
 
-      if index < length(sequence) do
-        IO.gets("\nPress Enter to continue...")
-      end
+      handle_sequence_continuation(index < length(sequence))
     end)
 
     IO.puts("\n#{IO.ANSI.green()}✨ Sequence completed!#{IO.ANSI.reset()}")
@@ -613,17 +606,37 @@ defmodule Raxol.Playground.Examples do
   end
 
   defp run_simple_example(example) do
-    if Map.has_key?(example, :component_id) do
-      Raxol.Playground.select_component(example.component_id)
-
-      if Map.has_key?(example, :initial_props) do
-        Raxol.Playground.update_props(example.initial_props)
-      end
-
-      {:ok, preview} = Raxol.Playground.get_preview()
-      IO.puts("\n#{preview}")
-    end
-
+    setup_simple_component(Map.has_key?(example, :component_id), example)
     IO.puts("\n#{IO.ANSI.green()}✨ Example completed!#{IO.ANSI.reset()}")
+  end
+
+  # Helper functions for if statement elimination
+
+  defp setup_initial_props(false, _example), do: :ok
+
+  defp setup_initial_props(true, example) do
+    Raxol.Playground.update_props(example.initial_props)
+  end
+
+  defp handle_step_continuation(false), do: :ok
+
+  defp handle_step_continuation(true) do
+    IO.puts("\nPress Enter to continue...")
+    IO.gets("")
+  end
+
+  defp handle_sequence_continuation(false), do: :ok
+
+  defp handle_sequence_continuation(true) do
+    IO.puts("\nPress Enter for next component...")
+    IO.gets("")
+  end
+
+  defp setup_simple_component(false, _example), do: :ok
+
+  defp setup_simple_component(true, example) do
+    Raxol.Playground.select_component(example.component_id)
+    {:ok, preview} = Raxol.Playground.get_preview()
+    IO.puts("\n#{preview}")
   end
 end

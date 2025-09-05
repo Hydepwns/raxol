@@ -58,37 +58,50 @@ defmodule Raxol.Style.Colors.PaletteManager do
   end
 
   defp calculate_hue_and_saturation(r, g, b, max_val, min_val, delta, l) do
-    if delta == 0 do
-      {0, 0}
-    else
-      s = calculate_saturation(delta, max_val, min_val, l)
-      h = calculate_hue(r, g, b, max_val, delta)
-      {h, s}
-    end
+    handle_delta_calculation(delta, r, g, b, max_val, min_val, l)
+  end
+
+  defp handle_delta_calculation(0, _r, _g, _b, _max_val, _min_val, _l) do
+    {0, 0}
+  end
+
+  defp handle_delta_calculation(delta, r, g, b, max_val, min_val, l) do
+    s = calculate_saturation(delta, max_val, min_val, l)
+    h = calculate_hue(r, g, b, max_val, delta)
+    {h, s}
   end
 
   defp calculate_saturation(delta, max_val, min_val, l) do
-    if l > 0.5,
-      do: delta / (2 - max_val - min_val),
-      else: delta / (max_val + min_val)
+    saturation_by_lightness(l > 0.5, delta, max_val, min_val)
+  end
+
+  defp saturation_by_lightness(true, delta, max_val, min_val) do
+    delta / (2 - max_val - min_val)
+  end
+
+  defp saturation_by_lightness(false, delta, max_val, min_val) do
+    delta / (max_val + min_val)
   end
 
   # Helper functions for pattern matching refactoring
 
   defp calculate_hue(r, g, b, max_val, delta) when max_val == r do
     h = (g - b) / delta * 60
-    if h < 0, do: h + 360, else: h
+    normalize_hue(h)
   end
 
   defp calculate_hue(r, g, b, max_val, delta) when max_val == g do
     h = ((b - r) / delta + 2) * 60
-    if h < 0, do: h + 360, else: h
+    normalize_hue(h)
   end
 
   defp calculate_hue(r, g, b, max_val, delta) when max_val == b do
     h = ((r - g) / delta + 4) * 60
-    if h < 0, do: h + 360, else: h
+    normalize_hue(h)
   end
+
+  defp normalize_hue(h) when h < 0, do: h + 360
+  defp normalize_hue(h), do: h
 
   defp hsl_to_hex(h, s, l) do
     {r, g, b} = hsl_to_rgb(h, s, l)
@@ -134,13 +147,15 @@ defmodule Raxol.Style.Colors.PaletteManager do
     min_contrast = 3.0
 
     Enum.map(colors, fn color ->
-      if has_sufficient_contrast(color, dark_bg, min_contrast) do
-        color
-      else
-        # Adjust color to meet contrast requirements
-        adjust_for_contrast(color, dark_bg, min_contrast)
-      end
+      ensure_color_contrast(color, dark_bg, min_contrast)
     end)
+  end
+
+  defp ensure_color_contrast(color, background, min_contrast) do
+    case has_sufficient_contrast(color, background, min_contrast) do
+      true -> color
+      false -> adjust_for_contrast(color, background, min_contrast)
+    end
   end
 
   defp has_sufficient_contrast(color, background, min_ratio) do
@@ -164,15 +179,46 @@ defmodule Raxol.Style.Colors.PaletteManager do
          min_ratio,
          attempts \\ 0
        ) do
-    if attempts >= 20 do
-      # Fallback to a safe color if we can't achieve contrast
-      0.8
-    else
-      test_color = hsl_to_hex(h, s, l)
+    handle_lightness_adjustment(
+      attempts >= 20,
+      h,
+      s,
+      l,
+      background,
+      min_ratio,
+      attempts
+    )
+  end
 
-      if has_sufficient_contrast(test_color, background, min_ratio) do
+  defp handle_lightness_adjustment(
+         true,
+         _h,
+         _s,
+         _l,
+         _background,
+         _min_ratio,
+         _attempts
+       ) do
+    # Fallback to a safe color if we can't achieve contrast
+    0.8
+  end
+
+  defp handle_lightness_adjustment(
+         false,
+         h,
+         s,
+         l,
+         background,
+         min_ratio,
+         attempts
+       ) do
+    test_color = hsl_to_hex(h, s, l)
+
+    case has_sufficient_contrast(test_color, background, min_ratio) do
+      true ->
         l
-      else
+
+      false ->
         # Increase lightness and try again
         new_l = min(0.95, l + 0.05)
 
@@ -184,7 +230,6 @@ defmodule Raxol.Style.Colors.PaletteManager do
           min_ratio,
           attempts + 1
         )
-      end
     end
   end
 end

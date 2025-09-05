@@ -107,19 +107,36 @@ defmodule Raxol.Style.Colors.Utilities do
     required_ratio = get_required_ratio(level, size)
     current_ratio = contrast_ratio(color, background)
 
-    if current_ratio >= required_ratio do
-      color
-    else
-      # Determine if we need to lighten or darken
-      color_luminance = relative_luminance(color)
-      bg_luminance = relative_luminance(background)
+    adjust_color_based_on_ratio(
+      current_ratio >= required_ratio,
+      color,
+      background,
+      required_ratio
+    )
+  end
 
-      if color_luminance > bg_luminance do
-        darken_until_contrast(color, background, required_ratio)
-      else
-        lighten_until_contrast(color, background, required_ratio)
-      end
-    end
+  defp adjust_color_based_on_ratio(true, color, _background, _required_ratio),
+    do: color
+
+  defp adjust_color_based_on_ratio(false, color, background, required_ratio) do
+    # Determine if we need to lighten or darken
+    color_luminance = relative_luminance(color)
+    bg_luminance = relative_luminance(background)
+
+    adjust_based_on_luminance(
+      color_luminance > bg_luminance,
+      color,
+      background,
+      required_ratio
+    )
+  end
+
+  defp adjust_based_on_luminance(true, color, background, required_ratio) do
+    darken_until_contrast(color, background, required_ratio)
+  end
+
+  defp adjust_based_on_luminance(false, color, background, required_ratio) do
+    lighten_until_contrast(color, background, required_ratio)
   end
 
   @doc """
@@ -140,11 +157,14 @@ defmodule Raxol.Style.Colors.Utilities do
 
   def increase_contrast({r, g, b}) do
     {
-      if(r > 127, do: 255, else: 0),
-      if(g > 127, do: 255, else: 0),
-      if(b > 127, do: 255, else: 0)
+      contrast_value(r),
+      contrast_value(g),
+      contrast_value(b)
     }
   end
+
+  defp contrast_value(v) when v > 127, do: 255
+  defp contrast_value(_v), do: 0
 
   @doc """
   Checks if two colors have sufficient contrast according to WCAG guidelines.
@@ -160,11 +180,13 @@ defmodule Raxol.Style.Colors.Utilities do
         {:aa, :large} -> 3.0
       end
 
-    if ratio >= min_ratio do
-      {:ok, ratio}
-    else
-      {:error, {:contrast_too_low, ratio, min_ratio}}
-    end
+    validate_contrast_ratio(ratio >= min_ratio, ratio, min_ratio)
+  end
+
+  defp validate_contrast_ratio(true, ratio, _min_ratio), do: {:ok, ratio}
+
+  defp validate_contrast_ratio(false, ratio, min_ratio) do
+    {:error, {:contrast_too_low, ratio, min_ratio}}
   end
 
   @doc """
@@ -205,17 +227,7 @@ defmodule Raxol.Style.Colors.Utilities do
     min = Enum.min([r, g, b])
     l = (max + min) / 2
 
-    {h, s} =
-      if max == min do
-        {0, 0}
-      else
-        d = max - min
-        s = if l > 0.5, do: d / (2 - max - min), else: d / (max + min)
-
-        h = calculate_hue(r, g, b, max, d) * 60
-
-        {h, s}
-      end
+    {h, s} = calculate_hue_and_saturation(max == min, r, g, b, max, min, l)
 
     {h, s, l}
   end
@@ -253,13 +265,21 @@ defmodule Raxol.Style.Colors.Utilities do
 
   # Private helpers
 
-  defp convert_to_linear(value) do
-    if value <= 0.03928 do
-      value / 12.92
-    else
-      :math.pow((value + 0.055) / 1.055, 2.4)
-    end
+  defp calculate_hue_and_saturation(true, _r, _g, _b, _max, _min, _l),
+    do: {0, 0}
+
+  defp calculate_hue_and_saturation(false, r, g, b, max, min, l) do
+    d = max - min
+    s = calculate_saturation(l > 0.5, d, max, min)
+    h = calculate_hue(r, g, b, max, d) * 60
+    {h, s}
   end
+
+  defp calculate_saturation(true, d, max, min), do: d / (2 - max - min)
+  defp calculate_saturation(false, d, max, min), do: d / (max + min)
+
+  defp convert_to_linear(value) when value <= 0.03928, do: value / 12.92
+  defp convert_to_linear(value), do: :math.pow((value + 0.055) / 1.055, 2.4)
 
   defp get_required_ratio(level, size) do
     # Normalize to lowercase atoms for robust matching
@@ -307,12 +327,29 @@ defmodule Raxol.Style.Colors.Utilities do
        ) do
     current_ratio = contrast_ratio(color, background)
 
-    if current_ratio >= required_ratio or iter >= 50 do
-      color
-    else
-      darker = darken_color(color, step)
-      darken_until_contrast(darker, background, required_ratio, step, iter + 1)
-    end
+    continue_darkening(
+      current_ratio < required_ratio and iter < 50,
+      color,
+      background,
+      required_ratio,
+      step,
+      iter
+    )
+  end
+
+  defp continue_darkening(
+         false,
+         color,
+         _background,
+         _required_ratio,
+         _step,
+         _iter
+       ),
+       do: color
+
+  defp continue_darkening(true, color, background, required_ratio, step, iter) do
+    darker = darken_color(color, step)
+    darken_until_contrast(darker, background, required_ratio, step, iter + 1)
   end
 
   defp lighten_until_contrast(
@@ -324,19 +361,29 @@ defmodule Raxol.Style.Colors.Utilities do
        ) do
     current_ratio = contrast_ratio(color, background)
 
-    if current_ratio >= required_ratio or iter >= 50 do
-      color
-    else
-      lighter = lighten_color(color, step)
+    continue_lightening(
+      current_ratio < required_ratio and iter < 50,
+      color,
+      background,
+      required_ratio,
+      step,
+      iter
+    )
+  end
 
-      lighten_until_contrast(
-        lighter,
-        background,
-        required_ratio,
-        step,
-        iter + 1
-      )
-    end
+  defp continue_lightening(
+         false,
+         color,
+         _background,
+         _required_ratio,
+         _step,
+         _iter
+       ),
+       do: color
+
+  defp continue_lightening(true, color, background, required_ratio, step, iter) do
+    lighter = lighten_color(color, step)
+    lighten_until_contrast(lighter, background, required_ratio, step, iter + 1)
   end
 
   defp darken_color(%Color{} = color, factor) do
@@ -367,13 +414,25 @@ defmodule Raxol.Style.Colors.Utilities do
        when ratio_black >= min_ratio,
        do: black
 
-  defp select_best_contrast(ratio_white, ratio_black, _min_ratio, white, black) do
-    if ratio_white > ratio_black, do: white, else: black
-  end
+  defp select_best_contrast(ratio_white, ratio_black, _min_ratio, white, black)
+       when ratio_white > ratio_black,
+       do: white
+
+  defp select_best_contrast(
+         _ratio_white,
+         _ratio_black,
+         _min_ratio,
+         _white,
+         black
+       ),
+       do: black
 
   defp calculate_hue(r, g, b, max, d) when max == r do
-    (g - b) / d + if g < b, do: 6, else: 0
+    (g - b) / d + hue_adjustment(g < b)
   end
+
+  defp hue_adjustment(true), do: 6
+  defp hue_adjustment(false), do: 0
 
   defp calculate_hue(r, g, b, max, d) when max == g do
     (b - r) / d + 2

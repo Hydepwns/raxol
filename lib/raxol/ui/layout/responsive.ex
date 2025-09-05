@@ -307,17 +307,19 @@ defmodule Raxol.UI.Layout.Responsive do
   defp apply_container_queries(styles, attrs, space) do
     container_query = Map.get(attrs, :container_query, %{})
 
-    if container_query != %{} do
-      query_matches = evaluate_container_query(container_query, space)
-
-      if query_matches do
-        query_styles = Map.get(container_query, :styles, %{})
-        Map.merge(styles, query_styles)
-      else
+    case container_query do
+      %{} when container_query == %{} ->
         styles
-      end
-    else
-      styles
+
+      _ ->
+        case evaluate_container_query(container_query, space) do
+          true ->
+            query_styles = Map.get(container_query, :styles, %{})
+            Map.merge(styles, query_styles)
+
+          false ->
+            styles
+        end
     end
   end
 
@@ -431,53 +433,55 @@ defmodule Raxol.UI.Layout.Responsive do
     child_attrs = Map.get(child, :attrs, %{})
     responsive_attrs = Map.get(child_attrs, :responsive, %{})
 
-    if responsive_attrs != %{} do
-      # Get responsive styles for this breakpoint
-      current_responsive_styles =
-        get_breakpoint_value(responsive_attrs, breakpoint, %{})
+    case responsive_attrs do
+      %{} when responsive_attrs == %{} ->
+        child
 
-      # Apply responsive typography if font-related properties exist
-      final_attrs =
-        if Map.has_key?(current_responsive_styles, :font_size) or
-             Map.has_key?(child_attrs, :font_size) do
-          apply_responsive_typography(
-            Map.merge(child_attrs, current_responsive_styles),
-            breakpoint
-          )
-        else
-          Map.merge(child_attrs, current_responsive_styles)
-        end
+      _ ->
+        current_responsive_styles =
+          get_breakpoint_value(responsive_attrs, breakpoint, %{})
 
-      %{child | attrs: final_attrs}
-    else
-      child
+        final_attrs =
+          case Map.has_key?(current_responsive_styles, :font_size) or
+                 Map.has_key?(child_attrs, :font_size) do
+            true ->
+              apply_responsive_typography(
+                Map.merge(child_attrs, current_responsive_styles),
+                breakpoint
+              )
+
+            false ->
+              Map.merge(child_attrs, current_responsive_styles)
+          end
+
+        %{child | attrs: final_attrs}
     end
   end
 
   defp measure_responsive_children(children, space, current_breakpoint) do
-    if Enum.empty?(children) do
-      %{width: 0, height: 0}
-    else
-      # Apply responsiveness to children and measure
-      responsive_children =
-        Enum.map(children, fn child ->
-          apply_child_responsiveness(child, current_breakpoint)
-        end)
+    case children do
+      [] ->
+        %{width: 0, height: 0}
 
-      # Calculate total dimensions (simple column layout assumption)
-      total_height =
-        Enum.reduce(responsive_children, 0, fn child, acc ->
-          dims = Engine.measure_element(child, space)
-          acc + dims.height
-        end)
+      _ ->
+        responsive_children =
+          Enum.map(children, fn child ->
+            apply_child_responsiveness(child, current_breakpoint)
+          end)
 
-      max_width =
-        Enum.reduce(responsive_children, 0, fn child, acc ->
-          dims = Engine.measure_element(child, space)
-          max(acc, dims.width)
-        end)
+        total_height =
+          Enum.reduce(responsive_children, 0, fn child, acc ->
+            dims = Engine.measure_element(child, space)
+            acc + dims.height
+          end)
 
-      %{width: max_width, height: total_height}
+        max_width =
+          Enum.reduce(responsive_children, 0, fn child, acc ->
+            dims = Engine.measure_element(child, space)
+            max(acc, dims.width)
+          end)
+
+        %{width: max_width, height: total_height}
     end
   end
 

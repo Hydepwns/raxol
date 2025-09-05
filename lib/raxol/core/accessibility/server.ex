@@ -346,12 +346,7 @@ defmodule Raxol.Core.Accessibility.Server do
 
   @impl GenServer
   def handle_call({:get_announcement_history, limit}, _from, state) do
-    history =
-      if limit do
-        Enum.take(state.announcements.history, limit)
-      else
-        state.announcements.history
-      end
+    history = get_limited_history(state.announcements.history, limit)
 
     {:reply, history, state}
   end
@@ -381,23 +376,56 @@ defmodule Raxol.Core.Accessibility.Server do
   end
 
   @impl GenServer
-  def handle_cast({:handle_focus_change, old_focus, new_focus}, state) do
-    if state.enabled && state.preferences.screen_reader do
-      # Get metadata for the new focus
-      metadata = Map.get(state.metadata, new_focus, %{})
-
-      # Create announcement based on metadata
-      announcement = create_focus_announcement(new_focus, metadata)
-
-      # Announce the focus change
-      new_state = process_announcement(state, announcement, priority: :high)
-      {:noreply, new_state}
-    else
-      {:noreply, state}
-    end
+  def handle_cast({:handle_focus_change, _old_focus, new_focus}, state) do
+    handle_focus_change_with_state(state, new_focus)
   end
 
   # Private Helper Functions
+
+  defp get_limited_history(history, nil), do: history
+  defp get_limited_history(history, limit), do: Enum.take(history, limit)
+
+  defp handle_focus_change_with_state(state, new_focus) do
+    handle_focus_announcement(state.enabled && state.preferences.screen_reader, state, new_focus)
+  end
+
+  defp handle_focus_announcement(false, state, _new_focus), do: {:noreply, state}
+  defp handle_focus_announcement(true, state, new_focus) do
+    # Get metadata for the new focus
+    metadata = Map.get(state.metadata, new_focus, %{})
+
+    # Create announcement based on metadata
+    announcement = create_focus_announcement(new_focus, metadata)
+
+    # Announce the focus change
+    new_state = process_announcement(state, announcement, priority: :high)
+    {:noreply, new_state}
+  end
+
+  defp should_process_announcement?(state) do
+    state.enabled && state.preferences.screen_reader && !state.preferences.silence_announcements
+  end
+
+  defp handle_announcement_delivery(true, _queue, announcement, callback) do
+    # Immediate announcement when interrupt is true
+    deliver_announcement(announcement, callback)
+  end
+  defp handle_announcement_delivery(false, queue, announcement, callback) do
+    handle_queue_delivery(Enum.empty?(queue), queue, announcement, callback)
+  end
+
+  defp handle_queue_delivery(true, _queue, announcement, callback) do
+    # Immediate announcement when queue is empty
+    deliver_announcement(announcement, callback)
+  end
+  defp handle_queue_delivery(false, queue, announcement, callback) do
+    # Queue announcement based on priority
+    new_queue = insert_by_priority(queue, announcement)
+    process_queue(new_queue, callback)
+  end
+
+  defp call_callback_if_present(nil, _message), do: :ok
+  defp call_callback_if_present(callback, message), do: callback.(message)
 
   defp merge_preferences(current, options) do
     options_map = Enum.into(options, %{})
@@ -445,8 +473,8 @@ defmodule Raxol.Core.Accessibility.Server do
   end
 
   defp process_announcement(state, message, opts) do
-    if state.enabled && state.preferences.screen_reader &&
-         !state.preferences.silence_announcements do
+    case should_process_announcement?(state) do
+      true ->
       priority = Keyword.get(opts, :priority, :medium)
       interrupt = Keyword.get(opts, :interrupt, false)
 
@@ -462,14 +490,7 @@ defmodule Raxol.Core.Accessibility.Server do
       limited_history = Enum.take(new_history, state.announcements.max_history)
 
       # Process announcement
-      if interrupt || Enum.empty?(state.announcements.queue) do
-        # Immediate announcement
-        deliver_announcement(announcement, state.announcement_callback)
-      else
-        # Queue announcement based on priority
-        new_queue = insert_by_priority(state.announcements.queue, announcement)
-        process_queue(new_queue, state.announcement_callback)
-      end
+      handle_announcement_delivery(interrupt, state.announcements.queue, announcement, state.announcement_callback)
 
       new_announcements = %{
         state.announcements
@@ -477,29 +498,20 @@ defmodule Raxol.Core.Accessibility.Server do
       }
 
       %{state | announcements: new_announcements}
-    else
-      state
+      false ->
+        state
     end
   end
 
   defp deliver_announcement(announcement, callback) do
     # Call the callback if provided
-    if callback do
-      callback.(announcement.message)
-    end
+    call_callback_if_present(callback, announcement.message)
 
     # Dispatch event for other systems
     EventManager.dispatch({:screen_reader_announcement, announcement.message})
   end
 
   defp insert_by_priority(queue, announcement) do
-    priority_value =
-      case announcement.priority do
-        :high -> 1
-        :medium -> 2
-        :low -> 3
-      end
-
     Enum.sort_by([announcement | queue], fn a ->
       case a.priority do
         :high -> 1
@@ -531,12 +543,12 @@ defmodule Raxol.Core.Accessibility.Server do
     handle_focus_change(__MODULE__, old_focus, new_focus)
   end
 
-  def handle_preference_changed_event({:preference_changed, key, value}) do
+  def handle_preference_changed_event({:preference_changed, _key, _value}) do
     # Handle preference changes from other systems
     :ok
   end
 
-  def handle_theme_changed_event({:theme_changed, theme}) do
+  def handle_theme_changed_event({:theme_changed, _theme}) do
     # Handle theme changes that might affect accessibility
     :ok
   end

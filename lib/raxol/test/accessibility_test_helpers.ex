@@ -93,19 +93,12 @@ defmodule Raxol.AccessibilityTestHelpers do
     quote do
       announcements = Process.get(:accessibility_test_announcements, [])
 
-      if unquote(exact) do
-        if not Enum.member?(announcements, unquote(expected)) do
-          flunk(
-            "Expected screen reader announcement \"#{unquote(expected)}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{unquote(context)}"
-          )
-        end
-      else
-        validate_announcement_present(
-          announcements,
-          unquote(expected),
-          unquote(context)
-        )
-      end
+      validate_announcement_match(
+        unquote(exact),
+        announcements,
+        unquote(expected),
+        unquote(context)
+      )
     end
   end
 
@@ -128,11 +121,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     announcements = Process.get(:accessibility_test_announcements, [])
     context = Keyword.get(opts, :context, "")
 
-    if not Enum.empty?(announcements) do
-      flunk(
-        "Expected no screen reader announcements, but got: #{inspect(announcements)}\n#{context}"
-      )
-    end
+    validate_no_announcements_made(announcements, context)
   end
 
   @doc """
@@ -145,19 +134,12 @@ defmodule Raxol.AccessibilityTestHelpers do
     quote do
       announcements = Process.get(:accessibility_test_announcements, [])
 
-      if unquote(exact) do
-        if Enum.member?(announcements, unquote(expected)) do
-          flunk(
-            "Unexpected screen reader announcement \"#{unquote(expected)}\" was made.\nActual announcements: #{inspect(announcements)}\n#{unquote(context)}"
-          )
-        end
-      else
-        validate_announcement_absent(
-          announcements,
-          unquote(expected),
-          unquote(context)
-        )
-      end
+      validate_announcement_not_match(
+        unquote(exact),
+        announcements,
+        unquote(expected),
+        unquote(context)
+      )
     end
   end
 
@@ -189,11 +171,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     ratio = Utilities.contrast_ratio(color1, color2)
     min_ratio = get_minimum_ratio(level, size)
 
-    if ratio < min_ratio do
-      flunk(
-        "Insufficient contrast ratio: #{ratio}. Expected at least #{min_ratio} for WCAG #{level |> Atom.to_string() |> String.upcase()} with #{size} text.\n#{context}"
-      )
-    end
+    validate_contrast_ratio_sufficient(ratio, min_ratio, level, size, context)
   end
 
   @doc """
@@ -215,16 +193,10 @@ defmodule Raxol.AccessibilityTestHelpers do
 
       # Find next focusable element
       next =
-        if FocusManager.get_focus_direction() == :backward do
-          FocusManager.get_previous_focusable(current)
-        else
-          FocusManager.get_next_focusable(current)
-        end
+        get_next_focusable_element(current)
 
       # Move focus
-      if next do
-        FocusManager.set_focus(next)
-      end
+      move_focus_if_available(next)
     end)
   end
 
@@ -249,11 +221,7 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     context = Keyword.get(opts, :context, "")
 
-    if current != expected do
-      flunk(
-        "Expected focus on \"#{expected}\", but it's on \"#{current}\"\n#{context}"
-      )
-    end
+    validate_focus_matches_expected(current, expected, context)
   end
 
   @doc """
@@ -284,9 +252,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     shortcut_context = Keyword.get(opts, :in_context)
 
     # Set context if provided
-    if shortcut_context do
-      KeyboardShortcuts.set_context(shortcut_context)
-    end
+    set_keyboard_context_if_provided(shortcut_context)
 
     # Initialize action spy
     Process.put(:shortcut_action_executed, false)
@@ -325,11 +291,7 @@ defmodule Raxol.AccessibilityTestHelpers do
         executed = Process.get(:shortcut_action_executed, false)
         action_id = Process.get(:shortcut_action_id)
 
-        if !executed do
-          flunk(
-            "Keyboard shortcut \"#{shortcut}\" did not trigger any action.\n#{context}"
-          )
-        end
+        validate_shortcut_execution(executed, shortcut, context)
 
         # Return the action ID for further assertions
         action_id
@@ -506,22 +468,138 @@ defmodule Raxol.AccessibilityTestHelpers do
 
   defp validate_announcement_absent(announcements, expected, context)
        when is_binary(expected) do
-    if Enum.any?(announcements, &String.contains?(&1, expected)) do
-      flunk(
-        "Unexpected screen reader announcement containing \"#{expected}\" was made.\nActual announcements: #{inspect(announcements)}\n#{context}"
-      )
-    end
+    validate_announcement_not_contains(announcements, expected, context)
   end
 
   defp validate_announcement_absent(announcements, %Regex{} = expected, context) do
-    if Enum.any?(announcements, &Regex.match?(expected, &1)) do
-      flunk(
-        "Unexpected screen reader announcement matching #{inspect(expected)} was made.\nActual announcements: #{inspect(announcements)}\n#{context}"
-      )
-    end
+    validate_announcement_not_matches_regex(announcements, expected, context)
   end
 
   defp validate_announcement_absent(_announcements, expected, _context) do
     flunk("Invalid expected value for refute_announced: #{inspect(expected)}")
+  end
+
+  ## Pattern matching helper functions for if statement elimination
+
+  defp validate_announcement_match(true, announcements, expected, context) do
+    case Enum.member?(announcements, expected) do
+      true ->
+        :ok
+
+      false ->
+        flunk(
+          "Expected screen reader announcement \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
+        )
+    end
+  end
+
+  defp validate_announcement_match(false, announcements, expected, context) do
+    validate_announcement_present(announcements, expected, context)
+  end
+
+  defp validate_no_announcements_made([], _context), do: :ok
+
+  defp validate_no_announcements_made(announcements, context) do
+    flunk(
+      "Expected no screen reader announcements, but got: #{inspect(announcements)}\n#{context}"
+    )
+  end
+
+  defp validate_announcement_not_match(true, announcements, expected, context) do
+    case Enum.member?(announcements, expected) do
+      true ->
+        flunk(
+          "Unexpected screen reader announcement \"#{expected}\" was made.\nActual announcements: #{inspect(announcements)}\n#{context}"
+        )
+
+      false ->
+        :ok
+    end
+  end
+
+  defp validate_announcement_not_match(false, announcements, expected, context) do
+    validate_announcement_absent(announcements, expected, context)
+  end
+
+  defp validate_contrast_ratio_sufficient(
+         ratio,
+         min_ratio,
+         level,
+         size,
+         context
+       )
+       when ratio < min_ratio do
+    flunk(
+      "Insufficient contrast ratio: #{ratio}. Expected at least #{min_ratio} for WCAG #{level |> Atom.to_string() |> String.upcase()} with #{size} text.\n#{context}"
+    )
+  end
+
+  defp validate_contrast_ratio_sufficient(
+         _ratio,
+         _min_ratio,
+         _level,
+         _size,
+         _context
+       ),
+       do: :ok
+
+  defp get_next_focusable_element(current) do
+    case FocusManager.get_focus_direction() do
+      :backward -> FocusManager.get_previous_focusable(current)
+      _ -> FocusManager.get_next_focusable(current)
+    end
+  end
+
+  defp move_focus_if_available(nil), do: :ok
+
+  defp move_focus_if_available(next) do
+    FocusManager.set_focus(next)
+  end
+
+  defp validate_focus_matches_expected(current, expected, context)
+       when current != expected do
+    flunk(
+      "Expected focus on \"#{expected}\", but it's on \"#{current}\"\n#{context}"
+    )
+  end
+
+  defp validate_focus_matches_expected(_current, _expected, _context), do: :ok
+
+  defp set_keyboard_context_if_provided(nil), do: :ok
+
+  defp set_keyboard_context_if_provided(shortcut_context) do
+    KeyboardShortcuts.set_context(shortcut_context)
+  end
+
+  defp validate_shortcut_execution(true, _shortcut, _context), do: :ok
+
+  defp validate_shortcut_execution(false, shortcut, context) do
+    flunk(
+      "Keyboard shortcut \"#{shortcut}\" did not trigger any action.\n#{context}"
+    )
+  end
+
+  defp validate_announcement_not_contains(announcements, expected, context) do
+    case Enum.any?(announcements, &String.contains?(&1, expected)) do
+      true ->
+        flunk(
+          "Unexpected screen reader announcement containing \"#{expected}\" was made.\nActual announcements: #{inspect(announcements)}\n#{context}"
+        )
+
+      false ->
+        :ok
+    end
+  end
+
+  defp validate_announcement_not_matches_regex(announcements, expected, context) do
+    case Enum.any?(announcements, &Regex.match?(expected, &1)) do
+      true ->
+        flunk(
+          "Unexpected screen reader announcement matching #{inspect(expected)} was made.\nActual announcements: #{inspect(announcements)}\n#{context}"
+        )
+
+      false ->
+        :ok
+    end
   end
 end

@@ -263,7 +263,15 @@ defmodule Raxol.UI.Rendering.ComponentCache do
 
   defp hash_style(style) when is_map(style) do
     style
-    |> Map.take([:fg, :bg, :foreground, :background, :bold, :italic, :underline])
+    |> Map.take([
+      :fg,
+      :bg,
+      :foreground,
+      :background,
+      :bold,
+      :italic,
+      :underline
+    ])
     |> :erlang.phash2()
   end
 

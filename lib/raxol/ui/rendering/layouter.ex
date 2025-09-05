@@ -68,21 +68,21 @@ defmodule Raxol.UI.Rendering.Layouter do
     )
   end
 
+  defp handle_otherwise_diff(diff_result) when is_map(diff_result) do
+    Raxol.Core.Runtime.Log.debug(
+      "Layout Stage: Input is a map, treating as full layout: #{inspect(diff_result)}"
+    )
+
+    do_layout_node_and_children(diff_result, {:replace, diff_result})
+  end
+
   defp handle_otherwise_diff(diff_result) do
-    if is_map(diff_result) do
-      Raxol.Core.Runtime.Log.debug(
-        "Layout Stage: Input is a map, treating as full layout: #{inspect(diff_result)}"
-      )
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Layout Stage: Unhandled diff_result type or non-map input: #{inspect(diff_result)}",
+      %{}
+    )
 
-      do_layout_node_and_children(diff_result, {:replace, diff_result})
-    else
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "Layout Stage: Unhandled diff_result type or non-map input: #{inspect(diff_result)}",
-        %{}
-      )
-
-      diff_result
-    end
+    diff_result
   end
 
   defp do_layout_node_and_children(nil, _diff), do: nil
@@ -156,20 +156,26 @@ defmodule Raxol.UI.Rendering.Layouter do
     end
   end
 
-  defp get_children(node) do
-    if is_map(node), do: Map.get(node, :children, []), else: []
-  end
+  defp get_children(node) when is_map(node), do: Map.get(node, :children, [])
+  defp get_children(_node), do: []
 
-  defp get_node_type(node) do
-    if is_map(node), do: Map.get(node, :type, :unknown), else: :unknown
-  end
+  defp get_node_type(node) when is_map(node), do: Map.get(node, :type, :unknown)
+  defp get_node_type(_node), do: :unknown
 
   defp update_node_children(node, processed_children) do
-    if Map.has_key?(node, :children) do
-      %{node | children: processed_children}
-    else
-      node
-    end
+    update_children_if_present(
+      Map.has_key?(node, :children),
+      node,
+      processed_children
+    )
+  end
+
+  defp update_children_if_present(true, node, processed_children) do
+    %{node | children: processed_children}
+  end
+
+  defp update_children_if_present(false, node, _processed_children) do
+    node
   end
 
   defp map_child_changes_to_new_children_list(
@@ -212,18 +218,7 @@ defmodule Raxol.UI.Rendering.Layouter do
       {:update, _child_path, child_changes} ->
         # Update child at index with partial changes
         current_child = Enum.at(acc, index)
-
-        if current_child do
-          updated_child =
-            do_layout_node_and_children(
-              current_child,
-              {:update_children, child_changes}
-            )
-
-          List.replace_at(acc, index, updated_child)
-        else
-          acc
-        end
+        update_child_at_index(current_child, acc, index, child_changes)
 
       _ ->
         # Unknown diff type, keep original
@@ -239,11 +234,7 @@ defmodule Raxol.UI.Rendering.Layouter do
   defp process_keyed_child_op({:key_update, key, child_diff}, acc) do
     # Find and update existing child by key
     Enum.map(acc, fn child ->
-      if is_map(child) && Map.get(child, :key) == key do
-        do_layout_node_and_children(child, child_diff)
-      else
-        child
-      end
+      update_child_by_key(child, key, child_diff)
     end)
   end
 
@@ -258,7 +249,7 @@ defmodule Raxol.UI.Rendering.Layouter do
     # Reorder children according to new key order
     children_by_key =
       Map.new(acc, fn child ->
-        if is_map(child), do: {Map.get(child, :key), child}, else: {nil, child}
+        create_key_value_pair(child)
       end)
 
     Enum.map(new_keys_ordered, fn key ->
@@ -283,13 +274,44 @@ defmodule Raxol.UI.Rendering.Layouter do
       y: 0,
       width: 10,
       height: 1,
-      node_type:
-        if(is_map(node_content),
-          do: Map.get(node_content, :type, :unknown),
-          else: :unknown
-        ),
+      node_type: get_node_type(node_content),
       processed_with_diff: :full,
       timestamp: System.monotonic_time()
     }
+  end
+
+  # Helper functions for refactored if statements
+
+  defp update_child_at_index(nil, acc, _index, _child_changes) do
+    acc
+  end
+
+  defp update_child_at_index(current_child, acc, index, child_changes) do
+    updated_child =
+      do_layout_node_and_children(
+        current_child,
+        {:update_children, child_changes}
+      )
+
+    List.replace_at(acc, index, updated_child)
+  end
+
+  defp update_child_by_key(child, key, child_diff) when is_map(child) do
+    case Map.get(child, :key) == key do
+      true -> do_layout_node_and_children(child, child_diff)
+      false -> child
+    end
+  end
+
+  defp update_child_by_key(child, _key, _child_diff) do
+    child
+  end
+
+  defp create_key_value_pair(child) when is_map(child) do
+    {Map.get(child, :key), child}
+  end
+
+  defp create_key_value_pair(child) do
+    {nil, child}
   end
 end

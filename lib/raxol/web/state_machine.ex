@@ -607,12 +607,15 @@ defmodule Raxol.Web.StateMachine do
 
     undefined_states = transition_states -- defined_states
 
-    if not Enum.empty?(undefined_states) do
-      raise CompileError,
-        file: env.file,
-        line: env.line,
-        description:
-          "State machine validation failed: undefined states #{inspect(undefined_states)}"
+    case not Enum.empty?(undefined_states) do
+      true ->
+        raise CompileError,
+          file: env.file,
+          line: env.line,
+          description:
+            "State machine validation failed: undefined states #{inspect(undefined_states)}"
+      false ->
+        :ok
     end
 
     # Check for unreachable states
@@ -625,12 +628,15 @@ defmodule Raxol.Web.StateMachine do
     unreachable_states =
       defined_states -- (reachable_states ++ [List.first(defined_states)])
 
-    if not Enum.empty?(unreachable_states) do
-      IO.warn(
-        "Warning: unreachable states detected: #{inspect(unreachable_states)}",
-        file: env.file,
-        line: env.line
-      )
+    case not Enum.empty?(unreachable_states) do
+      true ->
+        IO.warn(
+          "Warning: unreachable states detected: #{inspect(unreachable_states)}",
+          file: env.file,
+          line: env.line
+        )
+      false ->
+        :ok
     end
   end
 

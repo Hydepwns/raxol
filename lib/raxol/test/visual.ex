@@ -49,11 +49,7 @@ defmodule Raxol.Test.Visual do
     {:ok, component} = Raxol.Test.Unit.setup_isolated_component(module, props)
 
     # Defensive check: ensure component is a map with :module and :state
-    if !(is_map(component) and Map.has_key?(component, :module) and
-           Map.has_key?(component, :state)) do
-      raise ArgumentError,
-            "setup_visual_component/2 expected a map with :module and :state keys, got: #{inspect(component)}"
-    end
+    validate_component_structure!(component)
 
     # Set up render context
     terminal = TestHelper.setup_test_terminal()
@@ -106,11 +102,15 @@ defmodule Raxol.Test.Visual do
   end
 
   defp extract_render_context(component_or_map_or_view, opts) do
-    if view_is_map(component_or_map_or_view) do
-      extract_render_details_from_view_map(component_or_map_or_view, opts)
-    else
-      extract_render_details(component_or_map_or_view)
-    end
+    handle_render_context_extraction(view_is_map(component_or_map_or_view), component_or_map_or_view, opts)
+  end
+
+  defp handle_render_context_extraction(true, component_or_map_or_view, opts) do
+    extract_render_details_from_view_map(component_or_map_or_view, opts)
+  end
+
+  defp handle_render_context_extraction(false, component_or_map_or_view, _opts) do
+    extract_render_details(component_or_map_or_view)
   end
 
   defp view_is_map(map) when is_map(map), do: Map.has_key?(map, :type)
@@ -330,11 +330,7 @@ defmodule Raxol.Test.Visual do
 
     case File.read(snapshot_path) do
       {:ok, expected} ->
-        if current == expected do
-          :ok
-        else
-          {:diff, compute_visual_diff(expected, current)}
-        end
+        compare_render_output(current, expected)
 
       {:error, :enoent} ->
         {:error, :no_snapshot}
@@ -420,15 +416,50 @@ defmodule Raxol.Test.Visual do
 
   # Private Helpers
 
+  defp validate_component_structure!(component) when is_map(component) do
+    validate_component_keys!(component)
+  end
+
+  defp validate_component_structure!(component) do
+    raise ArgumentError,
+          "setup_visual_component/2 expected a map with :module and :state keys, got: #{inspect(component)}"
+  end
+
+  defp validate_component_keys!(%{module: _, state: _}), do: :ok
+
+  defp validate_component_keys!(component) do
+    raise ArgumentError,
+          "setup_visual_component/2 expected a map with :module and :state keys, got: #{inspect(component)}"
+  end
+
+  defp validate_render_component_structure!(component_map) when is_map(component_map) do
+    validate_render_component_keys!(component_map)
+  end
+
+  defp validate_render_component_structure!(component_map) do
+    raise ArgumentError,
+          "render_component/2 expected a map with :module and :state keys, got: #{inspect(component_map)}"
+  end
+
+  defp validate_render_component_keys!(%{state: _}), do: :ok
+
+  defp validate_render_component_keys!(component_map) do
+    raise ArgumentError,
+          "render_component/2 expected a map with :module and :state keys, got: #{inspect(component_map)}"
+  end
+
+  defp compare_render_output(current, expected) when current == expected, do: :ok
+
+  defp compare_render_output(current, expected) do
+    {:diff, compute_visual_diff(expected, current)}
+  end
+
   @doc """
   Renders a component state within a controlled test environment.
   Accepts an optional context map.
   """
   def render_component(component_map, context \\ default_render_context()) do
-    if !(is_map(component_map) and Map.has_key?(component_map, :state)) do
-      raise ArgumentError,
-            "render_component/2 expected a map with :module and :state keys, got: #{inspect(component_map)}"
-    end
+    validate_render_component_structure!(component_map)
 
     # Extract the actual state and module from the component map
     state = component_map.state

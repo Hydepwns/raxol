@@ -178,22 +178,22 @@ defmodule Raxol.UI.Layout.Panels do
     }
   end
 
-  defp determine_base_width(children_size, available_space, explicit_width) do
-    if children_size.width == 0 and is_nil(explicit_width) do
-      available_space.width
-    else
-      # Add borders
-      children_size.width + 2
-    end
+  defp determine_base_width(%{width: 0}, available_space, nil) do
+    available_space.width
   end
 
-  defp determine_base_height(children_size, available_space, explicit_height) do
-    if children_size.height == 0 and is_nil(explicit_height) do
-      available_space.height
-    else
-      # Add borders
-      children_size.height + 2
-    end
+  defp determine_base_width(children_size, _available_space, _explicit_width) do
+    # Add borders
+    children_size.width + 2
+  end
+
+  defp determine_base_height(%{height: 0}, available_space, nil) do
+    available_space.height
+  end
+
+  defp determine_base_height(children_size, _available_space, _explicit_height) do
+    # Add borders
+    children_size.height + 2
   end
 
   defp apply_constraints(dimensions, available_space) do

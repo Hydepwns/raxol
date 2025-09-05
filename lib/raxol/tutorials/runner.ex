@@ -335,9 +335,9 @@ defmodule Raxol.Tutorials.Runner do
 
     #{step.content}
 
-    #{if step.example_code, do: format_code_block(step.example_code), else: ""}
+    #{format_optional_code_block(step.example_code)}
 
-    #{if step.exercise, do: format_exercise(step.exercise), else: ""}
+    #{format_optional_exercise(step.exercise)}
 
     #{format_navigation_hints()}
     """
@@ -356,9 +356,9 @@ defmodule Raxol.Tutorials.Runner do
 
     #{step.content}
 
-    #{if step.example_code, do: format_code_block(step.example_code), else: ""}
+    #{format_optional_code_block(step.example_code)}
 
-    #{if step.exercise, do: format_exercise(step.exercise), else: ""}
+    #{format_optional_exercise(step.exercise)}
 
     #{format_navigation_hints()}
     """
@@ -452,7 +452,7 @@ defmodule Raxol.Tutorials.Runner do
   defp format_progress_bar(progress) do
     completed = length(Map.get(progress, :completed_steps, []))
     total = Map.get(progress, :total, 10)
-    percentage = if total > 0, do: completed / total, else: 0
+    percentage = safe_divide(completed, total)
 
     bar_width = 20
     filled = round(percentage * bar_width)
@@ -463,15 +463,7 @@ defmodule Raxol.Tutorials.Runner do
   end
 
   defp format_completed_steps(steps) do
-    if Enum.empty?(steps) do
-      "  None yet"
-    else
-      steps
-      |> Enum.map(fn step ->
-        "  #{IO.ANSI.green()}✓#{IO.ANSI.reset()} Step #{step}"
-      end)
-      |> Enum.join("\n")
-    end
+    format_step_list(Enum.empty?(steps), steps)
   end
 
   defp run_example_code(nil), do: {:error, "No example code available"}
@@ -494,5 +486,26 @@ defmodule Raxol.Tutorials.Runner do
       true -> progress
       false -> Map.put(progress, key, completed_steps ++ [step])
     end
+  end
+
+  # Helper functions to eliminate if statements
+
+  defp format_optional_code_block(nil), do: ""
+  defp format_optional_code_block(code), do: format_code_block(code)
+
+  defp format_optional_exercise(nil), do: ""
+  defp format_optional_exercise(exercise), do: format_exercise(exercise)
+
+  defp safe_divide(_completed, 0), do: 0
+  defp safe_divide(completed, total) when total > 0, do: completed / total
+
+  defp format_step_list(true, _steps), do: "  None yet"
+
+  defp format_step_list(false, steps) do
+    steps
+    |> Enum.map(fn step ->
+      "  #{IO.ANSI.green()}✓#{IO.ANSI.reset()} Step #{step}"
+    end)
+    |> Enum.join("\n")
   end
 end

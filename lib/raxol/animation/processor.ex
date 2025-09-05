@@ -127,77 +127,94 @@ defmodule Raxol.Animation.Processor do
     is_disabled = AnimAccessibility.disabled?(animation)
     is_pending_completion = Map.get(instance, :pending_completion, false)
 
-    if elapsed >= duration or (is_disabled and is_pending_completion) do
-      # Calculate final value and apply to state before completion
-      final_progress = 1.0
-      final_value = calculate_current_value(animation, final_progress)
+    should_complete = elapsed >= duration or (is_disabled and is_pending_completion)
+    
+    case should_complete do
+      true ->
+        # Calculate final value and apply to state before completion
+        final_progress = 1.0
+        final_value = calculate_current_value(animation, final_progress)
 
-      updated_state =
-        PathManager.set_in_state(state, animation.target_path, final_value)
+        updated_state =
+          PathManager.set_in_state(state, animation.target_path, final_value)
 
-      # Handle completion for both normal and disabled animations
-      Lifecycle.handle_animation_completion(
-        animation,
-        element_id,
-        animation_name,
-        instance,
-        user_preferences_pid
-      )
+        # Handle completion for both normal and disabled animations
+        Lifecycle.handle_animation_completion(
+          animation,
+          element_id,
+          animation_name,
+          instance,
+          user_preferences_pid
+        )
 
-      # Mark as completed
-      {updated_state, [{element_id, animation_name} | completed_list]}
-    else
-      # Calculate current value and apply to state
-      progress = calculate_animation_progress(animation, elapsed, duration)
-      current_value = calculate_current_value(animation, progress)
+        # Mark as completed
+        {updated_state, [{element_id, animation_name} | completed_list]}
+      false ->
+        # Calculate current value and apply to state
+        progress = calculate_animation_progress(animation, elapsed, duration)
+        current_value = calculate_current_value(animation, progress)
 
-      # Apply to state
-      updated_state =
-        PathManager.set_in_state(state, animation.target_path, current_value)
+        # Apply to state
+        updated_state =
+          PathManager.set_in_state(state, animation.target_path, current_value)
 
-      {updated_state, completed_list}
+        {updated_state, completed_list}
     end
   end
 
-  defp calculate_animation_progress(animation, elapsed, duration) do
+  defp ease_in_out_quad(progress) when progress < 0.5 do
+    2 * progress * progress
+  end
+
+  defp ease_in_out_quad(progress) do
+    1 - 2 * (1 - progress) * (1 - progress)
+  end
+
+  defp ease_in_out_cubic(progress) when progress < 0.5 do
+    4 * progress * progress * progress
+  end
+
+  defp ease_in_out_cubic(progress) do
+    1 - 4 * (1 - progress) * (1 - progress) * (1 - progress)
+  end
+
+  defp interpolate_values(f, t, progress) when is_number(f) and is_number(t) do
+    f + (t - f) * progress
+  end
+
+  defp interpolate_values(_f, t, _progress), do: t
+
+  defp calculate_animation_progress(animation, _elapsed, 0) do
     # Handle zero duration case - animation completes immediately
-    if duration == 0 do
-      1.0
-    else
-      # Ensure progress is between 0 and 1
-      progress = min(max(elapsed / duration, 0.0), 1.0)
+    1.0
+  end
 
-      # Apply easing if specified
-      case Map.get(animation, :easing) do
-        :ease_in_quad ->
-          progress * progress
+  defp calculate_animation_progress(animation, elapsed, duration) do
+    # Ensure progress is between 0 and 1
+    progress = min(max(elapsed / duration, 0.0), 1.0)
 
-        :ease_out_quad ->
-          1 - (1 - progress) * (1 - progress)
+    # Apply easing if specified
+    case Map.get(animation, :easing) do
+      :ease_in_quad ->
+        progress * progress
 
-        :ease_in_out_quad ->
-          if progress < 0.5 do
-            2 * progress * progress
-          else
-            1 - 2 * (1 - progress) * (1 - progress)
-          end
+      :ease_out_quad ->
+        1 - (1 - progress) * (1 - progress)
 
-        :ease_in_cubic ->
-          progress * progress * progress
+      :ease_in_out_quad ->
+        ease_in_out_quad(progress)
 
-        :ease_out_cubic ->
-          1 - (1 - progress) * (1 - progress) * (1 - progress)
+      :ease_in_cubic ->
+        progress * progress * progress
 
-        :ease_in_out_cubic ->
-          if progress < 0.5 do
-            4 * progress * progress * progress
-          else
-            1 - 4 * (1 - progress) * (1 - progress) * (1 - progress)
-          end
+      :ease_out_cubic ->
+        1 - (1 - progress) * (1 - progress) * (1 - progress)
 
-        _ ->
-          progress
-      end
+      :ease_in_out_cubic ->
+        ease_in_out_cubic(progress)
+
+      _ ->
+        progress
     end
   end
 
@@ -211,11 +228,7 @@ defmodule Raxol.Animation.Processor do
 
       {from_val, to_val} when is_list(from_val) and is_list(to_val) ->
         Enum.zip_with(from_val, to_val, fn f, t ->
-          if is_number(f) and is_number(t) do
-            f + (t - f) * progress
-          else
-            t
-          end
+          interpolate_values(f, t, progress)
         end)
 
       _ ->

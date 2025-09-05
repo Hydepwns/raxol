@@ -37,21 +37,22 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
     buffer_id = buffer_id || buffer_hash(buffer)
 
     # Check if this is in a hot region
-    if in_hot_region?(buffer, x, y) do
-      case ETSCacheManager.get_buffer_region(buffer_id, x, y, 1, 1) do
-        {:ok, cached_cell} ->
-          Telemetry.cache_hit(:buffer_cell, {buffer_id, x, y})
-          cached_cell
+    case in_hot_region?(buffer, x, y) do
+      true ->
+        case ETSCacheManager.get_buffer_region(buffer_id, x, y, 1, 1) do
+          {:ok, cached_cell} ->
+            Telemetry.cache_hit(:buffer_cell, {buffer_id, x, y})
+            cached_cell
 
-        :miss ->
-          Telemetry.cache_miss(:buffer_cell, {buffer_id, x, y})
-          cell = Operations.get_cell(buffer, x, y)
-          ETSCacheManager.cache_buffer_region(buffer_id, x, y, 1, 1, cell)
-          cell
-      end
-    else
-      # Don't cache cold regions
-      Operations.get_cell(buffer, x, y)
+          :miss ->
+            Telemetry.cache_miss(:buffer_cell, {buffer_id, x, y})
+            cell = Operations.get_cell(buffer, x, y)
+            ETSCacheManager.cache_buffer_region(buffer_id, x, y, 1, 1, cell)
+            cell
+        end
+      false ->
+        # Don't cache cold regions
+        Operations.get_cell(buffer, x, y)
     end
   end
 
@@ -74,9 +75,7 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
         line = Operations.get_line(buffer, y)
 
         # Only cache lines that are likely to be reused
-        if should_cache_line?(line, width) do
-          ETSCacheManager.cache_buffer_region(buffer_id, 0, y, width, 1, line)
-        end
+        cache_line_if_needed(should_cache_line?(line, width), buffer_id, y, width, line)
 
         line
     end
@@ -104,16 +103,7 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
           end
 
         # Cache if region is reasonable size
-        if width * height <= 1000 do
-          ETSCacheManager.cache_buffer_region(
-            buffer_id,
-            x,
-            y,
-            width,
-            height,
-            region
-          )
-        end
+        cache_region_if_small(width * height <= 1000, buffer_id, x, y, width, height, region)
 
         region
     end
@@ -193,27 +183,10 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
     buffer_id = buffer_id || buffer_hash(buffer)
 
     # Cache the visible viewport
-    if viewport = get_viewport(buffer) do
-      get_region(
-        buffer,
-        viewport.x,
-        viewport.y,
-        viewport.width,
-        viewport.height,
-        buffer_id
-      )
-    end
+    cache_viewport(get_viewport(buffer), buffer, buffer_id)
 
     # Cache lines around cursor
-    if cursor = get_cursor_position(buffer) do
-      for y <-
-            max(0, cursor.y - 5)..min(
-              get_buffer_height(buffer) - 1,
-              cursor.y + 5
-            ) do
-        get_line(buffer, y, buffer_id)
-      end
-    end
+    cache_cursor_lines(get_cursor_position(buffer), buffer, buffer_id)
 
     Logger.debug("Buffer cache warmed for buffer #{buffer_id}")
   end
@@ -325,6 +298,48 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
     # Clear all cache entries for this buffer
     # Real implementation would track and clear buffer-specific entries
     :ok
+  end
+
+  # Helper functions for if statement refactoring
+  
+  defp cache_line_if_needed(true, buffer_id, y, width, line) do
+    ETSCacheManager.cache_buffer_region(buffer_id, 0, y, width, 1, line)
+  end
+  defp cache_line_if_needed(false, _buffer_id, _y, _width, _line), do: :ok
+
+  defp cache_region_if_small(true, buffer_id, x, y, width, height, region) do
+    ETSCacheManager.cache_buffer_region(
+      buffer_id,
+      x,
+      y,
+      width,
+      height,
+      region
+    )
+  end
+  defp cache_region_if_small(false, _buffer_id, _x, _y, _width, _height, _region), do: :ok
+
+  defp cache_viewport(nil, _buffer, _buffer_id), do: :ok
+  defp cache_viewport(viewport, buffer, buffer_id) do
+    get_region(
+      buffer,
+      viewport.x,
+      viewport.y,
+      viewport.width,
+      viewport.height,
+      buffer_id
+    )
+  end
+
+  defp cache_cursor_lines(nil, _buffer, _buffer_id), do: :ok
+  defp cache_cursor_lines(cursor, buffer, buffer_id) do
+    for y <-
+          max(0, cursor.y - 5)..min(
+            get_buffer_height(buffer) - 1,
+            cursor.y + 5
+          ) do
+      get_line(buffer, y, buffer_id)
+    end
   end
 
   # Delegated operations that don't benefit from caching

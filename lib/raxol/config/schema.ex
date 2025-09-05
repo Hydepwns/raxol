@@ -65,12 +65,7 @@ defmodule Raxol.Config.Schema do
   """
   def validate_config(config, schema \\ schema()) do
     errors = validate_map(config, schema, [])
-
-    if Enum.empty?(errors) do
-      {:ok, :valid}
-    else
-      {:error, errors}
-    end
+    handle_validation_result(errors)
   end
 
   @doc """
@@ -588,11 +583,7 @@ defmodule Raxol.Config.Schema do
   defp validate_type(value, :atom, _path) when is_atom(value), do: :ok
 
   defp validate_type(value, {:enum, allowed}, path) do
-    if value in allowed do
-      :ok
-    else
-      {:error, {path, "must be one of: #{inspect(allowed)}"}}
-    end
+    validate_enum_value(value in allowed, path, allowed)
   end
 
   defp validate_type(value, {:list, item_type}, path) when is_list(value) do
@@ -604,7 +595,7 @@ defmodule Raxol.Config.Schema do
       end)
       |> Enum.filter(&(&1 != :ok))
 
-    if Enum.empty?(errors), do: :ok, else: {:error, errors}
+    handle_validation_errors(errors)
   end
 
   defp validate_type(value, {:map, value_type}, path) when is_map(value) do
@@ -615,7 +606,7 @@ defmodule Raxol.Config.Schema do
       end)
       |> Enum.filter(&(&1 != :ok))
 
-    if Enum.empty?(errors), do: :ok, else: {:error, errors}
+    handle_validation_errors(errors)
   end
 
   defp validate_type(_value, type, path) do
@@ -630,36 +621,30 @@ defmodule Raxol.Config.Schema do
       end)
       |> Enum.filter(&(&1 != :ok))
 
-    if Enum.empty?(errors), do: :ok, else: {:error, errors}
+    handle_validation_errors(errors)
   end
 
   defp validate_constraint(value, {:min, min}, path) when is_number(value) do
-    if value >= min, do: :ok, else: {:error, {path, "must be >= #{min}"}}
+    validate_minimum(value >= min, path, min)
   end
 
   defp validate_constraint(value, {:max, max}, path) when is_number(value) do
-    if value <= max, do: :ok, else: {:error, {path, "must be <= #{max}"}}
+    validate_maximum(value <= max, path, max)
   end
 
   defp validate_constraint(value, {:min_length, min}, path)
        when is_binary(value) do
-    if String.length(value) >= min,
-      do: :ok,
-      else: {:error, {path, "minimum length is #{min}"}}
+    validate_min_length(String.length(value) >= min, path, min)
   end
 
   defp validate_constraint(value, {:max_length, max}, path)
        when is_binary(value) do
-    if String.length(value) <= max,
-      do: :ok,
-      else: {:error, {path, "maximum length is #{max}"}}
+    validate_max_length(String.length(value) <= max, path, max)
   end
 
   defp validate_constraint(value, {:format, regex}, path)
        when is_binary(value) do
-    if Regex.match?(regex, value),
-      do: :ok,
-      else: {:error, {path, "invalid format"}}
+    validate_format(Regex.match?(regex, value), path)
   end
 
   defp validate_constraint(value, {:custom, validator}, path)
@@ -733,13 +718,51 @@ defmodule Raxol.Config.Schema do
     |> Enum.flat_map(fn {key, value} ->
       current_path = path ++ [key]
 
-      if Map.has_key?(value, :type) do
-        [generate_field_doc(current_path, value)]
-      else
-        generate_docs_for_schema(value, current_path)
-      end
+      generate_doc_for_value(Map.has_key?(value, :type), current_path, value)
     end)
   end
+
+  # Helper functions for validation using pattern matching instead of if statements
+
+  defp handle_validation_result([]), do: {:ok, :valid}
+  defp handle_validation_result(errors), do: {:error, errors}
+
+  defp validate_enum_value(true, _path, _allowed), do: :ok
+
+  defp validate_enum_value(false, path, allowed),
+    do: {:error, {path, "must be one of: #{inspect(allowed)}"}}
+
+  defp handle_validation_errors([]), do: :ok
+  defp handle_validation_errors(errors), do: {:error, errors}
+
+  defp validate_minimum(true, _path, _min), do: :ok
+
+  defp validate_minimum(false, path, min),
+    do: {:error, {path, "must be >= #{min}"}}
+
+  defp validate_maximum(true, _path, _max), do: :ok
+
+  defp validate_maximum(false, path, max),
+    do: {:error, {path, "must be <= #{max}"}}
+
+  defp validate_min_length(true, _path, _min), do: :ok
+
+  defp validate_min_length(false, path, min),
+    do: {:error, {path, "minimum length is #{min}"}}
+
+  defp validate_max_length(true, _path, _max), do: :ok
+
+  defp validate_max_length(false, path, max),
+    do: {:error, {path, "maximum length is #{max}"}}
+
+  defp validate_format(true, _path), do: :ok
+  defp validate_format(false, path), do: {:error, {path, "invalid format"}}
+
+  defp generate_doc_for_value(true, current_path, value),
+    do: [generate_field_doc(current_path, value)]
+
+  defp generate_doc_for_value(false, current_path, value),
+    do: generate_docs_for_schema(value, current_path)
 
   defp generate_field_doc(path, field_schema) do
     path_str = Enum.join(path, ".")

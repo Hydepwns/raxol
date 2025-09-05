@@ -185,8 +185,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
       %TrueColor{r: 0, g: 0, b: 255, a: 255}
   """
   def named(color_name) when is_atom(color_name) or is_binary(color_name) do
-    name_atom =
-      if is_binary(color_name), do: String.to_atom(color_name), else: color_name
+    name_atom = convert_to_atom(color_name)
 
     case Map.get(@colors, name_atom) do
       {r, g, b} -> rgb(r, g, b)
@@ -360,7 +359,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     l1 = relative_luminance(color1)
     l2 = relative_luminance(color2)
 
-    {lighter, darker} = if l1 > l2, do: {l1, l2}, else: {l2, l1}
+    {lighter, darker} = order_luminance(l1, l2)
 
     (lighter + 0.05) / (darker + 0.05)
   end
@@ -404,7 +403,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     black_contrast = contrast_ratio(black, bg_color)
     white_contrast = contrast_ratio(white, bg_color)
 
-    if black_contrast > white_contrast, do: black, else: white
+    select_best_contrast(black, white, black_contrast, white_contrast)
   end
 
   ## Color Space Conversions
@@ -446,11 +445,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
       "#FF0000"
   """
   def to_hex(%__MODULE__{r: r, g: g, b: b, a: a}) do
-    if a < 255 do
-      "##{pad_hex(r)}#{pad_hex(g)}#{pad_hex(b)}#{pad_hex(a)}"
-    else
-      "##{pad_hex(r)}#{pad_hex(g)}#{pad_hex(b)}"
-    end
+    format_hex_with_alpha(r, g, b, a)
   end
 
   ## Terminal Capability Detection
@@ -474,8 +469,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     colorterm = System.get_env("COLORTERM")
     term = System.get_env("TERM")
 
-    colorterm in ["truecolor", "24bit"] or
-      (term && String.contains?(term, "256color") and colorterm == "truecolor")
+    check_true_color_support(colorterm, term)
   end
 
   @doc """
@@ -483,7 +477,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
   """
   def supports_256_color? do
     term = System.get_env("TERM")
-    term && (String.contains?(term, "256color") or term == "xterm-kitty")
+    check_256_color_support(term)
   end
 
   @doc """
@@ -491,7 +485,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
   """
   def supports_16_color? do
     term = System.get_env("TERM")
-    term && term not in ["dumb", "unknown"]
+    check_16_color_support(term)
   end
 
   @doc """
@@ -637,22 +631,11 @@ defmodule Raxol.Terminal.Color.TrueColor do
 
     l = (max_val + min_val) / 2
 
-    if delta == 0 do
-      {0, 0, round(l * 100)}
-    else
-      s =
-        if l > 0.5,
-          do: delta / (2 - max_val - min_val),
-          else: delta / (max_val + min_val)
-
-      h = calculate_hue(max_val, delta, r, g, b)
-
-      {round(h * 60), round(s * 100), round(l * 100)}
-    end
+    calculate_hsl_values(delta, l, max_val, min_val, r, g, b)
   end
 
   defp calculate_hue(max_val, delta, r, g, b) when max_val == r do
-    rem((g - b) / delta + if(g < b, do: 6, else: 0), 6)
+    rem((g - b) / delta + adjust_for_negative_hue(g, b), 6)
   end
 
   defp calculate_hue(max_val, delta, r, g, b) when max_val == g do
@@ -688,18 +671,9 @@ defmodule Raxol.Terminal.Color.TrueColor do
     delta = max_val - min_val
 
     v = max_val
-    s = if max_val == 0, do: 0, else: delta / max_val
+    s = calculate_saturation(max_val, delta)
 
-    h =
-      if delta == 0 do
-        0
-      else
-        case max_val do
-          ^r -> rem((g - b) / delta + if(g < b, do: 6, else: 0), 6)
-          ^g -> (b - r) / delta + 2
-          ^b -> (r - g) / delta + 4
-        end
-      end
+    h = calculate_hsv_hue(delta, max_val, r, g, b)
 
     {round(h * 60), round(s * 100), round(v * 100)}
   end
@@ -708,7 +682,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     [r, g, b]
     |> Enum.map(fn c ->
       s = c / 255
-      if s <= 0.03928, do: s / 12.92, else: :math.pow((s + 0.055) / 1.055, 2.4)
+      calculate_linear_rgb(s)
     end)
     |> then(fn [r_l, g_l, b_l] ->
       0.2126 * r_l + 0.7152 * g_l + 0.0722 * b_l
@@ -719,7 +693,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     [r, g, b]
     |> Enum.map(fn c ->
       s = c / 255
-      if s > 0.04045, do: :math.pow((s + 0.055) / 1.055, 2.4), else: s / 12.92
+      calculate_linear_xyz(s)
     end)
     |> then(fn [r_l, g_l, b_l] ->
       x = r_l * 0.4124 + g_l * 0.3576 + b_l * 0.1805
@@ -747,10 +721,12 @@ defmodule Raxol.Terminal.Color.TrueColor do
   end
 
   defp lab_f(t) do
-    if t > :math.pow(6 / 29, 3),
-      do: :math.pow(t, 1 / 3),
-      else: 1 / 3 * :math.pow(29 / 6, 2) * t + 4 / 29
+    threshold = :math.pow(6 / 29, 3)
+    calculate_lab_f(t > threshold, t)
   end
+
+  defp calculate_lab_f(true, t), do: :math.pow(t, 1 / 3)
+  defp calculate_lab_f(false, t), do: 1 / 3 * :math.pow(29 / 6, 2) * t + 4 / 29
 
   defp to_256_color(%__MODULE__{r: r, g: g, b: b}) when r == g and g == b do
     # Grayscale
@@ -773,37 +749,37 @@ defmodule Raxol.Terminal.Color.TrueColor do
   # Red/Bright Red
   defp map_to_ansi_color(r, g, b, brightness)
        when r > 128 and g < 128 and b < 128 do
-    if brightness > 128, do: 91, else: 31
+    select_red_ansi_code(brightness)
   end
 
   # Green/Bright Green  
   defp map_to_ansi_color(r, g, b, brightness)
        when r < 128 and g > 128 and b < 128 do
-    if brightness > 128, do: 92, else: 32
+    select_green_ansi_code(brightness)
   end
 
   # Blue/Bright Blue
   defp map_to_ansi_color(r, g, b, brightness)
        when r < 128 and g < 128 and b > 128 do
-    if brightness > 128, do: 94, else: 34
+    select_blue_ansi_code(brightness)
   end
 
   # Yellow/Bright Yellow
   defp map_to_ansi_color(r, g, b, brightness)
        when r > 128 and g > 128 and b < 128 do
-    if brightness > 128, do: 93, else: 33
+    select_yellow_ansi_code(brightness)
   end
 
   # Magenta/Bright Magenta
   defp map_to_ansi_color(r, g, b, brightness)
        when r > 128 and g < 128 and b > 128 do
-    if brightness > 128, do: 95, else: 35
+    select_magenta_ansi_code(brightness)
   end
 
   # Cyan/Bright Cyan
   defp map_to_ansi_color(r, g, b, brightness)
        when r < 128 and g > 128 and b > 128 do
-    if brightness > 128, do: 96, else: 36
+    select_cyan_ansi_code(brightness)
   end
 
   # Black
@@ -812,7 +788,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
   defp map_to_ansi_color(_r, _g, _b, brightness) when brightness > 192, do: 37
   # Default - Bright White/White based on brightness
   defp map_to_ansi_color(_r, _g, _b, brightness) do
-    if brightness > 128, do: 97, else: 37
+    select_default_ansi_code(brightness)
   end
 
   defp generate_monochromatic_palette(%__MODULE__{} = base_color) do
@@ -835,4 +811,113 @@ defmodule Raxol.Terminal.Color.TrueColor do
       hsl(rem(h + 270, 360), s, l, base_color.a)
     ]
   end
+
+  # Helper functions using pattern matching instead of if statements
+
+  defp convert_to_atom(color_name) when is_binary(color_name),
+    do: String.to_atom(color_name)
+
+  defp convert_to_atom(color_name) when is_atom(color_name), do: color_name
+
+  defp order_luminance(l1, l2) when l1 > l2, do: {l1, l2}
+  defp order_luminance(l1, l2), do: {l2, l1}
+
+  defp select_best_contrast(black, _white, black_contrast, white_contrast)
+       when black_contrast > white_contrast,
+       do: black
+
+  defp select_best_contrast(_black, white, _black_contrast, _white_contrast),
+    do: white
+
+  defp format_hex_with_alpha(r, g, b, a) when a < 255 do
+    "##{pad_hex(r)}#{pad_hex(g)}#{pad_hex(b)}#{pad_hex(a)}"
+  end
+
+  defp format_hex_with_alpha(r, g, b, _a) do
+    "##{pad_hex(r)}#{pad_hex(g)}#{pad_hex(b)}"
+  end
+
+  defp check_true_color_support(colorterm, term)
+       when colorterm in ["truecolor", "24bit"],
+       do: true
+
+  defp check_true_color_support("truecolor", term) when is_binary(term) do
+    String.contains?(term, "256color")
+  end
+
+  defp check_true_color_support(_colorterm, _term), do: false
+
+  defp check_256_color_support(nil), do: false
+  defp check_256_color_support(term) when term == "xterm-kitty", do: true
+
+  defp check_256_color_support(term) when is_binary(term) do
+    String.contains?(term, "256color")
+  end
+
+  defp check_16_color_support(nil), do: false
+  defp check_16_color_support(term) when term in ["dumb", "unknown"], do: false
+  defp check_16_color_support(_term), do: true
+
+  defp calculate_hsl_values(0, l, _max_val, _min_val, _r, _g, _b) do
+    {0, 0, round(l * 100)}
+  end
+
+  defp calculate_hsl_values(delta, l, max_val, min_val, r, g, b) do
+    s = calculate_hsl_saturation(l, delta, max_val, min_val)
+    h = calculate_hue(max_val, delta, r, g, b)
+    {round(h * 60), round(s * 100), round(l * 100)}
+  end
+
+  defp calculate_hsl_saturation(l, delta, max_val, min_val) when l > 0.5 do
+    delta / (2 - max_val - min_val)
+  end
+
+  defp calculate_hsl_saturation(_l, delta, max_val, min_val) do
+    delta / (max_val + min_val)
+  end
+
+  defp calculate_saturation(0, _delta), do: 0
+  defp calculate_saturation(max_val, delta), do: delta / max_val
+
+  defp calculate_hsv_hue(0, _max_val, _r, _g, _b), do: 0
+
+  defp calculate_hsv_hue(delta, max_val, r, g, b) do
+    case max_val do
+      ^r -> rem((g - b) / delta + adjust_for_negative_hue(g, b), 6)
+      ^g -> (b - r) / delta + 2
+      ^b -> (r - g) / delta + 4
+    end
+  end
+
+  defp adjust_for_negative_hue(g, b) when g < b, do: 6
+  defp adjust_for_negative_hue(_g, _b), do: 0
+
+  defp calculate_linear_rgb(s) when s <= 0.03928, do: s / 12.92
+  defp calculate_linear_rgb(s), do: :math.pow((s + 0.055) / 1.055, 2.4)
+
+  defp calculate_linear_xyz(s) when s > 0.04045,
+    do: :math.pow((s + 0.055) / 1.055, 2.4)
+
+  defp calculate_linear_xyz(s), do: s / 12.92
+
+  defp select_red_ansi_code(brightness) when brightness > 128, do: 91
+  defp select_red_ansi_code(_brightness), do: 31
+
+  defp select_green_ansi_code(brightness) when brightness > 128, do: 92
+  defp select_green_ansi_code(_brightness), do: 32
+
+  defp select_blue_ansi_code(brightness) when brightness > 128, do: 94
+  defp select_blue_ansi_code(_brightness), do: 34
+
+  defp select_yellow_ansi_code(brightness) when brightness > 128, do: 93
+  defp select_yellow_ansi_code(_brightness), do: 33
+
+  defp select_magenta_ansi_code(brightness) when brightness > 128, do: 95
+  defp select_magenta_ansi_code(_brightness), do: 35
+
+  defp select_cyan_ansi_code(brightness) when brightness > 128, do: 96
+  defp select_cyan_ansi_code(_brightness), do: 36
+
+  defp select_default_ansi_code(brightness) when brightness > 128, do: 97
+  defp select_default_ansi_code(_brightness), do: 37
 end

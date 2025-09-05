@@ -22,32 +22,39 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
         ) :: {map(), ScrollBuffer.t()}
   def process_scroll_region(state, x, y, width, height, amount) do
     # Validate region bounds
-    if x < 0 or y < 0 or width <= 0 or height <= 0 or
-         x + width > state.active_buffer.width or
-         y + height > state.active_buffer.height do
-      # Invalid region, return unchanged buffers
-      {state.active_buffer, state.scrollback_buffer}
-    else
-      # Perform scrolling within the region
-      new_active_buffer =
-        scroll_region_in_buffer(
-          state.active_buffer,
-          x,
-          y,
-          width,
-          height,
-          amount
-        )
+    is_valid_region =
+      x >= 0 and y >= 0 and width > 0 and height > 0 and
+        x + width <= state.active_buffer.width and
+        y + height <= state.active_buffer.height
 
-      # Add scrolled content to scrollback buffer
-      scrolled_lines =
-        extract_scrolled_lines(state.active_buffer, x, y, width, height, amount)
+    handle_scroll_region(is_valid_region, state, x, y, width, height, amount)
+  end
 
-      new_scrollback_buffer =
-        add_lines_to_scrollback(state.scrollback_buffer, scrolled_lines)
+  defp handle_scroll_region(false, state, _x, _y, _width, _height, _amount) do
+    # Invalid region, return unchanged buffers
+    {state.active_buffer, state.scrollback_buffer}
+  end
 
-      {new_active_buffer, new_scrollback_buffer}
-    end
+  defp handle_scroll_region(true, state, x, y, width, height, amount) do
+    # Perform scrolling within the region
+    new_active_buffer =
+      scroll_region_in_buffer(
+        state.active_buffer,
+        x,
+        y,
+        width,
+        height,
+        amount
+      )
+
+    # Add scrolled content to scrollback buffer
+    scrolled_lines =
+      extract_scrolled_lines(state.active_buffer, x, y, width, height, amount)
+
+    new_scrollback_buffer =
+      add_lines_to_scrollback(state.scrollback_buffer, scrolled_lines)
+
+    {new_active_buffer, new_scrollback_buffer}
   end
 
   @doc """
@@ -65,12 +72,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     # Extract only the region content from each row
     region_lines =
       Enum.map(y..(y + height - 1), fn row_y ->
-        if row_y < buffer.height do
-          row = Enum.at(buffer.cells, row_y, [])
-          Enum.slice(row, x, width)
-        else
-          List.duplicate(Cell.new(), width)
-        end
+        extract_row_region(row_y < buffer.height, buffer, row_y, x, width)
       end)
 
     # Split the region into scroll_lines (lines that will be scrolled out) and remaining (lines that will stay)
@@ -102,12 +104,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     # Extract only the region content from each row
     region_lines =
       Enum.map(y..(y + height - 1), fn row_y ->
-        if row_y < buffer.height do
-          row = Enum.at(buffer.cells, row_y, [])
-          Enum.slice(row, x, width)
-        else
-          List.duplicate(Cell.new(), width)
-        end
+        extract_row_region(row_y < buffer.height, buffer, row_y, x, width)
       end)
 
     # Scroll the region content down: move lines starting from 0 down by 'amount' positions
@@ -127,14 +124,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
 
   # Private functions
 
+  defp scroll_region_in_buffer(buffer, x, y, width, height, amount)
+       when amount > 0 do
+    # Scroll up: move content up within the region
+    scroll_region_up(buffer, x, y, width, height, amount)
+  end
+
   defp scroll_region_in_buffer(buffer, x, y, width, height, amount) do
-    if amount > 0 do
-      # Scroll up: move content up within the region
-      scroll_region_up(buffer, x, y, width, height, amount)
-    else
-      # Scroll down: move content down within the region
-      scroll_region_down(buffer, x, y, width, height, abs(amount))
-    end
+    # Scroll down: move content down within the region
+    scroll_region_down(buffer, x, y, width, height, abs(amount))
   end
 
   # Extract lines that are scrolled out of the region
@@ -144,11 +142,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     Enum.map(0..(amount - 1), fn i ->
       row_y = y + i
 
-      if row_y < buffer.height do
-        Enum.slice(buffer.cells |> Enum.at(row_y, []), x, width)
-      else
-        []
-      end
+      extract_scrolled_row(row_y < buffer.height, buffer, row_y, x, width)
     end)
     |> Enum.filter(fn line -> line != [] end)
   end
@@ -161,22 +155,18 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     Enum.map((height - abs_amount)..(height - 1), fn i ->
       row_y = y + i
 
-      if row_y < buffer.height do
-        Enum.slice(buffer.cells |> Enum.at(row_y, []), x, width)
-      else
-        []
-      end
+      extract_scrolled_row(row_y < buffer.height, buffer, row_y, x, width)
     end)
     |> Enum.filter(fn line -> line != [] end)
   end
 
   # Add lines to scrollback buffer
+  defp add_lines_to_scrollback(scrollback_buffer, []) do
+    scrollback_buffer
+  end
+
   defp add_lines_to_scrollback(scrollback_buffer, lines) do
-    if lines != [] do
-      ScrollBuffer.add_content(scrollback_buffer, lines)
-    else
-      scrollback_buffer
-    end
+    ScrollBuffer.add_content(scrollback_buffer, lines)
   end
 
   # Helper function to replace a region in the buffer
@@ -191,16 +181,15 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     cells
     |> Enum.with_index()
     |> Enum.map(fn {row, row_y} ->
-      if row_in_region?(row_y, y, height) do
-        update_row_in_region(
-          row,
-          x,
-          width,
-          Enum.at(new_region_lines, row_y - y)
-        )
-      else
-        row
-      end
+      handle_row_update(
+        row_in_region?(row_y, y, height),
+        row,
+        x,
+        width,
+        new_region_lines,
+        row_y,
+        y
+      )
     end)
   end
 
@@ -212,18 +201,59 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     row
     |> Enum.with_index()
     |> Enum.map(fn {cell, col_x} ->
-      if col_in_region?(col_x, x, width) do
-        new_cell = Enum.at(region_row, col_x - x)
-        # Return new_cell or create empty cell if nil
-        new_cell || Cell.new()
-      else
-        cell
-      end
+      handle_cell_update(
+        col_in_region?(col_x, x, width),
+        cell,
+        region_row,
+        col_x,
+        x
+      )
     end)
   end
 
   defp col_in_region?(col_x, x, width) do
     col_x >= x and col_x < x + width
+  end
+
+  # Helper functions for refactored if statements
+  defp extract_row_region(true, buffer, row_y, x, width) do
+    row = Enum.at(buffer.cells, row_y, [])
+    Enum.slice(row, x, width)
+  end
+
+  defp extract_row_region(false, _buffer, _row_y, _x, width) do
+    List.duplicate(Cell.new(), width)
+  end
+
+  defp extract_scrolled_row(true, buffer, row_y, x, width) do
+    Enum.slice(buffer.cells |> Enum.at(row_y, []), x, width)
+  end
+
+  defp extract_scrolled_row(false, _buffer, _row_y, _x, _width) do
+    []
+  end
+
+  defp handle_row_update(true, row, x, width, new_region_lines, row_y, y) do
+    update_row_in_region(
+      row,
+      x,
+      width,
+      Enum.at(new_region_lines, row_y - y)
+    )
+  end
+
+  defp handle_row_update(false, row, _x, _width, _new_region_lines, _row_y, _y) do
+    row
+  end
+
+  defp handle_cell_update(true, _cell, region_row, col_x, x) do
+    new_cell = Enum.at(region_row, col_x - x)
+    # Return new_cell or create empty cell if nil
+    new_cell || Cell.new()
+  end
+
+  defp handle_cell_update(false, cell, _region_row, _col_x, _x) do
+    cell
   end
 
   @doc """

@@ -84,12 +84,7 @@ defmodule Raxol.UI.Components.Progress.Indeterminate do
   defp calculate_position(frame, width, segment_size) do
     total_frames = width * 2 - segment_size * 2
     pos = rem(frame, total_frames)
-
-    if pos < width - segment_size do
-      pos
-    else
-      total_frames - pos
-    end
+    calculate_final_position(pos, width, segment_size, total_frames)
   end
 
   defp create_indeterminate_elements(
@@ -106,17 +101,7 @@ defmodule Raxol.UI.Components.Progress.Indeterminate do
     elements = []
 
     elements =
-      if left_width > 0 do
-        [
-          Raxol.View.Elements.label(
-            content: String.duplicate(" ", left_width),
-            style: background_style
-          )
-          | elements
-        ]
-      else
-        elements
-      end
+      add_left_element_if_needed(left_width, elements, background_style)
 
     elements = [
       Raxol.View.Elements.label(
@@ -127,18 +112,43 @@ defmodule Raxol.UI.Components.Progress.Indeterminate do
     ]
 
     elements =
-      if right_width > 0 do
-        [
-          Raxol.View.Elements.label(
-            content: String.duplicate(" ", right_width),
-            style: background_style
-          )
-          | elements
-        ]
-      else
-        elements
-      end
+      add_right_element_if_needed(right_width, elements, background_style)
 
     Enum.reverse(elements)
+  end
+
+  # Helper functions for pattern matching instead of if statements
+
+  defp calculate_final_position(pos, width, segment_size, total_frames) do
+    case pos < width - segment_size do
+      true -> pos
+      false -> total_frames - pos
+    end
+  end
+
+  defp add_left_element_if_needed(0, elements, _background_style), do: elements
+
+  defp add_left_element_if_needed(left_width, elements, background_style)
+       when left_width > 0 do
+    [
+      Raxol.View.Elements.label(
+        content: String.duplicate(" ", left_width),
+        style: background_style
+      )
+      | elements
+    ]
+  end
+
+  defp add_right_element_if_needed(0, elements, _background_style), do: elements
+
+  defp add_right_element_if_needed(right_width, elements, background_style)
+       when right_width > 0 do
+    [
+      Raxol.View.Elements.label(
+        content: String.duplicate(" ", right_width),
+        style: background_style
+      )
+      | elements
+    ]
   end
 end

@@ -168,12 +168,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
     key_store = init_key_store(config)
 
     # Initialize HSM if configured
-    hsm_client =
-      if config.use_hsm do
-        init_hsm_client(config.hsm_config)
-      else
-        nil
-      end
+    hsm_client = initialize_hsm_if_configured(config.use_hsm, config.hsm_config)
 
     state = %__MODULE__{
       master_key: master_key,
@@ -396,12 +391,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
     key_id = generate_key_id(purpose)
     algorithm = Keyword.get(opts, :algorithm, state.config.algorithm)
 
-    key_material =
-      if state.hsm_client do
-        generate_key_in_hsm(algorithm, state.hsm_client)
-      else
-        generate_key_material(algorithm)
-      end
+    key_material = generate_key_by_source(state.hsm_client, algorithm)
 
     key = %{
       id: key_id,
@@ -444,14 +434,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
       {key, expiry} ->
         # Check if cache entry is still valid
-        if expiry > System.system_time(:millisecond) do
-          # Cache hit
-          new_metrics = Map.update!(state.metrics, :cache_hits, &(&1 + 1))
-          {:ok, key, %{state | metrics: new_metrics}}
-        else
-          # Expired cache entry
-          load_and_cache_key(key_id, version, state)
-        end
+        handle_cache_entry_validity(expiry, key, state, key_id, version)
 
       _ ->
         # Invalid cache entry
@@ -719,12 +702,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
   end
 
   defp load_and_cache_key(key_id, version, state) do
-    actual_version =
-      if version == :latest do
-        Map.get(state.key_versions, key_id, [1]) |> hd()
-      else
-        version
-      end
+    actual_version = resolve_key_version(version, key_id, state)
 
     file_path =
       Path.join(state.key_store.path, "#{key_id}_v#{actual_version}.key")
@@ -793,19 +771,11 @@ defmodule Raxol.Security.Encryption.KeyManager do
     now = DateTime.utc_now()
 
     Enum.reduce(state.active_keys, state, fn {key_id, key}, acc_state ->
-      if should_rotate?(key, now, acc_state.config.rotation_days) do
-        case rotate_encryption_key(key_id, acc_state) do
-          {:ok, _new_version, new_state} ->
-            Logger.info("Automatically rotated key #{key_id}")
-            new_state
-
-          {:error, reason} ->
-            Logger.error("Failed to rotate key #{key_id}: #{inspect(reason)}")
-            acc_state
-        end
-      else
+      process_key_rotation(
+        should_rotate?(key, now, acc_state.config.rotation_days),
+        key_id,
         acc_state
-      end
+      )
     end)
   end
 
@@ -869,5 +839,54 @@ defmodule Raxol.Security.Encryption.KeyManager do
       details: details,
       user: get_current_user()
     )
+  end
+
+  # Helper functions for if statement elimination
+
+  defp initialize_hsm_if_configured(false, _config), do: nil
+
+  defp initialize_hsm_if_configured(true, hsm_config),
+    do: init_hsm_client(hsm_config)
+
+  defp generate_key_by_source(nil, algorithm),
+    do: generate_key_material(algorithm)
+
+  defp generate_key_by_source(hsm_client, algorithm),
+    do: generate_key_in_hsm(algorithm, hsm_client)
+
+  defp handle_cache_entry_validity(expiry, key, state, key_id, version) do
+    current_time = :erlang.system_time(:millisecond)
+    process_cache_validity(expiry > current_time, key, state, key_id, version)
+  end
+
+  defp process_cache_validity(true, key, state, _key_id, _version) do
+    # Cache hit
+    new_metrics = Map.update!(state.metrics, :cache_hits, &(&1 + 1))
+    {:ok, key, %{state | metrics: new_metrics}}
+  end
+
+  defp process_cache_validity(false, _key, state, key_id, version) do
+    # Expired cache entry
+    load_and_cache_key(key_id, version, state)
+  end
+
+  defp resolve_key_version(:latest, key_id, state) do
+    Map.get(state.key_versions, key_id, [1]) |> hd()
+  end
+
+  defp resolve_key_version(version, _key_id, _state), do: version
+
+  defp process_key_rotation(false, _key_id, acc_state), do: acc_state
+
+  defp process_key_rotation(true, key_id, acc_state) do
+    case rotate_encryption_key(key_id, acc_state) do
+      {:ok, _new_version, new_state} ->
+        Logger.info("Automatically rotated key #{key_id}")
+        new_state
+
+      {:error, reason} ->
+        Logger.error("Failed to rotate key #{key_id}: #{inspect(reason)}")
+        acc_state
+    end
   end
 end

@@ -6,7 +6,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   updates the active theme accordingly.
   """
 
-  require Raxol.Core.Runtime.Log
+  # require Raxol.Core.Runtime.Log  # Commented out due to missing module
 
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.UserPreferences
@@ -61,13 +61,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       :ok
   """
   def cleanup do
-    if Mix.env() == :test do
-      # Only try to reset if the process exists
-      case Process.whereis(UserPreferences) do
-        nil -> :ok
-        _pid -> UserPreferences.reset_to_defaults_for_test!()
-      end
-    end
+    handle_test_cleanup(Mix.env() == :test)
 
     EventManager.unregister_handler(
       :accessibility_high_contrast,
@@ -121,7 +115,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   Updates the theme based on high contrast setting.
   """
   def handle_high_contrast({:accessibility_high_contrast, enabled}) do
-    require Raxol.Core.Runtime.Log
+    # require Raxol.Core.Runtime.Log  # Commented out due to missing module
 
     # Only try to set preference if the process exists
     case Process.whereis(UserPreferences) do
@@ -129,9 +123,9 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       _pid -> UserPreferences.set(pref_key(:high_contrast), enabled)
     end
 
-    Raxol.Core.Runtime.Log.debug(
-      "ThemeIntegration handling high contrast event: #{enabled}"
-    )
+    # Raxol.Core.Runtime.Log.debug(
+    #   "ThemeIntegration handling high contrast event: #{enabled}"
+    # )
 
     EventManager.trigger(:ui_refresh_required, %{reason: :theme_change})
 
@@ -153,11 +147,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
         _pid -> UserPreferences.get(pref_key(:high_contrast)) || false
       end
 
-    if high_contrast do
-      :high_contrast
-    else
-      :standard
-    end
+    determine_accessibility_mode(high_contrast)
   end
 
   @doc """
@@ -169,7 +159,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       :ok
   """
   def handle_reduced_motion({:accessibility_reduced_motion, enabled}) do
-    require Raxol.Core.Runtime.Log
+    # require Raxol.Core.Runtime.Log  # Commented out due to missing module
 
     # Only try to set preference if the process exists
     case Process.whereis(UserPreferences) do
@@ -177,7 +167,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       _pid -> UserPreferences.set(pref_key(:reduced_motion), enabled)
     end
 
-    Raxol.Core.Runtime.Log.debug("Restoring FocusRing config for normal motion")
+    # Raxol.Core.Runtime.Log.debug("Restoring FocusRing config for normal motion")
 
     EventManager.dispatch({:theme_changed, %{reduced_motion: enabled}})
 
@@ -218,11 +208,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
     theme = Theme.current()
     mode = get_accessibility_mode()
 
-    if mode == :high_contrast do
-      Theme.adjust_for_high_contrast(theme)
-    else
-      theme
-    end
+    apply_theme_adjustments(mode == :high_contrast, theme, mode)
   end
 
   @doc """
@@ -303,10 +289,26 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   def get_text_scale do
     large_text = UserPreferences.get(pref_key(:large_text)) || false
 
-    if large_text do
-      1.5
-    else
-      1.0
+    get_text_scale_factor(large_text)
+  end
+
+  defp handle_test_cleanup(false), do: :ok
+  defp handle_test_cleanup(true) do
+    # Only try to reset if the process exists
+    case Process.whereis(UserPreferences) do
+      nil -> :ok
+      _pid -> UserPreferences.reset_to_defaults_for_test!()
     end
   end
+
+  defp determine_accessibility_mode(true), do: :high_contrast
+  defp determine_accessibility_mode(false), do: :standard
+
+  defp apply_theme_adjustments(true, theme, _mode) do
+    Theme.adjust_for_high_contrast(theme)
+  end
+  defp apply_theme_adjustments(false, theme, _mode), do: theme
+
+  defp get_text_scale_factor(true), do: 1.5
+  defp get_text_scale_factor(false), do: 1.0
 end

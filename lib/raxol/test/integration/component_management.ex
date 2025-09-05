@@ -43,18 +43,19 @@ defmodule Raxol.Test.Integration.ComponentManagement do
 
     # Set up parent relationship if provided
     mounted_state =
-      if parent do
-        Map.put(mounted_state, :parent, parent.state)
-      else
-        mounted_state
+      case parent do
+        nil -> mounted_state
+        parent -> Map.put(mounted_state, :parent, parent.state)
       end
 
     # Trigger mount callbacks
-    if function_exported?(component.module, :mount, 1) do
-      {new_state, _commands} = component.module.mount(mounted_state)
-      %{component | state: new_state}
-    else
-      %{component | state: mounted_state}
+    case function_exported?(component.module, :mount, 1) do
+      true ->
+        {new_state, _commands} = component.module.mount(mounted_state)
+        %{component | state: new_state}
+      
+      false ->
+        %{component | state: mounted_state}
     end
   end
 
@@ -64,10 +65,9 @@ defmodule Raxol.Test.Integration.ComponentManagement do
   def unmount_component(component) do
     # Trigger unmount callbacks
     new_state =
-      if function_exported?(component.module, :unmount, 1) do
-        component.module.unmount(component.state)
-      else
-        component.state
+      case function_exported?(component.module, :unmount, 1) do
+        true -> component.module.unmount(component.state)
+        false -> component.state
       end
 
     # Set unmounted flag
@@ -86,17 +86,19 @@ defmodule Raxol.Test.Integration.ComponentManagement do
   def find_child_component_by_id(parent, child_id) do
     # This is a simplified implementation - in a real system, you'd have proper child references
     # For now, we'll create a mock child component with the expected state
-    if Map.has_key?(parent.state.child_states, child_id) do
-      child_state = parent.state.child_states[child_id]
+    case Map.has_key?(parent.state.child_states, child_id) do
+      true ->
+        child_state = parent.state.child_states[child_id]
 
-      # Create a mock child component struct
-      %{
-        module:
-          Raxol.UI.Components.Integration.ComponentIntegrationTest.ChildComponent,
-        state: child_state
-      }
-    else
-      nil
+        # Create a mock child component struct
+        %{
+          module:
+            Raxol.UI.Components.Integration.ComponentIntegrationTest.ChildComponent,
+          state: child_state
+        }
+      
+      false ->
+        nil
     end
   end
 

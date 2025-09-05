@@ -11,16 +11,15 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
   Returns nil if no search text is provided, otherwise returns filtered options.
   """
   def filter_options(options, search_text, searchable_fields) do
-    if search_text == "" do
-      nil
-    else
-      filtered =
-        Enum.filter(options, fn option ->
-          search_matches?(option, search_text, searchable_fields)
-        end)
+    do_filter_options(search_text == "", options, search_text, searchable_fields)
+  end
 
-      filtered
-    end
+  defp do_filter_options(true, _options, _search_text, _searchable_fields), do: nil
+
+  defp do_filter_options(false, options, search_text, searchable_fields) do
+    Enum.filter(options, fn option ->
+      search_matches?(option, search_text, searchable_fields)
+    end)
   end
 
   @doc """
@@ -38,23 +37,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
       String.contains?(String.downcase(label), String.downcase(search_text))
 
     # Search specified fields in the value if it's a map
-    value_match =
-      if is_map(value) do
-        Enum.any?(searchable_fields, fn field ->
-          case Map.get(value, field) do
-            nil ->
-              false
-
-            field_value ->
-              String.contains?(
-                String.downcase(to_string(field_value)),
-                String.downcase(search_text)
-              )
-          end
-        end)
-      else
-        false
-      end
+    value_match = search_value_fields(value, searchable_fields, search_text)
 
     label_match or value_match
   end
@@ -73,4 +56,21 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
         scroll_offset: 0
     }
   end
+
+  defp search_value_fields(value, searchable_fields, search_text) when is_map(value) do
+    Enum.any?(searchable_fields, fn field ->
+      case Map.get(value, field) do
+        nil ->
+          false
+
+        field_value ->
+          String.contains?(
+            String.downcase(to_string(field_value)),
+            String.downcase(search_text)
+          )
+      end
+    end)
+  end
+
+  defp search_value_fields(_value, _searchable_fields, _search_text), do: false
 end

@@ -142,34 +142,25 @@ defmodule Raxol.Terminal.Graphics.Manager do
 
   # Private helper functions
 
+  defp validate_result(true, _error_type), do: :ok
+  defp validate_result(false, error_type), do: {:error, error_type}
+
   defp validate_image(image) do
     required_fields = [:width, :height, :pixels, :format]
-
-    if Enum.all?(required_fields, &Map.has_key?(image, &1)) do
-      :ok
-    else
-      {:error, :invalid_image}
-    end
+    has_all_fields = Enum.all?(required_fields, &Map.has_key?(image, &1))
+    validate_result(has_all_fields, :invalid_image)
   end
 
   defp validate_opts(opts) do
     required_fields = [:scale, :dither, :optimize, :cache]
-
-    if Enum.all?(required_fields, &Map.has_key?(opts, &1)) do
-      :ok
-    else
-      {:error, :invalid_opts}
-    end
+    has_all_fields = Enum.all?(required_fields, &Map.has_key?(opts, &1))
+    validate_result(has_all_fields, :invalid_opts)
   end
 
   defp validate_sixel_data(sixel_data) do
     required_fields = [:width, :height, :colors, :data]
-
-    if Enum.all?(required_fields, &Map.has_key?(sixel_data, &1)) do
-      :ok
-    else
-      {:error, :invalid_sixel_data}
-    end
+    has_all_fields = Enum.all?(required_fields, &Map.has_key?(sixel_data, &1))
+    validate_result(has_all_fields, :invalid_sixel_data)
   end
 
   defp generate_cache_key(image, opts) do
@@ -314,39 +305,55 @@ defmodule Raxol.Terminal.Graphics.Manager do
   end
 
   defp distribute_to_pixel(pixels, x, y, width, height, error, factor) do
-    if x >= 0 and x < width and y < height do
-      index = y * width + x
+    bounds_valid = x >= 0 and x < width and y < height
+    handle_pixel_distribution(bounds_valid, pixels, x, y, width, error, factor)
+  end
 
-      if index < length(pixels) do
-        pixel = Enum.at(pixels, index)
+  defp handle_pixel_distribution(
+         false,
+         pixels,
+         _x,
+         _y,
+         _width,
+         _error,
+         _factor
+       ),
+       do: pixels
 
-        updated_pixel = %{
-          pixel
-          | r: max(0, min(255, pixel.r + error.r * factor)),
-            g: max(0, min(255, pixel.g + error.g * factor)),
-            b: max(0, min(255, pixel.b + error.b * factor))
-        }
+  defp handle_pixel_distribution(true, pixels, x, y, width, error, factor) do
+    index = y * width + x
+    index_valid = index < length(pixels)
+    update_pixel_if_valid(index_valid, pixels, index, error, factor)
+  end
 
-        List.replace_at(pixels, index, updated_pixel)
-      else
-        pixels
-      end
-    else
-      pixels
-    end
+  defp update_pixel_if_valid(false, pixels, _index, _error, _factor), do: pixels
+
+  defp update_pixel_if_valid(true, pixels, index, error, factor) do
+    pixel = Enum.at(pixels, index)
+
+    updated_pixel = %{
+      pixel
+      | r: max(0, min(255, pixel.r + error.r * factor)),
+        g: max(0, min(255, pixel.g + error.g * factor)),
+        b: max(0, min(255, pixel.b + error.b * factor))
+    }
+
+    List.replace_at(pixels, index, updated_pixel)
   end
 
   defp scale_image(image, scale \\ 1.0) do
-    if scale == 1.0 do
+    apply_scaling(scale == 1.0, image, scale)
+  end
+
+  defp apply_scaling(true, image, _scale), do: image
+
+  defp apply_scaling(false, image, scale) do
+    %{
       image
-    else
-      %{
-        image
-        | width: trunc(image.width * scale),
-          height: trunc(image.height * scale),
-          pixels: scale_pixels(image.pixels, image.width, image.height, scale)
-      }
-    end
+      | width: trunc(image.width * scale),
+        height: trunc(image.height * scale),
+        pixels: scale_pixels(image.pixels, image.width, image.height, scale)
+    }
   end
 
   defp scale_pixels(pixels, original_width, original_height, scale) do

@@ -32,31 +32,9 @@ defmodule Raxol.Playground.CodeGenerator do
     module_name = generate_module_name(component)
 
     imports =
-      if include_imports do
-        """
-        defmodule #{module_name} do
-          use Raxol.Component
-          #{generate_aliases(component)}
-        """
-      else
-        """
-        defmodule #{module_name} do
-          use Raxol.Component
-        """
-      end
+      generate_component_imports(include_imports, module_name, component)
 
-    init_function =
-      if map_size(state) > 0 do
-        """
-          
-          @impl true
-          def init(_props) do
-            {:ok, #{format_map(state, 4)}}
-          end
-        """
-      else
-        ""
-      end
+    init_function = generate_init_function(map_size(state) > 0, state)
 
     render_function = """
       
@@ -75,12 +53,7 @@ defmodule Raxol.Playground.CodeGenerator do
   end
 
   defp generate_standalone_code(component, props, _state, include_imports) do
-    imports =
-      if include_imports do
-        "alias #{component.module}\n\n"
-      else
-        ""
-      end
+    imports = generate_standalone_imports(include_imports, component.module)
 
     """
     #{imports}#{generate_render_call(component, props)}
@@ -88,32 +61,160 @@ defmodule Raxol.Playground.CodeGenerator do
   end
 
   defp generate_example_code(component, props, state, include_imports) do
-    imports =
-      if include_imports do
-        """
-        # Add to your component or view:
-        alias #{component.module}
+    imports = generate_example_imports(include_imports, component.module)
 
-        """
-      else
-        ""
-      end
-
-    state_comment =
-      if map_size(state) > 0 do
-        """
-        # Component state (managed internally):
-        # #{format_map(state, 0)}
-
-        """
-      else
-        ""
-      end
+    state_comment = generate_state_comment(map_size(state) > 0, state)
 
     """
     #{imports}# Example usage:
     #{state_comment}#{generate_render_call(component, props)}
     """
+  end
+
+  # Pattern matching helper functions for code generation
+
+  defp generate_component_imports(false, module_name, _component) do
+    """
+    defmodule #{module_name} do
+      use Raxol.Component
+    """
+  end
+
+  defp generate_component_imports(true, module_name, component) do
+    """
+    defmodule #{module_name} do
+      use Raxol.Component
+      #{generate_aliases(component)}
+    """
+  end
+
+  defp generate_init_function(false, _state), do: ""
+
+  defp generate_init_function(true, state) do
+    """
+      
+      @impl true
+      def init(_props) do
+        {:ok, #{format_map(state, 4)}}
+      end
+    """
+  end
+
+  defp generate_standalone_imports(false, _module), do: ""
+
+  defp generate_standalone_imports(true, module) do
+    "alias #{module}\n\n"
+  end
+
+  defp generate_example_imports(false, _module), do: ""
+
+  defp generate_example_imports(true, module) do
+    """
+    # Add to your component or view:
+    alias #{module}
+
+    """
+  end
+
+  defp generate_state_comment(false, _state), do: ""
+
+  defp generate_state_comment(true, state) do
+    """
+    # Component state (managed internally):
+    # #{format_map(state, 0)}
+
+    """
+  end
+
+  defp generate_render_call_with_props(true, module_alias, _props) do
+    "#{module_alias}.render()"
+  end
+
+  defp generate_render_call_with_props(false, module_alias, props) do
+    formatted_props = format_props(props)
+
+    format_multiline_render_call(
+      String.contains?(formatted_props, "\n"),
+      module_alias,
+      formatted_props
+    )
+  end
+
+  defp format_multiline_render_call(true, module_alias, formatted_props) do
+    """
+    #{module_alias}.render(#{formatted_props})
+    """
+  end
+
+  defp format_multiline_render_call(false, module_alias, formatted_props) do
+    "#{module_alias}.render(#{formatted_props})"
+  end
+
+  defp format_string_value(true, value), do: ~s('#{value}')
+  defp format_string_value(false, value), do: ~s("#{value}")
+
+  defp format_list_value(true, value) do
+    formatted_items = Enum.map(value, &format_value/1)
+    "[#{Enum.join(formatted_items, ", ")}]"
+  end
+
+  defp format_list_value(false, value) do
+    formatted_items =
+      value
+      |> Enum.map(&format_value/1)
+      |> Enum.map(&("  " <> &1))
+      |> Enum.join(",\n")
+
+    "[\n#{formatted_items}\n]"
+  end
+
+  defp format_event_handlers(true, _handlers), do: ""
+
+  defp format_event_handlers(false, handlers) do
+    handler_functions = Enum.map(handlers, &generate_handler/1)
+    "\n" <> Enum.join(handler_functions, "\n")
+  end
+
+  defp generate_handler_with_state_key(true, handler) do
+    """
+
+    @impl true
+    def handle_event(#{handler.event}, state) do
+      # #{handler.action}
+      {:ok, %{state | #{handler.state_key}: not state.#{handler.state_key}}}
+    end
+    """
+  end
+
+  defp generate_handler_with_state_key(false, handler) do
+    """
+
+    @impl true
+    def handle_event(#{handler.event}, state) do
+      # #{handler.action}
+      # Add your logic here
+      {:ok, state}
+    end
+    """
+  end
+
+  defp generate_handler_tests(true, _handlers, _component), do: ""
+
+  defp generate_handler_tests(false, handlers, component) do
+    test_cases =
+      Enum.map(handlers, fn handler ->
+        """
+        test "handles #{handler.event} event" do
+          {:ok, initial_state} = #{generate_module_name(component)}.init(%{})
+          {:ok, new_state} = #{generate_module_name(component)}.handle_event(#{handler.event}, initial_state)
+          
+          # Add assertions based on expected behavior
+          assert new_state != initial_state
+        end
+        """
+      end)
+
+    Enum.join(test_cases, "\n")
   end
 
   # Private Functions
@@ -158,19 +259,7 @@ defmodule Raxol.Playground.CodeGenerator do
   defp generate_render_call(component, props) do
     module_alias = get_module_alias(component.module)
 
-    if map_size(props) == 0 do
-      "#{module_alias}.render()"
-    else
-      formatted_props = format_props(props)
-
-      if String.contains?(formatted_props, "\n") do
-        """
-        #{module_alias}.render(#{formatted_props})
-        """
-      else
-        "#{module_alias}.render(#{formatted_props})"
-      end
-    end
+    generate_render_call_with_props(map_size(props) == 0, module_alias, props)
   end
 
   defp get_module_alias(full_module) do
@@ -236,11 +325,7 @@ defmodule Raxol.Playground.CodeGenerator do
   end
 
   defp format_value(value) when is_binary(value) do
-    if String.contains?(value, "\"") do
-      ~s('#{value}')
-    else
-      ~s("#{value}")
-    end
+    format_string_value(String.contains?(value, "\""), value)
   end
 
   defp format_value(value) when is_atom(value) do
@@ -256,18 +341,10 @@ defmodule Raxol.Playground.CodeGenerator do
   end
 
   defp format_value(value) when is_list(value) do
-    if Enum.all?(value, &is_binary/1) and length(value) <= 5 do
-      formatted_items = Enum.map(value, &format_value/1)
-      "[#{Enum.join(formatted_items, ", ")}]"
-    else
-      formatted_items =
-        value
-        |> Enum.map(&format_value/1)
-        |> Enum.map(&("  " <> &1))
-        |> Enum.join(",\n")
-
-      "[\n#{formatted_items}\n]"
-    end
+    format_list_value(
+      Enum.all?(value, &is_binary/1) and length(value) <= 5,
+      value
+    )
   end
 
   defp format_value(value) when is_map(value) do
@@ -281,12 +358,7 @@ defmodule Raxol.Playground.CodeGenerator do
   defp generate_event_handlers(component, state) do
     handlers = get_common_handlers(component, state)
 
-    if Enum.empty?(handlers) do
-      ""
-    else
-      handler_functions = Enum.map(handlers, &generate_handler/1)
-      "\n" <> Enum.join(handler_functions, "\n")
-    end
+    format_event_handlers(Enum.empty?(handlers), handlers)
   end
 
   defp get_common_handlers(component, _state) do
@@ -326,26 +398,7 @@ defmodule Raxol.Playground.CodeGenerator do
   end
 
   defp generate_handler(handler) do
-    if Map.has_key?(handler, :state_key) do
-      """
-
-      @impl true
-      def handle_event(#{handler.event}, state) do
-        # #{handler.action}
-        {:ok, %{state | #{handler.state_key}: not state.#{handler.state_key}}}
-      end
-      """
-    else
-      """
-
-      @impl true
-      def handle_event(#{handler.event}, state) do
-        # #{handler.action}
-        # Add your logic here
-        {:ok, state}
-      end
-      """
-    end
+    generate_handler_with_state_key(Map.has_key?(handler, :state_key), handler)
   end
 
   @doc """
@@ -443,23 +496,6 @@ defmodule Raxol.Playground.CodeGenerator do
   defp generate_event_tests(component, state) do
     handlers = get_common_handlers(component, state)
 
-    if Enum.empty?(handlers) do
-      ""
-    else
-      test_cases =
-        Enum.map(handlers, fn handler ->
-          """
-          test "handles #{handler.event} event" do
-            {:ok, initial_state} = #{generate_module_name(component)}.init(%{})
-            {:ok, new_state} = #{generate_module_name(component)}.handle_event(#{handler.event}, initial_state)
-            
-            # Add assertions based on expected behavior
-            assert new_state != initial_state
-          end
-          """
-        end)
-
-      Enum.join(test_cases, "\n")
-    end
+    generate_handler_tests(Enum.empty?(handlers), handlers, component)
   end
 end

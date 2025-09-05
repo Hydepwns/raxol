@@ -30,11 +30,19 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
     component = apply_props(component, props)
 
     # Call component's mount handler if it exists
-    if function_exported?(component.__struct__, :mount, 2) do
-      component.__struct__.mount(component, context)
-    else
-      {component, []}
-    end
+    call_mount_handler(component, context)
+  end
+
+  defp call_mount_handler(component, context) do
+    has_mount_handler(function_exported?(component.__struct__, :mount, 2), component, context)
+  end
+
+  defp has_mount_handler(true, component, context) do
+    component.__struct__.mount(component, context)
+  end
+
+  defp has_mount_handler(false, component, _context) do
+    {component, []}
   end
 
   @doc """
@@ -56,11 +64,19 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
     updated = apply_props(component, props)
 
     # Call component's update handler if it exists
-    if function_exported?(component.__struct__, :update, 3) do
-      component.__struct__.update(component, updated, context)
-    else
-      updated
-    end
+    call_update_handler(component, updated, context)
+  end
+
+  defp call_update_handler(component, updated, context) do
+    has_update_handler(function_exported?(component.__struct__, :update, 3), component, updated, context)
+  end
+
+  defp has_update_handler(true, component, updated, context) do
+    component.__struct__.update(component, updated, context)
+  end
+
+  defp has_update_handler(false, _component, updated, _context) do
+    updated
   end
 
   @doc """
@@ -78,11 +94,19 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   @spec unmount(Component.t(), map()) :: {Component.t(), list()}
   def unmount(component, context \\ %{}) do
     # Call component's unmount handler if it exists
-    if function_exported?(component.__struct__, :unmount, 2) do
-      component.__struct__.unmount(component, context)
-    else
-      {component, []}
-    end
+    call_unmount_handler(component, context)
+  end
+
+  defp call_unmount_handler(component, context) do
+    has_unmount_handler(function_exported?(component.__struct__, :unmount, 2), component, context)
+  end
+
+  defp has_unmount_handler(true, component, context) do
+    component.__struct__.unmount(component, context)
+  end
+
+  defp has_unmount_handler(false, component, _context) do
+    {component, []}
   end
 
   @doc """
@@ -103,14 +127,22 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   @spec render(Component.t(), map()) :: {Component.t(), map()}
   def render(component, context) do
     # Call the component's render function
-    if function_exported?(component.__struct__, :render, 2) do
-      {updated_component, view} =
-        component.__struct__.render(component, context)
+    call_render_handler(component, context)
+  end
 
-      {updated_component, view}
-    else
-      {component, %{type: :unknown_component}}
-    end
+  defp call_render_handler(component, context) do
+    has_render_handler(function_exported?(component.__struct__, :render, 2), component, context)
+  end
+
+  defp has_render_handler(true, component, context) do
+    {updated_component, view} =
+      component.__struct__.render(component, context)
+
+    {updated_component, view}
+  end
+
+  defp has_render_handler(false, component, _context) do
+    {component, %{type: :unknown_component}}
   end
 
   @doc """
@@ -132,11 +164,19 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
           {:update, Component.t()} | {:handled, Component.t()} | :passthrough
   def process_event(component, event, context) do
     # Process the event using the component's handler
-    if function_exported?(component.__struct__, :handle_event, 3) do
-      component.__struct__.handle_event(component, event, context)
-    else
-      :passthrough
-    end
+    call_event_handler(component, event, context)
+  end
+
+  defp call_event_handler(component, event, context) do
+    has_event_handler(function_exported?(component.__struct__, :handle_event, 3), component, event, context)
+  end
+
+  defp has_event_handler(true, component, event, context) do
+    component.__struct__.handle_event(component, event, context)
+  end
+
+  defp has_event_handler(false, _component, _event, _context) do
+    :passthrough
   end
 
   @doc """

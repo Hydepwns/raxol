@@ -56,64 +56,14 @@ defmodule Raxol.Plugins.ClipboardPlugin do
         %__MODULE__{} = state,
         %{type: :key, modifiers: mods, key: ?c} = _event
       ) do
-    if :ctrl in mods do
-      Raxol.Core.Runtime.Log.debug("[Clipboard] Ctrl+C detected.")
-      # Check for finalized selection and stored cells
-      if is_tuple(state.selection_start) and is_tuple(state.selection_end) and
-           is_map(state.last_cells_at_selection) do
-        Raxol.Core.Runtime.Log.debug("[Clipboard] Triggering yank_selection.")
-        result = yank_selection(state)
-        new_state = clear_selection(state)
-        # Store the yank result for debugging if needed
-        new_state = Map.put(new_state, :last_yank_result, result)
-        {:ok, new_state}
-      else
-        Raxol.Core.Runtime.Log.debug(
-          "[Clipboard] No complete selection available for copy."
-        )
-
-        {:ok, state}
-      end
-    else
-      # Not Ctrl+C, just 'c' key or other modifiers
-      {:ok, state}
-    end
+    handle_copy_key(state, mods)
   end
 
   def handle_input(
         %__MODULE__{} = state,
         %{type: :key, modifiers: mods, key: ?v} = _event
       ) do
-    if :ctrl in mods do
-      Raxol.Core.Runtime.Log.debug("[Clipboard] Ctrl+V detected.")
-
-      case get_clipboard_content() do
-        {:ok, content} when content != "" ->
-          Raxol.Core.Runtime.Log.debug(
-            "[Clipboard] Pasting content: #{content}"
-          )
-
-          # Return command for Runtime to handle
-          {:ok, state, {:command, {:paste, content}}}
-
-        {:ok, ""} ->
-          Raxol.Core.Runtime.Log.debug(
-            "[Clipboard] Clipboard is empty, nothing to paste."
-          )
-
-          {:ok, state}
-
-        {:error, reason} ->
-          Raxol.Core.Runtime.Log.error(
-            "[Clipboard] Failed to get clipboard content: #{inspect(reason)}"
-          )
-
-          {:ok, state}
-      end
-    else
-      # Not Ctrl+V, just 'v' key or other modifiers
-      {:ok, state}
-    end
+    handle_paste_key(state, mods)
   end
 
   # Catch-all for other map events or non-map events
@@ -149,14 +99,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
         selection_end: end_pos,
         last_cells_at_selection: cells
       } ->
-        if valid_selection?(start_pos, end_pos, cells) do
-          {min_x, max_x, min_y, max_y} =
-            get_selection_bounds(start_pos, end_pos)
-
-          {:ok, build_selected_text(cells, min_x, max_x, min_y, max_y)}
-        else
-          {:error, :no_selection}
-        end
+        process_valid_selection(valid_selection?(start_pos, end_pos, cells), start_pos, end_pos, cells)
 
       _ ->
         {:error, :no_selection}
@@ -212,5 +155,78 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   """
   def api_version do
     "1.0.0"
+  end
+
+  defp handle_copy_key(state, mods) do
+    handle_ctrl_modifier(state, :ctrl in mods, :copy)
+  end
+
+  defp handle_paste_key(state, mods) do
+    handle_ctrl_modifier(state, :ctrl in mods, :paste)
+  end
+
+  defp handle_ctrl_modifier(state, false, _action) do
+    {:ok, state}
+  end
+
+  defp handle_ctrl_modifier(state, true, :copy) do
+    Raxol.Core.Runtime.Log.debug("[Clipboard] Ctrl+C detected.")
+    # Check for finalized selection and stored cells
+    handle_copy_selection(state, has_complete_selection?(state))
+  end
+
+  defp handle_ctrl_modifier(state, true, :paste) do
+    Raxol.Core.Runtime.Log.debug("[Clipboard] Ctrl+V detected.")
+
+    case get_clipboard_content() do
+      {:ok, content} when content != "" ->
+        Raxol.Core.Runtime.Log.debug(
+          "[Clipboard] Pasting content: #{content}"
+        )
+        # Return command for Runtime to handle
+        {:ok, state, {:command, {:paste, content}}}
+
+      {:ok, ""} ->
+        Raxol.Core.Runtime.Log.debug(
+          "[Clipboard] Clipboard is empty, nothing to paste."
+        )
+        {:ok, state}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error(
+          "[Clipboard] Failed to get clipboard content: #{inspect(reason)}"
+        )
+        {:ok, state}
+    end
+  end
+
+  defp has_complete_selection?(state) do
+    is_tuple(state.selection_start) and is_tuple(state.selection_end) and
+      is_map(state.last_cells_at_selection)
+  end
+
+  defp handle_copy_selection(state, true) do
+    Raxol.Core.Runtime.Log.debug("[Clipboard] Triggering yank_selection.")
+    result = yank_selection(state)
+    new_state = clear_selection(state)
+    # Store the yank result for debugging if needed
+    new_state = Map.put(new_state, :last_yank_result, result)
+    {:ok, new_state}
+  end
+
+  defp handle_copy_selection(state, false) do
+    Raxol.Core.Runtime.Log.debug(
+      "[Clipboard] No complete selection available for copy."
+    )
+    {:ok, state}
+  end
+
+  defp process_valid_selection(true, start_pos, end_pos, cells) do
+    {min_x, max_x, min_y, max_y} = get_selection_bounds(start_pos, end_pos)
+    {:ok, build_selected_text(cells, min_x, max_x, min_y, max_y)}
+  end
+
+  defp process_valid_selection(false, _start_pos, _end_pos, _cells) do
+    {:error, :no_selection}
   end
 end

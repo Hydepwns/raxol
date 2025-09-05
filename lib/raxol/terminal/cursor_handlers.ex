@@ -16,11 +16,7 @@ defmodule Raxol.Terminal.CursorHandlers do
   @spec move_cursor_up(any(), non_neg_integer()) :: any()
   def move_cursor_up(emulator, count) do
     cursor = emulator.cursor
-
-    if pid?(cursor) do
-      GenServer.call(cursor, {:move_up, count})
-    end
-
+    call_cursor_if_pid(cursor, {:move_up, count})
     emulator
   end
 
@@ -30,11 +26,7 @@ defmodule Raxol.Terminal.CursorHandlers do
   @spec move_cursor_down(any(), non_neg_integer()) :: any()
   def move_cursor_down(emulator, count) do
     cursor = emulator.cursor
-
-    if pid?(cursor) do
-      GenServer.call(cursor, {:move_down, count})
-    end
-
+    call_cursor_if_pid(cursor, {:move_down, count})
     emulator
   end
 
@@ -44,11 +36,7 @@ defmodule Raxol.Terminal.CursorHandlers do
   @spec move_cursor_forward(any(), non_neg_integer()) :: any()
   def move_cursor_forward(emulator, count) do
     cursor = emulator.cursor
-
-    if pid?(cursor) do
-      GenServer.call(cursor, {:move_forward, count})
-    end
-
+    call_cursor_if_pid(cursor, {:move_forward, count})
     emulator
   end
 
@@ -58,11 +46,7 @@ defmodule Raxol.Terminal.CursorHandlers do
   @spec move_cursor_back(any(), non_neg_integer()) :: any()
   def move_cursor_back(emulator, count) do
     cursor = emulator.cursor
-
-    if pid?(cursor) do
-      GenServer.call(cursor, {:move_back, count})
-    end
-
+    call_cursor_if_pid(cursor, {:move_back, count})
     emulator
   end
 
@@ -151,5 +135,13 @@ defmodule Raxol.Terminal.CursorHandlers do
   @spec move_cursor_to(any(), non_neg_integer(), non_neg_integer()) :: any()
   def move_cursor_to(emulator, x, y) do
     Raxol.Terminal.Emulator.move_cursor_to(emulator, x, y)
+  end
+
+  # Helper function to handle cursor calls
+  defp call_cursor_if_pid(cursor, message) do
+    case pid?(cursor) do
+      true -> GenServer.call(cursor, message)
+      false -> nil
+    end
   end
 end

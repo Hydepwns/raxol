@@ -178,23 +178,48 @@ defmodule Raxol.UI.Layout.Flexbox do
     {main_axis, cross_axis} = get_axes(flex_props.flex_direction)
 
     # Calculate layout based on wrapping
-    if flex_props.flex_wrap == :nowrap do
-      calculate_single_line_layout(
-        children_with_dims,
-        space,
-        flex_props,
-        main_axis,
-        cross_axis
-      )
-    else
-      calculate_multi_line_layout(
-        children_with_dims,
-        space,
-        flex_props,
-        main_axis,
-        cross_axis
-      )
-    end
+    calculate_layout_by_wrap(
+      flex_props.flex_wrap,
+      children_with_dims,
+      space,
+      flex_props,
+      main_axis,
+      cross_axis
+    )
+  end
+
+  defp calculate_layout_by_wrap(
+         :nowrap,
+         children_with_dims,
+         space,
+         flex_props,
+         main_axis,
+         cross_axis
+       ) do
+    calculate_single_line_layout(
+      children_with_dims,
+      space,
+      flex_props,
+      main_axis,
+      cross_axis
+    )
+  end
+
+  defp calculate_layout_by_wrap(
+         _wrap_mode,
+         children_with_dims,
+         space,
+         flex_props,
+         main_axis,
+         cross_axis
+       ) do
+    calculate_multi_line_layout(
+      children_with_dims,
+      space,
+      flex_props,
+      main_axis,
+      cross_axis
+    )
   end
 
   defp measure_flex_child(child, available_space, flex_props) do
@@ -206,19 +231,19 @@ defmodule Raxol.UI.Layout.Flexbox do
     flex_basis = Map.get(flex_attrs, :basis, :auto)
 
     child_space =
-      if flex_basis == :auto do
-        available_space
-      else
-        case get_main_axis(flex_props.flex_direction) do
-          :horizontal ->
-            %{available_space | width: flex_basis}
-
-          :vertical ->
-            %{available_space | height: flex_basis}
-        end
-      end
+      get_child_space(flex_basis, available_space, flex_props.flex_direction)
 
     Engine.measure_element(child, child_space)
+  end
+
+  defp get_child_space(:auto, available_space, _flex_direction),
+    do: available_space
+
+  defp get_child_space(flex_basis, available_space, flex_direction) do
+    case get_main_axis(flex_direction) do
+      :horizontal -> %{available_space | width: flex_basis}
+      :vertical -> %{available_space | height: flex_basis}
+    end
   end
 
   defp get_flex_attributes(child) do
@@ -268,15 +293,12 @@ defmodule Raxol.UI.Layout.Flexbox do
 
     # Distribute extra space or shrink items
     sized_children =
-      if available_main_space > 0 do
-        distribute_extra_space(
-          children_with_dims,
-          available_main_space,
-          main_axis
-        )
-      else
-        shrink_items(children_with_dims, -available_main_space, main_axis)
-      end
+      handle_space_distribution(
+        available_main_space > 0,
+        children_with_dims,
+        available_main_space,
+        main_axis
+      )
 
     # Position items along main axis
     positioned_children =
@@ -284,6 +306,24 @@ defmodule Raxol.UI.Layout.Flexbox do
 
     # Position items along cross axis
     position_cross_axis(positioned_children, space, flex_props, cross_axis)
+  end
+
+  defp handle_space_distribution(
+         true,
+         children_with_dims,
+         available_main_space,
+         main_axis
+       ) do
+    distribute_extra_space(children_with_dims, available_main_space, main_axis)
+  end
+
+  defp handle_space_distribution(
+         false,
+         children_with_dims,
+         available_main_space,
+         main_axis
+       ) do
+    shrink_items(children_with_dims, -available_main_space, main_axis)
   end
 
   defp calculate_multi_line_layout(
@@ -330,26 +370,76 @@ defmodule Raxol.UI.Layout.Flexbox do
         acc + flex.grow
       end)
 
-    if total_grow == 0 do
-      children_with_dims
-    else
-      # Distribute extra space proportionally
-      Enum.map(children_with_dims, fn {child, dims, flex} ->
-        if flex.grow > 0 do
-          extra = div(extra_space * flex.grow, total_grow)
+    distribute_grow_space(
+      total_grow == 0,
+      children_with_dims,
+      extra_space,
+      total_grow,
+      main_axis
+    )
+  end
 
-          new_dims =
-            case main_axis do
-              :horizontal -> %{dims | width: dims.width + extra}
-              :vertical -> %{dims | height: dims.height + extra}
-            end
+  defp distribute_grow_space(
+         true,
+         children_with_dims,
+         _extra_space,
+         _total_grow,
+         _main_axis
+       ) do
+    children_with_dims
+  end
 
-          {child, new_dims, flex}
-        else
-          {child, dims, flex}
-        end
-      end)
-    end
+  defp distribute_grow_space(
+         false,
+         children_with_dims,
+         extra_space,
+         total_grow,
+         main_axis
+       ) do
+    # Distribute extra space proportionally
+    Enum.map(children_with_dims, fn {child, dims, flex} ->
+      apply_flex_grow(
+        flex.grow > 0,
+        child,
+        dims,
+        flex,
+        extra_space,
+        total_grow,
+        main_axis
+      )
+    end)
+  end
+
+  defp apply_flex_grow(
+         false,
+         child,
+         dims,
+         flex,
+         _extra_space,
+         _total_grow,
+         _main_axis
+       ) do
+    {child, dims, flex}
+  end
+
+  defp apply_flex_grow(
+         true,
+         child,
+         dims,
+         flex,
+         extra_space,
+         total_grow,
+         main_axis
+       ) do
+    extra = div(extra_space * flex.grow, total_grow)
+
+    new_dims =
+      case main_axis do
+        :horizontal -> %{dims | width: dims.width + extra}
+        :vertical -> %{dims | height: dims.height + extra}
+      end
+
+    {child, new_dims, flex}
   end
 
   defp shrink_items(children_with_dims, shortage, main_axis) do
@@ -360,30 +450,80 @@ defmodule Raxol.UI.Layout.Flexbox do
         acc + flex.shrink * size
       end)
 
-    if total_shrink_weight == 0 do
-      children_with_dims
-    else
-      # Shrink items proportionally
-      Enum.map(children_with_dims, fn {child, dims, flex} ->
-        if flex.shrink > 0 do
-          size = get_dimension(dims, main_axis)
-          shrink_weight = flex.shrink * size
+    distribute_shrink_space(
+      total_shrink_weight == 0,
+      children_with_dims,
+      shortage,
+      total_shrink_weight,
+      main_axis
+    )
+  end
 
-          shrink_amount =
-            min(size, div(shortage * shrink_weight, total_shrink_weight))
+  defp distribute_shrink_space(
+         true,
+         children_with_dims,
+         _shortage,
+         _total_shrink_weight,
+         _main_axis
+       ) do
+    children_with_dims
+  end
 
-          new_dims =
-            case main_axis do
-              :horizontal -> %{dims | width: max(0, dims.width - shrink_amount)}
-              :vertical -> %{dims | height: max(0, dims.height - shrink_amount)}
-            end
+  defp distribute_shrink_space(
+         false,
+         children_with_dims,
+         shortage,
+         total_shrink_weight,
+         main_axis
+       ) do
+    # Shrink items proportionally
+    Enum.map(children_with_dims, fn {child, dims, flex} ->
+      apply_flex_shrink(
+        flex.shrink > 0,
+        child,
+        dims,
+        flex,
+        shortage,
+        total_shrink_weight,
+        main_axis
+      )
+    end)
+  end
 
-          {child, new_dims, flex}
-        else
-          {child, dims, flex}
-        end
-      end)
-    end
+  defp apply_flex_shrink(
+         false,
+         child,
+         dims,
+         flex,
+         _shortage,
+         _total_shrink_weight,
+         _main_axis
+       ) do
+    {child, dims, flex}
+  end
+
+  defp apply_flex_shrink(
+         true,
+         child,
+         dims,
+         flex,
+         shortage,
+         total_shrink_weight,
+         main_axis
+       ) do
+    size = get_dimension(dims, main_axis)
+    shrink_weight = flex.shrink * size
+
+    shrink_amount =
+      min(size, div(shortage * shrink_weight, total_shrink_weight))
+
+    new_dims =
+      case main_axis do
+        :horizontal -> %{dims | width: max(0, dims.width - shrink_amount)}
+        :vertical -> %{dims | height: max(0, dims.height - shrink_amount)}
+      end
+
+    {child, new_dims, flex}
   end
 
   defp position_main_axis(sized_children, space, flex_props, main_axis) do
@@ -555,30 +695,64 @@ defmodule Raxol.UI.Layout.Flexbox do
         item_size = get_dimension(dims, main_axis)
 
         needed_size =
-          if current_line == [] do
-            item_size
-          else
-            current_size + gap_size + item_size
-          end
+          calculate_needed_size(
+            current_line == [],
+            item_size,
+            current_size,
+            gap_size
+          )
 
-        if needed_size <= available_main_size or current_line == [] do
-          # Item fits in current line
-          {lines, [item | current_line], needed_size}
-        else
-          # Start new line
-          {[Enum.reverse(current_line) | lines], [item], item_size}
-        end
+        handle_line_placement(
+          needed_size <= available_main_size or current_line == [],
+          lines,
+          current_line,
+          item,
+          needed_size,
+          item_size
+        )
       end)
 
     # Add the last line
-    final_lines =
-      if current_line == [] do
-        lines
-      else
-        [Enum.reverse(current_line) | lines]
-      end
+    final_lines = finalize_lines(current_line == [], lines, current_line)
 
     Enum.reverse(final_lines)
+  end
+
+  defp calculate_needed_size(true, item_size, _current_size, _gap_size),
+    do: item_size
+
+  defp calculate_needed_size(false, item_size, current_size, gap_size) do
+    current_size + gap_size + item_size
+  end
+
+  defp handle_line_placement(
+         true,
+         lines,
+         current_line,
+         item,
+         needed_size,
+         _item_size
+       ) do
+    # Item fits in current line
+    {lines, [item | current_line], needed_size}
+  end
+
+  defp handle_line_placement(
+         false,
+         lines,
+         current_line,
+         item,
+         _needed_size,
+         item_size
+       ) do
+    # Start new line
+    {[Enum.reverse(current_line) | lines], [item], item_size}
+  end
+
+  defp finalize_lines(true, lines, _current_line), do: lines
+
+  defp finalize_lines(false, lines, current_line) do
+    [Enum.reverse(current_line) | lines]
   end
 
   defp calculate_line_height(line_children, cross_axis) do
@@ -702,43 +876,60 @@ defmodule Raxol.UI.Layout.Flexbox do
   end
 
   defp calculate_container_size(child_dimensions, flex_props, _content_space) do
-    if Enum.empty?(child_dimensions) do
-      %{width: 0, height: 0}
-    else
-      {main_axis, cross_axis} = get_axes(flex_props.flex_direction)
+    calculate_size_by_children(
+      Enum.empty?(child_dimensions),
+      child_dimensions,
+      flex_props
+    )
+  end
 
-      if flex_props.flex_wrap == :nowrap do
-        # Single line: main axis is sum, cross axis is max
-        main_size =
-          Enum.reduce(child_dimensions, 0, fn dims, acc ->
-            acc + get_dimension(dims, main_axis)
-          end)
+  defp calculate_size_by_children(true, _child_dimensions, _flex_props) do
+    %{width: 0, height: 0}
+  end
 
-        cross_size =
-          Enum.reduce(child_dimensions, 0, fn dims, acc ->
-            max(acc, get_dimension(dims, cross_axis))
-          end)
+  defp calculate_size_by_children(false, child_dimensions, flex_props) do
+    {main_axis, cross_axis} = get_axes(flex_props.flex_direction)
 
-        case main_axis do
-          :horizontal -> %{width: main_size, height: cross_size}
-          :vertical -> %{width: cross_size, height: main_size}
-        end
-      else
-        # Multi-line: more complex calculation needed
-        # For now, return sum of all dimensions (conservative estimate)
-        total_width =
-          Enum.reduce(child_dimensions, 0, fn dims, acc ->
-            max(acc, dims.width)
-          end)
+    calculate_size_by_wrap(
+      flex_props.flex_wrap == :nowrap,
+      child_dimensions,
+      main_axis,
+      cross_axis
+    )
+  end
 
-        total_height =
-          Enum.reduce(child_dimensions, 0, fn dims, acc ->
-            acc + dims.height
-          end)
+  defp calculate_size_by_wrap(true, child_dimensions, main_axis, cross_axis) do
+    # Single line: main axis is sum, cross axis is max
+    main_size =
+      Enum.reduce(child_dimensions, 0, fn dims, acc ->
+        acc + get_dimension(dims, main_axis)
+      end)
 
-        %{width: total_width, height: total_height}
-      end
+    cross_size =
+      Enum.reduce(child_dimensions, 0, fn dims, acc ->
+        max(acc, get_dimension(dims, cross_axis))
+      end)
+
+    case main_axis do
+      :horizontal -> %{width: main_size, height: cross_size}
+      :vertical -> %{width: cross_size, height: main_size}
     end
+  end
+
+  defp calculate_size_by_wrap(false, child_dimensions, _main_axis, _cross_axis) do
+    # Multi-line: more complex calculation needed
+    # For now, return sum of all dimensions (conservative estimate)
+    total_width =
+      Enum.reduce(child_dimensions, 0, fn dims, acc ->
+        max(acc, dims.width)
+      end)
+
+    total_height =
+      Enum.reduce(child_dimensions, 0, fn dims, acc ->
+        acc + dims.height
+      end)
+
+    %{width: total_width, height: total_height}
   end
 
   @doc """

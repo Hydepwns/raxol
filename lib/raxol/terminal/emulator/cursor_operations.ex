@@ -14,11 +14,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @spec move_cursor_forward(emulator(), non_neg_integer()) :: emulator()
   def move_cursor_forward(emulator, count) do
     cursor = emulator.cursor
-
-    if is_pid(cursor) do
-      GenServer.call(cursor, {:move_forward, count})
-    end
-
+    call_cursor_if_pid(is_pid(cursor), cursor, {:move_forward, count})
     emulator
   end
 
@@ -28,11 +24,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @spec move_cursor_back(emulator(), non_neg_integer()) :: emulator()
   def move_cursor_back(emulator, count) do
     cursor = emulator.cursor
-
-    if is_pid(cursor) do
-      GenServer.call(cursor, {:move_back, count})
-    end
-
+    call_cursor_if_pid(is_pid(cursor), cursor, {:move_back, count})
     emulator
   end
 
@@ -47,11 +39,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @spec move_cursor_down(emulator(), non_neg_integer()) :: emulator()
   def move_cursor_down(emulator, count) do
     cursor = emulator.cursor
-
-    if is_pid(cursor) do
-      GenServer.call(cursor, {:move_down, count})
-    end
-
+    call_cursor_if_pid(is_pid(cursor), cursor, {:move_down, count})
     emulator
   end
 
@@ -66,11 +54,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @spec move_cursor_up(emulator(), non_neg_integer()) :: emulator()
   def move_cursor_up(emulator, count) do
     cursor = emulator.cursor
-
-    if is_pid(cursor) do
-      GenServer.call(cursor, {:move_up, count})
-    end
-
+    call_cursor_if_pid(is_pid(cursor), cursor, {:move_up, count})
     emulator
   end
 
@@ -168,17 +152,27 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @spec set_blink_rate(emulator(), non_neg_integer()) :: emulator()
   def set_blink_rate(emulator, rate) do
     cursor = emulator.cursor
-
-    if is_pid(cursor) do
-      # Set blink rate in cursor manager
-      GenServer.call(cursor, {:set_blink_rate, rate})
-
-      # Also set blink state based on rate
-      blinking = rate > 0
-      GenServer.call(cursor, {:set_blink, blinking})
-    end
-
+    set_cursor_blink_if_pid(is_pid(cursor), cursor, rate)
     # Store blink rate in emulator state for reference
     %{emulator | cursor_blink_rate: rate}
   end
+
+  # Helper functions for pattern matching refactoring
+
+  defp call_cursor_if_pid(true, cursor, message) do
+    GenServer.call(cursor, message)
+  end
+
+  defp call_cursor_if_pid(false, _cursor, _message), do: nil
+
+  defp set_cursor_blink_if_pid(true, cursor, rate) do
+    # Set blink rate in cursor manager
+    GenServer.call(cursor, {:set_blink_rate, rate})
+
+    # Also set blink state based on rate
+    blinking = rate > 0
+    GenServer.call(cursor, {:set_blink, blinking})
+  end
+
+  defp set_cursor_blink_if_pid(false, _cursor, _rate), do: nil
 end

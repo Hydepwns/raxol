@@ -132,29 +132,65 @@ defmodule Raxol.Core.ErrorHandler do
          retry_delay,
          fun
        ) do
-    if retries_left > 0 do
-      log_retry(operation, error, retries_left)
-      Process.sleep(retry_delay)
+    execute_with_retry(
+      retries_left > 0,
+      operation,
+      error,
+      context,
+      severity,
+      fallback,
+      retries_left,
+      retry_delay,
+      fun
+    )
+  end
 
-      do_execute(
-        operation,
-        fun,
-        context,
-        severity,
-        fallback,
-        retries_left - 1,
-        retry_delay
-      )
-    else
-      log_error(operation, error, context, severity)
-      emit_telemetry(operation, :error, context)
+  defp execute_with_retry(
+         true,
+         operation,
+         error,
+         context,
+         severity,
+         fallback,
+         retries_left,
+         retry_delay,
+         fun
+       ) do
+    log_retry(operation, error, retries_left)
+    Process.sleep(retry_delay)
 
-      if fallback do
-        {:ok, fallback}
-      else
-        {:error, :runtime, format_error_message(error), context}
-      end
-    end
+    do_execute(
+      operation,
+      fun,
+      context,
+      severity,
+      fallback,
+      retries_left - 1,
+      retry_delay
+    )
+  end
+
+  defp execute_with_retry(
+         false,
+         operation,
+         error,
+         context,
+         severity,
+         fallback,
+         _retries_left,
+         _retry_delay,
+         _fun
+       ) do
+    log_error(operation, error, context, severity)
+    emit_telemetry(operation, :error, context)
+    handle_fallback(fallback, error, context)
+  end
+
+  defp handle_fallback(nil, error, context) do
+    {:error, :runtime, format_error_message(error), context}
+  end
+  defp handle_fallback(fallback, _error, _context) do
+    {:ok, fallback}
   end
 
   defp handle_caught_error(
@@ -168,29 +204,68 @@ defmodule Raxol.Core.ErrorHandler do
          retry_delay,
          fun
        ) do
-    if retries_left > 0 and retriable_error?(kind, reason) do
-      log_retry(operation, {kind, reason}, retries_left)
-      Process.sleep(retry_delay)
+    execute_with_caught_retry(
+      retries_left > 0 and retriable_error?(kind, reason),
+      operation,
+      kind,
+      reason,
+      context,
+      severity,
+      fallback,
+      retries_left,
+      retry_delay,
+      fun
+    )
+  end
 
-      do_execute(
-        operation,
-        fun,
-        context,
-        severity,
-        fallback,
-        retries_left - 1,
-        retry_delay
-      )
-    else
-      log_caught_error(operation, kind, reason, context, severity)
-      emit_telemetry(operation, :error, Map.put(context, :error_kind, kind))
+  defp execute_with_caught_retry(
+         true,
+         operation,
+         kind,
+         reason,
+         context,
+         severity,
+         fallback,
+         retries_left,
+         retry_delay,
+         fun
+       ) do
+    log_retry(operation, {kind, reason}, retries_left)
+    Process.sleep(retry_delay)
 
-      if fallback do
-        {:ok, fallback}
-      else
-        {:error, :system, format_caught_error(kind, reason), context}
-      end
-    end
+    do_execute(
+      operation,
+      fun,
+      context,
+      severity,
+      fallback,
+      retries_left - 1,
+      retry_delay
+    )
+  end
+
+  defp execute_with_caught_retry(
+         false,
+         operation,
+         kind,
+         reason,
+         context,
+         severity,
+         fallback,
+         _retries_left,
+         _retry_delay,
+         _fun
+       ) do
+    log_caught_error(operation, kind, reason, context, severity)
+    emit_telemetry(operation, :error, Map.put(context, :error_kind, kind))
+    handle_caught_fallback(fallback, kind, reason, context)
+  end
+
+  defp handle_caught_fallback(nil, kind, reason, context) do
+    {:error, :system, format_caught_error(kind, reason), context}
+  end
+  defp handle_caught_fallback(fallback, _kind, _reason, _context) do
+    {:ok, fallback}
   end
 
   @doc """
@@ -322,7 +397,7 @@ defmodule Raxol.Core.ErrorHandler do
   defp classify_error(%ArgumentError{}), do: :validation
   defp classify_error(%RuntimeError{}), do: :runtime
   defp classify_error(%File.Error{}), do: :system
-  defp classify_error(%Jason.DecodeError{}), do: :validation
+  # defp classify_error(%Jason.DecodeError{}), do: :validation  # Commented out due to missing module
   defp classify_error(_error), do: :unknown
 
   defp retriable_error?(:exit, {:timeout, _}), do: true

@@ -44,16 +44,18 @@ defmodule Raxol.Extensions.VSCodeBackend do
   @impl GenServer
   def init(_opts) do
     state = State.new()
-
-    if state.mode == "vscode_ext" do
-      Logger.info("[VSCodeBackend] Starting in VS Code extension mode")
-      # Start listening for stdin messages from the extension
-      Task.start_link(&listen_for_messages/0)
-      send_capabilities(state.capabilities)
-    end
-
+    initialize_mode(state.mode, state.capabilities)
     {:ok, state}
   end
+
+  defp initialize_mode("vscode_ext", capabilities) do
+    Logger.info("[VSCodeBackend] Starting in VS Code extension mode")
+    # Start listening for stdin messages from the extension
+    Task.start_link(&listen_for_messages/0)
+    send_capabilities(capabilities)
+  end
+
+  defp initialize_mode(_mode, _capabilities), do: :ok
 
   @impl GenServer
   def handle_cast({:handle_message, message}, state) do
@@ -379,25 +381,23 @@ defmodule Raxol.Extensions.VSCodeBackend do
     functions = extract_functions(ast)
 
     suggestions = []
+    |> add_complexity_suggestion(complexity)
+    |> add_size_suggestion(functions)
+    |> finalize_suggestions()
 
-    suggestions =
-      if complexity > 10 do
-        ["Consider breaking down complex functions" | suggestions]
-      else
-        suggestions
-      end
-
-    suggestions =
-      if length(functions) > 20 do
-        ["Large module - consider splitting into smaller modules" | suggestions]
-      else
-        suggestions
-      end
-
-    if suggestions == [] do
-      ["Component looks well-structured"]
-    else
-      suggestions
-    end
+    suggestions
   end
+
+  defp add_complexity_suggestion(suggestions, complexity) when complexity > 10 do
+    ["Consider breaking down complex functions" | suggestions]
+  end
+  defp add_complexity_suggestion(suggestions, _complexity), do: suggestions
+
+  defp add_size_suggestion(suggestions, functions) when length(functions) > 20 do
+    ["Large module - consider splitting into smaller modules" | suggestions]
+  end
+  defp add_size_suggestion(suggestions, _functions), do: suggestions
+
+  defp finalize_suggestions([]), do: ["Component looks well-structured"]
+  defp finalize_suggestions(suggestions), do: suggestions
 end

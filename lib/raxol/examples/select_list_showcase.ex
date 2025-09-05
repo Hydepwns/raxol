@@ -306,17 +306,11 @@ defmodule Raxol.Examples.SelectListShowcase do
 
   def handle_event({:select_user, user_id}, _props, state) do
     # For multiple selection
-    if state.multiple_selected |> Enum.member?(user_id) do
-      # Remove from selection
-      {%{
-         state
-         | multiple_selected:
-             state.multiple_selected |> Enum.reject(&(&1 == user_id))
-       }, []}
-    else
-      # Add to selection
-      {%{state | multiple_selected: [user_id | state.multiple_selected]}, []}
-    end
+    handle_user_selection(
+      state.multiple_selected |> Enum.member?(user_id),
+      user_id,
+      state
+    )
   end
 
   def handle_event({:select_user_with_search, user_id}, _props, state) do
@@ -368,41 +362,25 @@ defmodule Raxol.Examples.SelectListShowcase do
           button(
             label: "Basic",
             on_click: {:select_tab, :basic},
-            style:
-              if(state.active_tab == :basic,
-                do: [bg: :blue, fg: :white],
-                else: []
-              )
+            style: get_tab_style(state.active_tab == :basic)
           )
 
           button(
             label: "Multiple Selection",
             on_click: {:select_tab, :multiple},
-            style:
-              if(state.active_tab == :multiple,
-                do: [bg: :blue, fg: :white],
-                else: []
-              )
+            style: get_tab_style(state.active_tab == :multiple)
           )
 
           button(
             label: "Search & Filter",
             on_click: {:select_tab, :search},
-            style:
-              if(state.active_tab == :search,
-                do: [bg: :blue, fg: :white],
-                else: []
-              )
+            style: get_tab_style(state.active_tab == :search)
           )
 
           button(
             label: "Pagination",
             on_click: {:select_tab, :pagination},
-            style:
-              if(state.active_tab == :pagination,
-                do: [bg: :blue, fg: :white],
-                else: []
-              )
+            style: get_tab_style(state.active_tab == :pagination)
           )
         end
 
@@ -423,57 +401,16 @@ defmodule Raxol.Examples.SelectListShowcase do
           column padding: 1, gap: 1 do
             case state.active_tab do
               :basic ->
-                if state.basic_selected do
-                  label(text: "Selected fruit: #{state.basic_selected}")
-                else
-                  label(text: "No fruit selected")
-                end
+                render_basic_selection(state.basic_selected)
 
               :multiple ->
-                if Enum.empty?(state.multiple_selected) do
-                  label(text: "No users selected")
-                else
-                  selected_users =
-                    state.users
-                    |> Enum.filter(
-                      &Enum.member?(state.multiple_selected, &1.id)
-                    )
-                    |> Enum.map(& &1.name)
-                    |> Enum.join(", ")
-
-                  label(text: "Selected users: #{selected_users}")
-                end
+                render_multiple_selection(state.multiple_selected, state.users)
 
               :search ->
-                if state.search_selected do
-                  column do
-                    label(text: "Selected user:")
-                    label(text: "Name: #{state.search_selected.name}")
-                    label(text: "Email: #{state.search_selected.email}")
-                    label(text: "Role: #{state.search_selected.role}")
-                  end
-                else
-                  label(text: "No user selected")
-                end
+                render_search_selection(state.search_selected)
 
               :pagination ->
-                if state.pagination_selected do
-                  column do
-                    label(text: "Selected country:")
-                    label(text: "Name: #{state.pagination_selected.name}")
-
-                    label(
-                      text:
-                        "Population: #{state.pagination_selected.population}"
-                    )
-
-                    label(
-                      text: "Continent: #{state.pagination_selected.continent}"
-                    )
-                  end
-                else
-                  label(text: "No country selected")
-                end
+                render_pagination_selection(state.pagination_selected)
             end
           end
         end
@@ -497,6 +434,70 @@ defmodule Raxol.Examples.SelectListShowcase do
           end
         end
       end
+    end
+  end
+
+  # Helper functions for refactored if statements
+
+  # Handle user selection instead of if statement
+  defp handle_user_selection(true, user_id, state) do
+    # Remove from selection
+    {%{
+       state
+       | multiple_selected:
+           state.multiple_selected |> Enum.reject(&(&1 == user_id))
+     }, []}
+  end
+
+  defp handle_user_selection(false, user_id, state) do
+    # Add to selection
+    {%{state | multiple_selected: [user_id | state.multiple_selected]}, []}
+  end
+
+  # Get tab style instead of if statement
+  defp get_tab_style(true), do: [bg: :blue, fg: :white]
+  defp get_tab_style(false), do: []
+
+  # Render basic selection instead of if statement
+  defp render_basic_selection(nil), do: label(text: "No fruit selected")
+  defp render_basic_selection(selected), do: label(text: "Selected fruit: #{selected}")
+
+  # Render multiple selection instead of if statement
+  defp render_multiple_selection(selected, _users) when selected == [] do
+    label(text: "No users selected")
+  end
+
+  defp render_multiple_selection(selected, users) do
+    selected_users =
+      users
+      |> Enum.filter(&Enum.member?(selected, &1.id))
+      |> Enum.map(& &1.name)
+      |> Enum.join(", ")
+
+    label(text: "Selected users: #{selected_users}")
+  end
+
+  # Render search selection instead of if statement
+  defp render_search_selection(nil), do: label(text: "No user selected")
+
+  defp render_search_selection(selected) do
+    column do
+      label(text: "Selected user:")
+      label(text: "Name: #{selected.name}")
+      label(text: "Email: #{selected.email}")
+      label(text: "Role: #{selected.role}")
+    end
+  end
+
+  # Render pagination selection instead of if statement
+  defp render_pagination_selection(nil), do: label(text: "No country selected")
+
+  defp render_pagination_selection(selected) do
+    column do
+      label(text: "Selected country:")
+      label(text: "Name: #{selected.name}")
+      label(text: "Population: #{selected.population}")
+      label(text: "Continent: #{selected.continent}")
     end
   end
 

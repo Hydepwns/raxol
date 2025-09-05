@@ -69,11 +69,7 @@ defmodule Mix.Tasks.Benchmark do
   def run(args) do
     {opts, _, _} = parse_args(args)
 
-    if opts[:help] do
-      Mix.shell().info(@moduledoc)
-      System.halt(0)
-    end
-
+    handle_help_option(opts[:help])
     execute_benchmarks(opts)
   end
 
@@ -126,14 +122,7 @@ defmodule Mix.Tasks.Benchmark do
   end
 
   defp validate_suites(suites) do
-    if Enum.empty?(suites) do
-      Mix.shell().error(
-        "No benchmark suites specified. Use --all or --suite <name>"
-      )
-
-      Mix.shell().info("Available suites: #{Enum.join(@all_suites, ", ")}")
-      System.halt(1)
-    end
+    validate_suite_list(Enum.empty?(suites))
   end
 
   defp log_execution_info(suites, benchmark_opts) do
@@ -142,43 +131,23 @@ defmodule Mix.Tasks.Benchmark do
   end
 
   defp run_suites(suites, benchmark_opts, opts) do
-    if opts[:profile] do
-      run_profiling(suites, benchmark_opts)
-    else
-      run_benchmarks(suites, benchmark_opts)
-    end
+    execute_suite_mode(opts[:profile], suites, benchmark_opts)
   end
 
   defp configure_options(opts) do
     base_opts = %{
       time: opts[:time] || 5,
       warmup: opts[:warmup] || 2,
-      memory_time: if(opts[:memory], do: 2, else: 0),
+      memory_time: get_memory_time(opts[:memory]),
       parallel: 1
     }
 
     # Quick mode for faster iteration
-    base_opts =
-      if opts[:quick] do
-        %{base_opts | time: 1, warmup: 0.5}
-      else
-        base_opts
-      end
+    base_opts = apply_quick_mode(opts[:quick], base_opts)
 
     # Add filters
-    base_opts =
-      if opts[:only] do
-        Map.put(base_opts, :only, compile_filter(opts[:only]))
-      else
-        base_opts
-      end
-
-    base_opts =
-      if opts[:except] do
-        Map.put(base_opts, :except, compile_filter(opts[:except]))
-      else
-        base_opts
-      end
+    base_opts = apply_only_filter(opts[:only], base_opts)
+    base_opts = apply_except_filter(opts[:except], base_opts)
 
     base_opts
   end
@@ -263,28 +232,21 @@ defmodule Mix.Tasks.Benchmark do
   @dialyzer {:no_return, process_results: 2}
   defp process_results(results, opts) do
     # Compare with baseline if requested
-    if opts[:compare] do
-      Mix.shell().info("\n📊 Comparing with baseline...")
-
-      regressions = Analyzer.check_regressions(results)
-
-      if Enum.any?(regressions) do
-        Mix.shell().warning("\n⚠️  Performance regressions detected!")
-        Analyzer.report_regressions(regressions)
-      else
-        Mix.shell().info("✅ No regressions detected")
-      end
-    end
+    handle_comparison(opts[:compare], results)
 
     # Save baseline if requested
-    if opts[:save_baseline] do
-      Mix.shell().info("\n💾 Saving new baseline...")
+    case opts[:save_baseline] do
+      true ->
+        Mix.shell().info("\n💾 Saving new baseline...")
 
-      Enum.each(results, fn result ->
-        Storage.save_baseline(result.suite_name, result.results)
-      end)
+        Enum.each(results, fn result ->
+          Storage.save_baseline(result.suite_name, result.results)
+        end)
 
-      Mix.shell().info("✅ Baseline saved")
+        Mix.shell().info("✅ Baseline saved")
+
+      _ ->
+        :ok
     end
 
     # Generate reports
@@ -343,6 +305,8 @@ defmodule Mix.Tasks.Benchmark do
     format_time_unit(microseconds)
   end
 
+  defp format_time(_), do: "N/A"
+
   defp format_time_unit(us) when us < 1_000, do: "#{us}μs"
 
   defp format_time_unit(us) when us < 1_000_000,
@@ -350,12 +314,12 @@ defmodule Mix.Tasks.Benchmark do
 
   defp format_time_unit(us), do: "#{Float.round(us / 1_000_000, 2)}s"
 
-  defp format_time(_), do: "N/A"
-
   @dialyzer {:no_return, format_memory: 1}
   defp format_memory(bytes) when is_number(bytes) do
     format_memory_unit(bytes)
   end
+
+  defp format_memory(_), do: "N/A"
 
   defp format_memory_unit(b) when b < 1_024, do: "#{b}B"
 
@@ -366,8 +330,6 @@ defmodule Mix.Tasks.Benchmark do
     do: "#{Float.round(b / 1_048_576, 2)}MB"
 
   defp format_memory_unit(b), do: "#{Float.round(b / 1_073_741_824, 2)}GB"
-
-  defp format_memory(_), do: "N/A"
 
   defp format_hot_spots([]), do: "  None identified"
 
@@ -381,5 +343,71 @@ defmodule Mix.Tasks.Benchmark do
 
   defp format_optimizations(opts) do
     Enum.map_join(opts, "\n", fn opt -> "  • #{opt}" end)
+  end
+
+  # Helper functions for if statement elimination
+
+  defp handle_help_option(true) do
+    Mix.shell().info(@moduledoc)
+    System.halt(0)
+  end
+
+  defp handle_help_option(_), do: :ok
+
+  defp validate_suite_list(true) do
+    Mix.shell().error(
+      "No benchmark suites specified. Use --all or --suite <name>"
+    )
+
+    Mix.shell().info("Available suites: #{Enum.join(@all_suites, ", ")}")
+    System.halt(1)
+  end
+
+  defp validate_suite_list(false), do: :ok
+
+  defp execute_suite_mode(true, suites, benchmark_opts) do
+    run_profiling(suites, benchmark_opts)
+  end
+
+  defp execute_suite_mode(_profile_mode, suites, benchmark_opts) do
+    run_benchmarks(suites, benchmark_opts)
+  end
+
+  defp get_memory_time(true), do: 2
+  defp get_memory_time(_), do: 0
+
+  defp apply_quick_mode(true, base_opts) do
+    %{base_opts | time: 1, warmup: 0.5}
+  end
+
+  defp apply_quick_mode(_quick_mode, base_opts), do: base_opts
+
+  defp apply_only_filter(nil, base_opts), do: base_opts
+
+  defp apply_only_filter(only_pattern, base_opts) do
+    Map.put(base_opts, :only, compile_filter(only_pattern))
+  end
+
+  defp apply_except_filter(nil, base_opts), do: base_opts
+
+  defp apply_except_filter(except_pattern, base_opts) do
+    Map.put(base_opts, :except, compile_filter(except_pattern))
+  end
+
+  defp handle_comparison(true, results) do
+    Mix.shell().info("\n📊 Comparing with baseline...")
+    regressions = Analyzer.check_regressions(results)
+    report_regressions(Enum.any?(regressions), regressions)
+  end
+
+  defp handle_comparison(_compare_mode, _results), do: :ok
+
+  defp report_regressions(true, regressions) do
+    Mix.shell().warning("\n⚠️  Performance regressions detected!")
+    Analyzer.report_regressions(regressions)
+  end
+
+  defp report_regressions(false, _regressions) do
+    Mix.shell().info("✅ No regressions detected")
   end
 end

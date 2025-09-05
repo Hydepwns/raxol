@@ -115,14 +115,7 @@ defmodule Raxol.Terminal.Config.Application do
   """
   def reset_config(terminal_pid \\ nil, optimize \\ true) do
     # Get default configuration
-    default_config =
-      if optimize do
-        # Use capability-aware optimized default config
-        Capabilities.optimized_config()
-      else
-        # Use basic default config
-        Raxol.Terminal.Config.Defaults.generate_default_config()
-      end
+    default_config = get_default_config(optimize)
 
     # Apply the default configuration
     apply_config(default_config, terminal_pid)
@@ -130,135 +123,163 @@ defmodule Raxol.Terminal.Config.Application do
 
   # Private functions
 
+  defp get_default_config(true) do
+    # Use capability-aware optimized default config
+    Capabilities.optimized_config()
+  end
+
+  defp get_default_config(false) do
+    # Use basic default config
+    Raxol.Terminal.Config.Defaults.generate_default_config()
+  end
+
   # Apply display configuration
   defp apply_display_config(%{display: display}, terminal_pid)
        when is_map(display) or is_tuple(display) do
     pid = terminal_pid || default_terminal_pid()
 
-    if pid do
-      # Extract relevant display settings
-      settings = %{
-        width:
-          if(is_map(display),
-            do: Map.get(display, :width),
-            else: if(is_tuple(display), do: elem(display, 0), else: nil)
-          ),
-        height:
-          if(is_map(display),
-            do: Map.get(display, :height),
-            else: if(is_tuple(display), do: elem(display, 1), else: nil)
-          ),
-        title: Map.get(display, :title),
-        colors: Map.get(display, :colors),
-        truecolor: Map.get(display, :truecolor),
-        unicode: Map.get(display, :unicode)
-      }
-
-      # Send configuration to terminal process
-      send_config_to_terminal(pid, {:display_config, settings})
-    else
-      # No terminal active
-      :ok
-    end
+    apply_display_config_to_pid(pid, display)
   end
 
   # No display config to apply
   defp apply_display_config(_, _), do: :ok
 
+  defp apply_display_config_to_pid(nil, _display) do
+    # No terminal active
+    :ok
+  end
+
+  defp apply_display_config_to_pid(pid, display) do
+    # Extract relevant display settings
+    settings = %{
+      width: extract_width(display),
+      height: extract_height(display),
+      title: Map.get(display, :title),
+      colors: Map.get(display, :colors),
+      truecolor: Map.get(display, :truecolor),
+      unicode: Map.get(display, :unicode)
+    }
+
+    # Send configuration to terminal process
+    send_config_to_terminal(pid, {:display_config, settings})
+  end
+
+  defp extract_width(display) when is_map(display), do: Map.get(display, :width)
+  defp extract_width(display) when is_tuple(display), do: elem(display, 0)
+  defp extract_width(_), do: nil
+
+  defp extract_height(display) when is_map(display),
+    do: Map.get(display, :height)
+
+  defp extract_height(display) when is_tuple(display), do: elem(display, 1)
+  defp extract_height(_), do: nil
+
   # Apply input configuration
   defp apply_input_config(%{input: input}, terminal_pid) when is_map(input) do
     pid = terminal_pid || default_terminal_pid()
-
-    if pid do
-      # Extract relevant input settings
-      settings = %{
-        mouse: Map.get(input, :mouse),
-        keyboard: Map.get(input, :keyboard),
-        escape_timeout: Map.get(input, :escape_timeout),
-        clipboard: Map.get(input, :clipboard)
-      }
-
-      # Send configuration to terminal process
-      send_config_to_terminal(pid, {:input_config, settings})
-    else
-      # No terminal active
-      :ok
-    end
+    apply_input_config_to_pid(pid, input)
   end
 
   # No input config to apply
   defp apply_input_config(_, _), do: :ok
 
+  defp apply_input_config_to_pid(nil, _input) do
+    # No terminal active
+    :ok
+  end
+
+  defp apply_input_config_to_pid(pid, input) do
+    # Extract relevant input settings
+    settings = %{
+      mouse: Map.get(input, :mouse),
+      keyboard: Map.get(input, :keyboard),
+      escape_timeout: Map.get(input, :escape_timeout),
+      clipboard: Map.get(input, :clipboard)
+    }
+
+    # Send configuration to terminal process
+    send_config_to_terminal(pid, {:input_config, settings})
+  end
+
   # Apply rendering configuration
   defp apply_rendering_config(%{rendering: rendering}, terminal_pid)
        when is_map(rendering) do
     pid = terminal_pid || default_terminal_pid()
-
-    if pid do
-      # Extract relevant rendering settings
-      settings = %{
-        fps: Map.get(rendering, :fps),
-        double_buffer: Map.get(rendering, :double_buffer),
-        redraw_mode: Map.get(rendering, :redraw_mode)
-      }
-
-      # Send configuration to terminal process
-      send_config_to_terminal(pid, {:rendering_config, settings})
-    else
-      # No terminal active
-      :ok
-    end
+    apply_rendering_config_to_pid(pid, rendering)
   end
 
   # No rendering config to apply
   defp apply_rendering_config(_, _), do: :ok
 
+  defp apply_rendering_config_to_pid(nil, _rendering) do
+    # No terminal active
+    :ok
+  end
+
+  defp apply_rendering_config_to_pid(pid, rendering) do
+    # Extract relevant rendering settings
+    settings = %{
+      fps: Map.get(rendering, :fps),
+      double_buffer: Map.get(rendering, :double_buffer),
+      redraw_mode: Map.get(rendering, :redraw_mode)
+    }
+
+    # Send configuration to terminal process
+    send_config_to_terminal(pid, {:rendering_config, settings})
+  end
+
   # Apply ANSI configuration
   defp apply_ansi_config(%{ansi: ansi}, terminal_pid) when is_map(ansi) do
     pid = terminal_pid || default_terminal_pid()
-
-    if pid do
-      # Extract relevant ANSI settings
-      settings = %{
-        enabled: Map.get(ansi, :enabled),
-        color_mode: Map.get(ansi, :color_mode),
-        colors: Map.get(ansi, :colors, %{})
-      }
-
-      # Send configuration to terminal process
-      send_config_to_terminal(pid, {:ansi_config, settings})
-    else
-      # No terminal active
-      :ok
-    end
+    apply_ansi_config_to_pid(pid, ansi)
   end
 
   # No ANSI config to apply
   defp apply_ansi_config(_, _), do: :ok
 
+  defp apply_ansi_config_to_pid(nil, _ansi) do
+    # No terminal active
+    :ok
+  end
+
+  defp apply_ansi_config_to_pid(pid, ansi) do
+    # Extract relevant ANSI settings
+    settings = %{
+      enabled: Map.get(ansi, :enabled),
+      color_mode: Map.get(ansi, :color_mode),
+      colors: Map.get(ansi, :colors, %{})
+    }
+
+    # Send configuration to terminal process
+    send_config_to_terminal(pid, {:ansi_config, settings})
+  end
+
   # Apply behavior configuration
   defp apply_behavior_config(%{behavior: behavior}, terminal_pid)
        when is_map(behavior) do
     pid = terminal_pid || default_terminal_pid()
-
-    if pid do
-      # Extract relevant behavior settings
-      settings = %{
-        scrollback_lines: Map.get(behavior, :scrollback_lines),
-        auto_wrap: Map.get(behavior, :auto_wrap),
-        bell_style: Map.get(behavior, :bell_style)
-      }
-
-      # Send configuration to terminal process
-      send_config_to_terminal(pid, {:behavior_config, settings})
-    else
-      # No terminal active
-      :ok
-    end
+    apply_behavior_config_to_pid(pid, behavior)
   end
 
   # No behavior config to apply
   defp apply_behavior_config(_, _), do: :ok
+
+  defp apply_behavior_config_to_pid(nil, _behavior) do
+    # No terminal active
+    :ok
+  end
+
+  defp apply_behavior_config_to_pid(pid, behavior) do
+    # Extract relevant behavior settings
+    settings = %{
+      scrollback_lines: Map.get(behavior, :scrollback_lines),
+      auto_wrap: Map.get(behavior, :auto_wrap),
+      bell_style: Map.get(behavior, :bell_style)
+    }
+
+    # Send configuration to terminal process
+    send_config_to_terminal(pid, {:behavior_config, settings})
+  end
 
   # Get the default terminal process PID
   defp default_terminal_pid do

@@ -125,15 +125,7 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
   """
   def update(world, delta_time \\ nil) do
     # Calculate delta time if not provided
-    delta_time =
-      if delta_time do
-        delta_time
-      else
-        now = System.os_time(:millisecond)
-        dt = (now - world.last_update) / 1000.0
-        # Clamp delta time to avoid large steps
-        min(dt, 0.1) * world.time_scale
-      end
+    delta_time = calculate_delta_time(delta_time, world)
 
     # Update all objects
     updated_objects =
@@ -171,36 +163,16 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
     object1 = Map.get(world.objects, object_id_1)
     object2 = Map.get(world.objects, object_id_2)
 
-    if object1 && object2 do
-      # Calculate spring force
-      direction = Vector.subtract(object2.position, object1.position)
-      distance = Vector.magnitude(direction)
-
-      # Avoid division by zero
-      direction =
-        if distance > 0 do
-          Vector.scale(direction, 1 / distance)
-        else
-          %Vector{x: 0, y: 0, z: 0}
-        end
-
-      # Calculate force magnitude (F = k * (d - r))
-      force_magnitude = spring_constant * (distance - rest_length)
-
-      # Calculate the force vector
-      force = Vector.scale(direction, force_magnitude)
-
-      # Apply forces to both objects
-      object1 = %{object1 | forces: [force | object1.forces]}
-      object2 = %{object2 | forces: [Vector.negate(force) | object2.forces]}
-
-      # Update world with new object states
-      world
-      |> Map.put(:objects, Map.put(world.objects, object_id_1, object1))
-      |> Map.put(:objects, Map.put(world.objects, object_id_2, object2))
-    else
-      world
-    end
+    apply_spring_force_if_objects_exist(
+      object1 && object2,
+      world,
+      object1,
+      object2,
+      object_id_1,
+      object_id_2,
+      spring_constant,
+      rest_length
+    )
   end
 
   @doc """
@@ -307,11 +279,7 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
     damping = Map.get(object.properties, :damping, 0.0)
 
     velocity_after_damping =
-      if damping > 0 do
-        Vector.scale(object.velocity, 1.0 - min(damping * delta_time, 0.99))
-      else
-        object.velocity
-      end
+      apply_damping_if_needed(damping > 0, object.velocity, damping, delta_time)
 
     # Update velocity: v = v0 + a*t
     velocity =
@@ -322,13 +290,11 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
 
     # Update lifetime for particles
     properties =
-      if Map.has_key?(object.properties, :lifetime) do
-        Map.update!(object.properties, :lifetime, fn lifetime ->
-          lifetime - delta_time
-        end)
-      else
-        object.properties
-      end
+      update_particle_lifetime(
+        Map.has_key?(object.properties, :lifetime),
+        object.properties,
+        delta_time
+      )
 
     # Return updated object
     %{
@@ -354,26 +320,22 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
 
   defp process_object_collisions(obj1, object_list, acc_objects) do
     Enum.reduce(object_list, acc_objects, fn obj2, inner_acc ->
-      if obj1.id != obj2.id do
-        obj1_updated = Map.get(inner_acc, obj1.id)
-        obj2_updated = Map.get(inner_acc, obj2.id)
-        handle_single_collision(obj1_updated, obj2_updated, inner_acc)
-      else
+      process_collision_if_different_objects(
+        obj1.id != obj2.id,
+        obj1,
+        obj2,
         inner_acc
-      end
+      )
     end)
   end
 
   defp handle_single_collision(obj1, obj2, acc_objects) do
-    if check_collision(obj1, obj2) do
-      {obj1_after, obj2_after} = resolve_collision(obj1, obj2)
-
+    handle_collision_if_detected(
+      check_collision(obj1, obj2),
+      obj1,
+      obj2,
       acc_objects
-      |> Map.put(obj1.id, obj1_after)
-      |> Map.put(obj2.id, obj2_after)
-    else
-      acc_objects
-    end
+    )
   end
 
   defp check_collision(obj1, obj2) do
@@ -399,35 +361,13 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
     velocity_along_normal = Vector.dot(relative_velocity, normal)
 
     # Early out if objects are moving away from each other
-    if velocity_along_normal > 0 do
-      {obj1, obj2}
-    else
-      # Calculate restitution (bounciness)
-      restitution =
-        min(
-          Map.get(obj1.properties, :restitution, 0.8),
-          Map.get(obj2.properties, :restitution, 0.8)
-        )
-
-      # Calculate impulse scalar
-      j = -(1 + restitution) * velocity_along_normal
-      j = j / (1 / obj1.mass + 1 / obj2.mass)
-
-      # Apply impulse
-      impulse = Vector.scale(normal, j)
-
-      obj1_velocity =
-        Vector.subtract(obj1.velocity, Vector.scale(impulse, 1 / obj1.mass))
-
-      obj2_velocity =
-        Vector.add(obj2.velocity, Vector.scale(impulse, 1 / obj2.mass))
-
-      # Return updated objects
-      {
-        %{obj1 | velocity: obj1_velocity},
-        %{obj2 | velocity: obj2_velocity}
-      }
-    end
+    resolve_collision_based_on_velocity(
+      velocity_along_normal > 0,
+      obj1,
+      obj2,
+      normal,
+      velocity_along_normal
+    )
   end
 
   defp apply_boundaries(objects, boundaries) do
@@ -456,36 +396,210 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
   end
 
   defp apply_min_boundary(obj, pos_key, vel_key, min_value) do
-    if min_value != nil and Map.get(obj.position, pos_key) < min_value do
-      %{
-        obj
-        | position: Map.put(obj.position, pos_key, min_value),
-          velocity:
-            Map.put(
-              obj.velocity,
-              vel_key,
-              -Map.get(obj.velocity, vel_key) * 0.8
-            )
-      }
-    else
-      obj
-    end
+    apply_min_boundary_constraint(
+      min_value != nil and Map.get(obj.position, pos_key) < min_value,
+      obj,
+      pos_key,
+      vel_key,
+      min_value
+    )
   end
 
   defp apply_max_boundary(obj, pos_key, vel_key, max_value) do
-    if max_value != nil and Map.get(obj.position, pos_key) > max_value do
-      %{
-        obj
-        | position: Map.put(obj.position, pos_key, max_value),
-          velocity:
-            Map.put(
-              obj.velocity,
-              vel_key,
-              -Map.get(obj.velocity, vel_key) * 0.8
-            )
-      }
-    else
+    apply_max_boundary_constraint(
+      max_value != nil and Map.get(obj.position, pos_key) > max_value,
+      obj,
+      pos_key,
+      vel_key,
+      max_value
+    )
+  end
+
+  # Helper functions to eliminate if statements
+
+  defp calculate_delta_time(nil, world) do
+    now = System.os_time(:millisecond)
+    dt = (now - world.last_update) / 1000.0
+    # Clamp delta time to avoid large steps
+    min(dt, 0.1) * world.time_scale
+  end
+
+  defp calculate_delta_time(delta_time, _world), do: delta_time
+
+  defp apply_spring_force_if_objects_exist(
+         false,
+         world,
+         _object1,
+         _object2,
+         _object_id_1,
+         _object_id_2,
+         _spring_constant,
+         _rest_length
+       ) do
+    world
+  end
+
+  defp apply_spring_force_if_objects_exist(
+         true,
+         world,
+         object1,
+         object2,
+         object_id_1,
+         object_id_2,
+         spring_constant,
+         rest_length
+       ) do
+    # Calculate spring force
+    direction = Vector.subtract(object2.position, object1.position)
+    distance = Vector.magnitude(direction)
+
+    # Avoid division by zero
+    direction = normalize_direction_vector(distance > 0, direction, distance)
+
+    # Calculate force magnitude (F = k * (d - r))
+    force_magnitude = spring_constant * (distance - rest_length)
+
+    # Calculate the force vector
+    force = Vector.scale(direction, force_magnitude)
+
+    # Apply forces to both objects
+    object1 = %{object1 | forces: [force | object1.forces]}
+    object2 = %{object2 | forces: [Vector.negate(force) | object2.forces]}
+
+    # Update world with new object states
+    world
+    |> Map.put(:objects, Map.put(world.objects, object_id_1, object1))
+    |> Map.put(:objects, Map.put(world.objects, object_id_2, object2))
+  end
+
+  defp normalize_direction_vector(true, direction, distance) do
+    Vector.scale(direction, 1 / distance)
+  end
+
+  defp normalize_direction_vector(false, _direction, _distance) do
+    %Vector{x: 0, y: 0, z: 0}
+  end
+
+  defp apply_damping_if_needed(false, velocity, _damping, _delta_time),
+    do: velocity
+
+  defp apply_damping_if_needed(true, velocity, damping, delta_time) do
+    Vector.scale(velocity, 1.0 - min(damping * delta_time, 0.99))
+  end
+
+  defp update_particle_lifetime(false, properties, _delta_time), do: properties
+
+  defp update_particle_lifetime(true, properties, delta_time) do
+    Map.update!(properties, :lifetime, fn lifetime ->
+      lifetime - delta_time
+    end)
+  end
+
+  defp process_collision_if_different_objects(false, _obj1, _obj2, inner_acc),
+    do: inner_acc
+
+  defp process_collision_if_different_objects(true, obj1, obj2, inner_acc) do
+    obj1_updated = Map.get(inner_acc, obj1.id)
+    obj2_updated = Map.get(inner_acc, obj2.id)
+    handle_single_collision(obj1_updated, obj2_updated, inner_acc)
+  end
+
+  defp handle_collision_if_detected(false, _obj1, _obj2, acc_objects),
+    do: acc_objects
+
+  defp handle_collision_if_detected(true, obj1, obj2, acc_objects) do
+    {obj1_after, obj2_after} = resolve_collision(obj1, obj2)
+
+    acc_objects
+    |> Map.put(obj1.id, obj1_after)
+    |> Map.put(obj2.id, obj2_after)
+  end
+
+  defp resolve_collision_based_on_velocity(
+         true,
+         obj1,
+         obj2,
+         _normal,
+         _velocity_along_normal
+       ) do
+    {obj1, obj2}
+  end
+
+  defp resolve_collision_based_on_velocity(
+         false,
+         obj1,
+         obj2,
+         normal,
+         velocity_along_normal
+       ) do
+    # Calculate restitution (bounciness)
+    restitution =
+      min(
+        Map.get(obj1.properties, :restitution, 0.8),
+        Map.get(obj2.properties, :restitution, 0.8)
+      )
+
+    # Calculate impulse scalar
+    j = -(1 + restitution) * velocity_along_normal
+    j = j / (1 / obj1.mass + 1 / obj2.mass)
+
+    # Apply impulse
+    impulse = Vector.scale(normal, j)
+
+    obj1_velocity =
+      Vector.subtract(obj1.velocity, Vector.scale(impulse, 1 / obj1.mass))
+
+    obj2_velocity =
+      Vector.add(obj2.velocity, Vector.scale(impulse, 1 / obj2.mass))
+
+    # Return updated objects
+    {
+      %{obj1 | velocity: obj1_velocity},
+      %{obj2 | velocity: obj2_velocity}
+    }
+  end
+
+  defp apply_min_boundary_constraint(
+         false,
+         obj,
+         _pos_key,
+         _vel_key,
+         _min_value
+       ),
+       do: obj
+
+  defp apply_min_boundary_constraint(true, obj, pos_key, vel_key, min_value) do
+    %{
       obj
-    end
+      | position: Map.put(obj.position, pos_key, min_value),
+        velocity:
+          Map.put(
+            obj.velocity,
+            vel_key,
+            -Map.get(obj.velocity, vel_key) * 0.8
+          )
+    }
+  end
+
+  defp apply_max_boundary_constraint(
+         false,
+         obj,
+         _pos_key,
+         _vel_key,
+         _max_value
+       ),
+       do: obj
+
+  defp apply_max_boundary_constraint(true, obj, pos_key, vel_key, max_value) do
+    %{
+      obj
+      | position: Map.put(obj.position, pos_key, max_value),
+        velocity:
+          Map.put(
+            obj.velocity,
+            vel_key,
+            -Map.get(obj.velocity, vel_key) * 0.8
+          )
+    }
   end
 end

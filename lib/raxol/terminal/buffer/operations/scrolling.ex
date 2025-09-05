@@ -10,10 +10,9 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   """
   def maybe_scroll(buffer) when is_list(buffer) do
     # Check if we need to scroll
-    if needs_scroll?(buffer) do
-      scroll_up(buffer, 1)
-    else
-      buffer
+    case needs_scroll?(buffer) do
+      true -> scroll_up(buffer, 1)
+      false -> buffer
     end
   end
 
@@ -72,11 +71,12 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
       )
 
     # Adjust cursor position if needed
-    if cursor_y >= lines do
-      {new_buffer, cursor_y - lines, cursor_x}
-    else
-      {new_buffer, 0, cursor_x}
-    end
+    new_cursor_y = 
+      case cursor_y >= lines do
+        true -> cursor_y - lines
+        false -> 0
+      end
+    {new_buffer, new_cursor_y, cursor_x}
   end
 
   # Handle ScreenBuffer structs with cursor position
@@ -194,19 +194,20 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
       when is_list(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) and
              is_integer(scroll_top) and is_integer(scroll_bottom) do
-    if cursor_y >= scroll_top and cursor_y <= scroll_bottom do
-      # Insert within scroll region
-      new_buffer =
-        buffer
-        |> Enum.take(cursor_y)
-        |> Enum.concat(
-          List.duplicate(create_empty_line(length(hd(buffer))), count)
-        )
-        |> Enum.concat(Enum.drop(buffer, cursor_y))
+    case cursor_y >= scroll_top and cursor_y <= scroll_bottom do
+      true ->
+        # Insert within scroll region
+        new_buffer =
+          buffer
+          |> Enum.take(cursor_y)
+          |> Enum.concat(
+            List.duplicate(create_empty_line(length(hd(buffer))), count)
+          )
+          |> Enum.concat(Enum.drop(buffer, cursor_y))
 
-      {new_buffer, cursor_y, cursor_x}
-    else
-      {buffer, cursor_y, cursor_x}
+        {new_buffer, cursor_y, cursor_x}
+      false ->
+        {buffer, cursor_y, cursor_x}
     end
   end
 
@@ -229,16 +230,17 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
       when is_list(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) and
              is_integer(scroll_top) and is_integer(scroll_bottom) do
-    if cursor_y >= scroll_top and cursor_y <= scroll_bottom do
-      # Delete within scroll region
-      new_buffer =
-        buffer
-        |> Enum.take(cursor_y)
-        |> Enum.concat(Enum.drop(buffer, cursor_y + count))
+    case cursor_y >= scroll_top and cursor_y <= scroll_bottom do
+      true ->
+        # Delete within scroll region
+        new_buffer =
+          buffer
+          |> Enum.take(cursor_y)
+          |> Enum.concat(Enum.drop(buffer, cursor_y + count))
 
-      {new_buffer, cursor_y, cursor_x}
-    else
-      {buffer, cursor_y, cursor_x}
+        {new_buffer, cursor_y, cursor_x}
+      false ->
+        {buffer, cursor_y, cursor_x}
     end
   end
 
@@ -273,12 +275,12 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   @doc """
   Scrolls the buffer by the specified number of lines.
   """
-  def scroll(buffer, lines) do
-    if lines > 0 do
-      Raxol.Terminal.Buffer.Scroller.scroll_up(buffer, lines)
-    else
-      Raxol.Terminal.Buffer.Scroller.scroll_down(buffer, abs(lines))
-    end
+  def scroll(buffer, lines) when lines > 0 do
+    Raxol.Terminal.Buffer.Scroller.scroll_up(buffer, lines)
+  end
+
+  def scroll(buffer, lines) when lines <= 0 do
+    Raxol.Terminal.Buffer.Scroller.scroll_down(buffer, abs(lines))
   end
 
   @doc """

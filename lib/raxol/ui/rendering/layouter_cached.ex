@@ -282,7 +282,7 @@ defmodule Raxol.UI.Rendering.LayouterCached do
     end
   end
 
-  defp calculate_flex_layout(node, constraints, base_layout) do
+  defp calculate_flex_layout(node, _constraints, base_layout) do
     direction = Map.get(node, :direction, :row)
 
     Map.merge(base_layout, %{
@@ -291,7 +291,7 @@ defmodule Raxol.UI.Rendering.LayouterCached do
     })
   end
 
-  defp calculate_grid_layout(node, constraints, base_layout) do
+  defp calculate_grid_layout(node, _constraints, base_layout) do
     columns = Map.get(node, :columns, 1)
     gap = Map.get(node, :gap, 0)
 

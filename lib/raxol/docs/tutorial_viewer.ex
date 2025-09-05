@@ -73,22 +73,14 @@ defmodule Raxol.Docs.TutorialViewer do
     next_index = state.step_index + 1
     next_step = Enum.at(state.active_tutorial.steps, next_index)
 
-    if next_step do
-      {%{state | current_step: next_step, step_index: next_index}, []}
-    else
-      {state, []}
-    end
+    handle_next_step(next_step, state, next_index)
   end
 
   def update({:previous_step}, state) do
     prev_index = state.step_index - 1
     prev_step = Enum.at(state.active_tutorial.steps, prev_index)
 
-    if prev_index >= 0 and prev_step do
-      {%{state | current_step: prev_step, step_index: prev_index}, []}
-    else
-      {state, []}
-    end
+    handle_previous_step(prev_index, prev_step, state)
   end
 
   def update({:update_input, input}, state) do
@@ -97,8 +89,7 @@ defmodule Raxol.Docs.TutorialViewer do
 
   def update({:validate_exercise}, state) do
     # Simple validation for now
-    result =
-      if state.user_input == "correct", do: :ok, else: {:error, "Try again!"}
+    result = validate_exercise_input(state.user_input)
 
     {%{state | validation_result: result}, []}
   end
@@ -156,6 +147,36 @@ defmodule Raxol.Docs.TutorialViewer do
 
   # --- Helper Functions ---
 
+  defp handle_next_step(nil, state, _next_index), do: {state, []}
+
+  defp handle_next_step(next_step, state, next_index) do
+    {%{state | current_step: next_step, step_index: next_index}, []}
+  end
+
+  defp handle_previous_step(prev_index, _prev_step, state) when prev_index < 0, do: {state, []}
+
+  defp handle_previous_step(_prev_index, nil, state), do: {state, []}
+
+  defp handle_previous_step(prev_index, prev_step, state) do
+    {%{state | current_step: prev_step, step_index: prev_index}, []}
+  end
+
+  defp validate_exercise_input("correct"), do: :ok
+
+  defp validate_exercise_input(_input), do: {:error, "Try again!"}
+
+  defp render_step_content(nil, _current_step) do
+    Raxol.View.Elements.label(content: "No active tutorial or step")
+  end
+
+  defp render_step_content(_active_tutorial, nil) do
+    Raxol.View.Elements.label(content: "No active tutorial or step")
+  end
+
+  defp render_step_content(active_tutorial, current_step) do
+    render_tutorial_step(active_tutorial, current_step)
+  end
+
   defp render_tutorial_selection(model) do
     Raxol.View.Elements.panel title: "Interactive Tutorials" do
       Raxol.View.Elements.column gap: 1 do
@@ -199,11 +220,7 @@ defmodule Raxol.Docs.TutorialViewer do
   end
 
   defp render_current_step(model) do
-    if model.active_tutorial && model.current_step do
-      render_tutorial_step(model.active_tutorial, model.current_step)
-    else
-      Raxol.View.Elements.label(content: "No active tutorial or step")
-    end
+    render_step_content(model.active_tutorial, model.current_step)
   end
 
   defp render_fallback(_model) do

@@ -190,7 +190,7 @@ defmodule Raxol.Playground.Preview do
     is_open = Map.get(state, :is_open, false)
 
     display_value = selected || placeholder
-    arrow = if is_open, do: "▲", else: "▼"
+    arrow = get_select_arrow(is_open)
 
     main_line = "│ #{display_value} #{arrow} │"
     width = String.length(main_line) - 4
@@ -235,9 +235,9 @@ defmodule Raxol.Playground.Preview do
     checked = Map.get(state, :checked, Map.get(props, :checked, false))
     disabled = Map.get(props, :disabled, false)
 
-    checkbox = format_checkbox_icon(checked, disabled)
+    checkbox = format_checkbox_display(checked, disabled)
 
-    label_style = format_disabled_label(label, disabled)
+    label_style = style_disabled_label(label, disabled)
 
     "#{checkbox} #{label_style}"
   end
@@ -258,12 +258,7 @@ defmodule Raxol.Playground.Preview do
     label = Map.get(props, :label, "")
     enabled = Map.get(state, :enabled, Map.get(props, :enabled, false))
 
-    switch =
-      if enabled do
-        "#{IO.ANSI.green_background()} ON #{IO.ANSI.reset()}"
-      else
-        "#{IO.ANSI.light_black_background()} OFF #{IO.ANSI.reset()}"
-      end
+    switch = format_toggle_switch(enabled)
 
     "#{label} #{switch}"
   end
@@ -289,15 +284,13 @@ defmodule Raxol.Playground.Preview do
     content_width = width - 2
 
     top_border =
-      if title do
-        title_length = String.length(title)
-        left_padding = div(content_width - title_length - 2, 2)
-        right_padding = content_width - title_length - 2 - left_padding
-
-        "#{top_left}#{String.duplicate(horizontal, left_padding)} #{title} #{String.duplicate(horizontal, right_padding)}#{top_right}"
-      else
-        "#{top_left}#{String.duplicate(horizontal, content_width)}#{top_right}"
-      end
+      create_box_top_border(
+        title,
+        content_width,
+        top_left,
+        top_right,
+        horizontal
+      )
 
     empty_line = "#{vertical}#{String.duplicate(" ", content_width)}#{vertical}"
     content_lines = List.duplicate(empty_line, height - 2)
@@ -315,11 +308,7 @@ defmodule Raxol.Playground.Preview do
 
     placeholder_items = ["Item 1", "Item 2", "Item 3"]
 
-    if direction == :horizontal do
-      Enum.join(placeholder_items, String.duplicate(" ", gap))
-    else
-      Enum.join(placeholder_items, String.duplicate("\n", gap))
-    end
+    join_flex_items(placeholder_items, direction, gap)
   end
 
   defp render_grid(props) do
@@ -327,7 +316,7 @@ defmodule Raxol.Playground.Preview do
     rows = Map.get(props, :rows, 2)
     gap = Map.get(props, :gap, 1)
 
-    total_items = if rows, do: columns * rows, else: 6
+    total_items = calculate_total_items(rows, columns)
 
     items = for i <- 1..total_items, do: "Item #{i}"
 
@@ -343,11 +332,7 @@ defmodule Raxol.Playground.Preview do
 
     tab_line =
       Enum.map(tabs, fn tab ->
-        if tab.id == active_tab do
-          "#{IO.ANSI.bright()}#{IO.ANSI.underline()}#{tab.label}#{IO.ANSI.reset()}"
-        else
-          tab.label
-        end
+        format_tab_label(tab, active_tab)
       end)
       |> Enum.join(" | ")
 
@@ -363,28 +348,30 @@ defmodule Raxol.Playground.Preview do
     rows = Map.get(props, :rows, [])
     border = Map.get(props, :border, true)
 
-    if !border do
-      # Simple table without borders
-      header_line = Enum.join(headers, " | ")
-      separator = String.duplicate("-", String.length(header_line))
-      row_lines = Enum.map(rows, &Enum.join(&1, " | "))
+    case border do
+      false ->
+        # Simple table without borders
+        header_line = Enum.join(headers, " | ")
+        separator = String.duplicate("-", String.length(header_line))
+        row_lines = Enum.map(rows, &Enum.join(&1, " | "))
 
-      ([header_line, separator] ++ row_lines)
-      |> Enum.join("\n")
-    else
-      # Table with borders
-      col_widths = calculate_column_widths(headers, rows)
+        ([header_line, separator] ++ row_lines)
+        |> Enum.join("\n")
 
-      top_border = create_table_border(col_widths, "┌", "┬", "┐", "─")
-      header_separator = create_table_border(col_widths, "├", "┼", "┤", "─")
-      bottom_border = create_table_border(col_widths, "└", "┴", "┘", "─")
+      true ->
+        # Table with borders
+        col_widths = calculate_column_widths(headers, rows)
 
-      header_line = create_table_row(headers, col_widths)
-      row_lines = Enum.map(rows, &create_table_row(&1, col_widths))
+        top_border = create_table_border(col_widths, "┌", "┬", "┐", "─")
+        header_separator = create_table_border(col_widths, "├", "┼", "┤", "─")
+        bottom_border = create_table_border(col_widths, "└", "┴", "┘", "─")
 
-      ([top_border, header_line, header_separator] ++
-         row_lines ++ [bottom_border])
-      |> Enum.join("\n")
+        header_line = create_table_row(headers, col_widths)
+        row_lines = Enum.map(rows, &create_table_row(&1, col_widths))
+
+        ([top_border, header_line, header_separator] ++
+           row_lines ++ [bottom_border])
+        |> Enum.join("\n")
     end
   end
 
@@ -393,15 +380,17 @@ defmodule Raxol.Playground.Preview do
     ordered = Map.get(props, :ordered, false)
     marker = Map.get(props, :marker, "•")
 
-    if ordered do
-      items
-      |> Enum.with_index(1)
-      |> Enum.map(fn {item, index} -> "#{index}. #{item}" end)
-      |> Enum.join("\n")
-    else
-      items
-      |> Enum.map(&"#{marker} #{&1}")
-      |> Enum.join("\n")
+    case ordered do
+      true ->
+        items
+        |> Enum.with_index(1)
+        |> Enum.map(fn {item, index} -> "#{index}. #{item}" end)
+        |> Enum.join("\n")
+
+      false ->
+        items
+        |> Enum.map(&"#{marker} #{&1}")
+        |> Enum.join("\n")
     end
   end
 
@@ -421,11 +410,7 @@ defmodule Raxol.Playground.Preview do
     bar =
       "#{IO.ANSI.green()}#{filled_bar}#{IO.ANSI.light_black()}#{empty_bar}#{IO.ANSI.reset()}"
 
-    if show_percentage do
-      "#{bar} #{percentage}%"
-    else
-      bar
-    end
+    format_progress_bar_display(bar, percentage, show_percentage)
   end
 
   defp render_spinner(props) do
@@ -451,40 +436,43 @@ defmodule Raxol.Playground.Preview do
     width = Map.get(props, :width, 40)
     height = Map.get(props, :height, 20)
 
-    unless visible do
-      "(Modal is hidden)"
-    else
-      # Create modal overlay effect
-      _overlay = String.duplicate("▓", width + 4)
+    case visible do
+      false ->
+        "(Modal is hidden)"
 
-      top_border = "╔" <> String.duplicate("═", width) <> "╗"
+      true ->
+        # Create modal overlay effect
+        _overlay = String.duplicate("▓", width + 4)
 
-      title_line =
-        "║ #{title}#{String.duplicate(" ", width - String.length(title) - 1)} ║"
+        top_border = "╔" <> String.duplicate("═", width) <> "╗"
 
-      separator = "╠" <> String.duplicate("═", width) <> "╣"
+        title_line =
+          "║ #{title}#{String.duplicate(" ", width - String.length(title) - 1)} ║"
 
-      content_lines =
-        for _ <- 1..(height - 4) do
-          "║#{String.duplicate(" ", width)}║"
-        end
+        separator = "╠" <> String.duplicate("═", width) <> "╣"
 
-      bottom_border = "╚" <> String.duplicate("═", width) <> "╝"
+        content_lines =
+          for _ <- 1..(height - 4) do
+            "║#{String.duplicate(" ", width)}║"
+          end
 
-      modal_lines =
-        [top_border, title_line, separator] ++ content_lines ++ [bottom_border]
+        bottom_border = "╚" <> String.duplicate("═", width) <> "╝"
 
-      # Add shadow effect
-      modal_with_shadow =
-        Enum.map(modal_lines, fn line ->
-          "#{line}#{IO.ANSI.light_black()}▓#{IO.ANSI.reset()}"
-        end)
+        modal_lines =
+          [top_border, title_line, separator] ++
+            content_lines ++ [bottom_border]
 
-      shadow_line =
-        "#{IO.ANSI.light_black()}#{String.duplicate("▓", width + 2)}#{IO.ANSI.reset()}"
+        # Add shadow effect
+        modal_with_shadow =
+          Enum.map(modal_lines, fn line ->
+            "#{line}#{IO.ANSI.light_black()}▓#{IO.ANSI.reset()}"
+          end)
 
-      (modal_with_shadow ++ [shadow_line])
-      |> Enum.join("\n")
+        shadow_line =
+          "#{IO.ANSI.light_black()}#{String.duplicate("▓", width + 2)}#{IO.ANSI.reset()}"
+
+        (modal_with_shadow ++ [shadow_line])
+        |> Enum.join("\n")
     end
   end
 
@@ -493,34 +481,15 @@ defmodule Raxol.Playground.Preview do
     position = Map.get(props, :position, :top)
     visible = Map.get(props, :visible, true)
 
-    unless visible do
-      ""
-    else
-      bubble =
-        "#{IO.ANSI.black_background()}#{IO.ANSI.white()} #{text} #{IO.ANSI.reset()}"
+    case visible do
+      false ->
+        ""
 
-      case position do
-        :top ->
-          """
-          #{bubble}
-           ▼
-          """
+      true ->
+        bubble =
+          "#{IO.ANSI.black_background()}#{IO.ANSI.white()} #{text} #{IO.ANSI.reset()}"
 
-        :bottom ->
-          """
-           ▲
-          #{bubble}
-          """
-
-        :left ->
-          "#{bubble} ►"
-
-        :right ->
-          "◄ #{bubble}"
-
-        _ ->
-          bubble
-      end
+        format_tooltip_position(bubble, position)
     end
   end
 
@@ -640,32 +609,21 @@ defmodule Raxol.Playground.Preview do
 
   # Missing helper functions for input components
 
-  defp get_border_style(disabled) do
-    if disabled, do: IO.ANSI.light_black(), else: ""
-  end
+  defp get_border_style(true), do: IO.ANSI.light_black()
+  defp get_border_style(false), do: ""
 
   defp format_input_display(value, placeholder, cursor_pos, disabled) do
-    display_text = if value == "", do: placeholder, else: value
-
-    if disabled do
-      "#{IO.ANSI.light_black()}#{display_text}#{IO.ANSI.reset()}"
-    else
-      # Add cursor indicator
-      if cursor_pos <= String.length(value) do
-        {before, after_cursor} = String.split_at(value, cursor_pos)
-        "#{before}│#{after_cursor}"
-      else
-        "#{display_text}│"
+    display_text =
+      case value do
+        "" -> placeholder
+        text -> text
       end
-    end
+
+    format_input_text(display_text, value, cursor_pos, disabled)
   end
 
   defp format_text_area_lines(value, placeholder) do
-    if value == "" do
-      [placeholder]
-    else
-      String.split(value, "\n")
-    end
+    split_textarea_content(value, placeholder)
   end
 
   defp append_option_lines_if_open(
@@ -702,24 +660,19 @@ defmodule Raxol.Playground.Preview do
   end
 
   defp format_radio_icon(option, selected) do
-    if option == selected do
-      "#{IO.ANSI.green()}◉#{IO.ANSI.reset()}"
-    else
-      "○"
-    end
+    format_radio_selected(option == selected)
   end
 
+  defp format_radio_selected(true), do: "#{IO.ANSI.green()}◉#{IO.ANSI.reset()}"
+  defp format_radio_selected(false), do: "○"
+
   defp format_required_label(text, required) do
-    if required do
-      "#{text} #{IO.ANSI.red()}*#{IO.ANSI.reset()}"
-    else
-      text
-    end
+    add_required_marker(text, required)
   end
 
   defp add_underline_if_needed(styled_content, level, content, _prefix)
        when level <= 2 do
-    underline_char = if level == 1, do: "═", else: "─"
+    underline_char = select_underline_char(level)
     underline = String.duplicate(underline_char, String.length(content))
     "#{styled_content}\n#{underline}"
   end
@@ -727,25 +680,139 @@ defmodule Raxol.Playground.Preview do
   defp add_underline_if_needed(styled_content, _level, _content, _prefix),
     do: styled_content
 
-  defp format_disabled_label(label, disabled) do
-    if disabled do
-      "#{IO.ANSI.light_black()}#{label}#{IO.ANSI.reset()}"
-    else
-      label
-    end
+  # Helper functions using pattern matching instead of if statements
+
+  defp select_underline_char(1), do: "═"
+  defp select_underline_char(_), do: "─"
+
+  defp get_select_arrow(true), do: "▲"
+  defp get_select_arrow(false), do: "▼"
+
+  defp join_flex_items(items, :horizontal, gap),
+    do: Enum.join(items, String.duplicate(" ", gap))
+
+  defp join_flex_items(items, _direction, gap),
+    do: Enum.join(items, String.duplicate("\n", gap))
+
+  defp calculate_total_items(nil, _columns), do: 6
+  defp calculate_total_items(rows, columns), do: columns * rows
+
+  defp format_tab_label(tab, active_tab) when tab.id == active_tab do
+    "#{IO.ANSI.bright()}#{IO.ANSI.underline()}#{tab.label}#{IO.ANSI.reset()}"
   end
 
-  defp format_checkbox_icon(checked, disabled) do
-    icon = if checked, do: "✓", else: " "
+  defp format_tab_label(tab, _active_tab), do: tab.label
 
-    if disabled do
-      "#{IO.ANSI.light_black()}[#{icon}]#{IO.ANSI.reset()}"
-    else
-      if checked do
-        "#{IO.ANSI.green()}[#{icon}]#{IO.ANSI.reset()}"
-      else
-        "[#{icon}]"
-      end
-    end
+  defp format_progress_bar_display(bar, percentage, true),
+    do: "#{bar} #{percentage}%"
+
+  defp format_progress_bar_display(bar, _percentage, false), do: bar
+
+  defp format_input_text(display_text, _value, _cursor_pos, true) do
+    "#{IO.ANSI.light_black()}#{display_text}#{IO.ANSI.reset()}"
   end
+
+  defp format_input_text(display_text, value, cursor_pos, false) do
+    add_cursor_indicator(display_text, value, cursor_pos)
+  end
+
+  defp add_cursor_indicator(display_text, value, cursor_pos) do
+    value_length = String.length(value)
+
+    format_cursor_position(
+      cursor_pos <= value_length,
+      display_text,
+      value,
+      cursor_pos
+    )
+  end
+
+  defp format_cursor_position(true, _display_text, value, cursor_pos) do
+    {before, after_cursor} = String.split_at(value, cursor_pos)
+    "#{before}│#{after_cursor}"
+  end
+
+  defp format_cursor_position(false, display_text, _value, _cursor_pos),
+    do: "#{display_text}│"
+
+  defp split_textarea_content("", placeholder), do: [placeholder]
+
+  defp split_textarea_content(value, _placeholder),
+    do: String.split(value, "\n")
+
+  defp add_required_marker(text, true),
+    do: "#{text} #{IO.ANSI.red()}*#{IO.ANSI.reset()}"
+
+  defp add_required_marker(text, false), do: text
+
+  defp style_disabled_label(label, true),
+    do: "#{IO.ANSI.light_black()}#{label}#{IO.ANSI.reset()}"
+
+  defp style_disabled_label(label, false), do: label
+
+  defp format_checkbox_display(checked, disabled) do
+    icon = get_checkbox_icon(checked)
+    apply_checkbox_style(icon, checked, disabled)
+  end
+
+  defp get_checkbox_icon(true), do: "✓"
+  defp get_checkbox_icon(false), do: " "
+
+  defp apply_checkbox_style(icon, _checked, true) do
+    "#{IO.ANSI.light_black()}[#{icon}]#{IO.ANSI.reset()}"
+  end
+
+  defp apply_checkbox_style(icon, true, false) do
+    "#{IO.ANSI.green()}[#{icon}]#{IO.ANSI.reset()}"
+  end
+
+  defp apply_checkbox_style(icon, false, false), do: "[#{icon}]"
+
+  defp format_toggle_switch(true),
+    do: "#{IO.ANSI.green_background()} ON #{IO.ANSI.reset()}"
+
+  defp format_toggle_switch(false),
+    do: "#{IO.ANSI.light_black_background()} OFF #{IO.ANSI.reset()}"
+
+  defp create_box_top_border(
+         nil,
+         content_width,
+         top_left,
+         top_right,
+         horizontal
+       ) do
+    "#{top_left}#{String.duplicate(horizontal, content_width)}#{top_right}"
+  end
+
+  defp create_box_top_border(
+         title,
+         content_width,
+         top_left,
+         top_right,
+         horizontal
+       ) do
+    title_length = String.length(title)
+    left_padding = div(content_width - title_length - 2, 2)
+    right_padding = content_width - title_length - 2 - left_padding
+
+    "#{top_left}#{String.duplicate(horizontal, left_padding)} #{title} #{String.duplicate(horizontal, right_padding)}#{top_right}"
+  end
+
+  defp format_tooltip_position(bubble, :top) do
+    """
+    #{bubble}
+     ▼
+    """
+  end
+
+  defp format_tooltip_position(bubble, :bottom) do
+    """
+     ▲
+    #{bubble}
+    """
+  end
+
+  defp format_tooltip_position(bubble, :left), do: "#{bubble} ►"
+  defp format_tooltip_position(bubble, :right), do: "◄ #{bubble}"
+  defp format_tooltip_position(bubble, _), do: bubble
 end

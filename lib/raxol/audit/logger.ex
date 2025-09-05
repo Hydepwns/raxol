@@ -109,7 +109,12 @@ defmodule Raxol.Audit.Logger do
       metadata: Keyword.get(opts, :metadata, %{})
     }
 
-    severity = if outcome == :denied, do: :medium, else: :low
+    severity =
+      case outcome do
+        :denied -> :medium
+        _ -> :low
+      end
+
     log_event(event, :authorization, severity)
   end
 
@@ -195,7 +200,12 @@ defmodule Raxol.Audit.Logger do
       metadata: Keyword.get(opts, :metadata, %{})
     }
 
-    severity = if status == :non_compliant, do: :high, else: :info
+    severity =
+      case status do
+        :non_compliant -> :high
+        _ -> :info
+      end
+
     log_event(event, :compliance, severity)
   end
 
@@ -286,12 +296,16 @@ defmodule Raxol.Audit.Logger do
     }
 
     # Schedule periodic tasks
-    if config.enabled do
-      :timer.send_interval(config.flush_interval_ms, :flush_buffer)
-      # Every hour
-      :timer.send_interval(3_600_000, :cleanup_old_logs)
-      # Daily
-      :timer.send_interval(86_400_000, :verify_integrity)
+    case config.enabled do
+      true ->
+        :timer.send_interval(config.flush_interval_ms, :flush_buffer)
+        # Every hour
+        :timer.send_interval(3_600_000, :cleanup_old_logs)
+        # Daily
+        :timer.send_interval(86_400_000, :verify_integrity)
+
+      false ->
+        :ok
     end
 
     Logger.info("Audit logger initialized with config: #{inspect(config)}")
@@ -300,17 +314,19 @@ defmodule Raxol.Audit.Logger do
 
   @impl GenServer
   def handle_call({:log_event, event, category, severity}, _from, state) do
-    if state.config.enabled and should_log?(severity, state.config.log_level) do
-      case process_event(event, category, severity, state) do
-        {:ok, new_state} ->
-          {:reply, :ok, new_state}
+    case state.config.enabled and should_log?(severity, state.config.log_level) do
+      true ->
+        case process_event(event, category, severity, state) do
+          {:ok, new_state} ->
+            {:reply, :ok, new_state}
 
-        {:error, reason} ->
-          Logger.error("Failed to log audit event: #{inspect(reason)}")
-          {:reply, {:error, reason}, state}
-      end
-    else
-      {:reply, :ok, state}
+          {:error, reason} ->
+            Logger.error("Failed to log audit event: #{inspect(reason)}")
+            {:reply, {:error, reason}, state}
+        end
+
+      false ->
+        {:reply, :ok, state}
     end
   end
 
@@ -389,18 +405,16 @@ defmodule Raxol.Audit.Logger do
 
     # Sign event if configured
     signed_event =
-      if state.config.sign_events do
-        sign_event(enriched_event, state)
-      else
-        enriched_event
+      case state.config.sign_events do
+        true -> sign_event(enriched_event, state)
+        false -> enriched_event
       end
 
     # Encrypt if configured
     final_event =
-      if state.config.encrypt_events do
-        encrypt_event(signed_event, state)
-      else
-        signed_event
+      case state.config.encrypt_events do
+        true -> encrypt_event(signed_event, state)
+        false -> signed_event
       end
 
     # Add to buffer
@@ -416,15 +430,15 @@ defmodule Raxol.Audit.Logger do
     new_state = update_metrics(new_state, category, severity)
 
     # Send alerts if needed
-    if severity in [:critical, :high] and state.config.alert_on_critical do
-      send_alerts(final_event, severity, state)
+    case severity in [:critical, :high] and state.config.alert_on_critical do
+      true -> send_alerts(final_event, severity, state)
+      false -> :ok
     end
 
     # Flush if needed
-    if should_flush do
-      flush_buffer_to_storage(new_state)
-    else
-      {:ok, new_state}
+    case should_flush do
+      true -> flush_buffer_to_storage(new_state)
+      false -> {:ok, new_state}
     end
   end
 
@@ -471,30 +485,32 @@ defmodule Raxol.Audit.Logger do
   end
 
   defp flush_buffer_to_storage(state) do
-    if Enum.empty?(state.buffer) do
-      {:ok, state}
-    else
-      events_to_flush = Enum.reverse(state.buffer)
+    case Enum.empty?(state.buffer) do
+      true ->
+        {:ok, state}
 
-      # Store in event store
-      stream_name = "audit-#{Date.utc_today() |> Date.to_iso8601()}"
+      false ->
+        events_to_flush = Enum.reverse(state.buffer)
 
-      case EventStore.append_events(
-             state.event_store,
-             events_to_flush,
-             stream_name
-           ) do
-        {:ok, _event_ids} ->
-          # Also store in specialized audit storage
-          Storage.store_batch(state.storage, events_to_flush)
+        # Store in event store
+        stream_name = "audit-#{Date.utc_today() |> Date.to_iso8601()}"
 
-          # Clear buffer
-          {:ok, %{state | buffer: []}}
+        case EventStore.append_events(
+               state.event_store,
+               events_to_flush,
+               stream_name
+             ) do
+          {:ok, _event_ids} ->
+            # Also store in specialized audit storage
+            Storage.store_batch(state.storage, events_to_flush)
 
-        {:error, reason} ->
-          Logger.error("Failed to flush audit buffer: #{inspect(reason)}")
-          {:error, reason}
-      end
+            # Clear buffer
+            {:ok, %{state | buffer: []}}
+
+          {:error, reason} ->
+            Logger.error("Failed to flush audit buffer: #{inspect(reason)}")
+            {:error, reason}
+        end
     end
   end
 
@@ -521,10 +537,9 @@ defmodule Raxol.Audit.Logger do
       "wget | sh"
     ]
 
-    if Enum.any?(dangerous_commands, &String.contains?(command || "", &1)) do
-      :high
-    else
-      :low
+    case Enum.any?(dangerous_commands, &String.contains?(command || "", &1)) do
+      true -> :high
+      false -> :low
     end
   end
 
@@ -650,10 +665,9 @@ defmodule Raxol.Audit.Logger do
         end
       end)
 
-    if Enum.empty?(invalid) do
-      :ok
-    else
-      {:error, {:tampered_events, length(invalid)}}
+    case Enum.empty?(invalid) do
+      true -> :ok
+      false -> {:error, {:tampered_events, length(invalid)}}
     end
   end
 

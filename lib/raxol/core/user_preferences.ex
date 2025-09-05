@@ -26,35 +26,7 @@ defmodule Raxol.Core.UserPreferences do
 
   @impl GenServer
   def init(opts) do
-    preferences =
-      if Keyword.get(opts, :test_mode?, false) do
-        Raxol.Core.Runtime.Log.info(
-          "UserPreferences starting in test mode, using defaults only."
-        )
-
-        default_preferences()
-      else
-        case Persistence.load() do
-          {:ok, loaded_prefs} ->
-            Raxol.Core.Runtime.Log.info("User preferences loaded successfully.")
-            deep_merge(default_preferences(), loaded_prefs)
-
-          {:error, :file_not_found} ->
-            Raxol.Core.Runtime.Log.info(
-              "No preferences file found, using defaults."
-            )
-
-            default_preferences()
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.warning(
-              "Failed to load preferences (#{reason}), using defaults."
-            )
-
-            default_preferences()
-        end
-      end
-
+    preferences = initialize_preferences(Keyword.get(opts, :test_mode?, false))
     {:ok, %State{preferences: preferences}}
   end
 
@@ -102,37 +74,14 @@ defmodule Raxol.Core.UserPreferences do
     path = normalize_path(key_or_path)
     current_value = get_in(state.preferences, path)
 
-    if current_value != value do
-      new_preferences = put_in(state.preferences, path, value)
-
-      Raxol.Core.Runtime.Log.debug(
-        "Preference updated: #{inspect(path)} = #{inspect(value)}"
-      )
-
-      new_state = %{state | preferences: new_preferences}
-
-      {caller_pid, _} = from
-
-      send(
-        caller_pid,
-        {:preferences_applied,
-         Process.info(self(), :registered_name) |> elem(1) || self()}
-      )
-
-      {:reply, :ok, schedule_save(new_state)}
-    else
-      if Mix.env() == :test do
-        {caller_pid, _} = from
-
-        send(
-          caller_pid,
-          {:preferences_applied,
-           Process.info(self(), :registered_name) |> elem(1) || self()}
-        )
-      end
-
-      {:reply, :ok, state}
-    end
+    handle_preference_change(
+      current_value == value,
+      current_value,
+      value,
+      path,
+      state,
+      from
+    )
   end
 
   @impl GenServer
@@ -218,21 +167,7 @@ defmodule Raxol.Core.UserPreferences do
 
   @impl GenServer
   def handle_info({:perform_delayed_save, timer_id}, state) do
-    if timer_id == state.save_timer do
-      case Persistence.save(state.preferences) do
-        :ok ->
-          Raxol.Core.Runtime.Log.debug("User preferences saved after delay.")
-
-        {:error, reason} ->
-          Raxol.Core.Runtime.Log.error(
-            "Failed to save preferences after delay: #{inspect(reason)}"
-          )
-      end
-
-      {:noreply, %{state | save_timer: nil}}
-    else
-      {:noreply, state}
-    end
+    handle_delayed_save(timer_id == state.save_timer, timer_id, state)
   end
 
   @impl GenServer
@@ -249,16 +184,109 @@ defmodule Raxol.Core.UserPreferences do
 
   defp deep_merge(map1, map2) do
     Map.merge(map1, map2, fn _key, val1, val2 ->
-      if is_map(val1) and is_map(val2) do
-        deep_merge(val1, val2)
-      else
-        val2
-      end
+      merge_values(is_map(val1) and is_map(val2), val1, val2)
     end)
   end
 
   defp normalize_path(path) when is_atom(path), do: [path]
   defp normalize_path(path) when is_list(path), do: path
+
+  # Helper functions for if-statement elimination
+  defp initialize_preferences(true) do
+    Raxol.Core.Runtime.Log.info(
+      "UserPreferences starting in test mode, using defaults only."
+    )
+
+    default_preferences()
+  end
+
+  defp initialize_preferences(false) do
+    case Persistence.load() do
+      {:ok, loaded_prefs} ->
+        Raxol.Core.Runtime.Log.info("User preferences loaded successfully.")
+        deep_merge(default_preferences(), loaded_prefs)
+
+      {:error, :file_not_found} ->
+        Raxol.Core.Runtime.Log.info(
+          "No preferences file found, using defaults."
+        )
+
+        default_preferences()
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.warning(
+          "Failed to load preferences: #{inspect(reason)}, using defaults."
+        )
+
+        default_preferences()
+    end
+  end
+
+  defp handle_preference_change(
+         true,
+         _current_value,
+         _value,
+         _path,
+         state,
+         from
+       ) do
+    # Value unchanged - only send notification in test mode
+    send_notification_if_test(from)
+    {:reply, :ok, state}
+  end
+
+  defp handle_preference_change(false, _current_value, value, path, state, from) do
+    new_preferences = put_in(state.preferences, path, value)
+
+    Raxol.Core.Runtime.Log.debug(
+      "Preference updated: #{inspect(path)} = #{inspect(value)}"
+    )
+
+    new_state = %{state | preferences: new_preferences}
+
+    {caller_pid, _} = from
+
+    send(
+      caller_pid,
+      {:preferences_applied,
+       Process.info(self(), :registered_name) |> elem(1) || self()}
+    )
+
+    {:reply, :ok, schedule_save(new_state)}
+  end
+
+  defp send_notification_if_test({caller_pid, _}) do
+    execute_test_notification(Mix.env() == :test, caller_pid)
+  end
+
+  defp execute_test_notification(false, _caller_pid), do: :ok
+
+  defp execute_test_notification(true, caller_pid) do
+    send(
+      caller_pid,
+      {:preferences_applied,
+       Process.info(self(), :registered_name) |> elem(1) || self()}
+    )
+  end
+
+  defp handle_delayed_save(false, _timer_id, state), do: {:noreply, state}
+
+  defp handle_delayed_save(true, _timer_id, state) do
+    case Persistence.save(state.preferences) do
+      :ok ->
+        Raxol.Core.Runtime.Log.debug("User preferences saved after delay.")
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error(
+          "Failed to save preferences after delay: #{inspect(reason)}"
+        )
+    end
+
+    {:noreply, %{state | save_timer: nil}}
+  end
+
+  defp merge_values(true, val1, val2), do: deep_merge(val1, val2)
+  defp merge_values(false, _val1, val2), do: val2
 
   defp normalize_path(path) when is_binary(path) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->

@@ -95,39 +95,11 @@ defmodule Raxol.Terminal.Extension.LifecycleManager do
   end
 
   defp handle_extension_activation(extension, extension_id, state) do
-    if extension.status == :idle do
-      case initialize_extension(extension) do
-        {:ok, initialized_extension} ->
-          new_extension = %{initialized_extension | status: :active}
-          new_state = put_in(state.extensions[extension_id], new_extension)
-          {:ok, new_state}
-
-        {:error, reason} ->
-          new_extension = %{extension | status: :error, error: reason}
-          _new_state = put_in(state.extensions[extension_id], new_extension)
-          {:error, reason}
-      end
-    else
-      {:error, :invalid_extension_state}
-    end
+    handle_activation_by_status(extension.status, extension, extension_id, state)
   end
 
   defp handle_extension_deactivation(extension, extension_id, state) do
-    if extension.status == :active do
-      case deinitialize_extension(extension) do
-        {:ok, deinitialized_extension} ->
-          new_extension = %{deinitialized_extension | status: :idle}
-          new_state = put_in(state.extensions[extension_id], new_extension)
-          {:ok, new_state}
-
-        {:error, reason} ->
-          new_extension = %{extension | status: :error, error: reason}
-          _new_state = put_in(state.extensions[extension_id], new_extension)
-          {:error, reason}
-      end
-    else
-      {:error, :invalid_extension_state}
-    end
+    handle_deactivation_by_status(extension.status, extension, extension_id, state)
   end
 
   defp initialize_extension(extension) do
@@ -182,5 +154,42 @@ defmodule Raxol.Terminal.Extension.LifecycleManager do
       _ ->
         :ok
     end
+  end
+
+  # Helper functions for pattern matching instead of if statements
+  defp handle_activation_by_status(:idle, extension, extension_id, state) do
+    case initialize_extension(extension) do
+      {:ok, initialized_extension} ->
+        new_extension = %{initialized_extension | status: :active}
+        new_state = put_in(state.extensions[extension_id], new_extension)
+        {:ok, new_state}
+
+      {:error, reason} ->
+        new_extension = %{extension | status: :error, error: reason}
+        _new_state = put_in(state.extensions[extension_id], new_extension)
+        {:error, reason}
+    end
+  end
+
+  defp handle_activation_by_status(_status, _extension, _extension_id, _state) do
+    {:error, :invalid_extension_state}
+  end
+
+  defp handle_deactivation_by_status(:active, extension, extension_id, state) do
+    case deinitialize_extension(extension) do
+      {:ok, deinitialized_extension} ->
+        new_extension = %{deinitialized_extension | status: :idle}
+        new_state = put_in(state.extensions[extension_id], new_extension)
+        {:ok, new_state}
+
+      {:error, reason} ->
+        new_extension = %{extension | status: :error, error: reason}
+        _new_state = put_in(state.extensions[extension_id], new_extension)
+        {:error, reason}
+    end
+  end
+
+  defp handle_deactivation_by_status(_status, _extension, _extension_id, _state) do
+    {:error, :invalid_extension_state}
   end
 end

@@ -80,20 +80,7 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
       "- Dropped frames: #{results.animation_fps.dropped_frames_percent}%"
     )
 
-    if Map.has_key?(results, :metrics_validation) do
-      validation = results.metrics_validation
-
-      IO.puts("\n=== Validation Results ===\n")
-      IO.puts("Overall status: #{validation.overall.status}")
-
-      IO.puts(
-        "Pass rate: #{Float.round(validation.overall.pass_percentage, 1)}% (#{validation.overall.passed_validations}/#{validation.overall.total_validations})"
-      )
-
-      if detailed do
-        print_detailed_validation(validation)
-      end
-    end
+    print_validation_results(results, detailed)
 
     IO.puts("\nBenchmark complete.")
   end
@@ -117,25 +104,7 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
 
       IO.puts("\n#{category_name}:")
 
-      if map_size(category_results) > 0 do
-        Enum.each(category_results, fn
-          {_metric, %{status: status, message: message}} ->
-            status_icon =
-              case status do
-                :pass -> "✓"
-                :fail -> "✗"
-                :skip -> "?"
-                _ -> "-"
-              end
-
-            IO.puts("  #{status_icon} #{message}")
-
-          _ ->
-            IO.puts("  ? Unknown validation result format")
-        end)
-      else
-        IO.puts("  No validation results available")
-      end
+      print_category_results(category_results)
     end)
   end
 
@@ -168,32 +137,9 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
     # Generate recommendations based on results
     recommendations = []
 
-    recommendations =
-      if get_in(results, [:render_performance, :full_screen_render_time_ms]) >
-           16 do
-        [
-          %{
-            category: :performance,
-            message: "Consider optimizing full screen rendering"
-          }
-          | recommendations
-        ]
-      else
-        recommendations
-      end
+    recommendations = add_performance_recommendation(results, recommendations)
 
-    recommendations =
-      if get_in(results, [:memory_usage, :memory_leak_detected]) do
-        [
-          %{
-            category: :memory,
-            message: "Memory leak detected - investigate resource cleanup"
-          }
-          | recommendations
-        ]
-      else
-        recommendations
-      end
+    recommendations = add_memory_recommendation(results, recommendations)
 
     recommendations
   end
@@ -207,4 +153,65 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
     # Calculate overall performance score
     90.0
   end
+
+  defp print_validation_results(%{metrics_validation: validation}, detailed) do
+    IO.puts("\n=== Validation Results ===\n")
+    IO.puts("Overall status: #{validation.overall.status}")
+
+    IO.puts(
+      "Pass rate: #{Float.round(validation.overall.pass_percentage, 1)}% (#{validation.overall.passed_validations}/#{validation.overall.total_validations})"
+    )
+
+    print_detailed_if_needed(detailed, validation)
+  end
+  defp print_validation_results(_results, _detailed), do: :ok
+
+  defp print_detailed_if_needed(true, validation), do: print_detailed_validation(validation)
+  defp print_detailed_if_needed(false, _validation), do: :ok
+
+  defp print_category_results(category_results) when map_size(category_results) > 0 do
+    Enum.each(category_results, fn
+      {_metric, %{status: status, message: message}} ->
+        status_icon = get_status_icon(status)
+        IO.puts("  #{status_icon} #{message}")
+
+      _ ->
+        IO.puts("  ? Unknown validation result format")
+    end)
+  end
+  defp print_category_results(_category_results) do
+    IO.puts("  No validation results available")
+  end
+
+  defp get_status_icon(:pass), do: "✓"
+  defp get_status_icon(:fail), do: "✗"
+  defp get_status_icon(:skip), do: "?"
+  defp get_status_icon(_), do: "-"
+
+  defp add_performance_recommendation(results, recommendations) do
+    render_time = get_in(results, [:render_performance, :full_screen_render_time_ms])
+    add_recommendation_if_needed(render_time, 16, :performance,
+      "Consider optimizing full screen rendering", recommendations)
+  end
+
+  defp add_memory_recommendation(results, recommendations) do
+    memory_leak = get_in(results, [:memory_usage, :memory_leak_detected])
+    add_recommendation_if_leak(memory_leak, recommendations)
+  end
+
+  defp add_recommendation_if_needed(value, threshold, category, message, recommendations) 
+    when value > threshold do
+    [%{category: category, message: message} | recommendations]
+  end
+  defp add_recommendation_if_needed(_value, _threshold, _category, _message, recommendations) do
+    recommendations
+  end
+
+  defp add_recommendation_if_leak(true, recommendations) do
+    [%{
+      category: :memory,
+      message: "Memory leak detected - investigate resource cleanup"
+    } | recommendations]
+  end
+  defp add_recommendation_if_leak(_memory_leak, recommendations), do: recommendations
 end

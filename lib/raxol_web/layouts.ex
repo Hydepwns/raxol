@@ -14,11 +14,17 @@ defmodule RaxolWeb.Layouts do
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body>
-        <%= if @flash[:info], do: Phoenix.HTML.raw(@flash[:info]) %>
-        <%= if @flash[:error], do: Phoenix.HTML.raw(@flash[:error]) %>
+        <%= render_flash_message(@flash[:info], :info) %>
+        <%= render_flash_message(@flash[:error], :error) %>
         <%= @inner_content %>
       </body>
     </html>
     """
+  end
+
+  defp render_flash_message(nil, _type), do: ""
+
+  defp render_flash_message(message, _type) do
+    Phoenix.HTML.raw(message)
   end
 end

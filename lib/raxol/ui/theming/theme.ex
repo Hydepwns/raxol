@@ -274,11 +274,15 @@ defmodule Raxol.UI.Theming.Theme do
   # Private helpers
 
   defp process_colors(attrs) do
-    if Map.has_key?(attrs, :colors) do
-      Map.update!(attrs, :colors, &convert_hex_colors/1)
-    else
-      attrs
-    end
+    handle_colors(Map.has_key?(attrs, :colors), attrs)
+  end
+
+  defp handle_colors(true, attrs) do
+    Map.update!(attrs, :colors, &convert_hex_colors/1)
+  end
+
+  defp handle_colors(false, attrs) do
+    attrs
   end
 
   defp convert_hex_colors(colors) do
@@ -446,10 +450,11 @@ defmodule Raxol.UI.Theming.Theme do
 
   defp deep_merge(map1, map2) when is_map(map1) and is_map(map2) do
     Map.merge(map1, map2, fn _key, v1, v2 ->
-      if is_map(v1) and is_map(v2) do
-        deep_merge(v1, v2)
-      else
-        v2
+      case {is_map(v1), is_map(v2)} do
+        {true, true} ->
+          deep_merge(v1, v2)
+        _ ->
+          v2
       end
     end)
   end
@@ -467,11 +472,11 @@ defmodule Raxol.UI.Theming.Theme do
   defp process_value(value, _key, _rest), do: value
 
   defp ensure_button_background(value, rest) do
-    if Enum.any?(rest, &(&1 == :button)) and
-         not Map.has_key?(value, :background) do
-      Map.put(value, :background, "#000000")
-    else
-      value
+    case {Enum.any?(rest, &(&1 == :button)), Map.has_key?(value, :background)} do
+      {true, false} ->
+        Map.put(value, :background, "#000000")
+      _ ->
+        value
     end
   end
 

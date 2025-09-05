@@ -24,10 +24,9 @@ defmodule Raxol.Test.Visual.Matchers do
     pattern =
       Regex.compile!("#{color_code}#{Regex.escape(content)}#{IO.ANSI.reset()}")
 
-    if Regex.match?(pattern, output) do
-      {:ok, output}
-    else
-      {:error, "Expected #{inspect(content)} to be in #{color}"}
+    case Regex.match?(pattern, output) do
+      true -> {:ok, output}
+      false -> {:error, "Expected #{inspect(content)} to be in #{color}"}
     end
   end
 
@@ -46,10 +45,9 @@ defmodule Raxol.Test.Visual.Matchers do
     pattern =
       Regex.compile!("#{style_code}#{Regex.escape(content)}#{IO.ANSI.reset()}")
 
-    if Regex.match?(pattern, output) do
-      {:ok, output}
-    else
-      {:error, "Expected #{inspect(content)} to have style #{style}"}
+    case Regex.match?(pattern, output) do
+      true -> {:ok, output}
+      false -> {:error, "Expected #{inspect(content)} to have style #{style}"}
     end
   end
 
@@ -109,10 +107,9 @@ defmodule Raxol.Test.Visual.Matchers do
         String.starts_with?(line, String.duplicate(" ", padding))
       end)
 
-    if centered? do
-      {:ok, output}
-    else
-      {:error, "Content is not centered"}
+    case centered? do
+      true -> {:ok, output}
+      false -> {:error, "Content is not centered"}
     end
   end
 
@@ -126,10 +123,9 @@ defmodule Raxol.Test.Visual.Matchers do
           String.ends_with?(line, String.duplicate(" ", padding))
       end)
 
-    if padded? do
-      {:ok, output}
-    else
-      {:error, "Content is not properly padded"}
+    case padded? do
+      true -> {:ok, output}
+      false -> {:error, "Content is not properly padded"}
     end
   end
 
@@ -147,10 +143,9 @@ defmodule Raxol.Test.Visual.Matchers do
   def matches_component(output, :button, label) when is_binary(output) do
     pattern = ~r/\[#{Regex.escape(label)}\]/
 
-    if Regex.match?(pattern, output) do
-      {:ok, output}
-    else
-      {:error, "Button with label #{inspect(label)} not found"}
+    case Regex.match?(pattern, output) do
+      true -> {:ok, output}
+      false -> {:error, "Button with label #{inspect(label)} not found"}
     end
   end
 
@@ -158,10 +153,12 @@ defmodule Raxol.Test.Visual.Matchers do
     placeholder = Keyword.get(opts, :placeholder, "")
     pattern = ~r/\[#{Regex.escape(placeholder)}_+\]/
 
-    if Regex.match?(pattern, output) do
-      {:ok, output}
-    else
-      {:error, "Input with placeholder #{inspect(placeholder)} not found"}
+    case Regex.match?(pattern, output) do
+      true ->
+        {:ok, output}
+
+      false ->
+        {:error, "Input with placeholder #{inspect(placeholder)} not found"}
     end
   end
 
@@ -195,10 +192,9 @@ defmodule Raxol.Test.Visual.Matchers do
         end
       end)
 
-    if aligned? do
-      {:ok, output}
-    else
-      {:error, "Content is not #{alignment}-aligned"}
+    case aligned? do
+      true -> {:ok, output}
+      false -> {:error, "Content is not #{alignment}-aligned"}
     end
   end
 

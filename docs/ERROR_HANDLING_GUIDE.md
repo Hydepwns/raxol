@@ -4,6 +4,24 @@
 
 Raxol follows functional programming principles for error handling, favoring explicit error propagation over exceptions. This guide outlines the patterns and best practices for error handling throughout the codebase.
 
+## Core ErrorHandling Module Functions
+
+The `Raxol.Core.ErrorHandling` module provides the primary functions for safe execution:
+
+### Primary Functions
+
+- **`safe_call/1`** - Executes a function and returns `{:ok, result}` or `{:error, error}`
+- **`safe_call_with_info/1`** - Like `safe_call/1` but includes stacktrace for debugging
+- **`safe_genserver_call/3`** - Makes GenServer calls with proper timeout and error handling
+
+### Supporting Functions
+
+- **`safe_call_with_default/2`** - Returns a default value on error
+- **`safe_apply/3`** - Safely calls module functions, checking if they're exported
+- **`safe_callback/3`** - Calls optional callbacks, returns `{:ok, nil}` if not found
+- **`safe_deserialize/1`** - Safely deserializes binary data
+- **`safe_serialize/1`** - Safely serializes terms to binary
+
 ## Core Principles
 
 1. **Explicit over Implicit**: Errors should be explicit in function signatures
@@ -54,24 +72,40 @@ end
 ```elixir
 alias Raxol.Core.ErrorHandling
 
-# Good - Safe execution with logging
-def execute_callback(module, function, args) do
-  ErrorHandling.safe_apply(module, function, args)
+# Safe execution with Result type
+def execute_callback(fun) do
+  ErrorHandling.safe_call(fun)
+  # Returns: {:ok, result} | {:error, error}
 end
 
-# Good - Safe execution with fallback
+# Safe execution with error details and stacktrace
+def execute_with_debugging(fun) do
+  ErrorHandling.safe_call_with_info(fun)
+  # Returns: {:ok, result} | {:error, {kind, reason, stacktrace}}
+end
+
+# Safe execution with fallback value
 def compute_value(fun) do
   ErrorHandling.safe_call_with_default(fun, 0)
+  # Returns: result or 0 on error
 end
 
-# Good - Safe GenServer calls
+# Safe GenServer calls with timeout handling
 def get_server_state(server) do
-  ErrorHandling.safe_genserver_call(server, :get_state)
+  ErrorHandling.safe_genserver_call(server, :get_state, 5000)
+  # Returns: {:ok, result} | {:error, :not_available} | {:error, :timeout}
 end
 
-# Good - Binary operations
+# Safe module function calls
+def execute_callback(module, function, args) do
+  ErrorHandling.safe_apply(module, function, args)
+  # Returns: {:ok, result} | {:error, :function_not_exported}
+end
+
+# Binary operations
 def load_config(binary_data) do
   ErrorHandling.safe_deserialize(binary_data)
+  # Returns: {:ok, term} | {:error, reason}
 end
 ```
 

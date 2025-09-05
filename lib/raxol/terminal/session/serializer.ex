@@ -224,11 +224,12 @@ defmodule Raxol.Terminal.Session.Serializer do
         _ -> false
       end)
 
-    if Enum.empty?(errors) do
-      serialized = Enum.map(results, fn {:ok, data} -> data end)
-      {:ok, serialized}
-    else
-      {:error, {:multiple_buffer_errors, errors}}
+    case Enum.empty?(errors) do
+      true ->
+        serialized = Enum.map(results, fn {:ok, data} -> data end)
+        {:ok, serialized}
+      false ->
+        {:error, {:multiple_buffer_errors, errors}}
     end
   end
 
@@ -277,11 +278,12 @@ defmodule Raxol.Terminal.Session.Serializer do
         _ -> false
       end)
 
-    if Enum.empty?(errors) do
-      serialized = Enum.map(results, fn {:ok, data} -> data end)
-      {:ok, serialized}
-    else
-      {:error, {:cell_errors, errors}}
+    case Enum.empty?(errors) do
+      true ->
+        serialized = Enum.map(results, fn {:ok, data} -> data end)
+        {:ok, serialized}
+      false ->
+        {:error, {:cell_errors, errors}}
     end
   end
 
@@ -550,11 +552,12 @@ defmodule Raxol.Terminal.Session.Serializer do
         _ -> false
       end)
 
-    if Enum.empty?(errors) do
-      deserialized = Enum.map(results, fn {:ok, data} -> data end)
-      {:ok, deserialized}
-    else
-      {:error, {:multiple_buffer_errors, errors}}
+    case Enum.empty?(errors) do
+      true ->
+        deserialized = Enum.map(results, fn {:ok, data} -> data end)
+        {:ok, deserialized}
+      false ->
+        {:error, {:multiple_buffer_errors, errors}}
     end
   end
 
@@ -599,22 +602,23 @@ defmodule Raxol.Terminal.Session.Serializer do
         _ -> false
       end)
 
-    if Enum.empty?(errors) do
-      deserialized = Enum.map(results, fn {:ok, data} -> data end)
-      {:ok, deserialized}
-    else
-      # Log errors but continue with default cells
-      Raxol.Core.Runtime.Log.warning(
-        "Some cells failed to deserialize: #{inspect(errors)}"
-      )
+    case Enum.empty?(errors) do
+      true ->
+        deserialized = Enum.map(results, fn {:ok, data} -> data end)
+        {:ok, deserialized}
+      false ->
+        # Log errors but continue with default cells
+        Raxol.Core.Runtime.Log.warning(
+          "Some cells failed to deserialize: #{inspect(errors)}"
+        )
 
-      deserialized =
-        Enum.map(results, fn
-          {:ok, data} -> data
-          {:error, _} -> create_default_cell()
-        end)
+        deserialized =
+          Enum.map(results, fn
+            {:ok, data} -> data
+            {:error, _} -> create_default_cell()
+          end)
 
-      {:ok, deserialized}
+        {:ok, deserialized}
     end
   end
 

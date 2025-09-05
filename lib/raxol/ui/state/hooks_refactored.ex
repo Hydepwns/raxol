@@ -106,18 +106,13 @@ defmodule Raxol.UI.State.HooksRefactored do
     deps_key = {hook_id, :dependencies}
     prev_deps = Server.get_hook_state(component_id, deps_key)
 
-    if dependencies_changed?(prev_deps, dependencies) do
-      # Run cleanup from previous effect if any
-      cleanup_key = {hook_id, :cleanup}
-      run_cleanup(component_id, cleanup_key)
-
-      # Run new effect safely
-      cleanup = execute_with_logging(effect_fn, "Effect execution", nil)
-
-      # Store new dependencies and cleanup
-      Server.set_hook_state(component_id, deps_key, dependencies)
-      Server.set_hook_state(component_id, cleanup_key, cleanup)
-    end
+    handle_effect_dependencies(dependencies_changed?(prev_deps, dependencies), {
+      component_id,
+      hook_id,
+      deps_key,
+      effect_fn,
+      dependencies
+    })
 
     :ok
   end
@@ -152,17 +147,14 @@ defmodule Raxol.UI.State.HooksRefactored do
 
     prev_deps = Server.get_hook_state(component_id, deps_key)
 
-    if dependencies_changed?(prev_deps, dependencies) do
-      # Recompute value safely
-      new_value = execute_with_logging(compute_fn, "Memo computation", nil)
-
-      Server.set_hook_state(component_id, deps_key, dependencies)
-      Server.set_hook_state(component_id, value_key, new_value)
-      new_value
-    else
-      # Return cached value
-      Server.get_hook_state(component_id, value_key)
-    end
+    handle_memo_dependencies(dependencies_changed?(prev_deps, dependencies), {
+      component_id,
+      hook_id,
+      deps_key,
+      value_key,
+      compute_fn,
+      dependencies
+    })
   end
 
   @doc """
@@ -185,16 +177,16 @@ defmodule Raxol.UI.State.HooksRefactored do
 
     prev_deps = Server.get_hook_state(component_id, deps_key)
 
-    if dependencies_changed?(prev_deps, dependencies) do
-      Server.set_hook_state(component_id, deps_key, dependencies)
-      Server.set_hook_state(component_id, callback_key, callback_fn)
-      callback_fn
-    else
-      case Server.get_hook_state(component_id, callback_key) do
-        nil -> callback_fn
-        cached_fn -> cached_fn
-      end
-    end
+    handle_callback_dependencies(
+      dependencies_changed?(prev_deps, dependencies),
+      {
+        component_id,
+        deps_key,
+        callback_key,
+        callback_fn,
+        dependencies
+      }
+    )
   end
 
   @doc """
@@ -318,6 +310,67 @@ defmodule Raxol.UI.State.HooksRefactored do
     # Clear all hook state
     Server.clear_hook_state(component_id)
     :ok
+  end
+
+  # Effect dependency handlers using pattern matching
+  defp handle_effect_dependencies(false, _args), do: :ok
+
+  defp handle_effect_dependencies(
+         true,
+         {component_id, hook_id, deps_key, effect_fn, dependencies}
+       ) do
+    # Run cleanup from previous effect if any
+    cleanup_key = {hook_id, :cleanup}
+    run_cleanup(component_id, cleanup_key)
+
+    # Run new effect safely
+    cleanup = execute_with_logging(effect_fn, "Effect execution", nil)
+
+    # Store new dependencies and cleanup
+    Server.set_hook_state(component_id, deps_key, dependencies)
+    Server.set_hook_state(component_id, cleanup_key, cleanup)
+  end
+
+  # Memo dependency handlers using pattern matching
+  defp handle_memo_dependencies(
+         false,
+         {component_id, _hook_id, _deps_key, value_key, _compute_fn,
+          _dependencies}
+       ) do
+    # Return cached value
+    Server.get_hook_state(component_id, value_key)
+  end
+
+  defp handle_memo_dependencies(
+         true,
+         {component_id, _hook_id, deps_key, value_key, compute_fn, dependencies}
+       ) do
+    # Recompute value safely
+    new_value = execute_with_logging(compute_fn, "Memo computation", nil)
+
+    Server.set_hook_state(component_id, deps_key, dependencies)
+    Server.set_hook_state(component_id, value_key, new_value)
+    new_value
+  end
+
+  # Callback dependency handlers using pattern matching
+  defp handle_callback_dependencies(
+         false,
+         {component_id, _deps_key, callback_key, callback_fn, _dependencies}
+       ) do
+    case Server.get_hook_state(component_id, callback_key) do
+      nil -> callback_fn
+      cached_fn -> cached_fn
+    end
+  end
+
+  defp handle_callback_dependencies(
+         true,
+         {component_id, deps_key, callback_key, callback_fn, dependencies}
+       ) do
+    Server.set_hook_state(component_id, deps_key, dependencies)
+    Server.set_hook_state(component_id, callback_key, callback_fn)
+    callback_fn
   end
 
   # Private helper functions

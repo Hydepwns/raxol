@@ -104,12 +104,12 @@ defmodule Raxol.Security.InputValidator do
   # Private functions
 
   defp check_required(nil, %{rules: rules}) do
-    if {:required, true} in rules do
-      {:error, "is required"}
-    else
-      {:ok, nil}
-    end
+    is_required = {:required, true} in rules
+    handle_required_check(is_required)
   end
+
+  defp handle_required_check(true), do: {:error, "is required"}
+  defp handle_required_check(false), do: {:ok, nil}
 
   defp check_required(value, _), do: {:ok, value}
 
@@ -171,51 +171,17 @@ defmodule Raxol.Security.InputValidator do
   end
 
   defp apply_rule(value, {:min_length, min}) when is_binary(value) do
-    if String.length(value) >= min do
-      {:ok, value}
-    else
-      {:error, "must be at least #{min} characters"}
-    end
+    meets_min = String.length(value) >= min
+    handle_min_length_check(meets_min, value, min)
   end
 
-  defp apply_rule(value, {:max_length, max}) when is_binary(value) do
-    if String.length(value) <= max do
-      {:ok, value}
-    else
-      {:error, "must be at most #{max} characters"}
-    end
-  end
 
-  defp apply_rule(value, {:min, min}) when is_number(value) do
-    if value >= min do
-      {:ok, value}
-    else
-      {:error, "must be at least #{min}"}
-    end
-  end
 
-  defp apply_rule(value, {:max, max}) when is_number(value) do
-    if value <= max do
-      {:ok, value}
-    else
-      {:error, "must be at most #{max}"}
-    end
-  end
 
-  defp apply_rule(value, {:format, regex}) when is_binary(value) do
-    if Regex.match?(regex, value) do
-      {:ok, value}
-    else
-      {:error, "has invalid format"}
-    end
-  end
 
   defp apply_rule(value, {:in, allowed}) do
-    if value in allowed do
-      {:ok, value}
-    else
-      {:error, "must be one of: #{Enum.join(allowed, ", ")}"}
-    end
+    is_allowed = value in allowed
+    handle_allowed_check(is_allowed, value, allowed)
   end
 
   defp apply_rule(value, {:custom, validator}) when is_function(validator, 1) do
@@ -223,6 +189,44 @@ defmodule Raxol.Security.InputValidator do
   end
 
   defp apply_rule(value, _), do: {:ok, value}
+
+  defp handle_min_length_check(true, value, _min), do: {:ok, value}
+
+  defp handle_min_length_check(false, _value, min) do
+    {:error, "must be at least #{min} characters"}
+  end
+
+
+  defp handle_max_length_check(true, value, _max), do: {:ok, value}
+
+  defp handle_max_length_check(false, _value, max) do
+    {:error, "must be at most #{max} characters"}
+  end
+
+  defp handle_allowed_check(true, value, _allowed), do: {:ok, value}
+  
+  defp handle_allowed_check(false, _value, allowed) do
+    {:error, "must be one of: #{inspect(allowed)}"}
+  end
+
+
+  defp handle_min_value_check(true, value, _min), do: {:ok, value}
+
+  defp handle_min_value_check(false, _value, min) do
+    {:error, "must be at least #{min}"}
+  end
+
+
+  defp handle_max_value_check(true, value, _max), do: {:ok, value}
+
+  defp handle_max_value_check(false, _value, max) do
+    {:error, "must be at most #{max}"}
+  end
+
+
+  defp handle_format_check(true, value), do: {:ok, value}
+  defp handle_format_check(false, _value), do: {:error, "has invalid format"}
+
 
   defp sanitize_if_needed(value, %{sanitize: true, rules: rules})
        when is_binary(value) do
@@ -254,12 +258,12 @@ defmodule Raxol.Security.InputValidator do
 
   defp sanitize_url(url) do
     # Basic URL sanitization
-    if String.starts_with?(url, ["http://", "https://"]) do
-      url
-    else
-      "https://#{url}"
-    end
+    has_protocol = String.starts_with?(url, ["http://", "https://"])
+    handle_url_protocol(has_protocol, url)
   end
+
+  defp handle_url_protocol(true, url), do: url
+  defp handle_url_protocol(false, url), do: "https://#{url}"
 
   @doc """
   Creates a validator function for reuse.
@@ -316,10 +320,9 @@ defmodule Raxol.Security.InputValidator do
           {valid, [{name, reason} | errors]}
       end)
 
-    if Enum.empty?(errors) do
-      {:ok, valid}
-    else
-      {:error, errors}
-    end
+    handle_validation_result(Enum.empty?(errors), valid, errors)
   end
+
+  defp handle_validation_result(true, valid, _errors), do: {:ok, valid}
+  defp handle_validation_result(false, _valid, errors), do: {:error, errors}
 end

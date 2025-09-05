@@ -186,6 +186,82 @@ defmodule Raxol.Audit.Storage do
     end
   end
 
+  ## Pattern Matching Helper Functions for Storage Operations
+
+  defp get_base_events_by_filter(filters, state) do
+    case {Map.has_key?(filters, :user_id),
+          Map.has_key?(state.indexes.user_id, Map.get(filters, :user_id))} do
+      {true, true} ->
+        get_events_by_ids(state.indexes.user_id[filters.user_id], state)
+
+      _ ->
+        load_all_events(state)
+    end
+  end
+
+  defp fallback_search_if_needed([], events, query) do
+    query_lower = String.downcase(query)
+
+    Enum.filter(events, fn event ->
+      searchable_text =
+        [
+          Map.get(event, :description, ""),
+          Map.get(event, :command, ""),
+          Map.get(event, :error_message, ""),
+          Map.get(event, :denial_reason, "")
+        ]
+        |> Enum.join(" ")
+        |> String.downcase()
+
+      String.contains?(searchable_text, query_lower)
+    end)
+  end
+
+  defp fallback_search_if_needed(indexed_results, _events, _query),
+    do: indexed_results
+
+  defp rotate_file_if_exists(false, _current_file, state), do: {:ok, state}
+
+  defp rotate_file_if_exists(true, current_file, state) do
+    # Generate archive name
+    timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
+    archive_name = "#{current_file}.#{timestamp}"
+
+    # Rename current file
+    File.rename!(current_file, archive_name)
+
+    # Compress if enabled
+    compress_if_enabled(state.compression_enabled, archive_name)
+
+    # Update state with new file
+    {:ok, %{state | current_file: init_current_file(state.storage_path)}}
+  end
+
+  defp compress_if_enabled(false, _archive_name), do: :ok
+
+  defp compress_if_enabled(true, archive_name) do
+    Task.start(fn -> compress_file(archive_name) end)
+  end
+
+  defp update_event_with_atom(nil, event, _key), do: event
+  defp update_event_with_atom(atom, event, key), do: Map.put(event, key, atom)
+
+  defp intersect_matching_terms(nil, matching), do: matching
+
+  defp intersect_matching_terms(acc, matching),
+    do: MapSet.intersection(acc, matching)
+
+  defp load_indexes_if_file_exists(false, _index_file, state), do: state
+
+  defp load_indexes_if_file_exists(true, index_file, state) do
+    with {:ok, binary} <- File.read(index_file),
+         {:ok, indexes} <- safe_binary_to_term(binary) do
+      %{state | indexes: indexes}
+    else
+      _ -> state
+    end
+  end
+
   ## Private Functions
 
   defp store_events(events, state) do
@@ -268,12 +344,7 @@ defmodule Raxol.Audit.Storage do
   defp get_base_events(filters, state) do
     task =
       Task.async(fn ->
-        if Map.has_key?(filters, :user_id) and
-             Map.has_key?(state.indexes.user_id, filters.user_id) do
-          get_events_by_ids(state.indexes.user_id[filters.user_id], state)
-        else
-          load_all_events(state)
-        end
+        get_base_events_by_filter(filters, state)
       end)
 
     case Task.yield(task, 10000) || Task.shutdown(task) do
@@ -409,25 +480,7 @@ defmodule Raxol.Audit.Storage do
     indexed_results = Enum.filter(events, &(&1.event_id in matching_ids))
 
     # Fallback to direct text search if index returns no results
-    if Enum.empty?(indexed_results) do
-      query_lower = String.downcase(query)
-
-      Enum.filter(events, fn event ->
-        searchable_text =
-          [
-            Map.get(event, :description, ""),
-            Map.get(event, :command, ""),
-            Map.get(event, :error_message, ""),
-            Map.get(event, :denial_reason, "")
-          ]
-          |> Enum.join(" ")
-          |> String.downcase()
-
-        String.contains?(searchable_text, query_lower)
-      end)
-    else
-      indexed_results
-    end
+    fallback_search_if_needed(indexed_results, events, query)
   end
 
   defp filter_by_text_search(events, _, _), do: events
@@ -461,24 +514,7 @@ defmodule Raxol.Audit.Storage do
   defp rotate_log_file(state) do
     current_file = get_current_file_path(state)
 
-    if File.exists?(current_file) do
-      # Generate archive name
-      timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
-      archive_name = "#{current_file}.#{timestamp}"
-
-      # Rename current file
-      File.rename!(current_file, archive_name)
-
-      # Compress if enabled
-      if state.compression_enabled do
-        Task.start(fn -> compress_file(archive_name) end)
-      end
-
-      # Update state with new file
-      {:ok, %{state | current_file: init_current_file(state.storage_path)}}
-    else
-      {:ok, state}
-    end
+    rotate_file_if_exists(File.exists?(current_file), current_file, state)
   end
 
   defp compress_file(file_path) do
@@ -533,11 +569,7 @@ defmodule Raxol.Audit.Storage do
     case Map.get(event, key) do
       value when is_binary(value) ->
         with atom <- safe_string_to_atom(value) do
-          if atom != nil do
-            Map.put(event, key, atom)
-          else
-            event
-          end
+          update_event_with_atom(atom, event, key)
         end
 
       _ ->
@@ -693,11 +725,7 @@ defmodule Raxol.Audit.Storage do
     Enum.reduce(terms, nil, fn term, acc ->
       matching = get_in(search_index, [:terms, term]) || MapSet.new()
 
-      if acc == nil do
-        matching
-      else
-        MapSet.intersection(acc, matching)
-      end
+      intersect_matching_terms(acc, matching)
     end) || MapSet.new()
   end
 
@@ -722,16 +750,7 @@ defmodule Raxol.Audit.Storage do
   defp load_existing_indexes(state) do
     index_file = Path.join(state.storage_path, "indexes.dat")
 
-    if File.exists?(index_file) do
-      with {:ok, binary} <- File.read(index_file),
-           {:ok, indexes} <- safe_binary_to_term(binary) do
-        %{state | indexes: indexes}
-      else
-        _ -> state
-      end
-    else
-      state
-    end
+    load_indexes_if_file_exists(File.exists?(index_file), index_file, state)
   end
 
   defp safe_binary_to_term(binary) do

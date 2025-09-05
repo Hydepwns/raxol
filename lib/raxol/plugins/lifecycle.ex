@@ -181,13 +181,17 @@ defmodule Raxol.Plugins.Lifecycle do
   end
 
   defp call_plugin_stop_with_config(_plugin, module, plugin_config) do
-    if function_exported?(module, :stop, 1) do
-      case module.stop(plugin_config) do
-        {:ok, _updated_state} -> :ok
-        {:error, reason} -> {:error, reason}
-      end
-    else
-      :ok
+    handle_plugin_stop(function_exported?(module, :stop, 1), module, plugin_config)
+  end
+
+  defp handle_plugin_stop(false, _module, _plugin_config) do
+    :ok
+  end
+
+  defp handle_plugin_stop(true, module, plugin_config) do
+    case module.stop(plugin_config) do
+      {:ok, _updated_state} -> :ok
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -244,12 +248,15 @@ defmodule Raxol.Plugins.Lifecycle do
   defp get_plugin(manager, name) do
     plugin_key = Dependencies.normalize_plugin_key(name)
     plugin = Map.get(manager.plugins, plugin_key)
+    validate_plugin_existence(plugin, name)
+  end
 
-    if plugin do
-      {:ok, plugin}
-    else
-      {:error, "Plugin #{name} not found"}
-    end
+  defp validate_plugin_existence(nil, name) do
+    {:error, "Plugin #{name} not found"}
+  end
+
+  defp validate_plugin_existence(plugin, _name) do
+    {:ok, plugin}
   end
 
   defp check_plugin_dependencies(plugin, manager) do
@@ -319,10 +326,7 @@ defmodule Raxol.Plugins.Lifecycle do
   end
 
   defp find_plugin_and_start(plugin_name, manager, initialized_plugins) do
-    plugin_name_str =
-      if is_atom(plugin_name),
-        do: Atom.to_string(plugin_name),
-        else: plugin_name
+    plugin_name_str = normalize_plugin_name(plugin_name)
 
     case Enum.find(initialized_plugins, &(&1.name == plugin_name_str)) do
       nil -> {:error, "Plugin not found"}
@@ -330,12 +334,24 @@ defmodule Raxol.Plugins.Lifecycle do
     end
   end
 
+  defp normalize_plugin_name(plugin_name) when is_atom(plugin_name) do
+    Atom.to_string(plugin_name)
+  end
+
+  defp normalize_plugin_name(plugin_name) do
+    plugin_name
+  end
+
   defp start_plugin_if_supported(plugin, manager) do
-    if function_exported?(plugin.module, :start, 1) do
-      handle_plugin_start(plugin, manager)
-    else
-      {:ok, manager}
-    end
+    check_start_function_support(function_exported?(plugin.module, :start, 1), plugin, manager)
+  end
+
+  defp check_start_function_support(false, _plugin, manager) do
+    {:ok, manager}
+  end
+
+  defp check_start_function_support(true, plugin, manager) do
+    handle_plugin_start(plugin, manager)
   end
 
   defp handle_plugin_start(plugin, manager) do
@@ -355,10 +371,7 @@ defmodule Raxol.Plugins.Lifecycle do
   end
 
   defp find_and_load_plugin(plugin_name, acc_manager, initialized_plugins) do
-    plugin_name_str =
-      if is_atom(plugin_name),
-        do: Atom.to_string(plugin_name),
-        else: plugin_name
+    plugin_name_str = normalize_plugin_name(plugin_name)
 
     case Enum.find(initialized_plugins, &(&1.name == plugin_name_str)) do
       plugin when not is_nil(plugin) ->

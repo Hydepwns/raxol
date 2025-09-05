@@ -110,26 +110,15 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
         actual_module = Enum.join(module_parts, ".")
 
         issues =
-          if expected_module != actual_module do
-            [
-              {:module_name_mismatch, 1, file_path,
-               "Module name #{actual_module} doesn't match file path", :error}
-              | issues
-            ]
-          else
+          check_module_name_match(
+            expected_module,
+            actual_module,
+            file_path,
             issues
-          end
+          )
 
         # Check for moduledoc
-        if not has_moduledoc?(body) do
-          [
-            {:missing_moduledoc, 1, file_path, "Module is missing @moduledoc",
-             :warning}
-            | issues
-          ]
-        else
-          issues
-        end
+        check_moduledoc_presence(body, file_path, issues)
 
       _ ->
         issues
@@ -147,17 +136,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
 
           # Check if previous node was @doc
           # Note: has_preceding_doc? always returns false (placeholder implementation)
-          if not has_preceding_doc?(ast, line) do
-            {node,
-             [
-               {:missing_doc, line, file_path,
-                "Public function #{name}/#{length(args)} is missing @doc",
-                :warning}
-               | acc
-             ]}
-          else
-            {node, acc}
-          end
+          handle_missing_doc_check(ast, line, node, acc, file_path, name, args)
 
         node, acc ->
           {node, acc}
@@ -200,17 +179,14 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
           line = Keyword.get(meta, :line, 0)
           name_str = to_string(name)
 
-          if String.length(name_str) == 1 and
-               name_str not in ["_", "x", "y", "z"] do
-            {node,
-             [
-               {:naming_convention, line, file_path,
-                "Single letter variable #{name} should be avoided", :info}
-               | acc
-             ]}
-          else
-            {node, acc}
-          end
+          handle_single_letter_variable(
+            name_str,
+            name,
+            line,
+            file_path,
+            node,
+            acc
+          )
 
         node, acc ->
           {node, acc}
@@ -232,19 +208,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
         # Flag non-standard error returns
         {atom, meta, value} = node, acc
         when atom in [:ok, :error] and is_list(meta) ->
-          if value != nil do
-            line = Keyword.get(meta, :line, 0)
-
-            {node,
-             [
-               {:error_handling, line, file_path,
-                "Use tagged tuples {:ok, value} or {:error, reason} instead of bare atoms",
-                :warning}
-               | acc
-             ]}
-          else
-            {node, acc}
-          end
+          handle_error_atom_check(value, meta, file_path, node, acc)
 
         node, acc ->
           {node, acc}
@@ -264,16 +228,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
 
           # Check if @impl true precedes it
           # Note: has_impl_attribute? always returns false (placeholder implementation)
-          if not has_impl_attribute?(ast, line) do
-            {node,
-             [
-               {:genserver_pattern, line, file_path,
-                "GenServer callback missing @impl true", :warning}
-               | acc
-             ]}
-          else
-            {node, acc}
-          end
+          handle_impl_attribute_check(ast, line, file_path, node, acc)
 
         node, acc ->
           {node, acc}
@@ -332,17 +287,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
           # Flag broad imports without :only
           case module do
             {:__aliases__, _, parts} when parts != [] ->
-              if not has_only_option?(node) do
-                {node,
-                 [
-                   {:import_style, line, file_path,
-                    "Import without :only option may import too many functions",
-                    :info}
-                   | acc
-                 ]}
-              else
-                {node, acc}
-              end
+              handle_only_option_check(node, line, file_path, acc)
 
             _ ->
               {node, acc}
@@ -356,6 +301,164 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   end
 
   # Helper functions
+
+  defp check_module_name_match(expected, actual, file_path, issues)
+       when expected != actual do
+    [
+      {:module_name_mismatch, 1, file_path,
+       "Module name #{actual} doesn't match file path", :error}
+      | issues
+    ]
+  end
+
+  defp check_module_name_match(_, _, _, issues), do: issues
+
+  defp check_moduledoc_presence(body, file_path, issues) do
+    case has_moduledoc?(body) do
+      true ->
+        issues
+
+      false ->
+        [
+          {:missing_moduledoc, 1, file_path, "Module is missing @moduledoc",
+           :warning}
+          | issues
+        ]
+    end
+  end
+
+  defp handle_missing_doc_check(ast, line, node, acc, file_path, name, args) do
+    case has_preceding_doc?(ast, line) do
+      true ->
+        {node, acc}
+
+      false ->
+        {node,
+         [
+           {:missing_doc, line, file_path,
+            "Public function #{name}/#{length(args)} is missing @doc", :warning}
+           | acc
+         ]}
+    end
+  end
+
+  defp handle_single_letter_variable(name_str, name, line, file_path, node, acc) do
+    case should_flag_single_letter_variable?(name_str) do
+      true ->
+        {node,
+         [
+           {:naming_convention, line, file_path,
+            "Single letter variable #{name} should be avoided", :info}
+           | acc
+         ]}
+
+      false ->
+        {node, acc}
+    end
+  end
+
+  defp should_flag_single_letter_variable?(name_str) do
+    String.length(name_str) == 1 and name_str not in ["_", "x", "y", "z"]
+  end
+
+  defp handle_error_atom_check(nil, _meta, _file_path, node, acc),
+    do: {node, acc}
+
+  defp handle_error_atom_check(_value, meta, file_path, node, acc) do
+    line = Keyword.get(meta, :line, 0)
+
+    {node,
+     [
+       {:error_handling, line, file_path,
+        "Use tagged tuples {:ok, value} or {:error, reason} instead of bare atoms",
+        :warning}
+       | acc
+     ]}
+  end
+
+  defp handle_impl_attribute_check(ast, line, file_path, node, acc) do
+    case has_impl_attribute?(ast, line) do
+      true ->
+        {node, acc}
+
+      false ->
+        {node,
+         [
+           {:genserver_pattern, line, file_path,
+            "GenServer callback missing @impl true", :warning}
+           | acc
+         ]}
+    end
+  end
+
+  defp handle_only_option_check(node, line, file_path, acc) do
+    case has_only_option?(node) do
+      true ->
+        {node, acc}
+
+      false ->
+        {node,
+         [
+           {:import_style, line, file_path,
+            "Import without :only option may import too many functions", :info}
+           | acc
+         ]}
+    end
+  end
+
+  defp add_moduledoc_recommendation(summary, recommendations) do
+    case Map.get(summary, :missing_moduledoc, 0) do
+      count when count > 0 ->
+        ["Add @moduledoc documentation to all modules" | recommendations]
+
+      _ ->
+        recommendations
+    end
+  end
+
+  defp add_doc_recommendation(summary, recommendations) do
+    case Map.get(summary, :missing_doc, 0) do
+      count when count > 0 ->
+        ["Add @doc documentation to all public functions" | recommendations]
+
+      _ ->
+        recommendations
+    end
+  end
+
+  defp add_error_handling_recommendation(summary, recommendations) do
+    case Map.get(summary, :error_handling, 0) do
+      count when count > 0 ->
+        [
+          "Use consistent {:ok, result} | {:error, reason} patterns"
+          | recommendations
+        ]
+
+      _ ->
+        recommendations
+    end
+  end
+
+  defp add_formatting_recommendation(summary, recommendations) do
+    case Map.get(summary, :formatting, 0) do
+      count when count > 0 ->
+        ["Run mix format to fix formatting issues" | recommendations]
+
+      _ ->
+        recommendations
+    end
+  end
+
+  defp format_final_recommendations([]) do
+    "No specific recommendations. Code follows standards well!"
+  end
+
+  defp format_final_recommendations(recommendations) do
+    recommendations
+    |> Enum.with_index(1)
+    |> Enum.map(fn {rec, idx} -> "#{idx}. #{rec}" end)
+    |> Enum.join("\n")
+  end
 
   defp find_elixir_files(dir_path) do
     case File.ls(dir_path) do
@@ -482,45 +585,16 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   defp generate_recommendations(summary) do
     recommendations = []
 
-    recommendations =
-      if Map.get(summary, :missing_moduledoc, 0) > 0 do
-        ["Add @moduledoc documentation to all modules" | recommendations]
-      else
-        recommendations
-      end
+    recommendations = add_moduledoc_recommendation(summary, recommendations)
+
+    recommendations = add_doc_recommendation(summary, recommendations)
 
     recommendations =
-      if Map.get(summary, :missing_doc, 0) > 0 do
-        ["Add @doc documentation to all public functions" | recommendations]
-      else
-        recommendations
-      end
+      add_error_handling_recommendation(summary, recommendations)
 
-    recommendations =
-      if Map.get(summary, :error_handling, 0) > 0 do
-        [
-          "Use consistent {:ok, result} | {:error, reason} patterns"
-          | recommendations
-        ]
-      else
-        recommendations
-      end
+    recommendations = add_formatting_recommendation(summary, recommendations)
 
-    recommendations =
-      if Map.get(summary, :formatting, 0) > 0 do
-        ["Run mix format to fix formatting issues" | recommendations]
-      else
-        recommendations
-      end
-
-    if Enum.empty?(recommendations) do
-      "No specific recommendations. Code follows standards well!"
-    else
-      recommendations
-      |> Enum.with_index(1)
-      |> Enum.map(fn {rec, idx} -> "#{idx}. #{rec}" end)
-      |> Enum.join("\n")
-    end
+    format_final_recommendations(recommendations)
   end
 
   defp validate_function_name(name_str)
@@ -544,7 +618,10 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
       ],
       :ok,
       fn {condition, result} ->
-        if condition, do: result
+        case condition do
+          true -> result
+          false -> nil
+        end
       end
     )
   end

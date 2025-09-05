@@ -303,12 +303,7 @@ defmodule Raxol do
   ```
   """
   def set_accessibility(opts \\ []) do
-    if opts[:high_contrast] do
-      set_theme(Raxol.UI.Theming.Theme.dark_theme())
-    else
-      set_theme(Raxol.UI.Theming.Theme.default_theme())
-    end
-
+    apply_accessibility_theme(opts[:high_contrast])
     :ok
   end
 
@@ -337,6 +332,14 @@ defmodule Raxol do
     })
   end
 
+  defp apply_accessibility_theme(true) do
+    set_theme(Raxol.UI.Theming.Theme.dark_theme())
+  end
+
+  defp apply_accessibility_theme(_) do
+    set_theme(Raxol.UI.Theming.Theme.default_theme())
+  end
+
   @doc """
   Starts a Raxol application.
 
@@ -357,20 +360,22 @@ defmodule Raxol do
   def start_app(module, props, _config) do
     # For now, return a simple success tuple
     # In a full implementation, this would start the runtime
-    case module.init(props) do
-      {_initial_state, _commands} ->
-        # Start a simple GenServer to represent the app
-        pid =
-          spawn(fn ->
-            receive do
-              :stop -> :ok
-            end
-          end)
+    handle_module_init(module.init(props))
+  end
 
-        {:ok, pid}
+  defp handle_module_init({_initial_state, _commands}) do
+    # Start a simple GenServer to represent the app
+    pid =
+      spawn(fn ->
+        receive do
+          :stop -> :ok
+        end
+      end)
 
-      error ->
-        {:error, error}
-    end
+    {:ok, pid}
+  end
+
+  defp handle_module_init(error) do
+    {:error, error}
   end
 end

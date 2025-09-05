@@ -90,14 +90,14 @@ defmodule Raxol.Cloud.Config do
     StateManager.put(@state_key, state)
 
     # Apply configuration if requested
-    if Keyword.get(opts, :auto_apply, true) and Enum.empty?(errors) do
-      apply_configuration(config)
+    case Keyword.get(opts, :auto_apply, true) and Enum.empty?(errors) do
+      true -> apply_configuration(config)
+      false -> :ok
     end
 
-    if Enum.empty?(errors) do
-      {:ok, %{status: :initialized, sources: state.sources}}
-    else
-      {:error, %{status: :initialized_with_errors, errors: errors}}
+    case Enum.empty?(errors) do
+      true -> {:ok, %{status: :initialized, sources: state.sources}}
+      false -> {:error, %{status: :initialized_with_errors, errors: errors}}
     end
   end
 
@@ -115,16 +115,14 @@ defmodule Raxol.Cloud.Config do
     flatten = Keyword.get(opts, :flatten, false)
 
     config =
-      if section do
-        Map.get(state.config, section, Map.get(@defaults, section, %{}))
-      else
-        state.config
+      case section do
+        nil -> state.config
+        _ -> Map.get(state.config, section, Map.get(@defaults, section, %{}))
       end
 
-    if flatten do
-      flatten_map(config)
-    else
-      config
+    case flatten do
+      true -> flatten_map(config)
+      false -> config
     end
   end
 
@@ -141,47 +139,54 @@ defmodule Raxol.Cloud.Config do
   def update(new_config, opts \\ []) do
     state = get_state()
     section = Keyword.get(opts, :section)
-    new_config = if is_map(new_config), do: new_config, else: %{}
+
+    new_config =
+      case is_map(new_config) do
+        true -> new_config
+        false -> %{}
+      end
 
     updated_config =
-      if section do
-        update_config_section(state, section, new_config)
-      else
-        deep_merge(state.config, new_config)
+      case section do
+        nil -> deep_merge(state.config, new_config)
+        key -> update_config_section(state, key, new_config)
       end
 
     # Validate if requested
     {valid, errors} =
-      if Keyword.get(opts, :validate, true) do
-        validate_config(updated_config)
-      else
-        {true, []}
+      case Keyword.get(opts, :validate, true) do
+        true -> validate_config(updated_config)
+        false -> {true, []}
       end
 
-    if valid do
-      # Update state
-      updated_state = %{
-        state
-        | config: updated_config,
-          last_updated: DateTime.utc_now(),
-          validation_errors: []
-      }
+    case valid do
+      true ->
+        # Update state
+        updated_state = %{
+          state
+          | config: updated_config,
+            last_updated: DateTime.utc_now(),
+            validation_errors: []
+        }
 
-      StateManager.put(@state_key, updated_state)
+        StateManager.put(@state_key, updated_state)
 
-      # Persist if requested
-      if Keyword.get(opts, :persist, false) do
-        persist_config(updated_config)
-      end
+        # Persist if requested
+        case Keyword.get(opts, :persist, false) do
+          true -> persist_config(updated_config)
+          false -> :ok
+        end
 
-      # Apply if requested
-      if Keyword.get(opts, :apply, true) do
-        apply_configuration(updated_config)
-      end
+        # Apply if requested
+        case Keyword.get(opts, :apply, true) do
+          true -> apply_configuration(updated_config)
+          false -> :ok
+        end
 
-      {:ok, %{status: :updated}}
-    else
-      {:error, %{status: :validation_failed, errors: errors}}
+        {:ok, %{status: :updated}}
+
+      false ->
+        {:error, %{status: :validation_failed, errors: errors}}
     end
   end
 
@@ -200,25 +205,28 @@ defmodule Raxol.Cloud.Config do
     # Load configuration from sources
     {config, errors} = load_from_sources(sources, opts)
 
-    if Enum.empty?(errors) do
-      # Update state
-      updated_state = %{
-        state
-        | config: config,
-          last_updated: DateTime.utc_now(),
-          validation_errors: []
-      }
+    case Enum.empty?(errors) do
+      true ->
+        # Update state
+        updated_state = %{
+          state
+          | config: config,
+            last_updated: DateTime.utc_now(),
+            validation_errors: []
+        }
 
-      StateManager.put(@state_key, updated_state)
+        StateManager.put(@state_key, updated_state)
 
-      # Apply if requested
-      if Keyword.get(opts, :apply, true) do
-        apply_configuration(config)
-      end
+        # Apply if requested
+        case Keyword.get(opts, :apply, true) do
+          true -> apply_configuration(config)
+          false -> :ok
+        end
 
-      {:ok, %{status: :reloaded, sources: sources}}
-    else
-      {:error, %{status: :reload_failed, errors: errors}}
+        {:ok, %{status: :reloaded, sources: sources}}
+
+      false ->
+        {:error, %{status: :reload_failed, errors: errors}}
     end
   end
 
@@ -280,10 +288,9 @@ defmodule Raxol.Cloud.Config do
     # Validate final configuration
     {valid, validation_errors} = validate_config(config)
 
-    if valid do
-      {config, errors}
-    else
-      {config, errors ++ validation_errors}
+    case valid do
+      true -> {config, errors}
+      false -> {config, errors ++ validation_errors}
     end
   end
 
@@ -316,10 +323,9 @@ defmodule Raxol.Cloud.Config do
   defp load_from_source(:file, opts) do
     config_file = Keyword.get(opts, :config_file, "config/cloud.json")
 
-    if File.exists?(config_file) do
-      parse_config_file(config_file)
-    else
-      {:error, {:file_not_found, config_file}}
+    case File.exists?(config_file) do
+      true -> parse_config_file(config_file)
+      false -> {:error, {:file_not_found, config_file}}
     end
   end
 
@@ -344,33 +350,37 @@ defmodule Raxol.Cloud.Config do
     unknown_keys = Map.keys(config) -- Map.keys(@defaults)
 
     errors =
-      if Enum.empty?(unknown_keys) do
-        errors
-      else
-        [{:unknown_keys, unknown_keys} | errors]
+      case Enum.empty?(unknown_keys) do
+        true -> errors
+        false -> [{:unknown_keys, unknown_keys} | errors]
       end
 
     # Basic type validation for common fields
     errors =
-      if is_map(config[:edge]) and not is_atom(Map.get(config[:edge], :mode)) do
-        [
-          {:invalid_type, [:edge, :mode], :atom, Map.get(config[:edge], :mode)}
-          | errors
-        ]
-      else
-        errors
+      case {is_map(config[:edge]), is_atom(Map.get(config[:edge], :mode))} do
+        {true, false} ->
+          [
+            {:invalid_type, [:edge, :mode], :atom,
+             Map.get(config[:edge], :mode)}
+            | errors
+          ]
+
+        _ ->
+          errors
       end
 
     errors =
-      if is_map(config[:monitoring]) and
-           not is_boolean(Map.get(config[:monitoring], :active)) do
-        [
-          {:invalid_type, [:monitoring, :active], :boolean,
-           Map.get(config[:monitoring], :active)}
-          | errors
-        ]
-      else
-        errors
+      case {is_map(config[:monitoring]),
+            is_boolean(Map.get(config[:monitoring], :active))} do
+        {true, false} ->
+          [
+            {:invalid_type, [:monitoring, :active], :boolean,
+             Map.get(config[:monitoring], :active)}
+            | errors
+          ]
+
+        _ ->
+          errors
       end
 
     # Reverse to maintain original order if needed
@@ -445,12 +455,15 @@ defmodule Raxol.Cloud.Config do
 
   defp flatten_map(map, prefix \\ "") do
     Enum.flat_map(map, fn {key, value} ->
-      key_string = if prefix == "", do: to_string(key), else: "#{prefix}.#{key}"
+      key_string =
+        case prefix do
+          "" -> to_string(key)
+          _ -> "#{prefix}.#{key}"
+        end
 
-      if is_map(value) and not is_struct(value) do
-        flatten_map(value, key_string)
-      else
-        [{key_string, value}]
+      case {is_map(value), is_struct(value)} do
+        {true, false} -> flatten_map(value, key_string)
+        _ -> [{key_string, value}]
       end
     end)
     |> Enum.into(%{})
@@ -464,14 +477,22 @@ defmodule Raxol.Cloud.Config do
   end
 
   defp deep_merge(left, right) do
-    left = if is_map(left), do: left, else: %{}
-    right = if is_map(right), do: right, else: %{}
+    left =
+      case is_map(left) do
+        true -> left
+        false -> %{}
+      end
+
+    right =
+      case is_map(right) do
+        true -> right
+        false -> %{}
+      end
 
     Map.merge(left, right, fn _key, left_value, right_value ->
-      if is_map(left_value) and is_map(right_value) do
-        deep_merge(left_value, right_value)
-      else
-        right_value
+      case {is_map(left_value), is_map(right_value)} do
+        {true, true} -> deep_merge(left_value, right_value)
+        _ -> right_value
       end
     end)
   end
@@ -690,10 +711,9 @@ defmodule Raxol.Cloud.Config do
   end
 
   defp merge_existing_config(existing, new_config) do
-    if is_map(existing) do
-      Map.merge(existing, new_config)
-    else
-      new_config
+    case is_map(existing) do
+      true -> Map.merge(existing, new_config)
+      false -> new_config
     end
   end
 end

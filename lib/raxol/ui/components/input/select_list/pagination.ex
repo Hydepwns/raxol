@@ -10,10 +10,11 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   Calculates the total number of pages based on the number of options and page size.
   """
   def calculate_total_pages(num_options, page_size) do
-    if num_options == 0 do
-      1
-    else
-      ceil(num_options / page_size)
+    case num_options == 0 do
+      true ->
+        1
+      false ->
+        ceil(num_options / page_size)
     end
   end
 
@@ -57,10 +58,11 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   Gets the effective options list (filtered or original) based on current state.
   """
   def get_effective_options(state) do
-    if state.is_filtering do
-      state.filtered_options || []
-    else
-      state.options
+    case state.is_filtering do
+      true ->
+        state.filtered_options || []
+      false ->
+        state.options
     end
   end
 end

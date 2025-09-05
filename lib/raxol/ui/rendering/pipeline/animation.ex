@@ -18,22 +18,26 @@ defmodule Raxol.UI.Rendering.Pipeline.Animation do
   """
   @spec ensure_animation_ticker_running(state()) :: state()
   def ensure_animation_ticker_running(state) do
-    if is_nil(state.animation_ticker_ref) do
-      Logger.debug("Pipeline: Animation ticker not running, starting it.")
+    start_animation_ticker(is_nil(state.animation_ticker_ref), state)
+  end
 
-      # Use the actual timer reference returned by Process.send_after
-      timer_ref =
-        Process.send_after(
-          self(),
-          {:animation_tick, :timer_ref},
-          @animation_tick_interval_ms
-        )
+  defp start_animation_ticker(false, state) do
+    # Already running
+    state
+  end
 
-      %{state | animation_ticker_ref: timer_ref}
-    else
-      # Already running
-      state
-    end
+  defp start_animation_ticker(_should_start, state) do
+    Logger.debug("Pipeline: Animation ticker not running, starting it.")
+
+    # Use the actual timer reference returned by Process.send_after
+    timer_ref =
+      Process.send_after(
+        self(),
+        {:animation_tick, :timer_ref},
+        @animation_tick_interval_ms
+      )
+
+    %{state | animation_ticker_ref: timer_ref}
   end
 
   @doc """
@@ -41,17 +45,21 @@ defmodule Raxol.UI.Rendering.Pipeline.Animation do
   """
   @spec maybe_stop_animation_ticker(state()) :: state()
   def maybe_stop_animation_ticker(state) do
-    if :queue.is_empty(state.animation_frame_requests) and
-         not is_nil(state.animation_ticker_ref) do
-      Logger.debug("Pipeline: No more animation requests, stopping ticker.")
+    should_stop = :queue.is_empty(state.animation_frame_requests) and not is_nil(state.animation_ticker_ref)
+    stop_animation_ticker(should_stop, state)
+  end
 
-      # Cancel the timer
-      Process.cancel_timer(state.animation_ticker_ref)
+  defp stop_animation_ticker(false, state) do
+    state
+  end
 
-      %{state | animation_ticker_ref: nil}
-    else
-      state
-    end
+  defp stop_animation_ticker(_should_stop, state) do
+    Logger.debug("Pipeline: No more animation requests, stopping ticker.")
+
+    # Cancel the timer
+    Process.cancel_timer(state.animation_ticker_ref)
+
+    %{state | animation_ticker_ref: nil}
   end
 
   @doc """
@@ -94,11 +102,15 @@ defmodule Raxol.UI.Rendering.Pipeline.Animation do
     state_cleared = %{state_after_requests | animation_ticker_ref: nil}
 
     # Restart ticker if there are more requests
-    if not :queue.is_empty(state_cleared.animation_frame_requests) do
-      ensure_animation_ticker_running(state_cleared)
-    else
-      state_cleared
-    end
+    restart_ticker_if_needed(:queue.is_empty(state_cleared.animation_frame_requests), state_cleared)
+  end
+
+  defp restart_ticker_if_needed(true, state_cleared) do
+    state_cleared
+  end
+
+  defp restart_ticker_if_needed(_queue_empty, state_cleared) do
+    ensure_animation_ticker_running(state_cleared)
   end
 
   @doc """

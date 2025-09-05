@@ -90,9 +90,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     }
 
     # Send initialization telemetry
-    if telemetry_enabled do
-      send_telemetry(:collector_initialized, %{}, %{})
-    end
+    send_initialization_telemetry(telemetry_enabled)
 
     collector
   end
@@ -129,11 +127,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     }
 
     # Send telemetry
-    if collector.telemetry_enabled do
-      send_telemetry(:frame_rendered, %{frame_time: frame_time}, %{
-        fps: if(frame_time > 0, do: 1000 / frame_time, else: 0.0)
-      })
-    end
+    send_frame_telemetry(collector.telemetry_enabled, frame_time)
 
     %{
       collector
@@ -167,7 +161,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
 
       times ->
         avg_frame_time = Enum.sum(times) / length(times)
-        if avg_frame_time > 0, do: 1000 / avg_frame_time, else: 0.0
+        calculate_fps_from_frame_time(avg_frame_time)
     end
   end
 
@@ -259,14 +253,11 @@ defmodule Raxol.Core.Performance.MetricsCollector do
         current_time = System.system_time(:millisecond)
         time_diff = current_time - last_time
 
-        if time_diff > 0 do
-          # Calculate memory growth rate
-          memory_growth = collector.memory_usage - last_memory
-          # Convert to bytes per second
-          memory_growth / time_diff * 1000
-        else
-          0.0
-        end
+        calculate_memory_growth_rate(
+          time_diff,
+          collector.memory_usage,
+          last_memory
+        )
 
       _ ->
         0.0
@@ -344,12 +335,12 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     }
 
     # Send telemetry
-    if collector.telemetry_enabled do
-      send_telemetry(:event_processed, %{processing_time: processing_time}, %{
-        event_type: event_type,
-        average_time: get_average_event_time(updated_timings)
-      })
-    end
+    send_event_telemetry(
+      collector.telemetry_enabled,
+      processing_time,
+      event_type,
+      updated_timings
+    )
 
     %{
       collector
@@ -380,11 +371,11 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     }
 
     # Send telemetry
-    if collector.telemetry_enabled do
-      send_telemetry(:operation_completed, %{duration: duration}, %{
-        operation_type: operation_type
-      })
-    end
+    send_operation_telemetry(
+      collector.telemetry_enabled,
+      duration,
+      operation_type
+    )
 
     %{collector | operation_counters: updated_counters}
   end
@@ -410,12 +401,12 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     cpu_samples = [cpu_usage | Enum.take(collector.cpu_samples, 59)]
 
     # Send telemetry
-    if collector.telemetry_enabled do
-      send_telemetry(:cpu_sampled, %{cpu_usage: cpu_usage}, %{
-        run_queue: run_queue,
-        logical_processors: logical_processors
-      })
-    end
+    send_cpu_telemetry(
+      collector.telemetry_enabled,
+      cpu_usage,
+      run_queue,
+      logical_processors
+    )
 
     %{collector | cpu_samples: cpu_samples}
   end
@@ -499,6 +490,74 @@ defmodule Raxol.Core.Performance.MetricsCollector do
 
   # Private helper functions
 
+  defp send_initialization_telemetry(true) do
+    send_telemetry(:collector_initialized, %{}, %{})
+  end
+
+  defp send_initialization_telemetry(false), do: :ok
+
+  defp send_frame_telemetry(true, frame_time) do
+    fps = calculate_fps_from_frame_time(frame_time)
+    send_telemetry(:frame_rendered, %{frame_time: frame_time}, %{fps: fps})
+  end
+
+  defp send_frame_telemetry(false, _frame_time), do: :ok
+
+  defp calculate_fps_from_frame_time(frame_time) when frame_time > 0,
+    do: 1000 / frame_time
+
+  defp calculate_fps_from_frame_time(_frame_time), do: 0.0
+
+  defp calculate_memory_growth_rate(time_diff, current_memory, last_memory)
+       when time_diff > 0 do
+    # Calculate memory growth rate
+    memory_growth = current_memory - last_memory
+    # Convert to bytes per second
+    memory_growth / time_diff * 1000
+  end
+
+  defp calculate_memory_growth_rate(_time_diff, _current_memory, _last_memory),
+    do: 0.0
+
+  defp send_event_telemetry(true, processing_time, event_type, updated_timings) do
+    send_telemetry(:event_processed, %{processing_time: processing_time}, %{
+      event_type: event_type,
+      average_time: get_average_event_time(updated_timings)
+    })
+  end
+
+  defp send_event_telemetry(
+         false,
+         _processing_time,
+         _event_type,
+         _updated_timings
+       ),
+       do: :ok
+
+  defp send_operation_telemetry(true, duration, operation_type) do
+    send_telemetry(:operation_completed, %{duration: duration}, %{
+      operation_type: operation_type
+    })
+  end
+
+  defp send_operation_telemetry(false, _duration, _operation_type), do: :ok
+
+  defp send_cpu_telemetry(true, cpu_usage, run_queue, logical_processors) do
+    send_telemetry(:cpu_sampled, %{cpu_usage: cpu_usage}, %{
+      run_queue: run_queue,
+      logical_processors: logical_processors
+    })
+  end
+
+  defp send_cpu_telemetry(false, _cpu_usage, _run_queue, _logical_processors),
+    do: :ok
+
+  defp calculate_memory_score(memory_trend) when memory_trend < 0, do: 100.0
+
+  defp calculate_memory_score(memory_trend) do
+    max(0.0, 100.0 - abs(memory_trend) / 1000.0)
+  end
+
   defp send_telemetry(event_name, measurements, metadata) do
     :telemetry.execute(
       [:raxol, :performance, event_name],
@@ -549,10 +608,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     # Lower CPU usage is better
     cpu_score = max(0.0, 100.0 - cpu_usage)
 
-    memory_score =
-      if memory_trend < 0,
-        do: 100.0,
-        else: max(0.0, 100.0 - abs(memory_trend) / 1000.0)
+    memory_score = calculate_memory_score(memory_trend)
 
     # Weighted average
     fps_score * 0.4 + cpu_score * 0.3 + memory_score * 0.3

@@ -14,41 +14,64 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
       normalize_spacing({1, 2, 3, 4}) # {1, 2, 3, 4}
   """
   def normalize_spacing(spacing) when is_integer(spacing) do
-    if spacing < 0 do
-      raise ArgumentError, "Padding must be a positive integer or tuple"
-    end
+    validate_positive_integer(
+      spacing >= 0,
+      "Padding must be a positive integer or tuple"
+    )
 
     {spacing, spacing, spacing, spacing}
   end
 
-  def normalize_spacing({top, right, bottom, left}) do
-    if not (is_integer(top) and is_integer(right) and is_integer(bottom) and
-              is_integer(left)) or
-         top < 0 or right < 0 or bottom < 0 or left < 0 do
-      raise ArgumentError, "Padding must be a positive integer or tuple"
-    end
+  defp validate_positive_integer(true, _message), do: :ok
 
+  defp validate_positive_integer(false, message) do
+    raise ArgumentError, message
+  end
+
+  def normalize_spacing({top, right, bottom, left}) do
+    validate_four_tuple_spacing(top, right, bottom, left)
     {top, right, bottom, left}
   end
 
-  def normalize_spacing({vertical, horizontal}) do
-    if not (is_integer(vertical) and is_integer(horizontal)) or
-         vertical < 0 or horizontal < 0 do
-      raise ArgumentError, "Padding must be a positive integer or tuple"
-    end
+  defp validate_four_tuple_spacing(top, right, bottom, left)
+       when is_integer(top) and is_integer(right) and is_integer(bottom) and
+              is_integer(left) and
+              top >= 0 and right >= 0 and bottom >= 0 and left >= 0,
+       do: :ok
 
+  defp validate_four_tuple_spacing(_top, _right, _bottom, _left) do
+    raise ArgumentError, "Padding must be a positive integer or tuple"
+  end
+
+  def normalize_spacing({vertical, horizontal}) do
+    validate_two_tuple_spacing(vertical, horizontal)
     {vertical, horizontal, vertical, horizontal}
   end
 
+  defp validate_two_tuple_spacing(vertical, horizontal)
+       when is_integer(vertical) and is_integer(horizontal) and vertical >= 0 and
+              horizontal >= 0,
+       do: :ok
+
+  defp validate_two_tuple_spacing(_vertical, _horizontal) do
+    raise ArgumentError, "Padding must be a positive integer or tuple"
+  end
+
   def normalize_spacing(invalid) do
-    if is_integer(invalid) and invalid < 0 do
-      raise ArgumentError, "Padding must be a positive integer or tuple"
-    end
+    handle_invalid_spacing_type(invalid)
+  end
 
-    if is_tuple(invalid) and tuple_size(invalid) == 3 do
-      raise ArgumentError, "Invalid padding tuple length"
-    end
+  defp handle_invalid_spacing_type(invalid)
+       when is_integer(invalid) and invalid < 0 do
+    raise ArgumentError, "Padding must be a positive integer or tuple"
+  end
 
+  defp handle_invalid_spacing_type(invalid)
+       when is_tuple(invalid) and tuple_size(invalid) == 3 do
+    raise ArgumentError, "Invalid padding tuple length"
+  end
+
+  defp handle_invalid_spacing_type(_invalid) do
     raise ArgumentError, "Padding must be a positive integer or tuple"
   end
 
@@ -63,41 +86,60 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
       normalize_margin({1, 2, 3, 4}) # {1, 2, 3, 4}
   """
   def normalize_margin(spacing) when is_integer(spacing) do
-    if spacing < 0 do
-      raise ArgumentError, "Margin must be a positive integer or tuple"
-    end
-
+    validate_positive_margin_integer(spacing >= 0)
     {spacing, spacing, spacing, spacing}
   end
 
-  def normalize_margin({top, right, bottom, left}) do
-    if not (is_integer(top) and is_integer(right) and is_integer(bottom) and
-              is_integer(left)) or
-         top < 0 or right < 0 or bottom < 0 or left < 0 do
-      raise ArgumentError, "Margin must be a positive integer or tuple"
-    end
+  defp validate_positive_margin_integer(true), do: :ok
 
+  defp validate_positive_margin_integer(false) do
+    raise ArgumentError, "Margin must be a positive integer or tuple"
+  end
+
+  def normalize_margin({top, right, bottom, left}) do
+    validate_four_tuple_margin(top, right, bottom, left)
     {top, right, bottom, left}
   end
 
-  def normalize_margin({vertical, horizontal}) do
-    if not (is_integer(vertical) and is_integer(horizontal)) or
-         vertical < 0 or horizontal < 0 do
-      raise ArgumentError, "Margin must be a positive integer or tuple"
-    end
+  defp validate_four_tuple_margin(top, right, bottom, left)
+       when is_integer(top) and is_integer(right) and is_integer(bottom) and
+              is_integer(left) and
+              top >= 0 and right >= 0 and bottom >= 0 and left >= 0,
+       do: :ok
 
+  defp validate_four_tuple_margin(_top, _right, _bottom, _left) do
+    raise ArgumentError, "Margin must be a positive integer or tuple"
+  end
+
+  def normalize_margin({vertical, horizontal}) do
+    validate_two_tuple_margin(vertical, horizontal)
     {vertical, horizontal, vertical, horizontal}
   end
 
+  defp validate_two_tuple_margin(vertical, horizontal)
+       when is_integer(vertical) and is_integer(horizontal) and vertical >= 0 and
+              horizontal >= 0,
+       do: :ok
+
+  defp validate_two_tuple_margin(_vertical, _horizontal) do
+    raise ArgumentError, "Margin must be a positive integer or tuple"
+  end
+
   def normalize_margin(invalid) do
-    if is_integer(invalid) and invalid < 0 do
-      raise ArgumentError, "Margin must be a positive integer or tuple"
-    end
+    handle_invalid_margin_type(invalid)
+  end
 
-    if is_tuple(invalid) and tuple_size(invalid) == 3 do
-      raise ArgumentError, "Invalid margin tuple length"
-    end
+  defp handle_invalid_margin_type(invalid)
+       when is_integer(invalid) and invalid < 0 do
+    raise ArgumentError, "Margin must be a positive integer or tuple"
+  end
 
+  defp handle_invalid_margin_type(invalid)
+       when is_tuple(invalid) and tuple_size(invalid) == 3 do
+    raise ArgumentError, "Invalid margin tuple length"
+  end
+
+  defp handle_invalid_margin_type(_invalid) do
     raise ArgumentError, "Margin must be a positive integer or tuple"
   end
 

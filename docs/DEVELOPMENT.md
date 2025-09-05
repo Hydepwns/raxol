@@ -223,57 +223,195 @@ When contributing to Raxol:
 4. Update documentation if needed
 5. Follow functional programming patterns (see guides below)
 
-### Functional Programming Best Practices
+### Functional Programming Best Practices (v1.1.0)
 
-**Error Handling Patterns** (Required for all new code):
+As of v1.1.0, Raxol follows strict functional programming principles with a 97.1% reduction in try/catch blocks and 100% elimination of Process Dictionary usage.
+
+#### Core Principles
+
+1. **Explicit Error Handling**: All errors must be explicit in function signatures
+2. **Immutability**: No Process Dictionary or mutable state
+3. **Composability**: Functions should compose well with pipelines
+4. **Pattern Matching**: Prefer pattern matching over conditionals
+
+#### Error Handling Patterns (Required for all new code)
 
 ```elixir
-# ✅ Use Result types with explicit error handling
+# ✅ GOOD: Use Result types with explicit error handling
 alias Raxol.Core.ErrorHandling
 
 def process_data(input) do
-  with {:ok, validated} <- ErrorHandling.safe_call(fn -> validate(input) end),
-       {:ok, transformed} <- ErrorHandling.safe_call(fn -> transform(validated) end),
-       {:ok, result} <- ErrorHandling.safe_call(fn -> save(transformed) end) do
+  with {:ok, validated} <- validate_input(input),
+       {:ok, transformed} <- transform_data(validated),
+       {:ok, result} <- save_result(transformed) do
     {:ok, result}
   end
 end
 
-# ✅ Use safe wrappers for external operations  
-def call_external_service(params) do
-  ErrorHandling.safe_genserver_call(ServiceManager, {:call, params}, 5000)
+# ✅ GOOD: Use safe_call for potentially failing operations
+def fetch_user_data(user_id) do
+  ErrorHandling.safe_call(fn -> 
+    Database.get_user!(user_id)
+  end)
 end
 
-# ✅ Use functional composition for pipelines
-def process_pipeline(data) do
-  data
-  |> ErrorHandling.safe_call(&validate_input/1)
-  |> ErrorHandling.flat_map(&ErrorHandling.safe_call(fn input -> process(input) end))
-  |> ErrorHandling.map(&format_output/1)
+# ✅ GOOD: Use safe_genserver_call for server operations  
+def get_server_state(server) do
+  ErrorHandling.safe_genserver_call(server, :get_state, 5000)
 end
 
-# ❌ Avoid try/catch for control flow
-def old_pattern(data) do
+# ✅ GOOD: Use safe_call_with_info for debugging
+def debug_operation(data) do
+  case ErrorHandling.safe_call_with_info(fn -> complex_operation(data) end) do
+    {:ok, result} -> result
+    {:error, {kind, reason, stacktrace}} ->
+      Logger.error("Operation failed", 
+        kind: kind, 
+        reason: reason, 
+        stacktrace: stacktrace
+      )
+      {:error, :operation_failed}
+  end
+end
+
+# ❌ BAD: Avoid try/catch for control flow
+def bad_pattern(data) do
   try do
-    result = risky_operation(data)
-    {:ok, result}
+    risky_operation(data)
   rescue
-    error -> {:error, error}
+    _ -> default_value()
+  end
+end
+
+# ❌ BAD: Avoid Process Dictionary
+def bad_context_pattern() do
+  Process.put(:context, value)
+  # ... code ...
+  Process.get(:context)
+end
+
+# ❌ BAD: Avoid excessive conditionals
+def bad_conditional(value) do
+  cond do
+    value < 0 -> :negative
+    value == 0 -> :zero
+    value > 0 -> :positive
   end
 end
 ```
 
-**Performance Guidelines**:
-- Use caching for expensive computations (see existing cache modules)
-- Implement damage tracking for UI operations  
-- Prefer streams over lists for large datasets
-- Profile hot paths and add performance caches when needed
+#### Pattern Matching Best Practices
 
-**Code Organization**:
-- Group related functions in modules with clear responsibilities
-- Use `@spec` types for all public functions
-- Document complex error handling flows
-- Test both happy path and error scenarios
+```elixir
+# ✅ GOOD: Use function heads for pattern matching
+def process_message({:data, payload}), do: handle_data(payload)
+def process_message({:error, reason}), do: handle_error(reason)
+def process_message({:command, cmd}), do: execute_command(cmd)
+def process_message(_unknown), do: {:error, :unknown_message}
+
+# ✅ GOOD: Use guard clauses
+def validate_age(age) when is_integer(age) and age >= 0 and age <= 150 do
+  {:ok, age}
+end
+def validate_age(_), do: {:error, :invalid_age}
+```
+
+#### Pipeline Composition
+
+```elixir
+# ✅ GOOD: Use pipeline-friendly functions
+def process_order(order_data) do
+  order_data
+  |> validate_order()
+  |> calculate_totals()
+  |> apply_discounts()
+  |> generate_invoice()
+  |> send_confirmation()
+end
+
+# Each function returns {:ok, data} or {:error, reason}
+defp validate_order(data) do
+  # validation logic
+  {:ok, data}
+end
+```
+
+#### State Management
+
+```elixir
+# ✅ GOOD: Use immutable state transformations
+def update_user(user, changes) do
+  user
+  |> Map.merge(changes)
+  |> validate_user()
+  |> save_user()
+end
+
+# ❌ BAD: Don't mutate state
+def bad_update(user, changes) do
+  # Don't do this - Process Dictionary is banned
+  Process.put(:user, Map.merge(user, changes))
+end
+```
+
+#### Performance Guidelines
+
+- **Caching**: Use the 7 established cache modules for hot paths
+- **Lazy Evaluation**: Use streams for large datasets
+- **Tail Recursion**: Ensure recursive functions are tail-call optimized
+- **Benchmarking**: Profile before optimizing (use `Raxol.Benchmark`)
+
+```elixir
+# ✅ GOOD: Tail-recursive accumulator pattern
+def sum_list(list, acc \\ 0)
+def sum_list([], acc), do: acc
+def sum_list([h | t], acc), do: sum_list(t, acc + h)
+
+# ✅ GOOD: Stream processing for large data
+def process_large_file(path) do
+  path
+  |> File.stream!()
+  |> Stream.map(&parse_line/1)
+  |> Stream.filter(&valid?/1)
+  |> Stream.map(&transform/1)
+  |> Enum.to_list()
+end
+```
+
+#### Testing Functional Code
+
+```elixir
+# Test both success and failure paths
+describe "functional error handling" do
+  test "successful operation returns ok tuple" do
+    assert {:ok, result} = MyModule.safe_operation(valid_input)
+    assert result == expected_value
+  end
+  
+  test "failed operation returns error tuple" do
+    assert {:error, reason} = MyModule.safe_operation(invalid_input)
+    assert reason == :invalid_input
+  end
+  
+  test "pipeline stops on first error" do
+    result = 
+      {:ok, "data"}
+      |> MyModule.step1()
+      |> MyModule.step2_that_fails()
+      |> MyModule.step3()
+    
+    assert {:error, :step2_failed} = result
+  end
+end
+```
+
+#### Code Organization
+
+- **Module Cohesion**: One module, one responsibility
+- **Function Size**: Keep functions under 20 lines
+- **Type Specifications**: All public functions must have @spec
+- **Documentation**: Document error conditions in @doc
+- **Naming**: Use descriptive names that indicate Result types (e.g., `safe_fetch`, `try_connect`)
 
 ## Advanced Usage
 

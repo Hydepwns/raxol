@@ -226,19 +226,19 @@ defmodule Raxol.Core.Config.Manager do
     end
   end
 
-  defp maybe_validate_and_set_config(state, config) do
-    if state.validate do
-      case validate_config(config) do
-        :ok ->
-          {:ok, %{state | config: config}}
+  defp maybe_validate_and_set_config(%{validate: true} = state, config) do
+    case validate_config(config) do
+      :ok ->
+        {:ok, %{state | config: config}}
 
-        {:error, reason} ->
-          Logger.warning("Configuration validation failed: #{reason}")
-          {:ok, %{state | config: %{}}}
-      end
-    else
-      {:ok, %{state | config: config}}
+      {:error, reason} ->
+        Logger.warning("Configuration validation failed: #{reason}")
+        {:ok, %{state | config: %{}}}
     end
+  end
+
+  defp maybe_validate_and_set_config(state, config) do
+    {:ok, %{state | config: config}}
   end
 
   defp load_persistent_config(state) do
@@ -260,25 +260,26 @@ defmodule Raxol.Core.Config.Manager do
   end
 
   defp load_config_file(file, env) do
-    if File.exists?(file) do
-      case Raxol.Core.ErrorHandling.safe_call(fn ->
-             {config, _binding} = Code.eval_file(file)
+    case File.exists?(file) do
+      true ->
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
+               {config, _binding} = Code.eval_file(file)
 
-             case get_in(config, [env]) do
-               nil -> {:ok, %{}}
-               env_config -> {:ok, env_config}
-             end
-           end) do
-        {:ok, result} ->
-          result
+               case get_in(config, [env]) do
+                 nil -> {:ok, %{}}
+                 env_config -> {:ok, env_config}
+               end
+             end) do
+          {:ok, result} ->
+            result
 
-        {:error, {e, _stacktrace}} ->
-          Logger.error("Failed to load config file: #{inspect(e)}")
-          {:error, :invalid_config_file}
-      end
-    else
-      Logger.warning("Config file not found: #{file}")
-      {:ok, %{}}
+          {:error, {e, _stacktrace}} ->
+            Logger.error("Failed to load config file: #{inspect(e)}")
+            {:error, :invalid_config_file}
+        end
+      false ->
+        Logger.warning("Config file not found: #{file}")
+        {:ok, %{}}
     end
   end
 
@@ -288,13 +289,14 @@ defmodule Raxol.Core.Config.Manager do
     missing_fields =
       Enum.filter(required_fields, &(not Map.has_key?(config, &1)))
 
-    if Enum.empty?(missing_fields) do
-      validate_terminal_config(config.terminal)
-      validate_buffer_config(config.buffer)
-      validate_renderer_config(config.renderer)
-    else
-      {:error,
-       "Missing required configuration fields: #{Enum.join(missing_fields, ", ")}"}
+    case Enum.empty?(missing_fields) do
+      true ->
+        validate_terminal_config(config.terminal)
+        validate_buffer_config(config.buffer)
+        validate_renderer_config(config.renderer)
+      false ->
+        {:error,
+         "Missing required configuration fields: #{Enum.join(missing_fields, ", ")}"}
     end
   end
 
@@ -316,11 +318,12 @@ defmodule Raxol.Core.Config.Manager do
   defp validate_required_fields(config, fields, section) do
     missing_fields = Enum.filter(fields, &(not Map.has_key?(config, &1)))
 
-    if Enum.empty?(missing_fields) do
-      :ok
-    else
-      {:error,
-       "Missing required #{section} configuration fields: #{Enum.join(missing_fields, ", ")}"}
+    case Enum.empty?(missing_fields) do
+      true ->
+        :ok
+      false ->
+        {:error,
+         "Missing required #{section} configuration fields: #{Enum.join(missing_fields, ", ")}"}
     end
   end
 
@@ -440,13 +443,14 @@ defmodule Raxol.Core.Config.Manager do
   defp load_persistent_file(file_path) do
     expanded_path = Path.expand(file_path)
 
-    if File.exists?(expanded_path) do
-      case File.read(expanded_path) do
-        {:ok, content} -> decode_json_content(content)
-        {:error, reason} -> {:error, reason}
-      end
-    else
-      {:error, :file_not_found}
+    case File.exists?(expanded_path) do
+      true ->
+        case File.read(expanded_path) do
+          {:ok, content} -> decode_json_content(content)
+          {:error, reason} -> {:error, reason}
+        end
+      false ->
+        {:error, :file_not_found}
     end
   end
 

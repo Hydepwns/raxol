@@ -57,71 +57,84 @@ defmodule Raxol.Test.Integration.EventSimulation do
     {updated_component, commands} =
       Raxol.Test.Unit.simulate_event(component, event)
 
-    # If the component has a component_manager_id, update it in the manager
-    if Map.has_key?(updated_component.state, :component_manager_id) do
-      component_id = updated_component.state.component_manager_id
+    # Update manager if component has component_manager_id
+    do_manager_update(updated_component, commands)
+  end
 
-      # Update the component in ComponentManager with the new state using set_component_state
-      case ComponentManager.set_component_state(
-             component_id,
-             updated_component.state
-           ) do
-        :ok ->
-          # Process commands for parent notification
-          Enum.each(commands, fn
-            {:command, {:notify_parent, updated_child_state}} ->
-              parent_id = updated_child_state.parent_id
-              child_id = updated_child_state.id
-              value = updated_child_state.value
+  defp do_manager_update(
+         %{state: %{component_manager_id: component_id}} = updated_component,
+         commands
+       ) do
+    # Update the component in ComponentManager with the new state using set_component_state
+    case ComponentManager.set_component_state(
+           component_id,
+           updated_component.state
+         ) do
+      :ok ->
+        # Process commands for parent notification
+        Enum.each(commands, &process_command(&1, updated_component))
+        {updated_component, commands}
 
-              # Find parent in ComponentManager
-              parent_component =
-                if parent_id do
-                  ComponentManager.get_all_components()
-                  |> Enum.find_value(fn {_id, comp} ->
-                    if comp.state.id == parent_id, do: comp, else: nil
-                  end)
-                else
-                  nil
-                end
+      {:error, reason} ->
+        # Log error but continue with local update
+        IO.puts(
+          "Warning: Failed to update component in manager: #{inspect(reason)}"
+        )
 
-              if parent_component do
-                # Simulate :child_event on parent
-                {updated_parent, _parent_cmds} =
-                  Raxol.Test.Unit.simulate_event(parent_component, %{
-                    type: :child_event,
-                    child_id: child_id,
-                    value: value
-                  })
-
-                # Update parent in ComponentManager
-                if Map.has_key?(updated_parent.state, :component_manager_id) do
-                  ComponentManager.set_component_state(
-                    updated_parent.state.component_manager_id,
-                    updated_parent.state
-                  )
-                end
-              end
-
-            _ ->
-              :ok
-          end)
-
-          {updated_component, commands}
-
-        {:error, reason} ->
-          # Log error but continue with local update
-          IO.puts(
-            "Warning: Failed to update component in manager: #{inspect(reason)}"
-          )
-
-          {updated_component, commands}
-      end
-    else
-      # No component_manager_id, just return local update
-      {updated_component, commands}
+        {updated_component, commands}
     end
   end
+
+  defp do_manager_update(updated_component, commands) do
+    # No component_manager_id, just return local update
+    {updated_component, commands}
+  end
+
+  defp process_command(
+         {:command, {:notify_parent, updated_child_state}},
+         _updated_component
+       ) do
+    parent_id = updated_child_state.parent_id
+    child_id = updated_child_state.id
+    value = updated_child_state.value
+
+    # Find parent in ComponentManager
+    parent_component = find_parent_component(parent_id)
+    handle_parent_notification(parent_component, child_id, value)
+  end
+
+  defp process_command(_, _), do: :ok
+
+  defp find_parent_component(nil), do: nil
+
+  defp find_parent_component(parent_id) do
+    ComponentManager.get_all_components()
+    |> Enum.find_value(fn
+      {_id, %{state: %{id: ^parent_id}} = comp} -> comp
+      _ -> nil
+    end)
+  end
+
+  defp handle_parent_notification(nil, _child_id, _value), do: :ok
+
+  defp handle_parent_notification(parent_component, child_id, value) do
+    # Simulate :child_event on parent
+    {updated_parent, _parent_cmds} =
+      Raxol.Test.Unit.simulate_event(parent_component, %{
+        type: :child_event,
+        child_id: child_id,
+        value: value
+      })
+
+    # Update parent in ComponentManager if it has a component_manager_id
+    update_parent_in_manager(updated_parent)
+  end
+
+  defp update_parent_in_manager(%{state: %{component_manager_id: id} = state}) do
+    ComponentManager.set_component_state(id, state)
+  end
+
+  defp update_parent_in_manager(_), do: :ok
 
   @doc """
   Simulates a broadcast event from parent to children.
@@ -136,33 +149,35 @@ defmodule Raxol.Test.Integration.EventSimulation do
       simulate_event_with_manager_update(parent, event)
 
     # Process broadcast commands
-    Enum.each(commands, fn command ->
-      case command do
-        {:command, {:broadcast_to_children, :increment}} ->
-          # Broadcast increment to all children
-          Enum.each(updated_parent.state.children, fn child_id ->
-            # Find the child component by searching through all components in ComponentManager
-            # This is a test helper approach since we don't have get_component_by_id
-            child_component = find_child_component_by_id_in_manager(child_id)
-
-            if child_component do
-              # Simulate the increment event on the child
-              increment_event = %{type: :increment}
-
-              {_updated_child, _child_commands} =
-                simulate_event_with_manager_update(
-                  child_component,
-                  increment_event
-                )
-            end
-          end)
-
-        _ ->
-          :ok
-      end
-    end)
+    Enum.each(commands, &process_broadcast_command(&1, updated_parent))
 
     {updated_parent, commands}
+  end
+
+  defp process_broadcast_command(
+         {:command, {:broadcast_to_children, :increment}},
+         updated_parent
+       ) do
+    # Broadcast increment to all children
+    Enum.each(updated_parent.state.children, fn child_id ->
+      # Find the child component by searching through all components in ComponentManager
+      # This is a test helper approach since we don't have get_component_by_id
+      child_component = find_child_component_by_id_in_manager(child_id)
+
+      simulate_child_increment(child_component)
+    end)
+  end
+
+  defp process_broadcast_command(_, _), do: :ok
+
+  defp simulate_child_increment(nil), do: :ok
+
+  defp simulate_child_increment(child_component) do
+    # Simulate the increment event on the child
+    increment_event = %{type: :increment}
+
+    {_updated_child, _child_commands} =
+      simulate_event_with_manager_update(child_component, increment_event)
   end
 
   @doc """
@@ -189,60 +204,74 @@ defmodule Raxol.Test.Integration.EventSimulation do
     {updated_component, commands} = dispatch_event(component, event)
 
     # Process commands
-    Enum.each(commands, fn command ->
-      case command do
-        {:dispatch_to_parent, parent_event} ->
-          # Find parent component and dispatch event to it
-          if Map.has_key?(component, :parent_id) do
-            # For now, we'll need to access the parent component through the test context
-            # This is a simplified implementation - in a real system, we'd have proper parent references
-            IO.puts(
-              "Would dispatch #{inspect(parent_event)} to parent #{component.parent_id}"
-            )
-          end
-
-        _ ->
-          # Handle other command types as needed
-          IO.puts("Unhandled command: #{inspect(command)}")
-      end
-    end)
+    Enum.each(commands, &process_dispatch_command(&1, component))
 
     updated_component
   end
 
+  defp process_dispatch_command({:dispatch_to_parent, parent_event}, component) do
+    # Find parent component and dispatch event to it
+    handle_parent_dispatch(component, parent_event)
+  end
+
+  defp process_dispatch_command(command, _component) do
+    # Handle other command types as needed
+    IO.puts("Unhandled command: #{inspect(command)}")
+  end
+
+  defp handle_parent_dispatch(%{parent_id: parent_id}, parent_event) do
+    # For now, we'll need to access the parent component through the test context
+    # This is a simplified implementation - in a real system, we'd have proper parent references
+    IO.puts("Would dispatch #{inspect(parent_event)} to parent #{parent_id}")
+  end
+
+  defp handle_parent_dispatch(_component, _parent_event), do: :ok
+
   defp dispatch_event(component, event, routing_info \\ %{}) do
-    if function_exported?(component.module, :handle_event, 3) do
-      context =
-        %{
-          parent: Map.get(routing_info, :parent),
-          child: Map.get(routing_info, :child)
-        }
-        |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
-        |> Enum.into(%{})
+    do_dispatch_event(
+      function_exported?(component.module, :handle_event, 3),
+      component,
+      event,
+      routing_info
+    )
+  end
 
-      result = component.module.handle_event(component.state, event, context)
+  defp do_dispatch_event(false, component, _event, _routing_info),
+    do: {component, []}
 
-      case result do
-        {:update, new_state, commands} ->
-          {put_in(component.state, new_state), commands}
+  defp do_dispatch_event(true, component, event, routing_info) do
+    context =
+      %{
+        parent: Map.get(routing_info, :parent),
+        child: Map.get(routing_info, :child)
+      }
+      |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
+      |> Enum.into(%{})
 
-        {:handled, new_state} ->
-          {put_in(component.state, new_state), []}
+    result = component.module.handle_event(component.state, event, context)
+    handle_event_result(result, component)
+  end
 
-        :passthrough ->
-          {component, []}
+  defp handle_event_result({:update, new_state, commands}, component) do
+    {put_in(component.state, new_state), commands}
+  end
 
-        {new_state, commands} ->
-          # Legacy format for backward compatibility
-          {put_in(component.state, new_state), commands}
+  defp handle_event_result({:handled, new_state}, component) do
+    {put_in(component.state, new_state), []}
+  end
 
-        _ ->
-          # Unknown return format, assume no change
-          {component, []}
-      end
-    else
-      {component, []}
-    end
+  defp handle_event_result(:passthrough, component) do
+    {component, []}
+  end
+
+  defp handle_event_result({new_state, commands}, component) do
+    # Legacy format for backward compatibility
+    {put_in(component.state, new_state), commands}
+  end
+
+  defp handle_event_result(_, component) do
+    # Unknown return format, assume no change
+    {component, []}
   end
 
   # Helper function to find a child component by ID in ComponentManager
@@ -250,14 +279,10 @@ defmodule Raxol.Test.Integration.EventSimulation do
     # Get all components from ComponentManager and find the one with matching ID
     # This is a test helper approach - in production you'd have a proper lookup
     # We need to iterate through all components to find the one with the matching internal ID
-    all_components = ComponentManager.get_all_components()
-
-    Enum.find_value(all_components, fn {_manager_id, component} ->
-      if component.state.id == child_id do
-        component
-      else
-        nil
-      end
+    ComponentManager.get_all_components()
+    |> Enum.find_value(fn
+      {_manager_id, %{state: %{id: ^child_id}} = component} -> component
+      _ -> nil
     end)
   end
 end

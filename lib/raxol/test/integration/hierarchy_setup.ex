@@ -25,17 +25,7 @@ defmodule Raxol.Test.Integration.HierarchySetup do
     # Check if child_ids are provided for unique IDs
     child_ids = Keyword.get(opts, :child_ids, [])
 
-    children =
-      if child_ids != [] and length(child_ids) == length(child_modules) do
-        # Create children with specific IDs
-        Enum.zip(child_modules, child_ids)
-        |> Enum.map(fn {module, id} ->
-          create_test_component(module, %{id: id})
-        end)
-      else
-        # Create children with default IDs
-        Enum.map(child_modules, &create_test_component/1)
-      end
+    children = create_children_with_ids(child_modules, child_ids)
 
     setup_component_hierarchy(parent, children, opts)
   end
@@ -76,69 +66,88 @@ defmodule Raxol.Test.Integration.HierarchySetup do
     mount_in_manager = Keyword.get(opts, :mount_in_manager, false)
 
     # Mount components if requested
-    if mount_in_manager do
-      # Mount parent first
-      case ComponentManager.mount(parent_struct.module, parent_state) do
-        {:ok, parent_id} ->
-          parent_struct = %{
-            parent_struct
-            | state: Map.put(parent_state, :component_manager_id, parent_id)
-          }
+    mount_components_conditionally(
+      mount_in_manager,
+      parent_struct,
+      parent_state,
+      updated_children
+    )
+  end
 
-          # Mount all children and update parent's child_states
-          {mounted_children, updated_parent_state} =
-            Enum.map_reduce(updated_children, parent_struct.state, fn child,
-                                                                      parent_state ->
-              case ComponentManager.mount(child.module, child.state) do
-                {:ok, child_id} ->
-                  # Use the actual ComponentManager key as component_manager_id
-                  updated_child_state =
-                    Map.put(child.state, :component_manager_id, child_id)
+  defp mount_components_conditionally(
+         false,
+         parent_struct,
+         _parent_state,
+         updated_children
+       ) do
+    {:ok, parent_struct, updated_children}
+  end
 
-                  updated_child = %{
-                    child
-                    | state: updated_child_state
-                  }
+  defp mount_components_conditionally(
+         true,
+         parent_struct,
+         parent_state,
+         updated_children
+       ) do
+    # Mount parent first
+    case ComponentManager.mount(parent_struct.module, parent_state) do
+      {:ok, parent_id} ->
+        parent_struct = %{
+          parent_struct
+          | state: Map.put(parent_state, :component_manager_id, parent_id)
+        }
 
-                  # Immediately update the state in the ComponentManager
-                  ComponentManager.set_component_state(
-                    child_id,
-                    updated_child_state
-                  )
+        # Mount all children and update parent's child_states
+        {mounted_children, updated_parent_state} =
+          Enum.map_reduce(updated_children, parent_struct.state, fn child,
+                                                                    parent_state ->
+            case ComponentManager.mount(child.module, child.state) do
+              {:ok, child_id} ->
+                # Use the actual ComponentManager key as component_manager_id
+                updated_child_state =
+                  Map.put(child.state, :component_manager_id, child_id)
 
-                  # Update parent's child_states map with the new child state
-                  updated_parent_state =
+                updated_child = %{
+                  child
+                  | state: updated_child_state
+                }
+
+                # Immediately update the state in the ComponentManager
+                ComponentManager.set_component_state(
+                  child_id,
+                  updated_child_state
+                )
+
+                # Update parent's child_states map with the new child state
+                updated_parent_state =
+                  Map.put(
+                    parent_state,
+                    :child_states,
                     Map.put(
-                      parent_state,
-                      :child_states,
-                      Map.put(
-                        parent_state.child_states,
-                        child.state.id,
-                        updated_child.state
-                      )
+                      parent_state.child_states,
+                      child.state.id,
+                      updated_child.state
                     )
-
-                  {updated_child, updated_parent_state}
-
-                {:error, reason} ->
-                  IO.puts(
-                    "Failed to mount child #{inspect(child.state.id)}: #{inspect(reason)}"
                   )
 
-                  {child, parent_state}
-              end
-            end)
+                {updated_child, updated_parent_state}
 
-          # Update parent struct with new state that includes updated child_states
-          parent_struct = %{parent_struct | state: updated_parent_state}
+              {:error, reason} ->
+                IO.puts(
+                  "Failed to mount child #{inspect(child.state.id)}: #{inspect(reason)}"
+                )
 
-          {:ok, parent_struct, mounted_children}
+                {child, parent_state}
+            end
+          end)
 
-        {:error, _reason} ->
-          {:ok, parent_struct, updated_children}
-      end
-    else
-      {:ok, parent_struct, updated_children}
+        # Update parent struct with new state that includes updated child_states
+        parent_struct = %{parent_struct | state: updated_parent_state}
+
+        {:ok, parent_struct, mounted_children}
+
+      {:error, _reason} ->
+        {:ok, parent_struct, updated_children}
     end
   end
 
@@ -213,42 +222,7 @@ defmodule Raxol.Test.Integration.HierarchySetup do
         #   "DEBUG: Processing child #{inspect(child.state.id)} with component_manager_id: #{inspect(child.state.component_manager_id)}"
         # )
 
-        if child.state.component_manager_id do
-          child_mounted =
-            ComponentManager.get_component(child.state.component_manager_id)
-
-          # IO.puts(
-          #   "DEBUG: Found child by component_manager_id: #{inspect(child_mounted.state.component_manager_id)}"
-          # )
-
-          %{child | state: child_mounted.state}
-        else
-          # If child doesn't have component_manager_id, try to find it by ID
-          all_components = ComponentManager.get_all_components()
-
-          # IO.puts(
-          #   "DEBUG: All components in manager: #{inspect(Map.keys(all_components))}"
-          # )
-
-          child_component =
-            Enum.find_value(all_components, fn {_manager_id, comp} ->
-              if comp.state.id == child.state.id, do: comp, else: nil
-            end)
-
-          if child_component do
-            # IO.puts(
-            #   "DEBUG: Found child by ID: #{inspect(child_component.state.component_manager_id)}"
-            # )
-
-            %{child | state: child_component.state}
-          else
-            # IO.puts(
-            #   "DEBUG: Could not find child #{inspect(child.state.id)} in ComponentManager"
-            # )
-
-            child
-          end
-        end
+        get_child_with_mounted_state(child)
       end)
 
     # Update parent's child_states map with the mounted child states
@@ -358,6 +332,141 @@ defmodule Raxol.Test.Integration.HierarchySetup do
 
   # Private helper functions
 
+  defp create_children_with_ids(child_modules, child_ids) do
+    create_children_with_ids_conditional(
+      child_ids != [] and length(child_ids) == length(child_modules),
+      child_modules,
+      child_ids
+    )
+  end
+
+  defp create_children_with_ids_conditional(true, child_modules, child_ids) do
+    # Create children with specific IDs
+    Enum.zip(child_modules, child_ids)
+    |> Enum.map(fn {module, id} ->
+      create_test_component(module, %{id: id})
+    end)
+  end
+
+  defp create_children_with_ids_conditional(false, child_modules, _child_ids) do
+    # Create children with default IDs
+    Enum.map(child_modules, &create_test_component/1)
+  end
+
+  defp get_child_with_mounted_state(child) do
+    get_child_by_manager_id(child.state.component_manager_id, child)
+  end
+
+  defp get_child_by_manager_id(nil, child) do
+    # If child doesn't have component_manager_id, try to find it by ID
+    all_components = ComponentManager.get_all_components()
+
+    # IO.puts(
+    #   "DEBUG: All components in manager: #{inspect(Map.keys(all_components))}"
+    # )
+
+    child_component =
+      Enum.find_value(all_components, fn {_manager_id, comp} ->
+        find_child_by_id(comp.state.id == child.state.id, comp)
+      end)
+
+    get_child_from_found_component(child_component, child)
+  end
+
+  defp get_child_by_manager_id(component_manager_id, child) do
+    child_mounted = ComponentManager.get_component(component_manager_id)
+
+    # IO.puts(
+    #   "DEBUG: Found child by component_manager_id: #{inspect(child_mounted.state.component_manager_id)}"
+    # )
+
+    %{child | state: child_mounted.state}
+  end
+
+  defp find_child_by_id(true, comp), do: comp
+  defp find_child_by_id(false, _comp), do: nil
+
+  defp get_child_from_found_component(nil, child) do
+    # IO.puts(
+    #   "DEBUG: Could not find child #{inspect(child.state.id)} in ComponentManager"
+    # )
+
+    child
+  end
+
+  defp get_child_from_found_component(child_component, child) do
+    # IO.puts(
+    #   "DEBUG: Found child by ID: #{inspect(child_component.state.component_manager_id)}"
+    # )
+
+    %{child | state: child_component.state}
+  end
+
+  defp mount_single_component_pair(
+         false,
+         parent_struct,
+         _parent_state,
+         child_struct,
+         _child_state
+       ) do
+    {:ok, parent_struct, child_struct}
+  end
+
+  defp mount_single_component_pair(
+         true,
+         parent_struct,
+         parent_state,
+         child_struct,
+         child_state
+       ) do
+    case ComponentManager.mount(parent_struct.module, parent_state) do
+      {:ok, parent_id} ->
+        case ComponentManager.mount(child_struct.module, child_state) do
+          {:ok, child_id} ->
+            # Get the mounted states from ComponentManager
+            parent_mounted = ComponentManager.get_component(parent_id)
+            child_mounted = ComponentManager.get_component(child_id)
+
+            # Update the mounted states with component_manager_id
+            updated_parent_state =
+              Map.put(parent_mounted.state, :component_manager_id, parent_id)
+
+            updated_child_state =
+              Map.put(child_mounted.state, :component_manager_id, child_id)
+
+            # Update the components in ComponentManager with the new states
+            ComponentManager.set_component_state(
+              parent_id,
+              updated_parent_state
+            )
+
+            ComponentManager.set_component_state(
+              child_id,
+              updated_child_state
+            )
+
+            # Update the structs with the new states
+            parent_struct = %{
+              parent_struct
+              | state: updated_parent_state
+            }
+
+            child_struct = %{
+              child_struct
+              | state: updated_child_state
+            }
+
+            {:ok, parent_struct, child_struct}
+
+          {:error, reason} ->
+            {:error, {:child_mount_failed, reason}}
+        end
+
+      {:error, reason} ->
+        {:error, {:parent_mount_failed, reason}}
+    end
+  end
+
   defp maybe_mount_components(
          parent_struct,
          parent_state,
@@ -365,56 +474,13 @@ defmodule Raxol.Test.Integration.HierarchySetup do
          child_state,
          mount_in_manager
        ) do
-    if mount_in_manager do
-      case ComponentManager.mount(parent_struct.module, parent_state) do
-        {:ok, parent_id} ->
-          case ComponentManager.mount(child_struct.module, child_state) do
-            {:ok, child_id} ->
-              # Get the mounted states from ComponentManager
-              parent_mounted = ComponentManager.get_component(parent_id)
-              child_mounted = ComponentManager.get_component(child_id)
-
-              # Update the mounted states with component_manager_id
-              updated_parent_state =
-                Map.put(parent_mounted.state, :component_manager_id, parent_id)
-
-              updated_child_state =
-                Map.put(child_mounted.state, :component_manager_id, child_id)
-
-              # Update the components in ComponentManager with the new states
-              ComponentManager.set_component_state(
-                parent_id,
-                updated_parent_state
-              )
-
-              ComponentManager.set_component_state(
-                child_id,
-                updated_child_state
-              )
-
-              # Update the structs with the new states
-              parent_struct = %{
-                parent_struct
-                | state: updated_parent_state
-              }
-
-              child_struct = %{
-                child_struct
-                | state: updated_child_state
-              }
-
-              {:ok, parent_struct, child_struct}
-
-            {:error, reason} ->
-              {:error, {:child_mount_failed, reason}}
-          end
-
-        {:error, reason} ->
-          {:error, {:parent_mount_failed, reason}}
-      end
-    else
-      {:ok, parent_struct, child_struct}
-    end
+    mount_single_component_pair(
+      mount_in_manager,
+      parent_struct,
+      parent_state,
+      child_struct,
+      child_state
+    )
   end
 
   defp create_test_component(module, opts \\ %{}) do

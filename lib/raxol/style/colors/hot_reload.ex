@@ -124,17 +124,18 @@ defmodule Raxol.Style.Colors.HotReload do
   defp get_theme_paths do
     # Get paths from config or use defaults
     config_paths = Application.get_env(:raxol, :theme_paths, [])
-
-    if Enum.empty?(config_paths) do
-      # Use default paths
-      [
-        Path.expand("~/.config/raxol/themes"),
-        Path.join(:code.priv_dir(:raxol), "themes")
-      ]
-    else
-      config_paths
-    end
+    get_paths_or_defaults(Enum.empty?(config_paths), config_paths)
   end
+
+  defp get_paths_or_defaults(true, _config_paths) do
+    # Use default paths
+    [
+      Path.expand("~/.config/raxol/themes"),
+      Path.join(:code.priv_dir(:raxol), "themes")
+    ]
+  end
+
+  defp get_paths_or_defaults(false, config_paths), do: config_paths
 
   defp init_path_watch(path, state) do
     # Create directory if it doesn't exist
@@ -144,12 +145,7 @@ defmodule Raxol.Style.Colors.HotReload do
     last_modified = get_path_modification_times(path)
 
     # Add path to watched_paths if not already present
-    watched_paths =
-      if path in state.watched_paths do
-        state.watched_paths
-      else
-        [path | state.watched_paths]
-      end
+    watched_paths = update_watched_paths(path in state.watched_paths, path, state.watched_paths)
 
     %{
       state
@@ -248,9 +244,7 @@ defmodule Raxol.Style.Colors.HotReload do
 
         Enum.each(subscribers, fn pid ->
           # Don't send message to self
-          if pid != self() do
-            send(pid, {:theme_reloaded, theme})
-          end
+          send_theme_to_pid(pid != self(), pid, theme)
         end)
 
       {:error, _reason} ->
@@ -267,9 +261,7 @@ defmodule Raxol.Style.Colors.HotReload do
 
                 Enum.each(subscribers, fn pid ->
                   # Don't send message to self
-                  if pid != self() do
-                    send(pid, {:theme_reloaded, theme_struct})
-                  end
+                  send_theme_to_pid(pid != self(), pid, theme_struct)
                 end)
 
               _ ->
@@ -291,4 +283,10 @@ defmodule Raxol.Style.Colors.HotReload do
     timer_id = System.unique_integer([:positive])
     Process.send_after(self(), {:check_changes, timer_id}, @check_interval)
   end
+
+  defp update_watched_paths(true, _path, watched_paths), do: watched_paths
+  defp update_watched_paths(false, path, watched_paths), do: [path | watched_paths]
+
+  defp send_theme_to_pid(true, pid, theme), do: send(pid, {:theme_reloaded, theme})
+  defp send_theme_to_pid(false, _pid, _theme), do: :ok
 end

@@ -231,19 +231,11 @@ defmodule Raxol.Terminal.Extension.Manager do
       :state
     ]
 
-    if Enum.all?(required_fields, &Map.has_key?(extension, &1)) do
-      :ok
-    else
-      {:error, :invalid_extension}
-    end
+    validate_fields(Enum.all?(required_fields, &Map.has_key?(extension, &1)))
   end
 
   defp check_extension_conflicts(manager, extension) do
-    if Map.has_key?(manager.extensions, extension.name) do
-      {:error, :extension_already_loaded}
-    else
-      :ok
-    end
+    check_extension_exists(Map.has_key?(manager.extensions, extension.name))
   end
 
   defp register_extension_events(events, extension) do
@@ -269,11 +261,7 @@ defmodule Raxol.Terminal.Extension.Manager do
           filtered_events =
             Enum.reject(event_list, fn e -> e.extension == extension.name end)
 
-          if Enum.empty?(filtered_events) do
-            Map.delete(acc, event_name)
-          else
-            Map.put(acc, event_name, filtered_events)
-          end
+          handle_filtered_events(filtered_events, acc, event_name)
       end
     end)
   end
@@ -334,4 +322,14 @@ defmodule Raxol.Terminal.Extension.Manager do
   defp update_metrics(metrics, :config_updates) do
     update_in(metrics.config_updates, &(&1 + 1))
   end
+
+  # Helper functions for pattern matching instead of if statements
+  defp validate_fields(true), do: :ok
+  defp validate_fields(false), do: {:error, :invalid_extension}
+
+  defp check_extension_exists(true), do: {:error, :extension_already_loaded}
+  defp check_extension_exists(false), do: :ok
+
+  defp handle_filtered_events([], acc, event_name), do: Map.delete(acc, event_name)
+  defp handle_filtered_events(filtered_events, acc, event_name), do: Map.put(acc, event_name, filtered_events)
 end

@@ -275,147 +275,36 @@ defmodule Raxol.DevTools.PropsValidator do
   end
 
   defp check_type(prop_name, value, %{type: :string}) do
-    if is_binary(value) do
-      {:ok, value}
-    else
-      {:error,
-       ValidationError.new(
-         prop_name,
-         :type,
-         "#{prop_name} must be a string",
-         value,
-         "try: \"#{value}\""
-       )}
-    end
+    validate_string_type(prop_name, value)
   end
 
   defp check_type(prop_name, value, %{type: :number}) do
-    if is_number(value) do
-      {:ok, value}
-    else
-      case Float.parse(to_string(value)) do
-        {number, ""} ->
-          {:ok, number}
-
-        _ ->
-          {:error,
-           ValidationError.new(
-             prop_name,
-             :type,
-             "#{prop_name} must be a number",
-             value
-           )}
-      end
-    end
+    validate_number_type(prop_name, value)
   end
 
   defp check_type(prop_name, value, %{type: :boolean}) do
-    if is_boolean(value) do
-      {:ok, value}
-    else
-      case value do
-        "true" ->
-          {:ok, true}
-
-        "false" ->
-          {:ok, false}
-
-        1 ->
-          {:ok, true}
-
-        0 ->
-          {:ok, false}
-
-        _ ->
-          {:error,
-           ValidationError.new(
-             prop_name,
-             :type,
-             "#{prop_name} must be a boolean",
-             value,
-             "try: true or false"
-           )}
-      end
-    end
+    validate_boolean_type(prop_name, value)
   end
 
   # Functional atom conversion replacing try/catch
   defp check_type(prop_name, value, %{type: :atom}) do
-    if is_atom(value) do
-      {:ok, value}
-    else
-      with {:ok, atom_value} <- safe_string_to_existing_atom(to_string(value)) do
-        {:ok, atom_value}
-      else
-        {:error, :invalid_atom} ->
-          {:error,
-           ValidationError.new(
-             prop_name,
-             :type,
-             "#{prop_name} must be an atom",
-             value,
-             "try: :#{value}"
-           )}
-      end
-    end
+    validate_atom_type(prop_name, value)
   end
 
   defp check_type(prop_name, value, %{type: :list}) do
-    if is_list(value) do
-      {:ok, value}
-    else
-      {:error,
-       ValidationError.new(
-         prop_name,
-         :type,
-         "#{prop_name} must be a list",
-         value,
-         "try: [#{value}]"
-       )}
-    end
+    validate_list_type(prop_name, value)
   end
 
   defp check_type(prop_name, value, %{type: :map}) do
-    if is_map(value) do
-      {:ok, value}
-    else
-      {:error,
-       ValidationError.new(
-         prop_name,
-         :type,
-         "#{prop_name} must be a map",
-         value
-       )}
-    end
+    validate_map_type(prop_name, value)
   end
 
   defp check_type(prop_name, value, %{type: :function}) do
-    if is_function(value) do
-      {:ok, value}
-    else
-      {:error,
-       ValidationError.new(
-         prop_name,
-         :type,
-         "#{prop_name} must be a function",
-         value,
-         "try: fn -> ... end"
-       )}
-    end
+    validate_function_type(prop_name, value)
   end
 
   defp check_type(prop_name, value, %{type: :component}) do
-    if is_component?(value) do
-      {:ok, value}
-    else
-      {:error,
-       ValidationError.new(
-         prop_name,
-         :type,
-         "#{prop_name} must be a component",
-         value
-       )}
-    end
+    validate_component_type(prop_name, value)
   end
 
   defp check_type(_prop_name, value, %{type: :any}) do
@@ -443,20 +332,7 @@ defmodule Raxol.DevTools.PropsValidator do
 
   defp check_enum(prop_name, value, %{enum: valid_values})
        when is_list(valid_values) do
-    if value in valid_values do
-      {:ok, value}
-    else
-      suggestion = suggest_closest_enum_value(value, valid_values)
-
-      {:error,
-       ValidationError.new(
-         prop_name,
-         :enum,
-         "#{prop_name} must be one of #{inspect(valid_values)}",
-         value,
-         suggestion
-       )}
-    end
+    validate_enum_value(prop_name, value, valid_values)
   end
 
   defp check_enum(_prop_name, value, _schema) do
@@ -469,62 +345,22 @@ defmodule Raxol.DevTools.PropsValidator do
 
   defp check_range(prop_name, value, %{min: min_val})
        when is_number(value) and is_number(min_val) do
-    if value >= min_val do
-      {:ok, value}
-    else
-      {:error,
-       ValidationError.new(
-         prop_name,
-         :range,
-         "#{prop_name} must be >= #{min_val}",
-         value
-       )}
-    end
+    validate_min_value(prop_name, value, min_val)
   end
 
   defp check_range(prop_name, value, %{max: max_val})
        when is_number(value) and is_number(max_val) do
-    if value <= max_val do
-      {:ok, value}
-    else
-      {:error,
-       ValidationError.new(
-         prop_name,
-         :range,
-         "#{prop_name} must be <= #{max_val}",
-         value
-       )}
-    end
+    validate_max_value(prop_name, value, max_val)
   end
 
   defp check_range(prop_name, value, %{min: min_len})
        when is_binary(value) and is_number(min_len) do
-    if String.length(value) >= min_len do
-      {:ok, value}
-    else
-      {:error,
-       ValidationError.new(
-         prop_name,
-         :range,
-         "#{prop_name} must be at least #{min_len} characters",
-         value
-       )}
-    end
+    validate_min_length(prop_name, value, min_len)
   end
 
   defp check_range(prop_name, value, %{max: max_len})
        when is_binary(value) and is_number(max_len) do
-    if String.length(value) <= max_len do
-      {:ok, value}
-    else
-      {:error,
-       ValidationError.new(
-         prop_name,
-         :range,
-         "#{prop_name} must be at most #{max_len} characters",
-         value
-       )}
-    end
+    validate_max_length(prop_name, value, max_len)
   end
 
   defp check_range(_prop_name, value, _schema) do
@@ -539,18 +375,7 @@ defmodule Raxol.DevTools.PropsValidator do
        when is_function(value) do
     actual_arity = Function.info(value, :arity) |> elem(1)
 
-    if actual_arity == expected_arity do
-      {:ok, value}
-    else
-      {:error,
-       ValidationError.new(
-         prop_name,
-         :arity,
-         "#{prop_name} function must have arity #{expected_arity}, got #{actual_arity}",
-         value,
-         "try: fn #{Enum.map_join(1..expected_arity, ", ", fn i -> "arg#{i}" end)} -> ... end"
-       )}
-    end
+    validate_function_arity(prop_name, value, actual_arity, expected_arity)
   end
 
   defp check_arity(_prop_name, value, _schema) do
@@ -579,12 +404,7 @@ defmodule Raxol.DevTools.PropsValidator do
         end
       end)
 
-    if Enum.empty?(errors) do
-      {:ok, Enum.reverse(validated_items)}
-    else
-      # Return first error for simplicity
-      {:error, List.first(errors)}
-    end
+    process_validation_errors(errors, validated_items)
   end
 
   defp check_nested(prop_name, value, %{schema: nested_schema})
@@ -712,6 +532,243 @@ defmodule Raxol.DevTools.PropsValidator do
       _ ->
         nil
     end
+  end
+
+  ## Pattern matching helper functions for if statement elimination
+
+  defp validate_string_type(prop_name, value) when is_binary(value),
+    do: {:ok, value}
+
+  defp validate_string_type(prop_name, value) do
+    {:error,
+     ValidationError.new(
+       prop_name,
+       :type,
+       "#{prop_name} must be a string",
+       value,
+       "try: \"#{value}\""
+     )}
+  end
+
+  defp validate_number_type(prop_name, value) when is_number(value),
+    do: {:ok, value}
+
+  defp validate_number_type(prop_name, value) do
+    case Float.parse(to_string(value)) do
+      {number, ""} ->
+        {:ok, number}
+
+      _ ->
+        {:error,
+         ValidationError.new(
+           prop_name,
+           :type,
+           "#{prop_name} must be a number",
+           value
+         )}
+    end
+  end
+
+  defp validate_boolean_type(prop_name, value) when is_boolean(value),
+    do: {:ok, value}
+
+  defp validate_boolean_type(prop_name, "true"), do: {:ok, true}
+  defp validate_boolean_type(prop_name, "false"), do: {:ok, false}
+  defp validate_boolean_type(prop_name, 1), do: {:ok, true}
+  defp validate_boolean_type(prop_name, 0), do: {:ok, false}
+
+  defp validate_boolean_type(prop_name, value) do
+    {:error,
+     ValidationError.new(
+       prop_name,
+       :type,
+       "#{prop_name} must be a boolean",
+       value,
+       "try: true or false"
+     )}
+  end
+
+  defp validate_atom_type(prop_name, value) when is_atom(value),
+    do: {:ok, value}
+
+  defp validate_atom_type(prop_name, value) do
+    with {:ok, atom_value} <- safe_string_to_existing_atom(to_string(value)) do
+      {:ok, atom_value}
+    else
+      {:error, :invalid_atom} ->
+        {:error,
+         ValidationError.new(
+           prop_name,
+           :type,
+           "#{prop_name} must be an atom",
+           value,
+           "try: :#{value}"
+         )}
+    end
+  end
+
+  defp validate_list_type(prop_name, value) when is_list(value),
+    do: {:ok, value}
+
+  defp validate_list_type(prop_name, value) do
+    {:error,
+     ValidationError.new(
+       prop_name,
+       :type,
+       "#{prop_name} must be a list",
+       value,
+       "try: [#{value}]"
+     )}
+  end
+
+  defp validate_map_type(prop_name, value) when is_map(value), do: {:ok, value}
+
+  defp validate_map_type(prop_name, value) do
+    {:error,
+     ValidationError.new(
+       prop_name,
+       :type,
+       "#{prop_name} must be a map",
+       value
+     )}
+  end
+
+  defp validate_function_type(prop_name, value) when is_function(value),
+    do: {:ok, value}
+
+  defp validate_function_type(prop_name, value) do
+    {:error,
+     ValidationError.new(
+       prop_name,
+       :type,
+       "#{prop_name} must be a function",
+       value,
+       "try: fn -> ... end"
+     )}
+  end
+
+  defp validate_component_type(prop_name, value) do
+    case is_component?(value) do
+      true ->
+        {:ok, value}
+
+      false ->
+        {:error,
+         ValidationError.new(
+           prop_name,
+           :type,
+           "#{prop_name} must be a component",
+           value
+         )}
+    end
+  end
+
+  defp validate_enum_value(prop_name, value, valid_values) do
+    case value in valid_values do
+      true ->
+        {:ok, value}
+
+      false ->
+        validate_enum_value_with_suggestion(prop_name, value, valid_values)
+    end
+  end
+
+  defp validate_enum_value_with_suggestion(prop_name, value, valid_values) do
+    suggestion = suggest_closest_enum_value(value, valid_values)
+
+    {:error,
+     ValidationError.new(
+       prop_name,
+       :enum,
+       "#{prop_name} must be one of #{inspect(valid_values)}",
+       value,
+       suggestion
+     )}
+  end
+
+  defp validate_min_value(prop_name, value, min_val) when value >= min_val do
+    {:ok, value}
+  end
+
+  defp validate_min_value(prop_name, value, min_val) do
+    {:error,
+     ValidationError.new(
+       prop_name,
+       :range,
+       "#{prop_name} must be >= #{min_val}",
+       value
+     )}
+  end
+
+  defp validate_max_value(prop_name, value, max_val) when value <= max_val do
+    {:ok, value}
+  end
+
+  defp validate_max_value(prop_name, value, max_val) do
+    {:error,
+     ValidationError.new(
+       prop_name,
+       :range,
+       "#{prop_name} must be <= #{max_val}",
+       value
+     )}
+  end
+
+  defp validate_min_length(prop_name, value, min_len) do
+    case String.length(value) >= min_len do
+      true ->
+        {:ok, value}
+
+      false ->
+        {:error,
+         ValidationError.new(
+           prop_name,
+           :range,
+           "#{prop_name} must be at least #{min_len} characters",
+           value
+         )}
+    end
+  end
+
+  defp validate_max_length(prop_name, value, max_len) do
+    case String.length(value) <= max_len do
+      true ->
+        {:ok, value}
+
+      false ->
+        {:error,
+         ValidationError.new(
+           prop_name,
+           :range,
+           "#{prop_name} must be at most #{max_len} characters",
+           value
+         )}
+    end
+  end
+
+  defp validate_function_arity(prop_name, value, actual_arity, expected_arity)
+       when actual_arity == expected_arity do
+    {:ok, value}
+  end
+
+  defp validate_function_arity(prop_name, value, actual_arity, expected_arity) do
+    {:error,
+     ValidationError.new(
+       prop_name,
+       :arity,
+       "#{prop_name} function must have arity #{expected_arity}, got #{actual_arity}",
+       value,
+       "try: fn #{Enum.map_join(1..expected_arity, ", ", fn i -> "arg#{i}" end)} -> ... end"
+     )}
+  end
+
+  defp process_validation_errors([], validated_items) do
+    {:ok, Enum.reverse(validated_items)}
+  end
+
+  defp process_validation_errors(errors, _validated_items) do
+    # Return first error for simplicity
+    {:error, List.first(errors)}
   end
 
   ## Validation Helpers

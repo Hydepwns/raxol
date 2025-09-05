@@ -63,16 +63,18 @@ defmodule Raxol.Plugins.Manager.Events do
   end
 
   defp broadcast_plugin_event({_name, plugin}, {:ok, acc_manager}, event) do
-    if plugin.enabled do
-      module = plugin.__struct__
+    case plugin.enabled do
+      true ->
+        module = plugin.__struct__
 
-      if function_exported?(module, :handle_event, 2) do
-        handle_plugin_event(module, plugin, event, acc_manager)
-      else
+        case function_exported?(module, :handle_event, 2) do
+          true ->
+            handle_plugin_event(module, plugin, event, acc_manager)
+          false ->
+            {:cont, {:ok, acc_manager}}
+        end
+      false ->
         {:cont, {:ok, acc_manager}}
-      end
-    else
-      {:cont, {:ok, acc_manager}}
     end
   end
 

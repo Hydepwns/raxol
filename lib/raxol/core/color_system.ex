@@ -128,13 +128,25 @@ defmodule Raxol.Core.ColorSystem do
     fg = get_color(theme, foreground)
     bg = get_color(theme, background)
 
-    if Utilities.meets_contrast_requirements?(fg, bg, level, size) do
-      theme
-    else
-      # Adjust the foreground color to meet contrast requirements
-      adjusted_fg = adjust_color_for_contrast(fg, bg, level, size)
-      put_in(theme, [:colors, foreground], adjusted_fg)
-    end
+    do_adjust_for_contrast(
+      Utilities.meets_contrast_requirements?(fg, bg, level, size),
+      theme,
+      foreground,
+      fg,
+      bg,
+      level,
+      size
+    )
+  end
+
+  defp do_adjust_for_contrast(true, theme, _foreground, _fg, _bg, _level, _size) do
+    theme
+  end
+
+  defp do_adjust_for_contrast(false, theme, foreground, fg, bg, level, size) do
+    # Adjust the foreground color to meet contrast requirements
+    adjusted_fg = adjust_color_for_contrast(fg, bg, level, size)
+    put_in(theme, [:colors, foreground], adjusted_fg)
   end
 
   @doc """
@@ -154,31 +166,36 @@ defmodule Raxol.Core.ColorSystem do
       when is_atom(theme_id) and is_atom(color_name) do
     # Get the theme struct using the correct alias
     theme = Theme.get(theme_id)
+    do_get_color(theme, theme_id, color_name)
+  end
 
-    if theme do
-      # Get the active accessibility variant (e.g., :high_contrast)
-      active_variant_id = ThemeIntegration.get_active_variant()
+  defp do_get_color(nil, theme_id, _color_name) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "ColorSystem: Theme with ID #{theme_id} not found. Falling back.",
+      %{}
+    )
 
-      # Check variant palette first, then base palette
-      # Get variant palette safely
-      variant_definition = safe_map_get(theme.variants, active_variant_id)
+    nil
+  end
 
-      variant_palette =
-        if variant_definition,
-          do: safe_map_get(variant_definition, :palette),
-          else: nil
+  defp do_get_color(theme, _theme_id, color_name) do
+    # Get the active accessibility variant (e.g., :high_contrast)
+    active_variant_id = ThemeIntegration.get_active_variant()
 
-      base_palette = theme.colors
+    # Check variant palette first, then base palette
+    # Get variant palette safely
+    variant_definition = safe_map_get(theme.variants, active_variant_id)
 
-      lookup_color_in_palettes(color_name, variant_palette, base_palette)
-    else
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "ColorSystem: Theme with ID #{theme_id} not found. Falling back.",
-        %{}
-      )
+    variant_palette = get_variant_palette(variant_definition)
+    base_palette = theme.colors
 
-      nil
-    end
+    lookup_color_in_palettes(color_name, variant_palette, base_palette)
+  end
+
+  defp get_variant_palette(nil), do: nil
+
+  defp get_variant_palette(variant_definition) do
+    safe_map_get(variant_definition, :palette)
   end
 
   @doc """
@@ -249,20 +266,23 @@ defmodule Raxol.Core.ColorSystem do
 
     # Get the theme
     theme = Theme.get(theme_id)
+    do_init(theme, theme_id)
+  end
 
-    if theme do
-      # Store current theme in process dictionary for compatibility
-      Raxol.Style.Colors.System.Server.set_current_theme(theme_id)
-      :ok
-    else
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "ColorSystem: Theme #{theme_id} not found, using default",
-        %{}
-      )
+  defp do_init(nil, theme_id) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "ColorSystem: Theme #{theme_id} not found, using default",
+      %{}
+    )
 
-      Raxol.Style.Colors.System.Server.set_current_theme(:default)
-      :ok
-    end
+    Raxol.Style.Colors.System.Server.set_current_theme(:default)
+    :ok
+  end
+
+  defp do_init(_theme, theme_id) do
+    # Store current theme in process dictionary for compatibility
+    Raxol.Style.Colors.System.Server.set_current_theme(theme_id)
+    :ok
   end
 
   @doc """
@@ -281,13 +301,11 @@ defmodule Raxol.Core.ColorSystem do
   def get_current_theme do
     theme_id = Raxol.Style.Colors.System.Server.get_current_theme(:default)
     theme = Theme.get(theme_id)
-
-    if theme do
-      {:ok, theme}
-    else
-      {:error, :theme_not_found}
-    end
+    format_theme_result(theme)
   end
+
+  defp format_theme_result(nil), do: {:error, :theme_not_found}
+  defp format_theme_result(theme), do: {:ok, theme}
 
   @doc """
   Set the current theme.
@@ -312,13 +330,14 @@ defmodule Raxol.Core.ColorSystem do
     )
 
     theme = Theme.get(theme_id)
+    do_set_theme(theme, theme_id)
+  end
 
-    if theme do
-      Raxol.Style.Colors.System.Server.set_current_theme(theme_id)
-      :ok
-    else
-      {:error, :theme_not_found}
-    end
+  defp do_set_theme(nil, _theme_id), do: {:error, :theme_not_found}
+
+  defp do_set_theme(_theme, theme_id) do
+    Raxol.Style.Colors.System.Server.set_current_theme(theme_id)
+    :ok
   end
 
   # Private functions
@@ -331,24 +350,64 @@ defmodule Raxol.Core.ColorSystem do
     # Try lightening first
     lightened = Color.lighten(current, step)
 
-    if Utilities.meets_contrast_requirements?(lightened, bg, level, size) do
-      lightened
-    else
-      # If lightening doesn't work, try darkening
-      darkened = Color.darken(current, step)
+    try_contrast_adjustment(
+      Utilities.meets_contrast_requirements?(lightened, bg, level, size),
+      lightened,
+      current,
+      bg,
+      level,
+      size,
+      step
+    )
+  end
 
-      if Utilities.meets_contrast_requirements?(darkened, bg, level, size) do
-        darkened
-      else
-        # If neither works, try the opposite of the background
-        Color.complement(bg)
-      end
-    end
+  defp try_contrast_adjustment(
+         true,
+         lightened,
+         _current,
+         _bg,
+         _level,
+         _size,
+         _step
+       ) do
+    lightened
+  end
+
+  defp try_contrast_adjustment(
+         false,
+         _lightened,
+         current,
+         bg,
+         level,
+         size,
+         step
+       ) do
+    # If lightening doesn't work, try darkening
+    darkened = Color.darken(current, step)
+
+    try_darkening(
+      Utilities.meets_contrast_requirements?(darkened, bg, level, size),
+      darkened,
+      bg
+    )
+  end
+
+  defp try_darkening(true, darkened, _bg), do: darkened
+
+  defp try_darkening(false, _darkened, bg) do
+    # If neither works, try the opposite of the background
+    Color.complement(bg)
   end
 
   defp safe_map_get(data, key, default \\ nil) do
-    if is_map(data), do: Map.get(data, key, default), else: default
+    do_safe_map_get(is_map(data), data, key, default)
   end
+
+  defp do_safe_map_get(true, data, key, default) do
+    Map.get(data, key, default)
+  end
+
+  defp do_safe_map_get(false, _data, _key, default), do: default
 
   defp lookup_color_in_palettes(color_name, variant_palette, base_palette) do
     case {variant_palette && Map.has_key?(variant_palette, color_name),

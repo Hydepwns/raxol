@@ -121,9 +121,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
       script_timeout: Keyword.get(opts, :script_timeout, 30_000)
     }
 
-    if state.auto_load do
-      load_scripts_from_paths(state.script_paths)
-    end
+    maybe_load_scripts(state.auto_load, state.script_paths)
 
     {:ok, state}
   end
@@ -169,15 +167,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         {:reply, {:error, :script_not_found}, state}
 
       script ->
-        if is_map(config) do
-          config_map = config
-          script_config = if is_map(script.config), do: script.config, else: %{}
-          new_script = %{script | config: Map.merge(script_config, config_map)}
-          new_state = put_in(state.scripts[script_id], new_script)
-          {:reply, :ok, new_state}
-        else
-          {:reply, {:error, :invalid_script_config}, state}
-        end
+        update_script_config_if_valid(config, script, script_id, state)
     end
   end
 
@@ -212,13 +202,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         {:reply, {:error, :script_not_found}, state}
 
       script ->
-        if script.status == :running do
-          new_script = %{script | status: :paused}
-          new_state = put_in(state.scripts[script_id], new_script)
-          {:reply, :ok, new_state}
-        else
-          {:reply, {:error, :invalid_script_state}, state}
-        end
+        pause_script_if_running(script.status, script, script_id, state)
     end
   end
 
@@ -228,13 +212,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         {:reply, {:error, :script_not_found}, state}
 
       script ->
-        if script.status == :paused do
-          new_script = %{script | status: :running}
-          new_state = put_in(state.scripts[script_id], new_script)
-          {:reply, :ok, new_state}
-        else
-          {:reply, {:error, :invalid_script_state}, state}
-        end
+        resume_script_if_paused(script.status, script, script_id, state)
     end
   end
 
@@ -244,13 +222,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         {:reply, {:error, :script_not_found}, state}
 
       script ->
-        if script.status in [:running, :paused] do
-          new_script = %{script | status: :idle}
-          new_state = put_in(state.scripts[script_id], new_script)
-          {:reply, :ok, new_state}
-        else
-          {:reply, {:error, :invalid_script_state}, state}
-        end
+        stop_script_if_active(script.status, script, script_id, state)
     end
   end
 
@@ -260,11 +232,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         {:reply, {:error, :script_not_found}, state}
 
       %{output: [latest | _]} ->
-        if is_binary(latest) and length([latest | []]) == 1 do
-          {:reply, {:ok, latest}, state}
-        else
-          {:reply, {:ok, [latest | []]}, state}
-        end
+        format_script_output(latest, state)
 
       %{output: []} ->
         {:reply, {:ok, ""}, state}
@@ -398,12 +366,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
       Task.async(fn ->
         [{mod, _bin}] = Code.compile_string(wrapped_code)
 
-        if function_exported?(mod, :main, length(args)) do
-          result = apply(mod, :main, args)
-          if is_binary(result), do: {:ok, result}, else: {:ok, inspect(result)}
-        else
-          {:ok, "Elixir script executed successfully"}
-        end
+        execute_main_function_if_exported(mod, args)
       end)
 
     case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
@@ -511,8 +474,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         # Determine file extension based on script type
         extension = get_script_extension(script.type)
 
-        script_path =
-          if Path.extname(path) == "", do: path <> extension, else: path
+        script_path = add_extension_if_needed(path, extension)
 
         # Write script source
         File.write!(script_path, script.source)
@@ -722,18 +684,106 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   end
 
   defp load_script_from_single_file(path) do
-    if script_file?(Path.basename(path)) do
-      case import_script_from_file(path, []) do
-        {:ok, script} ->
-          script_id = generate_script_id()
+    load_script_if_valid_file(script_file?(Path.basename(path)), path)
+  end
 
-          # Store in process dictionary for now, could be enhanced to use GenServer state
-          Raxol.Core.StateManager.set_state({:loaded_script, script_id}, script)
-          Logger.info("Loaded script: #{script.name} from #{path}")
+  # Helper functions for if statement elimination
 
-        {:error, reason} ->
-          Logger.error("Failed to load script from #{path}: #{inspect(reason)}")
-      end
+  defp maybe_load_scripts(false, _paths), do: :ok
+  defp maybe_load_scripts(true, paths), do: load_scripts_from_paths(paths)
+
+  defp update_script_config_if_valid(config, script, script_id, state)
+       when is_map(config) do
+    script_config = get_script_config(script.config)
+    new_script = %{script | config: Map.merge(script_config, config)}
+    new_state = put_in(state.scripts[script_id], new_script)
+    {:reply, :ok, new_state}
+  end
+
+  defp update_script_config_if_valid(_config, _script, _script_id, state) do
+    {:reply, {:error, :invalid_script_config}, state}
+  end
+
+  defp get_script_config(config) when is_map(config), do: config
+  defp get_script_config(_config), do: %{}
+
+  defp pause_script_if_running(:running, script, script_id, state) do
+    new_script = %{script | status: :paused}
+    new_state = put_in(state.scripts[script_id], new_script)
+    {:reply, :ok, new_state}
+  end
+
+  defp pause_script_if_running(_status, _script, _script_id, state) do
+    {:reply, {:error, :invalid_script_state}, state}
+  end
+
+  defp resume_script_if_paused(:paused, script, script_id, state) do
+    new_script = %{script | status: :running}
+    new_state = put_in(state.scripts[script_id], new_script)
+    {:reply, :ok, new_state}
+  end
+
+  defp resume_script_if_paused(_status, _script, _script_id, state) do
+    {:reply, {:error, :invalid_script_state}, state}
+  end
+
+  defp stop_script_if_active(status, script, script_id, state)
+       when status in [:running, :paused] do
+    new_script = %{script | status: :idle}
+    new_state = put_in(state.scripts[script_id], new_script)
+    {:reply, :ok, new_state}
+  end
+
+  defp stop_script_if_active(_status, _script, _script_id, state) do
+    {:reply, {:error, :invalid_script_state}, state}
+  end
+
+  defp format_script_output(latest, state) when is_binary(latest) do
+    output = handle_single_output(length([latest | []]), latest)
+    {:reply, {:ok, output}, state}
+  end
+
+  defp format_script_output(latest, state) do
+    {:reply, {:ok, [latest | []]}, state}
+  end
+
+  defp handle_single_output(1, latest), do: latest
+  defp handle_single_output(_, latest), do: [latest | []]
+
+  defp execute_main_function_if_exported(mod, args) do
+    case function_exported?(mod, :main, length(args)) do
+      true ->
+        result = apply(mod, :main, args)
+        format_elixir_result(result)
+
+      false ->
+        {:ok, "Elixir script executed successfully"}
+    end
+  end
+
+  defp format_elixir_result(result) when is_binary(result), do: {:ok, result}
+  defp format_elixir_result(result), do: {:ok, inspect(result)}
+
+  defp add_extension_if_needed(path, extension) do
+    case Path.extname(path) do
+      "" -> path <> extension
+      _ -> path
+    end
+  end
+
+  defp load_script_if_valid_file(false, _path), do: :ok
+
+  defp load_script_if_valid_file(true, path) do
+    case import_script_from_file(path, []) do
+      {:ok, script} ->
+        script_id = generate_script_id()
+
+        # Store in process dictionary for now, could be enhanced to use GenServer state
+        Raxol.Core.StateManager.set_state({:loaded_script, script_id}, script)
+        Logger.info("Loaded script: #{script.name} from #{path}")
+
+      {:error, reason} ->
+        Logger.error("Failed to load script from #{path}: #{inspect(reason)}")
     end
   end
 end

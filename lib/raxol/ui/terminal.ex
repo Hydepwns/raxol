@@ -77,13 +77,7 @@ defmodule Raxol.UI.Terminal do
     rtl = Keyword.get(opts, :rtl) || I18n.rtl?()
 
     # Format text for RTL if needed
-    formatted_text =
-      if rtl do
-        # Basic RTL formatting - in a real implementation this would be more sophisticated
-        String.reverse(text)
-      else
-        text
-      end
+    formatted_text = format_text_for_rtl(rtl, text)
 
     # Apply styles
     styled_text = apply_styles(formatted_text, opts)
@@ -284,18 +278,11 @@ defmodule Raxol.UI.Terminal do
     top_border = "┌" <> String.duplicate("─", config.width - 2) <> "┐"
     print_border_line(top_border, config)
 
-    if config.title do
-      print_title(config)
-    end
+    print_title_if_present(config.title, config)
   end
 
   defp print_border_line(border, config) do
-    if config.centered do
-      print_centered(border, color: config.border_color)
-      println()
-    else
-      println(border, color: config.border_color)
-    end
+    print_border_with_centering(config.centered, border, config.border_color)
   end
 
   defp print_title(config) do
@@ -368,7 +355,7 @@ defmodule Raxol.UI.Terminal do
     ]
 
     Enum.reduce(style_mappings, codes, fn {key, code}, acc ->
-      if Keyword.get(opts, key, false), do: [code | acc], else: acc
+      add_style_code_if_enabled(Keyword.get(opts, key, false), code, acc)
     end)
   end
 
@@ -452,4 +439,28 @@ defmodule Raxol.UI.Terminal do
         %{width: 80, height: 24}
     end
   end
+
+  # Helper functions for pattern matching instead of if statements
+
+  defp format_text_for_rtl(true, text) do
+    # Basic RTL formatting - in a real implementation this would be more sophisticated
+    String.reverse(text)
+  end
+
+  defp format_text_for_rtl(false, text), do: text
+
+  defp print_title_if_present(nil, _config), do: :ok
+  defp print_title_if_present(_title, config), do: print_title(config)
+
+  defp print_border_with_centering(true, border, border_color) do
+    print_centered(border, color: border_color)
+    println()
+  end
+
+  defp print_border_with_centering(false, border, border_color) do
+    println(border, color: border_color)
+  end
+
+  defp add_style_code_if_enabled(true, code, acc), do: [code | acc]
+  defp add_style_code_if_enabled(false, _code, acc), do: acc
 end

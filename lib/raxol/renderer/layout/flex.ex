@@ -98,19 +98,23 @@ defmodule Raxol.Renderer.Layout.Flex do
          space,
          gap
        ) do
-    x_start = x + if(x == 0, do: 0, else: gap)
+    x_start = x + case x == 0 do
+      true -> 0
+      false -> gap
+    end
     needs_wrap = x > 0 and x_start + cw > space.width
 
-    if needs_wrap do
-      process_wrapped_row_wrap(child, {cw, ch}, {acc, x, y, line_h}, space, gap)
-    else
-      process_wrapped_row_no_wrap(
-        child,
-        {cw, ch},
-        {acc, x, y, line_h},
-        space,
-        x_start
-      )
+    case needs_wrap do
+      true ->
+        process_wrapped_row_wrap(child, {cw, ch}, {acc, x, y, line_h}, space, gap)
+      false ->
+        process_wrapped_row_no_wrap(
+          child,
+          {cw, ch},
+          {acc, x, y, line_h},
+          space,
+          x_start
+        )
     end
   end
 
@@ -162,25 +166,29 @@ defmodule Raxol.Renderer.Layout.Flex do
          space,
          gap
        ) do
-    y_start = y + if(y == 0, do: 0, else: gap)
+    y_start = y + case y == 0 do
+      true -> 0
+      false -> gap
+    end
     needs_wrap = y > 0 and y_start + ch > space.height
 
-    if needs_wrap do
-      process_wrapped_column_wrap(
-        child,
-        {cw, ch},
-        {acc, x, y, col_w},
-        space,
-        gap
-      )
-    else
-      process_wrapped_column_no_wrap(
-        child,
-        {cw, ch},
-        {acc, x, y, col_w},
-        space,
-        y_start
-      )
+    case needs_wrap do
+      true ->
+        process_wrapped_column_wrap(
+          child,
+          {cw, ch},
+          {acc, x, y, col_w},
+          space,
+          gap
+        )
+      false ->
+        process_wrapped_column_no_wrap(
+          child,
+          {cw, ch},
+          {acc, x, y, col_w},
+          space,
+          y_start
+        )
     end
   end
 

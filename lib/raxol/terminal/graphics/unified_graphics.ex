@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   """
   @spec start_link(map()) :: GenServer.on_start()
   def start_link(opts \\ %{}) do
-    opts = if is_map(opts), do: opts, else: Enum.into(opts, %{})
+    opts = ensure_map_opts(opts)
     name = Map.get(opts, :name, __MODULE__)
     gen_server_opts = Map.delete(opts, :name)
     GenServer.start_link(__MODULE__, gen_server_opts, name: name)
@@ -151,12 +151,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     }
 
     # If this is the first graphics context, make it active
-    new_state =
-      if state.active_graphics == nil do
-        %{new_state | active_graphics: graphics_id}
-      else
-        new_state
-      end
+    new_state = set_active_if_first(new_state, graphics_id)
 
     {:reply, {:ok, graphics_id}, new_state}
   end
@@ -215,26 +210,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
 
       graphics_state ->
         # Only update if data has changed
-        if data != graphics_state.buffer do
-          # Use double buffering for smooth rendering
-          new_buffer = get_new_buffer(graphics_state.back_buffer, data)
-
-          new_graphics_state = %{
-            graphics_state
-            | buffer: data,
-              back_buffer: new_buffer,
-              last_render: System.system_time(:millisecond)
-          }
-
-          new_state = %{
-            state
-            | graphics: Map.put(state.graphics, graphics_id, new_graphics_state)
-          }
-
-          {:reply, :ok, new_state}
-        else
-          {:reply, :ok, state}
-        end
+        update_graphics_buffer(data, graphics_state, graphics_id, state)
     end
   end
 
@@ -317,10 +293,9 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
 
   # Private Functions
   defp get_new_buffer(back_buffer, data) do
-    if back_buffer == nil do
-      data
-    else
-      back_buffer
+    case back_buffer do
+      nil -> data
+      buffer -> buffer
     end
   end
 
@@ -329,14 +304,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
          closed_graphics_id,
          new_graphics
        ) do
-    if active_graphics == closed_graphics_id do
-      case Map.keys(new_graphics) do
-        [] -> nil
-        [first_graphics | _] -> first_graphics
-      end
-    else
-      active_graphics
-    end
+    handle_graphics_close_update(active_graphics == closed_graphics_id, active_graphics, new_graphics)
   end
 
   defp default_config do
@@ -359,4 +327,51 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
       quality: 90
     }
   end
+
+  defp ensure_map_opts(opts) when is_map(opts), do: opts
+  defp ensure_map_opts(opts), do: Enum.into(opts, %{})
+
+  defp update_graphics_buffer(data, graphics_state, graphics_id, state) do
+    handle_buffer_update(data == graphics_state.buffer, data, graphics_state, graphics_id, state)
+  end
+
+  defp handle_buffer_update(true, _data, _graphics_state, _graphics_id, state) do
+    {:reply, :ok, state}
+  end
+
+  defp handle_buffer_update(false, data, graphics_state, graphics_id, state) do
+    # Use double buffering for smooth rendering
+    new_buffer = get_new_buffer(graphics_state.back_buffer, data)
+
+    new_graphics_state = %{
+      graphics_state
+      | buffer: data,
+        back_buffer: new_buffer,
+        last_render: System.system_time(:millisecond)
+    }
+
+    new_state = %{
+      state
+      | graphics: Map.put(state.graphics, graphics_id, new_graphics_state)
+    }
+
+    {:reply, :ok, new_state}
+  end
+
+  defp handle_graphics_close_update(true, _active_graphics, new_graphics) do
+    case Map.keys(new_graphics) do
+      [] -> nil
+      [first_graphics | _] -> first_graphics
+    end
+  end
+
+  defp handle_graphics_close_update(false, active_graphics, _new_graphics) do
+    active_graphics
+  end
+
+  defp set_active_if_first(%{active_graphics: nil} = state, graphics_id) do
+    %{state | active_graphics: graphics_id}
+  end
+
+  defp set_active_if_first(state, _graphics_id), do: state
 end

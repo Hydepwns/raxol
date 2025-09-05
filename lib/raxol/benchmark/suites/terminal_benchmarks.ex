@@ -197,16 +197,17 @@ defmodule Raxol.Benchmark.Suites.TerminalBenchmarks do
     text = String.duplicate(base_text, repetitions)
 
     # Add some ANSI sequences
-    if size > 1000 do
-      text
-      |> String.split(" ")
-      |> Enum.map_every(10, fn word ->
-        color = Enum.random(31..37)
-        "\e[#{color}m#{word}\e[0m"
-      end)
-      |> Enum.join(" ")
-    else
-      text
+    case size > 1000 do
+      true ->
+        text
+        |> String.split(" ")
+        |> Enum.map_every(10, fn word ->
+          color = Enum.random(31..37)
+          "\e[#{color}m#{word}\e[0m"
+        end)
+        |> Enum.join(" ")
+      false ->
+        text
     end
   end
 end

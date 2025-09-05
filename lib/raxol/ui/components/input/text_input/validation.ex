@@ -15,32 +15,31 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
 
   defp get_validation_error(%{max_length: max_length, value: value} = state)
        when not is_nil(max_length) do
-    if String.length(value) > max_length do
-      "Maximum length is #{max_length} characters"
-    else
-      # Check other validations if max_length is ok
-      check_other_validations(state)
-    end
+    validate_max_length(String.length(value) > max_length, max_length, state)
+  end
+
+  defp validate_max_length(true, max_length, _state) do
+    "Maximum length is #{max_length} characters"
+  end
+
+  defp validate_max_length(false, _max_length, state) do
+    # Check other validations if max_length is ok
+    check_other_validations(state)
   end
 
   defp get_validation_error(%{pattern: pattern, value: value})
        when not is_nil(pattern) do
-    if Regex.match?(~r/^#{pattern}$/, value) do
-      nil
-    else
-      "Invalid input format"
-    end
+    validate_pattern_match(Regex.match?(~r/^#{pattern}$/, value))
   end
+
+  defp validate_pattern_match(true), do: nil
+  defp validate_pattern_match(false), do: "Invalid input format"
 
   defp get_validation_error(_state), do: nil
 
   defp check_other_validations(%{pattern: pattern, value: value})
        when not is_nil(pattern) do
-    if Regex.match?(~r/^#{pattern}$/, value) do
-      nil
-    else
-      "Invalid input format"
-    end
+    validate_pattern_match(Regex.match?(~r/^#{pattern}$/, value))
   end
 
   defp check_other_validations(_state), do: nil
@@ -67,12 +66,11 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
   Returns :ok if valid, {:error, reason} if invalid.
   """
   def validate_pattern(value, pattern) when is_binary(pattern) do
-    if Regex.match?(~r/^#{pattern}$/, value) do
-      :ok
-    else
-      {:error, "Invalid input format"}
-    end
+    check_pattern_result(Regex.match?(~r/^#{pattern}$/, value))
   end
+
+  defp check_pattern_result(true), do: :ok
+  defp check_pattern_result(false), do: {:error, "Invalid input format"}
 
   @doc """
   Validates a value's length against a maximum.
@@ -80,10 +78,12 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
   """
   def validate_length(value, max_length)
       when is_integer(max_length) and max_length > 0 do
-    if String.length(value) <= max_length do
-      :ok
-    else
-      {:error, "Maximum length is #{max_length} characters"}
-    end
+    check_length_result(String.length(value) <= max_length, max_length)
+  end
+
+  defp check_length_result(true, _max_length), do: :ok
+
+  defp check_length_result(false, max_length) do
+    {:error, "Maximum length is #{max_length} characters"}
   end
 end

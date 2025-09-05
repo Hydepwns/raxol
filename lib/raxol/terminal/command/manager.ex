@@ -218,11 +218,11 @@ defmodule Raxol.Terminal.Command.Manager do
     max_history = state.max_history || 100
 
     trimmed_history =
-      if length(new_history) > max_history do
-        Enum.slice(new_history, -max_history, max_history)
-      else
-        new_history
-      end
+      trim_history_if_needed(
+        length(new_history) > max_history,
+        new_history,
+        max_history
+      )
 
     %{
       state
@@ -273,46 +273,56 @@ defmodule Raxol.Terminal.Command.Manager do
   def process_key_event(state, _), do: state
 
   defp handle_enter(state) do
-    if state.command_buffer != "" do
-      state = add_to_history_state(state, state.command_buffer)
-      %{state | command_buffer: ""}
-    else
-      state
-    end
+    process_enter_command(state.command_buffer != "", state)
+  end
+
+  defp process_enter_command(false, state), do: state
+
+  defp process_enter_command(true, state) do
+    state = add_to_history_state(state, state.command_buffer)
+    %{state | command_buffer: ""}
   end
 
   defp handle_backspace(state) do
-    if state.command_buffer != "" do
-      %{state | command_buffer: String.slice(state.command_buffer, 0..-2//-1)}
-    else
-      state
-    end
+    process_backspace(state.command_buffer != "", state)
+  end
+
+  defp process_backspace(false, state), do: state
+
+  defp process_backspace(true, state) do
+    %{state | command_buffer: String.slice(state.command_buffer, 0..-2//-1)}
   end
 
   defp handle_up(state) do
-    if state.history_index < length(state.history) - 1 do
-      new_index = state.history_index + 1
-      command = Enum.at(state.history, new_index)
-      %{state | command_buffer: command, history_index: new_index}
-    else
-      state
-    end
+    can_go_up = state.history_index < length(state.history) - 1
+    navigate_history_up(can_go_up, state)
+  end
+
+  defp navigate_history_up(false, state), do: state
+
+  defp navigate_history_up(true, state) do
+    new_index = state.history_index + 1
+    command = Enum.at(state.history, new_index)
+    %{state | command_buffer: command, history_index: new_index}
   end
 
   defp handle_down(state) do
-    if state.history_index > -1 do
-      new_index = state.history_index - 1
+    can_go_down = state.history_index > -1
+    navigate_history_down(can_go_down, state)
+  end
 
-      command =
-        case new_index do
-          -1 -> ""
-          _ -> Enum.at(state.history, new_index)
-        end
+  defp navigate_history_down(false, state), do: state
 
-      %{state | command_buffer: command, history_index: new_index}
-    else
-      state
-    end
+  defp navigate_history_down(true, state) do
+    new_index = state.history_index - 1
+
+    command =
+      case new_index do
+        -1 -> ""
+        _ -> Enum.at(state.history, new_index)
+      end
+
+    %{state | command_buffer: command, history_index: new_index}
   end
 
   defp handle_char(state, char),
@@ -323,11 +333,15 @@ defmodule Raxol.Terminal.Command.Manager do
   """
   def get_history_command(%Raxol.Terminal.Command{} = state, index)
       when is_integer(index) do
-    if index >= 0 and index < length(state.history) do
-      {:ok, Enum.at(state.history, index)}
-    else
-      {:error, :invalid_index}
-    end
+    valid_index = index >= 0 and index < length(state.history)
+    get_command_by_validity(valid_index, state, index)
+  end
+
+  defp get_command_by_validity(false, _state, _index),
+    do: {:error, :invalid_index}
+
+  defp get_command_by_validity(true, state, index) do
+    {:ok, Enum.at(state.history, index)}
   end
 
   @doc """
@@ -336,8 +350,17 @@ defmodule Raxol.Terminal.Command.Manager do
   def search_history(%Raxol.Terminal.Command{} = state, pattern)
       when is_binary(pattern) do
     matches = Enum.filter(state.history, &String.contains?(&1, pattern))
-    if Enum.empty?(matches), do: {:error, :not_found}, else: {:ok, matches}
+    return_search_result(Enum.empty?(matches), matches)
   end
+
+  defp return_search_result(true, _matches), do: {:error, :not_found}
+  defp return_search_result(false, matches), do: {:ok, matches}
+
+  defp trim_history_if_needed(true, new_history, max_history) do
+    Enum.slice(new_history, -max_history, max_history)
+  end
+
+  defp trim_history_if_needed(false, new_history, _max_history), do: new_history
 
   @doc """
   Processes a command string.

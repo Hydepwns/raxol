@@ -260,13 +260,17 @@ defmodule RaxolWeb.UserAuth do
   """
   @spec redirect_if_user_is_authenticated(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def redirect_if_user_is_authenticated(conn, _opts) do
-    if conn.assigns[:current_user] do
-      conn
-      |> redirect(to: signed_in_path(conn))
-      |> halt()
-    else
-      conn
-    end
+    handle_authenticated_user_redirect(conn.assigns[:current_user], conn)
+  end
+
+  defp handle_authenticated_user_redirect(nil, conn) do
+    conn
+  end
+
+  defp handle_authenticated_user_redirect(_user, conn) do
+    conn
+    |> redirect(to: signed_in_path(conn))
+    |> halt()
   end
 
   @doc """
@@ -310,15 +314,19 @@ defmodule RaxolWeb.UserAuth do
   """
   @spec require_authenticated_user(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def require_authenticated_user(conn, _opts) do
-    if conn.assigns[:current_user] do
-      conn
-    else
-      conn
-      |> put_flash(:error, "You must log in to access this page.")
-      |> maybe_store_return_to()
-      |> redirect(to: Routes.user_session_path(conn, :new))
-      |> halt()
-    end
+    handle_authentication_requirement(conn.assigns[:current_user], conn)
+  end
+
+  defp handle_authentication_requirement(nil, conn) do
+    conn
+    |> put_flash(:error, "You must log in to access this page.")
+    |> maybe_store_return_to()
+    |> redirect(to: Routes.user_session_path(conn, :new))
+    |> halt()
+  end
+
+  defp handle_authentication_requirement(_user, conn) do
+    conn
   end
 
   # Private Functions
@@ -366,17 +374,26 @@ defmodule RaxolWeb.UserAuth do
 
   @doc false
   defp ensure_user_token(conn) do
-    if user_token = get_session(conn, @session_keys.user_token) do
-      {user_token, conn}
-    else
-      conn = fetch_cookies(conn, signed: [@remember_me_cookie])
+    user_token = get_session(conn, @session_keys.user_token)
+    handle_user_token(user_token, conn)
+  end
 
-      if user_token = conn.cookies[@remember_me_cookie] do
-        {user_token, put_session(conn, @session_keys.user_token, user_token)}
-      else
-        {nil, conn}
-      end
-    end
+  defp handle_user_token(nil, conn) do
+    conn = fetch_cookies(conn, signed: [@remember_me_cookie])
+    remember_token = conn.cookies[@remember_me_cookie]
+    handle_remember_me_token(remember_token, conn)
+  end
+
+  defp handle_user_token(user_token, conn) do
+    {user_token, conn}
+  end
+
+  defp handle_remember_me_token(nil, conn) do
+    {nil, conn}
+  end
+
+  defp handle_remember_me_token(user_token, conn) do
+    {user_token, put_session(conn, @session_keys.user_token, user_token)}
   end
 
   @doc false

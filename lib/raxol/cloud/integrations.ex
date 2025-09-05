@@ -327,15 +327,7 @@ defmodule Raxol.Cloud.Integrations do
         desired = Keyword.get(opts, :desired)
 
         # If desired is specified, use that value
-        target =
-          if desired do
-            # Ensure desired is within min/max
-            desired |> max(min) |> min(max)
-          else
-            # This would normally calculate based on metrics
-            # For now, just generate a number between min and max
-            :rand.uniform(max - min + 1) + min - 1
-          end
+        target = calculate_target(desired, min, max)
 
         # Generate a mock current value
         current = :rand.uniform(max - min + 1) + min - 1
@@ -435,12 +427,7 @@ defmodule Raxol.Cloud.Integrations do
 
   defp validate_required_options(opts, required) do
     missing = Enum.filter(required, fn opt -> !Keyword.has_key?(opts, opt) end)
-
-    if Enum.empty?(missing) do
-      :ok
-    else
-      {:error, missing}
-    end
+    handle_validation_result(Enum.empty?(missing), missing)
   end
 
   defp initialize_providers(providers) do
@@ -565,4 +552,21 @@ defmodule Raxol.Cloud.Integrations do
     do: :scaling_down
 
   defp determine_scaling_status(_target, _current), do: :no_change
+
+  # Helper functions to eliminate if statements
+
+  defp calculate_target(nil, min, max) do
+    # This would normally calculate based on metrics
+    # For now, just generate a number between min and max
+    :rand.uniform(max - min + 1) + min - 1
+  end
+
+  defp calculate_target(desired, min, max) do
+    # Ensure desired is within min/max
+    desired |> max(min) |> min(max)
+  end
+
+  defp handle_validation_result(true, _missing), do: :ok
+
+  defp handle_validation_result(false, missing), do: {:error, missing}
 end

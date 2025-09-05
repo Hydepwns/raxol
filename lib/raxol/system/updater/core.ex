@@ -20,18 +20,20 @@ defmodule Raxol.System.Updater.Core do
 
   def check_for_updates do
     settings = State.get_update_settings()
+    handle_update_check(settings.auto_update, settings)
+  end
 
-    if settings.auto_update do
-      with {:ok, %{version: latest_version}} <- Network.fetch_latest_version(),
-           current_version = get_current_version(),
-           true <- latest_version != current_version do
-        {:ok, latest_version}
-      else
-        {:error, reason} -> {:error, reason}
-        false -> {:no_update, get_current_version()}
-      end
+  defp handle_update_check(false, _settings),
+    do: {:error, :auto_update_disabled}
+
+  defp handle_update_check(true, _settings) do
+    with {:ok, %{version: latest_version}} <- Network.fetch_latest_version(),
+         current_version = get_current_version(),
+         true <- latest_version != current_version do
+      {:ok, latest_version}
     else
-      {:error, :auto_update_disabled}
+      {:error, reason} -> {:error, reason}
+      false -> {:no_update, get_current_version()}
     end
   end
 
@@ -72,20 +74,21 @@ defmodule Raxol.System.Updater.Core do
   def rollback_update do
     settings = State.get_update_settings()
     backup_path = Path.join(settings.backup_path, "previous_version")
+    handle_rollback(File.exists?(backup_path), backup_path)
+  end
 
-    if File.exists?(backup_path) do
-      _platform = Validation.get_platform()
+  defp handle_rollback(false, _backup_path), do: {:error, :no_backup_found}
 
-      current_exe =
-        System.get_env("BURRITO_EXECUTABLE_PATH") ||
-          System.argv() |> List.first()
+  defp handle_rollback(true, backup_path) do
+    _platform = Validation.get_platform()
 
-      case File.cp(backup_path, current_exe) do
-        :ok -> {:ok, get_current_version()}
-        {:error, reason} -> {:error, reason}
-      end
-    else
-      {:error, :no_backup_found}
+    current_exe =
+      System.get_env("BURRITO_EXECUTABLE_PATH") ||
+        System.argv() |> List.first()
+
+    case File.cp(backup_path, current_exe) do
+      :ok -> {:ok, get_current_version()}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -123,16 +126,7 @@ defmodule Raxol.System.Updater.Core do
     use_delta = Keyword.get(opts, :use_delta, true)
 
     ErrorHandling.safe_call(fn ->
-      if is_binary(version) do
-        with {:ok, target_version} <- get_update_version(version) do
-          case @version == target_version do
-            false -> do_version_update(target_version, use_delta)
-            true -> {:no_update, @version}
-          end
-        end
-      else
-        {:error, "Not running as a compiled binary"}
-      end
+      handle_self_update(is_binary(version), version, use_delta)
     end)
     |> case do
       {:ok, result} -> result
@@ -252,22 +246,25 @@ defmodule Raxol.System.Updater.Core do
   defp check_updates(state) do
     case Network.fetch_latest_version() do
       {:ok, %{version: latest_version}} ->
-        if latest_version != state.current_version do
-          {:ok,
-           [
-             %{
-               version: latest_version,
-               url:
-                 "https://github.com/#{@github_repo}/releases/tag/v#{latest_version}"
-             }
-           ]}
-        else
-          {:ok, []}
-        end
+        versions_different = latest_version != state.current_version
+        build_update_response(versions_different, latest_version)
 
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  defp build_update_response(false, _latest_version), do: {:ok, []}
+
+  defp build_update_response(true, latest_version) do
+    {:ok,
+     [
+       %{
+         version: latest_version,
+         url:
+           "https://github.com/#{@github_repo}/releases/tag/v#{latest_version}"
+       }
+     ]}
   end
 
   defp perform_install_update(version, state) do
@@ -292,21 +289,35 @@ defmodule Raxol.System.Updater.Core do
   end
 
   defp do_version_update(version, use_delta) do
-    if use_delta do
-      try_delta_update(version)
-    else
-      do_self_update(version)
+    select_update_method(use_delta, version)
+  end
+
+  defp select_update_method(true, version), do: try_delta_update(version)
+  defp select_update_method(false, version), do: do_self_update(version)
+
+  defp get_update_version(version) do
+    handle_version_fetch(is_nil(version), version)
+  end
+
+  defp handle_version_fetch(false, version), do: {:ok, version}
+
+  defp handle_version_fetch(true, _version) do
+    case Network.fetch_latest_version() do
+      {:ok, latest} -> {:ok, latest}
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  defp get_update_version(version) do
-    if is_nil(version) do
-      case Network.fetch_latest_version() do
-        {:ok, latest} -> {:ok, latest}
-        {:error, reason} -> {:error, reason}
+  defp handle_self_update(false, _version, _use_delta) do
+    {:error, "Not running as a compiled binary"}
+  end
+
+  defp handle_self_update(true, version, use_delta) do
+    with {:ok, target_version} <- get_update_version(version) do
+      case @version == target_version do
+        false -> do_version_update(target_version, use_delta)
+        true -> {:no_update, @version}
       end
-    else
-      {:ok, version}
     end
   end
 

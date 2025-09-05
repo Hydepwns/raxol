@@ -302,21 +302,11 @@ defmodule Raxol.UI.Components.Patterns.Compound do
         # Get item context
         item_context = Hooks.use_context(:accordion_item_context)
 
-        if item_context.is_expanded do
-          %{
-            type: :column,
-            attrs: %{
-              id: "accordion-content-#{item_context.value}",
-              style: %{
-                padding: 10,
-                border_top: "1px solid #e0e0e0"
-              }
-            },
-            children: children
-          }
-        else
-          %{type: :text, attrs: %{content: "", style: %{display: :none}}}
-        end
+        render_accordion_content(
+          item_context.is_expanded,
+          item_context.value,
+          children
+        )
       end
     }
   end
@@ -344,28 +334,11 @@ defmodule Raxol.UI.Components.Patterns.Compound do
 
         # Manage open state (controlled vs uncontrolled)
         {is_open, set_is_open} =
-          if controlled_open != nil do
-            {controlled_open,
-             fn new_open -> if on_open_change, do: on_open_change.(new_open) end}
-          else
-            Hooks.use_state(default_open)
-          end
+          manage_dropdown_state(controlled_open, on_open_change, default_open)
 
         # Close dropdown when clicking outside (placeholder implementation)
         Hooks.use_effect(
-          fn ->
-            if is_open do
-              outside_click_handler = fn _event ->
-                set_is_open.(false)
-              end
-
-              register_outside_click_listener(outside_click_handler)
-
-              fn ->
-                unregister_outside_click_listener(outside_click_handler)
-              end
-            end
-          end,
+          fn -> setup_outside_click_handler(is_open, set_is_open) end,
           [is_open]
         )
 
@@ -429,49 +402,11 @@ defmodule Raxol.UI.Components.Patterns.Compound do
         # Get dropdown context
         dropdown_context = Hooks.use_context(:dropdown_context)
 
-        if dropdown_context.is_open do
-          %{
-            type: :column,
-            attrs: %{
-              role: :menu,
-              style: %{
-                position: :absolute,
-                top:
-                  case dropdown_context.placement do
-                    :top -> :auto
-                    _ -> "100%"
-                  end,
-                bottom:
-                  case dropdown_context.placement do
-                    :top -> "100%"
-                    _ -> :auto
-                  end,
-                left:
-                  case dropdown_context.placement do
-                    :left -> :auto
-                    :right -> "100%"
-                    _ -> 0
-                  end,
-                right:
-                  case dropdown_context.placement do
-                    :right -> :auto
-                    :left -> "100%"
-                    _ -> :auto
-                  end,
-                z_index: 1000,
-                background: :white,
-                border: "1px solid #e0e0e0",
-                border_radius: 4,
-                box_shadow: "0 2px 8px rgba(0,0,0,0.15)",
-                padding: 4,
-                min_width: 150
-              }
-            },
-            children: children
-          }
-        else
-          %{type: :text, attrs: %{content: "", style: %{display: :none}}}
-        end
+        render_dropdown_content(
+          dropdown_context.is_open,
+          dropdown_context.placement,
+          children
+        )
       end
     }
   end
@@ -497,14 +432,11 @@ defmodule Raxol.UI.Components.Patterns.Compound do
         dropdown_context = Hooks.use_context(:dropdown_context)
 
         handle_select =
-          Hooks.use_callback(
-            fn ->
-              if not disabled do
-                if on_select, do: on_select.(value)
-                dropdown_context.close.()
-              end
-            end,
-            [disabled, on_select, value]
+          create_dropdown_item_handler(
+            disabled,
+            on_select,
+            value,
+            dropdown_context
           )
 
         %{
@@ -519,10 +451,10 @@ defmodule Raxol.UI.Components.Patterns.Compound do
               text_align: :left,
               background: :transparent,
               border: :none,
-              cursor: if(disabled, do: :not_allowed, else: :pointer),
-              opacity: if(disabled, do: 0.5, else: 1.0),
+              cursor: get_cursor_style(disabled),
+              opacity: get_opacity_style(disabled),
               hover: %{
-                background: if(disabled, do: :transparent, else: :primary_light)
+                background: get_hover_background(disabled)
               }
             }
           },
@@ -576,14 +508,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
         children = Map.get(props, :children, [])
 
         {active_tab, set_active_tab} =
-          if controlled_value != nil do
-            {controlled_value,
-             fn new_value ->
-               if on_value_change, do: on_value_change.(new_value)
-             end}
-          else
-            Hooks.use_state(default_value)
-          end
+          manage_tabs_state(controlled_value, on_value_change, default_value)
 
         tabs_context = %{
           active_tab: active_tab,
@@ -657,56 +582,47 @@ defmodule Raxol.UI.Components.Patterns.Compound do
         disabled = Map.get(props, :disabled, false)
         children = Map.get(props, :children, [])
 
-        if value do
-          # Get tabs context
-          tabs_context = Hooks.use_context(:tabs_context)
+        case value do
+          nil ->
+            render_tabs_trigger_error()
 
-          is_active = tabs_context.active_tab == value
+          _ ->
+            # Get tabs context
+            tabs_context = Hooks.use_context(:tabs_context)
+            is_active = tabs_context.active_tab == value
 
-          handle_click =
-            Hooks.use_callback(
-              fn ->
-                if not disabled do
-                  tabs_context.set_active_tab.(value)
-                end
-              end,
-              [disabled, value]
-            )
+            handle_click =
+              create_tabs_click_handler(disabled, value, tabs_context)
 
-          %{
-            type: :button,
-            attrs: %{
-              role: :tab,
-              "aria-selected": is_active,
-              "aria-controls": "tab-panel-#{value}",
-              disabled: disabled,
-              on_click: handle_click,
-              style: %{
-                padding: 12,
-                background: if(is_active, do: :white, else: :transparent),
-                border: :none,
-                border_bottom:
-                  if(is_active and tabs_context.orientation == :horizontal,
-                    do: "2px solid #007acc",
-                    else: :none
-                  ),
-                border_right:
-                  if(is_active and tabs_context.orientation == :vertical,
-                    do: "2px solid #007acc",
-                    else: :none
-                  ),
-                cursor: if(disabled, do: :not_allowed, else: :pointer),
-                opacity: if(disabled, do: 0.5, else: 1.0),
-                font_weight: if(is_active, do: :bold, else: :normal)
-              }
-            },
-            children: children
-          }
-        else
-          %{
-            type: :text,
-            attrs: %{content: "Error: tabs_trigger requires :value prop"}
-          }
+            %{
+              type: :button,
+              attrs: %{
+                role: :tab,
+                "aria-selected": is_active,
+                "aria-controls": "tab-panel-#{value}",
+                disabled: disabled,
+                on_click: handle_click,
+                style: %{
+                  padding: 12,
+                  background: if(is_active, do: :white, else: :transparent),
+                  border: :none,
+                  border_bottom:
+                    if(is_active and tabs_context.orientation == :horizontal,
+                      do: "2px solid #007acc",
+                      else: :none
+                    ),
+                  border_right:
+                    if(is_active and tabs_context.orientation == :vertical,
+                      do: "2px solid #007acc",
+                      else: :none
+                    ),
+                  cursor: if(disabled, do: :not_allowed, else: :pointer),
+                  opacity: if(disabled, do: 0.5, else: 1.0),
+                  font_weight: if(is_active, do: :bold, else: :normal)
+                }
+              },
+              children: children
+            }
         end
       end
     }
@@ -725,39 +641,246 @@ defmodule Raxol.UI.Components.Patterns.Compound do
         value = Map.get(props, :value)
         children = Map.get(props, :children, [])
 
-        if value do
-          # Get tabs context
-          tabs_context = Hooks.use_context(:tabs_context)
-
-          is_active = tabs_context.active_tab == value
-
-          if is_active do
-            %{
-              type: :column,
-              attrs: %{
-                role: :tabpanel,
-                id: "tab-panel-#{value}",
-                "aria-labelledby": "tab-#{value}",
-                style: %{
-                  padding: 16
-                }
-              },
-              children: children
-            }
-          else
-            %{type: :text, attrs: %{content: "", style: %{display: :none}}}
-          end
-        else
-          %{
-            type: :text,
-            attrs: %{content: "Error: tabs_content requires :value prop"}
-          }
+        case value do
+          nil -> render_tabs_content_error()
+          _ -> render_tabs_content_panel(value, children)
         end
       end
     }
   end
 
   # Helper functions (placeholders)
+
+  defp manage_dropdown_state(controlled_open, on_open_change, default_open)
+       when controlled_open != nil do
+    {controlled_open, create_controlled_change_handler(on_open_change)}
+  end
+
+  defp manage_dropdown_state(_controlled_open, _on_open_change, default_open) do
+    Hooks.use_state(default_open)
+  end
+
+  defp create_controlled_change_handler(nil), do: fn _new_open -> :ok end
+
+  defp create_controlled_change_handler(on_open_change) do
+    fn new_open -> on_open_change.(new_open) end
+  end
+
+  defp setup_outside_click_handler(false, _set_is_open), do: nil
+
+  defp setup_outside_click_handler(true, set_is_open) do
+    outside_click_handler = fn _event -> set_is_open.(false) end
+    register_outside_click_listener(outside_click_handler)
+    fn -> unregister_outside_click_listener(outside_click_handler) end
+  end
+
+  defp render_accordion_content(false, _value, _children) do
+    %{type: :text, attrs: %{content: "", style: %{display: :none}}}
+  end
+
+  defp render_accordion_content(true, value, children) do
+    %{
+      type: :column,
+      attrs: %{
+        id: "accordion-content-#{value}",
+        style: %{
+          padding: 10,
+          border_top: "1px solid #e0e0e0"
+        }
+      },
+      children: children
+    }
+  end
+
+  defp render_dropdown_content(false, _placement, _children) do
+    %{type: :text, attrs: %{content: "", style: %{display: :none}}}
+  end
+
+  defp render_dropdown_content(true, placement, children) do
+    %{
+      type: :column,
+      attrs: %{
+        role: :menu,
+        style: %{
+          position: :absolute,
+          top: get_dropdown_position(:top, placement),
+          bottom: get_dropdown_position(:bottom, placement),
+          left: get_dropdown_position(:left, placement),
+          right: get_dropdown_position(:right, placement),
+          z_index: 1000,
+          background: :white,
+          border: "1px solid #e0e0e0",
+          border_radius: 4,
+          box_shadow: "0 2px 8px rgba(0,0,0,0.15)",
+          padding: 4,
+          min_width: 150
+        }
+      },
+      children: children
+    }
+  end
+
+  defp get_dropdown_position(:top, :top), do: :auto
+  defp get_dropdown_position(:top, _), do: "100%"
+  defp get_dropdown_position(:bottom, :top), do: "100%"
+  defp get_dropdown_position(:bottom, _), do: :auto
+  defp get_dropdown_position(:left, :left), do: :auto
+  defp get_dropdown_position(:left, :right), do: "100%"
+  defp get_dropdown_position(:left, _), do: 0
+  defp get_dropdown_position(:right, :right), do: :auto
+  defp get_dropdown_position(:right, :left), do: "100%"
+  defp get_dropdown_position(:right, _), do: :auto
+
+  defp create_dropdown_item_handler(
+         disabled,
+         on_select,
+         value,
+         dropdown_context
+       ) do
+    Hooks.use_callback(
+      fn ->
+        handle_dropdown_item_select(
+          disabled,
+          on_select,
+          value,
+          dropdown_context
+        )
+      end,
+      [disabled, on_select, value]
+    )
+  end
+
+  defp handle_dropdown_item_select(true, _on_select, _value, _dropdown_context),
+    do: :ok
+
+  defp handle_dropdown_item_select(false, on_select, value, dropdown_context) do
+    execute_on_select(on_select, value)
+    dropdown_context.close.()
+  end
+
+  defp execute_on_select(nil, _value), do: :ok
+  defp execute_on_select(on_select, value), do: on_select.(value)
+
+  defp manage_tabs_state(controlled_value, on_value_change, default_value)
+       when controlled_value != nil do
+    {controlled_value, create_tabs_change_handler(on_value_change)}
+  end
+
+  defp manage_tabs_state(_controlled_value, _on_value_change, default_value) do
+    Hooks.use_state(default_value)
+  end
+
+  defp create_tabs_change_handler(nil), do: fn _new_value -> :ok end
+
+  defp create_tabs_change_handler(on_value_change) do
+    fn new_value -> on_value_change.(new_value) end
+  end
+
+  defp render_tabs_trigger_error do
+    %{
+      type: :text,
+      attrs: %{content: "Error: tabs_trigger requires :value prop"}
+    }
+  end
+
+  defp create_tabs_click_handler(disabled, value, tabs_context) do
+    Hooks.use_callback(
+      fn -> handle_tabs_click(disabled, value, tabs_context) end,
+      [disabled, value]
+    )
+  end
+
+  defp handle_tabs_click(true, _value, _tabs_context), do: :ok
+
+  defp handle_tabs_click(false, value, tabs_context) do
+    tabs_context.set_active_tab.(value)
+  end
+
+  defp get_cursor_style(true), do: :not_allowed
+  defp get_cursor_style(false), do: :pointer
+
+  defp get_opacity_style(true), do: 0.5
+  defp get_opacity_style(false), do: 1.0
+
+  defp get_hover_background(true), do: :transparent
+  defp get_hover_background(false), do: :primary_light
+
+  defp render_tabs_trigger_content(
+         is_active,
+         disabled,
+         tabs_context,
+         handle_click,
+         children,
+         value
+       ) do
+    %{
+      type: :button,
+      attrs: %{
+        role: :tab,
+        "aria-selected": is_active,
+        "aria-controls": "tab-panel-#{value}",
+        disabled: disabled,
+        on_click: handle_click,
+        style: %{
+          padding: 12,
+          background: get_tab_background(is_active),
+          border: :none,
+          border_bottom:
+            get_tab_border_bottom(is_active, tabs_context.orientation),
+          border_right:
+            get_tab_border_right(is_active, tabs_context.orientation),
+          cursor: get_cursor_style(disabled),
+          opacity: get_opacity_style(disabled),
+          font_weight: get_font_weight(is_active)
+        }
+      },
+      children: children
+    }
+  end
+
+  defp get_tab_background(true), do: :white
+  defp get_tab_background(false), do: :transparent
+
+  defp get_tab_border_bottom(true, :horizontal), do: "2px solid #007acc"
+  defp get_tab_border_bottom(_, _), do: :none
+
+  defp get_tab_border_right(true, :vertical), do: "2px solid #007acc"
+  defp get_tab_border_right(_, _), do: :none
+
+  defp get_font_weight(true), do: :bold
+  defp get_font_weight(false), do: :normal
+
+  defp render_tabs_content_error do
+    %{
+      type: :text,
+      attrs: %{content: "Error: tabs_content requires :value prop"}
+    }
+  end
+
+  defp render_tabs_content_panel(value, children) do
+    tabs_context = Hooks.use_context(:tabs_context)
+    is_active = tabs_context.active_tab == value
+    render_tabs_panel_if_active(is_active, value, children)
+  end
+
+  defp render_tabs_panel_if_active(false, _value, _children) do
+    %{type: :text, attrs: %{content: "", style: %{display: :none}}}
+  end
+
+  defp render_tabs_panel_if_active(true, value, children) do
+    %{
+      type: :column,
+      attrs: %{
+        role: :tabpanel,
+        id: "tab-panel-#{value}",
+        "aria-labelledby": "tab-#{value}",
+        style: %{
+          padding: 16
+        }
+      },
+      children: children
+    }
+  end
 
   defp register_outside_click_listener(_handler) do
     # This would integrate with the actual event system

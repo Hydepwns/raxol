@@ -16,17 +16,18 @@ defmodule RaxolWeb.UserRegistrationController do
     changeset =
       Raxol.Auth.User.registration_changeset(%Raxol.Auth.User{}, user_params)
 
-    if changeset.valid? do
-      {:ok, user} = Raxol.Repo.insert(changeset)
+    case changeset.valid? do
+      true ->
+        {:ok, user} = Raxol.Repo.insert(changeset)
 
-      conn
-      |> UserAuth.log_in_user(user)
-      |> put_flash(:info, "User created successfully.")
-      |> redirect(to: "/")
-    else
-      conn
-      |> put_flash(:error, "Registration failed.")
-      |> render(:new, changeset: changeset)
+        conn
+        |> UserAuth.log_in_user(user)
+        |> put_flash(:info, "User created successfully.")
+        |> redirect(to: "/")
+      false ->
+        conn
+        |> put_flash(:error, "Registration failed.")
+        |> render(:new, changeset: changeset)
     end
   end
 end

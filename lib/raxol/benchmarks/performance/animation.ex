@@ -62,16 +62,19 @@ defmodule Raxol.Benchmarks.Performance.Animation do
 
   defp measure_frames_until(start_time, duration, frame_count) do
     current_time = System.monotonic_time(:millisecond)
+    within_duration = current_time - start_time < duration
 
-    if current_time - start_time < duration do
-      # Simulate rendering a frame
-      component = RenderingBenchmark.generate_test_component(:simple)
-      RenderingBenchmark.render_component(component)
+    case within_duration do
+      true ->
+        # Simulate rendering a frame
+        component = RenderingBenchmark.generate_test_component(:simple)
+        RenderingBenchmark.render_component(component)
 
-      # Recursive call to continue animation
-      measure_frames_until(start_time, duration, frame_count + 1)
-    else
-      frame_count
+        # Recursive call to continue animation
+        measure_frames_until(start_time, duration, frame_count + 1)
+
+      false ->
+        frame_count
     end
   end
 
@@ -100,31 +103,34 @@ defmodule Raxol.Benchmarks.Performance.Animation do
 
   defp capture_frame_times(start_time, end_time, frame_duration, frame_times) do
     current_time = System.monotonic_time(:millisecond)
+    before_end = current_time < end_time
 
-    if current_time < end_time do
-      # Record time before frame
-      frame_start = System.monotonic_time(:millisecond)
+    case before_end do
+      true ->
+        # Record time before frame
+        frame_start = System.monotonic_time(:millisecond)
 
-      # Simulate rendering a frame
-      component = RenderingBenchmark.generate_test_component(:simple)
-      RenderingBenchmark.render_component(component)
+        # Simulate rendering a frame
+        component = RenderingBenchmark.generate_test_component(:simple)
+        RenderingBenchmark.render_component(component)
 
-      # Calculate actual frame time
-      actual_time = System.monotonic_time(:millisecond) - frame_start
+        # Calculate actual frame time
+        actual_time = System.monotonic_time(:millisecond) - frame_start
 
-      # Sleep remaining time
-      remaining = max(0, frame_duration - actual_time)
-      if remaining > 0, do: Process.sleep(trunc(remaining))
+        # Sleep remaining time
+        remaining = max(0, frame_duration - actual_time)
+        sleep_if_needed(remaining > 0, remaining)
 
-      # Record total frame time
-      total_frame_time = System.monotonic_time(:millisecond) - frame_start
+        # Record total frame time
+        total_frame_time = System.monotonic_time(:millisecond) - frame_start
 
-      # Recursive call to continue animation
-      capture_frame_times(start_time, end_time, frame_duration, [
-        total_frame_time | frame_times
-      ])
-    else
-      frame_times
+        # Recursive call to continue animation
+        capture_frame_times(start_time, end_time, frame_duration, [
+          total_frame_time | frame_times
+        ])
+
+      false ->
+        frame_times
     end
   end
 
@@ -156,18 +162,21 @@ defmodule Raxol.Benchmarks.Performance.Animation do
          dropped_count
        ) do
     current_time = System.monotonic_time(:millisecond)
+    at_or_past_end = current_time >= end_time
 
-    if current_time >= end_time do
-      {frame_count, dropped_count}
-    else
-      handle_frame_timing(
-        start_time,
-        end_time,
-        frame_duration,
-        frame_count,
-        dropped_count,
-        current_time
-      )
+    case at_or_past_end do
+      true ->
+        {frame_count, dropped_count}
+
+      false ->
+        handle_frame_timing(
+          start_time,
+          end_time,
+          frame_duration,
+          frame_count,
+          dropped_count,
+          current_time
+        )
     end
   end
 
@@ -182,25 +191,27 @@ defmodule Raxol.Benchmarks.Performance.Animation do
     target_time = start_time + frame_count * frame_duration
     late = current_time > target_time + frame_duration
 
-    if late do
-      handle_late_frame(
-        start_time,
-        end_time,
-        frame_duration,
-        frame_count,
-        dropped_count,
-        current_time,
-        target_time
-      )
-    else
-      render_and_continue(
-        start_time,
-        end_time,
-        frame_duration,
-        frame_count,
-        dropped_count,
-        target_time
-      )
+    case late do
+      true ->
+        handle_late_frame(
+          start_time,
+          end_time,
+          frame_duration,
+          frame_count,
+          dropped_count,
+          current_time,
+          target_time
+        )
+
+      false ->
+        render_and_continue(
+          start_time,
+          end_time,
+          frame_duration,
+          frame_count,
+          dropped_count,
+          target_time
+        )
     end
   end
 
@@ -245,7 +256,7 @@ defmodule Raxol.Benchmarks.Performance.Animation do
         target_time + frame_duration - System.monotonic_time(:millisecond)
       )
 
-    if remaining > 0, do: Process.sleep(trunc(remaining))
+    sleep_if_needed(remaining > 0, remaining)
 
     count_timely_frames(
       start_time,
@@ -288,16 +299,22 @@ defmodule Raxol.Benchmarks.Performance.Animation do
   end
 
   defp run_animation_until(end_time) do
-    if System.monotonic_time(:millisecond) < end_time do
-      # Simulate rendering animation frame
-      component = RenderingBenchmark.generate_test_component(:medium)
-      RenderingBenchmark.render_component(component)
+    before_end = System.monotonic_time(:millisecond) < end_time
 
-      # Small sleep to prevent CPU overload
-      Process.sleep(16)
+    case before_end do
+      true ->
+        # Simulate rendering animation frame
+        component = RenderingBenchmark.generate_test_component(:medium)
+        RenderingBenchmark.render_component(component)
 
-      # Continue animation
-      run_animation_until(end_time)
+        # Small sleep to prevent CPU overload
+        Process.sleep(16)
+
+        # Continue animation
+        run_animation_until(end_time)
+
+      false ->
+        :ok
     end
   end
 
@@ -311,4 +328,9 @@ defmodule Raxol.Benchmarks.Performance.Animation do
     (consistency_score * 0.7 + dropped_score * 0.3)
     |> Float.round(1)
   end
+
+  ## Helper Functions for Pattern Matching
+
+  defp sleep_if_needed(true, remaining), do: Process.sleep(trunc(remaining))
+  defp sleep_if_needed(false, _remaining), do: :ok
 end

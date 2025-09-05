@@ -267,8 +267,11 @@ defmodule Raxol.Svelte.Reactive do
         new_state = execute_all_reactive_statements(state)
 
         # Check if we have the reactive execution function
-        if function_exported?(__MODULE__, :execute_reactive_statements, 1) do
-          execute_reactive_statements(new_state)
+        case function_exported?(__MODULE__, :execute_reactive_statements, 1) do
+          true ->
+            execute_reactive_statements(new_state)
+          false ->
+            :ok
         end
 
         new_state

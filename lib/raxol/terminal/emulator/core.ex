@@ -76,42 +76,45 @@ defmodule Raxol.Terminal.Emulator.Core do
   Updated emulator with cursor in visible region.
   """
   def ensure_cursor_in_visible_region(emulator) do
-    # If cursor position was handled by autowrap, don't override it
-    if Map.get(emulator, :cursor_handled_by_autowrap, false) do
-      # DEBUG: ensure_cursor_in_visible_region - cursor_handled_by_autowrap is true, skipping cursor adjustment
-
-      # Remove the flag and return the emulator without further cursor adjustment
-      %{emulator | cursor_handled_by_autowrap: false}
-    else
-      # DEBUG: ensure_cursor_in_visible_region - cursor_handled_by_autowrap is false, checking cursor position
-
-      active_buffer = get_screen_buffer(emulator)
-      buffer_height = ScreenBuffer.get_height(active_buffer)
-
-      {_, cursor_y} =
-        case emulator.cursor do
-          cursor when is_pid(cursor) ->
-            Manager.get_position(cursor)
-
-          cursor when is_map(cursor) ->
-            Manager.get_position(cursor)
-
-          _ ->
-            {0, 0}
-        end
-
-      # DEBUG: ensure_cursor_in_visible_region - cursor_y: #{cursor_y}, buffer_height: #{buffer_height}
-
-      if cursor_y >= buffer_height do
-        # Scroll until the cursor is in the visible region
-        ensure_cursor_in_visible_region(
-          Raxol.Terminal.Emulator.maybe_scroll(emulator)
-        )
-      else
-        emulator
-      end
-    end
+    cursor_handled = Map.get(emulator, :cursor_handled_by_autowrap, false)
+    handle_cursor_adjustment(cursor_handled, emulator)
   end
+
+  defp handle_cursor_adjustment(true, emulator) do
+    # DEBUG: ensure_cursor_in_visible_region - cursor_handled_by_autowrap is true, skipping cursor adjustment
+    # Remove the flag and return the emulator without further cursor adjustment
+    %{emulator | cursor_handled_by_autowrap: false}
+  end
+
+  defp handle_cursor_adjustment(false, emulator) do
+    # DEBUG: ensure_cursor_in_visible_region - cursor_handled_by_autowrap is false, checking cursor position
+    active_buffer = get_screen_buffer(emulator)
+    buffer_height = ScreenBuffer.get_height(active_buffer)
+
+    {_, cursor_y} =
+      case emulator.cursor do
+        cursor when is_pid(cursor) ->
+          Manager.get_position(cursor)
+
+        cursor when is_map(cursor) ->
+          Manager.get_position(cursor)
+
+        _ ->
+          {0, 0}
+      end
+
+    # DEBUG: ensure_cursor_in_visible_region - cursor_y: #{cursor_y}, buffer_height: #{buffer_height}
+    handle_cursor_position_check(cursor_y >= buffer_height, emulator)
+  end
+
+  defp handle_cursor_position_check(true, emulator) do
+    # Scroll until the cursor is in the visible region
+    ensure_cursor_in_visible_region(
+      Raxol.Terminal.Emulator.maybe_scroll(emulator)
+    )
+  end
+
+  defp handle_cursor_position_check(false, emulator), do: emulator
 
   @doc """
   Checks if scrolling is needed and performs it if necessary.
@@ -127,15 +130,15 @@ defmodule Raxol.Terminal.Emulator.Core do
   @spec maybe_scroll(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def maybe_scroll(%Raxol.Terminal.Emulator{} = emulator) do
     {x, y} = Manager.get_position(emulator.cursor)
-
     log_scroll_debug(x, y, emulator.height)
+    handle_scroll_decision(y >= emulator.height, emulator)
+  end
 
-    if y >= emulator.height do
-      perform_scroll(emulator)
-    else
-      log_no_scroll_needed()
-      emulator
-    end
+  defp handle_scroll_decision(true, emulator), do: perform_scroll(emulator)
+
+  defp handle_scroll_decision(false, emulator) do
+    log_no_scroll_needed()
+    emulator
   end
 
   @doc """
@@ -203,20 +206,11 @@ defmodule Raxol.Terminal.Emulator.Core do
   def resize(%Raxol.Terminal.Emulator{} = emulator, width, height)
       when width > 0 and height > 0 do
     # Resize main screen buffer
-    main_buffer =
-      if emulator.main_screen_buffer do
-        ScreenBuffer.resize(emulator.main_screen_buffer, width, height)
-      else
-        ScreenBuffer.new(width, height)
-      end
+    main_buffer = resize_main_buffer(emulator.main_screen_buffer, width, height)
 
-    # Resize alternate screen buffer
+    # Resize alternate screen buffer  
     alternate_buffer =
-      if emulator.alternate_screen_buffer do
-        ScreenBuffer.resize(emulator.alternate_screen_buffer, width, height)
-      else
-        ScreenBuffer.new(width, height)
-      end
+      resize_alternate_buffer(emulator.alternate_screen_buffer, width, height)
 
     # Update emulator with new dimensions and buffers
     %{
@@ -226,6 +220,20 @@ defmodule Raxol.Terminal.Emulator.Core do
         main_screen_buffer: main_buffer,
         alternate_screen_buffer: alternate_buffer
     }
+  end
+
+  defp resize_main_buffer(nil, width, height),
+    do: ScreenBuffer.new(width, height)
+
+  defp resize_main_buffer(buffer, width, height) do
+    ScreenBuffer.resize(buffer, width, height)
+  end
+
+  defp resize_alternate_buffer(nil, width, height),
+    do: ScreenBuffer.new(width, height)
+
+  defp resize_alternate_buffer(buffer, width, height) do
+    ScreenBuffer.resize(buffer, width, height)
   end
 
   @doc """
@@ -320,55 +328,80 @@ defmodule Raxol.Terminal.Emulator.Core do
     emulator_with_updated_buffer =
       update_active_buffer(emulator, updated_buffer)
 
-    # If cursor position was handled by autowrap, don't override it
-    if Map.get(emulator, :cursor_handled_by_autowrap, false) do
-      # DEBUG: perform_scroll - cursor_handled_by_autowrap is true, skipping cursor adjustment
+    # Handle cursor position based on autowrap state
+    cursor_handled = Map.get(emulator, :cursor_handled_by_autowrap, false)
 
-      emulator_with_updated_buffer
-    else
-      # Update the cursor position to stay within the visible region
-      {cursor_x, cursor_y} =
-        Manager.get_position(emulator.cursor)
+    handle_cursor_update_after_scroll(
+      cursor_handled,
+      emulator_with_updated_buffer,
+      emulator
+    )
+  end
 
-      # Move cursor up by 1 line, but not below 0
-      new_cursor_y = max(0, cursor_y - 1)
+  defp handle_cursor_update_after_scroll(
+         true,
+         emulator_with_updated_buffer,
+         _original_emulator
+       ) do
+    # DEBUG: perform_scroll - cursor_handled_by_autowrap is true, skipping cursor adjustment
+    emulator_with_updated_buffer
+  end
 
-      # Update the cursor position
-      updated_cursor =
-        Manager.set_position(
-          emulator.cursor,
-          {cursor_x, new_cursor_y}
-        )
+  defp handle_cursor_update_after_scroll(
+         false,
+         emulator_with_updated_buffer,
+         original_emulator
+       ) do
+    # Update the cursor position to stay within the visible region
+    {cursor_x, cursor_y} = Manager.get_position(original_emulator.cursor)
 
-      %{emulator_with_updated_buffer | cursor: updated_cursor}
-    end
+    # Move cursor up by 1 line, but not below 0
+    new_cursor_y = max(0, cursor_y - 1)
+
+    # Update the cursor position
+    updated_cursor =
+      Manager.set_position(original_emulator.cursor, {cursor_x, new_cursor_y})
+
+    %{emulator_with_updated_buffer | cursor: updated_cursor}
   end
 
   defp update_scrollback_buffer(scrolled_buffer, scrolled_lines) do
-    if scrolled_lines && length(scrolled_lines) > 0 do
-      # Filter out lines that don't contain meaningful content
-      meaningful_lines = Enum.filter(scrolled_lines, &has_meaningful_content?/1)
+    has_lines = scrolled_lines && length(scrolled_lines) > 0
+    handle_scrollback_update(has_lines, scrolled_buffer, scrolled_lines)
+  end
 
-      if length(meaningful_lines) > 0 do
-        Raxol.Core.Runtime.Log.debug(
-          "[maybe_scroll] Adding #{length(meaningful_lines)} meaningful lines to scrollback"
-        )
+  defp handle_scrollback_update(false, scrolled_buffer, _scrolled_lines) do
+    Raxol.Core.Runtime.Log.debug("[maybe_scroll] No scrolled_lines to add")
+    scrolled_buffer
+  end
 
-        Scrollback.add_lines(
-          scrolled_buffer,
-          meaningful_lines
-        )
-      else
-        Raxol.Core.Runtime.Log.debug(
-          "[maybe_scroll] No meaningful lines to add to scrollback"
-        )
+  defp handle_scrollback_update(true, scrolled_buffer, scrolled_lines) do
+    # Filter out lines that don't contain meaningful content
+    meaningful_lines = Enum.filter(scrolled_lines, &has_meaningful_content?/1)
 
-        scrolled_buffer
-      end
-    else
-      Raxol.Core.Runtime.Log.debug("[maybe_scroll] No scrolled_lines to add")
-      scrolled_buffer
-    end
+    has_meaningful = length(meaningful_lines) > 0
+
+    handle_meaningful_lines_update(
+      has_meaningful,
+      scrolled_buffer,
+      meaningful_lines
+    )
+  end
+
+  defp handle_meaningful_lines_update(false, scrolled_buffer, _meaningful_lines) do
+    Raxol.Core.Runtime.Log.debug(
+      "[maybe_scroll] No meaningful lines to add to scrollback"
+    )
+
+    scrolled_buffer
+  end
+
+  defp handle_meaningful_lines_update(true, scrolled_buffer, meaningful_lines) do
+    Raxol.Core.Runtime.Log.debug(
+      "[maybe_scroll] Adding #{length(meaningful_lines)} meaningful lines to scrollback"
+    )
+
+    Scrollback.add_lines(scrolled_buffer, meaningful_lines)
   end
 
   defp has_meaningful_content?(line) do
@@ -401,12 +434,11 @@ defmodule Raxol.Terminal.Emulator.Core do
   end
 
   defp get_cursor_struct(%Raxol.Terminal.Emulator{cursor: cursor}) do
-    if is_pid(cursor) do
-      GenServer.call(cursor, :get_state)
-    else
-      cursor
-    end
+    handle_cursor_type(is_pid(cursor), cursor)
   end
+
+  defp handle_cursor_type(true, cursor), do: GenServer.call(cursor, :get_state)
+  defp handle_cursor_type(false, cursor), do: cursor
 
   defp log_scroll_debug(x, y, height) do
     Raxol.Core.Runtime.Log.debug(

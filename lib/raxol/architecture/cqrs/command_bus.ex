@@ -316,13 +316,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
 
   @impl GenServer
   def handle_call(:get_metrics, _from, state) do
-    metrics =
-      if state.config.enable_metrics do
-        get_metrics_from_collector(state.metrics_collector)
-      else
-        %{metrics_disabled: true}
-      end
-
+    metrics = get_metrics_if_enabled(state.config, state.metrics_collector)
     {:reply, metrics, state}
   end
 
@@ -466,15 +460,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     case execute_middleware_chain(middleware_stack, context, state) do
       {:ok, updated_context} ->
         # Execute the actual command handler
-        if handler_module do
-          execute_command_handler(
-            handler_module,
-            updated_context.command,
-            updated_context
-          )
-        else
-          {:error, :no_handler_registered}
-        end
+        execute_handler_if_present(handler_module, updated_context)
 
       {:error, reason} ->
         {:error, reason}
@@ -604,19 +590,12 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
       :failure ->
         new_failures = current.failures + 1
 
-        # Circuit breaker threshold
-        if new_failures >= 5 do
-          Map.put(circuit_breakers, handler_module, %{
-            failures: new_failures,
-            status: :open,
-            opened_at: System.monotonic_time(:millisecond)
-          })
-        else
-          Map.put(circuit_breakers, handler_module, %{
-            current
-            | failures: new_failures
-          })
-        end
+        update_circuit_breaker_on_failure(
+          circuit_breakers,
+          handler_module,
+          current,
+          new_failures
+        )
     end
   end
 
@@ -672,51 +651,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
         ready_commands,
         %{state | retry_queue: remaining_queue},
         fn retry_entry, acc_state ->
-          if retry_entry.attempts < acc_state.config.max_retries do
-            # Retry the command
-            case execute_command_internal(retry_entry.command, [], acc_state) do
-              {:ok, _result, new_state} ->
-                Logger.info(
-                  "Command retry succeeded: #{inspect(retry_entry.command.__struct__)}"
-                )
-
-                new_state
-
-              {:error, reason, new_state} ->
-                # Increment attempts and re-queue or move to dead letter
-                updated_entry = %{
-                  retry_entry
-                  | attempts: retry_entry.attempts + 1,
-                    next_retry_at:
-                      calculate_next_retry_time(
-                        retry_entry.attempts + 1,
-                        acc_state.config.retry_backoff_base
-                      )
-                }
-
-                if updated_entry.attempts >= acc_state.config.max_retries do
-                  # Move to dead letter queue
-                  add_to_dead_letter_queue(
-                    new_state,
-                    retry_entry.command,
-                    reason
-                  )
-                else
-                  # Re-queue for retry
-                  new_retry_queue =
-                    :queue.in(updated_entry, new_state.retry_queue)
-
-                  %{new_state | retry_queue: new_retry_queue}
-                end
-            end
-          else
-            # Max retries exceeded, move to dead letter queue
-            add_to_dead_letter_queue(
-              acc_state,
-              retry_entry.command,
-              :max_retries_exceeded
-            )
-          end
+          process_retry_entry(retry_entry, acc_state)
         end
       )
 
@@ -730,16 +665,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
   defp extract_ready_commands_acc(queue, now, ready, remaining) do
     case :queue.out(queue) do
       {{:value, entry}, rest} ->
-        if entry.next_retry_at <= now do
-          extract_ready_commands_acc(rest, now, [entry | ready], remaining)
-        else
-          extract_ready_commands_acc(
-            rest,
-            now,
-            ready,
-            :queue.in(entry, remaining)
-          )
-        end
+        process_queue_entry(entry, rest, now, ready, remaining)
 
       {:empty, _} ->
         {ready, remaining}
@@ -767,9 +693,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     removed_count =
       map_size(state.dead_letter_queue) - map_size(new_dead_letter_queue)
 
-    if removed_count > 0 do
-      Logger.info("Cleaned up #{removed_count} expired dead letter commands")
-    end
+    log_cleanup_if_needed(removed_count)
 
     %{state | dead_letter_queue: new_dead_letter_queue}
   end
@@ -781,11 +705,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     new_circuit_breakers =
       state.circuit_breakers
       |> Enum.map(fn {handler, breaker} ->
-        if breaker.status == :open and now - breaker.opened_at >= timeout_ms do
-          {handler, %{breaker | status: :half_open}}
-        else
-          {handler, breaker}
-        end
+        reset_circuit_breaker_if_expired(handler, breaker, now, timeout_ms)
       end)
       |> Map.new()
 
@@ -794,84 +714,95 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
 
   ## Helper Functions
 
-  defp init_metrics_collector(config) do
-    if config.enable_metrics do
-      %{
-        enabled: true,
-        command_counts: %{},
-        execution_times: [],
-        success_rate: 0.0,
-        last_reset: System.monotonic_time(:millisecond)
-      }
-    else
-      %{enabled: false}
-    end
+  defp init_metrics_collector(%{enable_metrics: true}) do
+    %{
+      enabled: true,
+      command_counts: %{},
+      execution_times: [],
+      success_rate: 0.0,
+      last_reset: System.monotonic_time(:millisecond)
+    }
   end
 
-  defp init_audit_logger(config) do
-    if config.enable_auditing do
-      %{
-        enabled: true,
-        log_file: "log/command_audit.log",
-        buffer: []
-      }
-    else
-      %{enabled: false}
-    end
+  defp init_metrics_collector(_config) do
+    %{enabled: false}
   end
 
-  defp update_metrics(state, command, result, execution_time) do
-    if state.metrics_collector.enabled do
-      command_type = command.__struct__
-
-      # Update command counts
-      current_count =
-        Map.get(state.metrics_collector.command_counts, command_type, %{
-          success: 0,
-          failure: 0
-        })
-
-      new_count =
-        case result do
-          :success -> %{current_count | success: current_count.success + 1}
-          :failure -> %{current_count | failure: current_count.failure + 1}
-        end
-
-      new_command_counts =
-        Map.put(state.metrics_collector.command_counts, command_type, new_count)
-
-      # Update execution times (keep last 100)
-      new_execution_times = [
-        execution_time | Enum.take(state.metrics_collector.execution_times, 99)
-      ]
-
-      new_metrics_collector = %{
-        state.metrics_collector
-        | command_counts: new_command_counts,
-          execution_times: new_execution_times
-      }
-
-      %{state | metrics_collector: new_metrics_collector}
-    else
-      state
-    end
+  defp init_audit_logger(%{enable_auditing: true}) do
+    %{
+      enabled: true,
+      log_file: "log/command_audit.log",
+      buffer: []
+    }
   end
 
-  defp audit_command(state, command, result, execution_time) do
-    if state.audit_logger.enabled do
-      audit_entry = %{
-        timestamp: System.system_time(:millisecond),
-        command_id: generate_command_id(command),
-        command_type: command.__struct__,
-        result: result,
-        execution_time_us: execution_time,
-        metadata: extract_audit_metadata(command)
-      }
+  defp init_audit_logger(_config) do
+    %{enabled: false}
+  end
 
-      # In practice, would write to audit log
-      Logger.info("Command audit: #{inspect(audit_entry)}")
-    end
+  defp update_metrics(
+         %{metrics_collector: %{enabled: true}} = state,
+         command,
+         result,
+         execution_time
+       ) do
+    command_type = command.__struct__
 
+    # Update command counts
+    current_count =
+      Map.get(state.metrics_collector.command_counts, command_type, %{
+        success: 0,
+        failure: 0
+      })
+
+    new_count =
+      case result do
+        :success -> %{current_count | success: current_count.success + 1}
+        :failure -> %{current_count | failure: current_count.failure + 1}
+      end
+
+    new_command_counts =
+      Map.put(state.metrics_collector.command_counts, command_type, new_count)
+
+    # Update execution times (keep last 100)
+    new_execution_times = [
+      execution_time | Enum.take(state.metrics_collector.execution_times, 99)
+    ]
+
+    new_metrics_collector = %{
+      state.metrics_collector
+      | command_counts: new_command_counts,
+        execution_times: new_execution_times
+    }
+
+    %{state | metrics_collector: new_metrics_collector}
+  end
+
+  defp update_metrics(state, _command, _result, _execution_time) do
+    state
+  end
+
+  defp audit_command(
+         %{audit_logger: %{enabled: true}} = state,
+         command,
+         result,
+         execution_time
+       ) do
+    audit_entry = %{
+      timestamp: System.system_time(:millisecond),
+      command_id: generate_command_id(command),
+      command_type: command.__struct__,
+      result: result,
+      execution_time_us: execution_time,
+      metadata: extract_audit_metadata(command)
+    }
+
+    # In practice, would write to audit log
+    Logger.info("Command audit: #{inspect(audit_entry)}")
+    state
+  end
+
+  defp audit_command(state, _command, _result, _execution_time) do
     state
   end
 
@@ -902,44 +833,38 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     end)
   end
 
-  defp get_metrics_from_collector(metrics_collector) do
-    if metrics_collector.enabled do
-      total_commands =
-        metrics_collector.command_counts
-        |> Map.values()
-        |> Enum.reduce(0, fn counts, acc ->
-          acc + counts.success + counts.failure
-        end)
+  defp get_metrics_from_collector(%{enabled: true} = metrics_collector) do
+    total_commands =
+      metrics_collector.command_counts
+      |> Map.values()
+      |> Enum.reduce(0, fn counts, acc ->
+        acc + counts.success + counts.failure
+      end)
 
-      total_successes =
-        metrics_collector.command_counts
-        |> Map.values()
-        |> Enum.reduce(0, fn counts, acc -> acc + counts.success end)
+    total_successes =
+      metrics_collector.command_counts
+      |> Map.values()
+      |> Enum.reduce(0, fn counts, acc -> acc + counts.success end)
 
-      success_rate =
-        if total_commands > 0 do
-          total_successes / total_commands * 100
-        else
-          0.0
-        end
+    success_rate = calculate_success_rate(total_commands, total_successes)
 
-      avg_execution_time =
-        if length(metrics_collector.execution_times) > 0 do
-          Enum.sum(metrics_collector.execution_times) /
-            length(metrics_collector.execution_times)
-        else
-          0.0
-        end
+    avg_execution_time =
+      calculate_avg_execution_time(metrics_collector.execution_times)
 
-      %{
-        total_commands: total_commands,
-        success_rate: success_rate,
-        average_execution_time_us: avg_execution_time,
-        command_breakdown: metrics_collector.command_counts
-      }
-    else
-      %{metrics_disabled: true}
-    end
+    %{
+      total_commands: total_commands,
+      success_rate: success_rate,
+      average_execution_time_us: avg_execution_time,
+      command_breakdown: metrics_collector.command_counts
+    }
+  end
+
+  defp get_metrics_from_collector(%{enabled: false}) do
+    %{metrics_disabled: true}
+  end
+
+  defp get_metrics_from_collector(_metrics_collector) do
+    %{metrics_disabled: true}
   end
 
   ## Helper functions for refactored code
@@ -986,14 +911,6 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     state
   end
 
-  defp update_metrics_if_enabled(state, command, status, execution_time)
-       when is_map(state) do
-    case state.config[:enable_metrics] do
-      true -> update_metrics(state, command, status, execution_time)
-      _ -> state
-    end
-  end
-
   defp audit_if_enabled(
          %{config: %{enable_auditing: true}} = state,
          command,
@@ -1010,5 +927,125 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
       true -> add_to_retry_queue(state, command, reason)
       false -> add_to_dead_letter_queue(state, command, reason)
     end
+  end
+
+  ## Helper functions for refactored if statements
+
+  defp update_circuit_breaker_on_failure(
+         circuit_breakers,
+         handler_module,
+         _current,
+         new_failures
+       )
+       when new_failures >= 5 do
+    Map.put(circuit_breakers, handler_module, %{
+      failures: new_failures,
+      status: :open,
+      opened_at: System.monotonic_time(:millisecond)
+    })
+  end
+
+  defp update_circuit_breaker_on_failure(
+         circuit_breakers,
+         handler_module,
+         current,
+         new_failures
+       ) do
+    Map.put(circuit_breakers, handler_module, %{
+      current
+      | failures: new_failures
+    })
+  end
+
+  defp process_retry_entry(retry_entry, acc_state)
+       when retry_entry.attempts < acc_state.config.max_retries do
+    # Retry the command
+    case execute_command_internal(retry_entry.command, [], acc_state) do
+      {:ok, _result, new_state} ->
+        Logger.info(
+          "Command retry succeeded: #{inspect(retry_entry.command.__struct__)}"
+        )
+
+        new_state
+
+      {:error, reason, new_state} ->
+        # Increment attempts and re-queue or move to dead letter
+        updated_entry = %{
+          retry_entry
+          | attempts: retry_entry.attempts + 1,
+            next_retry_at:
+              calculate_next_retry_time(
+                retry_entry.attempts + 1,
+                acc_state.config.retry_backoff_base
+              )
+        }
+
+        handle_updated_retry_entry(updated_entry, new_state, reason)
+    end
+  end
+
+  defp process_retry_entry(retry_entry, acc_state) do
+    # Max retries exceeded, move to dead letter queue
+    add_to_dead_letter_queue(
+      acc_state,
+      retry_entry.command,
+      :max_retries_exceeded
+    )
+  end
+
+  defp handle_updated_retry_entry(updated_entry, new_state, reason)
+       when updated_entry.attempts >= new_state.config.max_retries do
+    # Move to dead letter queue
+    add_to_dead_letter_queue(new_state, updated_entry.command, reason)
+  end
+
+  defp handle_updated_retry_entry(updated_entry, new_state, _reason) do
+    # Re-queue for retry
+    new_retry_queue = :queue.in(updated_entry, new_state.retry_queue)
+    %{new_state | retry_queue: new_retry_queue}
+  end
+
+  defp process_queue_entry(entry, rest, now, ready, remaining)
+       when entry.next_retry_at <= now do
+    extract_ready_commands_acc(rest, now, [entry | ready], remaining)
+  end
+
+  defp process_queue_entry(entry, rest, now, ready, remaining) do
+    extract_ready_commands_acc(rest, now, ready, :queue.in(entry, remaining))
+  end
+
+  defp log_cleanup_if_needed(removed_count) when removed_count > 0 do
+    Logger.info("Cleaned up #{removed_count} expired dead letter commands")
+  end
+
+  defp log_cleanup_if_needed(_removed_count), do: :ok
+
+  defp reset_circuit_breaker_if_expired(handler, breaker, now, timeout_ms)
+       when breaker.status == :open do
+    case now - breaker.opened_at >= timeout_ms do
+      true -> {handler, %{breaker | status: :half_open}}
+      false -> {handler, breaker}
+    end
+  end
+
+  defp reset_circuit_breaker_if_expired(handler, breaker, _now, _timeout_ms) do
+    {handler, breaker}
+  end
+
+  defp calculate_success_rate(total_commands, total_successes)
+       when total_commands > 0 do
+    total_successes / total_commands * 100
+  end
+
+  defp calculate_success_rate(_total_commands, _total_successes) do
+    0.0
+  end
+
+  defp calculate_avg_execution_time([]) do
+    0.0
+  end
+
+  defp calculate_avg_execution_time(execution_times) do
+    Enum.sum(execution_times) / length(execution_times)
   end
 end

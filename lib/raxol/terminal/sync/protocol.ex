@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Sync.Protocol do
   # Protocol Functions
   def create_sync_message(component_id, component_type, state, opts \\ []) do
     # Convert keyword list to map if needed
-    opts_map = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
+    opts_map = convert_opts_to_map(Keyword.keyword?(opts), opts)
 
     %{
       type: @sync_type,
@@ -177,11 +177,9 @@ defmodule Raxol.Terminal.Sync.Protocol do
   end
 
   defp handle_valid_ack(message, current_state) do
-    if message.metadata.version == current_state.metadata.version do
-      :ok
-    else
-      {:error, :version_mismatch}
-    end
+    handle_ack_version_check(
+      message.metadata.version == current_state.metadata.version
+    )
   end
 
   defp handle_valid_conflict(message, current_state) do
@@ -199,11 +197,10 @@ defmodule Raxol.Terminal.Sync.Protocol do
   end
 
   defp handle_valid_resolve(message, current_state) do
-    if message.metadata.version > current_state.metadata.version do
-      {:ok, message.state}
-    else
-      {:error, :version_mismatch}
-    end
+    handle_resolve_version_check(
+      message.metadata.version > current_state.metadata.version,
+      message.state
+    )
   end
 
   defp resolve_conflict(message, current_state) do
@@ -213,11 +210,9 @@ defmodule Raxol.Terminal.Sync.Protocol do
 
     case {message_metadata.consistency, current_metadata.consistency} do
       {:strong, :strong} ->
-        if message_metadata.version > current_metadata.version do
-          :accept
-        else
-          :reject
-        end
+        resolve_strong_consistency(
+          message_metadata.version > current_metadata.version
+        )
 
       {:strong, _} ->
         :accept
@@ -227,15 +222,10 @@ defmodule Raxol.Terminal.Sync.Protocol do
 
       _ ->
         # Both eventual consistency
-        if message_metadata.version > current_metadata.version do
-          :accept
-        else
-          if message_metadata.version == current_metadata.version do
-            :conflict
-          else
-            :reject
-          end
-        end
+        resolve_eventual_consistency(
+          message_metadata.version,
+          current_metadata.version
+        )
     end
   end
 
@@ -264,4 +254,30 @@ defmodule Raxol.Terminal.Sync.Protocol do
   defp get_default_consistency(:window), do: :strong
   defp get_default_consistency(:tab), do: :eventual
   defp get_default_consistency(_), do: :eventual
+
+  # Helper functions for pattern matching refactoring
+
+  defp convert_opts_to_map(true, opts), do: Map.new(opts)
+  defp convert_opts_to_map(false, opts), do: opts
+
+  defp handle_ack_version_check(true), do: :ok
+  defp handle_ack_version_check(false), do: {:error, :version_mismatch}
+
+  defp handle_resolve_version_check(true, state), do: {:ok, state}
+  defp handle_resolve_version_check(false, _state), do: {:error, :version_mismatch}
+
+  defp resolve_strong_consistency(true), do: :accept
+  defp resolve_strong_consistency(false), do: :reject
+
+  defp resolve_eventual_consistency(message_version, current_version) when message_version > current_version do
+    :accept
+  end
+
+  defp resolve_eventual_consistency(message_version, current_version) when message_version == current_version do
+    :conflict
+  end
+
+  defp resolve_eventual_consistency(_message_version, _current_version) do
+    :reject
+  end
 end

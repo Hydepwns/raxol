@@ -114,8 +114,9 @@ defmodule Raxol.Performance.PredictiveOptimizer do
     }
 
     # Check if immediate optimization is needed
-    if should_optimize_immediately?(new_state) do
-      perform_optimization(new_state)
+    case should_optimize_immediately?(new_state) do
+      true -> perform_optimization(new_state)
+      false -> :ok
     end
 
     {:noreply, new_state}
@@ -190,14 +191,13 @@ defmodule Raxol.Performance.PredictiveOptimizer do
 
   defp update_pattern_history(history, pattern) do
     new_queue = :queue.in(pattern, history)
+    trim_pattern_history(:queue.len(new_queue) > @pattern_history_size, new_queue)
+  end
 
-    # Keep only recent patterns
-    if :queue.len(new_queue) > @pattern_history_size do
-      {_, trimmed} = :queue.out(new_queue)
-      trimmed
-    else
-      new_queue
-    end
+  defp trim_pattern_history(false, queue), do: queue
+  defp trim_pattern_history(true, queue) do
+    {_, trimmed} = :queue.out(queue)
+    trimmed
   end
 
   defp update_operation_stats(stats, event_name, measurements) do
@@ -375,25 +375,29 @@ defmodule Raxol.Performance.PredictiveOptimizer do
       predict_next_operations(state.prediction_model, state.pattern_history)
 
     Enum.flat_map(predictions, fn {operation, probability} ->
-      if probability > @cache_warm_threshold do
-        case operation do
-          {:csi_parse, sequence} ->
-            # Warm CSI parser cache
-            ETSCacheManager.get_csi(sequence)
-            [{:cache_warmed, :csi_parser, sequence}]
-
-          {:cell_create, {char, style}} ->
-            # Warm cell cache
-            ETSCacheManager.get_cell(char, :erlang.phash2(style))
-            [{:cache_warmed, :cell, {char, style}}]
-
-          _ ->
-            []
-        end
-      else
-        []
-      end
+      evaluate_cache_warming(probability > @cache_warm_threshold, operation)
     end)
+  end
+
+  defp evaluate_cache_warming(false, _operation) do
+    []
+  end
+
+  defp evaluate_cache_warming(true, operation) do
+    case operation do
+      {:csi_parse, sequence} ->
+        # Warm CSI parser cache
+        ETSCacheManager.get_csi(sequence)
+        [{:cache_warmed, :csi_parser, sequence}]
+
+      {:cell_create, {char, style}} ->
+        # Warm cell cache
+        ETSCacheManager.get_cell(char, :erlang.phash2(style))
+        [{:cache_warmed, :cell, {char, style}}]
+
+      _ ->
+        []
+    end
   end
 
   defp predict_next_operations(model, history) do
@@ -469,10 +473,13 @@ defmodule Raxol.Performance.PredictiveOptimizer do
   defp calculate_hit_rates(cache_hit_rates) do
     Map.new(cache_hit_rates, fn {name, stats} ->
       total = stats.hits + stats.misses
-      rate = if total > 0, do: stats.hits / total, else: 0
+      rate = calculate_hit_rate(total > 0, stats.hits, total)
       {name, %{hit_rate: Float.round(rate, 3), total_accesses: total}}
     end)
   end
+
+  defp calculate_hit_rate(false, _hits, _total), do: 0
+  defp calculate_hit_rate(true, hits, total), do: hits / total
 
   defp generate_recommendations(state) do
     %{
@@ -509,11 +516,15 @@ defmodule Raxol.Performance.PredictiveOptimizer do
       |> Enum.sort_by(fn {_, duration} -> -duration end)
       |> Enum.take(5)
 
-    if length(slow_operations) > 0 do
-      [{:optimize_slow_operations, slow_operations}]
-    else
-      [:performance_acceptable]
-    end
+    format_performance_tips(length(slow_operations) > 0, slow_operations)
+  end
+
+  defp format_performance_tips(false, _slow_operations) do
+    [:performance_acceptable]
+  end
+
+  defp format_performance_tips(true, slow_operations) do
+    [{:optimize_slow_operations, slow_operations}]
   end
 
   defp schedule_optimization do

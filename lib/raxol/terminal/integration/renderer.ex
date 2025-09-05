@@ -15,55 +15,9 @@ defmodule Raxol.Terminal.Integration.Renderer do
   Returns :ok or {:error, reason}.
   """
   def init_terminal do
-    # Check if we're in test mode
-    if Application.get_env(:raxol, :terminal_test_mode, false) do
-      IO.puts(
-        "[Renderer] Test mode detected, skipping actual terminal initialization"
-      )
-
-      :ok
-    else
-      IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_init()")
-
-      case ErrorHandling.safe_call(fn ->
-             raw_init_result = :termbox2_nif.tb_init()
-
-             case raw_init_result do
-               0 ->
-                 IO.puts(
-                   "[Renderer] :termbox2_nif.tb_init() returned 0 (success)"
-                 )
-
-                 :ok
-
-               int_val when is_integer(int_val) ->
-                 Logger.warning(
-                   "Terminal integration renderer failed to initialize: #{inspect(int_val)}",
-                   %{error: int_val}
-                 )
-
-                 {:error, {:init_failed_with_code, int_val}}
-
-               other ->
-                 Logger.error(
-                   "[Renderer] Termbox2 NIF tb_init() returned unexpected value: #{inspect(other)}"
-                 )
-
-                 {:error, {:init_failed_unexpected_return, other}}
-             end
-           end) do
-        {:ok, result} ->
-          result
-
-        {:error, reason} ->
-          Logger.error("""
-          [Renderer] Caught exception/exit during :termbox2_nif.tb_init() call.
-          Reason: #{inspect(reason)}
-          """)
-
-          {:error, {:init_failed_exception, reason}}
-      end
-    end
+    init_terminal_by_mode(
+      Application.get_env(:raxol, :terminal_test_mode, false)
+    )
   end
 
   @doc """
@@ -72,33 +26,9 @@ defmodule Raxol.Terminal.Integration.Renderer do
   Returns :ok or {:error, reason}.
   """
   def shutdown_terminal do
-    # Check if we're in test mode
-    if Application.get_env(:raxol, :terminal_test_mode, false) do
-      IO.puts(
-        "[Renderer] Test mode detected, skipping actual terminal shutdown"
-      )
-
-      :ok
-    else
-      IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_shutdown()")
-
-      case ErrorHandling.safe_call(fn ->
-             :termbox2_nif.tb_shutdown()
-             IO.puts("[Renderer] :termbox2_nif.tb_shutdown() called.")
-             :ok
-           end) do
-        {:ok, result} ->
-          result
-
-        {:error, reason} ->
-          Logger.error("""
-          [Renderer] Caught exception/exit during :termbox2_nif.tb_shutdown() call.
-          Reason: #{inspect(reason)}
-          """)
-
-          {:error, {:shutdown_failed_exception, reason}}
-      end
-    end
+    shutdown_terminal_by_mode(
+      Application.get_env(:raxol, :terminal_test_mode, false)
+    )
   end
 
   @doc """
@@ -108,42 +38,20 @@ defmodule Raxol.Terminal.Integration.Renderer do
   def render(%State{} = state) do
     active_buffer = Manager.get_screen_buffer(state.buffer_manager)
 
-    if active_buffer && active_buffer.cells do
-      case Raxol.Terminal.Integration.CellRenderer.render(active_buffer.cells) do
-        :ok -> handle_cursor_and_present(state)
-        error -> error
-      end
-    else
-      :ok
-    end
+    render_buffer_if_present(active_buffer, state)
   end
 
   defp handle_cursor_and_present(state) do
-    # Check if we're in test mode
-    if Application.get_env(:raxol, :terminal_test_mode, false) do
-      # In test mode, just return success
-      :ok
-    else
-      {cursor_x, cursor_y} = CursorManager.get_position(state.cursor_manager)
-
-      case :termbox2_nif.tb_set_cursor(cursor_x, cursor_y) do
-        0 -> present_buffer()
-        error_code -> {:error, {:set_cursor_failed, error_code}}
-      end
-    end
+    handle_cursor_by_mode(
+      state,
+      Application.get_env(:raxol, :terminal_test_mode, false)
+    )
   end
 
   defp present_buffer do
-    # Check if we're in test mode
-    if Application.get_env(:raxol, :terminal_test_mode, false) do
-      # In test mode, just return success
-      :ok
-    else
-      case :termbox2_nif.tb_present() do
-        0 -> :ok
-        error_code -> {:error, {:present_failed, error_code}}
-      end
-    end
+    present_buffer_by_mode(
+      Application.get_env(:raxol, :terminal_test_mode, false)
+    )
   end
 
   @doc """
@@ -153,21 +61,9 @@ defmodule Raxol.Terminal.Integration.Renderer do
   A negative value might indicate an error (e.g., not initialized).
   """
   def get_dimensions do
-    # Check if we're in test mode
-    if Application.get_env(:raxol, :terminal_test_mode, false) do
-      # Return mock dimensions for tests
-      {:ok, {80, 24}}
-    else
-      width = :termbox2_nif.tb_width()
-      height = :termbox2_nif.tb_height()
-
-      if width >= 0 and height >= 0 do
-        {:ok, {width, height}}
-      else
-        # Assuming negative values mean error/not initialized
-        {:error, {:dimensions_unavailable, width: width, height: height}}
-      end
-    end
+    get_dimensions_by_mode(
+      Application.get_env(:raxol, :terminal_test_mode, false)
+    )
   end
 
   @doc """
@@ -176,13 +72,9 @@ defmodule Raxol.Terminal.Integration.Renderer do
   Returns :ok or {:error, reason}.
   """
   def clear_screen(%State{} = _state) do
-    # Check if we're in test mode
-    if Application.get_env(:raxol, :terminal_test_mode, false) do
-      # In test mode, just return success
-      :ok
-    else
-      clear_and_present()
-    end
+    clear_screen_by_mode(
+      Application.get_env(:raxol, :terminal_test_mode, false)
+    )
   end
 
   defp clear_and_present do
@@ -199,13 +91,11 @@ defmodule Raxol.Terminal.Integration.Renderer do
   Returns :ok or {:error, reason}.
   """
   def move_cursor(%State{} = _state, x, y) do
-    # Check if we're in test mode
-    if Application.get_env(:raxol, :terminal_test_mode, false) do
-      # In test mode, just return success
-      :ok
-    else
-      set_cursor_and_present(x, y)
-    end
+    move_cursor_by_mode(
+      x,
+      y,
+      Application.get_env(:raxol, :terminal_test_mode, false)
+    )
   end
 
   defp set_cursor_and_present(x, y) do
@@ -306,23 +196,12 @@ defmodule Raxol.Terminal.Integration.Renderer do
   """
   def resize(%State{} = state, width, height)
       when is_integer(width) and is_integer(height) do
-    # Check if we're in test mode
-    if Application.get_env(:raxol, :terminal_test_mode, false) do
-      # In test mode, just update the state
-      %{state | width: width, height: height}
-    else
-      # In real mode, we need to handle terminal resize
-      # Note: Termbox2 doesn't have a direct resize function, so we update our state
-      # and let the next render cycle handle the new dimensions
-      case validate_dimensions(width, height) do
-        :ok ->
-          %{state | width: width, height: height}
-
-        {:error, reason} ->
-          Logger.error("Invalid resize dimensions: #{inspect(reason)}")
-          state
-      end
-    end
+    resize_by_mode(
+      state,
+      width,
+      height,
+      Application.get_env(:raxol, :terminal_test_mode, false)
+    )
   end
 
   @doc """
@@ -330,52 +209,22 @@ defmodule Raxol.Terminal.Integration.Renderer do
   """
   def set_cursor_visibility(%State{} = state, visible)
       when is_boolean(visible) do
-    # Check if we're in test mode
-    if Application.get_env(:raxol, :terminal_test_mode, false) do
-      # In test mode, just update the state
-      %{state | config: Map.put(state.config || %{}, :cursor_visible, visible)}
-    else
-      # In real mode, use termbox2 to hide/show cursor
-      case set_terminal_cursor_visibility(visible) do
-        :ok ->
-          %{
-            state
-            | config: Map.put(state.config || %{}, :cursor_visible, visible)
-          }
-
-        {:error, reason} ->
-          Logger.error("Failed to set cursor visibility: #{inspect(reason)}")
-          state
-      end
-    end
+    set_cursor_visibility_by_mode(
+      state,
+      visible,
+      Application.get_env(:raxol, :terminal_test_mode, false)
+    )
   end
 
   @doc """
   Sets the terminal title.
   """
   def set_title(%State{} = state, title) when is_binary(title) do
-    # Check if we're in test mode
-    if Application.get_env(:raxol, :terminal_test_mode, false) do
-      # In test mode, just update the state
-      %{state | config: Map.put(state.config || %{}, :title, title)}
-    else
-      # In real mode, use termbox2 to set the title
-      case :termbox2_nif.tb_set_title(title) do
-        {:ok, "set"} ->
-          %{state | config: Map.put(state.config || %{}, :title, title)}
-
-        {:error, reason} ->
-          Logger.error("Failed to set terminal title: #{inspect(reason)}")
-          state
-
-        other ->
-          Logger.error(
-            "Unexpected response from tb_set_title: #{inspect(other)}"
-          )
-
-          state
-      end
-    end
+    set_title_by_mode(
+      state,
+      title,
+      Application.get_env(:raxol, :terminal_test_mode, false)
+    )
   end
 
   @doc """
@@ -426,15 +275,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
   end
 
   defp apply_config_changes(config) do
-    # Apply theme changes if present
-    if Map.has_key?(config, :theme) do
-      case apply_theme_config(config.theme) do
-        :ok -> :ok
-        error -> error
-      end
-    else
-      :ok
-    end
+    apply_theme_if_present(config)
   end
 
   defp apply_config_value(:cursor_visible, visible) do
@@ -469,16 +310,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
   end
 
   defp set_terminal_cursor_visibility(visible) do
-    if visible do
-      # Show cursor by setting it to a valid position (will be updated during render)
-      :ok
-    else
-      # Hide cursor by setting it to -1, -1
-      case :termbox2_nif.tb_set_cursor(-1, -1) do
-        :ok -> :ok
-        error_code -> {:error, {:hide_cursor_failed, error_code}}
-      end
-    end
+    set_cursor_visibility_state(visible)
   end
 
   defp validate_dimensions(width, height) when width <= 0 do
@@ -513,5 +345,246 @@ defmodule Raxol.Terminal.Integration.Renderer do
 
   defp validate_theme(_theme) do
     {:error, :invalid_theme_format}
+  end
+
+  ## Helper functions for refactored if statements
+
+  defp init_terminal_by_mode(true) do
+    IO.puts(
+      "[Renderer] Test mode detected, skipping actual terminal initialization"
+    )
+
+    :ok
+  end
+
+  defp init_terminal_by_mode(false) do
+    IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_init()")
+
+    case ErrorHandling.safe_call(fn ->
+           raw_init_result = :termbox2_nif.tb_init()
+
+           case raw_init_result do
+             0 ->
+               IO.puts(
+                 "[Renderer] :termbox2_nif.tb_init() returned 0 (success)"
+               )
+
+               :ok
+
+             int_val when is_integer(int_val) ->
+               Logger.warning(
+                 "Terminal integration renderer failed to initialize: #{inspect(int_val)}",
+                 %{error: int_val}
+               )
+
+               {:error, {:init_failed_with_code, int_val}}
+
+             other ->
+               Logger.error(
+                 "[Renderer] Termbox2 NIF tb_init() returned unexpected value: #{inspect(other)}"
+               )
+
+               {:error, {:init_failed_unexpected_return, other}}
+           end
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, reason} ->
+        Logger.error("""
+        [Renderer] Caught exception/exit during :termbox2_nif.tb_init() call.
+        Reason: #{inspect(reason)}
+        """)
+
+        {:error, {:init_failed_exception, reason}}
+    end
+  end
+
+  defp shutdown_terminal_by_mode(true) do
+    IO.puts("[Renderer] Test mode detected, skipping actual terminal shutdown")
+    :ok
+  end
+
+  defp shutdown_terminal_by_mode(false) do
+    IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_shutdown()")
+
+    case ErrorHandling.safe_call(fn ->
+           :termbox2_nif.tb_shutdown()
+           IO.puts("[Renderer] :termbox2_nif.tb_shutdown() called.")
+           :ok
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, reason} ->
+        Logger.error("""
+        [Renderer] Caught exception/exit during :termbox2_nif.tb_shutdown() call.
+        Reason: #{inspect(reason)}
+        """)
+
+        {:error, {:shutdown_failed_exception, reason}}
+    end
+  end
+
+  defp render_buffer_if_present(%{cells: cells}, state)
+       when not is_nil(cells) do
+    case Raxol.Terminal.Integration.CellRenderer.render(cells) do
+      :ok -> handle_cursor_and_present(state)
+      error -> error
+    end
+  end
+
+  defp render_buffer_if_present(_active_buffer, _state) do
+    :ok
+  end
+
+  defp handle_cursor_by_mode(_state, true) do
+    # In test mode, just return success
+    :ok
+  end
+
+  defp handle_cursor_by_mode(state, false) do
+    {cursor_x, cursor_y} = CursorManager.get_position(state.cursor_manager)
+
+    case :termbox2_nif.tb_set_cursor(cursor_x, cursor_y) do
+      0 -> present_buffer()
+      error_code -> {:error, {:set_cursor_failed, error_code}}
+    end
+  end
+
+  defp present_buffer_by_mode(true) do
+    # In test mode, just return success
+    :ok
+  end
+
+  defp present_buffer_by_mode(false) do
+    case :termbox2_nif.tb_present() do
+      0 -> :ok
+      error_code -> {:error, {:present_failed, error_code}}
+    end
+  end
+
+  defp get_dimensions_by_mode(true) do
+    # Return mock dimensions for tests
+    {:ok, {80, 24}}
+  end
+
+  defp get_dimensions_by_mode(false) do
+    width = :termbox2_nif.tb_width()
+    height = :termbox2_nif.tb_height()
+
+    validate_terminal_dimensions(width, height)
+  end
+
+  defp validate_terminal_dimensions(width, height)
+       when width >= 0 and height >= 0 do
+    {:ok, {width, height}}
+  end
+
+  defp validate_terminal_dimensions(width, height) do
+    # Assuming negative values mean error/not initialized
+    {:error, {:dimensions_unavailable, width: width, height: height}}
+  end
+
+  defp clear_screen_by_mode(true) do
+    # In test mode, just return success
+    :ok
+  end
+
+  defp clear_screen_by_mode(false) do
+    clear_and_present()
+  end
+
+  defp move_cursor_by_mode(_x, _y, true) do
+    # In test mode, just return success
+    :ok
+  end
+
+  defp move_cursor_by_mode(x, y, false) do
+    set_cursor_and_present(x, y)
+  end
+
+  defp resize_by_mode(state, width, height, true) do
+    # In test mode, just update the state
+    %{state | width: width, height: height}
+  end
+
+  defp resize_by_mode(state, width, height, false) do
+    # In real mode, we need to handle terminal resize
+    # Note: Termbox2 doesn't have a direct resize function, so we update our state
+    # and let the next render cycle handle the new dimensions
+    case validate_dimensions(width, height) do
+      :ok ->
+        %{state | width: width, height: height}
+
+      {:error, reason} ->
+        Logger.error("Invalid resize dimensions: #{inspect(reason)}")
+        state
+    end
+  end
+
+  defp set_cursor_visibility_by_mode(state, visible, true) do
+    # In test mode, just update the state
+    %{state | config: Map.put(state.config || %{}, :cursor_visible, visible)}
+  end
+
+  defp set_cursor_visibility_by_mode(state, visible, false) do
+    # In real mode, use termbox2 to hide/show cursor
+    case set_terminal_cursor_visibility(visible) do
+      :ok ->
+        %{
+          state
+          | config: Map.put(state.config || %{}, :cursor_visible, visible)
+        }
+
+      {:error, reason} ->
+        Logger.error("Failed to set cursor visibility: #{inspect(reason)}")
+        state
+    end
+  end
+
+  defp set_title_by_mode(state, title, true) do
+    # In test mode, just update the state
+    %{state | config: Map.put(state.config || %{}, :title, title)}
+  end
+
+  defp set_title_by_mode(state, title, false) do
+    # In real mode, use termbox2 to set the title
+    case :termbox2_nif.tb_set_title(title) do
+      {:ok, "set"} ->
+        %{state | config: Map.put(state.config || %{}, :title, title)}
+
+      {:error, reason} ->
+        Logger.error("Failed to set terminal title: #{inspect(reason)}")
+        state
+
+      other ->
+        Logger.error("Unexpected response from tb_set_title: #{inspect(other)}")
+        state
+    end
+  end
+
+  defp apply_theme_if_present(%{theme: theme}) do
+    case apply_theme_config(theme) do
+      :ok -> :ok
+      error -> error
+    end
+  end
+
+  defp apply_theme_if_present(_config) do
+    :ok
+  end
+
+  defp set_cursor_visibility_state(true) do
+    # Show cursor by setting it to a valid position (will be updated during render)
+    :ok
+  end
+
+  defp set_cursor_visibility_state(false) do
+    # Hide cursor by setting it to -1, -1
+    case :termbox2_nif.tb_set_cursor(-1, -1) do
+      :ok -> :ok
+      error_code -> {:error, {:hide_cursor_failed, error_code}}
+    end
   end
 end

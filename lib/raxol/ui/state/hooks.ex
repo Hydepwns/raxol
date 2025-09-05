@@ -81,34 +81,32 @@ defmodule Raxol.UI.State.Hooks do
     deps_key = {hook_id, :dependencies}
     prev_deps = Server.get_hook_state(component_id, deps_key)
 
-    if dependencies_changed?(prev_deps, dependencies) do
-      # Run cleanup from previous effect if any
-      cleanup_key = {hook_id, :cleanup}
+    case dependencies_changed?(prev_deps, dependencies) do
+      true ->
+        cleanup_key = {hook_id, :cleanup}
 
-      case Server.get_hook_state(component_id, cleanup_key) do
-        cleanup_fn when is_function(cleanup_fn, 0) ->
-          ErrorHandling.safe_call_with_logging(
-            cleanup_fn,
-            "Effect cleanup failed"
-          )
+        case Server.get_hook_state(component_id, cleanup_key) do
+          cleanup_fn when is_function(cleanup_fn, 0) ->
+            ErrorHandling.safe_call_with_logging(
+              cleanup_fn,
+              "Effect cleanup failed"
+            )
 
-        _ ->
-          :ok
-      end
-
-      # Run new effect
-      cleanup =
-        case ErrorHandling.safe_call_with_logging(
-               effect_fn,
-               "Effect failed"
-             ) do
-          {:ok, result} -> result
-          {:error, _} -> nil
+          _ ->
+            :ok
         end
 
-      # Store new dependencies and cleanup
-      Server.set_hook_state(component_id, deps_key, dependencies)
-      Server.set_hook_state(component_id, cleanup_key, cleanup)
+        cleanup =
+          case ErrorHandling.safe_call_with_logging(effect_fn, "Effect failed") do
+            {:ok, result} -> result
+            {:error, _} -> nil
+          end
+
+        Server.set_hook_state(component_id, deps_key, dependencies)
+        Server.set_hook_state(component_id, cleanup_key, cleanup)
+
+      false ->
+        :ok
     end
 
     :ok
@@ -134,23 +132,23 @@ defmodule Raxol.UI.State.Hooks do
 
     prev_deps = Server.get_hook_state(component_id, deps_key)
 
-    if dependencies_changed?(prev_deps, dependencies) do
-      # Recompute value
-      new_value =
-        case ErrorHandling.safe_call_with_logging(
-               compute_fn,
-               "Memo computation failed"
-             ) do
-          {:ok, result} -> result
-          {:error, _} -> nil
-        end
+    case dependencies_changed?(prev_deps, dependencies) do
+      true ->
+        new_value =
+          case ErrorHandling.safe_call_with_logging(
+                 compute_fn,
+                 "Memo computation failed"
+               ) do
+            {:ok, result} -> result
+            {:error, _} -> nil
+          end
 
-      Server.set_hook_state(component_id, deps_key, dependencies)
-      Server.set_hook_state(component_id, value_key, new_value)
-      new_value
-    else
-      # Return cached value
-      Server.get_hook_state(component_id, value_key)
+        Server.set_hook_state(component_id, deps_key, dependencies)
+        Server.set_hook_state(component_id, value_key, new_value)
+        new_value
+
+      false ->
+        Server.get_hook_state(component_id, value_key)
     end
   end
 
@@ -174,15 +172,17 @@ defmodule Raxol.UI.State.Hooks do
 
     prev_deps = Server.get_hook_state(component_id, deps_key)
 
-    if dependencies_changed?(prev_deps, dependencies) do
-      Server.set_hook_state(component_id, deps_key, dependencies)
-      Server.set_hook_state(component_id, callback_key, callback_fn)
-      callback_fn
-    else
-      case Server.get_hook_state(component_id, callback_key) do
-        nil -> callback_fn
-        cached_fn -> cached_fn
-      end
+    case dependencies_changed?(prev_deps, dependencies) do
+      true ->
+        Server.set_hook_state(component_id, deps_key, dependencies)
+        Server.set_hook_state(component_id, callback_key, callback_fn)
+        callback_fn
+
+      false ->
+        case Server.get_hook_state(component_id, callback_key) do
+          nil -> callback_fn
+          cached_fn -> cached_fn
+        end
     end
   end
 
@@ -285,14 +285,14 @@ defmodule Raxol.UI.State.Hooks do
     # Send update message to component process if available
     case Server.get_component_process() do
       nil ->
-        # No component process, log for debugging
         Logger.debug(
           "Component update requested for #{component_id} but no process registered"
         )
 
       pid when is_pid(pid) ->
-        if Process.alive?(pid) do
-          send(pid, {:component_update, component_id})
+        case Process.alive?(pid) do
+          true -> send(pid, {:component_update, component_id})
+          false -> :ok
         end
 
       _ ->
@@ -305,7 +305,12 @@ defmodule Raxol.UI.State.Hooks do
   def set_component_context(component_id, process_pid \\ nil) do
     ensure_server_started()
     Server.set_component_id(component_id)
-    if process_pid, do: Server.set_component_process(process_pid)
+
+    case process_pid do
+      nil -> :ok
+      pid -> Server.set_component_process(pid)
+    end
+
     :ok
   end
 

@@ -20,13 +20,22 @@ defmodule Raxol.Terminal.Buffer.Content do
           TextFormatting.text_style() | nil
         ) :: ScreenBuffer.t()
   def write_char(buffer, x, y, char, style \\ nil) when x >= 0 and y >= 0 do
-    if x < buffer.width and y < buffer.height do
-      cell = Cell.new(char, style)
-      updated_cells = update_cell_at(buffer.cells, x, y, cell)
-      %{buffer | cells: updated_cells}
-    else
-      buffer
-    end
+    do_write_char(
+      x < buffer.width and y < buffer.height,
+      buffer,
+      x,
+      y,
+      char,
+      style
+    )
+  end
+
+  defp do_write_char(false, buffer, _x, _y, _char, _style), do: buffer
+
+  defp do_write_char(true, buffer, x, y, char, style) do
+    cell = Cell.new(char, style)
+    updated_cells = update_cell_at(buffer.cells, x, y, cell)
+    %{buffer | cells: updated_cells}
   end
 
   @doc """
@@ -40,12 +49,21 @@ defmodule Raxol.Terminal.Buffer.Content do
           TextFormatting.text_style() | nil
         ) :: ScreenBuffer.t()
   def write_string(buffer, x, y, string, style \\ nil) when x >= 0 and y >= 0 do
-    if x < buffer.width and y < buffer.height do
-      # Use the Writer module which properly handles wide characters
-      Raxol.Terminal.Buffer.Writer.write_string(buffer, x, y, string, style)
-    else
-      buffer
-    end
+    do_write_string(
+      x < buffer.width and y < buffer.height,
+      buffer,
+      x,
+      y,
+      string,
+      style
+    )
+  end
+
+  defp do_write_string(false, buffer, _x, _y, _string, _style), do: buffer
+
+  defp do_write_string(true, buffer, x, y, string, style) do
+    # Use the Writer module which properly handles wide characters
+    Raxol.Terminal.Buffer.Writer.write_string(buffer, x, y, string, style)
   end
 
   @doc """
@@ -54,20 +72,22 @@ defmodule Raxol.Terminal.Buffer.Content do
   @spec get_char(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           String.t()
   def get_char(buffer, x, y) when x >= 0 and y >= 0 do
-    if x < buffer.width and y < buffer.height do
-      case buffer.cells do
-        nil ->
-          # Return empty string if cells is nil
-          ""
+    do_get_char(x < buffer.width and y < buffer.height, buffer, x, y)
+  end
 
-        cells ->
-          cells
-          |> Enum.at(y)
-          |> Enum.at(x)
-          |> Cell.get_char()
-      end
-    else
-      ""
+  defp do_get_char(false, _buffer, _x, _y), do: ""
+
+  defp do_get_char(true, buffer, x, y) do
+    case buffer.cells do
+      nil ->
+        # Return empty string if cells is nil
+        ""
+
+      cells ->
+        cells
+        |> Enum.at(y)
+        |> Enum.at(x)
+        |> Cell.get_char()
     end
   end
 
@@ -77,17 +97,19 @@ defmodule Raxol.Terminal.Buffer.Content do
   @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           Cell.t()
   def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
-    if x < buffer.width and y < buffer.height do
-      case buffer.cells do
-        nil ->
-          # Return a default cell if cells is nil
-          Cell.new()
+    do_get_cell(x < buffer.width and y < buffer.height, buffer, x, y)
+  end
 
-        cells ->
-          get_cell_from_row(cells, x, y)
-      end
-    else
-      Cell.new()
+  defp do_get_cell(false, _buffer, _x, _y), do: Cell.new()
+
+  defp do_get_cell(true, buffer, x, y) do
+    case buffer.cells do
+      nil ->
+        # Return a default cell if cells is nil
+        Cell.new()
+
+      cells ->
+        get_cell_from_row(cells, x, y)
     end
   end
 
@@ -183,9 +205,10 @@ defmodule Raxol.Terminal.Buffer.Content do
   # === Private Helper Functions ===
 
   @doc false
-  defp convert_to_cell(cell_or_map) do
-    if is_map(cell_or_map), do: struct(Cell, cell_or_map), else: cell_or_map
-  end
+  defp convert_to_cell(cell_or_map) when is_map(cell_or_map),
+    do: struct(Cell, cell_or_map)
+
+  defp convert_to_cell(cell_or_map), do: cell_or_map
 
   @doc """
   Updates a cell at the specified position in the cells list.
@@ -229,6 +252,9 @@ defmodule Raxol.Terminal.Buffer.Content do
   @doc false
   defp get_cell_from_row(cells, x, y) do
     row = Enum.at(cells, y)
-    if is_nil(row), do: Cell.new(), else: Enum.at(row, x) || Cell.new()
+    fetch_cell_from_row(row, x)
   end
+
+  defp fetch_cell_from_row(nil, _x), do: Cell.new()
+  defp fetch_cell_from_row(row, x), do: Enum.at(row, x) || Cell.new()
 end

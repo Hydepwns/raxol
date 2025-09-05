@@ -20,8 +20,7 @@ defmodule RaxolWeb.PageLive do
   end
 
   def handle_event("toggle_high_contrast", _params, socket) do
-    new_value =
-      if socket.assigns.high_contrast == "true", do: "false", else: "true"
+    new_value = toggle_boolean_string(socket.assigns.high_contrast)
 
     {:noreply,
      socket
@@ -30,8 +29,7 @@ defmodule RaxolWeb.PageLive do
   end
 
   def handle_event("toggle_reduced_motion", _params, socket) do
-    new_value =
-      if socket.assigns.reduced_motion == "true", do: "false", else: "true"
+    new_value = toggle_boolean_string(socket.assigns.reduced_motion)
 
     {:noreply,
      socket
@@ -52,4 +50,7 @@ defmodule RaxolWeb.PageLive do
      |> assign(:font_size, new_value)
      |> push_event("font_size_changed", %{value: new_value})}
   end
+
+  defp toggle_boolean_string("true"), do: "false"
+  defp toggle_boolean_string(_), do: "true"
 end

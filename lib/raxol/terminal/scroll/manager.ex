@@ -48,9 +48,9 @@ defmodule Raxol.Terminal.Scroll.Manager do
     sync_enabled = Keyword.get(opts, :sync_enabled, true)
 
     %__MODULE__{
-      predictor: if(prediction_enabled, do: Predictor.new(), else: nil),
-      optimizer: if(optimization_enabled, do: Optimizer.new(), else: nil),
-      sync: if(sync_enabled, do: Sync.new(), else: nil),
+      predictor: create_predictor(prediction_enabled),
+      optimizer: create_optimizer(optimization_enabled),
+      sync: create_sync(sync_enabled),
       metrics: %{
         scrolls: 0,
         predictions: 0,
@@ -130,9 +130,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
   def optimize(manager) do
     case Raxol.Terminal.Cache.System.stats(namespace: :scroll) do
       {:ok, stats} ->
-        if stats.size > stats.max_size * 0.8 do
-          Raxol.Terminal.Cache.System.clear(namespace: :scroll)
-        end
+        handle_cache_stats(stats)
 
       _ ->
         :ok
@@ -157,34 +155,11 @@ defmodule Raxol.Terminal.Scroll.Manager do
 
     manager = update_metrics(manager, :scroll)
 
-    manager =
-      if predict and manager.predictor do
-        %{
-          manager
-          | predictor: Predictor.predict(manager.predictor, direction, amount)
-        }
-        |> update_metrics(:prediction)
-      else
-        manager
-      end
+    manager = apply_prediction(manager, predict, direction, amount)
 
-    manager =
-      if optimize and manager.optimizer do
-        %{
-          manager
-          | optimizer: Optimizer.optimize(manager.optimizer, direction, amount)
-        }
-        |> update_metrics(:optimization)
-      else
-        manager
-      end
+    manager = apply_optimization(manager, optimize, direction, amount)
 
-    manager =
-      if sync and manager.sync do
-        %{manager | sync: Sync.sync(manager.sync, direction, amount)}
-      else
-        manager
-      end
+    manager = apply_sync(manager, sync, direction, amount)
 
     scroll_entry = %{
       direction: direction,
@@ -271,6 +246,57 @@ defmodule Raxol.Terminal.Scroll.Manager do
     case Raxol.Terminal.Cache.System.clear(namespace: :scroll) do
       :ok -> {:ok, manager}
       {:error, _} -> {:ok, manager}
+    end
+  end
+
+  defp create_predictor(true), do: Predictor.new()
+  defp create_predictor(false), do: nil
+
+  defp create_optimizer(true), do: Optimizer.new()
+  defp create_optimizer(false), do: nil
+
+  defp create_sync(true), do: Sync.new()
+  defp create_sync(false), do: nil
+
+  defp apply_prediction(manager, predict, direction, amount) do
+    case {predict, manager.predictor} do
+      {true, predictor} when not is_nil(predictor) ->
+        %{
+          manager
+          | predictor: Predictor.predict(predictor, direction, amount)
+        }
+        |> update_metrics(:prediction)
+      _ ->
+        manager
+    end
+  end
+
+  defp apply_optimization(manager, optimize, direction, amount) do
+    case {optimize, manager.optimizer} do
+      {true, optimizer} when not is_nil(optimizer) ->
+        %{
+          manager
+          | optimizer: Optimizer.optimize(optimizer, direction, amount)
+        }
+        |> update_metrics(:optimization)
+      _ ->
+        manager
+    end
+  end
+
+  defp apply_sync(manager, sync, direction, amount) do
+    case {sync, manager.sync} do
+      {true, sync_module} when not is_nil(sync_module) ->
+        %{manager | sync: Sync.sync(sync_module, direction, amount)}
+      _ ->
+        manager
+    end
+  end
+
+  defp handle_cache_stats(stats) do
+    case stats.size > stats.max_size * 0.8 do
+      true -> Raxol.Terminal.Cache.System.clear(namespace: :scroll)
+      false -> :ok
     end
   end
 end

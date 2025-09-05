@@ -30,30 +30,31 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     {effective_top, effective_bottom} = get_scroll_region(buffer, scroll_region)
     region_height = effective_bottom - effective_top + 1
 
-    if count > 0 and region_height > 0 do
-      actual_scroll_count = min(count, region_height)
-      preserved_lines_source_start = effective_top + actual_scroll_count
-      _preserved_lines_count = region_height - actual_scroll_count
+    case {count > 0, region_height > 0} do
+      {true, true} ->
+        actual_scroll_count = min(count, region_height)
+        preserved_lines_source_start = effective_top + actual_scroll_count
+        _preserved_lines_count = region_height - actual_scroll_count
 
-      new_buffer =
-        shift_lines_up(
-          buffer,
-          effective_top,
-          preserved_lines_source_start,
-          region_height,
-          blank_style
-        )
+        new_buffer =
+          shift_lines_up(
+            buffer,
+            effective_top,
+            preserved_lines_source_start,
+            region_height,
+            blank_style
+          )
 
-      %{
-        new_buffer
-        | scroll_position:
-            min(
-              (buffer.scroll_position || 0) + actual_scroll_count,
-              effective_bottom
-            )
-      }
-    else
-      buffer
+        %{
+          new_buffer
+          | scroll_position:
+              min(
+                (buffer.scroll_position || 0) + actual_scroll_count,
+                effective_bottom
+              )
+        }
+      _ ->
+        buffer
     end
   end
 
@@ -88,28 +89,29 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     {effective_top, effective_bottom} = get_scroll_region(buffer, scroll_region)
     region_height = effective_bottom - effective_top + 1
 
-    if count > 0 and region_height > 0 do
-      actual_scroll_count = min(count, region_height)
+    case {count > 0, region_height > 0} do
+      {true, true} ->
+        actual_scroll_count = min(count, region_height)
 
-      new_buffer =
-        shift_lines_down(
-          buffer,
-          effective_top + actual_scroll_count,
-          effective_top,
-          region_height,
-          blank_style
-        )
+        new_buffer =
+          shift_lines_down(
+            buffer,
+            effective_top + actual_scroll_count,
+            effective_top,
+            region_height,
+            blank_style
+          )
 
-      %{
-        new_buffer
-        | scroll_position:
-            max(
-              (buffer.scroll_position || 0) - actual_scroll_count,
-              effective_top
-            )
-      }
-    else
-      buffer
+        %{
+          new_buffer
+          | scroll_position:
+              max(
+                (buffer.scroll_position || 0) - actual_scroll_count,
+                effective_top
+              )
+        }
+      _ ->
+        buffer
     end
   end
 
@@ -159,10 +161,9 @@ defmodule Raxol.Terminal.Commands.Scrolling do
       max_lines_in_region - lines_after_insertion - lines_to_keep
 
     additional_blank_lines =
-      if remaining_lines > 0 do
-        List.duplicate(blank_line, remaining_lines)
-      else
-        []
+      case remaining_lines > 0 do
+        true -> List.duplicate(blank_line, remaining_lines)
+        false -> []
       end
 
     # Combine the parts
@@ -379,10 +380,9 @@ defmodule Raxol.Terminal.Commands.Scrolling do
   end
 
   defp get_source_line(cells, source_idx, fallback_line) do
-    if source_idx >= 0 and source_idx < length(cells) do
-      Enum.at(cells, source_idx) || fallback_line
-    else
-      fallback_line
+    case source_idx >= 0 and source_idx < length(cells) do
+      true -> Enum.at(cells, source_idx) || fallback_line
+      false -> fallback_line
     end
   end
 end

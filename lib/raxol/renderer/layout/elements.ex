@@ -143,7 +143,7 @@ defmodule Raxol.Renderer.Layout.Elements do
   def process_text_input_element(%{attrs: attrs}, space, acc) do
     value = Map.get(attrs, :value, "")
     placeholder = Map.get(attrs, :placeholder, "")
-    text = if value == "", do: placeholder, else: value
+    text = get_display_text(value, placeholder)
     style = Map.get(attrs, :style, @default_text_input_style)
 
     placeholder_style =
@@ -163,7 +163,7 @@ defmodule Raxol.Renderer.Layout.Elements do
         position: {space.x + 2, space.y + 1},
         size: {input_width, 1},
         content: text,
-        style: if(value == "", do: placeholder_style, else: style)
+        style: get_text_style(value, placeholder_style, style)
       }
     ]
 
@@ -187,7 +187,7 @@ defmodule Raxol.Renderer.Layout.Elements do
     checked = Map.get(attrs, :checked, false)
     label = Map.get(attrs, :label, "")
     style = Map.get(attrs, :style, @default_style)
-    checkbox_text = if checked, do: "[✓]", else: "[ ]"
+    checkbox_text = get_checkbox_text(checked)
     text = "#{checkbox_text} #{label}"
 
     checkbox_elements = [
@@ -218,22 +218,23 @@ defmodule Raxol.Renderer.Layout.Elements do
   """
   def process_table_element(element_map, space, acc) do
     # Check if this is a table struct that has been converted to a map
-    if Map.get(element_map, :__struct__) == Raxol.Core.Renderer.Views.Table do
-      # Use the table's build_table_content function to get proper children with separator row
-      table_children =
-        Raxol.Core.Renderer.Views.Table.build_table_content(element_map)
+    case Map.get(element_map, :__struct__) == Raxol.Core.Renderer.Views.Table do
+      true ->
+        # Use the table's build_table_content function to get proper children with separator row
+        table_children =
+          Raxol.Core.Renderer.Views.Table.build_table_content(element_map)
 
-      [
-        Map.merge(element_map, %{
-          position: {space.x, space.y},
-          size: {space.width, space.height},
-          children: table_children
-        })
-        | acc
-      ]
-    else
-      # For non-table elements, process normally
-      [element_map | acc]
+        [
+          Map.merge(element_map, %{
+            position: {space.x, space.y},
+            size: {space.width, space.height},
+            children: table_children
+          })
+          | acc
+        ]
+      false ->
+        # For non-table elements, process normally
+        [element_map | acc]
     end
   end
 
@@ -495,4 +496,14 @@ defmodule Raxol.Renderer.Layout.Elements do
     size = Map.get(element_map, :size)
     Raxol.Renderer.Layout.calculate_size(size, space)
   end
+
+  # Helper functions for pattern matching instead of if statements
+  defp get_display_text("", placeholder), do: placeholder
+  defp get_display_text(value, _placeholder), do: value
+
+  defp get_text_style("", placeholder_style, _style), do: placeholder_style
+  defp get_text_style(_value, _placeholder_style, style), do: style
+
+  defp get_checkbox_text(true), do: "[✓]"
+  defp get_checkbox_text(false), do: "[ ]"
 end

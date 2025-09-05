@@ -20,10 +20,9 @@ defmodule Raxol.UI.Components.Progress.Bar do
     ]
 
     content =
-      if state.label do
-        [Raxol.View.Elements.label(content: state.label) | content]
-      else
-        content
+      case state.label do
+        nil -> content
+        label -> [Raxol.View.Elements.label(content: label) | content]
       end
 
     # Use row or column based on desired layout
@@ -76,7 +75,10 @@ defmodule Raxol.UI.Components.Progress.Bar do
 
     # Generate percentage text
     percentage_text =
-      if show_percentage, do: "#{round(value * 100)}%", else: nil
+      case show_percentage do
+        true -> "#{round(value * 100)}%"
+        false -> nil
+      end
 
     # Create the progress bar with label based on position
     case position do
@@ -260,19 +262,25 @@ defmodule Raxol.UI.Components.Progress.Bar do
     adjusted_width =
       Keyword.get(opts, :width, 20) -
         String.length(label) -
-        if(percentage_text, do: String.length(percentage_text) + 1, else: 0)
+        case percentage_text do
+          nil -> 0
+          text -> String.length(text) + 1
+        end
 
     Raxol.View.Elements.row id: id do
       [
         bar(value, Keyword.put(opts, :width, adjusted_width)),
         Raxol.View.Elements.label(content: " #{label}", style: label_style),
-        if(percentage_text,
-          do:
+        case percentage_text do
+          nil ->
+            nil
+
+          text ->
             Raxol.View.Elements.label(
-              content: " #{percentage_text}",
+              content: " #{text}",
               style: percentage_style
             )
-        )
+        end
       ]
       |> Enum.reject(&is_nil/1)
     end
@@ -287,17 +295,23 @@ defmodule Raxol.UI.Components.Progress.Bar do
     label_text = Raxol.View.Elements.label(content: label, style: label_style)
 
     percentage_element =
-      if percentage_text do
-        Raxol.View.Elements.label(
-          content: percentage_text,
-          style: percentage_style
-        )
-      else
-        nil
+      case percentage_text do
+        nil ->
+          nil
+
+        text ->
+          Raxol.View.Elements.label(
+            content: text,
+            style: percentage_style
+          )
       end
 
     elements = [label_text]
-    if percentage_element, do: elements ++ [percentage_element], else: elements
+
+    case percentage_element do
+      nil -> elements
+      element -> elements ++ [element]
+    end
   end
 
   defp create_bar_elements(
@@ -311,29 +325,33 @@ defmodule Raxol.UI.Components.Progress.Bar do
     elements = []
 
     elements =
-      if filled_width > 0 do
-        filled_text =
-          Raxol.View.Elements.label(
-            content: filled_portion,
-            style: filled_style
-          )
+      case filled_width do
+        w when w > 0 ->
+          filled_text =
+            Raxol.View.Elements.label(
+              content: filled_portion,
+              style: filled_style
+            )
 
-        [filled_text | elements]
-      else
-        elements
+          [filled_text | elements]
+
+        _ ->
+          elements
       end
 
     elements =
-      if empty_width > 0 do
-        empty_text =
-          Raxol.View.Elements.label(
-            content: empty_portion,
-            style: empty_style
-          )
+      case empty_width do
+        w when w > 0 ->
+          empty_text =
+            Raxol.View.Elements.label(
+              content: empty_portion,
+              style: empty_style
+            )
 
-        [empty_text | elements]
-      else
-        elements
+          [empty_text | elements]
+
+        _ ->
+          elements
       end
 
     # Return elements in correct order (reverse accumulation)

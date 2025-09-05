@@ -122,16 +122,7 @@ defmodule Raxol.Terminal.ControlCodes do
 
     last_row = buffer_height - 1
 
-    if current_row == last_row do
-      emulator
-      |> move_cursor_down()
-      |> Emulator.maybe_scroll()
-      |> reset_last_col_exceeded_after_scroll()
-    else
-      emulator
-      |> move_cursor_down()
-      |> reset_last_col_exceeded_after_scroll()
-    end
+    handle_lf_cursor_movement(current_row == last_row, emulator)
   end
 
   defp move_cursor_down(emulator) do
@@ -216,36 +207,7 @@ defmodule Raxol.Terminal.ControlCodes do
     )
 
     # 1. Check for pending wrap
-    emulator_after_pending_wrap =
-      if emulator.last_col_exceeded do
-        Raxol.Core.Runtime.Log.debug("[handle_cr] Pending wrap detected")
-        # Perform the deferred wrap: move cursor to col 0, next line
-        {_cx, cy} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
-
-        wrapped_cursor =
-          Raxol.Terminal.Cursor.Manager.move_to(emulator.cursor, 0, cy + 1)
-
-        Raxol.Core.Runtime.Log.debug(
-          "[handle_cr] Cursor after wrap: #{inspect(Raxol.Terminal.Cursor.Manager.get_position(wrapped_cursor))}"
-        )
-
-        # Also scroll if needed after wrap (use maybe_scroll on potentially wrapped state)
-        maybe_scrolled_emulator =
-          Emulator.maybe_scroll(%{
-            emulator
-            | cursor: wrapped_cursor,
-              last_col_exceeded: false
-          })
-
-        Raxol.Core.Runtime.Log.debug(
-          "[handle_cr] State after pending wrap + scroll: cursor=#{inspect(Raxol.Terminal.Cursor.Manager.get_position(maybe_scrolled_emulator.cursor))}, last_exceeded=#{maybe_scrolled_emulator.last_col_exceeded}"
-        )
-
-        maybe_scrolled_emulator
-      else
-        Raxol.Core.Runtime.Log.debug("[handle_cr] No pending wrap")
-        emulator
-      end
+    emulator_after_pending_wrap = handle_pending_wrap(emulator.last_col_exceeded, emulator)
 
     # 2. Perform CR logic on potentially updated state
     Raxol.Core.Runtime.Log.debug("[handle_cr] Moving cursor to column 0")
@@ -364,21 +326,7 @@ defmodule Raxol.Terminal.ControlCodes do
         nil -> {0, ScreenBuffer.get_height(active_buffer) - 1}
       end
 
-    if row == top_margin do
-      Raxol.Terminal.Commands.Screen.scroll_down(emulator, 1)
-    else
-      cursor = emulator.cursor
-      # Use alias
-      cursor =
-        Movement.move_up(
-          cursor,
-          1,
-          ScreenBuffer.get_width(active_buffer),
-          ScreenBuffer.get_height(active_buffer)
-        )
-
-      %{emulator | cursor: cursor}
-    end
+    handle_ri_cursor_movement(row == top_margin, emulator, active_buffer)
   end
 
   @spec handle_decsc(Emulator.t()) :: Emulator.t()
@@ -431,33 +379,7 @@ defmodule Raxol.Terminal.ControlCodes do
         }
 
         # Restore cursor position and attributes using CursorManager
-        if restored_state_data.cursor do
-          cursor_data = restored_state_data.cursor
-
-          # Restore cursor position
-          Raxol.Terminal.Cursor.Manager.set_position(
-            emulator.cursor,
-            cursor_data.position
-          )
-
-          # Restore cursor visibility
-          Raxol.Terminal.Cursor.Manager.set_visibility(
-            emulator.cursor,
-            cursor_data.visible
-          )
-
-          # Restore cursor style
-          Raxol.Terminal.Cursor.Manager.set_style(
-            emulator.cursor,
-            cursor_data.style
-          )
-
-          # Restore cursor blinking state
-          Raxol.Terminal.Cursor.Manager.set_blink(
-            emulator.cursor,
-            cursor_data.blink_state
-          )
-        end
+        restore_cursor_state(restored_state_data.cursor, emulator.cursor)
 
         emulator
 
@@ -570,12 +492,12 @@ defmodule Raxol.Terminal.ControlCodes do
   # Helper function for line feed cursor adjustment
   defp apply_line_feed_cursor_adjustment(
          moved_cursor,
-         cursor,
+         _cursor,
          current_col,
          line_feed_mode
        )
        when is_pid(moved_cursor) do
-    target_col = if line_feed_mode, do: 0, else: current_col
+    target_col = get_target_column(line_feed_mode, current_col)
     GenServer.call(moved_cursor, {:move_to_column, target_col})
     moved_cursor
   end
@@ -587,12 +509,13 @@ defmodule Raxol.Terminal.ControlCodes do
          line_feed_mode
        )
        when is_map(moved_cursor) do
-    if Map.has_key?(moved_cursor, :row) and Map.has_key?(moved_cursor, :col) do
-      target_col = if line_feed_mode, do: 0, else: current_col
-      Raxol.Terminal.Cursor.Manager.move_to_column(moved_cursor, target_col)
-    else
-      cursor
-    end
+    apply_map_cursor_adjustment(
+      Map.has_key?(moved_cursor, :row) and Map.has_key?(moved_cursor, :col),
+      moved_cursor,
+      cursor,
+      current_col,
+      line_feed_mode
+    )
   end
 
   defp apply_line_feed_cursor_adjustment(
@@ -601,6 +524,109 @@ defmodule Raxol.Terminal.ControlCodes do
          _current_col,
          _line_feed_mode
        ) do
+    cursor
+  end
+
+  # Helper functions for refactored if statements
+  defp handle_lf_cursor_movement(true, emulator) do
+    emulator
+    |> move_cursor_down()
+    |> Emulator.maybe_scroll()
+    |> reset_last_col_exceeded_after_scroll()
+  end
+
+  defp handle_lf_cursor_movement(_at_last_row, emulator) do
+    emulator
+    |> move_cursor_down()
+    |> reset_last_col_exceeded_after_scroll()
+  end
+
+  defp handle_pending_wrap(true, emulator) do
+    Raxol.Core.Runtime.Log.debug("[handle_cr] Pending wrap detected")
+    # Perform the deferred wrap: move cursor to col 0, next line
+    {_cx, cy} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
+    wrapped_cursor =
+      Raxol.Terminal.Cursor.Manager.move_to(emulator.cursor, 0, cy + 1)
+
+    Raxol.Core.Runtime.Log.debug(
+      "[handle_cr] Cursor after wrap: #{inspect(Raxol.Terminal.Cursor.Manager.get_position(wrapped_cursor))}"
+    )
+
+    # Also scroll if needed after wrap (use maybe_scroll on potentially wrapped state)
+    maybe_scrolled_emulator =
+      Emulator.maybe_scroll(%{
+        emulator
+        | cursor: wrapped_cursor,
+          last_col_exceeded: false
+      })
+
+    Raxol.Core.Runtime.Log.debug(
+      "[handle_cr] State after pending wrap + scroll: cursor=#{inspect(Raxol.Terminal.Cursor.Manager.get_position(maybe_scrolled_emulator.cursor))}, last_exceeded=#{maybe_scrolled_emulator.last_col_exceeded}"
+    )
+
+    maybe_scrolled_emulator
+  end
+
+  defp handle_pending_wrap(_has_wrap, emulator) do
+    Raxol.Core.Runtime.Log.debug("[handle_cr] No pending wrap")
+    emulator
+  end
+
+  defp handle_ri_cursor_movement(true, emulator, _active_buffer) do
+    Raxol.Terminal.Commands.Screen.scroll_down(emulator, 1)
+  end
+
+  defp handle_ri_cursor_movement(_at_top_margin, emulator, active_buffer) do
+    cursor = emulator.cursor
+    # Use alias
+    cursor =
+      Movement.move_up(
+        cursor,
+        1,
+        ScreenBuffer.get_width(active_buffer),
+        ScreenBuffer.get_height(active_buffer)
+      )
+
+    %{emulator | cursor: cursor}
+  end
+
+  defp restore_cursor_state(nil, _emulator_cursor), do: :ok
+  defp restore_cursor_state(cursor_data, emulator_cursor) do
+    # Restore cursor position
+    Raxol.Terminal.Cursor.Manager.set_position(
+      emulator_cursor,
+      cursor_data.position
+    )
+
+    # Restore cursor visibility
+    Raxol.Terminal.Cursor.Manager.set_visibility(
+      emulator_cursor,
+      cursor_data.visible
+    )
+
+    # Restore cursor style
+    Raxol.Terminal.Cursor.Manager.set_style(
+      emulator_cursor,
+      cursor_data.style
+    )
+
+    # Restore cursor blinking state
+    Raxol.Terminal.Cursor.Manager.set_blink(
+      emulator_cursor,
+      cursor_data.blink_state
+    )
+  end
+
+  defp get_target_column(true, _current_col), do: 0
+  defp get_target_column(_line_feed_mode, current_col), do: current_col
+
+  defp apply_map_cursor_adjustment(true, moved_cursor, _cursor, current_col, line_feed_mode) do
+    target_col = get_target_column(line_feed_mode, current_col)
+    Raxol.Terminal.Cursor.Manager.move_to_column(moved_cursor, target_col)
+  end
+
+  defp apply_map_cursor_adjustment(_has_keys, _moved_cursor, cursor, _current_col, _line_feed_mode) do
     cursor
   end
 end

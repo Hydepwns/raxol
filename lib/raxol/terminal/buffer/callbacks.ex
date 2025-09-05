@@ -26,31 +26,32 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
     memory_limit = Keyword.get(opts, :memory_limit, 10_000_000)
 
     # Validate dimensions
-    if width <= 0 or height <= 0 do
-      {:stop, {:invalid_dimensions, {width, height}}}
-    else
-      # Create initial buffer
-      buffer = ScreenBuffer.new(width, height)
+    case width <= 0 or height <= 0 do
+      true ->
+        {:stop, {:invalid_dimensions, {width, height}}}
+      false ->
+        # Create initial buffer
+        buffer = ScreenBuffer.new(width, height)
 
-      # Initialize modular components
-      operation_queue = OperationQueue.new(50)
-      metrics = MetricsTracker.new()
-      damage_tracker = DamageTracker.new(100)
-      memory_usage = MetricsTracker.calculate_memory_usage(buffer)
+        # Initialize modular components
+        operation_queue = OperationQueue.new(50)
+        metrics = MetricsTracker.new()
+        damage_tracker = DamageTracker.new(100)
+        memory_usage = MetricsTracker.calculate_memory_usage(buffer)
 
-      # Initialize state
-      state = %Raxol.Terminal.Buffer.BufferServer.State{
-        buffer: buffer,
-        operation_queue: operation_queue,
-        metrics: metrics,
-        damage_tracker: damage_tracker,
-        memory_limit: memory_limit,
-        memory_usage: memory_usage
-      }
+        # Initialize state
+        state = %Raxol.Terminal.Buffer.BufferServer.State{
+          buffer: buffer,
+          operation_queue: operation_queue,
+          metrics: metrics,
+          damage_tracker: damage_tracker,
+          memory_limit: memory_limit,
+          memory_usage: memory_usage
+        }
 
-      Logger.debug("BufferServer started with dimensions #{width}x#{height}")
+        Logger.debug("BufferServer started with dimensions #{width}x#{height}")
 
-      {:ok, state}
+        {:ok, state}
     end
   end
 
@@ -60,39 +61,41 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
   def handle_call({:get_cell, x, y}, _from, state) do
     start_time = System.monotonic_time()
 
-    if OperationProcessor.valid_coordinates?(state.buffer, x, y) do
-      with {:ok, cell} <- safe_get_cell(state.buffer, x, y) do
-        new_metrics =
-          MetricsTracker.update_metrics(state.metrics, :reads, start_time)
+    case OperationProcessor.valid_coordinates?(state.buffer, x, y) do
+      true ->
+        with {:ok, cell} <- safe_get_cell(state.buffer, x, y) do
+          new_metrics =
+            MetricsTracker.update_metrics(state.metrics, :reads, start_time)
 
-        new_state = %{state | metrics: new_metrics}
-        {:reply, {:ok, cell}, new_state}
-      else
-        {:error, reason} ->
-          Logger.error("Failed to get cell at (#{x}, #{y}): #{inspect(reason)}")
-          {:reply, {:error, reason}, state}
-      end
-    else
-      {:reply, {:error, :invalid_coordinates}, state}
+          new_state = %{state | metrics: new_metrics}
+          {:reply, {:ok, cell}, new_state}
+        else
+          {:error, reason} ->
+            Logger.error("Failed to get cell at (#{x}, #{y}): #{inspect(reason)}")
+            {:reply, {:error, reason}, state}
+        end
+      false ->
+        {:reply, {:error, :invalid_coordinates}, state}
     end
   end
 
   def handle_call(:flush, _from, state) do
     # Process all pending operations synchronously
     new_state =
-      if OperationQueue.empty?(state.operation_queue) do
-        state
-      else
-        with {:ok, processed_state} <- safe_flush_operations(state) do
-          processed_state
-        else
-          {:error, reason} ->
-            Logger.error(
-              "Error processing flush operations: #{inspect(reason)}"
-            )
+      case OperationQueue.empty?(state.operation_queue) do
+        true ->
+          state
+        false ->
+          with {:ok, processed_state} <- safe_flush_operations(state) do
+            processed_state
+          else
+            {:error, reason} ->
+              Logger.error(
+                "Error processing flush operations: #{inspect(reason)}"
+              )
 
-            state
-        end
+              state
+          end
       end
 
     {:reply, :ok, new_state}
@@ -140,29 +143,30 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
   def handle_call({:set_cell_sync, x, y, cell}, _from, state) do
     start_time = System.monotonic_time()
 
-    if OperationProcessor.valid_coordinates?(state.buffer, x, y) do
-      with {:ok, new_buffer} <- safe_write_char(state.buffer, x, y, cell) do
-        new_metrics =
-          MetricsTracker.update_metrics(state.metrics, :writes, start_time)
+    case OperationProcessor.valid_coordinates?(state.buffer, x, y) do
+      true ->
+        with {:ok, new_buffer} <- safe_write_char(state.buffer, x, y, cell) do
+          new_metrics =
+            MetricsTracker.update_metrics(state.metrics, :writes, start_time)
 
-        new_damage_tracker =
-          DamageTracker.add_damage_region(state.damage_tracker, x, y, 1, 1)
+          new_damage_tracker =
+            DamageTracker.add_damage_region(state.damage_tracker, x, y, 1, 1)
 
-        new_state = %{
-          state
-          | buffer: new_buffer,
-            metrics: new_metrics,
-            damage_tracker: new_damage_tracker
-        }
+          new_state = %{
+            state
+            | buffer: new_buffer,
+              metrics: new_metrics,
+              damage_tracker: new_damage_tracker
+          }
 
-        {:reply, :ok, new_state}
-      else
-        {:error, reason} ->
-          Logger.error("Failed to set cell at (#{x}, #{y}): #{inspect(reason)}")
-          {:reply, {:error, reason}, state}
-      end
-    else
-      {:reply, {:error, :invalid_coordinates}, state}
+          {:reply, :ok, new_state}
+        else
+          {:error, reason} ->
+            Logger.error("Failed to set cell at (#{x}, #{y}): #{inspect(reason)}")
+            {:reply, {:error, reason}, state}
+        end
+      false ->
+        {:reply, {:error, :invalid_coordinates}, state}
     end
   end
 

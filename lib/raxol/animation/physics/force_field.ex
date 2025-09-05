@@ -168,22 +168,28 @@ defmodule Raxol.Animation.Physics.ForceField do
     direction = Vector.subtract(object.position, field.position)
     distance = Vector.magnitude(direction)
 
-    if field.radius != :infinity and distance > field.radius do
-      %Vector{}
-    else
-      direction = normalize_direction(direction, distance)
-      force_magnitude = calculate_force_magnitude(field, distance)
-      Vector.scale(direction, force_magnitude)
+    case check_distance_within_radius(field.radius, distance) do
+      :out_of_range ->
+        %Vector{}
+      :within_range ->
+        direction = normalize_direction(direction, distance)
+        force_magnitude = calculate_force_magnitude(field, distance)
+        Vector.scale(direction, force_magnitude)
     end
   end
 
+  defp check_distance_within_radius(:infinity, _distance), do: :within_range
+  defp check_distance_within_radius(radius, distance) when distance > radius, do: :out_of_range
+  defp check_distance_within_radius(_radius, _distance), do: :within_range
+
   defp normalize_direction(direction, distance) do
-    if distance > 0 do
-      Vector.scale(direction, 1 / distance)
-    else
-      theta = :rand.uniform() * 2 * :math.pi()
-      phi = :rand.uniform() * :math.pi()
-      Vector.from_spherical(1, theta, phi)
+    case distance > 0 do
+      true ->
+        Vector.scale(direction, 1 / distance)
+      false ->
+        theta = :rand.uniform() * 2 * :math.pi()
+        phi = :rand.uniform() * :math.pi()
+        Vector.from_spherical(1, theta, phi)
     end
   end
 
@@ -216,10 +222,11 @@ defmodule Raxol.Animation.Physics.ForceField do
     to_object = Vector.subtract(object.position, field.position)
     distance = Vector.magnitude(to_object)
 
-    if field.radius != :infinity and distance > field.radius do
-      %Vector{}
-    else
-      calculate_vortex_force_at_point(field, to_object, distance)
+    case check_distance_within_radius(field.radius, distance) do
+      :out_of_range ->
+        %Vector{}
+      :within_range ->
+        calculate_vortex_force_at_point(field, to_object, distance)
     end
   end
 
@@ -230,13 +237,14 @@ defmodule Raxol.Animation.Physics.ForceField do
     perpendicular = Vector.subtract(to_object, axis_projection)
     perp_distance = Vector.magnitude(perpendicular)
 
-    if perp_distance > 0 do
-      perp_normalized = Vector.scale(perpendicular, 1 / perp_distance)
-      tangent = Vector.cross(field.direction, perp_normalized)
-      force_magnitude = calculate_force_magnitude(field, distance)
-      Vector.scale(tangent, force_magnitude)
-    else
-      %Vector{}
+    case perp_distance > 0 do
+      true ->
+        perp_normalized = Vector.scale(perpendicular, 1 / perp_distance)
+        tangent = Vector.cross(field.direction, perp_normalized)
+        force_magnitude = calculate_force_magnitude(field, distance)
+        Vector.scale(tangent, force_magnitude)
+      false ->
+        %Vector{}
     end
   end
 
@@ -272,10 +280,9 @@ defmodule Raxol.Animation.Physics.ForceField do
   end
 
   defp calculate_custom_force(%__MODULE__{type: :custom} = field, object) do
-    if field.function do
-      field.function.(object, field)
-    else
-      %Vector{}
+    case field.function do
+      nil -> %Vector{}
+      fun -> fun.(object, field)
     end
   end
 end

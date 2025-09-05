@@ -124,29 +124,18 @@ defmodule Mix.Tasks.Raxol.Examples do
   end
 
   defp build_config(opts) do
-    config = []
-
-    config =
-      if opts[:theme] do
-        [{:theme, String.to_atom(opts[:theme])} | config]
-      else
-        config
-      end
-
-    config =
-      if opts[:width] do
-        [{:width, opts[:width]} | config]
-      else
-        config
-      end
-
-    config =
-      if opts[:height] do
-        [{:height, opts[:height]} | config]
-      else
-        config
-      end
-
-    config
+    []
+    |> add_theme_config(opts[:theme])
+    |> add_width_config(opts[:width])
+    |> add_height_config(opts[:height])
   end
+
+  defp add_theme_config(config, nil), do: config
+  defp add_theme_config(config, theme), do: [{:theme, String.to_atom(theme)} | config]
+
+  defp add_width_config(config, nil), do: config
+  defp add_width_config(config, width), do: [{:width, width} | config]
+
+  defp add_height_config(config, nil), do: config
+  defp add_height_config(config, height), do: [{:height, height} | config]
 end

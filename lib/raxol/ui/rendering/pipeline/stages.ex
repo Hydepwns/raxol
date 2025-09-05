@@ -35,38 +35,85 @@ defmodule Raxol.UI.Rendering.Pipeline.Stages do
         previous_composed_tree,
         previous_painted_output
       ) do
-    if should_process_tree?(diff_result, new_tree_for_reference) do
-      layout_data = Layouter.layout_tree(diff_result, new_tree_for_reference)
+    process_render_stages(
+      should_process_tree?(diff_result, new_tree_for_reference),
+      diff_result,
+      new_tree_for_reference,
+      previous_composed_tree,
+      previous_painted_output
+    )
+  end
 
-      if should_process_layout?(diff_result, layout_data) do
-        composed_data =
-          Composer.compose_render_tree(
-            layout_data,
-            new_tree_for_reference,
-            previous_composed_tree
-          )
+  defp process_render_stages(
+         false,
+         _diff_result,
+         _new_tree_for_reference,
+         previous_composed_tree,
+         previous_painted_output
+       ) do
+    Logger.debug(
+      "Render Pipeline: No effective tree to process based on initial diff_result and new_tree_for_reference."
+    )
 
-        handle_composition_stage(
-          composed_data,
-          layout_data,
-          previous_painted_output,
-          previous_composed_tree,
-          new_tree_for_reference
-        )
-      else
-        Logger.debug(
-          "Render Pipeline: Layout stage resulted in nil, skipping compose, paint and commit."
-        )
+    {previous_painted_output, previous_composed_tree}
+  end
 
-        {previous_painted_output, previous_composed_tree}
-      end
-    else
-      Logger.debug(
-        "Render Pipeline: No effective tree to process based on initial diff_result and new_tree_for_reference."
+  defp process_render_stages(
+         _should_process,
+         diff_result,
+         new_tree_for_reference,
+         previous_composed_tree,
+         previous_painted_output
+       ) do
+    layout_data = Layouter.layout_tree(diff_result, new_tree_for_reference)
+
+    process_layout_stage(
+      should_process_layout?(diff_result, layout_data),
+      diff_result,
+      layout_data,
+      new_tree_for_reference,
+      previous_composed_tree,
+      previous_painted_output
+    )
+  end
+
+  defp process_layout_stage(
+         false,
+         _diff_result,
+         _layout_data,
+         _new_tree_for_reference,
+         previous_composed_tree,
+         previous_painted_output
+       ) do
+    Logger.debug(
+      "Render Pipeline: Layout stage resulted in nil, skipping compose, paint and commit."
+    )
+
+    {previous_painted_output, previous_composed_tree}
+  end
+
+  defp process_layout_stage(
+         _should_process,
+         _diff_result,
+         layout_data,
+         new_tree_for_reference,
+         previous_composed_tree,
+         previous_painted_output
+       ) do
+    composed_data =
+      Composer.compose_render_tree(
+        layout_data,
+        new_tree_for_reference,
+        previous_composed_tree
       )
 
-      {previous_painted_output, previous_composed_tree}
-    end
+    handle_composition_stage(
+      composed_data,
+      layout_data,
+      previous_painted_output,
+      previous_composed_tree,
+      new_tree_for_reference
+    )
   end
 
   @doc """
@@ -86,23 +133,45 @@ defmodule Raxol.UI.Rendering.Pipeline.Stages do
         previous_composed_tree,
         new_tree_for_reference
       ) do
-    if should_process_composition?(composed_data, layout_data) do
-      painted_data =
-        Painter.paint(
-          composed_data,
-          new_tree_for_reference,
-          previous_composed_tree,
-          previous_painted_output
-        )
+    process_composition_stage(
+      should_process_composition?(composed_data, layout_data),
+      composed_data,
+      new_tree_for_reference,
+      previous_composed_tree,
+      previous_painted_output
+    )
+  end
 
-      {painted_data, composed_data}
-    else
-      Logger.debug(
-        "Render Pipeline: Composition stage resulted in nil, skipping paint and commit."
+  defp process_composition_stage(
+         false,
+         composed_data,
+         _new_tree_for_reference,
+         _previous_composed_tree,
+         previous_painted_output
+       ) do
+    Logger.debug(
+      "Render Pipeline: Composition stage resulted in nil, skipping paint and commit."
+    )
+
+    {previous_painted_output, composed_data}
+  end
+
+  defp process_composition_stage(
+         _should_process,
+         composed_data,
+         new_tree_for_reference,
+         previous_composed_tree,
+         previous_painted_output
+       ) do
+    painted_data =
+      Painter.paint(
+        composed_data,
+        new_tree_for_reference,
+        previous_composed_tree,
+        previous_painted_output
       )
 
-      {previous_painted_output, composed_data}
-    end
+    {painted_data, composed_data}
   end
 
   # Stage validation functions

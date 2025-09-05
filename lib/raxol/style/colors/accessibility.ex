@@ -58,8 +58,11 @@ defmodule Raxol.Style.Colors.Accessibility do
   defp _channel_to_linear(channel_val)
        when channel_val >= 0 and channel_val <= 255 do
     v = channel_val / 255
-    if v <= 0.03928, do: v / 12.92, else: :math.pow((v + 0.055) / 1.055, 2.4)
+    convert_to_linear(v <= 0.03928, v)
   end
+
+  defp convert_to_linear(true, v), do: v / 12.92
+  defp convert_to_linear(false, v), do: :math.pow((v + 0.055) / 1.055, 2.4)
 
   @doc """
   Calculates the contrast ratio between two colors according to WCAG guidelines.
@@ -200,13 +203,15 @@ defmodule Raxol.Style.Colors.Accessibility do
     complement = Color.complement(color)
 
     # Check if it has enough contrast
-    if readable?(color, complement, :aa) do
-      complement
-    else
-      # If not, try black or white (whichever has better contrast)
-      # This chooses black/white based on contrast
-      suggest_text_color(color)
-    end
+    select_contrast_color(readable?(color, complement, :aa), complement, color)
+  end
+
+  defp select_contrast_color(true, complement, _color), do: complement
+
+  defp select_contrast_color(false, _complement, color) do
+    # If not, try black or white (whichever has better contrast)
+    # This chooses black/white based on contrast
+    suggest_text_color(color)
   end
 
   @doc """
@@ -355,21 +360,70 @@ defmodule Raxol.Style.Colors.Accessibility do
     orig_lum = relative_luminance(color)
     adj_lum = relative_luminance(adjusted)
 
-    if contrast_ratio(adjusted, background) >= target_ratio and
-         ((direction == :lighter and adj_lum > orig_lum) or
-            (direction == :darker and adj_lum < orig_lum)) do
-      adjusted
-    else
-      do_adjust_until_contrast(
+    handle_contrast_adjustment(
+      meets_contrast_and_direction?(
         adjusted,
         background,
         target_ratio,
-        adjust_fun,
         direction,
-        steps - 1,
-        min(step * 1.5, 1.0)
-      )
-    end
+        adj_lum,
+        orig_lum
+      ),
+      adjusted,
+      background,
+      target_ratio,
+      adjust_fun,
+      direction,
+      steps,
+      step
+    )
+  end
+
+  defp meets_contrast_and_direction?(
+         adjusted,
+         background,
+         target_ratio,
+         direction,
+         adj_lum,
+         orig_lum
+       ) do
+    contrast_ratio(adjusted, background) >= target_ratio and
+      ((direction == :lighter and adj_lum > orig_lum) or
+         (direction == :darker and adj_lum < orig_lum))
+  end
+
+  defp handle_contrast_adjustment(
+         true,
+         adjusted,
+         _background,
+         _target_ratio,
+         _adjust_fun,
+         _direction,
+         _steps,
+         _step
+       ) do
+    adjusted
+  end
+
+  defp handle_contrast_adjustment(
+         false,
+         adjusted,
+         background,
+         target_ratio,
+         adjust_fun,
+         direction,
+         steps,
+         step
+       ) do
+    do_adjust_until_contrast(
+      adjusted,
+      background,
+      target_ratio,
+      adjust_fun,
+      direction,
+      steps - 1,
+      min(step * 1.5, 1.0)
+    )
   end
 
   @spec lighten_until_contrast(Color.t(), Color.t(), number()) ::
@@ -446,44 +500,71 @@ defmodule Raxol.Style.Colors.Accessibility do
   defp find_accessible_color(color, bg, min_ratio) do
     bg_lum = relative_luminance(bg)
 
-    if bg_lum < 0.5 do
-      try_lighten_then_darken(color, bg, min_ratio)
-    else
-      try_darken_then_lighten(color, bg, min_ratio)
-    end
+    select_strategy_by_luminance(bg_lum < 0.5, color, bg, min_ratio)
   end
 
   defp try_lighten_then_darken(color, bg, min_ratio) do
     lightened = lighten_until_contrast(color, bg, min_ratio)
 
-    if valid_adjustment?(lightened, color, bg, min_ratio, :lighter) do
-      lightened.hex
-    else
-      darkened = darken_until_contrast(color, bg, min_ratio)
-
-      if valid_adjustment?(darkened, color, bg, min_ratio, :darker) do
-        darkened.hex
-      else
-        "#FFFFFF"
-      end
-    end
+    select_lightened_or_darkened(
+      valid_adjustment?(lightened, color, bg, min_ratio, :lighter),
+      lightened,
+      color,
+      bg,
+      min_ratio
+    )
   end
 
   defp try_darken_then_lighten(color, bg, min_ratio) do
     darkened = darken_until_contrast(color, bg, min_ratio)
 
-    if valid_adjustment?(darkened, color, bg, min_ratio, :darker) do
-      darkened.hex
-    else
-      lightened = lighten_until_contrast(color, bg, min_ratio)
-
-      if valid_adjustment?(lightened, color, bg, min_ratio, :lighter) do
-        lightened.hex
-      else
-        "#000000"
-      end
-    end
+    select_darkened_or_lightened(
+      valid_adjustment?(darkened, color, bg, min_ratio, :darker),
+      darkened,
+      color,
+      bg,
+      min_ratio
+    )
   end
+
+  defp select_strategy_by_luminance(true, color, bg, min_ratio) do
+    try_lighten_then_darken(color, bg, min_ratio)
+  end
+
+  defp select_strategy_by_luminance(false, color, bg, min_ratio) do
+    try_darken_then_lighten(color, bg, min_ratio)
+  end
+
+  defp select_lightened_or_darkened(true, lightened, _color, _bg, _min_ratio) do
+    lightened.hex
+  end
+
+  defp select_lightened_or_darkened(false, _lightened, color, bg, min_ratio) do
+    darkened = darken_until_contrast(color, bg, min_ratio)
+
+    select_final_color(
+      valid_adjustment?(darkened, color, bg, min_ratio, :darker),
+      darkened.hex,
+      "#FFFFFF"
+    )
+  end
+
+  defp select_darkened_or_lightened(true, darkened, _color, _bg, _min_ratio) do
+    darkened.hex
+  end
+
+  defp select_darkened_or_lightened(false, _darkened, color, bg, min_ratio) do
+    lightened = lighten_until_contrast(color, bg, min_ratio)
+
+    select_final_color(
+      valid_adjustment?(lightened, color, bg, min_ratio, :lighter),
+      lightened.hex,
+      "#000000"
+    )
+  end
+
+  defp select_final_color(true, color_hex, _fallback), do: color_hex
+  defp select_final_color(false, _color_hex, fallback), do: fallback
 
   defp valid_adjustment?(adjusted, original, bg, min_ratio, direction) do
     adjusted &&
@@ -569,7 +650,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     issues =
       find_contrast_issues(colors_map, bg, Keyword.get(opts, :level, :aa))
 
-    if Enum.empty?(issues), do: {:ok, colors}, else: {:error, issues}
+    format_validation_result(Enum.empty?(issues), colors, issues)
   end
 
   def validate_colors(colors, background) when is_binary(background) do
@@ -579,8 +660,7 @@ defmodule Raxol.Style.Colors.Accessibility do
   @spec get_optimal_text_color(Color.t() | String.t()) :: String.t()
   def get_optimal_text_color(background) do
     # Convert background to Color struct if it's a hex string
-    bg =
-      if is_binary(background), do: Color.from_hex(background), else: background
+    bg = convert_to_color(is_binary(background), background)
 
     black = Color.from_hex("#000000")
     white = Color.from_hex("#FFFFFF")
@@ -588,11 +668,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     ratio_with_white = contrast_ratio(bg, white)
     ratio_with_black = contrast_ratio(bg, black)
 
-    if ratio_with_white >= ratio_with_black do
-      "#FFFFFF"
-    else
-      "#000000"
-    end
+    choose_optimal_contrast(ratio_with_white >= ratio_with_black)
   end
 
   @doc """
@@ -621,12 +697,41 @@ defmodule Raxol.Style.Colors.Accessibility do
         {:aa, :large} -> @contrast_aa_large
       end
 
-    if ratio >= min_ratio do
-      {:ok, ratio}
-    else
-      {:error, {:contrast_too_low, ratio, min_ratio}}
-    end
+    validate_contrast_ratio(ratio >= min_ratio, ratio, min_ratio)
   end
+
+  defp format_validation_result(true, colors, _issues), do: {:ok, colors}
+  defp format_validation_result(false, _colors, issues), do: {:error, issues}
+
+  defp convert_to_color(true, background), do: Color.from_hex(background)
+  defp convert_to_color(false, background), do: background
+
+  defp choose_optimal_contrast(true), do: "#FFFFFF"
+  defp choose_optimal_contrast(false), do: "#000000"
+
+  defp validate_contrast_ratio(true, ratio, _min_ratio), do: {:ok, ratio}
+
+  defp validate_contrast_ratio(false, ratio, min_ratio) do
+    {:error, {:contrast_too_low, ratio, min_ratio}}
+  end
+
+  defp adjust_color_by_key(true, key, color, _bg_hex), do: {key, color}
+
+  defp adjust_color_by_key(false, key, color, bg_hex) do
+    {key, suggest_accessible_color(color, background: bg_hex, level: :aa)}
+  end
+
+  defp set_fallback_color(true, key, bg), do: {key, bg.hex}
+  defp set_fallback_color(false, key, bg), do: {key, get_optimal_text_color(bg)}
+
+  defp normalize_color_value(true, v), do: Color.from_hex(v)
+  defp normalize_color_value(false, v), do: v
+
+  defp convert_background_color(true, background),
+    do: Color.from_hex(background)
+
+  defp convert_background_color(false, background),
+    do: background || Color.from_hex("#FFFFFF")
 
   @doc """
   Adjusts a color palette to ensure all colors are accessible against a background.
@@ -654,10 +759,7 @@ defmodule Raxol.Style.Colors.Accessibility do
   defp adjust_colors(colors, bg) do
     colors
     |> Enum.map(fn {key, color} ->
-      if key == :background,
-        do: {key, color},
-        else:
-          {key, suggest_accessible_color(color, background: bg.hex, level: :aa)}
+      adjust_color_by_key(key == :background, key, color, bg.hex)
     end)
     |> Map.new()
   end
@@ -665,9 +767,7 @@ defmodule Raxol.Style.Colors.Accessibility do
   defp fallback_colors(colors, bg) do
     colors
     |> Enum.map(fn {key, _color} ->
-      if key == :background,
-        do: {key, bg.hex},
-        else: {key, get_optimal_text_color(bg)}
+      set_fallback_color(key == :background, key, bg)
     end)
     |> Map.new()
   end
@@ -684,14 +784,12 @@ defmodule Raxol.Style.Colors.Accessibility do
   defp extract_background(opts) do
     background = Keyword.get(opts, :background)
 
-    if is_binary(background),
-      do: Color.from_hex(background),
-      else: background || Color.from_hex("#FFFFFF")
+    convert_background_color(is_binary(background), background)
   end
 
   defp normalize_colors_map(colors) do
     Map.new(colors, fn {k, v} ->
-      {k, if(is_binary(v), do: Color.from_hex(v), else: v)}
+      {k, normalize_color_value(is_binary(v), v)}
     end)
   end
 

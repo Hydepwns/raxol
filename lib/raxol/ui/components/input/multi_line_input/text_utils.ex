@@ -38,20 +38,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextUtils do
     safe_row = clamp(row, 0, max(0, num_lines - 1))
 
     line_length =
-      if safe_row >= 0 and safe_row < num_lines do
-        String.length(Enum.at(text_lines, safe_row) || "")
-      else
-        0
-      end
+      calculate_line_length(
+        safe_row >= 0 and safe_row < num_lines,
+        text_lines,
+        safe_row
+      )
 
     # If row is out of bounds, clamp to end of last line
-    safe_col =
-      if row >= num_lines do
-        # End of the last line
-        line_length
-      else
-        clamp(col, 0, line_length)
-      end
+    safe_col = calculate_safe_col(row >= num_lines, col, line_length)
 
     # Calculate index by summing lengths of previous lines plus newlines
     prefix_sum =
@@ -79,19 +73,31 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextUtils do
     value |> max(min) |> min(max)
   end
 
+  defp calculate_line_length(true, text_lines, safe_row) do
+    String.length(Enum.at(text_lines, safe_row) || "")
+  end
+
+  defp calculate_line_length(false, _text_lines, _safe_row), do: 0
+
+  defp calculate_safe_col(true, _col, line_length), do: line_length
+
+  defp calculate_safe_col(false, col, line_length),
+    do: clamp(col, 0, line_length)
+
   @doc """
   Normalizes full text by joining lines with newlines if it's a list.
   """
-  def normalize_full_text(full_text) do
-    if is_list(full_text), do: Enum.join(full_text, "\n"), else: full_text
-  end
+  def normalize_full_text(full_text) when is_list(full_text),
+    do: Enum.join(full_text, "\n")
+
+  def normalize_full_text(full_text), do: full_text
 
   @doc """
   Gets the part of a line after a given column position.
   """
-  def get_after_part(line, end_col, line_length) do
-    if end_col == line_length,
-      do: "",
-      else: String.slice(line, end_col, line_length - end_col)
-  end
+  def get_after_part(_line, end_col, line_length) when end_col == line_length,
+    do: ""
+
+  def get_after_part(line, end_col, line_length),
+    do: String.slice(line, end_col, line_length - end_col)
 end

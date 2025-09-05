@@ -226,7 +226,9 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
     checkpoint = create_checkpoint(state.emulator_state)
     new_state = %{state | last_checkpoint: checkpoint}
 
-    Telemetry.record_checkpoint_created(%{checkpoint_size: map_size(checkpoint)})
+    Telemetry.record_checkpoint_created(%{
+      checkpoint_size: map_size(checkpoint)
+    })
 
     {:reply, {:ok, checkpoint}, new_state}
   end
@@ -261,7 +263,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   @impl true
   def handle_info({:retry_processing, input}, state) do
-    with {:ok, result} <- process_with_retry(input, state) do
+    with {:ok, _result} <- process_with_retry(input, state) do
       Logger.info("Retry successful for buffered input")
       new_state = %{state | input_buffer: <<>>, recovery_state: :healthy}
       {:noreply, new_state}
@@ -282,14 +284,60 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   # Private helper functions
 
   defp validate_input_size(input) when is_binary(input) do
-    if byte_size(input) > @max_input_size do
-      {:error, :input_too_large}
-    else
-      {:ok, :valid_size}
-    end
+    validate_size_limit(byte_size(input) > @max_input_size)
   end
 
   defp validate_input_size(_), do: {:error, :invalid_input}
+
+  # Pattern matching helpers to eliminate if statements
+  defp validate_size_limit(true), do: {:error, :input_too_large}
+  defp validate_size_limit(false), do: {:ok, :valid_size}
+
+  defp validate_sequence_type(sequence)
+       when is_binary(sequence) or is_list(sequence),
+       do: {:ok, sequence}
+
+  defp validate_sequence_type(_sequence), do: {:error, :invalid_sequence}
+
+  defp handle_input_buffering(true, new_state, state, input) do
+    buffered_state = %{new_state | input_buffer: state.input_buffer <> input}
+
+    # Schedule retry
+    Process.send_after(self(), {:retry_processing, input}, @recovery_delay)
+
+    buffered_state
+  end
+
+  defp handle_input_buffering(false, new_state, _state, _input), do: new_state
+
+  defp handle_recovery_check(:recovering, state)
+       when state.error_stats.total_errors > 0 do
+    # Try to recover
+    case perform_recovery(state) do
+      {:ok, recovered_state} ->
+        Telemetry.record_recovery_success()
+        recovered_state
+
+      {:error, reason} ->
+        Telemetry.record_recovery_failure(reason)
+        state
+    end
+  end
+
+  defp handle_recovery_check(_recovery_state, state), do: state
+
+  defp recover_from_checkpoint(nil, _state), do: {:error, :no_checkpoint}
+
+  defp recover_from_checkpoint(checkpoint, state) do
+    {:ok,
+     %{
+       state
+       | emulator_state: checkpoint,
+         recovery_state: :recovered,
+         error_stats:
+           Map.update!(state.error_stats, :recovery_attempts, &(&1 + 1))
+     }}
+  end
 
   defp safe_call_with_timeout(pid, message) do
     with true <- Process.alive?(pid) do
@@ -401,11 +449,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   defp perform_sequence_validation(sequence) do
     # Placeholder for sequence validation logic
-    if is_binary(sequence) or is_list(sequence) do
-      {:ok, sequence}
-    else
-      {:error, :invalid_sequence}
-    end
+    validate_sequence_type(sequence)
   end
 
   defp perform_sequence_application(sequence, emulator_state) do
@@ -489,16 +533,12 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
     new_state = %{state | error_stats: new_stats, recovery_state: :recovering}
 
     # Buffer input for retry if configured
-    if state.config[:buffer_inputs] do
-      buffered_state = %{new_state | input_buffer: state.input_buffer <> input}
-
-      # Schedule retry
-      Process.send_after(self(), {:retry_processing, input}, @recovery_delay)
-
-      buffered_state
-    else
-      new_state
-    end
+    handle_input_buffering(
+      state.config[:buffer_inputs],
+      new_state,
+      state,
+      input
+    )
   end
 
   defp record_error(state, error_type, reason) do
@@ -558,39 +598,14 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
     })
 
     # Perform health check and potentially recover
-    if state.recovery_state == :recovering and
-         state.error_stats.total_errors > 0 do
-      # Try to recover
-      case perform_recovery(state) do
-        {:ok, recovered_state} ->
-          Telemetry.record_recovery_success()
-          recovered_state
-
-        {:error, reason} ->
-          Telemetry.record_recovery_failure(reason)
-          state
-      end
-    else
-      state
-    end
+    handle_recovery_check(state.recovery_state, state)
   end
 
   defp perform_recovery(state) do
     Telemetry.record_recovery_attempt()
 
     # Attempt to recover from errors
-    if state.last_checkpoint do
-      {:ok,
-       %{
-         state
-         | emulator_state: state.last_checkpoint,
-           recovery_state: :recovered,
-           error_stats:
-             Map.update!(state.error_stats, :recovery_attempts, &(&1 + 1))
-       }}
-    else
-      {:error, :no_checkpoint}
-    end
+    recover_from_checkpoint(state.last_checkpoint, state)
   end
 
   defp process_with_retry(input, state) do

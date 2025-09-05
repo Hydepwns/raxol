@@ -9,27 +9,43 @@ defmodule Raxol.Terminal.Input.TextProcessor do
   """
   @spec handle_text_input(binary(), any()) :: any()
   def handle_text_input(input, emulator) do
-    if printable_text?(input) do
-      emulator
-      |> maybe_add_to_command_history(input)
-      |> process_input_characters(input)
-    else
-      emulator
-    end
+    process_text_based_on_printability(printable_text?(input), input, emulator)
+  end
+
+  defp process_text_based_on_printability(false, _input, emulator), do: emulator
+
+  defp process_text_based_on_printability(true, input, emulator) do
+    emulator
+    |> maybe_add_to_command_history(input)
+    |> process_input_characters(input)
   end
 
   defp maybe_add_to_command_history(emulator, input) do
-    if String.ends_with?(input, "\n") and String.trim(input) != "" do
-      command = String.trim_trailing(input, "\n")
+    process_command_history(
+      String.ends_with?(input, "\n") and String.trim(input) != "",
+      emulator,
+      input
+    )
+  end
 
-      if command != "" and can_add_to_history?(emulator) do
-        Raxol.Terminal.Command.Manager.add_to_history(emulator.command, command)
-      end
+  defp process_command_history(false, emulator, _input), do: emulator
 
-      emulator
-    else
-      emulator
-    end
+  defp process_command_history(true, emulator, input) do
+    command = String.trim_trailing(input, "\n")
+
+    add_to_history_if_valid(
+      command != "" and can_add_to_history?(emulator),
+      emulator,
+      command
+    )
+
+    emulator
+  end
+
+  defp add_to_history_if_valid(false, _emulator, _command), do: :ok
+
+  defp add_to_history_if_valid(true, emulator, command) do
+    Raxol.Terminal.Command.Manager.add_to_history(emulator.command, command)
   end
 
   defp can_add_to_history?(emulator) do

@@ -93,12 +93,13 @@ defmodule Raxol.Svelte.Component do
       # Handle render messages
       @impl GenServer
       def handle_info(:render, state) do
-        if state.dirty do
-          rendered = render_component(state)
-          write_to_terminal(state.terminal, rendered)
-          {:noreply, %{state | dirty: false}}
-        else
-          {:noreply, state}
+        case state.dirty do
+          true ->
+            rendered = render_component(state)
+            write_to_terminal(state.terminal, rendered)
+            {:noreply, %{state | dirty: false}}
+          false ->
+            {:noreply, state}
         end
       end
     end
@@ -169,14 +170,15 @@ defmodule Raxol.Svelte.Component do
   Transforms templates into direct buffer operations.
   """
   defmacro template(do: template_ast) do
-    if Module.get_attribute(__CALLER__.module, :compile_time) do
-      # Compile to direct buffer operations at compile time
-      compile_to_buffer_ops(template_ast)
-    else
-      # Keep as runtime template
-      quote do
-        unquote(template_ast)
-      end
+    case Module.get_attribute(__CALLER__.module, :compile_time) do
+      true ->
+        # Compile to direct buffer operations at compile time
+        compile_to_buffer_ops(template_ast)
+      false ->
+        # Keep as runtime template
+        quote do
+          unquote(template_ast)
+        end
     end
   end
 

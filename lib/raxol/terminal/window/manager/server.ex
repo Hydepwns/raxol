@@ -293,11 +293,7 @@ defmodule Raxol.Terminal.Window.Manager.Server do
 
     # Activate if it's the first window
     new_state =
-      if state.active_window == nil do
-        %{new_state | active_window: window_id}
-      else
-        new_state
-      end
+      maybe_activate_first_window(new_state, state.active_window, window_id)
 
     {:reply, {:ok, window}, new_state}
   end
@@ -322,11 +318,11 @@ defmodule Raxol.Terminal.Window.Manager.Server do
 
         # Update active window if necessary
         new_active =
-          if state.active_window == window_id do
-            List.first(new_window_order)
-          else
-            state.active_window
-          end
+          update_active_after_destroy(
+            state.active_window,
+            window_id,
+            new_window_order
+          )
 
         # Clean up spatial map and navigation paths
         new_spatial_map = Map.delete(state.spatial_map, window_id)
@@ -353,27 +349,11 @@ defmodule Raxol.Terminal.Window.Manager.Server do
 
   @impl GenServer
   def handle_call({:set_active_window, window_id}, _from, state) do
-    if Map.has_key?(state.windows, window_id) do
-      # Update window states
-      new_windows =
-        state.windows
-        |> Enum.map(fn {id, window} ->
-          new_state =
-            if id == window_id do
-              :active
-            else
-              if window.state == :active, do: :inactive, else: window.state
-            end
-
-          {id, %{window | state: new_state}}
-        end)
-        |> Enum.into(%{})
-
-      new_state = %{state | windows: new_windows, active_window: window_id}
-      {:reply, :ok, new_state}
-    else
-      {:reply, {:error, :not_found}, state}
-    end
+    handle_set_active_window(
+      Map.has_key?(state.windows, window_id),
+      window_id,
+      state
+    )
   end
 
   @impl GenServer
@@ -476,24 +456,20 @@ defmodule Raxol.Terminal.Window.Manager.Server do
 
   @impl GenServer
   def handle_call({:move_window_to_front, window_id}, _from, state) do
-    if Map.has_key?(state.windows, window_id) do
-      new_order = [window_id | List.delete(state.window_order, window_id)]
-      new_state = %{state | window_order: new_order}
-      {:reply, :ok, new_state}
-    else
-      {:reply, {:error, :not_found}, state}
-    end
+    handle_move_window_to_front(
+      Map.has_key?(state.windows, window_id),
+      window_id,
+      state
+    )
   end
 
   @impl GenServer
   def handle_call({:move_window_to_back, window_id}, _from, state) do
-    if Map.has_key?(state.windows, window_id) do
-      new_order = List.delete(state.window_order, window_id) ++ [window_id]
-      new_state = %{state | window_order: new_order}
-      {:reply, :ok, new_state}
-    else
-      {:reply, {:error, :not_found}, state}
-    end
+    handle_move_window_to_back(
+      Map.has_key?(state.windows, window_id),
+      window_id,
+      state
+    )
   end
 
   @impl GenServer
@@ -550,5 +526,74 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   @impl GenServer
   def handle_call(:reset, _from, _state) do
     {:reply, :ok, @default_state}
+  end
+
+  # Private helper functions
+
+  defp maybe_activate_first_window(new_state, nil, window_id) do
+    %{new_state | active_window: window_id}
+  end
+
+  defp maybe_activate_first_window(new_state, _active_window, _window_id) do
+    new_state
+  end
+
+  defp update_active_after_destroy(active_window, window_id, new_window_order)
+       when active_window == window_id do
+    List.first(new_window_order)
+  end
+
+  defp update_active_after_destroy(active_window, _window_id, _new_window_order) do
+    active_window
+  end
+
+  defp handle_set_active_window(false, _window_id, state) do
+    {:reply, {:error, :not_found}, state}
+  end
+
+  defp handle_set_active_window(true, window_id, state) do
+    # Update window states
+    new_windows =
+      state.windows
+      |> Enum.map(fn {id, window} ->
+        new_state = determine_window_state(id == window_id, window.state)
+        {id, %{window | state: new_state}}
+      end)
+      |> Enum.into(%{})
+
+    new_state = %{state | windows: new_windows, active_window: window_id}
+    {:reply, :ok, new_state}
+  end
+
+  defp determine_window_state(true, _current_state) do
+    :active
+  end
+
+  defp determine_window_state(false, :active) do
+    :inactive
+  end
+
+  defp determine_window_state(false, current_state) do
+    current_state
+  end
+
+  defp handle_move_window_to_front(false, _window_id, state) do
+    {:reply, {:error, :not_found}, state}
+  end
+
+  defp handle_move_window_to_front(true, window_id, state) do
+    new_order = [window_id | List.delete(state.window_order, window_id)]
+    new_state = %{state | window_order: new_order}
+    {:reply, :ok, new_state}
+  end
+
+  defp handle_move_window_to_back(false, _window_id, state) do
+    {:reply, {:error, :not_found}, state}
+  end
+
+  defp handle_move_window_to_back(true, window_id, state) do
+    new_order = List.delete(state.window_order, window_id) ++ [window_id]
+    new_state = %{state | window_order: new_order}
+    {:reply, :ok, new_state}
   end
 end

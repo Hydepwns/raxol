@@ -325,11 +325,11 @@ defmodule Raxol.Auth do
       when is_binary(user_id) do
     case get_user(user_id) do
       {:ok, user} ->
-        if verify_password(current_password, user.password_hash) do
-          update_user_password(user, new_password)
-        else
-          {:error, :invalid_current_password}
-        end
+        handle_password_verification(
+          verify_password(current_password, user.password_hash),
+          user,
+          new_password
+        )
 
       {:error, :not_found} ->
         # Fallback to Accounts for backward compatibility
@@ -347,6 +347,46 @@ defmodule Raxol.Auth do
     do: {:error, :invalid_user_id}
 
   # Private functions
+
+  # Pattern matching helper functions for refactored if statements
+
+  # Handle password verification instead of if statement
+  defp handle_password_verification(true, user, new_password) do
+    update_user_password(user, new_password)
+  end
+
+  defp handle_password_verification(false, _user, _new_password) do
+    {:error, :invalid_current_password}
+  end
+
+  # Check permissions by role instead of if statement
+  defp check_permissions_by_role(true, _user, _module, _action) do
+    # Admin has all permissions
+    true
+  end
+
+  defp check_permissions_by_role(false, user, module, action) do
+    # Check specific permissions
+    module_str = to_string(module)
+    action_str = to_string(action)
+
+    user.permissions
+    |> Enum.any?(fn permission ->
+      permission.module == module_str && permission.action == action_str
+    end)
+  end
+
+  # Handle lock check instead of if statement
+  defp handle_lock_check(true), do: {:error, :user_locked}
+  defp handle_lock_check(false), do: :ok
+
+  # Handle password validation instead of if statement
+  defp handle_password_validation(true), do: :ok
+  defp handle_password_validation(false), do: {:error, :invalid_credentials}
+
+  # Calculate lock time instead of if statement
+  defp calculate_lock_time(true), do: DateTime.add(DateTime.utc_now(), 900, :second)
+  defp calculate_lock_time(false), do: nil
 
   defp get_user_with_role(user_id) do
     case get_user(user_id) do
@@ -367,18 +407,12 @@ defmodule Raxol.Auth do
   """
   def check_user_permissions(user, module, action) do
     # Check if user has admin role (admin has all permissions)
-    if has_admin_role?(user) do
-      true
-    else
-      # Check specific permissions
-      module_str = to_string(module)
-      action_str = to_string(action)
-
-      user.permissions
-      |> Enum.any?(fn permission ->
-        permission.module == module_str && permission.action == action_str
-      end)
-    end
+    check_permissions_by_role(
+      has_admin_role?(user),
+      user,
+      module,
+      action
+    )
   end
 
   defp has_admin_role?(user) do
@@ -414,19 +448,11 @@ defmodule Raxol.Auth do
   defp validate_user_not_locked(%{locked_until: nil}), do: :ok
 
   defp validate_user_not_locked(%{locked_until: locked_until}) do
-    if DateTime.compare(locked_until, DateTime.utc_now()) == :gt do
-      {:error, :user_locked}
-    else
-      :ok
-    end
+    handle_lock_check(DateTime.compare(locked_until, DateTime.utc_now()) == :gt)
   end
 
   defp validate_password(password, password_hash) do
-    if verify_password(password, password_hash) do
-      :ok
-    else
-      {:error, :invalid_credentials}
-    end
+    handle_password_validation(verify_password(password, password_hash))
   end
 
   defp handle_authentication_error({:error, :invalid_credentials}, user) do
@@ -465,10 +491,7 @@ defmodule Raxol.Auth do
   defp update_user_login_failure(user) do
     failed_attempts = (user.failed_login_attempts || 0) + 1
 
-    locked_until =
-      if failed_attempts >= 5,
-        do: DateTime.add(DateTime.utc_now(), 900, :second),
-        else: nil
+    locked_until = calculate_lock_time(failed_attempts >= 5)
 
     attrs = %{
       failed_login_attempts: failed_attempts,

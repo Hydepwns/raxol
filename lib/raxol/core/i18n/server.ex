@@ -173,23 +173,28 @@ defmodule Raxol.Core.I18n.Server do
   @impl GenServer
   def handle_call({:set_locale, locale}, _from, state) do
     available_locales = Map.get(state.config, :available_locales, ["en"])
+    handle_locale_change(Enum.member?(available_locales, locale), locale, state)
+  end
 
-    if Enum.member?(available_locales, locale) do
-      previous_locale = state.current_locale
-      new_state = %{state | current_locale: locale}
-      new_state = load_translations(new_state, locale)
+  defp handle_locale_change(false, _locale, state) do
+    {:reply, {:error, :locale_not_available}, state}
+  end
 
-      # Broadcast locale change event
-      if state.event_manager do
-        event = {:locale_changed, previous_locale, locale}
-        state.event_manager.broadcast(event)
-        handle_locale_changed(event, new_state)
-      end
+  defp handle_locale_change(true, locale, state) do
+    previous_locale = state.current_locale
+    new_state = %{state | current_locale: locale}
+    new_state = load_translations(new_state, locale)
 
-      {:reply, :ok, new_state}
-    else
-      {:reply, {:error, :locale_not_available}, state}
-    end
+    # Broadcast locale change event
+    broadcast_locale_event(state.event_manager, previous_locale, locale, new_state)
+    {:reply, :ok, new_state}
+  end
+
+  defp broadcast_locale_event(nil, _previous_locale, _locale, _state), do: :ok
+  defp broadcast_locale_event(event_manager, previous_locale, locale, new_state) do
+    event = {:locale_changed, previous_locale, locale}
+    event_manager.broadcast(event)
+    handle_locale_changed(event, new_state)
   end
 
   @impl GenServer
@@ -321,15 +326,23 @@ defmodule Raxol.Core.I18n.Server do
     old_rtl = Enum.member?(state.rtl_locales, old_locale)
     new_rtl = Enum.member?(state.rtl_locales, new_locale)
 
-    if old_rtl != new_rtl and state.event_manager do
-      state.event_manager.broadcast({:rtl_changed, new_rtl})
-    end
-
-    if state.accessibility_module do
-      direction = if new_rtl, do: :rtl, else: :ltr
-      state.accessibility_module.set_option(:direction, direction)
-    end
-
+    handle_rtl_change(old_rtl != new_rtl, state.event_manager, new_rtl)
+    update_accessibility_direction(state.accessibility_module, new_rtl)
     :ok
   end
+
+  defp handle_rtl_change(false, _event_manager, _new_rtl), do: :ok
+  defp handle_rtl_change(true, nil, _new_rtl), do: :ok
+  defp handle_rtl_change(true, event_manager, new_rtl) do
+    event_manager.broadcast({:rtl_changed, new_rtl})
+  end
+
+  defp update_accessibility_direction(nil, _new_rtl), do: :ok
+  defp update_accessibility_direction(accessibility_module, new_rtl) do
+    direction = get_direction(new_rtl)
+    accessibility_module.set_option(:direction, direction)
+  end
+
+  defp get_direction(true), do: :rtl
+  defp get_direction(false), do: :ltr
 end

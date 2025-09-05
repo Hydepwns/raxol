@@ -95,11 +95,9 @@ defmodule Raxol.Core.Performance.Profiler do
   def profile_execution(operation, opts, fun) do
     sample_rate = Keyword.get(opts, :sample_rate, 1.0)
 
-    if :rand.uniform() <= sample_rate do
-      do_profile(operation, opts, fun)
-    else
-      # Not sampled, just execute
-      fun.()
+    case should_profile?(sample_rate) do
+      true -> do_profile(operation, opts, fun)
+      false -> fun.()
     end
   end
 
@@ -258,12 +256,7 @@ defmodule Raxol.Core.Performance.Profiler do
     operations = Keyword.get(opts, :operations, :all)
 
     # If operations are specified as a list, return raw data unless format is explicitly set
-    format =
-      if is_list(operations) and not Keyword.has_key?(opts, :format) do
-        :raw
-      else
-        format
-      end
+    format = determine_report_format(operations, opts, format)
 
     GenServer.call(__MODULE__, {:generate_report, format, operations})
   end
@@ -334,9 +327,7 @@ defmodule Raxol.Core.Performance.Profiler do
     # Periodic analysis of profiling data
     new_suggestions = analyze_for_optimizations(state)
 
-    if new_suggestions != state.suggestions do
-      Logger.info("New performance optimization suggestions available")
-    end
+    log_new_suggestions(new_suggestions, state.suggestions)
 
     # Schedule next analysis
     Process.send_after(self(), :analyze, 60_000)
@@ -345,6 +336,105 @@ defmodule Raxol.Core.Performance.Profiler do
   end
 
   # Private functions
+
+  defp should_profile?(sample_rate) do
+    :rand.uniform() <= sample_rate
+  end
+
+  defp determine_report_format(operations, opts, default_format)
+       when is_list(operations) do
+    case Keyword.has_key?(opts, :format) do
+      true -> default_format
+      false -> :raw
+    end
+  end
+
+  defp determine_report_format(_, _, default_format), do: default_format
+
+  defp log_new_suggestions(new_suggestions, old_suggestions)
+       when new_suggestions != old_suggestions do
+    Logger.info("New performance optimization suggestions available")
+  end
+
+  defp log_new_suggestions(_, _), do: :ok
+
+  defp enable_tracing_if_requested(true), do: start_tracing()
+  defp enable_tracing_if_requested(false), do: :ok
+
+  defp disable_tracing_if_enabled(true), do: stop_tracing()
+  defp disable_tracing_if_enabled(false), do: :ok
+
+  defp log_slow_operation_if_needed(operation, metrics) do
+    case metrics.duration_us > 1_000_000 do
+      true ->
+        Logger.warning(
+          "[Performance] Slow operation #{operation}: #{metrics.duration_us / 1_000_000}s"
+        )
+
+      false ->
+        :ok
+    end
+  end
+
+  defp build_benchmark_results(operation, _sorted, 0) do
+    %{
+      operation: operation,
+      min: 0,
+      max: 0,
+      mean: 0,
+      median: 0,
+      p95: 0,
+      p99: 0,
+      std_dev: 0
+    }
+  end
+
+  defp build_benchmark_results(operation, sorted, count) do
+    %{
+      operation: operation,
+      min: Enum.min(sorted),
+      max: Enum.max(sorted),
+      mean: Enum.sum(sorted) / count,
+      median: Enum.at(sorted, div(count, 2)),
+      p95: Enum.at(sorted, round(count * 0.95)),
+      p99: Enum.at(sorted, round(count * 0.99)),
+      std_dev: calculate_std_dev(sorted)
+    }
+  end
+
+  defp check_slow_operation_suggestion(op, avg) when avg > 100_000 do
+    [
+      "Operation #{op} is slow (avg: #{format_time(avg)}). Consider optimization."
+    ]
+  end
+
+  defp check_slow_operation_suggestion(_, _), do: []
+
+  defp check_high_memory_suggestion(op, avg_mem) when avg_mem > 1_000_000 do
+    [
+      "Operation #{op} uses high memory (avg: #{format_memory(avg_mem)}). Consider streaming."
+    ]
+  end
+
+  defp check_high_memory_suggestion(_, _), do: []
+
+  defp check_gc_pressure_suggestion(op, gc_pressure) when gc_pressure > 0.5 do
+    ["Operation #{op} causes GC pressure. Consider reducing allocations."]
+  end
+
+  defp check_gc_pressure_suggestion(_, _), do: []
+
+  defp calculate_average_memory_delta([]), do: 0
+
+  defp calculate_average_memory_delta(deltas) do
+    Enum.sum(deltas) / length(deltas)
+  end
+
+  defp calculate_gc_pressure_ratio(_total_gcs, []), do: 0
+
+  defp calculate_gc_pressure_ratio(total_gcs, profiles) do
+    total_gcs / length(profiles)
+  end
 
   defp do_profile(operation, opts, fun) do
     metadata = Keyword.get(opts, :metadata, %{})
@@ -359,7 +449,7 @@ defmodule Raxol.Core.Performance.Profiler do
     start_time = System.monotonic_time(:microsecond)
 
     # Enable tracing if requested
-    if trace, do: start_tracing()
+    enable_tracing_if_requested(trace)
 
     # Execute the function with functional error handling
     case Raxol.Core.ErrorHandling.safe_call_with_info(fun) do
@@ -371,7 +461,7 @@ defmodule Raxol.Core.Performance.Profiler do
         {reductions_after, _} = :erlang.statistics(:reductions)
 
         # Stop tracing
-        if trace, do: stop_tracing()
+        disable_tracing_if_enabled(trace)
 
         # Build metrics
         metrics = %Metrics{
@@ -393,16 +483,12 @@ defmodule Raxol.Core.Performance.Profiler do
         GenServer.call(__MODULE__, {:record_profile, metrics})
 
         # Log if slow (> 1 second)
-        if metrics.duration_us > 1_000_000 do
-          Logger.warning(
-            "[Performance] Slow operation #{operation}: #{metrics.duration_us / 1_000_000}s"
-          )
-        end
+        log_slow_operation_if_needed(operation, metrics)
 
         result
 
       {:error, {kind, error, stacktrace}} ->
-        if trace, do: stop_tracing()
+        disable_tracing_if_enabled(trace)
         :erlang.raise(kind, error, stacktrace)
     end
   end
@@ -411,29 +497,7 @@ defmodule Raxol.Core.Performance.Profiler do
     sorted = Enum.sort(times)
     count = length(sorted)
 
-    if count == 0 do
-      %{
-        operation: operation,
-        min: 0,
-        max: 0,
-        mean: 0,
-        median: 0,
-        p95: 0,
-        p99: 0,
-        std_dev: 0
-      }
-    else
-      %{
-        operation: operation,
-        min: Enum.min(sorted),
-        max: Enum.max(sorted),
-        mean: Enum.sum(sorted) / count,
-        median: Enum.at(sorted, div(count, 2)),
-        p95: Enum.at(sorted, round(count * 0.95)),
-        p99: Enum.at(sorted, round(count * 0.99)),
-        std_dev: calculate_std_dev(sorted)
-      }
-    end
+    build_benchmark_results(operation, sorted, count)
   end
 
   defp calculate_improvement(old_results, new_results) do
@@ -542,13 +606,7 @@ defmodule Raxol.Core.Performance.Profiler do
         Enum.flat_map(profiles_by_op, fn {op, profiles} ->
           avg = average_duration(profiles)
           # > 100ms
-          if avg > 100_000 do
-            [
-              "Operation #{op} is slow (avg: #{format_time(avg)}). Consider optimization."
-            ]
-          else
-            []
-          end
+          check_slow_operation_suggestion(op, avg)
         end)
 
     # Check for high memory operations
@@ -557,13 +615,7 @@ defmodule Raxol.Core.Performance.Profiler do
         Enum.flat_map(profiles_by_op, fn {op, profiles} ->
           avg_mem = average_memory(profiles)
           # > 1MB
-          if avg_mem > 1_000_000 do
-            [
-              "Operation #{op} uses high memory (avg: #{format_memory(avg_mem)}). Consider streaming."
-            ]
-          else
-            []
-          end
+          check_high_memory_suggestion(op, avg_mem)
         end)
 
     # Check for GC pressure
@@ -572,13 +624,7 @@ defmodule Raxol.Core.Performance.Profiler do
         Enum.flat_map(profiles_by_op, fn {op, profiles} ->
           gc_pressure = calculate_gc_pressure(profiles)
           # > 0.5 GCs per call
-          if gc_pressure > 0.5 do
-            [
-              "Operation #{op} causes GC pressure. Consider reducing allocations."
-            ]
-          else
-            []
-          end
+          check_gc_pressure_suggestion(op, gc_pressure)
         end)
 
     suggestions
@@ -614,11 +660,7 @@ defmodule Raxol.Core.Performance.Profiler do
       |> Enum.map(& &1.memory_delta)
       |> Enum.filter(& &1)
 
-    if length(deltas) > 0 do
-      Enum.sum(deltas) / length(deltas)
-    else
-      0
-    end
+    calculate_average_memory_delta(deltas)
   end
 
   defp calculate_gc_pressure(profiles) do
@@ -628,11 +670,7 @@ defmodule Raxol.Core.Performance.Profiler do
       |> Enum.filter(& &1)
       |> Enum.sum()
 
-    if length(profiles) > 0 do
-      total_gcs / length(profiles)
-    else
-      0
-    end
+    calculate_gc_pressure_ratio(total_gcs, profiles)
   end
 
   defp format_time(microseconds) when microseconds < 1000 do

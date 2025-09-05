@@ -80,12 +80,12 @@ defmodule Raxol.UI.Components.Base do
 
   defp validate_required(props, required) do
     missing = Enum.filter(required, &(not Map.has_key?(props, &1)))
+    handle_missing_props(missing)
+  end
 
-    if Enum.empty?(missing) do
-      :ok
-    else
-      {:error, "Missing required props: #{Enum.join(missing, ", ")}"}
-    end
+  defp handle_missing_props([]), do: :ok
+  defp handle_missing_props(missing) do
+    {:error, "Missing required props: #{Enum.join(missing, ", ")}"}
   end
 
   defp validate_types(props, types) do

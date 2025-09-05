@@ -22,12 +22,20 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   # Helper functions for pattern matching refactoring
 
   defp validate_with_custom_function(validation_fn, solution) do
-    if validation_fn.(solution) do
-      {:ok, "Solution is correct!"}
-    else
-      {:error, "Solution is incorrect"}
-    end
+    validate_solution_result(validation_fn.(solution))
   end
+
+  defp validate_solution_result(true), do: {:ok, "Solution is correct!"}
+
+  defp validate_solution_result(false), do: {:error, "Solution is incorrect"}
+
+  defp validate_output_match(true), do: {:ok, "Solution matches expected output"}
+
+  defp validate_output_match(false), do: {:error, "Solution does not match expected output"}
+
+  defp validate_multiple_choice_answer(true), do: {:ok, "Correct answer selected"}
+
+  defp validate_multiple_choice_answer(false), do: {:error, "Incorrect answer selected"}
 
   @doc """
   Validates a user's solution for an exercise with custom validation function.
@@ -48,11 +56,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
     solution = String.trim(solution)
     expected = String.trim(expected_output)
 
-    if solution == expected do
-      {:ok, "Solution matches expected output"}
-    else
-      {:error, "Solution does not match expected output"}
-    end
+    validate_output_match(solution == expected)
   end
 
   @doc """
@@ -133,11 +137,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
         {:error, "No validation configured for multiple choice"}
 
       correct_answer when is_binary(correct_answer) ->
-        if solution == correct_answer do
-          {:ok, "Correct answer selected"}
-        else
-          {:error, "Incorrect answer selected"}
-        end
+        validate_multiple_choice_answer(solution == correct_answer)
 
       _ ->
         {:error, "Invalid validation configuration"}

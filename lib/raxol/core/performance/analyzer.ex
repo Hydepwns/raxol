@@ -113,118 +113,121 @@ defmodule Raxol.Core.Performance.Analyzer do
     # Deduct points for issues
     deductions = [
       # FPS deductions
-      if(metrics.fps < 30, do: 20, else: 0),
-      if(metrics.fps < 45, do: 10, else: 0),
+      fps_deduction_severe(metrics.fps),
+      fps_deduction_moderate(metrics.fps),
 
       # Jank deductions
-      if(metrics.jank_count > 0, do: metrics.jank_count * 5, else: 0),
+      jank_deduction(metrics.jank_count),
 
       # Memory usage deductions
-      # 1GB
-      if(metrics.memory_usage > 1_000_000_000, do: 15, else: 0),
-      # 500MB
-      if(metrics.memory_usage > 500_000_000, do: 10, else: 0),
+      memory_deduction_severe(metrics.memory_usage),
+      memory_deduction_moderate(metrics.memory_usage),
 
       # GC pressure deductions
-      if(Map.get(metrics.gc_stats, :number_of_gcs, 0) > 100, do: 10, else: 0)
+      gc_deduction(Map.get(metrics.gc_stats, :number_of_gcs, 0))
     ]
 
     # Calculate final score
     max(0, base_score - Enum.sum(deductions))
   end
 
+  defp fps_deduction_severe(fps) when fps < 30, do: 20
+  defp fps_deduction_severe(_fps), do: 0
+
+  defp fps_deduction_moderate(fps) when fps < 45, do: 10
+  defp fps_deduction_moderate(_fps), do: 0
+
+  defp jank_deduction(0), do: 0
+  defp jank_deduction(count), do: count * 5
+
+  defp memory_deduction_severe(usage) when usage > 1_000_000_000, do: 15
+  defp memory_deduction_severe(_usage), do: 0
+
+  defp memory_deduction_moderate(usage) when usage > 500_000_000, do: 10
+  defp memory_deduction_moderate(_usage), do: 0
+
+  defp gc_deduction(count) when count > 100, do: 10
+  defp gc_deduction(_count), do: 0
+
   defp identify_issues(metrics) do
-    issues = []
-
-    # Check FPS
-    issues =
-      if metrics.fps < 45 and metrics.fps >= 30,
-        do: ["Warning: Suboptimal FPS (< 45)" | issues],
-        else: issues
-
-    issues =
-      if metrics.fps < 30,
-        do: ["Critical: Low FPS (< 30)" | issues],
-        else: issues
-
-    # Check UI jank
-    issues =
-      if metrics.jank_count > 0 do
-        ["Warning: UI jank detected (#{metrics.jank_count} frames)" | issues]
-      else
-        issues
-      end
-
-    # Check memory usage
-    issues =
-      if metrics.memory_usage > 1_000_000_000 do
-        ["Critical: High memory usage (> 1GB)" | issues]
-      else
-        issues
-      end
-
-    issues =
-      if metrics.memory_usage > 500_000_000 do
-        ["Warning: Elevated memory usage (> 500MB)" | issues]
-      else
-        issues
-      end
-
-    # Check garbage collection
-    issues =
-      if Map.get(metrics.gc_stats, :number_of_gcs, 0) > 100 do
-        ["Warning: Frequent garbage collection" | issues]
-      else
-        issues
-      end
-
-    issues
+    []
+    |> add_fps_issues(metrics.fps)
+    |> add_jank_issues(metrics.jank_count)
+    |> add_memory_issues(metrics.memory_usage)
+    |> add_gc_issues(Map.get(metrics.gc_stats, :number_of_gcs, 0))
   end
+
+  defp add_fps_issues(issues, fps) when fps < 30 do
+    ["Critical: Low FPS (< 30)" | issues]
+  end
+
+  defp add_fps_issues(issues, fps) when fps < 45 do
+    ["Warning: Suboptimal FPS (< 45)" | issues]
+  end
+
+  defp add_fps_issues(issues, _fps), do: issues
+
+  defp add_jank_issues(issues, 0), do: issues
+
+  defp add_jank_issues(issues, jank_count) do
+    ["Warning: UI jank detected (#{jank_count} frames)" | issues]
+  end
+
+  defp add_memory_issues(issues, usage) when usage > 1_000_000_000 do
+    ["Critical: High memory usage (> 1GB)" | issues]
+  end
+
+  defp add_memory_issues(issues, usage) when usage > 500_000_000 do
+    ["Warning: Elevated memory usage (> 500MB)" | issues]
+  end
+
+  defp add_memory_issues(issues, _usage), do: issues
+
+  defp add_gc_issues(issues, count) when count > 100 do
+    ["Warning: Frequent garbage collection" | issues]
+  end
+
+  defp add_gc_issues(issues, _count), do: issues
 
   defp generate_suggestions(metrics) do
-    suggestions = []
-
-    # FPS suggestions
-    suggestions =
-      if metrics.fps < 30 do
-        [
-          "Consider using virtual scrolling for large lists",
-          "Implement component memoization",
-          "Review and optimize expensive computations"
-          | suggestions
-        ]
-      else
-        suggestions
-      end
-
-    # Memory suggestions
-    suggestions =
-      if metrics.memory_usage > 500_000_000 do
-        [
-          "Review memory usage patterns",
-          "Implement memory-efficient data structures",
-          "Consider implementing pagination"
-          | suggestions
-        ]
-      else
-        suggestions
-      end
-
-    # GC suggestions
-    suggestions =
-      if Map.get(metrics.gc_stats, :number_of_gcs, 0) > 100 do
-        [
-          "Review object lifecycle management",
-          "Implement object pooling where appropriate",
-          "Consider using WeakMap/WeakSet for caches"
-          | suggestions
-        ]
-      else
-        suggestions
-      end
-
-    suggestions
+    []
+    |> add_fps_suggestions(metrics.fps)
+    |> add_memory_suggestions(metrics.memory_usage)
+    |> add_gc_suggestions(Map.get(metrics.gc_stats, :number_of_gcs, 0))
   end
+
+  defp add_fps_suggestions(suggestions, fps) when fps < 30 do
+    [
+      "Consider using virtual scrolling for large lists",
+      "Implement component memoization",
+      "Review and optimize expensive computations"
+      | suggestions
+    ]
+  end
+
+  defp add_fps_suggestions(suggestions, _fps), do: suggestions
+
+  defp add_memory_suggestions(suggestions, usage) when usage > 500_000_000 do
+    [
+      "Review memory usage patterns",
+      "Implement memory-efficient data structures",
+      "Consider implementing pagination"
+      | suggestions
+    ]
+  end
+
+  defp add_memory_suggestions(suggestions, _usage), do: suggestions
+
+  defp add_gc_suggestions(suggestions, count) when count > 100 do
+    [
+      "Review object lifecycle management",
+      "Implement object pooling where appropriate",
+      "Consider using WeakMap/WeakSet for caches"
+      | suggestions
+    ]
+  end
+
+  defp add_gc_suggestions(suggestions, _count), do: suggestions
 
   defp identify_patterns(metrics) do
     %{

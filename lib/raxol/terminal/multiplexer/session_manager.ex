@@ -344,9 +344,10 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
     {:ok, storage} = init_storage(config)
 
     # Schedule periodic saves
-    if config.auto_save_interval_ms > 0 do
-      :timer.send_interval(config.auto_save_interval_ms, :auto_save)
-    end
+    schedule_auto_save(
+      config.auto_save_interval_ms > 0,
+      config.auto_save_interval_ms
+    )
 
     # Load existing sessions
     sessions = load_sessions(storage)
@@ -358,10 +359,7 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
       config: config,
       event_bus: init_event_bus(),
       collaboration_server:
-        if(config.enable_collaboration,
-          do: init_collaboration_server(),
-          else: nil
-        )
+        init_collaboration_if_enabled(config.enable_collaboration)
     }
 
     Logger.info(
@@ -445,28 +443,7 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
 
   @impl GenServer
   def handle_call(:detach_session, _from, state) do
-    if state.active_session do
-      session_id = state.active_session
-      session = Map.get(state.sessions, session_id)
-
-      # Update session status
-      updated_session = %{
-        session
-        | status: :detached,
-          last_accessed: System.monotonic_time(:millisecond)
-      }
-
-      new_sessions = Map.put(state.sessions, session_id, updated_session)
-      new_state = %{state | sessions: new_sessions, active_session: nil}
-
-      # Broadcast detachment event
-      broadcast_event(state, :session_detached, %{session_id: session_id})
-
-      Logger.info("Detached from session '#{session.name}' (#{session_id})")
-      {:reply, :ok, new_state}
-    else
-      {:reply, {:error, :no_active_session}, state}
-    end
+    process_detach_session(state.active_session != nil, state)
   end
 
   @impl GenServer
@@ -514,21 +491,12 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
 
   @impl GenServer
   def handle_call({:share_session, session_id, opts}, _from, state) do
-    if state.config.enable_collaboration do
-      case create_share_token(state, session_id, opts) do
-        {:ok, share_token, new_state} ->
-          Logger.info(
-            "Session #{session_id} shared with token #{String.slice(share_token, 0, 8)}..."
-          )
-
-          {:reply, {:ok, share_token}, new_state}
-
-        {:error, reason} ->
-          {:reply, {:error, reason}, state}
-      end
-    else
-      {:reply, {:error, :collaboration_disabled}, state}
-    end
+    handle_session_sharing(
+      state.config.enable_collaboration,
+      state,
+      session_id,
+      opts
+    )
   end
 
   @impl GenServer
@@ -548,56 +516,62 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
 
   defp create_session_impl(state, opts) do
     # Check session limit
-    if map_size(state.sessions) >= state.config.max_sessions do
-      {:error, :max_sessions_reached}
-    else
-      session_id = generate_session_id()
-      session_name = Keyword.get(opts, :name, "session-#{session_id}")
+    session_limit_reached =
+      map_size(state.sessions) >= state.config.max_sessions
 
-      # Create base session
-      session = %{
-        id: session_id,
-        name: session_name,
-        created_at: System.monotonic_time(:millisecond),
-        last_accessed: System.monotonic_time(:millisecond),
-        windows: [],
-        active_window: nil,
-        environment: Keyword.get(opts, :environment, System.get_env()),
-        working_directory: Keyword.get(opts, :working_directory, File.cwd!()),
-        status: :active,
-        metadata: %{}
-      }
+    create_session_if_allowed(session_limit_reached, state, opts)
+  end
 
-      # Create initial windows if specified
-      {updated_session, updated_state} =
-        case Keyword.get(opts, :windows, []) do
-          [] ->
-            # Create default window
-            {:ok, window, new_state} = create_default_window(state, session)
+  defp create_session_if_allowed(true, _state, _opts),
+    do: {:error, :max_sessions_reached}
 
-            updated_sess = %{
-              session
-              | windows: [window.id],
-                active_window: window.id
-            }
+  defp create_session_if_allowed(false, state, opts) do
+    session_id = generate_session_id()
+    session_name = Keyword.get(opts, :name, "session-#{session_id}")
 
-            {updated_sess, new_state}
+    # Create base session
+    session = %{
+      id: session_id,
+      name: session_name,
+      created_at: System.monotonic_time(:millisecond),
+      last_accessed: System.monotonic_time(:millisecond),
+      windows: [],
+      active_window: nil,
+      environment: Keyword.get(opts, :environment, System.get_env()),
+      working_directory: Keyword.get(opts, :working_directory, File.cwd!()),
+      status: :active,
+      metadata: %{}
+    }
 
-          window_configs ->
-            create_initial_windows(state, session, window_configs)
-        end
+    # Create initial windows if specified
+    {updated_session, updated_state} =
+      case Keyword.get(opts, :windows, []) do
+        [] ->
+          # Create default window
+          {:ok, window, new_state} = create_default_window(state, session)
 
-      new_sessions =
-        Map.put(updated_state.sessions, session_id, updated_session)
+          updated_sess = %{
+            session
+            | windows: [window.id],
+              active_window: window.id
+          }
 
-      final_state = %{
-        updated_state
-        | sessions: new_sessions,
-          active_session: session_id
-      }
+          {updated_sess, new_state}
 
-      {:ok, updated_session, final_state}
-    end
+        window_configs ->
+          create_initial_windows(state, session, window_configs)
+      end
+
+    new_sessions =
+      Map.put(updated_state.sessions, session_id, updated_session)
+
+    final_state = %{
+      updated_state
+      | sessions: new_sessions,
+        active_session: session_id
+    }
+
+    {:ok, updated_session, final_state}
   end
 
   defp create_window_impl(state, session, opts) do
@@ -737,25 +711,12 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
         {:error, :session_not_found}
 
       session ->
-        if window_id in session.windows do
-          # Mock pane lookup
-          pane = %{
-            id: pane_id,
-            window_id: window_id,
-            session_id: session_id,
-            command: nil,
-            pid: nil,
-            size: %{width: 80, height: 24},
-            position: %{x: 0, y: 0},
-            status: :active,
-            buffer: init_pane_buffer(),
-            metadata: %{}
-          }
-
-          {:ok, pane}
-        else
-          {:error, :window_not_found}
-        end
+        validate_window_and_get_pane(
+          window_id in session.windows,
+          pane_id,
+          window_id,
+          session_id
+        )
     end
   end
 
@@ -900,17 +861,10 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
              :file ->
                sessions_file = Path.join(storage.path, "sessions.json")
 
-               if File.exists?(sessions_file) do
+               load_sessions_from_file(
+                 File.exists?(sessions_file),
                  sessions_file
-                 |> File.read!()
-                 |> Jason.decode!()
-                 |> Enum.map(fn {id, session_data} ->
-                   {id, atomize_keys(session_data)}
-                 end)
-                 |> Map.new()
-               else
-                 %{}
-               end
+               )
 
              :ets ->
                :ets.tab2list(storage.table) |> Map.new()
@@ -976,9 +930,12 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
   end
 
   defp broadcast_event(state, event_type, event_data) do
-    if state.event_bus do
-      GenServer.cast(state.event_bus, {:broadcast, event_type, event_data})
-    end
+    broadcast_if_available(
+      state.event_bus != nil,
+      state.event_bus,
+      event_type,
+      event_data
+    )
   end
 
   ## Utility Functions
@@ -992,6 +949,97 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
   end
 
   defp atomize_keys(value), do: value
+
+  ## Helper Functions for Pattern Matching
+
+  defp schedule_auto_save(false, _interval), do: :ok
+
+  defp schedule_auto_save(true, interval),
+    do: :timer.send_interval(interval, :auto_save)
+
+  defp init_collaboration_if_enabled(true), do: init_collaboration_server()
+  defp init_collaboration_if_enabled(false), do: nil
+
+  defp process_detach_session(false, state),
+    do: {:reply, {:error, :no_active_session}, state}
+
+  defp process_detach_session(true, state) do
+    session_id = state.active_session
+    session = Map.get(state.sessions, session_id)
+
+    # Update session status
+    updated_session = %{
+      session
+      | status: :detached,
+        last_accessed: System.monotonic_time(:millisecond)
+    }
+
+    new_sessions = Map.put(state.sessions, session_id, updated_session)
+    new_state = %{state | sessions: new_sessions, active_session: nil}
+
+    # Broadcast detachment event
+    broadcast_event(state, :session_detached, %{session_id: session_id})
+
+    Logger.info("Detached from session '#{session.name}' (#{session_id})")
+    {:reply, :ok, new_state}
+  end
+
+  defp handle_session_sharing(false, state, _session_id, _opts),
+    do: {:reply, {:error, :collaboration_disabled}, state}
+
+  defp handle_session_sharing(true, state, session_id, opts) do
+    case create_share_token(state, session_id, opts) do
+      {:ok, share_token, new_state} ->
+        Logger.info(
+          "Session #{session_id} shared with token #{String.slice(share_token, 0, 8)}..."
+        )
+
+        {:reply, {:ok, share_token}, new_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  defp validate_window_and_get_pane(false, _pane_id, _window_id, _session_id),
+    do: {:error, :window_not_found}
+
+  defp validate_window_and_get_pane(true, pane_id, window_id, session_id) do
+    # Mock pane lookup
+    pane = %{
+      id: pane_id,
+      window_id: window_id,
+      session_id: session_id,
+      command: nil,
+      pid: nil,
+      size: %{width: 80, height: 24},
+      position: %{x: 0, y: 0},
+      status: :active,
+      buffer: init_pane_buffer(),
+      metadata: %{}
+    }
+
+    {:ok, pane}
+  end
+
+  defp load_sessions_from_file(false, _sessions_file), do: %{}
+
+  defp load_sessions_from_file(true, sessions_file) do
+    sessions_file
+    |> File.read!()
+    |> Jason.decode!()
+    |> Enum.map(fn {id, session_data} ->
+      {id, atomize_keys(session_data)}
+    end)
+    |> Map.new()
+  end
+
+  defp broadcast_if_available(false, _event_bus, _event_type, _event_data),
+    do: :ok
+
+  defp broadcast_if_available(true, event_bus, event_type, event_data) do
+    GenServer.cast(event_bus, {:broadcast, event_type, event_data})
+  end
 
   ## Public Utility Functions
 

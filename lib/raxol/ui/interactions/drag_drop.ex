@@ -161,141 +161,142 @@ defmodule Raxol.UI.Interactions.DragDrop do
 
   Updated drag/drop state with drag operation active.
   """
-  def start_drag(state, element_id, %{x: _x, y: _y} = position, drag_config) do
-    if drag_config.draggable do
-      # Announce to screen readers if accessibility is enabled
-      if drag_config.accessibility.announce_drag_start do
+  def start_drag(
+        state,
+        element_id,
+        %{x: _x, y: _y} = position,
+        %{draggable: true} = drag_config
+      ) do
+    # Announce to screen readers if accessibility is enabled
+    case drag_config.accessibility.announce_drag_start do
+      true ->
         data_description = describe_drag_data(drag_config.drag_data)
 
         Accessibility.announce(
           "Started dragging #{element_id}. #{data_description}"
         )
-      end
 
-      # Start drag visual feedback animation
-      Framework.create_animation(:drag_start_feedback, %{
-        type: :scale,
-        duration: 150,
-        from: 1.0,
-        to: 1.05,
-        easing: :ease_out_back,
-        target_path: [:visual, :scale]
-      })
-
-      Framework.start_animation(:drag_start_feedback, element_id)
-
-      updated_state = %{
-        state
-        | active: true,
-          dragging_element: element_id,
-          drag_data: drag_config.drag_data,
-          start_position: position,
-          current_position: position,
-          constraints: drag_config.constraints,
-          visual_feedback: drag_config.visual_feedback
-      }
-
-      {:ok, updated_state}
-    else
-      {:error, :not_draggable}
+      false ->
+        :ok
     end
+
+    # Start drag visual feedback animation
+    Framework.create_animation(:drag_start_feedback, %{
+      type: :scale,
+      duration: 150,
+      from: 1.0,
+      to: 1.05,
+      easing: :ease_out_back,
+      target_path: [:visual, :scale]
+    })
+
+    Framework.start_animation(:drag_start_feedback, element_id)
+
+    updated_state = %{
+      state
+      | active: true,
+        dragging_element: element_id,
+        drag_data: drag_config.drag_data,
+        start_position: position,
+        current_position: position,
+        constraints: drag_config.constraints,
+        visual_feedback: drag_config.visual_feedback
+    }
+
+    {:ok, updated_state}
+  end
+
+  def start_drag(_state, _element_id, _position, _drag_config) do
+    {:error, :not_draggable}
   end
 
   @doc """
   Handle drag movement during an active drag operation.
   """
-  def handle_drag_move(state, %{x: _x, y: _y} = new_position) do
-    if state.active do
-      # Apply constraints to movement
-      constrained_position =
-        apply_drag_constraints(
-          new_position,
-          state.start_position,
-          state.constraints
-        )
+  def handle_drag_move(%{active: false} = state, _new_position), do: state
 
-      # Update drag offset
-      drag_offset = %{
-        x: constrained_position.x - state.start_position.x,
-        y: constrained_position.y - state.start_position.y
-      }
+  def handle_drag_move(%{active: true} = state, %{x: _x, y: _y} = new_position) do
+    # Apply constraints to movement
+    constrained_position =
+      apply_drag_constraints(
+        new_position,
+        state.start_position,
+        state.constraints
+      )
 
-      # Check for valid drop targets
-      valid_drop_target =
-        find_valid_drop_target(
-          constrained_position,
-          state.drop_zones,
-          state.drag_data
-        )
+    # Update drag offset
+    drag_offset = %{
+      x: constrained_position.x - state.start_position.x,
+      y: constrained_position.y - state.start_position.y
+    }
 
-      # Update visual feedback if drop target changed
-      updated_state =
-        if valid_drop_target != state.valid_drop_target do
-          handle_drop_target_change(
-            state,
-            state.valid_drop_target,
-            valid_drop_target
-          )
-        else
-          state
-        end
+    # Check for valid drop targets
+    valid_drop_target =
+      find_valid_drop_target(
+        constrained_position,
+        state.drop_zones,
+        state.drag_data
+      )
 
-      %{
-        updated_state
-        | current_position: constrained_position,
-          drag_offset: drag_offset,
-          valid_drop_target: valid_drop_target
-      }
-    else
-      state
-    end
+    # Update visual feedback if drop target changed
+    updated_state =
+      update_drop_target_feedback(
+        state,
+        state.valid_drop_target,
+        valid_drop_target
+      )
+
+    %{
+      updated_state
+      | current_position: constrained_position,
+        drag_offset: drag_offset,
+        valid_drop_target: valid_drop_target
+    }
   end
 
   @doc """
   Handle the end of a drag operation (drop or cancel).
   """
-  def end_drag(state, %{x: _x, y: _y} = drop_position, cancelled \\ false) do
-    if state.active do
-      result =
-        if cancelled do
-          handle_drag_cancel(state)
-        else
-          handle_drop_attempt(state, drop_position)
-        end
+  def end_drag(state, drop_position, cancelled \\ false)
 
-      # Cleanup drag state
-      reset_state = %{
-        state
-        | active: false,
-          dragging_element: nil,
-          drag_data: %{},
-          start_position: nil,
-          current_position: nil,
-          drag_offset: %{x: 0, y: 0},
-          valid_drop_target: nil
-      }
+  def end_drag(%{active: false}, _drop_position, _cancelled) do
+    {:error, :no_active_drag}
+  end
 
-      # Animation feedback for drop/cancel
-      animation_name =
-        if cancelled, do: :drag_cancel_feedback, else: :drag_drop_feedback
+  def end_drag(
+        %{active: true} = state,
+        %{x: _x, y: _y} = drop_position,
+        cancelled
+      ) do
+    result = handle_drag_result(cancelled, state, drop_position)
 
-      Framework.create_animation(animation_name, %{
-        type: :scale,
-        duration: 200,
-        from: 1.05,
-        to: 1.0,
-        easing: :ease_in_back,
-        target_path: [:visual, :scale]
-      })
+    # Cleanup drag state
+    reset_state = %{
+      state
+      | active: false,
+        dragging_element: nil,
+        drag_data: %{},
+        start_position: nil,
+        current_position: nil,
+        drag_offset: %{x: 0, y: 0},
+        valid_drop_target: nil
+    }
 
-      if state.dragging_element do
-        Framework.start_animation(animation_name, state.dragging_element)
-      end
+    # Animation feedback for drop/cancel
+    animation_name = get_animation_name(cancelled)
 
-      {result, reset_state}
-    else
-      {:error, :no_active_drag}
-    end
+    Framework.create_animation(animation_name, %{
+      type: :scale,
+      duration: 200,
+      from: 1.05,
+      to: 1.0,
+      easing: :ease_in_back,
+      target_path: [:visual, :scale]
+    })
+
+    animate_drag_element(state.dragging_element, animation_name)
+
+    {result, reset_state}
   end
 
   @doc """
@@ -331,6 +332,29 @@ defmodule Raxol.UI.Interactions.DragDrop do
 
   # Private helper functions
 
+  defp update_drop_target_feedback(state, old_target, new_target)
+       when old_target == new_target,
+       do: state
+
+  defp update_drop_target_feedback(state, old_target, new_target) do
+    handle_drop_target_change(state, old_target, new_target)
+  end
+
+  defp handle_drag_result(true, state, _drop_position),
+    do: handle_drag_cancel(state)
+
+  defp handle_drag_result(false, state, drop_position),
+    do: handle_drop_attempt(state, drop_position)
+
+  defp get_animation_name(true), do: :drag_cancel_feedback
+  defp get_animation_name(false), do: :drag_drop_feedback
+
+  defp animate_drag_element(nil, _animation_name), do: :ok
+
+  defp animate_drag_element(element, animation_name) do
+    Framework.start_animation(animation_name, element)
+  end
+
   defp describe_drag_data(drag_data) do
     type = Map.get(drag_data, :type, "item")
     id = Map.get(drag_data, :id, "unknown")
@@ -338,20 +362,8 @@ defmodule Raxol.UI.Interactions.DragDrop do
   end
 
   defp apply_drag_constraints(position, start_position, constraints) do
-    x =
-      if Map.get(constraints, :horizontal, false) do
-        start_position.x
-      else
-        position.x
-      end
-
-    y =
-      if Map.get(constraints, :vertical, false) do
-        start_position.y
-      else
-        position.y
-      end
-
+    x = get_constrained_x(position, start_position, constraints)
+    y = get_constrained_y(position, start_position, constraints)
     constrained_pos = %{x: x, y: y}
 
     # Apply bounds constraints if specified
@@ -360,6 +372,18 @@ defmodule Raxol.UI.Interactions.DragDrop do
       bounds -> apply_bounds_constraint(constrained_pos, bounds)
     end
   end
+
+  defp get_constrained_x(_position, start_position, %{horizontal: true}),
+    do: start_position.x
+
+  defp get_constrained_x(position, _start_position, _constraints),
+    do: position.x
+
+  defp get_constrained_y(_position, start_position, %{vertical: true}),
+    do: start_position.y
+
+  defp get_constrained_y(position, _start_position, _constraints),
+    do: position.y
 
   defp apply_bounds_constraint(%{x: x, y: y}, bounds) do
     constrained_x = max(bounds.x, min(x, bounds.x + bounds.width))
@@ -386,87 +410,100 @@ defmodule Raxol.UI.Interactions.DragDrop do
   end
 
   defp handle_drop_target_change(state, old_target, new_target) do
-    # Handle drag leave for old target
-    if old_target do
-      old_target.on_drag_leave.(state.drag_data)
-      # Stop highlighting old target
-      Framework.create_animation(:drop_zone_unhighlight, %{
-        type: :fade,
-        duration: 200,
-        from: 1.0,
-        to: 0.8,
-        target_path: [:visual, :highlight_opacity]
-      })
-
-      Framework.start_animation(:drop_zone_unhighlight, old_target.id)
-    end
-
-    # Handle drag enter for new target
-    if new_target do
-      new_target.on_drag_enter.(state.drag_data)
-      # Start highlighting new target
-      Framework.create_animation(:drop_zone_highlight, %{
-        type: :fade,
-        duration: 200,
-        from: 0.8,
-        to: 1.0,
-        target_path: [:visual, :highlight_opacity]
-      })
-
-      Framework.start_animation(:drop_zone_highlight, new_target.id)
-    end
-
+    handle_drag_leave(old_target, state.drag_data)
+    handle_drag_enter(new_target, state.drag_data)
     state
   end
 
+  defp handle_drag_leave(nil, _drag_data), do: :ok
+
+  defp handle_drag_leave(old_target, drag_data) do
+    old_target.on_drag_leave.(drag_data)
+    # Stop highlighting old target
+    Framework.create_animation(:drop_zone_unhighlight, %{
+      type: :fade,
+      duration: 200,
+      from: 1.0,
+      to: 0.8,
+      target_path: [:visual, :highlight_opacity]
+    })
+
+    Framework.start_animation(:drop_zone_unhighlight, old_target.id)
+  end
+
+  defp handle_drag_enter(nil, _drag_data), do: :ok
+
+  defp handle_drag_enter(new_target, drag_data) do
+    new_target.on_drag_enter.(drag_data)
+    # Start highlighting new target
+    Framework.create_animation(:drop_zone_highlight, %{
+      type: :fade,
+      duration: 200,
+      from: 0.8,
+      to: 1.0,
+      target_path: [:visual, :highlight_opacity]
+    })
+
+    Framework.start_animation(:drop_zone_highlight, new_target.id)
+  end
+
   defp handle_drag_cancel(state) do
-    if state.dragging_element do
-      Accessibility.announce("Drag cancelled")
-
-      # Animate return to original position
-      Framework.create_animation(:drag_return, %{
-        type: :slide,
-        duration: 300,
-        from: state.drag_offset,
-        to: %{x: 0, y: 0},
-        easing: :ease_out_back,
-        target_path: [:visual, :position]
-      })
-
-      Framework.start_animation(:drag_return, state.dragging_element)
-    end
-
+    animate_drag_cancel(state.dragging_element, state.drag_offset)
     :cancelled
   end
 
-  defp handle_drop_attempt(state, _drop_position) do
-    if state.valid_drop_target do
-      result = state.valid_drop_target.on_drop.(state.drag_data)
+  defp animate_drag_cancel(nil, _drag_offset), do: :ok
 
-      if state.valid_drop_target do
-        Accessibility.announce(
-          "Dropped #{state.dragging_element} on #{state.valid_drop_target.id}"
-        )
+  defp animate_drag_cancel(element, drag_offset) do
+    Accessibility.announce("Drag cancelled")
 
-        # Success animation
-        Framework.create_animation(:drop_success, %{
-          type: :bounce,
-          duration: 400,
-          from: 1.0,
-          to: 1.0,
-          easing: :ease_out_bounce,
-          target_path: [:visual, :scale]
-        })
+    # Animate return to original position
+    Framework.create_animation(:drag_return, %{
+      type: :slide,
+      duration: 300,
+      from: drag_offset,
+      to: %{x: 0, y: 0},
+      easing: :ease_out_back,
+      target_path: [:visual, :position]
+    })
 
-        if state.dragging_element do
-          Framework.start_animation(:drop_success, state.dragging_element)
-        end
-      end
+    Framework.start_animation(:drag_return, element)
+  end
 
-      {:dropped, result}
-    else
-      handle_drag_cancel(state)
-    end
+  defp handle_drop_attempt(%{valid_drop_target: nil} = state, _drop_position) do
+    handle_drag_cancel(state)
+  end
+
+  defp handle_drop_attempt(
+         %{valid_drop_target: drop_target} = state,
+         _drop_position
+       ) do
+    result = drop_target.on_drop.(state.drag_data)
+
+    announce_drop_success(state.dragging_element, drop_target.id)
+    animate_drop_success(state.dragging_element)
+
+    {:dropped, result}
+  end
+
+  defp announce_drop_success(element, target_id) do
+    Accessibility.announce("Dropped #{element} on #{target_id}")
+  end
+
+  defp animate_drop_success(nil), do: :ok
+
+  defp animate_drop_success(element) do
+    # Success animation
+    Framework.create_animation(:drop_success, %{
+      type: :bounce,
+      duration: 400,
+      from: 1.0,
+      to: 1.0,
+      easing: :ease_out_bounce,
+      target_path: [:visual, :scale]
+    })
+
+    Framework.start_animation(:drop_success, element)
   end
 
   defp keyboard_start_drag(state, element_id, drag_config) do
@@ -485,13 +522,7 @@ defmodule Raxol.UI.Interactions.DragDrop do
     # Configurable step size for keyboard movement
     step_size = 10
 
-    {dx, dy} =
-      case direction do
-        :up -> {0, -step_size}
-        :down -> {0, step_size}
-        :left -> {-step_size, 0}
-        :right -> {step_size, 0}
-      end
+    {dx, dy} = get_movement_delta(direction, step_size)
 
     current_pos = state.current_position || %{x: 0, y: 0}
     new_position = %{x: current_pos.x + dx, y: current_pos.y + dy}
@@ -499,14 +530,21 @@ defmodule Raxol.UI.Interactions.DragDrop do
     updated_state = handle_drag_move(state, new_position)
 
     # Announce position for screen readers
-    if updated_state.valid_drop_target do
-      Accessibility.announce(
-        "Over drop zone: #{updated_state.valid_drop_target.id}"
-      )
-    else
-      Accessibility.announce("Position: #{new_position.x}, #{new_position.y}")
-    end
+    announce_position(updated_state.valid_drop_target, new_position)
 
     {:moved, updated_state}
+  end
+
+  defp get_movement_delta(:up, step_size), do: {0, -step_size}
+  defp get_movement_delta(:down, step_size), do: {0, step_size}
+  defp get_movement_delta(:left, step_size), do: {-step_size, 0}
+  defp get_movement_delta(:right, step_size), do: {step_size, 0}
+
+  defp announce_position(nil, position) do
+    Accessibility.announce("Position: #{position.x}, #{position.y}")
+  end
+
+  defp announce_position(drop_target, _position) do
+    Accessibility.announce("Over drop zone: #{drop_target.id}")
   end
 end

@@ -97,10 +97,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   def resize(buffer, new_width, new_height) do
     # Validate input dimensions
-    if new_width <= 0 or new_height <= 0 do
-      raise ArgumentError,
-            "ScreenBuffer dimensions must be positive integers, got: #{new_width}x#{new_height}"
-    end
+    validate_dimensions(new_width <= 0 or new_height <= 0, new_width, new_height)
 
     # Create a new ScreenBuffer with the new dimensions
     default_cell = %Raxol.Terminal.Cell{
@@ -654,4 +651,11 @@ defmodule Raxol.Terminal.ScreenBuffer do
                 replacement
               ),
               to: RegionOperations
+
+  defp validate_dimensions(true, new_width, new_height) do
+    raise ArgumentError,
+          "ScreenBuffer dimensions must be positive integers, got: #{new_width}x#{new_height}"
+  end
+
+  defp validate_dimensions(false, _new_width, _new_height), do: :ok
 end

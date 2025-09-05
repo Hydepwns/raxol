@@ -28,16 +28,8 @@ defmodule Raxol.Test.RendererTestHelper do
       is_binary(arg2) and is_binary(arg3) and is_map(arg4) ->
         # Called as (name, desc, desc, colors_or_config)
         # Check if arg4 contains variants
-        if Map.has_key?(arg4, :variants) do
-          variants = Map.get(arg4, :variants, %{})
-          colors = Map.drop(arg4, [:variants])
-
-          # Don't merge defaults - let themes be partial for inheritance testing
-          {colors, %{}, %{}, variants}
-        else
-          # Don't merge defaults - let themes be partial for inheritance testing
-          {arg4, %{}, %{}, %{}}
-        end
+        has_variants = Map.has_key?(arg4, :variants)
+        handle_variants_parsing(has_variants, arg4)
 
       is_map(arg2) and is_map(arg3) and (is_map(arg4) or is_nil(arg4)) ->
         # Called as (name, colors, styles, fonts)
@@ -46,9 +38,13 @@ defmodule Raxol.Test.RendererTestHelper do
 
       true ->
         # Fallback: treat arg2 as colors if it's a map
-        {if(is_map(arg2), do: arg2, else: %{}),
-         if(is_map(arg3), do: arg3, else: %{}),
-         if(is_map(arg4), do: arg4, else: %{}), %{}}
+        arg2_is_map = is_map(arg2)
+        arg3_is_map = is_map(arg3)
+        arg4_is_map = is_map(arg4)
+
+        {get_map_or_empty(arg2_is_map, arg2),
+         get_map_or_empty(arg3_is_map, arg3),
+         get_map_or_empty(arg4_is_map, arg4), %{}}
     end
   end
 
@@ -115,31 +111,33 @@ defmodule Raxol.Test.RendererTestHelper do
   defp ensure_id(%Theme{} = map), do: map
 
   defp ensure_id(map) do
-    if Map.has_key?(map, :id), do: map, else: Map.put(map, :id, :test_id)
+    has_id = Map.has_key?(map, :id)
+    ensure_id_by_presence(has_id, map)
   end
 
   defp ensure_style(map) do
-    if Map.has_key?(map, :style), do: map, else: Map.put(map, :style, %{})
+    has_style = Map.has_key?(map, :style)
+    ensure_style_by_presence(has_style, map)
   end
 
   defp ensure_position(map) do
-    if Map.has_key?(map, :position),
-      do: map,
-      else: Map.put(map, :position, {0, 0})
+    has_position = Map.has_key?(map, :position)
+    ensure_position_by_presence(has_position, map)
   end
 
   defp ensure_disabled(map) do
-    if Map.has_key?(map, :disabled),
-      do: map,
-      else: Map.put(map, :disabled, false)
+    has_disabled = Map.has_key?(map, :disabled)
+    ensure_disabled_by_presence(has_disabled, map)
   end
 
   defp ensure_focused(map) do
-    if Map.has_key?(map, :focused), do: map, else: Map.put(map, :focused, false)
+    has_focused = Map.has_key?(map, :focused)
+    ensure_focused_by_presence(has_focused, map)
   end
 
   defp ensure_attrs(map) do
-    if Map.has_key?(map, :attrs), do: map, else: Map.put(map, :attrs, %{})
+    has_attrs = Map.has_key?(map, :attrs)
+    ensure_attrs_by_presence(has_attrs, map)
   end
 
   def create_test_element(type, x, y, opts \\ %{}) do
@@ -216,4 +214,44 @@ defmodule Raxol.Test.RendererTestHelper do
     |> ensure_focused()
     |> ensure_attrs()
   end
+
+  ## Helper Functions for Pattern Matching
+
+  defp handle_variants_parsing(true, arg4) do
+    variants = Map.get(arg4, :variants, %{})
+    colors = Map.drop(arg4, [:variants])
+
+    # Don't merge defaults - let themes be partial for inheritance testing
+    {colors, %{}, %{}, variants}
+  end
+
+  defp handle_variants_parsing(false, arg4) do
+    # Don't merge defaults - let themes be partial for inheritance testing
+    {arg4, %{}, %{}, %{}}
+  end
+
+  defp get_map_or_empty(true, map), do: map
+  defp get_map_or_empty(false, _), do: %{}
+
+  defp ensure_id_by_presence(true, map), do: map
+  defp ensure_id_by_presence(false, map), do: Map.put(map, :id, :test_id)
+
+  defp ensure_style_by_presence(true, map), do: map
+  defp ensure_style_by_presence(false, map), do: Map.put(map, :style, %{})
+
+  defp ensure_position_by_presence(true, map), do: map
+
+  defp ensure_position_by_presence(false, map),
+    do: Map.put(map, :position, {0, 0})
+
+  defp ensure_disabled_by_presence(true, map), do: map
+
+  defp ensure_disabled_by_presence(false, map),
+    do: Map.put(map, :disabled, false)
+
+  defp ensure_focused_by_presence(true, map), do: map
+  defp ensure_focused_by_presence(false, map), do: Map.put(map, :focused, false)
+
+  defp ensure_attrs_by_presence(true, map), do: map
+  defp ensure_attrs_by_presence(false, map), do: Map.put(map, :attrs, %{})
 end

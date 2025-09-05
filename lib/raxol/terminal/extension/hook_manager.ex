@@ -60,32 +60,13 @@ defmodule Raxol.Terminal.Extension.HookManager do
          callback,
          state
        ) do
-    if hook_name in extension.hooks do
-      callback_map = build_callback_map(callback, extension_id)
-
-      new_hooks =
-        Map.update(
-          state.hooks,
-          hook_name,
-          [callback_map],
-          &[callback_map | &1]
-        )
-
-      new_state = %{state | hooks: new_hooks}
-      {:ok, new_state}
-    else
-      {:error, :hook_not_found}
-    end
+    hook_exists = hook_name in extension.hooks
+    handle_registration_by_existence(hook_exists, extension_id, hook_name, callback, state)
   end
 
   defp handle_hook_unregistration(extension, extension_id, hook_name, state) do
-    if hook_name in extension.hooks do
-      new_hooks = remove_hook_callback(state.hooks, hook_name, extension_id)
-      new_state = %{state | hooks: new_hooks}
-      {:ok, new_state}
-    else
-      {:error, :hook_not_found}
-    end
+    hook_exists = hook_name in extension.hooks
+    handle_unregistration_by_existence(hook_exists, extension_id, hook_name, state)
   end
 
   defp build_callback_map(callback, extension_id) do
@@ -123,5 +104,35 @@ defmodule Raxol.Terminal.Extension.HookManager do
       end)
     end)
     |> Enum.map(&Task.await(&1, 5000))
+  end
+
+  # Helper functions for pattern matching instead of if statements
+  defp handle_registration_by_existence(true, extension_id, hook_name, callback, state) do
+    callback_map = build_callback_map(callback, extension_id)
+
+    new_hooks =
+      Map.update(
+        state.hooks,
+        hook_name,
+        [callback_map],
+        &[callback_map | &1]
+      )
+
+    new_state = %{state | hooks: new_hooks}
+    {:ok, new_state}
+  end
+
+  defp handle_registration_by_existence(false, _extension_id, _hook_name, _callback, _state) do
+    {:error, :hook_not_found}
+  end
+
+  defp handle_unregistration_by_existence(true, extension_id, hook_name, state) do
+    new_hooks = remove_hook_callback(state.hooks, hook_name, extension_id)
+    new_state = %{state | hooks: new_hooks}
+    {:ok, new_state}
+  end
+
+  defp handle_unregistration_by_existence(false, _extension_id, _hook_name, _state) do
+    {:error, :hook_not_found}
   end
 end

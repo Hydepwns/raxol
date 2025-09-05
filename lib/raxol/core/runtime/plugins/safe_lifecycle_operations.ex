@@ -129,11 +129,15 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
   # Private helper functions
 
   defp validate_plugin_id(plugin_id) when is_binary(plugin_id) do
-    if String.length(plugin_id) > 0 do
-      {:ok, plugin_id}
-    else
-      error(:validation, "Plugin ID cannot be empty")
-    end
+    validate_plugin_id_length(String.length(plugin_id), plugin_id)
+  end
+
+  defp validate_plugin_id_length(0, _plugin_id) do
+    error(:validation, "Plugin ID cannot be empty")
+  end
+
+  defp validate_plugin_id_length(_length, plugin_id) do
+    {:ok, plugin_id}
   end
 
   defp validate_plugin_id(_) do
@@ -144,11 +148,18 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
   defp validate_config(_), do: error(:validation, "Config must be a map")
 
   defp check_plugin_not_loaded(plugin_id, state) do
-    if Map.has_key?(state.plugins, plugin_id) do
-      error(:validation, "Plugin already loaded: #{plugin_id}")
-    else
-      {:ok, plugin_id}
-    end
+    do_check_plugin_not_loaded(
+      Map.has_key?(state.plugins, plugin_id),
+      plugin_id
+    )
+  end
+
+  defp do_check_plugin_not_loaded(true, plugin_id) do
+    error(:validation, "Plugin already loaded: #{plugin_id}")
+  end
+
+  defp do_check_plugin_not_loaded(false, plugin_id) do
+    {:ok, plugin_id}
   end
 
   defp do_load_plugin(plugin_id, config, state) do
@@ -187,11 +198,14 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
 
   defp stop_plugin_processes(plugin, _state) do
     # Stop any running processes for the plugin
-    if pid = Map.get(plugin, :pid) do
-      Process.exit(pid, :shutdown)
-    end
-
+    stop_plugin_process_if_exists(Map.get(plugin, :pid))
     :ok
+  end
+
+  defp stop_plugin_process_if_exists(nil), do: :ok
+
+  defp stop_plugin_process_if_exists(pid) do
+    Process.exit(pid, :shutdown)
   end
 
   defp remove_plugin_from_state(plugin_id, state) do
@@ -217,30 +231,31 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
   end
 
   defp restore_plugin_state(plugin_id, backup, state) do
-    restored_state = state
-
     restored_state =
-      if backup.plugin do
-        put_in(restored_state.plugins[plugin_id], backup.plugin)
-      else
-        restored_state
-      end
-
-    restored_state =
-      if backup.plugin_state do
-        put_in(restored_state.plugin_states[plugin_id], backup.plugin_state)
-      else
-        restored_state
-      end
-
-    restored_state =
-      if backup.metadata do
-        put_in(restored_state.metadata[plugin_id], backup.metadata)
-      else
-        restored_state
-      end
+      state
+      |> maybe_restore_plugin(plugin_id, backup.plugin)
+      |> maybe_restore_plugin_state(plugin_id, backup.plugin_state)
+      |> maybe_restore_metadata(plugin_id, backup.metadata)
 
     {:ok, restored_state}
+  end
+
+  defp maybe_restore_plugin(state, _plugin_id, nil), do: state
+
+  defp maybe_restore_plugin(state, plugin_id, plugin) do
+    put_in(state.plugins[plugin_id], plugin)
+  end
+
+  defp maybe_restore_plugin_state(state, _plugin_id, nil), do: state
+
+  defp maybe_restore_plugin_state(state, plugin_id, plugin_state) do
+    put_in(state.plugin_states[plugin_id], plugin_state)
+  end
+
+  defp maybe_restore_metadata(state, _plugin_id, nil), do: state
+
+  defp maybe_restore_metadata(state, plugin_id, metadata) do
+    put_in(state.metadata[plugin_id], metadata)
   end
 
   defp validate_all_operations(_, operations) do
@@ -252,11 +267,13 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
         end
       end)
 
-    if Enum.empty?(errors) do
-      {:ok, operations}
-    else
-      error(:validation, "Invalid operations", %{errors: errors})
-    end
+    handle_validation_errors(errors, operations)
+  end
+
+  defp handle_validation_errors([], operations), do: {:ok, operations}
+
+  defp handle_validation_errors(errors, _operations) do
+    error(:validation, "Invalid operations", %{errors: errors})
   end
 
   defp validate_operation({:load, plugin_id, _config})
@@ -319,28 +336,33 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
 
   defp verify_state_consistency(state) do
     # Verify that the state is internally consistent
-    inconsistencies = []
-
-    # Check that all plugins in load_order exist in plugins map
     inconsistencies =
       Enum.reduce(
         Map.get(state, :load_order, []),
-        inconsistencies,
+        [],
         fn plugin_id, acc ->
-          if Map.has_key?(state.plugins, plugin_id) do
-            acc
-          else
-            ["Plugin #{plugin_id} in load_order but not in plugins map" | acc]
-          end
+          check_plugin_consistency(plugin_id, state, acc)
         end
       )
 
-    if Enum.empty?(inconsistencies) do
-      {:ok, state}
-    else
-      error(:validation, "State consistency check failed", %{
-        inconsistencies: inconsistencies
-      })
-    end
+    handle_consistency_check(inconsistencies, state)
+  end
+
+  defp check_plugin_consistency(plugin_id, state, acc) do
+    do_check_consistency(Map.has_key?(state.plugins, plugin_id), plugin_id, acc)
+  end
+
+  defp do_check_consistency(true, _plugin_id, acc), do: acc
+
+  defp do_check_consistency(false, plugin_id, acc) do
+    ["Plugin #{plugin_id} in load_order but not in plugins map" | acc]
+  end
+
+  defp handle_consistency_check([], state), do: {:ok, state}
+
+  defp handle_consistency_check(inconsistencies, _state) do
+    error(:validation, "State consistency check failed", %{
+      inconsistencies: inconsistencies
+    })
   end
 end

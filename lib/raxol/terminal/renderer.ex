@@ -133,16 +133,20 @@ defmodule Raxol.Terminal.Renderer do
   end
 
   defp render_row_with_style_batching(row, theme, style_batching) do
-    if style_batching do
-      row
-      |> group_cells_by_style(theme)
-      |> Enum.map_join("", fn {style_attrs, chars} ->
-        "<span style=\"#{style_attrs}\">#{chars}</span>"
-      end)
-    else
-      row
-      |> Enum.map_join("", fn cell -> render_cell(cell, theme) end)
-    end
+    apply_style_batching(style_batching, row, theme)
+  end
+
+  defp apply_style_batching(true, row, theme) do
+    row
+    |> group_cells_by_style(theme)
+    |> Enum.map_join("", fn {style_attrs, chars} ->
+      "<span style=\"#{style_attrs}\">#{chars}</span>"
+    end)
+  end
+
+  defp apply_style_batching(false, row, theme) do
+    row
+    |> Enum.map_join("", fn cell -> render_cell(cell, theme) end)
   end
 
   defp group_cells_by_style(row, theme) do
@@ -184,21 +188,27 @@ defmodule Raxol.Terminal.Renderer do
 
   defp add_background_color(attrs, style_map, theme) do
     color = get_style_color(style_map, :background, theme, :background)
-    if color != "", do: [{"background-color", color} | attrs], else: attrs
+    add_color_attr(attrs, color, "background-color")
   end
+
+  defp add_color_attr(attrs, "", _attr_name), do: attrs
+  defp add_color_attr(attrs, color, attr_name), do: [{attr_name, color} | attrs]
 
   defp add_foreground_color(attrs, style_map, theme) do
     color = get_style_color(style_map, :foreground, theme, :foreground)
-    if color != "", do: [{"color", color} | attrs], else: attrs
+    add_color_attr(attrs, color, "color")
   end
 
   defp get_style_color(style_map, key, theme, theme_key) do
-    if Map.has_key?(style_map, key) and not is_nil(style_map[key]) do
-      get_color(style_map[key], Map.get(theme, theme_key, %{}))
-    else
-      get_color(:default, Map.get(theme, theme_key, %{}))
-    end
+    color_value = Map.get(style_map, key)
+    resolve_style_color(color_value, Map.get(theme, theme_key, %{}))
   end
+
+  defp resolve_style_color(nil, theme_colors),
+    do: get_color(:default, theme_colors)
+
+  defp resolve_style_color(color_value, theme_colors),
+    do: get_color(color_value, theme_colors)
 
   defp add_text_attributes(attrs, style_map) do
     attrs
@@ -208,10 +218,14 @@ defmodule Raxol.Terminal.Renderer do
   end
 
   defp add_if_present(attrs, style_map, key, css_prop, css_value) do
-    if Map.get(style_map, key, false),
-      do: [{css_prop, css_value} | attrs],
-      else: attrs
+    style_enabled = Map.get(style_map, key, false)
+    add_style_if_enabled(attrs, style_enabled, css_prop, css_value)
   end
+
+  defp add_style_if_enabled(attrs, false, _css_prop, _css_value), do: attrs
+
+  defp add_style_if_enabled(attrs, true, css_prop, css_value),
+    do: [{css_prop, css_value} | attrs]
 
   defp build_style_string(attrs) do
     attrs
@@ -230,15 +244,17 @@ defmodule Raxol.Terminal.Renderer do
   end
 
   defp convert_rgb_to_hex(color) do
-    if Map.has_key?(color, :r) do
-      r = Map.get(color, :r, 0)
-      g = Map.get(color, :g, 0)
-      b = Map.get(color, :b, 0)
+    convert_color_map(Map.has_key?(color, :r), color)
+  end
 
-      "##{Integer.to_string(r, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(g, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(b, 16) |> String.pad_leading(2, "0")}"
-    else
-      ""
-    end
+  defp convert_color_map(false, _color), do: ""
+
+  defp convert_color_map(true, color) do
+    r = Map.get(color, :r, 0)
+    g = Map.get(color, :g, 0)
+    b = Map.get(color, :b, 0)
+
+    "##{Integer.to_string(r, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(g, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(b, 16) |> String.pad_leading(2, "0")}"
   end
 
   defp convert_color_atom(color) do
@@ -378,13 +394,14 @@ defmodule Raxol.Terminal.Renderer do
       renderer.screen_buffer
       |> ScreenBuffer.get_content()
 
-    if include_cursor do
-      content
-      |> maybe_add_cursor(renderer.cursor, include_cursor)
-    else
-      content
-    end
+    apply_cursor_option(content, renderer.cursor, include_cursor)
   end
+
+  defp apply_cursor_option(content, cursor, true) do
+    content |> maybe_add_cursor(cursor, true)
+  end
+
+  defp apply_cursor_option(content, _cursor, false), do: content
 
   # Handle ScreenBuffer structs
   def get_content(%Raxol.Terminal.ScreenBuffer{} = buffer, opts) do

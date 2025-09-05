@@ -125,11 +125,7 @@ defmodule Raxol.Svelte.Compiler do
 
         # Elements with only static props
         {element, _, props} = node, acc when is_atom(element) ->
-          if all_static_props?(props) do
-            {node, [{:static_element, element, props} | acc]}
-          else
-            {node, acc}
-          end
+          handle_static_element(all_static_props?(props), node, element, props, acc)
 
         node, acc ->
           {node, acc}
@@ -150,11 +146,7 @@ defmodule Raxol.Svelte.Compiler do
           dynamic_props =
             Enum.filter(props, fn {_k, v} -> is_dynamic_value?(v) end)
 
-          if dynamic_props != [] do
-            {node, [{:dynamic_element, element, dynamic_props} | acc]}
-          else
-            {node, acc}
-          end
+          handle_dynamic_element(dynamic_props != [], node, element, dynamic_props, acc)
 
         node, acc ->
           {node, acc}
@@ -168,11 +160,7 @@ defmodule Raxol.Svelte.Compiler do
       Macro.prewalk(ast, [], fn
         # Custom components (capitalized)
         {component, _, props} = node, acc when is_atom(component) ->
-          if component_name?(component) do
-            {node, [{component, props} | acc]}
-          else
-            {node, acc}
-          end
+          handle_component_name(component_name?(component), node, component, props, acc)
 
         node, acc ->
           {node, acc}
@@ -201,11 +189,7 @@ defmodule Raxol.Svelte.Compiler do
 
           new_directives = events ++ uses
 
-          if new_directives != [] do
-            {node, [{element, new_directives} | acc]}
-          else
-            {node, acc}
-          end
+          handle_new_directives(new_directives != [], node, element, new_directives, acc)
 
         node, acc ->
           {node, acc}
@@ -247,12 +231,7 @@ defmodule Raxol.Svelte.Compiler do
         generate_input_operations(props)
 
       component when is_atom(component) ->
-        if component_name?(component) do
-          {:render_component, component, props}
-        else
-          # Handle as unknown element
-          {:error, :unknown_element, component}
-        end
+        handle_component_operation(component_name?(component), component, props)
     end
   end
 
@@ -399,5 +378,48 @@ defmodule Raxol.Svelte.Compiler do
       padding: get_prop(props, :padding, 0),
       margin: get_prop(props, :margin, 0)
     }
+  end
+
+  # Helper functions to eliminate if statements
+
+  defp handle_static_element(false, node, _element, _props, acc) do
+    {node, acc}
+  end
+
+  defp handle_static_element(true, node, element, props, acc) do
+    {node, [{:static_element, element, props} | acc]}
+  end
+
+  defp handle_dynamic_element(false, node, _element, _dynamic_props, acc) do
+    {node, acc}
+  end
+
+  defp handle_dynamic_element(true, node, element, dynamic_props, acc) do
+    {node, [{:dynamic_element, element, dynamic_props} | acc]}
+  end
+
+  defp handle_component_name(false, node, _component, _props, acc) do
+    {node, acc}
+  end
+
+  defp handle_component_name(true, node, component, props, acc) do
+    {node, [{component, props} | acc]}
+  end
+
+  defp handle_new_directives(false, node, _element, _new_directives, acc) do
+    {node, acc}
+  end
+
+  defp handle_new_directives(true, node, element, new_directives, acc) do
+    {node, [{element, new_directives} | acc]}
+  end
+
+  defp handle_component_operation(false, component, _props) do
+    # Handle as unknown element
+    {:error, :unknown_element, component}
+  end
+
+  defp handle_component_operation(true, component, props) do
+    {:render_component, component, props}
   end
 end

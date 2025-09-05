@@ -132,9 +132,7 @@ defmodule Raxol.Playground do
     }
 
     # Start preview server if web mode
-    if Keyword.get(opts, :web, false) do
-      start_web_server(port)
-    end
+    maybe_start_web_server(Keyword.get(opts, :web, false), port)
 
     {:ok, state}
   end
@@ -173,18 +171,11 @@ defmodule Raxol.Playground do
   def handle_call({:update_props, props}, _from, state) do
     new_state = %{state | current_props: Map.merge(state.current_props, props)}
 
-    if state.selected_component do
-      preview =
-        Preview.generate(
-          state.selected_component,
-          new_state.current_props,
-          new_state.current_state
-        )
-
-      {:reply, {:ok, preview}, new_state}
-    else
-      {:reply, {:error, "No component selected"}, new_state}
-    end
+    handle_component_operation(
+      state.selected_component,
+      new_state,
+      &generate_preview_for_props/2
+    )
   end
 
   @impl true
@@ -194,88 +185,41 @@ defmodule Raxol.Playground do
       | current_state: Map.merge(state.current_state, new_component_state)
     }
 
-    if state.selected_component do
-      preview =
-        Preview.generate(
-          state.selected_component,
-          new_state.current_props,
-          new_state.current_state
-        )
-
-      {:reply, {:ok, preview}, new_state}
-    else
-      {:reply, {:error, "No component selected"}, new_state}
-    end
+    handle_component_operation(
+      state.selected_component,
+      new_state,
+      &generate_preview_for_state/2
+    )
   end
 
   @impl true
   def handle_call({:switch_theme, theme}, _from, state) do
     new_state = %{state | theme: theme}
 
-    if state.selected_component do
-      preview =
-        Preview.generate(
-          state.selected_component,
-          state.current_props,
-          state.current_state,
-          theme: theme
-        )
-
-      {:reply, {:ok, preview}, new_state}
-    else
-      {:reply, :ok, new_state}
-    end
+    handle_theme_operation(
+      state.selected_component,
+      state,
+      new_state,
+      theme
+    )
   end
 
   @impl true
   def handle_call(:export_code, _from, state) do
-    if state.selected_component do
-      code =
-        CodeGenerator.generate(
-          state.selected_component,
-          state.current_props,
-          state.current_state
-        )
-
-      {:reply, {:ok, code}, state}
-    else
-      {:reply, {:error, "No component selected"}, state}
-    end
+    handle_export_operation(
+      state.selected_component,
+      state
+    )
   end
 
   @impl true
   def handle_call(:get_preview, _from, state) do
-    if state.selected_component do
-      preview =
-        Preview.generate(
-          state.selected_component,
-          state.current_props,
-          state.current_state,
-          theme: state.theme
-        )
-
-      {:reply, {:ok, preview}, state}
-    else
-      {:reply, {:error, "No component selected"}, state}
-    end
+    handle_preview_request(state.selected_component, state)
   end
 
   @impl true
   def handle_call(:refresh_preview, _from, state) do
-    if state.selected_component do
-      preview =
-        Preview.generate(
-          state.selected_component,
-          state.current_props,
-          state.current_state,
-          theme: state.theme,
-          force_refresh: true
-        )
-
-      {:reply, {:ok, preview}, state}
-    else
-      {:reply, {:error, "No component selected"}, state}
-    end
+    handle_refresh_request(state.selected_component, state)
   end
 
   @impl true
@@ -366,19 +310,7 @@ defmodule Raxol.Playground do
 
   defp parse_command("props") do
     state = GenServer.call(__MODULE__, :get_state)
-
-    if state.selected_component do
-      editor_output =
-        PropertyEditor.render_terminal_editor(
-          state.selected_component,
-          state.current_props
-        )
-
-      IO.puts(editor_output)
-      :ok
-    else
-      {:error, "No component selected"}
-    end
+    handle_props_command(state.selected_component, state)
   end
 
   defp parse_command("set " <> rest) do
@@ -386,36 +318,12 @@ defmodule Raxol.Playground do
 
     case String.split(rest, " ", parts: 2) do
       [prop, value] ->
-        if state.selected_component do
-          case PropertyEditor.parse_property_value(
-                 state.selected_component,
-                 prop,
-                 value
-               ) do
-            {:ok, parsed_value} ->
-              case update_props(%{String.to_atom(prop) => parsed_value}) do
-                {:ok, preview} ->
-                  IO.puts(
-                    "#{IO.ANSI.green()}✓ Updated #{prop} = #{inspect(parsed_value)}#{IO.ANSI.reset()}"
-                  )
-
-                  display_preview(preview)
-                  :ok
-
-                {:error, reason} ->
-                  {:error, reason}
-              end
-
-            {:error, reason} ->
-              help =
-                PropertyEditor.get_property_help(state.selected_component, prop)
-
-              {:error,
-               "Invalid value for #{prop}: #{reason}\nExpected: #{help}"}
-          end
-        else
-          {:error, "No component selected"}
-        end
+        handle_set_property_command(
+          state.selected_component,
+          prop,
+          value,
+          state
+        )
 
       _ ->
         {:error, "Usage: set <prop> <value>"}
@@ -599,5 +507,124 @@ defmodule Raxol.Playground do
   defp start_web_server(_port) do
     # Web server implementation would go here
     :ok
+  end
+
+  # Missing helper functions for compilation
+  defp maybe_start_web_server(false, _port), do: :ok
+  defp maybe_start_web_server(true, port), do: start_web_server(port)
+
+  defp handle_component_operation(nil, state, _gen_fun) do
+    {:reply, {:error, "No component selected"}, state}
+  end
+
+  defp handle_component_operation(component, state, gen_fun) do
+    preview = gen_fun.(component, state)
+    {:reply, {:ok, preview}, state}
+  end
+
+  defp generate_preview_for_props(component, state) do
+    Preview.generate(component, state.current_props, state.current_state)
+  end
+
+  defp generate_preview_for_state(component, state) do
+    Preview.generate(component, state.current_props, state.current_state)
+  end
+
+  defp handle_theme_operation(nil, _old_state, new_state, _theme) do
+    {:reply, {:error, "No component selected"}, new_state}
+  end
+
+  defp handle_theme_operation(_component, _old_state, new_state, _theme) do
+    preview =
+      Preview.generate(
+        new_state.selected_component,
+        new_state.current_props,
+        new_state.current_state,
+        theme: new_state.theme
+      )
+
+    {:reply, {:ok, preview}, new_state}
+  end
+
+  defp handle_export_operation(nil, state) do
+    {:reply, {:error, "No component selected"}, state}
+  end
+
+  defp handle_export_operation(component, state) do
+    code = CodeGenerator.generate_code(component, state.current_props)
+    {:reply, {:ok, code}, state}
+  end
+
+  # Helper functions for if statement elimination
+
+  defp handle_preview_request(nil, state) do
+    {:reply, {:error, "No component selected"}, state}
+  end
+
+  defp handle_preview_request(component, state) do
+    preview =
+      Preview.generate(
+        component,
+        state.current_props,
+        state.current_state,
+        theme: state.theme
+      )
+
+    {:reply, {:ok, preview}, state}
+  end
+
+  defp handle_refresh_request(nil, state) do
+    {:reply, {:error, "No component selected"}, state}
+  end
+
+  defp handle_refresh_request(component, state) do
+    preview =
+      Preview.generate(
+        component,
+        state.current_props,
+        state.current_state,
+        theme: state.theme,
+        force_refresh: true
+      )
+
+    {:reply, {:ok, preview}, state}
+  end
+
+  defp handle_props_command(nil, _state) do
+    {:error, "No component selected"}
+  end
+
+  defp handle_props_command(component, state) do
+    editor_output =
+      PropertyEditor.render_terminal_editor(component, state.current_props)
+
+    IO.puts(editor_output)
+    :ok
+  end
+
+  defp handle_set_property_command(nil, _prop, _value, _state) do
+    {:error, "No component selected"}
+  end
+
+  defp handle_set_property_command(component, prop, value, _state) do
+    case PropertyEditor.parse_property_value(component, prop, value) do
+      {:ok, parsed_value} ->
+        case update_props(%{String.to_atom(prop) => parsed_value}) do
+          {:ok, preview} ->
+            IO.puts(
+              "#{IO.ANSI.green()}✓ Updated #{prop} = #{inspect(parsed_value)}#{IO.ANSI.reset()}"
+            )
+
+            display_preview(preview)
+            :ok
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        help = PropertyEditor.get_property_help(component, prop)
+        {:error, "Invalid value for #{prop}: #{reason}\nExpected: #{help}"}
+    end
   end
 end

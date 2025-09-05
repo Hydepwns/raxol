@@ -62,29 +62,33 @@ defmodule RaxolWeb.TerminalChannel do
   @dialyzer {:nowarn_function, join: 3}
   def join("terminal:" <> session_id, _params, socket) do
     # Only allow if session_id is a valid UUID
-    if valid_uuid?(session_id) do
-      # Get scrollback limit from config or use default
-      scrollback_limit =
-        Application.get_env(:raxol, :terminal, %{})[:scrollback_lines] || 1000
+    handle_terminal_join(valid_uuid?(session_id), session_id, socket)
+  end
 
-      # Create new emulator instance
-      emulator = emulator_module().new(80, 24, scrollback: scrollback_limit)
-      input = Input.new()
-      renderer = renderer_module().new(emulator.main_screen_buffer)
+  defp handle_terminal_join(false, _session_id, _socket) do
+    {:error, %{reason: "unauthorized"}}
+  end
 
-      state = %__MODULE__{
-        emulator: emulator,
-        input: input,
-        renderer: renderer,
-        session_id: session_id,
-        user_id: socket.assigns.user_id,
-        scrollback_limit: scrollback_limit
-      }
+  defp handle_terminal_join(true, session_id, socket) do
+    # Get scrollback limit from config or use default
+    scrollback_limit =
+      Application.get_env(:raxol, :terminal, %{})[:scrollback_lines] || 1000
 
-      {:ok, assign(socket, :terminal_state, state)}
-    else
-      {:error, %{reason: "unauthorized"}}
-    end
+    # Create new emulator instance
+    emulator = emulator_module().new(80, 24, scrollback: scrollback_limit)
+    input = Input.new()
+    renderer = renderer_module().new(emulator.main_screen_buffer)
+
+    state = %__MODULE__{
+      emulator: emulator,
+      input: input,
+      renderer: renderer,
+      session_id: session_id,
+      user_id: socket.assigns.user_id,
+      scrollback_limit: scrollback_limit
+    }
+
+    {:ok, assign(socket, :terminal_state, state)}
   end
 
   @impl Phoenix.Channel
@@ -169,49 +173,53 @@ defmodule RaxolWeb.TerminalChannel do
   @impl Phoenix.Channel
   def handle_in("theme", %{"theme" => theme}, socket) do
     state = socket.assigns.terminal_state
+    handle_theme_change(theme in ["dark", "light", "high-contrast"], theme, state, socket)
+  end
 
-    # Validate theme
-    if theme in ["dark", "light", "high-contrast"] do
-      renderer = renderer_module().set_theme(state.renderer, theme)
+  defp handle_theme_change(false, _theme, _state, socket) do
+    {:reply, {:error, %{reason: "invalid_theme"}}, socket}
+  end
 
-      new_state = %{state | renderer: renderer}
-      socket = assign(socket, :terminal_state, new_state)
+  defp handle_theme_change(true, theme, state, socket) do
+    renderer = renderer_module().set_theme(state.renderer, theme)
 
-      # Get cursor position and visibility
-      {cursor_x, cursor_y} =
-        emulator_module().get_cursor_position(state.emulator)
+    new_state = %{state | renderer: renderer}
+    socket = assign(socket, :terminal_state, new_state)
 
-      cursor_visible = emulator_module().get_cursor_visible(state.emulator)
+    # Get cursor position and visibility
+    {cursor_x, cursor_y} =
+      emulator_module().get_cursor_position(state.emulator)
 
-      push(socket, "output", %{
-        html: renderer_module().render(renderer),
-        cursor: %{
-          x: cursor_x,
-          y: cursor_y,
-          visible: cursor_visible
-        }
-      })
+    cursor_visible = emulator_module().get_cursor_visible(state.emulator)
 
-      {:reply, :ok, socket}
-    else
-      {:reply, {:error, %{reason: "invalid_theme"}}, socket}
-    end
+    push(socket, "output", %{
+      html: renderer_module().render(renderer),
+      cursor: %{
+        x: cursor_x,
+        y: cursor_y,
+        visible: cursor_visible
+      }
+    })
+
+    {:reply, :ok, socket}
   end
 
   @impl Phoenix.Channel
   def handle_in("set_scrollback_limit", %{"limit" => limit}, socket) do
     state = socket.assigns.terminal_state
     limit = if is_integer(limit), do: limit, else: String.to_integer("#{limit}")
+    handle_scrollback_limit_change(limit >= 100 and limit <= 10_000, limit, state, socket)
+  end
 
-    # Validate limit
-    if limit >= 100 and limit <= 10_000 do
-      emulator = %{state.emulator | scrollback_limit: limit}
-      new_state = %{state | emulator: emulator}
-      socket = assign(socket, :terminal_state, new_state)
-      {:reply, :ok, socket}
-    else
-      {:reply, {:error, %{reason: "invalid_limit"}}, socket}
-    end
+  defp handle_scrollback_limit_change(false, _limit, _state, socket) do
+    {:reply, {:error, %{reason: "invalid_limit"}}, socket}
+  end
+
+  defp handle_scrollback_limit_change(true, limit, state, socket) do
+    emulator = %{state.emulator | scrollback_limit: limit}
+    new_state = %{state | emulator: emulator}
+    socket = assign(socket, :terminal_state, new_state)
+    {:reply, :ok, socket}
   end
 
   defp validate_and_process_input(data, socket) do
@@ -328,13 +336,12 @@ defmodule RaxolWeb.TerminalChannel do
   end
 
   defp validate_dimensions(width, height) do
-    if is_integer(width) and is_integer(height) and width > 0 and height > 0 and
-         width <= 200 and height <= 100 do
-      :ok
-    else
-      :error
-    end
+    dimensions_valid = is_integer(width) and is_integer(height) and width > 0 and height > 0 and width <= 200 and height <= 100
+    validate_dimensions_result(dimensions_valid)
   end
+
+  defp validate_dimensions_result(true), do: :ok
+  defp validate_dimensions_result(false), do: :error
 
   defp apply_scroll_offset(emulator, offset) when offset < 0 do
     Raxol.Terminal.Commands.Screen.scroll_up(emulator, abs(offset))
@@ -364,16 +371,21 @@ defmodule RaxolWeb.TerminalChannel do
   @impl Phoenix.Channel
   def terminate(_reason, socket) do
     # Clean up rate limiting data
-    if socket.assigns[:terminal_state] do
-      user_id = socket.assigns.terminal_state.user_id
-      # Only delete if table exists
-      case :ets.info(:rate_limit_table) do
-        :undefined -> :ok
-        _ -> :ets.delete(:rate_limit_table, "rate_limit:#{user_id}")
-      end
-    end
-
+    cleanup_rate_limiting_data(socket.assigns[:terminal_state], socket)
     :ok
+  end
+
+  defp cleanup_rate_limiting_data(nil, _socket) do
+    :ok
+  end
+
+  defp cleanup_rate_limiting_data(terminal_state, _socket) do
+    user_id = terminal_state.user_id
+    # Only delete if table exists
+    case :ets.info(:rate_limit_table) do
+      :undefined -> :ok
+      _ -> :ets.delete(:rate_limit_table, "rate_limit:#{user_id}")
+    end
   end
 
   defp valid_uuid?(uuid) do

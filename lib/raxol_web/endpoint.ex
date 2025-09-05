@@ -44,26 +44,34 @@ defmodule RaxolWeb.Endpoint do
       {"referrer-policy", "strict-origin-when-cross-origin"}
     ]
 
-  # Code reloading can be explicitly enabled under the
-  # :code_reloader configuration of your endpoint.
-  if code_reloading? do
-    if Mix.env() == :dev do
+  # Code reloading configuration using compile-time conditions
+  @code_reloading Application.get_env(:raxol, RaxolWeb.Endpoint, [])[
+                    :code_reloader
+                  ] || false
+
+  case {@code_reloading, Mix.env()} do
+    {true, :dev} ->
       socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
       plug Phoenix.LiveReloader
-    end
-
-    plug Phoenix.CodeReloader
-
-    if Mix.env() == :dev do
+      plug Phoenix.CodeReloader
       plug Phoenix.Ecto.CheckRepoStatus, otp_app: :raxol
-    end
+
+    {true, _} ->
+      plug Phoenix.CodeReloader
+
+    {false, _} ->
+      :ok
   end
 
-  if Mix.env() == :dev and
-       Code.ensure_loaded?(Phoenix.LiveDashboard.RequestLogger) do
-    plug Phoenix.LiveDashboard.RequestLogger,
-      param_key: "request_logger",
-      cookie_key: "request_logger"
+  # Live dashboard configuration using compile-time conditions
+  case {Mix.env(), Code.ensure_loaded?(Phoenix.LiveDashboard.RequestLogger)} do
+    {:dev, true} ->
+      plug Phoenix.LiveDashboard.RequestLogger,
+        param_key: "request_logger",
+        cookie_key: "request_logger"
+
+    _ ->
+      :ok
   end
 
   plug Plug.RequestId

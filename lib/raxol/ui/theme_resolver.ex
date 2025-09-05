@@ -36,12 +36,7 @@ defmodule Raxol.UI.ThemeResolver do
     # Check for parent theme inheritance
     parent_theme = Map.get(element, :parent_theme)
 
-    if parent_theme && is_map(parent_theme) do
-      # Merge parent theme with main theme (main theme overrides parent)
-      merge_themes_for_inheritance(parent_theme, main_theme)
-    else
-      main_theme
-    end
+    merge_parent_theme_if_present(parent_theme, main_theme)
   end
 
   @doc """
@@ -151,31 +146,14 @@ defmodule Raxol.UI.ThemeResolver do
   def resolve_variant_color(attrs, theme, color_type) do
     variant_name = Map.get(attrs, :variant)
 
-    if variant_name && theme && is_map(theme) do
-      variants = Map.get(theme, :variants, %{})
-      variant = Map.get(variants, variant_name)
-
-      if variant && is_map(variant) do
-        Map.get(variant, color_type)
-      else
-        nil
-      end
-    else
-      nil
-    end
+    get_variant_color_if_valid(variant_name, theme, color_type)
   end
 
   @doc """
   Gets component styles from theme.
   """
   def get_component_styles(component_type, theme) do
-    if component_type && is_map(theme) do
-      theme
-      |> Map.get(:component_styles, %{})
-      |> get_component_styles_from_map(component_type)
-    else
-      %{}
-    end
+    get_component_styles_if_valid(component_type, theme)
   end
 
   defp get_component_styles_from_map(component_styles, component_type)
@@ -220,9 +198,7 @@ defmodule Raxol.UI.ThemeResolver do
   # Helper functions to reduce complexity
   defp get_explicit_color(attrs, color_keys) do
     Enum.find_value(color_keys, fn key ->
-      if Map.has_key?(attrs, key) and not is_nil(Map.get(attrs, key)) do
-        Map.get(attrs, key)
-      end
+      get_attr_value_if_present(attrs, key)
     end)
   end
 
@@ -248,6 +224,54 @@ defmodule Raxol.UI.ThemeResolver do
       nil -> default
       colors when is_map(colors) -> Map.get(colors, color_type, default)
       _ -> default
+    end
+  end
+
+  ## Pattern matching helper functions for if statement elimination
+
+  defp merge_parent_theme_if_present(parent_theme, main_theme)
+       when is_map(parent_theme) do
+    # Merge parent theme with main theme (main theme overrides parent)
+    merge_themes_for_inheritance(parent_theme, main_theme)
+  end
+
+  defp merge_parent_theme_if_present(_parent_theme, main_theme), do: main_theme
+
+  defp get_variant_color_if_valid(nil, _theme, _color_type), do: nil
+  defp get_variant_color_if_valid(_variant_name, nil, _color_type), do: nil
+
+  defp get_variant_color_if_valid(_variant_name, theme, _color_type)
+       when not is_map(theme),
+       do: nil
+
+  defp get_variant_color_if_valid(variant_name, theme, color_type) do
+    variants = Map.get(theme, :variants, %{})
+    variant = Map.get(variants, variant_name)
+    get_color_from_variant(variant, color_type)
+  end
+
+  defp get_color_from_variant(variant, color_type) when is_map(variant) do
+    Map.get(variant, color_type)
+  end
+
+  defp get_color_from_variant(_variant, _color_type), do: nil
+
+  defp get_component_styles_if_valid(nil, _theme), do: %{}
+
+  defp get_component_styles_if_valid(_component_type, theme)
+       when not is_map(theme),
+       do: %{}
+
+  defp get_component_styles_if_valid(component_type, theme) do
+    theme
+    |> Map.get(:component_styles, %{})
+    |> get_component_styles_from_map(component_type)
+  end
+
+  defp get_attr_value_if_present(attrs, key) do
+    case Map.get(attrs, key) do
+      nil -> nil
+      value -> value
     end
   end
 end

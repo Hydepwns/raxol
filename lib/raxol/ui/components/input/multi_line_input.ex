@@ -158,65 +158,17 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   def handle_backspace(state) do
-    new_state =
-      if elem(
-           Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-             state
-           ),
-           0
-         ) != nil do
-        {s, _deleted} =
-          Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(
-            state
-          )
-
-        s
-      else
-        Raxol.UI.Components.Input.MultiLineInput.TextHelper.handle_backspace_no_selection(
-          state
-        )
-      end
-
+    new_state = process_backspace_with_selection_check(state)
     trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
   end
 
   def handle_delete(state) do
-    new_state =
-      if elem(
-           Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-             state
-           ),
-           0
-         ) != nil do
-        {s, _deleted} =
-          Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(
-            state
-          )
-
-        s
-      else
-        Raxol.UI.Components.Input.MultiLineInput.TextHelper.handle_delete_no_selection(
-          state
-        )
-      end
-
+    new_state = process_delete_with_selection_check(state)
     trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
   end
 
   def handle_enter(state) do
-    {state_after_delete, _} =
-      if elem(
-           Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-             state
-           ),
-           0
-         ) != nil do
-        Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(
-          state
-        )
-      else
-        {state, ""}
-      end
+    {state_after_delete, _} = handle_enter_selection_delete(state)
 
     new_state =
       Raxol.UI.Components.Input.MultiLineInput.TextHelper.insert_char(
@@ -307,39 +259,12 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   def handle_copy(state) do
-    if elem(
-         Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-           state
-         ),
-         0
-       ) != nil do
-      Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper.copy_selection(
-        state
-      )
-    end
-
+    handle_copy_if_selection_exists(state)
     {:noreply, state, nil}
   end
 
   def handle_cut(state) do
-    if elem(
-         Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-           state
-         ),
-         0
-       ) != nil do
-      {new_state, cmd} =
-        Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper.cut_selection(
-          state
-        )
-
-      trigger_on_change(
-        {:noreply, ensure_cursor_visible(new_state), cmd},
-        state
-      )
-    else
-      {:noreply, state, nil}
-    end
+    handle_cut_with_selection_check(state)
   end
 
   def handle_paste(state) do
@@ -347,14 +272,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   def handle_clipboard_content(content, state) do
-    {start_pos, end_pos} =
-      if state.selection_start && state.selection_end do
-        Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-          state
-        )
-      else
-        {state.cursor_pos, state.cursor_pos}
-      end
+    {start_pos, end_pos} = get_clipboard_position_range(state)
 
     {new_value, _replaced} =
       Raxol.UI.Components.Input.MultiLineInput.TextHelper.replace_text_range(
@@ -398,32 +316,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   def handle_delete_selection(_direction, state) do
-    if elem(
-         Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-           state
-         ),
-         0
-       ) != nil do
-      Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(
-        state
-      )
-    else
-      {:noreply, state}
-    end
+    handle_delete_selection_if_exists(state)
   end
 
   def handle_copy_selection(state) do
-    if elem(
-         Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-           state
-         ),
-         0
-       ) != nil do
-      Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper.copy_selection(
-        state
-      )
-    end
-
+    handle_copy_if_selection_exists(state)
     {:noreply, state}
   end
 
@@ -515,26 +412,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   defp trigger_on_change({:noreply, new_state, existing_cmd}, old_state) do
-    if new_state.value != old_state.value and
-         is_function(new_state.on_change, 1) do
-      change_event_cmd =
-        {:component_event, new_state.id, {:change, new_state.value}}
-
-      new_cmd =
-        case existing_cmd do
-          nil -> [change_event_cmd]
-          cmd when is_list(cmd) -> [change_event_cmd | cmd]
-          single_cmd -> [change_event_cmd, single_cmd]
-        end
-
-      Raxol.Core.Runtime.Log.debug(
-        "Value changed for #{new_state.id}, queueing :change event."
-      )
-
-      {:noreply, new_state, new_cmd}
-    else
-      {:noreply, new_state, existing_cmd}
-    end
+    trigger_change_if_value_changed(new_state, old_state, existing_cmd)
   end
 
   defp trigger_on_change(other, _old_state), do: other
@@ -654,11 +532,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     placeholder_element = render_placeholder(state, merged_theme)
 
     children =
-      if placeholder_element != nil and visible_lines == [""] do
-        [placeholder_element]
-      else
-        line_elements
-      end
+      choose_children_content(placeholder_element, visible_lines, line_elements)
 
     children |> List.flatten() |> Enum.reject(&is_nil/1)
   end
@@ -678,14 +552,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   defp render_placeholder(state, merged_theme) do
-    if state.value == "" and not state.focused and state.placeholder != "" do
-      Raxol.View.Elements.label(
-        content: state.placeholder,
-        style: [color: merged_theme[:placeholder_color] || :gray]
-      )
-    else
-      nil
-    end
+    render_placeholder_if_conditions_met(state, merged_theme)
   end
 
   defp build_root_props(state, merged_theme) do
@@ -707,4 +574,211 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
        do: cursor_row - height + 1
 
   defp calculate_scroll_row(_cursor_row, scroll_row, _height), do: scroll_row
+
+  # Helper functions to eliminate if statements
+
+  defp process_backspace_with_selection_check(state) do
+    selection_result =
+      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
+        state
+      )
+
+    do_backspace_with_selection(elem(selection_result, 0), state)
+  end
+
+  defp do_backspace_with_selection(nil, state) do
+    Raxol.UI.Components.Input.MultiLineInput.TextHelper.handle_backspace_no_selection(
+      state
+    )
+  end
+
+  defp do_backspace_with_selection(_selection, state) do
+    {s, _deleted} =
+      Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(
+        state
+      )
+
+    s
+  end
+
+  defp process_delete_with_selection_check(state) do
+    selection_result =
+      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
+        state
+      )
+
+    do_delete_with_selection(elem(selection_result, 0), state)
+  end
+
+  defp do_delete_with_selection(nil, state) do
+    Raxol.UI.Components.Input.MultiLineInput.TextHelper.handle_delete_no_selection(
+      state
+    )
+  end
+
+  defp do_delete_with_selection(_selection, state) do
+    {s, _deleted} =
+      Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(
+        state
+      )
+
+    s
+  end
+
+  defp handle_enter_selection_delete(state) do
+    selection_result =
+      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
+        state
+      )
+
+    do_enter_selection_delete(elem(selection_result, 0), state)
+  end
+
+  defp do_enter_selection_delete(nil, state), do: {state, ""}
+
+  defp do_enter_selection_delete(_selection, state) do
+    Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(state)
+  end
+
+  defp handle_copy_if_selection_exists(state) do
+    selection_result =
+      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
+        state
+      )
+
+    do_copy_if_selection_exists(elem(selection_result, 0), state)
+  end
+
+  defp do_copy_if_selection_exists(nil, _state), do: :ok
+
+  defp do_copy_if_selection_exists(_selection, state) do
+    Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper.copy_selection(
+      state
+    )
+  end
+
+  defp handle_cut_with_selection_check(state) do
+    selection_result =
+      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
+        state
+      )
+
+    do_cut_with_selection(elem(selection_result, 0), state)
+  end
+
+  defp do_cut_with_selection(nil, state), do: {:noreply, state, nil}
+
+  defp do_cut_with_selection(_selection, state) do
+    {new_state, cmd} =
+      Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper.cut_selection(
+        state
+      )
+
+    trigger_on_change({:noreply, ensure_cursor_visible(new_state), cmd}, state)
+  end
+
+  defp get_clipboard_position_range(%{selection_start: nil} = state),
+    do: {state.cursor_pos, state.cursor_pos}
+
+  defp get_clipboard_position_range(%{selection_end: nil} = state),
+    do: {state.cursor_pos, state.cursor_pos}
+
+  defp get_clipboard_position_range(state) do
+    Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
+      state
+    )
+  end
+
+  defp handle_delete_selection_if_exists(state) do
+    selection_result =
+      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
+        state
+      )
+
+    do_delete_selection_if_exists(elem(selection_result, 0), state)
+  end
+
+  defp do_delete_selection_if_exists(nil, state), do: {:noreply, state}
+
+  defp do_delete_selection_if_exists(_selection, state) do
+    Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(state)
+  end
+
+  defp trigger_change_if_value_changed(new_state, old_state, existing_cmd) do
+    do_trigger_change(
+      new_state.value != old_state.value and
+        is_function(new_state.on_change, 1),
+      new_state,
+      existing_cmd
+    )
+  end
+
+  defp do_trigger_change(false, new_state, existing_cmd),
+    do: {:noreply, new_state, existing_cmd}
+
+  defp do_trigger_change(true, new_state, existing_cmd) do
+    change_event_cmd =
+      {:component_event, new_state.id, {:change, new_state.value}}
+
+    new_cmd =
+      case existing_cmd do
+        nil -> [change_event_cmd]
+        cmd when is_list(cmd) -> [change_event_cmd | cmd]
+        single_cmd -> [change_event_cmd, single_cmd]
+      end
+
+    Raxol.Core.Runtime.Log.debug(
+      "Value changed for #{new_state.id}, queueing :change event."
+    )
+
+    {:noreply, new_state, new_cmd}
+  end
+
+  defp choose_children_content(
+         placeholder_element,
+         visible_lines,
+         line_elements
+       ) do
+    do_choose_children_content(
+      placeholder_element != nil and visible_lines == [""],
+      placeholder_element,
+      visible_lines,
+      line_elements
+    )
+  end
+
+  defp do_choose_children_content(
+         true,
+         placeholder_element,
+         _visible_lines,
+         _line_elements
+       ) do
+    [placeholder_element]
+  end
+
+  defp do_choose_children_content(
+         false,
+         _placeholder_element,
+         _visible_lines,
+         line_elements
+       ) do
+    line_elements
+  end
+
+  defp render_placeholder_if_conditions_met(state, merged_theme) do
+    do_render_placeholder(
+      state.value == "" and not state.focused and state.placeholder != "",
+      state,
+      merged_theme
+    )
+  end
+
+  defp do_render_placeholder(false, _state, _merged_theme), do: nil
+
+  defp do_render_placeholder(true, state, merged_theme) do
+    Raxol.View.Elements.label(
+      content: state.placeholder,
+      style: [color: merged_theme[:placeholder_color] || :gray]
+    )
+  end
 end

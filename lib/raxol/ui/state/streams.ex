@@ -398,10 +398,7 @@ defmodule Raxol.UI.State.Streams do
         Observer.new(
           fn value ->
             with {:ok, should_emit} <- safe_apply(predicate_fn, value) do
-              if should_emit do
-                safe_apply(observer.next, value)
-              end
-
+              emit_if_predicate_matches(should_emit, observer, value)
               :ok
             else
               {:error, reason} ->
@@ -429,15 +426,7 @@ defmodule Raxol.UI.State.Streams do
         Observer.new(
           fn value ->
             current = :counters.get(counter, 1)
-
-            if current < count do
-              :counters.add(counter, 1, 1)
-              safe_apply(observer.next, value)
-
-              if current + 1 >= count do
-                safe_apply(observer.complete)
-              end
-            end
+            handle_take_value(current, count, counter, observer, value)
           end,
           observer.error,
           observer.complete
@@ -462,9 +451,7 @@ defmodule Raxol.UI.State.Streams do
             current = :counters.get(counter, 1)
             :counters.add(counter, 1, 1)
 
-            if current >= count do
-              safe_apply(observer.next, value)
-            end
+            emit_if_skip_threshold_reached(current, count, observer, value)
           end,
           observer.error,
           observer.complete
@@ -479,19 +466,23 @@ defmodule Raxol.UI.State.Streams do
   """
   def debounce(%Observable{} = observable, milliseconds) do
     Observable.new(fn observer ->
-      {:ok, debouncer} = DebouncerServer.start_link(observer, milliseconds)
+      {:ok, debouncer} =
+        Raxol.UI.State.Streams.DebouncerServer.start_link(
+          observer,
+          milliseconds
+        )
 
       new_observer =
         Observer.new(
           fn value ->
-            DebouncerServer.emit(debouncer, value)
+            Raxol.UI.State.Streams.DebouncerServer.emit(debouncer, value)
           end,
           fn error ->
-            DebouncerServer.stop(debouncer)
+            Raxol.UI.State.Streams.DebouncerServer.stop(debouncer)
             safe_apply(observer.error, error)
           end,
           fn ->
-            DebouncerServer.stop(debouncer)
+            Raxol.UI.State.Streams.DebouncerServer.stop(debouncer)
             safe_apply(observer.complete)
           end
         )
@@ -524,9 +515,7 @@ defmodule Raxol.UI.State.Streams do
     @impl GenServer
     def handle_cast({:emit, value}, state) do
       # Cancel existing timer if present
-      if state.timer do
-        Process.cancel_timer(state.timer)
-      end
+      Raxol.UI.State.Streams.cancel_existing_timer(state.timer)
 
       # Start new timer
       timer = Process.send_after(self(), :flush, state.delay)
@@ -535,9 +524,10 @@ defmodule Raxol.UI.State.Streams do
 
     @impl GenServer
     def handle_info(:flush, state) do
-      if state.last_value != nil do
-        Raxol.UI.State.Streams.safe_apply(state.observer.next, state.last_value)
-      end
+      Raxol.UI.State.Streams.emit_debounced_value(
+        state.last_value,
+        state.observer
+      )
 
       {:noreply, %{state | timer: nil, last_value: nil}}
     end
@@ -586,7 +576,8 @@ defmodule Raxol.UI.State.Streams do
   """
   def combine_latest(observables) when is_list(observables) do
     Observable.new(fn observer ->
-      {:ok, combiner} = CombinerServer.start_link(observables, observer)
+      {:ok, combiner} =
+        Raxol.UI.State.Streams.CombinerServer.start_link(observables, observer)
 
       # Subscribe to all observables
       subscriptions =
@@ -595,9 +586,19 @@ defmodule Raxol.UI.State.Streams do
         |> Enum.map(fn {obs, index} ->
           obs.subscribe_fn.(
             Observer.new(
-              fn value -> CombinerServer.update(combiner, index, value) end,
-              fn error -> CombinerServer.error(combiner, error) end,
-              fn -> CombinerServer.complete(combiner, index) end
+              fn value ->
+                Raxol.UI.State.Streams.CombinerServer.update(
+                  combiner,
+                  index,
+                  value
+                )
+              end,
+              fn error ->
+                Raxol.UI.State.Streams.CombinerServer.error(combiner, error)
+              end,
+              fn ->
+                Raxol.UI.State.Streams.CombinerServer.complete(combiner, index)
+              end
             )
           )
         end)
@@ -644,40 +645,57 @@ defmodule Raxol.UI.State.Streams do
 
     @impl GenServer
     def handle_cast({:update, index, value}, state) do
-      if not state.errored do
-        new_values = List.replace_at(state.values, index, value)
-        new_has_value = List.replace_at(state.has_value, index, true)
-
-        # Emit if all streams have emitted at least once
-        if Enum.all?(new_has_value) do
-          Raxol.UI.State.Streams.safe_apply(state.observer.next, new_values)
-        end
-
-        {:noreply, %{state | values: new_values, has_value: new_has_value}}
-      else
-        {:noreply, state}
-      end
+      handle_combiner_update(state, index, value)
     end
 
     @impl GenServer
     def handle_cast({:error, error}, state) do
-      if not state.errored do
-        Raxol.UI.State.Streams.safe_apply(state.observer.error, error)
-        {:noreply, %{state | errored: true}}
-      else
-        {:noreply, state}
-      end
+      handle_combiner_error(state, error)
     end
 
     @impl GenServer
     def handle_cast({:complete, index}, state) do
       new_completed = List.replace_at(state.completed, index, true)
 
-      if Enum.all?(new_completed) and not state.errored do
-        Raxol.UI.State.Streams.safe_apply(state.observer.complete)
-      end
+      complete_if_all_streams_done(new_completed, state.errored, state.observer)
 
       {:noreply, %{state | completed: new_completed}}
+    end
+
+    # Helper functions
+    defp handle_combiner_update(%{errored: true} = state, _index, _value),
+      do: {:noreply, state}
+
+    defp handle_combiner_update(state, index, value) do
+      new_values = List.replace_at(state.values, index, value)
+      new_has_value = List.replace_at(state.has_value_flags, index, true)
+
+      case Enum.all?(new_has_value) do
+        true ->
+          Raxol.UI.State.Streams.safe_apply(state.observer.next, new_values)
+
+          {:noreply,
+           %{state | values: new_values, has_value_flags: new_has_value}}
+
+        false ->
+          {:noreply,
+           %{state | values: new_values, has_value_flags: new_has_value}}
+      end
+    end
+
+    defp handle_combiner_error(%{errored: true} = state, _error),
+      do: {:noreply, state}
+
+    defp handle_combiner_error(state, error) do
+      Raxol.UI.State.Streams.safe_apply(state.observer.error, error)
+      {:noreply, %{state | errored: true}}
+    end
+
+    defp complete_if_all_streams_done(completed_flags, errored, observer) do
+      case {Enum.all?(completed_flags), errored} do
+        {true, false} -> Raxol.UI.State.Streams.safe_apply(observer.complete)
+        _ -> :ok
+      end
     end
   end
 
@@ -702,12 +720,7 @@ defmodule Raxol.UI.State.Streams do
   Unsubscribes from an observable.
   """
   def unsubscribe(%Subscription{} = subscription) do
-    if subscription.active do
-      subscription.unsubscribe_fn.()
-      %{subscription | active: false}
-    else
-      subscription
-    end
+    unsubscribe_if_active(subscription)
   end
 
   ## Helper functions for safe function application
@@ -742,5 +755,87 @@ defmodule Raxol.UI.State.Streams do
       {:error, {:throw, thrown}} -> {:error, {:throw, thrown}}
       {:error, error} -> {:error, error}
     end
+  end
+
+  ## Private helper functions for pattern matching refactoring
+
+  defp emit_if_predicate_matches(true, observer, value),
+    do: safe_apply(observer.next, value)
+
+  defp emit_if_predicate_matches(false, _observer, _value), do: :ok
+
+  defp handle_take_value(current, count, counter, observer, value)
+       when current < count do
+    :counters.add(counter, 1, 1)
+    safe_apply(observer.next, value)
+    complete_if_count_reached(current + 1, count, observer)
+  end
+
+  defp handle_take_value(_current, _count, _counter, _observer, _value), do: :ok
+
+  defp complete_if_count_reached(new_count, count, observer)
+       when new_count >= count do
+    safe_apply(observer.complete)
+  end
+
+  defp complete_if_count_reached(_new_count, _count, _observer), do: :ok
+
+  defp emit_if_skip_threshold_reached(current, count, observer, value)
+       when current >= count do
+    safe_apply(observer.next, value)
+  end
+
+  defp emit_if_skip_threshold_reached(_current, _count, _observer, _value),
+    do: :ok
+
+  defp cancel_existing_timer(nil), do: :ok
+  defp cancel_existing_timer(timer), do: Process.cancel_timer(timer)
+
+  defp emit_debounced_value(nil, _observer), do: :ok
+
+  defp emit_debounced_value(value, observer) do
+    Raxol.UI.State.Streams.safe_apply(observer.next, value)
+  end
+
+  defp handle_combiner_update(%{errored: true} = state, _index, _value),
+    do: {:noreply, state}
+
+  defp handle_combiner_update(state, index, value) do
+    new_values = List.replace_at(state.values, index, value)
+    new_has_value = List.replace_at(state.has_value, index, true)
+
+    # Emit if all streams have emitted at least once
+    emit_combined_if_all_ready(new_has_value, new_values, state.observer)
+
+    {:noreply, %{state | values: new_values, has_value: new_has_value}}
+  end
+
+  defp emit_combined_if_all_ready(has_value_flags, values, observer) do
+    case Enum.all?(has_value_flags) do
+      true -> Raxol.UI.State.Streams.safe_apply(observer.next, values)
+      false -> :ok
+    end
+  end
+
+  defp handle_combiner_error(%{errored: true} = state, _error),
+    do: {:noreply, state}
+
+  defp handle_combiner_error(state, error) do
+    Raxol.UI.State.Streams.safe_apply(state.observer.error, error)
+    {:noreply, %{state | errored: true}}
+  end
+
+  defp complete_if_all_streams_done(completed_flags, errored, observer) do
+    case {Enum.all?(completed_flags), errored} do
+      {true, false} -> Raxol.UI.State.Streams.safe_apply(observer.complete)
+      _ -> :ok
+    end
+  end
+
+  defp unsubscribe_if_active(%{active: false} = subscription), do: subscription
+
+  defp unsubscribe_if_active(subscription) do
+    subscription.unsubscribe_fn.()
+    %{subscription | active: false}
   end
 end

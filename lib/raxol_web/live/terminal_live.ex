@@ -19,16 +19,17 @@ defmodule RaxolWeb.TerminalLive do
   @impl Phoenix.LiveView
   def mount(_params, session, socket) do
     # In test environment, always use connected mode to ensure assigns are available
-    if Mix.env() == :test do
-      require Logger
+    case {Mix.env(), connected?(socket)} do
+      {:test, _} ->
+        require Logger
 
-      Logger.debug(
-        "RaxolWeb.TerminalLive: Using mount_connected for test environment"
-      )
+        Logger.debug(
+          "RaxolWeb.TerminalLive: Using mount_connected for test environment"
+        )
 
-      mount_connected(session, socket)
-    else
-      if connected?(socket) do
+        mount_connected(session, socket)
+
+      {_, true} ->
         require Logger
 
         Logger.debug(
@@ -36,7 +37,8 @@ defmodule RaxolWeb.TerminalLive do
         )
 
         mount_connected(session, socket)
-      else
+
+      {_, false} ->
         require Logger
 
         Logger.debug(
@@ -44,7 +46,6 @@ defmodule RaxolWeb.TerminalLive do
         )
 
         mount_disconnected(socket)
-      end
     end
   end
 
@@ -189,7 +190,10 @@ defmodule RaxolWeb.TerminalLive do
 
   def handle_event("scroll", %{"offset" => offset}, socket) do
     offset =
-      if is_integer(offset), do: offset, else: String.to_integer("#{offset}")
+      case is_integer(offset) do
+        true -> offset
+        false -> String.to_integer("#{offset}")
+      end
 
     emulator = socket.assigns.emulator
     scrollback_size = length(emulator.scrollback_buffer || [])
@@ -204,10 +208,9 @@ defmodule RaxolWeb.TerminalLive do
     emulator = socket.assigns.emulator
     scrollback_size = length(emulator.scrollback_buffer || [])
 
-    if scrollback_size > 0 do
-      handle_scroll_update(socket, scrollback_size)
-    else
-      {:noreply, socket}
+    case scrollback_size do
+      size when size > 0 -> handle_scroll_update(socket, scrollback_size)
+      _ -> {:noreply, socket}
     end
   end
 
@@ -215,10 +218,9 @@ defmodule RaxolWeb.TerminalLive do
     emulator = socket.assigns.emulator
     scrollback_size = length(emulator.scrollback_buffer || [])
 
-    if scrollback_size > 0 do
-      handle_scroll_update(socket, -scrollback_size)
-    else
-      {:noreply, socket}
+    case scrollback_size do
+      size when size > 0 -> handle_scroll_update(socket, -scrollback_size)
+      _ -> {:noreply, socket}
     end
   end
 
@@ -237,7 +239,12 @@ defmodule RaxolWeb.TerminalLive do
   end
 
   def handle_event("set_scrollback_limit", %{"limit" => limit}, socket) do
-    limit = if is_integer(limit), do: limit, else: String.to_integer("#{limit}")
+    limit =
+      case is_integer(limit) do
+        true -> limit
+        false -> String.to_integer("#{limit}")
+      end
+
     emulator = %{socket.assigns.emulator | scrollback_limit: limit}
     {:noreply, assign(socket, emulator: emulator, scrollback_limit: limit)}
   end
@@ -284,9 +291,13 @@ defmodule RaxolWeb.TerminalLive do
     emulator = socket.assigns.emulator
 
     new_emulator =
-      if offset < 0,
-        do: Raxol.Terminal.Commands.Screen.scroll_up(emulator, abs(offset)),
-        else: Raxol.Terminal.Commands.Screen.scroll_down(emulator, abs(offset))
+      case offset < 0 do
+        true ->
+          Raxol.Terminal.Commands.Screen.scroll_up(emulator, abs(offset))
+
+        false ->
+          Raxol.Terminal.Commands.Screen.scroll_down(emulator, abs(offset))
+      end
 
     renderer = %{
       socket.assigns.renderer
@@ -315,10 +326,9 @@ defmodule RaxolWeb.TerminalLive do
         socket
       ) do
     # Ignore if this message originated from this session
-    if sender_session_id == socket.assigns.session_id do
-      {:noreply, socket}
-    else
-      {:noreply, assign(socket, terminal_html: html, cursor: cursor)}
+    case sender_session_id == socket.assigns.session_id do
+      true -> {:noreply, socket}
+      false -> {:noreply, assign(socket, terminal_html: html, cursor: cursor)}
     end
   end
 
@@ -351,22 +361,22 @@ defmodule RaxolWeb.TerminalLive do
   @impl Phoenix.LiveView
   def terminate(_reason, socket) do
     # Clean up Presence tracking and PubSub subscriptions
-    if socket.assigns.presence_topic && socket.assigns.user_id do
-      require Logger
+    case {socket.assigns.presence_topic, socket.assigns.user_id} do
+      {nil, _} ->
+        :ok
 
-      Logger.debug(
-        "RaxolWeb.TerminalLive: Cleaning up presence and pubsub for topic: #{socket.assigns.presence_topic}"
-      )
+      {_, nil} ->
+        :ok
 
-      # Untrack from Presence
-      Presence.untrack(
-        self(),
-        socket.assigns.presence_topic,
-        socket.assigns.user_id
-      )
+      {topic, user_id} ->
+        require Logger
 
-      # Unsubscribe from PubSub
-      PubSub.unsubscribe(Raxol.PubSub, socket.assigns.presence_topic)
+        Logger.debug(
+          "RaxolWeb.TerminalLive: Cleaning up presence and pubsub for topic: #{topic}"
+        )
+
+        Presence.untrack(self(), topic, user_id)
+        PubSub.unsubscribe(Raxol.PubSub, topic)
     end
 
     :ok
@@ -520,10 +530,9 @@ defmodule RaxolWeb.TerminalLive do
     case Raxol.Core.CompilerState.safe_lookup(:terminal_cache, cache_key) do
       {:ok, [{^cache_key, rendered, timestamp}]} ->
         # Cache is valid for 1 second
-        if System.system_time(:second) - timestamp < 1 do
-          rendered
-        else
-          render_and_cache(renderer, cache_key)
+        case System.system_time(:second) - timestamp < 1 do
+          true -> rendered
+          false -> render_and_cache(renderer, cache_key)
         end
 
       {:ok, []} ->

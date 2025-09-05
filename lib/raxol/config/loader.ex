@@ -36,14 +36,7 @@ defmodule Raxol.Config.Loader do
 
     {successes, failures} = Enum.split_with(results, &match?({:ok, _}, &1))
 
-    if length(failures) == length(paths) do
-      {:error, {:all_files_failed, failures}}
-    else
-      configs = Enum.map(successes, fn {:ok, config} -> config end)
-      merged = Enum.reduce(configs, %{}, &deep_merge/2)
-
-      {:ok, merged}
-    end
+    handle_load_results(length(failures) == length(paths), failures, successes)
   end
 
   @doc """
@@ -132,21 +125,7 @@ defmodule Raxol.Config.Loader do
   Creates a backup of a configuration file.
   """
   def backup_config(path) do
-    if File.exists?(path) do
-      timestamp = DateTime.utc_now() |> DateTime.to_unix()
-      backup_path = "#{path}.backup.#{timestamp}"
-
-      case File.copy(path, backup_path) do
-        {:ok, _} ->
-          Logger.info("Configuration backed up to #{backup_path}")
-          {:ok, backup_path}
-
-        {:error, reason} ->
-          {:error, {:backup_failed, reason}}
-      end
-    else
-      {:error, :file_not_found}
-    end
+    create_backup_if_exists(File.exists?(path), path)
   end
 
   @doc """
@@ -167,6 +146,83 @@ defmodule Raxol.Config.Loader do
       {:error, reason} ->
         {:error, {:watch_failed, reason}}
     end
+  end
+
+  # Private functions - Pattern Matching Helpers
+
+  defp handle_load_results(true, failures, _successes) do
+    {:error, {:all_files_failed, failures}}
+  end
+
+  defp handle_load_results(false, _failures, successes) do
+    configs = Enum.map(successes, fn {:ok, config} -> config end)
+    merged = Enum.reduce(configs, %{}, &deep_merge/2)
+    {:ok, merged}
+  end
+
+  defp create_backup_if_exists(false, _path) do
+    {:error, :file_not_found}
+  end
+
+  defp create_backup_if_exists(true, path) do
+    timestamp = DateTime.utc_now() |> DateTime.to_unix()
+    backup_path = "#{path}.backup.#{timestamp}"
+
+    case File.copy(path, backup_path) do
+      {:ok, _} ->
+        Logger.info("Configuration backed up to #{backup_path}")
+        {:ok, backup_path}
+
+      {:error, reason} ->
+        {:error, {:backup_failed, reason}}
+    end
+  end
+
+  defp find_files_in_directory(false, _directory) do
+    []
+  end
+
+  defp find_files_in_directory(true, directory) do
+    @supported_formats
+    |> Enum.flat_map(fn ext ->
+      Path.wildcard(Path.join(directory, "*#{ext}"))
+    end)
+    |> Enum.sort()
+  end
+
+  defp process_file_event(false, _event_key, _file_path, paths, callback, processed_events) do
+    watch_loop(paths, callback, processed_events)
+  end
+
+  defp process_file_event(true, event_key, file_path, paths, callback, processed_events) do
+    handle_file_change(file_path in paths, file_path, callback)
+    
+    new_processed = reset_processed_events_if_needed(MapSet.size(processed_events) > 100, processed_events, event_key)
+    
+    Process.send_after(self(), {:remove_event, event_key}, 1000)
+    watch_loop(paths, callback, new_processed)
+  end
+
+  defp handle_file_change(false, _file_path, _callback), do: :ok
+
+  defp handle_file_change(true, file_path, callback) do
+    Logger.debug("Configuration file changed: #{file_path}")
+
+    case load_file(file_path) do
+      {:ok, config} ->
+        callback.({:file_changed, file_path, config})
+
+      {:error, reason} ->
+        callback.({:file_error, file_path, reason})
+    end
+  end
+
+  defp reset_processed_events_if_needed(true, _processed_events, event_key) do
+    MapSet.new([event_key])
+  end
+
+  defp reset_processed_events_if_needed(false, processed_events, event_key) do
+    MapSet.put(processed_events, event_key)
   end
 
   # Private functions
@@ -332,15 +388,7 @@ defmodule Raxol.Config.Loader do
   end
 
   defp find_config_files(directory) do
-    if File.dir?(directory) do
-      @supported_formats
-      |> Enum.flat_map(fn ext ->
-        Path.wildcard(Path.join(directory, "*#{ext}"))
-      end)
-      |> Enum.sort()
-    else
-      []
-    end
+    find_files_in_directory(File.dir?(directory), directory)
   end
 
   defp detect_format(path) do
@@ -408,34 +456,14 @@ defmodule Raxol.Config.Loader do
         # Debounce events to avoid multiple calls for the same file
         event_key = {file_path, events}
 
-        if not MapSet.member?(processed_events, event_key) do
-          if file_path in paths do
-            Logger.debug("Configuration file changed: #{file_path}")
-
-            case load_file(file_path) do
-              {:ok, config} ->
-                callback.({:file_changed, file_path, config})
-
-              {:error, reason} ->
-                callback.({:file_error, file_path, reason})
-            end
-          end
-
-          # Reset processed events periodically
-          new_processed =
-            if MapSet.size(processed_events) > 100 do
-              MapSet.new([event_key])
-            else
-              MapSet.put(processed_events, event_key)
-            end
-
-          # Remove event after delay to allow for debouncing
-          Process.send_after(self(), {:remove_event, event_key}, 1000)
-
-          watch_loop(paths, callback, new_processed)
-        else
-          watch_loop(paths, callback, processed_events)
-        end
+        process_file_event(
+          not MapSet.member?(processed_events, event_key),
+          event_key,
+          file_path,
+          paths,
+          callback,
+          processed_events
+        )
 
       {:remove_event, event_key} ->
         new_processed = MapSet.delete(processed_events, event_key)

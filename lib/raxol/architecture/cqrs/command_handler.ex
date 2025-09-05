@@ -197,11 +197,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
       :ok
     else
       false ->
-        if not Code.ensure_loaded?(handler_module) do
-          {:error, :handler_not_loaded}
-        else
-          {:error, :missing_handle_function}
-        end
+        validate_handler_error(Code.ensure_loaded?(handler_module))
     end
   end
 
@@ -245,17 +241,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
   Applies optimistic locking to prevent concurrent modifications.
   """
   def with_optimistic_lock(resource, expected_version, update_fn) do
-    if resource.version == expected_version do
-      case update_fn.(resource) do
-        {:ok, updated_resource} ->
-          {:ok, %{updated_resource | version: resource.version + 1}}
-
-        error ->
-          error
-      end
-    else
-      {:error, :version_mismatch}
-    end
+    handle_version_check(resource.version == expected_version, resource, update_fn)
   end
 
   @doc """
@@ -272,12 +258,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
         end
       end)
 
-    if Enum.empty?(failed_preconditions) do
-      :ok
-    else
-      failed_names = Enum.map(failed_preconditions, &elem(&1, 0))
-      {:error, {:precondition_failed, failed_names}}
-    end
+    handle_precondition_validation(Enum.empty?(failed_preconditions), failed_preconditions)
   end
 
   @doc """
@@ -406,5 +387,32 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
         compensation_fn -> compensation_fn.()
       end
     end)
+  end
+
+  # Helper functions to eliminate if statements
+
+  defp validate_handler_error(true), do: {:error, :missing_handle_function}
+
+  defp validate_handler_error(false), do: {:error, :handler_not_loaded}
+
+  defp handle_version_check(false, _resource, _update_fn) do
+    {:error, :version_mismatch}
+  end
+
+  defp handle_version_check(true, resource, update_fn) do
+    case update_fn.(resource) do
+      {:ok, updated_resource} ->
+        {:ok, %{updated_resource | version: resource.version + 1}}
+
+      error ->
+        error
+    end
+  end
+
+  defp handle_precondition_validation(true, _failed_preconditions), do: :ok
+
+  defp handle_precondition_validation(false, failed_preconditions) do
+    failed_names = Enum.map(failed_preconditions, &elem(&1, 0))
+    {:error, {:precondition_failed, failed_names}}
   end
 end

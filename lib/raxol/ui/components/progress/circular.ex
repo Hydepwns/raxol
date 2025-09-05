@@ -62,12 +62,7 @@ defmodule Raxol.UI.Components.Progress.Circular do
     progress_char = Enum.at(chars, char_index)
 
     # Generate percentage text
-    percentage_text =
-      if show_percentage do
-        "#{round(value * 100)}%"
-      else
-        ""
-      end
+    percentage_text = generate_percentage_text(show_percentage, value)
 
     # Create the circular progress indicator
     Raxol.View.Elements.row([id: id],
@@ -80,21 +75,44 @@ defmodule Raxol.UI.Components.Progress.Circular do
         elements = [char_element]
 
         elements =
-          if show_percentage do
-            percentage_element =
-              Raxol.View.Elements.label(
-                content: percentage_text,
-                style: percentage_style
-              )
-
-            elements ++ [percentage_element]
-          else
-            elements
-          end
+          add_percentage_element_if_needed(
+            show_percentage,
+            elements,
+            percentage_text,
+            percentage_style
+          )
 
         # Return the elements
         elements
       end
     )
+  end
+
+  # Helper functions for pattern matching instead of if statements
+
+  defp generate_percentage_text(true, value), do: "#{round(value * 100)}%"
+  defp generate_percentage_text(false, _value), do: ""
+
+  defp add_percentage_element_if_needed(
+         false,
+         elements,
+         _percentage_text,
+         _percentage_style
+       ),
+       do: elements
+
+  defp add_percentage_element_if_needed(
+         true,
+         elements,
+         percentage_text,
+         percentage_style
+       ) do
+    percentage_element =
+      Raxol.View.Elements.label(
+        content: percentage_text,
+        style: percentage_style
+      )
+
+    elements ++ [percentage_element]
   end
 end

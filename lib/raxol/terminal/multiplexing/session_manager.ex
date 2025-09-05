@@ -381,20 +381,13 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
     File.mkdir_p!(persistence_dir)
 
     # Start cleanup timer
-    if config.cleanup_interval_minutes > 0 do
-      :timer.send_interval(
-        config.cleanup_interval_minutes * 60 * 1000,
-        :cleanup_sessions
-      )
-    end
+    Raxol.Terminal.Multiplexing.SessionManager.Helpers.start_cleanup_timer(
+      config.cleanup_interval_minutes
+    )
 
     # Initialize network server for remote sessions
     network_server =
-      if config.enable_session_sharing do
-        start_network_server(config.network_port)
-      else
-        nil
-      end
+      init_network_server(config.enable_session_sharing, config.network_port)
 
     state = %__MODULE__{
       sessions: %{},
@@ -533,32 +526,7 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
         {:reply, {:error, :session_not_found}, state}
 
       session ->
-        if length(session.windows) >= state.config.max_windows_per_session do
-          {:reply, {:error, :max_windows_exceeded}, state}
-        else
-          window_id = generate_window_id()
-
-          window =
-            create_window_with_panes(window_id, session_id, window_name, config)
-
-          updated_session = %{
-            session
-            | windows: [window | session.windows],
-              active_window: window_id,
-              last_activity: System.monotonic_time(:millisecond)
-          }
-
-          updated_sessions =
-            Map.put(state.sessions, session_id, updated_session)
-
-          new_state = %{state | sessions: updated_sessions}
-
-          Logger.info(
-            "Created window '#{window_name}' in session '#{session.name}'"
-          )
-
-          {:reply, {:ok, window}, new_state}
-        end
+        handle_window_creation(session, session_id, window_name, config, state)
     end
   end
 
@@ -570,31 +538,16 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
       ) do
     case find_pane(state, session_id, window_id, pane_id) do
       {:ok, _session, window, pane} ->
-        if length(window.panes) >= state.config.max_panes_per_window do
-          {:reply, {:error, :max_panes_exceeded}, state}
-        else
-          new_pane = split_existing_pane(pane, direction, config)
-
-          updated_window = %{
-            window
-            | panes: [new_pane | window.panes],
-              active_pane: new_pane.id
-          }
-
-          new_state =
-            update_window_in_session(
-              state,
-              session_id,
-              window_id,
-              updated_window
-            )
-
-          Logger.info(
-            "Split pane #{pane_id} #{direction}ly in window '#{window.name}'"
-          )
-
-          {:reply, {:ok, new_pane}, new_state}
-        end
+        handle_pane_splitting(
+          window,
+          pane,
+          direction,
+          config,
+          state,
+          session_id,
+          window_id,
+          pane_id
+        )
 
       {:error, reason} ->
         {:reply, {:error, reason}, state}
@@ -667,35 +620,7 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
   ## Private Implementation
 
   defp create_new_session(session_id, name, config, state) do
-    if map_size(state.sessions) >= state.config.max_sessions do
-      {:error, :max_sessions_exceeded}
-    else
-      now = System.monotonic_time(:millisecond)
-
-      session = %Session{
-        id: session_id,
-        name: name,
-        created_at: now,
-        last_activity: now,
-        status: :active,
-        metadata: Map.get(config, :metadata, %{}),
-        windows: [],
-        active_window: nil,
-        clients: [],
-        persistence_config: %{enabled: Map.get(config, :persistence, true)},
-        resource_limits: Map.get(config, :resource_limits, %{}),
-        hooks: Map.get(config, :hooks, %{})
-      }
-
-      # Create initial windows if specified
-      {updated_session, windows} = create_initial_windows(session, config)
-      final_session = %{updated_session | windows: windows}
-
-      updated_sessions = Map.put(state.sessions, session_id, final_session)
-      new_state = %{state | sessions: updated_sessions}
-
-      {:ok, final_session, new_state}
-    end
+    check_session_limit_and_create(session_id, name, config, state)
   end
 
   defp create_initial_windows(session, config) do
@@ -717,12 +642,7 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
       end)
 
     # Set first window as active
-    active_window =
-      if length(windows) > 0 do
-        List.first(windows).id
-      else
-        nil
-      end
+    active_window = get_active_window(windows)
 
     {%{session | active_window: active_window}, windows}
   end
@@ -865,11 +785,7 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
 
     updated_windows =
       Enum.map(session.windows, fn window ->
-        if window.id == window_id do
-          updated_window
-        else
-          window
-        end
+        update_window_if_match(window, window_id, updated_window)
       end)
 
     updated_session = %{session | windows: updated_windows}
@@ -882,11 +798,7 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
     # Terminate all terminal processes
     session.windows
     |> Enum.flat_map(& &1.panes)
-    |> Enum.each(fn pane ->
-      if Process.alive?(pane.terminal) do
-        GenServer.stop(pane.terminal, :normal)
-      end
-    end)
+    |> Enum.each(&stop_terminal_if_alive/1)
 
     # Remove all clients
     updated_clients =
@@ -907,18 +819,7 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
           now - session.last_activity > timeout_ms
       end)
 
-    if length(expired) > 0 do
-      Logger.info("Cleaning up #{length(expired)} expired sessions")
-
-      # Cleanup expired sessions
-      Enum.each(expired, fn {_id, session} ->
-        cleanup_session(session, state)
-      end)
-
-      %{state | sessions: Map.new(active)}
-    else
-      state
-    end
+    cleanup_expired_sessions_if_any(expired, active, state)
   end
 
   defp session_summary(session) do
@@ -948,11 +849,7 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
   end
 
   defp send_to_terminal(terminal_pid, input) do
-    if Process.alive?(terminal_pid) do
-      GenServer.call(terminal_pid, {:input, input})
-    else
-      {:error, :terminal_dead}
-    end
+    send_input_if_alive(terminal_pid, input)
   end
 
   ## Persistence Management
@@ -965,41 +862,11 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
   end
 
   defp save_session_to_disk(session, persistence_manager) do
-    if persistence_manager.enabled do
-      session_file =
-        Path.join(persistence_manager.directory, "#{session.name}.session")
-
-      session_data = serialize_session(session)
-
-      case File.write(session_file, session_data) do
-        :ok ->
-          Logger.info("Session '#{session.name}' saved to #{session_file}")
-
-        {:error, reason} ->
-          Logger.error("Failed to save session: #{inspect(reason)}")
-      end
-    else
-      :ok
-    end
+    save_if_persistence_enabled(session, persistence_manager)
   end
 
   defp restore_persisted_sessions(state) do
-    if state.config.persistence_enabled do
-      session_files =
-        Path.wildcard(
-          Path.join(state.persistence_manager.directory, "*.session")
-        )
-
-      session_files
-      |> Enum.reduce(%{}, fn file, acc ->
-        case restore_session_from_file(file) do
-          {:ok, session} -> Map.put(acc, session.id, session)
-          {:error, _reason} -> acc
-        end
-      end)
-    else
-      %{}
-    end
+    restore_sessions_if_enabled(state.config.persistence_enabled, state)
   end
 
   defp restore_session_from_file(file) do
@@ -1076,4 +943,162 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
   defp generate_client_id do
     "client_" <> Base.encode16(:crypto.strong_rand_bytes(4))
   end
+
+  # Additional helper functions
+
+  defp init_network_server(false, _port), do: nil
+  defp init_network_server(true, port), do: start_network_server(port)
+
+  defp update_window_if_match(window, window_id, updated_window) do
+    case window.id == window_id do
+      true -> updated_window
+      false -> window
+    end
+  end
+
+  defp save_if_persistence_enabled(_session, %{enabled: false}), do: :ok
+
+  defp save_if_persistence_enabled(session, %{enabled: true, directory: dir}) do
+    filename = Path.join(dir, "#{session.id}.session")
+    data = serialize_session(session)
+    File.write(filename, data)
+  end
+
+  defp send_input_if_alive(terminal_pid, input) do
+    case Process.alive?(terminal_pid) do
+      true ->
+        GenServer.call(terminal_pid, {:send_input, input})
+
+      false ->
+        {:error, :terminal_dead}
+    end
+  end
+
+  defp handle_pane_splitting(
+         window,
+         pane,
+         direction,
+         config,
+         state,
+         session_id,
+         window_id,
+         pane_id
+       ) do
+    new_pane = split_existing_pane(pane, direction, config)
+    updated_panes = [new_pane | window.panes]
+    updated_window = %{window | panes: updated_panes}
+
+    new_state =
+      update_window_in_session(state, session_id, window_id, updated_window)
+
+    {:reply, {:ok, new_pane}, new_state}
+  end
+
+  defp handle_window_creation(session, session_id, window_name, config, state) do
+    case length(session.windows) < state.config.max_windows_per_session do
+      true ->
+        window_id = generate_window_id()
+
+        new_window =
+          create_window_with_panes(window_id, session_id, window_name, config)
+
+        updated_windows = [new_window | session.windows]
+        updated_session = %{session | windows: updated_windows}
+        updated_sessions = Map.put(state.sessions, session_id, updated_session)
+        new_state = %{state | sessions: updated_sessions}
+
+        Logger.info("Created window '#{window_name}' in session #{session_id}")
+        {:reply, {:ok, new_window}, new_state}
+
+      false ->
+        {:reply, {:error, :max_windows_exceeded}, state}
+    end
+  end
+
+  defp stop_terminal_if_alive(pane) do
+    case Process.alive?(pane.terminal) do
+      true -> GenServer.stop(pane.terminal)
+      false -> :ok
+    end
+  end
+
+  defp check_session_limit_and_create(session_id, name, config, state) do
+    case map_size(state.sessions) < state.config.max_sessions do
+      true ->
+        now = System.monotonic_time(:millisecond)
+
+        session = %Session{
+          id: session_id,
+          name: name,
+          created_at: now,
+          last_activity: now,
+          status: :active,
+          metadata: Map.get(config, :metadata, %{}),
+          windows: [],
+          active_window: nil,
+          clients: [],
+          persistence_config: %{},
+          resource_limits: %{},
+          hooks: %{}
+        }
+
+        # Create initial windows
+        {updated_session, windows} = create_initial_windows(session, config)
+        final_session = %{updated_session | windows: windows}
+
+        # Add to state
+        updated_sessions = Map.put(state.sessions, session_id, final_session)
+        new_state = %{state | sessions: updated_sessions}
+
+        {:ok, final_session, new_state}
+
+      false ->
+        {:error, :max_sessions_exceeded}
+    end
+  end
+
+  defp cleanup_expired_sessions_if_any([], _active, state), do: state
+
+  defp cleanup_expired_sessions_if_any(expired, active, state) do
+    Logger.info("Cleaning up #{length(expired)} expired sessions")
+
+    # Cleanup each expired session
+    Enum.each(expired, fn {_id, session} ->
+      cleanup_session(session, state)
+    end)
+
+    # Keep only active sessions
+    active_sessions = Map.new(active)
+    %{state | sessions: active_sessions}
+  end
+
+  defp restore_sessions_if_enabled(false, _state), do: %{}
+
+  defp restore_sessions_if_enabled(true, state) do
+    persistence_dir = state.config.persistence_directory |> Path.expand()
+
+    case File.ls(persistence_dir) do
+      {:ok, files} ->
+        files
+        |> Enum.filter(&String.ends_with?(&1, ".session"))
+        |> Enum.reduce(%{}, fn file, acc ->
+          file_path = Path.join(persistence_dir, file)
+
+          case restore_session_from_file(file_path) do
+            {:ok, session} -> Map.put(acc, session.id, session)
+            {:error, _reason} -> acc
+          end
+        end)
+
+      {:error, reason} ->
+        Logger.warning(
+          "Could not list persistence directory: #{inspect(reason)}"
+        )
+
+        %{}
+    end
+  end
+
+  defp get_active_window([]), do: nil
+  defp get_active_window([window | _windows]), do: window.id
 end

@@ -60,10 +60,11 @@ defmodule Raxol.UI.Components.Modal.Rendering do
   @doc "Gets modal box ID."
   @spec get_modal_box_id(map()) :: any()
   def get_modal_box_id(state) do
-    if Map.get(state, :id, nil),
-      do: "#{Map.get(state, :id, nil)}-box",
-      else: nil
+    build_modal_box_id(Map.get(state, :id, nil))
   end
+
+  defp build_modal_box_id(nil), do: nil
+  defp build_modal_box_id(id), do: "#{id}-box"
 
   @doc "Gets modal style."
   @spec get_modal_style(map()) :: map()
@@ -90,8 +91,11 @@ defmodule Raxol.UI.Components.Modal.Rendering do
   @doc "Renders spacer element."
   @spec render_spacer(boolean()) :: any()
   def render_spacer(condition) do
-    if condition, do: Raxol.View.Elements.label(content: "")
+    render_spacer_element(condition)
   end
+
+  defp render_spacer_element(false), do: nil
+  defp render_spacer_element(_condition), do: Raxol.View.Elements.label(content: "")
 
   @doc "Renders button row."
   @spec render_button_row(list()) :: any()
@@ -213,10 +217,7 @@ defmodule Raxol.UI.Components.Modal.Rendering do
   def render_field_row(field, input_element) do
     Raxol.View.Elements.row style: %{width: :fill, gap: 1} do
       [
-        if(field.label,
-          do:
-            Raxol.View.Elements.label(content: field.label, style: %{width: 15})
-        ),
+        render_field_label(field.label),
         input_element
       ]
       |> Enum.reject(&is_nil/1)
@@ -226,13 +227,23 @@ defmodule Raxol.UI.Components.Modal.Rendering do
   @doc "Renders field error message."
   @spec render_field_error(map()) :: any()
   def render_field_error(field) do
-    if field.error do
-      Raxol.View.Elements.row style: %{width: :fill} do
-        Raxol.View.Elements.label(
-          content: field.error,
-          style: %{color: :red, padding_left: 16}
-        )
-      end
+    render_error_element(field.error)
+  end
+
+  defp render_error_element(nil), do: nil
+  defp render_error_element(error) do
+    Raxol.View.Elements.row style: %{width: :fill} do
+      Raxol.View.Elements.label(
+        content: error,
+        style: %{color: :red, padding_left: 16}
+      )
     end
+  end
+
+  @doc "Renders field label if present."
+  @spec render_field_label(String.t() | nil) :: any()
+  def render_field_label(nil), do: nil
+  def render_field_label(label) do
+    Raxol.View.Elements.label(content: label, style: %{width: 15})
   end
 end

@@ -100,7 +100,10 @@ defmodule Mix.Tasks.Benchmark.Visualization do
     ]
 
     Enum.find_value(size_mappings, :small, fn {flag, size} ->
-      if flag in args, do: size, else: nil
+      case flag in args do
+        true -> size
+        false -> nil
+      end
     end)
   end
 

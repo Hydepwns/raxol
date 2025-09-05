@@ -113,11 +113,9 @@ defmodule Raxol.Terminal.Input.Processor do
   end
 
   defp build_mouse_modifiers(mod1, mod2) do
-    mods = []
-    mods = if mod1 == "2", do: mods ++ [:shift], else: mods
-    mods = if mod2 == "3", do: mods ++ [:alt], else: mods
-    mods = if mod2 == "5", do: mods ++ [:ctrl], else: mods
-    mods
+    mod1_list = get_mod1_modifiers(mod1)
+    mod2_list = get_mod2_modifiers(mod2)
+    mod1_list ++ mod2_list
   end
 
   @doc """
@@ -179,7 +177,7 @@ defmodule Raxol.Terminal.Input.Processor do
 
   defp parse_simple_modifier_key(input) do
     <<27, ?[, prefix::binary-size(1), key::binary-size(1)>> = input
-    modifiers = if prefix == "2", do: [:shift], else: []
+    modifiers = get_simple_modifiers(prefix)
 
     {:ok,
      %KeyEvent{
@@ -199,11 +197,7 @@ defmodule Raxol.Terminal.Input.Processor do
   end
 
   defp parse_unknown_input(input) do
-    if String.starts_with?(input, "\e[") do
-      {:error, :invalid_key_sequence}
-    else
-      {:error, :invalid_key_event}
-    end
+    get_unknown_error(String.starts_with?(input, "\e["))
   end
 
   @doc """
@@ -379,16 +373,41 @@ defmodule Raxol.Terminal.Input.Processor do
 
   defp mouse_modifiers_for_format(modifiers) do
     # The test expects :shift = 2, :ctrl = 5, :alt = 3
-    mod1 = if :shift in modifiers, do: 2, else: 0
-    mod2 = if :ctrl in modifiers, do: 5, else: 0
+    mod1 = get_mod1_code(:shift in modifiers)
+    mod2 = get_mod2_code(:ctrl in modifiers)
     {mod1, mod2}
   end
 
   defp parse_key_modifiers_for_test(prefix, mod_code) do
     # The test expects "2;5A" to mean [:shift, :ctrl] in that order
-    mods = []
-    mods = if prefix == "2", do: mods ++ [:shift], else: mods
-    mods = if mod_code == "5", do: mods ++ [:ctrl], else: mods
-    mods
+    prefix_mods = get_prefix_modifiers(prefix)
+    code_mods = get_code_modifiers(mod_code)
+    prefix_mods ++ code_mods
   end
+
+  # Helper functions for pattern matching instead of if statements
+  defp get_mod1_modifiers("2"), do: [:shift]
+  defp get_mod1_modifiers(_), do: []
+
+  defp get_mod2_modifiers("3"), do: [:alt]
+  defp get_mod2_modifiers("5"), do: [:ctrl]
+  defp get_mod2_modifiers(_), do: []
+
+  defp get_simple_modifiers("2"), do: [:shift]
+  defp get_simple_modifiers(_), do: []
+
+  defp get_unknown_error(true), do: {:error, :invalid_key_sequence}
+  defp get_unknown_error(false), do: {:error, :invalid_key_event}
+
+  defp get_mod1_code(true), do: 2
+  defp get_mod1_code(false), do: 0
+
+  defp get_mod2_code(true), do: 5
+  defp get_mod2_code(false), do: 0
+
+  defp get_prefix_modifiers("2"), do: [:shift]
+  defp get_prefix_modifiers(_), do: []
+
+  defp get_code_modifiers("5"), do: [:ctrl]
+  defp get_code_modifiers(_), do: []
 end

@@ -77,6 +77,10 @@ defmodule Raxol.Terminal.Input.Manager do
   end
 
   # Validation functions
+
+  defp validate_all_modifiers(true), do: :ok
+  defp validate_all_modifiers(false), do: :error
+
   defp validate_key(%{key: key}) when is_binary(key) and byte_size(key) > 0,
     do: :ok
 
@@ -84,7 +88,7 @@ defmodule Raxol.Terminal.Input.Manager do
 
   defp validate_modifiers(%{modifiers: modifiers}) when is_list(modifiers) do
     valid_modifiers = [:shift, :ctrl, :alt, :meta]
-    if Enum.all?(modifiers, &(&1 in valid_modifiers)), do: :ok, else: :error
+    validate_all_modifiers(Enum.all?(modifiers, &(&1 in valid_modifiers)))
   end
 
   defp validate_modifiers(_), do: :error
@@ -349,26 +353,41 @@ defmodule Raxol.Terminal.Input.Manager do
   """
   @spec process_key_with_modifiers(t(), String.t()) :: t()
   def process_key_with_modifiers(manager, key) do
-    if manager.modifier_state.ctrl do
-      # Always append the escape sequence to the buffer
-      escape_sequence = "\e[1;97"
-      char_codes = String.to_charlist(escape_sequence)
+    process_key_with_ctrl_modifier(manager.modifier_state.ctrl, manager, key)
+  end
 
-      events =
-        manager.buffer.events ++
-          Enum.map(char_codes, &%{char: &1, timestamp: System.system_time()})
+  # Helper functions that need to be defined earlier
 
-      %{manager | buffer: %{manager.buffer | events: events}}
-    else
-      # Process as regular key
-      char_code = List.first(String.to_charlist(key))
+  defp apply_completion_if_available(false, _completions, manager) do
+    handle_default_tab(manager)
+  end
 
-      events =
-        manager.buffer.events ++
-          [%{char: char_code, timestamp: System.system_time()}]
+  defp apply_completion_if_available(true, completions, manager) do
+    completion = List.first(completions)
 
-      %{manager | buffer: %{manager.buffer | events: events}}
-    end
+    events =
+      Enum.map(String.to_charlist(completion), fn c ->
+        %{char: c, timestamp: System.system_time()}
+      end)
+
+    %{manager | buffer: %{manager.buffer | events: events}}
+  end
+
+  defp process_mouse_if_enabled(false, manager, _action, _button, _x, _y),
+    do: manager
+
+  defp process_mouse_if_enabled(true, manager, action, button, x, y) do
+    handle_mouse_action(manager, action, button, x, y)
+  end
+
+  defp update_modifier_if_known(false, manager, _modifier_key, _value),
+    do: manager
+
+  defp update_modifier_if_known(true, manager, modifier_key, value) do
+    %{
+      manager
+      | modifier_state: Map.put(manager.modifier_state, modifier_key, value)
+    }
   end
 
   @doc """
@@ -403,6 +422,35 @@ defmodule Raxol.Terminal.Input.Manager do
   end
 
   # Private helper functions for keyboard processing
+
+  defp process_key_with_ctrl_modifier(false, manager, key) do
+    # Process as regular key
+    char_code = List.first(String.to_charlist(key))
+
+    events =
+      manager.buffer.events ++
+        [%{char: char_code, timestamp: System.system_time()}]
+
+    %{manager | buffer: %{manager.buffer | events: events}}
+  end
+
+  defp process_key_with_ctrl_modifier(true, manager, _key) do
+    # Always append the escape sequence to the buffer
+    escape_sequence = "\e[1;97"
+    char_codes = String.to_charlist(escape_sequence)
+
+    events =
+      manager.buffer.events ++
+        Enum.map(char_codes, &%{char: &1, timestamp: System.system_time()})
+
+    %{manager | buffer: %{manager.buffer | events: events}}
+  end
+
+  defp handle_tab_with_callback(nil, manager), do: handle_default_tab(manager)
+
+  defp handle_tab_with_callback(_callback, manager),
+    do: handle_tab_with_completion(manager)
+
   defp handle_enter_key(manager) do
     line =
       manager.buffer.events
@@ -418,28 +466,12 @@ defmodule Raxol.Terminal.Input.Manager do
   end
 
   defp handle_tab_key(manager) do
-    if manager.completion_callback do
-      handle_tab_with_completion(manager)
-    else
-      handle_default_tab(manager)
-    end
+    handle_tab_with_callback(manager.completion_callback, manager)
   end
 
   defp handle_tab_with_completion(manager) do
     completions = manager.completion_callback.(manager.buffer.events)
-
-    if length(completions) > 0 do
-      completion = List.first(completions)
-
-      events =
-        Enum.map(String.to_charlist(completion), fn c ->
-          %{char: c, timestamp: System.system_time()}
-        end)
-
-      %{manager | buffer: %{manager.buffer | events: events}}
-    else
-      handle_default_tab(manager)
-    end
+    apply_completion_if_available(length(completions) > 0, completions, manager)
   end
 
   defp handle_default_tab(manager) do
@@ -506,11 +538,14 @@ defmodule Raxol.Terminal.Input.Manager do
   """
   @spec process_mouse(t(), {atom(), integer(), integer(), integer()}) :: t()
   def process_mouse(manager, {action, button, x, y}) do
-    if manager.mouse_enabled do
-      handle_mouse_action(manager, action, button, x, y)
-    else
-      manager
-    end
+    process_mouse_if_enabled(
+      manager.mouse_enabled,
+      manager,
+      action,
+      button,
+      x,
+      y
+    )
   end
 
   defp handle_mouse_action(manager, :press, button, x, y) do
@@ -582,13 +617,11 @@ defmodule Raxol.Terminal.Input.Manager do
         _ -> :unknown
       end
 
-    if modifier_key != :unknown do
-      %{
-        manager
-        | modifier_state: Map.put(manager.modifier_state, modifier_key, value)
-      }
-    else
-      manager
-    end
+    update_modifier_if_known(
+      modifier_key != :unknown,
+      manager,
+      modifier_key,
+      value
+    )
   end
 end

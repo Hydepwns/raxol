@@ -79,32 +79,62 @@ defmodule Raxol.UI.State.Management.Server do
   # Hooks API
 
   def get_component_id(pid \\ nil) do
-    pid = pid || self()
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
     GenServer.call(__MODULE__, {:get_component_id, pid})
   end
 
   def set_component_id(id, pid \\ nil) do
-    pid = pid || self()
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
     GenServer.call(__MODULE__, {:set_component_id, pid, id})
   end
 
   def get_render_context(pid \\ nil) do
-    pid = pid || self()
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
     GenServer.call(__MODULE__, {:get_render_context, pid})
   end
 
   def set_render_context(context, pid \\ nil) do
-    pid = pid || self()
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
     GenServer.call(__MODULE__, {:set_render_context, pid, context})
   end
 
   def get_component_process(pid \\ nil) do
-    pid = pid || self()
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
     GenServer.call(__MODULE__, {:get_component_process, pid})
   end
 
   def set_component_process(process_pid, pid \\ nil) do
-    pid = pid || self()
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
     GenServer.call(__MODULE__, {:set_component_process, pid, process_pid})
   end
 
@@ -173,10 +203,9 @@ defmodule Raxol.UI.State.Management.Server do
 
     # Add to history if enabled
     updated_state =
-      if state.max_history_size > 0 do
-        add_to_history(updated_state, action)
-      else
-        updated_state
+      case state.max_history_size do
+        size when size > 0 -> add_to_history(updated_state, action)
+        _ -> updated_state
       end
 
     # Notify subscribers
@@ -187,14 +216,24 @@ defmodule Raxol.UI.State.Management.Server do
 
   @impl true
   def handle_call({:get_state, path}, _from, state) do
-    path_list = if is_list(path), do: path, else: [path]
+    path_list =
+      case path do
+        p when is_list(p) -> p
+        p -> [p]
+      end
+
     value = get_in(state.store_data, path_list)
     {:reply, value, state}
   end
 
   @impl true
   def handle_call({:update_state, path, value}, _from, state) do
-    path_list = if is_list(path), do: path, else: [path]
+    path_list =
+      case path do
+        p when is_list(p) -> p
+        p -> [p]
+      end
+
     new_data = put_in(state.store_data, path_list, value)
     updated_state = %{state | store_data: new_data}
 
@@ -355,8 +394,9 @@ defmodule Raxol.UI.State.Management.Server do
     debounce_timers = Map.delete(state.debounce_timers, timer_key)
 
     # Send the message to the target process
-    if Process.alive?(pid) do
-      send(pid, message)
+    case Process.alive?(pid) do
+      true -> send(pid, message)
+      false -> :ok
     end
 
     {:noreply, %{state | debounce_timers: debounce_timers}}
@@ -396,11 +436,13 @@ defmodule Raxol.UI.State.Management.Server do
   # Private helpers
 
   defp ensure_monitored(pid, state) do
-    if Map.has_key?(state.monitors, pid) do
-      state
-    else
-      ref = Process.monitor(pid)
-      %{state | monitors: Map.put(state.monitors, pid, ref)}
+    case Map.has_key?(state.monitors, pid) do
+      true ->
+        state
+
+      false ->
+        ref = Process.monitor(pid)
+        %{state | monitors: Map.put(state.monitors, pid, ref)}
     end
   end
 
@@ -439,8 +481,9 @@ defmodule Raxol.UI.State.Management.Server do
 
   defp notify_subscribers(changed_path, new_value, state) do
     Enum.each(state.subscribers, fn {_id, subscription} ->
-      if path_affects_subscription?(changed_path, subscription.path) do
-        notify_subscriber(subscription, new_value, state)
+      case path_affects_subscription?(changed_path, subscription.path) do
+        true -> notify_subscriber(subscription, new_value, state)
+        false -> :ok
       end
     end)
   end
@@ -449,13 +492,18 @@ defmodule Raxol.UI.State.Management.Server do
     # Handle debouncing if specified
     debounce_ms = Keyword.get(subscription.options, :debounce, 0)
 
-    if debounce_ms > 0 do
-      # Schedule debounced notification
-      message = {:notify_subscriber, subscription, value}
-      schedule_debounced({:subscription, subscription.id}, message, debounce_ms)
-    else
-      # Immediate notification
-      execute_callback(subscription.callback, value)
+    case debounce_ms do
+      ms when ms > 0 ->
+        message = {:notify_subscriber, subscription, value}
+
+        schedule_debounced(
+          {:subscription, subscription.id},
+          message,
+          debounce_ms
+        )
+
+      _ ->
+        execute_callback(subscription.callback, value)
     end
   end
 

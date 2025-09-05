@@ -55,7 +55,10 @@ defmodule Raxol.Terminal.CharacterHandling do
   """
   @spec get_char_width(codepoint :: integer() | String.t()) :: 1 | 2
   def get_char_width(codepoint) when is_integer(codepoint) do
-    if wide_char?(codepoint), do: 2, else: 1
+    case wide_char?(codepoint) do
+      true -> 2
+      false -> 1
+    end
   end
 
   def get_char_width(str) when is_binary(str) do
@@ -101,7 +104,10 @@ defmodule Raxol.Terminal.CharacterHandling do
     ]
 
     Enum.find_value(bidi_checks, :NEUTRAL, fn {check, type} ->
-      if check.(char), do: type, else: nil
+      case check.(char) do
+        true -> type
+        false -> nil
+      end
     end)
   end
 
@@ -178,10 +184,9 @@ defmodule Raxol.Terminal.CharacterHandling do
         [{bidi_type, char_str}]
 
       [{prev_type, prev_str} | rest] ->
-        if prev_type == bidi_type do
-          [{prev_type, prev_str <> char_str} | rest]
-        else
-          [{bidi_type, char_str}, {prev_type, prev_str} | rest]
+        case prev_type == bidi_type do
+          true -> [{prev_type, prev_str <> char_str} | rest]
+          false -> [{bidi_type, char_str}, {prev_type, prev_str} | rest]
         end
     end
   end
@@ -220,15 +225,16 @@ defmodule Raxol.Terminal.CharacterHandling do
        ) do
     char_width = get_char_width(char)
 
-    if current_width + char_width <= width do
-      do_split_at_width(
-        rest,
-        width,
-        current_width + char_width,
-        acc <> <<char::utf8>>
-      )
-    else
-      {acc, <<char::utf8, rest::binary>>}
+    case current_width + char_width <= width do
+      true ->
+        do_split_at_width(
+          rest,
+          width,
+          current_width + char_width,
+          acc <> <<char::utf8>>
+        )
+      false ->
+        {acc, <<char::utf8, rest::binary>>}
     end
   end
 end

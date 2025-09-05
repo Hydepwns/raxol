@@ -123,10 +123,9 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
   def erase_from_cursor_to_line_end(buffer, row, col) when is_list(buffer) do
     Enum.with_index(buffer)
     |> Enum.map(fn {line, idx} ->
-      if idx == row do
-        map_cells_from_column(line, col)
-      else
-        line
+      case idx == row do
+        true -> map_cells_from_column(line, col)
+        false -> line
       end
     end)
   end
@@ -134,7 +133,10 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
   defp map_cells_from_column(line, col) do
     Enum.with_index(line)
     |> Enum.map(fn {cell, cell_col} ->
-      if cell_col >= col, do: Cell.new(" "), else: cell
+      case cell_col >= col do
+        true -> Cell.new(" ")
+        false -> cell
+      end
     end)
   end
 
@@ -170,10 +172,9 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
   def erase_from_line_start_to_cursor(buffer, row, col) when is_list(buffer) do
     Enum.with_index(buffer)
     |> Enum.map(fn {line, idx} ->
-      if idx == row do
-        map_cells_up_to_column(line, col)
-      else
-        line
+      case idx == row do
+        true -> map_cells_up_to_column(line, col)
+        false -> line
       end
     end)
   end
@@ -181,7 +182,10 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
   defp map_cells_up_to_column(line, col) do
     Enum.with_index(line)
     |> Enum.map(fn {cell, cell_col} ->
-      if cell_col < col, do: Cell.new(" "), else: cell
+      case cell_col < col do
+        true -> Cell.new(" ")
+        false -> cell
+      end
     end)
   end
 
@@ -222,13 +226,11 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
     end)
   end
 
-  defp process_line_for_erase(line, idx, row) do
-    if idx == row do
-      Enum.map(line, fn _ -> Cell.new(" ") end)
-    else
-      line
-    end
+  defp process_line_for_erase(line, idx, row) when idx == row do
+    Enum.map(line, fn _ -> Cell.new(" ") end)
   end
+
+  defp process_line_for_erase(line, _idx, _row), do: line
 
   @doc """
   Erases all lines after the specified row.

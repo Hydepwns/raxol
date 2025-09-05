@@ -23,15 +23,16 @@ defmodule Raxol.Terminal.Buffer.Writer do
         ) :: ScreenBuffer.t()
   def write_char(%ScreenBuffer{} = buffer, x, y, char, style \\ nil)
       when x >= 0 and y >= 0 do
-    if y < buffer.height and x < buffer.width do
-      codepoint = hd(String.to_charlist(char))
-      width = Raxol.Terminal.CharacterHandling.get_char_width(codepoint)
-      cell_style = create_cell_style(style)
-      log_char_write(char, x, y, cell_style)
-      cells = update_cells(buffer, x, y, char, cell_style, width)
-      %{buffer | cells: cells}
-    else
-      buffer
+    case within_bounds?(y, x, buffer.height, buffer.width) do
+      true ->
+        codepoint = hd(String.to_charlist(char))
+        width = Raxol.Terminal.CharacterHandling.get_char_width(codepoint)
+        cell_style = create_cell_style(style)
+        log_char_write(char, x, y, cell_style)
+        cells = update_cells(buffer, x, y, char, cell_style, width)
+        %{buffer | cells: cells}
+      false ->
+        buffer
     end
   end
 
@@ -176,12 +177,13 @@ defmodule Raxol.Terminal.Buffer.Writer do
   def update_row(row, x, char, cell_style, width, buffer_width) do
     new_cell = Cell.new(char, cell_style)
 
-    if width == 2 and x + 1 < buffer_width do
-      row
-      |> List.update_at(x, fn _ -> new_cell end)
-      |> List.update_at(x + 1, fn _ -> Cell.new_wide_placeholder(cell_style) end)
-    else
-      List.update_at(row, x, fn _ -> new_cell end)
+    case {width == 2, x + 1 < buffer_width} do
+      {true, true} ->
+        row
+        |> List.update_at(x, fn _ -> new_cell end)
+        |> List.update_at(x + 1, fn _ -> Cell.new_wide_placeholder(cell_style) end)
+      _ ->
+        List.update_at(row, x, fn _ -> new_cell end)
     end
   end
 
@@ -198,19 +200,20 @@ defmodule Raxol.Terminal.Buffer.Writer do
         ) :: ScreenBuffer.t()
   def write_string(%ScreenBuffer{} = buffer, x, y, string, style \\ nil)
       when x >= 0 and y >= 0 do
-    if y < buffer.height and x < buffer.width do
-      segments = Raxol.Terminal.CharacterHandling.process_bidi_text(string)
+    case within_bounds?(y, x, buffer.height, buffer.width) do
+      true ->
+        segments = Raxol.Terminal.CharacterHandling.process_bidi_text(string)
 
-      Enum.reduce(segments, {buffer, x}, fn {_type, segment},
-                                            {acc_buffer, acc_x} ->
-        {new_buffer, new_x} =
-          write_segment(acc_buffer, acc_x, y, segment, style)
+        Enum.reduce(segments, {buffer, x}, fn {_type, segment},
+                                              {acc_buffer, acc_x} ->
+          {new_buffer, new_x} =
+            write_segment(acc_buffer, acc_x, y, segment, style)
 
-        {new_buffer, new_x}
-      end)
-      |> elem(0)
-    else
-      buffer
+          {new_buffer, new_x}
+        end)
+        |> elem(0)
+      false ->
+        buffer
     end
   end
 
@@ -249,5 +252,9 @@ defmodule Raxol.Terminal.Buffer.Writer do
       width = Raxol.Terminal.CharacterHandling.get_char_width(codepoint)
       {write_char(acc_buffer, acc_x, y, char, style), acc_x + width}
     end)
+  end
+
+  defp within_bounds?(y, x, height, width) do
+    y < height and x < width
   end
 end

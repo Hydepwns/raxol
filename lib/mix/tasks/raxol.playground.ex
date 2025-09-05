@@ -80,29 +80,35 @@ defmodule Mix.Tasks.Raxol.Playground do
       )
 
     # Check for invalid options first
-    if invalid != [] do
-      {:error, "Invalid options: #{inspect(invalid)}"}
-    else
-      # Use Enum.find_value to find the first matching option
-      option_handlers = [
-        {fn -> opts[:help] end, fn -> {:help} end},
-        {fn -> opts[:demo] end, fn -> {:demo} end},
-        {fn -> opts[:examples] end, fn -> {:examples} end},
-        {fn -> opts[:web] end,
-         fn ->
-           web_opts = [
-             port: opts[:port] || 4444,
-             component: opts[:component],
-             theme: opts[:theme]
-           ]
+    case invalid do
+      [] ->
+        # Use Enum.find_value to find the first matching option
+        option_handlers = [
+          {fn -> opts[:help] end, fn -> {:help} end},
+          {fn -> opts[:demo] end, fn -> {:demo} end},
+          {fn -> opts[:examples] end, fn -> {:examples} end},
+          {fn -> opts[:web] end,
+           fn ->
+             web_opts = [
+               port: opts[:port] || 4444,
+               component: opts[:component],
+               theme: opts[:theme]
+             ]
 
-           {:web, web_opts}
-         end}
-      ]
+             {:web, web_opts}
+           end}
+        ]
 
-      Enum.find_value(option_handlers, fn {check, handler} ->
-        if check.(), do: handler.(), else: nil
-      end) || {:playground, [component: opts[:component], theme: opts[:theme]]}
+        Enum.find_value(option_handlers, fn {check, handler} ->
+          case check.() do
+            true -> handler.()
+            false -> nil
+          end
+        end) ||
+          {:playground, [component: opts[:component], theme: opts[:theme]]}
+
+      _ ->
+        {:error, "Invalid options: #{inspect(invalid)}"}
     end
   end
 
@@ -123,22 +129,10 @@ defmodule Mix.Tasks.Raxol.Playground do
     case Raxol.Playground.launch() do
       :ok ->
         # Auto-select component if specified
-        if component_id do
-          case Raxol.Playground.select_component(component_id) do
-            {:ok, _preview} ->
-              Mix.shell().info("Auto-selected component: #{component_id}")
-
-            {:error, reason} ->
-              Mix.shell().error(
-                "Could not select component '#{component_id}': #{reason}"
-              )
-          end
-        end
+        auto_select_component(component_id)
 
         # Set theme if specified
-        if theme != :default do
-          Raxol.Playground.switch_theme(theme)
-        end
+        set_theme_if_not_default(theme)
 
       {:error, reason} ->
         Mix.shell().error("Failed to start playground: #{reason}")
@@ -222,7 +216,10 @@ defmodule Mix.Tasks.Raxol.Playground do
     Now let's update the button properties and see the changes:
     """)
 
-    case Raxol.Playground.update_props(%{label: "Demo Button", variant: :danger}) do
+    case Raxol.Playground.update_props(%{
+           label: "Demo Button",
+           variant: :danger
+         }) do
       {:ok, preview} ->
         Mix.shell().info("\n#{preview}")
 
@@ -344,6 +341,23 @@ defmodule Mix.Tasks.Raxol.Playground do
     #{IO.ANSI.yellow()}Tip:#{IO.ANSI.reset()} You can also start the playground without arguments and use the 'list' command to browse all available components.
     """)
   end
+
+  defp auto_select_component(nil), do: :ok
+
+  defp auto_select_component(component_id) do
+    case Raxol.Playground.select_component(component_id) do
+      {:ok, _preview} ->
+        Mix.shell().info("Auto-selected component: #{component_id}")
+
+      {:error, reason} ->
+        Mix.shell().error(
+          "Could not select component '#{component_id}': #{reason}"
+        )
+    end
+  end
+
+  defp set_theme_if_not_default(:default), do: :ok
+  defp set_theme_if_not_default(theme), do: Raxol.Playground.switch_theme(theme)
 
   defp display_demo_catalog(catalog) do
     categories =

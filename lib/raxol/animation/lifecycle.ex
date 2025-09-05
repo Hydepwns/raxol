@@ -52,85 +52,64 @@ defmodule Raxol.Animation.Lifecycle do
       ) do
     # Get animation definition via StateManager
     animation_def = StateManager.get_animation(animation_name)
+    do_start_animation(animation_def, element_id, opts, user_preferences_pid)
+  end
 
-    if animation_def do
-      # Generalize target_path: if it's a single property, prepend [:elements, element_id]
-      animation_def =
-        PathManager.update_animation_path(animation_def, element_id)
+  defp do_start_animation(nil, _element_id, _opts, _user_preferences_pid) do
+    {:error, :animation_not_found}
+  end
 
-      # Check accessibility settings via StateManager
-      settings = StateManager.get_settings()
-      reduce_motion? = Map.get(settings, :reduced_motion, false)
+  defp do_start_animation(animation_def, element_id, opts, user_preferences_pid) do
+    # Generalize target_path: if it's a single property, prepend [:elements, element_id]
+    animation_def = PathManager.update_animation_path(animation_def, element_id)
 
-      cognitive_accessibility? =
-        Map.get(settings, :cognitive_accessibility, false)
+    # Check accessibility settings via StateManager
+    settings = StateManager.get_settings()
+    reduce_motion? = Map.get(settings, :reduced_motion, false)
 
-      disable_all_animations? =
-        Map.get(settings, :disable_all_animations, false)
+    cognitive_accessibility? =
+      Map.get(settings, :cognitive_accessibility, false)
 
-      # Adapt animation for accessibility and global disable
-      adapted_animation =
-        if disable_all_animations? do
-          animation_def
-          |> Map.put(:duration, 10)
-          |> Map.put(:disabled, true)
-        else
-          AnimAccessibility.adapt_animation(
-            animation_def,
-            reduce_motion?,
-            cognitive_accessibility?
-          )
-        end
+    disable_all_animations? = Map.get(settings, :disable_all_animations, false)
 
-      notify_pid = Map.get(opts, :notify_pid, self())
-
-      # Build animation instance
-      instance = %{
-        animation: adapted_animation,
-        start_time: System.system_time(:millisecond),
-        on_complete: Map.get(opts, :on_complete),
-        context: Map.get(opts, :context),
-        notify_pid: notify_pid
-      }
-
-      # Register animation instance
-      StateManager.put_active_animation(
-        element_id,
-        animation_def.name,
-        instance
+    # Adapt animation for accessibility and global disable
+    adapted_animation =
+      adapt_animation_for_accessibility(
+        animation_def,
+        disable_all_animations?,
+        reduce_motion?,
+        cognitive_accessibility?
       )
 
-      # Always send animation_started message for test synchronization
-      send(notify_pid, {:animation_started, element_id, animation_def.name})
+    notify_pid = Map.get(opts, :notify_pid, self())
 
-      # Announce animation start to screen reader if needed
-      if Map.get(adapted_animation, :announce_to_screen_reader, false) do
-        description = Map.get(adapted_animation, :description)
+    # Build animation instance
+    instance = %{
+      animation: adapted_animation,
+      start_time: System.system_time(:millisecond),
+      on_complete: Map.get(opts, :on_complete),
+      context: Map.get(opts, :context),
+      notify_pid: notify_pid
+    }
 
-        message =
-          if description,
-            do: "#{description} started",
-            else: "Animation started"
+    # Register animation instance
+    StateManager.put_active_animation(element_id, animation_def.name, instance)
 
-        Accessibility.announce(message, [], user_preferences_pid)
-      end
+    # Always send animation_started message for test synchronization
+    send(notify_pid, {:animation_started, element_id, animation_def.name})
 
-      # If animation is disabled (e.g., by reduced motion), mark as pending completion
-      if AnimAccessibility.disabled?(adapted_animation) do
-        # Mark the instance as pending completion
-        pending_instance = Map.put(instance, :pending_completion, true)
+    # Announce animation start to screen reader if needed
+    announce_animation_start(adapted_animation, user_preferences_pid)
 
-        StateManager.put_active_animation(
-          element_id,
-          animation_def.name,
-          pending_instance
-        )
-      end
+    # If animation is disabled (e.g., by reduced motion), mark as pending completion
+    handle_disabled_animation(
+      adapted_animation,
+      element_id,
+      animation_def.name,
+      instance
+    )
 
-      :ok
-    else
-      {:error, :animation_not_found}
-    end
+    :ok
   end
 
   @doc """
@@ -153,12 +132,7 @@ defmodule Raxol.Animation.Lifecycle do
 
       instance ->
         # Call on_complete callback if provided
-        if instance.on_complete do
-          ErrorHandling.safe_call_with_logging(
-            fn -> instance.on_complete.(instance.context) end,
-            "Error in animation on_complete callback"
-          )
-        end
+        call_on_complete_callback(instance)
 
         # Remove from active animations
         StateManager.remove_active_animation(element_id, animation_name)
@@ -186,32 +160,13 @@ defmodule Raxol.Animation.Lifecycle do
         user_preferences_pid
       ) do
     # Call on_complete callback if provided
-    if instance.on_complete do
-      ErrorHandling.safe_call_with_logging(
-        fn -> instance.on_complete.(instance.context) end,
-        "Error in animation on_complete callback"
-      )
-    end
+    call_on_complete_callback(instance)
 
     # Send completion message to notify_pid
-    if instance.notify_pid do
-      send(
-        instance.notify_pid,
-        {:animation_completed, element_id, animation_name}
-      )
-    end
+    send_completion_message(instance, element_id, animation_name)
 
     # Announce completion to screen reader if needed
-    if Map.get(animation, :announce_to_screen_reader, false) do
-      description = Map.get(animation, :description)
-
-      message =
-        if description,
-          do: "#{description} completed",
-          else: "Animation completed"
-
-      Accessibility.announce(message, [], user_preferences_pid)
-    end
+    announce_animation_completion(animation, user_preferences_pid)
   end
 
   @doc """
@@ -239,36 +194,181 @@ defmodule Raxol.Animation.Lifecycle do
         elapsed = now - start_time
         duration = animation.duration
 
-        if elapsed >= duration do
-          # Animation is complete, return final value
-          {:ok, Map.get(animation, :to, 1)}
-        else
-          # Calculate current value
-          progress = min(max(elapsed / duration, 0.0), 1.0)
-          from = Map.get(animation, :from, 0)
-          to = Map.get(animation, :to, 1)
-
-          current_value =
-            case {from, to} do
-              {from_val, to_val}
-              when is_number(from_val) and is_number(to_val) ->
-                from_val + (to_val - from_val) * progress
-
-              {from_val, to_val} when is_list(from_val) and is_list(to_val) ->
-                Enum.zip_with(from_val, to_val, fn f, t ->
-                  if is_number(f) and is_number(t) do
-                    f + (t - f) * progress
-                  else
-                    t
-                  end
-                end)
-
-              _ ->
-                to
-            end
-
-          {:ok, current_value}
-        end
+        calculate_animation_value(elapsed, duration, animation)
     end
   end
+
+  # Helper functions to eliminate if statements
+
+  defp adapt_animation_for_accessibility(
+         animation_def,
+         true,
+         _reduce_motion?,
+         _cognitive_accessibility?
+       ) do
+    animation_def
+    |> Map.put(:duration, 10)
+    |> Map.put(:disabled, true)
+  end
+
+  defp adapt_animation_for_accessibility(
+         animation_def,
+         false,
+         reduce_motion?,
+         cognitive_accessibility?
+       ) do
+    AnimAccessibility.adapt_animation(
+      animation_def,
+      reduce_motion?,
+      cognitive_accessibility?
+    )
+  end
+
+  defp announce_animation_start(adapted_animation, user_preferences_pid) do
+    do_announce_animation_start(
+      Map.get(adapted_animation, :announce_to_screen_reader, false),
+      adapted_animation,
+      user_preferences_pid
+    )
+  end
+
+  defp do_announce_animation_start(
+         false,
+         _adapted_animation,
+         _user_preferences_pid
+       ),
+       do: :ok
+
+  defp do_announce_animation_start(
+         true,
+         adapted_animation,
+         user_preferences_pid
+       ) do
+    description = Map.get(adapted_animation, :description)
+    message = get_animation_start_message(description)
+    Accessibility.announce(message, [], user_preferences_pid)
+  end
+
+  defp get_animation_start_message(nil), do: "Animation started"
+  defp get_animation_start_message(description), do: "#{description} started"
+
+  defp handle_disabled_animation(
+         adapted_animation,
+         element_id,
+         animation_name,
+         instance
+       ) do
+    do_handle_disabled_animation(
+      AnimAccessibility.disabled?(adapted_animation),
+      element_id,
+      animation_name,
+      instance
+    )
+  end
+
+  defp do_handle_disabled_animation(
+         false,
+         _element_id,
+         _animation_name,
+         _instance
+       ),
+       do: :ok
+
+  defp do_handle_disabled_animation(true, element_id, animation_name, instance) do
+    # Mark the instance as pending completion
+    pending_instance = Map.put(instance, :pending_completion, true)
+
+    StateManager.put_active_animation(
+      element_id,
+      animation_name,
+      pending_instance
+    )
+  end
+
+  defp call_on_complete_callback(%{on_complete: nil}), do: :ok
+
+  defp call_on_complete_callback(%{on_complete: callback, context: context}) do
+    ErrorHandling.safe_call_with_logging(
+      fn -> callback.(context) end,
+      "Error in animation on_complete callback"
+    )
+  end
+
+  defp send_completion_message(
+         %{notify_pid: nil},
+         _element_id,
+         _animation_name
+       ),
+       do: :ok
+
+  defp send_completion_message(
+         %{notify_pid: notify_pid},
+         element_id,
+         animation_name
+       ) do
+    send(notify_pid, {:animation_completed, element_id, animation_name})
+  end
+
+  defp announce_animation_completion(animation, user_preferences_pid) do
+    do_announce_animation_completion(
+      Map.get(animation, :announce_to_screen_reader, false),
+      animation,
+      user_preferences_pid
+    )
+  end
+
+  defp do_announce_animation_completion(
+         false,
+         _animation,
+         _user_preferences_pid
+       ),
+       do: :ok
+
+  defp do_announce_animation_completion(true, animation, user_preferences_pid) do
+    description = Map.get(animation, :description)
+    message = get_animation_completion_message(description)
+    Accessibility.announce(message, [], user_preferences_pid)
+  end
+
+  defp get_animation_completion_message(nil), do: "Animation completed"
+
+  defp get_animation_completion_message(description),
+    do: "#{description} completed"
+
+  defp calculate_animation_value(elapsed, duration, animation)
+       when elapsed >= duration do
+    # Animation is complete, return final value
+    {:ok, Map.get(animation, :to, 1)}
+  end
+
+  defp calculate_animation_value(elapsed, duration, animation) do
+    # Calculate current value
+    progress = min(max(elapsed / duration, 0.0), 1.0)
+    from = Map.get(animation, :from, 0)
+    to = Map.get(animation, :to, 1)
+
+    current_value = interpolate_values(from, to, progress)
+    {:ok, current_value}
+  end
+
+  defp interpolate_values(from_val, to_val, progress)
+       when is_number(from_val) and is_number(to_val) do
+    from_val + (to_val - from_val) * progress
+  end
+
+  defp interpolate_values(from_val, to_val, progress)
+       when is_list(from_val) and is_list(to_val) do
+    Enum.zip_with(from_val, to_val, fn f, t ->
+      interpolate_list_values(f, t, progress)
+    end)
+  end
+
+  defp interpolate_values(_from_val, to_val, _progress), do: to_val
+
+  defp interpolate_list_values(f, t, progress)
+       when is_number(f) and is_number(t) do
+    f + (t - f) * progress
+  end
+
+  defp interpolate_list_values(_f, t, _progress), do: t
 end

@@ -205,22 +205,22 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   end
 
   def extract_metadata(module) do
-    if function_exported?(module, :plugin_info, 0) do
-      {:ok, module.plugin_info()}
-    else
-      {:ok, %{name: module, version: "1.0.0"}}
+    case function_exported?(module, :plugin_info, 0) do
+      true -> {:ok, module.plugin_info()}
+      false -> {:ok, %{name: module, version: "1.0.0"}}
     end
   end
 
   def initialize_plugin(module, config) do
-    if function_exported?(module, :init, 1) do
-      case module.init(config) do
-        {:ok, state} -> {:ok, state}
-        state when is_map(state) -> {:ok, state}
-        _ -> {:error, :invalid_init_return}
-      end
-    else
-      {:ok, %{}}
+    case function_exported?(module, :init, 1) do
+      true ->
+        case module.init(config) do
+          {:ok, state} -> {:ok, state}
+          state when is_map(state) -> {:ok, state}
+          _ -> {:error, :invalid_init_return}
+        end
+      false ->
+        {:ok, %{}}
     end
   end
 
@@ -233,12 +233,12 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
            module_info = module.module_info(:attributes)
            behaviours = Keyword.get_values(module_info, :behaviour)
 
-           if behaviour in behaviours do
-             true
-           else
-             # Fallback: check if the module has the required callbacks
-             # This is a simplified check - in a real implementation you'd check all callbacks
-             function_exported?(module, :plugin_info, 0)
+           case behaviour in behaviours do
+             true -> true
+             false ->
+               # Fallback: check if the module has the required callbacks
+               # This is a simplified check - in a real implementation you'd check all callbacks
+               function_exported?(module, :plugin_info, 0)
            end
          end) do
       {:ok, result} -> result
@@ -265,10 +265,9 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
         case ErrorHandling.safe_call(fn ->
                module = String.to_existing_atom(id)
 
-               if Code.ensure_loaded(module) == {:module, module} do
-                 {:ok, module}
-               else
-                 {:error, :module_not_found}
+               case Code.ensure_loaded(module) do
+                 {:module, ^module} -> {:ok, module}
+                 _ -> {:error, :module_not_found}
                end
              end) do
           {:ok, result} -> result

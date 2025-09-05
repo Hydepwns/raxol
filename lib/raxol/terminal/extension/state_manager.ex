@@ -150,15 +150,7 @@ defmodule Raxol.Terminal.Extension.StateManager do
 
   defp load_script_module(path) do
     script_path = Path.join(path, @script_file)
-
-    if File.exists?(script_path) do
-      case Code.compile_file(script_path) do
-        [{module, _}] -> {:ok, module}
-        _ -> {:error, :compilation_failed}
-      end
-    else
-      {:error, :script_not_found}
-    end
+    handle_script_loading(File.exists?(script_path), script_path)
   end
 
   defp load_plugin_module(path) do
@@ -192,15 +184,7 @@ defmodule Raxol.Terminal.Extension.StateManager do
   defp load_theme_module(path) do
     # Themes typically have a theme.ex file
     theme_path = Path.join(path, "theme.ex")
-
-    if File.exists?(theme_path) do
-      case Code.compile_file(theme_path) do
-        [{module, _}] -> {:ok, module}
-        _ -> {:error, :compilation_failed}
-      end
-    else
-      {:error, :theme_not_found}
-    end
+    handle_theme_loading(File.exists?(theme_path), theme_path)
   end
 
   defp load_custom_module(path) do
@@ -224,27 +208,56 @@ defmodule Raxol.Terminal.Extension.StateManager do
   end
 
   defp try_compile_custom_path(custom_path) do
-    if File.exists?(custom_path) do
-      case Code.compile_file(custom_path) do
-        [{module, _}] -> {:ok, module}
-        _ -> nil
-      end
-    end
+    handle_custom_compilation(File.exists?(custom_path), custom_path)
   end
 
   defp load_extension_config(path, default_config) do
     config_path = Path.join(path, @config_file)
+    handle_config_loading(File.exists?(config_path), config_path, default_config)
+  end
 
-    if File.exists?(config_path) do
-      case Raxol.Core.ErrorHandling.safe_call(fn ->
-             {config, _} = Code.eval_file(config_path)
-             Map.merge(default_config, config)
-           end) do
-        {:ok, merged_config} -> merged_config
-        {:error, _reason} -> default_config
-      end
-    else
-      default_config
+  defp handle_script_loading(true, script_path) do
+    case Code.compile_file(script_path) do
+      [{module, _}] -> {:ok, module}
+      _ -> {:error, :compilation_failed}
     end
+  end
+
+  defp handle_script_loading(false, _script_path) do
+    {:error, :script_not_found}
+  end
+
+  defp handle_theme_loading(true, theme_path) do
+    case Code.compile_file(theme_path) do
+      [{module, _}] -> {:ok, module}
+      _ -> {:error, :compilation_failed}
+    end
+  end
+
+  defp handle_theme_loading(false, _theme_path) do
+    {:error, :theme_not_found}
+  end
+
+  defp handle_custom_compilation(true, custom_path) do
+    case Code.compile_file(custom_path) do
+      [{module, _}] -> {:ok, module}
+      _ -> nil
+    end
+  end
+
+  defp handle_custom_compilation(false, _custom_path), do: nil
+
+  defp handle_config_loading(true, config_path, default_config) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           {config, _} = Code.eval_file(config_path)
+           Map.merge(default_config, config)
+         end) do
+      {:ok, merged_config} -> merged_config
+      {:error, _reason} -> default_config
+    end
+  end
+
+  defp handle_config_loading(false, _config_path, default_config) do
+    default_config
   end
 end

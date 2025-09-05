@@ -115,38 +115,45 @@ defmodule Raxol.Test.TestHelper do
   end
 
   defp do_wait_for_state(condition_fun, start, timeout_ms, ref) do
-    if condition_fun.() do
-      :ok
-    else
-      if System.monotonic_time(:millisecond) - start < timeout_ms do
-        Process.send_after(self(), {:check_condition, ref}, 100)
-
-        receive do
-          {:check_condition, received_ref} when received_ref == ref ->
-            do_wait_for_state(condition_fun, start, timeout_ms, ref)
-        after
-          timeout_ms ->
-            flunk("Condition not met within \\#{timeout_ms}ms")
-        end
-      else
-        flunk("Condition not met within \\#{timeout_ms}ms")
-      end
+    case condition_fun.() do
+      true ->
+        :ok
+      false ->
+        handle_wait_timeout(System.monotonic_time(:millisecond) - start < timeout_ms, condition_fun, start, timeout_ms, ref)
     end
+  end
+
+  defp handle_wait_timeout(true, condition_fun, start, timeout_ms, ref) do
+    Process.send_after(self(), {:check_condition, ref}, 100)
+
+    receive do
+      {:check_condition, received_ref} when received_ref == ref ->
+        do_wait_for_state(condition_fun, start, timeout_ms, ref)
+    after
+      timeout_ms ->
+        flunk("Condition not met within \\#{timeout_ms}ms")
+    end
+  end
+  defp handle_wait_timeout(false, _condition_fun, _start, timeout_ms, _ref) do
+    flunk("Condition not met within \\#{timeout_ms}ms")
   end
 
   @doc """
   Cleans up a process and waits for it to be down.
   """
   def cleanup_process(pid, timeout \\ 5000) do
-    if Process.alive?(pid) do
-      ref = Process.monitor(pid)
-      Process.exit(pid, :normal)
+    case Process.alive?(pid) do
+      true ->
+        ref = Process.monitor(pid)
+        Process.exit(pid, :normal)
 
-      receive do
-        {:DOWN, ^ref, :process, _pid, _reason} -> :ok
-      after
-        timeout -> :timeout
-      end
+        receive do
+          {:DOWN, ^ref, :process, _pid, _reason} -> :ok
+        after
+          timeout -> :timeout
+        end
+      false ->
+        :ok
     end
   end
 
@@ -154,8 +161,9 @@ defmodule Raxol.Test.TestHelper do
   Cleans up an ETS table.
   """
   def cleanup_ets_table(table) do
-    if :ets.whereis(table) != :undefined do
-      :ets.delete_all_objects(table)
+    case :ets.whereis(table) do
+      :undefined -> :ok
+      _ -> :ets.delete_all_objects(table)
     end
   end
 
@@ -163,8 +171,9 @@ defmodule Raxol.Test.TestHelper do
   Cleans up a registry.
   """
   def cleanup_registry(registry) do
-    if Process.whereis(registry) do
-      Registry.unregister(registry, self())
+    case Process.whereis(registry) do
+      nil -> :ok
+      _ -> Registry.unregister(registry, self())
     end
   end
 

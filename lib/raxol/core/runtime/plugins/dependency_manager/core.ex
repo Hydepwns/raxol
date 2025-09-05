@@ -73,11 +73,24 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   defp find_conflict(reqs) do
     Enum.find_value(reqs, :ok, fn {dep_id, dep_list} ->
-      if length(dep_list) > 1 and not compatible_requirements?(dep_list) do
-        {dep_id, dep_list}
-      end
+      check_requirement_conflict(dep_id, dep_list)
     end)
   end
+
+  defp check_requirement_conflict(dep_id, dep_list) when length(dep_list) > 1 do
+    check_requirement_compatibility(
+      compatible_requirements?(dep_list),
+      dep_id,
+      dep_list
+    )
+  end
+
+  defp check_requirement_conflict(_dep_id, _dep_list), do: nil
+
+  defp check_requirement_compatibility(true, _dep_id, _dep_list), do: nil
+
+  defp check_requirement_compatibility(false, dep_id, dep_list),
+    do: {dep_id, dep_list}
 
   defp format_conflict_result(:ok, _current_chain), do: :ok
 
@@ -117,12 +130,20 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   end
 
   defp log_optional_missing(optional_missing, current_chain) do
-    if Enum.any?(optional_missing) do
-      Raxol.Core.Runtime.Log.info(
-        "Optional dependencies not found for plugin #{current_chain |> List.first()}: #{inspect(optional_missing)}"
-      )
-    end
+    log_optional_if_any(
+      Enum.any?(optional_missing),
+      optional_missing,
+      current_chain
+    )
   end
+
+  defp log_optional_if_any(true, optional_missing, current_chain) do
+    Raxol.Core.Runtime.Log.info(
+      "Optional dependencies not found for plugin #{current_chain |> List.first()}: #{inspect(optional_missing)}"
+    )
+  end
+
+  defp log_optional_if_any(false, _optional_missing, _current_chain), do: :ok
 
   defp check_dependency_errors(
          missing,
@@ -151,50 +172,104 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   end
 
   defp check_missing_version_error(missing_version, current_chain) do
-    if Enum.any?(missing_version) do
-      {:error, :missing_version, Enum.reverse(missing_version), current_chain}
-    else
-      :ok
-    end
+    handle_missing_version_result(
+      Enum.any?(missing_version),
+      missing_version,
+      current_chain
+    )
   end
+
+  defp handle_missing_version_result(true, missing_version, current_chain) do
+    {:error, :missing_version, Enum.reverse(missing_version), current_chain}
+  end
+
+  defp handle_missing_version_result(false, _missing_version, _current_chain),
+    do: :ok
 
   defp check_missing_dependencies_error(missing, current_chain) do
-    if Enum.any?(missing) do
-      {:error, :missing_dependencies, Enum.reverse(missing), current_chain}
-    else
-      :ok
-    end
+    handle_missing_dependencies_result(
+      Enum.any?(missing),
+      missing,
+      current_chain
+    )
   end
 
-  defp check_invalid_version_format_error(invalid_version_format, current_chain) do
-    if Enum.any?(invalid_version_format) do
-      {:error, :invalid_version_format, Enum.reverse(invalid_version_format),
-       current_chain}
-    else
-      :ok
-    end
+  defp handle_missing_dependencies_result(true, missing, current_chain) do
+    {:error, :missing_dependencies, Enum.reverse(missing), current_chain}
   end
+
+  defp handle_missing_dependencies_result(false, _missing, _current_chain),
+    do: :ok
+
+  defp check_invalid_version_format_error(invalid_version_format, current_chain) do
+    handle_invalid_version_format_result(
+      Enum.any?(invalid_version_format),
+      invalid_version_format,
+      current_chain
+    )
+  end
+
+  defp handle_invalid_version_format_result(
+         true,
+         invalid_version_format,
+         current_chain
+       ) do
+    {:error, :invalid_version_format, Enum.reverse(invalid_version_format),
+     current_chain}
+  end
+
+  defp handle_invalid_version_format_result(
+         false,
+         _invalid_version_format,
+         _current_chain
+       ),
+       do: :ok
 
   defp check_invalid_version_requirement_error(
          invalid_version_requirement,
          current_chain
        ) do
-    if Enum.any?(invalid_version_requirement) do
-      {:error, :invalid_version_requirement,
-       Enum.reverse(invalid_version_requirement), current_chain}
-    else
-      :ok
-    end
+    handle_invalid_version_requirement_result(
+      Enum.any?(invalid_version_requirement),
+      invalid_version_requirement,
+      current_chain
+    )
   end
 
-  defp check_version_mismatches_error(version_mismatches, current_chain) do
-    if Enum.any?(version_mismatches) do
-      {:error, :version_mismatch, Enum.reverse(version_mismatches),
-       current_chain}
-    else
-      :ok
-    end
+  defp handle_invalid_version_requirement_result(
+         true,
+         invalid_version_requirement,
+         current_chain
+       ) do
+    {:error, :invalid_version_requirement,
+     Enum.reverse(invalid_version_requirement), current_chain}
   end
+
+  defp handle_invalid_version_requirement_result(
+         false,
+         _invalid_version_requirement,
+         _current_chain
+       ),
+       do: :ok
+
+  defp check_version_mismatches_error(version_mismatches, current_chain) do
+    handle_version_mismatches_result(
+      Enum.any?(version_mismatches),
+      version_mismatches,
+      current_chain
+    )
+  end
+
+  defp handle_version_mismatches_result(true, version_mismatches, current_chain) do
+    {:error, :version_mismatch, Enum.reverse(version_mismatches), current_chain}
+  end
+
+  defp handle_version_mismatches_result(
+         false,
+         _version_mismatches,
+         _current_chain
+       ),
+       do: :ok
 
   defp process_dependency(
          {dep_id, version_req, %{optional: true}},
@@ -209,12 +284,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   end
 
   defp process_dependency(dep_id, loaded_plugins, acc) when is_binary(dep_id) do
-    if Map.has_key?(loaded_plugins, dep_id) do
-      acc
-    else
-      {elem(acc, 0) ++ [dep_id], elem(acc, 1), elem(acc, 2), elem(acc, 3),
-       elem(acc, 4), elem(acc, 5)}
-    end
+    handle_binary_dependency(Map.has_key?(loaded_plugins, dep_id), dep_id, acc)
+  end
+
+  defp handle_binary_dependency(true, _dep_id, acc), do: acc
+
+  defp handle_binary_dependency(false, dep_id, acc) do
+    {elem(acc, 0) ++ [dep_id], elem(acc, 1), elem(acc, 2), elem(acc, 3),
+     elem(acc, 4), elem(acc, 5)}
   end
 
   @doc """
@@ -273,10 +350,15 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   end
 
   defp check_self_dependency({plugin_id, deps}) do
-    if Enum.any?(deps, fn {dep_id, _, _} -> dep_id == plugin_id end) do
-      {:error, plugin_id, [plugin_id]}
-    end
+    has_self_dep = Enum.any?(deps, fn {dep_id, _, _} -> dep_id == plugin_id end)
+    handle_self_dependency_result(has_self_dep, plugin_id)
   end
+
+  defp handle_self_dependency_result(true, plugin_id) do
+    {:error, plugin_id, [plugin_id]}
+  end
+
+  defp handle_self_dependency_result(false, _plugin_id), do: nil
 
   # Conflicting requirements: multiple dependencies on the same plugin with incompatible version requirements
   defp find_conflicting_requirements(graph) do
@@ -335,14 +417,20 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
           {dep_id, plugins[dep_id][:version], req}
         end)
 
-      if mismatches != [] do
-        {:error, mismatches,
-         [plugin_id | Enum.map(mismatches, fn {dep_id, _, _} -> dep_id end)]}
-      else
-        nil
-      end
+      handle_version_mismatch_result(
+        mismatches != [],
+        mismatches,
+        plugin_id
+      )
     end)
   end
+
+  defp handle_version_mismatch_result(true, mismatches, plugin_id) do
+    {:error, mismatches,
+     [plugin_id | Enum.map(mismatches, fn {dep_id, _, _} -> dep_id end)]}
+  end
+
+  defp handle_version_mismatch_result(false, _mismatches, _plugin_id), do: nil
 
   defp handle_optional_dependency(dep_id, version_req, loaded_plugins, acc) do
     case Map.get(loaded_plugins, dep_id) do

@@ -14,13 +14,7 @@ defmodule Raxol.Web.Session.Recovery do
   """
   def init do
     # Skip database operations in test environment
-    if function_exported?(Mix, :env, 0) and Mix.env() == :test do
-      :ok
-    else
-      # Recover any active sessions from the database
-      _ = recover_active_sessions()
-      :ok
-    end
+    handle_init_environment(function_exported?(Mix, :env, 0) and Mix.env() == :test)
   end
 
   @doc """
@@ -30,17 +24,7 @@ defmodule Raxol.Web.Session.Recovery do
     case Storage.get(session_id) do
       {:ok, session} ->
         # Check if session needs recovery
-        if needs_recovery?(session) do
-          # Recover session data
-          recovered_session = recover_session_data(session)
-
-          # Store recovered session
-          :ok = Storage.store(recovered_session)
-
-          {:ok, recovered_session}
-        else
-          {:ok, session}
-        end
+        handle_session_recovery(needs_recovery?(session), session)
 
       {:error, reason} ->
         {:error, reason}
@@ -55,10 +39,7 @@ defmodule Raxol.Web.Session.Recovery do
 
     # Recover each session
     for session <- active_sessions do
-      if needs_recovery?(session) do
-        recovered_session = recover_session_data(session)
-        :ok = Storage.store(recovered_session)
-      end
+      process_session_if_needed(needs_recovery?(session), session)
     end
   end
 
@@ -79,5 +60,34 @@ defmodule Raxol.Web.Session.Recovery do
 
     # Update session
     %{session | last_active: DateTime.utc_now(), metadata: metadata}
+  end
+
+  # Helper functions to eliminate if statements
+
+  defp handle_init_environment(true), do: :ok
+
+  defp handle_init_environment(false) do
+    # Recover any active sessions from the database
+    _ = recover_active_sessions()
+    :ok
+  end
+
+  defp handle_session_recovery(false, session), do: {:ok, session}
+
+  defp handle_session_recovery(true, session) do
+    # Recover session data
+    recovered_session = recover_session_data(session)
+
+    # Store recovered session
+    :ok = Storage.store(recovered_session)
+
+    {:ok, recovered_session}
+  end
+
+  defp process_session_if_needed(false, _session), do: :ok
+
+  defp process_session_if_needed(true, session) do
+    recovered_session = recover_session_data(session)
+    :ok = Storage.store(recovered_session)
   end
 end

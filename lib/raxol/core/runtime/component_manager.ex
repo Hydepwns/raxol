@@ -167,9 +167,10 @@ defmodule Raxol.Core.Runtime.ComponentManager do
                 )
 
               # Send component_updated message if runtime_pid is set
-              if state.runtime_pid do
-                send(state.runtime_pid, {:component_updated, component_id})
-              end
+              send_component_updated_if_runtime_pid(
+                state.runtime_pid,
+                component_id
+              )
 
               {:reply, {:ok, new_state}, state}
 
@@ -187,9 +188,10 @@ defmodule Raxol.Core.Runtime.ComponentManager do
                 )
 
               # Send component_updated message if runtime_pid is set
-              if state.runtime_pid do
-                send(state.runtime_pid, {:component_updated, component_id})
-              end
+              send_component_updated_if_runtime_pid(
+                state.runtime_pid,
+                component_id
+              )
 
               {:reply, {:ok, new_state}, state}
 
@@ -227,9 +229,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
           )
 
         # Send component_updated message if runtime_pid is set
-        if state.runtime_pid do
-          send(state.runtime_pid, {:component_updated, component_id})
-        end
+        send_component_updated_if_runtime_pid(state.runtime_pid, component_id)
 
         {:reply, :ok, state}
     end
@@ -328,11 +328,12 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         process_commands(commands, component_id, acc)
 
         # Queue re-render if state changed
-        if new_state != component.state do
-          update_component_state_and_queue_render(acc, component_id, new_state)
-        else
-          acc
-        end
+        queue_render_if_state_changed(
+          acc,
+          component_id,
+          new_state,
+          component.state
+        )
       end)
 
     {:noreply, state}
@@ -409,17 +410,12 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   end
 
   defp queue_render_if_changed(state, component_id, new_state, old_state) do
-    if new_state != old_state do
-      update_in(state.render_queue, fn queue ->
-        if component_id in queue do
-          queue
-        else
-          [component_id | queue]
-        end
-      end)
-    else
-      state
-    end
+    queue_component_render_if_state_changed(
+      state,
+      component_id,
+      new_state,
+      old_state
+    )
   end
 
   # Private Helpers
@@ -461,11 +457,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   defp broadcast_update(msg, source_component_id, state) do
     Enum.reduce(Map.keys(state.components), state, fn id, acc_state ->
-      if id == source_component_id do
-        acc_state
-      else
-        update_component_in_broadcast(id, msg, acc_state)
-      end
+      update_component_if_not_source(id, source_component_id, msg, acc_state)
     end)
   end
 
@@ -512,17 +504,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     # Queue re-render
     state =
       update_in(state.render_queue, fn queue ->
-        if component_id in queue do
-          queue
-        else
-          [component_id | queue]
-        end
+        add_to_queue_if_not_present(queue, component_id)
       end)
 
     # Send component_updated message if runtime_pid is set
-    if state.runtime_pid do
-      send(state.runtime_pid, {:component_updated, component_id})
-    end
+    send_component_updated_if_runtime_pid(state.runtime_pid, component_id)
 
     state
   end
@@ -606,21 +592,75 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     # Queue initial render (avoid duplicates)
     new_state =
       update_in(new_state.render_queue, fn queue ->
-        if component_id in queue do
-          queue
-        else
-          [component_id | queue]
-        end
+        add_to_queue_if_not_present(queue, component_id)
       end)
 
     # Emit component_queued_for_render event if runtime_pid is set
-    if new_state.runtime_pid,
-      do:
-        send(
-          new_state.runtime_pid,
-          {:component_queued_for_render, component_id}
-        )
+    send_component_queued_if_runtime_pid(new_state.runtime_pid, component_id)
 
     {:reply, {:ok, component_id}, new_state}
+  end
+
+  ## Helper functions for refactored if statements
+
+  defp send_component_updated_if_runtime_pid(nil, _component_id), do: :ok
+
+  defp send_component_updated_if_runtime_pid(runtime_pid, component_id) do
+    send(runtime_pid, {:component_updated, component_id})
+  end
+
+  defp queue_render_if_state_changed(acc, component_id, new_state, old_state)
+       when new_state != old_state do
+    update_component_state_and_queue_render(acc, component_id, new_state)
+  end
+
+  defp queue_render_if_state_changed(
+         acc,
+         _component_id,
+         _new_state,
+         _old_state
+       ),
+       do: acc
+
+  defp queue_component_render_if_state_changed(
+         state,
+         component_id,
+         new_state,
+         old_state
+       )
+       when new_state != old_state do
+    update_in(state.render_queue, fn queue ->
+      add_to_queue_if_not_present(queue, component_id)
+    end)
+  end
+
+  defp queue_component_render_if_state_changed(
+         state,
+         _component_id,
+         _new_state,
+         _old_state
+       ),
+       do: state
+
+  defp update_component_if_not_source(id, source_component_id, _msg, acc_state)
+       when id == source_component_id do
+    acc_state
+  end
+
+  defp update_component_if_not_source(id, _source_component_id, msg, acc_state) do
+    update_component_in_broadcast(id, msg, acc_state)
+  end
+
+  defp add_to_queue_if_not_present(queue, component_id) do
+    case component_id in queue do
+      true -> queue
+      false -> [component_id | queue]
+    end
+  end
+
+  defp send_component_queued_if_runtime_pid(nil, _component_id), do: :ok
+
+  defp send_component_queued_if_runtime_pid(runtime_pid, component_id) do
+    send(runtime_pid, {:component_queued_for_render, component_id})
   end
 end

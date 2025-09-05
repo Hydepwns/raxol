@@ -321,10 +321,11 @@ defmodule Raxol.Security.SessionManager do
   defp check_session_limit(user_id, max_concurrent) do
     active_count = length(get_user_sessions_internal(user_id))
 
-    if active_count >= max_concurrent do
-      {:error, :limit_exceeded}
-    else
-      :ok
+    case active_count >= max_concurrent do
+      true ->
+        {:error, :limit_exceeded}
+      false ->
+        :ok
     end
   end
 
@@ -333,10 +334,11 @@ defmodule Raxol.Security.SessionManager do
   end
 
   defp secure_token_compare(token1, token2) do
-    if byte_size(token1) == byte_size(token2) do
-      :crypto.hash_equals(token1, token2)
-    else
-      false
+    case byte_size(token1) == byte_size(token2) do
+      true ->
+        :crypto.hash_equals(token1, token2)
+      false ->
+        false
     end
   end
 
@@ -363,8 +365,11 @@ defmodule Raxol.Security.SessionManager do
       invalidate_session_internal(session_id)
     end)
 
-    if length(expired) > 0 do
-      Logger.info("Cleaned up #{length(expired)} expired sessions")
+    case length(expired) > 0 do
+      true ->
+        Logger.info("Cleaned up #{length(expired)} expired sessions")
+      false ->
+        :ok
     end
   end
 

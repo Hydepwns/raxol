@@ -144,12 +144,7 @@ defmodule Raxol.Cloud.EdgeComputing.Server do
     data_size = :erlang.term_to_binary(value) |> byte_size()
 
     # Check if we need to evict
-    state =
-      if state.cache.size + data_size > state.cache.max_size do
-        evict_cache_items(state, data_size)
-      else
-        state
-      end
+    state = maybe_evict_cache_items(state.cache.size + data_size > state.cache.max_size, state, data_size)
 
     # Create cache item
     item = %{
@@ -178,19 +173,12 @@ defmodule Raxol.Cloud.EdgeComputing.Server do
 
       item ->
         # Check TTL
-        if item.ttl &&
-             DateTime.diff(DateTime.utc_now(), item.created_at) > item.ttl do
-          # Item expired, remove it
-          updated_cache = %{
-            state.cache
-            | items: Map.delete(state.cache.items, key),
-              size: state.cache.size - item.size
-          }
-
-          {:reply, nil, %{state | cache: updated_cache}}
-        else
-          {:reply, item.value, state}
-        end
+        handle_cache_item_ttl(
+          item.ttl && DateTime.diff(DateTime.utc_now(), item.created_at) > item.ttl,
+          key,
+          item,
+          state
+        )
     end
   end
 
@@ -268,7 +256,7 @@ defmodule Raxol.Cloud.EdgeComputing.Server do
   # Sync handlers
 
   @impl true
-  def handle_call({:sync, opts}, _from, state) do
+  def handle_call({:sync, _opts}, _from, state) do
     # Update last sync time
     updated_sync = %{state.sync | last_sync: DateTime.utc_now()}
 
@@ -312,12 +300,7 @@ defmodule Raxol.Cloud.EdgeComputing.Server do
     updated_config = Map.merge(state.config, config)
 
     # Update cache max size if changed
-    updated_cache =
-      if config[:offline_cache_size] do
-        %{state.cache | max_size: config[:offline_cache_size]}
-      else
-        state.cache
-      end
+    updated_cache = update_cache_max_size_if_needed(config[:offline_cache_size], state.cache, config[:offline_cache_size])
 
     {:reply, :ok, %{state | config: updated_config, cache: updated_cache}}
   end
@@ -327,28 +310,67 @@ defmodule Raxol.Cloud.EdgeComputing.Server do
     {:reply, state.config, state}
   end
 
+  # Private helper functions - Pattern Matching Helpers
+
+  defp maybe_evict_cache_items(true, state, data_size) do
+    evict_cache_items(state, data_size)
+  end
+
+  defp maybe_evict_cache_items(false, state, _data_size), do: state
+
+  defp handle_cache_item_ttl(true, key, item, state) do
+    # Item expired, remove it
+    updated_cache = %{
+      state.cache
+      | items: Map.delete(state.cache.items, key),
+        size: state.cache.size - item.size
+    }
+    {:reply, nil, %{state | cache: updated_cache}}
+  end
+
+  defp handle_cache_item_ttl(false, _key, item, state) do
+    {:reply, item.value, state}
+  end
+
+  defp update_cache_max_size_if_needed(nil, cache, _new_size), do: cache
+  defp update_cache_max_size_if_needed(_present, cache, new_size) do
+    %{cache | max_size: new_size}
+  end
+
+  defp evict_items_if_present(true, state, _needed_size), do: state
+  defp evict_items_if_present(false, state, needed_size) do
+    # Sort by creation time (oldest first) for LRU eviction
+    sorted_items =
+      state.cache.items
+      |> Enum.sort_by(fn {_, item} -> item.created_at end, DateTime)
+
+    # Evict until we have enough space
+    {remaining_items, new_size} =
+      do_evict_items(
+        sorted_items,
+        state.cache.items,
+        state.cache.size,
+        needed_size
+      )
+
+    %{state | cache: %{state.cache | items: remaining_items, size: new_size}}
+  end
+
+  defp handle_eviction_result(true, updated_items, updated_size, _rest, _needed_size) do
+    {updated_items, updated_size}
+  end
+
+  defp handle_eviction_result(false, updated_items, updated_size, rest, needed_size) do
+    do_evict_items(rest, updated_items, updated_size, needed_size)
+  end
+
+  defp determine_retry_result(true), do: :failed
+  defp determine_retry_result(false), do: :retry
+
   # Private helper functions
 
   defp evict_cache_items(state, needed_size) do
-    if map_size(state.cache.items) == 0 do
-      state
-    else
-      # Sort by creation time (oldest first) for LRU eviction
-      sorted_items =
-        state.cache.items
-        |> Enum.sort_by(fn {_, item} -> item.created_at end, DateTime)
-
-      # Evict until we have enough space
-      {remaining_items, new_size} =
-        do_evict_items(
-          sorted_items,
-          state.cache.items,
-          state.cache.size,
-          needed_size
-        )
-
-      %{state | cache: %{state.cache | items: remaining_items, size: new_size}}
-    end
+    evict_items_if_present(map_size(state.cache.items) == 0, state, needed_size)
   end
 
   defp do_evict_items([], items, size, _needed) do
@@ -359,11 +381,13 @@ defmodule Raxol.Cloud.EdgeComputing.Server do
     updated_items = Map.delete(items, key)
     updated_size = size - item.size
 
-    if size - updated_size >= needed_size do
-      {updated_items, updated_size}
-    else
-      do_evict_items(rest, updated_items, updated_size, needed_size)
-    end
+    handle_eviction_result(
+      size - updated_size >= needed_size,
+      updated_items,
+      updated_size,
+      rest,
+      needed_size
+    )
   end
 
   defp process_queue_operations(operations, config) do
@@ -387,11 +411,7 @@ defmodule Raxol.Cloud.EdgeComputing.Server do
             result
 
           {:error, _reason} ->
-            if operation.attempts >= config.retry_limit do
-              :failed
-            else
-              :retry
-            end
+            determine_retry_result(operation.attempts >= config.retry_limit)
         end
 
       :sync ->

@@ -38,12 +38,7 @@ defmodule Raxol.UI.Components.CodeBlock do
         #         end
         lexer = Makeup.Lexers.PlainTextLexer
 
-        style =
-          if is_atom(style_opt) && Code.ensure_loaded?(style_opt) do
-            style_opt
-          else
-            Makeup.Styles.GithubLight
-          end
+        style = get_style(style_opt)
 
         # Use Makeup.highlight/2 instead of highlight!/2
         highlighted_html =
@@ -114,6 +109,17 @@ defmodule Raxol.UI.Components.CodeBlock do
   @impl true
   @spec unmount(map()) :: map()
   def unmount(state), do: state
+
+  # Private helper functions
+
+  defp get_style(style_opt) when is_atom(style_opt) do
+    case Code.ensure_loaded?(style_opt) do
+      true -> style_opt
+      false -> Makeup.Styles.GithubLight
+    end
+  end
+  
+  defp get_style(_style_opt), do: Makeup.Styles.GithubLight
 
   # Removed render_fallback/3 helper function
 

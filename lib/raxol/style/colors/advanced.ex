@@ -117,10 +117,9 @@ defmodule Raxol.Style.Colors.Advanced do
     harmony_colors = generate_harmony_colors(h, s, l, type, angle)
     preserve_brightness = Keyword.get(opts, :preserve_brightness, false)
 
-    if preserve_brightness do
-      adjust_harmony_brightness(harmony_colors, l)
-    else
-      harmony_colors
+    case preserve_brightness do
+      true -> adjust_harmony_brightness(harmony_colors, l)
+      false -> harmony_colors
     end
   end
 
@@ -207,7 +206,10 @@ defmodule Raxol.Style.Colors.Advanced do
 
   defp normalize_hue(hue) do
     normalized = rem(round(hue), 360)
-    if normalized < 0, do: normalized + 360, else: normalized
+    case normalized < 0 do
+      true -> normalized + 360
+      false -> normalized
+    end
   end
 
   @doc """
@@ -263,10 +265,9 @@ defmodule Raxol.Style.Colors.Advanced do
     l = (c_max + c_min) / 2
 
     s =
-      if delta == 0 do
-        0
-      else
-        delta / (1 - abs(2 * l - 1))
+      case delta == 0 do
+        true -> 0
+        false -> delta / (1 - abs(2 * l - 1))
       end
 
     %{h: round(h), s: round(s * 100), l: round(l * 100)}
@@ -326,12 +327,13 @@ defmodule Raxol.Style.Colors.Advanced do
     %{l: original_l} = rgb_to_hsl(color)
 
     # If brightness is too low, adjust lightness while preserving hue and saturation
-    if original_l < 30 do
-      %{h: h, s: s} = rgb_to_hsl(color)
-      # Increase lightness to 30%
-      hsl_to_rgb({h, s, 0.3})
-    else
-      color
+    case original_l < 30 do
+      true ->
+        %{h: h, s: s} = rgb_to_hsl(color)
+        # Increase lightness to 30%
+        hsl_to_rgb({h, s, 0.3})
+      false ->
+        color
     end
   end
 

@@ -170,13 +170,16 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     }
 
     # Start async encryption worker
-    if config[:async_encryption] do
-      :timer.send_interval(100, :process_encryption_queue)
-    end
+    start_async_encryption_worker(config[:async_encryption])
 
     Logger.info("Encrypted storage initialized with backend: #{config.backend}")
     {:ok, state}
   end
+
+  defp start_async_encryption_worker(true),
+    do: :timer.send_interval(100, :process_encryption_queue)
+
+  defp start_async_encryption_worker(_), do: :ok
 
   @impl GenServer
   def handle_call({:store, key, data, opts}, _from, state) do
@@ -292,11 +295,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
 
     # Compress if beneficial
     final_data =
-      if should_compress?(serialized, state.config) do
-        compress_data(serialized)
-      else
-        serialized
-      end
+      apply_compression(should_compress?(serialized, state.config), serialized)
 
     # Get encryption key
     key_id = Map.get(opts, :key_id, state.default_key_id)
@@ -349,18 +348,19 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     case retrieve_from_backend(key, state) do
       {:ok, envelope} ->
         # Verify integrity
-        if state.config.verify_integrity do
-          expected_hmac =
-            calculate_hmac(
-              envelope.encrypted_data,
-              envelope.encrypted_data.key_id
-            )
+        verify_envelope_integrity(state.config.verify_integrity, envelope, key)
 
-          if envelope.hmac != expected_hmac do
-            Logger.error("HMAC verification failed for key: #{key}")
-            audit_security_event(:integrity_failure, key)
-            {:error, :integrity_check_failed}
-          end
+        # Check integrity result
+        integrity_result =
+          verify_envelope_integrity(
+            state.config.verify_integrity,
+            envelope,
+            key
+          )
+
+        case integrity_result do
+          {:error, reason} -> {:error, reason}
+          :ok -> :ok
         end
 
         # Decrypt data
@@ -372,12 +372,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
              ) do
           {:ok, decrypted} ->
             # Decompress if needed
-            final_data =
-              if envelope.compressed do
-                decompress_data(decrypted)
-              else
-                decrypted
-              end
+            final_data = apply_decompression(envelope.compressed, decrypted)
 
             # Deserialize
             data = deserialize_data(final_data)
@@ -408,18 +403,46 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
         key_id = Map.get(opts, :key_id, state.default_key_id)
 
         # For large files, use streaming encryption
-        if size > state.config.chunk_size do
-          encrypt_file_streaming(file_path, encrypted_name, key_id, size, state)
-        else
-          # Small file - encrypt in memory
-          case File.read(file_path) do
-            {:ok, content} ->
-              encrypt_and_store(encrypted_name, content, opts, state)
+        handle_file_encryption(
+          size > state.config.chunk_size,
+          file_path,
+          encrypted_name,
+          key_id,
+          size,
+          opts,
+          state
+        )
 
-            {:error, reason} ->
-              {:error, reason}
-          end
-        end
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp handle_file_encryption(
+         true,
+         file_path,
+         encrypted_name,
+         key_id,
+         size,
+         _opts,
+         state
+       ) do
+    encrypt_file_streaming(file_path, encrypted_name, key_id, size, state)
+  end
+
+  defp handle_file_encryption(
+         false,
+         file_path,
+         encrypted_name,
+         _key_id,
+         _size,
+         opts,
+         state
+       ) do
+    # Small file - encrypt in memory
+    case File.read(file_path) do
+      {:ok, content} ->
+        encrypt_and_store(encrypted_name, content, opts, state)
 
       {:error, reason} ->
         {:error, reason}
@@ -635,8 +658,31 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     :zlib.gzip(data)
   end
 
+  defp apply_compression(true, data), do: compress_data(data)
+  defp apply_compression(false, data), do: data
+
   defp decompress_data(data) do
     :zlib.gunzip(data)
+  end
+
+  defp apply_decompression(true, data), do: decompress_data(data)
+  defp apply_decompression(false, data), do: data
+
+  defp verify_envelope_integrity(false, _envelope, _key), do: :ok
+
+  defp verify_envelope_integrity(true, envelope, key) do
+    expected_hmac =
+      calculate_hmac(envelope.encrypted_data, envelope.encrypted_data.key_id)
+
+    check_hmac_match(envelope.hmac == expected_hmac, key)
+  end
+
+  defp check_hmac_match(true, _key), do: :ok
+
+  defp check_hmac_match(false, key) do
+    Logger.error("HMAC verification failed for key: #{key}")
+    audit_security_event(:integrity_failure, key)
+    {:error, :integrity_check_failed}
   end
 
   defp should_compress?(data, config) do
@@ -657,12 +703,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
   end
 
   defp list_encrypted_items(prefix, %{storage_backend: %{type: :file}} = state) do
-    pattern =
-      if prefix do
-        Path.join(state.storage_backend.path, "#{prefix}*")
-      else
-        Path.join(state.storage_backend.path, "*")
-      end
+    pattern = build_file_pattern(prefix, state.storage_backend.path)
 
     Path.wildcard(pattern)
     |> Enum.map(&Path.basename/1)
@@ -673,14 +714,14 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
        }) do
     store
     |> Map.keys()
-    |> Enum.filter(fn key ->
-      if prefix do
-        String.starts_with?(key, prefix)
-      else
-        true
-      end
-    end)
+    |> Enum.filter(&filter_by_prefix(&1, prefix))
   end
+
+  defp build_file_pattern(nil, path), do: Path.join(path, "*")
+  defp build_file_pattern(prefix, path), do: Path.join(path, "#{prefix}*")
+
+  defp filter_by_prefix(_key, nil), do: true
+  defp filter_by_prefix(key, prefix), do: String.starts_with?(key, prefix)
 
   defp search_encrypted(_query, _opts, _state) do
     # Implement encrypted search using searchable encryption techniques

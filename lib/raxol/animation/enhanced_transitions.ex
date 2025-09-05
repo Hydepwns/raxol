@@ -263,17 +263,17 @@ defmodule Raxol.Animation.EnhancedTransitions do
   defp generate_path_points(%{path_type: :bezier} = params) do
     control_points = params[:control_points] || []
     resolution = params[:resolution] || 50
-
-    if length(control_points) >= 4 do
-      0..resolution
-      |> Enum.map(fn i ->
-        t = i / resolution
-        calculate_bezier_point(control_points, t)
-      end)
-    else
-      []
-    end
+    generate_bezier_points(control_points, resolution)
   end
+
+  defp generate_bezier_points(control_points, resolution) when length(control_points) >= 4 do
+    0..resolution
+    |> Enum.map(fn i ->
+      t = i / resolution
+      calculate_bezier_point(control_points, t)
+    end)
+  end
+  defp generate_bezier_points(_control_points, _resolution), do: []
 
   defp generate_path_points(_params), do: []
 
@@ -292,24 +292,25 @@ defmodule Raxol.Animation.EnhancedTransitions do
   end
 
   defp interpolate_path_position(progress, _params, path_points) do
-    if length(path_points) > 1 do
-      index = progress * (length(path_points) - 1)
-      lower_index = floor(index)
-      upper_index = min(lower_index + 1, length(path_points) - 1)
-
-      local_progress = index - lower_index
-
-      lower_point = Enum.at(path_points, lower_index)
-      upper_point = Enum.at(path_points, upper_index)
-
-      %{
-        x: lower_point.x + (upper_point.x - lower_point.x) * local_progress,
-        y: lower_point.y + (upper_point.y - lower_point.y) * local_progress
-      }
-    else
-      %{x: 0, y: 0}
-    end
+    calculate_path_interpolation(path_points, progress)
   end
+
+  defp calculate_path_interpolation(path_points, progress) when length(path_points) > 1 do
+    index = progress * (length(path_points) - 1)
+    lower_index = floor(index)
+    upper_index = min(lower_index + 1, length(path_points) - 1)
+
+    local_progress = index - lower_index
+
+    lower_point = Enum.at(path_points, lower_index)
+    upper_point = Enum.at(path_points, upper_index)
+
+    %{
+      x: lower_point.x + (upper_point.x - lower_point.x) * local_progress,
+      y: lower_point.y + (upper_point.y - lower_point.y) * local_progress
+    }
+  end
+  defp calculate_path_interpolation(_path_points, _progress), do: %{x: 0, y: 0}
 
   defp initialize_spring_physics(params) do
     %{
@@ -390,12 +391,23 @@ defmodule Raxol.Animation.EnhancedTransitions do
     animation_start = accumulated_time + delay
     animation_end = animation_start + duration
 
-    if current_time >= animation_start and current_time <= animation_end do
-      local_progress = (current_time - animation_start) / duration
-      {name, min(1.0, max(0.0, local_progress))}
-    else
-      find_active_animation_recursive(rest, current_time, animation_end)
-    end
+    check_animation_active(
+      current_time >= animation_start and current_time <= animation_end,
+      name,
+      current_time,
+      animation_start,
+      duration,
+      rest,
+      animation_end
+    )
+  end
+
+  defp check_animation_active(true, name, current_time, animation_start, duration, _rest, _animation_end) do
+    local_progress = (current_time - animation_start) / duration
+    {name, min(1.0, max(0.0, local_progress))}
+  end
+  defp check_animation_active(false, _name, current_time, _animation_start, _duration, rest, animation_end) do
+    find_active_animation_recursive(rest, current_time, animation_end)
   end
 
   defp generate_batch_config(elements, params) do
@@ -426,12 +438,12 @@ defmodule Raxol.Animation.EnhancedTransitions do
       Enum.map(params[:batch_config], fn config ->
         element_start_time = config.delay
 
-        element_progress =
-          if current_time >= element_start_time do
-            min(1.0, (current_time - element_start_time) / config.duration)
-          else
-            0.0
-          end
+        element_progress = calculate_element_progress(
+          current_time >= element_start_time,
+          current_time,
+          element_start_time,
+          config.duration
+        )
 
         %{
           element_id: config.element_id,
@@ -444,5 +456,12 @@ defmodule Raxol.Animation.EnhancedTransitions do
       element_states: element_states,
       overall_progress: progress
     }
+  end
+
+  defp calculate_element_progress(true, current_time, element_start_time, duration) do
+    min(1.0, (current_time - element_start_time) / duration)
+  end
+  defp calculate_element_progress(false, _current_time, _element_start_time, _duration) do
+    0.0
   end
 end

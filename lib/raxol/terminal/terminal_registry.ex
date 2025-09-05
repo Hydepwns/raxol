@@ -146,12 +146,11 @@ defmodule Raxol.Terminal.TerminalRegistry do
         user_id = Map.get(metadata, :user_id)
 
         new_user_terminals =
-          if user_id do
-            user_list = Map.get(state.user_terminals, user_id, [])
-            Map.put(state.user_terminals, user_id, [terminal_id | user_list])
-          else
-            state.user_terminals
-          end
+          update_user_terminals_on_register(
+            state.user_terminals,
+            user_id,
+            terminal_id
+          )
 
         new_state = %{
           state
@@ -331,23 +330,11 @@ defmodule Raxol.Terminal.TerminalRegistry do
     new_terminal_metadata = Map.delete(state.terminal_metadata, terminal_id)
 
     new_user_terminals =
-      if user_id do
-        case Map.get(state.user_terminals, user_id) do
-          nil ->
-            state.user_terminals
-
-          terminal_list ->
-            updated_list = List.delete(terminal_list, terminal_id)
-
-            if Enum.empty?(updated_list) do
-              Map.delete(state.user_terminals, user_id)
-            else
-              Map.put(state.user_terminals, user_id, updated_list)
-            end
-        end
-      else
-        state.user_terminals
-      end
+      update_user_terminals_on_unregister(
+        state.user_terminals,
+        user_id,
+        terminal_id
+      )
 
     %{
       state
@@ -404,4 +391,33 @@ defmodule Raxol.Terminal.TerminalRegistry do
       monitors: :erlang.external_size(state.monitors)
     }
   end
+
+  # Helper functions for user terminal updates (if-statement elimination)
+  defp update_user_terminals_on_register(user_terminals, nil, _terminal_id),
+    do: user_terminals
+
+  defp update_user_terminals_on_register(user_terminals, user_id, terminal_id) do
+    user_list = Map.get(user_terminals, user_id, [])
+    Map.put(user_terminals, user_id, [terminal_id | user_list])
+  end
+
+  defp update_user_terminals_on_unregister(user_terminals, nil, _terminal_id),
+    do: user_terminals
+
+  defp update_user_terminals_on_unregister(user_terminals, user_id, terminal_id) do
+    case Map.get(user_terminals, user_id) do
+      nil ->
+        user_terminals
+
+      terminal_list ->
+        updated_list = List.delete(terminal_list, terminal_id)
+        handle_empty_user_terminal_list(user_terminals, user_id, updated_list)
+    end
+  end
+
+  defp handle_empty_user_terminal_list(user_terminals, user_id, []),
+    do: Map.delete(user_terminals, user_id)
+
+  defp handle_empty_user_terminal_list(user_terminals, user_id, updated_list),
+    do: Map.put(user_terminals, user_id, updated_list)
 end

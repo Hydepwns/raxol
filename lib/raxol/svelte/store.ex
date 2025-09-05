@@ -185,12 +185,13 @@ defmodule Raxol.Svelte.Store do
           old_value = get_in(acc, [:values, name])
           new_value = compute_fn.(acc.values)
 
-          if old_value != new_value do
-            acc
-            |> put_in([:values, name], new_value)
-            |> notify_subscribers(name)
-          else
-            acc
+          case old_value != new_value do
+            true ->
+              acc
+              |> put_in([:values, name], new_value)
+              |> notify_subscribers(name)
+            false ->
+              acc
           end
         end)
       end

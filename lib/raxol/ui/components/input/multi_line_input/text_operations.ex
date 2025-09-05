@@ -35,23 +35,24 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations do
       Selection.normalize_positions(start_pos_tuple, end_pos_tuple)
 
     {new_full_text, replaced_text} =
-      if start_row == end_row do
-        SingleLine.handle_single_line_replacement(
-          lines_list,
-          start_row,
-          start_col,
-          end_col,
-          replacement
-        )
-      else
-        MultiLine.handle_multi_line_replacement(
-          lines_list,
-          start_row,
-          start_col,
-          end_row,
-          end_col,
-          replacement
-        )
+      case start_row == end_row do
+        true ->
+          SingleLine.handle_single_line_replacement(
+            lines_list,
+            start_row,
+            start_col,
+            end_col,
+            replacement
+          )
+        false ->
+          MultiLine.handle_multi_line_replacement(
+            lines_list,
+            start_row,
+            start_col,
+            end_row,
+            end_col,
+            replacement
+          )
       end
 
     {Utils.format_result(new_full_text), replaced_text}
@@ -70,10 +71,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations do
   def insert_text(lines_list, row, col, text) do
     lines = String.split(text, "\n")
 
-    if length(lines) == 1 do
-      SingleLine.insert_text(lines_list, row, col, text)
-    else
-      MultiLine.insert_multi_line_text(lines_list, row, col, text)
+    case length(lines) do
+      1 ->
+        SingleLine.insert_text(lines_list, row, col, text)
+      _ ->
+        MultiLine.insert_multi_line_text(lines_list, row, col, text)
     end
   end
 

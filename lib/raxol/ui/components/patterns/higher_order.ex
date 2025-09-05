@@ -72,11 +72,13 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
           })
 
         # Show loading component if loading
-        if loading do
-          loading_component.(enhanced_props)
-        else
-          component_module.render(enhanced_props, context)
-        end
+        render_with_loading_state(
+          loading,
+          loading_component,
+          enhanced_props,
+          component_module,
+          context
+        )
       end
     end
   end
@@ -116,10 +118,7 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
           Hooks.use_callback(
             fn error_info ->
               set_error.(error_info)
-
-              if on_error_callback do
-                on_error_callback.(error_info)
-              end
+              handle_error_callback(on_error_callback, error_info)
             end,
             [set_error, on_error_callback]
           )
@@ -131,29 +130,15 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
             on_error: report_error
           })
 
-        if error do
-          error_component.(enhanced_props)
-        else
-          case Raxol.Core.ErrorHandling.safe_call(fn ->
-                 component_module.render(enhanced_props, context)
-               end) do
-            {:ok, result} ->
-              result
-
-            {:error, {reason, stacktrace}} ->
-              error_info = %{
-                kind: :error,
-                reason: reason,
-                stacktrace: stacktrace,
-                component: component_module,
-                props: props,
-                timestamp: System.monotonic_time(:millisecond)
-              }
-
-              report_error.(error_info)
-              error_component.(enhanced_props)
-          end
-        end
+        render_with_error_boundary(
+          error,
+          error_component,
+          enhanced_props,
+          component_module,
+          context,
+          props,
+          report_error
+        )
       end
     end
   end
@@ -376,9 +361,7 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
         # Auto-track component mount
         Hooks.use_effect(
           fn ->
-            if auto_track_mount do
-              track_event.("component_mount")
-            end
+            track_mount_if_enabled(auto_track_mount, track_event)
 
             # Track unmount
             fn ->
@@ -440,31 +423,12 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
               end_time = System.monotonic_time(:microsecond)
               start_time = Map.get(props, :"#{timer_name}_start_time")
 
-              if start_time do
-                duration_ms = (end_time - start_time) / 1000
-
-                # Update performance data
-                set_performance_data.(fn perf ->
-                  # Keep last 20
-                  new_render_times = [
-                    duration_ms | Enum.take(perf.render_times, 19)
-                  ]
-
-                  avg_time =
-                    Enum.sum(new_render_times) / length(new_render_times)
-
-                  slow_count =
-                    if duration_ms > report_threshold_ms,
-                      do: perf.slow_renders + 1,
-                      else: perf.slow_renders
-
-                  %{
-                    render_times: new_render_times,
-                    average_render_time: avg_time,
-                    slow_renders: slow_count
-                  }
-                end)
-              end
+              calculate_timing_if_available(
+                start_time,
+                end_time,
+                set_performance_data,
+                report_threshold_ms
+              )
             end,
             [set_performance_data, report_threshold_ms]
           )
@@ -486,13 +450,11 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
 
         # Update render time (async to avoid affecting current render)
         Task.start(fn ->
-          if render_time_ms > report_threshold_ms do
-            require Logger
-
-            Logger.warning(
-              "Slow render detected: #{component_module} took #{Float.round(render_time_ms, 2)}ms"
-            )
-          end
+          log_slow_render_if_needed(
+            render_time_ms,
+            report_threshold_ms,
+            component_module
+          )
         end)
 
         result
@@ -559,12 +521,13 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
   def when_condition(condition_fn, hoc) when is_function(condition_fn, 1) do
     fn component_module ->
       fn props, context ->
-        if condition_fn.(props) do
-          enhanced_component = hoc.(component_module)
-          enhanced_component.(props, context)
-        else
-          component_module.render(props, context)
-        end
+        apply_hoc_conditionally(
+          condition_fn.(props),
+          hoc,
+          component_module,
+          props,
+          context
+        )
       end
     end
   end
@@ -709,11 +672,14 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
          unauthorized_component
        )
        when required_permissions != [] do
-    if Enum.all?(required_permissions, has_permission) do
-      component_module.render(enhanced_props, context)
-    else
-      unauthorized_component.(enhanced_props)
-    end
+    render_based_on_permissions(
+      required_permissions,
+      has_permission,
+      component_module,
+      enhanced_props,
+      context,
+      unauthorized_component
+    )
   end
 
   defp render_based_on_auth_state(
@@ -764,5 +730,166 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
          _error_component
        ) do
     component_module.render(enhanced_props, context)
+  end
+
+  ## Pattern matching helper functions for if statement elimination
+
+  defp render_with_loading_state(
+         true,
+         loading_component,
+         enhanced_props,
+         _component_module,
+         _context
+       ) do
+    loading_component.(enhanced_props)
+  end
+
+  defp render_with_loading_state(
+         false,
+         _loading_component,
+         enhanced_props,
+         component_module,
+         context
+       ) do
+    component_module.render(enhanced_props, context)
+  end
+
+  defp handle_error_callback(nil, _error_info), do: :ok
+  defp handle_error_callback(callback, error_info), do: callback.(error_info)
+
+  defp render_with_error_boundary(
+         nil,
+         error_component,
+         enhanced_props,
+         component_module,
+         context,
+         props,
+         report_error
+       ) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           component_module.render(enhanced_props, context)
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, {reason, stacktrace}} ->
+        error_info = %{
+          kind: :error,
+          reason: reason,
+          stacktrace: stacktrace,
+          component: component_module,
+          props: props,
+          timestamp: System.monotonic_time(:millisecond)
+        }
+
+        report_error.(error_info)
+        error_component.(enhanced_props)
+    end
+  end
+
+  defp render_with_error_boundary(
+         error,
+         error_component,
+         enhanced_props,
+         _component_module,
+         _context,
+         _props,
+         _report_error
+       )
+       when not is_nil(error) do
+    error_component.(enhanced_props)
+  end
+
+  defp track_mount_if_enabled(false, _track_event), do: :ok
+
+  defp track_mount_if_enabled(true, track_event),
+    do: track_event.("component_mount")
+
+  defp calculate_timing_if_available(
+         nil,
+         _end_time,
+         _set_performance_data,
+         _threshold
+       ),
+       do: :ok
+
+  defp calculate_timing_if_available(
+         start_time,
+         end_time,
+         set_performance_data,
+         report_threshold_ms
+       ) do
+    duration_ms = (end_time - start_time) / 1000
+
+    # Update performance data
+    set_performance_data.(fn perf ->
+      # Keep last 20
+      new_render_times = [
+        duration_ms | Enum.take(perf.render_times, 19)
+      ]
+
+      avg_time =
+        Enum.sum(new_render_times) / length(new_render_times)
+
+      slow_count =
+        increment_slow_count_if_needed(
+          duration_ms,
+          report_threshold_ms,
+          perf.slow_renders
+        )
+
+      %{
+        render_times: new_render_times,
+        average_render_time: avg_time,
+        slow_renders: slow_count
+      }
+    end)
+  end
+
+  defp increment_slow_count_if_needed(duration_ms, threshold, current_count)
+       when duration_ms > threshold do
+    current_count + 1
+  end
+
+  defp increment_slow_count_if_needed(_duration_ms, _threshold, current_count),
+    do: current_count
+
+  defp log_slow_render_if_needed(render_time_ms, threshold, component_module)
+       when render_time_ms > threshold do
+    require Logger
+
+    Logger.warning(
+      "Slow render detected: #{component_module} took #{Float.round(render_time_ms, 2)}ms"
+    )
+  end
+
+  defp log_slow_render_if_needed(
+         _render_time_ms,
+         _threshold,
+         _component_module
+       ),
+       do: :ok
+
+  defp apply_hoc_conditionally(true, hoc, component_module, props, context) do
+    enhanced_component = hoc.(component_module)
+    enhanced_component.(props, context)
+  end
+
+  defp apply_hoc_conditionally(false, _hoc, component_module, props, context) do
+    component_module.render(props, context)
+  end
+
+  defp render_based_on_permissions(
+         required_permissions,
+         has_permission,
+         component_module,
+         enhanced_props,
+         context,
+         unauthorized_component
+       ) do
+    case Enum.all?(required_permissions, has_permission) do
+      true -> component_module.render(enhanced_props, context)
+      false -> unauthorized_component.(enhanced_props)
+    end
   end
 end

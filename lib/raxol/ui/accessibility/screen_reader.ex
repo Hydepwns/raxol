@@ -480,21 +480,13 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
         # Handle live region updates
         updated_final_state =
-          if component.config[:live] and Map.has_key?(properties, :text) do
-            announce_to_screen_reader(
-              new_state,
-              properties.text,
-              component.config.live
-            )
-
-            update_live_regions(
-              new_state,
-              properties.text,
-              component.config.live
-            )
-          else
-            new_state
-          end
+          handle_live_region_update(
+            component.config[:live],
+            Map.has_key?(properties, :text),
+            new_state,
+            properties,
+            component
+          )
 
         {:noreply, updated_final_state}
     end
@@ -737,11 +729,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
       end
 
     # Adjust for landmarks
-    if "navigation" in config.landmarks do
-      base_order - 1
-    else
-      base_order
-    end
+    adjust_for_navigation("navigation" in config.landmarks, base_order)
   end
 
   defp announce_initialization(state) do
@@ -757,20 +745,12 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   end
 
   defp announce_to_screen_reader(state, text, priority) do
-    if state.speech_engine.available do
-      case state.speech_engine.type do
-        :nvda -> announce_to_nvda(text, priority)
-        :jaws -> announce_to_jaws(text, priority)
-        :voiceover -> announce_to_voiceover(text, priority)
-        :orca -> announce_to_orca(text, priority)
-      end
-    else
-      # Fallback to system speech synthesis or logging
-      Logger.info("Screen Reader Announcement (#{priority}): #{text}")
-
-      # Try system TTS as fallback
-      try_system_tts(text)
-    end
+    handle_speech_announcement(
+      state.speech_engine.available,
+      state.speech_engine.type,
+      text,
+      priority
+    )
   end
 
   defp announce_to_nvda(text, priority) do
@@ -813,11 +793,9 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
         :verbose ->
           shortcuts =
-            if map_size(component.config.keyboard_shortcuts) > 0 do
-              ", shortcuts available"
-            else
-              ""
-            end
+            format_shortcuts_availability(
+              map_size(component.config.keyboard_shortcuts) > 0
+            )
 
           "#{announcement}#{shortcuts}"
       end
@@ -854,11 +832,12 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     updated_regions =
       state.live_regions
       |> Enum.map(fn {region_id, region} ->
-        if region.priority == priority do
-          {region_id, %{region | last_announcement: text}}
-        else
-          {region_id, region}
-        end
+        update_region_priority(
+          region.priority == priority,
+          region_id,
+          region,
+          text
+        )
       end)
       |> Map.new()
 
@@ -869,20 +848,24 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     descriptions = []
 
     descriptions =
-      if formatting[:bold], do: ["bold" | descriptions], else: descriptions
+      add_description_if_formatting(formatting[:bold], "bold", descriptions)
 
     descriptions =
-      if formatting[:italic], do: ["italic" | descriptions], else: descriptions
+      add_description_if_formatting(formatting[:italic], "italic", descriptions)
 
     descriptions =
-      if formatting[:underline],
-        do: ["underlined" | descriptions],
-        else: descriptions
+      add_description_if_formatting(
+        formatting[:underline],
+        "underlined",
+        descriptions
+      )
 
     descriptions =
-      if formatting[:strikethrough],
-        do: ["strikethrough" | descriptions],
-        else: descriptions
+      add_description_if_formatting(
+        formatting[:strikethrough],
+        "strikethrough",
+        descriptions
+      )
 
     # Color descriptions
     descriptions =
@@ -955,11 +938,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         # Read character by character with phonetic if needed
         char = String.at(base_text, 0) || ""
 
-        if String.match?(char, ~r/[a-zA-Z]/) do
-          char
-        else
-          describe_special_character(char)
-        end
+        format_character_reading(String.match?(char, ~r/[a-zA-Z]/), char)
 
       :word ->
         # Read word by word
@@ -1015,20 +994,11 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   end
 
   defp play_audio_cue(state, cue_type) do
-    if state.audio_cues.enabled do
-      case Map.get(state.audio_cues.sounds, cue_type) do
-        nil ->
-          :ok
-
-        cue ->
-          # Play audio cue - would use actual audio synthesis
-          Logger.debug(
-            "Audio cue: #{cue_type} (#{cue.frequency}Hz, #{cue.duration}ms)"
-          )
-
-          :ok
-      end
-    end
+    play_cue_if_enabled(
+      state.audio_cues.enabled,
+      state.audio_cues.sounds,
+      cue_type
+    )
   end
 
   defp handle_accessibility_shortcut(key_combo, context) do
@@ -1040,12 +1010,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
       [:ctrl, :alt, :s] ->
         # Announce shortcuts for current component
-        if context[:current_component] do
-          GenServer.call(
-            __MODULE__,
-            {:announce_shortcuts, context.current_component}
-          )
-        end
+        announce_shortcuts_if_component(context[:current_component])
 
       [:ctrl, :alt, :h] ->
         # Toggle help mode
@@ -1114,20 +1079,18 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
     # Check for accessible name
     issues =
-      if not component_config[:label] and not component_config[:accessible_name] do
-        ["Missing accessible name (label or aria-label)" | issues]
-      else
+      check_accessible_name(
+        not component_config[:label] and not component_config[:accessible_name],
         issues
-      end
+      )
 
     # Check for keyboard accessibility
     issues =
-      if component_config[:role] in [:button, :textbox, :listbox] and
-           map_size(component_config[:keyboard_shortcuts] || %{}) == 0 do
-        ["Interactive element missing keyboard shortcuts" | issues]
-      else
+      check_keyboard_accessibility(
+        component_config[:role] in [:button, :textbox, :listbox] and
+          map_size(component_config[:keyboard_shortcuts] || %{}) == 0,
         issues
-      end
+      )
 
     # Check for color contrast (would need actual color values)
     # This is a placeholder for color contrast checking
@@ -1214,6 +1177,107 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     end
   end
 
+  # Pattern matching helper functions for accessibility features
+
+  defp handle_live_region_update(
+         nil,
+         _has_text,
+         new_state,
+         _properties,
+         _component
+       ),
+       do: new_state
+
+  defp handle_live_region_update(
+         _live,
+         false,
+         new_state,
+         _properties,
+         _component
+       ),
+       do: new_state
+
+  defp handle_live_region_update(live, true, new_state, properties, component) do
+    announce_to_screen_reader(new_state, properties.text, component.config.live)
+    update_live_regions(new_state, properties.text, component.config.live)
+  end
+
+  defp adjust_for_navigation(true, base_order), do: base_order - 1
+  defp adjust_for_navigation(false, base_order), do: base_order
+
+  defp handle_speech_announcement(false, _type, text, priority) do
+    # Fallback to system speech synthesis or logging
+    Logger.info("Screen Reader Announcement (#{priority}): #{text}")
+    try_system_tts(text)
+  end
+
+  defp handle_speech_announcement(true, type, text, priority) do
+    case type do
+      :nvda -> announce_to_nvda(text, priority)
+      :jaws -> announce_to_jaws(text, priority)
+      :voiceover -> announce_to_voiceover(text, priority)
+      :orca -> announce_to_orca(text, priority)
+    end
+  end
+
+  defp format_shortcuts_availability(true), do: ", shortcuts available"
+  defp format_shortcuts_availability(false), do: ""
+
+  defp update_region_priority(true, region_id, region, text) do
+    {region_id, %{region | last_announcement: text}}
+  end
+
+  defp update_region_priority(false, region_id, region, _text) do
+    {region_id, region}
+  end
+
+  defp add_description_if_formatting(true, description, descriptions) do
+    [description | descriptions]
+  end
+
+  defp add_description_if_formatting(false, _description, descriptions) do
+    descriptions
+  end
+
+  defp format_character_reading(true, char), do: char
+
+  defp format_character_reading(false, char),
+    do: describe_special_character(char)
+
+  defp play_cue_if_enabled(false, _sounds, _cue_type), do: :ok
+
+  defp play_cue_if_enabled(true, sounds, cue_type) do
+    case Map.get(sounds, cue_type) do
+      nil ->
+        :ok
+
+      cue ->
+        Logger.debug(
+          "Audio cue: #{cue_type} (#{cue.frequency}Hz, #{cue.duration}ms)"
+        )
+
+        :ok
+    end
+  end
+
+  defp announce_shortcuts_if_component(nil), do: :ok
+
+  defp announce_shortcuts_if_component(component) do
+    GenServer.call(__MODULE__, {:announce_shortcuts, component})
+  end
+
+  defp check_accessible_name(true, issues) do
+    ["Missing accessible name (label or aria-label)" | issues]
+  end
+
+  defp check_accessible_name(false, issues), do: issues
+
+  defp check_keyboard_accessibility(true, issues) do
+    ["Interactive element missing keyboard shortcuts" | issues]
+  end
+
+  defp check_keyboard_accessibility(false, issues), do: issues
+
   # Helper functions for if statement refactoring
 
   defp init_braille_if_enabled(%{enable_braille: true}),
@@ -1297,11 +1361,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
   defp adjust_order_for_landmarks(base_order, landmarks)
        when is_list(landmarks) do
-    if "navigation" in landmarks do
-      base_order - 1
-    else
-      base_order
-    end
+    adjust_for_navigation("navigation" in landmarks, base_order)
   end
 
   defp adjust_order_for_landmarks(base_order, _landmarks), do: base_order

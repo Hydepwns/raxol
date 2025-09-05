@@ -35,30 +35,38 @@ defmodule Raxol.UI.Components.Input.TextInput.Selection do
     case state.selection do
       {start, _len} ->
         # Extend existing selection
-        if new_cursor < start do
-          %{
-            state
-            | cursor: new_cursor,
-              selection: {new_cursor, start - new_cursor}
-          }
-        else
-          %{state | cursor: new_cursor, selection: {start, new_cursor - start}}
+        case new_cursor < start do
+          true ->
+            %{
+              state
+              | cursor: new_cursor,
+                selection: {new_cursor, start - new_cursor}
+            }
+
+          false ->
+            %{
+              state
+              | cursor: new_cursor,
+                selection: {start, new_cursor - start}
+            }
         end
 
       nil ->
         # Start new selection
-        if new_cursor < state.cursor do
-          %{
-            state
-            | cursor: new_cursor,
-              selection: {new_cursor, state.cursor - new_cursor}
-          }
-        else
-          %{
-            state
-            | cursor: new_cursor,
-              selection: {state.cursor, new_cursor - state.cursor}
-          }
+        case new_cursor < state.cursor do
+          true ->
+            %{
+              state
+              | cursor: new_cursor,
+                selection: {new_cursor, state.cursor - new_cursor}
+            }
+
+          false ->
+            %{
+              state
+              | cursor: new_cursor,
+                selection: {state.cursor, new_cursor - state.cursor}
+            }
         end
     end
   end

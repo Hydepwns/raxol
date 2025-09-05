@@ -77,12 +77,11 @@ defmodule Raxol.Commands.CreateTerminalCommand do
 
   defp validate_user_permissions(command) do
     # In a real implementation, would check user permissions
-    if command.user_id do
-      :ok
-    else
-      {:error, :user_not_authenticated}
-    end
+    check_user_authentication(command.user_id)
   end
+
+  defp check_user_authentication(user_id) when user_id != nil, do: :ok
+  defp check_user_authentication(_user_id), do: {:error, :user_not_authenticated}
 
   defp generate_terminal_id do
     "term_" <>
@@ -389,10 +388,9 @@ defmodule Raxol.Commands.ApplyThemeCommand do
         end
       end)
 
-    if Enum.empty?(invalid_colors) do
-      :ok
-    else
-      {:error, {:invalid_colors, invalid_colors}}
-    end
+    handle_color_validation_result(invalid_colors)
   end
+
+  defp handle_color_validation_result([]), do: :ok
+  defp handle_color_validation_result(invalid_colors), do: {:error, {:invalid_colors, invalid_colors}}
 end

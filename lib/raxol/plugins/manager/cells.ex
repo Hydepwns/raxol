@@ -38,23 +38,33 @@ defmodule Raxol.Plugins.Manager.Cells do
          {:ok, acc_manager, acc_cell},
          emulator_state
        ) do
-    if plugin.enabled do
-      module = plugin.__struct__
+    handle_plugin_enabled_cell(plugin.enabled, plugin, acc_cell, acc_manager, emulator_state)
+  end
 
-      if function_exported?(module, :process_cell, 3) do
-        handle_plugin_cell(
-          module,
-          plugin,
-          acc_cell,
-          acc_manager,
-          emulator_state
-        )
-      else
-        {:cont, {:ok, acc_manager, acc_cell}}
-      end
-    else
-      {:cont, {:ok, acc_manager, acc_cell}}
-    end
+  # Helper functions to eliminate if statements
+
+  defp handle_plugin_enabled_cell(false, _plugin, acc_cell, acc_manager, _emulator_state) do
+    {:cont, {:ok, acc_manager, acc_cell}}
+  end
+
+  defp handle_plugin_enabled_cell(true, plugin, acc_cell, acc_manager, emulator_state) do
+    module = plugin.__struct__
+    handle_function_exported_cell(
+      function_exported?(module, :process_cell, 3),
+      module,
+      plugin,
+      acc_cell,
+      acc_manager,
+      emulator_state
+    )
+  end
+
+  defp handle_function_exported_cell(false, _module, _plugin, acc_cell, acc_manager, _emulator_state) do
+    {:cont, {:ok, acc_manager, acc_cell}}
+  end
+
+  defp handle_function_exported_cell(true, module, plugin, acc_cell, acc_manager, emulator_state) do
+    handle_plugin_cell(module, plugin, acc_cell, acc_manager, emulator_state)
   end
 
   defp handle_plugin_cell(module, plugin, acc_cell, acc_manager, emulator_state) do
@@ -85,17 +95,30 @@ defmodule Raxol.Plugins.Manager.Cells do
          {_name, plugin},
          {:ok, acc_manager, acc_commands}
        ) do
-    if plugin.enabled do
-      module = plugin.__struct__
+    handle_plugin_enabled_commands(plugin.enabled, plugin, acc_manager, acc_commands)
+  end
 
-      if function_exported?(module, :get_cell_commands, 1) do
-        handle_plugin_commands(module, plugin, acc_manager, acc_commands)
-      else
-        {:ok, acc_manager, acc_commands}
-      end
-    else
-      {:ok, acc_manager, acc_commands}
-    end
+  defp handle_plugin_enabled_commands(false, _plugin, acc_manager, acc_commands) do
+    {:ok, acc_manager, acc_commands}
+  end
+
+  defp handle_plugin_enabled_commands(true, plugin, acc_manager, acc_commands) do
+    module = plugin.__struct__
+    handle_function_exported_commands(
+      function_exported?(module, :get_cell_commands, 1),
+      module,
+      plugin,
+      acc_manager,
+      acc_commands
+    )
+  end
+
+  defp handle_function_exported_commands(false, _module, _plugin, acc_manager, acc_commands) do
+    {:ok, acc_manager, acc_commands}
+  end
+
+  defp handle_function_exported_commands(true, module, plugin, acc_manager, acc_commands) do
+    handle_plugin_commands(module, plugin, acc_manager, acc_commands)
   end
 
   defp handle_plugin_commands(module, plugin, acc_manager, acc_commands) do

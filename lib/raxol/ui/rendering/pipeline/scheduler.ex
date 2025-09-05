@@ -61,50 +61,7 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   """
   @spec execute_render(state()) :: state()
   def execute_render(state) do
-    if state.current_tree do
-      Logger.debug("Pipeline: Executing render with current tree.")
-
-      start_time = System.monotonic_time(:microsecond)
-
-      # Execute the rendering pipeline stages
-      {painted_output, composed_tree} =
-        Stages.execute_render_stages(
-          {:replace, state.current_tree},
-          state.current_tree,
-          state.renderer_module,
-          state.previous_composed_tree,
-          state.previous_painted_output
-        )
-
-      # Commit the painted output to the renderer
-      if painted_output do
-        commit_to_renderer(painted_output, state.renderer_module)
-      end
-
-      end_time = System.monotonic_time(:microsecond)
-      render_time_ms = (end_time - start_time) / 1000
-
-      Logger.debug("Pipeline: Render completed in #{render_time_ms}ms")
-
-      %{
-        state
-        | render_timer_ref: nil,
-          render_scheduled_for_next_frame: false,
-          last_render_time: render_time_ms,
-          previous_composed_tree: composed_tree,
-          previous_painted_output: painted_output
-      }
-    else
-      Logger.debug(
-        "Pipeline: Execute render called but no current tree available."
-      )
-
-      %{
-        state
-        | render_timer_ref: nil,
-          render_scheduled_for_next_frame: false
-      }
-    end
+    execute_render_with_tree(state.current_tree, state)
   end
 
   @doc """
@@ -113,6 +70,58 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   @spec mark_render_for_next_frame(state()) :: state()
   def mark_render_for_next_frame(state) do
     %{state | render_scheduled_for_next_frame: true}
+  end
+
+  # Helper functions for if-statement elimination
+  defp execute_render_with_tree(nil, state) do
+    Logger.debug(
+      "Pipeline: Execute render called but no current tree available."
+    )
+
+    %{
+      state
+      | render_timer_ref: nil,
+        render_scheduled_for_next_frame: false
+    }
+  end
+
+  defp execute_render_with_tree(current_tree, state) do
+    Logger.debug("Pipeline: Executing render with current tree.")
+
+    start_time = System.monotonic_time(:microsecond)
+
+    # Execute the rendering pipeline stages
+    {painted_output, composed_tree} =
+      Stages.execute_render_stages(
+        {:replace, current_tree},
+        current_tree,
+        state.renderer_module,
+        state.previous_composed_tree,
+        state.previous_painted_output
+      )
+
+    # Commit the painted output to the renderer
+    commit_painted_output(painted_output, state.renderer_module)
+
+    end_time = System.monotonic_time(:microsecond)
+    render_time_ms = (end_time - start_time) / 1000
+
+    Logger.debug("Pipeline: Render completed in #{render_time_ms}ms")
+
+    %{
+      state
+      | render_timer_ref: nil,
+        render_scheduled_for_next_frame: false,
+        last_render_time: render_time_ms,
+        previous_composed_tree: composed_tree,
+        previous_painted_output: painted_output
+    }
+  end
+
+  defp commit_painted_output(nil, _renderer_module), do: :ok
+
+  defp commit_painted_output(painted_output, renderer_module) do
+    commit_to_renderer(painted_output, renderer_module)
   end
 
   @spec commit_to_renderer(term(), module()) :: :ok

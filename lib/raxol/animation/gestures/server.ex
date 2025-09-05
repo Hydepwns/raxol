@@ -76,7 +76,12 @@ defmodule Raxol.Animation.Gestures.Server do
   Initializes gesture state for the calling process.
   """
   def init_gestures(pid \\ nil) do
-    pid = pid || self()
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
     GenServer.call(__MODULE__, {:init_gestures, pid})
   end
 
@@ -84,7 +89,12 @@ defmodule Raxol.Animation.Gestures.Server do
   Registers a gesture handler for the calling process.
   """
   def register_handler(gesture_type, handler, pid \\ nil) do
-    pid = pid || self()
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
     GenServer.call(__MODULE__, {:register_handler, pid, gesture_type, handler})
   end
 
@@ -92,8 +102,18 @@ defmodule Raxol.Animation.Gestures.Server do
   Handles a touch down event.
   """
   def touch_down(position, time \\ nil, pid \\ nil) do
-    pid = pid || self()
-    time = time || System.monotonic_time(:millisecond)
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
+    time =
+      case time do
+        nil -> System.monotonic_time(:millisecond)
+        t -> t
+      end
+
     GenServer.call(__MODULE__, {:touch_down, pid, position, time})
   end
 
@@ -101,8 +121,18 @@ defmodule Raxol.Animation.Gestures.Server do
   Handles a touch move event.
   """
   def touch_move(position, time \\ nil, pid \\ nil) do
-    pid = pid || self()
-    time = time || System.monotonic_time(:millisecond)
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
+    time =
+      case time do
+        nil -> System.monotonic_time(:millisecond)
+        t -> t
+      end
+
     GenServer.call(__MODULE__, {:touch_move, pid, position, time})
   end
 
@@ -110,8 +140,18 @@ defmodule Raxol.Animation.Gestures.Server do
   Handles a touch up event.
   """
   def touch_up(position, time \\ nil, pid \\ nil) do
-    pid = pid || self()
-    time = time || System.monotonic_time(:millisecond)
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
+    time =
+      case time do
+        nil -> System.monotonic_time(:millisecond)
+        t -> t
+      end
+
     GenServer.call(__MODULE__, {:touch_up, pid, position, time})
   end
 
@@ -119,7 +159,12 @@ defmodule Raxol.Animation.Gestures.Server do
   Updates animations for the calling process.
   """
   def update_animations(delta_time \\ nil, pid \\ nil) do
-    pid = pid || self()
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
     GenServer.call(__MODULE__, {:update_animations, pid, delta_time})
   end
 
@@ -127,7 +172,12 @@ defmodule Raxol.Animation.Gestures.Server do
   Gets animation objects for the calling process.
   """
   def get_animation_objects(pid \\ nil) do
-    pid = pid || self()
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
     GenServer.call(__MODULE__, {:get_animation_objects, pid})
   end
 
@@ -135,7 +185,12 @@ defmodule Raxol.Animation.Gestures.Server do
   Gets gesture state for the calling process.
   """
   def get_state(pid \\ nil) do
-    pid = pid || self()
+    pid =
+      case pid do
+        nil -> self()
+        p -> p
+      end
+
     GenServer.call(__MODULE__, {:get_state, pid})
   end
 
@@ -207,28 +262,30 @@ defmodule Raxol.Animation.Gestures.Server do
   def handle_call({:touch_move, pid, position, time}, _from, state) do
     updated_state =
       update_process_state(state, pid, fn gesture_state ->
-        if gesture_state.active do
-          # Calculate velocity
-          time_diff = max(1, time - gesture_state.current_time)
-          {prev_x, prev_y} = gesture_state.touch_current
-          {curr_x, curr_y} = position
+        case gesture_state.active do
+          true ->
+            # Calculate velocity
+            time_diff = max(1, time - gesture_state.current_time)
+            {prev_x, prev_y} = gesture_state.touch_current
+            {curr_x, curr_y} = position
 
-          velocity = %Vector{
-            x: (curr_x - prev_x) / time_diff * 1000,
-            y: (curr_y - prev_y) / time_diff * 1000
-          }
+            velocity = %Vector{
+              x: (curr_x - prev_x) / time_diff * 1000,
+              y: (curr_y - prev_y) / time_diff * 1000
+            }
 
-          %{
+            %{
+              gesture_state
+              | touch_current: position,
+                touch_history:
+                  [position | gesture_state.touch_history] |> Enum.take(10),
+                current_time: time,
+                velocity: velocity,
+                gesture_type: detect_gesture_type(gesture_state, :move)
+            }
+
+          false ->
             gesture_state
-            | touch_current: position,
-              touch_history:
-                [position | gesture_state.touch_history] |> Enum.take(10),
-              current_time: time,
-              velocity: velocity,
-              gesture_type: detect_gesture_type(gesture_state, :move)
-          }
-        else
-          gesture_state
         end
       end)
 
@@ -239,36 +296,38 @@ defmodule Raxol.Animation.Gestures.Server do
   def handle_call({:touch_up, pid, position, time}, _from, state) do
     updated_state =
       update_process_state(state, pid, fn gesture_state ->
-        if gesture_state.active do
-          # Finalize gesture and trigger handlers
-          final_gesture_type = detect_gesture_type(gesture_state, :up)
-          gesture_data = build_gesture_data(gesture_state, position, time)
+        case gesture_state.active do
+          true ->
+            # Finalize gesture and trigger handlers
+            final_gesture_type = detect_gesture_type(gesture_state, :up)
+            gesture_data = build_gesture_data(gesture_state, position, time)
 
-          # Call handlers asynchronously
-          call_handlers_async(
-            final_gesture_type,
-            gesture_data,
-            gesture_state.handlers
-          )
-
-          # Create animation if applicable
-          animations =
-            create_animation_if_applicable(
+            # Call handlers asynchronously
+            call_handlers_async(
               final_gesture_type,
               gesture_data,
-              gesture_state.active_animations
+              gesture_state.handlers
             )
 
-          %{
+            # Create animation if applicable
+            animations =
+              create_animation_if_applicable(
+                final_gesture_type,
+                gesture_data,
+                gesture_state.active_animations
+              )
+
+            %{
+              gesture_state
+              | touch_current: position,
+                current_time: time,
+                active: false,
+                gesture_type: final_gesture_type,
+                active_animations: animations
+            }
+
+          false ->
             gesture_state
-            | touch_current: position,
-              current_time: time,
-              active: false,
-              gesture_type: final_gesture_type,
-              active_animations: animations
-          }
-        else
-          gesture_state
         end
       end)
 
@@ -278,7 +337,11 @@ defmodule Raxol.Animation.Gestures.Server do
   @impl true
   def handle_call({:update_animations, pid, delta_time}, _from, state) do
     # ~60fps
-    delta_time = delta_time || 16.67
+    delta_time =
+      case delta_time do
+        nil -> 16.67
+        dt -> dt
+      end
 
     updated_state =
       update_process_state(state, pid, fn gesture_state ->
@@ -329,11 +392,13 @@ defmodule Raxol.Animation.Gestures.Server do
   # Private helpers
 
   defp ensure_monitored(pid, state) do
-    if Map.has_key?(state.monitors, pid) do
-      state
-    else
-      ref = Process.monitor(pid)
-      %{state | monitors: Map.put(state.monitors, pid, ref)}
+    case Map.has_key?(state.monitors, pid) do
+      true ->
+        state
+
+      false ->
+        ref = Process.monitor(pid)
+        %{state | monitors: Map.put(state.monitors, pid, ref)}
     end
   end
 
@@ -352,11 +417,10 @@ defmodule Raxol.Animation.Gestures.Server do
     # Simple gesture detection logic
     case event_type do
       :move ->
-        if gesture_state.gesture_type == nil and
-             Vector.magnitude(gesture_state.velocity) > 100 do
-          :drag
-        else
-          gesture_state.gesture_type
+        case {gesture_state.gesture_type == nil,
+              Vector.magnitude(gesture_state.velocity) > 100} do
+          {true, true} -> :drag
+          _ -> gesture_state.gesture_type
         end
 
       :up ->
@@ -399,10 +463,18 @@ defmodule Raxol.Animation.Gestures.Server do
     dx = x2 - x1
     dy = y2 - y1
 
-    if abs(dx) > abs(dy) do
-      if dx > 0, do: :right, else: :left
-    else
-      if dy > 0, do: :down, else: :up
+    case abs(dx) > abs(dy) do
+      true ->
+        case dx > 0 do
+          true -> :right
+          false -> :left
+        end
+
+      false ->
+        case dy > 0 do
+          true -> :down
+          false -> :up
+        end
     end
   end
 
@@ -410,20 +482,24 @@ defmodule Raxol.Animation.Gestures.Server do
     handler_list = Map.get(handlers, gesture_type, [])
 
     # Execute handlers in separate task to avoid blocking
-    if length(handler_list) > 0 do
-      Task.start(fn ->
-        Enum.each(handler_list, fn handler ->
-          case Raxol.Core.ErrorHandling.safe_call(fn ->
-                 handler.(gesture_data)
-               end) do
-            {:ok, _result} ->
-              :ok
+    case length(handler_list) do
+      0 ->
+        :ok
 
-            {:error, reason} ->
-              Logger.warning("Gesture handler failed: #{inspect(reason)}")
-          end
+      _ ->
+        Task.start(fn ->
+          Enum.each(handler_list, fn handler ->
+            case Raxol.Core.ErrorHandling.safe_call(fn ->
+                   handler.(gesture_data)
+                 end) do
+              {:ok, _result} ->
+                :ok
+
+              {:error, reason} ->
+                Logger.warning("Gesture handler failed: #{inspect(reason)}")
+            end
+          end)
         end)
-      end)
     end
   end
 
@@ -505,13 +581,15 @@ defmodule Raxol.Animation.Gestures.Server do
     current_time = System.monotonic_time(:millisecond)
     elapsed = current_time - animation.start_time
 
-    if elapsed > animation.duration do
-      true
-    else
-      # Check if all objects have essentially stopped moving
-      Enum.all?(animation.world.objects, fn {_, obj} ->
-        Vector.magnitude(obj.velocity) < 0.5
-      end)
+    case elapsed > animation.duration do
+      true ->
+        true
+
+      false ->
+        # Check if all objects have essentially stopped moving
+        Enum.all?(animation.world.objects, fn {_, obj} ->
+          Vector.magnitude(obj.velocity) < 0.5
+        end)
     end
   end
 

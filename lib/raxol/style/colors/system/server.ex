@@ -218,11 +218,12 @@ defmodule Raxol.Style.Colors.System.Server do
         nil ->
           # Calculate color
           calculated_color =
-            if state.high_contrast do
-              get_high_contrast_color(state.current_theme, color_name, variant)
-            else
-              get_standard_color(state.current_theme, color_name, variant)
-            end
+            calculate_color_for_contrast_mode(
+              state.high_contrast,
+              state.current_theme,
+              color_name,
+              variant
+            )
 
           # Convert to Color struct if needed
           final_color =
@@ -323,21 +324,7 @@ defmodule Raxol.Style.Colors.System.Server do
 
   @impl true
   def handle_call(:get_all_ui_colors, _from, state) do
-    colors =
-      if state.current_theme do
-        (state.current_theme.ui_mappings || %{})
-        |> Enum.map(fn {role, color_name} ->
-          color_atom =
-            if is_atom(color_name),
-              do: color_name,
-              else: String.to_atom(color_name)
-
-          {role, resolve_color(state, color_atom, :base)}
-        end)
-        |> Enum.into(%{})
-      else
-        %{}
-      end
+    colors = get_ui_colors_for_theme(state)
 
     {:reply, colors, state}
   end
@@ -353,16 +340,12 @@ defmodule Raxol.Style.Colors.System.Server do
     updated_state = %{state | accessibility_options: options}
 
     # Update high contrast if it changed
-    if options[:high_contrast] != state.high_contrast do
-      updated_state = %{
+    updated_state =
+      update_high_contrast_if_changed(
+        options[:high_contrast],
+        state.high_contrast,
         updated_state
-        | high_contrast: options[:high_contrast],
-          # Clear cache on high contrast change
-          color_cache: %{}
-      }
-
-      EventManager.dispatch({:high_contrast_changed, options[:high_contrast]})
-    end
+      )
 
     {:reply, :ok, updated_state}
   end
@@ -398,11 +381,12 @@ defmodule Raxol.Style.Colors.System.Server do
   # Private helper functions
 
   defp resolve_color(state, color_name, variant) do
-    if state.high_contrast do
-      get_high_contrast_color(state.current_theme, color_name, variant)
-    else
-      get_standard_color(state.current_theme, color_name, variant)
-    end
+    calculate_color_for_contrast_mode(
+      state.high_contrast,
+      state.current_theme,
+      color_name,
+      variant
+    )
     |> case do
       %Color{} = c -> c
       hex when is_binary(hex) -> Color.from_hex(hex)
@@ -473,30 +457,97 @@ defmodule Raxol.Style.Colors.System.Server do
 
   defp get_background_color(theme) do
     background = get_standard_color(theme, :background, :base)
-
-    if background do
-      Color.from_hex(background)
-    else
-      Color.from_hex("#000000")
-    end
+    get_background_color_or_default(background)
   end
+
+  defp get_background_color_or_default(nil), do: Color.from_hex("#000000")
+
+  defp get_background_color_or_default(background),
+    do: Color.from_hex(background)
 
   defp generate_high_contrast_color(color, background_color) do
     current_ratio = Utilities.contrast_ratio(color, background_color)
     # AAA level
     target_ratio = 7.0
 
-    if current_ratio >= target_ratio do
-      Utilities.increase_contrast(color)
-    else
-      adjusted_color =
-        Utilities.adjust_for_contrast(color, background_color, :aaa, :normal)
+    handle_contrast_adjustment(
+      current_ratio >= target_ratio,
+      color,
+      background_color
+    )
+  end
 
-      if adjusted_color.hex == color.hex do
-        Utilities.increase_contrast(color)
-      else
-        adjusted_color
-      end
-    end
+  defp handle_contrast_adjustment(true, color, _background_color) do
+    Utilities.increase_contrast(color)
+  end
+
+  defp handle_contrast_adjustment(false, color, background_color) do
+    adjusted_color =
+      Utilities.adjust_for_contrast(color, background_color, :aaa, :normal)
+
+    choose_contrast_color(
+      adjusted_color.hex == color.hex,
+      color,
+      adjusted_color
+    )
+  end
+
+  defp choose_contrast_color(true, color, _adjusted_color) do
+    Utilities.increase_contrast(color)
+  end
+
+  defp choose_contrast_color(false, _color, adjusted_color) do
+    adjusted_color
+  end
+
+  # Helper functions for refactored if statements
+
+  defp calculate_color_for_contrast_mode(true, theme, color_name, variant) do
+    get_high_contrast_color(theme, color_name, variant)
+  end
+
+  defp calculate_color_for_contrast_mode(false, theme, color_name, variant) do
+    get_standard_color(theme, color_name, variant)
+  end
+
+  defp get_ui_colors_for_theme(%{current_theme: nil}) do
+    %{}
+  end
+
+  defp get_ui_colors_for_theme(%{current_theme: theme} = state) do
+    (theme.ui_mappings || %{})
+    |> Enum.map(fn {role, color_name} ->
+      color_atom = normalize_color_name(color_name)
+      {role, resolve_color(state, color_atom, :base)}
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp normalize_color_name(color_name) when is_atom(color_name), do: color_name
+  defp normalize_color_name(color_name), do: String.to_atom(color_name)
+
+  defp update_high_contrast_if_changed(
+         new_high_contrast,
+         current_high_contrast,
+         state
+       )
+       when new_high_contrast == current_high_contrast do
+    state
+  end
+
+  defp update_high_contrast_if_changed(
+         new_high_contrast,
+         _current_high_contrast,
+         state
+       ) do
+    updated_state = %{
+      state
+      | high_contrast: new_high_contrast,
+        # Clear cache on high contrast change
+        color_cache: %{}
+    }
+
+    EventManager.dispatch({:high_contrast_changed, new_high_contrast})
+    updated_state
   end
 end

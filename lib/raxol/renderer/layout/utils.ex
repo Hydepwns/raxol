@@ -120,11 +120,12 @@ defmodule Raxol.Renderer.Layout.Utils do
 
       # Handle list of children
       list when is_list(list) ->
-        if is_root and length(list) == 1 do
-          [first_child | _] = list
-          deep_normalize_child(first_child, space, default_type, false)
-        else
-          Enum.flat_map(list, fn child_node ->
+        case is_root and length(list) == 1 do
+          true ->
+            [first_child | _] = list
+            deep_normalize_child(first_child, space, default_type, false)
+          false ->
+            Enum.flat_map(list, fn child_node ->
             case child_node do
               %{type: type} when not is_nil(type) ->
                 [ensure_required_keys(child_node, space, type)]

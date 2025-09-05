@@ -38,8 +38,11 @@ defmodule RaxolWeb.RateLimitManager do
         {{:_, :_, :"$1"}, [{:<, :"$1", now - 60}], [true]}
       ])
 
-    if deleted > 0 do
-      Logger.debug("Cleaned up #{deleted} old rate limit entries")
+    case deleted > 0 do
+      true ->
+        Logger.debug("Cleaned up #{deleted} old rate limit entries")
+      false ->
+        :ok
     end
 
     schedule_cleanup()

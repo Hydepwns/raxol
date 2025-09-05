@@ -112,11 +112,20 @@ defmodule Raxol.Renderer.Layout.Scroll do
     {content_width, content_height} =
       calculate_content_dimensions(scrolled_children)
 
-    viewport_width =
-      max(0, space.width - if(render_v_bar, do: scrollbar_thickness, else: 0))
+    v_bar_adjustment =
+      case render_v_bar do
+        true -> scrollbar_thickness
+        false -> 0
+      end
 
-    viewport_height =
-      max(0, space.height - if(render_h_bar, do: scrollbar_thickness, else: 0))
+    h_bar_adjustment =
+      case render_h_bar do
+        true -> scrollbar_thickness
+        false -> 0
+      end
+
+    viewport_width = max(0, space.width - v_bar_adjustment)
+    viewport_height = max(0, space.height - h_bar_adjustment)
 
     scrollbar_elements =
       create_scrollbar_elements(%{
@@ -138,11 +147,15 @@ defmodule Raxol.Renderer.Layout.Scroll do
 
   # Helper function to calculate content dimensions
   defp calculate_content_dimensions(scrolled_children) do
-    if Enum.empty?(scrolled_children) do
-      {0, 0}
-    else
-      {min_x, min_y, max_x, max_y} = calculate_bounds(scrolled_children)
-      {max(0, max_x - min_x), max(0, max_y - min_y)}
+    children_empty = Enum.empty?(scrolled_children)
+
+    case children_empty do
+      true ->
+        {0, 0}
+
+      false ->
+        {min_x, min_y, max_x, max_y} = calculate_bounds(scrolled_children)
+        {max(0, max_x - min_x), max(0, max_y - min_y)}
     end
   end
 
@@ -235,35 +248,44 @@ defmodule Raxol.Renderer.Layout.Scroll do
          render_v_bar: render_v_bar,
          scrollbar_attrs: scrollbar_attrs
        }) do
-    if render_v_bar and space.width >= scrollbar_thickness and
-         viewport_height > 0 do
-      track =
-        create_scrollbar_track(
-          space.x + viewport_width,
-          space.y,
-          scrollbar_thickness,
-          viewport_height,
-          scrollbar_attrs
-        )
+    should_render_v_bar =
+      render_v_bar and space.width >= scrollbar_thickness and
+        viewport_height > 0
 
-      if content_height > viewport_height do
-        thumb =
-          create_vertical_thumb(
-            space,
-            viewport_width,
-            viewport_height,
-            content_height,
-            oy,
+    case should_render_v_bar do
+      true ->
+        track =
+          create_scrollbar_track(
+            space.x + viewport_width,
+            space.y,
             scrollbar_thickness,
+            viewport_height,
             scrollbar_attrs
           )
 
-        [thumb, track | elements]
-      else
-        [track | elements]
-      end
-    else
-      elements
+        needs_thumb = content_height > viewport_height
+
+        case needs_thumb do
+          true ->
+            thumb =
+              create_vertical_thumb(
+                space,
+                viewport_width,
+                viewport_height,
+                content_height,
+                oy,
+                scrollbar_thickness,
+                scrollbar_attrs
+              )
+
+            [thumb, track | elements]
+
+          false ->
+            [track | elements]
+        end
+
+      false ->
+        elements
     end
   end
 
@@ -277,35 +299,44 @@ defmodule Raxol.Renderer.Layout.Scroll do
          render_h_bar: render_h_bar,
          scrollbar_attrs: scrollbar_attrs
        }) do
-    if render_h_bar and space.height >= scrollbar_thickness and
-         viewport_width > 0 do
-      track =
-        create_scrollbar_track(
-          space.x,
-          space.y + viewport_height,
-          viewport_width,
-          scrollbar_thickness,
-          scrollbar_attrs
-        )
+    should_render_h_bar =
+      render_h_bar and space.height >= scrollbar_thickness and
+        viewport_width > 0
 
-      if content_width > viewport_width do
-        thumb =
-          create_horizontal_thumb(
-            space,
+    case should_render_h_bar do
+      true ->
+        track =
+          create_scrollbar_track(
+            space.x,
+            space.y + viewport_height,
             viewport_width,
-            viewport_height,
-            content_width,
-            ox,
             scrollbar_thickness,
             scrollbar_attrs
           )
 
-        [thumb, track | elements]
-      else
-        [track | elements]
-      end
-    else
-      elements
+        needs_thumb = content_width > viewport_width
+
+        case needs_thumb do
+          true ->
+            thumb =
+              create_horizontal_thumb(
+                space,
+                viewport_width,
+                viewport_height,
+                content_width,
+                ox,
+                scrollbar_thickness,
+                scrollbar_attrs
+              )
+
+            [thumb, track | elements]
+
+          false ->
+            [track | elements]
+        end
+
+      false ->
+        elements
     end
   end
 
@@ -318,18 +349,23 @@ defmodule Raxol.Renderer.Layout.Scroll do
          render_h_bar: render_h_bar,
          scrollbar_attrs: scrollbar_attrs
        }) do
-    if render_v_bar and render_h_bar and space.width >= scrollbar_thickness and
-         space.height >= scrollbar_thickness do
-      corner = %{
-        type: :box,
-        position: {space.x + viewport_width, space.y + viewport_height},
-        size: {scrollbar_thickness, scrollbar_thickness},
-        style: %{fg: scrollbar_attrs.corner_fg, bg: scrollbar_attrs.corner_bg}
-      }
+    should_render_corner =
+      render_v_bar and render_h_bar and space.width >= scrollbar_thickness and
+        space.height >= scrollbar_thickness
 
-      [corner | elements]
-    else
-      elements
+    case should_render_corner do
+      true ->
+        corner = %{
+          type: :box,
+          position: {space.x + viewport_width, space.y + viewport_height},
+          size: {scrollbar_thickness, scrollbar_thickness},
+          style: %{fg: scrollbar_attrs.corner_fg, bg: scrollbar_attrs.corner_bg}
+        }
+
+        [corner | elements]
+
+      false ->
+        elements
     end
   end
 

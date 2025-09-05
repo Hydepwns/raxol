@@ -14,20 +14,25 @@ defmodule Raxol.UI.Rendering.Renderer do
   Starts the rendering process.
   """
   def start_link(opts \\ []) do
-    name =
-      if Mix.env() == :test do
-        Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
-      else
-        Keyword.get(opts, :name)
-      end
-
+    name = get_process_name(Mix.env() == :test, opts)
     gen_server_opts = Keyword.delete(opts, :name)
+    start_genserver_with_name(name != nil, name, gen_server_opts)
+  end
 
-    if name do
-      GenServer.start_link(__MODULE__, %{}, [name: name] ++ gen_server_opts)
-    else
-      GenServer.start_link(__MODULE__, %{}, gen_server_opts)
-    end
+  defp get_process_name(true, opts) do
+    Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
+  end
+
+  defp get_process_name(false, opts) do
+    Keyword.get(opts, :name)
+  end
+
+  defp start_genserver_with_name(true, name, gen_server_opts) do
+    GenServer.start_link(__MODULE__, %{}, [name: name] ++ gen_server_opts)
+  end
+
+  defp start_genserver_with_name(false, _name, gen_server_opts) do
+    GenServer.start_link(__MODULE__, %{}, gen_server_opts)
   end
 
   @doc """
@@ -195,17 +200,7 @@ defmodule Raxol.UI.Rendering.Renderer do
     # Update the buffer for the full tree render
     {new_state, _} = do_partial_render([], data, data, state)
 
-    if state.test_pid do
-      Logger.debug(
-        "[Renderer] Sending {:renderer_rendered, ops} to test_pid #{inspect(state.test_pid)} with ops=#{inspect(ops)}"
-      )
-
-      send(state.test_pid, {:renderer_rendered, ops})
-    else
-      Logger.debug(
-        "[Renderer] No test_pid set, not sending {:renderer_rendered, ops} message"
-      )
-    end
+    notify_test_pid_for_render(state.test_pid != nil, state.test_pid, ops)
 
     require Raxol.Core.Runtime.Log
 
@@ -235,7 +230,7 @@ defmodule Raxol.UI.Rendering.Renderer do
     # Update the buffer for the full tree render
     {new_state, _} = do_partial_render([], new_tree, new_tree, state)
 
-    if state.test_pid, do: send(state.test_pid, {:renderer_rendered, ops})
+    send_rendered_ops_to_test_pid(state.test_pid != nil, state.test_pid, ops)
     require Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.info(
@@ -275,20 +270,13 @@ defmodule Raxol.UI.Rendering.Renderer do
     {new_state, _} =
       do_partial_render(path, updated_subtree, updated_tree, state)
 
-    if state.test_pid do
-      Raxol.Core.Runtime.Log.debug(
-        "Renderer: Sending {:renderer_partial_update, #{inspect(path)}, #{inspect(updated_subtree)}, #{inspect(updated_tree)}} to test_pid #{inspect(state.test_pid)}"
-      )
-
-      send(
-        state.test_pid,
-        {:renderer_partial_update, path, updated_subtree, updated_tree}
-      )
-    else
-      Raxol.Core.Runtime.Log.debug(
-        "Renderer: No test_pid set, not sending partial update message"
-      )
-    end
+    send_partial_update_to_test_pid(
+      state.test_pid != nil,
+      state.test_pid,
+      path,
+      updated_subtree,
+      updated_tree
+    )
 
     require Raxol.Core.Runtime.Log
 
@@ -304,6 +292,44 @@ defmodule Raxol.UI.Rendering.Renderer do
 
   defp get_subtree_at_path(%{children: children}, [idx | rest]) do
     get_subtree_at_path(Enum.at(children, idx), rest)
+  end
+
+  # Helper functions for pattern matching refactoring
+  
+  defp notify_test_pid_for_render(true, test_pid, ops) do
+    Logger.debug(
+      "[Renderer] Sending {:renderer_rendered, ops} to test_pid #{inspect(test_pid)} with ops=#{inspect(ops)}"
+    )
+    send(test_pid, {:renderer_rendered, ops})
+  end
+
+  defp notify_test_pid_for_render(false, _test_pid, _ops) do
+    Logger.debug(
+      "[Renderer] No test_pid set, not sending {:renderer_rendered, ops} message"
+    )
+  end
+
+  defp send_rendered_ops_to_test_pid(true, test_pid, ops) do
+    send(test_pid, {:renderer_rendered, ops})
+  end
+
+  defp send_rendered_ops_to_test_pid(false, _test_pid, _ops), do: nil
+
+  defp send_partial_update_to_test_pid(true, test_pid, path, updated_subtree, updated_tree) do
+    Raxol.Core.Runtime.Log.debug(
+      "Renderer: Sending {:renderer_partial_update, #{inspect(path)}, #{inspect(updated_subtree)}, #{inspect(updated_tree)}} to test_pid #{inspect(test_pid)}"
+    )
+
+    send(
+      test_pid,
+      {:renderer_partial_update, path, updated_subtree, updated_tree}
+    )
+  end
+
+  defp send_partial_update_to_test_pid(false, _test_pid, _path, _updated_subtree, _updated_tree) do
+    Raxol.Core.Runtime.Log.debug(
+      "Renderer: No test_pid set, not sending partial update message"
+    )
   end
 
   # Helper for global process registration (optional, for singleton)

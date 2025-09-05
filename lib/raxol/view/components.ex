@@ -115,14 +115,16 @@ defmodule Raxol.View.Components do
   end
 
   defp ensure_id(opts) do
-    if Keyword.has_key?(opts, :id),
-      do: opts,
-      else: Keyword.put(opts, :id, :test_id)
+    case Keyword.has_key?(opts, :id) do
+      true -> opts
+      false -> Keyword.put(opts, :id, :test_id)
+    end
   end
 
   defp ensure_style(opts) do
-    if Keyword.has_key?(opts, :style),
-      do: opts,
-      else: Keyword.put(opts, :style, %{})
+    case Keyword.has_key?(opts, :style) do
+      true -> opts
+      false -> Keyword.put(opts, :style, %{})
+    end
   end
 end

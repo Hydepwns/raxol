@@ -30,13 +30,11 @@ defmodule Raxol.UI.Rendering.Composer do
   # Renamed and modified do_compose_node to be recursive and diff-aware
   defp do_compose_recursive(current_layout_node, previous_composed_node)
        when is_map(current_layout_node) do
-    if can_reuse_previous_node?(current_layout_node, previous_composed_node) do
-      log_reuse_previous_node(current_layout_node)
+    handle_node_composition(
+      can_reuse_previous_node?(current_layout_node, previous_composed_node),
+      current_layout_node,
       previous_composed_node
-    else
-      log_recomposition_reason(current_layout_node, previous_composed_node)
-      build_new_composed_node(current_layout_node, previous_composed_node)
-    end
+    )
   end
 
   defp do_compose_recursive(current_layout_node, _previous_composed_node)
@@ -99,25 +97,23 @@ defmodule Raxol.UI.Rendering.Composer do
   end
 
   defp current_layout_node_type(node) do
-    if is_map(node), do: Map.get(node, :type, nil), else: nil
+    extract_node_type(node)
   end
 
   defp get_previous_child(previous_composed_node, idx) do
-    if is_map(previous_composed_node) && previous_composed_node[:children] do
-      Enum.at(previous_composed_node[:children], idx)
-    else
-      nil
-    end
+    extract_child_at_index(
+      is_map(previous_composed_node) && previous_composed_node[:children],
+      previous_composed_node,
+      idx
+    )
   end
 
   defp log_recomposition_reason(current_layout_node, previous_composed_node) do
-    if is_map(previous_composed_node) do
-      log_recomposition_for_map(current_layout_node, previous_composed_node)
-    else
-      Raxol.Core.Runtime.Log.debug(
-        "Composition Stage: Composing new node (no valid previous) for type: #{current_layout_node_type(current_layout_node)}"
-      )
-    end
+    handle_recomposition_logging(
+      is_map(previous_composed_node),
+      current_layout_node,
+      previous_composed_node
+    )
   end
 
   defp log_recomposition_for_map(current_layout_node, previous_composed_node) do
@@ -169,4 +165,59 @@ defmodule Raxol.UI.Rendering.Composer do
         :other
     end
   end
+
+  # Missing helper functions
+
+  defp extract_child_at_index(false, _previous_composed_node, _idx), do: nil
+
+  defp extract_child_at_index(true, previous_composed_node, idx) do
+    children = previous_composed_node[:children]
+    extract_child_from_list(is_list(children), children, idx)
+  end
+
+  defp extract_child_from_list(false, _children, _idx), do: nil
+  
+  defp extract_child_from_list(true, children, idx) when idx < length(children) do
+    Enum.at(children, idx)
+  end
+  
+  defp extract_child_from_list(true, _children, _idx), do: nil
+
+  defp handle_recomposition_logging(
+         false,
+         _current_layout_node,
+         _previous_composed_node
+       ),
+       do: :ok
+
+  defp handle_recomposition_logging(
+         true,
+         current_layout_node,
+         previous_composed_node
+       ) do
+    log_recomposition_for_map(current_layout_node, previous_composed_node)
+  end
+
+  defp handle_node_composition(
+         true,
+         current_layout_node,
+         previous_composed_node
+       ) do
+    log_reuse_previous_node(current_layout_node)
+    previous_composed_node
+  end
+
+  defp handle_node_composition(
+         false,
+         current_layout_node,
+         previous_composed_node
+       ) do
+    build_new_composed_node(current_layout_node, previous_composed_node)
+  end
+
+  defp extract_node_type(node) when is_map(node) do
+    node[:type] || node[:composed_type] || :unknown
+  end
+
+  defp extract_node_type(_node), do: :primitive
 end

@@ -155,10 +155,8 @@ defmodule Raxol.Svelte.Context do
 
         # Immediately call with current value
         current_value = find_context_value(key, state, nil)
-
-        if current_value != nil do
-          Task.start(fn -> callback.(current_value) end)
-        end
+        
+        maybe_call_callback_with_value(current_value != nil, callback, current_value)
 
         {:reply, subscription_id, new_state}
       end
@@ -209,12 +207,7 @@ defmodule Raxol.Svelte.Context do
       @impl GenServer
       def handle_cast({:context_update, key, value}, state) do
         # Trigger re-render if this context is used
-        if context_affects_render?(key, state) do
-          send(self(), :render)
-          {:noreply, %{state | dirty: true}}
-        else
-          {:noreply, state}
-        end
+        handle_context_render_update(context_affects_render?(key, state), state)
       end
 
       # Context resolution - walk up the component tree
@@ -222,14 +215,7 @@ defmodule Raxol.Svelte.Context do
         case Map.get(state.contexts, key) do
           nil ->
             # Look in parent component
-            if state.parent_component do
-              GenServer.call(
-                state.parent_component,
-                {:get_context, key, default}
-              )
-            else
-              default
-            end
+            get_context_from_parent(state.parent_component, key, default)
 
           value ->
             value
@@ -256,15 +242,43 @@ defmodule Raxol.Svelte.Context do
         true
       end
 
+      defp maybe_call_callback_with_value(true, callback, current_value) do
+        Task.start(fn -> callback.(current_value) end)
+      end
+
+      defp maybe_call_callback_with_value(false, _callback, _current_value), do: :ok
+
+      defp handle_context_render_update(true, state) do
+        send(self(), :render)
+        {:noreply, %{state | dirty: true}}
+      end
+
+      defp handle_context_render_update(false, state) do
+        {:noreply, state}
+      end
+
+      defp get_context_from_parent(nil, _key, default), do: default
+
+      defp get_context_from_parent(parent_component, key, default) do
+        GenServer.call(
+          parent_component,
+          {:get_context, key, default}
+        )
+      end
+
+      defp setup_parent_child_relationship(nil, _pid), do: :ok
+
+      defp setup_parent_child_relationship(parent, pid) do
+        GenServer.call(pid, {:set_parent, parent})
+        add_child_component(parent, pid)
+      end
+
       # Override mount to establish parent-child relationships
       def mount(terminal, props, parent)
           when is_pid(parent) or is_nil(parent) do
         {:ok, pid} = start_link(terminal, props)
 
-        if parent do
-          GenServer.call(pid, {:set_parent, parent})
-          add_child_component(parent, pid)
-        end
+        setup_parent_child_relationship(parent, pid)
 
         pid
       end

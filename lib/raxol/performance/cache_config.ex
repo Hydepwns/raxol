@@ -105,11 +105,15 @@ defmodule Raxol.Performance.CacheConfig do
       }
     }
 
-    if profile == :adaptive do
-      apply_adaptive_tuning(base_config)
-    else
-      base_config
-    end
+    handle_adaptive_profile(profile == :adaptive, base_config)
+  end
+
+  defp handle_adaptive_profile(false, base_config) do
+    base_config
+  end
+
+  defp handle_adaptive_profile(true, base_config) do
+    apply_adaptive_tuning(base_config)
   end
 
   @doc """
@@ -338,19 +342,39 @@ defmodule Raxol.Performance.CacheConfig do
 
   defp warmup_caches(config) do
     # Warmup font metrics cache
-    if config[:font_metrics][:warmup_chars] do
-      Raxol.Core.Performance.Caches.FontMetricsCache.warmup()
-    end
+    warmup_font_metrics(config[:font_metrics][:warmup_chars])
 
     # Preload common CSI sequences
-    if config[:csi_parser][:preload] do
-      Enum.each(common_csi_sequences(), fn seq ->
-        # This would trigger caching in actual implementation
-        Raxol.Performance.ETSCacheManager.get_csi(seq)
-      end)
-    end
+    preload_csi_sequences(config[:csi_parser][:preload])
 
     :ok
+  end
+
+  defp warmup_font_metrics(nil) do
+    :ok
+  end
+
+  defp warmup_font_metrics(false) do
+    :ok
+  end
+
+  defp warmup_font_metrics(true) do
+    Raxol.Core.Performance.Caches.FontMetricsCache.warmup()
+  end
+
+  defp preload_csi_sequences(nil) do
+    :ok
+  end
+
+  defp preload_csi_sequences(false) do
+    :ok
+  end
+
+  defp preload_csi_sequences(true) do
+    Enum.each(common_csi_sequences(), fn seq ->
+      # This would trigger caching in actual implementation
+      Raxol.Performance.ETSCacheManager.get_csi(seq)
+    end)
   end
 
   @doc """

@@ -35,13 +35,15 @@ defmodule Raxol.Terminal.Buffer.LineOperations.CharOperations do
         ) :: ScreenBuffer.t()
   def erase_chars(buffer, row, col, count) do
     line = get_line(buffer, row)
+    handle_erase_operation(line != nil, buffer, row, line, col, count)
+  end
 
-    if line do
-      new_line = erase_chars_in_line(line, col, count)
-      update_line(buffer, row, new_line)
-    else
-      buffer
-    end
+  defp handle_erase_operation(false, buffer, _row, _line, _col, _count),
+    do: buffer
+
+  defp handle_erase_operation(true, buffer, row, line, col, count) do
+    new_line = erase_chars_in_line(line, col, count)
+    update_line(buffer, row, new_line)
   end
 
   @doc """
@@ -65,23 +67,28 @@ defmodule Raxol.Terminal.Buffer.LineOperations.CharOperations do
           non_neg_integer()
         ) :: ScreenBuffer.t()
   def delete_chars_at(buffer, row, col, count) do
-    if row >= 0 and row < length(buffer.cells) and col >= 0 and
-         col < buffer.width do
-      line = get_line(buffer, row)
+    valid_position =
+      row >= 0 and row < length(buffer.cells) and col >= 0 and
+        col < buffer.width
 
-      new_line =
-        delete_chars_from_line(
-          line,
-          col,
-          count,
-          buffer.width,
-          buffer.default_style
-        )
+    handle_delete_operation(valid_position, buffer, row, col, count)
+  end
 
-      update_line(buffer, row, new_line)
-    else
-      buffer
-    end
+  defp handle_delete_operation(false, buffer, _row, _col, _count), do: buffer
+
+  defp handle_delete_operation(true, buffer, row, col, count) do
+    line = get_line(buffer, row)
+
+    new_line =
+      delete_chars_from_line(
+        line,
+        col,
+        count,
+        buffer.width,
+        buffer.default_style
+      )
+
+    update_line(buffer, row, new_line)
   end
 
   @doc """
@@ -105,36 +112,41 @@ defmodule Raxol.Terminal.Buffer.LineOperations.CharOperations do
           non_neg_integer()
         ) :: ScreenBuffer.t()
   def insert_chars_at(buffer, row, col, count) do
-    if row >= 0 and row < length(buffer.cells) and col >= 0 and
-         col < buffer.width do
-      line = get_line(buffer, row)
+    valid_position =
+      row >= 0 and row < length(buffer.cells) and col >= 0 and
+        col < buffer.width
 
-      new_line =
-        insert_chars_into_line(
-          line,
-          col,
-          count,
-          buffer.width,
-          buffer.default_style
-        )
+    handle_insert_operation(valid_position, buffer, row, col, count)
+  end
 
-      update_line(buffer, row, new_line)
-    else
-      buffer
-    end
+  defp handle_insert_operation(false, buffer, _row, _col, _count), do: buffer
+
+  defp handle_insert_operation(true, buffer, row, col, count) do
+    line = get_line(buffer, row)
+
+    new_line =
+      insert_chars_into_line(
+        line,
+        col,
+        count,
+        buffer.width,
+        buffer.default_style
+      )
+
+    update_line(buffer, row, new_line)
   end
 
   # Helper functions
   defp erase_chars_in_line(line, col, count) do
     Enum.with_index(line)
     |> Enum.map(fn {cell, index} ->
-      if index >= col and index < col + count do
-        Cell.new(" ")
-      else
-        cell
-      end
+      should_erase = index >= col and index < col + count
+      erase_cell_if_needed(should_erase, cell)
     end)
   end
+
+  defp erase_cell_if_needed(true, _cell), do: Cell.new(" ")
+  defp erase_cell_if_needed(false, cell), do: cell
 
   defp delete_chars_from_line(line, col, count, width, default_style) do
     {before, after_part} = Enum.split(line, col)
@@ -144,11 +156,16 @@ defmodule Raxol.Terminal.Buffer.LineOperations.CharOperations do
     new_line = before ++ remaining
 
     # Ensure the line has the correct width by padding with empty cells
-    if length(new_line) < width do
-      new_line ++ create_empty_line(width - length(new_line), default_style)
-    else
-      Enum.take(new_line, width)
-    end
+    needs_padding = length(new_line) < width
+    pad_line_if_needed(needs_padding, new_line, width, default_style)
+  end
+
+  defp pad_line_if_needed(true, new_line, width, default_style) do
+    new_line ++ create_empty_line(width - length(new_line), default_style)
+  end
+
+  defp pad_line_if_needed(false, new_line, width, _default_style) do
+    Enum.take(new_line, width)
   end
 
   defp insert_chars_into_line(line, col, count, width, default_style) do
@@ -180,11 +197,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations.CharOperations do
         []
 
       cells ->
-        if line_index >= 0 and line_index < length(cells) do
-          Enum.at(cells, line_index) || []
-        else
-          []
-        end
+        valid_index = line_index >= 0 and line_index < length(cells)
+        get_line_by_index(valid_index, cells, line_index)
     end
   end
 
@@ -195,12 +209,24 @@ defmodule Raxol.Terminal.Buffer.LineOperations.CharOperations do
         buffer
 
       cells ->
-        if line_index >= 0 and line_index < length(cells) do
-          new_cells = List.replace_at(cells, line_index, new_line)
-          %{buffer | cells: new_cells}
-        else
-          buffer
-        end
+        valid_index = line_index >= 0 and line_index < length(cells)
+        update_line_by_index(valid_index, buffer, cells, line_index, new_line)
     end
+  end
+
+  ## Helper Functions for Pattern Matching
+
+  defp get_line_by_index(false, _cells, _line_index), do: []
+
+  defp get_line_by_index(true, cells, line_index) do
+    Enum.at(cells, line_index) || []
+  end
+
+  defp update_line_by_index(false, buffer, _cells, _line_index, _new_line),
+    do: buffer
+
+  defp update_line_by_index(true, buffer, cells, line_index, new_line) do
+    new_cells = List.replace_at(cells, line_index, new_line)
+    %{buffer | cells: new_cells}
   end
 end

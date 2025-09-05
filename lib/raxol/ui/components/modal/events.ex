@@ -194,10 +194,11 @@ defmodule Raxol.UI.Components.Modal.Events do
   defp match_cancel_message({:cancel, _} = msg), do: msg
 
   defp match_cancel_message(msg) when is_atom(msg) do
-    if String.ends_with?(Atom.to_string(msg), "cancel") do
-      msg
-    else
-      msg
+    case String.ends_with?(Atom.to_string(msg), "cancel") do
+      true ->
+        msg
+      false ->
+        msg
     end
   end
 

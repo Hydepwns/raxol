@@ -48,7 +48,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
       ],
       :unhandled,
       fn {predicate, result} ->
-        if predicate.(event), do: result
+        apply_predicate(predicate.(event), result)
       end
     )
   end
@@ -131,7 +131,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
       ],
       :unhandled,
       fn {predicate, result} ->
-        if predicate.(data), do: result
+        apply_predicate(predicate.(data), result)
       end
     )
   end
@@ -191,16 +191,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
     msg = map_key_to_message(key, modifiers)
 
     # Return the update message directly for the component behaviour
-    if msg do
-      Raxol.Core.Runtime.Log.debug("Returning update message: #{inspect(msg)}")
-      {:update, msg, input_state}
-    else
-      Raxol.Core.Runtime.Log.debug(
-        "No message handler found, returning noreply"
-      )
-
-      {:noreply, input_state, nil}
-    end
+    handle_message_result(msg, input_state)
   end
 
   # Maps key and modifier combinations to update messages
@@ -245,7 +236,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
       ],
       :unhandled,
       fn {predicate, result} ->
-        if predicate.(key, modifiers), do: result
+        apply_predicate(predicate.(key, modifiers), result)
       end
     )
   end
@@ -277,11 +268,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
   defp handle_basic_input(key, []) do
     case key do
       char when is_binary(char) ->
-        if String.length(char) == 1 and String.printable?(char) do
-          {:input, char}
-        else
-          nil
-        end
+        validate_char_input(
+          String.length(char) == 1 and String.printable?(char),
+          char
+        )
 
       :backspace ->
         {:backspace}
@@ -520,10 +510,29 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
   end
 
   defp handle_submit(_event, state) do
-    if state.on_submit do
-      _ = state.on_submit.()
-    end
-
+    execute_on_submit(state.on_submit)
     {:noreply, state, nil}
   end
+
+  # Pattern matching helpers to eliminate if statements
+  defp apply_predicate(true, result), do: result
+  defp apply_predicate(false, _result), do: nil
+
+  defp handle_message_result(nil, input_state) do
+    Raxol.Core.Runtime.Log.debug("No message handler found, returning noreply")
+    {:noreply, input_state, nil}
+  end
+
+  defp handle_message_result(msg, input_state) do
+    Raxol.Core.Runtime.Log.debug("Returning update message: #{inspect(msg)}")
+    {:update, msg, input_state}
+  end
+
+  defp validate_char_input(true, char), do: {:input, char}
+  defp validate_char_input(false, _char), do: nil
+
+  defp execute_on_submit(nil), do: :ok
+
+  defp execute_on_submit(on_submit) when is_function(on_submit, 0),
+    do: on_submit.()
 end

@@ -300,10 +300,7 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
 
     # Also update the cursor manager - use non-blocking cast for better performance
     cursor = emulator.cursor
-
-    if is_pid(cursor) do
-      GenServer.cast(cursor, {:set_visibility, visible})
-    end
+    update_cursor_visibility(cursor, visible)
 
     emulator
   end
@@ -337,4 +334,11 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
       mode_name -> {:ok, mode_name}
     end
   end
+
+  # Helper function for pattern matching instead of if statement
+  defp update_cursor_visibility(cursor, visible) when is_pid(cursor) do
+    GenServer.cast(cursor, {:set_visibility, visible})
+  end
+
+  defp update_cursor_visibility(_cursor, _visible), do: :ok
 end

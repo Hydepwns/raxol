@@ -62,10 +62,11 @@ defmodule Raxol.Svelte.Actions do
       # Apply actions during element creation
       defp apply_actions(element, actions) when is_map(actions) do
         Enum.reduce(actions, element, fn {action_name, params}, acc ->
-          if function_exported?(__MODULE__, action_name, 2) do
-            apply(__MODULE__, action_name, [acc, params])
-          else
-            acc
+          case function_exported?(__MODULE__, action_name, 2) do
+            true ->
+              apply(__MODULE__, action_name, [acc, params])
+            false ->
+              acc
           end
         end)
       end

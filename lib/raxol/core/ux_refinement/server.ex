@@ -195,29 +195,29 @@ defmodule Raxol.Core.UXRefinement.Server do
         _from,
         state
       ) do
-    new_state =
-      if MapSet.member?(state.features, :accessibility) do
-        accessibility_module().register_element_metadata(component_id, metadata)
-        %{state | metadata: Map.put(state.metadata, component_id, metadata)}
-      else
-        Raxol.Core.Runtime.Log.debug(
-          "[UXRefinement] Accessibility not enabled, metadata registration skipped for #{component_id}"
-        )
+    accessibility_enabled = MapSet.member?(state.features, :accessibility)
 
+    new_state =
+      handle_accessibility_metadata_registration(
+        accessibility_enabled,
+        component_id,
+        metadata,
         state
-      end
+      )
 
     {:reply, :ok, new_state}
   end
 
   @impl GenServer
   def handle_call({:get_accessibility_metadata, component_id}, _from, state) do
+    accessibility_enabled = MapSet.member?(state.features, :accessibility)
+
     metadata =
-      if MapSet.member?(state.features, :accessibility) do
-        Map.get(state.metadata, component_id)
-      else
-        nil
-      end
+      get_accessibility_metadata_by_feature_status(
+        accessibility_enabled,
+        component_id,
+        state
+      )
 
     {:reply, metadata, state}
   end
@@ -262,7 +262,8 @@ defmodule Raxol.Core.UXRefinement.Server do
 
   defp do_enable_feature(:focus_ring, opts, user_prefs, state) do
     state = ensure_feature_enabled(:focus_management, user_prefs, state)
-    focus_ring_opts = if is_list(opts) and opts == [], do: %{}, else: opts
+    is_empty_list = is_list(opts) and opts == []
+    focus_ring_opts = get_focus_ring_opts(is_empty_list, opts)
     focus_ring_config = Raxol.UI.Components.FocusRing.init(focus_ring_opts)
 
     new_state = %{
@@ -362,16 +363,15 @@ defmodule Raxol.Core.UXRefinement.Server do
   end
 
   defp do_disable_feature(:events, state) do
-    if MapSet.member?(state.features, :accessibility) ||
-         MapSet.member?(state.features, :keyboard_shortcuts) do
-      {{:error,
-        "Cannot disable events while accessibility or keyboard shortcuts are enabled"},
-       state}
-    else
-      Raxol.Core.Events.Manager.cleanup()
-      new_state = %{state | features: MapSet.delete(state.features, :events)}
-      {:ok, new_state}
-    end
+    accessibility_enabled = MapSet.member?(state.features, :accessibility)
+
+    keyboard_shortcuts_enabled =
+      MapSet.member?(state.features, :keyboard_shortcuts)
+
+    can_disable_events =
+      not (accessibility_enabled or keyboard_shortcuts_enabled)
+
+    handle_events_disable_request(can_disable_events, state)
   end
 
   defp do_disable_feature(feature, state) do
@@ -380,12 +380,14 @@ defmodule Raxol.Core.UXRefinement.Server do
   end
 
   defp ensure_feature_enabled(feature, user_prefs, state) do
-    if MapSet.member?(state.features, feature) do
+    feature_enabled = MapSet.member?(state.features, feature)
+
+    ensure_feature_by_enabled_status(
+      feature_enabled,
+      feature,
+      user_prefs,
       state
-    else
-      {_result, new_state} = do_enable_feature(feature, [], user_prefs, state)
-      new_state
-    end
+    )
   end
 
   defp do_register_hint(component_id, hint, state) when is_binary(hint) do
@@ -435,34 +437,14 @@ defmodule Raxol.Core.UXRefinement.Server do
 
   defp maybe_register_shortcuts(component_id, %{shortcuts: shortcuts}, state)
        when is_list(shortcuts) do
-    if MapSet.member?(state.features, :keyboard_shortcuts) do
-      ks_module = keyboard_shortcuts_module()
+    keyboard_shortcuts_enabled =
+      MapSet.member?(state.features, :keyboard_shortcuts)
 
-      Enum.each(shortcuts, fn
-        {key, description} when is_binary(key) and is_binary(description) ->
-          shortcut_name = "#{component_id}_shortcut_#{key}"
-
-          callback = fn ->
-            Raxol.Core.Runtime.Log.debug(
-              "Shortcut activated for #{component_id}: #{description}"
-            )
-
-            focus_manager_module().set_focus(component_id)
-            :ok
-          end
-
-          ks_module.register_shortcut(key, shortcut_name, callback,
-            description: description,
-            context: component_id
-          )
-
-        _invalid ->
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "Invalid shortcut format for component #{component_id}",
-            %{}
-          )
-      end)
-    end
+    register_shortcuts_if_enabled(
+      keyboard_shortcuts_enabled,
+      component_id,
+      shortcuts
+    )
   end
 
   defp maybe_register_shortcuts(_component_id, _hint_info, _state), do: :ok
@@ -473,29 +455,150 @@ defmodule Raxol.Core.UXRefinement.Server do
          user_prefs,
          state
        ) do
-    if MapSet.member?(state.features, :accessibility) do
-      metadata = Map.get(state.metadata, new_focus) || %{}
-      label = Map.get(metadata, :label, new_focus)
+    accessibility_enabled = MapSet.member?(state.features, :accessibility)
 
-      announcement =
-        if is_nil(old_focus) do
-          "Focus set to #{label}"
-        else
-          old_label =
-            Map.get(state.metadata, old_focus, %{})
-            |> Map.get(:label, old_focus)
-
-          "Focus moved from #{old_label} to #{label}"
-        end
-
-      accessibility_module().announce(
-        announcement,
-        [priority: :low],
-        user_prefs
-      )
-    end
+    handle_focus_change_by_accessibility_status(
+      accessibility_enabled,
+      old_focus,
+      new_focus,
+      user_prefs,
+      state
+    )
 
     :ok
+  end
+
+  ## Helper Functions for Pattern Matching
+
+  defp handle_accessibility_metadata_registration(
+         true,
+         component_id,
+         metadata,
+         state
+       ) do
+    accessibility_module().register_element_metadata(component_id, metadata)
+    %{state | metadata: Map.put(state.metadata, component_id, metadata)}
+  end
+
+  defp handle_accessibility_metadata_registration(
+         false,
+         component_id,
+         _metadata,
+         state
+       ) do
+    Raxol.Core.Runtime.Log.debug(
+      "[UXRefinement] Accessibility not enabled, metadata registration skipped for #{component_id}"
+    )
+
+    state
+  end
+
+  defp get_accessibility_metadata_by_feature_status(true, component_id, state) do
+    Map.get(state.metadata, component_id)
+  end
+
+  defp get_accessibility_metadata_by_feature_status(
+         false,
+         _component_id,
+         _state
+       ) do
+    nil
+  end
+
+  defp get_focus_ring_opts(true, _opts), do: %{}
+  defp get_focus_ring_opts(false, opts), do: opts
+
+  defp handle_events_disable_request(true, state) do
+    Raxol.Core.Events.Manager.cleanup()
+    new_state = %{state | features: MapSet.delete(state.features, :events)}
+    {:ok, new_state}
+  end
+
+  defp handle_events_disable_request(false, state) do
+    {{:error,
+      "Cannot disable events while accessibility or keyboard shortcuts are enabled"},
+     state}
+  end
+
+  defp ensure_feature_by_enabled_status(true, _feature, _user_prefs, state) do
+    state
+  end
+
+  defp ensure_feature_by_enabled_status(false, feature, user_prefs, state) do
+    {_result, new_state} = do_enable_feature(feature, [], user_prefs, state)
+    new_state
+  end
+
+  defp register_shortcuts_if_enabled(true, component_id, shortcuts) do
+    ks_module = keyboard_shortcuts_module()
+
+    Enum.each(shortcuts, fn
+      {key, description} when is_binary(key) and is_binary(description) ->
+        shortcut_name = "#{component_id}_shortcut_#{key}"
+
+        callback = fn ->
+          Raxol.Core.Runtime.Log.debug(
+            "Shortcut activated for #{component_id}: #{description}"
+          )
+
+          focus_manager_module().set_focus(component_id)
+          :ok
+        end
+
+        ks_module.register_shortcut(key, shortcut_name, callback,
+          description: description,
+          context: component_id
+        )
+
+      _invalid ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Invalid shortcut format for component #{component_id}",
+          %{}
+        )
+    end)
+  end
+
+  defp register_shortcuts_if_enabled(false, _component_id, _shortcuts), do: :ok
+
+  defp handle_focus_change_by_accessibility_status(
+         true,
+         old_focus,
+         new_focus,
+         user_prefs,
+         state
+       ) do
+    metadata = Map.get(state.metadata, new_focus) || %{}
+    label = Map.get(metadata, :label, new_focus)
+
+    announcement = create_focus_announcement(old_focus, new_focus, label, state)
+
+    accessibility_module().announce(
+      announcement,
+      [priority: :low],
+      user_prefs
+    )
+  end
+
+  defp handle_focus_change_by_accessibility_status(
+         false,
+         _old_focus,
+         _new_focus,
+         _user_prefs,
+         _state
+       ) do
+    :ok
+  end
+
+  defp create_focus_announcement(nil, _new_focus, label, _state) do
+    "Focus set to #{label}"
+  end
+
+  defp create_focus_announcement(old_focus, _new_focus, label, state) do
+    old_label =
+      Map.get(state.metadata, old_focus, %{})
+      |> Map.get(:label, old_focus)
+
+    "Focus moved from #{old_label} to #{label}"
   end
 
   # Module helpers

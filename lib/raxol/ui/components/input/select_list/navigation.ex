@@ -12,12 +12,15 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
 
-    if num_options == 0 do
-      state
-    else
-      new_index = max(0, state.focused_index - 1)
-      update_focus_and_scroll(state, new_index)
-    end
+    has_options = num_options > 0
+    handle_arrow_up_navigation(has_options, state)
+  end
+
+  defp handle_arrow_up_navigation(false, state), do: state
+
+  defp handle_arrow_up_navigation(true, state) do
+    new_index = max(0, state.focused_index - 1)
+    update_focus_and_scroll(state, new_index)
   end
 
   @doc """
@@ -27,12 +30,15 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
 
-    if num_options == 0 do
-      state
-    else
-      new_index = min(num_options - 1, state.focused_index + 1)
-      update_focus_and_scroll(state, new_index)
-    end
+    has_options = num_options > 0
+    handle_arrow_down_navigation(has_options, state, num_options)
+  end
+
+  defp handle_arrow_down_navigation(false, state, _num_options), do: state
+
+  defp handle_arrow_down_navigation(true, state, num_options) do
+    new_index = min(num_options - 1, state.focused_index + 1)
+    update_focus_and_scroll(state, new_index)
   end
 
   @doc """
@@ -42,12 +48,15 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
 
-    if num_options == 0 do
-      state
-    else
-      new_index = max(0, state.focused_index - state.page_size)
-      update_focus_and_scroll(state, new_index)
-    end
+    has_options = num_options > 0
+    handle_page_up_navigation(has_options, state)
+  end
+
+  defp handle_page_up_navigation(false, state), do: state
+
+  defp handle_page_up_navigation(true, state) do
+    new_index = max(0, state.focused_index - state.page_size)
+    update_focus_and_scroll(state, new_index)
   end
 
   @doc """
@@ -57,12 +66,15 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
 
-    if num_options == 0 do
-      state
-    else
-      new_index = min(num_options - 1, state.focused_index + state.page_size)
-      update_focus_and_scroll(state, new_index)
-    end
+    has_options = num_options > 0
+    handle_page_down_navigation(has_options, state, num_options)
+  end
+
+  defp handle_page_down_navigation(false, state, _num_options), do: state
+
+  defp handle_page_down_navigation(true, state, num_options) do
+    new_index = min(num_options - 1, state.focused_index + state.page_size)
+    update_focus_and_scroll(state, new_index)
   end
 
   @doc """
@@ -72,11 +84,14 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
 
-    if num_options == 0 do
-      state
-    else
-      update_focus_and_scroll(state, 0)
-    end
+    has_options = num_options > 0
+    handle_home_navigation(has_options, state)
+  end
+
+  defp handle_home_navigation(false, state), do: state
+
+  defp handle_home_navigation(true, state) do
+    update_focus_and_scroll(state, 0)
   end
 
   @doc """
@@ -86,11 +101,14 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
 
-    if num_options == 0 do
-      state
-    else
-      update_focus_and_scroll(state, num_options - 1)
-    end
+    has_options = num_options > 0
+    handle_end_navigation(has_options, state, num_options)
+  end
+
+  defp handle_end_navigation(false, state, _num_options), do: state
+
+  defp handle_end_navigation(true, state, num_options) do
+    update_focus_and_scroll(state, num_options - 1)
   end
 
   @doc """
@@ -100,20 +118,24 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
 
-    if num_options == 0 do
-      state
-    else
-      clamped_index = min(max(new_index, 0), num_options - 1)
-      # Calculate new scroll offset to keep focused item visible
-      new_scroll_offset =
-        calculate_scroll_offset(
-          clamped_index,
-          state.scroll_offset,
-          state.page_size
-        )
+    has_options = num_options > 0
+    handle_focus_scroll_update(has_options, state, new_index, num_options)
+  end
 
-      %{state | focused_index: clamped_index, scroll_offset: new_scroll_offset}
-    end
+  defp handle_focus_scroll_update(false, state, _new_index, _num_options),
+    do: state
+
+  defp handle_focus_scroll_update(true, state, new_index, num_options) do
+    clamped_index = min(max(new_index, 0), num_options - 1)
+    # Calculate new scroll offset to keep focused item visible
+    new_scroll_offset =
+      calculate_scroll_offset(
+        clamped_index,
+        state.scroll_offset,
+        state.page_size
+      )
+
+    %{state | focused_index: clamped_index, scroll_offset: new_scroll_offset}
   end
 
   @doc """
@@ -127,12 +149,12 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     index = state.scroll_offset + y
     effective_options = Pagination.get_effective_options(state)
 
-    if index >= 0 and index < length(effective_options) do
-      index
-    else
-      -1
-    end
+    is_valid_index = index >= 0 and index < length(effective_options)
+    handle_clicked_index_result(is_valid_index, index)
   end
+
+  defp handle_clicked_index_result(true, index), do: index
+  defp handle_clicked_index_result(false, _index), do: -1
 
   @doc """
   Recalculates scroll position to ensure the focused item is visible after a resize or visible_height change.

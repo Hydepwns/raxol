@@ -320,7 +320,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     new_config = %{state.config | enable_vsync: enabled}
     new_state = %{state | config: new_config}
 
-    Logger.info("VSync #{if enabled, do: "enabled", else: "disabled"}")
+    Logger.info("VSync #{get_vsync_status(enabled)}")
     {:reply, :ok, new_state}
   end
 
@@ -379,13 +379,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
 
   @impl GenServer
   def handle_info(:check_thermal_state, state) do
-    if state.config.thermal_throttling do
-      thermal_state = check_system_thermal_state()
-      updated_state = apply_thermal_throttling(state, thermal_state)
-      {:noreply, updated_state}
-    else
-      {:noreply, state}
-    end
+    handle_thermal_check(state.config.thermal_throttling, state)
   end
 
   @impl GenServer
@@ -395,26 +389,79 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
 
   ## Private Implementation
 
+  defp get_vsync_status(true), do: "enabled"
+  defp get_vsync_status(false), do: "disabled"
+
+  defp handle_thermal_check(false, state), do: {:noreply, state}
+
+  defp handle_thermal_check(true, state) do
+    thermal_state = check_system_thermal_state()
+    updated_state = apply_thermal_throttling(state, thermal_state)
+    {:noreply, updated_state}
+  end
+
+  defp calculate_fps_with_override(true, state) do
+    %{state | current_fps: state.config.forced_fps}
+  end
+
+  defp calculate_fps_with_override(false, state) do
+    base_fps = calculate_base_fps(state)
+    content_fps = apply_content_analysis(base_fps, state.content_analyzer)
+
+    interaction_fps =
+      apply_interaction_boost_calculation(
+        content_fps,
+        state.interaction_tracker
+      )
+
+    power_fps = apply_power_constraints(interaction_fps, state.power_manager)
+    focus_fps = apply_focus_constraints(power_fps, state.focus_tracker)
+    final_fps = clamp_fps(focus_fps, state.config)
+
+    %{state | current_fps: final_fps, target_fps: final_fps}
+  end
+
+  defp apply_interaction_boost_if_active(
+         false,
+         content_fps,
+         _interaction_tracker
+       ) do
+    content_fps
+  end
+
+  defp apply_interaction_boost_if_active(true, content_fps, interaction_tracker) do
+    # Boost FPS during active interaction
+    boost_multiplier =
+      case interaction_tracker.interaction_intensity do
+        :low -> 1.2
+        :medium -> 1.5
+        :high -> 2.0
+      end
+
+    round(content_fps * boost_multiplier)
+  end
+
+  defp apply_throttling_if_needed(false, state, _throttle_factor), do: state
+
+  defp apply_throttling_if_needed(true, state, throttle_factor) do
+    new_fps = round(state.current_fps * throttle_factor)
+
+    Logger.info(
+      "Thermal throttling applied: #{state.current_fps} -> #{new_fps} fps"
+    )
+
+    %{state | current_fps: clamp_fps(new_fps, state.config)}
+  end
+
+  defp calculate_fps_from_stats(false, state), do: state.current_fps
+
+  defp calculate_fps_from_stats(true, state) do
+    1000.0 / state.stats.average_frame_time
+  end
+
   defp calculate_optimal_fps(state) do
     # Check for forced FPS override
-    if Map.has_key?(state.config, :forced_fps) do
-      %{state | current_fps: state.config.forced_fps}
-    else
-      base_fps = calculate_base_fps(state)
-      content_fps = apply_content_analysis(base_fps, state.content_analyzer)
-
-      interaction_fps =
-        apply_interaction_boost_calculation(
-          content_fps,
-          state.interaction_tracker
-        )
-
-      power_fps = apply_power_constraints(interaction_fps, state.power_manager)
-      focus_fps = apply_focus_constraints(power_fps, state.focus_tracker)
-      final_fps = clamp_fps(focus_fps, state.config)
-
-      %{state | current_fps: final_fps, target_fps: final_fps}
-    end
+    calculate_fps_with_override(Map.has_key?(state.config, :forced_fps), state)
   end
 
   defp calculate_base_fps(state) do
@@ -497,19 +544,11 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
         now - timestamp < @interaction_timeout_ms
       end)
 
-    if length(recent_interactions) > 0 do
-      # Boost FPS during active interaction
-      boost_multiplier =
-        case interaction_tracker.interaction_intensity do
-          :low -> 1.2
-          :medium -> 1.5
-          :high -> 2.0
-        end
-
-      round(content_fps * boost_multiplier)
-    else
-      content_fps
-    end
+    apply_interaction_boost_if_active(
+      length(recent_interactions) > 0,
+      content_fps,
+      interaction_tracker
+    )
   end
 
   defp apply_interaction_boost(state, interaction_type) do
@@ -567,17 +606,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
         :hot -> 0.5
       end
 
-    if throttle_factor < 1.0 do
-      new_fps = round(state.current_fps * throttle_factor)
-
-      Logger.info(
-        "Thermal throttling applied: #{state.current_fps} -> #{new_fps} fps"
-      )
-
-      %{state | current_fps: clamp_fps(new_fps, state.config)}
-    else
-      state
-    end
+    apply_throttling_if_needed(throttle_factor < 1.0, state, throttle_factor)
   end
 
   defp clamp_fps(fps, config) do
@@ -589,11 +618,12 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
 
   defp maybe_optimize_fps(state) do
     # Periodic optimization based on performance metrics
-    if should_optimize?(state) do
-      Logger.debug("Running FPS optimization")
-      calculate_optimal_fps(state)
-    else
-      state
+    case should_optimize?(state) do
+      true ->
+        Logger.debug("Running FPS optimization")
+        calculate_optimal_fps(state)
+      false ->
+        state
     end
   end
 
@@ -784,11 +814,10 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
   end
 
   defp calculate_average_fps(state) do
-    if state.stats.frames_rendered > 0 and state.stats.average_frame_time > 0 do
-      1000.0 / state.stats.average_frame_time
-    else
-      state.current_fps
-    end
+    calculate_fps_from_stats(
+      state.stats.frames_rendered > 0 and state.stats.average_frame_time > 0,
+      state
+    )
   end
 
   ## System Integration Functions (Platform-specific implementations would go here)

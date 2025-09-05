@@ -154,10 +154,9 @@ defmodule Raxol.Web.StateSynchronizer do
 
           new_timestamp = get_in(new_value, [:_metadata, :timestamp]) || now
 
-          if DateTime.compare(new_timestamp, old_timestamp) == :gt do
-            new_value
-          else
-            old_value
+          case DateTime.compare(new_timestamp, old_timestamp) do
+            :gt -> new_value
+            _ -> old_value
           end
 
         _key, _old_value, new_value ->
@@ -287,39 +286,41 @@ defmodule Raxol.Web.StateSynchronizer do
     conflicts =
       detect_conflicts(operation, state.pending_operations, state.vector_clock)
 
-    if Enum.empty?(conflicts) do
-      # No conflicts, apply directly
-      apply_operation_to_session(state.session_id, operation)
-      broadcast_operation(state.subscribers, operation, from_user)
+    case Enum.empty?(conflicts) do
+      true ->
+        # No conflicts, apply directly
+        apply_operation_to_session(state.session_id, operation)
+        broadcast_operation(state.subscribers, operation, from_user)
 
-      # Update vector clock
-      new_vector_clock =
-        merge_vector_clocks(state.vector_clock, operation.vector_clock)
+        # Update vector clock
+        new_vector_clock =
+          merge_vector_clocks(state.vector_clock, operation.vector_clock)
 
-      {:noreply,
-       %{state | vector_clock: new_vector_clock, last_sync: DateTime.utc_now()}}
-    else
-      # Resolve conflicts using operational transforms
-      resolved_operation = resolve_conflicts(operation, conflicts)
+        {:noreply,
+         %{state | vector_clock: new_vector_clock, last_sync: DateTime.utc_now()}}
+      
+      false ->
+        # Resolve conflicts using operational transforms
+        resolved_operation = resolve_conflicts(operation, conflicts)
 
-      # Apply resolved operation
-      apply_operation_to_session(state.session_id, resolved_operation)
-      broadcast_operation(state.subscribers, resolved_operation, from_user)
+        # Apply resolved operation
+        apply_operation_to_session(state.session_id, resolved_operation)
+        broadcast_operation(state.subscribers, resolved_operation, from_user)
 
-      # Update vector clock and remove resolved operations
-      new_vector_clock =
-        merge_vector_clocks(state.vector_clock, operation.vector_clock)
+        # Update vector clock and remove resolved operations
+        new_vector_clock =
+          merge_vector_clocks(state.vector_clock, operation.vector_clock)
 
-      new_pending =
-        remove_resolved_operations(state.pending_operations, conflicts)
+        new_pending =
+          remove_resolved_operations(state.pending_operations, conflicts)
 
-      {:noreply,
-       %{
-         state
-         | vector_clock: new_vector_clock,
-           pending_operations: new_pending,
-           last_sync: DateTime.utc_now()
-       }}
+        {:noreply,
+         %{
+           state
+           | vector_clock: new_vector_clock,
+             pending_operations: new_pending,
+             last_sync: DateTime.utc_now()
+         }}
     end
   end
 
@@ -548,11 +549,11 @@ defmodule Raxol.Web.StateSynchronizer do
         DateTime
       )
 
-    if DateTime.compare(operation.timestamp, latest_conflict.timestamp) == :gt do
-      operation
-    else
-      # Transform operation to resolve conflict
-      transform_operation(operation, latest_conflict)
+    case DateTime.compare(operation.timestamp, latest_conflict.timestamp) do
+      :gt -> operation
+      _ ->
+        # Transform operation to resolve conflict
+        transform_operation(operation, latest_conflict)
     end
   end
 

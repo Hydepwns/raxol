@@ -307,10 +307,9 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
 
         # Add to dead letter queue if enabled
         final_state =
-          if state.config.enable_dead_letter_queue do
-            add_to_dead_letter_queue(command, reason, updated_state)
-          else
-            updated_state
+          case state.config.enable_dead_letter_queue do
+            true -> add_to_dead_letter_queue(command, reason, updated_state)
+            false -> updated_state
           end
 
         # Update metrics
@@ -325,10 +324,11 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
   end
 
   defp do_dispatch_batch(commands, opts, state) do
-    if length(commands) > state.config.batch_size_limit do
-      {:error, :batch_too_large, state}
-    else
-      batch_start_time = System.monotonic_time(:microsecond)
+    case length(commands) > state.config.batch_size_limit do
+      true ->
+        {:error, :batch_too_large, state}
+      false ->
+        batch_start_time = System.monotonic_time(:microsecond)
 
       {results, final_state} =
         Enum.reduce(commands, {[], state}, fn command,
@@ -441,10 +441,9 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
         {:ok, :closed}
 
       %{state: :open, opened_at: opened_at, timeout_ms: timeout_ms} ->
-        if System.system_time(:millisecond) - opened_at > timeout_ms do
-          {:ok, :half_open}
-        else
-          {:error, :circuit_breaker_open}
+        case System.system_time(:millisecond) - opened_at > timeout_ms do
+          true -> {:ok, :half_open}
+          false -> {:error, :circuit_breaker_open}
         end
 
       %{state: :half_open} ->
@@ -464,15 +463,16 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
     new_failure_count = current_breaker.failure_count + 1
 
     updated_breaker =
-      if new_failure_count >= current_breaker.threshold do
-        %{
-          current_breaker
-          | state: :open,
-            failure_count: new_failure_count,
-            opened_at: System.system_time(:millisecond)
-        }
-      else
-        %{current_breaker | failure_count: new_failure_count}
+      case new_failure_count >= current_breaker.threshold do
+        true ->
+          %{
+            current_breaker
+            | state: :open,
+              failure_count: new_failure_count,
+              opened_at: System.system_time(:millisecond)
+          }
+        false ->
+          %{current_breaker | failure_count: new_failure_count}
       end
 
     new_circuit_breakers =
@@ -597,10 +597,9 @@ defmodule Raxol.Architecture.CQRS.Middleware.ValidationMiddleware do
 
   defp validate_command(command) do
     # Use the command's own validation if it has one
-    if function_exported?(command.__struct__, :validate, 1) do
-      command.__struct__.validate(command)
-    else
-      :ok
+    case function_exported?(command.__struct__, :validate, 1) do
+      true -> command.__struct__.validate(command)
+      false -> :ok
     end
   end
 end

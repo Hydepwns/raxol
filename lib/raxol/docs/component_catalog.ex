@@ -160,22 +160,26 @@ defmodule Raxol.Docs.ComponentCatalog do
   """
   def render_example(component_id, example_id, custom_props \\ %{}) do
     component = get_component(component_id)
+    handle_example_rendering(component, example_id, custom_props)
+  end
 
-    if component do
-      example =
-        Enum.find(component.examples, fn example ->
-          example.id == example_id
-        end)
+  defp handle_example_rendering(nil, _example_id, _custom_props) do
+    {:error, "Component not found"}
+  end
 
-      if example do
-        # Call the preview function with custom props
-        example.preview_fn.(custom_props)
-      else
-        {:error, "Example not found"}
-      end
-    else
-      {:error, "Component not found"}
-    end
+  defp handle_example_rendering(component, example_id, custom_props) do
+    example =
+      Enum.find(component.examples, fn example -> example.id == example_id end)
+
+    execute_example_preview(example, custom_props)
+  end
+
+  defp execute_example_preview(nil, _custom_props) do
+    {:error, "Example not found"}
+  end
+
+  defp execute_example_preview(example, custom_props) do
+    example.preview_fn.(custom_props)
   end
 
   @doc """
@@ -213,20 +217,23 @@ defmodule Raxol.Docs.ComponentCatalog do
   """
   def generate_code_snippet(component_id, props \\ %{}) do
     component = get_component(component_id)
+    build_code_snippet(component, props)
+  end
 
-    if component do
-      props_str = build_props_str(props)
-      main_arg = get_main_arg(props)
-      dsl_call = build_dsl_call(component.id, main_arg, props_str)
+  defp build_code_snippet(nil, _props) do
+    {:error, "Component not found"}
+  end
 
-      """
-      view do
-        #{dsl_call}
-      end
-      """
-    else
-      {:error, "Component not found"}
+  defp build_code_snippet(component, props) do
+    props_str = build_props_str(props)
+    main_arg = get_main_arg(props)
+    dsl_call = build_dsl_call(component.id, main_arg, props_str)
+
+    """
+    view do
+      #{dsl_call}
     end
+    """
   end
 
   @doc """
@@ -234,12 +241,15 @@ defmodule Raxol.Docs.ComponentCatalog do
   """
   def get_accessibility_info(component_id) do
     component = get_component(component_id)
+    extract_accessibility_info(component)
+  end
 
-    if component do
-      component.accessibility
-    else
-      {:error, "Component not found"}
-    end
+  defp extract_accessibility_info(nil) do
+    {:error, "Component not found"}
+  end
+
+  defp extract_accessibility_info(component) do
+    component.accessibility
   end
 
   @doc """
@@ -247,18 +257,19 @@ defmodule Raxol.Docs.ComponentCatalog do
   """
   def suggest_related_components(component_id) do
     component = get_component(component_id)
+    fetch_related_components(component)
+  end
 
-    if component do
-      # Get the related component IDs
-      related_ids = component.related_components
+  defp fetch_related_components(nil) do
+    []
+  end
 
-      # Fetch the actual components
-      related_ids
-      |> Enum.map(&get_component/1)
-      |> Enum.reject(&is_nil/1)
-    else
-      []
-    end
+  defp fetch_related_components(component) do
+    related_ids = component.related_components
+
+    related_ids
+    |> Enum.map(&get_component/1)
+    |> Enum.reject(&is_nil/1)
   end
 
   # Private helpers
@@ -391,21 +402,20 @@ defmodule Raxol.Docs.ComponentCatalog do
 
   # Enrich properties from .exs with descriptions found via introspection
   defp enrich_properties(static_properties, introspected_descs) do
-    Enum.map(
-      static_properties,
-      fn prop = %Raxol.Docs.ComponentCatalog.Property{} ->
-        # Prefer introspected description if found and static one is missing/generic
-        introspected_desc = Map.get(introspected_descs, prop.name)
+    Enum.map(static_properties, fn prop ->
+      introspected_desc = Map.get(introspected_descs, prop.name)
+      enrich_single_property(prop, introspected_desc)
+    end)
+  end
 
-        if introspected_desc &&
-             (is_nil(prop.description) || prop.description == "") do
-          %{prop | description: introspected_desc}
-        else
-          # Keep the static property data
-          prop
-        end
-      end
-    )
+  defp enrich_single_property(prop, introspected_desc)
+       when is_binary(introspected_desc) and
+              (is_nil(prop.description) or prop.description == "") do
+    %{prop | description: introspected_desc}
+  end
+
+  defp enrich_single_property(prop, _introspected_desc) do
+    prop
   end
 
   # Helper to fetch introspectable data from a module
@@ -449,10 +459,11 @@ defmodule Raxol.Docs.ComponentCatalog do
     end
   end
 
-  defp build_dsl_call(id, main_arg, props_str) do
-    case main_arg do
-      nil -> "#{id}(#{props_str})"
-      arg -> "#{id}(#{inspect(arg)}, #{props_str})"
-    end
+  defp build_dsl_call(id, nil, props_str) do
+    "#{id}(#{props_str})"
+  end
+
+  defp build_dsl_call(id, arg, props_str) do
+    "#{id}(#{inspect(arg)}, #{props_str})"
   end
 end

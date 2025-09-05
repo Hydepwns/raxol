@@ -32,11 +32,7 @@ defmodule Raxol.UI.RendererCached do
     default_theme = theme || ThemeResolverCached.get_default_theme()
 
     # Check if we can use batch rendering
-    if should_batch_render?(elements) do
-      render_batch_cached(elements, default_theme)
-    else
-      render_individual_cached(elements, default_theme)
-    end
+    choose_render_strategy(should_batch_render?(elements), elements, default_theme)
   end
 
   @doc """
@@ -49,12 +45,7 @@ defmodule Raxol.UI.RendererCached do
     case validate_element(element) do
       {:ok, valid_element} ->
         # Check if element is cacheable
-        if cacheable_element?(valid_element) do
-          ComponentCache.render_cached(valid_element, theme, parent_style)
-        else
-          # Fall back to uncached rendering for dynamic elements
-          Renderer.render_element(valid_element, theme, parent_style)
-        end
+        choose_render_method(cacheable_element?(valid_element), valid_element, theme, parent_style)
 
       {:error, _reason} ->
         []
@@ -133,6 +124,18 @@ defmodule Raxol.UI.RendererCached do
 
   # Private functions
 
+  defp choose_render_strategy(true, elements, theme), do: render_batch_cached(elements, theme)
+  defp choose_render_strategy(false, elements, theme), do: render_individual_cached(elements, theme)
+
+  defp choose_render_method(true, element, theme, parent_style) do
+    ComponentCache.render_cached(element, theme, parent_style)
+  end
+
+  defp choose_render_method(false, element, theme, parent_style) do
+    # Fall back to uncached rendering for dynamic elements
+    Renderer.render_element(element, theme, parent_style)
+  end
+
   defp render_batch_cached(elements, theme) do
     # Use batch rendering optimization from ComponentCache
     ComponentCache.render_elements_cached(elements, theme)
@@ -166,12 +169,7 @@ defmodule Raxol.UI.RendererCached do
 
   defp render_tree_recursive(element, theme, parent_style, depth) do
     # Render current element
-    element_cells =
-      if cacheable_element?(element) do
-        ComponentCache.render_cached(element, theme, parent_style)
-      else
-        Renderer.render_element(element, theme, parent_style)
-      end
+    element_cells = choose_render_method(cacheable_element?(element), element, theme, parent_style)
 
     # Render children if present
     children_cells =
@@ -226,12 +224,11 @@ defmodule Raxol.UI.RendererCached do
     do: {:error, :invalid_element}
 
   defp validate_element(element) do
-    if Map.has_key?(element, :type) do
-      {:ok, element}
-    else
-      {:error, :missing_type}
-    end
+    validate_element_type(Map.has_key?(element, :type), element)
   end
+
+  defp validate_element_type(true, element), do: {:ok, element}
+  defp validate_element_type(false, _element), do: {:error, :missing_type}
 
   defp calculate_visible_range(items, %{offset: offset, limit: limit}) do
     offset..(offset + limit - 1)

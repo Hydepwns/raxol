@@ -79,13 +79,18 @@ defmodule Raxol.Core.Renderer.Manager do
 
     {buffer, should_render} = Buffer.swap_buffers(buffer)
 
-    if should_render do
-      damage = Buffer.get_damage(buffer)
-      render_damage(damage)
+    case should_render do
+      true ->
+        damage = Buffer.get_damage(buffer)
+        render_damage(damage)
+      
+      false ->
+        :ok
     end
 
-    if reply_to_pid_for_signal do
-      send(reply_to_pid_for_signal, :render_cycle_complete)
+    case reply_to_pid_for_signal do
+      nil -> :ok
+      pid -> send(pid, :render_cycle_complete)
     end
 
     {:noreply, %{state | buffer: buffer}}
@@ -137,11 +142,13 @@ defmodule Raxol.Core.Renderer.Manager do
     view = component.module.view(component.state)
 
     # Ensure view is correctly defined and contains the expected data
-    if view && is_map(view) do
-      # Convert view to buffer cells
-      render_view(view, buffer)
-    else
-      buffer
+    case view && is_map(view) do
+      true ->
+        # Convert view to buffer cells
+        render_view(view, buffer)
+      
+      false ->
+        buffer
     end
   end
 
@@ -194,8 +201,14 @@ defmodule Raxol.Core.Renderer.Manager do
 
   defp build_styles(fg, bg, style) do
     [
-      if(fg, do: IO.ANSI.color(fg), else: []),
-      if(bg, do: bg_to_ansi(bg), else: []),
+      case fg do
+        nil -> []
+        color -> IO.ANSI.color(color)
+      end,
+      case bg do
+        nil -> []
+        color -> bg_to_ansi(color)
+      end,
       Enum.map(style, &style_to_ansi/1)
     ]
   end

@@ -19,11 +19,7 @@ defmodule RaxolWeb.InputSanitizer do
       # Remove ANSI escape sequences
       |> String.replace(~r/\x1B\[[0-9;]*[a-zA-Z]/, "")
 
-    if String.valid?(sanitized) and byte_size(sanitized) <= 1024 do
-      {:ok, sanitized}
-    else
-      {:error, :invalid_input}
-    end
+    validate_sanitized_input(sanitized)
   end
 
   def sanitize_terminal_input(_), do: {:error, :invalid_input}
@@ -44,6 +40,13 @@ defmodule RaxolWeb.InputSanitizer do
          end) do
       {:ok, sanitized} -> {:ok, sanitized}
       {:error, _reason} -> {:error, :invalid_input}
+    end
+  end
+
+  defp validate_sanitized_input(sanitized) do
+    case String.valid?(sanitized) and byte_size(sanitized) <= 1024 do
+      true -> {:ok, sanitized}
+      false -> {:error, :invalid_input}
     end
   end
 

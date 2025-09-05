@@ -12,37 +12,7 @@ defmodule Raxol.UI.ElementRenderer do
     {clip_x, clip_y, clip_width, clip_height} =
       CellManager.clip_coordinates(x, y, width, height)
 
-    if clip_width == 0 or clip_height == 0 do
-      []
-    else
-      # Check if borders are disabled
-      border_enabled = Map.get(style, :border, true)
-
-      if border_enabled do
-        border_chars =
-          BorderRenderer.get_border_chars(
-            Map.get(style, :border_style, :single)
-          )
-
-        BorderRenderer.render_box_borders(
-          clip_x,
-          clip_y,
-          clip_width,
-          clip_height,
-          border_chars,
-          style
-        )
-      else
-        # No borders - render empty box
-        BorderRenderer.render_empty_box(
-          clip_x,
-          clip_y,
-          clip_width,
-          clip_height,
-          style
-        )
-      end
-    end
+    render_clipped_box(clip_width, clip_height, clip_x, clip_y, style)
   end
 
   @doc """
@@ -50,21 +20,7 @@ defmodule Raxol.UI.ElementRenderer do
   """
   def render_text(x, y, text, style, _theme) do
     # Handle negative coordinates
-    if x < 0 or y < 0 do
-      []
-    else
-      # Resolve colors properly
-      fg = Map.get(style, :fg) || Map.get(style, :foreground, :white)
-      bg = Map.get(style, :bg) || Map.get(style, :background, :black)
-
-      # Simple text rendering - one character per cell
-      text
-      |> String.graphemes()
-      |> Enum.with_index()
-      |> Enum.map(fn {char, index} ->
-        {x + index, y, char, fg, bg, []}
-      end)
-    end
+    render_text_if_valid_coordinates(x, y, text, style)
   end
 
   @doc """
@@ -91,14 +47,10 @@ defmodule Raxol.UI.ElementRenderer do
 
     # Render headers
     cells =
-      if headers != [] do
-        cells ++ render_table_row(x, y, headers, col_widths, header_style)
-      else
-        cells
-      end
+      add_headers_if_present(cells, headers, x, y, col_widths, header_style)
 
     # Calculate starting y position for data rows
-    data_start_y = if headers != [], do: y + 2, else: y
+    data_start_y = calculate_data_start_y(headers, y)
 
     # Render data rows
     cells =
@@ -127,8 +79,7 @@ defmodule Raxol.UI.ElementRenderer do
     # Check if clipping is enabled for this panel
     clip_enabled = Map.get(panel_element, :clip, false)
 
-    clip_bounds =
-      if clip_enabled, do: {x, y, x + width - 1, y + height - 1}, else: nil
+    clip_bounds = calculate_clip_bounds(clip_enabled, x, y, width, height)
 
     # Render children with clipping and style inheritance
     children_cells =
@@ -144,11 +95,7 @@ defmodule Raxol.UI.ElementRenderer do
   """
   def calculate_table_width(headers, data, column_widths) do
     # If column widths are provided, use their sum
-    if column_widths != [] do
-      Enum.sum(column_widths)
-    else
-      calculate_content_based_width(headers, data)
-    end
+    calculate_table_width_from_columns_or_content(column_widths, headers, data)
   end
 
   @doc """
@@ -168,12 +115,7 @@ defmodule Raxol.UI.ElementRenderer do
   defp render_panel_children(children, clip_bounds, theme, merged_style) do
     Enum.flat_map(children || [], fn child ->
       # Pass clip bounds and merged style as parent style to children
-      child_with_clip =
-        if clip_bounds do
-          Map.put(child, :clip_bounds, clip_bounds)
-        else
-          child
-        end
+      child_with_clip = add_clip_bounds_if_present(child, clip_bounds)
 
       # Render the child element recursively
       Raxol.UI.Renderer.render_element(child_with_clip, theme, merged_style)
@@ -240,5 +182,115 @@ defmodule Raxol.UI.ElementRenderer do
     |> Enum.map(fn {char, char_index} ->
       {x + char_index, y, char, cell_fg, cell_bg, []}
     end)
+  end
+
+  ## Pattern matching helper functions for if statement elimination
+
+  defp render_clipped_box(0, _clip_height, _clip_x, _clip_y, _style), do: []
+  defp render_clipped_box(_clip_width, 0, _clip_x, _clip_y, _style), do: []
+
+  defp render_clipped_box(clip_width, clip_height, clip_x, clip_y, style) do
+    # Check if borders are disabled
+    border_enabled = Map.get(style, :border, true)
+
+    render_box_with_border_option(
+      border_enabled,
+      clip_x,
+      clip_y,
+      clip_width,
+      clip_height,
+      style
+    )
+  end
+
+  defp render_box_with_border_option(
+         true,
+         clip_x,
+         clip_y,
+         clip_width,
+         clip_height,
+         style
+       ) do
+    border_chars =
+      BorderRenderer.get_border_chars(Map.get(style, :border_style, :single))
+
+    BorderRenderer.render_box_borders(
+      clip_x,
+      clip_y,
+      clip_width,
+      clip_height,
+      border_chars,
+      style
+    )
+  end
+
+  defp render_box_with_border_option(
+         false,
+         clip_x,
+         clip_y,
+         clip_width,
+         clip_height,
+         style
+       ) do
+    # No borders - render empty box
+    BorderRenderer.render_empty_box(
+      clip_x,
+      clip_y,
+      clip_width,
+      clip_height,
+      style
+    )
+  end
+
+  defp render_text_if_valid_coordinates(x, y, _text, _style)
+       when x < 0 or y < 0,
+       do: []
+
+  defp render_text_if_valid_coordinates(x, y, text, style) do
+    # Resolve colors properly
+    fg = Map.get(style, :fg) || Map.get(style, :foreground, :white)
+    bg = Map.get(style, :bg) || Map.get(style, :background, :black)
+
+    # Simple text rendering - one character per cell
+    text
+    |> String.graphemes()
+    |> Enum.with_index()
+    |> Enum.map(fn {char, index} ->
+      {x + index, y, char, fg, bg, []}
+    end)
+  end
+
+  defp add_headers_if_present(cells, [], _x, _y, _col_widths, _header_style),
+    do: cells
+
+  defp add_headers_if_present(cells, headers, x, y, col_widths, header_style) do
+    cells ++ render_table_row(x, y, headers, col_widths, header_style)
+  end
+
+  defp calculate_data_start_y([], y), do: y
+  defp calculate_data_start_y(_headers, y), do: y + 2
+
+  defp calculate_clip_bounds(false, _x, _y, _width, _height), do: nil
+
+  defp calculate_clip_bounds(true, x, y, width, height) do
+    {x, y, x + width - 1, y + height - 1}
+  end
+
+  defp calculate_table_width_from_columns_or_content([], headers, data) do
+    calculate_content_based_width(headers, data)
+  end
+
+  defp calculate_table_width_from_columns_or_content(
+         column_widths,
+         _headers,
+         _data
+       ) do
+    Enum.sum(column_widths)
+  end
+
+  defp add_clip_bounds_if_present(child, nil), do: child
+
+  defp add_clip_bounds_if_present(child, clip_bounds) do
+    Map.put(child, :clip_bounds, clip_bounds)
   end
 end

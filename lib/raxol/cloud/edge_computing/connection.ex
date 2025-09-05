@@ -10,37 +10,45 @@ defmodule Raxol.Cloud.EdgeComputing.Connection do
   """
   def check_connection do
     state = Core.get_state()
+    handle_connection_check(state.mode, state)
+  end
 
-    # Skip if in edge-only mode
-    if state.mode != :edge_only do
-      # Perform actual connection check
-      connection_result = perform_connection_check()
+  defp handle_connection_check(:edge_only, _state) do
+    # In edge-only mode, we don't care about cloud connection
+    false
+  end
 
-      # Update state with connection result
-      Core.with_state(fn s ->
-        %{
-          s
-          | cloud_status:
-              if(connection_result, do: :connected, else: :disconnected)
-        }
-      end)
+  defp handle_connection_check(_mode, state) do
+    # Perform actual connection check
+    connection_result = perform_connection_check()
 
-      # Process queued operations if we're connected
-      if connection_result do
-        _ = process_pending_operations()
-      end
+    # Update state with connection result
+    Core.with_state(fn s ->
+      %{
+        s
+        | cloud_status: get_connection_status(connection_result)
+      }
+    end)
 
-      # Reschedule the check
-      _ = schedule_connection_check(state.config.connection_check_interval)
+    # Process queued operations if we're connected
+    process_operations_if_connected(connection_result)
 
-      connection_result
-    else
-      # In edge-only mode, we don't care about cloud connection
-      false
-    end
+    # Reschedule the check
+    _ = schedule_connection_check(state.config.connection_check_interval)
+
+    connection_result
   end
 
   # Private functions
+
+  defp get_connection_status(true), do: :connected
+  defp get_connection_status(false), do: :disconnected
+
+  defp process_operations_if_connected(true) do
+    _ = process_pending_operations()
+  end
+
+  defp process_operations_if_connected(false), do: :ok
 
   defp process_pending_operations do
     # Process operations in the queue

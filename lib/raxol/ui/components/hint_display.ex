@@ -77,35 +77,41 @@ defmodule Raxol.UI.Components.HintDisplay do
   @impl Raxol.UI.Components.Base.Component
   # Correct arity
   def render(state, %{} = _props) do
-    if state.visible and state.hints != [] do
-      # Format hints (example: key: desc)
-      hint_texts =
-        Enum.map(state.hints, fn
-          {key, desc} -> "#{key}: #{desc}"
-          hint when is_binary(hint) -> hint
-          _ -> ""
-        end)
+    render_hints(should_render_hints?(state), state)
+  end
 
-      # Join hints with a separator
-      display_text = Enum.join(hint_texts, " | ")
+  # Private helper functions
 
-      # Use View Elements macros
-      dsl_result =
-        Raxol.View.Elements.box id: Map.get(state, :id, nil),
-                                style:
-                                  Map.merge(
-                                    %{width: :fill, height: 1},
-                                    state.style
-                                  ) do
-          Raxol.View.Elements.label(content: display_text)
-        end
+  defp should_render_hints?(state) do
+    state.visible and state.hints != []
+  end
 
-      # Return element map directly
-      dsl_result
-    else
-      # Render nothing if not visible or no hints
-      nil
-    end
+  defp render_hints(false, _state), do: nil
+  defp render_hints(true, state) do
+    # Format hints (example: key: desc)
+    hint_texts =
+      Enum.map(state.hints, fn
+        {key, desc} -> "#{key}: #{desc}"
+        hint when is_binary(hint) -> hint
+        _ -> ""
+      end)
+
+    # Join hints with a separator
+    display_text = Enum.join(hint_texts, " | ")
+
+    # Use View Elements macros
+    dsl_result =
+      Raxol.View.Elements.box id: Map.get(state, :id, nil),
+                              style:
+                                Map.merge(
+                                  %{width: :fill, height: 1},
+                                  state.style
+                                ) do
+        Raxol.View.Elements.label(content: display_text)
+      end
+
+    # Return element map directly
+    dsl_result
   end
 
   # Remove old render/2, render_title, render_hints, render_shortcuts, render_footer

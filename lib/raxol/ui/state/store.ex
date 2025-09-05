@@ -268,24 +268,9 @@ defmodule Raxol.UI.State.Store do
   def delete_state(path, _store \\ nil) do
     ensure_server_started()
     # Implement by setting to nil or removing from parent map
-    path_list = if is_list(path), do: path, else: [path]
+    path_list = normalize_path(path)
 
-    if length(path_list) == 1 do
-      # Top-level key - set to nil
-      Server.update_state(path_list, nil)
-    else
-      # Nested key - need to update parent
-      parent_path = Enum.drop(path_list, -1)
-      key = List.last(path_list)
-      parent = Server.get_state(parent_path)
-
-      if is_map(parent) do
-        updated_parent = Map.delete(parent, key)
-        Server.update_state(parent_path, updated_parent)
-      else
-        :ok
-      end
-    end
+    perform_delete(path_list)
   end
 
   def register_middleware(_middleware_fn, _store \\ nil) do
@@ -332,4 +317,29 @@ defmodule Raxol.UI.State.Store do
       apply(compute_fn, values)
     end
   end
+
+  # Helper functions for pattern matching instead of if statements
+
+  defp normalize_path(path) when is_list(path), do: path
+  defp normalize_path(path), do: [path]
+
+  defp perform_delete([_key]) do
+    # Top-level key - set to nil
+    Server.update_state([_key], nil)
+  end
+
+  defp perform_delete(path_list) do
+    # Nested key - need to update parent
+    parent_path = Enum.drop(path_list, -1)
+    key = List.last(path_list)
+    parent = Server.get_state(parent_path)
+    update_parent_if_map(parent, parent_path, key)
+  end
+
+  defp update_parent_if_map(parent, parent_path, key) when is_map(parent) do
+    updated_parent = Map.delete(parent, key)
+    Server.update_state(parent_path, updated_parent)
+  end
+
+  defp update_parent_if_map(_parent, _parent_path, _key), do: :ok
 end

@@ -152,8 +152,9 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
     }
 
     # Start periodic system metrics collection
-    if Keyword.get(opts, :auto_collect_system_metrics, true) do
-      schedule_system_metrics_collection()
+    case Keyword.get(opts, :auto_collect_system_metrics, true) do
+      true -> schedule_system_metrics_collection()
+      false -> :ok
     end
 
     {:ok, state}
@@ -201,10 +202,9 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
 
     # Filter by tags if specified
     filtered_entries =
-      if tags == [] do
-        metric_entries
-      else
-        Enum.filter(metric_entries, fn entry -> entry.tags == tags end)
+      case tags do
+        [] -> metric_entries
+        _ -> Enum.filter(metric_entries, fn entry -> entry.tags == tags end)
       end
 
     {:reply, filtered_entries, state}
@@ -256,9 +256,10 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
 
   defp filter_and_map_entries(entries, type, tags) do
     filtered =
-      if tags == %{},
-        do: entries,
-        else: Enum.filter(entries, &(&1.tags == tags))
+      case tags do
+        %{} -> entries
+        _ -> Enum.filter(entries, &(&1.tags == tags))
+      end
 
     Enum.map(filtered, &Map.put(&1, :type, type))
   end

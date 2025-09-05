@@ -12,11 +12,7 @@ defmodule Raxol.UI.Components.Input.TextInput.CharacterHandler do
   end
 
   defp process_char_key(char_key) when is_binary(char_key) do
-    if String.length(char_key) == 1 and String.printable?(char_key) do
-      char_key
-    else
-      nil
-    end
+    validate_char_key(char_key)
   end
 
   defp process_char_key(char_key)
@@ -56,8 +52,23 @@ defmodule Raxol.UI.Components.Input.TextInput.CharacterHandler do
   end
 
   defp emit_change_side_effect(state, new_value) do
-    if is_function(state.on_change, 1) do
-      state.on_change.(new_value)
-    end
+    execute_on_change(state.on_change, new_value)
   end
+
+  # Helper functions for if-statement elimination
+  defp validate_char_key(char_key) do
+    handle_char_validation(
+      String.length(char_key) == 1 and String.printable?(char_key),
+      char_key
+    )
+  end
+
+  defp handle_char_validation(true, char_key), do: char_key
+  defp handle_char_validation(false, _char_key), do: nil
+
+  defp execute_on_change(on_change, new_value) when is_function(on_change, 1) do
+    on_change.(new_value)
+  end
+
+  defp execute_on_change(_on_change, _new_value), do: :ok
 end

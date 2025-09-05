@@ -1,5 +1,7 @@
-if Mix.env() == :test do
-  defmodule Raxol.Test.FileWatcherTestHelper do
+defmodule Raxol.Test.FileWatcherTestHelper do
+  @file_enabled Mix.env() == :test
+  
+  if @file_enabled do
     @moduledoc """
     Helper functions for testing file watcher functionality.
     """
@@ -126,11 +128,14 @@ if Mix.env() == :test do
     """
     def cleanup_test_plugins do
       plugin_dir = "test/plugins"
-
-      if File.exists?(plugin_dir) do
-        File.rm_rf!(plugin_dir)
-      end
+      handle_plugin_cleanup(File.exists?(plugin_dir), plugin_dir)
     end
+
+    defp handle_plugin_cleanup(true, plugin_dir) do
+      File.rm_rf!(plugin_dir)
+    end
+
+    defp handle_plugin_cleanup(false, _plugin_dir), do: :ok
 
     @doc """
     Provides default plugin content for testing.

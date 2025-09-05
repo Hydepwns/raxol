@@ -118,9 +118,10 @@ defmodule Raxol.Style.Colors.Gradient do
         segment_colors =
           generate_gradient_colors(start_color, end_color, segment_steps)
 
-        if end_color == List.last(color_stops),
-          do: segment_colors,
-          else: Enum.drop(segment_colors, -1)
+        handle_segment_end(
+          end_color == List.last(color_stops),
+          segment_colors
+        )
       end)
 
     %__MODULE__{
@@ -220,12 +221,7 @@ defmodule Raxol.Style.Colors.Gradient do
   def at_position(%__MODULE__{colors: colors}, position)
       when is_float(position) and position >= 0.0 and position <= 1.0 do
     # Determine the index based on position
-    index =
-      if position == 1.0 do
-        length(colors) - 1
-      else
-        trunc(position * length(colors))
-      end
+    index = calculate_position_index(position == 1.0, colors, position)
 
     Enum.at(colors, index)
   end
@@ -329,9 +325,10 @@ defmodule Raxol.Style.Colors.Gradient do
     # Then add 1 to get the number of *colors* needed for each segment's generation
     Enum.map(1..segment_count, fn segment_index ->
       intervals_for_segment =
-        if segment_index <= remainder_intervals,
-          do: base_intervals + 1,
-          else: base_intervals
+        calculate_segment_intervals(
+          segment_index <= remainder_intervals,
+          base_intervals
+        )
 
       # Need intervals + 1 colors to cover the intervals
       intervals_for_segment + 1
@@ -343,42 +340,19 @@ defmodule Raxol.Style.Colors.Gradient do
     color_count = length(colors)
     char_count = length(graphemes)
 
-    if color_count >= char_count do
-      # If we have more or equal colors than characters, we can assign one color per character
-      {1, 0}
-    else
-      # Otherwise, calculate how many characters per color
-      chars_per_color = div(char_count, color_count)
-      remainder = rem(char_count, color_count)
-      {chars_per_color, remainder}
-    end
+    handle_color_distribution(color_count >= char_count, color_count, char_count)
   end
 
   # Combine colors with text characters
   defp combine_colors_with_text(colors, graphemes, chars_per_color, remainder) do
     # If we have more colors than characters, just use the first n colors
-    if chars_per_color == 1 and remainder == 0 do
-      Enum.zip(graphemes, colors)
-      |> Enum.map(fn {char, color} -> colorize_text(char, color) end)
-    else
-      # Distribute colors across characters
-      colors
-      |> Enum.with_index()
-      |> Enum.flat_map(fn {color, index} ->
-        # Calculate how many characters for this color
-        extra = if index < remainder, do: 1, else: 0
-        count = chars_per_color + extra
-
-        # Calculate the starting position in the graphemes list
-        start_pos = index * chars_per_color + min(index, remainder)
-
-        # Extract the characters for this color
-        chars = Enum.slice(graphemes, start_pos, count)
-
-        # Apply color to each character
-        Enum.map(chars, fn char -> colorize_text(char, color) end)
-      end)
-    end
+    handle_color_text_combination(
+      {chars_per_color == 1, remainder == 0},
+      colors,
+      graphemes,
+      chars_per_color,
+      remainder
+    )
   end
 
   # Apply a color to a text string
@@ -386,4 +360,73 @@ defmodule Raxol.Style.Colors.Gradient do
     # Format as true-color ANSI escape sequence
     "\e[38;2;#{r};#{g};#{b}m#{text}\e[0m"
   end
+
+  # Pattern matching helper functions for refactored if statements
+
+  # Handle segment end decision instead of if statement
+  defp handle_segment_end(true, segment_colors), do: segment_colors
+  defp handle_segment_end(false, segment_colors), do: Enum.drop(segment_colors, -1)
+
+  # Calculate position index instead of if statement
+  defp calculate_position_index(true, colors, _position), do: length(colors) - 1
+  defp calculate_position_index(false, colors, position), do: trunc(position * length(colors))
+
+  # Calculate segment intervals instead of if statement
+  defp calculate_segment_intervals(true, base_intervals), do: base_intervals + 1
+  defp calculate_segment_intervals(false, base_intervals), do: base_intervals
+
+  # Handle color distribution instead of if statement
+  defp handle_color_distribution(true, _color_count, _char_count) do
+    # If we have more or equal colors than characters, we can assign one color per character
+    {1, 0}
+  end
+
+  defp handle_color_distribution(false, color_count, char_count) do
+    # Otherwise, calculate how many characters per color
+    chars_per_color = div(char_count, color_count)
+    remainder = rem(char_count, color_count)
+    {chars_per_color, remainder}
+  end
+
+  # Handle color text combination instead of if statement
+  defp handle_color_text_combination(
+         {true, true},
+         colors,
+         graphemes,
+         _chars_per_color,
+         _remainder
+       ) do
+    Enum.zip(graphemes, colors)
+    |> Enum.map(fn {char, color} -> colorize_text(char, color) end)
+  end
+
+  defp handle_color_text_combination(
+         _condition,
+         colors,
+         graphemes,
+         chars_per_color,
+         remainder
+       ) do
+    # Distribute colors across characters
+    colors
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {color, index} ->
+      # Calculate how many characters for this color
+      extra = calculate_extra_chars(index < remainder)
+      count = chars_per_color + extra
+
+      # Calculate the starting position in the graphemes list
+      start_pos = index * chars_per_color + min(index, remainder)
+
+      # Extract the characters for this color
+      chars = Enum.slice(graphemes, start_pos, count)
+
+      # Apply color to each character
+      Enum.map(chars, fn char -> colorize_text(char, color) end)
+    end)
+  end
+
+  # Calculate extra characters instead of if statement
+  defp calculate_extra_chars(true), do: 1
+  defp calculate_extra_chars(false), do: 0
 end

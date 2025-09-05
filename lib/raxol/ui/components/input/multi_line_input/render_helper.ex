@@ -56,10 +56,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
         line_len
       )
 
-    if is_list(segments) and match?([%{type: :label} | _], segments) do
-      segments
-    else
-      process_segments(segments, line_content)
+    case {is_list(segments), segments} do
+      {true, [%{type: :label} | _]} -> segments
+      _ -> process_segments(segments, line_content)
     end
   end
 
@@ -94,12 +93,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
     segments =
       Enum.filter(segments, fn {text, _} -> text != nil and text != "" end)
 
-    if line_content == "" and segments == [] do
-      []
-    else
-      Enum.map(segments, fn {text, style} ->
-        Components.label(text, style: style)
-      end)
+    case {line_content, segments} do
+      {"", []} ->
+        []
+
+      _ ->
+        Enum.map(segments, fn {text, style} ->
+          Components.label(text, style: style)
+        end)
     end
   end
 
@@ -113,20 +114,22 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
     min_row = min(start_row, end_row)
     max_row = max(start_row, end_row)
 
-    if line_index < min_row or line_index > max_row do
-      nil
-    else
-      {left, right} =
-        calculate_selection_bounds(
-          start_row,
-          start_col,
-          end_row,
-          end_col,
-          line_index,
-          line_len
-        )
+    case line_index < min_row or line_index > max_row do
+      true ->
+        nil
 
-      {min(max(left, 0), line_len), min(max(right, 0), line_len)}
+      false ->
+        {left, right} =
+          calculate_selection_bounds(
+            start_row,
+            start_col,
+            end_row,
+            end_col,
+            line_index,
+            line_len
+          )
+
+        {min(max(left, 0), line_len), min(max(right, 0), line_len)}
     end
   end
 

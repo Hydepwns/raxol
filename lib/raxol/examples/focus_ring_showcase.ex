@@ -60,10 +60,11 @@ defmodule Raxol.Examples.FocusRingShowcase do
 
         # Also cycle component type every full animation cycle
         next_component_type =
-          if next_index == 0 do
-            cycle_next_in_list(state.current_component_type, @component_types)
-          else
-            state.current_component_type
+          case next_index == 0 do
+            true ->
+              cycle_next_in_list(state.current_component_type, @component_types)
+            false ->
+              state.current_component_type
           end
 
         # Update focus ring
@@ -75,10 +76,11 @@ defmodule Raxol.Examples.FocusRingShowcase do
 
         # Schedule next cycle if demo is running
         commands =
-          if state.demo_running do
-            [schedule({:demo_cycle}, 2000)]
-          else
-            []
+          case state.demo_running do
+            true ->
+              [schedule({:demo_cycle}, 2000)]
+            false ->
+              []
           end
 
         {%{
@@ -162,10 +164,11 @@ defmodule Raxol.Examples.FocusRingShowcase do
 
         # Start or stop the cycle timer
         commands =
-          if demo_running do
-            [schedule({:demo_cycle}, 2000)]
-          else
-            []
+          case demo_running do
+            true ->
+              [schedule({:demo_cycle}, 2000)]
+            false ->
+              []
           end
 
         {%{state | demo_running: demo_running}, commands}

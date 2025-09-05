@@ -48,12 +48,21 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
 
   defp draw_border_char(grid, current_y, current_x, y, x, max_y, max_x, style) do
     char = get_border_char(current_y, current_x, y, x, max_y, max_x, grid)
+    draw_char_if_not_space(char != " ", char, grid, current_y, current_x, style)
+  end
 
-    if char != " " do
-      put_cell(grid, current_y, current_x, %{Cell.new(char) | style: style})
-    else
-      grid
-    end
+  defp draw_char_if_not_space(
+         false,
+         _char,
+         grid,
+         _current_y,
+         _current_x,
+         _style
+       ),
+       do: grid
+
+  defp draw_char_if_not_space(true, char, grid, current_y, current_x, style) do
+    put_cell(grid, current_y, current_x, %{Cell.new(char) | style: style})
   end
 
   defp get_border_char(current_y, current_x, y, x, max_y, max_x, grid) do
@@ -88,8 +97,11 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   end
 
   defp get_edge_char(current_y, _current_x, y, _x) do
-    if current_y == y, do: "─", else: "│"
+    get_edge_character(current_y == y)
   end
+
+  defp get_edge_character(true), do: "─"
+  defp get_edge_character(false), do: "│"
 
   @doc """
   Draws text centered horizontally on a specific row in the grid.
@@ -97,18 +109,10 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   """
   def draw_text_centered(grid, y, text) do
     height = length(grid)
-    width = if height > 0, do: length(List.first(grid)), else: 0
+    width = calculate_grid_width(height > 0, grid)
 
-    if y < 0 or y >= height or width == 0 do
-      # Invalid position or grid
-      grid
-    else
-      text_len = String.length(text)
-      start_x = max(0, div(width - text_len, 2))
-      # Truncate text to fit remaining width
-      truncated_text = String.slice(text, 0, max(0, width - start_x))
-      draw_text(grid, y, start_x, truncated_text)
-    end
+    is_valid_position = y >= 0 and y < height and width > 0
+    handle_text_centering(is_valid_position, grid, y, text, width)
   end
 
   @doc """
@@ -122,26 +126,22 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
     grid_width = length(List.first(grid))
     _available_width = grid_width - x
 
-    if y >= 0 and y < grid_height and x >= 0 and x < grid_width do
-      chars = String.to_charlist(text)
-      draw_chars(grid, chars, y, x, grid_width, style)
-    else
-      grid
-    end
+    is_valid_position = y >= 0 and y < grid_height and x >= 0 and x < grid_width
+    handle_text_drawing(is_valid_position, grid, text, y, x, grid_width, style)
   end
 
   defp draw_chars(grid, chars, y, x, grid_width, style) do
     Enum.reduce(Enum.with_index(chars), grid, fn {char_code, index}, acc_grid ->
       current_x = x + index
 
-      if current_x < grid_width do
-        put_cell(acc_grid, y, current_x, %{
-          Cell.new(<<char_code::utf8>>)
-          | style: style
-        })
-      else
-        {:halt, acc_grid}
-      end
+      handle_char_drawing(
+        current_x < grid_width,
+        acc_grid,
+        char_code,
+        y,
+        current_x,
+        style
+      )
     end)
     |> case do
       {:halt, final_grid} -> final_grid
@@ -154,24 +154,28 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   Handles out-of-bounds coordinates gracefully (no-op).
   """
   def put_cell(grid, y, x, cell) when is_list(grid) and y >= 0 and x >= 0 do
-    if y < length(grid) do
-      update_row(grid, y, x, cell)
-    else
-      grid
-    end
+    is_valid_y = y < length(grid)
+    handle_cell_placement(is_valid_y, grid, y, x, cell)
   end
+
+  defp handle_cell_placement(false, grid, _y, _x, _cell), do: grid
+
+  defp handle_cell_placement(true, grid, y, x, cell),
+    do: update_row(grid, y, x, cell)
 
   # Catch non-grids or negative coords
   def put_cell(grid, _y, _x, _cell), do: grid
 
   defp update_row(grid, y, x, cell) do
     row = Enum.at(grid, y)
+    is_valid_row = is_list(row) and x < length(row)
+    handle_row_update(is_valid_row, grid, y, x, cell, row)
+  end
 
-    if is_list(row) and x < length(row) do
-      List.update_at(grid, y, fn _ -> List.replace_at(row, x, cell) end)
-    else
-      grid
-    end
+  defp handle_row_update(false, grid, _y, _x, _cell, _row), do: grid
+
+  defp handle_row_update(true, grid, y, x, cell, row) do
+    List.update_at(grid, y, fn _ -> List.replace_at(row, x, cell) end)
   end
 
   @doc """
@@ -184,5 +188,42 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
       {:ok, row} when is_list(row) -> Enum.fetch(row, x)
       _ -> {:error, :out_of_bounds}
     end
+  end
+
+  ## Helper Functions for Pattern Matching
+
+  defp calculate_grid_width(false, _grid), do: 0
+  defp calculate_grid_width(true, grid), do: length(List.first(grid))
+
+  defp handle_text_centering(false, grid, _y, _text, _width) do
+    # Invalid position or grid
+    grid
+  end
+
+  defp handle_text_centering(true, grid, y, text, width) do
+    text_len = String.length(text)
+    start_x = max(0, div(width - text_len, 2))
+    # Truncate text to fit remaining width
+    truncated_text = String.slice(text, 0, max(0, width - start_x))
+    draw_text(grid, y, start_x, truncated_text)
+  end
+
+  defp handle_text_drawing(false, grid, _text, _y, _x, _grid_width, _style),
+    do: grid
+
+  defp handle_text_drawing(true, grid, text, y, x, grid_width, style) do
+    chars = String.to_charlist(text)
+    draw_chars(grid, chars, y, x, grid_width, style)
+  end
+
+  defp handle_char_drawing(false, acc_grid, _char_code, _y, _current_x, _style) do
+    {:halt, acc_grid}
+  end
+
+  defp handle_char_drawing(true, acc_grid, char_code, y, current_x, style) do
+    put_cell(acc_grid, y, current_x, %{
+      Cell.new(<<char_code::utf8>>)
+      | style: style
+    })
   end
 end

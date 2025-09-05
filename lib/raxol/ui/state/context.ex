@@ -130,20 +130,22 @@ defmodule Raxol.UI.State.Context do
     context_def = Map.get(attrs, :context)
     value = Map.get(attrs, :value)
 
-    if context_def && value do
-      # Create new provider
-      provider = Provider.new(context_def, value, children)
+    case {context_def, value} do
+      {context_def, value} when not is_nil(context_def) and not is_nil(value) ->
+        # Create new provider
+        provider = Provider.new(context_def, value, children)
 
-      # Update context stack for children
-      current_stack = Map.get(render_context, :context_stack, %{})
-      new_stack = Map.put(current_stack, context_def.name, provider)
-      child_context = Map.put(render_context, :context_stack, new_stack)
+        # Update context stack for children
+        current_stack = Map.get(render_context, :context_stack, %{})
+        new_stack = Map.put(current_stack, context_def.name, provider)
+        child_context = Map.put(render_context, :context_stack, new_stack)
 
-      # Process children with updated context
-      process_children_with_context(children, child_context, acc)
-    else
-      # No valid context, process children normally
-      process_children_with_context(children, render_context, acc)
+        # Process children with updated context
+        process_children_with_context(children, child_context, acc)
+
+      _ ->
+        # No valid context, process children normally
+        process_children_with_context(children, render_context, acc)
     end
   end
 
@@ -184,23 +186,26 @@ defmodule Raxol.UI.State.Context do
     context_def = Map.get(attrs, :context)
     render_fn = Map.get(attrs, :render)
 
-    if context_def && render_fn do
-      context_value = use_context(render_context, context_def.name)
+    case {context_def, render_fn} do
+      {context_def, render_fn}
+      when not is_nil(context_def) and not is_nil(render_fn) ->
+        context_value = use_context(render_context, context_def.name)
 
-      case ErrorHandling.safe_call_with_logging(
-             fn ->
-               rendered_element = render_fn.(context_value)
-               # Process the rendered element
-               alias Raxol.UI.Layout.Engine
-               Engine.process_element(rendered_element, render_context, acc)
-             end,
-             "Error in context consumer render function"
-           ) do
-        {:ok, result} -> result
-        {:error, _} -> acc
-      end
-    else
-      acc
+        case ErrorHandling.safe_call_with_logging(
+               fn ->
+                 rendered_element = render_fn.(context_value)
+                 # Process the rendered element
+                 alias Raxol.UI.Layout.Engine
+                 Engine.process_element(rendered_element, render_context, acc)
+               end,
+               "Error in context consumer render function"
+             ) do
+          {:ok, result} -> result
+          {:error, _} -> acc
+        end
+
+      _ ->
+        acc
     end
   end
 

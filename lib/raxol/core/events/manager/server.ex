@@ -243,16 +243,19 @@ defmodule Raxol.Core.Events.Manager.Server do
     current_handlers = Map.get(state.handlers, event_type, [])
 
     # Check if handler already exists
+    handler_exists = Enum.any?(current_handlers, fn {m, f, _p} ->
+      m == module && f == function
+    end)
+
     updated_handlers =
-      if Enum.any?(current_handlers, fn {m, f, _p} ->
-           m == module && f == function
-         end) do
-        # Update priority if handler exists
-        current_handlers
-        |> Enum.reject(fn {m, f, _p} -> m == module && f == function end)
-        |> Kernel.++([handler])
-      else
-        [handler | current_handlers]
+      case handler_exists do
+        true ->
+          # Update priority if handler exists
+          current_handlers
+          |> Enum.reject(fn {m, f, _p} -> m == module && f == function end)
+          |> Kernel.++([handler])
+        false ->
+          [handler | current_handlers]
       end
       |> Enum.sort_by(fn {_m, _f, p} -> p end)
 
@@ -276,10 +279,9 @@ defmodule Raxol.Core.Events.Manager.Server do
       end)
 
     new_handlers =
-      if updated_handlers == [] do
-        Map.delete(state.handlers, event_type)
-      else
-        Map.put(state.handlers, event_type, updated_handlers)
+      case updated_handlers do
+        [] -> Map.delete(state.handlers, event_type)
+        _ -> Map.put(state.handlers, event_type, updated_handlers)
       end
 
     new_state = %{state | handlers: new_handlers}
@@ -354,10 +356,9 @@ defmodule Raxol.Core.Events.Manager.Server do
   @impl GenServer
   def handle_call({:get_event_history, limit}, _from, state) do
     history =
-      if limit do
-        Enum.take(state.event_history, limit)
-      else
-        state.event_history
+      case limit do
+        nil -> state.event_history
+        n -> Enum.take(state.event_history, n)
       end
 
     {:reply, history, state}
@@ -466,24 +467,25 @@ defmodule Raxol.Core.Events.Manager.Server do
 
     # Notify matching subscribers
     Enum.each(state.subscriptions, fn {_ref, subscription} ->
-      if event_type in subscription.event_types &&
-           matches_filters?(event, subscription.filters) do
-        send(subscription.pid, {:event, event})
+      should_notify = event_type in subscription.event_types &&
+                      matches_filters?(event, subscription.filters)
+      
+      case should_notify do
+        true -> send(subscription.pid, {:event, event})
+        false -> :ok
       end
     end)
 
     maybe_record_event(state, event)
   end
 
-  defp maybe_record_event(state, event) do
-    if state.config.enable_history do
-      history = [{event, DateTime.utc_now()} | state.event_history]
-      limited_history = Enum.take(history, state.config.history_limit)
-      %{state | event_history: limited_history}
-    else
-      state
-    end
+  defp maybe_record_event(%{config: %{enable_history: true}} = state, event) do
+    history = [{event, DateTime.utc_now()} | state.event_history]
+    limited_history = Enum.take(history, state.config.history_limit)
+    %{state | event_history: limited_history}
   end
+
+  defp maybe_record_event(state, _event), do: state
 
   defp extract_event_type(event)
        when is_tuple(event) and tuple_size(event) > 0 do

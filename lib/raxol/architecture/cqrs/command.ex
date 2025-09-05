@@ -103,22 +103,14 @@ defmodule Raxol.Architecture.CQRS.Command do
         end
       end)
 
-    if Enum.empty?(missing_fields) do
-      :ok
-    else
-      {:error, {:missing_required_fields, missing_fields}}
-    end
+    validate_missing_fields(Enum.empty?(missing_fields), missing_fields)
   end
 
   @doc """
   Validates email format.
   """
   def validate_email(email) when is_binary(email) do
-    if String.match?(email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/) do
-      :ok
-    else
-      {:error, :invalid_email_format}
-    end
+    validate_email_format(String.match?(email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/))
   end
 
   def validate_email(nil), do: {:error, :email_required}
@@ -128,11 +120,7 @@ defmodule Raxol.Architecture.CQRS.Command do
   Validates a field is within a specified range.
   """
   def validate_range(value, min, max) when is_number(value) do
-    if value >= min and value <= max do
-      :ok
-    else
-      {:error, {:value_out_of_range, value, min, max}}
-    end
+    validate_value_range(value >= min and value <= max, value, min, max)
   end
 
   def validate_range(_, _, _), do: {:error, :invalid_range_value}
@@ -141,11 +129,7 @@ defmodule Raxol.Architecture.CQRS.Command do
   Validates a field matches one of the allowed values.
   """
   def validate_inclusion(value, allowed_values) when is_list(allowed_values) do
-    if value in allowed_values do
-      :ok
-    else
-      {:error, {:value_not_allowed, value, allowed_values}}
-    end
+    validate_value_inclusion(value in allowed_values, value, allowed_values)
   end
 
   @doc """
@@ -154,11 +138,7 @@ defmodule Raxol.Architecture.CQRS.Command do
   def validate_length(value, min, max) when is_binary(value) do
     length = String.length(value)
 
-    if length >= min and length <= max do
-      :ok
-    else
-      {:error, {:invalid_length, length, min, max}}
-    end
+    validate_string_length(length >= min and length <= max, length, min, max)
   end
 
   def validate_length(nil, min, _max) when min > 0 do
@@ -226,5 +206,35 @@ defmodule Raxol.Architecture.CQRS.Command do
       nil -> 0
       timestamp -> System.system_time(:millisecond) - timestamp
     end
+  end
+
+  # Helper functions to eliminate if statements
+
+  defp validate_missing_fields(true, _missing_fields), do: :ok
+
+  defp validate_missing_fields(false, missing_fields) do
+    {:error, {:missing_required_fields, missing_fields}}
+  end
+
+  defp validate_email_format(true), do: :ok
+
+  defp validate_email_format(false), do: {:error, :invalid_email_format}
+
+  defp validate_value_range(true, _value, _min, _max), do: :ok
+
+  defp validate_value_range(false, value, min, max) do
+    {:error, {:value_out_of_range, value, min, max}}
+  end
+
+  defp validate_value_inclusion(true, _value, _allowed_values), do: :ok
+
+  defp validate_value_inclusion(false, value, allowed_values) do
+    {:error, {:value_not_allowed, value, allowed_values}}
+  end
+
+  defp validate_string_length(true, _length, _min, _max), do: :ok
+
+  defp validate_string_length(false, length, min, max) do
+    {:error, {:invalid_length, length, min, max}}
   end
 end

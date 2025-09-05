@@ -64,16 +64,23 @@ defmodule Raxol.Style.Colors.Adaptive do
   """
   def init do
     # Create the ETS table if it doesn't already exist
-    if :ets.info(@capabilities_cache_name) == :undefined do
-      :ets.new(@capabilities_cache_name, [
-        :set,
-        :public,
-        :named_table,
-        read_concurrency: true
-      ])
-    end
-
+    ensure_ets_table_exists()
     :ok
+  end
+
+  defp ensure_ets_table_exists do
+    case :ets.info(@capabilities_cache_name) do
+      :undefined ->
+        :ets.new(@capabilities_cache_name, [
+          :set,
+          :public,
+          :named_table,
+          read_concurrency: true
+        ])
+
+      _ ->
+        :ok
+    end
   end
 
   @doc """
@@ -292,13 +299,18 @@ defmodule Raxol.Style.Colors.Adaptive do
   """
   def reset_detection do
     # Only delete if the table exists
-    if :ets.info(@capabilities_cache_name) != :undefined do
-      :ets.delete(@capabilities_cache_name)
-    end
+    delete_ets_table_if_exists()
 
     # Re-create the table after deleting it (or ensure it exists)
     init()
     :ok
+  end
+
+  defp delete_ets_table_if_exists do
+    case :ets.info(@capabilities_cache_name) do
+      :undefined -> :ok
+      _ -> :ets.delete(@capabilities_cache_name)
+    end
   end
 
   @doc """

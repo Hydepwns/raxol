@@ -247,13 +247,14 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
   """
   def render(text, config \\ nil) when is_binary(text) do
     config = config || default_config()
-
-    if config.performance_mode do
-      render_optimized(text, config)
-    else
-      render_standard(text, config)
-    end
+    apply_rendering_mode(config.performance_mode, text, config)
   end
+
+  defp apply_rendering_mode(true, text, config),
+    do: render_optimized(text, config)
+
+  defp apply_rendering_mode(false, text, config),
+    do: render_standard(text, config)
 
   @doc """
   Checks if text contains any ligatures that would be rendered.
@@ -425,12 +426,19 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
       |> Enum.sort_by(fn {text, _} -> -String.length(text) end)
 
     Enum.reduce(sorted_ligatures, text, fn {pattern, unicode_point}, acc ->
-      if String.contains?(acc, pattern) do
-        String.replace(acc, pattern, <<unicode_point::utf8>>)
-      else
-        acc
-      end
+      apply_ligature_replacement(
+        String.contains?(acc, pattern),
+        acc,
+        pattern,
+        unicode_point
+      )
     end)
+  end
+
+  defp apply_ligature_replacement(false, acc, _pattern, _unicode_point), do: acc
+
+  defp apply_ligature_replacement(true, acc, pattern, unicode_point) do
+    String.replace(acc, pattern, <<unicode_point::utf8>>)
   end
 
   defp render_optimized(text, config) do
@@ -443,13 +451,19 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
       |> Enum.filter(fn {pattern, _} -> String.contains?(text, pattern) end)
       |> Enum.sort_by(fn {text, _} -> -String.length(text) end)
 
-    if Enum.empty?(candidate_ligatures) do
-      text
-    else
-      Enum.reduce(candidate_ligatures, text, fn {pattern, unicode_point}, acc ->
-        String.replace(acc, pattern, <<unicode_point::utf8>>)
-      end)
-    end
+    process_candidate_ligatures(
+      Enum.empty?(candidate_ligatures),
+      text,
+      candidate_ligatures
+    )
+  end
+
+  defp process_candidate_ligatures(true, text, _candidate_ligatures), do: text
+
+  defp process_candidate_ligatures(false, text, candidate_ligatures) do
+    Enum.reduce(candidate_ligatures, text, fn {pattern, unicode_point}, acc ->
+      String.replace(acc, pattern, <<unicode_point::utf8>>)
+    end)
   end
 
   defp build_ligature_map(config) do
@@ -549,12 +563,14 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
     ligature_map
     |> Enum.sort_by(fn {pattern, _} -> -String.length(pattern) end)
     |> Enum.find_value(fn {pattern, unicode} ->
-      if String.starts_with?(text, pattern) do
-        {pattern, unicode, String.length(pattern)}
-      else
-        nil
-      end
+      check_ligature_match(String.starts_with?(text, pattern), pattern, unicode)
     end)
+  end
+
+  defp check_ligature_match(false, _pattern, _unicode), do: nil
+
+  defp check_ligature_match(true, pattern, unicode) do
+    {pattern, unicode, String.length(pattern)}
   end
 
   defp calculate_ligature_frequency(text, config) do
@@ -621,34 +637,40 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
 
     # Check enabled sets
     errors =
-      if Enum.all?(config.enabled_sets, &Map.has_key?(@all_ligature_sets, &1)) do
-        errors
-      else
-        invalid_sets =
-          Enum.reject(
-            config.enabled_sets,
-            &Map.has_key?(@all_ligature_sets, &1)
-          )
-
-        ["Invalid ligature sets: #{inspect(invalid_sets)}" | errors]
-      end
+      validate_enabled_sets(
+        Enum.all?(config.enabled_sets, &Map.has_key?(@all_ligature_sets, &1)),
+        errors,
+        config.enabled_sets
+      )
 
     # Check custom ligatures
-    errors =
-      if Enum.all?(config.custom_ligatures, fn {k, v} ->
-           is_binary(k) and is_integer(v)
-         end) do
-        errors
-      else
-        ["Custom ligatures must be %{String.t() => integer()}" | errors]
-      end
+    valid_custom =
+      Enum.all?(config.custom_ligatures, fn {k, v} ->
+        is_binary(k) and is_integer(v)
+      end)
 
-    if Enum.empty?(errors) do
-      :ok
-    else
-      {:error, errors}
-    end
+    errors = validate_custom_ligatures(valid_custom, errors)
+
+    return_validation_result(Enum.empty?(errors), errors)
   end
+
+  defp validate_enabled_sets(true, errors, _enabled_sets), do: errors
+
+  defp validate_enabled_sets(false, errors, enabled_sets) do
+    invalid_sets =
+      Enum.reject(enabled_sets, &Map.has_key?(@all_ligature_sets, &1))
+
+    ["Invalid ligature sets: #{inspect(invalid_sets)}" | errors]
+  end
+
+  defp validate_custom_ligatures(true, errors), do: errors
+
+  defp validate_custom_ligatures(false, errors) do
+    ["Custom ligatures must be %{String.t() => integer()}" | errors]
+  end
+
+  defp return_validation_result(true, _errors), do: :ok
+  defp return_validation_result(false, errors), do: {:error, errors}
 
   @doc """
   Gets performance statistics for ligature rendering.

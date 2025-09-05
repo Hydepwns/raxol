@@ -36,7 +36,9 @@ defmodule RaxolWeb.PlaygroundLive do
   defp execute_code(code, language) do
     case language do
       "elixir" ->
-        case Raxol.Core.ErrorHandling.safe_call(fn -> Code.eval_string(code) end) do
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
+               Code.eval_string(code)
+             end) do
           {:ok, result} -> {:ok, inspect(result)}
           {:error, e} -> {:error, Exception.message(e)}
         end

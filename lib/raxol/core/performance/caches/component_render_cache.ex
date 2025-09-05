@@ -170,7 +170,7 @@ defmodule Raxol.Core.Performance.Caches.ComponentRenderCache do
   def estimate_render_cost(%{type: :panel}), do: :medium
 
   def estimate_render_cost(%{type: :table, data: data}) when is_list(data) do
-    if length(data) > 10, do: :high, else: :medium
+    determine_table_cost(length(data) > 10)
   end
 
   def estimate_render_cost(%{children: children}) when is_list(children) do
@@ -184,6 +184,10 @@ defmodule Raxol.Core.Performance.Caches.ComponentRenderCache do
   end
 
   def estimate_render_cost(_), do: :low
+
+  defp determine_table_cost(true), do: :high
+  defp determine_table_cost(false), do: :medium
+
 
   # Private functions
 
@@ -239,7 +243,7 @@ defmodule Raxol.Core.Performance.Caches.ComponentRenderCache do
   end
 
   # Telemetry
-  defp emit_telemetry(event, metadata \\ %{}) do
+  defp emit_telemetry(event, metadata) do
     :telemetry.execute(
       @telemetry_prefix ++ [event],
       %{count: 1},

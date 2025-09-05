@@ -134,14 +134,7 @@ defmodule Raxol.Terminal.Session do
   """
   @spec save_session(GenServer.server()) :: :ok
   def save_session(pid) do
-    if Mix.env() == :test do
-      # Use synchronous save in test environment
-      GenServer.call(pid, :save_session, 5000)
-    else
-      # Use asynchronous save in other environments
-      GenServer.cast(pid, :save_session)
-      :ok
-    end
+    execute_save_by_environment(pid)
   end
 
   @doc """
@@ -274,9 +267,7 @@ defmodule Raxol.Terminal.Session do
   end
 
   def handle_info(:auto_save, state) do
-    if state.auto_save do
-      Task.start(fn -> Storage.save_session(state) end)
-    end
+    execute_auto_save(state.auto_save, state)
 
     # Schedule next auto-save
     timer_id = System.unique_integer([:positive])
@@ -286,6 +277,28 @@ defmodule Raxol.Terminal.Session do
   end
 
   # Private functions
+
+  # Helper functions for if-statement elimination
+  defp execute_save_by_environment(pid) do
+    handle_save_by_env(Mix.env(), pid)
+  end
+
+  defp handle_save_by_env(:test, pid) do
+    # Use synchronous save in test environment
+    GenServer.call(pid, :save_session, 5000)
+  end
+
+  defp handle_save_by_env(_env, pid) do
+    # Use asynchronous save in other environments
+    GenServer.cast(pid, :save_session)
+    :ok
+  end
+
+  defp execute_auto_save(false, _state), do: :ok
+
+  defp execute_auto_save(true, state) do
+    Task.start(fn -> Storage.save_session(state) end)
+  end
 
   defp update_state_from_config(state, config) do
     %{

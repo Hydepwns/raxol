@@ -81,55 +81,56 @@ defmodule RaxolWeb.Settings.PasswordComponent do
     password_confirmation = user_params["password_confirmation"]
 
     # Validate password confirmation
-    if new_password != password_confirmation do
-      error_changeset = %Ecto.Changeset{
-        data: %Raxol.Auth.User{},
-        errors: [password_confirmation: {"does not match", []}],
-        valid?: false
-      }
+    case new_password != password_confirmation do
+      true ->
+        error_changeset = %Ecto.Changeset{
+          data: %Raxol.Auth.User{},
+          errors: [password_confirmation: {"does not match", []}],
+          valid?: false
+        }
 
-      {:noreply,
-       socket
-       |> put_flash(:error, "Password confirmation does not match.")
-       |> assign(:password_changeset, error_changeset)}
-    else
-      # Update password using Accounts module
-      case Accounts.update_password(user.id, current_password, new_password) do
-        {:ok, updated_user} ->
-          send(self(), {:password_updated, updated_user})
+        {:noreply,
+         socket
+         |> put_flash(:error, "Password confirmation does not match.")
+         |> assign(:password_changeset, error_changeset)}
+      false ->
+        # Update password using Accounts module
+        case Accounts.update_password(user.id, current_password, new_password) do
+          {:ok, updated_user} ->
+            send(self(), {:password_updated, updated_user})
 
-          {:noreply,
-           socket
-           |> put_flash(:info, "Password updated successfully.")
-           |> redirect(to: "/settings")}
+            {:noreply,
+             socket
+             |> put_flash(:info, "Password updated successfully.")
+             |> redirect(to: "/settings")}
 
-        {:error, :invalid_current_password} ->
-          error_changeset = %Ecto.Changeset{
-            data: %Raxol.Auth.User{},
-            errors: [current_password: {"is incorrect", []}],
-            valid?: false
-          }
+          {:error, :invalid_current_password} ->
+            error_changeset = %Ecto.Changeset{
+              data: %Raxol.Auth.User{},
+              errors: [current_password: {"is incorrect", []}],
+              valid?: false
+            }
 
-          {:noreply,
-           socket
-           |> put_flash(:error, "Current password is incorrect.")
-           |> assign(:password_changeset, error_changeset)}
+            {:noreply,
+             socket
+             |> put_flash(:error, "Current password is incorrect.")
+             |> assign(:password_changeset, error_changeset)}
 
-        {:error, changeset} when is_map(changeset) ->
-          {:noreply, assign(socket, :password_changeset, changeset)}
+          {:error, changeset} when is_map(changeset) ->
+            {:noreply, assign(socket, :password_changeset, changeset)}
 
-        {:error, reason} ->
-          error_changeset = %Ecto.Changeset{
-            data: %Raxol.Auth.User{},
-            errors: [password: {"update failed", []}],
-            valid?: false
-          }
+          {:error, reason} ->
+            error_changeset = %Ecto.Changeset{
+              data: %Raxol.Auth.User{},
+              errors: [password: {"update failed", []}],
+              valid?: false
+            }
 
-          {:noreply,
-           socket
-           |> put_flash(:error, "Failed to update password: #{inspect(reason)}")
-           |> assign(:password_changeset, error_changeset)}
-      end
+            {:noreply,
+             socket
+             |> put_flash(:error, "Failed to update password: #{inspect(reason)}")
+             |> assign(:password_changeset, error_changeset)}
+        end
     end
   end
 

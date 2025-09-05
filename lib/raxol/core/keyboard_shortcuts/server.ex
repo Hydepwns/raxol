@@ -220,18 +220,16 @@ defmodule Raxol.Core.KeyboardShortcuts.Server do
     # Check for conflicts
     existing = get_shortcut_from_state(state, parsed_shortcut, context)
 
-    if existing && !override do
-      {:reply, {:error, :conflict}, state}
-    else
-      new_state =
-        add_shortcut_to_state(state, parsed_shortcut, shortcut_def, context)
+    case check_shortcut_conflict(existing, override) do
+      {:conflict, _} ->
+        {:reply, {:error, :conflict}, state}
 
-      # Announce if accessibility is enabled
-      if Accessibility.enabled?() do
-        Accessibility.announce("Shortcut #{shortcut} registered for #{name}")
-      end
+      :allow ->
+        new_state =
+          add_shortcut_to_state(state, parsed_shortcut, shortcut_def, context)
 
-      {:reply, :ok, new_state}
+        announce_shortcut_registration(shortcut, name)
+        {:reply, :ok, new_state}
     end
   end
 
@@ -259,13 +257,7 @@ defmodule Raxol.Core.KeyboardShortcuts.Server do
 
   @impl GenServer
   def handle_call({:get_shortcuts_for_context, context}, _from, state) do
-    shortcuts =
-      if context == :global do
-        state.shortcuts.global
-      else
-        Map.get(state.shortcuts.contexts, context, %{})
-      end
-
+    shortcuts = get_shortcuts_by_context(state, context)
     {:reply, shortcuts, state}
   end
 
@@ -273,12 +265,7 @@ defmodule Raxol.Core.KeyboardShortcuts.Server do
   def handle_call(:get_available_shortcuts, _from, state) do
     global = state.shortcuts.global
 
-    context_shortcuts =
-      if state.active_context != :global do
-        Map.get(state.shortcuts.contexts, state.active_context, %{})
-      else
-        %{}
-      end
+    context_shortcuts = get_context_shortcuts(state)
 
     # Merge with context shortcuts taking precedence
     available = Map.merge(global, context_shortcuts)
@@ -316,12 +303,7 @@ defmodule Raxol.Core.KeyboardShortcuts.Server do
 
   @impl GenServer
   def handle_call({:clear_context, context}, _from, state) do
-    new_state =
-      if context == :global do
-        put_in(state, [:shortcuts, :global], %{})
-      else
-        update_in(state, [:shortcuts, :contexts], &Map.delete(&1, context))
-      end
+    new_state = clear_shortcuts_for_context(state, context)
 
     {:reply, :ok, new_state}
   end
@@ -333,14 +315,126 @@ defmodule Raxol.Core.KeyboardShortcuts.Server do
 
   @impl GenServer
   def handle_cast({:handle_keyboard_event, event}, state) do
-    if state.enabled do
-      process_keyboard_event(event, state)
-    end
+    process_event_if_enabled(event, state)
 
     {:noreply, state}
   end
 
   # Private Helper Functions
+
+  defp check_shortcut_conflict(existing, override)
+       when existing != nil and override == false do
+    {:conflict, existing}
+  end
+
+  defp check_shortcut_conflict(_, _), do: :allow
+
+  defp announce_shortcut_registration(shortcut, name) do
+    case Accessibility.enabled?() do
+      true ->
+        Accessibility.announce("Shortcut #{shortcut} registered for #{name}")
+
+      false ->
+        :ok
+    end
+  end
+
+  defp get_shortcuts_by_context(state, :global), do: state.shortcuts.global
+
+  defp get_shortcuts_by_context(state, context) do
+    Map.get(state.shortcuts.contexts, context, %{})
+  end
+
+  defp get_context_shortcuts(state) when state.active_context != :global do
+    Map.get(state.shortcuts.contexts, state.active_context, %{})
+  end
+
+  defp get_context_shortcuts(_state), do: %{}
+
+  defp clear_shortcuts_for_context(state, :global) do
+    put_in(state, [:shortcuts, :global], %{})
+  end
+
+  defp clear_shortcuts_for_context(state, context) do
+    update_in(state, [:shortcuts, :contexts], &Map.delete(&1, context))
+  end
+
+  defp process_event_if_enabled(event, state) when state.enabled == true do
+    process_keyboard_event(event, state)
+  end
+
+  defp process_event_if_enabled(_event, _state), do: :ok
+
+  defp add_shortcut_by_context(state, key, shortcut_def, :global) do
+    put_in(state, [:shortcuts, :global, key], shortcut_def)
+  end
+
+  defp add_shortcut_by_context(state, key, shortcut_def, context) do
+    contexts = state.shortcuts.contexts
+    context_shortcuts = Map.get(contexts, context, %{})
+    updated_shortcuts = Map.put(context_shortcuts, key, shortcut_def)
+    updated_contexts = Map.put(contexts, context, updated_shortcuts)
+    %{state | shortcuts: %{state.shortcuts | contexts: updated_contexts}}
+  end
+
+  defp remove_shortcut_by_context(state, key, :global) do
+    update_in(state, [:shortcuts, :global], &Map.delete(&1, key))
+  end
+
+  defp remove_shortcut_by_context(state, key, context) do
+    update_in(
+      state,
+      [:shortcuts, :contexts, context],
+      &Map.delete(&1 || %{}, key)
+    )
+  end
+
+  defp find_matching_shortcut(state, key_str)
+       when state.active_context != :global do
+    context_shortcuts =
+      Map.get(state.shortcuts.contexts, state.active_context, %{})
+
+    Map.get(context_shortcuts, key_str) ||
+      Map.get(state.shortcuts.global, key_str)
+  end
+
+  defp find_matching_shortcut(state, key_str) do
+    Map.get(state.shortcuts.global, key_str)
+  end
+
+  defp execute_shortcut_callback(nil), do: :ok
+
+  defp execute_shortcut_callback(shortcut) when shortcut.callback == nil,
+    do: :ok
+
+  defp execute_shortcut_callback(shortcut) do
+    case Raxol.Core.ErrorHandling.safe_call(shortcut.callback) do
+      {:ok, _result} ->
+        announce_shortcut_execution(shortcut)
+
+      {:error, reason} ->
+        Logger.error("Shortcut callback failed: #{inspect(reason)}")
+    end
+  end
+
+  defp announce_shortcut_execution(shortcut) do
+    case {Accessibility.enabled?(), shortcut.description} do
+      {true, description} when description != "" ->
+        Accessibility.announce(description, priority: :high)
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp generate_context_help(state) when state.active_context != :global do
+    context_shortcuts =
+      Map.get(state.shortcuts.contexts, state.active_context, %{})
+
+    format_shortcuts_group(to_string(state.active_context), context_shortcuts)
+  end
+
+  defp generate_context_help(_state), do: ""
 
   defp parse_shortcut(shortcut) when is_binary(shortcut) do
     # Parse shortcut string like "Ctrl+S", "Alt+F4", "Cmd+Shift+P"
@@ -409,43 +503,20 @@ defmodule Raxol.Core.KeyboardShortcuts.Server do
   end
 
   defp get_shortcut_from_state(state, parsed_shortcut, context) do
-    shortcuts =
-      if context == :global do
-        state.shortcuts.global
-      else
-        Map.get(state.shortcuts.contexts, context, %{})
-      end
-
+    shortcuts = get_shortcuts_by_context(state, context)
     Map.get(shortcuts, shortcut_key(parsed_shortcut))
   end
 
   defp add_shortcut_to_state(state, parsed_shortcut, shortcut_def, context) do
     key = shortcut_key(parsed_shortcut)
 
-    if context == :global do
-      put_in(state, [:shortcuts, :global, key], shortcut_def)
-    else
-      contexts = state.shortcuts.contexts
-      context_shortcuts = Map.get(contexts, context, %{})
-      updated_shortcuts = Map.put(context_shortcuts, key, shortcut_def)
-      updated_contexts = Map.put(contexts, context, updated_shortcuts)
-
-      %{state | shortcuts: %{state.shortcuts | contexts: updated_contexts}}
-    end
+    add_shortcut_by_context(state, key, shortcut_def, context)
   end
 
   defp remove_shortcut_from_state(state, parsed_shortcut, context) do
     key = shortcut_key(parsed_shortcut)
 
-    if context == :global do
-      update_in(state, [:shortcuts, :global], &Map.delete(&1, key))
-    else
-      update_in(
-        state,
-        [:shortcuts, :contexts, context],
-        &Map.delete(&1 || %{}, key)
-      )
-    end
+    remove_shortcut_by_context(state, key, context)
   end
 
   defp shortcut_key(parsed_shortcut) do
@@ -466,27 +537,9 @@ defmodule Raxol.Core.KeyboardShortcuts.Server do
     key_str = shortcut_key(parsed)
 
     # Look for matching shortcut in active context first, then global
-    shortcut =
-      if state.active_context != :global do
-        context_shortcuts =
-          Map.get(state.shortcuts.contexts, state.active_context, %{})
+    shortcut = find_matching_shortcut(state, key_str)
 
-        Map.get(context_shortcuts, key_str)
-      end || Map.get(state.shortcuts.global, key_str)
-
-    if shortcut && shortcut.callback do
-      # Execute callback
-      case Raxol.Core.ErrorHandling.safe_call(shortcut.callback) do
-        {:ok, _result} ->
-          # Announce if accessibility is enabled
-          if Accessibility.enabled?() && shortcut.description != "" do
-            Accessibility.announce(shortcut.description, priority: :high)
-          end
-
-        {:error, reason} ->
-          Logger.error("Shortcut callback failed: #{inspect(reason)}")
-      end
-    end
+    execute_shortcut_callback(shortcut)
   end
 
   defp process_keyboard_event(_event, _state), do: :ok
@@ -494,18 +547,7 @@ defmodule Raxol.Core.KeyboardShortcuts.Server do
   defp generate_help_text(state) do
     global_shortcuts = format_shortcuts_group("Global", state.shortcuts.global)
 
-    context_help =
-      if state.active_context != :global do
-        context_shortcuts =
-          Map.get(state.shortcuts.contexts, state.active_context, %{})
-
-        format_shortcuts_group(
-          to_string(state.active_context),
-          context_shortcuts
-        )
-      else
-        ""
-      end
+    context_help = generate_context_help(state)
 
     [global_shortcuts, context_help]
     |> Enum.filter(&(&1 != ""))

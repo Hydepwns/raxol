@@ -188,13 +188,14 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     {scroll_start, scroll_end} = get_effective_region(buffer, scroll_region_arg)
     visible_lines = scroll_end - scroll_start + 1
 
-    if lines >= visible_lines do
-      scrolled_lines =
-        extract_lines_from_region(buffer, scroll_start, scroll_end)
+    case lines >= visible_lines do
+      true ->
+        scrolled_lines =
+          extract_lines_from_region(buffer, scroll_start, scroll_end)
 
-      {clear_region(buffer, scroll_start, scroll_end), scrolled_lines}
-    else
-      scroll_region_up_with_lines(buffer, scroll_start, scroll_end, lines)
+        {clear_region(buffer, scroll_start, scroll_end), scrolled_lines}
+      false ->
+        scroll_region_up_with_lines(buffer, scroll_start, scroll_end, lines)
     end
   end
 
@@ -278,10 +279,9 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     {scroll_start, scroll_end} = get_effective_region(buffer, scroll_region_arg)
     visible_lines = scroll_end - scroll_start + 1
 
-    if lines >= visible_lines do
-      clear_region(buffer, scroll_start, scroll_end)
-    else
-      scroll_region_down(buffer, scroll_start, scroll_end, lines)
+    case lines >= visible_lines do
+      true -> clear_region(buffer, scroll_start, scroll_end)
+      false -> scroll_region_down(buffer, scroll_start, scroll_end, lines)
     end
   end
 
@@ -328,10 +328,9 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
 
   defp extract_lines_from_region(buffer, start_line, end_line) do
     Enum.map(start_line..end_line, fn i ->
-      if i < length(buffer.cells) do
-        Enum.at(buffer.cells, i, [])
-      else
-        []
+      case i < length(buffer.cells) do
+        true -> Enum.at(buffer.cells, i, [])
+        false -> []
       end
     end)
     |> Enum.filter(fn line -> line != [] end)
@@ -396,18 +395,18 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
          direction,
          empty_line
        ) do
-    if idx < scroll_start do
-      line
-    else
-      transform_line_in_region(
-        idx,
-        cells,
-        scroll_start,
-        scroll_end,
-        lines,
-        direction,
-        empty_line
-      )
+    case idx < scroll_start do
+      true -> line
+      false ->
+        transform_line_in_region(
+          idx,
+          cells,
+          scroll_start,
+          scroll_end,
+          lines,
+          direction,
+          empty_line
+        )
     end
   end
 

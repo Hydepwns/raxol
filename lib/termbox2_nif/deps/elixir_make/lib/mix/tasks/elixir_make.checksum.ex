@@ -32,11 +32,7 @@ defmodule Mix.Tasks.ElixirMake.Checksum do
 
   @impl true
   def run(flags) when is_list(flags) do
-    if function_exported?(Mix, :ensure_application!, 1) do
-      Mix.ensure_application!(:inets)
-      Mix.ensure_application!(:ssl)
-      Mix.ensure_application!(:crypto)
-    end
+    ensure_mix_applications(function_exported?(Mix, :ensure_application!, 1))
 
     config = Mix.Project.config()
 
@@ -65,12 +61,7 @@ defmodule Mix.Tasks.ElixirMake.Checksum do
               [{{target, nif_version_to_use}, url}]
 
             {:error, {:unavailable_target, current_target, error}} ->
-              recover =
-                if function_exported?(precompiler, :unavailable_target, 1) do
-                  precompiler.unavailable_target(current_target)
-                else
-                  :compile
-                end
+              recover = get_unavailable_target_recovery(function_exported?(precompiler, :unavailable_target, 1), precompiler, current_target)
 
               case recover do
                 :compile ->
@@ -92,17 +83,51 @@ defmodule Mix.Tasks.ElixirMake.Checksum do
 
     artefacts = download_and_checksum_all(config, urls, options)
 
-    if Keyword.get(options, :print, false) do
-      artefacts
-      |> Enum.map(fn %Artefact{basename: basename, checksum: checksum} ->
-        {basename, checksum}
-      end)
-      |> Enum.sort()
-      |> Enum.map_join("\n", fn {file, checksum} -> "#{checksum}  #{file}" end)
-      |> IO.puts()
-    end
+    handle_print_option(Keyword.get(options, :print, false), artefacts)
 
     Artefact.write_checksums!(artefacts)
+  end
+
+  defp ensure_mix_applications(false) do
+    :ok
+  end
+
+  defp ensure_mix_applications(true) do
+    Mix.ensure_application!(:inets)
+    Mix.ensure_application!(:ssl)
+    Mix.ensure_application!(:crypto)
+  end
+
+  defp get_unavailable_target_recovery(false, _precompiler, _current_target) do
+    :compile
+  end
+
+  defp get_unavailable_target_recovery(true, precompiler, current_target) do
+    precompiler.unavailable_target(current_target)
+  end
+
+  defp handle_print_option(false, _artefacts) do
+    :ok
+  end
+
+  defp handle_print_option(true, artefacts) do
+    artefacts
+    |> Enum.map(fn %Artefact{basename: basename, checksum: checksum} ->
+      {basename, checksum}
+    end)
+    |> Enum.sort()
+    |> Enum.map_join("\n", fn {file, checksum} -> "#{checksum}  #{file}" end)
+    |> IO.puts()
+  end
+
+  defp handle_download_failure(true, result) do
+    msg = "Skipped unavailable NIF artifact. Reason: #{inspect(result)}"
+    Mix.shell().info(msg)
+  end
+
+  defp handle_download_failure(false, result) do
+    msg = "Could not finish the download of NIF artifacts. Reason: #{inspect(result)}"
+    Mix.shell().error(msg)
   end
 
   defp download_and_checksum_all(config, urls, options) do
@@ -157,18 +182,7 @@ defmodule Mix.Tasks.ElixirMake.Checksum do
             [artefact]
 
           result ->
-            if ignore_unavailable? do
-              msg =
-                "Skipped unavailable NIF artifact. Reason: #{inspect(result)}"
-
-              Mix.shell().info(msg)
-            else
-              msg =
-                "Could not finish the download of NIF artifacts. Reason: #{inspect(result)}"
-
-              Mix.shell().error(msg)
-            end
-
+            handle_download_failure(ignore_unavailable?, result)
             []
         end
     end)

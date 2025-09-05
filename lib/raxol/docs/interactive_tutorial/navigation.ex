@@ -46,26 +46,13 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
            Map.get(state.tutorials, tutorial_id) do
       current_index = Enum.find_index(tutorial.steps, &(&1.id == step_id))
 
-      if current_index < length(tutorial.steps) - 1 do
-        next_step = Enum.at(tutorial.steps, current_index + 1)
-
-        updated_state =
-          state
-          |> Map.put(:current_step, next_step.id)
-          |> Map.update!(
-            :history,
-            &[{:step_change, tutorial_id, next_step.id} | &1]
-          )
-          |> State.update_progress(tutorial_id, next_step.id)
-
-        {:ok, State.get_current_step(updated_state), updated_state}
-      else
-        # This was the last step, mark tutorial as completed
+      handle_next_step_transition(
+        current_index < length(tutorial.steps) - 1,
+        tutorial,
+        current_index,
+        tutorial_id,
         state
-        |> State.mark_completed(tutorial_id)
-        |> Map.update!(:history, &[{:tutorial_complete, tutorial_id} | &1])
-        |> then(fn _ -> {:ok, :tutorial_completed} end)
-      end
+      )
     else
       _ -> {:error, "No tutorial in progress"}
     end
@@ -81,19 +68,13 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
            Map.get(state.tutorials, tutorial_id) do
       current_index = Enum.find_index(tutorial.steps, &(&1.id == step_id))
 
-      if current_index > 0 do
-        prev_step = Enum.at(tutorial.steps, current_index - 1)
-
-        updated_state = %{
-          state
-          | current_step: prev_step.id,
-            history: [{:step_change, tutorial_id, prev_step.id} | state.history]
-        }
-
-        {:ok, State.get_current_step(updated_state), updated_state}
-      else
-        {:error, "Already at first step"}
-      end
+      handle_previous_step_transition(
+        current_index > 0,
+        tutorial.steps,
+        current_index,
+        tutorial_id,
+        state
+      )
     else
       _ -> {:error, "No tutorial in progress"}
     end
@@ -139,7 +120,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
         completed_steps = length(progress.completed_steps)
 
         percentage =
-          if total_steps > 0, do: completed_steps / total_steps * 100, else: 0
+          calculate_percentage(total_steps, completed_steps)
 
         {:ok,
          %{
@@ -152,5 +133,52 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
            percentage: percentage
          }}
     end
+  end
+
+  # Helper functions to eliminate if statements
+
+  defp handle_next_step_transition(false, _tutorial, _current_index, tutorial_id, state) do
+    # This was the last step, mark tutorial as completed
+    state
+    |> State.mark_completed(tutorial_id)
+    |> Map.update!(:history, &[{:tutorial_complete, tutorial_id} | &1])
+    |> then(fn _ -> {:ok, :tutorial_completed} end)
+  end
+
+  defp handle_next_step_transition(true, tutorial, current_index, tutorial_id, state) do
+    next_step = Enum.at(tutorial.steps, current_index + 1)
+
+    updated_state =
+      state
+      |> Map.put(:current_step, next_step.id)
+      |> Map.update!(
+        :history,
+        &[{:step_change, tutorial_id, next_step.id} | &1]
+      )
+      |> State.update_progress(tutorial_id, next_step.id)
+
+    {:ok, State.get_current_step(updated_state), updated_state}
+  end
+
+  defp handle_previous_step_transition(false, _steps, _current_index, _tutorial_id, _state) do
+    {:error, "Already at first step"}
+  end
+
+  defp handle_previous_step_transition(true, steps, current_index, tutorial_id, state) do
+    prev_step = Enum.at(steps, current_index - 1)
+
+    updated_state = %{
+      state
+      | current_step: prev_step.id,
+        history: [{:step_change, tutorial_id, prev_step.id} | state.history]
+    }
+
+    {:ok, State.get_current_step(updated_state), updated_state}
+  end
+
+  defp calculate_percentage(0, _completed_steps), do: 0
+
+  defp calculate_percentage(total_steps, completed_steps) do
+    completed_steps / total_steps * 100
   end
 end

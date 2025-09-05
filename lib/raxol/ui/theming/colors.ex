@@ -567,12 +567,11 @@ defmodule Raxol.UI.Theming.Colors do
   end
 
   defp validate_palette_colors(colors) do
-    if Enum.all?(colors, &valid_palette_color?/1) do
-      :ok
-    else
-      {:error, :invalid_color_format}
-    end
+    handle_palette_validation(Enum.all?(colors, &valid_palette_color?/1))
   end
+
+  defp handle_palette_validation(true), do: :ok
+  defp handle_palette_validation(false), do: {:error, :invalid_color_format}
 
   defp valid_palette_color?({index, {r, g, b}})
        when is_integer(index) and

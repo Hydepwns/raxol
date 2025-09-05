@@ -112,17 +112,24 @@ defmodule Raxol.Core.CompilerState do
 
       nil ->
         # Timeout - check if another process created it
-        if table_exists?(name), do: :ok, else: {:error, :creation_timeout}
+        case table_exists?(name) do
+          true -> :ok
+          false -> {:error, :creation_timeout}
+        end
 
       {:exit, {:badarg, _}} ->
         # Table creation failed - likely already exists
-        if table_exists?(name), do: :ok, else: {:error, :creation_failed}
+        case table_exists?(name) do
+          true -> :ok
+          false -> {:error, :creation_failed}
+        end
 
       {:exit, reason} ->
         # Unexpected error - check table existence as fallback
-        if table_exists?(name),
-          do: :ok,
-          else: {:error, {:creation_error, reason}}
+        case table_exists?(name) do
+          true -> :ok
+          false -> {:error, {:creation_error, reason}}
+        end
     end
   end
 

@@ -167,9 +167,7 @@ defmodule Raxol.UI.Components.Table do
 
   def update({:sort, column}, state) do
     new_direction =
-      if state.sort_by == column && state.sort_direction == :asc,
-        do: :desc,
-        else: :asc
+      get_new_sort_direction(state.sort_by, state.sort_direction, column)
 
     new_state = %{state | sort_by: column, sort_direction: new_direction}
     {:ok, new_state}
@@ -228,10 +226,7 @@ defmodule Raxol.UI.Components.Table do
     rows = create_rows(paginated_data, state.columns, state, layout_context)
 
     # Create pagination controls if enabled
-    pagination =
-      if state.options.paginate,
-        do: create_pagination(state, layout_context),
-        else: []
+    pagination = get_pagination(state.options.paginate, state, layout_context)
 
     # Compose header and rows into a single flex container using the macro
     header_and_rows =
@@ -301,23 +296,31 @@ defmodule Raxol.UI.Components.Table do
     {:ok, %{state | selected_row: length(state.data) - 1}}
   end
 
+  def handle_event(
+        {:key, {:arrow_right, _}},
+        _context,
+        %{options: %{paginate: true}} = state
+      ) do
+    max_page = ceil(length(state.data) / state.page_size)
+    new_page = min(state.current_page + 1, max_page)
+    {:ok, %{state | current_page: new_page}}
+  end
+
   def handle_event({:key, {:arrow_right, _}}, _context, state) do
-    if state.options.paginate do
-      max_page = ceil(length(state.data) / state.page_size)
-      new_page = min(state.current_page + 1, max_page)
-      {:ok, %{state | current_page: new_page}}
-    else
-      {:ok, state}
-    end
+    {:ok, state}
+  end
+
+  def handle_event(
+        {:key, {:arrow_left, _}},
+        _context,
+        %{options: %{paginate: true}} = state
+      ) do
+    new_page = max(state.current_page - 1, 1)
+    {:ok, %{state | current_page: new_page}}
   end
 
   def handle_event({:key, {:arrow_left, _}}, _context, state) do
-    if state.options.paginate do
-      new_page = max(state.current_page - 1, 1)
-      {:ok, %{state | current_page: new_page}}
-    else
-      {:ok, state}
-    end
+    {:ok, state}
   end
 
   def handle_event({:button_click, button_id}, _context, state) do
@@ -348,93 +351,113 @@ defmodule Raxol.UI.Components.Table do
       ],
       :unknown,
       fn {predicate, result} ->
-        if predicate.(button_id) do
-          if is_function(result), do: result.(button_id), else: result
+        case predicate.(button_id) do
+          true ->
+            case result do
+              fun when is_function(fun) -> fun.(button_id)
+              value -> value
+            end
+
+          false ->
+            nil
         end
       end
     )
   end
 
+  defp handle_next_page_click(%{options: %{paginate: true}} = state) do
+    max_page = ceil(length(state.data) / state.page_size)
+    new_page = min(state.current_page + 1, max_page)
+    {:ok, %{state | current_page: new_page}}
+  end
+
   defp handle_next_page_click(state) do
-    if state.options.paginate do
-      max_page = ceil(length(state.data) / state.page_size)
-      new_page = min(state.current_page + 1, max_page)
-      {:ok, %{state | current_page: new_page}}
-    else
-      {:ok, state}
-    end
+    {:ok, state}
+  end
+
+  defp handle_prev_page_click(%{options: %{paginate: true}} = state) do
+    new_page = max(state.current_page - 1, 1)
+    {:ok, %{state | current_page: new_page}}
   end
 
   defp handle_prev_page_click(state) do
-    if state.options.paginate do
-      new_page = max(state.current_page - 1, 1)
-      {:ok, %{state | current_page: new_page}}
-    else
-      {:ok, state}
+    {:ok, state}
+  end
+
+  defp handle_sort_click(column_id, %{options: %{sortable: true}} = state) do
+    new_direction =
+      get_new_sort_direction(state.sort_by, state.sort_direction, column_id)
+
+    {:ok, %{state | sort_by: column_id, sort_direction: new_direction}}
+  end
+
+  defp handle_sort_click(_column_id, state) do
+    {:ok, state}
+  end
+
+  def handle_event(
+        {:text_input, input_id, value},
+        _context,
+        %{options: %{searchable: true}} = state
+      )
+      when is_binary(input_id) do
+    case String.ends_with?(input_id, "_search") do
+      true -> {:ok, %{state | filter_term: value, current_page: 1}}
+      false -> {:ok, state}
     end
   end
 
-  defp handle_sort_click(column_id, state) do
-    if state.options.sortable do
-      new_direction =
-        if state.sort_by == column_id and state.sort_direction == :asc,
-          do: :desc,
-          else: :asc
-
-      {:ok, %{state | sort_by: column_id, sort_direction: new_direction}}
-    else
-      {:ok, state}
-    end
+  def handle_event({:text_input, _input_id, _value}, _context, state) do
+    {:ok, state}
   end
 
-  def handle_event({:text_input, input_id, value}, _context, state) do
-    if is_binary(input_id) and String.ends_with?(input_id, "_search") and
-         state.options.searchable do
-      {:ok, %{state | filter_term: value, current_page: 1}}
-    else
-      {:ok, state}
-    end
+  def handle_event({:key, {:enter, _}}, _context, %{selected_row: nil} = state) do
+    {:ok, state}
   end
 
   def handle_event({:key, {:enter, _}}, _context, state) do
-    if state.selected_row do
-      {:ok, state}
-    else
-      {:ok, state}
-    end
+    {:ok, state}
   end
 
   def handle_event({:key, {:escape, _}}, _context, state) do
     {:ok, %{state | selected_row: nil}}
   end
 
-  def handle_event({:key, {:backspace, _}}, _context, state) do
-    if state.options.searchable do
-      new_term = String.slice(state.filter_term, 0..-2//-1)
-      {:ok, %{state | filter_term: new_term, current_page: 1}}
-    else
-      {:ok, state}
-    end
+  def handle_event(
+        {:key, {:backspace, _}},
+        _context,
+        %{options: %{searchable: true}} = state
+      ) do
+    new_term = String.slice(state.filter_term, 0..-2//-1)
+    {:ok, %{state | filter_term: new_term, current_page: 1}}
   end
 
-  def handle_event({:key, {:char, char}}, _context, state) do
-    if state.options.searchable do
-      new_term = state.filter_term <> char
-      {:ok, %{state | filter_term: new_term, current_page: 1}}
-    else
-      {:ok, state}
-    end
+  def handle_event({:key, {:backspace, _}}, _context, state) do
+    {:ok, state}
+  end
+
+  def handle_event(
+        {:key, {:char, char}},
+        _context,
+        %{options: %{searchable: true}} = state
+      ) do
+    new_term = state.filter_term <> char
+    {:ok, %{state | filter_term: new_term, current_page: 1}}
+  end
+
+  def handle_event({:key, {:char, _char}}, _context, state) do
+    {:ok, state}
   end
 
   def handle_event({:mouse, {:click, {_x, y}}}, _context, state) do
     # Calculate row index based on y position
     # Assuming each row is 1 unit high
     row_index = div(y - 1, 1)
+    data_length = length(state.data)
 
-    if row_index >= 0 and row_index < length(state.data) do
-      {:ok, %{state | selected_row: row_index}}
-    else
-      {:ok, state}
+    case row_index >= 0 and row_index < data_length do
+      true -> {:ok, %{state | selected_row: row_index}}
+      false -> {:ok, state}
     end
   end
 
@@ -447,6 +470,44 @@ defmodule Raxol.UI.Components.Table do
   end
 
   # Private Helpers
+
+  defp get_new_sort_direction(current_column, :asc, target_column)
+       when current_column == target_column,
+       do: :desc
+
+  defp get_new_sort_direction(_current_column, _direction, _target_column),
+    do: :asc
+
+  defp get_pagination(true, state, context),
+    do: create_pagination(state, context)
+
+  defp get_pagination(false, _state, _context), do: []
+
+  defp get_column_content(true, column, sort_by, sort_direction) do
+    "#{column.label} #{sort_indicator(sort_by, sort_direction, column.id)}"
+  end
+
+  defp get_column_content(false, column, _sort_by, _sort_direction),
+    do: column.label
+
+  defp create_header_cell(true, content, column, style_list) do
+    # Create a clickable button for sorting
+    Raxol.Core.Renderer.View.button(
+      content,
+      id: "test_table_sort_#{column.id}",
+      style: [:bold | style_list],
+      align: column.align
+    )
+  end
+
+  defp create_header_cell(false, content, column, style_list) do
+    # Just text when not sortable
+    Raxol.Core.Renderer.View.text(
+      content,
+      style: [:bold | style_list],
+      align: column.align
+    )
+  end
 
   defp filter_data(data, term) when term == "", do: data
 
@@ -488,11 +549,12 @@ defmodule Raxol.UI.Components.Table do
     header_cells =
       Enum.map(columns, fn column ->
         content =
-          if state.options.sortable do
-            "#{column.label} #{sort_indicator(state.sort_by, state.sort_direction, column.id)}"
-          else
-            column.label
-          end
+          get_column_content(
+            state.options.sortable,
+            column,
+            state.sort_by,
+            state.sort_direction
+          )
 
         cell_style =
           Map.merge(header_style, Map.get(column, :header_style, %{}))
@@ -500,22 +562,7 @@ defmodule Raxol.UI.Components.Table do
         # Convert style map to list of style attributes
         style_list = convert_style_to_list(cell_style)
 
-        if state.options.sortable do
-          # Create a clickable button for sorting
-          Raxol.Core.Renderer.View.button(
-            content,
-            id: "test_table_sort_#{column.id}",
-            style: [:bold | style_list],
-            align: column.align
-          )
-        else
-          # Just text when not sortable
-          Raxol.Core.Renderer.View.text(
-            content,
-            style: [:bold | style_list],
-            align: column.align
-          )
-        end
+        create_header_cell(state.options.sortable, content, column, style_list)
       end)
 
     Raxol.Core.Renderer.View.flex available_width: context[:available_width],
@@ -604,29 +651,12 @@ defmodule Raxol.UI.Components.Table do
         _ -> width + 1
       end
 
-    if content_length >= adjusted_width do
-      String.slice(content_str, 0, adjusted_width)
-    else
-      padding_needed = adjusted_width - content_length
-
-      case alignment do
-        :left ->
-          content_str <> String.duplicate(" ", padding_needed)
-
-        :right ->
-          String.duplicate(" ", padding_needed) <> content_str
-
-        :center ->
-          left_padding = div(padding_needed, 2)
-          right_padding = padding_needed - left_padding
-
-          String.duplicate(" ", left_padding) <>
-            content_str <> String.duplicate(" ", right_padding)
-
-        _ ->
-          content_str <> String.duplicate(" ", padding_needed)
-      end
-    end
+    format_content_with_width(
+      content_length >= adjusted_width,
+      content_str,
+      adjusted_width,
+      alignment
+    )
   end
 
   defp convert_style_to_list(style_map) do
@@ -653,10 +683,9 @@ defmodule Raxol.UI.Components.Table do
        ) do
     base_style = Map.merge(row_style, Map.get(column, :style, %{}))
 
-    if index == selected_row do
-      Map.merge(base_style, selected_row_style)
-    else
-      base_style
+    case index == selected_row do
+      true -> Map.merge(base_style, selected_row_style)
+      false -> base_style
     end
   end
 
@@ -698,5 +727,33 @@ defmodule Raxol.UI.Components.Table do
 
   def render(state) do
     render(state, %{})
+  end
+
+  # Helper function for if statement elimination
+  defp format_content_with_width(true, content_str, adjusted_width, _alignment) do
+    String.slice(content_str, 0, adjusted_width)
+  end
+
+  defp format_content_with_width(false, content_str, adjusted_width, alignment) do
+    content_length = String.length(content_str)
+    padding_needed = adjusted_width - content_length
+
+    case alignment do
+      :left ->
+        content_str <> String.duplicate(" ", padding_needed)
+
+      :right ->
+        String.duplicate(" ", padding_needed) <> content_str
+
+      :center ->
+        left_padding = div(padding_needed, 2)
+        right_padding = padding_needed - left_padding
+
+        String.duplicate(" ", left_padding) <>
+          content_str <> String.duplicate(" ", right_padding)
+
+      _ ->
+        content_str <> String.duplicate(" ", padding_needed)
+    end
   end
 end

@@ -81,11 +81,7 @@ defmodule RaxolWeb.SettingsLive do
   @impl Phoenix.LiveView
   def handle_event("toggle_theme", _params, socket) do
     current_theme = socket.assigns.theme
-
-    new_theme =
-      if current_theme.id == :dark,
-        do: Theme.default_theme(),
-        else: Theme.dark_theme()
+    new_theme = select_theme(current_theme.id == :dark)
 
     {:noreply,
      socket
@@ -155,27 +151,7 @@ defmodule RaxolWeb.SettingsLive do
          ]) do
       {:ok, sanitized_params} when map_size(sanitized_params) > 0 ->
         changeset = Raxol.Auth.User.changeset(user, sanitized_params)
-
-        if changeset.valid? do
-          # Update the user in the agent storage
-          updated_user = %{
-            user
-            | email: sanitized_params["email"],
-              username: sanitized_params["username"]
-          }
-
-          Agent.update(Raxol.Accounts, fn users ->
-            Map.put(users, user.email, updated_user)
-          end)
-
-          {:noreply,
-           push_navigate(
-             socket |> put_flash(:info, "Profile updated successfully."),
-             to: "/settings"
-           )}
-        else
-          {:noreply, assign(socket, :changeset, changeset)}
-        end
+        handle_profile_validation(changeset.valid?, changeset, user, sanitized_params, socket)
 
       {:ok, _empty_params} ->
         changeset = Raxol.Auth.User.changeset(user, user_params)
@@ -197,55 +173,7 @@ defmodule RaxolWeb.SettingsLive do
     password_confirmation = user_params["password_confirmation"]
 
     # Validate password confirmation
-    if new_password != password_confirmation do
-      error_changeset = %Ecto.Changeset{
-        data: %Raxol.Auth.User{},
-        errors: [password_confirmation: {"does not match", []}],
-        valid?: false
-      }
-
-      {:noreply,
-       socket
-       |> put_flash(:error, "Password confirmation does not match.")
-       |> assign(:password_changeset, error_changeset)}
-    else
-      # Update password using Accounts module
-      case Accounts.update_password(user.id, current_password, new_password) do
-        {:ok, updated_user} ->
-          {:noreply,
-           socket
-           |> put_flash(:info, "Password updated successfully.")
-           |> push_navigate(to: "/settings")
-           |> assign(:current_user, updated_user)}
-
-        {:error, :invalid_current_password} ->
-          error_changeset = %Ecto.Changeset{
-            data: %Raxol.Auth.User{},
-            errors: [current_password: {"is incorrect", []}],
-            valid?: false
-          }
-
-          {:noreply,
-           socket
-           |> put_flash(:error, "Current password is incorrect.")
-           |> assign(:password_changeset, error_changeset)}
-
-        {:error, changeset} when is_map(changeset) ->
-          {:noreply, assign(socket, :password_changeset, changeset)}
-
-        {:error, reason} ->
-          error_changeset = %Ecto.Changeset{
-            data: %Raxol.Auth.User{},
-            errors: [password: {"failed to update", []}],
-            valid?: false
-          }
-
-          {:noreply,
-           socket
-           |> put_flash(:error, "Failed to update password: #{inspect(reason)}")
-           |> assign(:password_changeset, error_changeset)}
-      end
-    end
+    handle_password_confirmation(new_password != password_confirmation, user, current_password, new_password, socket)
   end
 
   # Handle messages from child components
@@ -267,6 +195,89 @@ defmodule RaxolWeb.SettingsLive do
   @impl Phoenix.LiveView
   def handle_info({:preferences_updated, updated_preferences}, socket) do
     {:noreply, assign(socket, :preferences, updated_preferences)}
+  end
+
+  defp select_theme(true) do
+    Theme.default_theme()
+  end
+
+  defp select_theme(false) do
+    Theme.dark_theme()
+  end
+
+  defp handle_profile_validation(false, changeset, _user, _sanitized_params, socket) do
+    {:noreply, assign(socket, :changeset, changeset)}
+  end
+
+  defp handle_profile_validation(true, _changeset, user, sanitized_params, socket) do
+    # Update the user in the agent storage
+    updated_user = %{
+      user
+      | email: sanitized_params["email"],
+        username: sanitized_params["username"]
+    }
+
+    Agent.update(Raxol.Accounts, fn users ->
+      Map.put(users, user.email, updated_user)
+    end)
+
+    {:noreply,
+     push_navigate(
+       socket |> put_flash(:info, "Profile updated successfully."),
+       to: "/settings"
+     )}
+  end
+
+  defp handle_password_confirmation(true, _user, _current_password, _new_password, socket) do
+    error_changeset = %Ecto.Changeset{
+      data: %Raxol.Auth.User{},
+      errors: [password_confirmation: {"does not match", []}],
+      valid?: false
+    }
+
+    {:noreply,
+     socket
+     |> put_flash(:error, "Password confirmation does not match.")
+     |> assign(:password_changeset, error_changeset)}
+  end
+
+  defp handle_password_confirmation(false, user, current_password, new_password, socket) do
+    # Update password using Accounts module
+    case Accounts.update_password(user.id, current_password, new_password) do
+      {:ok, updated_user} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Password updated successfully.")
+         |> push_navigate(to: "/settings")
+         |> assign(:current_user, updated_user)}
+
+      {:error, :invalid_current_password} ->
+        error_changeset = %Ecto.Changeset{
+          data: %Raxol.Auth.User{},
+          errors: [current_password: {"is incorrect", []}],
+          valid?: false
+        }
+
+        {:noreply,
+         socket
+         |> put_flash(:error, "Current password is incorrect.")
+         |> assign(:password_changeset, error_changeset)}
+
+      {:error, changeset} when is_map(changeset) ->
+        {:noreply, assign(socket, :password_changeset, changeset)}
+
+      {:error, reason} ->
+        error_changeset = %Ecto.Changeset{
+          data: %Raxol.Auth.User{},
+          errors: [password: {"failed to update", []}],
+          valid?: false
+        }
+
+        {:noreply,
+         socket
+         |> put_flash(:error, "Failed to update password: #{inspect(reason)}")
+         |> assign(:password_changeset, error_changeset)}
+    end
   end
 
   @impl Phoenix.LiveView

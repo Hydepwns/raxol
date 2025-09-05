@@ -20,7 +20,11 @@ defmodule Raxol.Examples.AccessibilityDemo do
   alias Raxol.Core.AccessibilityRefactored, as: AccessibilityRefactored
   alias Raxol.Core.FocusManagerRefactored, as: FocusManagerRefactored
   alias Raxol.Core.UserPreferences
-  alias Raxol.Core.UXRefinementRefactored, as: UXRefinementRefactoredRefactored, as: UXRefinementRefactored
+
+  alias Raxol.Core.UXRefinementRefactored,
+    as: UXRefinementRefactoredRefactored,
+    as: UXRefinementRefactored
+
   require Raxol.Core.Renderer.View
   alias Raxol.Core.Renderer.View
 
@@ -51,66 +55,14 @@ defmodule Raxol.Examples.AccessibilityDemo do
     current_focus = state.focused_element
     next_focus = FocusManager.get_next_focusable(current_focus)
 
-    if next_focus do
-      FocusManager.set_focus(next_focus)
-
-      Accessibility.announce(
-        "Focus: #{get_hint(next_focus, :basic, next_focus)}",
-        [],
-        UserPreferences
-      )
-
-      {:ok, %{state | focused_element: next_focus}}
-    else
-      first_focus = FocusManager.get_next_focusable(nil)
-
-      if first_focus do
-        FocusManager.set_focus(first_focus)
-
-        Accessibility.announce(
-          "Focus: #{get_hint(first_focus, :basic, first_focus)}",
-          [],
-          UserPreferences
-        )
-
-        {%{state | focused_element: first_focus}, []}
-      else
-        {state, []}
-      end
-    end
+    handle_tab_navigation(next_focus, state)
   end
 
   def update({:keyboard_event, %{key: :tab, shift: true}}, state) do
     current_focus = state.focused_element
     prev_focus = FocusManager.get_previous_focusable(current_focus)
 
-    if prev_focus do
-      FocusManager.set_focus(prev_focus)
-
-      Accessibility.announce(
-        "Focus: #{get_hint(prev_focus, :basic, prev_focus)}",
-        [],
-        UserPreferences
-      )
-
-      {:ok, %{state | focused_element: prev_focus}}
-    else
-      last_focus = FocusManager.get_previous_focusable(nil)
-
-      if last_focus do
-        FocusManager.set_focus(last_focus)
-
-        Accessibility.announce(
-          "Focus: #{get_hint(last_focus, :basic, last_focus)}",
-          [],
-          UserPreferences
-        )
-
-        {%{state | focused_element: last_focus}, []}
-      else
-        {state, []}
-      end
-    end
+    handle_shift_tab_navigation(prev_focus, state)
   end
 
   def update({:keyboard_event, %{key: :enter}}, state) do
@@ -201,27 +153,7 @@ defmodule Raxol.Examples.AccessibilityDemo do
 
     # --- Conditionally create the focus ring component ---
     focus_ring_component =
-      if focused_position do
-        # Raxol.View.Elements.component(
-        #   Raxol.UI.Components.FocusRing,
-        #   id: :focus_ring,
-        #   model: state.focus_ring_model,
-        #   focused_element_id: state.focused_element,
-        #   focused_element_position: focused_position
-        # )
-        # Construct component map directly
-        %{
-          type: Raxol.UI.Components.FocusRing,
-          id: :focus_ring,
-          # Pass props directly, assuming component handles its own model state
-          # model: state.focus_ring_model,
-          focused_element_id: state.focused_element,
-          focused_element_position: focused_position
-        }
-      else
-        # Explicitly return nil if no position
-        nil
-      end
+      create_focus_ring_component(focused_position, state)
 
     # Raxol.View.Elements.component Raxol.UI.Components.AppContainer, id: :app_container do
     # Use AppContainer map directly as the root element
@@ -462,5 +394,66 @@ defmodule Raxol.Examples.AccessibilityDemo do
         View.text("ARIA Attributes")
       ]
     end
+  end
+
+  # Helper functions for pattern matching refactoring
+
+  defp handle_tab_navigation(nil, state) do
+    first_focus = FocusManager.get_next_focusable(nil)
+    handle_fallback_focus(first_focus, state)
+  end
+
+  defp handle_tab_navigation(next_focus, state) do
+    FocusManager.set_focus(next_focus)
+
+    Accessibility.announce(
+      "Focus: #{get_hint(next_focus, :basic, next_focus)}",
+      [],
+      UserPreferences
+    )
+
+    {:ok, %{state | focused_element: next_focus}}
+  end
+
+  defp handle_shift_tab_navigation(nil, state) do
+    last_focus = FocusManager.get_previous_focusable(nil)
+    handle_fallback_focus(last_focus, state)
+  end
+
+  defp handle_shift_tab_navigation(prev_focus, state) do
+    FocusManager.set_focus(prev_focus)
+
+    Accessibility.announce(
+      "Focus: #{get_hint(prev_focus, :basic, prev_focus)}",
+      [],
+      UserPreferences
+    )
+
+    {:ok, %{state | focused_element: prev_focus}}
+  end
+
+  defp handle_fallback_focus(nil, state), do: {state, []}
+
+  defp handle_fallback_focus(focus_element, state) do
+    FocusManager.set_focus(focus_element)
+
+    Accessibility.announce(
+      "Focus: #{get_hint(focus_element, :basic, focus_element)}",
+      [],
+      UserPreferences
+    )
+
+    {%{state | focused_element: focus_element}, []}
+  end
+
+  defp create_focus_ring_component(nil, _state), do: nil
+
+  defp create_focus_ring_component(focused_position, state) do
+    %{
+      type: Raxol.UI.Components.FocusRing,
+      id: :focus_ring,
+      focused_element_id: state.focused_element,
+      focused_element_position: focused_position
+    }
   end
 end

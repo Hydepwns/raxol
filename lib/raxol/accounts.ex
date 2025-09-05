@@ -94,13 +94,16 @@ defmodule Raxol.Accounts do
   @spec register_user(map()) ::
           {:ok, map()} | {:error, map() | Ecto.Changeset.t()}
   def register_user(attrs) do
-    case database_enabled?() do
-      true ->
-        register_user_database(attrs)
+    database_enabled = database_enabled?()
+    register_user_by_database_status(database_enabled, attrs)
+  end
 
-      false ->
-        register_user_agent(attrs)
-    end
+  defp register_user_by_database_status(true, attrs) do
+    register_user_database(attrs)
+  end
+
+  defp register_user_by_database_status(false, attrs) do
+    register_user_agent(attrs)
   end
 
   @doc """
@@ -133,16 +136,19 @@ defmodule Raxol.Accounts do
              :invalid_credentials | :user_locked | :user_inactive | term()}
   def authenticate_user(email, password)
       when is_binary(email) and is_binary(password) do
-    case database_enabled?() do
-      true ->
-        authenticate_user_database(email, password)
-
-      false ->
-        authenticate_user_agent(email, password)
-    end
+    database_enabled = database_enabled?()
+    authenticate_user_by_database_status(database_enabled, email, password)
   end
 
   def authenticate_user(_email, _password), do: {:error, :invalid_credentials}
+
+  defp authenticate_user_by_database_status(true, email, password) do
+    authenticate_user_database(email, password)
+  end
+
+  defp authenticate_user_by_database_status(false, email, password) do
+    authenticate_user_agent(email, password)
+  end
 
   @doc """
   Retrieves a user by ID with efficient database lookup.
@@ -169,39 +175,45 @@ defmodule Raxol.Accounts do
   @spec get_user(String.t()) ::
           {:ok, map()} | {:error, :not_found | term()} | nil
   def get_user(user_id) when is_binary(user_id) do
-    case database_enabled?() do
-      true ->
-        case Database.get(User, user_id) do
-          {:ok, user} ->
-            # Preload associations for complete user data
-            user_with_associations = Repo.preload(user, [:role, :permissions])
-            {:ok, user_with_associations}
-
-          {:error, :not_found} ->
-            {:error, :not_found}
-
-          {:error, reason} ->
-            Raxol.Core.Runtime.Log.error(
-              "Database error retrieving user #{user_id}: #{inspect(reason)}"
-            )
-
-            {:error, reason}
-        end
-
-      false ->
-        # Use Agent storage when database is disabled
-        case Agent.get(__MODULE__, fn users ->
-               Enum.find_value(users, fn {_email, user} ->
-                 if user.id == user_id, do: user, else: nil
-               end)
-             end) do
-          nil -> {:error, :not_found}
-          user -> {:ok, user}
-        end
-    end
+    database_enabled = database_enabled?()
+    get_user_by_database_status(database_enabled, user_id)
   end
 
   def get_user(_user_id), do: {:error, :invalid_user_id}
+
+  defp get_user_by_database_status(true, user_id) do
+    case Database.get(User, user_id) do
+      {:ok, user} ->
+        # Preload associations for complete user data
+        user_with_associations = Repo.preload(user, [:role, :permissions])
+        {:ok, user_with_associations}
+
+      {:error, :not_found} ->
+        {:error, :not_found}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error(
+          "Database error retrieving user #{user_id}: #{inspect(reason)}"
+        )
+
+        {:error, reason}
+    end
+  end
+
+  defp get_user_by_database_status(false, user_id) do
+    # Use Agent storage when database is disabled
+    case Agent.get(__MODULE__, fn users ->
+           Enum.find_value(users, fn {_email, user} ->
+             user_matches_id(user.id == user_id, user)
+           end)
+         end) do
+      nil -> {:error, :not_found}
+      user -> {:ok, user}
+    end
+  end
+
+  defp user_matches_id(true, user), do: user
+  defp user_matches_id(false, _user), do: nil
 
   @doc """
   Updates a user's password with secure hashing and current password verification.
@@ -237,17 +249,36 @@ defmodule Raxol.Accounts do
              | term()}
   def update_password(user_id, current_password, new_password)
       when is_binary(user_id) do
-    case database_enabled?() do
-      true ->
-        update_password_database(user_id, current_password, new_password)
+    database_enabled = database_enabled?()
 
-      false ->
-        update_password_agent(user_id, current_password, new_password)
-    end
+    update_password_by_database_status(
+      database_enabled,
+      user_id,
+      current_password,
+      new_password
+    )
   end
 
   def update_password(_user_id, _current_password, _new_password),
     do: {:error, :invalid_user_id}
+
+  defp update_password_by_database_status(
+         true,
+         user_id,
+         current_password,
+         new_password
+       ) do
+    update_password_database(user_id, current_password, new_password)
+  end
+
+  defp update_password_by_database_status(
+         false,
+         user_id,
+         current_password,
+         new_password
+       ) do
+    update_password_agent(user_id, current_password, new_password)
+  end
 
   @doc """
   Checks if a user has permission to perform an action on a module.
@@ -311,23 +342,26 @@ defmodule Raxol.Accounts do
       {:error, :not_found}
   """
   def find_user_by_email(email) when is_binary(email) do
-    case database_enabled?() do
-      true ->
-        case Repo.get_by(User, email: email) do
-          nil -> {:error, :not_found}
-          user -> {:ok, Repo.preload(user, [:role, :permissions])}
-        end
-
-      false ->
-        # Use Agent storage when database is disabled
-        case Agent.get(__MODULE__, fn users -> Map.get(users, email) end) do
-          nil -> {:error, :not_found}
-          user -> {:ok, user}
-        end
-    end
+    database_enabled = database_enabled?()
+    find_user_by_email_and_database_status(database_enabled, email)
   end
 
   def find_user_by_email(_email), do: {:error, :invalid_email}
+
+  defp find_user_by_email_and_database_status(true, email) do
+    case Repo.get_by(User, email: email) do
+      nil -> {:error, :not_found}
+      user -> {:ok, Repo.preload(user, [:role, :permissions])}
+    end
+  end
+
+  defp find_user_by_email_and_database_status(false, email) do
+    # Use Agent storage when database is disabled
+    case Agent.get(__MODULE__, fn users -> Map.get(users, email) end) do
+      nil -> {:error, :not_found}
+      user -> {:ok, user}
+    end
+  end
 
   @doc """
   Creates a default admin user if no users exist in the system.
@@ -343,13 +377,16 @@ defmodule Raxol.Accounts do
       {:ok, %User{id: "admin123", email: "admin@raxol.com", role: %Role{name: "admin"}}}
   """
   def create_default_admin do
-    case database_enabled?() do
-      true ->
-        create_default_admin_database()
+    database_enabled = database_enabled?()
+    create_default_admin_by_database_status(database_enabled)
+  end
 
-      false ->
-        create_default_admin_agent()
-    end
+  defp create_default_admin_by_database_status(true) do
+    create_default_admin_database()
+  end
+
+  defp create_default_admin_by_database_status(false) do
+    create_default_admin_agent()
   end
 
   # Database-backed implementations
@@ -389,11 +426,8 @@ defmodule Raxol.Accounts do
   defp update_password_database(user_id, current_password, new_password) do
     case get_user(user_id) do
       {:ok, user} ->
-        if verify_password(current_password, user.password_hash) do
-          update_user_password(user, new_password)
-        else
-          {:error, :invalid_current_password}
-        end
+        password_valid = verify_password(current_password, user.password_hash)
+        handle_password_verification(password_valid, user, new_password)
 
       {:error, :not_found} ->
         {:error, :not_found}
@@ -401,6 +435,14 @@ defmodule Raxol.Accounts do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  defp handle_password_verification(true, user, new_password) do
+    update_user_password(user, new_password)
+  end
+
+  defp handle_password_verification(false, _user, _new_password) do
+    {:error, :invalid_current_password}
   end
 
   defp create_default_admin_database do
@@ -424,30 +466,28 @@ defmodule Raxol.Accounts do
               role
           end
 
-        if admin_role do
-          # Create admin user
-          admin_attrs = %{
-            email: "admin@raxol.com",
-            username: "admin",
-            password: "admin123",
-            role_id: admin_role.id,
-            active: true
-          }
+        create_admin_user_if_role_exists(admin_role)
+    end
+  end
 
-          case Database.create(User, admin_attrs) do
-            {:ok, user} ->
-              user_with_associations = Repo.preload(user, [:role, :permissions])
-              {:ok, user_with_associations}
+  defp create_admin_user_if_role_exists(nil) do
+    {:error, :failed_to_create_admin_role}
+  end
 
-            {:error, reason} ->
-              {:error, reason}
-          end
-        else
-          {:error, :failed_to_create_admin_role}
-        end
+  defp create_admin_user_if_role_exists(admin_role) do
+    # Create admin user
+    admin_attrs = %{
+      email: "admin@raxol.com",
+      username: "admin",
+      password: "admin123",
+      role_id: admin_role.id,
+      active: true
+    }
 
-      {:ok, _users} ->
-        {:error, :users_already_exist}
+    case Database.create(User, admin_attrs) do
+      {:ok, user} ->
+        user_with_associations = Repo.preload(user, [:role, :permissions])
+        {:ok, user_with_associations}
 
       {:error, reason} ->
         {:error, reason}
@@ -461,27 +501,8 @@ defmodule Raxol.Accounts do
     password = Map.get(attrs, :password) || Map.get(attrs, "password")
 
     Agent.get_and_update(__MODULE__, fn users ->
-      if Map.has_key?(users, email) do
-        {{:error, %{email: "has already been taken"}}, users}
-      else
-        user_id = Ecto.UUID.generate()
-        # Hash the password for security
-        password_hash = hash_password(password)
-
-        # Create a Raxol.Auth.User struct instead of a plain map
-        new_user = %Raxol.Auth.User{
-          id: user_id,
-          email: email,
-          password_hash: password_hash,
-          # Use email as username for agent-based users
-          username: email,
-          active: true,
-          failed_login_attempts: 0
-        }
-
-        {{:ok, Map.take(new_user, [:id, :email])},
-         Map.put(users, email, new_user)}
-      end
+      email_exists = Map.has_key?(users, email)
+      handle_user_registration(email_exists, users, email, password)
     end)
   end
 
@@ -492,12 +513,8 @@ defmodule Raxol.Accounts do
           {:error, :invalid_credentials}
 
         user ->
-          if verify_password(password, user.password_hash) do
-            # Return the full user struct on success
-            {:ok, user}
-          else
-            {:error, :invalid_credentials}
-          end
+          password_valid = verify_password(password, user.password_hash)
+          handle_agent_password_verification(password_valid, user)
       end
     end)
   end
@@ -514,38 +531,23 @@ defmodule Raxol.Accounts do
           {{:error, :not_found}, users}
 
         {email, user} ->
-          if verify_password(current_password, user.password_hash) do
-            # Hash the new password
-            password_hash = hash_password(new_password)
-            updated_user = %{user | password_hash: password_hash}
-            updated_users = Map.put(users, email, updated_user)
-            {{:ok, updated_user}, updated_users}
-          else
-            # Current password mismatch
-            {{:error, :invalid_current_password}, users}
-          end
+          password_valid = verify_password(current_password, user.password_hash)
+
+          handle_agent_password_update(
+            password_valid,
+            user,
+            email,
+            new_password,
+            users
+          )
       end
     end)
   end
 
   defp create_default_admin_agent do
     Agent.get_and_update(__MODULE__, fn users ->
-      if map_size(users) == 0 do
-        admin_id = Ecto.UUID.generate()
-
-        admin_user = %Raxol.Auth.User{
-          id: admin_id,
-          email: "admin@raxol.com",
-          password_hash: hash_password("admin123"),
-          username: "admin",
-          active: true,
-          failed_login_attempts: 0
-        }
-
-        {{:ok, admin_user}, Map.put(users, "admin@raxol.com", admin_user)}
-      else
-        {{:error, :users_already_exist}, users}
-      end
+      users_empty = map_size(users) == 0
+      handle_admin_creation(users_empty, users)
     end)
   end
 
@@ -598,6 +600,72 @@ defmodule Raxol.Accounts do
 
   defp database_enabled? do
     Application.get_env(:raxol, :database_enabled, false)
+  end
+
+  ## Helper Functions for Pattern Matching
+
+  defp handle_user_registration(true, users, _email, _password) do
+    {{:error, %{email: "has already been taken"}}, users}
+  end
+
+  defp handle_user_registration(false, users, email, password) do
+    user_id = Ecto.UUID.generate()
+    # Hash the password for security
+    password_hash = hash_password(password)
+
+    # Create a Raxol.Auth.User struct instead of a plain map
+    new_user = %Raxol.Auth.User{
+      id: user_id,
+      email: email,
+      password_hash: password_hash,
+      # Use email as username for agent-based users
+      username: email,
+      active: true,
+      failed_login_attempts: 0
+    }
+
+    {{:ok, Map.take(new_user, [:id, :email])}, Map.put(users, email, new_user)}
+  end
+
+  defp handle_agent_password_verification(true, user) do
+    # Return the full user struct on success
+    {:ok, user}
+  end
+
+  defp handle_agent_password_verification(false, _user) do
+    {:error, :invalid_credentials}
+  end
+
+  defp handle_agent_password_update(true, user, email, new_password, users) do
+    # Hash the new password
+    password_hash = hash_password(new_password)
+    updated_user = %{user | password_hash: password_hash}
+    updated_users = Map.put(users, email, updated_user)
+    {{:ok, updated_user}, updated_users}
+  end
+
+  defp handle_agent_password_update(false, _user, _email, _new_password, users) do
+    # Current password mismatch
+    {{:error, :invalid_current_password}, users}
+  end
+
+  defp handle_admin_creation(true, users) do
+    admin_id = Ecto.UUID.generate()
+
+    admin_user = %Raxol.Auth.User{
+      id: admin_id,
+      email: "admin@raxol.com",
+      password_hash: hash_password("admin123"),
+      username: "admin",
+      active: true,
+      failed_login_attempts: 0
+    }
+
+    {{:ok, admin_user}, Map.put(users, "admin@raxol.com", admin_user)}
+  end
+
+  defp handle_admin_creation(false, users) do
+    {{:error, :users_already_exist}, users}
   end
 
   # Legacy User struct for backward compatibility

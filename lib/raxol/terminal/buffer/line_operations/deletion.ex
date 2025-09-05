@@ -20,21 +20,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
       )
 
     # Only delete lines within the scroll region
-    if y >= top and y <= bottom do
-      # Split the content at the cursor position
-      {before, after_cursor} = Enum.split(buffer.cells, y)
-
-      # Remove the specified number of lines and shift remaining lines up
-      remaining_lines = Enum.drop(after_cursor, count)
-
-      # Add blank lines at the bottom
-      blank_lines = create_empty_lines(buffer.width, count)
-      new_cells = before ++ remaining_lines ++ blank_lines
-
-      %{buffer | cells: new_cells}
-    else
-      buffer
-    end
+    in_scroll_region = y >= top and y <= bottom
+    handle_delete_lines_in_region(in_scroll_region, buffer, y, count)
   end
 
   @doc """
@@ -48,21 +35,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
         scroll_top,
         scroll_bottom
       ) do
-    if cursor_y >= scroll_top and cursor_y <= scroll_bottom do
-      # Split the content at the cursor position
-      {before, after_cursor} = Enum.split(buffer.cells, cursor_y)
-
-      # Remove the specified number of lines and shift remaining lines up
-      remaining_lines = Enum.drop(after_cursor, count)
-
-      # Add blank lines at the bottom
-      blank_lines = create_empty_lines(buffer.width, count)
-      new_cells = before ++ remaining_lines ++ blank_lines
-
-      %{buffer | cells: new_cells}
-    else
-      buffer
-    end
+    in_scroll_region = cursor_y >= scroll_top and cursor_y <= scroll_bottom
+    handle_delete_lines_with_cursor(in_scroll_region, buffer, cursor_y, count)
   end
 
   @doc """
@@ -71,15 +45,10 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
   @spec delete_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           ScreenBuffer.t()
   def delete_lines(buffer, position, count) do
-    if position >= 0 and position < length(buffer.cells) and count > 0 do
-      {before, after_cursor} = Enum.split(buffer.cells, position)
-      remaining_lines = Enum.drop(after_cursor, count)
-      blank_lines = create_empty_lines(buffer.width, count)
-      new_cells = before ++ remaining_lines ++ blank_lines
-      %{buffer | cells: new_cells}
-    else
-      buffer
-    end
+    valid_position =
+      position >= 0 and position < length(buffer.cells) and count > 0
+
+    handle_delete_at_position(valid_position, buffer, position, count)
   end
 
   @doc """
@@ -94,11 +63,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
         ) ::
           ScreenBuffer.t()
   def delete_lines(buffer, y, count, style, {top, bottom}) do
-    if y >= top and y <= bottom and count > 0 do
-      do_delete_lines_in_region(buffer, y, count, style, top, bottom)
-    else
-      buffer
-    end
+    valid_deletion = y >= top and y <= bottom and count > 0
+    handle_styled_deletion(valid_deletion, buffer, y, count, style, top, bottom)
   end
 
   def delete_lines(buffer, _y, _count, _style, region)
@@ -110,23 +76,16 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
   """
   def delete_lines_in_region(buffer, lines, y, top, bottom) do
     # Only operate if cursor is within the scroll region
-    if y >= top and y <= bottom do
-      # Calculate how many lines we can actually delete within the region
-      available_lines = bottom - y + 1
-      lines_to_delete = min(lines, available_lines)
+    in_region = y >= top and y <= bottom
 
-      if lines_to_delete > 0 do
-        # Delete lines from y to y + lines_to_delete - 1
-        # This shifts content up from below the deleted region
-        buffer
-        |> delete_lines_from_position(y, lines_to_delete, bottom + 1)
-      else
-        buffer
-      end
-    else
-      # Cursor is outside scroll region - no effect
-      buffer
-    end
+    handle_delete_lines_in_scroll_region(
+      in_region,
+      buffer,
+      lines,
+      y,
+      top,
+      bottom
+    )
   end
 
   defp do_delete_lines_in_region(buffer, y, count, style, top, bottom) do
@@ -164,18 +123,13 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
 
     # Shift lines from below the deletion region up
     buffer =
-      if lines_to_shift > 0 do
-        Enum.reduce(0..(lines_to_shift - 1), buffer, fn offset, acc ->
-          target_y = start_y + offset
-          source_y = start_y + count + offset
-          # Get the line that should move up
-          source_line = get_line(acc, source_y)
-          # Set it at the current position
-          set_line(acc, target_y, source_line)
-        end)
-      else
-        buffer
-      end
+      handle_line_shifting(
+        lines_to_shift > 0,
+        buffer,
+        start_y,
+        count,
+        lines_to_shift
+      )
 
     # Fill the bottom lines with empty content
     Enum.reduce((bottom - count)..(bottom - 1), buffer, fn y, acc ->
@@ -209,20 +163,128 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
         []
 
       cells ->
-        if line_index >= 0 and line_index < length(cells) do
-          Enum.at(cells, line_index) || []
-        else
-          []
-        end
+        get_line_at_index(
+          line_index >= 0 and line_index < length(cells),
+          cells,
+          line_index
+        )
     end
   end
 
   defp set_line(buffer, position, new_line) do
-    if position >= 0 and position < length(buffer.cells) do
-      new_cells = List.replace_at(buffer.cells, position, new_line)
-      %{buffer | cells: new_cells}
-    else
-      buffer
-    end
+    valid_pos = position >= 0 and position < length(buffer.cells)
+    update_line_at_position(valid_pos, buffer, position, new_line)
   end
+
+  # Helper functions for refactored if statements
+  defp handle_delete_lines_in_region(true, buffer, y, count) do
+    # Split the content at the cursor position
+    {before, after_cursor} = Enum.split(buffer.cells, y)
+
+    # Remove the specified number of lines and shift remaining lines up
+    remaining_lines = Enum.drop(after_cursor, count)
+
+    # Add blank lines at the bottom
+    blank_lines = create_empty_lines(buffer.width, count)
+    new_cells = before ++ remaining_lines ++ blank_lines
+
+    %{buffer | cells: new_cells}
+  end
+
+  defp handle_delete_lines_in_region(false, buffer, _y, _count), do: buffer
+
+  defp handle_delete_lines_with_cursor(true, buffer, cursor_y, count) do
+    # Split the content at the cursor position
+    {before, after_cursor} = Enum.split(buffer.cells, cursor_y)
+
+    # Remove the specified number of lines and shift remaining lines up
+    remaining_lines = Enum.drop(after_cursor, count)
+
+    # Add blank lines at the bottom
+    blank_lines = create_empty_lines(buffer.width, count)
+    new_cells = before ++ remaining_lines ++ blank_lines
+
+    %{buffer | cells: new_cells}
+  end
+
+  defp handle_delete_lines_with_cursor(false, buffer, _cursor_y, _count),
+    do: buffer
+
+  defp handle_delete_at_position(true, buffer, position, count) do
+    {before, after_cursor} = Enum.split(buffer.cells, position)
+    remaining_lines = Enum.drop(after_cursor, count)
+    blank_lines = create_empty_lines(buffer.width, count)
+    new_cells = before ++ remaining_lines ++ blank_lines
+    %{buffer | cells: new_cells}
+  end
+
+  defp handle_delete_at_position(false, buffer, _position, _count), do: buffer
+
+  defp handle_styled_deletion(true, buffer, y, count, style, top, bottom) do
+    do_delete_lines_in_region(buffer, y, count, style, top, bottom)
+  end
+
+  defp handle_styled_deletion(false, buffer, _y, _count, _style, _top, _bottom),
+    do: buffer
+
+  defp handle_delete_lines_in_scroll_region(true, buffer, lines, y, top, bottom) do
+    # Calculate how many lines we can actually delete within the region
+    available_lines = bottom - y + 1
+    lines_to_delete = min(lines, available_lines)
+
+    handle_lines_to_delete(
+      lines_to_delete > 0,
+      buffer,
+      y,
+      lines_to_delete,
+      bottom
+    )
+  end
+
+  defp handle_delete_lines_in_scroll_region(
+         false,
+         buffer,
+         _lines,
+         _y,
+         _top,
+         _bottom
+       ),
+       do: buffer
+
+  defp handle_lines_to_delete(true, buffer, y, lines_to_delete, bottom) do
+    # Delete lines from y to y + lines_to_delete - 1
+    # This shifts content up from below the deleted region
+    buffer
+    |> delete_lines_from_position(y, lines_to_delete, bottom + 1)
+  end
+
+  defp handle_lines_to_delete(false, buffer, _y, _lines_to_delete, _bottom),
+    do: buffer
+
+  defp handle_line_shifting(true, buffer, start_y, count, lines_to_shift) do
+    Enum.reduce(0..(lines_to_shift - 1), buffer, fn offset, acc ->
+      target_y = start_y + offset
+      source_y = start_y + count + offset
+      # Get the line that should move up
+      source_line = get_line(acc, source_y)
+      # Set it at the current position
+      set_line(acc, target_y, source_line)
+    end)
+  end
+
+  defp handle_line_shifting(false, buffer, _start_y, _count, _lines_to_shift),
+    do: buffer
+
+  defp get_line_at_index(true, cells, line_index) do
+    Enum.at(cells, line_index) || []
+  end
+
+  defp get_line_at_index(false, _cells, _line_index), do: []
+
+  defp update_line_at_position(true, buffer, position, new_line) do
+    new_cells = List.replace_at(buffer.cells, position, new_line)
+    %{buffer | cells: new_cells}
+  end
+
+  defp update_line_at_position(false, buffer, _position, _new_line), do: buffer
 end

@@ -154,17 +154,20 @@ defmodule Raxol.Core.Renderer.Views.Chart do
 
   defp calculate_range(series, min, max) do
     data = Enum.flat_map(series, & &1.data)
+    handle_range_calculation(Enum.empty?(data), data, min, max)
+  end
 
-    if Enum.empty?(data) do
-      # Handle empty data case: return default range
-      {min || 0, max || 1}
-    else
-      # Proceed as before if data is not empty
-      {
-        min || Enum.min(data),
-        max || Enum.max(data)
-      }
-    end
+  defp handle_range_calculation(true, _data, min, max) do
+    # Handle empty data case: return default range
+    {min || 0, max || 1}
+  end
+
+  defp handle_range_calculation(false, data, min, max) do
+    # Proceed as before if data is not empty
+    {
+      min || Enum.min(data),
+      max || Enum.max(data)
+    }
   end
 
   defp create_bar_chart(series, min, max, width, height, orientation) do
@@ -176,16 +179,19 @@ defmodule Raxol.Core.Renderer.Views.Chart do
 
   defp create_bars(series, min, max, width, height, orientation) do
     total_points = Enum.sum(Enum.map(series, &length(&1.data)))
+    create_bars_with_points(total_points == 0, series, min, max, width, height, orientation, total_points)
+  end
 
-    if total_points == 0 do
-      empty_bars_flex(orientation)
-    else
-      config = bar_config(orientation, min, max, width, height, total_points)
-      bars = create_bars_for_series(series, config)
+  defp create_bars_with_points(true, _series, _min, _max, _width, _height, orientation, _total_points) do
+    empty_bars_flex(orientation)
+  end
 
-      View.flex direction: config.direction do
-        bars
-      end
+  defp create_bars_with_points(false, series, min, max, width, height, orientation, total_points) do
+    config = bar_config(orientation, min, max, width, height, total_points)
+    bars = create_bars_for_series(series, config)
+
+    View.flex direction: config.direction do
+      bars
     end
   end
 
@@ -380,14 +386,16 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   defp calculate_next_position(x, y, sx, sy, err, dx, dy, e2) do
-    {next_x, _next_err_x} =
-      if e2 >= dy, do: {x + sx, err + dy}, else: {x, err}
-
-    {next_y, next_err_y} =
-      if e2 <= dx, do: {y + sy, err + dx}, else: {y, err}
-
+    {next_x, _next_err_x} = calculate_next_x(e2 >= dy, x, sx, err, dy)
+    {next_y, next_err_y} = calculate_next_y(e2 <= dx, y, sy, err, dx)
     {next_x, next_y, next_err_y}
   end
+
+  defp calculate_next_x(true, x, sx, err, dy), do: {x + sx, err + dy}
+  defp calculate_next_x(false, x, _sx, err, _dy), do: {x, err}
+
+  defp calculate_next_y(true, y, sy, err, dx), do: {y + sy, err + dx}
+  defp calculate_next_y(false, y, _sy, err, _dx), do: {y, err}
 
   defp canvas_to_view_cells(canvas, color) do
     for {row, y} <- Enum.with_index(canvas),
@@ -475,20 +483,22 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   defp bar_blocks(clamped_length) do
     full_blocks = div(clamped_length, 8)
     remainder = rem(clamped_length, 8)
-
-    partial_block =
-      if remainder > 0, do: Enum.at(@bar_chars, remainder), else: ""
-
+    partial_block = get_partial_block(remainder > 0, remainder)
     {full_blocks, partial_block}
   end
 
+  defp get_partial_block(true, remainder), do: Enum.at(@bar_chars, remainder)
+  defp get_partial_block(false, _remainder), do: ""
+
   defp scale_value(value, min, max, new_min, new_max) do
     # Avoid division by zero if min == max
-    if max == min do
-      new_min
-    else
-      (value - min) / (max - min) * (new_max - new_min) + new_min
-    end
+    scale_value_with_range(max == min, value, min, max, new_min, new_max)
+  end
+
+  defp scale_value_with_range(true, _value, _min, _max, new_min, _new_max), do: new_min
+
+  defp scale_value_with_range(false, value, min, max, new_min, new_max) do
+    (value - min) / (max - min) * (new_max - new_min) + new_min
   end
 
   defp add_axes(content, _min, _max, width, height, _orientation) do

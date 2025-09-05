@@ -3,7 +3,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
   Manages accessibility preferences and settings.
   """
 
-  alias Raxol.Core.Events.Manager, as: Manager, as: EventManager
+  alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.UserPreferences
   require Raxol.Core.Runtime.Log
 
@@ -29,14 +29,15 @@ defmodule Raxol.Core.Accessibility.Preferences do
     # Pass the list path directly
     value = UserPreferences.get(pref_key(key), target_pid_or_name)
     # Explicitly check for nil before applying default, to handle false values
-    if is_nil(value) do
-      default
-    else
-      # If the value is a process name, return the default instead
-      case value do
-        pid_or_name when is_atom(pid_or_name) or is_pid(pid_or_name) -> default
-        _ -> value
-      end
+    case is_nil(value) do
+      true ->
+        default
+      false ->
+        # If the value is a process name, return the default instead
+        case value do
+          pid_or_name when is_atom(pid_or_name) or is_pid(pid_or_name) -> default
+          _ -> value
+        end
     end
   end
 
@@ -61,21 +62,26 @@ defmodule Raxol.Core.Accessibility.Preferences do
       false
   """
   def get_option(key, user_preferences_pid_or_name \\ nil, default \\ nil) do
-    if Mix.env() == :test do
-      get_option_test(key, user_preferences_pid_or_name, default)
-    else
-      get_pref(key, default, user_preferences_pid_or_name)
+    case Mix.env() do
+      :test ->
+        get_option_test(key, user_preferences_pid_or_name, default)
+      _ ->
+        get_pref(key, default, user_preferences_pid_or_name)
     end
   end
 
   defp get_option_test(key, user_preferences_pid_or_name, default) do
     target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
 
-    if target_pid_or_name == self() do
-      default
-    else
-      value = UserPreferences.get(pref_key(key), target_pid_or_name)
-      if value == nil, do: default, else: value
+    case target_pid_or_name == self() do
+      true ->
+        default
+      false ->
+        value = UserPreferences.get(pref_key(key), target_pid_or_name)
+        case value do
+          nil -> default
+          _ -> value
+        end
     end
   end
 
@@ -216,18 +222,22 @@ defmodule Raxol.Core.Accessibility.Preferences do
   def get_text_scale(user_preferences_pid_or_name \\ nil) do
     # Calculate based on the :large_text preference directly
     # Explicitly handle test environment to ensure consistent behavior
-    if Mix.env() == :test do
-      target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
+    case Mix.env() do
+      :test ->
+        target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
 
-      case UserPreferences.get(pref_key(:large_text), target_pid_or_name) do
-        # Always return 1.5 when explicitly true
-        true -> 1.5
-        # Default to 1.0 for any other value
-        _ -> 1.0
-      end
-    else
-      large_text_enabled = get_option(:large_text, user_preferences_pid_or_name)
-      if large_text_enabled, do: 1.5, else: 1.0
+        case UserPreferences.get(pref_key(:large_text), target_pid_or_name) do
+          # Always return 1.5 when explicitly true
+          true -> 1.5
+          # Default to 1.0 for any other value
+          _ -> 1.0
+        end
+      _ ->
+        large_text_enabled = get_option(:large_text, user_preferences_pid_or_name)
+        case large_text_enabled do
+          true -> 1.5
+          _ -> 1.0
+        end
     end
   end
 

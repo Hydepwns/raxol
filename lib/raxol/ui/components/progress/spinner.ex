@@ -31,17 +31,7 @@ defmodule Raxol.UI.Components.Progress.Spinner do
   """
   def update(:tick, state) do
     current_time = System.monotonic_time(:millisecond)
-
-    if current_time - state.last_update >= state.speed do
-      %{
-        state
-        | frame_index: rem(state.frame_index + 1, length(state.frames)),
-          color_index: rem(state.color_index + 1, length(state.colors)),
-          last_update: current_time
-      }
-    else
-      state
-    end
+    update_spinner_if_time_elapsed(current_time, state)
   end
 
   def update(:reset, state) do
@@ -134,13 +124,7 @@ defmodule Raxol.UI.Components.Progress.Spinner do
 
     Raxol.View.Elements.row id: Map.get(state, :id, nil), style: state.style do
       Raxol.View.Elements.label(content: frame)
-
-      if state.label do
-        Raxol.View.Elements.label(
-          content: state.label,
-          style: %{margin_left: 1}
-        )
-      end
+      render_label_if_present(state.label)
     end
   end
 
@@ -209,15 +193,7 @@ defmodule Raxol.UI.Components.Progress.Spinner do
           )
 
         # Create message element if provided
-        message_element =
-          if message do
-            Raxol.View.Elements.label(
-              content: " #{message}",
-              style: message_style
-            )
-          else
-            nil
-          end
+        message_element = create_message_element(message, message_style)
 
         # Return elements, filtering nil
         [spinner_element, message_element]
@@ -259,5 +235,40 @@ defmodule Raxol.UI.Components.Progress.Spinner do
       :custom -> default_spinner_frames()
       _ -> Map.get(spinner_types(), style, default_spinner_frames())
     end
+  end
+
+  # Helper functions for pattern matching instead of if statements
+
+  defp update_spinner_if_time_elapsed(current_time, state) do
+    case current_time - state.last_update >= state.speed do
+      true ->
+        %{
+          state
+          | frame_index: rem(state.frame_index + 1, length(state.frames)),
+            color_index: rem(state.color_index + 1, length(state.colors)),
+            last_update: current_time
+        }
+
+      false ->
+        state
+    end
+  end
+
+  defp render_label_if_present(nil), do: nil
+
+  defp render_label_if_present(label) do
+    Raxol.View.Elements.label(
+      content: label,
+      style: %{margin_left: 1}
+    )
+  end
+
+  defp create_message_element(nil, _message_style), do: nil
+
+  defp create_message_element(message, message_style) do
+    Raxol.View.Elements.label(
+      content: " #{message}",
+      style: message_style
+    )
   end
 end

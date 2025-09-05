@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
 
   # Client API
   def start_link(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = normalize_opts_to_list(opts)
     name = Keyword.get(opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, opts, name: name)
   end
@@ -98,9 +98,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
       plugin_config: Map.get(opts_map, :plugin_config, %{})
     }
 
-    if state.auto_load do
-      load_plugins_from_paths(state.plugin_paths)
-    end
+    auto_load_plugins_if_enabled(state.auto_load, state.plugin_paths)
 
     {:ok, state}
   end
@@ -352,7 +350,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
       ],
       {:error, :unknown_type},
       fn {extension, type} ->
-        if String.ends_with?(file, extension), do: {:ok, type}
+        check_file_extension(file, extension, type)
       end
     )
   end
@@ -363,7 +361,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
 
   # Theme Plugin Functions
   defp load_theme_plugin(path, opts) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = normalize_opts_to_list(opts)
 
     with {:ok, theme_config} <- load_theme_config(path),
          {:ok, theme_module} <- load_theme_module(path),
@@ -392,12 +390,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp load_theme_config(path) do
-    config_path =
-      if File.dir?(path) do
-        Path.join(path, "theme.json")
-      else
-        path
-      end
+    config_path = get_theme_config_path(path)
 
     with {:ok, content} <- File.read(config_path),
          {:ok, config} <- safe_json_decode(content) do
@@ -421,18 +414,8 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp load_theme_module(path) do
-    module_path =
-      if File.dir?(path) do
-        Path.join(path, "theme.ex")
-      else
-        String.replace(path, ".json", ".ex")
-      end
-
-    if File.exists?(module_path) do
-      safe_load_module(module_path)
-    else
-      {:ok, nil}
-    end
+    module_path = get_theme_module_path(path)
+    load_module_if_exists(module_path)
   end
 
   defp safe_load_module(path) do
@@ -487,21 +470,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp safe_call_cleanup(module, config, plugin_type) do
-    if function_exported?(module, :cleanup, 1) do
-      case safe_apply(module, :cleanup, [config]) do
-        {:ok, _} ->
-          :ok
-
-        {:error, reason} ->
-          Logger.error(
-            "Failed to cleanup #{plugin_type} plugin: #{inspect(reason)}"
-          )
-
-          {:error, :cleanup_failed}
-      end
-    else
-      :ok
-    end
+    call_cleanup_if_exported(module, config, plugin_type)
   end
 
   defp execute_theme_function(plugin_state, function, args) do
@@ -515,25 +484,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp safe_execute_function(module, function, args, plugin_type) do
-    if function_exported?(module, function, length(args)) do
-      case safe_apply(module, function, args) do
-        {:ok, result} ->
-          case result do
-            {:ok, unwrapped_result} -> {:ok, unwrapped_result}
-            {:error, reason} -> {:error, reason}
-            other -> {:ok, other}
-          end
-
-        {:error, reason} ->
-          Logger.error(
-            "Failed to execute #{plugin_type} function: #{inspect(reason)}"
-          )
-
-          {:error, :execution_failed}
-      end
-    else
-      {:error, :function_not_exported}
-    end
+    execute_function_if_exported(module, function, args, plugin_type)
   end
 
   # Script Plugin Functions
@@ -547,7 +498,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp normalize_opts(opts) do
-    if is_map(opts), do: Enum.into(opts, []), else: opts
+    normalize_opts_format(opts)
   end
 
   defp handle_script_path(path) do
@@ -561,11 +512,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   defp find_script_in_directory(path) do
     script_file = find_script_file(path)
 
-    if script_file do
-      {:ok, script_file}
-    else
-      {:error, :invalid_plugin_format}
-    end
+    validate_script_file(script_file)
   end
 
   defp find_script_file(path) do
@@ -574,7 +521,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
       nil,
       fn filename ->
         full_path = Path.join(path, filename)
-        if File.exists?(full_path), do: full_path
+        check_script_file_exists(full_path)
       end
     )
   end
@@ -633,7 +580,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
 
   # Extension Plugin Functions
   defp load_extension_plugin(path, opts) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = normalize_opts_to_list(opts)
 
     with {:ok, extension_config} <- load_extension_config(path),
          {:ok, extension_module} <- load_extension_module(path),
@@ -660,12 +607,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp load_extension_config(path) do
-    config_path =
-      if File.dir?(path) do
-        Path.join(path, "extension.json")
-      else
-        path
-      end
+    config_path = get_extension_config_path(path)
 
     with {:ok, content} <- File.read(config_path),
          {:ok, config} <- safe_json_decode(content) do
@@ -678,18 +620,8 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp load_extension_module(path) do
-    module_path =
-      if File.dir?(path) do
-        Path.join(path, "extension.ex")
-      else
-        String.replace(path, Path.extname(path), ".ex")
-      end
-
-    if File.exists?(module_path) do
-      safe_load_module(module_path)
-    else
-      {:ok, nil}
-    end
+    module_path = get_extension_module_path(path)
+    load_module_if_exists(module_path)
   end
 
   defp cleanup_extension_plugin(plugin_state) do
@@ -722,6 +654,110 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
       {:error, {:exit, reason}} -> {:error, {:exit, reason}}
       {:error, {:throw, thrown}} -> {:error, {:throw, thrown}}
       {:error, error} -> {:error, error}
+    end
+  end
+
+  ## Helper functions for refactored if statements
+
+  defp auto_load_plugins_if_enabled(true, plugin_paths) do
+    load_plugins_from_paths(plugin_paths)
+  end
+
+  defp auto_load_plugins_if_enabled(false, _plugin_paths), do: :ok
+
+  defp check_file_extension(file, extension, type) do
+    case String.ends_with?(file, extension) do
+      true -> type
+      false -> nil
+    end
+  end
+
+  defp get_theme_config_path(path) do
+    case File.dir?(path) do
+      true -> Path.join(path, "theme.json")
+      false -> Path.dirname(path) |> Path.join("theme.json")
+    end
+  end
+
+  defp get_theme_module_path(path) do
+    case File.dir?(path) do
+      true -> Path.join(path, "theme.ex")
+      false -> Path.dirname(path) |> Path.join("theme.ex")
+    end
+  end
+
+  defp load_module_if_exists(module_path) do
+    case File.exists?(module_path) do
+      true -> safe_load_module(module_path)
+      false -> {:ok, nil}
+    end
+  end
+
+  defp call_cleanup_if_exported(module, config, plugin_type) do
+    case function_exported?(module, :cleanup, 1) do
+      true ->
+        ErrorHandling.safe_call(fn -> module.cleanup(config) end)
+        |> case do
+          {:ok, result} ->
+            result
+
+          {:error, error} ->
+            Logger.error("#{plugin_type} cleanup failed: #{inspect(error)}")
+            {:error, :cleanup_failed}
+        end
+
+      false ->
+        :ok
+    end
+  end
+
+  defp execute_function_if_exported(module, function, args, plugin_type) do
+    case function_exported?(module, function, length(args)) do
+      true ->
+        safe_apply(module, function, args)
+
+      false ->
+        Logger.warning(
+          "Function #{function}/#{length(args)} not exported from #{plugin_type} module"
+        )
+
+        {:error, :function_not_exported}
+    end
+  end
+
+  defp normalize_opts_format(opts) when is_map(opts) do
+    Enum.into(opts, [])
+  end
+
+  defp normalize_opts_format(opts), do: opts
+
+  defp normalize_opts_to_list(opts) when is_map(opts) do
+    Enum.into(opts, [])
+  end
+
+  defp normalize_opts_to_list(opts), do: opts
+
+  defp validate_script_file(nil), do: {:error, :script_not_found}
+  defp validate_script_file(script_file), do: {:ok, script_file}
+
+  defp check_script_file_exists(full_path) do
+    case File.exists?(full_path) do
+      true -> full_path
+      false -> nil
+    end
+  end
+
+  defp get_extension_config_path(path) do
+    case File.dir?(path) do
+      true -> Path.join(path, "extension.json")
+      false -> Path.dirname(path) |> Path.join("extension.json")
+    end
+  end
+
+  defp get_extension_module_path(path) do
+    case File.dir?(path) do
+      true -> Path.join(path, "extension.ex")
+      false -> Path.dirname(path) |> Path.join("extension.ex")
     end
   end
 end

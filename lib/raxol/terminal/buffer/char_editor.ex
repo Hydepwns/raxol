@@ -120,13 +120,15 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   Truncates a line to the specified content length, padding with blank cells if needed.
   """
   def truncate_to_content_length(line, content_length) do
-    if length(line) <= content_length do
-      # Pad with blank cells if line is shorter than content length
-      padding = List.duplicate(Cell.new(" "), content_length - length(line))
-      line ++ padding
-    else
-      # Truncate to content length
-      Enum.take(line, content_length)
+    case length(line) <= content_length do
+      true ->
+        # Pad with blank cells if line is shorter than content length
+        padding = List.duplicate(Cell.new(" "), content_length - length(line))
+        line ++ padding
+
+      false ->
+        # Truncate to content length
+        Enum.take(line, content_length)
     end
   end
 
@@ -180,12 +182,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
         ) :: Raxol.Terminal.ScreenBuffer.t()
 
   def insert_chars(buffer, row, col, count) do
-    if valid_insert_params?(buffer, row, col, count) and
-         can_insert_at_position?(buffer, row, col, count) do
-      insert_characters(buffer, row, col, count, buffer.default_style)
-    else
-      buffer
-    end
+    insert_chars_if_valid(buffer, row, col, count)
   end
 
   defp can_insert_at_position?(buffer, row, col, count) do
@@ -242,30 +239,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
         ) :: Raxol.Terminal.ScreenBuffer.t()
   def insert_characters(buffer, row, col, count, default_style)
       when row >= 0 and col >= 0 and count > 0 do
-    if row >= buffer.height or col >= buffer.width do
-      buffer
-    else
-      case buffer.cells do
-        nil ->
-          # Return buffer unchanged if cells is nil
-          buffer
-
-        cells ->
-          new_cells =
-            List.replace_at(
-              cells,
-              row,
-              insert_into_line(
-                Enum.at(cells, row),
-                col,
-                count,
-                default_style
-              )
-            )
-
-          %{buffer | cells: new_cells}
-      end
-    end
+    insert_chars_in_bounds(buffer, row, col, count, default_style)
   end
 
   @doc """
@@ -335,10 +309,9 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
           non_neg_integer()
         ) :: Raxol.Terminal.ScreenBuffer.t()
   def delete_chars(buffer, row, col, count) do
-    if valid_delete_params?(buffer, row, col, count) do
-      delete_characters(buffer, row, col, count, buffer.default_style)
-    else
-      buffer
+    case valid_delete_params?(buffer, row, col, count) do
+      true -> delete_characters(buffer, row, col, count, buffer.default_style)
+      false -> buffer
     end
   end
 
@@ -375,30 +348,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
         ) :: Raxol.Terminal.ScreenBuffer.t()
   def delete_characters(buffer, row, col, count, default_style)
       when row >= 0 and col >= 0 and count > 0 do
-    if row >= buffer.height or col >= buffer.width do
-      buffer
-    else
-      case buffer.cells do
-        nil ->
-          # Return buffer unchanged if cells is nil
-          buffer
-
-        cells ->
-          new_cells =
-            List.replace_at(
-              cells,
-              row,
-              delete_from_line(
-                Enum.at(cells, row),
-                col,
-                count,
-                default_style
-              )
-            )
-
-          %{buffer | cells: new_cells}
-      end
-    end
+    delete_chars_in_bounds(buffer, row, col, count, default_style)
   end
 
   @doc """
@@ -451,14 +401,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   Writes a character at the specified position in the buffer.
   """
   def write_char(buffer, row, col, char) when is_binary(char) do
-    if row >= 0 and row < buffer.height and col >= 0 and col < buffer.width do
-      line = Enum.at(buffer.cells, row)
-      updated_line = List.replace_at(line, col, Cell.new(char))
-      cells = List.replace_at(buffer.cells, row, updated_line)
-      %{buffer | cells: cells}
-    else
-      buffer
-    end
+    write_char_if_in_bounds(buffer, row, col, char)
   end
 
   @doc """
@@ -466,24 +409,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   """
   def write_string(buffer, row, col, string) when is_binary(string) do
     # Check if position is valid
-    if row < 0 or row >= buffer.height or col < 0 or col >= buffer.width do
-      buffer
-    else
-      line = Enum.at(buffer.cells, row)
-      chars = String.graphemes(string)
-
-      # Only write if we have characters to write
-      if length(chars) > 0 do
-        updated_line =
-          update_line_with_chars_wide_aware(line, col, chars, buffer.width)
-
-        updated_line = pad_or_truncate_line(updated_line, buffer.width)
-        cells = List.replace_at(buffer.cells, row, updated_line)
-        %{buffer | cells: cells}
-      else
-        buffer
-      end
-    end
+    write_string_if_valid_position(buffer, row, col, string)
   end
 
   defp update_line_with_chars_wide_aware(line, col, chars, width) do
@@ -495,27 +421,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   end
 
   defp process_char_in_line(line, col, char, width) do
-    if col < width and col + char_width(char) <= width do
-      updated_line =
-        List.replace_at(line, col, %{
-          Enum.at(line, col)
-          | char: char,
-            dirty: true
-        })
-
-      if char_width(char) > 1 do
-        List.replace_at(updated_line, col + 1, %{
-          Enum.at(updated_line, col + 1)
-          | wide_placeholder: true,
-            dirty: true
-        })
-      else
-        updated_line
-      end
-      |> then(fn final_line -> {final_line, col + char_width(char)} end)
-    else
-      {line, col}
-    end
+    process_char_if_fits(line, col, char, width)
   end
 
   def update_line_with_string(line, col, string, width) do
@@ -524,11 +430,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     Enum.reduce(Enum.with_index(chars), line, fn {char, index}, acc_line ->
       pos = col + index
 
-      if pos < width do
-        List.replace_at(acc_line, pos, Cell.new(char))
-      else
-        acc_line
-      end
+      replace_char_if_in_width(acc_line, pos, char, width)
     end)
   end
 
@@ -555,10 +457,9 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
           non_neg_integer()
         ) :: Raxol.Terminal.ScreenBuffer.t()
   def erase_chars(buffer, row, col, count) do
-    if valid_erase_params?(buffer, row, col, count) do
-      erase_chars_in_buffer(buffer, row, col, count)
-    else
-      buffer
+    case valid_erase_params?(buffer, row, col, count) do
+      true -> erase_chars_in_buffer(buffer, row, col, count)
+      false -> buffer
     end
   end
 
@@ -587,10 +488,9 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
           Raxol.Terminal.ANSI.TextFormatting.text_style()
         ) :: Raxol.Terminal.ScreenBuffer.t()
   def erase_chars(buffer, row, col, count, style) do
-    if valid_erase_params?(buffer, row, col, count) do
-      erase_chars_in_buffer_with_style(buffer, row, col, count, style)
-    else
-      buffer
+    case valid_erase_params?(buffer, row, col, count) do
+      true -> erase_chars_in_buffer_with_style(buffer, row, col, count, style)
+      false -> buffer
     end
   end
 
@@ -644,25 +544,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   end
 
   def replace_chars(buffer, row, col, string, style \\ nil) do
-    if valid_replace_params?(buffer, row, col, string) do
-      chars = String.graphemes(string)
-      max_replace = max(0, buffer.width - col)
-      truncated_chars = Enum.take(chars, max_replace)
-
-      if truncated_chars == [] do
-        buffer
-      else
-        replace_chars_in_buffer(
-          buffer,
-          row,
-          col,
-          Enum.join(truncated_chars),
-          style || buffer.default_style
-        )
-      end
-    else
-      buffer
-    end
+    replace_chars_if_valid_params(buffer, row, col, string, style)
   end
 
   defp valid_replace_params?(buffer, row, col, string) do
@@ -696,11 +578,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     {left, _} = Enum.split(line, col)
 
     right =
-      if col + rep_len < line_len do
-        Enum.slice(line, col + rep_len, line_len - (col + rep_len))
-      else
-        []
-      end
+      get_right_part_after_replacement(line, col, rep_len, line_len)
 
     {left, right}
   end
@@ -714,10 +592,187 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
   end
 
   defp update_cell_with_style(orig_cell, char, style) do
-    if style do
-      %{orig_cell | char: char, style: style, dirty: true}
-    else
-      %{orig_cell | char: char, dirty: true}
+    case style do
+      nil -> %{orig_cell | char: char, dirty: true}
+      s -> %{orig_cell | char: char, style: s, dirty: true}
     end
   end
+
+  ## Helper functions for refactored if statements
+
+  defp insert_chars_if_valid(buffer, row, col, count) do
+    case valid_insert_params?(buffer, row, col, count) and
+           can_insert_at_position?(buffer, row, col, count) do
+      true -> insert_characters(buffer, row, col, count, buffer.default_style)
+      false -> buffer
+    end
+  end
+
+  defp insert_chars_in_bounds(buffer, row, col, count, default_style)
+       when row >= buffer.height or col >= buffer.width do
+    buffer
+  end
+
+  defp insert_chars_in_bounds(buffer, row, col, count, default_style) do
+    case buffer.cells do
+      nil ->
+        # Return buffer unchanged if cells is nil
+        buffer
+
+      cells ->
+        new_cells =
+          List.replace_at(
+            cells,
+            row,
+            insert_into_line(Enum.at(cells, row), col, count, default_style)
+          )
+
+        %{buffer | cells: new_cells}
+    end
+  end
+
+  defp delete_chars_in_bounds(buffer, row, col, count, default_style)
+       when row >= buffer.height or col >= buffer.width do
+    buffer
+  end
+
+  defp delete_chars_in_bounds(buffer, row, col, count, default_style) do
+    case buffer.cells do
+      nil ->
+        # Return buffer unchanged if cells is nil
+        buffer
+
+      cells ->
+        new_cells =
+          List.replace_at(
+            cells,
+            row,
+            delete_from_line(Enum.at(cells, row), col, count, default_style)
+          )
+
+        %{buffer | cells: new_cells}
+    end
+  end
+
+  defp write_char_if_in_bounds(buffer, row, col, char)
+       when row >= 0 and row < buffer.height and col >= 0 and col < buffer.width do
+    line = Enum.at(buffer.cells, row)
+    updated_line = List.replace_at(line, col, Cell.new(char))
+    cells = List.replace_at(buffer.cells, row, updated_line)
+    %{buffer | cells: cells}
+  end
+
+  defp write_char_if_in_bounds(buffer, _row, _col, _char), do: buffer
+
+  defp write_string_if_valid_position(buffer, row, col, string)
+       when row < 0 or row >= buffer.height or col < 0 or col >= buffer.width do
+    buffer
+  end
+
+  defp write_string_if_valid_position(buffer, row, col, string) do
+    line = Enum.at(buffer.cells, row)
+    chars = String.graphemes(string)
+
+    # Only write if we have characters to write
+    write_chars_if_present(buffer, line, row, col, chars)
+  end
+
+  defp write_chars_if_present(buffer, _line, _row, _col, []), do: buffer
+
+  defp write_chars_if_present(buffer, line, row, col, chars) do
+    updated_line =
+      update_line_with_chars_wide_aware(line, col, chars, buffer.width)
+
+    updated_line = pad_or_truncate_line(updated_line, buffer.width)
+    cells = List.replace_at(buffer.cells, row, updated_line)
+    %{buffer | cells: cells}
+  end
+
+  defp process_char_if_fits(line, col, char, width) do
+    char_w = char_width(char)
+
+    process_char_with_width_check(
+      col < width and col + char_w <= width,
+      line,
+      col,
+      char,
+      char_w
+    )
+  end
+
+  defp process_char_with_width_check(true, line, col, char, char_w) do
+    updated_line =
+      List.replace_at(line, col, %{Enum.at(line, col) | char: char, dirty: true})
+
+    final_line = handle_wide_char_if_needed(updated_line, col, char, char_w)
+    {final_line, col + char_w}
+  end
+
+  defp process_char_with_width_check(false, line, col, _char, _char_w),
+    do: {line, col}
+
+  defp handle_wide_char_if_needed(updated_line, col, _char, char_w)
+       when char_w > 1 do
+    List.replace_at(updated_line, col + 1, %{
+      Enum.at(updated_line, col + 1)
+      | wide_placeholder: true,
+        dirty: true
+    })
+  end
+
+  defp handle_wide_char_if_needed(updated_line, _col, _char, _char_w),
+    do: updated_line
+
+  defp replace_char_if_in_width(acc_line, pos, char, width) when pos < width do
+    List.replace_at(acc_line, pos, Cell.new(char))
+  end
+
+  defp replace_char_if_in_width(acc_line, _pos, _char, _width), do: acc_line
+
+  defp replace_chars_if_valid_params(buffer, row, col, string, style) do
+    case valid_replace_params?(buffer, row, col, string) do
+      true ->
+        chars = String.graphemes(string)
+        max_replace = max(0, buffer.width - col)
+        truncated_chars = Enum.take(chars, max_replace)
+
+        replace_truncated_chars_if_present(
+          buffer,
+          row,
+          col,
+          truncated_chars,
+          style
+        )
+
+      false ->
+        buffer
+    end
+  end
+
+  defp replace_truncated_chars_if_present(buffer, _row, _col, [], _style),
+    do: buffer
+
+  defp replace_truncated_chars_if_present(
+         buffer,
+         row,
+         col,
+         truncated_chars,
+         style
+       ) do
+    replace_chars_in_buffer(
+      buffer,
+      row,
+      col,
+      Enum.join(truncated_chars),
+      style || buffer.default_style
+    )
+  end
+
+  defp get_right_part_after_replacement(line, col, rep_len, line_len)
+       when col + rep_len < line_len do
+    Enum.slice(line, col + rep_len, line_len - (col + rep_len))
+  end
+
+  defp get_right_part_after_replacement(_line, _col, _rep_len, _line_len),
+    do: []
 end

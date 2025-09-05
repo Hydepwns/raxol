@@ -150,6 +150,41 @@ defmodule Raxol.Config.Generator do
     write_config_file(minimal, path, detect_format_from_path(path), [])
   end
 
+  # Private functions - Pattern Matching Helpers
+
+  defp maybe_add_metadata(true, config, schema, include_comments, include_examples) do
+    add_metadata_to_config(config, schema, include_comments, include_examples)
+  end
+
+  defp maybe_add_metadata(false, config, _schema, _include_comments, _include_examples), do: config
+
+  defp handle_schema_value(true, key, value, acc) do
+    Map.put(acc, key, value.default)
+  end
+
+  defp handle_schema_value(false, key, value, acc) do
+    nested_defaults = extract_defaults_from_schema(value)
+    handle_nested_defaults(map_size(nested_defaults) > 0, key, nested_defaults, acc)
+  end
+
+  defp handle_nested_defaults(true, key, nested_defaults, acc) do
+    Map.put(acc, key, nested_defaults)
+  end
+
+  defp handle_nested_defaults(false, _key, _nested_defaults, acc), do: acc
+
+  defp handle_template_value(true, key, value, acc) do
+    # This is a field
+    template_value = generate_template_value(value)
+    Map.put(acc, key, template_value)
+  end
+
+  defp handle_template_value(false, key, value, acc) do
+    # This is a nested section
+    nested_template = extract_template_from_schema(value)
+    Map.put(acc, key, nested_template)
+  end
+
   # Private functions
 
   defp build_default_config(include_comments, include_examples) do
@@ -157,26 +192,12 @@ defmodule Raxol.Config.Generator do
 
     config = extract_defaults_from_schema(schema)
 
-    if include_comments or include_examples do
-      add_metadata_to_config(config, schema, include_comments, include_examples)
-    else
-      config
-    end
+    maybe_add_metadata(include_comments or include_examples, config, schema, include_comments, include_examples)
   end
 
   defp extract_defaults_from_schema(schema) when is_map(schema) do
     Enum.reduce(schema, %{}, fn {key, value}, acc ->
-      if Map.has_key?(value, :default) do
-        Map.put(acc, key, value.default)
-      else
-        nested_defaults = extract_defaults_from_schema(value)
-
-        if map_size(nested_defaults) > 0 do
-          Map.put(acc, key, nested_defaults)
-        else
-          acc
-        end
-      end
+      handle_schema_value(Map.has_key?(value, :default), key, value, acc)
     end)
   end
 
@@ -282,15 +303,7 @@ defmodule Raxol.Config.Generator do
 
   defp extract_template_from_schema(schema) when is_map(schema) do
     Enum.reduce(schema, %{}, fn {key, value}, acc ->
-      if Map.has_key?(value, :type) do
-        # This is a field
-        template_value = generate_template_value(value)
-        Map.put(acc, key, template_value)
-      else
-        # This is a nested section
-        nested_template = extract_template_from_schema(value)
-        Map.put(acc, key, nested_template)
-      end
+      handle_template_value(Map.has_key?(value, :type), key, value, acc)
     end)
   end
 

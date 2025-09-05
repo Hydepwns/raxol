@@ -14,15 +14,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
 
     # Get visible options based on pagination
     visible_options =
-      if state.show_pagination do
-        Pagination.get_page_options(
-          effective_options,
-          state.current_page,
-          state.page_size
-        )
-      else
-        effective_options
-      end
+      get_paginated_options(state.show_pagination, effective_options, state)
 
     # Merge default, theme, and style props for the main container
     merged_style =
@@ -42,9 +34,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
 
     [
       # Search input if enabled
-      if state.enable_search do
-        render_search_input(state)
-      end,
+      render_search_if_enabled(state.enable_search, state),
       # Main list container
       %{
         type: :container,
@@ -52,9 +42,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         children: render_options(state, visible_options)
       },
       # Pagination controls if enabled
-      if state.show_pagination do
-        render_pagination_controls(state)
-      end
+      render_pagination_if_enabled(state.show_pagination, state)
     ]
     |> Enum.reject(&is_nil/1)
   end
@@ -117,35 +105,11 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
   Renders the list of options.
   """
   def render_options(state, visible_options) do
-    if Enum.empty?(visible_options) do
-      merged_style =
-        Map.merge(
-          %{
-            padding: "1rem",
-            text_align: "center",
-            color: "#666"
-          },
-          Map.merge(
-            state.theme[:empty_message] || %{},
-            state.style[:empty_message] || %{}
-          )
-        )
-
-      [
-        %{
-          type: :text,
-          props: %{
-            content: state.empty_message,
-            style: merged_style
-          }
-        }
-      ]
-    else
-      Enum.with_index(visible_options)
-      |> Enum.map(fn {option, index} ->
-        render_option_by_type(option, state, index + state.scroll_offset)
-      end)
-    end
+    render_options_by_availability(
+      Enum.empty?(visible_options),
+      state,
+      visible_options
+    )
   end
 
   # Helper function to render option based on its type structure
@@ -209,39 +173,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
           type: :text,
           props: %{
             content: if(selected, do: "✓ #{label}", else: "  #{label}"),
-            style:
-              if selected do
-                Map.merge(
-                  Map.merge(
-                    %{
-                      color:
-                        state.style[:selected_color] ||
-                          state.theme[:selected_color] || "#0066cc"
-                    },
-                    Map.merge(
-                      state.theme[:option_text] || %{},
-                      state.style[:option_text] || %{}
-                    )
-                  ),
-                  # Per-option style merged, but color is always overridden
-                  Map.drop(opt_style || %{}, [:color, "color"])
-                )
-              else
-                Map.merge(
-                  Map.merge(
-                    %{
-                      color:
-                        opt_style[:color] || state.theme[:option_color] ||
-                          state.style[:option_color] || "#333"
-                    },
-                    Map.merge(
-                      state.theme[:option_text] || %{},
-                      state.style[:option_text] || %{}
-                    )
-                  ),
-                  opt_style || %{}
-                )
-              end
+            style: get_option_text_style(selected, state, opt_style)
           }
         }
       ]
@@ -348,5 +280,96 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         }
       ]
     }
+  end
+
+  # Pattern matching helpers to eliminate if statements
+  defp get_paginated_options(true, effective_options, state) do
+    Pagination.get_page_options(
+      effective_options,
+      state.current_page,
+      state.page_size
+    )
+  end
+
+  defp get_paginated_options(false, effective_options, _state),
+    do: effective_options
+
+  defp render_search_if_enabled(true, state), do: render_search_input(state)
+  defp render_search_if_enabled(false, _state), do: nil
+
+  defp render_pagination_if_enabled(true, state),
+    do: render_pagination_controls(state)
+
+  defp render_pagination_if_enabled(false, _state), do: nil
+
+  defp render_options_by_availability(true, state, _visible_options) do
+    # Empty options - render empty message
+    merged_style =
+      Map.merge(
+        %{
+          padding: "1rem",
+          text_align: "center",
+          color: "#666"
+        },
+        Map.merge(
+          state.theme[:empty_message] || %{},
+          state.style[:empty_message] || %{}
+        )
+      )
+
+    [
+      %{
+        type: :text,
+        props: %{
+          content: state.empty_message,
+          style: merged_style
+        }
+      }
+    ]
+  end
+
+  defp render_options_by_availability(false, state, visible_options) do
+    # Render actual options
+    Enum.with_index(visible_options)
+    |> Enum.map(fn {option, index} ->
+      render_option_by_type(option, state, index + state.scroll_offset)
+    end)
+  end
+
+  defp get_option_text_style(true, state, opt_style) do
+    # Selected option style
+    Map.merge(
+      Map.merge(
+        %{
+          color:
+            state.style[:selected_color] ||
+              state.theme[:selected_color] || "#0066cc"
+        },
+        Map.merge(
+          state.theme[:option_text] || %{},
+          state.style[:option_text] || %{}
+        )
+      ),
+      # Per-option style merged, but color is always overridden
+      Map.drop(opt_style || %{}, [:color, "color"])
+    )
+  end
+
+  defp get_option_text_style(false, state, opt_style) do
+    # Unselected option style
+    Map.merge(
+      Map.merge(
+        %{
+          color:
+            opt_style[:color] || state.theme[:option_color] ||
+              state.style[:option_color] || "#333"
+        },
+        Map.merge(
+          state.theme[:option_text] || %{},
+          state.style[:option_text] || %{}
+        )
+      ),
+      opt_style || %{}
+    )
   end
 end

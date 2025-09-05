@@ -221,31 +221,18 @@ defmodule Raxol.Security.Auditor do
         _ -> true
       end)
 
-    if Enum.empty?(failures) do
-      {:ok, :all_passed}
-    else
-      {:error, :audit_failed, failures}
-    end
+    process_audit_results(failures)
   end
 
   # Private functions
 
   defp check_length(input, opts) do
     max_length = Keyword.get(opts, :max_length, 1000)
-
-    if String.length(input) <= max_length do
-      {:ok, input}
-    else
-      {:error, :low, "Input exceeds maximum length"}
-    end
+    validate_input_length(input, max_length)
   end
 
   defp check_encoding(input) do
-    if String.valid?(input) do
-      {:ok, input}
-    else
-      {:error, :high, "Invalid character encoding"}
-    end
+    validate_string_encoding(input)
   end
 
   defp check_patterns(input, :sql) do
@@ -304,12 +291,7 @@ defmodule Raxol.Security.Auditor do
   end
 
   defp sanitize_input(input, type, opts) when type in [:html, :text] do
-    if Keyword.get(opts, :sanitize, false) do
-      sanitized = sanitize_html(input)
-      {:ok, sanitized}
-    else
-      {:ok, input}
-    end
+    handle_html_sanitization(input, Keyword.get(opts, :sanitize, false))
   end
 
   defp sanitize_input(input, _, _), do: {:ok, input}
@@ -323,11 +305,7 @@ defmodule Raxol.Security.Auditor do
   end
 
   defp validate_username(username) do
-    if Regex.match?(~r/^[a-zA-Z0-9_.-]+$/, username) do
-      {:ok, username}
-    else
-      {:error, :medium, "Invalid username format"}
-    end
+    validate_username_format(username)
   end
 
   defp validate_password(password) when byte_size(password) < 8 do
@@ -355,11 +333,7 @@ defmodule Raxol.Security.Auditor do
     key = "login_attempts:#{username}"
     attempts = get_rate_count(key)
 
-    if attempts > 5 do
-      {:error, :high, "Too many login attempts"}
-    else
-      :ok
-    end
+    check_brute_force_threshold(attempts)
   end
 
   defp get_user_permissions(user) do
@@ -372,11 +346,7 @@ defmodule Raxol.Security.Auditor do
 
   defp check_resource_access(permissions, _resource, action) do
     # Mock implementation
-    if Map.get(permissions, action, false) do
-      :ok
-    else
-      {:error, :unauthorized}
-    end
+    authorize_action_permission(permissions, action)
   end
 
   defp audit_access_attempt(user, resource, action) do
@@ -396,11 +366,7 @@ defmodule Raxol.Security.Auditor do
   end
 
   defp validate_sql_params(params) do
-    if Enum.all?(params, &safe_param?/1) do
-      :ok
-    else
-      {:error, :high, "Unsafe SQL parameter detected"}
-    end
+    validate_all_params(params)
   end
 
   defp safe_param?(param) when is_binary(param) do
@@ -430,11 +396,7 @@ defmodule Raxol.Security.Auditor do
   end
 
   defp secure_compare(a, b) when is_binary(a) and is_binary(b) do
-    if byte_size(a) == byte_size(b) do
-      secure_compare_binaries(a, b, 0) == 0
-    else
-      false
-    end
+    secure_compare_same_size(a, b)
   end
 
   defp secure_compare(_, _), do: false
@@ -454,35 +416,19 @@ defmodule Raxol.Security.Auditor do
   end
 
   defp validate_csp(value) do
-    if String.contains?(value, "default-src") do
-      :ok
-    else
-      {:error, "Missing default-src directive"}
-    end
+    validate_csp_default_src(value)
   end
 
   defp validate_content_type_options(value) do
-    if value == "nosniff" do
-      :ok
-    else
-      {:error, "Should be 'nosniff'"}
-    end
+    validate_nosniff_value(value)
   end
 
   defp validate_frame_options(value) do
-    if value in ~w(DENY SAMEORIGIN) do
-      :ok
-    else
-      {:error, "Should be DENY or SAMEORIGIN"}
-    end
+    validate_frame_options_value(value)
   end
 
   defp validate_hsts(value) do
-    if String.contains?(value, "max-age=") do
-      :ok
-    else
-      {:error, "Missing max-age directive"}
-    end
+    validate_hsts_max_age(value)
   end
 
   defp remove_scripts(html) do
@@ -510,21 +456,13 @@ defmodule Raxol.Security.Auditor do
   end
 
   defp check_file_size(size, max_size) do
-    if size <= max_size do
-      :ok
-    else
-      {:error, :medium, "File size exceeds limit"}
-    end
+    validate_file_size_limit(size, max_size)
   end
 
   defp check_file_type(file_path, allowed_types) do
     extension = Path.extname(file_path) |> String.downcase()
 
-    if extension in allowed_types do
-      :ok
-    else
-      {:error, :high, "File type not allowed"}
-    end
+    validate_file_extension(extension, allowed_types)
   end
 
   defp scan_file_content(_file_path) do
@@ -564,6 +502,93 @@ defmodule Raxol.Security.Auditor do
     {:ok, :dependencies_secure}
   end
 
+  ## Pattern matching helper functions for if statement elimination
+
+  defp process_audit_results([]), do: {:ok, :all_passed}
+  defp process_audit_results(failures), do: {:error, :audit_failed, failures}
+
+  defp validate_string_encoding(input) do
+    case String.valid?(input) do
+      true -> {:ok, input}
+      false -> {:error, :high, "Invalid character encoding"}
+    end
+  end
+
+  defp handle_html_sanitization(input, true) do
+    sanitized = sanitize_html(input)
+    {:ok, sanitized}
+  end
+
+  defp handle_html_sanitization(input, false), do: {:ok, input}
+
+  defp validate_username_format(username) do
+    case Regex.match?(~r/^[a-zA-Z0-9_.-]+$/, username) do
+      true -> {:ok, username}
+      false -> {:error, :medium, "Invalid username format"}
+    end
+  end
+
+  defp check_brute_force_threshold(attempts) when attempts > 5 do
+    {:error, :high, "Too many login attempts"}
+  end
+
+  defp check_brute_force_threshold(_attempts), do: :ok
+
+  defp authorize_action_permission(permissions, action) do
+    case Map.get(permissions, action, false) do
+      true -> :ok
+      false -> {:error, :unauthorized}
+    end
+  end
+
+  defp validate_all_params(params) do
+    case Enum.all?(params, &safe_param?/1) do
+      true -> :ok
+      false -> {:error, :high, "Unsafe SQL parameter detected"}
+    end
+  end
+
+  defp secure_compare_same_size(a, b) when byte_size(a) == byte_size(b) do
+    secure_compare_binaries(a, b, 0) == 0
+  end
+
+  defp secure_compare_same_size(_a, _b), do: false
+
+  defp validate_csp_default_src(value) do
+    case String.contains?(value, "default-src") do
+      true -> :ok
+      false -> {:error, "Missing default-src directive"}
+    end
+  end
+
+  defp validate_nosniff_value("nosniff"), do: :ok
+  defp validate_nosniff_value(_value), do: {:error, "Should be 'nosniff'"}
+
+  defp validate_frame_options_value(value) when value in ~w(DENY SAMEORIGIN),
+    do: :ok
+
+  defp validate_frame_options_value(_value),
+    do: {:error, "Should be DENY or SAMEORIGIN"}
+
+  defp validate_hsts_max_age(value) do
+    case String.contains?(value, "max-age=") do
+      true -> :ok
+      false -> {:error, "Missing max-age directive"}
+    end
+  end
+
+  defp validate_file_size_limit(size, max_size) when size <= max_size, do: :ok
+
+  defp validate_file_size_limit(_size, _max_size),
+    do: {:error, :medium, "File size exceeds limit"}
+
+  defp validate_file_extension(extension, allowed_types) do
+    case extension in allowed_types do
+      true -> :ok
+      false -> {:error, :high, "File type not allowed"}
+    end
+  end
+
   ## Helper functions for refactored code
 
   defp check_and_update_rate_limit(current_count, limit, _key, _window)
@@ -584,20 +609,10 @@ defmodule Raxol.Security.Auditor do
     {:error, :medium, "Security headers issues: #{inspect(errors)}"}
   end
 
-  defp process_audit_results([]) do
-    {:ok, :all_passed}
-  end
-
-  defp process_audit_results(failures) do
-    {:error, :audit_failed, failures}
-  end
-
-  defp validate_input_length(input, max_length)
-       when byte_size(input) <= max_length do
-    {:ok, input}
-  end
-
-  defp validate_input_length(_input, _max_length) do
-    {:error, :low, "Input exceeds maximum length"}
+  defp validate_input_length(input, max_length) do
+    case String.length(input) <= max_length do
+      true -> {:ok, input}
+      false -> {:error, :low, "Input exceeds maximum length"}
+    end
   end
 end

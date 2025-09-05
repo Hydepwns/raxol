@@ -124,10 +124,11 @@ defmodule Raxol.Security.UserContext do
            result = fun.()
 
            # Restore previous user context
-           if previous_user == "system" do
-             Server.clear_current_user()
-           else
-             Server.set_current_user(previous_user)
+           case previous_user == "system" do
+             true ->
+               Server.clear_current_user()
+             false ->
+               Server.set_current_user(previous_user)
            end
 
            result

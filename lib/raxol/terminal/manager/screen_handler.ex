@@ -54,12 +54,7 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
         new_emulator = emulator
 
         # Notify runtime process if present
-        if state.runtime_pid do
-          send(
-            state.runtime_pid,
-            {:terminal_screen_updated, [update], new_emulator}
-          )
-        end
+        notify_runtime_process(state.runtime_pid, [update], new_emulator)
 
         # Handle resize notifications if needed
         handle_resize_notification(update, state)
@@ -84,12 +79,7 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
         new_emulator = emulator
 
         # Notify runtime process if present
-        if state.runtime_pid do
-          send(
-            state.runtime_pid,
-            {:terminal_screen_updated, updates, new_emulator}
-          )
-        end
+        notify_runtime_process(state.runtime_pid, updates, new_emulator)
 
         # Handle resize notifications for each update
         Enum.each(updates, &handle_resize_notification(&1, state))
@@ -106,24 +96,32 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
   end
 
   defp handle_resize_notification(update, state) do
-    if Map.has_key?(update, :width) and Map.has_key?(update, :height) do
-      NotificationManager.notify_resized(
-        state.runtime_pid,
-        state.callback_module,
-        update.width,
-        update.height
-      )
-    end
+    check_and_notify_resize(update, state)
   end
 
-  defp handle_no_terminal_error(state, action, data) do
-    if state.runtime_pid do
-      send(
-        state.runtime_pid,
-        {:terminal_error, :no_terminal, %{action: action, update: data}}
-      )
-    end
+  defp check_and_notify_resize(%{width: width, height: height}, state) do
+    NotificationManager.notify_resized(
+      state.runtime_pid,
+      state.callback_module,
+      width,
+      height
+    )
+  end
 
+  defp check_and_notify_resize(_update, _state), do: :ok
+
+  defp handle_no_terminal_error(state, action, data) do
+    send_error_if_runtime_present(state.runtime_pid, action, data)
     {:error, :no_terminal}
+  end
+
+  defp notify_runtime_process(nil, _updates, _emulator), do: :ok
+  defp notify_runtime_process(runtime_pid, updates, emulator) do
+    send(runtime_pid, {:terminal_screen_updated, updates, emulator})
+  end
+
+  defp send_error_if_runtime_present(nil, _action, _data), do: :ok
+  defp send_error_if_runtime_present(runtime_pid, action, data) do
+    send(runtime_pid, {:terminal_error, :no_terminal, %{action: action, update: data}})
   end
 end

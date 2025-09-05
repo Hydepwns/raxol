@@ -172,13 +172,23 @@ defmodule Raxol.Component do
           todos
           |> Enum.with_index()
           |> Enum.map(fn {todo, idx} ->
-            cursor = if idx == selected, do: ">", else: " "
-            check = if todo.complete, do: "[x]", else: "[ ]"
-            text = if editing == idx, do: "[editing...]", else: todo.text
+            cursor = render_cursor(idx == selected)
+            check = render_check(todo.complete)
+            text = render_text(editing == idx, editing, todo.text)
             "\#{cursor} \#{check} \#{text}"
           end)
           |> Enum.join("\n")
         end
+
+        # Helper functions to eliminate if statements in documentation example
+        defp render_cursor(true), do: ">"
+        defp render_cursor(false), do: " "
+
+        defp render_check(true), do: "[x]"
+        defp render_check(false), do: "[ ]"
+
+        defp render_text(true, _editing, _text), do: "[editing...]"
+        defp render_text(false, _editing, text), do: text
       end
 
   ## Component Composition

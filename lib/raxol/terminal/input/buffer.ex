@@ -118,17 +118,7 @@ defmodule Raxol.Terminal.Input.Buffer do
   Adds an event to the input buffer.
   """
   def add(buffer, event) do
-    if buffer.current_size >= buffer.max_size do
-      {:error, :buffer_full}
-    else
-      new_buffer = %{
-        buffer
-        | buffer: buffer.buffer ++ [event],
-          current_size: buffer.current_size + 1
-      }
-
-      {:ok, new_buffer}
-    end
+    add_to_buffer(buffer.current_size >= buffer.max_size, buffer, event)
   end
 
   @doc """
@@ -184,11 +174,7 @@ defmodule Raxol.Terminal.Input.Buffer do
     case parse_events_recursive(combined_input, []) do
       {:ok, events, remaining} ->
         # If there's remaining input, buffer it
-        new_state =
-          if remaining != "",
-            do: %{state | input_buffer: remaining},
-            else: %{state | input_buffer: ""}
-
+        new_state = update_input_buffer(remaining, state)
         {:ok, events, new_state}
 
       {:buffer, remaining} ->
@@ -225,11 +211,7 @@ defmodule Raxol.Terminal.Input.Buffer do
 
       {:error, _reason} ->
         # If we still can't parse, skip the first character and continue
-        if String.length(input) > 0 do
-          parse_events_recursive(String.slice(input, 1..-1//1), events)
-        else
-          {:ok, events, ""}
-        end
+        handle_unparseable_input(input, events)
     end
   end
 
@@ -249,84 +231,27 @@ defmodule Raxol.Terminal.Input.Buffer do
   end
 
   defp parse_incomplete_escape(input) do
-    if input == "\e" or String.starts_with?(input, "\e[") do
-      {:buffer, input}
-    end
+    check_incomplete_escape(input)
   end
 
   defp parse_single_character_event(input) do
-    if String.length(input) >= 1 and
-         not String.match?(String.first(input), ~r/[\x00-\x1F]/) do
-      char = String.first(input)
-      event = %Raxol.Terminal.Input.Event.KeyEvent{key: char, modifiers: []}
-      remaining = String.slice(input, 1..-1//1)
-      {:ok, event, remaining}
-    end
+    parse_single_char_if_valid(input)
   end
 
   defp parse_control_character(input) do
-    if String.length(input) >= 1 do
-      {:error, :unrecognized_sequence}
-    end
+    parse_control_if_present(input)
   end
 
   defp parse_mouse_event(input) do
-    if String.match?(input, ~r/^\e\[(\d+);(\d+);(\d+);(\d+)M/) do
-      [_, button_code, action_code, x, y] =
-        Regex.run(~r/^\e\[(\d+);(\d+);(\d+);(\d+)M/, input)
-
-      button = parse_mouse_button(button_code)
-      action = parse_mouse_action(action_code)
-
-      event = %Raxol.Terminal.Input.Event.MouseEvent{
-        button: button,
-        action: action,
-        x: String.to_integer(x),
-        y: String.to_integer(y)
-      }
-
-      sequence_length =
-        String.length("\e[#{button_code};#{action_code};#{x};#{y}M")
-
-      remaining = String.slice(input, sequence_length..-1//1)
-      {:ok, event, remaining}
-    end
+    parse_mouse_if_matches(input)
   end
 
   defp parse_key_event_3_params(input) do
-    if String.match?(input, ~r/^\e\[(\d+);(\d+);(\d+)([A-Z])/) do
-      [_, param1, param2, param3, key] =
-        Regex.run(~r/^\e\[(\d+);(\d+);(\d+)([A-Z])/, input)
-
-      modifiers = parse_modifiers([param1, param2, param3])
-
-      event = %Raxol.Terminal.Input.Event.KeyEvent{
-        key: key,
-        modifiers: modifiers
-      }
-
-      sequence_length = String.length("\e[#{param1};#{param2};#{param3}#{key}")
-      remaining = String.slice(input, sequence_length..-1//1)
-      {:ok, event, remaining}
-    end
+    parse_key_3_params_if_matches(input)
   end
 
   defp parse_key_event_2_params(input) do
-    if String.match?(input, ~r/^\e\[(\d+);(\d+)([A-Z])/) do
-      [_, modifier_code, key_code, key] =
-        Regex.run(~r/^\e\[(\d+);(\d+)([A-Z])/, input)
-
-      modifiers = parse_modifiers([modifier_code, key_code])
-
-      event = %Raxol.Terminal.Input.Event.KeyEvent{
-        key: key,
-        modifiers: modifiers
-      }
-
-      sequence_length = String.length("\e[#{modifier_code};#{key_code}#{key}")
-      remaining = String.slice(input, sequence_length..-1//1)
-      {:ok, event, remaining}
-    end
+    parse_key_2_params_if_matches(input)
   end
 
   defp parse_mouse_button(button_code) do
@@ -348,14 +273,7 @@ defmodule Raxol.Terminal.Input.Buffer do
   end
 
   defp parse_single_character(input) do
-    if String.length(input) >= 1 do
-      char = String.first(input)
-      event = %Raxol.Terminal.Input.Event.KeyEvent{key: char, modifiers: []}
-      remaining = String.slice(input, 1..-1//1)
-      {:ok, event, remaining}
-    else
-      {:error, :empty_input}
-    end
+    parse_single_char_with_check(input)
   end
 
   defp parse_modifiers(params) do
@@ -375,5 +293,150 @@ defmodule Raxol.Terminal.Input.Buffer do
     # Remove duplicates and sort in the order [:shift, :ctrl, :alt]
     order = %{shift: 0, ctrl: 1, alt: 2}
     modifiers |> Enum.uniq() |> Enum.sort_by(&Map.get(order, &1, 99))
+  end
+
+  # Helper functions for if statement elimination
+
+  defp add_to_buffer(true, _buffer, _event) do
+    {:error, :buffer_full}
+  end
+
+  defp add_to_buffer(false, buffer, event) do
+    new_buffer = %{
+      buffer
+      | buffer: buffer.buffer ++ [event],
+        current_size: buffer.current_size + 1
+    }
+
+    {:ok, new_buffer}
+  end
+
+  defp update_input_buffer("", state) do
+    %{state | input_buffer: ""}
+  end
+
+  defp update_input_buffer(remaining, state) do
+    %{state | input_buffer: remaining}
+  end
+
+  defp handle_unparseable_input(input, events) when byte_size(input) > 0 do
+    parse_events_recursive(String.slice(input, 1..-1//1), events)
+  end
+
+  defp handle_unparseable_input(_input, events) do
+    {:ok, events, ""}
+  end
+
+  defp check_incomplete_escape("\e"), do: {:buffer, "\e"}
+  defp check_incomplete_escape("\e[" <> _), do: {:buffer, "\e"}
+  defp check_incomplete_escape(_input), do: nil
+
+  defp parse_single_char_if_valid(input) when byte_size(input) >= 1 do
+    char = String.first(input)
+
+    case String.match?(char, ~r/[\x00-\x1F]/) do
+      true ->
+        nil
+
+      false ->
+        event = %Raxol.Terminal.Input.Event.KeyEvent{key: char, modifiers: []}
+        remaining = String.slice(input, 1..-1//1)
+        {:ok, event, remaining}
+    end
+  end
+
+  defp parse_single_char_if_valid(_input), do: nil
+
+  defp parse_control_if_present(input) when byte_size(input) >= 1 do
+    {:error, :unrecognized_sequence}
+  end
+
+  defp parse_control_if_present(_input), do: nil
+
+  defp parse_mouse_if_matches(input) do
+    mouse_regex = ~r/^\e\[(\d+);(\d+);(\d+);(\d+)M/
+
+    case String.match?(input, mouse_regex) do
+      true ->
+        [_, button_code, action_code, x, y] = Regex.run(mouse_regex, input)
+
+        button = parse_mouse_button(button_code)
+        action = parse_mouse_action(action_code)
+
+        event = %Raxol.Terminal.Input.Event.MouseEvent{
+          button: button,
+          action: action,
+          x: String.to_integer(x),
+          y: String.to_integer(y)
+        }
+
+        sequence_length =
+          String.length("\e[#{button_code};#{action_code};#{x};#{y}M")
+
+        remaining = String.slice(input, sequence_length..-1//1)
+        {:ok, event, remaining}
+
+      false ->
+        nil
+    end
+  end
+
+  defp parse_key_3_params_if_matches(input) do
+    key_regex = ~r/^\e\[(\d+);(\d+);(\d+)([A-Z])/
+
+    case String.match?(input, key_regex) do
+      true ->
+        [_, param1, param2, param3, key] = Regex.run(key_regex, input)
+
+        modifiers = parse_modifiers([param1, param2, param3])
+
+        event = %Raxol.Terminal.Input.Event.KeyEvent{
+          key: key,
+          modifiers: modifiers
+        }
+
+        sequence_length =
+          String.length("\e[#{param1};#{param2};#{param3}#{key}")
+
+        remaining = String.slice(input, sequence_length..-1//1)
+        {:ok, event, remaining}
+
+      false ->
+        nil
+    end
+  end
+
+  defp parse_key_2_params_if_matches(input) do
+    key_regex = ~r/^\e\[(\d+);(\d+)([A-Z])/
+
+    case String.match?(input, key_regex) do
+      true ->
+        [_, modifier_code, key_code, key] = Regex.run(key_regex, input)
+
+        modifiers = parse_modifiers([modifier_code, key_code])
+
+        event = %Raxol.Terminal.Input.Event.KeyEvent{
+          key: key,
+          modifiers: modifiers
+        }
+
+        sequence_length = String.length("\e[#{modifier_code};#{key_code}#{key}")
+        remaining = String.slice(input, sequence_length..-1//1)
+        {:ok, event, remaining}
+
+      false ->
+        nil
+    end
+  end
+
+  defp parse_single_char_with_check(input) when byte_size(input) >= 1 do
+    char = String.first(input)
+    event = %Raxol.Terminal.Input.Event.KeyEvent{key: char, modifiers: []}
+    remaining = String.slice(input, 1..-1//1)
+    {:ok, event, remaining}
+  end
+
+  defp parse_single_char_with_check(_input) do
+    {:error, :empty_input}
   end
 end

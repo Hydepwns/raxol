@@ -119,11 +119,7 @@ defmodule Raxol.I18nTestHelpers do
       RaxolWeb.Gettext.available_locales()
       |> Enum.find(fn locale -> RaxolWeb.Gettext.rtl?(locale) end)
 
-    if rtl_locale do
-      with_locale(rtl_locale, fun)
-    else
-      flunk("No RTL locale available for testing")
-    end
+    execute_with_rtl_locale(rtl_locale, fun)
   end
 
   @doc """
@@ -178,13 +174,7 @@ defmodule Raxol.I18nTestHelpers do
              # {announcement_type}" not properly formatted for locale "#{locale}""
              "Screen reader announcement "
 
-      if map_size(bindings) > 0 do
-        Enum.each(bindings, fn {_key, value} ->
-          assert String.contains?(formatted, to_string(value)),
-                 # {value}" for key "#{key}". Formatted: "#{formatted}""
-                 "Screen reader announcement doesn't contain binding value "
-        end)
-      end
+      validate_binding_values(bindings, formatted, key)
     end)
   end
 
@@ -216,28 +206,76 @@ defmodule Raxol.I18nTestHelpers do
 
         default_locale = RaxolWeb.Gettext.get_locale()
 
-        if locale != default_locale do
-          default_label =
-            with_locale(default_locale, fn ->
-              default_metadata =
-                get_mock_element_metadata(component_id) || %{}
-
-              Map.get(default_metadata, label_type)
-            end)
-
-          if not is_nil(default_label) do
-            refute label == default_label,
-                   # {component_id}" "#{label_type}" label ("#{label}") was not translated from default locale ("#{default_label}")"
-                   "Component "
-          else
-            Raxol.Core.Runtime.Log.debug(
-              # {component_id}" "#{label_type}" as default label was nil"
-              "Could not compare label for "
-            )
-          end
-        end
+        compare_with_default_locale(locale, default_locale, component_id, label_type, label)
       end)
     end)
+  end
+
+  # Helper functions to eliminate if statements
+  
+  defp execute_with_rtl_locale(nil, _fun) do
+    flunk("No RTL locale available for testing")
+  end
+
+  defp execute_with_rtl_locale(rtl_locale, fun) do
+    with_locale(rtl_locale, fun)
+  end
+
+  defp validate_binding_values(bindings, formatted, _key) when map_size(bindings) > 0 do
+    Enum.each(bindings, fn {_key, value} ->
+      assert String.contains?(formatted, to_string(value)),
+             # {value}" for key "#{key}". Formatted: "#{formatted}""
+             "Screen reader announcement doesn't contain binding value "
+    end)
+  end
+
+  defp validate_binding_values(_bindings, _formatted, _key), do: :ok
+
+  defp compare_with_default_locale(locale, locale, _component_id, _label_type, _label), do: :ok
+
+  defp compare_with_default_locale(_locale, default_locale, component_id, label_type, label) do
+    default_label =
+      with_locale(default_locale, fn ->
+        default_metadata =
+          get_mock_element_metadata(component_id) || %{}
+
+        Map.get(default_metadata, label_type)
+      end)
+
+    validate_translation_difference(default_label, label, component_id, label_type)
+  end
+
+  defp validate_translation_difference(nil, _label, _component_id, _label_type) do
+    Raxol.Core.Runtime.Log.debug(
+      # {component_id}" "#{label_type}" as default label was nil"
+      "Could not compare label for "
+    )
+  end
+
+  defp validate_translation_difference(default_label, label, _component_id, _label_type) do
+    refute label == default_label,
+           # {component_id}" "#{label_type}" label ("#{label}") was not translated from default locale ("#{default_label}")"
+           "Component "
+  end
+
+  defp validate_shortcut_data(nil, _shortcut_id, _locale, _expected_key, _expected_description) do
+    flunk(
+      # {shortcut_id}" not found in current context for locale "#{locale}""
+      "Shortcut with ID "
+    )
+  end
+
+  defp validate_shortcut_data(shortcut_data, _shortcut_id, _locale, expected_key, expected_description) do
+    actual_key = shortcut_data.key_combo
+    actual_description = shortcut_data.description
+
+    assert actual_key == expected_key,
+           # {shortcut_id}" to be "#{expected_key}" in locale "#{locale}", but got "#{actual_key}""
+           "Expected shortcut key for "
+
+    assert actual_description == expected_description,
+           # {shortcut_id}" to be "#{expected_description}" in locale "#{locale}", but got "#{actual_description}""
+           "Expected shortcut description for "
   end
 
   # Mock implementation for tests
@@ -269,23 +307,7 @@ defmodule Raxol.I18nTestHelpers do
       shortcut_data =
         Enum.find(all_shortcuts, fn s -> s.name == shortcut_id end)
 
-      if shortcut_data do
-        actual_key = shortcut_data.key_combo
-        actual_description = shortcut_data.description
-
-        assert actual_key == expected_key,
-               # {shortcut_id}" to be "#{expected_key}" in locale "#{locale}", but got "#{actual_key}""
-               "Expected shortcut key for "
-
-        assert actual_description == expected_description,
-               # {shortcut_id}" to be "#{expected_description}" in locale "#{locale}", but got "#{actual_description}""
-               "Expected shortcut description for "
-      else
-        flunk(
-          # {shortcut_id}" not found in current context for locale "#{locale}""
-          "Shortcut with ID "
-        )
-      end
+      validate_shortcut_data(shortcut_data, shortcut_id, locale, expected_key, expected_description)
     end)
   end
 

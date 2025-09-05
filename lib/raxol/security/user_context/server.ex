@@ -202,20 +202,22 @@ defmodule Raxol.Security.UserContext.Server do
   @impl true
   def handle_call({:clear_context, pid}, _from, state) do
     contexts =
-      if Map.has_key?(state.contexts, pid) do
-        Map.delete(state.contexts, pid)
-      else
-        state.contexts
+      case Map.has_key?(state.contexts, pid) do
+        true ->
+          Map.delete(state.contexts, pid)
+        false ->
+          state.contexts
       end
 
     # Stop monitoring if context is cleared
     state =
-      if Map.has_key?(state.monitors, pid) do
-        ref = Map.get(state.monitors, pid)
-        Process.demonitor(ref)
-        %{state | monitors: Map.delete(state.monitors, pid)}
-      else
-        state
+      case Map.has_key?(state.monitors, pid) do
+        true ->
+          ref = Map.get(state.monitors, pid)
+          Process.demonitor(ref)
+          %{state | monitors: Map.delete(state.monitors, pid)}
+        false ->
+          state
       end
 
     {:reply, :ok, %{state | contexts: contexts}}
@@ -258,11 +260,12 @@ defmodule Raxol.Security.UserContext.Server do
   # Private helpers
 
   defp ensure_monitored(pid, state) do
-    if Map.has_key?(state.monitors, pid) do
-      state
-    else
-      ref = Process.monitor(pid)
-      %{state | monitors: Map.put(state.monitors, pid, ref)}
+    case Map.has_key?(state.monitors, pid) do
+      true ->
+        state
+      false ->
+        ref = Process.monitor(pid)
+        %{state | monitors: Map.put(state.monitors, pid, ref)}
     end
   end
 end

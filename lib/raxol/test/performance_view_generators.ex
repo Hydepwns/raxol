@@ -9,6 +9,10 @@ defmodule Raxol.Test.PerformanceViewGenerators do
   alias Raxol.Core.Renderer.View
   alias Raxol.Test.PerformanceTestData
 
+  # Helper function for macro expansions
+  defp ensure_keyword_list(value) when is_list(value), do: value
+  defp ensure_keyword_list(value), do: [value]
+
   def create_nested_structure(depth, current_depth \\ 0)
   def create_nested_structure(depth, depth), do: View.text("Leaf")
 
@@ -18,24 +22,26 @@ defmodule Raxol.Test.PerformanceViewGenerators do
         create_nested_structure(depth, current_depth + 1)
       end
 
-    if rem(current_depth, 2) == 0 do
-      View.flex direction: :row do
-        children
-      end
-    else
-      View.grid columns: 3 do
-        children
-      end
+    case rem(current_depth, 2) do
+      0 ->
+        View.flex direction: :row do
+          children
+        end
+      _ ->
+        View.grid columns: 3 do
+          children
+        end
     end
   end
 
   def count_nested_views(view) do
     children = Map.get(view, :children, [])
 
-    if Enum.empty?(children) do
-      1
-    else
-      1 + Enum.sum(Enum.map(children, &count_nested_views/1))
+    case Enum.empty?(children) do
+      true ->
+        1
+      false ->
+        1 + Enum.sum(Enum.map(children, &count_nested_views/1))
     end
   end
 
@@ -71,7 +77,10 @@ defmodule Raxol.Test.PerformanceViewGenerators do
           key_for_sparkline = Map.get(col_spec, :key, :sales)
 
           sparkline_width =
-            if is_map(col_spec), do: Map.get(col_spec, :width, 12), else: 12
+            case is_map(col_spec) do
+              true -> Map.get(col_spec, :width, 12)
+              false -> 12
+            end
 
           Map.merge(col_spec, %{
             key: key_for_sparkline,
@@ -136,18 +145,19 @@ defmodule Raxol.Test.PerformanceViewGenerators do
         ]
       end
 
-    if Keyword.get(opts, :include_top_header, false) do
-      View.box(
-        children: [
-          View.box(
-            border: :single,
-            children: [View.text("Header", style: [:bold])]
-          ),
-          main_content
-        ]
-      )
-    else
-      View.box(children: [main_content])
+    case Keyword.get(opts, :include_top_header, false) do
+      true ->
+        View.box(
+          children: [
+            View.box(
+              border: :single,
+              children: [View.text("Header", style: [:bold])]
+            ),
+            main_content
+          ]
+        )
+      false ->
+        View.box(children: [main_content])
     end
   end
 
@@ -161,13 +171,14 @@ defmodule Raxol.Test.PerformanceViewGenerators do
 
   def update_some_data(data, index) do
     Enum.map(data, fn item ->
-      if item.id == index do
-        %{
+      case item.id == index do
+        true ->
+          %{
+            item
+            | sales: Enum.map(item.sales, fn _ -> :rand.uniform(1000) end)
+          }
+        false ->
           item
-          | sales: Enum.map(item.sales, fn _ -> :rand.uniform(1000) end)
-        }
-      else
-        item
       end
     end)
   end

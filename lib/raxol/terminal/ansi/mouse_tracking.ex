@@ -185,15 +185,22 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
         # Fallback to the old logic for other protocols
         button = Map.get(@mouse_buttons, button_code &&& 0x03)
         action = Map.get(@mouse_actions, button_code)
-        if button && action, do: {button, action, x, y}, else: nil
+        case {button, action} do
+          {nil, _} -> nil
+          {_, nil} -> nil
+          _ -> {button, action, x, y}
+        end
     end
   end
 
+  defp convert_to_string(rest) when is_binary(rest) do
+    :erlang.binary_to_list(rest) |> to_string()
+  end
+
+  defp convert_to_string(rest), do: rest
+
   defp parse_sgr_mouse_event(rest) do
-    rest_str =
-      if is_binary(rest),
-        do: :erlang.binary_to_list(rest) |> to_string(),
-        else: rest
+    rest_str = convert_to_string(rest)
 
     case Regex.run(~r/^([0-9]+);([0-9]+);([0-9]+)([mM])/, rest_str) do
       [_, button, x, y, kind] ->
@@ -201,7 +208,11 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
         x = String.to_integer(x)
         y = String.to_integer(y)
         event = parse_mouse_event(button, x, y)
-        if kind == "m" and event, do: put_elem(event, 1, :release), else: event
+        case {kind, event} do
+          {"m", nil} -> nil
+          {"m", e} -> put_elem(e, 1, :release)
+          _ -> event
+        end
 
       _ ->
         nil
@@ -243,13 +254,19 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
 
   defp get_button_code(button) do
     Enum.find_value(@mouse_buttons, 0, fn {code, b} ->
-      if b == button, do: code
+      case b == button do
+        true -> code
+        false -> nil
+      end
     end)
   end
 
   defp get_action_code(action) do
     Enum.find_value(@mouse_actions, 0, fn {code, a} ->
-      if a == action, do: code
+      case a == action do
+        true -> code
+        false -> nil
+      end
     end)
   end
 end

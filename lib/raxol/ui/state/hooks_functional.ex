@@ -77,25 +77,14 @@ defmodule Raxol.UI.State.HooksFunctional do
     deps_key = {hook_id, :dependencies}
     prev_deps = Server.get_hook_state(component_id, deps_key)
 
-    if dependencies_changed?(prev_deps, dependencies) do
-      # Run cleanup from previous effect if any
-      cleanup_key = {hook_id, :cleanup}
-
-      case Server.get_hook_state(component_id, cleanup_key) do
-        cleanup_fn when is_function(cleanup_fn, 0) ->
-          safe_execute_cleanup(cleanup_fn)
-
-        _ ->
-          :ok
-      end
-
-      # Run new effect
-      cleanup = safe_execute_effect(effect_fn)
-
-      # Store new dependencies and cleanup
-      Server.set_hook_state(component_id, deps_key, dependencies)
-      Server.set_hook_state(component_id, cleanup_key, cleanup)
-    end
+    execute_effect_if_dependencies_changed(
+      prev_deps,
+      dependencies,
+      component_id,
+      hook_id,
+      deps_key,
+      effect_fn
+    )
 
     :ok
   end
@@ -120,17 +109,14 @@ defmodule Raxol.UI.State.HooksFunctional do
 
     prev_deps = Server.get_hook_state(component_id, deps_key)
 
-    if dependencies_changed?(prev_deps, dependencies) do
-      # Recompute value
-      new_value = safe_compute_memo(compute_fn)
-
-      Server.set_hook_state(component_id, deps_key, dependencies)
-      Server.set_hook_state(component_id, value_key, new_value)
-      new_value
-    else
-      # Return cached value
-      Server.get_hook_state(component_id, value_key)
-    end
+    handle_memo_computation(
+      prev_deps,
+      dependencies,
+      component_id,
+      deps_key,
+      value_key,
+      compute_fn
+    )
   end
 
   @doc """
@@ -153,16 +139,14 @@ defmodule Raxol.UI.State.HooksFunctional do
 
     prev_deps = Server.get_hook_state(component_id, deps_key)
 
-    if dependencies_changed?(prev_deps, dependencies) do
-      Server.set_hook_state(component_id, deps_key, dependencies)
-      Server.set_hook_state(component_id, callback_key, callback_fn)
+    handle_callback_update(
+      prev_deps,
+      dependencies,
+      component_id,
+      deps_key,
+      callback_key,
       callback_fn
-    else
-      case Server.get_hook_state(component_id, callback_key) do
-        nil -> callback_fn
-        cached_fn -> cached_fn
-      end
-    end
+    )
   end
 
   @doc """
@@ -223,6 +207,119 @@ defmodule Raxol.UI.State.HooksFunctional do
     {current_state, dispatch}
   end
 
+  # Pattern matching helper functions for if statement elimination
+
+  defp execute_effect_if_dependencies_changed(
+         prev_deps,
+         dependencies,
+         component_id,
+         hook_id,
+         deps_key,
+         effect_fn
+       )
+       when prev_deps != dependencies do
+    # Run cleanup from previous effect if any
+    cleanup_key = {hook_id, :cleanup}
+
+    case Server.get_hook_state(component_id, cleanup_key) do
+      cleanup_fn when is_function(cleanup_fn, 0) ->
+        safe_execute_cleanup(cleanup_fn)
+
+      _ ->
+        :ok
+    end
+
+    # Run new effect
+    cleanup = safe_execute_effect(effect_fn)
+
+    # Store new dependencies and cleanup
+    Server.set_hook_state(component_id, deps_key, dependencies)
+    Server.set_hook_state(component_id, cleanup_key, cleanup)
+  end
+
+  defp execute_effect_if_dependencies_changed(
+         _prev_deps,
+         _dependencies,
+         _component_id,
+         _hook_id,
+         _deps_key,
+         _effect_fn
+       ),
+       do: :ok
+
+  defp handle_memo_computation(
+         prev_deps,
+         dependencies,
+         component_id,
+         deps_key,
+         value_key,
+         compute_fn
+       )
+       when prev_deps != dependencies do
+    # Recompute value
+    new_value = safe_compute_memo(compute_fn)
+
+    Server.set_hook_state(component_id, deps_key, dependencies)
+    Server.set_hook_state(component_id, value_key, new_value)
+    new_value
+  end
+
+  defp handle_memo_computation(
+         _prev_deps,
+         _dependencies,
+         component_id,
+         _deps_key,
+         value_key,
+         _compute_fn
+       ) do
+    # Return cached value
+    Server.get_hook_state(component_id, value_key)
+  end
+
+  defp handle_callback_update(
+         prev_deps,
+         dependencies,
+         component_id,
+         deps_key,
+         callback_key,
+         callback_fn
+       )
+       when prev_deps != dependencies do
+    Server.set_hook_state(component_id, deps_key, dependencies)
+    Server.set_hook_state(component_id, callback_key, callback_fn)
+    callback_fn
+  end
+
+  defp handle_callback_update(
+         _prev_deps,
+         _dependencies,
+         component_id,
+         _deps_key,
+         callback_key,
+         callback_fn
+       ) do
+    case Server.get_hook_state(component_id, callback_key) do
+      nil -> callback_fn
+      cached_fn -> cached_fn
+    end
+  end
+
+  defp send_update_to_alive_process(pid, component_id) when is_pid(pid) do
+    send_message_to_living_process(pid, component_id, Process.alive?(pid))
+  end
+
+  defp send_message_to_living_process(pid, component_id, true) do
+    send(pid, {:component_update, component_id})
+  end
+
+  defp send_message_to_living_process(_pid, _component_id, false), do: :ok
+
+  defp set_component_process_if_provided(nil), do: :ok
+
+  defp set_component_process_if_provided(process_pid) do
+    Server.set_component_process(process_pid)
+  end
+
   # Private helper functions
 
   defp get_current_component_id do
@@ -262,9 +359,7 @@ defmodule Raxol.UI.State.HooksFunctional do
         )
 
       pid when is_pid(pid) ->
-        if Process.alive?(pid) do
-          send(pid, {:component_update, component_id})
-        end
+        send_update_to_alive_process(pid, component_id)
 
       _ ->
         :ok
@@ -346,7 +441,7 @@ defmodule Raxol.UI.State.HooksFunctional do
   def set_component_context(component_id, process_pid \\ nil) do
     ensure_server_started()
     Server.set_component_id(component_id)
-    if process_pid, do: Server.set_component_process(process_pid)
+    set_component_process_if_provided(process_pid)
     :ok
   end
 

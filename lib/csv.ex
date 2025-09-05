@@ -21,11 +21,12 @@ defmodule CSV do
   defp escape_field(value) when is_nil(value), do: ""
 
   defp escape_field(value) when is_binary(value) do
-    if String.contains?(value, [",", "\"", "\n", "\r"]) do
-      escaped = String.replace(value, "\"", "\"\"")
-      "\"#{escaped}\""
-    else
-      value
+    case String.contains?(value, [",", "\"", "\n", "\r"]) do
+      true ->
+        escaped = String.replace(value, "\"", "\"\"")
+        "\"#{escaped}\""
+      false ->
+        value
     end
   end
 

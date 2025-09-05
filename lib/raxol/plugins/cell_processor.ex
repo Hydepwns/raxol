@@ -74,17 +74,7 @@ defmodule Raxol.Plugins.CellProcessor do
     plugin_name = determine_plugin_for_placeholder(placeholder_value)
 
     {manager_after_processing, replacement_cells, new_commands} =
-      if plugin_name do
-        handle_placeholder_with_plugin(
-          acc_manager,
-          plugin_name,
-          placeholder_cell,
-          emulator_state
-        )
-      else
-        log_unknown_placeholder(placeholder_value)
-        {acc_manager, [], []}
-      end
+      handle_plugin_lookup(plugin_name, acc_manager, placeholder_cell, emulator_state, placeholder_value)
 
     {manager_after_processing, replacement_cells ++ processed_cells_rev,
      acc_commands ++ new_commands}
@@ -108,6 +98,73 @@ defmodule Raxol.Plugins.CellProcessor do
   end
 
   # --- Private Helper Functions ---
+
+  # Pattern matching for plugin lookup instead of if statement
+  defp handle_plugin_lookup(nil, acc_manager, _placeholder_cell, _emulator_state, placeholder_value) do
+    log_unknown_placeholder(placeholder_value)
+    {acc_manager, [], []}
+  end
+
+  defp handle_plugin_lookup(plugin_name, acc_manager, placeholder_cell, emulator_state, _placeholder_value) do
+    handle_placeholder_with_plugin(
+      acc_manager,
+      plugin_name,
+      placeholder_cell,
+      emulator_state
+    )
+  end
+
+  # Pattern matching for plugin availability instead of if statement
+  defp handle_plugin_availability(
+         {true, true},
+         manager,
+         plugin_name,
+         plugin,
+         placeholder_cell,
+         emulator_state
+       ) do
+    log_plugin_call_details(plugin_name, plugin, placeholder_cell)
+    call_plugin_handle_cells(manager, plugin_name, plugin, placeholder_cell, emulator_state)
+  end
+
+  defp handle_plugin_availability(
+         _availability,
+         manager,
+         plugin_name,
+         _plugin,
+         _placeholder_cell,
+         _emulator_state
+       ) do
+    Raxol.Core.Runtime.Log.debug(
+      "[CellProcessor.process] Plugin #{plugin_name} disabled or does not implement handle_cells/3. Skipping."
+    )
+    {manager, [], []}
+  end
+
+  # Pattern matching for image plugin logging instead of if statements
+  defp log_image_plugin_state("image", plugin) do
+    Raxol.Core.Runtime.Log.debug(
+      "[CellProcessor.process] Before calling ImagePlugin.handle_cells. sequence_just_generated: #{inspect(Map.get(plugin, :sequence_just_generated))}"
+    )
+  end
+
+  defp log_image_plugin_state(_plugin_name, _plugin), do: :ok
+
+  defp log_image_plugin_success("image", updated_plugin_state) do
+    Raxol.Core.Runtime.Log.debug(
+      "[CellProcessor.process] After ImagePlugin.handle_cells returned {:ok, ...}. sequence_just_generated: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
+    )
+  end
+
+  defp log_image_plugin_success(_plugin_name, _updated_plugin_state), do: :ok
+
+  defp log_image_plugin_decline("image", updated_plugin_state) do
+    Raxol.Core.Runtime.Log.debug(
+      "[CellProcessor.process] After ImagePlugin.handle_cells returned {:cont, ...}. sequence_just_generated: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
+    )
+  end
+
+  defp log_image_plugin_decline(_plugin_name, _updated_plugin_state), do: :ok
 
   @spec determine_plugin_for_placeholder(atom()) :: String.t() | nil
   defp determine_plugin_for_placeholder(:image), do: "image"
@@ -162,25 +219,14 @@ defmodule Raxol.Plugins.CellProcessor do
          placeholder_cell,
          emulator_state
        ) do
-    if plugin.enabled and
-         function_exported?(plugin.__struct__, :handle_cells, 3) do
-      log_plugin_call_details(plugin_name, plugin, placeholder_cell)
-
-      call_plugin_handle_cells(
-        manager,
-        plugin_name,
-        plugin,
-        placeholder_cell,
-        emulator_state
-      )
-    else
-      Raxol.Core.Runtime.Log.debug(
-        # {plugin_name}" disabled or does not implement handle_cells/3. Skipping."
-        "[CellProcessor.process] Plugin "
-      )
-
-      {manager, [], []}
-    end
+    handle_plugin_availability(
+      {plugin.enabled, function_exported?(plugin.__struct__, :handle_cells, 3)},
+      manager,
+      plugin_name,
+      plugin,
+      placeholder_cell,
+      emulator_state
+    )
   end
 
   defp call_plugin_handle_cells(
@@ -222,11 +268,7 @@ defmodule Raxol.Plugins.CellProcessor do
   # Logs details before calling the plugin's handle_cells
   defp log_plugin_call_details(plugin_name, plugin, placeholder_cell) do
     # Log state *before* calling plugin, especially for ImagePlugin
-    if plugin_name == "image" do
-      Raxol.Core.Runtime.Log.debug(
-        "[CellProcessor.process] Before calling ImagePlugin.handle_cells. sequence_just_generated: #{inspect(Map.get(plugin, :sequence_just_generated))}"
-      )
-    end
+    log_image_plugin_state(plugin_name, plugin)
 
     # Log the opts specifically
     Raxol.Core.Runtime.Log.debug(
@@ -337,11 +379,7 @@ CELL DATA: #{inspect(placeholder_cell)}"
          plugin_cells,
          plugin_commands
        ) do
-    if plugin_name == "image" do
-      Raxol.Core.Runtime.Log.debug(
-        "[CellProcessor.process] After ImagePlugin.handle_cells returned {:ok, ...}. sequence_just_generated: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
-      )
-    end
+    log_image_plugin_success(plugin_name, updated_plugin_state)
 
     Raxol.Core.Runtime.Log.debug(
       "[CellProcessor.process] Plugin #{plugin_name} handled placeholder. Cells: #{length(plugin_cells)}, Commands: #{length(plugin_commands)}"
@@ -354,11 +392,7 @@ CELL DATA: #{inspect(placeholder_cell)}"
       "[CellProcessor.process] Plugin #{plugin_name} returned :cont. State Flag: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
     )
 
-    if plugin_name == "image" do
-      Raxol.Core.Runtime.Log.debug(
-        "[CellProcessor.process] After ImagePlugin.handle_cells returned {:cont, ...}. sequence_just_generated: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
-      )
-    end
+    log_image_plugin_decline(plugin_name, updated_plugin_state)
 
     Raxol.Core.Runtime.Log.debug(
       "[CellProcessor.process] Plugin #{plugin_name} declined placeholder."

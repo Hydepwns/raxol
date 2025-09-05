@@ -70,19 +70,8 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
   end
 
   defp handle_mouse_event(emulator, button, x, y, rest) do
-    output =
-      if emulator.mode_manager.mouse_report_mode != :none do
-        ["\e[M", button, x, y]
-      else
-        []
-      end
-
-    if byte_size(rest) > 0 do
-      {final_emulator, remaining_output} = process_input(emulator, rest)
-      {final_emulator, iolist_to_binary([output | remaining_output])}
-    else
-      {emulator, iolist_to_binary(output)}
-    end
+    output = get_mouse_output(emulator.mode_manager.mouse_report_mode, button, x, y)
+    handle_remaining_input(emulator, rest, output)
   end
 
   defp handle_non_mouse_input(emulator, input) do
@@ -104,13 +93,7 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
     {updated_emulator, output} =
       CoreHandler.process_terminal_input(emulator, input)
 
-    final_emulator =
-      if needs_cursor_check?(updated_emulator) do
-        ensure_cursor_visible_optimized(updated_emulator)
-      else
-        updated_emulator
-      end
-
+    final_emulator = apply_cursor_check(needs_cursor_check?(updated_emulator), updated_emulator)
     {final_emulator, output}
   end
 
@@ -133,11 +116,7 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
   end
 
   defp unfold_cursor_check(emu) do
-    if cursor_needs_scroll?(emu) do
-      {emu, scroll_once(emu)}
-    else
-      nil
-    end
+    handle_cursor_scroll(cursor_needs_scroll?(emu), emu)
   end
 
   defp needs_cursor_check?(%{last_operation: :scroll}), do: false
@@ -255,4 +234,23 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
       end
     )
   end
+
+  # Helper functions for pattern matching instead of if statements
+  defp get_mouse_output(:none, _button, _x, _y), do: []
+  defp get_mouse_output(_mode, button, x, y), do: ["\e[M", button, x, y]
+
+  defp handle_remaining_input(emulator, <<>>, output) do
+    {emulator, iolist_to_binary(output)}
+  end
+
+  defp handle_remaining_input(emulator, rest, output) do
+    {final_emulator, remaining_output} = process_input(emulator, rest)
+    {final_emulator, iolist_to_binary([output | remaining_output])}
+  end
+
+  defp apply_cursor_check(true, emulator), do: ensure_cursor_visible_optimized(emulator)
+  defp apply_cursor_check(false, emulator), do: emulator
+
+  defp handle_cursor_scroll(true, emu), do: {emu, scroll_once(emu)}
+  defp handle_cursor_scroll(false, _emu), do: nil
 end

@@ -187,11 +187,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
 
     # If this is the first mouse context, make it active
     new_state =
-      if state.active_mouse == nil do
-        %{new_state | active_mouse: mouse_id}
-      else
-        new_state
-      end
+      set_active_if_first_mouse(state.active_mouse == nil, new_state, mouse_id)
 
     {:reply, {:ok, mouse_id}, new_state}
   end
@@ -309,15 +305,109 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
   end
 
   # Private Functions
-  defp update_active_mouse(active_mouse, closed_mouse_id, new_mice) do
-    if active_mouse == closed_mouse_id do
-      case Map.keys(new_mice) do
-        [] -> nil
-        [first_mouse | _] -> first_mouse
-      end
-    else
-      active_mouse
+
+  defp set_active_if_first_mouse(false, new_state, _mouse_id), do: new_state
+
+  defp set_active_if_first_mouse(true, new_state, mouse_id) do
+    %{new_state | active_mouse: mouse_id}
+  end
+
+  defp update_active_mouse_conditional(false, active_mouse, _new_mice),
+    do: active_mouse
+
+  defp update_active_mouse_conditional(true, _active_mouse, new_mice) do
+    case Map.keys(new_mice) do
+      [] -> nil
+      [first_mouse | _] -> first_mouse
     end
+  end
+
+  defp handle_press_if_not_pressed(
+         true,
+         mouse_state,
+         _button,
+         _position,
+         _modifiers
+       ) do
+    mouse_state
+  end
+
+  defp handle_press_if_not_pressed(
+         false,
+         mouse_state,
+         button,
+         position,
+         modifiers
+       ) do
+    update_mouse_state(
+      mouse_state,
+      position,
+      modifiers,
+      Map.put(mouse_state.button_state, button, :pressed)
+    )
+  end
+
+  defp handle_release_if_pressed(
+         false,
+         mouse_state,
+         _button,
+         _position,
+         _modifiers
+       ) do
+    mouse_state
+  end
+
+  defp handle_release_if_pressed(true, mouse_state, button, position, modifiers) do
+    update_mouse_state(
+      mouse_state,
+      position,
+      modifiers,
+      Map.delete(mouse_state.button_state, button)
+    )
+  end
+
+  defp handle_move_if_position_changed(
+         false,
+         mouse_state,
+         _position,
+         _modifiers
+       ) do
+    mouse_state
+  end
+
+  defp handle_move_if_position_changed(true, mouse_state, position, modifiers) do
+    update_mouse_state(
+      mouse_state,
+      position,
+      modifiers,
+      mouse_state.button_state
+    )
+  end
+
+  defp handle_drag_if_position_changed(
+         false,
+         mouse_state,
+         _position,
+         _modifiers
+       ) do
+    mouse_state
+  end
+
+  defp handle_drag_if_position_changed(true, mouse_state, position, modifiers) do
+    update_mouse_state(
+      mouse_state,
+      position,
+      modifiers,
+      mouse_state.button_state
+    )
+  end
+
+  defp update_active_mouse(active_mouse, closed_mouse_id, new_mice) do
+    update_active_mouse_conditional(
+      active_mouse == closed_mouse_id,
+      active_mouse,
+      new_mice
+    )
   end
 
   defp process_event(mouse_state, event, button, position, modifiers) do
@@ -331,55 +421,41 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
   end
 
   defp handle_press_event(mouse_state, button, position, modifiers) do
-    if Map.has_key?(mouse_state.button_state, button) do
-      mouse_state
-    else
-      update_mouse_state(
-        mouse_state,
-        position,
-        modifiers,
-        Map.put(mouse_state.button_state, button, :pressed)
-      )
-    end
+    handle_press_if_not_pressed(
+      Map.has_key?(mouse_state.button_state, button),
+      mouse_state,
+      button,
+      position,
+      modifiers
+    )
   end
 
   defp handle_release_event(mouse_state, button, position, modifiers) do
-    if Map.has_key?(mouse_state.button_state, button) do
-      update_mouse_state(
-        mouse_state,
-        position,
-        modifiers,
-        Map.delete(mouse_state.button_state, button)
-      )
-    else
-      mouse_state
-    end
+    handle_release_if_pressed(
+      Map.has_key?(mouse_state.button_state, button),
+      mouse_state,
+      button,
+      position,
+      modifiers
+    )
   end
 
   defp handle_move_event(mouse_state, position, modifiers) do
-    if position != mouse_state.position do
-      update_mouse_state(
-        mouse_state,
-        position,
-        modifiers,
-        mouse_state.button_state
-      )
-    else
-      mouse_state
-    end
+    handle_move_if_position_changed(
+      position != mouse_state.position,
+      mouse_state,
+      position,
+      modifiers
+    )
   end
 
   defp handle_drag_event(mouse_state, position, modifiers) do
-    if position != mouse_state.position do
-      update_mouse_state(
-        mouse_state,
-        position,
-        modifiers,
-        mouse_state.button_state
-      )
-    else
-      mouse_state
-    end
+    handle_drag_if_position_changed(
+      position != mouse_state.position,
+      mouse_state,
+      position,
+      modifiers
+    )
   end
 
   defp handle_other_event(mouse_state, position, modifiers) do

@@ -291,11 +291,26 @@ defmodule Raxol.Terminal.Integration.State do
   @spec cleanup(t()) :: :ok
   def cleanup(%__MODULE__{} = state) do
     # Clean up components only if they exist
-    if state.buffer_manager, do: UnifiedManager.cleanup(state.buffer_manager)
-    if state.scroll_buffer, do: UnifiedScroll.cleanup(state.scroll_buffer)
-    if state.renderer, do: UnifiedRenderer.cleanup(state.renderer)
-    if state.io, do: UnifiedIO.cleanup(state.io)
-    if state.window_manager, do: UnifiedWindow.cleanup()
+    cleanup_buffer_manager(state.buffer_manager)
+    cleanup_scroll_buffer(state.scroll_buffer)
+    cleanup_renderer(state.renderer)
+    cleanup_io(state.io)
+    cleanup_window_manager(state.window_manager)
     :ok
   end
+
+  defp cleanup_buffer_manager(nil), do: :ok
+  defp cleanup_buffer_manager(buffer_manager), do: UnifiedManager.cleanup(buffer_manager)
+
+  defp cleanup_scroll_buffer(nil), do: :ok
+  defp cleanup_scroll_buffer(scroll_buffer), do: UnifiedScroll.cleanup(scroll_buffer)
+
+  defp cleanup_renderer(nil), do: :ok
+  defp cleanup_renderer(renderer), do: UnifiedRenderer.cleanup(renderer)
+
+  defp cleanup_io(nil), do: :ok
+  defp cleanup_io(io), do: UnifiedIO.cleanup(io)
+
+  defp cleanup_window_manager(nil), do: :ok
+  defp cleanup_window_manager(_window_manager), do: UnifiedWindow.cleanup()
 end

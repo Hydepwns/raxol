@@ -50,13 +50,27 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
   end
 
   defp process_node(node, {:ok, idx, low, comp, stk, on_stk, i}, graph) do
-    if Map.has_key?(idx, node) do
-      {:cont, {:ok, idx, low, comp, stk, on_stk, i}}
-    else
-      handle_strongconnect_result(
-        strongconnect(node, graph, idx, low, comp, stk, i, on_stk)
-      )
-    end
+    process_node_state(
+      Map.has_key?(idx, node),
+      node,
+      idx,
+      low,
+      comp,
+      stk,
+      on_stk,
+      i,
+      graph
+    )
+  end
+
+  defp process_node_state(true, _node, idx, low, comp, stk, on_stk, i, _graph) do
+    {:cont, {:ok, idx, low, comp, stk, on_stk, i}}
+  end
+
+  defp process_node_state(false, node, idx, low, comp, stk, on_stk, i, graph) do
+    handle_strongconnect_result(
+      strongconnect(node, graph, idx, low, comp, stk, i, on_stk)
+    )
   end
 
   defp handle_strongconnect_result(
@@ -157,8 +171,11 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
   end
 
   defp get_neighbor_type(neighbor, _graph, _idx, on_stk) do
-    if MapSet.member?(on_stk, neighbor), do: :on_stack, else: :visited
+    get_neighbor_stack_status(MapSet.member?(on_stk, neighbor))
   end
+
+  defp get_neighbor_stack_status(true), do: :on_stack
+  defp get_neighbor_stack_status(false), do: :visited
 
   defp process_unvisited_neighbor(neighbor, %{
          graph: graph,
@@ -187,47 +204,81 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
   end
 
   defp process_component_root(node, idx, low, comp, stk, on_stk, i, graph) do
-    if Map.get(low, node) == Map.get(idx, node) do
-      {component, new_stack} = extract_component(node, stk)
-      validate_component(component, on_stk)
-      handle_component(component, idx, low, comp, new_stack, on_stk, i, graph)
-    else
-      {:ok, idx, low, comp, stk, on_stk, i}
-    end
+    is_component_root = Map.get(low, node) == Map.get(idx, node)
+
+    handle_component_root(
+      is_component_root,
+      node,
+      idx,
+      low,
+      comp,
+      stk,
+      on_stk,
+      i,
+      graph
+    )
+  end
+
+  defp handle_component_root(true, node, idx, low, comp, stk, on_stk, i, graph) do
+    {component, new_stack} = extract_component(node, stk)
+    validate_component(component, on_stk)
+    handle_component(component, idx, low, comp, new_stack, on_stk, i, graph)
+  end
+
+  defp handle_component_root(
+         false,
+         _node,
+         idx,
+         low,
+         comp,
+         stk,
+         on_stk,
+         i,
+         _graph
+       ) do
+    {:ok, idx, low, comp, stk, on_stk, i}
   end
 
   defp validate_component(component, on_stk) do
-    if !(is_list(component) and Enum.all?(component, &is_atom/1)),
-      do: raise("Component must be a list of atoms")
-
-    if not is_struct(on_stk, MapSet), do: raise("on_stk must be a MapSet")
+    validate_component_list(component)
+    validate_mapset_structure(on_stk)
   end
+
+  defp validate_component_list(component) when is_list(component) do
+    validate_atoms_in_component(Enum.all?(component, &is_atom/1))
+  end
+
+  defp validate_component_list(_component) do
+    raise("Component must be a list of atoms")
+  end
+
+  defp validate_atoms_in_component(true), do: :ok
+
+  defp validate_atoms_in_component(false),
+    do: raise("Component must be a list of atoms")
+
+  defp validate_mapset_structure(%MapSet{}), do: :ok
+  defp validate_mapset_structure(_), do: raise("on_stk must be a MapSet")
 
   defp handle_component(component, idx, low, comp, new_stack, on_stk, i, graph) do
-    if length(component) > 1 do
-      handle_multi_node_component(
-        component,
-        idx,
-        low,
-        comp,
-        new_stack,
-        on_stk,
-        i,
-        graph
-      )
-    else
-      handle_single_node_component(
-        component,
-        idx,
-        low,
-        comp,
-        new_stack,
-        on_stk,
-        i,
-        graph
-      )
-    end
+    component_handler = get_component_handler(length(component))
+
+    component_handler.(
+      component,
+      idx,
+      low,
+      comp,
+      new_stack,
+      on_stk,
+      i,
+      graph
+    )
   end
+
+  defp get_component_handler(length) when length > 1,
+    do: &handle_multi_node_component/8
+
+  defp get_component_handler(_length), do: &handle_single_node_component/8
 
   defp handle_multi_node_component(
          component,
@@ -239,13 +290,44 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
          i,
          graph
        ) do
-    if has_internal_edge?(component, graph) do
-      {:error, component}
-    else
-      new_components = [component | comp]
-      new_on_stack = remove_from_stack(component, on_stk)
-      {:ok, idx, low, new_components, new_stack, new_on_stack, i}
-    end
+    process_multi_node_result(
+      has_internal_edge?(component, graph),
+      component,
+      idx,
+      low,
+      comp,
+      new_stack,
+      on_stk,
+      i
+    )
+  end
+
+  defp process_multi_node_result(
+         true,
+         component,
+         _idx,
+         _low,
+         _comp,
+         _new_stack,
+         _on_stk,
+         _i
+       ) do
+    {:error, component}
+  end
+
+  defp process_multi_node_result(
+         false,
+         component,
+         idx,
+         low,
+         comp,
+         new_stack,
+         on_stk,
+         i
+       ) do
+    new_components = [component | comp]
+    new_on_stack = remove_from_stack(component, on_stk)
+    {:ok, idx, low, new_components, new_stack, new_on_stack, i}
   end
 
   defp handle_single_node_component(
@@ -261,13 +343,50 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
     node = hd(component)
     deps = Map.get(graph, node, [])
 
-    if Enum.any?(deps, fn {neighbor, _, _} -> neighbor == node end) do
-      {:error, component}
-    else
-      new_components = [component | comp]
-      new_on_stack = MapSet.delete(on_stk, node)
-      {:ok, idx, low, new_components, new_stack, new_on_stack, i}
-    end
+    has_self_reference =
+      Enum.any?(deps, fn {neighbor, _, _} -> neighbor == node end)
+
+    process_single_node_result(
+      has_self_reference,
+      component,
+      node,
+      idx,
+      low,
+      comp,
+      new_stack,
+      on_stk,
+      i
+    )
+  end
+
+  defp process_single_node_result(
+         true,
+         component,
+         _node,
+         _idx,
+         _low,
+         _comp,
+         _new_stack,
+         _on_stk,
+         _i
+       ) do
+    {:error, component}
+  end
+
+  defp process_single_node_result(
+         false,
+         component,
+         node,
+         idx,
+         low,
+         comp,
+         new_stack,
+         on_stk,
+         i
+       ) do
+    new_components = [component | comp]
+    new_on_stack = MapSet.delete(on_stk, node)
+    {:ok, idx, low, new_components, new_stack, new_on_stack, i}
   end
 
   defp has_internal_edge?(component, graph) do
@@ -295,10 +414,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
 
   defp remove_from_stack(component, on_stk) do
     Enum.reduce(component, on_stk, fn elem, acc ->
-      if not is_struct(acc, MapSet), do: raise("Accumulator must be a MapSet")
+      validate_mapset_accumulator(acc)
       MapSet.delete(acc, elem)
     end)
   end
+
+  defp validate_mapset_accumulator(%MapSet{}), do: :ok
+  defp validate_mapset_accumulator(_), do: raise("Accumulator must be a MapSet")
 
   @doc false
   defp extract_component(node, [top | rest]) do
@@ -307,12 +429,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
 
   defp do_extract_component(node, [top | rest], acc) do
     acc = [top | acc]
+    extract_component_result(top == node, acc, rest, node)
+  end
 
-    if top == node do
-      {acc, rest}
-    else
-      do_extract_component(node, rest, acc)
-    end
+  defp extract_component_result(true, acc, rest, _node), do: {acc, rest}
+
+  defp extract_component_result(false, acc, rest, node) do
+    do_extract_component(node, rest, acc)
   end
 
   @doc """

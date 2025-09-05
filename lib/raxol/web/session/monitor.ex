@@ -113,10 +113,11 @@ defmodule Raxol.Web.Session.Monitor do
   end
 
   defp calculate_avg_duration(durations) do
-    if durations == [] do
-      0
-    else
-      Enum.sum(durations) / length(durations)
+    case durations == [] do
+      true ->
+        0
+      false ->
+        Enum.sum(durations) / length(durations)
     end
   end
 

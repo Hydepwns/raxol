@@ -43,10 +43,7 @@ defmodule Raxol.Terminal.Buffer do
     max_cells = 1_000_000
     total_cells = width * height
 
-    if total_cells > max_cells do
-      raise RuntimeError,
-            "Buffer too large: #{width}x#{height} = #{total_cells} cells exceeds limit of #{max_cells} cells"
-    end
+    validate_buffer_size(total_cells, max_cells, width, height)
 
     %__MODULE__{
       width: width,
@@ -86,9 +83,7 @@ defmodule Raxol.Terminal.Buffer do
   def set_cell(buffer, x, y, cell)
       when is_integer(x) and is_integer(y) and x >= 0 and y >= 0 and
              x < buffer.width and y < buffer.height do
-    if not Cell.valid?(cell) do
-      raise ArgumentError, "Invalid cell data: #{inspect(cell)}"
-    end
+    validate_cell_data(cell)
 
     new_cells =
       List.update_at(buffer.cells, y, fn row ->
@@ -140,15 +135,10 @@ defmodule Raxol.Terminal.Buffer do
   @spec write(t(), String.t(), keyword()) :: t()
   def write(buffer, data, _opts \\ []) do
     # Validate input data
-    if not is_binary(data) do
-      raise ArgumentError, "Invalid data: expected string, got #{inspect(data)}"
-    end
+    validate_data_type(data)
 
     # Check for buffer overflow
-    if String.length(data) > buffer.width * buffer.height do
-      raise ArgumentError,
-            "Buffer overflow: string length #{String.length(data)} exceeds buffer capacity #{buffer.width * buffer.height}"
-    end
+    validate_buffer_capacity(data, buffer)
 
     screen_buffer = to_screen_buffer(buffer)
 
@@ -169,18 +159,13 @@ defmodule Raxol.Terminal.Buffer do
   @spec read(t(), keyword()) :: {String.t(), t()}
   def read(buffer, opts \\ []) do
     # Validate options
-    if not is_list(opts) do
-      raise ArgumentError,
-            "Invalid options: expected keyword list, got #{inspect(opts)}"
-    end
+    validate_options_type(opts)
 
     # Check for invalid option keys
     valid_keys = [:line, :include_style, :region]
     invalid_keys = Enum.filter(opts, fn {key, _} -> key not in valid_keys end)
 
-    if invalid_keys != [] do
-      raise ArgumentError, "Invalid options: #{inspect(invalid_keys)}"
-    end
+    validate_option_keys(invalid_keys)
 
     screen_buffer = to_screen_buffer(buffer)
     {Operations.get_content(screen_buffer), buffer}
@@ -227,20 +212,7 @@ defmodule Raxol.Terminal.Buffer do
   @spec set_scroll_region(t(), non_neg_integer(), non_neg_integer()) :: t()
   def set_scroll_region(buffer, top, bottom) do
     # Validate scroll region parameters
-    if top < 0 or bottom < 0 do
-      raise ArgumentError,
-            "Scroll region boundaries must be non-negative, got top=#{top}, bottom=#{bottom}"
-    end
-
-    if top > bottom do
-      raise ArgumentError,
-            "Scroll region top must be less than or equal to bottom, got top=#{top}, bottom=#{bottom}"
-    end
-
-    if bottom >= buffer.height do
-      raise ArgumentError,
-            "Scroll region bottom must be less than buffer height, got bottom=#{bottom}, height=#{buffer.height}"
-    end
+    validate_scroll_region(top, bottom, buffer.height)
 
     screen_buffer = to_screen_buffer(buffer)
 
@@ -394,23 +366,126 @@ defmodule Raxol.Terminal.Buffer do
   end
 
   defp set_cell(buffer, x, y, char, style) do
-    if x >= 0 and x < buffer.width and y >= 0 and y < buffer.height do
-      cell = Cell.new(char, style || %{})
-
-      cells =
-        List.replace_at(
-          buffer.cells,
-          y,
-          List.replace_at(Enum.at(buffer.cells, y), x, cell)
-        )
-
-      %{buffer | cells: cells}
-    else
-      buffer
-    end
+    update_cell_if_in_bounds(buffer, x, y, char, style)
   end
 
   # Private functions
+
+  defp validate_buffer_size(total_cells, max_cells, width, height)
+       when total_cells > max_cells do
+    raise RuntimeError,
+          "Buffer too large: #{width}x#{height} = #{total_cells} cells exceeds limit of #{max_cells} cells"
+  end
+
+  defp validate_buffer_size(_, _, _, _), do: :ok
+
+  defp validate_cell_data(cell) do
+    case Cell.valid?(cell) do
+      true -> :ok
+      false -> raise ArgumentError, "Invalid cell data: #{inspect(cell)}"
+    end
+  end
+
+  defp validate_data_type(data) when is_binary(data), do: :ok
+
+  defp validate_data_type(data) do
+    raise ArgumentError, "Invalid data: expected string, got #{inspect(data)}"
+  end
+
+  defp validate_buffer_capacity(data, buffer) do
+    data_length = String.length(data)
+    buffer_capacity = buffer.width * buffer.height
+
+    case data_length <= buffer_capacity do
+      true ->
+        :ok
+
+      false ->
+        raise ArgumentError,
+              "Buffer overflow: string length #{data_length} exceeds buffer capacity #{buffer_capacity}"
+    end
+  end
+
+  defp validate_options_type(opts) when is_list(opts), do: :ok
+
+  defp validate_options_type(opts) do
+    raise ArgumentError,
+          "Invalid options: expected keyword list, got #{inspect(opts)}"
+  end
+
+  defp validate_option_keys([]), do: :ok
+
+  defp validate_option_keys(invalid_keys) do
+    raise ArgumentError, "Invalid options: #{inspect(invalid_keys)}"
+  end
+
+  defp validate_scroll_region(top, bottom, height) do
+    check_negative_boundaries(top, bottom)
+    check_region_order(top, bottom)
+    check_region_bounds(bottom, height)
+  end
+
+  defp check_negative_boundaries(top, bottom) when top < 0 or bottom < 0 do
+    raise ArgumentError,
+          "Scroll region boundaries must be non-negative, got top=#{top}, bottom=#{bottom}"
+  end
+
+  defp check_negative_boundaries(_, _), do: :ok
+
+  defp check_region_order(top, bottom) when top > bottom do
+    raise ArgumentError,
+          "Scroll region top must be less than or equal to bottom, got top=#{top}, bottom=#{bottom}"
+  end
+
+  defp check_region_order(_, _), do: :ok
+
+  defp check_region_bounds(bottom, height) when bottom >= height do
+    raise ArgumentError,
+          "Scroll region bottom must be less than buffer height, got bottom=#{bottom}, height=#{height}"
+  end
+
+  defp check_region_bounds(_, _), do: :ok
+
+  defp update_cell_if_in_bounds(buffer, x, y, char, style) do
+    case in_bounds?(buffer, x, y) do
+      true -> update_cell_at_position(buffer, x, y, char, style)
+      false -> buffer
+    end
+  end
+
+  defp in_bounds?(buffer, x, y) do
+    x >= 0 and x < buffer.width and y >= 0 and y < buffer.height
+  end
+
+  defp update_cell_at_position(buffer, x, y, char, style) do
+    cell = Cell.new(char, style || %{})
+
+    cells =
+      List.replace_at(
+        buffer.cells,
+        y,
+        List.replace_at(Enum.at(buffer.cells, y), x, cell)
+      )
+
+    %{buffer | cells: cells}
+  end
+
+  defp validate_buffer_state(buffer) do
+    check_cells_not_nil(buffer.cells)
+    check_width_not_nil(buffer.width)
+    check_height_not_nil(buffer.height)
+  end
+
+  defp check_cells_not_nil(nil), do: raise(RuntimeError, "Buffer cells are nil")
+  defp check_cells_not_nil(_), do: :ok
+
+  defp check_width_not_nil(nil), do: raise(RuntimeError, "Buffer width is nil")
+  defp check_width_not_nil(_), do: :ok
+
+  defp check_height_not_nil(nil),
+    do: raise(RuntimeError, "Buffer height is nil")
+
+  defp check_height_not_nil(_), do: :ok
 
   defp create_empty_grid(width, height) do
     for _y <- 0..(height - 1) do
@@ -421,17 +496,7 @@ defmodule Raxol.Terminal.Buffer do
   end
 
   defp to_screen_buffer(buffer) do
-    if buffer.cells == nil do
-      raise RuntimeError, "Buffer cells are nil"
-    end
-
-    if buffer.width == nil do
-      raise RuntimeError, "Buffer width is nil"
-    end
-
-    if buffer.height == nil do
-      raise RuntimeError, "Buffer height is nil"
-    end
+    validate_buffer_state(buffer)
 
     %ScreenBuffer{
       width: buffer.width,

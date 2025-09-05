@@ -377,50 +377,7 @@ defmodule Raxol.Security.Encryption.Config do
   defp validate_against_profile(params, profile_name, state) do
     profile = Map.get(state.compliance_profiles, profile_name)
 
-    if profile do
-      requirements = profile.requirements
-      violations = []
-
-      # Check key length
-      if params[:key_length] && params.key_length < requirements.min_key_length do
-        _violations = [
-          {:key_length, "Minimum #{requirements.min_key_length} bits required"}
-          | violations
-        ]
-      end
-
-      # Check algorithm
-      if params[:algorithm] &&
-           params.algorithm not in requirements.allowed_algorithms do
-        _violations = [
-          {:algorithm, "Algorithm not allowed for #{profile.name}"} | violations
-        ]
-      end
-
-      # Check rotation
-      if params[:rotation_days] &&
-           params.rotation_days > requirements.key_rotation_days do
-        _violations = [
-          {:rotation, "Maximum #{requirements.key_rotation_days} days allowed"}
-          | violations
-        ]
-      end
-
-      # Check audit requirement
-      if requirements[:require_audit] && !params[:audit_enabled] do
-        _violations = [
-          {:audit, "Audit logging required for #{profile.name}"} | violations
-        ]
-      end
-
-      if Enum.empty?(violations) do
-        {:ok, :compliant}
-      else
-        {:error, {:non_compliant, violations}}
-      end
-    else
-      {:error, :unknown_profile}
-    end
+    handle_profile_validation(profile != nil, profile, params, state)
   end
 
   defp generate_recommendations(attributes, state) do
@@ -483,26 +440,9 @@ defmodule Raxol.Security.Encryption.Config do
   defp recommend_controls(attributes) do
     controls = []
 
-    controls =
-      if contains_pii?(attributes) do
-        [:tokenization, :field_encryption | controls]
-      else
-        controls
-      end
-
-    controls =
-      if attributes[:searchable] do
-        [:deterministic_encryption | controls]
-      else
-        controls
-      end
-
-    controls =
-      if attributes[:large_volume] do
-        [:streaming_encryption, :compression | controls]
-      else
-        controls
-      end
+    controls = add_pii_controls(contains_pii?(attributes), controls)
+    controls = add_searchable_controls(attributes[:searchable], controls)
+    controls = add_volume_controls(attributes[:large_volume], controls)
 
     controls
   end
@@ -526,6 +466,105 @@ defmodule Raxol.Security.Encryption.Config do
   end
 
   defp get_current_user do
-    Raxol.Security.UserContext.Server.get_current_user("system")
+    Raxol.Security.UserContext.Server.get_current_user()
   end
+
+  # Helper functions for refactored if statements
+  defp handle_profile_validation(false, _profile, _params, _state) do
+    {:error, :unknown_profile}
+  end
+
+  defp handle_profile_validation(true, profile, params, _state) do
+    requirements = profile.requirements
+    violations = []
+
+    # Check key length
+    violations =
+      check_key_length_violation(
+        params[:key_length] && params.key_length < requirements.min_key_length,
+        requirements,
+        violations
+      )
+
+    # Check algorithm
+    violations =
+      check_algorithm_violation(
+        params[:algorithm] &&
+          params.algorithm not in requirements.allowed_algorithms,
+        profile.name,
+        violations
+      )
+
+    # Check rotation
+    violations =
+      check_rotation_violation(
+        params[:rotation_days] &&
+          params.rotation_days > requirements.key_rotation_days,
+        requirements,
+        violations
+      )
+
+    # Check audit requirement  
+    violations =
+      check_audit_violation(
+        requirements[:require_audit] && !params[:audit_enabled],
+        profile.name,
+        violations
+      )
+
+    format_validation_result(Enum.empty?(violations), violations)
+  end
+
+  defp check_key_length_violation(true, requirements, violations) do
+    [
+      {:key_length, "Minimum #{requirements.min_key_length} bits required"}
+      | violations
+    ]
+  end
+
+  defp check_key_length_violation(false, _requirements, violations),
+    do: violations
+
+  defp check_algorithm_violation(true, profile_name, violations) do
+    [{:algorithm, "Algorithm not allowed for #{profile_name}"} | violations]
+  end
+
+  defp check_algorithm_violation(false, _profile_name, violations),
+    do: violations
+
+  defp check_rotation_violation(true, requirements, violations) do
+    [
+      {:rotation, "Maximum #{requirements.key_rotation_days} days allowed"}
+      | violations
+    ]
+  end
+
+  defp check_rotation_violation(false, _requirements, violations),
+    do: violations
+
+  defp check_audit_violation(true, profile_name, violations) do
+    [{:audit, "Audit logging required for #{profile_name}"} | violations]
+  end
+
+  defp check_audit_violation(false, _profile_name, violations), do: violations
+
+  defp format_validation_result(true, _violations), do: {:ok, :compliant}
+
+  defp format_validation_result(false, violations),
+    do: {:error, {:non_compliant, violations}}
+
+  defp add_pii_controls(true, controls),
+    do: [:tokenization, :field_encryption | controls]
+
+  defp add_pii_controls(false, controls), do: controls
+
+  defp add_searchable_controls(true, controls),
+    do: [:deterministic_encryption | controls]
+
+  defp add_searchable_controls(_, controls), do: controls
+
+  defp add_volume_controls(true, controls),
+    do: [:streaming_encryption, :compression | controls]
+
+  defp add_volume_controls(_, controls), do: controls
 end

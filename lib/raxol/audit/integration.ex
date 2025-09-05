@@ -20,24 +20,20 @@ defmodule Raxol.Audit.Integration do
     )
 
     # Check for dangerous commands
-    if dangerous_command?(command) do
-      Logger.log_security_event(
-        :dangerous_command,
-        :high,
-        "Dangerous command executed: #{command}",
-        user_id: user_id,
-        terminal_id: terminal_id,
-        command: command
-      )
-    end
+    log_dangerous_command_if_needed(
+      dangerous_command?(command),
+      user_id,
+      terminal_id,
+      command
+    )
 
     # Check for privilege escalation
-    if privilege_escalation?(command) do
-      Logger.log_terminal_operation(user_id, terminal_id, :privilege_escalation,
-        command: command,
-        elevation_type: detect_elevation_type(command)
-      )
-    end
+    log_privilege_escalation_if_needed(
+      privilege_escalation?(command),
+      user_id,
+      terminal_id,
+      command
+    )
   end
 
   @doc """
@@ -89,17 +85,13 @@ defmodule Raxol.Audit.Integration do
     )
 
     # Extra logging for sensitive files
-    if sensitive_file?(file_path) do
-      Logger.log_security_event(
-        :sensitive_file_access,
-        :medium,
-        "Access to sensitive file: #{file_path}",
-        user_id: user_id,
-        terminal_id: terminal_id,
-        operation: operation,
-        file_path: file_path
-      )
-    end
+    log_sensitive_file_access_if_needed(
+      sensitive_file?(file_path),
+      user_id,
+      terminal_id,
+      operation,
+      file_path
+    )
   end
 
   @doc """
@@ -109,9 +101,7 @@ defmodule Raxol.Audit.Integration do
     Logger.log_authentication(username, method, outcome, opts)
 
     # Track failed attempts for account lockout
-    if outcome == :failure do
-      track_failed_attempt(username, opts)
-    end
+    handle_authentication_outcome(outcome, username, opts)
   end
 
   @doc """
@@ -121,16 +111,12 @@ defmodule Raxol.Audit.Integration do
     Logger.log_authorization(user_id, resource, action, outcome, opts)
 
     # Alert on critical resource denial
-    if outcome == :denied and critical_resource?(resource) do
-      Logger.log_security_event(
-        :critical_resource_denied,
-        :high,
-        "Access denied to critical resource",
-        user_id: user_id,
-        resource: resource,
-        action: action
-      )
-    end
+    log_critical_resource_denial_if_needed(
+      outcome == :denied and critical_resource?(resource),
+      user_id,
+      resource,
+      action
+    )
   end
 
   @doc """
@@ -154,17 +140,14 @@ defmodule Raxol.Audit.Integration do
     )
 
     # Alert on security-relevant changes
-    if security_relevant_setting?(setting) do
-      Logger.log_security_event(
-        :security_config_changed,
-        :medium,
-        "Security configuration modified: #{setting}",
-        user_id: user_id,
-        component: component,
-        old_value: sanitize_value(old_value),
-        new_value: sanitize_value(new_value)
-      )
-    end
+    log_security_config_change_if_needed(
+      security_relevant_setting?(setting),
+      user_id,
+      component,
+      setting,
+      old_value,
+      new_value
+    )
   end
 
   @doc """
@@ -189,17 +172,13 @@ defmodule Raxol.Audit.Integration do
     )
 
     # Check for potential data exfiltration
-    if large_clipboard_content?(content_summary) do
-      Logger.log_security_event(
-        :potential_data_exfiltration,
-        :medium,
-        "Large clipboard operation detected",
-        user_id: user_id,
-        terminal_id: terminal_id,
-        operation: operation,
-        size: byte_size(content_summary || "")
-      )
-    end
+    log_potential_data_exfiltration_if_needed(
+      large_clipboard_content?(content_summary),
+      user_id,
+      terminal_id,
+      operation,
+      content_summary
+    )
   end
 
   @doc """
@@ -225,18 +204,182 @@ defmodule Raxol.Audit.Integration do
     )
 
     # Check for suspicious connections
-    if suspicious_host?(host) or suspicious_port?(port) do
-      Logger.log_security_event(
-        :suspicious_connection,
-        :high,
-        "Suspicious network connection detected",
-        user_id: user_id,
-        terminal_id: terminal_id,
-        host: host,
-        port: port,
-        direction: direction
-      )
-    end
+    log_suspicious_connection_if_needed(
+      suspicious_host?(host) or suspicious_port?(port),
+      user_id,
+      terminal_id,
+      host,
+      port,
+      direction
+    )
+  end
+
+  ## Pattern Matching Helper Functions for Security Logging
+
+  defp log_dangerous_command_if_needed(false, _user_id, _terminal_id, _command),
+    do: :ok
+
+  defp log_dangerous_command_if_needed(true, user_id, terminal_id, command) do
+    Logger.log_security_event(
+      :dangerous_command,
+      :high,
+      "Dangerous command executed: #{command}",
+      user_id: user_id,
+      terminal_id: terminal_id,
+      command: command
+    )
+  end
+
+  defp log_privilege_escalation_if_needed(
+         false,
+         _user_id,
+         _terminal_id,
+         _command
+       ),
+       do: :ok
+
+  defp log_privilege_escalation_if_needed(true, user_id, terminal_id, command) do
+    Logger.log_terminal_operation(user_id, terminal_id, :privilege_escalation,
+      command: command,
+      elevation_type: detect_elevation_type(command)
+    )
+  end
+
+  defp log_sensitive_file_access_if_needed(
+         false,
+         _user_id,
+         _terminal_id,
+         _operation,
+         _file_path
+       ),
+       do: :ok
+
+  defp log_sensitive_file_access_if_needed(
+         true,
+         user_id,
+         terminal_id,
+         operation,
+         file_path
+       ) do
+    Logger.log_security_event(
+      :sensitive_file_access,
+      :medium,
+      "Access to sensitive file: #{file_path}",
+      user_id: user_id,
+      terminal_id: terminal_id,
+      operation: operation,
+      file_path: file_path
+    )
+  end
+
+  defp handle_authentication_outcome(:failure, username, opts),
+    do: track_failed_attempt(username, opts)
+
+  defp handle_authentication_outcome(_outcome, _username, _opts), do: :ok
+
+  defp log_critical_resource_denial_if_needed(
+         false,
+         _user_id,
+         _resource,
+         _action
+       ),
+       do: :ok
+
+  defp log_critical_resource_denial_if_needed(true, user_id, resource, action) do
+    Logger.log_security_event(
+      :critical_resource_denied,
+      :high,
+      "Access denied to critical resource",
+      user_id: user_id,
+      resource: resource,
+      action: action
+    )
+  end
+
+  defp log_security_config_change_if_needed(
+         false,
+         _user_id,
+         _component,
+         _setting,
+         _old_value,
+         _new_value
+       ),
+       do: :ok
+
+  defp log_security_config_change_if_needed(
+         true,
+         user_id,
+         component,
+         setting,
+         old_value,
+         new_value
+       ) do
+    Logger.log_security_event(
+      :security_config_changed,
+      :medium,
+      "Security configuration modified: #{setting}",
+      user_id: user_id,
+      component: component,
+      old_value: sanitize_value(old_value),
+      new_value: sanitize_value(new_value)
+    )
+  end
+
+  defp log_potential_data_exfiltration_if_needed(
+         false,
+         _user_id,
+         _terminal_id,
+         _operation,
+         _content_summary
+       ),
+       do: :ok
+
+  defp log_potential_data_exfiltration_if_needed(
+         true,
+         user_id,
+         terminal_id,
+         operation,
+         content_summary
+       ) do
+    Logger.log_security_event(
+      :potential_data_exfiltration,
+      :medium,
+      "Large clipboard operation detected",
+      user_id: user_id,
+      terminal_id: terminal_id,
+      operation: operation,
+      size: byte_size(content_summary || "")
+    )
+  end
+
+  defp log_suspicious_connection_if_needed(
+         false,
+         _user_id,
+         _terminal_id,
+         _host,
+         _port,
+         _direction
+       ),
+       do: :ok
+
+  defp log_suspicious_connection_if_needed(
+         true,
+         user_id,
+         terminal_id,
+         host,
+         port,
+         direction
+       ) do
+    Logger.log_security_event(
+      :suspicious_connection,
+      :high,
+      "Suspicious network connection detected",
+      user_id: user_id,
+      terminal_id: terminal_id,
+      host: host,
+      port: port,
+      direction: direction
+    )
   end
 
   ## Helper Functions

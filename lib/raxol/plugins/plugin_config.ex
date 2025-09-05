@@ -118,10 +118,11 @@ defmodule Raxol.Plugins.PluginConfig do
   """
   def enable_plugin(%__MODULE__{} = config, plugin_name)
       when is_binary(plugin_name) do
-    if plugin_name in config.enabled_plugins do
-      config
-    else
-      %{config | enabled_plugins: [plugin_name | config.enabled_plugins]}
+    case plugin_name in config.enabled_plugins do
+      true ->
+        config
+      false ->
+        %{config | enabled_plugins: [plugin_name | config.enabled_plugins]}
     end
   end
 

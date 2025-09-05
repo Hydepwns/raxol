@@ -56,9 +56,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     direction = Keyword.get(opts, :direction, :row)
 
     # Validate flex direction
-    if direction not in [:row, :column] do
-      raise ArgumentError, "Invalid flex direction: #{inspect(direction)}"
-    end
+    validate_flex_direction(direction)
 
     # Get raw children from opts
     raw_children = Keyword.get(opts, :children)
@@ -133,34 +131,14 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     wrap = Map.get(container, :wrap, false)
     gap = container.gap
 
-    if wrap do
-      wrap_flex_layout(measured_children, direction, {width, height}, gap)
-    else
-      # Existing non-wrapping logic
-      {main_axis_size, cross_axis_size} =
-        get_axis_sizes(direction, {width, height})
-
-      total_content_size = calculate_total_content_size(measured_children, gap)
-
-      justified_children =
-        apply_justification(
-          measured_children,
-          container.justify,
-          main_axis_size,
-          total_content_size,
-          gap
-        )
-
-      aligned_children =
-        apply_alignment(
-          justified_children,
-          container.align,
-          cross_axis_size,
-          direction
-        )
-
-      apply_gap_spacing(aligned_children, gap, direction)
-    end
+    do_calculate_layout(
+      wrap,
+      measured_children,
+      direction,
+      {width, height},
+      gap,
+      container
+    )
   end
 
   # New: Implements wrapping for flex layout
@@ -183,14 +161,17 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
       Enum.reduce(children, {[], [], 0}, fn child, {lines, line, line_width} ->
         {child_w, _child_h} = Map.get(child, :measured_size)
 
-        new_width =
-          if line_width == 0, do: child_w, else: line_width + gap + child_w
+        new_width = calculate_new_width(line_width, child_w, gap)
 
-        if new_width > width and line_width > 0 do
-          {[line | lines], [child], child_w}
-        else
-          {lines, [child | line], new_width}
-        end
+        handle_line_wrapping(
+          new_width,
+          width,
+          line_width,
+          lines,
+          line,
+          child,
+          child_w
+        )
       end)
 
     [current_line | lines]
@@ -202,16 +183,17 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
                                             {columns, column, column_height} ->
         {_child_w, child_h} = Map.get(child, :measured_size)
 
-        new_height =
-          if column_height == 0,
-            do: child_h,
-            else: column_height + gap + child_h
+        new_height = calculate_new_height(column_height, child_h, gap)
 
-        if new_height > height and column_height > 0 do
-          {[column | columns], [child], child_h}
-        else
-          {columns, [child | column], new_height}
-        end
+        handle_column_wrapping(
+          new_height,
+          height,
+          column_height,
+          columns,
+          column,
+          child,
+          child_h
+        )
       end)
 
     [current_column | columns]
@@ -230,11 +212,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     lines
     |> Enum.with_index()
     |> Enum.flat_map(fn {line, line_idx} ->
-      if line == [] do
-        []
-      else
-        position_children_in_line(line, line_idx, gap)
-      end
+      handle_line_positioning(line, line_idx, gap)
     end)
   end
 
@@ -242,11 +220,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
     columns
     |> Enum.with_index()
     |> Enum.flat_map(fn {column, col_idx} ->
-      if column == [] do
-        []
-      else
-        position_children_in_column(column, col_idx, gap)
-      end
+      handle_column_positioning(column, col_idx, gap)
     end)
   end
 
@@ -380,14 +354,13 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
   defp justify_space_between(children, main_axis_size, total_content_size, gap) do
     total_items = length(children)
 
-    if total_items <= 1 do
-      justify_start(children, gap)
-    else
-      # Calculate space between items
-      total_item_width = total_content_size - gap * (total_items - 1)
-      space_between = (main_axis_size - total_item_width) / (total_items - 1)
-      justify_children(children, 0, space_between)
-    end
+    do_justify_space_between(
+      total_items,
+      children,
+      main_axis_size,
+      total_content_size,
+      gap
+    )
   end
 
   defp justify_children(children, start_offset, gap) do
@@ -441,5 +414,153 @@ defmodule Raxol.Core.Renderer.View.Layout.Flex do
       |> Map.delete(:main_axis_position)
       |> Map.delete(:cross_axis_position)
     end)
+  end
+
+  defp validate_flex_direction(:row), do: :row
+  defp validate_flex_direction(:column), do: :column
+
+  defp validate_flex_direction(direction) do
+    raise ArgumentError, "Invalid flex direction: #{inspect(direction)}"
+  end
+
+  defp calculate_new_width(0, child_w, _gap), do: child_w
+
+  defp calculate_new_width(line_width, child_w, gap),
+    do: line_width + gap + child_w
+
+  defp handle_line_wrapping(
+         new_width,
+         width,
+         line_width,
+         lines,
+         line,
+         child,
+         child_w
+       )
+       when new_width > width and line_width > 0 do
+    {[line | lines], [child], child_w}
+  end
+
+  defp handle_line_wrapping(
+         new_width,
+         _width,
+         _line_width,
+         lines,
+         line,
+         child,
+         _child_w
+       ) do
+    {lines, [child | line], new_width}
+  end
+
+  defp calculate_new_height(0, child_h, _gap), do: child_h
+
+  defp calculate_new_height(column_height, child_h, gap),
+    do: column_height + gap + child_h
+
+  defp handle_column_wrapping(
+         new_height,
+         height,
+         column_height,
+         columns,
+         column,
+         child,
+         child_h
+       )
+       when new_height > height and column_height > 0 do
+    {[column | columns], [child], child_h}
+  end
+
+  defp handle_column_wrapping(
+         new_height,
+         _height,
+         _column_height,
+         columns,
+         column,
+         child,
+         _child_h
+       ) do
+    {columns, [child | column], new_height}
+  end
+
+  defp handle_line_positioning([], _line_idx, _gap), do: []
+
+  defp handle_line_positioning(line, line_idx, gap) do
+    position_children_in_line(line, line_idx, gap)
+  end
+
+  defp handle_column_positioning([], _col_idx, _gap), do: []
+
+  defp handle_column_positioning(column, col_idx, gap) do
+    position_children_in_column(column, col_idx, gap)
+  end
+
+  defp do_justify_space_between(
+         total_items,
+         children,
+         _main_axis_size,
+         _total_content_size,
+         gap
+       )
+       when total_items <= 1 do
+    justify_start(children, gap)
+  end
+
+  defp do_justify_space_between(
+         total_items,
+         children,
+         main_axis_size,
+         total_content_size,
+         gap
+       ) do
+    # Calculate space between items
+    total_item_width = total_content_size - gap * (total_items - 1)
+    space_between = (main_axis_size - total_item_width) / (total_items - 1)
+    justify_children(children, 0, space_between)
+  end
+
+  defp do_calculate_layout(
+         true,
+         measured_children,
+         direction,
+         dimensions,
+         gap,
+         _container
+       ) do
+    wrap_flex_layout(measured_children, direction, dimensions, gap)
+  end
+
+  defp do_calculate_layout(
+         false,
+         measured_children,
+         direction,
+         {width, height},
+         gap,
+         container
+       ) do
+    # Existing non-wrapping logic
+    {main_axis_size, cross_axis_size} =
+      get_axis_sizes(direction, {width, height})
+
+    total_content_size = calculate_total_content_size(measured_children, gap)
+
+    justified_children =
+      apply_justification(
+        measured_children,
+        container.justify,
+        main_axis_size,
+        total_content_size,
+        gap
+      )
+
+    aligned_children =
+      apply_alignment(
+        justified_children,
+        container.align,
+        cross_axis_size,
+        direction
+      )
+
+    apply_gap_spacing(aligned_children, gap, direction)
   end
 end

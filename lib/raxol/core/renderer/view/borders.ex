@@ -6,6 +6,14 @@ defmodule Raxol.Core.Renderer.View.Borders do
 
   alias Raxol.Core.Renderer.View.Style.Border
 
+  # Helper function for validating opts
+  defp validate_keyword_opts!(opts, function_name) do
+    unless Keyword.keyword?(opts) do
+      raise ArgumentError,
+            "Borders.#{function_name} macro expects a keyword list as the second argument, got: #{inspect(opts)}"
+    end
+  end
+
   @doc """
   Wraps a view with a border, optionally with a title and style.
 
@@ -22,13 +30,7 @@ defmodule Raxol.Core.Renderer.View.Borders do
       Borders.wrap_with_border(view, title: "Title", style: :double)
   """
   def wrap_with_border(view, opts \\ []) do
-    require Keyword
-
-    if !Keyword.keyword?(opts) do
-      raise ArgumentError,
-            "Borders.wrap_with_border macro expects a keyword list as the second argument, got: #{inspect(opts)}"
-    end
-
+    validate_keyword_opts!(opts, "wrap_with_border")
     Border.wrap(view, opts)
   end
 
@@ -47,13 +49,7 @@ defmodule Raxol.Core.Renderer.View.Borders do
       Borders.block_border(view, title: "Title")
   """
   def block_border(view, opts \\ []) do
-    require Keyword
-
-    if !Keyword.keyword?(opts) do
-      raise ArgumentError,
-            "Borders.block_border macro expects a keyword list as the second argument, got: #{inspect(opts)}"
-    end
-
+    validate_keyword_opts!(opts, "block_border")
     wrap_with_border(view, Keyword.put(opts, :style, :block))
   end
 
@@ -72,13 +68,7 @@ defmodule Raxol.Core.Renderer.View.Borders do
       Borders.double_border(view, title: "Title")
   """
   def double_border(view, opts \\ []) do
-    require Keyword
-
-    if !Keyword.keyword?(opts) do
-      raise ArgumentError,
-            "Borders.double_border macro expects a keyword list as the second argument, got: #{inspect(opts)}"
-    end
-
+    validate_keyword_opts!(opts, "double_border")
     wrap_with_border(view, Keyword.put(opts, :style, :double))
   end
 
@@ -97,13 +87,7 @@ defmodule Raxol.Core.Renderer.View.Borders do
       Borders.rounded_border(view, title: "Title")
   """
   def rounded_border(view, opts \\ []) do
-    require Keyword
-
-    if !Keyword.keyword?(opts) do
-      raise ArgumentError,
-            "Borders.rounded_border macro expects a keyword list as the second argument, got: #{inspect(opts)}"
-    end
-
+    validate_keyword_opts!(opts, "rounded_border")
     wrap_with_border(view, Keyword.put(opts, :style, :rounded))
   end
 
@@ -122,13 +106,7 @@ defmodule Raxol.Core.Renderer.View.Borders do
       Borders.bold_border(view, title: "Title")
   """
   def bold_border(view, opts \\ []) do
-    require Keyword
-
-    if !Keyword.keyword?(opts) do
-      raise ArgumentError,
-            "Borders.bold_border macro expects a keyword list as the second argument, got: #{inspect(opts)}"
-    end
-
+    validate_keyword_opts!(opts, "bold_border")
     wrap_with_border(view, Keyword.put(opts, :style, :bold))
   end
 
@@ -147,13 +125,7 @@ defmodule Raxol.Core.Renderer.View.Borders do
       Borders.simple_border(view, title: "Title")
   """
   def simple_border(view, opts \\ []) do
-    require Keyword
-
-    if !Keyword.keyword?(opts) do
-      raise ArgumentError,
-            "Borders.simple_border macro expects a keyword list as the second argument, got: #{inspect(opts)}"
-    end
-
+    validate_keyword_opts!(opts, "simple_border")
     wrap_with_border(view, Keyword.put(opts, :style, :simple))
   end
 end

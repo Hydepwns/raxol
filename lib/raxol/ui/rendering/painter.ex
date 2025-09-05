@@ -23,31 +23,13 @@ defmodule Raxol.UI.Rendering.Painter do
         previous_painted_output
       ) do
     # If the composed_data is identical to the previous composed tree, reuse the previous painted output
-    if composed_data === previous_composed_tree &&
-         previous_painted_output != nil do
-      Raxol.Core.Runtime.Log.debug(
-        "Paint Stage: Reusing previous_painted_output as composed_data is identical to previous_composed_tree."
-      )
-
+    handle_paint_reuse(
+      composed_data === previous_composed_tree &&
+        previous_painted_output != nil,
+      composed_data,
+      previous_composed_tree,
       previous_painted_output
-    else
-      if composed_data === previous_composed_tree do
-        Raxol.Core.Runtime.Log.debug(
-          "Paint Stage: composed_data is identical, but no previous_painted_output to reuse. Repainting."
-        )
-      else
-        Raxol.Core.Runtime.Log.debug(
-          "Paint Stage: composed_data differs from previous_composed_tree or no previous. Repainting. Details: composed_data: #{inspect(composed_data)}, prev_composed_tree: #{inspect(previous_composed_tree)}"
-        )
-      end
-
-      Raxol.Core.Runtime.Log.debug(
-        "Paint Stage: Starting with composed_stage_output: #{inspect(composed_data)}"
-      )
-
-      # Initial parent offsets are 0,0
-      do_paint_node(composed_data, 0, 0)
-    end
+    )
   end
 
   defp do_paint_node(nil, _parent_x, _parent_y), do: []
@@ -134,9 +116,7 @@ defmodule Raxol.UI.Rendering.Painter do
   end
 
   defp get_primitive_type(value) do
-    if is_binary(value),
-      do: :text,
-      else: if(is_number(value), do: :number, else: :unknown)
+    determine_primitive_type(value)
   end
 
   defp paint_children(composed_node, parent_x_offset, parent_y_offset) do
@@ -154,11 +134,80 @@ defmodule Raxol.UI.Rendering.Painter do
   end
 
   defp get_child_parent_offsets(composed_node, parent_x_offset, parent_y_offset) do
-    if composed_node[:composed_type] == :composed_element do
-      attrs = composed_node[:attributes] || %{}
-      {attrs[:x] || 0, attrs[:y] || 0}
-    else
-      {parent_x_offset, parent_y_offset}
-    end
+    handle_element_offsets(
+      composed_node[:composed_type] == :composed_element,
+      composed_node,
+      parent_x_offset,
+      parent_y_offset
+    )
+  end
+
+  # Helper functions for if-statement elimination
+  defp handle_paint_reuse(
+         true,
+         _composed_data,
+         _previous_composed_tree,
+         previous_painted_output
+       ) do
+    Raxol.Core.Runtime.Log.debug(
+      "Paint Stage: Reusing previous_painted_output as composed_data is identical to previous_composed_tree."
+    )
+
+    previous_painted_output
+  end
+
+  defp handle_paint_reuse(
+         false,
+         composed_data,
+         previous_composed_tree,
+         _previous_painted_output
+       ) do
+    log_repainting_reason(
+      composed_data === previous_composed_tree,
+      composed_data,
+      previous_composed_tree
+    )
+
+    Raxol.Core.Runtime.Log.debug(
+      "Paint Stage: Starting with composed_stage_output: #{inspect(composed_data)}"
+    )
+
+    # Initial parent offsets are 0,0
+    do_paint_node(composed_data, 0, 0)
+  end
+
+  defp log_repainting_reason(true, _composed_data, _previous_composed_tree) do
+    Raxol.Core.Runtime.Log.debug(
+      "Paint Stage: composed_data is identical, but no previous_painted_output to reuse. Repainting."
+    )
+  end
+
+  defp log_repainting_reason(false, composed_data, previous_composed_tree) do
+    Raxol.Core.Runtime.Log.debug(
+      "Paint Stage: composed_data differs from previous_composed_tree or no previous. Repainting. Details: composed_data: #{inspect(composed_data)}, prev_composed_tree: #{inspect(previous_composed_tree)}"
+    )
+  end
+
+  defp determine_primitive_type(value) when is_binary(value), do: :text
+  defp determine_primitive_type(value) when is_number(value), do: :number
+  defp determine_primitive_type(_value), do: :unknown
+
+  defp handle_element_offsets(
+         true,
+         composed_node,
+         _parent_x_offset,
+         _parent_y_offset
+       ) do
+    attrs = composed_node[:attributes] || %{}
+    {attrs[:x] || 0, attrs[:y] || 0}
+  end
+
+  defp handle_element_offsets(
+         false,
+         _composed_node,
+         parent_x_offset,
+         parent_y_offset
+       ) do
+    {parent_x_offset, parent_y_offset}
   end
 end

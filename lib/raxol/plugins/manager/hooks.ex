@@ -18,17 +18,32 @@ defmodule Raxol.Plugins.Manager.Hooks do
   end
 
   defp run_plugin_render_hook({_name, plugin}, {:ok, acc_manager, acc_commands}) do
-    if plugin.enabled do
-      module = plugin.__struct__
+    handle_render_plugin_enabled(plugin.enabled, plugin, acc_manager, acc_commands)
+  end
 
-      if function_exported?(module, :handle_render, 1) do
-        handle_render_hook(module, plugin, acc_manager, acc_commands)
-      else
-        {:ok, acc_manager, acc_commands}
-      end
-    else
-      {:ok, acc_manager, acc_commands}
-    end
+  # Helper functions to eliminate if statements
+
+  defp handle_render_plugin_enabled(false, _plugin, acc_manager, acc_commands) do
+    {:ok, acc_manager, acc_commands}
+  end
+
+  defp handle_render_plugin_enabled(true, plugin, acc_manager, acc_commands) do
+    module = plugin.__struct__
+    handle_render_function_exported(
+      function_exported?(module, :handle_render, 1),
+      module,
+      plugin,
+      acc_manager,
+      acc_commands
+    )
+  end
+
+  defp handle_render_function_exported(false, _module, _plugin, acc_manager, acc_commands) do
+    {:ok, acc_manager, acc_commands}
+  end
+
+  defp handle_render_function_exported(true, module, plugin, acc_manager, acc_commands) do
+    handle_render_hook(module, plugin, acc_manager, acc_commands)
   end
 
   defp handle_render_hook(module, plugin, acc_manager, acc_commands) do
@@ -75,24 +90,32 @@ defmodule Raxol.Plugins.Manager.Hooks do
          hook_name,
          args
        ) do
-    if plugin.enabled do
-      module = plugin.__struct__
+    handle_hook_plugin_enabled(plugin.enabled, plugin, hook_name, args, acc_manager, acc_results)
+  end
 
-      if function_exported?(module, hook_name, length(args) + 1) do
-        handle_plugin_hook(
-          module,
-          plugin,
-          hook_name,
-          args,
-          acc_manager,
-          acc_results
-        )
-      else
-        {:ok, acc_manager, acc_results}
-      end
-    else
-      {:ok, acc_manager, acc_results}
-    end
+  defp handle_hook_plugin_enabled(false, _plugin, _hook_name, _args, acc_manager, acc_results) do
+    {:ok, acc_manager, acc_results}
+  end
+
+  defp handle_hook_plugin_enabled(true, plugin, hook_name, args, acc_manager, acc_results) do
+    module = plugin.__struct__
+    handle_hook_function_exported(
+      function_exported?(module, hook_name, length(args) + 1),
+      module,
+      plugin,
+      hook_name,
+      args,
+      acc_manager,
+      acc_results
+    )
+  end
+
+  defp handle_hook_function_exported(false, _module, _plugin, _hook_name, _args, acc_manager, acc_results) do
+    {:ok, acc_manager, acc_results}
+  end
+
+  defp handle_hook_function_exported(true, module, plugin, hook_name, args, acc_manager, acc_results) do
+    handle_plugin_hook(module, plugin, hook_name, args, acc_manager, acc_results)
   end
 
   defp handle_plugin_hook(

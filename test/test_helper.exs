@@ -1,7 +1,13 @@
 IO.puts("[TestHelper] === TEST HELPER STARTING ===")
 
-# Start Mox
-{:ok, _} = Application.ensure_all_started(:mox)
+# Start Mox - wrapped in try/catch for safety
+try do
+  {:ok, _} = Application.ensure_all_started(:mox)
+  IO.puts("[TestHelper] Mox started successfully")
+rescue
+  e ->
+    IO.puts(:stderr, "[TestHelper] Warning: Could not start Mox: #{inspect(e)}")
+end
 
 # --- Global Docker Test Skip Logic ---
 if System.get_env("SKIP_TERMBOX2_TESTS") == "true" do
@@ -127,68 +133,75 @@ Application.ensure_all_started(:plug_cowboy)
 # Configure Mox mocks after application is started
 IO.puts("[TestHelper] Configuring Mox mocks...")
 
-# Core runtime mocks
-Mox.defmock(Raxol.Core.Runtime.Plugins.FileWatcherMock,
-  for: Raxol.Core.Runtime.Plugins.FileWatcherBehaviour
-)
+# Skip Mox configuration if Mox is not available
+if Code.ensure_loaded?(Mox) do
+  # Core runtime mocks
+  Mox.defmock(Raxol.Core.Runtime.Plugins.FileWatcherMock,
+    for: Raxol.Core.Runtime.Plugins.FileWatcherBehaviour
+  )
 
-Mox.defmock(Raxol.Core.Runtime.Plugins.LoaderMock,
-  for: Raxol.Core.Runtime.Plugins.LoaderBehaviour
-)
+  Mox.defmock(Raxol.Core.Runtime.Plugins.LoaderMock,
+    for: Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  )
 
-Mox.defmock(Raxol.Core.Runtime.Plugins.LifecycleHelperMock,
-  for: Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
-)
+  Mox.defmock(Raxol.Core.Runtime.Plugins.LifecycleHelperMock,
+    for: Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+  )
 
-Mox.defmock(Raxol.Core.Runtime.Plugins.PluginEventFilterMock,
-  for: Raxol.Core.Runtime.Plugins.PluginEventFilter.Behaviour
-)
+  Mox.defmock(Raxol.Core.Runtime.Plugins.PluginEventFilterMock,
+    for: Raxol.Core.Runtime.Plugins.PluginEventFilter.Behaviour
+  )
 
-Mox.defmock(Raxol.Core.Runtime.Plugins.PluginReloaderMock,
-  for: Raxol.Core.Runtime.Plugins.PluginReloader.Behaviour
-)
+  Mox.defmock(Raxol.Core.Runtime.Plugins.PluginReloaderMock,
+    for: Raxol.Core.Runtime.Plugins.PluginReloader.Behaviour
+  )
 
-Mox.defmock(Raxol.Core.Runtime.Plugins.PluginCommandHandlerMock,
-  for: Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
-)
+  Mox.defmock(Raxol.Core.Runtime.Plugins.PluginCommandHandlerMock,
+    for: Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
+  )
 
-Mox.defmock(Raxol.Core.Runtime.Plugins.TimerManagerMock,
-  for: Raxol.Core.Runtime.Plugins.TimerManager.Behaviour
-)
+  Mox.defmock(Raxol.Core.Runtime.Plugins.TimerManagerMock,
+    for: Raxol.Core.Runtime.Plugins.TimerManager.Behaviour
+  )
 
-Mox.defmock(Raxol.Core.Runtime.Rendering.EngineMock,
-  for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
-)
+  Mox.defmock(Raxol.Core.Runtime.Rendering.EngineMock,
+    for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
+  )
 
-# System and UI mocks
-Mox.defmock(Raxol.System.DeltaUpdaterSystemAdapterMock,
-  for: Raxol.System.DeltaUpdaterSystemAdapterBehaviour
-)
+  # System and UI mocks
+  Mox.defmock(Raxol.System.DeltaUpdaterSystemAdapterMock,
+    for: Raxol.System.DeltaUpdaterSystemAdapterBehaviour
+  )
 
-Mox.defmock(SystemInteractionMock,
-  for: Raxol.System.Interaction
-)
+  Mox.defmock(SystemInteractionMock,
+    for: Raxol.System.Interaction
+  )
 
-Mox.defmock(Raxol.Terminal.Config.EnvironmentAdapterMock,
-  for: Raxol.Terminal.Config.EnvironmentAdapterBehaviour
-)
+  Mox.defmock(Raxol.Terminal.Config.EnvironmentAdapterMock,
+    for: Raxol.Terminal.Config.EnvironmentAdapterBehaviour
+  )
 
-Mox.defmock(Raxol.Core.ClipboardMock,
-  for: Raxol.Core.Clipboard.Behaviour
-)
+  Mox.defmock(Raxol.Core.ClipboardMock,
+    for: Raxol.Core.Clipboard.Behaviour
+  )
 
-# Accessibility and UX mocks
-Mox.defmock(Raxol.Mocks.AccessibilityMock,
-  for: Raxol.Core.Accessibility.Behaviour
-)
+  # Accessibility and UX mocks
+  Mox.defmock(Raxol.Mocks.AccessibilityMock,
+    for: Raxol.Core.Accessibility.Behaviour
+  )
 
-Mox.defmock(Raxol.Mocks.FocusManagerMock,
-  for: Raxol.Core.FocusManager.Behaviour
-)
+  Mox.defmock(Raxol.Mocks.FocusManagerMock,
+    for: Raxol.Core.FocusManager.Behaviour
+  )
 
-Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
-  for: Raxol.Core.KeyboardShortcutsRefactoredBehaviour
-)
+  Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
+    for: Raxol.Core.KeyboardShortcutsRefactoredBehaviour
+  )
+
+  IO.puts("[TestHelper] Mox mocks configured successfully")
+else
+  IO.puts("[TestHelper] Skipping Mox mock configuration - Mox not available")
+end
 
 # Clipboard assertions are automatically loaded via elixirc_paths
 IO.puts("[TestHelper] Clipboard assertions loaded via elixirc_paths...")

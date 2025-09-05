@@ -50,11 +50,11 @@ defmodule Raxol.AI.ContentGeneration do
     options = opts |> Enum.into(%{}) |> normalize_options()
 
     # Check if AI features are enabled
-    if UXRefinement.feature_enabled?(:ai_content_generation) do
-      do_generate(type, prompt, options)
-    else
-      {:error, "AI content generation is not enabled"}
-    end
+    check_and_generate(
+      UXRefinement.feature_enabled?(:ai_content_generation),
+      :generate,
+      {type, prompt, options}
+    )
   end
 
   @doc """
@@ -70,11 +70,11 @@ defmodule Raxol.AI.ContentGeneration do
   def suggest_text(input, opts \\ []) do
     options = opts |> Enum.into(%{}) |> normalize_options()
 
-    if UXRefinement.feature_enabled?(:ai_content_generation) do
-      do_suggest_text(input, options)
-    else
-      {:error, "AI content generation is not enabled"}
-    end
+    check_and_generate(
+      UXRefinement.feature_enabled?(:ai_content_generation),
+      :suggest_text,
+      {input, options}
+    )
   end
 
   @doc """
@@ -89,11 +89,11 @@ defmodule Raxol.AI.ContentGeneration do
   def generate_help(context, opts \\ []) do
     options = opts |> Enum.into(%{}) |> normalize_options()
 
-    if UXRefinement.feature_enabled?(:ai_content_generation) do
-      do_generate_help(context, options)
-    else
-      {:error, "AI content generation is not enabled"}
-    end
+    check_and_generate(
+      UXRefinement.feature_enabled?(:ai_content_generation),
+      :generate_help,
+      {context, options}
+    )
   end
 
   @doc """
@@ -109,11 +109,11 @@ defmodule Raxol.AI.ContentGeneration do
   def generate_tutorial(feature, opts \\ []) do
     options = opts |> Enum.into(%{}) |> normalize_options()
 
-    if UXRefinement.feature_enabled?(:ai_content_generation) do
-      do_generate_tutorial(feature, options)
-    else
-      {:error, "AI content generation is not enabled"}
-    end
+    check_and_generate(
+      UXRefinement.feature_enabled?(:ai_content_generation),
+      :generate_tutorial,
+      {feature, options}
+    )
   end
 
   # Private helpers
@@ -199,5 +199,27 @@ defmodule Raxol.AI.ContentGeneration do
     }
 
     Map.merge(defaults, options)
+  end
+
+  # Helper functions to eliminate if statements
+
+  defp check_and_generate(false, _operation, _args) do
+    {:error, "AI content generation is not enabled"}
+  end
+
+  defp check_and_generate(true, :generate, {type, prompt, options}) do
+    do_generate(type, prompt, options)
+  end
+
+  defp check_and_generate(true, :suggest_text, {input, options}) do
+    do_suggest_text(input, options)
+  end
+
+  defp check_and_generate(true, :generate_help, {context, options}) do
+    do_generate_help(context, options)
+  end
+
+  defp check_and_generate(true, :generate_tutorial, {feature, options}) do
+    do_generate_tutorial(feature, options)
   end
 end

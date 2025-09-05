@@ -29,15 +29,12 @@ defmodule Raxol.Core.Events.Subscription do
     keys = Keyword.get(opts, :keys)
     _exclude_keys = Keyword.get(opts, :exclude_keys, [])
 
-    filter_opts =
-      if keys do
-        [key: keys]
-      else
-        []
-      end
-
+    filter_opts = build_key_filter(keys)
     Manager.subscribe([:key], filter_opts)
   end
+
+  defp build_key_filter(nil), do: []
+  defp build_key_filter(keys), do: [key: keys]
 
   @doc """
   Subscribes to mouse events with optional button and position filters.
@@ -79,16 +76,12 @@ defmodule Raxol.Core.Events.Subscription do
   """
   def subscribe_window(opts \\ []) do
     actions = Keyword.get(opts, :actions)
-
-    filter_opts =
-      if actions do
-        [window_action: actions]
-      else
-        []
-      end
-
+    filter_opts = build_window_filter(actions)
     Manager.subscribe([:window], filter_opts)
   end
+
+  defp build_window_filter(nil), do: []
+  defp build_window_filter(actions), do: [window_action: actions]
 
   @doc """
   Subscribes to timer events with optional data matching.
@@ -101,16 +94,12 @@ defmodule Raxol.Core.Events.Subscription do
   """
   def subscribe_timer(opts \\ []) do
     match = Keyword.get(opts, :match)
-
-    filter_opts =
-      if match do
-        [data: match]
-      else
-        []
-      end
-
+    filter_opts = build_match_filter(match)
     Manager.subscribe([:timer], filter_opts)
   end
+
+  defp build_match_filter(nil), do: []
+  defp build_match_filter(match), do: [data: match]
 
   @doc """
   Subscribes to custom events with data matching.
@@ -123,14 +112,7 @@ defmodule Raxol.Core.Events.Subscription do
   """
   def subscribe_custom(opts \\ []) do
     match = Keyword.get(opts, :match)
-
-    filter_opts =
-      if match do
-        [data: match]
-      else
-        []
-      end
-
+    filter_opts = build_match_filter(match)
     Manager.subscribe([:custom], filter_opts)
   end
 

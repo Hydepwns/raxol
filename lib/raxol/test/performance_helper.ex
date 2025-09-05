@@ -91,29 +91,57 @@ defmodule Raxol.Test.PerformanceHelper do
     max_p95 = Keyword.get(opts, :max_p95_time)
     min_iterations = Keyword.get(opts, :min_iterations)
 
-    if max_avg && benchmark_result.average_time > max_avg do
-      flunk(
-        "Average time #{benchmark_result.average_time} exceeds maximum allowed #{max_avg}"
-      )
-    end
+    check_average_time(max_avg, benchmark_result)
 
-    if max_p95 do
-      p95_time = calculate_percentile(benchmark_result.times, 95)
+    check_p95_time(max_p95, benchmark_result)
 
-      if p95_time > max_p95 do
-        flunk(
-          "95th percentile time #{p95_time} exceeds maximum allowed #{max_p95}"
-        )
-      end
-    end
-
-    if min_iterations && length(benchmark_result.times) < min_iterations do
-      flunk(
-        "Number of iterations #{length(benchmark_result.times)} is less than required #{min_iterations}"
-      )
-    end
+    check_minimum_iterations(min_iterations, benchmark_result)
 
     :ok
+  end
+
+  # Helper functions to eliminate if statements
+
+  defp check_average_time(nil, _benchmark_result), do: :ok
+
+  defp check_average_time(max_avg, benchmark_result) do
+    validate_average_time(
+      benchmark_result.average_time > max_avg,
+      benchmark_result.average_time,
+      max_avg
+    )
+  end
+
+  defp validate_average_time(false, _avg_time, _max_avg), do: :ok
+
+  defp validate_average_time(true, avg_time, max_avg) do
+    flunk("Average time #{avg_time} exceeds maximum allowed #{max_avg}")
+  end
+
+  defp check_p95_time(nil, _benchmark_result), do: :ok
+
+  defp check_p95_time(max_p95, benchmark_result) do
+    p95_time = calculate_percentile(benchmark_result.times, 95)
+    validate_p95_time(p95_time > max_p95, p95_time, max_p95)
+  end
+
+  defp validate_p95_time(false, _p95_time, _max_p95), do: :ok
+
+  defp validate_p95_time(true, p95_time, max_p95) do
+    flunk("95th percentile time #{p95_time} exceeds maximum allowed #{max_p95}")
+  end
+
+  defp check_minimum_iterations(nil, _benchmark_result), do: :ok
+
+  defp check_minimum_iterations(min_iterations, benchmark_result) do
+    actual_iterations = length(benchmark_result.times)
+    validate_minimum_iterations(actual_iterations < min_iterations, actual_iterations, min_iterations)
+  end
+
+  defp validate_minimum_iterations(false, _actual, _min), do: :ok
+
+  defp validate_minimum_iterations(true, actual, min) do
+    flunk("Number of iterations #{actual} is less than required #{min}")
   end
 
   @doc """

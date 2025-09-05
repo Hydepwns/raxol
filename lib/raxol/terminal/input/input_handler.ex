@@ -84,33 +84,35 @@ defmodule Raxol.Terminal.Input.InputHandler do
   """
   @spec process_mouse(t(), tuple()) :: t()
   def process_mouse(%__MODULE__{} = handler, {action, button, x, y}) do
-    if handler.mouse_enabled do
-      action_code =
-        case action do
-          :press -> "M"
-          :release -> "m"
-          :drag -> "M"
-          _ -> ""
-        end
+    handle_mouse_event(handler.mouse_enabled, handler, action, button, x, y)
+  end
 
-      sequence = "\e[<#{button};#{x + 1};#{y + 1}#{action_code}"
+  defp handle_mouse_event(false, handler, _action, _button, _x, _y), do: handler
 
-      mouse_buttons =
-        case action do
-          :press -> MapSet.put(handler.mouse_buttons, button)
-          :release -> MapSet.delete(handler.mouse_buttons, button)
-          _ -> handler.mouse_buttons
-        end
+  defp handle_mouse_event(true, handler, action, button, x, y) do
+    action_code =
+      case action do
+        :press -> "M"
+        :release -> "m"
+        :drag -> "M"
+        _ -> ""
+      end
 
-      %{
-        handler
-        | buffer: sequence,
-          mouse_position: {x, y},
-          mouse_buttons: mouse_buttons
-      }
-    else
+    sequence = "\e[<#{button};#{x + 1};#{y + 1}#{action_code}"
+
+    mouse_buttons =
+      case action do
+        :press -> MapSet.put(handler.mouse_buttons, button)
+        :release -> MapSet.delete(handler.mouse_buttons, button)
+        _ -> handler.mouse_buttons
+      end
+
+    %{
       handler
-    end
+      | buffer: sequence,
+        mouse_position: {x, y},
+        mouse_buttons: mouse_buttons
+    }
   end
 
   @doc """
@@ -142,12 +144,14 @@ defmodule Raxol.Terminal.Input.InputHandler do
   """
   @spec add_to_history(t()) :: t()
   def add_to_history(%__MODULE__{} = handler) do
-    if handler.buffer != "" do
-      history = [handler.buffer | handler.input_history]
-      %{handler | input_history: history, history_index: nil, buffer: ""}
-    else
-      handler
-    end
+    add_buffer_to_history(handler.buffer, handler)
+  end
+
+  defp add_buffer_to_history("", handler), do: handler
+
+  defp add_buffer_to_history(buffer, handler) do
+    history = [buffer | handler.input_history]
+    %{handler | input_history: history, history_index: nil, buffer: ""}
   end
 
   @doc """
@@ -155,12 +159,20 @@ defmodule Raxol.Terminal.Input.InputHandler do
   """
   @spec get_history_entry(t(), integer()) :: t()
   def get_history_entry(%__MODULE__{} = handler, index) do
-    if index >= 0 and index < length(handler.input_history) do
-      entry = Enum.at(handler.input_history, index)
-      %{handler | buffer: entry, history_index: index}
-    else
-      handler
-    end
+    history_length = length(handler.input_history)
+
+    get_entry_if_valid_index(
+      index >= 0 and index < history_length,
+      handler,
+      index
+    )
+  end
+
+  defp get_entry_if_valid_index(false, handler, _index), do: handler
+
+  defp get_entry_if_valid_index(true, handler, index) do
+    entry = Enum.at(handler.input_history, index)
+    %{handler | buffer: entry, history_index: index}
   end
 
   @doc """
@@ -168,14 +180,19 @@ defmodule Raxol.Terminal.Input.InputHandler do
   """
   @spec next_history_entry(t()) :: {t(), String.t()}
   def next_history_entry(%__MODULE__{} = handler) do
-    if handler.history_index == nil or handler.input_history == [] do
-      {handler, handler.buffer}
-    else
-      new_index = max(handler.history_index - 1, 0)
-      entry = Enum.at(handler.input_history, new_index)
-      new_handler = %{handler | buffer: entry, history_index: new_index}
-      {new_handler, entry}
-    end
+    handle_next_history(handler.history_index, handler.input_history, handler)
+  end
+
+  defp handle_next_history(nil, _history, handler),
+    do: {handler, handler.buffer}
+
+  defp handle_next_history(_index, [], handler), do: {handler, handler.buffer}
+
+  defp handle_next_history(index, history, handler) do
+    new_index = max(index - 1, 0)
+    entry = Enum.at(history, new_index)
+    new_handler = %{handler | buffer: entry, history_index: new_index}
+    {new_handler, entry}
   end
 
   @doc """
@@ -183,22 +200,30 @@ defmodule Raxol.Terminal.Input.InputHandler do
   """
   @spec previous_history_entry(t()) :: {t(), String.t()}
   def previous_history_entry(%__MODULE__{} = handler) do
-    if handler.history_index == nil and length(handler.input_history) > 0 do
-      entry = hd(handler.input_history)
-      new_handler = %{handler | buffer: entry, history_index: 0}
-      {new_handler, entry}
-    else
-      if handler.history_index != nil and
-           handler.history_index < length(handler.input_history) - 1 do
-        new_index = handler.history_index + 1
-        entry = Enum.at(handler.input_history, new_index)
-        new_handler = %{handler | buffer: entry, history_index: new_index}
-        {new_handler, entry}
-      else
-        {handler, handler.buffer}
-      end
-    end
+    history_length = length(handler.input_history)
+    handle_previous_history(handler.history_index, history_length, handler)
   end
+
+  defp handle_previous_history(nil, history_length, handler)
+       when history_length > 0 do
+    entry = hd(handler.input_history)
+    new_handler = %{handler | buffer: entry, history_index: 0}
+    {new_handler, entry}
+  end
+
+  defp handle_previous_history(nil, _history_length, handler),
+    do: {handler, handler.buffer}
+
+  defp handle_previous_history(index, history_length, handler)
+       when index < history_length - 1 do
+    new_index = index + 1
+    entry = Enum.at(handler.input_history, new_index)
+    new_handler = %{handler | buffer: entry, history_index: new_index}
+    {new_handler, entry}
+  end
+
+  defp handle_previous_history(_index, _history_length, handler),
+    do: {handler, handler.buffer}
 
   @doc """
   Clears the input buffer.

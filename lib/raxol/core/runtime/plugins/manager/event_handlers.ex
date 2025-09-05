@@ -290,16 +290,24 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
   end
 
   defp handle_lifecycle_shutdown(state) do
-    if Map.has_key?(state, :file_watcher_pid) do
-      FileWatcher.stop(state.file_watcher_pid)
-    end
-
-    if Map.has_key?(state, :tick_timer) do
-      Process.cancel_timer(state.tick_timer)
-    end
+    state
+    |> stop_file_watcher_if_exists()
+    |> cancel_tick_timer_if_exists()
 
     {:stop, :normal, state}
   end
+
+  defp stop_file_watcher_if_exists(%{file_watcher_pid: pid} = state) when is_pid(pid) do
+    FileWatcher.stop(pid)
+    state
+  end
+  defp stop_file_watcher_if_exists(state), do: state
+
+  defp cancel_tick_timer_if_exists(%{tick_timer: timer} = state) when is_reference(timer) do
+    Process.cancel_timer(timer)
+    state
+  end
+  defp cancel_tick_timer_if_exists(state), do: state
 
   defp handle_internal_initialize(state) do
     {:ok, initialized_state} = Lifecycle.initialize(state)
@@ -313,11 +321,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
   end
 
   defp handle_file_event(path, state) do
-    if should_process_file_event?(path, state) do
-      {:ok, plugin_id} = extract_plugin_id_from_path(path)
-      schedule_plugin_reload(plugin_id, path, state)
-    else
-      {:noreply, state}
+    case should_process_file_event?(path, state) do
+      true ->
+        {:ok, plugin_id} = extract_plugin_id_from_path(path)
+        schedule_plugin_reload(plugin_id, path, state)
+      false ->
+        {:noreply, state}
     end
   end
 
@@ -326,20 +335,18 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
     {:noreply, updated_state}
   end
 
-  defp setup_file_watching_if_enabled(state) do
-    if state.file_watching_enabled? do
-      case FileWatcher.start_link(self()) do
-        {:ok, watcher_pid} ->
-          FileWatcher.subscribe(watcher_pid)
-          %{state | file_watcher_pid: watcher_pid}
+  defp setup_file_watching_if_enabled(%{file_watching_enabled?: true} = state) do
+    case FileWatcher.start_link(self()) do
+      {:ok, watcher_pid} ->
+        FileWatcher.subscribe(watcher_pid)
+        %{state | file_watcher_pid: watcher_pid}
 
-        _ ->
-          state
-      end
-    else
-      state
+      _ ->
+        state
     end
   end
+
+  defp setup_file_watching_if_enabled(state), do: state
 
   defp should_process_file_event?(path, state) do
     String.ends_with?(path, ".ex") and
@@ -347,10 +354,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
   end
 
   defp extract_plugin_id_from_path(path) do
-    if String.ends_with?(path, ".ex") do
-      {:ok, Path.basename(path, ".ex")}
-    else
-      {:error, :invalid_path}
+    case String.ends_with?(path, ".ex") do
+      true -> {:ok, Path.basename(path, ".ex")}
+      false -> {:error, :invalid_path}
     end
   end
 

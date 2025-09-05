@@ -21,8 +21,7 @@ defmodule Raxol.Terminal.NotificationManager do
   """
   @spec notify_focus_changed(pid() | nil, module() | nil, boolean()) :: :ok
   def notify_focus_changed(runtime_pid, callback_module, focused?) do
-    if runtime_pid,
-      do: send(runtime_pid, {:terminal_focus_changed, focused?})
+    send_runtime_notification(runtime_pid, {:terminal_focus_changed, focused?})
 
     Raxol.Core.Runtime.Log.info("Terminal focus changed: #{inspect(focused?)}")
 
@@ -32,8 +31,7 @@ defmodule Raxol.Terminal.NotificationManager do
       %{pid: self()}
     )
 
-    if callback_module,
-      do: apply(callback_module, :focus_changed, [focused?, %{}])
+    execute_callback(callback_module, :focus_changed, [focused?, %{}])
 
     :ok
   end
@@ -49,8 +47,7 @@ defmodule Raxol.Terminal.NotificationManager do
   """
   @spec notify_resized(pid() | nil, module() | nil, integer(), integer()) :: :ok
   def notify_resized(runtime_pid, callback_module, width, height) do
-    if runtime_pid,
-      do: send(runtime_pid, {:terminal_resized, width, height})
+    send_runtime_notification(runtime_pid, {:terminal_resized, width, height})
 
     Raxol.Core.Runtime.Log.info("Terminal resized: #{width}x#{height}")
 
@@ -60,8 +57,7 @@ defmodule Raxol.Terminal.NotificationManager do
       %{pid: self()}
     )
 
-    if callback_module,
-      do: apply(callback_module, :resized, [width, height, %{}])
+    execute_callback(callback_module, :resized, [width, height, %{}])
 
     :ok
   end
@@ -76,8 +72,7 @@ defmodule Raxol.Terminal.NotificationManager do
   """
   @spec notify_mode_changed(pid() | nil, module() | nil, atom()) :: :ok
   def notify_mode_changed(runtime_pid, callback_module, new_mode) do
-    if runtime_pid,
-      do: send(runtime_pid, {:terminal_mode_changed, new_mode})
+    send_runtime_notification(runtime_pid, {:terminal_mode_changed, new_mode})
 
     Raxol.Core.Runtime.Log.info("Terminal mode changed: #{inspect(new_mode)}")
 
@@ -87,8 +82,7 @@ defmodule Raxol.Terminal.NotificationManager do
       %{pid: self()}
     )
 
-    if callback_module,
-      do: apply(callback_module, :mode_changed, [new_mode, %{}])
+    execute_callback(callback_module, :mode_changed, [new_mode, %{}])
 
     :ok
   end
@@ -105,8 +99,10 @@ defmodule Raxol.Terminal.NotificationManager do
   @spec notify_clipboard_event(pid() | nil, module() | nil, atom(), any()) ::
           :ok
   def notify_clipboard_event(runtime_pid, callback_module, type, data) do
-    if runtime_pid,
-      do: send(runtime_pid, {:terminal_clipboard_event, type, data})
+    send_runtime_notification(
+      runtime_pid,
+      {:terminal_clipboard_event, type, data}
+    )
 
     Raxol.Core.Runtime.Log.info(
       "Terminal clipboard event: #{inspect(type)} #{inspect(data)}"
@@ -118,8 +114,7 @@ defmodule Raxol.Terminal.NotificationManager do
       %{pid: self()}
     )
 
-    if callback_module,
-      do: apply(callback_module, :clipboard_event, [type, data, %{}])
+    execute_callback(callback_module, :clipboard_event, [type, data, %{}])
 
     :ok
   end
@@ -134,8 +129,10 @@ defmodule Raxol.Terminal.NotificationManager do
   """
   @spec notify_selection_changed(pid() | nil, module() | nil, map()) :: :ok
   def notify_selection_changed(runtime_pid, callback_module, selection) do
-    if runtime_pid,
-      do: send(runtime_pid, {:terminal_selection_changed, selection})
+    send_runtime_notification(
+      runtime_pid,
+      {:terminal_selection_changed, selection}
+    )
 
     Raxol.Core.Runtime.Log.info(
       "Terminal selection changed: #{inspect(selection)}"
@@ -147,8 +144,7 @@ defmodule Raxol.Terminal.NotificationManager do
       %{pid: self()}
     )
 
-    if callback_module,
-      do: apply(callback_module, :selection_changed, [selection, %{}])
+    execute_callback(callback_module, :selection_changed, [selection, %{}])
 
     :ok
   end
@@ -169,8 +165,7 @@ defmodule Raxol.Terminal.NotificationManager do
           {integer(), integer()}
         ) :: :ok
   def notify_paste_event(runtime_pid, callback_module, text, pos) do
-    if runtime_pid,
-      do: send(runtime_pid, {:terminal_paste_event, text, pos})
+    send_runtime_notification(runtime_pid, {:terminal_paste_event, text, pos})
 
     Raxol.Core.Runtime.Log.info(
       "Terminal paste event: #{inspect(text)} at #{inspect(pos)}"
@@ -189,8 +184,7 @@ defmodule Raxol.Terminal.NotificationManager do
       %{position: pos, pid: self()}
     )
 
-    if callback_module,
-      do: apply(callback_module, :paste_event, [text, pos, %{}])
+    execute_callback(callback_module, :paste_event, [text, pos, %{}])
 
     :ok
   end
@@ -205,8 +199,7 @@ defmodule Raxol.Terminal.NotificationManager do
   """
   @spec notify_cursor_event(pid() | nil, module() | nil, map()) :: :ok
   def notify_cursor_event(runtime_pid, callback_module, cursor) do
-    if runtime_pid,
-      do: send(runtime_pid, {:terminal_cursor_event, cursor})
+    send_runtime_notification(runtime_pid, {:terminal_cursor_event, cursor})
 
     Raxol.Core.Runtime.Log.info("Terminal cursor event: #{inspect(cursor)}")
 
@@ -216,8 +209,7 @@ defmodule Raxol.Terminal.NotificationManager do
       %{pid: self()}
     )
 
-    if callback_module,
-      do: apply(callback_module, :cursor_event, [cursor, %{}])
+    execute_callback(callback_module, :cursor_event, [cursor, %{}])
 
     :ok
   end
@@ -240,8 +232,10 @@ defmodule Raxol.Terminal.NotificationManager do
           {integer(), integer()}
         ) :: :ok
   def notify_scroll_event(runtime_pid, callback_module, dir, delta, pos) do
-    if runtime_pid,
-      do: send(runtime_pid, {:terminal_scroll_event, dir, delta, pos})
+    send_runtime_notification(
+      runtime_pid,
+      {:terminal_scroll_event, dir, delta, pos}
+    )
 
     Raxol.Core.Runtime.Log.info(
       "Terminal scroll event: #{inspect(dir)} delta=#{delta} at #{inspect(pos)}"
@@ -260,9 +254,24 @@ defmodule Raxol.Terminal.NotificationManager do
       %{direction: dir, position: pos, pid: self()}
     )
 
-    if callback_module,
-      do: apply(callback_module, :scroll_event, [dir, delta, pos, %{}])
+    execute_callback(callback_module, :scroll_event, [dir, delta, pos, %{}])
 
     :ok
+  end
+
+  # Private helper functions that use pattern matching instead of if statements
+
+  defp send_runtime_notification(nil, _message), do: :ok
+
+  defp send_runtime_notification(runtime_pid, message)
+       when is_pid(runtime_pid) do
+    send(runtime_pid, message)
+  end
+
+  defp execute_callback(nil, _function, _args), do: :ok
+
+  defp execute_callback(callback_module, function, args)
+       when is_atom(callback_module) do
+    apply(callback_module, function, args)
   end
 end

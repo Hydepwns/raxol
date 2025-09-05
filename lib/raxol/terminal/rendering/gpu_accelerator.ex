@@ -315,26 +315,28 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     merged_config = Map.merge(state.config, new_config)
 
     # Reinitialize if backend changed
-    if merged_config.backend != state.config.backend do
-      case initialize_backend(merged_config.backend, merged_config) do
-        {:ok, new_backend_state} ->
-          updated_state = %{
-            state
-            | config: merged_config,
-              backend: merged_config.backend,
-              device: new_backend_state.device,
-              queue: new_backend_state.queue,
-              pipeline: new_backend_state.pipeline
-          }
+    case merged_config.backend == state.config.backend do
+      false ->
+        case initialize_backend(merged_config.backend, merged_config) do
+          {:ok, new_backend_state} ->
+            updated_state = %{
+              state
+              | config: merged_config,
+                backend: merged_config.backend,
+                device: new_backend_state.device,
+                queue: new_backend_state.queue,
+                pipeline: new_backend_state.pipeline
+            }
 
-          {:reply, :ok, updated_state}
+            {:reply, :ok, updated_state}
 
-        {:error, reason} ->
-          {:reply, {:error, reason}, state}
-      end
-    else
-      updated_state = %{state | config: merged_config}
-      {:reply, :ok, updated_state}
+          {:error, reason} ->
+            {:reply, {:error, reason}, state}
+        end
+      
+      true ->
+        updated_state = %{state | config: merged_config}
+        {:reply, :ok, updated_state}
     end
   end
 
@@ -347,7 +349,10 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     ]
 
     Enum.find_value(backends, :software, fn {check, backend} ->
-      if check.(), do: backend, else: nil
+      case check.() do
+        true -> backend
+        false -> nil
+      end
     end)
   end
 
@@ -587,13 +592,15 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     surface_id =
       state.surface_cache
       |> Enum.find_value(fn {id, cached_surface} ->
-        if cached_surface == surface, do: id
+        case cached_surface == surface do
+          true -> id
+          false -> nil
+        end
       end)
 
-    if surface_id do
-      remove_surface(state, surface_id)
-    else
-      {:error, :surface_not_found}
+    case surface_id do
+      nil -> {:error, :surface_not_found}
+      id -> remove_surface(state, id)
     end
   end
 

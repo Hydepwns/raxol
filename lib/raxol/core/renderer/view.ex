@@ -106,24 +106,16 @@ defmodule Raxol.Core.Renderer.View do
       View.box(style: [border: :double, padding: 1], children: [text("Hello")])
   """
   def box(opts \\ []) do
-    require Keyword
-
-    if !Keyword.keyword?(opts) do
-      raise ArgumentError,
-            "View.box macro expects a keyword list as the first argument, got: #{inspect(opts)}"
-    end
-
+    validate_keyword_opts(opts, "View.box")
     Box.new(opts)
   end
 
   defmacro box(opts, do: block) do
     quote do
-      require Keyword
-
-      if !Keyword.keyword?(unquote(opts)) do
-        raise ArgumentError,
-              "View.box macro expects a keyword list as the first argument, got: #{inspect(unquote(opts))}"
-      end
+      Raxol.Core.Renderer.View.validate_keyword_opts(
+        unquote(opts),
+        "View.box macro"
+      )
 
       children = unquote(block)
 
@@ -152,13 +144,7 @@ defmodule Raxol.Core.Renderer.View do
       end
   """
   def row(opts \\ []) do
-    require Keyword
-
-    if !Keyword.keyword?(opts) do
-      raise ArgumentError,
-            "View.row macro expects a keyword list as the first argument, got: #{inspect(opts)}"
-    end
-
+    validate_keyword_opts(opts, "View.row")
     Flex.row(opts)
   end
 
@@ -180,12 +166,10 @@ defmodule Raxol.Core.Renderer.View do
   """
   defmacro flex(opts, do: block) do
     quote do
-      require Keyword
-
-      if !Keyword.keyword?(unquote(opts)) do
-        raise ArgumentError,
-              "View.flex macro expects a keyword list as the first argument, got: #{inspect(unquote(opts))}"
-      end
+      Raxol.Core.Renderer.View.validate_keyword_opts(
+        unquote(opts),
+        "View.flex macro"
+      )
 
       children = unquote(block)
 
@@ -213,12 +197,10 @@ defmodule Raxol.Core.Renderer.View do
   """
   defmacro grid(opts, do: block) do
     quote do
-      require Keyword
-
-      if !Keyword.keyword?(unquote(opts)) do
-        raise ArgumentError,
-              "View.grid macro expects a keyword list as the first argument, got: #{inspect(unquote(opts))}"
-      end
+      Raxol.Core.Renderer.View.validate_keyword_opts(
+        unquote(opts),
+        "View.grid macro"
+      )
 
       children = unquote(block)
 
@@ -233,12 +215,10 @@ defmodule Raxol.Core.Renderer.View do
 
   defmacro grid(opts) do
     quote do
-      require Keyword
-
-      if !Keyword.keyword?(unquote(opts)) do
-        raise ArgumentError,
-              "View.grid macro expects a keyword list as the first argument, got: #{inspect(unquote(opts))}"
-      end
+      Raxol.Core.Renderer.View.validate_keyword_opts(
+        unquote(opts),
+        "View.grid macro"
+      )
 
       Raxol.Core.Renderer.View.Layout.Grid.new(unquote(opts))
     end
@@ -259,13 +239,7 @@ defmodule Raxol.Core.Renderer.View do
       View.border(view, title: "Title", style: :double)
   """
   def border(view, opts \\ []) do
-    require Keyword
-
-    if !Keyword.keyword?(opts) do
-      raise ArgumentError,
-            "View.border macro expects a keyword list as the first argument, got: #{inspect(opts)}"
-    end
-
+    validate_keyword_opts(opts, "View.border")
     Border.wrap(view, opts)
   end
 
@@ -285,13 +259,7 @@ defmodule Raxol.Core.Renderer.View do
       View.scroll(view, offset: {0, 10}, scrollbars: true)
   """
   def scroll(view, opts \\ []) do
-    require Keyword
-
-    if !Keyword.keyword?(opts) do
-      raise ArgumentError,
-            "View.scroll macro expects a keyword list as the first argument, got: #{inspect(opts)}"
-    end
-
+    validate_keyword_opts(opts, "View.scroll")
     Scroll.new(view, opts)
   end
 
@@ -317,12 +285,10 @@ defmodule Raxol.Core.Renderer.View do
   """
   defmacro row(opts, do: block) do
     quote do
-      require Keyword
-
-      if !Keyword.keyword?(unquote(opts)) do
-        raise ArgumentError,
-              "View.row macro expects a keyword list as the first argument, got: #{inspect(unquote(opts))}"
-      end
+      Raxol.Core.Renderer.View.validate_keyword_opts(
+        unquote(opts),
+        "View.row macro"
+      )
 
       Raxol.Core.Renderer.View.Layout.Flex.row(
         Keyword.merge(
@@ -348,13 +314,12 @@ defmodule Raxol.Core.Renderer.View do
   """
   defmacro border_wrap(style, do: block) do
     quote do
-      require Keyword
       opts = [style: unquote(style)]
 
-      if !Keyword.keyword?(opts) do
-        raise ArgumentError,
-              "View.border_wrap macro expects a keyword list as the first argument, got: #{inspect(opts)}"
-      end
+      Raxol.Core.Renderer.View.validate_keyword_opts(
+        opts,
+        "View.border_wrap macro"
+      )
 
       Raxol.Core.Renderer.View.Style.Border.wrap(unquote(block), opts)
     end
@@ -383,12 +348,10 @@ defmodule Raxol.Core.Renderer.View do
   """
   defmacro scroll_wrap(opts, do: block) do
     quote do
-      require Keyword
-
-      if !Keyword.keyword?(unquote(opts)) do
-        raise ArgumentError,
-              "View.scroll_wrap macro expects a keyword list as the first argument, got: #{inspect(unquote(opts))}"
-      end
+      Raxol.Core.Renderer.View.validate_keyword_opts(
+        unquote(opts),
+        "View.scroll_wrap macro"
+      )
 
       Raxol.Core.Renderer.View.Components.Scroll.new(
         unquote(block),
@@ -644,7 +607,7 @@ defmodule Raxol.Core.Renderer.View do
     quote do
       case unquote(opts) do
         opts when is_list(opts) and length(opts) > 0 ->
-          if is_tuple(hd(opts)), do: opts, else: []
+          ensure_keyword_list(opts)
 
         opts when is_map(opts) ->
           Map.to_list(opts)
@@ -690,4 +653,27 @@ defmodule Raxol.Core.Renderer.View do
   end
 
   defp process_layout_result(result, _view), do: result
+
+  # Helper functions for if statement elimination
+
+  defp validate_keyword_opts(opts, function_name) when is_list(opts) do
+    require Keyword
+    validate_keyword_list(opts, function_name)
+  end
+
+  defp validate_keyword_opts(opts, function_name) do
+    raise ArgumentError,
+          "#{function_name} expects a keyword list as the first argument, got: #{inspect(opts)}"
+  end
+
+  defp validate_keyword_list(opts, _function_name) when is_list(opts) do
+    case opts do
+      [] -> :ok
+      [tuple | _] when is_tuple(tuple) -> :ok
+      _ -> raise ArgumentError, "Expected keyword list"
+    end
+  end
+
+  defp ensure_keyword_list([tuple | _] = opts) when is_tuple(tuple), do: opts
+  defp ensure_keyword_list(_opts), do: []
 end

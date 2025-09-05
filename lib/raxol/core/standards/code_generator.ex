@@ -134,12 +134,12 @@ defmodule Raxol.Core.Standards.CodeGenerator do
 
       defp validate_params(params, required_fields) do
         missing_fields = required_fields -- Map.keys(params)
+        do_validate_params(missing_fields, params)
+      end
 
-        if Enum.empty?(missing_fields) do
-          {:ok, params}
-        else
-          {:error, {:missing_fields, missing_fields}}
-        end
+      defp do_validate_params([], params), do: {:ok, params}
+      defp do_validate_params(missing_fields, _params) do
+        {:error, {:missing_fields, missing_fields}}
       end
 
       defp handle_operation_result({:ok, result}), do: {:ok, result}
@@ -412,24 +412,20 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     """
   end
 
+  defp format_children_docs([]), do: "No children defined yet."
+
   defp format_children_docs(children) do
-    if Enum.empty?(children) do
-      "No children defined yet."
-    else
-      children
-      |> Enum.map(fn child -> "  - #{child}" end)
-      |> Enum.join("\n")
-    end
+    children
+    |> Enum.map(fn child -> "  - #{child}" end)
+    |> Enum.join("\n")
   end
 
+  defp format_children_specs([]), do: "# Add child specifications here"
+
   defp format_children_specs(children) do
-    if Enum.empty?(children) do
-      "# Add child specifications here"
-    else
-      children
-      |> Enum.map(fn child -> "{#{child}, []}" end)
-      |> Enum.join(",\n          ")
-    end
+    children
+    |> Enum.map(fn child -> "{#{child}, []}" end)
+    |> Enum.join(",\n          ")
   end
 
   defp context_name(module_name) do
@@ -457,25 +453,25 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     |> Enum.join("\n")
   end
 
+  defp generate_test_cases(_module_name, []) do
+    """
+    describe "basic functionality" do
+      test "placeholder test" do
+        assert true
+      end
+    end
+    """
+  end
+
   defp generate_test_cases(_module_name, test_cases) do
-    if Enum.empty?(test_cases) do
+    Enum.map(test_cases, fn {function, tests} ->
       """
-      describe "basic functionality" do
-        test "placeholder test" do
-          assert true
-        end
+      describe "#{function}/#{length(tests)}" do
+        #{format_tests(function, tests)}
       end
       """
-    else
-      Enum.map(test_cases, fn {function, tests} ->
-        """
-        describe "#{function}/#{length(tests)}" do
-          #{format_tests(function, tests)}
-        end
-        """
-      end)
-      |> Enum.join("\n")
-    end
+    end)
+    |> Enum.join("\n")
   end
 
   defp format_tests(_function, tests) do
@@ -541,56 +537,55 @@ defmodule Raxol.Core.Standards.CodeGenerator do
     |> Enum.join("\n")
   end
 
-  defp format_migration_operations(operations) do
-    if Enum.empty?(operations) do
-      """
-      create table(:example) do
-        add :name, :string, null: false
-        add :description, :text
+  defp format_migration_operations([]) do
+    """
+    create table(:example) do
+      add :name, :string, null: false
+      add :description, :text
 
-        timestamps()
-      end
-
-      create index(:example, [:name])
-      """
-    else
-      Enum.map(operations, fn
-        {:create_table, name, fields} ->
-          """
-          create table(:#{name}) do
-            #{format_table_fields(fields)}
-
-            timestamps()
-          end
-          """
-
-        {:add_index, table, columns} ->
-          "create index(:#{table}, #{inspect(columns)})"
-
-        {:add_column, _table, column, type} ->
-          "add :#{column}, :#{type}"
-
-        _ ->
-          "# Add migration operations"
-      end)
-      |> Enum.join("\n\n    ")
+      timestamps()
     end
+
+    create index(:example, [:name])
+    """
+  end
+
+  defp format_migration_operations(operations) do
+    Enum.map(operations, fn
+      {:create_table, name, fields} ->
+        """
+        create table(:#{name}) do
+          #{format_table_fields(fields)}
+
+          timestamps()
+        end
+        """
+
+      {:add_index, table, columns} ->
+        "create index(:#{table}, #{inspect(columns)})"
+
+      {:add_column, _table, column, type} ->
+        "add :#{column}, :#{type}"
+
+      _ ->
+        "# Add migration operations"
+    end)
+    |> Enum.join("\n\n    ")
   end
 
   defp format_table_fields(fields) do
     fields
     |> Enum.map(fn {name, type, opts} ->
-      opts_str =
-        if Enum.empty?(opts) do
-          ""
-        else
-          ", " <>
-            Enum.map_join(opts, ", ", fn {k, v} -> "#{k}: #{inspect(v)}" end)
-        end
-
+      opts_str = format_field_opts(opts)
       "add :#{name}, :#{type}#{opts_str}"
     end)
     |> Enum.join("\n      ")
+  end
+
+  defp format_field_opts([]), do: ""
+
+  defp format_field_opts(opts) do
+    ", " <> Enum.map_join(opts, ", ", fn {k, v} -> "#{k}: #{inspect(v)}" end)
   end
 
   defp schema_name(module_name) do
@@ -640,33 +635,33 @@ defmodule Raxol.Core.Standards.CodeGenerator do
   defp format_validations(fields) do
     fields
     |> Enum.flat_map(fn {name, type, opts} ->
-      validations = []
-
-      validations =
-        if length = Keyword.get(opts, :min_length) do
-          ["|> validate_length(:#{name}, min: #{length})" | validations]
-        else
-          validations
-        end
-
-      validations =
-        if length = Keyword.get(opts, :max_length) do
-          ["|> validate_length(:#{name}, max: #{length})" | validations]
-        else
-          validations
-        end
-
-      validations =
-        if type == :email do
-          ["|> validate_format(:#{name}, ~r/@/)" | validations]
-        else
-          validations
-        end
-
-      validations
+      []
+      |> add_min_length_validation(name, opts)
+      |> add_max_length_validation(name, opts)
+      |> add_email_validation(name, type)
     end)
     |> Enum.join("\n    ")
   end
+
+  defp add_min_length_validation(validations, name, opts) do
+    case Keyword.get(opts, :min_length) do
+      nil -> validations
+      length -> ["|> validate_length(:#{name}, min: #{length})" | validations]
+    end
+  end
+
+  defp add_max_length_validation(validations, name, opts) do
+    case Keyword.get(opts, :max_length) do
+      nil -> validations
+      length -> ["|> validate_length(:#{name}, max: #{length})" | validations]
+    end
+  end
+
+  defp add_email_validation(validations, name, :email) do
+    ["|> validate_format(:#{name}, ~r/@/)" | validations]
+  end
+
+  defp add_email_validation(validations, _name, _type), do: validations
 
   defp elixir_type(:string), do: "String.t()"
   defp elixir_type(:integer), do: "integer()"

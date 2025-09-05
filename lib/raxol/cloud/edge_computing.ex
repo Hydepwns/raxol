@@ -76,7 +76,7 @@ defmodule Raxol.Cloud.EdgeComputing do
     ensure_server_started()
 
     # Queue the operation for execution
-    operation_id =
+    _operation_id =
       Server.enqueue_operation(:function, %{
         function: func,
         options: opts

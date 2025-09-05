@@ -143,10 +143,15 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   Starts the unified IO system.
   """
   def start_link(opts \\ %{}) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = convert_opts_to_keyword_list(opts)
     name = Keyword.get(opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, opts, name: name)
   end
+
+  defp convert_opts_to_keyword_list(opts) when is_map(opts),
+    do: Enum.into(opts, [])
+
+  defp convert_opts_to_keyword_list(opts), do: opts
 
   @doc """
   Initializes the terminal IO system.
@@ -222,7 +227,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   def init(opts) do
     # Convert keyword list to map for config
-    config = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
+    config = convert_keyword_to_map(opts)
 
     state = %__MODULE__{
       # Input state
@@ -257,6 +262,15 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
     {:ok, state}
   end
+
+  defp convert_keyword_to_map(opts) when is_list(opts) do
+    case Keyword.keyword?(opts) do
+      true -> Map.new(opts)
+      false -> opts
+    end
+  end
+
+  defp convert_keyword_to_map(opts), do: opts
 
   def handle_call({:init_terminal, width, height, config}, _from, state) do
     # Initialize components
@@ -333,11 +347,15 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   def handle_call({:set_cursor_visibility, visible}, _from, state) do
     # Only call UnifiedRenderer if it's available
-    if Process.whereis(Raxol.Terminal.Render.UnifiedRenderer) do
-      UnifiedRenderer.set_cursor_visibility(visible)
-    end
-
+    set_cursor_visibility_if_available(visible)
     {:reply, :ok, state}
+  end
+
+  defp set_cursor_visibility_if_available(visible) do
+    case Process.whereis(Raxol.Terminal.Render.UnifiedRenderer) do
+      nil -> :ok
+      _pid -> UnifiedRenderer.set_cursor_visibility(visible)
+    end
   end
 
   def handle_call(:get_title, _from, state) do
@@ -415,31 +433,39 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   end
 
   defp process_keyboard_input(state, key) do
-    if state.processing_escape do
-      handle_escape_sequence(state, key)
-    else
-      case key do
-        "\e" -> {:ok, %{state | processing_escape: true}, []}
-        _ -> process_normal_input(state, key)
-      end
+    handle_keyboard_input(state.processing_escape, state, key)
+  end
+
+  defp handle_keyboard_input(true, state, key) do
+    handle_escape_sequence(state, key)
+  end
+
+  defp handle_keyboard_input(false, state, key) do
+    case key do
+      "\e" -> {:ok, %{state | processing_escape: true}, []}
+      _ -> process_normal_input(state, key)
     end
   end
 
   defp process_mouse_input(state, event) do
-    if state.mouse_enabled do
-      mouse_sequence = encode_mouse_event(event)
+    handle_mouse_input(state.mouse_enabled, state, event)
+  end
 
-      new_state = %{
-        state
-        | buffer: state.buffer <> mouse_sequence,
-          mouse_buttons: update_mouse_buttons(state.mouse_buttons, event),
-          mouse_position: {event.x, event.y}
-      }
+  defp handle_mouse_input(true, state, event) do
+    mouse_sequence = encode_mouse_event(event)
 
-      {:ok, new_state, []}
-    else
-      {:ok, state, []}
-    end
+    new_state = %{
+      state
+      | buffer: state.buffer <> mouse_sequence,
+        mouse_buttons: update_mouse_buttons(state.mouse_buttons, event),
+        mouse_position: {event.x, event.y}
+    }
+
+    {:ok, new_state, []}
+  end
+
+  defp handle_mouse_input(false, state, _event) do
+    {:ok, state, []}
   end
 
   defp process_special_key(state, key) do
@@ -487,11 +513,15 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   end
 
   defp initialize_or_update_components(state, config) do
-    if state.buffer_manager do
-      update_existing_components(state, config)
-    else
-      initialize_new_components(config)
-    end
+    handle_component_initialization(state.buffer_manager, state, config)
+  end
+
+  defp handle_component_initialization(nil, _state, config) do
+    initialize_new_components(config)
+  end
+
+  defp handle_component_initialization(_buffer_manager, state, config) do
+    update_existing_components(state, config)
   end
 
   defp update_existing_components(state, config) do
@@ -537,21 +567,29 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
           _ -> nil
         end
 
-    if buffer_manager do
-      # Update buffer manager
-      {:ok, new_buffer_manager} =
-        UnifiedManager.resize(buffer_manager, width, height)
+    handle_buffer_manager_resize(buffer_manager, state, width, height)
+  end
 
-      # Update renderer if it exists
-      if state.renderer do
-        UnifiedRenderer.resize(width, height)
-      end
+  defp handle_buffer_manager_resize(nil, state, _width, _height) do
+    # If we can't create a buffer manager, just return the state
+    state
+  end
 
-      %{state | buffer_manager: new_buffer_manager}
-    else
-      # If we can't create a buffer manager, just return the state
-      state
-    end
+  defp handle_buffer_manager_resize(buffer_manager, state, width, height) do
+    # Update buffer manager
+    {:ok, new_buffer_manager} =
+      UnifiedManager.resize(buffer_manager, width, height)
+
+    # Update renderer if it exists
+    update_renderer_if_exists(state.renderer, width, height)
+
+    %{state | buffer_manager: new_buffer_manager}
+  end
+
+  defp update_renderer_if_exists(nil, _width, _height), do: :ok
+
+  defp update_renderer_if_exists(_renderer, width, height) do
+    UnifiedRenderer.resize(width, height)
   end
 
   defp get_default_config do
@@ -643,11 +681,15 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   end
 
   defp handle_incomplete_sequence(state, key, sequence) do
-    if String.length(sequence) > 10 do
-      {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
-    else
-      {:ok, %{state | escape_buffer: state.escape_buffer <> key}, []}
-    end
+    handle_sequence_length(String.length(sequence) > 10, state, key)
+  end
+
+  defp handle_sequence_length(true, state, _key) do
+    {:ok, %{state | processing_escape: false, escape_buffer: ""}, []}
+  end
+
+  defp handle_sequence_length(false, state, key) do
+    {:ok, %{state | escape_buffer: state.escape_buffer <> key}, []}
   end
 
   defp process_normal_input(state, key) do
@@ -707,11 +749,13 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   # Deep merge two maps, recursively merging nested maps
   defp deep_merge(map1, map2) do
     Map.merge(map1, map2, fn _key, val1, val2 ->
-      if is_map(val1) and is_map(val2) do
-        deep_merge(val1, val2)
-      else
-        val2
-      end
+      merge_nested_values(val1, val2)
     end)
   end
+
+  defp merge_nested_values(val1, val2) when is_map(val1) and is_map(val2) do
+    deep_merge(val1, val2)
+  end
+
+  defp merge_nested_values(_val1, val2), do: val2
 end

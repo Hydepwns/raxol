@@ -2,8 +2,6 @@
 defmodule Raxol.Cloud.Monitoring.Health do
   @moduledoc false
 
-  # Process dictionary key for health
-  @health_key :raxol_monitoring_health
 
   def init(config) do
     health_state = %{
@@ -18,7 +16,7 @@ defmodule Raxol.Cloud.Monitoring.Health do
   end
 
   def check(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = normalize_opts(opts)
     health_state = get_health_state()
 
     components_to_check =
@@ -33,12 +31,7 @@ defmodule Raxol.Cloud.Monitoring.Health do
       end)
       |> Enum.into(%{})
 
-    status =
-      if Enum.any?(component_results, fn {_, status} -> status == :unhealthy end) do
-        :unhealthy
-      else
-        :healthy
-      end
+    status = determine_overall_status(component_results)
 
     updated_health_state = %{
       health_state
@@ -81,4 +74,16 @@ defmodule Raxol.Cloud.Monitoring.Health do
   defp check_component(_, _) do
     :unknown
   end
+
+  defp normalize_opts(opts) when is_map(opts), do: Enum.into(opts, [])
+  defp normalize_opts(opts), do: opts
+
+  # Helper function for pattern matching instead of if statement
+  defp determine_overall_status(component_results) do
+    has_unhealthy = Enum.any?(component_results, fn {_, status} -> status == :unhealthy end)
+    get_status_from_health_check(has_unhealthy)
+  end
+
+  defp get_status_from_health_check(true), do: :unhealthy
+  defp get_status_from_health_check(false), do: :healthy
 end

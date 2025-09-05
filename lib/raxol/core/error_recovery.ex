@@ -136,17 +136,18 @@ defmodule Raxol.Core.ErrorRecovery do
       )
   """
   def degrade_gracefully(feature, full_fn, degraded_fn) do
-    if feature_available?(feature) do
-      case safe_execute(full_fn) do
-        {:ok, result} ->
-          {:ok, result}
+    case feature_available?(feature) do
+      true ->
+        case safe_execute(full_fn) do
+          {:ok, result} ->
+            {:ok, result}
 
-        {:error, _type, _msg, _context} = error ->
-          mark_feature_degraded(feature, error)
-          safe_execute(degraded_fn)
-      end
-    else
-      safe_execute(degraded_fn)
+          {:error, _type, _msg, _context} = error ->
+            mark_feature_degraded(feature, error)
+            safe_execute(degraded_fn)
+        end
+      false ->
+        safe_execute(degraded_fn)
     end
   end
 
@@ -303,10 +304,11 @@ defmodule Raxol.Core.ErrorRecovery do
   defp record_circuit_success(circuit) do
     case circuit.state do
       :half_open ->
-        if circuit.success_count >= 3 do
-          %{circuit | state: :closed, failure_count: 0, success_count: 0}
-        else
-          %{circuit | success_count: circuit.success_count + 1}
+        case circuit.success_count >= 3 do
+          true ->
+            %{circuit | state: :closed, failure_count: 0, success_count: 0}
+          false ->
+            %{circuit | success_count: circuit.success_count + 1}
         end
 
       _ ->
@@ -317,15 +319,16 @@ defmodule Raxol.Core.ErrorRecovery do
   defp record_circuit_failure(circuit) do
     new_failure_count = circuit.failure_count + 1
 
-    if new_failure_count >= circuit.threshold do
-      %{
-        circuit
-        | state: :open,
-          failure_count: new_failure_count,
-          last_failure_time: System.system_time(:millisecond)
-      }
-    else
-      %{circuit | failure_count: new_failure_count}
+    case new_failure_count >= circuit.threshold do
+      true ->
+        %{
+          circuit
+          | state: :open,
+            failure_count: new_failure_count,
+            last_failure_time: System.system_time(:millisecond)
+        }
+      false ->
+        %{circuit | failure_count: new_failure_count}
     end
   end
 
@@ -347,15 +350,14 @@ defmodule Raxol.Core.ErrorRecovery do
     end
   end
 
-  defp calculate_backoff_delay(attempt, base_delay, max_delay, jitter) do
+  defp calculate_backoff_delay(attempt, base_delay, max_delay, true) do
     delay = min(base_delay * :math.pow(2, attempt), max_delay) |> round()
+    jitter_amount = round(delay * 0.1 * :rand.uniform())
+    delay + jitter_amount
+  end
 
-    if jitter do
-      jitter_amount = round(delay * 0.1 * :rand.uniform())
-      delay + jitter_amount
-    else
-      delay
-    end
+  defp calculate_backoff_delay(attempt, base_delay, max_delay, false) do
+    min(base_delay * :math.pow(2, attempt), max_delay) |> round()
   end
 
   defp safe_execute(fun) when is_function(fun, 0) do
@@ -419,15 +421,9 @@ defmodule Raxol.Core.ErrorRecovery do
   defp format_error(%{message: msg}), do: msg
   defp format_error(reason), do: inspect(reason)
 
-  defp checkout_from_pool(pool_name, timeout) do
-    # Simplified implementation - would integrate with actual pool
-    # For now, simulate timeout for nil pool name or zero timeout
-    if pool_name == nil or timeout == 0 do
-      {:error, :timeout}
-    else
-      {:ok, :mock_worker}
-    end
-  end
+  defp checkout_from_pool(nil, _timeout), do: {:error, :timeout}
+  defp checkout_from_pool(_pool_name, 0), do: {:error, :timeout}
+  defp checkout_from_pool(_pool_name, _timeout), do: {:ok, :mock_worker}
 
   defp checkin_to_pool(_pool_name, _worker) do
     :ok

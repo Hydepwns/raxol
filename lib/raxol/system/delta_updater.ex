@@ -27,20 +27,7 @@ defmodule Raxol.System.DeltaUpdater do
     full_size = full_asset["size"]
     delta_size = delta_asset["size"]
 
-    if delta_size < full_size * 0.5 do
-      savings_percent = round((1 - delta_size / full_size) * 100)
-
-      {:ok,
-       %{
-         delta_size: delta_size,
-         full_size: full_size,
-         savings_percent: savings_percent,
-         delta_url: delta_asset["browser_download_url"],
-         full_url: full_asset["browser_download_url"]
-       }}
-    else
-      {:error, :delta_too_large}
-    end
+    evaluate_delta_size(delta_size < full_size * 0.5, delta_size, full_size, delta_asset, full_asset)
   end
 
   def apply_delta_update(delta_url, target_version) do
@@ -127,12 +114,7 @@ defmodule Raxol.System.DeltaUpdater do
 
     exe = exe_path_env || List.first(argv)
 
-    if is_nil(exe) do
-      # Return error tuple
-      {:error, :cannot_determine_executable_path}
-    else
-      {:ok, exe}
-    end
+    handle_executable_path(is_nil(exe), exe)
   end
 
   defp apply_binary_delta(original_file, delta_file, output_file) do
@@ -165,9 +147,7 @@ defmodule Raxol.System.DeltaUpdater do
            stderr_to_stdout: true
          ) do
       {output, 0} ->
-        if String.contains?(output, expected_version),
-          do: :ok,
-          else: {:error, :version_verification_failed}
+        validate_version_output(String.contains?(output, expected_version))
 
       {error_output, _exit_status} ->
         {:error, {:verify_failed_to_run, error_output}}
@@ -209,4 +189,35 @@ defmodule Raxol.System.DeltaUpdater do
         {:error, {:fetch_releases_failed, reason}}
     end
   end
+
+  # Helper functions to eliminate if statements
+
+  defp evaluate_delta_size(false, _delta_size, _full_size, _delta_asset, _full_asset) do
+    {:error, :delta_too_large}
+  end
+
+  defp evaluate_delta_size(true, delta_size, full_size, delta_asset, full_asset) do
+    savings_percent = round((1 - delta_size / full_size) * 100)
+
+    {:ok,
+     %{
+       delta_size: delta_size,
+       full_size: full_size,
+       savings_percent: savings_percent,
+       delta_url: delta_asset["browser_download_url"],
+       full_url: full_asset["browser_download_url"]
+     }}
+  end
+
+  defp handle_executable_path(true, _exe) do
+    {:error, :cannot_determine_executable_path}
+  end
+
+  defp handle_executable_path(false, exe) do
+    {:ok, exe}
+  end
+
+  defp validate_version_output(true), do: :ok
+
+  defp validate_version_output(false), do: {:error, :version_verification_failed}
 end

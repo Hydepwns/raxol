@@ -77,17 +77,24 @@ defmodule Raxol.Core.Renderer.Color do
   def to_ansi(:default), do: "\e[39m"
 
   def to_ansi(color) when is_atom(color) do
-    if Enum.member?(@ansi_16_atoms, color) do
-      code = @ansi_16_map[color]
+    process_ansi_atom_color(Enum.member?(@ansi_16_atoms, color), color)
+  end
 
-      if code >= 8 do
-        "\e[#{90 + (code - 8)}m"
-      else
-        "\e[#{30 + code}m"
-      end
-    else
-      raise ArgumentError, "Invalid color format"
-    end
+  defp process_ansi_atom_color(false, _color) do
+    raise ArgumentError, "Invalid color format"
+  end
+
+  defp process_ansi_atom_color(_is_member, color) do
+    code = @ansi_16_map[color]
+    format_ansi_code(code >= 8, code)
+  end
+
+  defp format_ansi_code(true, code) do
+    "\e[#{90 + (code - 8)}m"
+  end
+
+  defp format_ansi_code(_is_bright, code) do
+    "\e[#{30 + code}m"
   end
 
   def to_ansi(color) when is_integer(color) and color in 0..255//1 do
@@ -119,15 +126,19 @@ defmodule Raxol.Core.Renderer.Color do
   def to_bg_ansi(color) when is_atom(color) do
     case {Enum.member?(@ansi_16_atoms, color), @ansi_16_map[color]} do
       {true, code} when not is_nil(code) ->
-        if code >= 8 do
-          "\e[#{100 + (code - 8)}m"
-        else
-          "\e[#{40 + code}m"
-        end
+        format_bg_ansi_code(code >= 8, code)
 
       _ ->
         raise ArgumentError, "Invalid color format"
     end
+  end
+
+  defp format_bg_ansi_code(true, code) do
+    "\e[#{100 + (code - 8)}m"
+  end
+
+  defp format_bg_ansi_code(_is_bright, code) do
+    "\e[#{40 + code}m"
   end
 
   def to_bg_ansi(color) when is_integer(color) and color in 0..255//1 do
@@ -198,12 +209,16 @@ defmodule Raxol.Core.Renderer.Color do
   end
 
   defp process_color_entry({_key, value}) do
-    msg =
-      if is_binary(value),
-        do: "Invalid color in theme: #{value}",
-        else: "Invalid color in theme: #{inspect(value)}"
-
+    msg = format_error_message(is_binary(value), value)
     raise(ArgumentError, msg)
+  end
+
+  defp format_error_message(true, value) do
+    "Invalid color in theme: #{value}"
+  end
+
+  defp format_error_message(_is_binary, value) do
+    "Invalid color in theme: #{inspect(value)}"
   end
 
   @doc """
@@ -312,11 +327,15 @@ defmodule Raxol.Core.Renderer.Color do
   """
   def rgb_to_ansi256({r, g, b})
       when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
-    if r == g and g == b do
-      grayscale_to_ansi256(r)
-    else
-      color_cube_to_ansi256(r, g, b)
-    end
+    convert_rgb_to_ansi256(r == g and g == b, r, g, b)
+  end
+
+  defp convert_rgb_to_ansi256(true, r, _g, _b) do
+    grayscale_to_ansi256(r)
+  end
+
+  defp convert_rgb_to_ansi256(_is_grayscale, r, g, b) do
+    color_cube_to_ansi256(r, g, b)
   end
 
   def rgb_to_ansi256({r, g, b})

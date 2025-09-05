@@ -240,13 +240,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   end
 
   defp handle_health_check(_event, measurements, metadata, _config) do
-    if metadata[:status] != :healthy do
-      Logger.info("""
-      Emulator health check:
-        Status: #{metadata[:status]}
-        Value: #{measurements[:status]}
-      """)
-    end
+    log_health_check(metadata[:status], measurements, metadata)
   end
 
   defp format_duration(nil), do: "N/A"
@@ -260,4 +254,14 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   defp status_to_number(:critical), do: 2
   defp status_to_number(:fallback), do: 3
   defp status_to_number(_), do: -1
+
+  # Helper function for pattern matching instead of if statement
+  defp log_health_check(:healthy, _measurements, _metadata), do: :ok
+  defp log_health_check(status, measurements, metadata) do
+    Logger.info("""
+    Emulator health check:
+      Status: #{status}
+      Value: #{measurements[:status]}
+    """)
+  end
 end

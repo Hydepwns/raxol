@@ -50,14 +50,12 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
     end
   end
 
-  # Process dictionary key for edge computing state
-  @edge_key :raxol_edge_computing_state
 
   @doc """
   Initializes the edge computing system.
   """
   def init(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = normalize_opts(opts)
     state = State.new()
 
     # Override defaults with provided options
@@ -96,7 +94,7 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
   Updates the edge computing configuration.
   """
   def update_config(state \\ nil, config) do
-    config = if is_map(config), do: Enum.into(config, []), else: config
+    config = normalize_opts(config)
 
     with_state(state, fn s ->
       # Merge new config with existing config
@@ -179,22 +177,33 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
   end
 
   def with_state(arg1, arg2 \\ nil) do
-    {state, fun} =
-      if is_function(arg1) do
-        {get_state(), arg1}
-      else
-        {arg1 || get_state(), arg2}
-      end
-
+    {state, fun} = resolve_state_and_function(arg1, arg2)
     result = fun.(state)
+    handle_state_update(result)
+  end
 
-    if is_map(result) and Map.has_key?(result, :mode) do
-      # If a state map is returned, update the state
-      Raxol.Cloud.EdgeComputing.Server.set_state(result)
-      result
-    else
-      # Otherwise just return the result
-      result
+  defp resolve_state_and_function(arg1, arg2) do
+    resolve_args(is_function(arg1), arg1, arg2)
+  end
+
+  defp resolve_args(true, fun, _arg2) do
+    {get_state(), fun}
+  end
+
+  defp resolve_args(false, state, fun) do
+    {state || get_state(), fun}
+  end
+
+  defp handle_state_update(result) do
+    case {is_map(result), is_map(result) && Map.has_key?(result, :mode)} do
+      {true, true} ->
+        # If a state map is returned, update the state
+        Raxol.Cloud.EdgeComputing.Server.set_state(result)
+        result
+
+      _ ->
+        # Otherwise just return the result
+        result
     end
   end
 
@@ -220,4 +229,7 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
       Raxol.Cloud.EdgeComputing.Connection.check_connection()
     end)
   end
+
+  defp normalize_opts(opts) when is_map(opts), do: Enum.into(opts, [])
+  defp normalize_opts(opts), do: opts
 end

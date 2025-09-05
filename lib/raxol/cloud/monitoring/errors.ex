@@ -2,8 +2,6 @@
 defmodule Raxol.Cloud.Monitoring.Errors do
   @moduledoc false
 
-  # Process dictionary key for errors
-  @errors_key :raxol_monitoring_errors
 
   def init(config) do
     errors_state = %{
@@ -16,7 +14,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
   end
 
   def record(error, opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = normalize_opts(opts)
     errors_state = get_errors_state()
 
     # Create error entry
@@ -47,7 +45,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
   end
 
   def get(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = normalize_opts(opts)
     errors_state = get_errors_state()
 
     limit = Keyword.get(opts, :limit, 100)
@@ -97,7 +95,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
     do: inspect(error)
 
   defp get_stacktrace(opts) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = normalize_opts(opts)
 
     Keyword.get(
       opts,
@@ -133,4 +131,8 @@ defmodule Raxol.Cloud.Monitoring.Errors do
     # FEAT: This would use the Honeybadger client to send errors
     :ok
   end
+
+  # Helper function to eliminate if statements
+  defp normalize_opts(opts) when is_map(opts), do: Enum.into(opts, [])
+  defp normalize_opts(opts), do: opts
 end

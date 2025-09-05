@@ -79,23 +79,10 @@ defmodule Raxol.Runtime.Supervisor do
          debug_mode: debug_mode
        }) do
     # Only start UserPreferences if not already running (in test mode it may be started by test_helper)
-    user_prefs_children =
-      if Mix.env() == :test and Process.whereis(Raxol.Core.UserPreferences) do
-        []
-      else
-        [
-          {Raxol.Core.UserPreferences,
-           if(Mix.env() == :test, do: [test_mode?: true], else: [])}
-        ]
-      end
+    user_prefs_children = get_user_prefs_children(Mix.env() == :test and Process.whereis(Raxol.Core.UserPreferences))
 
     # Only start Registry if not already running (in test mode it may be started by test_helper)
-    registry_children =
-      if Mix.env() == :test and Process.whereis(:raxol_event_subscriptions) do
-        []
-      else
-        [{Registry, keys: :duplicate, name: :raxol_event_subscriptions}]
-      end
+    registry_children = get_registry_children(Mix.env() == :test and Process.whereis(:raxol_event_subscriptions))
 
     user_prefs_children ++
       registry_children ++
@@ -150,30 +137,48 @@ defmodule Raxol.Runtime.Supervisor do
           restart: :permanent,
           type: :worker
         }
-      ] ++
-      if IO.ANSI.enabled?() or Mix.env() == :test do
-        driver_module =
-          if Mix.env() == :test,
-            do: Raxol.Terminal.DriverMock,
-            else: Raxol.Terminal.Driver
-
-        [
-          # 4. Terminal Driver (needs Dispatcher PID)
-          %{
-            id: TerminalDriver,
-            # Passes registered name
-            start: {driver_module, :start_link, [Dispatcher]},
-            restart: :permanent,
-            type: :worker
-          }
-        ]
-      else
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "[Raxol.Runtime.Supervisor] Not attached to a TTY. Terminal driver will not be started.",
-          %{}
-        )
-
-        []
-      end
+      ] ++ get_terminal_driver_children(IO.ANSI.enabled?() or Mix.env() == :test)
   end
+
+  defp get_user_prefs_children(true), do: []
+
+  defp get_user_prefs_children(false) do
+    [
+      {Raxol.Core.UserPreferences,
+       get_user_prefs_args(Mix.env() == :test)}
+    ]
+  end
+
+  defp get_user_prefs_args(true), do: [test_mode?: true]
+  defp get_user_prefs_args(false), do: []
+
+  defp get_registry_children(true), do: []
+  defp get_registry_children(false), do: [{Registry, keys: :duplicate, name: :raxol_event_subscriptions}]
+
+  defp get_terminal_driver_children(true) do
+    driver_module = get_driver_module(Mix.env() == :test)
+
+    [
+      # 4. Terminal Driver (needs Dispatcher PID)
+      %{
+        id: TerminalDriver,
+        # Passes registered name
+        start: {driver_module, :start_link, [Dispatcher]},
+        restart: :permanent,
+        type: :worker
+      }
+    ]
+  end
+
+  defp get_terminal_driver_children(false) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[Raxol.Runtime.Supervisor] Not attached to a TTY. Terminal driver will not be started.",
+      %{}
+    )
+
+    []
+  end
+
+  defp get_driver_module(true), do: Raxol.Terminal.DriverMock
+  defp get_driver_module(false), do: Raxol.Terminal.Driver
 end

@@ -203,9 +203,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   def handle_cast({:set_performance_mode, enabled}, state) do
     new_monitor = Map.put(state.performance_monitor, :performance_mode, enabled)
 
-    Logger.info(
-      "Performance mode #{if enabled, do: "enabled", else: "disabled"}"
-    )
+    Logger.info("Performance mode #{get_performance_mode_status(enabled)}")
 
     {:noreply, %{state | performance_monitor: new_monitor}}
   end
@@ -275,11 +273,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   defp perform_render(scene, %{pipeline: pipeline} = state) do
     # Apply performance optimizations if needed
     optimized_scene =
-      if state.performance_monitor.performance_mode do
-        optimize_scene(scene)
-      else
-        scene
-      end
+      maybe_optimize_scene(state.performance_monitor.performance_mode, scene)
 
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            GenServer.call(pipeline, {:render, optimized_scene}, @render_timeout)
@@ -304,29 +298,13 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   defp handle_render_error(scene, reason, from, state) do
     Logger.warning("Render error: #{inspect(reason)}")
 
-    if state.config.enable_fallback do
-      case use_fallback_renderer(scene, state) do
-        {:ok, result, new_state} ->
-          new_stats =
-            Map.update(new_state.stats, :errors_recovered, 1, &(&1 + 1))
-
-          final_state = %{new_state | stats: new_stats}
-          {:reply, {:ok, result}, final_state}
-
-        {:error, _fallback_reason, new_state} ->
-          # Queue for later retry if possible
-          if :queue.len(state.render_queue) < state.config.max_queue_size do
-            new_queue = :queue.in({scene, from}, state.render_queue)
-            schedule_queue_processing()
-            {:noreply, %{new_state | render_queue: new_queue}}
-          else
-            new_stats = Map.update(state.stats, :frames_dropped, 1, &(&1 + 1))
-            {:reply, {:error, :render_failed}, %{new_state | stats: new_stats}}
-          end
-      end
-    else
-      {:reply, {:error, reason}, state}
-    end
+    handle_fallback_decision(
+      state.config.enable_fallback,
+      scene,
+      reason,
+      from,
+      state
+    )
   end
 
   defp use_fallback_renderer(scene, state) do
@@ -344,15 +322,8 @@ defmodule Raxol.UI.Rendering.SafePipeline do
     case validate_animation(animation) do
       :ok ->
         # Check if we should skip frames
-        if should_skip_frame?(state) do
-          new_stats = Map.update(state.stats, :frames_dropped, 1, &(&1 + 1))
-          %{state | stats: new_stats}
-        else
-          case perform_animation(animation, opts, state) do
-            {:ok, new_state} -> new_state
-            {:error, _reason} -> state
-          end
-        end
+        skip_frame = should_skip_frame?(state)
+        handle_animation_frame(skip_frame, animation, opts, state)
 
       {:error, reason} ->
         Logger.error("Invalid animation: #{inspect(reason)}")
@@ -386,12 +357,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
     # Calculate average render time
     times_list = :queue.to_list(frame_times)
 
-    avg_time =
-      if length(times_list) > 0 do
-        Enum.sum(times_list) / length(times_list)
-      else
-        0.0
-      end
+    avg_time = calculate_average_time(length(times_list) > 0, times_list)
 
     new_monitor = %{
       state.performance_monitor
@@ -410,34 +376,24 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   defp check_performance_threshold(state, render_time) do
     threshold_ms = @render_timeout * state.config.performance_mode_threshold
 
-    if render_time > threshold_ms and
-         not state.performance_monitor.performance_mode do
-      Logger.warning(
-        "Performance threshold exceeded (#{render_time}ms > #{threshold_ms}ms)"
-      )
+    threshold_exceeded =
+      render_time > threshold_ms and
+        not state.performance_monitor.performance_mode
 
-      new_stats = Map.update(state.stats, :performance_warnings, 1, &(&1 + 1))
-      new_monitor = Map.put(state.performance_monitor, :performance_mode, true)
-
-      %{state | performance_monitor: new_monitor, stats: new_stats}
-    else
-      state
-    end
+    handle_performance_threshold(
+      threshold_exceeded,
+      state,
+      render_time,
+      threshold_ms
+    )
   end
 
   defp should_skip_frame?(state) do
-    if state.config.enable_frame_skip and
-         state.performance_monitor.performance_mode do
-      # Skip frame if we're behind schedule
-      now = System.monotonic_time(:microsecond)
+    should_check =
+      state.config.enable_frame_skip and
+        state.performance_monitor.performance_mode
 
-      time_since_last =
-        (now - state.performance_monitor.last_frame_time) / 1000.0
-
-      time_since_last < @render_timeout / 2
-    else
-      false
-    end
+    check_frame_skip(should_check, state)
   end
 
   defp optimize_scene(scene) do
@@ -525,11 +481,89 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   end
 
   defp trim_queue(queue, max_size) do
-    if :queue.len(queue) > max_size do
-      {_, new_queue} = :queue.out(queue)
-      trim_queue(new_queue, max_size)
-    else
-      queue
+    needs_trim = :queue.len(queue) > max_size
+    handle_queue_trim(needs_trim, queue, max_size)
+  end
+
+  defp get_performance_mode_status(true), do: "enabled"
+  defp get_performance_mode_status(false), do: "disabled"
+
+  defp maybe_optimize_scene(true, scene), do: optimize_scene(scene)
+  defp maybe_optimize_scene(false, scene), do: scene
+
+  defp handle_fallback_decision(false, _scene, reason, _from, state) do
+    {:reply, {:error, reason}, state}
+  end
+
+  defp handle_fallback_decision(true, scene, _reason, from, state) do
+    case use_fallback_renderer(scene, state) do
+      {:ok, result, new_state} ->
+        new_stats = Map.update(new_state.stats, :errors_recovered, 1, &(&1 + 1))
+        final_state = %{new_state | stats: new_stats}
+        {:reply, {:ok, result}, final_state}
+
+      {:error, _fallback_reason, new_state} ->
+        can_queue = :queue.len(state.render_queue) < state.config.max_queue_size
+        handle_fallback_queue_decision(can_queue, scene, from, state, new_state)
     end
+  end
+
+  defp handle_fallback_queue_decision(true, scene, from, state, new_state) do
+    new_queue = :queue.in({scene, from}, state.render_queue)
+    schedule_queue_processing()
+    {:noreply, %{new_state | render_queue: new_queue}}
+  end
+
+  defp handle_fallback_queue_decision(false, _scene, _from, state, new_state) do
+    new_stats = Map.update(state.stats, :frames_dropped, 1, &(&1 + 1))
+    {:reply, {:error, :render_failed}, %{new_state | stats: new_stats}}
+  end
+
+  defp handle_animation_frame(true, _animation, _opts, state) do
+    new_stats = Map.update(state.stats, :frames_dropped, 1, &(&1 + 1))
+    %{state | stats: new_stats}
+  end
+
+  defp handle_animation_frame(false, animation, opts, state) do
+    case perform_animation(animation, opts, state) do
+      {:ok, new_state} -> new_state
+      {:error, _reason} -> state
+    end
+  end
+
+  defp calculate_average_time(false, _times_list), do: 0.0
+
+  defp calculate_average_time(true, times_list) do
+    Enum.sum(times_list) / length(times_list)
+  end
+
+  defp handle_performance_threshold(false, state, _render_time, _threshold_ms),
+    do: state
+
+  defp handle_performance_threshold(true, state, render_time, threshold_ms) do
+    Logger.warning(
+      "Performance threshold exceeded (#{render_time}ms > #{threshold_ms}ms)"
+    )
+
+    new_stats = Map.update(state.stats, :performance_warnings, 1, &(&1 + 1))
+    new_monitor = Map.put(state.performance_monitor, :performance_mode, true)
+
+    %{state | performance_monitor: new_monitor, stats: new_stats}
+  end
+
+  defp check_frame_skip(false, _state), do: false
+
+  defp check_frame_skip(true, state) do
+    # Skip frame if we're behind schedule
+    now = System.monotonic_time(:microsecond)
+    time_since_last = (now - state.performance_monitor.last_frame_time) / 1000.0
+    time_since_last < @render_timeout / 2
+  end
+
+  defp handle_queue_trim(false, queue, _max_size), do: queue
+
+  defp handle_queue_trim(true, queue, max_size) do
+    {_, new_queue} = :queue.out(queue)
+    trim_queue(new_queue, max_size)
   end
 end

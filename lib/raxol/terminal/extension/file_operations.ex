@@ -37,9 +37,7 @@ defmodule Raxol.Terminal.Extension.FileOperations do
 
            # Only copy source files if export path is a directory
            unless String.ends_with?(path, ".json") do
-             if extension.path && File.exists?(extension.path) do
-               copy_extension_files(extension.path, path)
-             end
+             copy_source_files_if_exists(extension, path)
            end
 
            :ok
@@ -187,10 +185,7 @@ defmodule Raxol.Terminal.Extension.FileOperations do
         extension_path = Path.join(base_path, Atom.to_string(type))
 
         # If the extension directory doesn't exist, use the base path
-        final_path =
-          if File.exists?(extension_path),
-            do: extension_path,
-            else: base_path
+        final_path = determine_final_path(File.exists?(extension_path), extension_path, base_path)
 
         {:ok,
          Raxol.Terminal.Extension.StateManager.load_extension_state(
@@ -234,7 +229,7 @@ defmodule Raxol.Terminal.Extension.FileOperations do
     ]
 
     Enum.find_value(type_patterns, :custom, fn {type, predicate} ->
-      if Enum.any?(files, predicate), do: type
+      check_type_match(Enum.any?(files, predicate), type)
     end)
   end
 
@@ -247,7 +242,7 @@ defmodule Raxol.Terminal.Extension.FileOperations do
     ]
 
     Enum.find_value(module_type_checks, :custom, fn {type, function} ->
-      if function_exported?(module, function, 0), do: type
+      check_function_export(function_exported?(module, function, 0), type)
     end)
   end
 
@@ -362,4 +357,25 @@ defmodule Raxol.Terminal.Extension.FileOperations do
         )
     end
   end
+
+  defp copy_source_files_if_exists(%{path: path}, dest_path) when is_binary(path) do
+    handle_source_file_copy(File.exists?(path), path, dest_path)
+  end
+
+  defp copy_source_files_if_exists(_extension, _dest_path), do: :ok
+
+  defp handle_source_file_copy(true, source_path, dest_path) do
+    copy_extension_files(source_path, dest_path)
+  end
+
+  defp handle_source_file_copy(false, _source_path, _dest_path), do: :ok
+
+  defp determine_final_path(true, extension_path, _base_path), do: extension_path
+  defp determine_final_path(false, _extension_path, base_path), do: base_path
+
+  defp check_type_match(true, type), do: type
+  defp check_type_match(false, _type), do: nil
+
+  defp check_function_export(true, type), do: type
+  defp check_function_export(false, _type), do: nil
 end

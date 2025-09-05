@@ -112,11 +112,7 @@ defmodule Raxol.UI.Universal do
     # Broadcast to all registered event handlers
     Registry.dispatch(Raxol.Events, event, fn entries ->
       for {pid, handler} <- entries do
-        if is_function(handler) do
-          handler.(payload)
-        else
-          send(pid, {event, payload})
-        end
+        handle_universal_handler(is_function(handler), handler, pid, event, payload)
       end
     end)
   end
@@ -154,20 +150,11 @@ defmodule Raxol.UI.Universal do
       apply_property(element, prop, current_value)
     end)
 
-    if progress < 1.0 do
-      # Continue animation
-      # ~60 FPS
-      Process.sleep(16)
-      animate_loop(element, properties, duration, start_time)
-    end
+    continue_animation_if_needed(progress < 1.0, element, properties, duration, start_time)
   end
 
   defp ease_in_out(t) do
-    if t < 0.5 do
-      2 * t * t
-    else
-      -1 + (4 - 2 * t) * t
-    end
+    calculate_easing_value(t < 0.5, t)
   end
 
   defp interpolate(from, to, progress) when is_number(from) and is_number(to) do
@@ -186,4 +173,27 @@ defmodule Raxol.UI.Universal do
     # This would integrate with the terminal buffer system
     send(element, {:animate_property, property, value})
   end
+
+  # Helper functions to eliminate if statements
+
+  defp handle_universal_handler(true, handler, _pid, _event, payload) do
+    handler.(payload)
+  end
+
+  defp handle_universal_handler(false, _handler, pid, event, payload) do
+    send(pid, {event, payload})
+  end
+
+  defp continue_animation_if_needed(false, _element, _properties, _duration, _start_time), do: :ok
+
+  defp continue_animation_if_needed(true, element, properties, duration, start_time) do
+    # Continue animation
+    # ~60 FPS
+    Process.sleep(16)
+    animate_loop(element, properties, duration, start_time)
+  end
+
+  defp calculate_easing_value(true, t), do: 2 * t * t
+
+  defp calculate_easing_value(false, t), do: -1 + (4 - 2 * t) * t
 end

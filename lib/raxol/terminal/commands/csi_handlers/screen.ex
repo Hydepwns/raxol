@@ -64,12 +64,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     {row, col} = Emulator.get_cursor_position(emulator)
     {top, _bottom} = get_scroll_region(emulator)
 
-    new_row =
-      if row - lines < top do
-        top
-      else
-        row - lines
-      end
+    new_row = clamp_cursor_up(row, lines, top)
 
     {:ok, Emulator.move_cursor(emulator, col, new_row)}
   end
@@ -83,12 +78,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     {row, col} = Emulator.get_cursor_position(emulator)
     {_top, bottom} = get_scroll_region(emulator)
 
-    new_row =
-      if row + lines > bottom do
-        bottom
-      else
-        row + lines
-      end
+    new_row = clamp_cursor_down(row, lines, bottom)
 
     {:ok, Emulator.move_cursor(emulator, col, new_row)}
   end
@@ -110,12 +100,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     cols = Enum.at(params, 0, 1)
     {row, col} = Emulator.get_cursor_position(emulator)
 
-    new_col =
-      if col - cols < 0 do
-        0
-      else
-        col - cols
-      end
+    new_col = clamp_cursor_left(col, cols)
 
     {:ok, Emulator.move_cursor(emulator, new_col, row)}
   end
@@ -129,12 +114,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     {row, _col} = Emulator.get_cursor_position(emulator)
     {_top, bottom} = get_scroll_region(emulator)
 
-    new_row =
-      if row + lines > bottom do
-        bottom
-      else
-        row + lines
-      end
+    new_row = clamp_cursor_down(row, lines, bottom)
 
     {:ok, Emulator.move_cursor(emulator, 0, new_row)}
   end
@@ -148,12 +128,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     {row, _col} = Emulator.get_cursor_position(emulator)
     {top, _bottom} = get_scroll_region(emulator)
 
-    new_row =
-      if row - lines < top do
-        top
-      else
-        row - lines
-      end
+    new_row = clamp_cursor_up(row, lines, top)
 
     {:ok, Emulator.move_cursor(emulator, 0, new_row)}
   end
@@ -197,12 +172,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     cols = Enum.at(params, 0, 1)
     {row, col} = Emulator.get_cursor_position(emulator)
 
-    new_col =
-      if col + cols > emulator.width - 1 do
-        emulator.width - 1
-      else
-        col + cols
-      end
+    new_col = clamp_cursor_right(col, cols, emulator.width - 1)
 
     {:ok, Emulator.move_cursor(emulator, new_col, row)}
   end
@@ -383,18 +353,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     {row, col} = Emulator.get_cursor_position(emulator)
     tab_stops = emulator.tab_stops
 
-    new_col =
-      if col > 0 do
-        col - 1
-      else
-        emulator.width - 1
-      end
+    new_col = wrap_cursor_backward(col, emulator.width - 1)
 
-    if MapSet.member?(tab_stops, {new_col, row}) do
-      {:ok, Emulator.move_cursor(emulator, new_col, row)}
-    else
-      {:ok, emulator}
-    end
+    move_cursor_if_tab_stop(emulator, tab_stops, new_col, row)
   end
 
   @doc """
@@ -433,12 +394,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     lines = Enum.at(params, 0, 1)
     {row, col} = Emulator.get_cursor_position(emulator)
 
-    new_row =
-      if row + lines > emulator.height - 1 do
-        emulator.height - 1
-      else
-        row + lines
-      end
+    new_row = clamp_cursor_down(row, lines, emulator.height - 1)
 
     {:ok, Emulator.move_cursor(emulator, col, new_row)}
   end
@@ -542,12 +498,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   defp move_cursor_horizontally(emulator, cols, :relative) do
     {row, col} = Emulator.get_cursor_position(emulator)
 
-    new_col =
-      if col + cols > emulator.width - 1 do
-        emulator.width - 1
-      else
-        col + cols
-      end
+    new_col = clamp_cursor_right(col, cols, emulator.width - 1)
 
     {:ok, Emulator.move_cursor(emulator, new_col, row)}
   end
@@ -559,15 +510,12 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     buffer = emulator.main_screen_buffer
     cursor = buffer.cursor
 
-    if cursor.y >= buffer.height - 1 do
-      # Use ScreenBuffer.scroll_down since we have a ScreenBuffer struct
-      new_buffer = ScreenBuffer.scroll_down(buffer, 1)
-      %{emulator | main_screen_buffer: new_buffer}
-    else
-      new_cursor = %{cursor | y: cursor.y + 1}
-      new_buffer = %{buffer | cursor: new_cursor}
-      %{emulator | main_screen_buffer: new_buffer}
-    end
+    handle_cursor_at_bottom_scroll_or_move(
+      emulator,
+      buffer,
+      cursor,
+      cursor.y >= buffer.height - 1
+    )
   end
 
   @doc """
@@ -577,16 +525,12 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     buffer = emulator.main_screen_buffer
     cursor = buffer.cursor
 
-    if cursor.y >= buffer.height - 1 do
-      # Use ScreenBuffer.scroll_down since we have a ScreenBuffer struct
-      new_buffer = ScreenBuffer.scroll_down(buffer, 1)
-      new_cursor = %{new_buffer.cursor | x: 0}
-      %{emulator | main_screen_buffer: %{new_buffer | cursor: new_cursor}}
-    else
-      new_cursor = %{cursor | x: 0, y: cursor.y + 1}
-      new_buffer = %{buffer | cursor: new_cursor}
-      %{emulator | main_screen_buffer: new_buffer}
-    end
+    handle_next_line_scroll_or_move(
+      emulator,
+      buffer,
+      cursor,
+      cursor.y >= buffer.height - 1
+    )
   end
 
   @doc """
@@ -596,14 +540,71 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     buffer = emulator.main_screen_buffer
     cursor = buffer.cursor
 
-    if cursor.y <= 0 do
-      # Use ScreenBuffer.scroll_up since we have a ScreenBuffer struct
-      {new_buffer, _scrolled_lines} = ScreenBuffer.scroll_up(buffer, 1)
-      %{emulator | main_screen_buffer: new_buffer}
-    else
-      new_cursor = %{cursor | y: cursor.y - 1}
-      new_buffer = %{buffer | cursor: new_cursor}
-      %{emulator | main_screen_buffer: new_buffer}
+    handle_cursor_at_top_scroll_or_move(emulator, buffer, cursor, cursor.y <= 0)
+  end
+
+  ## Helper functions for refactored if statements
+
+  defp clamp_cursor_up(row, lines, top) when row - lines < top, do: top
+  defp clamp_cursor_up(row, lines, _top), do: row - lines
+
+  defp clamp_cursor_down(row, lines, bottom) when row + lines > bottom,
+    do: bottom
+
+  defp clamp_cursor_down(row, lines, _bottom), do: row + lines
+
+  defp clamp_cursor_left(col, cols) when col - cols < 0, do: 0
+  defp clamp_cursor_left(col, cols), do: col - cols
+
+  defp clamp_cursor_right(col, cols, max_width) when col + cols > max_width,
+    do: max_width
+
+  defp clamp_cursor_right(col, cols, _max_width), do: col + cols
+
+  defp wrap_cursor_backward(col, max_width) when col > 0, do: col - 1
+  defp wrap_cursor_backward(_col, max_width), do: max_width
+
+  defp move_cursor_if_tab_stop(emulator, tab_stops, new_col, row) do
+    case MapSet.member?(tab_stops, {new_col, row}) do
+      true -> {:ok, Emulator.move_cursor(emulator, new_col, row)}
+      false -> {:ok, emulator}
     end
+  end
+
+  defp handle_cursor_at_bottom_scroll_or_move(emulator, buffer, cursor, true) do
+    # Use ScreenBuffer.scroll_down since we have a ScreenBuffer struct
+    new_buffer = ScreenBuffer.scroll_down(buffer, 1)
+    %{emulator | main_screen_buffer: new_buffer}
+  end
+
+  defp handle_cursor_at_bottom_scroll_or_move(emulator, buffer, cursor, false) do
+    new_cursor = %{cursor | y: cursor.y + 1}
+    new_buffer = %{buffer | cursor: new_cursor}
+    %{emulator | main_screen_buffer: new_buffer}
+  end
+
+  defp handle_next_line_scroll_or_move(emulator, buffer, cursor, true) do
+    # Use ScreenBuffer.scroll_down since we have a ScreenBuffer struct
+    new_buffer = ScreenBuffer.scroll_down(buffer, 1)
+    new_cursor = %{new_buffer.cursor | x: 0}
+    %{emulator | main_screen_buffer: %{new_buffer | cursor: new_cursor}}
+  end
+
+  defp handle_next_line_scroll_or_move(emulator, buffer, cursor, false) do
+    new_cursor = %{cursor | x: 0, y: cursor.y + 1}
+    new_buffer = %{buffer | cursor: new_cursor}
+    %{emulator | main_screen_buffer: new_buffer}
+  end
+
+  defp handle_cursor_at_top_scroll_or_move(emulator, buffer, cursor, true) do
+    # Use ScreenBuffer.scroll_up since we have a ScreenBuffer struct
+    {new_buffer, _scrolled_lines} = ScreenBuffer.scroll_up(buffer, 1)
+    %{emulator | main_screen_buffer: new_buffer}
+  end
+
+  defp handle_cursor_at_top_scroll_or_move(emulator, buffer, cursor, false) do
+    new_cursor = %{cursor | y: cursor.y - 1}
+    new_buffer = %{buffer | cursor: new_cursor}
+    %{emulator | main_screen_buffer: new_buffer}
   end
 end

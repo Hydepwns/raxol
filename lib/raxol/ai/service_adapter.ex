@@ -150,38 +150,8 @@ defmodule Raxol.AI.ServiceAdapter do
            # Implementation for OpenAI API
            api_key = Application.get_env(:raxol, :openai_api_key)
 
-           if api_key do
-             case HTTPoison.post(
-                    "https://api.openai.com/v1/completions",
-                    Jason.encode!(%{
-                      model: "gpt-3.5-turbo-instruct",
-                      prompt: prompt,
-                      max_tokens: Map.get(options, :max_tokens, 100),
-                      temperature: Map.get(options, :temperature, 0.7)
-                    }),
-                    [
-                      {"Content-Type", "application/json"},
-                      {"Authorization", "Bearer #{api_key}"}
-                    ]
-                  ) do
-               {:ok, %{status_code: 200, body: body}} ->
-                 case Jason.decode(body) do
-                   {:ok, %{"choices" => [%{"text" => text} | _]}} ->
-                     {:ok, String.trim(text)}
-
-                   _ ->
-                     {:error, :invalid_response}
-                 end
-
-               {:ok, %{status_code: status}} ->
-                 {:error, {:http_error, status}}
-
-               {:error, reason} ->
-                 {:error, reason}
-             end
-           else
-             {:error, :api_key_not_configured}
-           end
+           api_key = Application.get_env(:raxol, :openai_api_key)
+           make_openai_request(api_key, prompt, options)
          end) do
       {:ok, result} -> result
       {:error, _reason} -> {:error, :service_unavailable}
@@ -193,38 +163,8 @@ defmodule Raxol.AI.ServiceAdapter do
            # Implementation for Anthropic Claude API
            api_key = Application.get_env(:raxol, :anthropic_api_key)
 
-           if api_key do
-             case HTTPoison.post(
-                    "https://api.anthropic.com/v1/messages",
-                    Jason.encode!(%{
-                      model: "claude-3-haiku-20240307",
-                      max_tokens: Map.get(options, :max_tokens, 100),
-                      messages: [%{role: "user", content: prompt}]
-                    }),
-                    [
-                      {"Content-Type", "application/json"},
-                      {"x-api-key", api_key},
-                      {"anthropic-version", "2023-06-01"}
-                    ]
-                  ) do
-               {:ok, %{status_code: 200, body: body}} ->
-                 case Jason.decode(body) do
-                   {:ok, %{"content" => [%{"text" => text} | _]}} ->
-                     {:ok, String.trim(text)}
-
-                   _ ->
-                     {:error, :invalid_response}
-                 end
-
-               {:ok, %{status_code: status}} ->
-                 {:error, {:http_error, status}}
-
-               {:error, reason} ->
-                 {:error, reason}
-             end
-           else
-             {:error, :api_key_not_configured}
-           end
+           api_key = Application.get_env(:raxol, :anthropic_api_key)
+           make_anthropic_request(api_key, prompt, options)
          end) do
       {:ok, result} -> result
       {:error, _reason} -> {:error, :service_unavailable}
@@ -298,7 +238,7 @@ defmodule Raxol.AI.ServiceAdapter do
 
     Enum.find_value(patterns, "Review and optimize this area", fn {pattern,
                                                                    suggestion} ->
-      if line =~ pattern, do: suggestion
+      check_pattern_match(line, pattern, suggestion)
     end)
   end
 
@@ -316,7 +256,7 @@ defmodule Raxol.AI.ServiceAdapter do
       response_patterns,
       "AI-generated response for: #{String.slice(prompt, 0, max_length)}",
       fn {pattern, response} ->
-        if downcase_prompt =~ pattern, do: response
+        check_prompt_match(downcase_prompt, pattern, response)
       end
     )
   end
@@ -344,6 +284,84 @@ defmodule Raxol.AI.ServiceAdapter do
 
       nil ->
         acc
+    end
+  end
+
+  defp make_openai_request(nil, _prompt, _options), do: {:error, :api_key_not_configured}
+  defp make_openai_request(api_key, prompt, options) do
+    case HTTPoison.post(
+           "https://api.openai.com/v1/completions",
+           Jason.encode!(%{
+             model: "gpt-3.5-turbo-instruct",
+             prompt: prompt,
+             max_tokens: Map.get(options, :max_tokens, 100),
+             temperature: Map.get(options, :temperature, 0.7)
+           }),
+           [
+             {"Content-Type", "application/json"},
+             {"Authorization", "Bearer #{api_key}"}
+           ]
+         ) do
+      {:ok, %{status_code: 200, body: body}} ->
+        case Jason.decode(body) do
+          {:ok, %{"choices" => [%{"text" => text} | _]}} ->
+            {:ok, String.trim(text)}
+
+          _ ->
+            {:error, :invalid_response}
+        end
+
+      {:ok, %{status_code: status}} ->
+        {:error, {:http_error, status}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp make_anthropic_request(nil, _prompt, _options), do: {:error, :api_key_not_configured}
+  defp make_anthropic_request(api_key, prompt, options) do
+    case HTTPoison.post(
+           "https://api.anthropic.com/v1/messages",
+           Jason.encode!(%{
+             model: "claude-3-haiku-20240307",
+             max_tokens: Map.get(options, :max_tokens, 100),
+             messages: [%{role: "user", content: prompt}]
+           }),
+           [
+             {"Content-Type", "application/json"},
+             {"x-api-key", api_key},
+             {"anthropic-version", "2023-06-01"}
+           ]
+         ) do
+      {:ok, %{status_code: 200, body: body}} ->
+        case Jason.decode(body) do
+          {:ok, %{"content" => [%{"text" => text} | _]}} ->
+            {:ok, String.trim(text)}
+
+          _ ->
+            {:error, :invalid_response}
+        end
+
+      {:ok, %{status_code: status}} ->
+        {:error, {:http_error, status}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp check_pattern_match(line, pattern, suggestion) do
+    case line =~ pattern do
+      true -> suggestion
+      false -> nil
+    end
+  end
+
+  defp check_prompt_match(downcase_prompt, pattern, response) do
+    case downcase_prompt =~ pattern do
+      true -> response
+      false -> nil
     end
   end
 end

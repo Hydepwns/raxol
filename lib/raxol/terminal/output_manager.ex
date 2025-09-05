@@ -304,19 +304,7 @@ defmodule Raxol.Terminal.OutputManager do
   defp format_control_char(char) do
     case Map.get(@control_char_map, char) do
       nil ->
-        case ErrorHandling.safe_call(fn ->
-               if byte_size(char) == 1 do
-                 <<c::utf8>> = char
-
-                 if c < 32 do
-                   "\\x#{:io_lib.format("~2.16.0b", [c])}"
-                 else
-                   char
-                 end
-               else
-                 char
-               end
-             end) do
+        case ErrorHandling.safe_call(fn -> process_unmapped_char(char) end) do
           {:ok, result} -> result
           {:error, _} -> char
         end
@@ -325,6 +313,23 @@ defmodule Raxol.Terminal.OutputManager do
         formatted
     end
   end
+
+  defp process_unmapped_char(char) do
+    handle_char_by_size(byte_size(char) == 1, char)
+  end
+
+  defp handle_char_by_size(true, char) do
+    <<c::utf8>> = char
+    format_single_byte_char(c < 32, c, char)
+  end
+
+  defp handle_char_by_size(false, char), do: char
+
+  defp format_single_byte_char(true, c, _char) do
+    "\\x#{:io_lib.format("~2.16.0b", [c])}"
+  end
+
+  defp format_single_byte_char(false, _c, char), do: char
 
   @doc """
   Formats Unicode characters for display.

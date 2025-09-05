@@ -21,18 +21,43 @@ defmodule Raxol.Terminal.Extension.CommandHandler do
   # Private functions
 
   defp handle_command_execution(extension, extension_id, command, args, state) do
-    if command in extension.commands do
-      case do_execute_command(extension, command, args) do
-        {:ok, result} ->
-          {:ok, result}
+    validate_and_execute_command(
+      command in extension.commands,
+      extension,
+      extension_id,
+      command,
+      args,
+      state
+    )
+  end
 
-        {:error, reason} ->
-          new_extension = %{extension | status: :error, error: reason}
-          _new_state = put_in(state.extensions[extension_id], new_extension)
-          {:error, reason}
-      end
-    else
-      {:error, :command_not_found}
+  defp validate_and_execute_command(
+         false,
+         _extension,
+         _extension_id,
+         _command,
+         _args,
+         _state
+       ) do
+    {:error, :command_not_found}
+  end
+
+  defp validate_and_execute_command(
+         true,
+         extension,
+         extension_id,
+         command,
+         args,
+         state
+       ) do
+    case do_execute_command(extension, command, args) do
+      {:ok, result} ->
+        {:ok, result}
+
+      {:error, reason} ->
+        new_extension = %{extension | status: :error, error: reason}
+        _new_state = put_in(state.extensions[extension_id], new_extension)
+        {:error, reason}
     end
   end
 
@@ -63,35 +88,47 @@ defmodule Raxol.Terminal.Extension.CommandHandler do
   end
 
   defp execute_by_type(module, :script, command, args) do
-    if function_exported?(module, :execute_command, 2) do
-      module.execute_command(command, args)
-    else
-      {:error, :command_not_implemented}
-    end
+    execute_if_exported(
+      function_exported?(module, :execute_command, 2),
+      module,
+      :execute_command,
+      [command, args]
+    )
   end
 
   defp execute_by_type(module, :plugin, command, args) do
-    if function_exported?(module, :run_extension, 2) do
-      module.run_extension(command, args)
-    else
-      {:error, :command_not_implemented}
-    end
+    execute_if_exported(
+      function_exported?(module, :run_extension, 2),
+      module,
+      :run_extension,
+      [command, args]
+    )
   end
 
   defp execute_by_type(module, :theme, _command, args) do
-    if function_exported?(module, :apply_theme, 1) do
-      module.apply_theme(args)
-    else
-      {:error, :command_not_implemented}
-    end
+    execute_if_exported(
+      function_exported?(module, :apply_theme, 1),
+      module,
+      :apply_theme,
+      [args]
+    )
   end
 
   defp execute_by_type(module, :custom, command, args) do
-    if function_exported?(module, :execute_feature, 2) do
-      module.execute_feature(command, args)
-    else
-      {:error, :command_not_implemented}
-    end
+    execute_if_exported(
+      function_exported?(module, :execute_feature, 2),
+      module,
+      :execute_feature,
+      [command, args]
+    )
+  end
+
+  defp execute_if_exported(true, module, function, args) do
+    apply(module, function, args)
+  end
+
+  defp execute_if_exported(false, _module, _function, _args) do
+    {:error, :command_not_implemented}
   end
 
   defp execute_fallback_command(extension, command, args) do

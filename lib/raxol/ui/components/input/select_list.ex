@@ -152,28 +152,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
     # If options change substantially, we may need to reset some state
     reset_state = %{}
 
-    reset_state =
-      if Map.has_key?(new_props, :options) and
-           new_props.options != state.options do
-        # Cancel any pending search timer
-        if state.search_timer do
-          Process.cancel_timer(state.search_timer)
-        end
-
-        Map.merge(reset_state, %{
-          filtered_options: nil,
-          is_filtering: false,
-          search_text: "",
-          search_buffer: "",
-          search_timer: nil,
-          # Preserve selection if possible, otherwise reset
-          focused_index: 0,
-          scroll_offset: 0,
-          current_page: 0
-        })
-      else
-        reset_state
-      end
+    reset_state = handle_options_change(new_props, state, reset_state)
 
     # Merge everything together, with new_props taking precedence
     updated_state = Map.merge(state, reset_state)
@@ -182,9 +161,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   def update({:search, search_text}, state) do
     # Cancel any existing timer
-    if state.search_timer do
-      Process.cancel_timer(state.search_timer)
-    end
+    cancel_timer_if_present(state.search_timer)
 
     # Schedule new search
     timer_id = System.unique_integer([:positive])
@@ -216,29 +193,13 @@ defmodule Raxol.UI.Components.Input.SelectList do
   def update({:set_focus, has_focus}, state) do
     new_state = %{state | has_focus: has_focus}
 
-    if has_focus and state.on_focus do
-      state.on_focus.(state.focused_index)
-    end
+    trigger_focus_callback_if_needed(has_focus, state)
 
     {new_state, nil}
   end
 
   def update({:toggle_search_focus}, state) do
-    if state.enable_search do
-      new_state = %{state | is_search_focused: !state.is_search_focused}
-
-      cleared_state = %{
-        new_state
-        | search_text: "",
-          search_buffer: "",
-          filtered_options: nil,
-          is_filtering: false
-      }
-
-      {cleared_state, nil}
-    else
-      {state, nil}
-    end
+    toggle_search_focus_if_enabled(state)
   end
 
   def update({:set_visible_height, height}, state) do
@@ -270,7 +231,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
     do: init(%{options: []})
 
   defp normalize_state(%{} = state) do
-    if Map.has_key?(state, :options), do: state, else: init(%{options: []})
+    ensure_options_present(state)
   end
 
   defp do_update({:update_props, new_props}, state),
@@ -354,11 +315,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
     index = y
     effective_options = Pagination.get_effective_options(state)
 
-    if index >= 0 and index < length(effective_options) do
-      handle_option_click(state, index)
-    else
-      {state, nil}
-    end
+    handle_option_click_if_valid(state, index, effective_options)
   end
 
   defp handle_mouse_click(_y, state), do: {state, nil}
@@ -401,13 +358,9 @@ defmodule Raxol.UI.Components.Input.SelectList do
   # --- Private Helper Functions ---
 
   defp validate_props!(props) do
-    if not Map.has_key?(props, :options) do
-      raise ArgumentError, "SelectList requires :options prop"
-    end
+    validate_options_prop_presence(props)
 
-    if not is_list(props.options) do
-      raise ArgumentError, "SelectList :options must be a list"
-    end
+    validate_options_prop_type(props.options)
 
     # Validate each option
     Enum.each(props.options, &validate_option!/1)
@@ -428,16 +381,11 @@ defmodule Raxol.UI.Components.Input.SelectList do
   end
 
   defp validate_label!(label) do
-    if not is_binary(label) do
-      raise ArgumentError, "SelectList option labels must be strings"
-    end
+    validate_label_type(label)
   end
 
   defp validate_style!(style) do
-    if not is_map(style) do
-      raise ArgumentError,
-            "SelectList option style (third element) must be a map"
-    end
+    validate_style_type(style)
   end
 
   defp ensure_state(state), do: normalize_state(state)
@@ -510,11 +458,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
   defp classify_key(key, state) do
     key_type = get_key_type(key)
 
-    if key_type == :unknown and character_key?(key, state) do
-      :character
-    else
-      key_type
-    end
+    classify_unknown_key(key_type, key, state)
   end
 
   defp get_key_type(key) do
@@ -539,36 +483,152 @@ defmodule Raxol.UI.Components.Input.SelectList do
   end
 
   defp handle_tab_key(state) do
-    if state.enable_search do
-      new_state = %{state | is_search_focused: !state.is_search_focused}
-
-      cleared_state = %{
-        new_state
-        | search_text: "",
-          search_buffer: "",
-          filtered_options: nil,
-          is_filtering: false
-      }
-
-      {cleared_state, nil}
-    else
-      {state, nil}
-    end
+    toggle_search_if_enabled(state)
   end
 
   defp handle_backspace_key(state) do
-    if state.is_search_focused and state.search_buffer != "" do
-      new_buffer =
-        String.slice(
-          state.search_buffer,
-          0,
-          String.length(state.search_buffer) - 1
-        )
+    handle_backspace_if_applicable(state)
+  end
 
-      {new_state, _} = update({:search, new_buffer}, state)
-      {new_state, nil}
-    else
-      {state, nil}
+  ## Helper functions for refactored if statements
+
+  defp handle_options_change(new_props, state, reset_state) do
+    case {Map.has_key?(new_props, :options),
+          new_props[:options] != state[:options]} do
+      {true, true} ->
+        # Cancel any pending search timer
+        cancel_timer_if_present(state.search_timer)
+
+        Map.merge(reset_state, %{
+          filtered_options: nil,
+          is_filtering: false,
+          search_text: "",
+          search_buffer: "",
+          search_timer: nil,
+          # Preserve selection if possible, otherwise reset
+          focused_index: 0,
+          scroll_offset: 0,
+          current_page: 0
+        })
+
+      _ ->
+        reset_state
     end
+  end
+
+  defp cancel_timer_if_present(nil), do: :ok
+
+  defp cancel_timer_if_present(timer_id) do
+    Process.cancel_timer(timer_id)
+  end
+
+  defp trigger_focus_callback_if_needed(true, %{on_focus: callback} = state)
+       when is_function(callback) do
+    callback.(state.focused_index)
+  end
+
+  defp trigger_focus_callback_if_needed(_has_focus, _state), do: :ok
+
+  defp toggle_search_focus_if_enabled(%{enable_search: true} = state) do
+    new_state = %{state | is_search_focused: !state.is_search_focused}
+
+    cleared_state = %{
+      new_state
+      | search_text: "",
+        search_buffer: "",
+        filtered_options: nil,
+        is_filtering: false
+    }
+
+    {cleared_state, nil}
+  end
+
+  defp toggle_search_focus_if_enabled(state) do
+    {state, nil}
+  end
+
+  defp ensure_options_present(%{options: _} = state), do: state
+  defp ensure_options_present(_state), do: init(%{options: []})
+
+  defp handle_option_click_if_valid(state, index, effective_options)
+       when index >= 0 and index < length(effective_options) do
+    handle_option_click(state, index)
+  end
+
+  defp handle_option_click_if_valid(state, _index, _effective_options) do
+    {state, nil}
+  end
+
+  defp validate_options_prop_presence(%{options: _}), do: :ok
+
+  defp validate_options_prop_presence(_props) do
+    raise ArgumentError, "SelectList requires :options prop"
+  end
+
+  defp validate_options_prop_type(options) when is_list(options), do: :ok
+
+  defp validate_options_prop_type(_options) do
+    raise ArgumentError, "SelectList :options must be a list"
+  end
+
+  defp validate_label_type(label) when is_binary(label), do: :ok
+
+  defp validate_label_type(_label) do
+    raise ArgumentError, "SelectList option labels must be strings"
+  end
+
+  defp validate_style_type(style) when is_map(style), do: :ok
+
+  defp validate_style_type(_style) do
+    raise ArgumentError,
+          "SelectList option style (third element) must be a map"
+  end
+
+  defp classify_unknown_key(:unknown, key, state) do
+    case character_key?(key, state) do
+      true -> :character
+      false -> :unknown
+    end
+  end
+
+  defp classify_unknown_key(key_type, _key, _state) do
+    key_type
+  end
+
+  defp toggle_search_if_enabled(%{enable_search: true} = state) do
+    new_state = %{state | is_search_focused: !state.is_search_focused}
+
+    cleared_state = %{
+      new_state
+      | search_text: "",
+        search_buffer: "",
+        filtered_options: nil,
+        is_filtering: false
+    }
+
+    {cleared_state, nil}
+  end
+
+  defp toggle_search_if_enabled(state) do
+    {state, nil}
+  end
+
+  defp handle_backspace_if_applicable(
+         %{is_search_focused: true, search_buffer: buffer} = state
+       )
+       when buffer != "" do
+    new_buffer =
+      String.slice(
+        state.search_buffer,
+        0,
+        String.length(state.search_buffer) - 1
+      )
+
+    {new_state, _} = update({:search, new_buffer}, state)
+    {new_state, nil}
+  end
+
+  defp handle_backspace_if_applicable(state) do
+    {state, nil}
   end
 end

@@ -83,16 +83,17 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     # Find URLs using a simple regex (could be more robust)
     url_regex = ~r{(https?://[\w./?=&\-]+)}
 
-    if String.contains?(output, "http://") or
+    case String.contains?(output, "http://") or
          String.contains?(output, "https://") do
-      modified_output =
-        String.replace(output, url_regex, fn url ->
-          create_hyperlink(url)
-        end)
+      true ->
+        modified_output =
+          String.replace(output, url_regex, fn url ->
+            create_hyperlink(url)
+          end)
 
-      {:ok, plugin_state, modified_output}
-    else
-      {:ok, plugin_state}
+        {:ok, plugin_state, modified_output}
+      false ->
+        {:ok, plugin_state}
     end
   end
 

@@ -291,14 +291,16 @@ defmodule Raxol.Terminal.TerminalProcess do
 
     # Update emulator if dimensions changed
     new_state =
-      if Enum.any?(changes, fn c -> c.field in [:width, :height] end) do
-        case update_emulator_dimensions(new_state) do
-          {:ok, updated_state} -> updated_state
-          # Keep old state on error
-          {:error, _reason} -> new_state
-        end
-      else
-        new_state
+      case Enum.any?(changes, fn c -> c.field in [:width, :height] end) do
+        true ->
+          case update_emulator_dimensions(new_state) do
+            {:ok, updated_state} -> updated_state
+            # Keep old state on error
+            {:error, _reason} -> new_state
+          end
+        
+        false ->
+          new_state
       end
 
     {:ok, new_state}
@@ -350,17 +352,15 @@ defmodule Raxol.Terminal.TerminalProcess do
 
     # Update theme-related settings
     new_config =
-      if theme.font_settings do
-        Map.put(new_config, :font_settings, theme.font_settings)
-      else
-        new_config
+      case theme.font_settings do
+        nil -> new_config
+        font_settings -> Map.put(new_config, :font_settings, font_settings)
       end
 
     new_config =
-      if theme.accessibility_options do
-        Map.put(new_config, :accessibility_options, theme.accessibility_options)
-      else
-        new_config
+      case theme.accessibility_options do
+        nil -> new_config
+        accessibility_options -> Map.put(new_config, :accessibility_options, accessibility_options)
       end
 
     new_state = %{state | config: new_config, version: state.version + 1}

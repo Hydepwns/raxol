@@ -103,15 +103,17 @@ defmodule Raxol.UI.Components.Input.TextInput do
     updated_state = Map.merge(state, Map.new(new_props))
 
     # Handle cursor position when value changes
-    if Map.has_key?(new_props, :value) do
-      new_value = new_props.value
-      value_length = String.length(new_value)
+    has_value = Map.has_key?(new_props, :value)
+    handle_value_update(has_value, updated_state, new_props)
+  end
 
-      # Move cursor to end of new value
-      %{updated_state | cursor_pos: value_length}
-    else
-      updated_state
-    end
+  defp handle_value_update(false, updated_state, _new_props), do: updated_state
+
+  defp handle_value_update(true, updated_state, new_props) do
+    new_value = new_props.value
+    value_length = String.length(new_value)
+    # Move cursor to end of new value
+    %{updated_state | cursor_pos: value_length}
   end
 
   def update(message, state) do
@@ -145,14 +147,8 @@ defmodule Raxol.UI.Components.Input.TextInput do
     value = state.value
     placeholder = state.placeholder
 
-    masked_text =
-      if state.mask_char do
-        String.duplicate(state.mask_char, String.length(value))
-      else
-        value
-      end
-
-    display_text = if(value == "", do: placeholder, else: masked_text)
+    masked_text = get_masked_text(state.mask_char, value)
+    display_text = get_display_text(value == "", placeholder, masked_text)
 
     merged_style =
       Map.merge(state.theme[:input] || %{}, state.style[:input] || %{})
@@ -165,6 +161,15 @@ defmodule Raxol.UI.Components.Input.TextInput do
       style: merged_style
     }
   end
+
+  defp get_masked_text(nil, value), do: value
+
+  defp get_masked_text(mask_char, value) do
+    String.duplicate(mask_char, String.length(value))
+  end
+
+  defp get_display_text(true, placeholder, _masked_text), do: placeholder
+  defp get_display_text(false, _placeholder, masked_text), do: masked_text
 end
 
 defmodule Raxol.UI.Components.Input.TextInput.KeyHandler do
@@ -202,11 +207,14 @@ defmodule Raxol.UI.Components.Input.TextInput.KeyHandler do
   def handle_key(state, _key, _modifiers), do: {state, []}
 
   defp handle_enter(state) do
-    if is_function(state.on_submit, 1) do
-      state.on_submit.(state.value)
-    end
-
+    handle_submit_callback(is_function(state.on_submit, 1), state)
     {state, []}
+  end
+
+  defp handle_submit_callback(false, _state), do: :ok
+
+  defp handle_submit_callback(true, state) do
+    state.on_submit.(state.value)
   end
 
   defp handle_escape(state) do
@@ -219,25 +227,30 @@ defmodule Raxol.UI.Components.Input.TextInput.NavigationHandler do
   @moduledoc false
 
   def handle_left(state) do
-    if state.cursor_pos > 0 do
-      new_cursor_pos = state.cursor_pos - 1
-      new_state = %{state | cursor_pos: new_cursor_pos}
-      {new_state, []}
-    else
-      {state, []}
-    end
+    can_move = state.cursor_pos > 0
+    handle_left_movement(can_move, state)
+  end
+
+  defp handle_left_movement(false, state), do: {state, []}
+
+  defp handle_left_movement(true, state) do
+    new_cursor_pos = state.cursor_pos - 1
+    new_state = %{state | cursor_pos: new_cursor_pos}
+    {new_state, []}
   end
 
   def handle_right(state) do
     current_value = state.value || ""
+    can_move = state.cursor_pos < String.length(current_value)
+    handle_right_movement(can_move, state)
+  end
 
-    if state.cursor_pos < String.length(current_value) do
-      new_cursor_pos = state.cursor_pos + 1
-      new_state = %{state | cursor_pos: new_cursor_pos}
-      {new_state, []}
-    else
-      {state, []}
-    end
+  defp handle_right_movement(false, state), do: {state, []}
+
+  defp handle_right_movement(true, state) do
+    new_cursor_pos = state.cursor_pos + 1
+    new_state = %{state | cursor_pos: new_cursor_pos}
+    {new_state, []}
   end
 
   def handle_home(state) do
@@ -258,40 +271,52 @@ defmodule Raxol.UI.Components.Input.TextInput.EditingHandler do
   def handle_backspace(state) do
     current_pos = state.cursor_pos
     current_value = state.value || ""
+    can_delete = current_pos > 0
+    handle_backspace_operation(can_delete, state, current_pos, current_value)
+  end
 
-    if current_pos > 0 do
-      before_part = String.slice(current_value, 0..(current_pos - 2))
-      remaining_part = String.slice(current_value, current_pos..-1//1)
-      before = before_part || ""
-      remaining = remaining_part || ""
-      new_value = before <> remaining
-      new_state = %{state | cursor_pos: current_pos - 1, value: new_value}
-      emit_change_side_effect(state, new_value)
-      {new_state, []}
-    else
-      {state, []}
-    end
+  defp handle_backspace_operation(false, state, _current_pos, _current_value) do
+    {state, []}
+  end
+
+  defp handle_backspace_operation(true, state, current_pos, current_value) do
+    before_part = String.slice(current_value, 0..(current_pos - 2))
+    remaining_part = String.slice(current_value, current_pos..-1//1)
+    before = before_part || ""
+    remaining = remaining_part || ""
+    new_value = before <> remaining
+    new_state = %{state | cursor_pos: current_pos - 1, value: new_value}
+    emit_change_side_effect(state, new_value)
+    {new_state, []}
   end
 
   def handle_delete(state) do
     current_pos = state.cursor_pos
     current_value = state.value || ""
+    can_delete = current_pos < String.length(current_value)
+    handle_delete_operation(can_delete, state, current_pos, current_value)
+  end
 
-    if current_pos < String.length(current_value) do
-      before = String.slice(current_value, 0, current_pos)
-      after_text = String.slice(current_value, (current_pos + 1)..-1//1) || ""
-      new_value = before <> after_text
-      new_state = %{state | value: new_value}
-      emit_change_side_effect(state, new_value)
-      {new_state, []}
-    else
-      {state, []}
-    end
+  defp handle_delete_operation(false, state, _current_pos, _current_value) do
+    {state, []}
+  end
+
+  defp handle_delete_operation(true, state, current_pos, current_value) do
+    before = String.slice(current_value, 0, current_pos)
+    after_text = String.slice(current_value, (current_pos + 1)..-1//1) || ""
+    new_value = before <> after_text
+    new_state = %{state | value: new_value}
+    emit_change_side_effect(state, new_value)
+    {new_state, []}
   end
 
   defp emit_change_side_effect(state, new_value) do
-    if is_function(state.on_change, 1) do
-      state.on_change.(new_value)
-    end
+    handle_change_callback(is_function(state.on_change, 1), state, new_value)
+  end
+
+  defp handle_change_callback(false, _state, _new_value), do: :ok
+
+  defp handle_change_callback(true, state, new_value) do
+    state.on_change.(new_value)
   end
 end

@@ -38,7 +38,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextEditing do
         value: new_text
     }
 
-    if state.on_change, do: state.on_change.(new_text)
+    trigger_on_change(state.on_change, new_text)
     new_state
   end
 
@@ -51,31 +51,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextEditing do
     {start_pos, end_pos} =
       NavigationHelper.normalize_selection(state)
 
-    if start_pos == nil or end_pos == nil do
-      Raxol.Core.Runtime.Log.warning(
-        "Attempted to delete invalid selection: #{inspect(state.selection_start)} to #{inspect(state.selection_end)}"
-      )
-
-      {state, ""}
-    else
-      {new_text, deleted_text} =
-        TextOperations.replace_text_range(lines, start_pos, end_pos, "")
-
-      new_lines = String.split(new_text, "\n")
-      new_full_text_str = new_text
-
-      new_state = %MultiLineInput{
-        state
-        | lines: new_lines,
-          cursor_pos: start_pos,
-          selection_start: nil,
-          selection_end: nil,
-          value: new_full_text_str
-      }
-
-      if state.on_change, do: state.on_change.(new_full_text_str)
-      {new_state, deleted_text}
-    end
+    perform_deletion(start_pos, end_pos, state, lines)
   end
 
   @doc """
@@ -85,12 +61,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextEditing do
     %{lines: lines, cursor_pos: {row, col}} = state
 
     # Handle backspace at the beginning of the document
-    if at_document_start?(row, col) do
-      state
-    else
-      prev_position = calculate_previous_position(lines, row, col)
-      update_state_after_deletion(state, lines, prev_position, {row, col})
-    end
+    handle_backspace_position(row, col, state, lines)
   end
 
   @doc """
@@ -100,28 +71,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextEditing do
     %{lines: lines, cursor_pos: {row, col}} = state
     num_lines = length(lines)
 
-    if row >= num_lines or at_end_of_document?(lines, row, col) do
-      state
-    else
-      next_position = calculate_next_position(lines, row, col)
-
-      {new_text, _deleted_text} =
-        TextOperations.replace_text_range(lines, {row, col}, next_position, "")
-
-      new_lines = String.split(new_text, "\n")
-      new_full_text_str = new_text
-
-      new_state = %MultiLineInput{
-        state
-        | lines: new_lines,
-          selection_start: nil,
-          selection_end: nil,
-          value: new_full_text_str
-      }
-
-      if state.on_change, do: state.on_change.(new_full_text_str)
-      new_state
-    end
+    handle_delete_position(row, col, state, lines, num_lines)
   end
 
   # --- Private helper functions ---
@@ -145,12 +95,13 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextEditing do
     lines_in_inserted = String.split(char_binary, "\n")
     num_lines = length(lines_in_inserted)
 
-    if num_lines == 1 do
-      {row, col + String.length(char_binary)}
-    else
-      last_line_length = String.length(List.last(lines_in_inserted))
-      {row + num_lines - 1, last_line_length}
-    end
+    calculate_position_by_lines(
+      num_lines,
+      row,
+      col,
+      char_binary,
+      lines_in_inserted
+    )
   end
 
   defp at_end_of_document?(lines, row, col) do
@@ -165,23 +116,18 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextEditing do
     current_line_length = String.length(current_line)
     num_lines = length(lines)
 
-    if col == current_line_length and row < num_lines - 1 do
-      {row + 1, 0}
-    else
-      {row, col + 1}
-    end
+    calculate_next_position_by_line_end(
+      col,
+      current_line_length,
+      row,
+      num_lines
+    )
   end
 
   defp at_document_start?(row, col), do: row == 0 and col == 0
 
   defp calculate_previous_position(lines, row, col) do
-    if col == 0 and row > 0 do
-      prev_line = Enum.at(lines, row - 1)
-      prev_col = String.length(prev_line)
-      {row - 1, prev_col}
-    else
-      {row, col - 1}
-    end
+    calculate_prev_position_by_column(col, row, lines)
   end
 
   defp update_state_after_deletion(state, lines, start_pos, end_pos) do
@@ -200,7 +146,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextEditing do
         value: new_full_text_str
     }
 
-    if state.on_change, do: state.on_change.(new_full_text_str)
+    trigger_on_change(state.on_change, new_full_text_str)
     new_state
   end
 
@@ -208,20 +154,156 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextEditing do
   Calculates the new cursor position after inserting text.
   """
   def calculate_new_position(row, col, inserted_text) do
-    if inserted_text == "" do
-      {row, col}
-    else
-      lines = String.split(inserted_text, "\n", trim: false)
-      num_lines = length(lines)
+    calculate_position_after_insertion(inserted_text, row, col)
+  end
 
-      if num_lines == 1 do
+  # Helper functions to eliminate if statements
+
+  defp trigger_on_change(nil, _text), do: :ok
+  defp trigger_on_change(callback, text), do: callback.(text)
+
+  defp perform_deletion(nil, _end_pos, state, _lines) do
+    Raxol.Core.Runtime.Log.warning(
+      "Attempted to delete invalid selection: #{inspect(state.selection_start)} to #{inspect(state.selection_end)}"
+    )
+
+    {state, ""}
+  end
+
+  defp perform_deletion(_start_pos, nil, state, _lines) do
+    Raxol.Core.Runtime.Log.warning(
+      "Attempted to delete invalid selection: #{inspect(state.selection_start)} to #{inspect(state.selection_end)}"
+    )
+
+    {state, ""}
+  end
+
+  defp perform_deletion(start_pos, end_pos, state, lines) do
+    {new_text, deleted_text} =
+      TextOperations.replace_text_range(lines, start_pos, end_pos, "")
+
+    new_lines = String.split(new_text, "\n")
+    new_full_text_str = new_text
+
+    new_state = %MultiLineInput{
+      state
+      | lines: new_lines,
+        cursor_pos: start_pos,
+        selection_start: nil,
+        selection_end: nil,
+        value: new_full_text_str
+    }
+
+    trigger_on_change(state.on_change, new_full_text_str)
+    {new_state, deleted_text}
+  end
+
+  defp handle_backspace_position(row, col, state, _lines)
+       when row == 0 and col == 0 do
+    state
+  end
+
+  defp handle_backspace_position(row, col, state, lines) do
+    prev_position = calculate_previous_position(lines, row, col)
+    update_state_after_deletion(state, lines, prev_position, {row, col})
+  end
+
+  defp handle_delete_position(row, _col, state, _lines, num_lines)
+       when row >= num_lines do
+    state
+  end
+
+  defp handle_delete_position(row, col, state, lines, _num_lines) do
+    case at_end_of_document?(lines, row, col) do
+      true ->
+        state
+
+      false ->
+        next_position = calculate_next_position(lines, row, col)
+
+        {new_text, _deleted_text} =
+          TextOperations.replace_text_range(
+            lines,
+            {row, col},
+            next_position,
+            ""
+          )
+
+        new_lines = String.split(new_text, "\n")
+        new_full_text_str = new_text
+
+        new_state = %MultiLineInput{
+          state
+          | lines: new_lines,
+            selection_start: nil,
+            selection_end: nil,
+            value: new_full_text_str
+        }
+
+        trigger_on_change(state.on_change, new_full_text_str)
+        new_state
+    end
+  end
+
+  defp calculate_position_by_lines(1, row, col, char_binary, _lines_in_inserted) do
+    {row, col + String.length(char_binary)}
+  end
+
+  defp calculate_position_by_lines(
+         num_lines,
+         row,
+         _col,
+         _char_binary,
+         lines_in_inserted
+       ) do
+    last_line_length = String.length(List.last(lines_in_inserted))
+    {row + num_lines - 1, last_line_length}
+  end
+
+  defp calculate_next_position_by_line_end(
+         col,
+         current_line_length,
+         row,
+         num_lines
+       )
+       when col == current_line_length and row < num_lines - 1 do
+    {row + 1, 0}
+  end
+
+  defp calculate_next_position_by_line_end(
+         col,
+         _current_line_length,
+         row,
+         _num_lines
+       ) do
+    {row, col + 1}
+  end
+
+  defp calculate_prev_position_by_column(0, row, lines) when row > 0 do
+    prev_line = Enum.at(lines, row - 1)
+    prev_col = String.length(prev_line)
+    {row - 1, prev_col}
+  end
+
+  defp calculate_prev_position_by_column(col, row, _lines) do
+    {row, col - 1}
+  end
+
+  defp calculate_position_after_insertion("", row, col), do: {row, col}
+
+  defp calculate_position_after_insertion(inserted_text, row, col) do
+    lines = String.split(inserted_text, "\n", trim: false)
+    num_lines = length(lines)
+
+    case num_lines do
+      1 ->
         # Single line insertion
         {row, col + String.length(inserted_text)}
-      else
+
+      _ ->
         # Multi-line insertion
         last_line_len = String.length(List.last(lines))
         {row + num_lines - 1, last_line_len}
-      end
     end
   end
 end

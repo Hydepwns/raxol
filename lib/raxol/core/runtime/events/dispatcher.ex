@@ -65,9 +65,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
     send(runtime_pid, {:plugin_manager_ready, initial_state.plugin_manager})
 
-    if Mix.env() == :test do
-      send(self(), {:dispatcher_ready, self()})
-    end
+    send_test_ready_message(Mix.env())
 
     {:ok, state}
   end
@@ -137,12 +135,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     new_theme_id =
       Map.get(updated_model, :current_theme_id, state.current_theme_id)
 
-    if new_theme_id != state.current_theme_id do
-      :ok = UserPreferences.set("theme.active_id", new_theme_id)
-      %{state | model: updated_model, current_theme_id: new_theme_id}
-    else
-      %{state | model: updated_model}
-    end
+    apply_theme_update(new_theme_id == state.current_theme_id, state, updated_model, new_theme_id)
   end
 
   defp log_update_error(state, message, event, reason) do
@@ -257,17 +250,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       {:ok, new_state, _commands} ->
         # Broadcast event globally if successfully handled by app logic
         # Ensure event.type and event.data are appropriate for broadcast
-        if is_atom(event.type) and is_map(event.data) do
-          Raxol.Core.Runtime.Log.debug(
-            "[Dispatcher] Broadcasting event: #{inspect(event.type)} via internal broadcast"
-          )
-
-          _ = __MODULE__.broadcast(event.type, event.data)
-        else
-          Raxol.Core.Runtime.Log.warning(
-            "[Dispatcher] Event not broadcast due to invalid type/data: #{inspect(event)}"
-          )
-        end
+        broadcast_event_if_valid(event.type, event.data)
 
         {:noreply, new_state}
 
@@ -430,21 +413,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   defp do_dispatch_event(event, state) do
-    if state.debug_mode do
-      Raxol.Core.Runtime.Log.debug("Dispatching event: #{inspect(event)}")
-    end
-
-    if system_event?(event) do
-      process_system_event(event, state)
-    else
-      filtered_event = apply_plugin_filters(event, state)
-
-      if is_nil(filtered_event) do
-        {:ok, state}
-      else
-        handle_event(filtered_event, state)
-      end
-    end
+    log_debug_if_enabled(state.debug_mode, event)
+    route_event_by_type(system_event?(event), event, state)
   end
 
   defp system_event?(%Event{type: type}) do
@@ -485,6 +455,54 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp default_event_to_message(event) do
     {:event, event}
   end
+
+  # --- Command Processing ---
+
+  # --- Helper Functions for Pattern Matching ---
+
+  defp send_test_ready_message(:test), do: send(self(), {:dispatcher_ready, self()})
+  defp send_test_ready_message(_env), do: :ok
+
+  defp apply_theme_update(true, state, updated_model, _new_theme_id) do
+    %{state | model: updated_model}
+  end
+
+  defp apply_theme_update(false, state, updated_model, new_theme_id) do
+    :ok = UserPreferences.set("theme.active_id", new_theme_id)
+    %{state | model: updated_model, current_theme_id: new_theme_id}
+  end
+
+  defp broadcast_event_if_valid(event_type, event_data) 
+       when is_atom(event_type) and is_map(event_data) do
+    Raxol.Core.Runtime.Log.debug(
+      "[Dispatcher] Broadcasting event: #{inspect(event_type)} via internal broadcast"
+    )
+    _ = __MODULE__.broadcast(event_type, event_data)
+  end
+
+  defp broadcast_event_if_valid(event_type, event_data) do
+    Raxol.Core.Runtime.Log.warning(
+      "[Dispatcher] Event not broadcast due to invalid type/data: type=#{inspect(event_type)}, data=#{inspect(event_data)}"
+    )
+  end
+
+  defp log_debug_if_enabled(true, event) do
+    Raxol.Core.Runtime.Log.debug("Dispatching event: #{inspect(event)}")
+  end
+
+  defp log_debug_if_enabled(false, _event), do: :ok
+
+  defp route_event_by_type(true, event, state) do
+    process_system_event(event, state)
+  end
+
+  defp route_event_by_type(false, event, state) do
+    filtered_event = apply_plugin_filters(event, state)
+    handle_filtered_event(filtered_event, state)
+  end
+
+  defp handle_filtered_event(nil, state), do: {:ok, state}
+  defp handle_filtered_event(filtered_event, state), do: handle_event(filtered_event, state)
 
   # --- Command Processing ---
 

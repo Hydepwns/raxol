@@ -129,10 +129,9 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   defp handle_color_definition(rest, state) do
     case consume_integer_params(rest) do
       {:ok, [pc | color_params], remaining_data} ->
-        if color_params == [] do
-          handle_color_selection([pc], remaining_data, state)
-        else
-          handle_color_params(pc, color_params, remaining_data, state)
+        case color_params do
+          [] -> handle_color_selection([pc], remaining_data, state)
+          _ -> handle_color_params(pc, color_params, remaining_data, state)
         end
 
       {:ok, params, remaining_data} ->
@@ -149,33 +148,34 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   end
 
   defp handle_color_params(pc, color_params, remaining_data, state) do
-    if pc >= 0 and pc <= SixelPalette.max_colors() do
-      color_space = Enum.at(color_params, 0) || 1
-      px = Enum.at(color_params, 1) || 0
-      py = Enum.at(color_params, 2) || 0
-      pz = Enum.at(color_params, 3) || 0
+    case pc >= 0 and pc <= SixelPalette.max_colors() do
+      true ->
+        color_space = Enum.at(color_params, 0) || 1
+        px = Enum.at(color_params, 1) || 0
+        py = Enum.at(color_params, 2) || 0
+        pz = Enum.at(color_params, 3) || 0
 
-      case SixelPalette.convert_color(color_space, px, py, pz) do
-        {:ok, {r, g, b}} ->
-          new_palette = Map.put(state.palette, pc, {r, g, b})
+        case SixelPalette.convert_color(color_space, px, py, pz) do
+          {:ok, {r, g, b}} ->
+            new_palette = Map.put(state.palette, pc, {r, g, b})
 
-          parse(remaining_data, %{state | palette: new_palette, color_index: pc})
+            parse(remaining_data, %{state | palette: new_palette, color_index: pc})
 
-        {:error, reason} ->
-          Raxol.Core.Runtime.Log.warning_with_context(
-            "Sixel Parser: Invalid color definition ##{pc}: #{inspect(reason)}. Skipping.",
-            %{}
-          )
+          {:error, reason} ->
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "Sixel Parser: Invalid color definition ##{pc}: #{inspect(reason)}. Skipping.",
+              %{}
+            )
 
-          parse(remaining_data, state)
-      end
-    else
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "Sixel Parser: Invalid color index ##{pc}. Skipping.",
-        %{}
-      )
+            parse(remaining_data, state)
+        end
+      false ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Sixel Parser: Invalid color index ##{pc}. Skipping.",
+          %{}
+        )
 
-      parse(remaining_data, state)
+        parse(remaining_data, state)
     end
   end
 
@@ -300,10 +300,9 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
             parse(remaining_data, state)
 
           _ ->
-            if String.contains?(remaining_data, "\e\\") do
-              parse(remaining_data, state)
-            else
-              {:error, :missing_st}
+            case String.contains?(remaining_data, "\e\\") do
+              true -> parse(remaining_data, state)
+              false -> {:error, :missing_st}
             end
         end
     end
@@ -313,7 +312,10 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
     pixels =
       Enum.reduce(0..5, %{}, fn bit_index, acc ->
         set? = Bitwise.band(pattern_int, Bitwise.bsl(1, bit_index)) != 0
-        if set?, do: Map.put(acc, {x, y + bit_index}, color), else: acc
+        case set? do
+          true -> Map.put(acc, {x, y + bit_index}, color)
+          false -> acc
+        end
       end)
 
     {pixels, x, y + 5}

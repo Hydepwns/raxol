@@ -85,10 +85,7 @@ defmodule Mix.Tasks.Raxol.Config do
         ]
       )
 
-    if opts[:help] do
-      Mix.shell().info(@moduledoc)
-      :ok
-    end
+    handle_help_request(opts[:help])
 
     command = List.first(args) || "help"
 
@@ -131,6 +128,15 @@ defmodule Mix.Tasks.Raxol.Config do
     end
   end
 
+  defp handle_help_request(true) do
+    Mix.shell().info(@moduledoc)
+    :ok
+  end
+
+  defp handle_help_request(_) do
+    :ok
+  end
+
   defp handle_init(opts) do
     file_path = get_config_path(opts)
     format = get_format(opts, file_path)
@@ -138,21 +144,36 @@ defmodule Mix.Tasks.Raxol.Config do
 
     Mix.shell().info("Initializing Raxol configuration...")
 
-    if File.exists?(file_path) and not confirm_overwrite(file_path) do
-      Mix.shell().info("Configuration initialization cancelled.")
-      :ok
-    end
+    should_cancel = File.exists?(file_path) and not confirm_overwrite(file_path)
+    handle_init_cancellation(should_cancel)
 
     result = generate_config(file_path, format, env, opts)
     handle_init_result(result)
   end
 
+  defp handle_init_cancellation(true) do
+    Mix.shell().info("Configuration initialization cancelled.")
+    :ok
+  end
+
+  defp handle_init_cancellation(false) do
+    :ok
+  end
+
   defp generate_config(file_path, format, env, opts) do
-    if opts[:minimal] do
-      Generator.generate_minimal_config(file_path)
-    else
-      generate_env_or_default_config(file_path, format, env, opts)
-    end
+    select_config_generation(opts[:minimal], file_path, format, env, opts)
+  end
+
+  defp select_config_generation(true, file_path, _format, _env, _opts) do
+    Generator.generate_minimal_config(file_path)
+  end
+
+  defp select_config_generation(false, file_path, format, env, opts) do
+    generate_env_or_default_config(file_path, format, env, opts)
+  end
+
+  defp select_config_generation(nil, file_path, format, env, opts) do
+    generate_env_or_default_config(file_path, format, env, opts)
   end
 
   defp generate_env_or_default_config(file_path, format, env, opts) do
@@ -260,11 +281,7 @@ defmodule Mix.Tasks.Raxol.Config do
         key_path = parse_key_path(key)
         value = get_nested_value(config, key_path)
 
-        if value != nil do
-          Mix.shell().info("#{key}: #{inspect(value)}")
-        else
-          Mix.shell().error("Configuration key not found: #{key}")
-        end
+        handle_config_value_display(value, key)
 
       {:error, reason} ->
         Mix.shell().error("❌ Failed to load configuration: #{inspect(reason)}")
@@ -274,6 +291,14 @@ defmodule Mix.Tasks.Raxol.Config do
   defp handle_get(_, _) do
     Mix.shell().error("Usage: mix raxol.config get <key>")
     Mix.shell().info("Example: mix raxol.config get terminal.width")
+  end
+
+  defp handle_config_value_display(nil, key) do
+    Mix.shell().error("Configuration key not found: #{key}")
+  end
+
+  defp handle_config_value_display(value, key) do
+    Mix.shell().info("#{key}: #{inspect(value)}")
   end
 
   defp handle_set([_, key, value | _], opts) do
@@ -359,12 +384,16 @@ defmodule Mix.Tasks.Raxol.Config do
 
   defp count_config_options(config) when is_map(config) do
     Enum.reduce(config, 0, fn {_key, value}, acc ->
-      if is_map(value) do
-        acc + count_config_options(value)
-      else
-        acc + 1
-      end
+      count_single_config_option(is_map(value), value, acc)
     end)
+  end
+
+  defp count_single_config_option(true, value, acc) do
+    acc + count_config_options(value)
+  end
+
+  defp count_single_config_option(false, _value, acc) do
+    acc + 1
   end
 
   defp show_validation_errors(errors) do

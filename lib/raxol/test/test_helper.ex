@@ -83,17 +83,22 @@ defmodule Raxol.Test.TestHelper do
     state =
       state
       |> (fn s ->
-            if Map.has_key?(s, :style), do: s, else: Map.put(s, :style, %{})
+            case Map.has_key?(s, :style) do
+              true -> s
+              false -> Map.put(s, :style, %{})
+            end
           end).()
       |> (fn s ->
-            if Map.has_key?(s, :disabled),
-              do: s,
-              else: Map.put(s, :disabled, false)
+            case Map.has_key?(s, :disabled) do
+              true -> s
+              false -> Map.put(s, :disabled, false)
+            end
           end).()
       |> (fn s ->
-            if Map.has_key?(s, :focused),
-              do: s,
-              else: Map.put(s, :focused, false)
+            case Map.has_key?(s, :focused) do
+              true -> s
+              false -> Map.put(s, :focused, false)
+            end
           end).()
       |> (fn s ->
             attrs = Map.get(s, :attrs, %{})
@@ -225,23 +230,27 @@ defmodule Raxol.Test.TestHelper do
   end
 
   defp do_wait_for_state(condition_fun, start, timeout_ms) do
-    if condition_fun.() do
-      :ok
-    else
-      if System.monotonic_time(:millisecond) - start < timeout_ms do
-        timer_id = System.unique_integer([:positive])
-        Process.send_after(self(), {:check_condition, timer_id}, 100)
+    case condition_fun.() do
+      true ->
+        :ok
 
-        receive do
-          {:check_condition, ^timer_id} ->
-            do_wait_for_state(condition_fun, start, timeout_ms)
-        after
-          timeout_ms ->
+      false ->
+        case System.monotonic_time(:millisecond) - start < timeout_ms do
+          true ->
+            timer_id = System.unique_integer([:positive])
+            Process.send_after(self(), {:check_condition, timer_id}, 100)
+
+            receive do
+              {:check_condition, ^timer_id} ->
+                do_wait_for_state(condition_fun, start, timeout_ms)
+            after
+              timeout_ms ->
+                flunk("Condition not met within \\#{timeout_ms}ms")
+            end
+
+          false ->
             flunk("Condition not met within \\#{timeout_ms}ms")
         end
-      else
-        flunk("Condition not met within \\#{timeout_ms}ms")
-      end
     end
   end
 
@@ -249,15 +258,19 @@ defmodule Raxol.Test.TestHelper do
   Cleans up a process and waits for it to be down.
   """
   def cleanup_process(pid, timeout \\ 5000) do
-    if Process.alive?(pid) do
-      ref = Process.monitor(pid)
-      Process.exit(pid, :normal)
+    case Process.alive?(pid) do
+      true ->
+        ref = Process.monitor(pid)
+        Process.exit(pid, :normal)
 
-      receive do
-        {:DOWN, ^ref, :process, _pid, _reason} -> :ok
-      after
-        timeout -> :timeout
-      end
+        receive do
+          {:DOWN, ^ref, :process, _pid, _reason} -> :ok
+        after
+          timeout -> :timeout
+        end
+
+      false ->
+        :ok
     end
   end
 
@@ -265,8 +278,9 @@ defmodule Raxol.Test.TestHelper do
   Cleans up an ETS table.
   """
   def cleanup_ets_table(table) do
-    if :ets.whereis(table) != :undefined do
-      :ets.delete_all_objects(table)
+    case :ets.whereis(table) do
+      :undefined -> :ok
+      _ -> :ets.delete_all_objects(table)
     end
   end
 
@@ -274,8 +288,9 @@ defmodule Raxol.Test.TestHelper do
   Cleans up a registry.
   """
   def cleanup_registry(registry) do
-    if Process.whereis(registry) do
-      Registry.unregister(registry, self())
+    case Process.whereis(registry) do
+      nil -> :ok
+      _ -> Registry.unregister(registry, self())
     end
   end
 

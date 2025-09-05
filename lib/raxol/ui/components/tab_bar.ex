@@ -90,12 +90,7 @@ defmodule Raxol.UI.Components.TabBar do
           active? = id == active_tab
 
           # Compute final style for this tab
-          final_style =
-            if active? do
-              Map.merge(tab_style, active_tab_style)
-            else
-              tab_style
-            end
+          final_style = compute_tab_style(active?, tab_style, active_tab_style)
 
           # Get additional tab properties if provided
           tooltip = Map.get(tab, :tooltip, "")
@@ -206,4 +201,11 @@ defmodule Raxol.UI.Components.TabBar do
       [tab_bar_result, active_tab_content]
     end
   end
+
+  # Helper function for pattern matching instead of if statements
+
+  defp compute_tab_style(true, tab_style, active_tab_style),
+    do: Map.merge(tab_style, active_tab_style)
+
+  defp compute_tab_style(false, tab_style, _active_tab_style), do: tab_style
 end

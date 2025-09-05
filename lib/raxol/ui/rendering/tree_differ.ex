@@ -52,11 +52,12 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
         are_children_consistently_keyed?(new_children)
 
     children_diff_result =
-      if attempt_keyed_diff do
-        perform_keyed_children_diff(old_children, new_children, path)
-      else
-        perform_non_keyed_children_diff(old_children, new_children, path)
-      end
+      perform_children_diff(
+        attempt_keyed_diff,
+        old_children,
+        new_children,
+        path
+      )
 
     case children_diff_result do
       :no_change -> :no_change
@@ -67,17 +68,26 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   # Fallback for non-map nodes or nodes without :children that are not identical
   defp do_diff_trees(_old, new, _path), do: {:replace, new}
 
+  defp perform_children_diff(true, old_children, new_children, path) do
+    perform_keyed_children_diff(old_children, new_children, path)
+  end
+
+  defp perform_children_diff(false, old_children, new_children, path) do
+    perform_non_keyed_children_diff(old_children, new_children, path)
+  end
+
   # Helper to check if a list of children is consistently keyed
   defp are_children_consistently_keyed?(children) when is_list(children) do
-    if Enum.empty?(children) do
-      # An empty list is vacuously considered keyed
-      true
-    else
-      Enum.all?(children, fn
-        child when is_map(child) -> Map.has_key?(child, :key)
-        _non_map_child -> false
-      end)
-    end
+    check_keyed_consistency(children)
+  end
+
+  defp check_keyed_consistency([]), do: true
+
+  defp check_keyed_consistency(children) do
+    Enum.all?(children, fn
+      child when is_map(child) -> Map.has_key?(child, :key)
+      _non_map_child -> false
+    end)
   end
 
   defp are_children_consistently_keyed?(_other), do: false
@@ -93,16 +103,19 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   end
 
   defp validate_child_has_key!(child, list_name) do
-    if !Map.has_key?(child, :key) do
-      Raxol.Core.Runtime.Log.error(
-        "Child in #{list_name} is missing :key for keyed diffing: #{inspect(child)}"
-      )
+    validate_key_presence(Map.has_key?(child, :key), child, list_name)
+  end
 
-      # Consider raising: raise ArgumentError, "Child in #{list_name} missing :key: #{inspect(child)}"
-    end
+  defp validate_key_presence(false, child, list_name) do
+    Raxol.Core.Runtime.Log.error(
+      "Child in #{list_name} is missing :key for keyed diffing: #{inspect(child)}"
+    )
 
+    # Consider raising: raise ArgumentError, "Child in #{list_name} missing :key: #{inspect(child)}"
     :ok
   end
+
+  defp validate_key_presence(true, _child, _list_name), do: :ok
 
   defp perform_non_keyed_children_diff(old_children, new_children, path) do
     child_diffs =
@@ -121,24 +134,28 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
       end)
       |> Enum.reject(&is_nil/1)
 
-    if child_diffs == [] do
-      # We need to return the unchanged tree, but we only have the children here
-      # This should be handled by the caller
-      :no_change
-    else
-      # `path` here is path_to_parent.
-      # `diffs` contains tuples `{original_child_idx, diff_for_child_at_idx}`.
-      # `diff_for_child_at_idx` could be {:replace, new_content_for_child} or
-      # {:update, child_path_segment, grandchild_changes} if the child itself had children that changed.
-      # The `child_path_segment` in such an internal update would be relative to the child,
-      # so if child was at path `P` and its own child at index `C` changed, the path in that
-      # internal diff would be `[C]`.
-      # The path stored in the diff entry `{idx, diff}` should reflect the *full path to the changed node*
-      # if the diff is an :update.
-      # However, `do_diff_trees` already returns paths like `path ++ [idx]` if it's an update.
-      # So `diff_for_child_at_idx` will contain the correct full path if it's an update.
-      {:update, path, %{type: :indexed_children, diffs: child_diffs}}
-    end
+    process_child_diffs(child_diffs, path)
+  end
+
+  defp process_child_diffs([], _path) do
+    # We need to return the unchanged tree, but we only have the children here
+    # This should be handled by the caller
+    :no_change
+  end
+
+  defp process_child_diffs(child_diffs, path) do
+    # `path` here is path_to_parent.
+    # `diffs` contains tuples `{original_child_idx, diff_for_child_at_idx}`.
+    # `diff_for_child_at_idx` could be {:replace, new_content_for_child} or
+    # {:update, child_path_segment, grandchild_changes} if the child itself had children that changed.
+    # The `child_path_segment` in such an internal update would be relative to the child,
+    # so if child was at path `P` and its own child at index `C` changed, the path in that
+    # internal diff would be `[C]`.
+    # The path stored in the diff entry `{idx, diff}` should reflect the *full path to the changed node*
+    # if the diff is an :update.
+    # However, `do_diff_trees` already returns paths like `path ++ [idx]` if it's an update.
+    # So `diff_for_child_at_idx` will contain the correct full path if it's an update.
+    {:update, path, %{type: :indexed_children, diffs: child_diffs}}
   end
 
   defp perform_keyed_children_diff(
@@ -205,12 +222,34 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
     Enum.reduce(new_children_list || [], [], fn new_child_node, acc ->
       key = new_child_node[:key]
 
-      if MapSet.member?(old_keys_set, key) do
-        handle_existing_key(old_children_map_by_key, new_child_node, key, acc)
-      else
-        [{:key_add, key, new_child_node} | acc]
-      end
+      process_keyed_child(
+        MapSet.member?(old_keys_set, key),
+        old_children_map_by_key,
+        new_child_node,
+        key,
+        acc
+      )
     end)
+  end
+
+  defp process_keyed_child(
+         true,
+         old_children_map_by_key,
+         new_child_node,
+         key,
+         acc
+       ) do
+    handle_existing_key(old_children_map_by_key, new_child_node, key, acc)
+  end
+
+  defp process_keyed_child(
+         false,
+         _old_children_map_by_key,
+         new_child_node,
+         key,
+         acc
+       ) do
+    [{:key_add, key, new_child_node} | acc]
   end
 
   defp handle_existing_key(old_children_map_by_key, new_child_node, key, acc) do
@@ -225,12 +264,16 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
 
   defp build_remove_operations(old_keys_set, new_keys_set) do
     Enum.reduce(MapSet.to_list(old_keys_set), [], fn old_key, acc ->
-      if !MapSet.member?(new_keys_set, old_key) do
-        [{:key_remove, old_key} | acc]
-      else
-        acc
-      end
+      process_old_key(MapSet.member?(new_keys_set, old_key), old_key, acc)
     end)
+  end
+
+  defp process_old_key(false, old_key, acc) do
+    [{:key_remove, old_key} | acc]
+  end
+
+  defp process_old_key(true, _old_key, acc) do
+    acc
   end
 
   defp determine_keyed_diff_result(

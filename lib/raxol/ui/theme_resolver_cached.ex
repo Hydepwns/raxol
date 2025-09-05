@@ -178,43 +178,14 @@ defmodule Raxol.UI.ThemeResolverCached do
   def resolve_variant_color(attrs, theme, color_type) do
     variant_name = Map.get(attrs, :variant)
 
-    if variant_name do
-      cache_key =
-        {:variant_color, variant_name, get_theme_id(theme), color_type}
-
-      case get_cached_color(cache_key) do
-        {:ok, color} ->
-          color
-
-        :miss ->
-          color = ThemeResolver.resolve_variant_color(attrs, theme, color_type)
-          cache_color(cache_key, color)
-          color
-      end
-    else
-      nil
-    end
+    resolve_variant_color_with_cache(variant_name, attrs, theme, color_type)
   end
 
   @doc """
   Cached version of get_component_styles.
   """
   def get_component_styles(component_type, theme) do
-    if component_type && is_map(theme) do
-      cache_key = {:component_styles, component_type, get_theme_id(theme)}
-
-      case get_cached_styles(cache_key) do
-        {:ok, styles} ->
-          styles
-
-        :miss ->
-          styles = ThemeResolver.get_component_styles(component_type, theme)
-          cache_styles(cache_key, styles)
-          styles
-      end
-    else
-      %{}
-    end
+    get_component_styles_with_cache(component_type, theme)
   end
 
   @doc """
@@ -234,6 +205,37 @@ defmodule Raxol.UI.ThemeResolverCached do
   end
 
   # Private cache helpers
+
+  defp resolve_variant_color_with_cache(nil, _attrs, _theme, _color_type), do: nil
+  defp resolve_variant_color_with_cache(variant_name, attrs, theme, color_type) do
+    cache_key = {:variant_color, variant_name, get_theme_id(theme), color_type}
+
+    case get_cached_color(cache_key) do
+      {:ok, color} ->
+        color
+
+      :miss ->
+        color = ThemeResolver.resolve_variant_color(attrs, theme, color_type)
+        cache_color(cache_key, color)
+        color
+    end
+  end
+
+  defp get_component_styles_with_cache(nil, _theme), do: %{}
+  defp get_component_styles_with_cache(_component_type, theme) when not is_map(theme), do: %{}
+  defp get_component_styles_with_cache(component_type, theme) do
+    cache_key = {:component_styles, component_type, get_theme_id(theme)}
+
+    case get_cached_styles(cache_key) do
+      {:ok, styles} ->
+        styles
+
+      :miss ->
+        styles = ThemeResolver.get_component_styles(component_type, theme)
+        cache_styles(cache_key, styles)
+        styles
+    end
+  end
 
   defp get_cached_theme(key) do
     # Use the style cache table for theme data

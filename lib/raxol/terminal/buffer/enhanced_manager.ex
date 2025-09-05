@@ -289,18 +289,8 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     # Check if compression is needed based on threshold
     buffer_size = calculate_buffer_size(buffer)
 
-    if buffer_size > state.threshold do
-      # Apply compression based on algorithm
-      case state.algorithm do
-        :lz4 -> apply_lz4_compression(buffer, state, opts)
-        :simple -> apply_simple_compression(buffer, state, opts)
-        :run_length -> apply_run_length_compression(buffer, state, opts)
-        _ -> apply_simple_compression(buffer, state, opts)
-      end
-    else
-      # Buffer is small enough, no compression needed
-      buffer
-    end
+    should_compress = buffer_size > state.threshold
+    apply_compression_decision(should_compress, buffer, state, opts)
   end
 
   defp update_compression_state(state, buffer) do
@@ -380,13 +370,18 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
   end
 
   defp optimize_cell_chunk(cells) do
-    if Enum.all?(cells, &empty_cell?/1) do
-      # All cells are empty, keep only one
-      [List.first(cells)]
-    else
-      # Some cells have content, minimize style attributes
-      Enum.map(cells, &minimize_cell_attributes/1)
-    end
+    all_empty = Enum.all?(cells, &empty_cell?/1)
+    optimize_by_emptiness(all_empty, cells)
+  end
+
+  defp optimize_by_emptiness(true, cells) do
+    # All cells are empty, keep only one
+    [List.first(cells)]
+  end
+
+  defp optimize_by_emptiness(false, cells) do
+    # Some cells have content, minimize style attributes
+    Enum.map(cells, &minimize_cell_attributes/1)
   end
 
   defp encode_run_length_chunk([cell]) do
@@ -402,45 +397,53 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
 
   defp minimize_cell_attributes(cell) do
     # Remove default style attributes to save memory
-    if empty_cell?(cell) do
-      # For empty cells, use minimal representation
-      %{cell | char: " ", style: nil, dirty: false, wide_placeholder: false}
-    else
-      # For non-empty cells, keep essential attributes only
-      minimal_style = extract_minimal_style(cell.style)
-      %{cell | style: minimal_style}
-    end
+    minimize_by_emptiness(empty_cell?(cell), cell)
+  end
+
+  defp minimize_by_emptiness(true, cell) do
+    # For empty cells, use minimal representation
+    %{cell | char: " ", style: nil, dirty: false, wide_placeholder: false}
+  end
+
+  defp minimize_by_emptiness(false, cell) do
+    # For non-empty cells, keep essential attributes only
+    minimal_style = extract_minimal_style(cell.style)
+    %{cell | style: minimal_style}
   end
 
   defp extract_minimal_style(style) do
     # Extract only non-default style attributes
-    if is_nil(style) do
-      nil
-    else
-      style_map = Map.from_struct(style)
-      default_style = Map.from_struct(Raxol.Terminal.ANSI.TextFormatting.new())
+    extract_style_attributes(is_nil(style), style)
+  end
 
-      # Keep only attributes that differ from defaults
-      Enum.reduce(
-        style_map,
-        %{},
-        &filter_non_default_attributes(&1, &2, default_style)
-      )
-      |> case do
-        # No non-default attributes
-        %{} -> nil
-        minimal -> minimal
-      end
+  defp extract_style_attributes(true, _style), do: nil
+
+  defp extract_style_attributes(false, style) do
+    style_map = Map.from_struct(style)
+    default_style = Map.from_struct(Raxol.Terminal.ANSI.TextFormatting.new())
+
+    # Keep only attributes that differ from defaults
+    Enum.reduce(
+      style_map,
+      %{},
+      &filter_non_default_attributes(&1, &2, default_style)
+    )
+    |> case do
+      # No non-default attributes
+      %{} -> nil
+      minimal -> minimal
     end
   end
 
   defp filter_non_default_attributes({key, value}, acc, default_style) do
-    if Map.get(default_style, key) != value do
-      Map.put(acc, key, value)
-    else
-      acc
-    end
+    is_different = Map.get(default_style, key) != value
+    update_attributes_if_different(is_different, key, value, acc)
   end
+
+  defp update_attributes_if_different(true, key, value, acc),
+    do: Map.put(acc, key, value)
+
+  defp update_attributes_if_different(false, _key, _value, acc), do: acc
 
   defp get_from_pool(pool, width, height) do
     # Get a buffer from the pool or return error
@@ -478,10 +481,10 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
           metrics.operation_counts
           | updates:
               metrics.operation_counts.updates +
-                if(operation_type == :update, do: 1, else: 0),
+                get_update_increment(operation_type == :update),
             compressions:
               metrics.operation_counts.compressions +
-                if(operation_type == :compression, do: 1, else: 0)
+                get_compression_increment(operation_type == :compression)
         }
     }
 
@@ -507,11 +510,8 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     buffers = Map.get(pool.buffers, key, [])
     new_buffers = [buffer | buffers]
 
-    if should_evict_buffer?(pool, new_buffers) do
-      evict_oldest_buffer(pool, key, new_buffers)
-    else
-      %{pool | buffers: Map.put(pool.buffers, key, new_buffers)}
-    end
+    should_evict = should_evict_buffer?(pool, new_buffers)
+    handle_buffer_eviction(should_evict, pool, key, new_buffers)
   end
 
   defp should_evict_buffer?(pool, new_buffers) do
@@ -591,12 +591,15 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
     recent_update_times = Enum.take(metrics.update_times, 10)
     recent_compression_times = Enum.take(metrics.compression_times, 10)
 
-    if has_sufficient_data?(recent_update_times, recent_compression_times) do
-      apply_fine_tuning(state, recent_update_times, recent_compression_times)
-    else
-      # Not enough data for fine-tuning, make a small adjustment
-      %{state | threshold: Kernel.max(state.threshold - 64, 256)}
-    end
+    has_data =
+      has_sufficient_data?(recent_update_times, recent_compression_times)
+
+    apply_tuning_strategy(
+      has_data,
+      state,
+      recent_update_times,
+      recent_compression_times
+    )
   end
 
   defp has_sufficient_data?(updates, compressions) do
@@ -648,5 +651,55 @@ defmodule Raxol.Terminal.Buffer.EnhancedManager do
 
   defp apply_fine_tuning_adjustment(state, _avg_update, _avg_compression) do
     state
+  end
+
+  ## Helper Functions for Pattern Matching
+
+  defp apply_compression_decision(false, buffer, _state, _opts) do
+    # Buffer is small enough, no compression needed
+    buffer
+  end
+
+  defp apply_compression_decision(true, buffer, state, opts) do
+    # Apply compression based on algorithm
+    case state.algorithm do
+      :lz4 -> apply_lz4_compression(buffer, state, opts)
+      :simple -> apply_simple_compression(buffer, state, opts)
+      :run_length -> apply_run_length_compression(buffer, state, opts)
+      _ -> apply_simple_compression(buffer, state, opts)
+    end
+  end
+
+  defp get_update_increment(true), do: 1
+  defp get_update_increment(false), do: 0
+
+  defp get_compression_increment(true), do: 1
+  defp get_compression_increment(false), do: 0
+
+  defp handle_buffer_eviction(true, pool, key, new_buffers) do
+    evict_oldest_buffer(pool, key, new_buffers)
+  end
+
+  defp handle_buffer_eviction(false, pool, key, new_buffers) do
+    %{pool | buffers: Map.put(pool.buffers, key, new_buffers)}
+  end
+
+  defp apply_tuning_strategy(
+         true,
+         state,
+         recent_update_times,
+         recent_compression_times
+       ) do
+    apply_fine_tuning(state, recent_update_times, recent_compression_times)
+  end
+
+  defp apply_tuning_strategy(
+         false,
+         state,
+         _recent_update_times,
+         _recent_compression_times
+       ) do
+    # Not enough data for fine-tuning, make a small adjustment
+    %{state | threshold: Kernel.max(state.threshold - 64, 256)}
   end
 end

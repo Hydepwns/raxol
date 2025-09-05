@@ -82,30 +82,34 @@ defmodule Raxol.UI.Components.Input.TextWrappingCached do
     char_width = FontMetricsCache.get_char_width(grapheme)
     new_width = current_width + char_width
 
-    if new_width <= max_width do
-      # Character fits on current line
-      do_wrap_visual(
-        rest,
-        max_width,
-        lines,
-        current_line <> grapheme,
-        new_width
-      )
-    else
-      # Need new line
-      if current_line == "" do
-        # Force at least one character per line
-        do_wrap_visual(rest, max_width, [grapheme | lines], "", 0)
-      else
-        # Start new line with current character
+    case new_width <= max_width do
+      true ->
+        # Character fits on current line
         do_wrap_visual(
           rest,
           max_width,
-          [current_line | lines],
-          grapheme,
-          char_width
+          lines,
+          current_line <> grapheme,
+          new_width
         )
-      end
+
+      false ->
+        # Need new line
+        case current_line do
+          "" ->
+            # Force at least one character per line
+            do_wrap_visual(rest, max_width, [grapheme | lines], "", 0)
+
+          _ ->
+            # Start new line with current character
+            do_wrap_visual(
+              rest,
+              max_width,
+              [current_line | lines],
+              grapheme,
+              char_width
+            )
+        end
     end
   end
 

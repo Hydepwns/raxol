@@ -242,12 +242,7 @@ defmodule Raxol.Cloud.Monitoring.Server do
     }
 
     # Start monitoring if active
-    updated_state =
-      if active do
-        start_monitoring_processes(updated_state)
-      else
-        updated_state
-      end
+    updated_state = start_monitoring_if_active(active, updated_state)
 
     {:reply, :ok, updated_state}
   end
@@ -260,12 +255,7 @@ defmodule Raxol.Cloud.Monitoring.Server do
 
   @impl true
   def handle_call(:start_monitoring, _from, state) do
-    if state.active do
-      {:reply, {:ok, :already_active}, state}
-    else
-      updated_state = start_monitoring_processes(%{state | active: true})
-      {:reply, :ok, updated_state}
-    end
+    handle_start_monitoring_request(state.active, state)
   end
 
   @impl true
@@ -294,60 +284,102 @@ defmodule Raxol.Cloud.Monitoring.Server do
     {:reply, state, state}
   end
 
+  @impl true
+  def handle_call({:get_metrics, name, opts}, _from, state) do
+    limit = Keyword.get(opts, :limit, 100)
+    metrics = Map.get(state.metrics.data, name, []) |> Enum.take(limit)
+    {:reply, metrics, state}
+  end
+
+  @impl true
+  def handle_call(:metrics_count, _from, state) do
+    {:reply, state.metrics.count, state}
+  end
+
+  @impl true
+  def handle_call({:get_errors, opts}, _from, state) do
+    limit = Keyword.get(opts, :limit, 100)
+    errors = state.errors.data |> Enum.take(limit)
+    {:reply, errors, state}
+  end
+
+  @impl true
+  def handle_call(:errors_count, _from, state) do
+    {:reply, state.errors.count, state}
+  end
+
+  @impl true
+  def handle_call({:run_health_check, opts}, _from, state) do
+    handle_health_check_request(state.active, opts, state)
+    components = Keyword.get(opts, :components, [:database, :api, :edge])
+    timeout = Keyword.get(opts, :timeout, 5000)
+
+    # Run health checks for each component
+    check_results =
+      Enum.map(components, fn component ->
+        {component, check_component_health(component, timeout)}
+      end)
+
+    # Determine overall status based on individual checks
+    overall_status =
+      case check_results do
+        [] ->
+          :unknown
+
+        results ->
+          has_critical = Enum.any?(results, fn {_, status} -> status.level == :critical end)
+          has_warning = Enum.any?(results, fn {_, status} -> status.level == :warning end)
+
+          cond do
+            has_critical -> :critical
+            has_warning -> :warning
+            true -> :healthy
+          end
+      end
+
+    # Update health state
+    health_status = %{
+      status: overall_status,
+      last_check: DateTime.utc_now(),
+      components: Map.new(check_results),
+      response_time: System.monotonic_time() - System.monotonic_time()
+    }
+
+    updated_health = %{state.health | status: overall_status, last_check: DateTime.utc_now()}
+
+    new_state = %{state | health: updated_health}
+
+    {:reply, health_status, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_health_status, _from, state) do
+    {:reply, state.health.status, state}
+  end
+
+  @impl true
+  def handle_call(:last_health_check_time, _from, state) do
+    {:reply, state.health.last_check, state}
+  end
+
+  @impl true
+  def handle_call({:get_alerts, opts}, _from, state) do
+    limit = Keyword.get(opts, :limit, 100)
+    alerts = state.alerts.active |> Enum.take(limit)
+    {:reply, alerts, state}
+  end
+
+  @impl true
+  def handle_call({:get_prometheus_metric, metric_name}, _from, state) do
+    value = Map.get(state.backends.prometheus_metrics, metric_name)
+    {:reply, value, state}
+  end
+
   # Metrics handlers
 
   @impl true
   def handle_cast({:record_metric, name, value, opts}, state) do
-    if state.active do
-      timestamp = Keyword.get(opts, :timestamp, DateTime.utc_now())
-      tags = Keyword.get(opts, :tags, [])
-      source = Keyword.get(opts, :source, :application)
-
-      metric = %{
-        name: name,
-        value: value,
-        timestamp: timestamp,
-        tags: tags,
-        source: source
-      }
-
-      # Update metrics data
-      metrics_data =
-        Map.update(
-          state.metrics.data,
-          name,
-          [metric],
-          &([metric | &1] |> Enum.take(1000))
-        )
-
-      # Add to buffer for batch processing
-      buffer = [metric | state.metrics.buffer]
-
-      # Check if we need to flush
-      {buffer, last_flush} =
-        if length(buffer) >= state.config.metrics_batch_size do
-          flush_metrics_to_backends(buffer, state.config.backends)
-          {[], DateTime.utc_now()}
-        else
-          {buffer, state.metrics.last_flush}
-        end
-
-      updated_metrics = %{
-        state.metrics
-        | data: metrics_data,
-          count: state.metrics.count + 1,
-          buffer: buffer,
-          last_flush: last_flush
-      }
-
-      # Check alert thresholds
-      updated_state =
-        check_alert_threshold(name, value, %{state | metrics: updated_metrics})
-
-      {:noreply, updated_state}
-    else
-      {:noreply, state}
-    end
+    handle_metric_recording(state.active, name, value, opts, state)
   end
 
   @impl true
@@ -363,166 +395,46 @@ defmodule Raxol.Cloud.Monitoring.Server do
     {:noreply, updated_state}
   end
 
-  @impl true
-  def handle_call({:get_metrics, name, opts}, _from, state) do
-    limit = Keyword.get(opts, :limit, 100)
-    metrics = Map.get(state.metrics.data, name, []) |> Enum.take(limit)
-    {:reply, metrics, state}
-  end
-
-  @impl true
-  def handle_call(:metrics_count, _from, state) do
-    {:reply, state.metrics.count, state}
-  end
-
   # Error tracking handlers
 
   @impl true
   def handle_cast({:record_error, error, opts}, state) do
-    if state.active && :rand.uniform() <= state.config.error_sample_rate do
-      error_entry = %{
-        error: error,
-        context: Keyword.get(opts, :context, %{}),
-        severity: Keyword.get(opts, :severity, :error),
-        tags: Keyword.get(opts, :tags, []),
-        timestamp: Keyword.get(opts, :timestamp, DateTime.utc_now()),
-        session_id: Keyword.get(opts, :session_id, state.current_session)
-      }
-
-      updated_errors = %{
-        state.errors
-        | data: [error_entry | state.errors.data] |> Enum.take(1000),
-          count: state.errors.count + 1,
-          last_error: error_entry
-      }
-
-      {:noreply, %{state | errors: updated_errors}}
-    else
-      {:noreply, state}
-    end
+    handle_error_recording(
+      state.active && :rand.uniform() <= state.config.error_sample_rate,
+      error,
+      opts,
+      state
+    )
   end
 
-  @impl true
-  def handle_call({:get_errors, opts}, _from, state) do
-    limit = Keyword.get(opts, :limit, 100)
-    errors = state.errors.data |> Enum.take(limit)
-    {:reply, errors, state}
-  end
-
-  @impl true
-  def handle_call(:errors_count, _from, state) do
-    {:reply, state.errors.count, state}
-  end
-
-  # Health check handlers
-
-  @impl true
-  def handle_call({:run_health_check, opts}, _from, state) do
-    if state.active do
-      components = Keyword.get(opts, :components, [:database, :api, :edge])
-      timeout = Keyword.get(opts, :timeout, 5000)
-
-      # Run health checks for each component
-      check_results =
-        Enum.map(components, fn component ->
-          {component, check_component_health(component, timeout)}
-        end)
-        |> Enum.into(%{})
-
-      # Determine overall status
-      overall_status =
-        if Enum.all?(check_results, fn {_, status} -> status == :healthy end) do
-          :healthy
-        else
-          :unhealthy
-        end
-
-      updated_health = %{
-        state.health
-        | status: overall_status,
-          last_check: DateTime.utc_now(),
-          components: check_results,
-          check_results:
-            [check_results | state.health.check_results] |> Enum.take(100)
-      }
-
-      updated_state = %{state | health: updated_health}
-
-      # Trigger alert if unhealthy
-      updated_state =
-        if overall_status == :unhealthy do
-          {:noreply, alert_state} =
-            handle_cast(
-              {:trigger_alert, :unhealthy_system,
-               %{
-                 message: "System health check failed",
-                 components: check_results
-               }, [severity: :critical]},
-              updated_state
-            )
-
-          alert_state
-        else
-          updated_state
-        end
-
-      result = %{
-        status: overall_status,
-        components: check_results,
-        timestamp: updated_health.last_check
-      }
-
-      {:reply, {:ok, result}, updated_state}
-    else
-      {:reply, {:error, :monitoring_inactive}, state}
-    end
-  end
-
-  @impl true
-  def handle_call(:get_health_status, _from, state) do
-    {:reply, state.health.status, state}
-  end
-
-  @impl true
-  def handle_call(:last_health_check_time, _from, state) do
-    {:reply, state.health.last_check, state}
-  end
 
   # Alert handlers
 
   @impl true
   def handle_cast({:trigger_alert, type, data, opts}, state) do
-    if state.active do
-      alert = %{
-        id: generate_alert_id(),
-        type: type,
-        data: data,
-        severity: Keyword.get(opts, :severity, :warning),
-        timestamp: DateTime.utc_now(),
-        session_id: state.current_session
-      }
+    handle_alert_trigger(state.active, type, data, opts, state)
 
-      updated_alerts = %{
-        state.alerts
-        | history: [alert | state.alerts.history] |> Enum.take(100),
-          active_alerts: Map.put(state.alerts.active_alerts, alert.id, alert)
-      }
+    alert = %{
+      id: generate_alert_id(),
+      type: type,
+      data: data,
+      severity: Keyword.get(opts, :severity, :warning),
+      timestamp: DateTime.utc_now(),
+      session_id: state.current_session
+    }
 
-      # Process the alert (send notifications, etc.)
-      process_alert_internal(alert, opts, state.config)
+    updated_alerts = %{
+      state.alerts
+      | history: [alert | state.alerts.history] |> Enum.take(100),
+        active_alerts: Map.put(state.alerts.active_alerts, alert.id, alert)
+    }
 
-      {:noreply, %{state | alerts: updated_alerts}}
-    else
-      {:noreply, state}
-    end
+    # Process the alert (send notifications, etc.)
+    process_alert_internal(alert, opts, state.config)
+
+    {:noreply, %{state | alerts: updated_alerts}}
   end
 
-  @impl true
-  def handle_call({:get_alerts, opts}, _from, state) do
-    limit = Keyword.get(opts, :limit, 100)
-    alerts = state.alerts.history |> Enum.take(limit)
-    {:reply, alerts, state}
-  end
 
   @impl true
   def handle_cast({:process_alert, alert, _opts}, state) do
@@ -537,7 +449,7 @@ defmodule Raxol.Cloud.Monitoring.Server do
   # Backend handlers
 
   @impl true
-  def handle_cast({:send_to_backend, backend, data}, state) do
+  def handle_cast({:send_to_backend, backend, _data}, state) do
     case backend do
       :prometheus ->
         # Store in Prometheus format
@@ -552,11 +464,6 @@ defmodule Raxol.Cloud.Monitoring.Server do
     end
   end
 
-  @impl true
-  def handle_call({:get_prometheus_metric, metric_name}, _from, state) do
-    value = Map.get(state.backends.prometheus_metrics, metric_name)
-    {:reply, value, state}
-  end
 
   @impl true
   def handle_cast({:set_prometheus_metric, metric_name, value, tags}, state) do
@@ -568,44 +475,254 @@ defmodule Raxol.Cloud.Monitoring.Server do
       | prometheus_metrics: updated_prometheus
     }
 
-    {:reply, :ok, %{state | backends: updated_backends}}
+    {:noreply, %{state | backends: updated_backends}}
   end
 
   # Handle monitoring process messages
   @impl true
   def handle_info(:collect_metrics, state) do
-    if state.active do
-      # Collect system metrics
-      collect_system_metrics(state)
-
-      # Schedule next collection
-      Process.send_after(
-        self(),
-        :collect_metrics,
-        state.config.metrics_interval
-      )
-    end
-
-    {:noreply, state}
+    handle_metrics_collection(state.active, state)
   end
 
   @impl true
   def handle_info(:run_health_check, state) do
-    if state.active do
-      # Run health check
-      {:reply, _result, new_state} =
-        handle_call({:run_health_check, []}, nil, state)
+    handle_scheduled_health_check(state.active, state)
+  end
 
-      # Schedule next check
-      Process.send_after(
-        self(),
-        :run_health_check,
-        state.config.health_check_interval
+  # Pattern matching helper functions for monitoring operations
+
+  defp start_monitoring_if_active(false, state), do: state
+
+  defp start_monitoring_if_active(true, state),
+    do: start_monitoring_processes(state)
+
+  defp handle_start_monitoring_request(true, state) do
+    {:reply, {:ok, :already_active}, state}
+  end
+
+  defp handle_start_monitoring_request(false, state) do
+    updated_state = start_monitoring_processes(%{state | active: true})
+    {:reply, :ok, updated_state}
+  end
+
+  defp handle_metric_recording(false, _name, _value, _opts, state) do
+    {:noreply, state}
+  end
+
+  defp handle_metric_recording(true, name, value, opts, state) do
+    timestamp = Keyword.get(opts, :timestamp, DateTime.utc_now())
+    tags = Keyword.get(opts, :tags, [])
+    source = Keyword.get(opts, :source, :application)
+
+    metric = %{
+      name: name,
+      value: value,
+      timestamp: timestamp,
+      tags: tags,
+      source: source
+    }
+
+    # Update metrics data
+    metrics_data =
+      Map.update(
+        state.metrics.data,
+        name,
+        [metric],
+        &([metric | &1] |> Enum.take(1000))
       )
 
-      {:noreply, new_state}
-    else
-      {:noreply, state}
+    # Add to buffer for batch processing
+    buffer = [metric | state.metrics.buffer]
+
+    # Check if we need to flush
+    {buffer, last_flush} =
+      handle_buffer_flush(
+        length(buffer) >= state.config.metrics_batch_size,
+        buffer,
+        state
+      )
+
+    updated_metrics = %{
+      state.metrics
+      | data: metrics_data,
+        count: state.metrics.count + 1,
+        buffer: buffer,
+        last_flush: last_flush
+    }
+
+    # Check alert thresholds
+    updated_state =
+      check_alert_threshold(name, value, %{state | metrics: updated_metrics})
+
+    {:noreply, updated_state}
+  end
+
+  defp handle_buffer_flush(false, buffer, state) do
+    {buffer, state.metrics.last_flush}
+  end
+
+  defp handle_buffer_flush(true, buffer, state) do
+    flush_metrics_to_backends(buffer, state.config.backends)
+    {[], DateTime.utc_now()}
+  end
+
+  defp handle_error_recording(false, _error, _opts, state) do
+    {:noreply, state}
+  end
+
+  defp handle_error_recording(true, error, opts, state) do
+    error_entry = %{
+      error: error,
+      context: Keyword.get(opts, :context, %{}),
+      severity: Keyword.get(opts, :severity, :error),
+      tags: Keyword.get(opts, :tags, []),
+      timestamp: Keyword.get(opts, :timestamp, DateTime.utc_now()),
+      session_id: Keyword.get(opts, :session_id, state.current_session)
+    }
+
+    updated_errors = %{
+      state.errors
+      | data: [error_entry | state.errors.data] |> Enum.take(1000),
+        count: state.errors.count + 1,
+        last_error: error_entry
+    }
+
+    {:noreply, %{state | errors: updated_errors}}
+  end
+
+  defp handle_health_check_request(false, _opts, state) do
+    {:reply, {:error, :monitoring_inactive}, state}
+  end
+
+  defp handle_health_check_request(true, opts, state) do
+    components = Keyword.get(opts, :components, [:database, :api, :edge])
+    timeout = Keyword.get(opts, :timeout, 5000)
+
+    # Run health checks for each component
+    check_results =
+      Enum.map(components, fn component ->
+        {component, check_component_health(component, timeout)}
+      end)
+      |> Enum.into(%{})
+
+    # Determine overall status
+    overall_status =
+      determine_overall_health_status(
+        Enum.all?(check_results, fn {_, status} -> status == :healthy end)
+      )
+
+    updated_health = %{
+      state.health
+      | status: overall_status,
+        last_check: DateTime.utc_now(),
+        components: check_results,
+        check_results:
+          [check_results | state.health.check_results] |> Enum.take(100)
+    }
+
+    updated_state = %{state | health: updated_health}
+
+    # Trigger alert if unhealthy
+    updated_state =
+      handle_unhealthy_alert(
+        overall_status == :unhealthy,
+        check_results,
+        updated_state
+      )
+
+    result = %{
+      status: overall_status,
+      components: check_results,
+      timestamp: updated_health.last_check
+    }
+
+    {:reply, {:ok, result}, updated_state}
+  end
+
+  defp determine_overall_health_status(true), do: :healthy
+  defp determine_overall_health_status(false), do: :unhealthy
+
+  defp handle_unhealthy_alert(false, _check_results, state), do: state
+
+  defp handle_unhealthy_alert(true, check_results, state) do
+    {:noreply, alert_state} =
+      handle_cast(
+        {:trigger_alert, :unhealthy_system,
+         %{
+           message: "System health check failed",
+           components: check_results
+         }, [severity: :critical]},
+        state
+      )
+
+    alert_state
+  end
+
+  defp handle_alert_trigger(false, _type, _data, _opts, state) do
+    {:noreply, state}
+  end
+
+  defp handle_alert_trigger(true, type, data, opts, state) do
+    alert = %{
+      id: generate_alert_id(),
+      type: type,
+      data: data,
+      severity: Keyword.get(opts, :severity, :warning),
+      timestamp: DateTime.utc_now(),
+      session_id: state.current_session
+    }
+
+    updated_alerts = %{
+      state.alerts
+      | history: [alert | state.alerts.history] |> Enum.take(100),
+        active_alerts: Map.put(state.alerts.active_alerts, alert.id, alert)
+    }
+
+    # Process the alert (send notifications, etc.)
+    process_alert_internal(alert, opts, state.config)
+
+    {:noreply, %{state | alerts: updated_alerts}}
+  end
+
+  defp handle_metrics_collection(false, state), do: {:noreply, state}
+
+  defp handle_metrics_collection(true, state) do
+    # Collect system metrics
+    collect_system_metrics(state)
+
+    # Schedule next collection
+    Process.send_after(
+      self(),
+      :collect_metrics,
+      state.config.metrics_interval
+    )
+
+    {:noreply, state}
+  end
+
+  defp handle_scheduled_health_check(false, state), do: {:noreply, state}
+
+  defp handle_scheduled_health_check(true, state) do
+    # Run health check
+    {:reply, _result, new_state} =
+      handle_call({:run_health_check, []}, nil, state)
+
+    # Schedule next check
+    Process.send_after(
+      self(),
+      :run_health_check,
+      state.config.health_check_interval
+    )
+
+    {:noreply, new_state}
+  end
+
+  defp check_edge_computing_status(false), do: :healthy
+
+  defp check_edge_computing_status(true) do
+    case EdgeComputing.status() do
+      %{mode: _} -> :healthy
+      _ -> :unhealthy
     end
   end
 
@@ -642,14 +759,7 @@ defmodule Raxol.Cloud.Monitoring.Server do
 
   defp check_component_health(:edge, _timeout) do
     # Check edge computing status
-    if function_exported?(EdgeComputing, :status, 0) do
-      case EdgeComputing.status() do
-        %{mode: _} -> :healthy
-        _ -> :unhealthy
-      end
-    else
-      :healthy
-    end
+    check_edge_computing_status(function_exported?(EdgeComputing, :status, 0))
   end
 
   defp check_component_health(_, _), do: :healthy

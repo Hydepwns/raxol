@@ -30,20 +30,24 @@ defmodule Raxol.Terminal.SearchBuffer do
   """
   @spec start_search(t(), String.t()) :: {:ok, t()} | {:error, term()}
   def start_search(buffer, pattern) when is_binary(pattern) do
-    if pattern == "" do
-      {:error, :empty_pattern}
-    else
-      # For now, just clear matches; real impl would search buffer content
-      new_buffer = %{
-        buffer
-        | pattern: pattern,
-          matches: [],
-          current_index: -1,
-          history: add_pattern_to_history(buffer.history, pattern)
-      }
+    handle_search_pattern(pattern == "", buffer, pattern)
+  end
 
-      {:ok, new_buffer}
-    end
+  defp handle_search_pattern(true, _buffer, _pattern) do
+    {:error, :empty_pattern}
+  end
+
+  defp handle_search_pattern(false, buffer, pattern) do
+    # For now, just clear matches; real impl would search buffer content
+    new_buffer = %{
+      buffer
+      | pattern: pattern,
+        matches: [],
+        current_index: -1,
+        history: add_pattern_to_history(buffer.history, pattern)
+    }
+
+    {:ok, new_buffer}
   end
 
   @doc """

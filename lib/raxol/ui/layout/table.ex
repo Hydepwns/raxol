@@ -45,14 +45,13 @@ defmodule Raxol.UI.Layout.Table do
     col_widths = calculate_column_widths(columns, data)
 
     # Calculate total width including separators
-    separator_width =
-      if length(col_widths) > 1, do: (length(col_widths) - 1) * 3, else: 0
+    separator_width = calculate_separator_width(col_widths)
 
     total_width = Enum.sum(col_widths) + separator_width
 
     # Calculate height (header + separator + data rows)
     # Header + separator line
-    header_height = if headers != [], do: 2, else: 0
+    header_height = calculate_header_height(headers)
     data_height = length(data)
     total_height = header_height + data_height
 
@@ -168,13 +167,13 @@ defmodule Raxol.UI.Layout.Table do
     num_rows = length(original_data)
 
     # Calculate width
-    separator_width = if num_cols > 1, do: (num_cols - 1) * 3, else: 0
+    separator_width = calculate_separator_width_for_cols(num_cols)
     total_content_width = Enum.sum(col_widths) + separator_width
     final_width = min(total_content_width, space.width)
 
     # Calculate height
-    header_height = if headers != [], do: 1, else: 0
-    separator_height = if headers != [], do: 1, else: 0
+    header_height = calculate_single_header_height(headers)
+    separator_height = calculate_single_separator_height(headers)
     data_height = num_rows
     total_content_height = header_height + separator_height + data_height
     final_height = min(total_content_height, space.height)
@@ -216,4 +215,25 @@ defmodule Raxol.UI.Layout.Table do
 
     positioned_table
   end
+
+  # Helper functions for pattern matching instead of if statements
+
+  defp calculate_separator_width([]), do: 0
+  defp calculate_separator_width([_]), do: 0
+
+  defp calculate_separator_width(col_widths) do
+    (length(col_widths) - 1) * 3
+  end
+
+  defp calculate_header_height([]), do: 0
+  defp calculate_header_height(_headers), do: 2
+
+  defp calculate_separator_width_for_cols(num_cols) when num_cols <= 1, do: 0
+  defp calculate_separator_width_for_cols(num_cols), do: (num_cols - 1) * 3
+
+  defp calculate_single_header_height([]), do: 0
+  defp calculate_single_header_height(_headers), do: 1
+
+  defp calculate_single_separator_height([]), do: 0
+  defp calculate_single_separator_height(_headers), do: 1
 end
