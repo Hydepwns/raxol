@@ -1,5 +1,4 @@
 defmodule Raxol.Cloud.StateManager do
-  
   @moduledoc """
   Centralized state management for Raxol cloud components.
 

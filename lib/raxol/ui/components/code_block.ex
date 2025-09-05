@@ -7,7 +7,6 @@ defmodule Raxol.UI.Components.CodeBlock do
   """
   use Raxol.UI.Components.Base.Component
 
-  
   @doc """
   Renders the code block.
 

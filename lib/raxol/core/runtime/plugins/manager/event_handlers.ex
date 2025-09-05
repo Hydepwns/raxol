@@ -3,7 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
   Handles GenServer event callbacks and message processing for the plugin manager.
   """
 
-    require Raxol.Core.Runtime.Log
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Plugins.PluginReloader
   alias Raxol.Core.Runtime.Plugins.FileWatcher
@@ -241,7 +241,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
     {:noreply, state}
   end
 
-  defp handle_info_message({watcher_pid, true}, state) when is_pid(watcher_pid) do
+  defp handle_info_message({watcher_pid, true}, state)
+       when is_pid(watcher_pid) do
     handle_watcher_ready(watcher_pid, state)
   end
 

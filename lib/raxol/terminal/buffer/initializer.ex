@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Buffer.Initializer do
   their dimensions and properties.
   """
 
-    require Raxol.Core.Runtime.Log
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ScreenBuffer

@@ -3,7 +3,7 @@ defmodule Raxol.UI.Rendering.Composer do
   Handles composition of UI rendering trees.
   """
 
-    require Raxol.Core.Runtime.Log
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Composes a render tree or command list from the layout tree.
@@ -121,41 +121,50 @@ defmodule Raxol.UI.Rendering.Composer do
   end
 
   defp log_recomposition_for_map(current_layout_node, previous_composed_node) do
-    reason = determine_recomposition_reason(current_layout_node, previous_composed_node)
-    
-    message = case reason do
-      :missing_layout_attrs ->
-        "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - missing layout_attrs."
-      
-      {:diff_change, diff_type} ->
-        "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - diff type: #{diff_type}"
-      
-      {:type_mismatch, prev_type} ->
-        "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} vs prev #{prev_type} - type mismatch."
-      
-      :other ->
-        "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - other reason or first time."
-    end
-    
+    reason =
+      determine_recomposition_reason(
+        current_layout_node,
+        previous_composed_node
+      )
+
+    message =
+      case reason do
+        :missing_layout_attrs ->
+          "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - missing layout_attrs."
+
+        {:diff_change, diff_type} ->
+          "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - diff type: #{diff_type}"
+
+        {:type_mismatch, prev_type} ->
+          "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} vs prev #{prev_type} - type mismatch."
+
+        :other ->
+          "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - other reason or first time."
+      end
+
     Raxol.Core.Runtime.Log.debug(message)
   end
 
-  defp determine_recomposition_reason(current_layout_node, previous_composed_node) do
+  defp determine_recomposition_reason(
+         current_layout_node,
+         previous_composed_node
+       ) do
     layout_attrs = current_layout_node[:layout_attrs]
-    
-    case {is_map(layout_attrs), 
+
+    case {is_map(layout_attrs),
           layout_attrs && layout_attrs[:processed_with_diff],
           current_layout_node_type(current_layout_node),
           previous_composed_node[:original_type]} do
       {false, _, _, _} ->
         :missing_layout_attrs
-      
+
       {true, diff, _, _} when diff != :no_change ->
         {:diff_change, diff}
-      
-      {true, :no_change, current_type, prev_type} when current_type != prev_type ->
+
+      {true, :no_change, current_type, prev_type}
+      when current_type != prev_type ->
         {:type_mismatch, prev_type}
-      
+
       _ ->
         :other
     end

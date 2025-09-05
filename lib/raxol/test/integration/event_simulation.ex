@@ -11,7 +11,7 @@ defmodule Raxol.Test.Integration.EventSimulation do
 
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Runtime.ComponentManager
-    import ExUnit.Assertions
+  import ExUnit.Assertions
 
   @doc """
   Simulates a user action on a component.

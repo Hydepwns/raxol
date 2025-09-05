@@ -1,6 +1,5 @@
 # Errors implementation for monitoring
 defmodule Raxol.Cloud.Monitoring.Errors do
-  
   @moduledoc false
 
   # Process dictionary key for errors
@@ -36,7 +35,10 @@ defmodule Raxol.Cloud.Monitoring.Errors do
     updated_errors = [error_entry | errors_state.errors] |> Enum.take(1000)
 
     # Update errors state
-    Raxol.Cloud.Monitoring.Server.update_errors(%{errors_state | errors: updated_errors})
+    Raxol.Cloud.Monitoring.Server.update_errors(%{
+      errors_state
+      | errors: updated_errors
+    })
 
     # Send to backends
     send_error_to_backends(error_entry, errors_state.config)
@@ -83,9 +85,10 @@ defmodule Raxol.Cloud.Monitoring.Errors do
   end
 
   # Helper functions for pattern matching refactoring
-  
-  defp get_error_message(error) when Kernel.is_exception(error) and is_map_key(error, :message),
-    do: error.message
+
+  defp get_error_message(error)
+       when Kernel.is_exception(error) and is_map_key(error, :message),
+       do: error.message
 
   defp get_error_message(error) when is_binary(error),
     do: error

@@ -16,7 +16,7 @@ defmodule Raxol.UI.Components.FocusRing do
   require Raxol.View.Elements
 
   # Import guards
-  
+
   # Define state struct with enhanced styling options
   defstruct visible: true,
             # {x, y, width, height} of focused element
@@ -121,13 +121,18 @@ defmodule Raxol.UI.Components.FocusRing do
           )
 
         # Schedule next animation tick
-        commands = case {state.animation, state.visible} do
-          {:none, _} -> []
-          {_, false} -> []
-          {_, true} ->
-            # ~60fps
-            [schedule({:animation_tick}, 16)]
-        end
+        commands =
+          case {state.animation, state.visible} do
+            {:none, _} ->
+              []
+
+            {_, false} ->
+              []
+
+            {_, true} ->
+              # ~60fps
+              [schedule({:animation_tick}, 16)]
+          end
 
         {%{state | animation_phase: new_phase, last_tick: current_time},
          commands}
@@ -137,17 +142,24 @@ defmodule Raxol.UI.Components.FocusRing do
         new_state = Map.merge(state, opts)
 
         # Start animation if needed
-        commands = case {
-          new_state.animation,
-          new_state.visible,
-          new_state.animation != state.animation or not state.visible
-        } do
-          {:none, _, _} -> []
-          {_, false, _} -> []
-          {_, true, false} -> []
-          {_, true, true} ->
-            [schedule({:animation_tick}, 16)]
-        end
+        commands =
+          case {
+            new_state.animation,
+            new_state.visible,
+            new_state.animation != state.animation or not state.visible
+          } do
+            {:none, _, _} ->
+              []
+
+            {_, false, _} ->
+              []
+
+            {_, true, false} ->
+              []
+
+            {_, true, true} ->
+              [schedule({:animation_tick}, 16)]
+          end
 
         {new_state, commands}
 
@@ -167,10 +179,12 @@ defmodule Raxol.UI.Components.FocusRing do
         {%{state | high_contrast: enabled}, []}
 
       {:accessibility_reduced_motion, enabled} ->
-        animation = case enabled do
-          true -> :none
-          false -> :pulse
-        end
+        animation =
+          case enabled do
+            true -> :none
+            false -> :pulse
+          end
+
         {%{state | animation: animation}, []}
 
       _ ->
@@ -189,6 +203,7 @@ defmodule Raxol.UI.Components.FocusRing do
       nil ->
         # Render nothing if not visible or no position
         nil
+
       result ->
         # Return element map directly
         result
@@ -215,6 +230,7 @@ defmodule Raxol.UI.Components.FocusRing do
                                 style: style_attrs do
           # Empty block needed as the macro expects it
         end
+
       _ ->
         # Return nil if not visible or no position
         nil
@@ -245,27 +261,27 @@ defmodule Raxol.UI.Components.FocusRing do
 
   # Determine appropriate color based on context
   defp determine_color(%{high_contrast: true}, _theme), do: :white
-  
+
   defp determine_color(%{state: :disabled} = _state, theme) do
     Map.get(theme, :disabled_color, :dark_gray)
   end
-  
+
   defp determine_color(%{state: :active} = _state, theme) do
     Map.get(theme, :active_color, :cyan)
   end
-  
+
   defp determine_color(%{component_type: :button} = _state, theme) do
     Map.get(theme, :button_focus_color, :blue)
   end
-  
+
   defp determine_color(%{component_type: :text_input} = _state, theme) do
     Map.get(theme, :input_focus_color, :green)
   end
-  
+
   defp determine_color(%{component_type: :checkbox} = _state, theme) do
     Map.get(theme, :checkbox_focus_color, :magenta)
   end
-  
+
   defp determine_color(state, _theme), do: state.color
 
   # Get component-specific styling
@@ -317,6 +333,7 @@ defmodule Raxol.UI.Components.FocusRing do
         case visible do
           true ->
             %{border_color: color}
+
           false ->
             # "Invisible" - would use transparency in real impl
             %{border_color: :black}

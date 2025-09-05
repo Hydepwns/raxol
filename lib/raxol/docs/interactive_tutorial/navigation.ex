@@ -1,5 +1,4 @@
 defmodule Raxol.Docs.InteractiveTutorial.Navigation do
-  
   @moduledoc """
   Handles navigation and progress tracking for tutorials.
   """

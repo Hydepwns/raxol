@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Session.Serializer do
   @moduledoc """
   Handles serialization and deserialization of terminal session state.
-  
+
   Refactored version with pure functional error handling patterns.
   All try/catch blocks have been replaced with with statements and proper error tuples.
   """
@@ -16,21 +16,23 @@ defmodule Raxol.Terminal.Session.Serializer do
   def serialize(%Session{} = session) do
     with {:ok, emulator_data} <- safe_serialize_emulator(session.emulator),
          {:ok, renderer_data} <- safe_serialize_renderer(session.renderer) do
-      {:ok, %{
-        id: session.id,
-        width: session.width,
-        height: session.height,
-        title: session.title,
-        theme: session.theme,
-        auto_save: session.auto_save,
-        emulator: emulator_data,
-        renderer: renderer_data
-      }}
+      {:ok,
+       %{
+         id: session.id,
+         width: session.width,
+         height: session.height,
+         title: session.title,
+         theme: session.theme,
+         auto_save: session.auto_save,
+         emulator: emulator_data,
+         renderer: renderer_data
+       }}
     else
       {:error, reason} = error ->
         Raxol.Core.Runtime.Log.error(
           "Session serialization failed: #{inspect(reason)}"
         )
+
         error
     end
   end
@@ -42,11 +44,14 @@ defmodule Raxol.Terminal.Session.Serializer do
   @spec serialize!(Session.t()) :: map()
   def serialize!(%Session{} = session) do
     case serialize(session) do
-      {:ok, data} -> data
+      {:ok, data} ->
+        data
+
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "Session serialization failed, returning fallback: #{inspect(reason)}"
         )
+
         # Return minimal valid session data
         %{
           id: session.id,
@@ -103,40 +108,45 @@ defmodule Raxol.Terminal.Session.Serializer do
   # Safe serialization helpers with error handling
 
   defp safe_serialize_emulator(%Emulator{} = emulator) do
-    with {:ok, main_buffer} <- safe_serialize_screen_buffer(emulator.main_screen_buffer),
-         {:ok, alt_buffer} <- safe_serialize_screen_buffer(emulator.alternate_screen_buffer),
-         {:ok, scrollback} <- safe_serialize_screen_buffer(emulator.scrollback_buffer) do
-      {:ok, %{
-        main_screen_buffer: main_buffer,
-        alternate_screen_buffer: alt_buffer,
-        active_buffer_type: emulator.active_buffer_type,
-        scrollback_buffer: scrollback,
-        cursor: emulator.cursor,
-        mode_manager: emulator.mode_manager,
-        style: emulator.style,
-        charset_state: emulator.charset_state,
-        width: emulator.width,
-        height: emulator.height,
-        window_state: emulator.window_state,
-        state_stack: emulator.state_stack,
-        output_buffer: emulator.output_buffer,
-        scrollback_limit: emulator.scrollback_limit,
-        window_title: emulator.window_title,
-        plugin_manager: emulator.plugin_manager,
-        saved_cursor: emulator.saved_cursor,
-        scroll_region: emulator.scroll_region,
-        sixel_state: emulator.sixel_state,
-        last_col_exceeded: emulator.last_col_exceeded,
-        cursor_blink_rate: emulator.cursor_blink_rate,
-        cursor_style: emulator.cursor_style,
-        session_id: emulator.session_id,
-        client_options: emulator.client_options
-      }}
+    with {:ok, main_buffer} <-
+           safe_serialize_screen_buffer(emulator.main_screen_buffer),
+         {:ok, alt_buffer} <-
+           safe_serialize_screen_buffer(emulator.alternate_screen_buffer),
+         {:ok, scrollback} <-
+           safe_serialize_screen_buffer(emulator.scrollback_buffer) do
+      {:ok,
+       %{
+         main_screen_buffer: main_buffer,
+         alternate_screen_buffer: alt_buffer,
+         active_buffer_type: emulator.active_buffer_type,
+         scrollback_buffer: scrollback,
+         cursor: emulator.cursor,
+         mode_manager: emulator.mode_manager,
+         style: emulator.style,
+         charset_state: emulator.charset_state,
+         width: emulator.width,
+         height: emulator.height,
+         window_state: emulator.window_state,
+         state_stack: emulator.state_stack,
+         output_buffer: emulator.output_buffer,
+         scrollback_limit: emulator.scrollback_limit,
+         window_title: emulator.window_title,
+         plugin_manager: emulator.plugin_manager,
+         saved_cursor: emulator.saved_cursor,
+         scroll_region: emulator.scroll_region,
+         sixel_state: emulator.sixel_state,
+         last_col_exceeded: emulator.last_col_exceeded,
+         cursor_blink_rate: emulator.cursor_blink_rate,
+         cursor_style: emulator.cursor_style,
+         session_id: emulator.session_id,
+         client_options: emulator.client_options
+       }}
     else
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "Emulator serialization failed: #{inspect(reason)}"
         )
+
         {:error, {:emulator_serialization_failed, reason}}
     end
   end
@@ -149,20 +159,23 @@ defmodule Raxol.Terminal.Session.Serializer do
     Raxol.Core.Runtime.Log.error(
       "Invalid emulator structure: #{inspect(invalid)}"
     )
+
     {:error, :invalid_emulator_structure}
   end
 
   defp safe_serialize_renderer(%Renderer{} = renderer) do
     with {:ok, buffer} <- safe_serialize_screen_buffer(renderer.screen_buffer) do
-      {:ok, %{
-        screen_buffer: buffer,
-        theme: renderer.theme
-      }}
+      {:ok,
+       %{
+         screen_buffer: buffer,
+         theme: renderer.theme
+       }}
     else
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "Renderer serialization failed: #{inspect(reason)}"
         )
+
         {:error, {:renderer_serialization_failed, reason}}
     end
   end
@@ -175,22 +188,25 @@ defmodule Raxol.Terminal.Session.Serializer do
     Raxol.Core.Runtime.Log.error(
       "Invalid renderer structure: #{inspect(invalid)}"
     )
+
     {:error, :invalid_renderer_structure}
   end
 
   defp safe_serialize_screen_buffer(%ScreenBuffer{} = buffer) do
     with {:ok, cells} <- safe_serialize_cells(buffer.cells) do
-      {:ok, %{
-        width: buffer.width,
-        height: buffer.height,
-        cells: cells,
-        cursor_position: buffer.cursor_position
-      }}
+      {:ok,
+       %{
+         width: buffer.width,
+         height: buffer.height,
+         cells: cells,
+         cursor_position: buffer.cursor_position
+       }}
     else
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "ScreenBuffer serialization failed: #{inspect(reason)}"
         )
+
         {:error, {:buffer_serialization_failed, reason}}
     end
   end
@@ -201,12 +217,13 @@ defmodule Raxol.Terminal.Session.Serializer do
 
   defp safe_serialize_screen_buffer(buffers) when is_list(buffers) do
     results = Enum.map(buffers, &safe_serialize_screen_buffer/1)
-    
-    errors = Enum.filter(results, fn
-      {:error, _} -> true
-      _ -> false
-    end)
-    
+
+    errors =
+      Enum.filter(results, fn
+        {:error, _} -> true
+        _ -> false
+      end)
+
     if Enum.empty?(errors) do
       serialized = Enum.map(results, fn {:ok, data} -> data end)
       {:ok, serialized}
@@ -223,22 +240,24 @@ defmodule Raxol.Terminal.Session.Serializer do
     Raxol.Core.Runtime.Log.error(
       "Invalid screen buffer structure: #{inspect(invalid)}"
     )
+
     {:error, :invalid_screen_buffer}
   end
 
   defp safe_serialize_cells(cells) when is_list(cells) do
-    result = 
+    result =
       cells
       |> Enum.with_index()
       |> Enum.reduce_while({:ok, []}, fn {row, row_idx}, {:ok, acc} ->
         case safe_serialize_row(row, row_idx) do
           {:ok, serialized_row} ->
             {:cont, {:ok, acc ++ [serialized_row]}}
+
           {:error, reason} ->
             {:halt, {:error, {:row_serialization_failed, row_idx, reason}}}
         end
       end)
-    
+
     case result do
       {:ok, serialized} -> {:ok, serialized}
       error -> error
@@ -251,12 +270,13 @@ defmodule Raxol.Terminal.Session.Serializer do
 
   defp safe_serialize_row(row, _row_idx) when is_list(row) do
     results = Enum.map(row, &safe_serialize_cell/1)
-    
-    errors = Enum.filter(results, fn
-      {:error, _} -> true
-      _ -> false
-    end)
-    
+
+    errors =
+      Enum.filter(results, fn
+        {:error, _} -> true
+        _ -> false
+      end)
+
     if Enum.empty?(errors) do
       serialized = Enum.map(results, fn {:ok, data} -> data end)
       {:ok, serialized}
@@ -267,95 +287,113 @@ defmodule Raxol.Terminal.Session.Serializer do
 
   defp safe_serialize_cell(%Raxol.Terminal.Cell{} = cell) do
     with {:ok, style} <- safe_serialize_style(cell.style) do
-      {:ok, %{
-        char: cell.char,
-        style: style,
-        dirty: cell.dirty,
-        wide_placeholder: cell.wide_placeholder
-      }}
+      {:ok,
+       %{
+         char: cell.char,
+         style: style,
+         dirty: cell.dirty,
+         wide_placeholder: cell.wide_placeholder
+       }}
     else
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "Cell serialization failed: #{inspect(reason)}, cell: #{inspect(cell)}"
         )
+
         {:error, {:cell_serialization_failed, reason}}
     end
   end
 
   defp safe_serialize_cell(nil) do
     # Return default empty cell
-    {:ok, %{
-      char: " ",
-      style: serialize_default_style(),
-      dirty: false,
-      wide_placeholder: false
-    }}
+    {:ok,
+     %{
+       char: " ",
+       style: serialize_default_style(),
+       dirty: false,
+       wide_placeholder: false
+     }}
   end
 
   defp safe_serialize_cell(invalid) do
     Raxol.Core.Runtime.Log.warning(
       "Invalid cell structure: #{inspect(invalid)}"
     )
+
     # Return default cell instead of failing
     safe_serialize_cell(nil)
   end
 
   defp safe_serialize_style(%Raxol.Terminal.ANSI.TextFormatting.Core{} = style) do
-    {:ok, %{
-      bold: style.bold,
-      italic: style.italic,
-      underline: style.underline,
-      blink: style.blink,
-      reverse: style.reverse,
-      foreground: style.foreground,
-      background: style.background,
-      double_width: Map.get(style, :double_width, false),
-      double_height: Map.get(style, :double_height, false),
-      faint: Map.get(style, :faint, false),
-      conceal: Map.get(style, :conceal, false),
-      strikethrough: Map.get(style, :strikethrough, false),
-      fraktur: Map.get(style, :fraktur, false),
-      double_underline: Map.get(style, :double_underline, false),
-      framed: Map.get(style, :framed, false),
-      encircled: Map.get(style, :encircled, false),
-      overlined: Map.get(style, :overlined, false),
-      hyperlink: Map.get(style, :hyperlink)
-    }}
-  rescue
-    error ->
-      Raxol.Core.Runtime.Log.error(
-        "Style serialization exception: #{inspect(error)}"
-      )
-      {:error, {:style_serialization_exception, error}}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           {:ok,
+            %{
+              bold: style.bold,
+              italic: style.italic,
+              underline: style.underline,
+              blink: style.blink,
+              reverse: style.reverse,
+              foreground: style.foreground,
+              background: style.background,
+              double_width: Map.get(style, :double_width, false),
+              double_height: Map.get(style, :double_height, false),
+              faint: Map.get(style, :faint, false),
+              conceal: Map.get(style, :conceal, false),
+              strikethrough: Map.get(style, :strikethrough, false),
+              fraktur: Map.get(style, :fraktur, false),
+              double_underline: Map.get(style, :double_underline, false),
+              framed: Map.get(style, :framed, false),
+              encircled: Map.get(style, :encircled, false),
+              overlined: Map.get(style, :overlined, false),
+              hyperlink: Map.get(style, :hyperlink)
+            }}
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, {error, _stacktrace}} ->
+        Raxol.Core.Runtime.Log.error(
+          "Style serialization exception: #{inspect(error)}"
+        )
+
+        {:error, {:style_serialization_exception, error}}
+    end
   end
 
   defp safe_serialize_style(%Raxol.Terminal.ANSI.TextFormatting{} = style) do
-    {:ok, %{
-      bold: style.bold,
-      italic: style.italic,
-      underline: style.underline,
-      blink: style.blink,
-      reverse: style.reverse,
-      foreground: style.foreground,
-      background: style.background,
-      double_width: Map.get(style, :double_width, false),
-      double_height: Map.get(style, :double_height, false),
-      faint: Map.get(style, :faint, false),
-      conceal: Map.get(style, :conceal, false),
-      strikethrough: Map.get(style, :strikethrough, false),
-      fraktur: Map.get(style, :fraktur, false),
-      double_underline: Map.get(style, :double_underline, false),
-      framed: Map.get(style, :framed, false),
-      encircled: Map.get(style, :encircled, false),
-      overlined: Map.get(style, :overlined, false),
-      hyperlink: Map.get(style, :hyperlink)
-    }}
-  rescue
-    error ->
-      Raxol.Core.Runtime.Log.error(
-        "Style serialization exception: #{inspect(error)}"
-      )
-      {:error, {:style_serialization_exception, error}}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           {:ok,
+            %{
+              bold: style.bold,
+              italic: style.italic,
+              underline: style.underline,
+              blink: style.blink,
+              reverse: style.reverse,
+              foreground: style.foreground,
+              background: style.background,
+              double_width: Map.get(style, :double_width, false),
+              double_height: Map.get(style, :double_height, false),
+              faint: Map.get(style, :faint, false),
+              conceal: Map.get(style, :conceal, false),
+              strikethrough: Map.get(style, :strikethrough, false),
+              fraktur: Map.get(style, :fraktur, false),
+              double_underline: Map.get(style, :double_underline, false),
+              framed: Map.get(style, :framed, false),
+              encircled: Map.get(style, :encircled, false),
+              overlined: Map.get(style, :overlined, false),
+              hyperlink: Map.get(style, :hyperlink)
+            }}
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, {error, _stacktrace}} ->
+        Raxol.Core.Runtime.Log.error(
+          "Style serialization exception: #{inspect(error)}"
+        )
+
+        {:error, {:style_serialization_exception, error}}
+    end
   end
 
   defp safe_serialize_style(nil) do
@@ -366,6 +404,7 @@ defmodule Raxol.Terminal.Session.Serializer do
     Raxol.Core.Runtime.Log.warning(
       "Unknown style type encountered during serialization: #{inspect(style)}"
     )
+
     # Return default style
     {:ok, serialize_default_style()}
   end
@@ -397,9 +436,13 @@ defmodule Raxol.Terminal.Session.Serializer do
 
   defp deserialize_emulator(emulator_data) when is_map(emulator_data) do
     with {:ok, main_screen_buffer} <-
-           deserialize_screen_buffer(Map.get(emulator_data, :main_screen_buffer)),
+           deserialize_screen_buffer(
+             Map.get(emulator_data, :main_screen_buffer)
+           ),
          {:ok, alternate_screen_buffer} <-
-           deserialize_screen_buffer(Map.get(emulator_data, :alternate_screen_buffer)),
+           deserialize_screen_buffer(
+             Map.get(emulator_data, :alternate_screen_buffer)
+           ),
          {:ok, scrollback_buffer} <-
            deserialize_screen_buffer(Map.get(emulator_data, :scrollback_buffer)) do
       emulator = %Emulator{
@@ -500,12 +543,13 @@ defmodule Raxol.Terminal.Session.Serializer do
 
   defp deserialize_screen_buffer(buffers) when is_list(buffers) do
     results = Enum.map(buffers, &deserialize_screen_buffer/1)
-    
-    errors = Enum.filter(results, fn
-      {:error, _} -> true
-      _ -> false
-    end)
-    
+
+    errors =
+      Enum.filter(results, fn
+        {:error, _} -> true
+        _ -> false
+      end)
+
     if Enum.empty?(errors) do
       deserialized = Enum.map(results, fn {:ok, data} -> data end)
       {:ok, deserialized}
@@ -523,18 +567,19 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp safe_deserialize_cells(cells) when is_list(cells) do
-    result = 
+    result =
       cells
       |> Enum.with_index()
       |> Enum.reduce_while({:ok, []}, fn {row, row_idx}, {:ok, acc} ->
         case safe_deserialize_row(row, row_idx) do
           {:ok, deserialized_row} ->
             {:cont, {:ok, acc ++ [deserialized_row]}}
+
           {:error, reason} ->
             {:halt, {:error, {:row_deserialization_failed, row_idx, reason}}}
         end
       end)
-    
+
     case result do
       {:ok, deserialized} -> {:ok, deserialized}
       error -> error
@@ -547,22 +592,28 @@ defmodule Raxol.Terminal.Session.Serializer do
 
   defp safe_deserialize_row(row, _row_idx) when is_list(row) do
     results = Enum.map(row, &safe_deserialize_cell/1)
-    
-    errors = Enum.filter(results, fn
-      {:error, _} -> true
-      _ -> false
-    end)
-    
+
+    errors =
+      Enum.filter(results, fn
+        {:error, _} -> true
+        _ -> false
+      end)
+
     if Enum.empty?(errors) do
       deserialized = Enum.map(results, fn {:ok, data} -> data end)
       {:ok, deserialized}
     else
       # Log errors but continue with default cells
-      Raxol.Core.Runtime.Log.warning("Some cells failed to deserialize: #{inspect(errors)}")
-      deserialized = Enum.map(results, fn
-        {:ok, data} -> data
-        {:error, _} -> create_default_cell()
-      end)
+      Raxol.Core.Runtime.Log.warning(
+        "Some cells failed to deserialize: #{inspect(errors)}"
+      )
+
+      deserialized =
+        Enum.map(results, fn
+          {:ok, data} -> data
+          {:error, _} -> create_default_cell()
+        end)
+
       {:ok, deserialized}
     end
   end
@@ -574,17 +625,19 @@ defmodule Raxol.Terminal.Session.Serializer do
          wide_placeholder: wide_placeholder
        }) do
     with {:ok, style} <- safe_deserialize_style(style_data) do
-      {:ok, %Raxol.Terminal.Cell{
-        char: char,
-        style: style,
-        dirty: dirty,
-        wide_placeholder: wide_placeholder
-      }}
+      {:ok,
+       %Raxol.Terminal.Cell{
+         char: char,
+         style: style,
+         dirty: dirty,
+         wide_placeholder: wide_placeholder
+       }}
     else
       {:error, reason} ->
         Raxol.Core.Runtime.Log.warning(
           "Cell deserialization failed: #{inspect(reason)}, using default"
         )
+
         {:ok, create_default_cell()}
     end
   end
@@ -603,34 +656,40 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp safe_deserialize_style(style_data) when is_map(style_data) do
-    style = %Raxol.Terminal.ANSI.TextFormatting.Core{
-      bold: Map.get(style_data, :bold, false),
-      italic: Map.get(style_data, :italic, false),
-      underline: Map.get(style_data, :underline, false),
-      blink: Map.get(style_data, :blink, false),
-      reverse: Map.get(style_data, :reverse, false),
-      foreground: Map.get(style_data, :foreground),
-      background: Map.get(style_data, :background),
-      double_width: Map.get(style_data, :double_width, false),
-      double_height: Map.get(style_data, :double_height, false),
-      faint: Map.get(style_data, :faint, false),
-      conceal: Map.get(style_data, :conceal, false),
-      strikethrough: Map.get(style_data, :strikethrough, false),
-      fraktur: Map.get(style_data, :fraktur, false),
-      double_underline: Map.get(style_data, :double_underline, false),
-      framed: Map.get(style_data, :framed, false),
-      encircled: Map.get(style_data, :encircled, false),
-      overlined: Map.get(style_data, :overlined, false),
-      hyperlink: Map.get(style_data, :hyperlink)
-    }
-    
-    {:ok, style}
-  rescue
-    error ->
-      Raxol.Core.Runtime.Log.warning(
-        "Style deserialization exception: #{inspect(error)}"
-      )
-      {:ok, Raxol.Terminal.ANSI.TextFormatting.Core.new()}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           style = %Raxol.Terminal.ANSI.TextFormatting.Core{
+             bold: Map.get(style_data, :bold, false),
+             italic: Map.get(style_data, :italic, false),
+             underline: Map.get(style_data, :underline, false),
+             blink: Map.get(style_data, :blink, false),
+             reverse: Map.get(style_data, :reverse, false),
+             foreground: Map.get(style_data, :foreground),
+             background: Map.get(style_data, :background),
+             double_width: Map.get(style_data, :double_width, false),
+             double_height: Map.get(style_data, :double_height, false),
+             faint: Map.get(style_data, :faint, false),
+             conceal: Map.get(style_data, :conceal, false),
+             strikethrough: Map.get(style_data, :strikethrough, false),
+             fraktur: Map.get(style_data, :fraktur, false),
+             double_underline: Map.get(style_data, :double_underline, false),
+             framed: Map.get(style_data, :framed, false),
+             encircled: Map.get(style_data, :encircled, false),
+             overlined: Map.get(style_data, :overlined, false),
+             hyperlink: Map.get(style_data, :hyperlink)
+           }
+
+           {:ok, style}
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, {error, _stacktrace}} ->
+        Raxol.Core.Runtime.Log.warning(
+          "Style deserialization exception: #{inspect(error)}"
+        )
+
+        {:ok, Raxol.Terminal.ANSI.TextFormatting.Core.new()}
+    end
   end
 
   defp safe_deserialize_style(nil) do

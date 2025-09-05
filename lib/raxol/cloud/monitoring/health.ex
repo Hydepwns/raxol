@@ -1,6 +1,5 @@
 # Health implementation for monitoring
 defmodule Raxol.Cloud.Monitoring.Health do
-  
   @moduledoc false
 
   # Process dictionary key for health

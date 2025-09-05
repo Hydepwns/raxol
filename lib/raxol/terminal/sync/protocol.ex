@@ -149,8 +149,12 @@ defmodule Raxol.Terminal.Sync.Protocol do
 
   defp validate_message(message) do
     with true <- Map.has_key?(message, :type) || {:error, :missing_type},
-         true <- Map.has_key?(message, :component_id) || {:error, :missing_component_id},
-         true <- Map.has_key?(message, :component_type) || {:error, :missing_component_type},
+         true <-
+           Map.has_key?(message, :component_id) ||
+             {:error, :missing_component_id},
+         true <-
+           Map.has_key?(message, :component_type) ||
+             {:error, :missing_component_type},
          true <- Map.has_key?(message, :metadata) || {:error, :missing_metadata} do
       :ok
     else

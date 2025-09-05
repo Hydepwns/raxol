@@ -1,5 +1,4 @@
 defmodule Raxol.Animation.PathManager do
-  
   @moduledoc """
   Manages animation target paths and state structure utilities.
 

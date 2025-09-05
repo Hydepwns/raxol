@@ -1,6 +1,5 @@
 # Alerts implementation for monitoring
 defmodule Raxol.Cloud.Monitoring.Alerts do
-  
   @moduledoc false
 
   # Process dictionary key for alerts

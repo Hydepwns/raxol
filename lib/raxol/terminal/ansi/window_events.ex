@@ -20,6 +20,7 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ANSI.Monitor
   alias Raxol.Terminal.ANSI.WindowManipulation
+  alias Raxol.Core.ErrorHandling
 
   @type window_event_type ::
           :close
@@ -46,14 +47,17 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
   """
   @spec process_sequence(String.t(), list(String.t())) :: window_event() | nil
   def process_sequence(sequence, params) do
-    try do
-      case get_sequence_handler(sequence) do
-        nil -> nil
-        handler -> handler.(params)
-      end
-    rescue
-      e ->
-        handle_sequence_error(sequence, params, e, __STACKTRACE__)
+    case ErrorHandling.safe_call(fn ->
+           case get_sequence_handler(sequence) do
+             nil -> nil
+             handler -> handler.(params)
+           end
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, e} ->
+        handle_sequence_error(sequence, params, e, nil)
     end
   end
 
@@ -62,20 +66,30 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
   end
 
   defp handle_sequence_error(sequence, params, error, stacktrace) do
-    try do
-      Monitor.record_error(sequence, "Window event error: #{inspect(error)}", %{
-        params: params,
-        stacktrace: Exception.format_stacktrace(stacktrace)
-      })
-    rescue
-      e ->
+    case ErrorHandling.safe_call(fn ->
+           Monitor.record_error(
+             sequence,
+             "Window event error: #{inspect(error)}",
+             %{
+               params: params,
+               stacktrace:
+                 if(stacktrace,
+                   do: Exception.format_stacktrace(stacktrace),
+                   else: nil
+                 )
+             }
+           )
+         end) do
+      {:ok, _} ->
+        :ok
+
+      {:error, e} ->
         Monitor.record_error(
           sequence,
           "Error recording window event error: #{inspect(e)}",
           %{
             original_error: inspect(error),
-            params: params,
-            stacktrace: Exception.format_stacktrace(stacktrace)
+            params: params
           }
         )
     end

@@ -1,5 +1,4 @@
 defmodule Raxol.Docs.ComponentCatalog do
-  
   @moduledoc """
   Visual component catalog for Raxol documentation.
 

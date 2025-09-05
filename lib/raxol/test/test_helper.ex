@@ -12,8 +12,9 @@ defmodule Raxol.Test.TestHelper do
   use ExUnit.CaseTemplate
   import ExUnit.Assertions
   alias Raxol.Core.Events.{Event}
+  alias Raxol.Core.ErrorHandling
   require Raxol.Core.Runtime.Log
-  
+
   @doc """
   Sets up a test environment with necessary services and configurations.
   """
@@ -195,13 +196,22 @@ defmodule Raxol.Test.TestHelper do
     {:ok, capture_pid} = StringIO.open("")
     Process.group_leader(self(), capture_pid)
 
-    try do
-      fun.()
-      {_input, output} = StringIO.contents(capture_pid)
-      output
-    after
-      Process.group_leader(self(), original_group_leader)
-      StringIO.close(capture_pid)
+    result =
+      ErrorHandling.ensure_cleanup(
+        fn ->
+          fun.()
+          {_input, output} = StringIO.contents(capture_pid)
+          output
+        end,
+        fn ->
+          Process.group_leader(self(), original_group_leader)
+          StringIO.close(capture_pid)
+        end
+      )
+
+    case result do
+      {:ok, output} -> output
+      {:error, _} -> ""
     end
   end
 

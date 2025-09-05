@@ -1,5 +1,4 @@
 defmodule Raxol.Animation.Physics.ForceField do
-  
   @moduledoc """
   Force field implementation for physics simulations.
 

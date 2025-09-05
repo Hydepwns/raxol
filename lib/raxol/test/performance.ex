@@ -10,7 +10,7 @@ defmodule Raxol.Test.Performance do
   """
 
   alias Raxol.Test.Visual
-  
+
   defmacro __using__(_opts) do
     quote do
       import Raxol.Test.Performance

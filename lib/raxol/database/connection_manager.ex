@@ -56,6 +56,7 @@ defmodule Raxol.Database.ConnectionManager do
         Raxol.Core.Runtime.Log.error(
           "Database connection check failed with exception: #{inspect(error)}"
         )
+
         false
     end
   end
@@ -76,12 +77,14 @@ defmodule Raxol.Database.ConnectionManager do
             "Database connection is unhealthy, attempting to restart...",
             %{}
           )
+
           restart_connection()
 
         {:error, error} ->
           Raxol.Core.Runtime.Log.error(
             "Error checking database connection: #{inspect(error)}"
           )
+
           restart_connection()
       end
     else
@@ -246,8 +249,12 @@ defmodule Raxol.Database.ConnectionManager do
     Task.async(fn -> Repo.custom_query("SELECT 1") end)
     |> Task.yield(5000)
     |> case do
-      {:ok, result} -> result
-      {:exit, reason} -> {:error, {:health_check_failed, reason}}
+      {:ok, result} ->
+        result
+
+      {:exit, reason} ->
+        {:error, {:health_check_failed, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -264,9 +271,15 @@ defmodule Raxol.Database.ConnectionManager do
     end)
     |> Task.yield(3000)
     |> case do
-      {:ok, :healthy} -> {:ok, :healthy}
-      {:ok, :unhealthy} -> {:error, :unhealthy}
-      {:exit, reason} -> {:error, {:connection_check_failed, reason}}
+      {:ok, :healthy} ->
+        {:ok, :healthy}
+
+      {:ok, :unhealthy} ->
+        {:error, :unhealthy}
+
+      {:exit, reason} ->
+        {:error, {:connection_check_failed, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -281,8 +294,12 @@ defmodule Raxol.Database.ConnectionManager do
     end)
     |> Task.yield(10000)
     |> case do
-      {:ok, result} -> result
-      {:exit, reason} -> {:error, {:close_connections_failed, reason}}
+      {:ok, result} ->
+        result
+
+      {:exit, reason} ->
+        {:error, {:close_connections_failed, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -293,8 +310,12 @@ defmodule Raxol.Database.ConnectionManager do
     Task.async(fn -> operation.() end)
     |> Task.yield(30000)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, reason}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, reason}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}

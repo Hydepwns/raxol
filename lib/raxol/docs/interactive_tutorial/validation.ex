@@ -1,10 +1,10 @@
 defmodule Raxol.Docs.InteractiveTutorial.Validation do
-  
   @moduledoc """
   Handles validation of tutorial exercises and user input.
   """
 
   alias Raxol.Docs.InteractiveTutorial.Models.Step
+  alias Raxol.Core.ErrorHandling
 
   @type validation_result :: {:ok, String.t()} | {:error, String.t()}
 
@@ -18,9 +18,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
       {false, false} -> do_validate(step.exercise, solution)
     end
   end
-  
+
   # Helper functions for pattern matching refactoring
-  
+
   defp validate_with_custom_function(validation_fn, solution) do
     if validation_fn.(solution) do
       {:ok, "Solution is correct!"}
@@ -59,12 +59,15 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   Validates code syntax.
   """
   def validate_syntax(code) when is_binary(code) do
-    try do
-      Code.string_to_quoted!(code)
-      {:ok, "Code syntax is valid"}
-    rescue
-      e in SyntaxError ->
-        {:error, "Syntax error: #{e.description}"}
+    case ErrorHandling.safe_call(fn -> Code.string_to_quoted!(code) end) do
+      {:ok, _} ->
+        {:ok, "Code syntax is valid"}
+
+      {:error, %SyntaxError{description: description}} ->
+        {:error, "Syntax error: #{description}"}
+
+      {:error, _} ->
+        {:error, "Syntax error: Invalid code"}
     end
   end
 
@@ -72,15 +75,18 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   Validates code execution.
   """
   def validate_execution(code) when is_binary(code) do
-    try do
-      {result, _} = Code.eval_string(code)
-      {:ok, "Code executed successfully", result}
-    rescue
-      e in RuntimeError ->
-        {:error, "Runtime error: #{e.message}"}
+    case ErrorHandling.safe_call(fn -> Code.eval_string(code) end) do
+      {:ok, {result, _}} ->
+        {:ok, "Code executed successfully", result}
 
-      e in CompileError ->
-        {:error, "Compilation error: #{e.description}"}
+      {:error, %RuntimeError{message: message}} ->
+        {:error, "Runtime error: #{message}"}
+
+      {:error, %CompileError{description: description}} ->
+        {:error, "Compilation error: #{description}"}
+
+      {:error, _} ->
+        {:error, "Code execution failed"}
     end
   end
 

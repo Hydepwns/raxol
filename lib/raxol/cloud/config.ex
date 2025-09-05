@@ -1,5 +1,4 @@
 defmodule Raxol.Cloud.Config do
-  
   @moduledoc """
   Configuration management for Raxol cloud integrations.
 
@@ -411,10 +410,12 @@ defmodule Raxol.Cloud.Config do
   end
 
   # Helper functions for pattern matching refactoring
-  
+
   defp convert_env_value(key, value) do
-    cond_key = {interval_key?(key), rate_key?(key), boolean_value?(value), mode_key?(key)}
-    
+    cond_key =
+      {interval_key?(key), rate_key?(key), boolean_value?(value),
+       mode_key?(key)}
+
     case cond_key do
       {true, _, _, _} -> String.to_integer(value)
       {false, true, _, _} -> String.to_float(value)

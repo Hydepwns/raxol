@@ -557,10 +557,13 @@ defmodule Raxol.Accounts do
   end
 
   defp verify_password(password, password_hash) do
-    # Use Bcrypt for password verification
-    Bcrypt.verify_pass(password, password_hash)
-  rescue
-    _ -> false
+    # Use Bcrypt for password verification with functional error handling
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           Bcrypt.verify_pass(password, password_hash)
+         end) do
+      {:ok, result} -> result
+      {:error, _} -> false
+    end
   end
 
   defp hash_password(password) do

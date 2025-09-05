@@ -2,13 +2,15 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   @moduledoc """
   Unified plugin system for the Raxol terminal emulator.
   Handles themes, scripting, and extensions.
-  
+
   Refactored version with pure functional error handling patterns.
   All try/catch blocks have been replaced with with statements and proper error tuples.
   """
 
   use GenServer
   require Logger
+
+  alias Raxol.Core.ErrorHandling
 
   # Types
   @type plugin_id :: String.t()
@@ -225,7 +227,12 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
             {:ok, %{state | plugins: new_plugins}}
 
           {:error, reason} ->
-            error_plugin_state = %{plugin_state | status: :error, error: inspect(reason)}
+            error_plugin_state = %{
+              plugin_state
+              | status: :error,
+                error: inspect(reason)
+            }
+
             new_plugins = Map.put(state.plugins, plugin_id, error_plugin_state)
             new_state = %{state | plugins: new_plugins}
             {:error, :reload_failed, new_state}
@@ -366,9 +373,11 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         type: :theme,
         name: Keyword.get(opts, :name, theme_config[:name] || "Unnamed Theme"),
         version: Keyword.get(opts, :version, theme_config[:version] || "1.0.0"),
-        description: Keyword.get(opts, :description, theme_config[:description] || ""),
+        description:
+          Keyword.get(opts, :description, theme_config[:description] || ""),
         author: Keyword.get(opts, :author, theme_config[:author] || "Unknown"),
-        dependencies: Keyword.get(opts, :dependencies, theme_config[:dependencies] || []),
+        dependencies:
+          Keyword.get(opts, :dependencies, theme_config[:dependencies] || []),
         config: theme_config,
         status: :active,
         error: nil,
@@ -383,7 +392,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp load_theme_config(path) do
-    config_path = 
+    config_path =
       if File.dir?(path) do
         Path.join(path, "theme.json")
       else
@@ -399,16 +408,20 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp safe_json_decode(content) do
-    case Jason.decode(content, keys: :atoms) do
-      {:ok, decoded} -> {:ok, decoded}
-      {:error, _} -> {:error, :invalid_json}
+    ErrorHandling.safe_call(fn ->
+      case Jason.decode(content, keys: :atoms) do
+        {:ok, decoded} -> {:ok, decoded}
+        {:error, _} -> {:error, :invalid_json}
+      end
+    end)
+    |> case do
+      {:ok, result} -> result
+      {:error, _} -> {:error, :json_decode_failed}
     end
-  rescue
-    _ -> {:error, :json_decode_failed}
   end
 
   defp load_theme_module(path) do
-    module_path = 
+    module_path =
       if File.dir?(path) do
         Path.join(path, "theme.ex")
       else
@@ -438,6 +451,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
           {:ok, module} -> {:ok, module}
           error -> error
         end
+
       {:error, _} ->
         {:error, :invalid_code}
     end
@@ -445,15 +459,21 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
 
   defp safe_compile_quoted(ast) do
     compiled = Code.compile_quoted(ast)
-    
-    case compiled do
-      [{module, _bin} | _] -> {:ok, module}
-      _ -> {:error, :compilation_failed}
+
+    ErrorHandling.safe_call(fn ->
+      case compiled do
+        [{module, _bin} | _] -> {:ok, module}
+        _ -> {:error, :compilation_failed}
+      end
+    end)
+    |> case do
+      {:ok, result} ->
+        result
+
+      {:error, error} ->
+        Logger.error("Compilation failed: #{inspect(error)}")
+        {:error, :compilation_failed}
     end
-  rescue
-    error ->
-      Logger.error("Compilation failed: #{inspect(error)}")
-      {:error, :compilation_failed}
   end
 
   defp cleanup_theme_plugin(plugin_state) do
@@ -469,9 +489,14 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   defp safe_call_cleanup(module, config, plugin_type) do
     if function_exported?(module, :cleanup, 1) do
       case safe_apply(module, :cleanup, [config]) do
-        {:ok, _} -> :ok
+        {:ok, _} ->
+          :ok
+
         {:error, reason} ->
-          Logger.error("Failed to cleanup #{plugin_type} plugin: #{inspect(reason)}")
+          Logger.error(
+            "Failed to cleanup #{plugin_type} plugin: #{inspect(reason)}"
+          )
+
           {:error, :cleanup_failed}
       end
     else
@@ -498,8 +523,12 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
             {:error, reason} -> {:error, reason}
             other -> {:ok, other}
           end
+
         {:error, reason} ->
-          Logger.error("Failed to execute #{plugin_type} function: #{inspect(reason)}")
+          Logger.error(
+            "Failed to execute #{plugin_type} function: #{inspect(reason)}"
+          )
+
           {:error, :execution_failed}
       end
     else
@@ -631,7 +660,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp load_extension_config(path) do
-    config_path = 
+    config_path =
       if File.dir?(path) do
         Path.join(path, "extension.json")
       else
@@ -649,7 +678,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp load_extension_module(path) do
-    module_path = 
+    module_path =
       if File.dir?(path) do
         Path.join(path, "extension.ex")
       else
@@ -683,14 +712,16 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
-  # Safe function application helper
+  # Safe function application helper using functional error handling
   defp safe_apply(module, function, args) do
-    {:ok, apply(module, function, args)}
-  rescue
-    error ->
-      {:error, error}
-  catch
-    :exit, reason -> {:error, {:exit, reason}}
-    thrown -> {:error, {:throw, thrown}}
+    ErrorHandling.safe_call(fn ->
+      apply(module, function, args)
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, thrown}} -> {:error, {:throw, thrown}}
+      {:error, error} -> {:error, error}
+    end
   end
 end

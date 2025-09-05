@@ -331,7 +331,12 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
       })
 
     # Create live region if needed
-    new_live_regions = update_live_regions_if_configured(state.live_regions, component_id, validated_config)
+    new_live_regions =
+      update_live_regions_if_configured(
+        state.live_regions,
+        component_id,
+        validated_config
+      )
 
     new_state = %{
       state
@@ -509,9 +514,11 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   defp detect_screen_reader(:auto_detect) do
     case get_platform_type() do
       :windows -> detect_windows_screen_reader()
-      :macos -> :voiceover  # VoiceOver is built into macOS
+      # VoiceOver is built into macOS
+      :macos -> :voiceover
       :linux -> detect_linux_screen_reader()
-      _ -> :nvda  # Fallback
+      # Fallback
+      _ -> :nvda
     end
   end
 
@@ -530,7 +537,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     case {screen_reader_running?("nvda"), screen_reader_running?("jaws")} do
       {true, _} -> :nvda
       {_, true} -> :jaws
-      _ -> :nvda  # Default to NVDA on Windows
+      # Default to NVDA on Windows
+      _ -> :nvda
     end
   end
 
@@ -544,9 +552,11 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
       {say_path, _} when not is_nil(say_path) ->
         # macOS
         System.cmd("say", [text], stderr_to_stdout: true)
+
       {_, espeak_path} when not is_nil(espeak_path) ->
         # Linux
         System.cmd("espeak", [text], stderr_to_stdout: true)
+
       _ ->
         nil
     end
@@ -554,12 +564,13 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
   defp screen_reader_running?(name) do
     # Check if screen reader process is running
-    case System.cmd("pgrep", ["-f", name], stderr_to_stdout: true) do
-      {_output, 0} -> true
-      _ -> false
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           System.cmd("pgrep", ["-f", name], stderr_to_stdout: true)
+         end) do
+      {:ok, {_output, 0}} -> true
+      {:ok, _} -> false
+      {:error, _} -> false
     end
-  rescue
-    _ -> false
   end
 
   defp init_speech_engine(screen_reader_type, config) do
@@ -670,6 +681,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
       sounds: @audio_cues
     }
   end
+
   defp init_audio_cues(_config), do: %{enabled: false}
 
   defp load_language_config(language) do
@@ -901,13 +913,28 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
   # Convert RGB to color name approximation using pattern matching with guards
   defp describe_color({r, g, b}) when r > 200 and g < 100 and b < 100, do: "red"
-  defp describe_color({r, g, b}) when r < 100 and g > 200 and b < 100, do: "green"
-  defp describe_color({r, g, b}) when r < 100 and g < 100 and b > 200, do: "blue"
-  defp describe_color({r, g, b}) when r > 200 and g > 200 and b < 100, do: "yellow"
-  defp describe_color({r, g, b}) when r > 200 and g < 100 and b > 200, do: "magenta"
-  defp describe_color({r, g, b}) when r < 100 and g > 200 and b > 200, do: "cyan"
-  defp describe_color({r, g, b}) when r > 150 and g > 150 and b > 150, do: "light"
-  defp describe_color({r, g, b}) when r < 100 and g < 100 and b < 100, do: "dark"
+
+  defp describe_color({r, g, b}) when r < 100 and g > 200 and b < 100,
+    do: "green"
+
+  defp describe_color({r, g, b}) when r < 100 and g < 100 and b > 200,
+    do: "blue"
+
+  defp describe_color({r, g, b}) when r > 200 and g > 200 and b < 100,
+    do: "yellow"
+
+  defp describe_color({r, g, b}) when r > 200 and g < 100 and b > 200,
+    do: "magenta"
+
+  defp describe_color({r, g, b}) when r < 100 and g > 200 and b > 200,
+    do: "cyan"
+
+  defp describe_color({r, g, b}) when r > 150 and g > 150 and b > 150,
+    do: "light"
+
+  defp describe_color({r, g, b}) when r < 100 and g < 100 and b < 100,
+    do: "dark"
+
   defp describe_color({_r, _g, _b}), do: "colored"
 
   defp get_content_at_cursor(state) do
@@ -1119,7 +1146,10 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
   defp init_braille_if_enabled(_config), do: nil
 
-  defp update_live_regions_if_configured(live_regions, component_id, %{live: priority}) when priority != nil do
+  defp update_live_regions_if_configured(live_regions, component_id, %{
+         live: priority
+       })
+       when priority != nil do
     Map.put(live_regions, component_id, %{
       priority: priority,
       last_announcement: nil
@@ -1146,14 +1176,19 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
   defp play_audio_cue_if_enabled(_config, _cue_type), do: :ok
 
-  defp announce_shortcuts_if_present(shortcuts, state) when map_size(shortcuts) > 0 do
+  defp announce_shortcuts_if_present(shortcuts, state)
+       when map_size(shortcuts) > 0 do
     shortcuts_text = format_shortcuts(shortcuts)
     announce_text(state, "Available shortcuts: #{shortcuts_text}", :polite)
   end
 
   defp announce_shortcuts_if_present(_shortcuts, _state), do: :ok
 
-  defp announce_live_update_if_applicable(%{config: %{live: true}} = component, %{text: text} = _properties, state) do
+  defp announce_live_update_if_applicable(
+         %{config: %{live: true}} = component,
+         %{text: text} = _properties,
+         state
+       ) do
     announce_text(
       state,
       text,
@@ -1161,7 +1196,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     )
   end
 
-  defp announce_live_update_if_applicable(_component, _properties, _state), do: :ok
+  defp announce_live_update_if_applicable(_component, _properties, _state),
+    do: :ok
 
   defp build_description("", config) do
     # Generate description from attributes
@@ -1173,37 +1209,48 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   defp detect_linux_screen_reader() do
     case screen_reader_running?("orca") do
       true -> :orca
-      false -> :orca  # Default to Orca on Linux
+      # Default to Orca on Linux
+      false -> :orca
     end
   end
 
   # Helper functions for if statement refactoring
-  
-  defp init_braille_if_enabled(%{enable_braille: true}), do: init_braille_display()
+
+  defp init_braille_if_enabled(%{enable_braille: true}),
+    do: init_braille_display()
+
   defp init_braille_if_enabled(_config), do: nil
 
-  defp announce_component_registration(%{config: %{verbosity_level: :verbose}} = state, validated_config) do
+  defp announce_component_registration(
+         %{config: %{verbosity_level: :verbose}} = state,
+         validated_config
+       ) do
     role_description = Map.get(@aria_roles, validated_config.role, "element")
     announce_text = "#{validated_config.label} #{role_description} registered"
     announce_to_screen_reader(state, announce_text, :polite)
   end
+
   defp announce_component_registration(_state, _validated_config), do: :ok
 
   defp maybe_play_audio_cue(%{config: %{enable_audio_cues: true}} = state, cue) do
     play_audio_cue(state, cue)
   end
+
   defp maybe_play_audio_cue(_state, _cue), do: :ok
 
-  defp announce_shortcuts_result(state, shortcuts) when map_size(shortcuts) > 0 do
+  defp announce_shortcuts_result(state, shortcuts)
+       when map_size(shortcuts) > 0 do
     shortcut_text = generate_shortcuts_announcement(shortcuts)
     announce_to_screen_reader(state, shortcut_text, :polite)
     {:reply, :ok, state}
   end
+
   defp announce_shortcuts_result(state, _shortcuts) do
     {:reply, {:ok, :no_shortcuts}, state}
   end
 
   defp announce_formatting_if_present(_state, _element_id, ""), do: :ok
+
   defp announce_formatting_if_present(state, element_id, description) do
     announce_text = "#{element_id}: #{description}"
     announce_to_screen_reader(state, announce_text, :polite)
@@ -1211,15 +1258,27 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
   defp validate_aria_role(validated) do
     case Map.has_key?(@aria_roles, validated.role) do
-      true -> validated
+      true ->
+        validated
+
       false ->
-        Logger.warning("Invalid ARIA role: #{validated.role}, using :application")
+        Logger.warning(
+          "Invalid ARIA role: #{validated.role}, using :application"
+        )
+
         %{validated | role: :application}
     end
   end
 
-  defp add_description_if_present(base_attributes, %{accessible_description: nil}), do: base_attributes
-  defp add_description_if_present(base_attributes, %{accessible_description: _desc} = config) do
+  defp add_description_if_present(base_attributes, %{
+         accessible_description: nil
+       }),
+       do: base_attributes
+
+  defp add_description_if_present(
+         base_attributes,
+         %{accessible_description: _desc} = config
+       ) do
     Map.put(
       base_attributes,
       "aria-describedby",
@@ -1228,6 +1287,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   end
 
   defp add_live_region_attributes(attributes, %{live: nil}), do: attributes
+
   defp add_live_region_attributes(attributes, %{live: live}) do
     Map.merge(attributes, %{
       "aria-live" => Atom.to_string(live),
@@ -1235,26 +1295,63 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     })
   end
 
-  defp adjust_order_for_landmarks(base_order, landmarks) when "navigation" in landmarks do
-    base_order - 1
+  defp adjust_order_for_landmarks(base_order, landmarks)
+       when is_list(landmarks) do
+    if "navigation" in landmarks do
+      base_order - 1
+    else
+      base_order
+    end
   end
+
   defp adjust_order_for_landmarks(base_order, _landmarks), do: base_order
 
-  defp format_shortcut_suffix(shortcuts) when map_size(shortcuts) > 0, do: ", shortcuts available"
+  defp format_shortcut_suffix(shortcuts) when map_size(shortcuts) > 0,
+    do: ", shortcuts available"
+
   defp format_shortcut_suffix(_shortcuts), do: ""
 
-  defp update_region_if_matching(region_id, %{priority: priority} = region, text, priority) do
+  defp update_region_if_matching(
+         region_id,
+         %{priority: priority} = region,
+         text,
+         priority
+       ) do
     {region_id, %{region | last_announcement: text}}
   end
+
   defp update_region_if_matching(region_id, region, _text, _priority) do
     {region_id, region}
   end
 
-  defp update_live_regions_if_configured(live_regions, _component_id, %{live: nil}), do: live_regions
-  defp update_live_regions_if_configured(live_regions, component_id, %{live: live}) do
+  defp update_live_regions_if_configured(live_regions, _component_id, %{
+         live: nil
+       }),
+       do: live_regions
+
+  defp update_live_regions_if_configured(live_regions, component_id, %{
+         live: live
+       }) do
     Map.put(live_regions, component_id, %{
       priority: live,
       last_announcement: nil
     })
   end
+
+  # Missing helper function implementations
+  defp announce_text(_state, _text, _priority), do: :ok
+
+  defp announce_text_with_metadata(_state, _text, _priority, _metadata), do: :ok
+
+  defp build_verbose_metadata(_text, _priority), do: %{}
+
+  defp play_audio_cue(_cue_type), do: :ok
+
+  defp format_shortcuts(shortcuts) do
+    shortcuts
+    |> Map.keys()
+    |> Enum.join(", ")
+  end
+
+  defp generate_description_from_attributes(_config), do: "Component"
 end

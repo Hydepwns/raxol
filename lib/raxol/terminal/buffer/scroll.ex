@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.Buffer.Scroll do
   - Buffer compression
   """
 
-    alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.Cell
 
   @type t :: %__MODULE__{
           buffer: list(list(Cell.t())),

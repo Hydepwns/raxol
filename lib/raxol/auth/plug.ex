@@ -20,9 +20,11 @@ defmodule Raxol.Auth.Plug do
         case user_id && Accounts.get_user(user_id) do
           user when is_map(user) ->
             assign(conn, :current_user, user)
+
           _ ->
             assign(conn, :current_user, nil)
         end
+
       _user ->
         conn
     end

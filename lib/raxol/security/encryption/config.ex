@@ -353,18 +353,25 @@ defmodule Raxol.Security.Encryption.Config do
     end
   end
 
-  defp validate_key_length(length) when length < 128, do: {:error, :key_too_short}
+  defp validate_key_length(length) when length < 128,
+    do: {:error, :key_too_short}
+
   defp validate_key_length(_length), do: :ok
 
-  defp validate_rotation_period(days) when days > 365, do: {:error, :rotation_period_too_long}
+  defp validate_rotation_period(days) when days > 365,
+    do: {:error, :rotation_period_too_long}
+
   defp validate_rotation_period(_days), do: :ok
 
-  defp validate_algorithm(algorithm) when algorithm in [
-    :aes_256_gcm,
-    :aes_256_cbc, 
-    :chacha20_poly1305,
-    :aes_256_ctr
-  ], do: :ok
+  defp validate_algorithm(algorithm)
+       when algorithm in [
+              :aes_256_gcm,
+              :aes_256_cbc,
+              :chacha20_poly1305,
+              :aes_256_ctr
+            ],
+       do: :ok
+
   defp validate_algorithm(_algorithm), do: {:error, :unsupported_algorithm}
 
   defp validate_against_profile(params, profile_name, state) do
@@ -441,7 +448,7 @@ defmodule Raxol.Security.Encryption.Config do
   defp determine_classification_level(attributes) when is_map(attributes) do
     cond_to_pattern_matching({
       contains_pii?(attributes),
-      contains_financial?(attributes), 
+      contains_financial?(attributes),
       Map.get(attributes, :internal, false)
     })
   end

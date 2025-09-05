@@ -106,7 +106,11 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
       clamped_index = min(max(new_index, 0), num_options - 1)
       # Calculate new scroll offset to keep focused item visible
       new_scroll_offset =
-        calculate_scroll_offset(clamped_index, state.scroll_offset, state.page_size)
+        calculate_scroll_offset(
+          clamped_index,
+          state.scroll_offset,
+          state.page_size
+        )
 
       %{state | focused_index: clamped_index, scroll_offset: new_scroll_offset}
     end
@@ -140,21 +144,29 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
 
     # Clamp scroll_offset so focused_index is visible
     new_scroll_offset =
-      calculate_scroll_offset_with_max(focused_index, state.scroll_offset, visible_height)
+      calculate_scroll_offset_with_max(
+        focused_index,
+        state.scroll_offset,
+        visible_height
+      )
 
     %{state | scroll_offset: new_scroll_offset}
   end
 
   defp calculate_scroll_offset(index, scroll_offset, page_size)
-       when index < scroll_offset, do: index
+       when index < scroll_offset,
+       do: index
 
   defp calculate_scroll_offset(index, scroll_offset, page_size)
-       when index >= scroll_offset + page_size, do: index - page_size + 1
+       when index >= scroll_offset + page_size,
+       do: index - page_size + 1
 
-  defp calculate_scroll_offset(_index, scroll_offset, _page_size), do: scroll_offset
+  defp calculate_scroll_offset(_index, scroll_offset, _page_size),
+    do: scroll_offset
 
   defp calculate_scroll_offset_with_max(index, scroll_offset, visible_height)
-       when index < scroll_offset, do: index
+       when index < scroll_offset,
+       do: index
 
   defp calculate_scroll_offset_with_max(index, scroll_offset, visible_height)
        when index >= scroll_offset + visible_height,

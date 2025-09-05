@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.CharacterSets do
   Manages character sets for the terminal emulator.
   """
 
-  
   @doc """
   Creates a new character sets manager with default settings.
   """

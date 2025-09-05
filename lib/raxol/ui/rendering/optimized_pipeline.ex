@@ -63,7 +63,12 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
 
           _ ->
             result = unquote(block)
-            Raxol.UI.State.Management.Server.set_cache(cache_key, {result, current_time})
+
+            Raxol.UI.State.Management.Server.set_cache(
+              cache_key,
+              {result, current_time}
+            )
+
             result
         end
       end

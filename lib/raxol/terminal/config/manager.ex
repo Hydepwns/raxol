@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Config.Manager do
-  
   @moduledoc """
   Manages terminal configuration including settings, preferences, and environment variables.
   This module is responsible for handling configuration operations and state.

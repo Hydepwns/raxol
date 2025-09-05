@@ -88,16 +88,18 @@ defmodule Mix.Tasks.Raxol.Playground do
         {fn -> opts[:help] end, fn -> {:help} end},
         {fn -> opts[:demo] end, fn -> {:demo} end},
         {fn -> opts[:examples] end, fn -> {:examples} end},
-        {fn -> opts[:web] end, fn ->
-          web_opts = [
-            port: opts[:port] || 4444,
-            component: opts[:component],
-            theme: opts[:theme]
-          ]
-          {:web, web_opts}
-        end}
+        {fn -> opts[:web] end,
+         fn ->
+           web_opts = [
+             port: opts[:port] || 4444,
+             component: opts[:component],
+             theme: opts[:theme]
+           ]
+
+           {:web, web_opts}
+         end}
       ]
-      
+
       Enum.find_value(option_handlers, fn {check, handler} ->
         if check.(), do: handler.(), else: nil
       end) || {:playground, [component: opts[:component], theme: opts[:theme]]}

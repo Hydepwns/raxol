@@ -1,5 +1,4 @@
 defmodule Raxol.Docs.InteractiveTutorial.State do
-  
   @moduledoc """
   Manages the state of the interactive tutorial system.
   """

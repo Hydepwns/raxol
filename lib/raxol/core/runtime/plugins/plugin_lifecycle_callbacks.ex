@@ -41,44 +41,41 @@ defmodule Raxol.Core.Runtime.Plugins.PluginLifecycleCallbacks do
         _opts
       ) do
     # Implementation for load_plugin_by_module callback
-    try do
-      # Initialize the plugin module
-      case module.init(config) do
-        {:ok, plugin_state} ->
-          # Extract plugin metadata from the state
-          plugin_id = Map.get(plugin_state, :name, "unknown_plugin")
+    case Raxol.Core.ErrorHandling.safe_call(fn -> module.init(config) end) do
+      {:ok, {:ok, plugin_state}} ->
+        # Extract plugin metadata from the state
+        plugin_id = Map.get(plugin_state, :name, "unknown_plugin")
 
-          # Update metadata with the new plugin
-          updated_metadata = Map.put(current_metadata, plugin_id, plugin_state)
+        # Update metadata with the new plugin
+        updated_metadata = Map.put(current_metadata, plugin_id, plugin_state)
 
-          # Update states with the new plugin state
-          updated_states = Map.put(states, plugin_id, plugin_state)
+        # Update states with the new plugin state
+        updated_states = Map.put(states, plugin_id, plugin_state)
 
-          # Handle command table - ensure it's a map
-          updated_table =
-            case command_table do
-              table when is_map(table) -> table
-              # Convert atom to empty map
-              table when is_atom(table) -> %{}
-              _ -> %{}
-            end
+        # Handle command table - ensure it's a map
+        updated_table =
+          case command_table do
+            table when is_map(table) -> table
+            # Convert atom to empty map
+            table when is_atom(table) -> %{}
+            _ -> %{}
+          end
 
-          # Also add the plugin to the plugins map (this is needed for enable_plugin to work)
-          # We need to get the current plugins map from the metadata
-          current_plugins = Map.get(current_metadata, :plugins, %{})
-          updated_plugins = Map.put(current_plugins, plugin_id, module)
+        # Also add the plugin to the plugins map (this is needed for enable_plugin to work)
+        # We need to get the current plugins map from the metadata
+        current_plugins = Map.get(current_metadata, :plugins, %{})
+        updated_plugins = Map.put(current_plugins, plugin_id, module)
 
-          updated_metadata_with_plugins =
-            Map.put(updated_metadata, :plugins, updated_plugins)
+        updated_metadata_with_plugins =
+          Map.put(updated_metadata, :plugins, updated_plugins)
 
-          {:ok, {updated_metadata_with_plugins, updated_states, updated_table}}
+        {:ok, {updated_metadata_with_plugins, updated_states, updated_table}}
 
-        {:error, reason} ->
-          {:error, reason}
-      end
-    rescue
-      e ->
-        {:error, {:plugin_init_failed, e}}
+      {:ok, {:error, reason}} ->
+        {:error, reason}
+
+      {:error, reason} ->
+        {:error, {:plugin_init_failed, reason}}
     end
   end
 

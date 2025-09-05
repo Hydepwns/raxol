@@ -4,7 +4,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
   Provides sophisticated version constraint handling with support for complex requirements.
   """
 
-  
   @doc """
   Checks if a version satisfies a version requirement.
 

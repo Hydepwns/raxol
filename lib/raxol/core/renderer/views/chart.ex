@@ -1,6 +1,6 @@
 defmodule Raxol.Core.Renderer.Views.Chart do
   require Raxol.Core.Renderer.View
-  
+
   @moduledoc """
   Chart view component for data visualization.
 
@@ -318,8 +318,9 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     draw_bresenham_with_params(params)
   end
 
-  defp draw_bresenham_with_params(%{canvas: canvas, depth: depth} = _params) 
-       when depth > 10_000, do: canvas
+  defp draw_bresenham_with_params(%{canvas: canvas, depth: depth} = _params)
+       when depth > 10_000,
+       do: canvas
 
   defp draw_bresenham_with_params(%{canvas: canvas} = params) do
     case {out_of_bounds?(canvas, params), reached_end?(params)} do

@@ -26,10 +26,11 @@ defmodule RaxolWeb.ErrorHelpers do
   Safely assigns a value to the socket, handling errors gracefully.
   """
   def safe_assign(socket, key, value_fn) when is_function(value_fn) do
-    try do
-      assign(socket, key, value_fn.())
-    rescue
-      error ->
+    case Raxol.Core.ErrorHandling.safe_call(value_fn) do
+      {:ok, value} ->
+        assign(socket, key, value)
+
+      {:error, error} ->
         Logger.error("Error assigning #{key}: #{inspect(error)}")
         assign(socket, key, nil)
     end

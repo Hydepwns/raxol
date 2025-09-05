@@ -1,15 +1,15 @@
 defmodule Raxol.Animation.StateManager do
   @moduledoc """
   Refactored StateManager that delegates to GenServer implementation.
-  
+
   This module provides the same API as the original Animation.StateManager but uses
   a supervised GenServer instead of the Process dictionary for state management.
-  
+
   ## Migration Notice
   This module is a drop-in replacement for `Raxol.Animation.StateManager`.
   All functions maintain backward compatibility while providing improved
   fault tolerance and functional programming patterns.
-  
+
   ## Benefits over Process Dictionary
   - Supervised state management with fault tolerance
   - Pure functional transformations
@@ -31,6 +31,7 @@ defmodule Raxol.Animation.StateManager do
       nil ->
         {:ok, _pid} = StateServer.start_link()
         :ok
+
       _pid ->
         :ok
     end
@@ -38,7 +39,7 @@ defmodule Raxol.Animation.StateManager do
 
   @doc """
   Initializes the animation state storage.
-  
+
   This function provides backward compatibility with the original StateManager.
   It delegates to the GenServer implementation.
   """
@@ -49,7 +50,7 @@ defmodule Raxol.Animation.StateManager do
 
   @doc """
   Retrieves the animation framework settings.
-  
+
   Returns the current animation settings from the GenServer state.
   """
   def get_settings do
@@ -59,7 +60,7 @@ defmodule Raxol.Animation.StateManager do
 
   @doc """
   Stores an animation definition.
-  
+
   The animation must have a `name` field which will be used as the key.
   """
   def put_animation(animation) do
@@ -69,7 +70,7 @@ defmodule Raxol.Animation.StateManager do
 
   @doc """
   Retrieves an animation definition by name.
-  
+
   Returns `nil` if no animation with the given name exists.
   """
   def get_animation(animation_name) do
@@ -79,7 +80,7 @@ defmodule Raxol.Animation.StateManager do
 
   @doc """
   Stores an active animation instance for a given element.
-  
+
   ## Parameters
   - `element_id`: The ID of the element being animated
   - `animation_name`: The name of the animation
@@ -92,7 +93,7 @@ defmodule Raxol.Animation.StateManager do
 
   @doc """
   Retrieves all active animations.
-  
+
   Returns a map of `{element_id, %{animation_name => instance}}`.
   """
   def get_active_animations do
@@ -102,7 +103,7 @@ defmodule Raxol.Animation.StateManager do
 
   @doc """
   Retrieves a specific active animation instance for a given element and animation name.
-  
+
   Returns `nil` if no matching animation is found.
   """
   def get_active_animation(element_id, animation_name) do
@@ -112,7 +113,7 @@ defmodule Raxol.Animation.StateManager do
 
   @doc """
   Removes a completed or stopped animation instance for a specific element.
-  
+
   This is typically called when an animation completes or is cancelled.
   """
   def remove_active_animation(element_id, animation_name) do
@@ -122,7 +123,7 @@ defmodule Raxol.Animation.StateManager do
 
   @doc """
   Clears all animation state (used primarily for testing or reset).
-  
+
   WARNING: This will remove all animation definitions and active animations.
   Use with caution in production environments.
   """
@@ -135,15 +136,15 @@ defmodule Raxol.Animation.StateManager do
 
   @doc """
   Batch updates multiple active animations at once.
-  
+
   This is more efficient than multiple individual calls when updating
   many animations in a single frame.
-  
+
   ## Parameters
   - `updates`: A list of update operations, each being either:
     - `{:put, element_id, animation_name, instance}` to add/update an animation
     - `{:remove, element_id, animation_name}` to remove an animation
-  
+
   ## Example
   ```elixir
   StateManager.batch_update_active_animations([
@@ -160,7 +161,7 @@ defmodule Raxol.Animation.StateManager do
 
   @doc """
   Gets all animations for a specific element.
-  
+
   Returns a map of animation_name => instance for the given element,
   or an empty map if the element has no active animations.
   """
@@ -180,7 +181,7 @@ defmodule Raxol.Animation.StateManager do
 
   @doc """
   Removes all animations for a specific element.
-  
+
   This is useful when an element is being destroyed or reset.
   """
   def remove_element_animations(element_id) do
@@ -194,7 +195,7 @@ defmodule Raxol.Animation.StateManager do
   def count_active_animations do
     ensure_started()
     all_animations = StateServer.get_active_animations()
-    
+
     Enum.reduce(all_animations, 0, fn {_element_id, animations}, acc ->
       acc + map_size(animations)
     end)

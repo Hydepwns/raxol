@@ -1,5 +1,4 @@
 defmodule Raxol.Core.UserPreferences do
-  
   @moduledoc """
   Manages user preferences for the terminal emulator.
 
@@ -262,15 +261,23 @@ defmodule Raxol.Core.UserPreferences do
   defp normalize_path(path) when is_list(path), do: path
 
   defp normalize_path(path) when is_binary(path) do
-    String.split(path, ".")
-    |> Enum.map(&String.to_existing_atom/1)
-  catch
-    ArgumentError ->
-      Raxol.Core.Runtime.Log.error(
-        "Invalid preference path string: #{inspect(path)} - cannot convert segments to atoms."
-      )
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           String.split(path, ".")
+           |> Enum.map(&String.to_existing_atom/1)
+         end) do
+      {:ok, result} ->
+        result
 
-      []
+      {:error, {%ArgumentError{}, _stacktrace}} ->
+        Raxol.Core.Runtime.Log.error(
+          "Invalid preference path string: #{inspect(path)} - cannot convert segments to atoms."
+        )
+
+        []
+
+      {:error, _} ->
+        []
+    end
   end
 
   @doc """
@@ -286,10 +293,12 @@ defmodule Raxol.Core.UserPreferences do
   end
 
   defp normalize_theme_id(theme) when is_binary(theme) do
-    try do
-      String.to_existing_atom(theme)
-    rescue
-      ArgumentError -> :default
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           String.to_existing_atom(theme)
+         end) do
+      {:ok, result} -> result
+      {:error, {%ArgumentError{}, _stacktrace}} -> :default
+      {:error, _} -> :default
     end
   end
 

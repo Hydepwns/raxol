@@ -9,7 +9,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
   """
 
   require Raxol.Core.Runtime.Log
-    alias Raxol.Core.Events.Event
+  alias Raxol.Core.Events.Event
 
   @doc """
   Processes a keyboard event and determines if it should be handled by the application
@@ -35,7 +35,8 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
   end
 
   defp check_system_key_combinations(key, modifiers, state) do
-    case {quit_key?(key, modifiers, state.quit_keys), debug_toggle_key?(key, modifiers)} do
+    case {quit_key?(key, modifiers, state.quit_keys),
+          debug_toggle_key?(key, modifiers)} do
       {true, _} -> {:system, :quit, state}
       {false, true} -> handle_debug_toggle(state)
       {false, false} -> :not_system

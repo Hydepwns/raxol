@@ -9,7 +9,6 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
   - Mode management
   """
 
-  
   alias Raxol.Terminal.{
     ANSI.SequenceHandlers,
     ANSI.SGRProcessor,

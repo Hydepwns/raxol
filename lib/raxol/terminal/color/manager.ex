@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Color.Manager do
   Manages terminal colors and color operations.
   """
 
-  
   defstruct colors: %{
               foreground: :default,
               background: :default,

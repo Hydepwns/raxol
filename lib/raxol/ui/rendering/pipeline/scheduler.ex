@@ -6,6 +6,7 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
 
   require Logger
   alias Raxol.UI.Rendering.Pipeline.Stages
+  alias Raxol.Core.ErrorHandling
 
   @type state :: map()
   @type diff_result :: term()
@@ -19,18 +20,25 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   Implements debouncing to batch rapid updates.
   """
   @spec schedule_or_execute_render(diff_result(), tree(), state()) :: state()
-  def schedule_or_execute_render(_diff_result, _tree, %{render_scheduled_for_next_frame: true} = state) do
+  def schedule_or_execute_render(
+        _diff_result,
+        _tree,
+        %{render_scheduled_for_next_frame: true} = state
+      ) do
     Logger.debug(
       "Pipeline: Render already scheduled for next frame, skipping additional scheduling."
     )
+
     state
   end
 
-  def schedule_or_execute_render(_diff_result, _tree, %{render_timer_ref: timer_ref} = state) 
+  def schedule_or_execute_render(
+        _diff_result,
+        _tree,
+        %{render_timer_ref: timer_ref} = state
+      )
       when not is_nil(timer_ref) do
-    Logger.debug(
-      "Pipeline: Cancelling existing render timer and rescheduling."
-    )
+    Logger.debug("Pipeline: Cancelling existing render timer and rescheduling.")
     Process.cancel_timer(timer_ref)
     schedule_render(state)
   end
@@ -111,14 +119,13 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   defp commit_to_renderer(painted_output, renderer_module) do
     renderer = renderer_module || Raxol.UI.Rendering.Renderer
 
-    try do
-      renderer.render(painted_output)
+    case ErrorHandling.safe_call(fn -> renderer.render(painted_output) end) do
+      {:ok, _} ->
+        Logger.debug(
+          "Pipeline: Committed output to renderer #{inspect(renderer)}"
+        )
 
-      Logger.debug(
-        "Pipeline: Committed output to renderer #{inspect(renderer)}"
-      )
-    rescue
-      error ->
+      {:error, error} ->
         Logger.error(
           "Pipeline: Failed to commit to renderer: #{inspect(error)}"
         )

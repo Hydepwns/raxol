@@ -350,23 +350,42 @@ defmodule Raxol.Style.Colors.Advanced do
   defp maybe_enhance_contrast(color, false), do: color
 
   defp calculate_hue(0, _c_max, _r_prime, _g_prime, _b_prime), do: 0
-  defp calculate_hue(delta, c_max, r_prime, g_prime, b_prime) when c_max == r_prime do
+
+  defp calculate_hue(delta, c_max, r_prime, g_prime, b_prime)
+       when c_max == r_prime do
     60 * ((g_prime - b_prime) / delta)
   end
-  defp calculate_hue(delta, c_max, r_prime, g_prime, b_prime) when c_max == g_prime do
+
+  defp calculate_hue(delta, c_max, r_prime, g_prime, b_prime)
+       when c_max == g_prime do
     60 * ((b_prime - r_prime) / delta + 2)
   end
-  defp calculate_hue(delta, c_max, r_prime, g_prime, b_prime) when c_max == b_prime do
+
+  defp calculate_hue(delta, c_max, r_prime, g_prime, b_prime)
+       when c_max == b_prime do
     60 * ((r_prime - g_prime) / delta + 4)
   end
+
   defp calculate_hue(_delta, _c_max, _r_prime, _g_prime, _b_prime), do: 0
 
-  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 0 and h < 60, do: {c, x, 0}
-  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 60 and h < 120, do: {x, c, 0}
-  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 120 and h < 180, do: {0, c, x}
-  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 180 and h < 240, do: {0, x, c}
-  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 240 and h < 300, do: {x, 0, c}
-  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 300 and h < 360, do: {c, 0, x}
+  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 0 and h < 60,
+    do: {c, x, 0}
+
+  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 60 and h < 120,
+    do: {x, c, 0}
+
+  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 120 and h < 180,
+    do: {0, c, x}
+
+  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 180 and h < 240,
+    do: {0, x, c}
+
+  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 240 and h < 300,
+    do: {x, 0, c}
+
+  defp calculate_rgb_prime_from_hue(h, c, x) when h >= 300 and h < 360,
+    do: {c, 0, x}
+
   defp calculate_rgb_prime_from_hue(_h, _c, _x), do: {0, 0, 0}
 
   defp adjust_lightness_for_contrast(l) when l > 40 and l < 60, do: l + 20

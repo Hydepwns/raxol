@@ -297,7 +297,14 @@ defmodule Raxol.Terminal.Sync.Manager do
     if new_version > existing_version, do: :update, else: :keep_existing
   end
 
-  defp check_eventual_consistency(new_version, existing_version) when new_version > existing_version, do: :update
-  defp check_eventual_consistency(new_version, existing_version) when new_version == existing_version, do: :conflict
-  defp check_eventual_consistency(_new_version, _existing_version), do: :keep_existing
+  defp check_eventual_consistency(new_version, existing_version)
+       when new_version > existing_version,
+       do: :update
+
+  defp check_eventual_consistency(new_version, existing_version)
+       when new_version == existing_version,
+       do: :conflict
+
+  defp check_eventual_consistency(_new_version, _existing_version),
+    do: :keep_existing
 end

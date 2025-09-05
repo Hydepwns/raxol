@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
-  
   @moduledoc """
   Core plugin responsible for handling notifications (:notify).
   Relies on an implementation of Raxol.System.Interaction for OS interactions.
@@ -200,38 +199,42 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
          os_name,
          state
        ) do
-    try do
-      Raxol.Core.Runtime.Log.debug(
-        "Executing notification command: #{executable} with args: #{inspect(args)}"
-      )
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           Raxol.Core.Runtime.Log.debug(
+             "Executing notification command: #{executable} with args: #{inspect(args)}"
+           )
 
-      case interaction_mod.system_cmd(executable, args, stderr_to_stdout: true) do
-        {_output, 0} ->
-          success_atom =
-            case os_name do
-              :linux -> :notification_sent_linux
-              :macos -> :notification_sent_macos
-              :windows -> :notification_sent_windows
-              _ -> :notification_sent
-            end
+           case interaction_mod.system_cmd(executable, args,
+                  stderr_to_stdout: true
+                ) do
+             {_output, 0} ->
+               success_atom =
+                 case os_name do
+                   :linux -> :notification_sent_linux
+                   :macos -> :notification_sent_macos
+                   :windows -> :notification_sent_windows
+                   _ -> :notification_sent
+                 end
 
-          {:ok, state, success_atom}
+               {:ok, state, success_atom}
 
-        {output, exit_code} ->
-          Raxol.Core.Runtime.Log.error(
-            "Notification command failed. Exit Code: #{exit_code}, Output: #{output}"
-          )
+             {output, exit_code} ->
+               Raxol.Core.Runtime.Log.error(
+                 "Notification command failed. Exit Code: #{exit_code}, Output: #{output}"
+               )
 
-          {:error, {:command_failed, exit_code, output}, state}
-      end
-    rescue
-      e ->
+               {:error, {:command_failed, exit_code, output}, state}
+           end
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, {e, stacktrace}} ->
         Raxol.Core.Runtime.Log.error(
           "NotificationPlugin: Error executing notification command: #{inspect(e)}"
         )
 
-        {:error,
-         {:command_exception, Exception.format(:error, e, __STACKTRACE__)},
+        {:error, {:command_exception, Exception.format(:error, e, stacktrace)},
          state}
     end
   end

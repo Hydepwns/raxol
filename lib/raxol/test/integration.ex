@@ -29,7 +29,6 @@ defmodule Raxol.Test.Integration do
       end
   """
 
-  
   # Delegation to focused modules
   alias Raxol.Test.Integration.{
     HierarchySetup,

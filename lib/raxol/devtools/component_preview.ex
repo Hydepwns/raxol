@@ -379,8 +379,11 @@ defmodule Raxol.DevTools.ComponentPreview do
       },
       children: [
         case safe_render_component(component, props, context) do
-          {:ok, rendered} -> rendered
-          {:error, reason} -> error_component("Error rendering #{component}: #{inspect(reason)}")
+          {:ok, rendered} ->
+            rendered
+
+          {:error, reason} ->
+            error_component("Error rendering #{component}: #{inspect(reason)}")
         end
       ]
     }
@@ -388,7 +391,8 @@ defmodule Raxol.DevTools.ComponentPreview do
 
   defp safe_render_component(component, props, context) do
     with {:ok, render_method} <- determine_render_method(component),
-         {:ok, rendered} <- execute_render_method(render_method, component, props, context) do
+         {:ok, rendered} <-
+           execute_render_method(render_method, component, props, context) do
       {:ok, rendered}
     else
       {:error, reason} -> {:error, reason}
@@ -397,12 +401,19 @@ defmodule Raxol.DevTools.ComponentPreview do
   end
 
   # Helper functions for pattern matching refactoring
-  
+
   defp determine_render_method(component) do
-    case {function_exported?(component, :render, 2), function_exported?(component, :component, 1)} do
-      {true, _} -> {:ok, :render_2}
-      {false, true} -> {:ok, :component_1}
-      {false, false} -> {:error, "Component #{component} does not export render/2 or component/1"}
+    case {function_exported?(component, :render, 2),
+          function_exported?(component, :component, 1)} do
+      {true, _} ->
+        {:ok, :render_2}
+
+      {false, true} ->
+        {:ok, :component_1}
+
+      {false, false} ->
+        {:error,
+         "Component #{component} does not export render/2 or component/1"}
     end
   end
 
@@ -885,7 +896,8 @@ defmodule Raxol.DevTools.ComponentPreview do
   end
 
   defp extract_module_name(content) do
-    with {:ok, regex_result} <- safe_regex_run(~r/defmodule\s+([\w\.]+).*?do/, content),
+    with {:ok, regex_result} <-
+           safe_regex_run(~r/defmodule\s+([\w\.]+).*?do/, content),
          {:ok, module_name} <- extract_module_from_regex(regex_result) do
       {:ok, module_name}
     else
@@ -954,7 +966,8 @@ defmodule Raxol.DevTools.ComponentPreview do
   end
 
   defp check_props_export(component) do
-    with {:ok, has_export} <- safe_function_exported_check(component, :__props__, 0) do
+    with {:ok, has_export} <-
+           safe_function_exported_check(component, :__props__, 0) do
       {:ok, has_export}
     else
       {:error, reason} -> {:error, reason}
@@ -1008,8 +1021,12 @@ defmodule Raxol.DevTools.ComponentPreview do
     Task.async(fn -> component.render(props, context) end)
     |> Task.yield(2000)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:render_exception, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:render_exception, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -1020,8 +1037,12 @@ defmodule Raxol.DevTools.ComponentPreview do
     Task.async(fn -> component.component(props) end)
     |> Task.yield(2000)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:component_exception, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:component_exception, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -1032,8 +1053,12 @@ defmodule Raxol.DevTools.ComponentPreview do
     Task.async(fn -> File.read!(file_path) end)
     |> Task.yield(1000)
     |> case do
-      {:ok, content} -> {:ok, content}
-      {:exit, reason} -> {:error, {:file_read_error, reason}}
+      {:ok, content} ->
+        {:ok, content}
+
+      {:exit, reason} ->
+        {:error, {:file_read_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -1044,8 +1069,12 @@ defmodule Raxol.DevTools.ComponentPreview do
     Task.async(fn -> Regex.run(regex, content) end)
     |> Task.yield(200)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:regex_error, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:regex_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -1063,8 +1092,12 @@ defmodule Raxol.DevTools.ComponentPreview do
     Task.async(fn -> Module.concat([module_name]) end)
     |> Task.yield(100)
     |> case do
-      {:ok, module} -> {:ok, module}
-      {:exit, reason} -> {:error, {:module_concat_error, reason}}
+      {:ok, module} ->
+        {:ok, module}
+
+      {:exit, reason} ->
+        {:error, {:module_concat_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -1095,8 +1128,12 @@ defmodule Raxol.DevTools.ComponentPreview do
     Task.async(fn -> module.__info__(info_type) end)
     |> Task.yield(200)
     |> case do
-      {:ok, info} -> {:ok, info}
-      {:exit, reason} -> {:error, {:module_info_error, reason}}
+      {:ok, info} ->
+        {:ok, info}
+
+      {:exit, reason} ->
+        {:error, {:module_info_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -1107,8 +1144,12 @@ defmodule Raxol.DevTools.ComponentPreview do
     Task.async(fn -> function_exported?(component, function, arity) end)
     |> Task.yield(100)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:export_check_error, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:export_check_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -1119,8 +1160,12 @@ defmodule Raxol.DevTools.ComponentPreview do
     Task.async(fn -> component.__props__() end)
     |> Task.yield(500)
     |> case do
-      {:ok, schema} -> {:ok, schema}
-      {:exit, reason} -> {:error, {:props_schema_error, reason}}
+      {:ok, schema} ->
+        {:ok, schema}
+
+      {:exit, reason} ->
+        {:error, {:props_schema_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -1131,8 +1176,12 @@ defmodule Raxol.DevTools.ComponentPreview do
     Task.async(fn -> Code.eval_string(string_value) end)
     |> Task.yield(1000)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:eval_error, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:eval_error, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}

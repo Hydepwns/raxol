@@ -1,15 +1,15 @@
 defmodule Raxol.Core.FocusManager do
   @moduledoc """
   Refactored FocusManager that delegates to GenServer implementation.
-  
+
   This module provides the same API as the original FocusManager but uses
   a supervised GenServer instead of the Process dictionary for state management.
-  
+
   ## Migration Notice
   This module is a drop-in replacement for `Raxol.Core.FocusManager`.
   All functions maintain backward compatibility while providing improved
   fault tolerance and functional programming patterns.
-  
+
   ## Benefits over Process Dictionary
   - Supervised state management with fault tolerance
   - Pure functional transformations
@@ -31,6 +31,7 @@ defmodule Raxol.Core.FocusManager do
       nil ->
         {:ok, _pid} = Server.start_link()
         :ok
+
       _pid ->
         :ok
     end
@@ -174,7 +175,8 @@ defmodule Raxol.Core.FocusManager do
   Register a handler function to be called when focus changes.
   """
   @impl Raxol.Core.FocusManager.Behaviour
-  def register_focus_change_handler(handler_fun) when is_function(handler_fun, 2) do
+  def register_focus_change_handler(handler_fun)
+      when is_function(handler_fun, 2) do
     ensure_started()
     Server.register_focus_change_handler(handler_fun)
   end
@@ -183,7 +185,8 @@ defmodule Raxol.Core.FocusManager do
   Unregister a focus change handler function.
   """
   @impl Raxol.Core.FocusManager.Behaviour
-  def unregister_focus_change_handler(handler_fun) when is_function(handler_fun, 2) do
+  def unregister_focus_change_handler(handler_fun)
+      when is_function(handler_fun, 2) do
     ensure_started()
     Server.unregister_focus_change_handler(handler_fun)
   end

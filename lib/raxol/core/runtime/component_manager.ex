@@ -1,10 +1,10 @@
 defmodule Raxol.Core.Runtime.ComponentManager do
   @moduledoc """
   Refactored component manager with functional error handling patterns.
-  
+
   This module eliminates all try/rescue blocks and uses pure functional 
   error handling with `with` statements and safe wrapper functions.
-  
+
   Key improvements:
   - 3 try/rescue blocks eliminated
   - Functional error composition with Task-based safety
@@ -15,7 +15,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   use GenServer
   require Raxol.Core.Runtime.Log
-  
+
   alias UUID
   alias Raxol.Core.Runtime.Subscription
 
@@ -158,7 +158,13 @@ defmodule Raxol.Core.Runtime.ComponentManager do
               state = process_commands(commands, component_id, state)
 
               # Queue re-render if state changed
-              state = queue_render_if_changed(state, component_id, new_state, component.state)
+              state =
+                queue_render_if_changed(
+                  state,
+                  component_id,
+                  new_state,
+                  component.state
+                )
 
               # Send component_updated message if runtime_pid is set
               if state.runtime_pid do
@@ -172,7 +178,13 @@ defmodule Raxol.Core.Runtime.ComponentManager do
               state = put_in(state.components[component_id].state, new_state)
 
               # Queue re-render if state changed
-              state = queue_render_if_changed(state, component_id, new_state, component.state)
+              state =
+                queue_render_if_changed(
+                  state,
+                  component_id,
+                  new_state,
+                  component.state
+                )
 
               # Send component_updated message if runtime_pid is set
               if state.runtime_pid do
@@ -185,11 +197,12 @@ defmodule Raxol.Core.Runtime.ComponentManager do
               {:reply, {:error, :invalid_component_return}, state}
           end
         else
-          {:error, reason} -> 
+          {:error, reason} ->
             Raxol.Core.Runtime.Log.warning_with_context(
               "Component update failed: #{inspect(reason)}",
               %{component_id: component_id, message: message}
             )
+
             {:reply, {:error, :component_error}, state}
         end
     end
@@ -205,7 +218,13 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         # Update the state directly in the components map
         state = put_in(state.components[component_id].state, new_state)
         # Queue re-render if state changed
-        state = queue_render_if_changed(state, component_id, new_state, component.state)
+        state =
+          queue_render_if_changed(
+            state,
+            component_id,
+            new_state,
+            component.state
+          )
 
         # Send component_updated message if runtime_pid is set
         if state.runtime_pid do
@@ -342,27 +361,28 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   defp safe_component_init(component_module, props) do
     # Use Task for safe execution with timeout
-    task = Task.async(fn ->
-      component_module.init(props)
-    end)
+    task =
+      Task.async(fn ->
+        component_module.init(props)
+      end)
 
     case Task.yield(task, 5000) do
       {:ok, {:ok, initial_state}} ->
         {:ok, initial_state}
-      
+
       {:ok, initial_state} when is_map(initial_state) ->
         {:ok, initial_state}
-      
+
       {:ok, {:error, reason}} ->
         {:error, reason}
-      
+
       {:ok, _} ->
         {:error, :invalid_init_return}
-      
+
       nil ->
         Task.shutdown(task, :brutal_kill)
         {:error, :init_timeout}
-      
+
       {:exit, reason} ->
         {:error, {:init_crashed, reason}}
     end
@@ -370,18 +390,19 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   defp safe_component_update(component, message) do
     # Use Task for safe execution with timeout
-    task = Task.async(fn ->
-      component.module.update(message, component.state)
-    end)
+    task =
+      Task.async(fn ->
+        component.module.update(message, component.state)
+      end)
 
     case Task.yield(task, 5000) do
       {:ok, result} ->
         {:ok, result}
-      
+
       nil ->
         Task.shutdown(task, :brutal_kill)
         {:error, :update_timeout}
-      
+
       {:exit, reason} ->
         {:error, {:update_crashed, reason}}
     end

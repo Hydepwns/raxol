@@ -66,16 +66,16 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   Creates a new window with the given configuration.
   """
   def create_window(config_or_width, height_or_config \\ nil)
-  
+
   def create_window(%Config{} = config, nil) do
     GenServer.call(__MODULE__, {:create_window, config})
   end
-  
-  def create_window(width, height) 
+
+  def create_window(width, height)
       when is_integer(width) and is_integer(height) do
     create_window(%Config{width: width, height: height})
   end
-  
+
   def create_window(server, %Config{} = config) when is_atom(server) do
     GenServer.call(server, {:create_window, config})
   end
@@ -118,13 +118,14 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   @doc """
   Sets the window state (normal, minimized, maximized, fullscreen).
   """
-  def set_window_state(state) 
+  def set_window_state(state)
       when state in [:normal, :minimized, :maximized, :fullscreen] do
     set_window_state(__MODULE__, state)
   end
-  
-  def set_window_state(server, state) 
-      when is_atom(server) and state in [:normal, :minimized, :maximized, :fullscreen] do
+
+  def set_window_state(server, state)
+      when is_atom(server) and
+             state in [:normal, :minimized, :maximized, :fullscreen] do
     GenServer.call(server, {:set_window_state, state})
   end
 
@@ -132,7 +133,8 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   Sets a specific window's state.
   """
   def set_window_state(server, window_id, state)
-      when is_atom(server) and state in [:active, :inactive, :minimized, :maximized] do
+      when is_atom(server) and
+             state in [:active, :inactive, :minimized, :maximized] do
     GenServer.call(server, {:set_window_state_by_id, window_id, state})
   end
 
@@ -150,9 +152,10 @@ defmodule Raxol.Terminal.Window.Manager.Server do
       when is_integer(width) and width > 0 and is_integer(height) and height > 0 do
     set_window_size(__MODULE__, width, height)
   end
-  
+
   def set_window_size(server, width, height)
-      when is_atom(server) and is_integer(width) and width > 0 and is_integer(height) and height > 0 do
+      when is_atom(server) and is_integer(width) and width > 0 and
+             is_integer(height) and height > 0 do
     GenServer.call(server, {:set_window_size, width, height})
   end
 
@@ -176,8 +179,9 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   def set_window_title(title) when is_binary(title) do
     set_window_title(__MODULE__, title)
   end
-  
-  def set_window_title(server, title) when is_atom(server) and is_binary(title) do
+
+  def set_window_title(server, title)
+      when is_atom(server) and is_binary(title) do
     GenServer.call(server, {:set_window_title, title})
   end
 
@@ -191,14 +195,16 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   @doc """
   Sets the icon name.
   """
-  def set_icon_name(server \\ __MODULE__, icon_name) when is_binary(icon_name) do
+  def set_icon_name(server \\ __MODULE__, icon_name)
+      when is_binary(icon_name) do
     GenServer.call(server, {:set_icon_name, icon_name})
   end
 
   @doc """
   Sets the icon title.
   """
-  def set_icon_title(server \\ __MODULE__, icon_title) when is_binary(icon_title) do
+  def set_icon_title(server \\ __MODULE__, icon_title)
+      when is_binary(icon_title) do
     GenServer.call(server, {:set_icon_title, icon_title})
   end
 
@@ -219,8 +225,18 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   @doc """
   Registers a window's spatial position for navigation.
   """
-  def register_window_position(server \\ __MODULE__, window_id, x, y, width, height) do
-    GenServer.call(server, {:register_window_position, window_id, x, y, width, height})
+  def register_window_position(
+        server \\ __MODULE__,
+        window_id,
+        x,
+        y,
+        width,
+        height
+      ) do
+    GenServer.call(
+      server,
+      {:register_window_position, window_id, x, y, width, height}
+    )
   end
 
   @doc """
@@ -254,7 +270,7 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   @impl GenServer
   def handle_call({:create_window, config}, _from, state) do
     window_id = "window_#{state.next_window_id}"
-    
+
     window = %Window{
       id: window_id,
       title: config[:title] || "",
@@ -264,25 +280,25 @@ defmodule Raxol.Terminal.Window.Manager.Server do
       size: {config.width, config.height},
       state: :inactive
     }
-    
+
     new_windows = Map.put(state.windows, window_id, window)
     new_window_order = [window_id | state.window_order]
-    
+
     new_state = %{
-      state |
-      windows: new_windows,
-      window_order: new_window_order,
-      next_window_id: state.next_window_id + 1
+      state
+      | windows: new_windows,
+        window_order: new_window_order,
+        next_window_id: state.next_window_id + 1
     }
-    
+
     # Activate if it's the first window
-    new_state = 
+    new_state =
       if state.active_window == nil do
         %{new_state | active_window: window_id}
       else
         new_state
       end
-    
+
     {:reply, {:ok, window}, new_state}
   end
 
@@ -299,32 +315,32 @@ defmodule Raxol.Terminal.Window.Manager.Server do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
-      
+
       _window ->
         new_windows = Map.delete(state.windows, window_id)
         new_window_order = List.delete(state.window_order, window_id)
-        
+
         # Update active window if necessary
-        new_active = 
+        new_active =
           if state.active_window == window_id do
             List.first(new_window_order)
           else
             state.active_window
           end
-        
+
         # Clean up spatial map and navigation paths
         new_spatial_map = Map.delete(state.spatial_map, window_id)
         new_nav_paths = Map.delete(state.navigation_paths, window_id)
-        
+
         new_state = %{
-          state |
-          windows: new_windows,
-          window_order: new_window_order,
-          active_window: new_active,
-          spatial_map: new_spatial_map,
-          navigation_paths: new_nav_paths
+          state
+          | windows: new_windows,
+            window_order: new_window_order,
+            active_window: new_active,
+            spatial_map: new_spatial_map,
+            navigation_paths: new_nav_paths
         }
-        
+
         {:reply, :ok, new_state}
     end
   end
@@ -339,19 +355,20 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   def handle_call({:set_active_window, window_id}, _from, state) do
     if Map.has_key?(state.windows, window_id) do
       # Update window states
-      new_windows = 
+      new_windows =
         state.windows
         |> Enum.map(fn {id, window} ->
-          new_state = 
+          new_state =
             if id == window_id do
               :active
             else
               if window.state == :active, do: :inactive, else: window.state
             end
+
           {id, %{window | state: new_state}}
         end)
         |> Enum.into(%{})
-      
+
       new_state = %{state | windows: new_windows, active_window: window_id}
       {:reply, :ok, new_state}
     else
@@ -374,11 +391,15 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   end
 
   @impl GenServer
-  def handle_call({:set_window_state_by_id, window_id, state_value}, _from, state) do
+  def handle_call(
+        {:set_window_state_by_id, window_id, state_value},
+        _from,
+        state
+      ) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
-      
+
       window ->
         updated_window = %{window | state: state_value}
         new_windows = Map.put(state.windows, window_id, updated_window)
@@ -399,11 +420,15 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   end
 
   @impl GenServer
-  def handle_call({:set_window_size_by_id, window_id, width, height}, _from, state) do
+  def handle_call(
+        {:set_window_size_by_id, window_id, width, height},
+        _from,
+        state
+      ) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
-      
+
       window ->
         updated_window = %{window | width: width, height: height}
         new_windows = Map.put(state.windows, window_id, updated_window)
@@ -428,7 +453,7 @@ defmodule Raxol.Terminal.Window.Manager.Server do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
-      
+
       window ->
         updated_window = %{window | title: title}
         new_windows = Map.put(state.windows, window_id, updated_window)
@@ -472,7 +497,11 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   end
 
   @impl GenServer
-  def handle_call({:register_window_position, window_id, x, y, width, height}, _from, state) do
+  def handle_call(
+        {:register_window_position, window_id, x, y, width, height},
+        _from,
+        state
+      ) do
     position_data = %{
       id: window_id,
       x: x,
@@ -482,18 +511,22 @@ defmodule Raxol.Terminal.Window.Manager.Server do
       center_x: x + div(width, 2),
       center_y: y + div(height, 2)
     }
-    
+
     new_spatial_map = Map.put(state.spatial_map, window_id, position_data)
     new_state = %{state | spatial_map: new_spatial_map}
     {:reply, :ok, new_state}
   end
 
   @impl GenServer
-  def handle_call({:define_navigation_path, from_id, direction, to_id}, _from, state) do
+  def handle_call(
+        {:define_navigation_path, from_id, direction, to_id},
+        _from,
+        state
+      ) do
     from_paths = Map.get(state.navigation_paths, from_id, %{})
     updated_from_paths = Map.put(from_paths, direction, to_id)
     new_nav_paths = Map.put(state.navigation_paths, from_id, updated_from_paths)
-    
+
     new_state = %{state | navigation_paths: new_nav_paths}
     {:reply, :ok, new_state}
   end
@@ -510,6 +543,7 @@ defmodule Raxol.Terminal.Window.Manager.Server do
       state: state.window_state,
       size: state.window_size
     }
+
     {:reply, legacy_state, state}
   end
 

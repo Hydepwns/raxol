@@ -32,7 +32,6 @@ defmodule Raxol.Terminal.Window do
 
   alias Raxol.Terminal.{Emulator, Config}
 
-  
   @type window_state :: :active | :inactive | :minimized | :maximized
   @type window_position :: {integer(), integer()}
   @type window_size :: {non_neg_integer(), non_neg_integer()}

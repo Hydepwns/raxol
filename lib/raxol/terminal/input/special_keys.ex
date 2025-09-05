@@ -65,17 +65,38 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
   end
 
   # Pattern matching for single character keys
-  defp generate_escape_sequence(key, modifiers, _state) when byte_size(key) == 1 do
+  defp generate_escape_sequence(key, modifiers, _state)
+       when byte_size(key) == 1 do
     <<code::utf8>> = key
     "\e[#{modifiers}#{code}"
   end
 
   # Pattern matching for arrow and function keys
-  defp generate_escape_sequence(key, modifiers, _state) when key in [
-    "ArrowUp", "ArrowDown", "ArrowRight", "ArrowLeft",
-    "Home", "End", "PageUp", "PageDown", "Insert", "Delete", 
-    "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"
-  ] do
+  defp generate_escape_sequence(key, modifiers, _state)
+       when key in [
+              "ArrowUp",
+              "ArrowDown",
+              "ArrowRight",
+              "ArrowLeft",
+              "Home",
+              "End",
+              "PageUp",
+              "PageDown",
+              "Insert",
+              "Delete",
+              "F1",
+              "F2",
+              "F3",
+              "F4",
+              "F5",
+              "F6",
+              "F7",
+              "F8",
+              "F9",
+              "F10",
+              "F11",
+              "F12"
+            ] do
     get_arrow_or_function_key_sequence(key, modifiers)
   end
 
@@ -85,7 +106,7 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
   defp generate_escape_sequence("Enter", _modifiers, _state), do: "\r"
   defp generate_escape_sequence("Backspace", _modifiers, _state), do: "\b"
   defp generate_escape_sequence("Escape", _modifiers, _state), do: "\e"
-  
+
   # Default case
   defp generate_escape_sequence(_key, _modifiers, _state), do: ""
 

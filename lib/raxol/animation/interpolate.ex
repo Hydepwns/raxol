@@ -1,5 +1,4 @@
 defmodule Raxol.Animation.Interpolate do
-  
   @moduledoc """
   Provides interpolation functions for different data types.
   """
@@ -95,13 +94,17 @@ defmodule Raxol.Animation.Interpolate do
   defp interpolate_hue(h1, h2, t) do
     diff = h2 - h1
     h_interpolated_raw = calculate_hue_interpolation(h1, diff, t)
-    
+
     mod_val = h_interpolated_raw - Float.floor(h_interpolated_raw / 360) * 360
     h_positive = if mod_val < 0, do: mod_val + 360, else: mod_val
     round(h_positive) |> then(&if(&1 == 360, do: 0, else: &1))
   end
-  
-  defp calculate_hue_interpolation(h1, diff, t) when abs(diff) <= 180, do: h1 + diff * t
-  defp calculate_hue_interpolation(h1, diff, t) when diff > 180, do: h1 + (diff - 360) * t
+
+  defp calculate_hue_interpolation(h1, diff, t) when abs(diff) <= 180,
+    do: h1 + diff * t
+
+  defp calculate_hue_interpolation(h1, diff, t) when diff > 180,
+    do: h1 + (diff - 360) * t
+
   defp calculate_hue_interpolation(h1, diff, t), do: h1 + (diff + 360) * t
 end

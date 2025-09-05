@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Renderer.View do
-  
   @moduledoc """
   Provides view-related functionality for rendering UI components.
   """

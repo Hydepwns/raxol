@@ -46,6 +46,7 @@ defmodule Raxol.Benchmark.Analyzer do
         nil ->
           Logger.info("No baseline found for #{suite_result.suite_name}")
           []
+
         baseline ->
           compare_with_baseline(suite_result, baseline)
       end
@@ -80,6 +81,7 @@ defmodule Raxol.Benchmark.Analyzer do
     case scenario do
       nil ->
         %{name: name, error: "No scenario data available"}
+
       scenario ->
         %{
           name: name,
@@ -130,7 +132,9 @@ defmodule Raxol.Benchmark.Analyzer do
         end)
 
       case baseline_scenario do
-        nil -> []
+        nil ->
+          []
+
         baseline_scenario ->
           current_avg = scenario.run_time_data.statistics.average
           baseline_avg = baseline_scenario.run_time_data.statistics.average
@@ -150,7 +154,9 @@ defmodule Raxol.Benchmark.Analyzer do
                     )
                 }
               ]
-            false -> []
+
+            false ->
+              []
           end
       end
     end)
@@ -182,14 +188,17 @@ defmodule Raxol.Benchmark.Analyzer do
       baseline = load_baseline(suite.suite_name)
 
       case baseline do
-        nil -> []
+        nil ->
+          []
+
         baseline ->
           suite.results.scenarios
           |> Enum.filter(fn scenario ->
             baseline_time = get_baseline_time(baseline, scenario.name)
             current_time = scenario.run_time_data.statistics.average
 
-            baseline_time && current_time > baseline_time * @regression_threshold
+            baseline_time &&
+              current_time > baseline_time * @regression_threshold
           end)
           |> Enum.map(fn scenario ->
             baseline_time = get_baseline_time(baseline, scenario.name)
@@ -200,7 +209,8 @@ defmodule Raxol.Benchmark.Analyzer do
               benchmark: scenario.name,
               current: current_time,
               baseline: baseline_time,
-              percentage: Float.round((current_time / baseline_time - 1) * 100, 2)
+              percentage:
+                Float.round((current_time / baseline_time - 1) * 100, 2)
             }
           end)
       end
@@ -212,14 +222,17 @@ defmodule Raxol.Benchmark.Analyzer do
       baseline = load_baseline(suite.suite_name)
 
       case baseline do
-        nil -> []
+        nil ->
+          []
+
         baseline ->
           suite.results.scenarios
           |> Enum.filter(fn scenario ->
             baseline_time = get_baseline_time(baseline, scenario.name)
             current_time = scenario.run_time_data.statistics.average
 
-            baseline_time && current_time < baseline_time * @improvement_threshold
+            baseline_time &&
+              current_time < baseline_time * @improvement_threshold
           end)
           |> Enum.map(fn scenario ->
             baseline_time = get_baseline_time(baseline, scenario.name)
@@ -230,7 +243,8 @@ defmodule Raxol.Benchmark.Analyzer do
               benchmark: scenario.name,
               current: current_time,
               baseline: baseline_time,
-              percentage: Float.round((1 - current_time / baseline_time) * 100, 2)
+              percentage:
+                Float.round((1 - current_time / baseline_time) * 100, 2)
             }
           end)
       end
@@ -245,7 +259,9 @@ defmodule Raxol.Benchmark.Analyzer do
 
     recommendations =
       case length(memory_intensive) do
-        0 -> recommendations
+        0 ->
+          recommendations
+
         _ ->
           [
             "Consider optimizing memory usage in: #{Enum.join(memory_intensive, ", ")}"
@@ -258,7 +274,9 @@ defmodule Raxol.Benchmark.Analyzer do
 
     recommendations =
       case length(high_variance) do
-        0 -> recommendations
+        0 ->
+          recommendations
+
         _ ->
           [
             "High variance detected in: #{Enum.join(high_variance, ", ")}. Consider investigating stability."
@@ -272,7 +290,9 @@ defmodule Raxol.Benchmark.Analyzer do
 
     recommendations =
       case length(slow_ops) do
-        0 -> recommendations
+        0 ->
+          recommendations
+
         _ ->
           [
             "Operations exceeding 100ms: #{Enum.join(slow_ops, ", ")}. Consider optimization."
@@ -324,7 +344,9 @@ defmodule Raxol.Benchmark.Analyzer do
           [
             "Consider breaking into smaller operations" | optimizations
           ]
-        false -> optimizations
+
+        false ->
+          optimizations
       end
 
     optimizations
@@ -405,7 +427,9 @@ defmodule Raxol.Benchmark.Analyzer do
           {:ok, data} -> data
           _ -> nil
         end
-      false -> nil
+
+      false ->
+        nil
     end
   end
 
@@ -445,15 +469,18 @@ defmodule Raxol.Benchmark.Analyzer do
     :tie
   end
 
-  def format_time(nanoseconds) when is_number(nanoseconds) and nanoseconds < 1_000 do
+  def format_time(nanoseconds)
+      when is_number(nanoseconds) and nanoseconds < 1_000 do
     "#{nanoseconds}ns"
   end
 
-  def format_time(nanoseconds) when is_number(nanoseconds) and nanoseconds < 1_000_000 do
+  def format_time(nanoseconds)
+      when is_number(nanoseconds) and nanoseconds < 1_000_000 do
     "#{Float.round(nanoseconds / 1_000, 2)}μs"
   end
 
-  def format_time(nanoseconds) when is_number(nanoseconds) and nanoseconds < 1_000_000_000 do
+  def format_time(nanoseconds)
+      when is_number(nanoseconds) and nanoseconds < 1_000_000_000 do
     "#{Float.round(nanoseconds / 1_000_000, 2)}ms"
   end
 

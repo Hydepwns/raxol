@@ -3,7 +3,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
   Handles search and filtering functionality for the SelectList component.
   """
 
-  
   @type option :: {String.t(), any()}
   @type options :: [option()]
 

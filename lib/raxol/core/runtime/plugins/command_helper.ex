@@ -38,6 +38,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
         Raxol.Core.Runtime.Log.debug(
           "Namespace string could not be converted to an existing atom."
         )
+
         nil
     end
   end
@@ -57,12 +58,15 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   defp atom_exists?(string) do
     # Check if the atom already exists in the atom table
     # This is a safe way to check without creating new atoms
-    string
-    |> String.to_charlist()
-    |> :erlang.list_to_existing_atom()
-    |> is_atom()
-  rescue
-    ArgumentError -> false
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           string
+           |> String.to_charlist()
+           |> :erlang.list_to_existing_atom()
+           |> is_atom()
+         end) do
+      {:ok, result} -> result
+      {:error, _} -> false
+    end
   end
 
   @impl Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
@@ -82,17 +86,21 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
 
   defp safe_get_commands(plugin_module) do
     # Use Task to safely execute and handle any errors
-    task = Task.async(fn -> 
-      {:ok, plugin_module.get_commands()}
-    end)
-    
-    case Task.yield(task, 5000) || Task.shutdown(task) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           task =
+             Task.async(fn ->
+               {:ok, plugin_module.get_commands()}
+             end)
+
+           case Task.yield(task, 5000) || Task.shutdown(task) do
+             {:ok, result} -> result
+             nil -> {:error, :timeout}
+             {:exit, reason} -> {:error, {:exit, reason}}
+           end
+         end) do
       {:ok, result} -> result
-      nil -> {:error, :timeout}
-      {:exit, reason} -> {:error, {:exit, reason}}
+      {:error, error} -> {:error, error}
     end
-  rescue
-    error -> {:error, error}
   end
 
   defp process_commands(plugin_module, commands, command_table)
@@ -314,29 +322,35 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
 
   # Functional helper function to execute a function with a timeout using Task
   defp with_timeout(fun, timeout) do
-    task = Task.async(fn ->
-      safe_execute(fun)
-    end)
+    task =
+      Task.async(fn ->
+        safe_execute(fun)
+      end)
 
     case Task.yield(task, timeout) || Task.shutdown(task) do
-      {:ok, result} -> 
+      {:ok, result} ->
         result
-      nil -> 
+
+      nil ->
         {:error, :timeout}
-      {:exit, reason} -> 
+
+      {:exit, reason} ->
         {:error, {:exit, reason}}
     end
   end
 
   defp safe_execute(fun) do
     # Execute the function safely and return structured result
-    case fun.() do
-      {:ok, _state, _result} = success -> success
-      {:error, _reason, _state} = error -> error
-      {:error, _reason} = error -> error
-      other -> {:ok, other, nil}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           case fun.() do
+             {:ok, _state, _result} = success -> success
+             {:error, _reason, _state} = error -> error
+             {:error, _reason} = error -> error
+             other -> {:ok, other, nil}
+           end
+         end) do
+      {:ok, result} -> result
+      {:error, {error, _stacktrace}} -> {:error, {:exception, error}}
     end
-  rescue
-    error -> {:error, {:exception, error}}
   end
 end

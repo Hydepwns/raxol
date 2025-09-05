@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "termbox2/termbox.h"
+#include "termbox2/termbox2.h"
 
 // tb_init/0
 static ERL_NIF_TERM nif_tb_init(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])

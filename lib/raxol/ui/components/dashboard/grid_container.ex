@@ -6,7 +6,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
   """
 
   require Raxol.Core.Runtime.Log
-  
+
   # Default grid dimensions and gap
   @default_cols 12
   @default_rows 12
@@ -81,7 +81,13 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
         breakpoint_values,
         %{cols: cols, rows: rows},
         fn {max_width, bp_cols, bp_rows}, acc ->
-          check_breakpoint_match(max_width, current_width, bp_cols, bp_rows, acc)
+          check_breakpoint_match(
+            max_width,
+            current_width,
+            bp_cols,
+            bp_rows,
+            acc
+          )
         end
       )
     else
@@ -239,13 +245,13 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
       end
     end
   end
-  
+
   # Catch-all clause for maps without parent_bounds
   def calculate_widget_bounds(_widget_config, %{} = grid_config) do
     Raxol.Core.Runtime.Log.warning(
       "calculate_widget_bounds received grid_config without parent_bounds: #{inspect(grid_config)}"
     )
-    
+
     %{x: 0, y: 0, width: 10, height: 10}
   end
 
@@ -330,13 +336,13 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
         {10, 10}
     end
   end
-  
+
   # Catch-all clause for maps without parent_bounds
   def get_cell_dimensions(%{} = grid_config) do
     Raxol.Core.Runtime.Log.warning(
       "get_cell_dimensions received grid_config without parent_bounds: #{inspect(grid_config)}"
     )
-    
+
     # Return sensible defaults
     {10, 10}
   end
@@ -370,12 +376,18 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     {:halt, %{cols: bp_cols, rows: bp_rows}}
   end
 
-  defp check_breakpoint_match(max_width, current_width, bp_cols, bp_rows, acc) 
+  defp check_breakpoint_match(max_width, current_width, bp_cols, bp_rows, acc)
        when current_width <= max_width do
     {:halt, %{cols: bp_cols, rows: bp_rows}}
   end
 
-  defp check_breakpoint_match(_max_width, _current_width, _bp_cols, _bp_rows, acc) do
+  defp check_breakpoint_match(
+         _max_width,
+         _current_width,
+         _bp_cols,
+         _bp_rows,
+         acc
+       ) do
     {:cont, acc}
   end
 

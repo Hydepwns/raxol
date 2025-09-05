@@ -4,7 +4,6 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
   This includes length validation, pattern matching, and error message generation.
   """
 
-  
   @doc """
   Validates the input value against the component's constraints.
   Returns a new state with any validation errors.
@@ -14,7 +13,7 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
     %{state | error: error}
   end
 
-  defp get_validation_error(%{max_length: max_length, value: value} = state) 
+  defp get_validation_error(%{max_length: max_length, value: value} = state)
        when not is_nil(max_length) do
     if String.length(value) > max_length do
       "Maximum length is #{max_length} characters"
@@ -24,7 +23,7 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
     end
   end
 
-  defp get_validation_error(%{pattern: pattern, value: value}) 
+  defp get_validation_error(%{pattern: pattern, value: value})
        when not is_nil(pattern) do
     if Regex.match?(~r/^#{pattern}$/, value) do
       nil
@@ -35,7 +34,8 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
 
   defp get_validation_error(_state), do: nil
 
-  defp check_other_validations(%{pattern: pattern, value: value}) when not is_nil(pattern) do
+  defp check_other_validations(%{pattern: pattern, value: value})
+       when not is_nil(pattern) do
     if Regex.match?(~r/^#{pattern}$/, value) do
       nil
     else

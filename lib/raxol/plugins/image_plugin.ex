@@ -1,5 +1,4 @@
 defmodule Raxol.Plugins.ImagePlugin do
-  
   @moduledoc """
   Plugin that enables displaying images in the terminal using the iTerm2 image protocol.
   Supports various image formats and provides options for image display.

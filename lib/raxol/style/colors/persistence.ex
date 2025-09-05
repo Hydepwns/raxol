@@ -1,5 +1,4 @@
 defmodule Raxol.Style.Colors.Persistence do
-  
   @moduledoc """
   Handles persistence of color themes and user preferences.
 
@@ -254,10 +253,20 @@ defmodule Raxol.Style.Colors.Persistence do
   defp to_atom_key(k), do: k
 
   # Helper to extract theme name with preference for id over name
-  defp extract_theme_name(theme) when is_map(theme) and is_map_key(theme, :id), do: theme[:id]
-  defp extract_theme_name(theme) when is_map(theme) and is_map_key(theme, "id"), do: theme["id"]
-  defp extract_theme_name(theme) when is_map(theme) and is_map_key(theme, :name), do: theme[:name]
-  defp extract_theme_name(theme) when is_map(theme) and is_map_key(theme, "name"), do: theme["name"]
+  defp extract_theme_name(theme) when is_map(theme) and is_map_key(theme, :id),
+    do: theme[:id]
+
+  defp extract_theme_name(theme) when is_map(theme) and is_map_key(theme, "id"),
+    do: theme["id"]
+
+  defp extract_theme_name(theme)
+       when is_map(theme) and is_map_key(theme, :name),
+       do: theme[:name]
+
+  defp extract_theme_name(theme)
+       when is_map(theme) and is_map_key(theme, "name"),
+       do: theme["name"]
+
   defp extract_theme_name(_theme), do: raise("Theme missing id or name key")
 
   # Helper to normalize color values in both colors and variants

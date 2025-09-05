@@ -21,7 +21,6 @@ defmodule Raxol.UI.Components.Display.Progress do
   # alias Raxol.View.Style
   # alias Raxol.View.Fragment
 
-  
   @behaviour Component
 
   @type props :: %{
@@ -126,11 +125,12 @@ defmodule Raxol.UI.Components.Display.Progress do
 
     case {state.animated, time_diff >= @animation_speed} do
       {true, true} ->
-      new_frame = rem(state.animation_frame + 1, length(@animation_chars))
-      %{state | animation_frame: new_frame, last_update: now}
+        new_frame = rem(state.animation_frame + 1, length(@animation_chars))
+        %{state | animation_frame: new_frame, last_update: now}
+
       _ ->
-      # No animation update needed
-      state
+        # No animation update needed
+        state
     end
   end
 
@@ -168,13 +168,15 @@ defmodule Raxol.UI.Components.Display.Progress do
         state.animation_frame
       )
 
-    percentage_text = case state.show_percentage do
-      true ->
-        percent_str = "#{floor(progress * 100)}%"
-        padding = div(width - String.length(percent_str), 2)
-        String.duplicate(" ", max(0, padding)) <> percent_str
-      false ->
-        ""
+    percentage_text =
+      case state.show_percentage do
+        true ->
+          percent_str = "#{floor(progress * 100)}%"
+          padding = div(width - String.length(percent_str), 2)
+          String.duplicate(" ", max(0, padding)) <> percent_str
+
+        false ->
+          ""
       end
 
     # Accessibility/extra attributes
@@ -226,47 +228,52 @@ defmodule Raxol.UI.Components.Display.Progress do
 
     # Add percentage text if needed
     # Use state.show_percentage
-    progress_elements = case state.show_percentage do
-      true ->
-        text_element = %{
-          type: :text,
-          x: 1,
-          y: 0,
-          text: percentage_text,
-          attrs: %{
-            fg: text_color,
-            # To show the bar underneath
-            bg: :transparent
+    progress_elements =
+      case state.show_percentage do
+        true ->
+          text_element = %{
+            type: :text,
+            x: 1,
+            y: 0,
+            text: percentage_text,
+            attrs: %{
+              fg: text_color,
+              # To show the bar underneath
+              bg: :transparent
+            }
           }
-        }
 
-        # Prepend text element
-        [text_element | progress_elements]
-      false ->
-        progress_elements
+          # Prepend text element
+          [text_element | progress_elements]
+
+        false ->
+          progress_elements
       end
 
     # Add label if provided
     # Use state.label
-    progress_elements = case state.label do
-      nil -> progress_elements
-      label ->
-        label_element = %{
-          type: :text,
-          x: 0,
-          # Above the progress bar
-          y: -1,
-          text: label,
-          attrs: %{
-            fg: text_color,
-            # Use main background color
-            bg: bg
-          }
-        }
+    progress_elements =
+      case state.label do
+        nil ->
+          progress_elements
 
-        # Prepend label element
-        [label_element | progress_elements]
-    end
+        label ->
+          label_element = %{
+            type: :text,
+            x: 0,
+            # Above the progress bar
+            y: -1,
+            text: label,
+            attrs: %{
+              fg: text_color,
+              # Use main background color
+              bg: bg
+            }
+          }
+
+          # Prepend label element
+          [label_element | progress_elements]
+      end
 
     # Return the list of elements
     progress_elements
@@ -320,20 +327,22 @@ defmodule Raxol.UI.Components.Display.Progress do
     # If animated and not complete, add animation character at the edge
     case {animated, filled_width < total_width} do
       {true, true} ->
-      # Calculate animation character
-      animation_char = Enum.at(@animation_chars, animation_frame)
+        # Calculate animation character
+        animation_char = Enum.at(@animation_chars, animation_frame)
 
-      # Insert animation character at the transition point
-      # Instead of String.slice(empty_part, 1..-1//-1), use String.slice(empty_part, 1, String.length(empty_part) - 1)
-      trail = case empty_width > 0 do
-        true -> String.slice(empty_part, 1, String.length(empty_part) - 1)
-        false -> ""
-      end
+        # Insert animation character at the transition point
+        # Instead of String.slice(empty_part, 1..-1//-1), use String.slice(empty_part, 1, String.length(empty_part) - 1)
+        trail =
+          case empty_width > 0 do
+            true -> String.slice(empty_part, 1, String.length(empty_part) - 1)
+            false -> ""
+          end
 
-      filled_part <> animation_char <> trail
+        filled_part <> animation_char <> trail
+
       _ ->
-      # No animation
-      filled_part <> empty_part
+        # No animation
+        filled_part <> empty_part
     end
   end
 

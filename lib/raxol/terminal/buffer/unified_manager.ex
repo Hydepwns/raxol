@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   use GenServer
   require Logger
   require Raxol.Core.Runtime.Log
-  
+
   alias Raxol.Terminal.{
     ScreenBuffer,
     Buffer.Scroll,

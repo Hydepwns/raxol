@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   Handles cursor movement, positioning, and blink operations.
   """
 
-  
   alias Raxol.Terminal.Emulator
 
   @type emulator :: Emulator.t()

@@ -340,10 +340,11 @@ defmodule Raxol.UI.Components.Table do
       [
         {&String.ends_with?(&1, "_next_page"), :next_page},
         {&String.ends_with?(&1, "_prev_page"), :prev_page},
-        {&String.contains?(&1, "_sort_"), fn id ->
-          column_id = String.replace(id, ~r/.*_sort_/, "") |> String.to_atom()
-          {:sort, column_id}
-        end}
+        {&String.contains?(&1, "_sort_"),
+         fn id ->
+           column_id = String.replace(id, ~r/.*_sort_/, "") |> String.to_atom()
+           {:sort, column_id}
+         end}
       ],
       :unknown,
       fn {predicate, result} ->

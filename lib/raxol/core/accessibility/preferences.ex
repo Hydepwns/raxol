@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Accessibility.Preferences do
-  
   @moduledoc """
   Manages accessibility preferences and settings.
   """

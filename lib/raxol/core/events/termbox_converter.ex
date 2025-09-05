@@ -100,11 +100,11 @@ defmodule Raxol.Core.Events.TermboxConverter do
   """
   @spec convert(map()) :: {:ok, Event.t()} | :ignore | {:error, term()}
   def convert(event_map) do
-    try do
-      handle_event(event_map)
-    catch
-      kind, reason ->
-        {:error, {kind, reason, __STACKTRACE__}}
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           handle_event(event_map)
+         end) do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, reason}
     end
   end
 

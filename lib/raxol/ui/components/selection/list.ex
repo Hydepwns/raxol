@@ -209,15 +209,21 @@ defmodule Raxol.UI.Components.Selection.List do
     calculate_scroll_offset(index, offset, height)
   end
 
-  defp calculate_scroll_offset(index, offset, _height) when index < offset, do: index
-  defp calculate_scroll_offset(index, offset, height) when index >= offset + height, do: index - height + 1
+  defp calculate_scroll_offset(index, offset, _height) when index < offset,
+    do: index
+
+  defp calculate_scroll_offset(index, offset, height)
+       when index >= offset + height,
+       do: index - height + 1
+
   defp calculate_scroll_offset(_index, offset, _height), do: offset
 
   defp format_display_content(content) when is_binary(content) do
     Raxol.View.Elements.label(content: content)
   end
 
-  defp format_display_content(content) when is_map(content) and is_map_key(content, :type) do
+  defp format_display_content(content)
+       when is_map(content) and is_map_key(content, :type) do
     content
   end
 

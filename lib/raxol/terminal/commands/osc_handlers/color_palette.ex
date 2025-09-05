@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
   - rgb(r%,g%,b%) (percentage, 0-100%)
   """
 
-    alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
   @spec handle_4(Emulator.t(), String.t()) ::
@@ -60,8 +60,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
       {&String.starts_with?(&1, "#"), &parse_hex_color/1},
       {&String.starts_with?(&1, "rgb("), &parse_rgb_decimal/1}
     ]
-    
-    Enum.find_value(color_parsers, {:error, :unsupported_format}, fn {check, parser} ->
+
+    Enum.find_value(color_parsers, {:error, :unsupported_format}, fn {check,
+                                                                      parser} ->
       if check.(spec), do: parser.(spec), else: nil
     end)
   end

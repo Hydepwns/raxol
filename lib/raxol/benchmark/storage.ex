@@ -249,9 +249,12 @@ defmodule Raxol.Benchmark.Storage do
   end
 
   defp deserialize_baseline(data) do
-    :erlang.binary_to_term(data)
-  rescue
-    _ -> nil
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           :erlang.binary_to_term(data)
+         end) do
+      {:ok, result} -> result
+      {:error, _} -> nil
+    end
   end
 
   defp list_result_files(suite_name) do
@@ -289,10 +292,11 @@ defmodule Raxol.Benchmark.Storage do
   defp load_result_file(path) do
     case File.read(path) do
       {:ok, content} ->
-        try do
-          :erlang.binary_to_term(content)
-        rescue
-          _ -> nil
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
+               :erlang.binary_to_term(content)
+             end) do
+          {:ok, result} -> result
+          {:error, _} -> nil
         end
 
       _ ->

@@ -9,7 +9,6 @@ defmodule Raxol.Renderer.Layout.Scroll do
   - Scrollbar thumb positioning
   """
 
-  
   @doc """
   Processes a scroll element and returns positioned children with scrollbars.
 

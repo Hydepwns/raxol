@@ -51,7 +51,12 @@ defmodule Raxol.Core.FocusManager.Server do
   @doc """
   Registers a focusable component with the focus manager.
   """
-  def register_focusable(server \\ __MODULE__, component_id, tab_index, opts \\ []) do
+  def register_focusable(
+        server \\ __MODULE__,
+        component_id,
+        tab_index,
+        opts \\ []
+      ) do
     GenServer.call(server, {:register_focusable, component_id, tab_index, opts})
   end
 
@@ -135,7 +140,7 @@ defmodule Raxol.Core.FocusManager.Server do
   @doc """
   Registers a handler function to be called when focus changes.
   """
-  def register_focus_change_handler(server \\ __MODULE__, handler_fun) 
+  def register_focus_change_handler(server \\ __MODULE__, handler_fun)
       when is_function(handler_fun, 2) do
     GenServer.call(server, {:register_focus_change_handler, handler_fun})
   end
@@ -177,7 +182,11 @@ defmodule Raxol.Core.FocusManager.Server do
   end
 
   @impl GenServer
-  def handle_call({:register_focusable, component_id, tab_index, opts}, _from, state) do
+  def handle_call(
+        {:register_focusable, component_id, tab_index, opts},
+        _from,
+        state
+      ) do
     group = Keyword.get(opts, :group, :default)
     disabled = Keyword.get(opts, :disabled, false)
     announce = Keyword.get(opts, :announce, nil)
@@ -195,8 +204,8 @@ defmodule Raxol.Core.FocusManager.Server do
         state.focusables,
         group,
         [focusable],
-        fn existing -> 
-          [focusable | existing] 
+        fn existing ->
+          [focusable | existing]
           |> Enum.sort_by(& &1.tab_index)
         end
       )
@@ -212,6 +221,7 @@ defmodule Raxol.Core.FocusManager.Server do
       |> Enum.map(fn {group, components} ->
         updated_components =
           Enum.reject(components, fn c -> c.id == component_id end)
+
         {group, updated_components}
       end)
       |> Enum.into(%{})
@@ -274,10 +284,10 @@ defmodule Raxol.Core.FocusManager.Server do
   @impl GenServer
   def handle_call({:disable_component, component_id}, _from, state) do
     new_state = update_component_state(state, component_id, :disabled, true)
-    
+
     # If this component is currently focused, move focus elsewhere
     new_state = handle_disabled_focus(new_state, component_id)
-    
+
     {:reply, :ok, new_state}
   end
 
@@ -334,9 +344,9 @@ defmodule Raxol.Core.FocusManager.Server do
 
         # Update state
         new_state = %{
-          state |
-          active_element: prev,
-          focus_history: rest
+          state
+          | active_element: prev,
+            focus_history: rest
         }
 
         # Send focus change event
@@ -381,22 +391,54 @@ defmodule Raxol.Core.FocusManager.Server do
   end
 
   defp find_next_enabled_component([], _current_index, _wrap), do: nil
+
   defp find_next_enabled_component(components, current_index, wrap) do
     component_count = length(components)
     start_index = calculate_next_start_index(current_index, component_count)
-    find_enabled_component_from_index(components, start_index, 1, component_count, wrap)
+
+    find_enabled_component_from_index(
+      components,
+      start_index,
+      1,
+      component_count,
+      wrap
+    )
   end
 
   defp find_prev_enabled_component([], _current_index, _wrap), do: nil
+
   defp find_prev_enabled_component(components, current_index, wrap) do
     component_count = length(components)
-    start_index = calculate_previous_start_index(current_index, component_count, wrap)
-    find_enabled_component_from_index(components, start_index, -1, component_count, wrap)
+
+    start_index =
+      calculate_previous_start_index(current_index, component_count, wrap)
+
+    find_enabled_component_from_index(
+      components,
+      start_index,
+      -1,
+      component_count,
+      wrap
+    )
   end
 
-  defp find_enabled_component_from_index(components, start_index, _step, count, _wrap) 
-       when start_index < 0 or start_index >= count, do: nil
-  defp find_enabled_component_from_index(components, start_index, step, count, wrap) do
+  defp find_enabled_component_from_index(
+         components,
+         start_index,
+         _step,
+         count,
+         _wrap
+       )
+       when start_index < 0 or start_index >= count,
+       do: nil
+
+  defp find_enabled_component_from_index(
+         components,
+         start_index,
+         step,
+         count,
+         wrap
+       ) do
     Enum.reduce_while(0..(count - 1), nil, fn i, _acc ->
       index = rem(start_index + i * step + count, count)
       component = Enum.at(components, index)
@@ -410,7 +452,9 @@ defmodule Raxol.Core.FocusManager.Server do
     components = Map.get(state.focusables, group, [])
 
     current_index = get_component_index(components, current_focus_id)
-    next_component = find_next_enabled_component(components, current_index, true)
+
+    next_component =
+      find_next_enabled_component(components, current_index, true)
 
     extract_component_id(next_component)
   end
@@ -420,60 +464,92 @@ defmodule Raxol.Core.FocusManager.Server do
     components = Map.get(state.focusables, group, [])
 
     current_index = get_prev_component_index(components, current_focus_id)
-    prev_component = find_prev_enabled_component(components, current_index, true)
+
+    prev_component =
+      find_prev_enabled_component(components, current_index, true)
 
     extract_component_id(prev_component)
   end
 
   # Helper functions for pattern matching refactoring
-  
-  defp determine_focus_group(group_opt, last_group) when group_opt != nil, do: group_opt
-  defp determine_focus_group(_group_opt, last_group) when last_group != nil, do: last_group
+
+  defp determine_focus_group(group_opt, last_group) when group_opt != nil,
+    do: group_opt
+
+  defp determine_focus_group(_group_opt, last_group) when last_group != nil,
+    do: last_group
+
   defp determine_focus_group(_group_opt, _last_group), do: :default
 
-  defp calculate_previous_start_index(nil, component_count, _wrap), do: component_count - 1
-  defp calculate_previous_start_index(current_index, component_count, true) when current_index <= 0,
+  defp calculate_previous_start_index(nil, component_count, _wrap),
     do: component_count - 1
-  defp calculate_previous_start_index(current_index, _component_count, false) when current_index <= 0,
-    do: -1
+
+  defp calculate_previous_start_index(current_index, component_count, true)
+       when current_index <= 0,
+       do: component_count - 1
+
+  defp calculate_previous_start_index(current_index, _component_count, false)
+       when current_index <= 0,
+       do: -1
+
   defp calculate_previous_start_index(current_index, _component_count, _wrap),
     do: current_index - 1
 
-  defp check_component_iteration(%{disabled: true}, _i, _count, _wrap), do: {:cont, nil}
-  defp check_component_iteration(component, _i, _count, _wrap) when component != nil do
+  defp check_component_iteration(%{disabled: true}, _i, _count, _wrap),
+    do: {:cont, nil}
+
+  defp check_component_iteration(component, _i, _count, _wrap)
+       when component != nil do
     {:halt, component}
   end
-  defp check_component_iteration(_component, i, count, false) when i == count - 1,
-    do: {:halt, nil}
-  defp check_component_iteration(_component, i, count, _wrap) when i == count - 1,
-    do: {:halt, nil}
+
+  defp check_component_iteration(_component, i, count, false)
+       when i == count - 1,
+       do: {:halt, nil}
+
+  defp check_component_iteration(_component, i, count, _wrap)
+       when i == count - 1,
+       do: {:halt, nil}
+
   defp check_component_iteration(_component, _i, _count, _wrap),
     do: {:cont, nil}
 
   # New helper functions for refactored code
-  defp handle_initial_focus_update(%{active_element: current} = state, component_id) 
-       when current == component_id, do: state
+  defp handle_initial_focus_update(
+         %{active_element: current} = state,
+         component_id
+       )
+       when current == component_id,
+       do: state
+
   defp handle_initial_focus_update(state, component_id) do
     do_set_focus(state, component_id)
   end
 
-  defp apply_focus_change(%{active_element: old_focus} = state, old_focus, old_focus), do: state
+  defp apply_focus_change(
+         %{active_element: old_focus} = state,
+         old_focus,
+         old_focus
+       ),
+       do: state
+
   defp apply_focus_change(state, old_focus, component_id) do
     component = find_component(state.focusables, component_id)
     process_focus_change(state, old_focus, component_id, component)
   end
 
   defp process_focus_change(state, _old_focus, _component_id, nil), do: state
+
   defp process_focus_change(state, old_focus, component_id, component) do
     # Update focus history
     updated_history = build_focus_history(old_focus, state.focus_history)
 
     # Update state
     new_state = %{
-      state |
-      active_element: component_id,
-      focus_history: updated_history,
-      last_group: component.group
+      state
+      | active_element: component_id,
+        focus_history: updated_history,
+        last_group: component.group
     }
 
     # Send focus change event
@@ -491,62 +567,87 @@ defmodule Raxol.Core.FocusManager.Server do
   end
 
   defp build_focus_history(nil, history), do: history
+
   defp build_focus_history(old_focus, history) do
     [old_focus | history] |> Enum.take(10)
   end
 
   defp announce_if_configured(%{announce: nil}), do: :ok
+
   defp announce_if_configured(%{announce: announcement}) do
     EventManager.dispatch({:accessibility_announce, announcement})
   end
+
   defp announce_if_configured(_), do: :ok
 
-  defp handle_disabled_focus(%{active_element: component_id} = state, component_id) do
+  defp handle_disabled_focus(
+         %{active_element: component_id} = state,
+         component_id
+       ) do
     do_focus_next(state, [])
   end
+
   defp handle_disabled_focus(state, _component_id), do: state
 
-  defp navigate_focus(%{active_element: nil} = state, _opts, _direction), do: state
+  defp navigate_focus(%{active_element: nil} = state, _opts, _direction),
+    do: state
+
   defp navigate_focus(state, opts, direction) do
     group_opt = Keyword.get(opts, :group, nil)
     wrap = Keyword.get(opts, :wrap, true)
 
     group = determine_focus_group(group_opt, state.last_group)
     components = Map.get(state.focusables, group, [])
-    current_index = Enum.find_index(components, &(&1.id == state.active_element))
 
-    next_component = find_component_by_direction(components, current_index, wrap, direction)
+    current_index =
+      Enum.find_index(components, &(&1.id == state.active_element))
+
+    next_component =
+      find_component_by_direction(components, current_index, wrap, direction)
+
     update_focus_with_component(state, next_component)
   end
 
   defp find_component_by_direction(components, current_index, wrap, :next) do
     find_next_enabled_component(components, current_index, wrap)
   end
+
   defp find_component_by_direction(components, current_index, wrap, :previous) do
     find_prev_enabled_component(components, current_index, wrap)
   end
 
   defp update_focus_with_component(state, nil), do: state
+
   defp update_focus_with_component(state, component) do
     do_set_focus(state, component.id)
   end
 
-  defp update_component_field(%{id: component_id} = component, component_id, field, value) do
+  defp update_component_field(
+         %{id: component_id} = component,
+         component_id,
+         field,
+         value
+       ) do
     Map.put(component, field, value)
   end
-  defp update_component_field(component, _component_id, _field, _value), do: component
+
+  defp update_component_field(component, _component_id, _field, _value),
+    do: component
 
   defp calculate_next_start_index(nil, _component_count), do: 0
+
   defp calculate_next_start_index(current_index, component_count) do
     rem((current_index || -1) + 1, component_count)
   end
 
   defp get_component_index(_components, nil), do: -1
+
   defp get_component_index(components, current_focus_id) do
     Enum.find_index(components, fn c -> c.id == current_focus_id end) || -1
   end
 
   defp get_prev_component_index(components, nil), do: length(components)
+
   defp get_prev_component_index(components, current_focus_id) do
     Enum.find_index(components, fn c -> c.id == current_focus_id end) || -1
   end

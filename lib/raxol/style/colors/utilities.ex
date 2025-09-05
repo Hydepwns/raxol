@@ -9,7 +9,6 @@ defmodule Raxol.Style.Colors.Utilities do
   conversions.
   """
 
-  
   @doc """
   Calculates the relative luminance of a color according to WCAG 2.0.
 
@@ -360,14 +359,14 @@ defmodule Raxol.Style.Colors.Utilities do
 
   # Helper functions for pattern matching refactoring
 
-  defp select_best_contrast(ratio_white, ratio_black, min_ratio, white, black) 
+  defp select_best_contrast(ratio_white, ratio_black, min_ratio, white, black)
        when ratio_white >= min_ratio and ratio_white >= ratio_black,
        do: white
-  
-  defp select_best_contrast(_ratio_white, ratio_black, min_ratio, _white, black) 
+
+  defp select_best_contrast(_ratio_white, ratio_black, min_ratio, _white, black)
        when ratio_black >= min_ratio,
        do: black
-  
+
   defp select_best_contrast(ratio_white, ratio_black, _min_ratio, white, black) do
     if ratio_white > ratio_black, do: white, else: black
   end
@@ -375,9 +374,11 @@ defmodule Raxol.Style.Colors.Utilities do
   defp calculate_hue(r, g, b, max, d) when max == r do
     (g - b) / d + if g < b, do: 6, else: 0
   end
+
   defp calculate_hue(r, g, b, max, d) when max == g do
     (b - r) / d + 2
   end
+
   defp calculate_hue(r, g, b, max, d) when max == b do
     (r - g) / d + 4
   end

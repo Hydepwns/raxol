@@ -523,8 +523,9 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     end
   end
 
-  defp validate_function_name(name_str) 
-       when name_str in ["__MODULE__", "__DIR__", "__ENV__"], do: :ok
+  defp validate_function_name(name_str)
+       when name_str in ["__MODULE__", "__DIR__", "__ENV__"],
+       do: :ok
 
   defp validate_function_name(name_str) do
     case {String.contains?(name_str, "__"), String.match?(name_str, ~r/[A-Z]/)} do
@@ -535,12 +536,16 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   end
 
   defp check_line_formatting(line) do
-    Enum.find_value([
-      {String.length(line) > 120, {:error, :line_too_long}},
-      {String.match?(line, ~r/\s+$/), {:error, :trailing_whitespace}},
-      {String.contains?(line, "\t"), {:error, :contains_tabs}}
-    ], :ok, fn {condition, result} ->
-      if condition, do: result
-    end)
+    Enum.find_value(
+      [
+        {String.length(line) > 120, {:error, :line_too_long}},
+        {String.match?(line, ~r/\s+$/), {:error, :trailing_whitespace}},
+        {String.contains?(line, "\t"), {:error, :contains_tabs}}
+      ],
+      :ok,
+      fn {condition, result} ->
+        if condition, do: result
+      end
+    )
   end
 end

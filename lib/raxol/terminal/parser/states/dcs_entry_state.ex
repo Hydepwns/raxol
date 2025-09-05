@@ -24,14 +24,19 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
 
   defp handle_byte(emulator, parser_state, byte, rest) do
     byte_handlers = [
-      {&param_byte?/1, fn -> handle_param_byte(emulator, parser_state, byte, rest) end},
-      {fn b -> b == ?; end, fn -> handle_separator(emulator, parser_state, rest) end},
-      {&intermediate_byte?/1, fn -> handle_intermediate_byte(emulator, parser_state, byte, rest) end},
-      {&final_byte?/1, fn -> handle_final_byte(emulator, parser_state, byte, rest) end},
+      {&param_byte?/1,
+       fn -> handle_param_byte(emulator, parser_state, byte, rest) end},
+      {fn b -> b == ?; end,
+       fn -> handle_separator(emulator, parser_state, rest) end},
+      {&intermediate_byte?/1,
+       fn -> handle_intermediate_byte(emulator, parser_state, byte, rest) end},
+      {&final_byte?/1,
+       fn -> handle_final_byte(emulator, parser_state, byte, rest) end},
       {&can_sub?/1, fn -> handle_can_sub(emulator, parser_state, rest) end},
-      {&ignored_byte?/1, fn -> handle_ignored_byte(emulator, parser_state, byte, rest) end}
+      {&ignored_byte?/1,
+       fn -> handle_ignored_byte(emulator, parser_state, byte, rest) end}
     ]
-    
+
     Enum.find_value(byte_handlers, fn {check, handler} ->
       if check.(byte), do: handler.(), else: nil
     end) || handle_unhandled_byte(emulator, parser_state, byte, rest)

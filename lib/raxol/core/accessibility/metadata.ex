@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Accessibility.Metadata do
-  
   @moduledoc """
   Handles accessibility metadata for UI elements and component styles.
   """
@@ -120,7 +119,8 @@ defmodule Raxol.Core.Accessibility.Metadata do
     label
   end
 
-  def get_accessible_name(%{id: id} = element) when not is_map_key(element, :label) do
+  def get_accessible_name(%{id: id} = element)
+      when not is_map_key(element, :label) do
     # If element has an ID but no label, try to get metadata by ID
     metadata = get_element_metadata(id)
 

@@ -1,5 +1,4 @@
 defmodule Raxol.Plugins.SearchPlugin do
-  
   @moduledoc """
   Plugin for text search functionality.
   """

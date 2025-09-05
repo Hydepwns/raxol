@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Runtime.Subscription do
-  
   @moduledoc """
   Provides a way to subscribe to recurring updates and external events.
 

@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Colors do
   Manages terminal colors and color-related operations.
   """
 
-  
   @type color :: String.t()
   @type t :: %__MODULE__{
           foreground: color(),

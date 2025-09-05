@@ -2,7 +2,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   @moduledoc """
   Handles extended ANSI sequences and provides improved integration with the screen buffer.
   Functional Programming Version - All try/catch blocks replaced with with statements.
-  
+
   This module adds support for:
   - Extended SGR attributes (90-97, 100-107)
   - True color support (24-bit RGB)
@@ -58,6 +58,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
         Monitor.record_error("", "Extended SGR error: #{inspect(error)}", %{
           params: params
         })
+
         buffer
     end
   end
@@ -77,6 +78,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
           type: type,
           color: color_str
         })
+
         buffer
     end
   end
@@ -90,9 +92,14 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
       processed_buffer
     else
       {:error, error} ->
-        Monitor.record_error("", "Unicode processing error: #{inspect(error)}", %{
-          char: char
-        })
+        Monitor.record_error(
+          "",
+          "Unicode processing error: #{inspect(error)}",
+          %{
+            char: char
+          }
+        )
+
         buffer
     end
   end
@@ -103,7 +110,8 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   @spec process_extended_cursor(String.t(), list(String.t()), ScreenBuffer.t()) ::
           ScreenBuffer.t()
   def process_extended_cursor(command, params, buffer) do
-    with {:ok, processed_buffer} <- safe_process_cursor_command(command, params, buffer) do
+    with {:ok, processed_buffer} <-
+           safe_process_cursor_command(command, params, buffer) do
       processed_buffer
     else
       {:error, error} ->
@@ -111,6 +119,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
           command: command,
           params: params
         })
+
         buffer
     end
   end
@@ -123,8 +132,12 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     end)
     |> Task.yield(1000)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:exit, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:exit, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -135,8 +148,12 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     Task.async(fn -> parse_true_color(color_str) end)
     |> Task.yield(500)
     |> case do
-      {:ok, result} -> {:ok, result}
-      {:exit, reason} -> {:error, {:exit, reason}}
+      {:ok, result} ->
+        {:ok, result}
+
+      {:exit, reason} ->
+        {:error, {:exit, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -159,8 +176,12 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     end)
     |> Task.yield(500)
     |> case do
-      {:ok, result} -> result
-      {:exit, reason} -> {:error, {:exit, reason}}
+      {:ok, result} ->
+        result
+
+      {:exit, reason} ->
+        {:error, {:exit, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -179,8 +200,12 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     end)
     |> Task.yield(500)
     |> case do
-      {:ok, result} -> result
-      {:exit, reason} -> {:error, {:exit, reason}}
+      {:ok, result} ->
+        result
+
+      {:exit, reason} ->
+        {:error, {:exit, reason}}
+
       nil ->
         Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
@@ -263,7 +288,9 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     y = buffer.cursor_y
 
     if x < buffer.width and y < buffer.height do
-      new_buffer = ScreenBuffer.write_char(buffer, x, y, char, buffer.default_style)
+      new_buffer =
+        ScreenBuffer.write_char(buffer, x, y, char, buffer.default_style)
+
       {:ok, %{new_buffer | cursor_x: x + 1}}
     else
       {:ok, buffer}

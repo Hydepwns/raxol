@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
-  
   @moduledoc """
   Core module for managing plugin dependencies and dependency resolution.
   Provides the main public API for dependency checking and load order resolution.
@@ -135,9 +134,18 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
        ) do
     with :ok <- check_missing_version_error(missing_version, current_chain),
          :ok <- check_missing_dependencies_error(missing, current_chain),
-         :ok <- check_invalid_version_format_error(invalid_version_format, current_chain),
-         :ok <- check_invalid_version_requirement_error(invalid_version_requirement, current_chain),
-         :ok <- check_version_mismatches_error(version_mismatches, current_chain) do
+         :ok <-
+           check_invalid_version_format_error(
+             invalid_version_format,
+             current_chain
+           ),
+         :ok <-
+           check_invalid_version_requirement_error(
+             invalid_version_requirement,
+             current_chain
+           ),
+         :ok <-
+           check_version_mismatches_error(version_mismatches, current_chain) do
       :ok
     end
   end
@@ -160,15 +168,20 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   defp check_invalid_version_format_error(invalid_version_format, current_chain) do
     if Enum.any?(invalid_version_format) do
-      {:error, :invalid_version_format, Enum.reverse(invalid_version_format), current_chain}
+      {:error, :invalid_version_format, Enum.reverse(invalid_version_format),
+       current_chain}
     else
       :ok
     end
   end
 
-  defp check_invalid_version_requirement_error(invalid_version_requirement, current_chain) do
+  defp check_invalid_version_requirement_error(
+         invalid_version_requirement,
+         current_chain
+       ) do
     if Enum.any?(invalid_version_requirement) do
-      {:error, :invalid_version_requirement, Enum.reverse(invalid_version_requirement), current_chain}
+      {:error, :invalid_version_requirement,
+       Enum.reverse(invalid_version_requirement), current_chain}
     else
       :ok
     end
@@ -176,7 +189,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
 
   defp check_version_mismatches_error(version_mismatches, current_chain) do
     if Enum.any?(version_mismatches) do
-      {:error, :version_mismatch, Enum.reverse(version_mismatches), current_chain}
+      {:error, :version_mismatch, Enum.reverse(version_mismatches),
+       current_chain}
     else
       :ok
     end

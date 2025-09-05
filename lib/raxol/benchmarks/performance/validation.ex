@@ -1,5 +1,4 @@
 defmodule Raxol.Benchmarks.Performance.Validation do
-  
   @moduledoc """
   Validation functions for Raxol performance benchmarks.
   """
@@ -76,9 +75,14 @@ defmodule Raxol.Benchmarks.Performance.Validation do
     if total > 0, do: passed / total * 100, else: 0
   end
 
-  defp determine_status(pass_percentage) when pass_percentage >= 95, do: :excellent
+  defp determine_status(pass_percentage) when pass_percentage >= 95,
+    do: :excellent
+
   defp determine_status(pass_percentage) when pass_percentage >= 80, do: :good
-  defp determine_status(pass_percentage) when pass_percentage >= 60, do: :acceptable
+
+  defp determine_status(pass_percentage) when pass_percentage >= 60,
+    do: :acceptable
+
   defp determine_status(_pass_percentage), do: :failed
 
   @doc """
@@ -176,7 +180,8 @@ defmodule Raxol.Benchmarks.Performance.Validation do
       result_value = Map.get(results, metric)
       baseline_value = Map.get(baseline, metric)
 
-      validation_result = validate_metric_value(result_value, baseline_value, comparator, label)
+      validation_result =
+        validate_metric_value(result_value, baseline_value, comparator, label)
 
       {metric, validation_result}
     end)

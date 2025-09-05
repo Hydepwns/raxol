@@ -335,7 +335,8 @@ defmodule Raxol.Style.Colors.Adaptive do
   end
 
   defp detect_color_support_fallback do
-    case {check_if_other_true_color_indicators(), check_if_256_colors_supported(), check_if_16_colors_supported()} do
+    case {check_if_other_true_color_indicators(),
+          check_if_256_colors_supported(), check_if_16_colors_supported()} do
       {true, _, _} -> :true_color
       {false, true, _} -> :ansi_256
       {false, false, true} -> :ansi_16

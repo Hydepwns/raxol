@@ -1,5 +1,4 @@
 defmodule Raxol.Cloud.Core do
-  
   @moduledoc """
   Core functionality for Raxol cloud integrations.
 

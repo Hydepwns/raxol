@@ -60,41 +60,69 @@ defmodule Raxol.Terminal.Scroll.Optimizer do
     avg_lines = calculate_average_lines(history)
     alternation_ratio = calculate_alternation_ratio(history)
 
-    calculate_batch_size_by_conditions(current_batch_size, avg_lines, alternation_ratio)
+    calculate_batch_size_by_conditions(
+      current_batch_size,
+      avg_lines,
+      alternation_ratio
+    )
   end
 
   # High alternation pattern - reduce batch size to handle direction changes
-  defp calculate_batch_size_by_conditions(current_batch_size, _avg_lines, alternation_ratio)
+  defp calculate_batch_size_by_conditions(
+         current_batch_size,
+         _avg_lines,
+         alternation_ratio
+       )
        when alternation_ratio > 0.5 do
     max(current_batch_size - 2, 1)
   end
 
   # Large scroll operations - increase batch size significantly
-  defp calculate_batch_size_by_conditions(current_batch_size, avg_lines, _alternation_ratio)
+  defp calculate_batch_size_by_conditions(
+         current_batch_size,
+         avg_lines,
+         _alternation_ratio
+       )
        when avg_lines >= 50 do
     min(current_batch_size + 10, 100)
   end
 
   # Medium scroll operations - moderate increase
-  defp calculate_batch_size_by_conditions(current_batch_size, avg_lines, _alternation_ratio)
+  defp calculate_batch_size_by_conditions(
+         current_batch_size,
+         avg_lines,
+         _alternation_ratio
+       )
        when avg_lines >= 20 do
     min(current_batch_size + 5, 50)
   end
 
   # Very small scrolls - reduce batch size for precision
-  defp calculate_batch_size_by_conditions(current_batch_size, avg_lines, _alternation_ratio)
+  defp calculate_batch_size_by_conditions(
+         current_batch_size,
+         avg_lines,
+         _alternation_ratio
+       )
        when avg_lines <= 2 do
     max(current_batch_size - 2, 1)
   end
 
   # Small scrolls - slight reduction
-  defp calculate_batch_size_by_conditions(current_batch_size, avg_lines, _alternation_ratio)
+  defp calculate_batch_size_by_conditions(
+         current_batch_size,
+         avg_lines,
+         _alternation_ratio
+       )
        when avg_lines <= 5 do
     max(current_batch_size - 1, 1)
   end
 
   # Default case - no changes needed
-  defp calculate_batch_size_by_conditions(current_batch_size, _avg_lines, _alternation_ratio) do
+  defp calculate_batch_size_by_conditions(
+         current_batch_size,
+         _avg_lines,
+         _alternation_ratio
+       ) do
     current_batch_size
   end
 

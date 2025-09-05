@@ -220,11 +220,9 @@ defmodule Raxol.Terminal.Buffer.Selection do
   @spec get_buffer_text(ScreenBuffer.t()) ::
           {:ok, String.t()} | {:error, term()}
   def get_buffer_text(buffer) do
-    try do
-      text = get_text(buffer)
-      {:ok, text}
-    rescue
-      e -> {:error, e}
+    case Raxol.Core.ErrorHandling.safe_call(fn -> get_text(buffer) end) do
+      {:ok, text} -> {:ok, text}
+      {:error, e} -> {:error, e}
     end
   end
 end

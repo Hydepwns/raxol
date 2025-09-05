@@ -3,7 +3,6 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
   Core edge computing functionality and state management.
   """
 
-  
   alias Raxol.Cloud.EdgeComputing.{Cache, Queue, SyncManager}
 
   # Edge computing state

@@ -99,10 +99,11 @@ defmodule Raxol.DevTools.DebugInspector do
   Starts the debug inspector with UI overlay.
   """
   def start do
-    result = case GenServer.whereis(__MODULE__) do
-      nil -> start_link()
-      _pid -> :already_started
-    end
+    result =
+      case GenServer.whereis(__MODULE__) do
+        nil -> start_link()
+        _pid -> :already_started
+      end
 
     enable_ui_overlay()
     result
@@ -277,7 +278,9 @@ defmodule Raxol.DevTools.DebugInspector do
     # Update parent's children list
     updated_tree =
       case parent_id do
-        nil -> new_tree
+        nil ->
+          new_tree
+
         parent_id ->
           case Map.get(new_tree, parent_id) do
             nil ->
@@ -726,9 +729,13 @@ defmodule Raxol.DevTools.DebugInspector do
               "Inconsistent render times (variance: #{Float.round(variance, 2)})"
               | bottlenecks
             ]
-          false -> bottlenecks
+
+          false ->
+            bottlenecks
         end
-      false -> bottlenecks
+
+      false ->
+        bottlenecks
     end
   end
 
@@ -768,6 +775,7 @@ defmodule Raxol.DevTools.DebugInspector do
     case length(snapshots) < 2 do
       true ->
         %{status: "Not enough snapshots for analysis"}
+
       false ->
         [latest | rest] = snapshots
         previous = List.first(rest)
@@ -802,7 +810,9 @@ defmodule Raxol.DevTools.DebugInspector do
             "Consider optimizing components with high render counts: #{inspect(high_render_components)}"
             | recommendations
           ]
-        true -> recommendations
+
+        true ->
+          recommendations
       end
 
     # Check for slow components
@@ -818,7 +828,9 @@ defmodule Raxol.DevTools.DebugInspector do
             "Optimize slow rendering components: #{inspect(slow_components)}"
             | recommendations
           ]
-        true -> recommendations
+
+        true ->
+          recommendations
       end
 
     case Enum.empty?(recommendations) do

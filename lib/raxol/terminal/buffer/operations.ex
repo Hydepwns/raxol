@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
   @type t :: term()
 
-    @behaviour Raxol.Terminal.Buffer.OperationsBehaviour
+  @behaviour Raxol.Terminal.Buffer.OperationsBehaviour
 
   # Alias the new modules
   alias Raxol.Terminal.Buffer.Operations.{Text, Scrolling, Erasing, Utils}

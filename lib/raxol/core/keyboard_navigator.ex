@@ -1,15 +1,15 @@
 defmodule Raxol.Core.KeyboardNavigator do
   @moduledoc """
   Refactored KeyboardNavigator that delegates to GenServer implementation.
-  
+
   This module provides the same API as the original KeyboardNavigator but uses
   a supervised GenServer instead of the Process dictionary for state management.
-  
+
   ## Migration Notice
   This module is a drop-in replacement for `Raxol.Core.KeyboardNavigator`.
   All functions maintain backward compatibility while providing improved
   fault tolerance and functional programming patterns.
-  
+
   ## Benefits over Process Dictionary
   - Supervised state management with fault tolerance
   - Pure functional navigation logic
@@ -18,7 +18,7 @@ defmodule Raxol.Core.KeyboardNavigator do
   - Group-based navigation support
   - Better debugging and testing capabilities
   - No global state pollution
-  
+
   ## New Features
   - Focus stack for back navigation
   - Component grouping for logical navigation
@@ -37,6 +37,7 @@ defmodule Raxol.Core.KeyboardNavigator do
       nil ->
         {:ok, _pid} = Server.start_link()
         :ok
+
       _pid ->
         :ok
     end
@@ -44,13 +45,13 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   @doc """
   Initialize the keyboard navigator.
-  
+
   This registers event handlers for keyboard navigation.
   """
   def init do
     ensure_started()
     Server.init_navigator()
-    
+
     # Register this module's handler with EventManager
     EventManager.register_handler(:keyboard, __MODULE__, :handle_keyboard_event)
     :ok
@@ -58,7 +59,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   @doc """
   Configure keyboard navigation behavior.
-  
+
   ## Options
   - `:next_key` - Key to move to next element (default: `:tab`)
   - `:previous_key` - Key to move to previous element (default: `:tab` with shift)
@@ -79,7 +80,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   @doc """
   Register component positions for spatial navigation.
-  
+
   This allows arrow keys to navigate components based on their physical layout.
   """
   def register_component_position(component_id, x, y, width, height) do
@@ -89,9 +90,9 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   @doc """
   Define explicit navigation paths between components.
-  
+
   This allows customizing navigation beyond spatial or tab order.
-  
+
   ## Parameters
   - `from_id` - Component ID to navigate from
   - `direction` - Navigation direction (`:up`, `:down`, `:left`, `:right`)
@@ -104,7 +105,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   @doc """
   Handle keyboard events for navigation.
-  
+
   This function is called by the EventManager when keyboard events occur.
   The actual processing is delegated to the server.
   """
@@ -116,7 +117,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   @doc """
   Gets the current configuration.
-  
+
   For backward compatibility with Process dictionary version.
   """
   def get_config do
@@ -126,7 +127,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   @doc """
   Gets the spatial map.
-  
+
   For backward compatibility with Process dictionary version.
   """
   def get_spatial_map do
@@ -136,7 +137,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   @doc """
   Gets navigation paths.
-  
+
   For backward compatibility with Process dictionary version.
   """
   def get_navigation_paths do
@@ -148,7 +149,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   @doc """
   Register a component to a navigation group.
-  
+
   Groups allow logical navigation between related components.
   """
   def register_to_group(component_id, group_name) do
@@ -166,7 +167,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   @doc """
   Push current focus to the navigation stack.
-  
+
   Useful for modal dialogs or nested navigation contexts.
   """
   def push_focus(component_id) do
@@ -176,7 +177,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   @doc """
   Pop and return to the previous focus.
-  
+
   Returns the component ID that was restored, or nil if stack was empty.
   """
   def pop_focus do

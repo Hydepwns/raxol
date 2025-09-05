@@ -9,7 +9,6 @@ defmodule Raxol.Test.Visual.Matchers do
   - Component structure patterns
   """
 
-  
   @doc """
   Matches ANSI color codes in the output.
 

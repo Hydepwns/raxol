@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.ANSI.SGRHandler do
   Translates SGR codes into updates on a TextFormatting style map.
   """
 
-  
   alias Raxol.Terminal.ANSI.TextFormatting
 
   @text_style_map %{

@@ -117,12 +117,13 @@ defmodule PreCommitCheck do
       (all_markdown_files_in_project_glob ++ existing_additional_files)
       |> Enum.uniq()
 
-    # Filter out files in the deps/ directory and node_modules
+    # Filter out files in the deps/ directory, node_modules, and submodules
     markdown_files_filtered =
       Enum.reject(all_markdown_files_in_project, fn file_path ->
         String.starts_with?(file_path, "deps/") or
           String.starts_with?(file_path, "node_modules/") or
-          String.contains?(file_path, "/node_modules/")
+          String.contains?(file_path, "/node_modules/") or
+          String.starts_with?(file_path, "lib/termbox2_nif/c_src/termbox2/")
       end)
 
     # Normalize all paths before putting them into the set

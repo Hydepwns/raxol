@@ -1,7 +1,7 @@
 defmodule Raxol.Cloud do
   @moduledoc "Cloud integration system for Raxol applications."
 
-    alias Raxol.Cloud.Config
+  alias Raxol.Cloud.Config
   alias Raxol.Cloud.Core
   alias Raxol.Cloud.EdgeComputing
 

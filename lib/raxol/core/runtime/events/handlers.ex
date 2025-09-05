@@ -9,6 +9,7 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
   """
 
   require Raxol.Core.Runtime.Log
+  alias Raxol.Core.ErrorHandling
 
   @doc """
   Registers a new event handler for the specified event types.
@@ -66,15 +67,25 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
   end
 
   defp execute_handlers_in_order(handlers, event, state) do
-    try do
-      Enum.reduce_while(handlers, {event, state}, &execute_single_handler/2)
-      |> case do
-        {updated_event, updated_state} -> {:ok, updated_event, updated_state}
-        {:error, reason, state} -> {:error, reason, state}
-      end
-    rescue
-      error ->
-        log_handler_error(error, event, state, __STACKTRACE__)
+    case ErrorHandling.safe_call(fn ->
+           Enum.reduce_while(
+             handlers,
+             {event, state},
+             &execute_single_handler/2
+           )
+           |> case do
+             {updated_event, updated_state} ->
+               {:ok, updated_event, updated_state}
+
+             {:error, reason, state} ->
+               {:error, reason, state}
+           end
+         end) do
+      {:ok, result} ->
+        result
+
+      {:error, error} ->
+        log_handler_error(error, event, state, nil)
         {:error, {:handler_error, error}, state}
     end
   end
@@ -103,15 +114,18 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
   end
 
   defp log_handler_error(error, event, state, stacktrace) do
-    try do
-      Raxol.Core.Runtime.Log.error_with_stacktrace(
-        "Error executing handlers",
-        error,
-        stacktrace,
-        %{module: __MODULE__, event: event, state: state}
-      )
-    rescue
-      e ->
+    case ErrorHandling.safe_call(fn ->
+           Raxol.Core.Runtime.Log.error_with_stacktrace(
+             "Error executing handlers",
+             error,
+             stacktrace,
+             %{module: __MODULE__, event: event, state: state}
+           )
+         end) do
+      {:ok, _} ->
+        :ok
+
+      {:error, e} ->
         Raxol.Core.Runtime.Log.error(
           "Failed to log handler error: #{inspect(e)}",
           %{module: __MODULE__, event: event, state: state}

@@ -246,7 +246,8 @@ defmodule Raxol.Docs.InteractiveTutorial do
 
   # Helper function to work with state
   defp with_state(state \\ nil, fun) do
-    current_state = state || Raxol.Core.StateManager.get_state(@state_key) || State.new()
+    current_state =
+      state || Raxol.Core.StateManager.get_state(@state_key) || State.new()
 
     case fun.(current_state) do
       {updated_state, result} ->

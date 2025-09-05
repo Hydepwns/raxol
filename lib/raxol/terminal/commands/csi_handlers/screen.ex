@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
   Handles screen-related CSI commands.
   """
 
-    alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.CSIHandlers.SGRHandler
   alias Raxol.Terminal.ScreenBuffer
 

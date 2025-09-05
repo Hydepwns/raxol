@@ -1,5 +1,4 @@
 defmodule Raxol.Core.ColorSystem do
-  
   @moduledoc """
   Core color system for Raxol.
 
@@ -350,16 +349,16 @@ defmodule Raxol.Core.ColorSystem do
   defp safe_map_get(data, key, default \\ nil) do
     if is_map(data), do: Map.get(data, key, default), else: default
   end
-  
+
   defp lookup_color_in_palettes(color_name, variant_palette, base_palette) do
-    case {variant_palette && Map.has_key?(variant_palette, color_name), 
+    case {variant_palette && Map.has_key?(variant_palette, color_name),
           Map.has_key?(base_palette, color_name)} do
       {true, _} ->
         safe_map_get(variant_palette, color_name)
-      
+
       {false, true} ->
         safe_map_get(base_palette, color_name)
-      
+
       _ ->
         # Color not found in either palette
         nil

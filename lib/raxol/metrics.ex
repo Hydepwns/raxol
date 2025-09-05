@@ -89,8 +89,9 @@ defmodule Raxol.Metrics do
   # Functional wrapper for GenServer.cast with error handling
   defp safe_genserver_cast(message) do
     case GenServer.whereis(__MODULE__) do
-      nil -> 
+      nil ->
         {:error, :not_available}
+
       _pid ->
         GenServer.cast(__MODULE__, message)
         {:ok, :sent}
@@ -100,16 +101,11 @@ defmodule Raxol.Metrics do
   # Functional wrapper for GenServer.call with error handling
   defp safe_genserver_call(message) do
     case GenServer.whereis(__MODULE__) do
-      nil -> 
+      nil ->
         {:error, :not_available}
+
       _pid ->
-        try do
-          result = GenServer.call(__MODULE__, message)
-          {:ok, result}
-        catch
-          :exit, {:noproc, _} -> {:error, :not_available}
-          :exit, {:timeout, _} -> {:error, :timeout}
-        end
+        Raxol.Core.ErrorHandling.safe_genserver_call(__MODULE__, message)
     end
   end
 

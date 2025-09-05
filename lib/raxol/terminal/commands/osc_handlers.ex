@@ -37,11 +37,12 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
       {[12, 50, 112], :cursor},
       {[4, 51], :standalone}
     ]
-    
-    result = Enum.find_value(command_groups, fn {commands, group} ->
-      if command in commands, do: {group, command}, else: nil
-    end)
-    
+
+    result =
+      Enum.find_value(command_groups, fn {commands, group} ->
+        if command in commands, do: {group, command}, else: nil
+      end)
+
     result || :unsupported
   end
 

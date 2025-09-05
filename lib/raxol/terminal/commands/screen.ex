@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   inserting and deleting lines, and other screen manipulation operations.
   """
 
-    alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Eraser
 

@@ -1,5 +1,4 @@
 defmodule Raxol.Terminal.Buffer.Scrollback do
-  
   @moduledoc """
   Handles scrollback buffer operations for the screen buffer.
   This module manages the history of lines that have scrolled off the screen,

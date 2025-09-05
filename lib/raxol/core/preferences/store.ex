@@ -1,5 +1,4 @@
 defmodule Raxol.Core.Preferences.Store do
-  
   @moduledoc """
   Handles storage and retrieval of user preferences.
   """

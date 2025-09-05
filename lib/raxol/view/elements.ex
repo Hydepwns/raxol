@@ -6,7 +6,6 @@ defmodule Raxol.View.Elements do
   in Raxol views.
   """
 
-  
   @doc """
   Creates a panel with a title and content.
 

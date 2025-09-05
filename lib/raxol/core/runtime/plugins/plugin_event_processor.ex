@@ -154,25 +154,25 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
          plugin_states,
          command_table
        ) do
-    try do
-      case plugin_module.handle_event(event, plugin_state) do
-        {:ok, updated_plugin_state} ->
-          updated_states =
-            Map.put(plugin_states, plugin_id, updated_plugin_state)
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           plugin_module.handle_event(event, plugin_state)
+         end) do
+      {:ok, {:ok, updated_plugin_state}} ->
+        updated_states =
+          Map.put(plugin_states, plugin_id, updated_plugin_state)
 
-          {:ok, {metadata, updated_states, command_table}}
+        {:ok, {metadata, updated_states, command_table}}
 
-        {:error, reason} ->
-          log_plugin_error(plugin_id, event, reason)
-          {:ok, {metadata, plugin_states, command_table}}
+      {:ok, {:error, reason}} ->
+        log_plugin_error(plugin_id, event, reason)
+        {:ok, {metadata, plugin_states, command_table}}
 
-        other ->
-          log_plugin_unexpected_return(plugin_id, event, other)
-          {:ok, {metadata, plugin_states, command_table}}
-      end
-    rescue
-      e ->
-        log_plugin_crash(plugin_id, event, e)
+      {:ok, other} ->
+        log_plugin_unexpected_return(plugin_id, event, other)
+        {:ok, {metadata, plugin_states, command_table}}
+
+      {:error, exception} ->
+        log_plugin_crash(plugin_id, event, exception)
         {:ok, {metadata, plugin_states, command_table}}
     end
   end

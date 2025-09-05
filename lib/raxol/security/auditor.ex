@@ -335,9 +335,15 @@ defmodule Raxol.Security.Auditor do
   end
 
   defp validate_password(password) do
-    with true <- Regex.match?(~r/[A-Z]/, password) || {:error, :low, "Password must contain uppercase"},
-         true <- Regex.match?(~r/[a-z]/, password) || {:error, :low, "Password must contain lowercase"},
-         true <- Regex.match?(~r/[0-9]/, password) || {:error, :low, "Password must contain numbers"} do
+    with true <-
+           Regex.match?(~r/[A-Z]/, password) ||
+             {:error, :low, "Password must contain uppercase"},
+         true <-
+           Regex.match?(~r/[a-z]/, password) ||
+             {:error, :low, "Password must contain lowercase"},
+         true <-
+           Regex.match?(~r/[0-9]/, password) ||
+             {:error, :low, "Password must contain numbers"} do
       {:ok, password}
     else
       {:error, level, message} -> {:error, level, message}
@@ -407,10 +413,13 @@ defmodule Raxol.Security.Auditor do
   defp safe_param?(_), do: false
 
   defp get_rate_count(key) do
-    # Mock implementation - would use ETS or Redis
-    :ets.lookup_element(:rate_limits, key, 2)
-  rescue
-    ArgumentError -> 0
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           # Mock implementation - would use ETS or Redis
+           :ets.lookup_element(:rate_limits, key, 2)
+         end) do
+      {:ok, count} -> count
+      {:error, _reason} -> 0
+    end
   end
 
   defp increment_rate_count(key, window) do
@@ -557,7 +566,8 @@ defmodule Raxol.Security.Auditor do
 
   ## Helper functions for refactored code
 
-  defp check_and_update_rate_limit(current_count, limit, _key, _window) when current_count >= limit do
+  defp check_and_update_rate_limit(current_count, limit, _key, _window)
+       when current_count >= limit do
     {:error, :medium, "Rate limit exceeded"}
   end
 
@@ -582,7 +592,8 @@ defmodule Raxol.Security.Auditor do
     {:error, :audit_failed, failures}
   end
 
-  defp validate_input_length(input, max_length) when byte_size(input) <= max_length do
+  defp validate_input_length(input, max_length)
+       when byte_size(input) <= max_length do
     {:ok, input}
   end
 

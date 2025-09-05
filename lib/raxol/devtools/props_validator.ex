@@ -48,6 +48,8 @@ defmodule Raxol.DevTools.PropsValidator do
 
   require Logger
 
+  alias Raxol.Core.ErrorHandling
+
   defmodule ValidationError do
     defstruct [:field, :type, :message, :value, :suggestion]
 
@@ -196,14 +198,16 @@ defmodule Raxol.DevTools.PropsValidator do
     end
   end
 
-  # Safe function call wrapper replacing try/catch
+  # Safe function call wrapper using functional error handling
   defp safe_call_props_function(component) do
-    case :erlang.apply(component, :__props__, []) do
-      props when is_map(props) -> {:ok, props}
-      _ -> {:error, :invalid_props}
+    ErrorHandling.safe_call(fn ->
+      :erlang.apply(component, :__props__, [])
+    end)
+    |> case do
+      {:ok, props} when is_map(props) -> {:ok, props}
+      {:ok, _} -> {:error, :invalid_props}
+      {:error, _} -> {:error, :call_failed}
     end
-  rescue
-    _ -> {:error, :call_failed}
   end
 
   defp run_validation(props, prop_schemas) do
@@ -422,13 +426,15 @@ defmodule Raxol.DevTools.PropsValidator do
     {:ok, value}
   end
 
-  # Safe atom conversion wrapper
+  # Safe atom conversion wrapper using functional error handling
   defp safe_string_to_existing_atom(string) do
-    case String.to_existing_atom(string) do
-      atom when is_atom(atom) -> {:ok, atom}
+    ErrorHandling.safe_call(fn ->
+      String.to_existing_atom(string)
+    end)
+    |> case do
+      {:ok, atom} when is_atom(atom) -> {:ok, atom}
+      {:error, _} -> {:error, :invalid_atom}
     end
-  rescue
-    ArgumentError -> {:error, :invalid_atom}
   end
 
   defp check_enum(_prop_name, nil, _schema) do
@@ -658,17 +664,17 @@ defmodule Raxol.DevTools.PropsValidator do
     {:ok, value}
   end
 
-  # Safe transform function wrapper
+  # Safe transform function wrapper using functional error handling
   defp safe_apply_transform(transform_fn, value) do
-    case transform_fn.(value) do
-      transformed_value -> {:ok, transformed_value}
+    ErrorHandling.safe_call(fn ->
+      transform_fn.(value)
+    end)
+    |> case do
+      {:ok, transformed_value} -> {:ok, transformed_value}
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, reason}} -> {:error, {:throw, reason}}
+      {:error, reason} -> {:error, {reason, :transform_failed}}
     end
-  rescue
-    kind ->
-      {:error, {kind, :transform_failed}}
-  catch
-    kind, reason ->
-      {:error, {kind, reason}}
   end
 
   defp is_component?(value) do
