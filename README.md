@@ -99,6 +99,11 @@ end
 # Clone and explore
 git clone https://github.com/Hydepwns/raxol.git
 cd raxol
+
+# IMPORTANT: If you have a previous clone, reset your local copy:
+# git fetch origin
+# git reset --hard origin/master
+
 mix deps.get
 
 # Interactive tutorial (5 minutes)
@@ -110,6 +115,8 @@ mix raxol.playground
 # Run tests (100% passing!)
 mix test
 ```
+
+> **Note for existing clones**: The repository history was recently updated. If you cloned this repo before September 2025, please reset your local copy using the commands shown above.
 
 ### Choose Your Framework
 
