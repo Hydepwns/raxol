@@ -14,6 +14,16 @@ mix compile | tee -a tmp/build_and_compile.log
 
 echo "Build complete. Output saved to tmp/build_and_compile.log"
 
+# Check for zero warnings
+echo "Checking for compilation warnings..."
+mix compile --warnings-as-errors 2>&1 | tee tmp/warnings_check.log
+if [ $? -eq 0 ]; then
+    echo "✅ Zero warnings - compilation check passed!"
+else
+    echo "❌ Compilation warnings detected - see tmp/warnings_check.log"
+    exit 1
+fi
+
 # Run tests, tee output
 echo "Running mix test..."
 mix test | tee tmp/test_output.log

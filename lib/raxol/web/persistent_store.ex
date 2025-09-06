@@ -530,7 +530,6 @@ defmodule Raxol.Web.PersistentStore do
         |> Repo.insert()
         |> case do
           {:ok, _session} -> :ok
-          {:error, reason} -> {:error, reason}
         end
 
       existing_session ->
@@ -540,7 +539,6 @@ defmodule Raxol.Web.PersistentStore do
         |> Repo.update()
         |> case do
           {:ok, _session} -> :ok
-          {:error, reason} -> {:error, reason}
         end
     end
   end
@@ -593,7 +591,7 @@ defmodule Raxol.Web.PersistentStore do
       nil ->
         {:error, :not_found}
 
-      session ->
+      %Raxol.Web.Session.Session{} = session ->
         # Convert database record to session state format
         session_state = %{
           session_id: session.id,
@@ -698,14 +696,14 @@ defmodule Raxol.Web.PersistentStore do
     :ets.foldl(
       fn {session_id, session_state}, _acc ->
         expires_at = Map.get(session_state, :expires_at)
-        
+
         cond do
           is_nil(expires_at) ->
             :ok
-            
+
           DateTime.compare(expires_at, now) == :lt ->
             :ets.delete(ets_table, session_id)
-            
+
           true ->
             :ok
         end

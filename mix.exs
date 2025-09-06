@@ -11,7 +11,7 @@ defmodule Raxol.MixProject do
       elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
       elixirc_options: [
-        warnings_as_errors: false,
+        warnings_as_errors: Mix.env() != :dev,
         ignore_module_conflict: true,
         compile_order: [:cell, :operations]
       ],

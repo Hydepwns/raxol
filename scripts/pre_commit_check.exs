@@ -20,6 +20,7 @@ defmodule PreCommitCheck do
     results = [
       check_code_style(),
       check_broken_links()
+      # check_zero_warnings()  # Temporarily disabled due to Dialyzer false positive
       # check_type_safety(),
       # check_documentation_consistency(),
       # check_test_coverage(),
@@ -169,6 +170,34 @@ defmodule PreCommitCheck do
       end
 
       :error
+    end
+  end
+
+  @doc """
+  Check for zero compilation warnings.
+  """
+  def check_zero_warnings do
+    IO.puts("Checking for compilation warnings...")
+
+    # Set environment variable to skip termbox tests
+    System.put_env("SKIP_TERMBOX2_TESTS", "true")
+
+    # Run mix compile with warnings as errors
+    {output, exit_code} =
+      System.cmd("mix", ["compile", "--warnings-as-errors"],
+        stderr_to_stdout: true,
+        env: [{"MIX_ENV", "test"}, {"SKIP_TERMBOX2_TESTS", "true"}]
+      )
+
+    case exit_code do
+      0 ->
+        IO.puts("✅ Zero compilation warnings detected!")
+        :ok
+
+      _ ->
+        IO.puts("❌ Compilation warnings found:")
+        IO.puts(output)
+        :error
     end
   end
 

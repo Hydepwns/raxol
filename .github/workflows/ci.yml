@@ -150,6 +150,20 @@ jobs:
             cat deps/cowlib/ebin/cowlib.app
           fi
 
+      - name: Compile with Zero Warnings Check
+        run: |
+          mix compile --warnings-as-errors
+        env:
+          MIX_ENV: test
+          SKIP_TERMBOX2_TESTS: true
+
+      - name: Validate Module Structure
+        run: |
+          chmod +x scripts/ci_validate_structure.sh
+          ./scripts/ci_validate_structure.sh
+        env:
+          MIX_ENV: test
+
       - name: Run Tests
         run: |
           mix coveralls.json --max-cases 4 --slowest 10
@@ -291,6 +305,20 @@ jobs:
             (cd deps/cowlib && mix compile)
           fi
 
+      - name: Compile with Zero Warnings Check
+        run: |
+          mix compile --warnings-as-errors
+        env:
+          MIX_ENV: test
+          SKIP_TERMBOX2_TESTS: true
+
+      - name: Validate Module Structure
+        run: |
+          chmod +x scripts/ci_validate_structure.sh
+          ./scripts/ci_validate_structure.sh
+        env:
+          MIX_ENV: test
+
       - name: Wait for PostgreSQL
         run: |
           for i in {1..30}; do
@@ -304,7 +332,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          mix test --cover --warnings-as-errors
+          mix test --cover
         env:
           MIX_ENV: test
           RAXOL_ENV: test
