@@ -60,10 +60,10 @@ defmodule Raxol.Examples.FocusRingShowcase do
 
         # Also cycle component type every full animation cycle
         next_component_type =
-          case next_index == 0 do
-            true ->
+          case next_index do
+            0 ->
               cycle_next_in_list(state.current_component_type, @component_types)
-            false ->
+            _ ->
               state.current_component_type
           end
 
@@ -149,7 +149,10 @@ defmodule Raxol.Examples.FocusRingShowcase do
       {:toggle_reduced_motion} ->
         reduced_motion = !state.reduced_motion
         # When reduced motion is enabled, set animation to :none
-        animation = if reduced_motion, do: :none, else: state.current_animation
+        animation = case reduced_motion do
+          true -> :none
+          false -> state.current_animation
+        end
         updated_focus_ring = Map.put(state.focus_ring, :animation, animation)
 
         {%{
@@ -215,10 +218,10 @@ defmodule Raxol.Examples.FocusRingShowcase do
                     label: to_string(animation),
                     on_click: {:select_animation, animation},
                     style:
-                      if(state.current_animation == animation,
-                        do: [bg: :blue, fg: :white],
-                        else: []
-                      )
+                      case state.current_animation == animation do
+                        true -> [bg: :blue, fg: :white]
+                        false -> []
+                      end
                   )
                 end
               end
@@ -232,10 +235,10 @@ defmodule Raxol.Examples.FocusRingShowcase do
                     label: to_string(component_type),
                     on_click: {:select_component_type, component_type},
                     style:
-                      if(state.current_component_type == component_type,
-                        do: [bg: :blue, fg: :white],
-                        else: []
-                      )
+                      case state.current_component_type == component_type do
+                        true -> [bg: :blue, fg: :white]
+                        false -> []
+                      end
                   )
                 end
               end
@@ -249,10 +252,10 @@ defmodule Raxol.Examples.FocusRingShowcase do
                     label: to_string(component_state),
                     on_click: {:select_component_state, component_state},
                     style:
-                      if(state.current_component_state == component_state,
-                        do: [bg: :blue, fg: :white],
-                        else: []
-                      )
+                      case state.current_component_state == component_state do
+                        true -> [bg: :blue, fg: :white]
+                        false -> []
+                      end
                   )
                 end
               end
@@ -277,16 +280,16 @@ defmodule Raxol.Examples.FocusRingShowcase do
             row do
               button(
                 label:
-                  if(state.demo_running,
-                    do: "Stop Demo",
-                    else: "Start Auto-Cycle Demo"
-                  ),
+                  case state.demo_running do
+                    true -> "Stop Demo"
+                    false -> "Start Auto-Cycle Demo"
+                  end,
                 on_click: {:toggle_demo},
                 style:
-                  if(state.demo_running,
-                    do: [bg: :red, fg: :white],
-                    else: [bg: :green, fg: :white]
-                  )
+                  case state.demo_running do
+                    true -> [bg: :red, fg: :white]
+                    false -> [bg: :green, fg: :white]
+                  end
               )
             end
           end

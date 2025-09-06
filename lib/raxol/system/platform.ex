@@ -153,7 +153,7 @@ defmodule Raxol.System.Platform do
 
   ## Parameters
 
-  * `feature` - Feature name as an atom (e.g., `:true_color`, `:unicode`, `:mouse`)
+  * `feature` - Feature name as an atom (e.g., `:true_color`, `:unicode`, `:mouse`, `:kitty_graphics`)
 
   ## Returns
 
@@ -164,6 +164,9 @@ defmodule Raxol.System.Platform do
 
       iex> Platform.supports_feature?(:true_color)
       true
+
+      iex> Platform.supports_feature?(:kitty_graphics)
+      false
   """
   @spec supports_feature?(atom()) :: boolean()
   def supports_feature?(feature) do
@@ -174,6 +177,10 @@ defmodule Raxol.System.Platform do
 
       :basic_colors ->
         true
+
+      # Graphics protocol features
+      feature when feature in [:kitty_graphics, :sixel_graphics, :iterm2_graphics] ->
+        detect_graphics_protocol_support(feature)
 
       # Platform-specific features
       feature when feature in [:true_color, :unicode, :mouse, :clipboard] ->
@@ -310,6 +317,234 @@ defmodule Raxol.System.Platform do
     end
   end
 
+  @doc """
+  Detects which graphics protocols are supported by the current terminal.
+
+  ## Returns
+
+  A map with graphics protocol support information:
+
+  * `:kitty_graphics` - boolean indicating Kitty graphics protocol support
+  * `:sixel_graphics` - boolean indicating Sixel graphics support
+  * `:iterm2_graphics` - boolean indicating iTerm2 inline images support
+  * `:terminal_type` - detected terminal type atom
+  * `:capabilities` - map of additional detected capabilities
+
+  ## Examples
+
+      iex> Platform.detect_graphics_support()
+      %{
+        kitty_graphics: true,
+        sixel_graphics: false,
+        iterm2_graphics: false,
+        terminal_type: :kitty,
+        capabilities: %{max_image_size: 100000000}
+      }
+  """
+  @spec detect_graphics_support() :: %{
+          :kitty_graphics => boolean(),
+          :sixel_graphics => boolean(),
+          :iterm2_graphics => boolean(),
+          :terminal_type => atom(),
+          :capabilities => map()
+        }
+  def detect_graphics_support do
+    terminal_type = detect_terminal_type()
+    
+    %{
+      kitty_graphics: detect_graphics_protocol_support(:kitty_graphics),
+      sixel_graphics: detect_graphics_protocol_support(:sixel_graphics),
+      iterm2_graphics: detect_graphics_protocol_support(:iterm2_graphics),
+      terminal_type: terminal_type,
+      capabilities: detect_terminal_capabilities(terminal_type)
+    }
+  end
+
+  # Graphics protocol detection
+  defp detect_graphics_protocol_support(:kitty_graphics) do
+    case detect_terminal_type() do
+      :kitty -> true
+      :wezterm -> check_wezterm_kitty_support()
+      :iterm2 -> check_iterm2_kitty_support()
+      :alacritty -> check_alacritty_kitty_support()
+      _ -> false
+    end
+  end
+
+  defp detect_graphics_protocol_support(:sixel_graphics) do
+    case detect_terminal_type() do
+      :xterm -> check_xterm_sixel_support()
+      :mintty -> true
+      :mlterm -> true
+      :wezterm -> true
+      :foot -> true
+      _ -> check_environment_sixel_support()
+    end
+  end
+
+  defp detect_graphics_protocol_support(:iterm2_graphics) do
+    case detect_terminal_type() do
+      :iterm2 -> true
+      _ -> false
+    end
+  end
+
+  defp detect_terminal_type do
+    case {
+      System.get_env("TERM"),
+      System.get_env("TERM_PROGRAM"),
+      System.get_env("KITTY_WINDOW_ID"),
+      System.get_env("WEZTERM_EXECUTABLE"),
+      System.get_env("ALACRITTY_LOG")
+    } do
+      {"xterm-kitty", _, _, _, _} -> 
+        :kitty
+      
+      {_, _, kitty_id, _, _} when not is_nil(kitty_id) -> 
+        :kitty
+      
+      {_, _, _, wezterm, _} when not is_nil(wezterm) -> 
+        :wezterm
+      
+      {"wezterm", _, _, _, _} -> 
+        :wezterm
+      
+      {_, "iTerm.app", _, _, _} -> 
+        :iterm2
+      
+      {_, _, _, _, alacritty} when not is_nil(alacritty) -> 
+        :alacritty
+      
+      {"alacritty", _, _, _, _} -> 
+        :alacritty
+      
+      {term, _, _, _, _} when not is_nil(term) ->
+        detect_terminal_from_term(term)
+      
+      _ -> 
+        :unknown
+    end
+  end
+
+  defp detect_terminal_from_term(term) do
+    cond do
+      String.contains?(term, "xterm") -> :xterm
+      String.contains?(term, "screen") -> :screen
+      String.contains?(term, "tmux") -> :tmux
+      String.contains?(term, "foot") -> :foot
+      String.contains?(term, "mlterm") -> :mlterm
+      term == "mintty" -> :mintty
+      String.starts_with?(term, "st-") -> :st
+      true -> :unknown
+    end
+  end
+
+  defp detect_terminal_capabilities(:kitty) do
+    %{
+      max_image_size: 100_000_000,  # 100MB
+      supports_animation: true,
+      supports_transparency: true,
+      supports_chunked_transmission: true,
+      max_image_width: 10000,
+      max_image_height: 10000
+    }
+  end
+
+  defp detect_terminal_capabilities(:wezterm) do
+    %{
+      max_image_size: 50_000_000,  # 50MB
+      supports_animation: true,
+      supports_transparency: true,
+      supports_chunked_transmission: true,
+      max_image_width: 8192,
+      max_image_height: 8192
+    }
+  end
+
+  defp detect_terminal_capabilities(:iterm2) do
+    %{
+      max_image_size: 10_000_000,  # 10MB
+      supports_animation: false,
+      supports_transparency: true,
+      supports_chunked_transmission: false,
+      max_image_width: 2048,
+      max_image_height: 2048
+    }
+  end
+
+  defp detect_terminal_capabilities(:xterm) do
+    %{
+      max_image_size: 1_000_000,  # 1MB (Sixel)
+      supports_animation: false,
+      supports_transparency: false,
+      supports_chunked_transmission: false,
+      max_image_width: 1024,
+      max_image_height: 1024
+    }
+  end
+
+  defp detect_terminal_capabilities(_) do
+    %{
+      max_image_size: 0,
+      supports_animation: false,
+      supports_transparency: false,
+      supports_chunked_transmission: false,
+      max_image_width: 0,
+      max_image_height: 0
+    }
+  end
+
+  # Terminal-specific graphics support detection
+  defp check_wezterm_kitty_support do
+    # WezTerm supports Kitty graphics protocol since v20220408
+    case System.get_env("WEZTERM_VERSION") do
+      nil -> true  # Assume recent version
+      version -> version >= "20220408"
+    end
+  end
+
+  defp check_iterm2_kitty_support do
+    # iTerm2 has limited Kitty graphics protocol support since 3.5
+    case System.get_env("TERM_PROGRAM_VERSION") do
+      nil -> false
+      version -> 
+        case String.split(version, ".") do
+          [major | _] when is_binary(major) ->
+            case Integer.parse(major) do
+              {maj_num, _} -> maj_num >= 3
+              _ -> false
+            end
+          _ -> false
+        end
+    end
+  end
+
+  defp check_alacritty_kitty_support do
+    # Alacritty currently does not support Kitty graphics protocol
+    false
+  end
+
+  defp check_xterm_sixel_support do
+    # Check if xterm was compiled with Sixel support
+    case System.get_env("XTERM_VERSION") do
+      nil -> false  # Unknown version
+      version ->
+        # Sixel support added in xterm 334+
+        case Integer.parse(version) do
+          {num, _} -> num >= 334
+          _ -> false
+        end
+    end
+  end
+
+  defp check_environment_sixel_support do
+    # Check TERM environment for Sixel indicators
+    term = System.get_env("TERM", "")
+    
+    String.contains?(term, "sixel") or
+    System.get_env("COLORTERM") == "sixel"
+  end
+
   # Platform-specific detection helpers
 
   defp apple_silicon? do
@@ -391,9 +626,10 @@ defmodule Raxol.System.Platform do
         "Cmder"
 
       {_, _, _, prompt, _} when prompt != nil ->
-        if String.contains?(prompt, "$P$G"),
-          do: "Command Prompt",
-          else: determine_by_psmodule(System.get_env("PSModulePath"))
+        case String.contains?(prompt, "$P$G") do
+          true -> "Command Prompt"
+          false -> determine_by_psmodule(System.get_env("PSModulePath"))
+        end
 
       {_, _, _, _, psmodule} when psmodule != nil ->
         "PowerShell"

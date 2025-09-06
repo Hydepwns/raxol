@@ -5,7 +5,6 @@ defmodule Raxol.Test.AssertionHelpers do
   """
 
   import ExUnit.Assertions
-  alias Raxol.Core.ErrorHandling
 
   @doc """
   Asserts that a component's state matches expected values.
@@ -46,7 +45,7 @@ defmodule Raxol.Test.AssertionHelpers do
   Asserts that a component properly handles errors.
   """
   def assert_error_handled(component, error_fn) do
-    case ErrorHandling.safe_call(error_fn) do
+    case Raxol.Core.ErrorHandling.safe_call(error_fn) do
       {:ok, _} ->
         flunk("Expected an error to be handled")
 
@@ -75,13 +74,14 @@ defmodule Raxol.Test.AssertionHelpers do
     output = capture_render(component)
     snapshot_path = Path.join(context.snapshots_dir, "#{snapshot_name}.snap")
 
-    if File.exists?(snapshot_path) do
-      expected = File.read!(snapshot_path)
+    case File.exists?(snapshot_path) do
+      true ->
+        expected = File.read!(snapshot_path)
 
-      assert output == expected,
-             "Component output does not match snapshot: #{snapshot_name}"
-    else
-      File.write!(snapshot_path, output)
+        assert output == expected,
+               "Component output does not match snapshot: #{snapshot_name}"
+      false ->
+        File.write!(snapshot_path, output)
     end
   end
 

@@ -158,13 +158,13 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
     handle_cell_placement(is_valid_y, grid, y, x, cell)
   end
 
+  # Catch non-grids or negative coords
+  def put_cell(grid, _y, _x, _cell), do: grid
+
   defp handle_cell_placement(false, grid, _y, _x, _cell), do: grid
 
   defp handle_cell_placement(true, grid, y, x, cell),
     do: update_row(grid, y, x, cell)
-
-  # Catch non-grids or negative coords
-  def put_cell(grid, _y, _x, _cell), do: grid
 
   defp update_row(grid, y, x, cell) do
     row = Enum.at(grid, y)

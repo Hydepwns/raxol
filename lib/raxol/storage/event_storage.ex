@@ -7,7 +7,6 @@ defmodule Raxol.Storage.EventStorage do
   """
 
   alias Raxol.Architecture.EventSourcing.{Event, EventStream}
-  alias Raxol.Core.ErrorHandling
 
   @type event :: Event.t()
   @type stream_name :: String.t()
@@ -246,13 +245,9 @@ defmodule Raxol.Storage.EventStorage.Memory do
 
   @impl GenServer
   def handle_call({:append_event, event, stream_name}, _from, state) do
-    case do_append_event(event, stream_name, state) do
-      {:ok, event_id, new_state} ->
-        {:reply, {:ok, event_id}, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    # do_append_event/3 always returns {:ok, event_id, new_state}, no error case possible
+    {:ok, event_id, new_state} = do_append_event(event, stream_name, state)
+    {:reply, {:ok, event_id}, new_state}
   end
 
   @impl GenServer
@@ -359,24 +354,18 @@ defmodule Raxol.Storage.EventStorage.Memory do
         {:ok, [], state}
 
       _ ->
-        # Process all events in batch using functional error handling
-        ErrorHandling.safe_call(fn ->
+        # Process all events in batch - Memory.do_append_event/3 never returns errors
+        Raxol.Core.ErrorHandling.safe_call(fn ->
           {event_ids, final_state} =
             Enum.reduce(events, {[], state}, fn event, {acc_ids, acc_state} ->
-              case do_append_event(event, stream_name, acc_state) do
-                {:ok, event_id, new_state} ->
-                  {[event_id | acc_ids], new_state}
-
-                {:error, reason} ->
-                  throw({:error, reason})
-              end
+              {:ok, event_id, new_state} = do_append_event(event, stream_name, acc_state)
+              {[event_id | acc_ids], new_state}
             end)
 
           {:ok, Enum.reverse(event_ids), final_state}
         end)
         |> case do
           {:ok, result} -> result
-          {:error, {:throw, {:error, reason}}} -> {:error, reason}
           {:error, reason} -> {:error, reason}
         end
     end
@@ -540,13 +529,8 @@ defmodule Raxol.Storage.EventStorage.Disk do
 
   @impl GenServer
   def handle_call({:read_all, start_position, count}, _from, state) do
-    case read_all_events(start_position, count, state) do
-      {:ok, events} ->
-        {:reply, {:ok, events}, state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, events} = read_all_events(start_position, count, state)
+    {:reply, {:ok, events}, state}
   end
 
   @impl GenServer
@@ -645,7 +629,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
 
       _ ->
         # Process all events in batch using functional error handling
-        ErrorHandling.safe_call(fn ->
+        Raxol.Core.ErrorHandling.safe_call(fn ->
           {event_ids, final_state} =
             Enum.reduce(events, {[], state}, fn event, {acc_ids, acc_state} ->
               case do_append_event(event, stream_name, acc_state) do
@@ -747,7 +731,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
 
     case File.read(file_path) do
       {:ok, binary_data} ->
-        ErrorHandling.safe_call(fn ->
+        Raxol.Core.ErrorHandling.safe_call(fn ->
           snapshot = :erlang.binary_to_term(binary_data)
           {:ok, snapshot}
         end)
@@ -780,7 +764,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
 
     case File.read(index_file) do
       {:ok, binary_data} ->
-        ErrorHandling.safe_call_with_default(
+        Raxol.Core.ErrorHandling.safe_call_with_default(
           fn ->
             :erlang.binary_to_term(binary_data)
           end,

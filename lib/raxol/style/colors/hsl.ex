@@ -29,7 +29,10 @@ defmodule Raxol.Style.Colors.HSL do
 
     h = _calculate_hue(r_norm, g_norm, b_norm, max, delta)
     l = (max + min) / 2
-    s = if delta == +0.0, do: +0.0, else: delta / (1 - abs(2 * l - 1))
+    s = case delta do
+      +0.0 -> +0.0
+      _ -> delta / (1 - abs(2 * l - 1))
+    end
 
     {h, s, l}
   end
@@ -45,16 +48,17 @@ defmodule Raxol.Style.Colors.HSL do
   defp _calculate_hue(r, g, b, max, delta) when max == g,
     do: normalize_hue(60.0 * ((b - r) / delta + 2.0))
 
-  defp _calculate_hue(r, g, b, _max, delta),
+  defp _calculate_hue(r, g, _b, _max, delta),
     do: normalize_hue(60.0 * ((r - g) / delta + 4.0))
 
   defp normalize_hue(hue) do
     # Ensure hue is always positive
-    if hue < 0,
-      do: hue + 360.0,
-      else:
+    case hue < 0 do
+      true -> hue + 360.0
+      false -> 
         hue
         |> then(&rem(round(&1), 360))
+    end
   end
 
   @doc """

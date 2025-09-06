@@ -42,10 +42,13 @@ defmodule Raxol.Test.BufferHelper do
 
     # Setup metrics if enabled
     metrics_state =
-      if Keyword.get(opts, :enable_metrics, true) do
-        Raxol.Test.MetricsHelper.setup_metrics_test(
-          Keyword.get(opts, :metrics_opts, [])
-        )
+      case Keyword.get(opts, :enable_metrics, true) do
+        true ->
+          Raxol.Test.MetricsHelper.setup_metrics_test(
+            Keyword.get(opts, :metrics_opts, [])
+          )
+        false ->
+          nil
       end
 
     %{
@@ -64,12 +67,14 @@ defmodule Raxol.Test.BufferHelper do
   """
   def cleanup_buffer_test(state) do
     # Check if the process is still alive before stopping
-    if Process.alive?(state.manager) do
-      GenServer.stop(state.manager)
+    case Process.alive?(state.manager) do
+      true -> GenServer.stop(state.manager)
+      false -> :ok
     end
 
-    if state.metrics do
-      Raxol.Test.MetricsHelper.cleanup_metrics_test(state.metrics)
+    case state.metrics do
+      nil -> :ok
+      metrics -> Raxol.Test.MetricsHelper.cleanup_metrics_test(metrics)
     end
   end
 

@@ -12,7 +12,6 @@ defmodule Raxol.Test.TestHelper do
   use ExUnit.CaseTemplate
   import ExUnit.Assertions
   alias Raxol.Core.Events.{Event}
-  alias Raxol.Core.ErrorHandling
   require Raxol.Core.Runtime.Log
 
   @doc """
@@ -202,7 +201,7 @@ defmodule Raxol.Test.TestHelper do
     Process.group_leader(self(), capture_pid)
 
     result =
-      ErrorHandling.ensure_cleanup(
+      Raxol.Core.ErrorHandling.ensure_cleanup(
         fn ->
           fun.()
           {_input, output} = StringIO.contents(capture_pid)

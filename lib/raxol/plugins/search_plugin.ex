@@ -79,10 +79,12 @@ defmodule Raxol.Plugins.SearchPlugin do
         search_results = plugin.search_results || []
 
         next_index =
-          if length(search_results) > 0 do
-            min(plugin.current_result_index + 1, length(search_results) - 1)
-          else
-            0
+          case length(search_results) > 0 do
+            true ->
+              min(plugin.current_result_index + 1, length(search_results) - 1)
+
+            false ->
+              0
           end
 
         updated_plugin = %{plugin | current_result_index: next_index}
@@ -92,10 +94,12 @@ defmodule Raxol.Plugins.SearchPlugin do
         search_results = plugin.search_results || []
 
         prev_index =
-          if length(search_results) > 0 do
-            max(plugin.current_result_index - 1, 0)
-          else
-            0
+          case length(search_results) > 0 do
+            true ->
+              max(plugin.current_result_index - 1, 0)
+
+            false ->
+              0
           end
 
         updated_plugin = %{plugin | current_result_index: prev_index}
@@ -192,10 +196,12 @@ defmodule Raxol.Plugins.SearchPlugin do
 
   @doc false
   def get_current_result(plugin) do
-    if length(plugin.search_results) > 0 do
-      Enum.at(plugin.search_results, plugin.current_result_index)
-    else
-      nil
+    case length(plugin.search_results) > 0 do
+      true ->
+        Enum.at(plugin.search_results, plugin.current_result_index)
+
+      false ->
+        nil
     end
   end
 

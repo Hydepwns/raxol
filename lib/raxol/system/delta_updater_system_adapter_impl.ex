@@ -68,11 +68,13 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
     case Application.spec(:raxol, :vsn) do
       nil ->
         # Try Mix.Project.config if available (compile time)
-        if Code.ensure_loaded?(Mix.Project) do
-          config = Mix.Project.config()
-          to_string(config[:version] || "0.0.0")
-        else
-          "0.0.0"
+        # Code.ensure_loaded?/1 returns a boolean, not {:module, _} or {:error, _}
+        case Code.ensure_loaded?(Mix.Project) do
+          true ->
+            config = Mix.Project.config()
+            to_string(config[:version] || "0.0.0")
+          false ->
+            "0.0.0"
         end
 
       vsn ->

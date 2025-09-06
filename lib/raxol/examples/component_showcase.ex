@@ -108,32 +108,34 @@ defmodule Raxol.Examples.ComponentShowcase do
     theme = get_theme_preview_colors(assigns.theme_id)
 
     [
-      if assigns.modal_open? do
-        %{
-          type: Raxol.UI.Components.Modal,
-          id: "my_modal",
-          assigns: %{
-            title: "My Modal Title",
-            width: 40,
-            height: 10,
-            events: [close: :close_modal]
-          },
-          children: [
-            column padding: 1, gap: 1 do
-              label("This is the content of the modal.")
+      case assigns.modal_open? do
+        true ->
+          %{
+            type: Raxol.UI.Components.Modal,
+            id: "my_modal",
+            assigns: %{
+              title: "My Modal Title",
+              width: 40,
+              height: 10,
+              events: [close: :close_modal]
+            },
+            children: [
+              column padding: 1, gap: 1 do
+                label("This is the content of the modal.")
 
-              %{
-                type: Raxol.UI.Components.Input.Button,
-                id: :modal_close_button,
-                assigns: %{
-                  label: "Close Me",
-                  on_click: :close_modal,
-                  preset: :secondary
+                %{
+                  type: Raxol.UI.Components.Input.Button,
+                  id: :modal_close_button,
+                  assigns: %{
+                    label: "Close Me",
+                    on_click: :close_modal,
+                    preset: :secondary
+                  }
                 }
-              }
-            end
-          ]
-        }
+              end
+            ]
+          }
+        false -> nil
       end,
       column do
         panel title: "Raxol Component Showcase", border: :single do
@@ -194,10 +196,9 @@ defmodule Raxol.Examples.ComponentShowcase do
   end
 
   defp style_for_tab(tab_id, active_tab, theme) do
-    if tab_id == active_tab do
-      [bg: theme.accent_bg, fg: theme.accent_fg]
-    else
-      []
+    case tab_id == active_tab do
+      true -> [bg: theme.accent_bg, fg: theme.accent_fg]
+      false -> []
     end
   end
 
@@ -259,12 +260,14 @@ defmodule Raxol.Examples.ComponentShowcase do
           label(content: "Spinner:", style: [:bold])
 
           row gap: 1, align: :center do
-            if assigns.loading? do
-              %{
-                type: Raxol.UI.Components.Display.Spinner,
-                id: :spinner_loading,
-                assigns: %{label: "Loading..."}
-              }
+            case assigns.loading? do
+              true ->
+                %{
+                  type: Raxol.UI.Components.Display.Spinner,
+                  id: :spinner_loading,
+                  assigns: %{label: "Loading..."}
+                }
+              false -> nil
             end
 
             %{

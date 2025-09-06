@@ -78,26 +78,28 @@ defmodule Raxol.ComponentTestHelpers do
   # Private helper functions
 
   defp mount_component(component) do
-    if function_exported?(component.module, :mount, 1) do
-      {new_state, commands} = component.module.mount(component.state)
+    case function_exported?(component.module, :mount, 1) do
+      true ->
+        {new_state, commands} = component.module.mount(component.state)
 
-      # Process commands (similar to simulate_event)
-      Enum.each(commands, fn command ->
-        send(self(), {:commands, command})
-      end)
+        # Process commands (similar to simulate_event)
+        Enum.each(commands, fn command ->
+          send(self(), {:commands, command})
+        end)
 
-      %{component | state: new_state}
-    else
-      component
+        %{component | state: new_state}
+      false ->
+        component
     end
   end
 
   defp unmount_component(component) do
-    if function_exported?(component.module, :unmount, 1) do
-      new_state = component.module.unmount(component.state)
-      %{component | state: new_state}
-    else
-      component
+    case function_exported?(component.module, :unmount, 1) do
+      true ->
+        new_state = component.module.unmount(component.state)
+        %{component | state: new_state}
+      false ->
+        component
     end
   end
 end

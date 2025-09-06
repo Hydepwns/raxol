@@ -523,7 +523,10 @@ defmodule Raxol.Examples.Showcase do
 
   @impl true
   def handle_event("toggle_theme", _, socket) do
-    new_theme = if socket.assigns.theme == "dark", do: "light", else: "dark"
+    new_theme = case socket.assigns.theme do
+      "dark" -> "light"
+      _ -> "dark"
+    end
     {:noreply, assign(socket, theme: new_theme)}
   end
 
@@ -660,10 +663,11 @@ defmodule Raxol.Examples.Showcase.ThemeToggle do
       onClick={@onChange}
       title="Toggle theme"
     >
-      <%= if @theme == "dark" do %>
-        🌙 Dark
-      <% else %>
-        ☀️ Light
+      <%= case @theme do %>
+        <% "dark" -> %>
+          🌙 Dark
+        <% _ -> %>
+          ☀️ Light
       <% end %>
     </Button>
     """

@@ -23,7 +23,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
         _state
       ) do
     title = Map.get(opts, :title, "Chart")
-    handle_bounds_check({width >= 5 and height >= 3}, data, title, bounds)
+    handle_bounds_check(width >= 5 and height >= 3, data, title, bounds)
   end
 
   # --- Private Helper Functions ---
@@ -190,7 +190,10 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     num_bars = Enum.count(data)
     total_bar_area_width = max(1, chart_width - (num_bars - 1))
     bar_width = max(1, div(total_bar_area_width, num_bars))
-    spacing = if num_bars > 1, do: 1, else: 0
+    spacing = case num_bars > 1 do
+      true -> 1
+      false -> 0
+    end
 
     Enum.reduce(Enum.with_index(data), {grid, 4}, fn {{label, value}, _index},
                                                      {acc_grid, current_x} ->
@@ -266,8 +269,14 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
   defp sample_chart_data(other), do: other
 
   defp log_sampling(original_data, sampled_data) do
-    data_length = if is_list(original_data), do: length(original_data), else: 0
-    sampled_length = if is_list(sampled_data), do: length(sampled_data), else: 0
+    data_length = case original_data do
+      data when is_list(data) -> length(data)
+      _ -> 0
+    end
+    sampled_length = case sampled_data do
+      data when is_list(data) -> length(data)
+      _ -> 0
+    end
 
     handle_sampling_log(
       {data_length != sampled_length, data_length > 0},

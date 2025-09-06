@@ -43,12 +43,13 @@ defmodule Raxol.DataCase do
   within a transaction that will be rolled back.
   """
   def with_transaction(fun) do
-    if Application.get_env(:raxol, :database_enabled, false) do
-      # For MockDB, just execute the function directly
-      # Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
-      fun.()
-    else
-      fun.()
+    case Application.get_env(:raxol, :database_enabled, false) do
+      true ->
+        # For MockDB, just execute the function directly
+        # Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
+        fun.()
+      false ->
+        fun.()
     end
   end
 

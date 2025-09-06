@@ -101,7 +101,10 @@ defmodule Raxol.Examples.FormDemo do
           UI.label("Password:"),
           UI.text_input(id: :password_input, value: state.form_data.password, password: true),
           UI.button(id: :submit_button, label: "Submit"),
-          (if state.submitted, do: UI.label("Submitted!"), else: nil)
+          case state.submitted do
+            true -> UI.label("Submitted!")
+            false -> nil
+          end
         ] |> Enum.reject(&nil?/1)
       end
     end

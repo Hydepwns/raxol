@@ -66,6 +66,7 @@ defmodule Raxol.Svelte.Context do
       @contexts %{}
       @context_subscriptions %{}
       @before_compile Raxol.Svelte.Context
+      
     end
   end
 
@@ -356,55 +357,55 @@ defmodule Raxol.Svelte.Context.ThemeProvider do
   @moduledoc """
   Built-in theme context provider.
   """
-  use Raxol.Svelte.Component
-  use Raxol.Svelte.Context
-  use Phoenix.Component
+  
+  # Simplified implementation without unused macro functions
+  use GenServer
 
-  state(:theme, "light")
+  def start_link(initial_theme \\ "light") do
+    GenServer.start_link(__MODULE__, %{theme: initial_theme})
+  end
 
-  def mount_with_context(terminal, props) do
-    {:ok, component} = GenServer.start_link(__MODULE__, {terminal, props})
+  def get_theme_data(pid) do
+    GenServer.call(pid, :get_theme_data)
+  end
 
+  def toggle_theme(pid) do
+    GenServer.call(pid, :toggle_theme)
+  end
+
+  def set_theme(pid, theme_name) do
+    GenServer.call(pid, {:set_theme, theme_name})
+  end
+
+  @impl GenServer
+  def init(state) do
+    {:ok, state}
+  end
+
+  @impl GenServer  
+  def handle_call(:get_theme_data, _from, state) do
     theme_data = %{
-      name: get_state(:theme),
-      colors: get_theme_colors(get_state(:theme)),
-      spacing: get_theme_spacing(get_state(:theme)),
-      toggle: fn -> toggle_theme() end,
-      set_theme: fn name -> set_theme(name) end
+      name: state.theme,
+      colors: get_theme_colors(state.theme),
+      spacing: get_theme_spacing(state.theme)
     }
-
-    set_context(:theme, theme_data)
-
-    component
+    {:reply, theme_data, state}
   end
 
-  def toggle_theme do
-    current = get_state(:theme)
-    new_theme = if current == "light", do: "dark", else: "light"
-    update_theme(new_theme)
+  @impl GenServer
+  def handle_call(:toggle_theme, _from, state) do
+    new_theme = case state.theme do
+      "light" -> "dark"
+      _ -> "light"
+    end
+    new_state = %{state | theme: new_theme}
+    {:reply, new_theme, new_state}
   end
 
-  def update_theme(theme_name) do
-    set_state(:theme, theme_name)
-
-    # Update context
-    theme_data = %{
-      name: theme_name,
-      colors: get_theme_colors(theme_name),
-      spacing: get_theme_spacing(theme_name),
-      toggle: fn -> toggle_theme() end,
-      set_theme: fn name -> update_theme(name) end
-    }
-
-    update_context(:theme, fn _ -> theme_data end)
-  end
-
-  def render(_assigns) do
-    ~S"""
-    <Box class={"theme-" <> @theme}>
-      {@children}
-    </Box>
-    """
+  @impl GenServer
+  def handle_call({:set_theme, theme_name}, _from, state) do
+    new_state = %{state | theme: theme_name}
+    {:reply, :ok, new_state}
   end
 
   defp get_theme_colors("dark") do
@@ -444,80 +445,79 @@ defmodule Raxol.Svelte.Context.AuthProvider do
   @moduledoc """
   Built-in authentication context provider.
   """
-  use Raxol.Svelte.Component
-  use Raxol.Svelte.Context
-  use Phoenix.Component
+  
+  # Simplified implementation without unused macro functions
+  use GenServer
 
-  state(:user, nil)
-  state(:loading, false)
-  state(:error, nil)
-
-  def mount_with_parent(terminal, props, parent)
-      when is_pid(parent) or is_nil(parent) do
-    {:ok, component} = GenServer.start_link(__MODULE__, {terminal, props})
-
-    auth_data = %{
-      user: get_state(:user),
-      loading: get_state(:loading),
-      error: get_state(:error),
-      login: fn credentials -> login(credentials) end,
-      logout: fn -> logout() end,
-      is_authenticated: fn -> get_state(:user) != nil end
-    }
-
-    set_context(:auth, auth_data)
-
-    component
+  def start_link(initial_user \\ nil) do
+    GenServer.start_link(__MODULE__, %{user: initial_user, loading: false, error: nil})
   end
 
-  def login(credentials) do
-    set_state(:loading, true)
-    set_state(:error, nil)
+  def get_auth_data(pid) do
+    GenServer.call(pid, :get_auth_data)
+  end
 
-    # Simulate async login
+  def login(pid, credentials) do
+    GenServer.call(pid, {:login, credentials})
+  end
+
+  def logout(pid) do
+    GenServer.call(pid, :logout)
+  end
+
+  def is_authenticated?(pid) do
+    GenServer.call(pid, :is_authenticated?)
+  end
+
+  @impl GenServer
+  def init(state) do
+    {:ok, state}
+  end
+
+  @impl GenServer
+  def handle_call(:get_auth_data, _from, state) do
+    auth_data = %{
+      user: state.user,
+      loading: state.loading,
+      error: state.error,
+      is_authenticated: state.user != nil
+    }
+    {:reply, auth_data, state}
+  end
+
+  @impl GenServer
+  def handle_call({:login, credentials}, _from, state) do
+    new_state = %{state | loading: true, error: nil}
+    
+    # Simulate async authentication
     Task.start(fn ->
-      case authenticate(credentials) do
-        {:ok, user} ->
-          set_state(:user, user)
-          set_state(:loading, false)
-          update_auth_context()
-
-        {:error, reason} ->
-          set_state(:error, reason)
-          set_state(:loading, false)
-          update_auth_context()
-      end
+      user = authenticate(credentials)
+      GenServer.cast(self(), {:login_complete, user})
     end)
+    
+    {:reply, :ok, new_state}
   end
 
-  def logout do
-    set_state(:user, nil)
-    set_state(:error, nil)
-    update_auth_context()
+  @impl GenServer
+  def handle_call(:logout, _from, state) do
+    new_state = %{state | user: nil, error: nil, loading: false}
+    {:reply, :ok, new_state}
   end
 
-  defp update_auth_context do
-    auth_data = %{
-      user: get_state(:user),
-      loading: get_state(:loading),
-      error: get_state(:error),
-      login: fn credentials -> login(credentials) end,
-      logout: fn -> logout() end,
-      is_authenticated: fn -> get_state(:user) != nil end
-    }
+  @impl GenServer
+  def handle_call(:is_authenticated?, _from, state) do
+    {:reply, state.user != nil, state}
+  end
 
-    update_context(:auth, fn _ -> auth_data end)
+  @impl GenServer
+  def handle_cast({:login_complete, user}, state) do
+    new_state = %{state | user: user, loading: false}
+    {:noreply, new_state}
   end
 
   defp authenticate(_credentials) do
     # Mock authentication
     Process.sleep(1000)
-    {:ok, %{id: 1, name: "User", email: "user@example.com"}}
-  end
-
-  def render(_assigns) do
-    ~S"""
-    {@children}
-    """
+    %{id: 1, name: "User", email: "user@example.com"}
   end
 end

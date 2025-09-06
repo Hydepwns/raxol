@@ -73,7 +73,10 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
       |> Enum.reject(&is_nil/1)
       |> Enum.join("\n")
 
-    if metadata != "", do: "## Metadata\n#{metadata}", else: nil
+    case metadata do
+      "" -> nil
+      _ -> "## Metadata\n#{metadata}"
+    end
   end
 
   defp render_difficulty(%Tutorial{difficulty: difficulty}) do

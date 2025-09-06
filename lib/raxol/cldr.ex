@@ -8,10 +8,9 @@ defmodule Raxol.Cldr do
 
   # Minimal locale set for faster compilation in development
   locales =
-    if Mix.env() == :prod do
-      ["en", "fr", "de", "ja", "es", "ar", "he", "fa", "ur"]
-    else
-      ["en"]
+    case Mix.env() do
+      :prod -> ["en", "fr", "de", "ja", "es", "ar", "he", "fa", "ur"]
+      _ -> ["en"]
     end
 
   # Use minimal CLDR configuration to avoid guard compilation issues
@@ -28,10 +27,9 @@ defmodule Raxol.Cldr do
   Get the configured locales for this environment.
   """
   def configured_locales do
-    if Mix.env() == :prod do
-      ["en", "fr", "de", "ja", "es", "ar", "he", "fa", "ur"]
-    else
-      ["en"]
+    case Mix.env() do
+      :prod -> ["en", "fr", "de", "ja", "es", "ar", "he", "fa", "ur"]
+      _ -> ["en"]
     end
   end
 

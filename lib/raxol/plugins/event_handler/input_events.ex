@@ -31,10 +31,9 @@ defmodule Raxol.Plugins.EventHandler.InputEvents do
         )
       end)
 
-    if is_map(result) do
-      {:ok, result.manager}
-    else
-      result
+    case is_map(result) do
+      true -> {:ok, result.manager}
+      false -> result
     end
   end
 

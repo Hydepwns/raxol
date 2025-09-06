@@ -48,11 +48,14 @@ defmodule RaxolWeb.ChannelCase do
 
     # Ensure Raxol.PubSub is started before the endpoint
     # This is required because the endpoint is configured to use Raxol.PubSub
-    if !Process.whereis(Raxol.PubSub) do
-      {:ok, _pid} =
-        Supervisor.start_link([{Phoenix.PubSub, name: Raxol.PubSub}],
-          strategy: :one_for_one
-        )
+    case Process.whereis(Raxol.PubSub) do
+      nil ->
+        {:ok, _pid} =
+          Supervisor.start_link([{Phoenix.PubSub, name: Raxol.PubSub}],
+            strategy: :one_for_one
+          )
+      _pid ->
+        :ok
     end
 
     # Start the endpoint itself

@@ -88,20 +88,23 @@ defmodule Raxol.System.Updater.Network do
   end
 
   def find_executable(dir, platform) do
-    executable_name = if platform == "windows", do: "raxol.exe", else: "raxol"
+    executable_name = case platform do
+      "windows" -> "raxol.exe"
+      _ -> "raxol"
+    end
     executable_path = Path.join(dir, executable_name)
 
-    if File.exists?(executable_path) do
-      executable_path
-    else
-      # Search recursively in subdirectories
-      case find_file_recursive(dir, executable_name) do
-        nil ->
-          throw({:error, "Could not find new executable in update package"})
+    case File.exists?(executable_path) do
+      true -> executable_path
+      false ->
+        # Search recursively in subdirectories
+        case find_file_recursive(dir, executable_name) do
+          nil ->
+            throw({:error, "Could not find new executable in update package"})
 
-        path ->
-          path
-      end
+          path ->
+            path
+        end
     end
   end
 
@@ -109,49 +112,50 @@ defmodule Raxol.System.Updater.Network do
     # Make the new executable executable
     File.chmod!(new_exe, 0o755)
 
-    if platform == "windows" do
-      # On Windows, we need to use a different approach since we can't replace a running executable
-      # Create a batch file that will replace the exe after we exit
-      updater_bat = System.tmp_dir!() |> Path.join("raxol_updater.bat")
+    case platform do
+      "windows" ->
+        # On Windows, we need to use a different approach since we can't replace a running executable
+        # Create a batch file that will replace the exe after we exit
+        updater_bat = System.tmp_dir!() |> Path.join("raxol_updater.bat")
 
-      # Ensure paths are properly escaped for the batch file
-      safe_new_exe = Path.expand(new_exe)
-      safe_current_exe = Path.expand(current_exe)
+        # Ensure paths are properly escaped for the batch file
+        safe_new_exe = Path.expand(new_exe)
+        safe_current_exe = Path.expand(current_exe)
 
-      batch_contents = """
-      @echo off
-      timeout /t 2 /nobreak > nul
-      copy /y "#{safe_new_exe}" "#{safe_current_exe}"
-      del "#{updater_bat}"
-      """
+        batch_contents = """
+        @echo off
+        timeout /t 2 /nobreak > nul
+        copy /y "#{safe_new_exe}" "#{safe_current_exe}"
+        del "#{updater_bat}"
+        """
 
-      File.write!(updater_bat, batch_contents)
+        File.write!(updater_bat, batch_contents)
 
-      # Execute the batch file and exit
-      # Using start /b runs the command in the background without a new window
-      _ = System.cmd("cmd", ["/c", "start", "/b", updater_bat])
-      # Give the batch file a moment to start before exiting
-      Process.sleep(500)
-      # Exit the current Elixir application
-      System.stop(0)
-    else
-      # On Unix systems, we can replace the current executable directly
-      # The new process will start with the updated executable
-      case File.cp(new_exe, current_exe) do
-        :ok ->
-          IO.puts(
-            "Executable replaced successfully. Please restart the application."
-          )
+        # Execute the batch file and exit
+        # Using start /b runs the command in the background without a new window
+        _ = System.cmd("cmd", ["/c", "start", "/b", updater_bat])
+        # Give the batch file a moment to start before exiting
+        Process.sleep(500)
+        # Exit the current Elixir application
+        System.stop(0)
+      _ ->
+        # On Unix systems, we can replace the current executable directly
+        # The new process will start with the updated executable
+        case File.cp(new_exe, current_exe) do
+          :ok ->
+            IO.puts(
+              "Executable replaced successfully. Please restart the application."
+            )
 
-          # On Unix, we might not need to System.stop immediately,
-          # depending on how the restart is managed.
-          # For now, let's assume the caller handles the restart or exit logic
-          # after this function returns :ok.
-          :ok
+            # On Unix, we might not need to System.stop immediately,
+            # depending on how the restart is managed.
+            # For now, let's assume the caller handles the restart or exit logic
+            # after this function returns :ok.
+            :ok
 
-        {:error, reason} ->
-          throw({:error, "Failed to replace executable: #{inspect(reason)}"})
-      end
+          {:error, reason} ->
+            throw({:error, "Failed to replace executable: #{inspect(reason)}"})
+        end
     end
   end
 

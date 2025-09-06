@@ -4,7 +4,6 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   """
 
   alias Raxol.Docs.InteractiveTutorial.Models.Step
-  alias Raxol.Core.ErrorHandling
 
   @type validation_result :: {:ok, String.t()} | {:error, String.t()}
 
@@ -63,7 +62,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   Validates code syntax.
   """
   def validate_syntax(code) when is_binary(code) do
-    case ErrorHandling.safe_call(fn -> Code.string_to_quoted!(code) end) do
+    case Raxol.Core.ErrorHandling.safe_call(fn -> Code.string_to_quoted!(code) end) do
       {:ok, _} ->
         {:ok, "Code syntax is valid"}
 
@@ -79,7 +78,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   Validates code execution.
   """
   def validate_execution(code) when is_binary(code) do
-    case ErrorHandling.safe_call(fn -> Code.eval_string(code) end) do
+    case Raxol.Core.ErrorHandling.safe_call(fn -> Code.eval_string(code) end) do
       {:ok, {result, _}} ->
         {:ok, "Code executed successfully", result}
 

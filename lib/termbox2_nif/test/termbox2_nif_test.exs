@@ -8,15 +8,16 @@ defmodule Termbox2NifTest do
       {tty, 0} ->
         tty = String.trim(tty)
 
-        if String.starts_with?(tty, "/dev/") do
-          IO.puts("Running in real TTY: #{tty}")
+        case String.starts_with?(tty, "/dev/") do
+          true ->
+            IO.puts("Running in real TTY: #{tty}")
 
-          # Print module info
-          IO.puts("Module info: #{inspect(:code.which(:termbox2_nif))}")
-          IO.puts("Priv dir: #{inspect(:code.priv_dir(:termbox2_nif))}")
+            # Print module info
+            IO.puts("Module info: #{inspect(:code.which(:termbox2_nif))}")
+            IO.puts("Priv dir: #{inspect(:code.priv_dir(:termbox2_nif))}")
 
-          # Initialize termbox
-          IO.puts("Initializing termbox...")
+            # Initialize termbox
+            IO.puts("Initializing termbox...")
           result = :termbox2_nif.tb_init()
           IO.puts("Init result: #{inspect(result)}")
           assert result == 0

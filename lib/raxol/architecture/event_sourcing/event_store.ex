@@ -680,31 +680,32 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   defp event_type_matches?(filters, event_type), do: event_type in filters
 
   defp create_automatic_snapshots(state) do
-    if state.config.enable_snapshots do
-      frequency = state.config.snapshot_frequency
+    case state.config.enable_snapshots do
+      true ->
+        frequency = state.config.snapshot_frequency
 
-      streams_needing_snapshots =
-        state.streams
-        |> Enum.filter(fn {stream_name, stream} ->
-          needs_snapshot?(stream_name, stream, frequency, state.snapshots)
+        streams_needing_snapshots =
+          state.streams
+          |> Enum.filter(fn {stream_name, stream} ->
+            needs_snapshot?(stream_name, stream, frequency, state.snapshots)
+          end)
+
+        Enum.reduce(streams_needing_snapshots, state, fn {stream_name, _stream},
+                                                         acc_state ->
+          case create_stream_snapshot(stream_name, acc_state) do
+            {:ok, new_state} ->
+              new_state
+
+            {:error, reason} ->
+              Logger.warning(
+                "Failed to create snapshot for #{stream_name}: #{inspect(reason)}"
+              )
+
+              acc_state
+          end
         end)
-
-      Enum.reduce(streams_needing_snapshots, state, fn {stream_name, _stream},
-                                                       acc_state ->
-        case create_stream_snapshot(stream_name, acc_state) do
-          {:ok, new_state} ->
-            new_state
-
-          {:error, reason} ->
-            Logger.warning(
-              "Failed to create snapshot for #{stream_name}: #{inspect(reason)}"
-            )
-
-            acc_state
-        end
-      end)
-    else
-      state
+      false ->
+        state
     end
   end
 
@@ -856,12 +857,13 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
 
   defp replicate_to_nodes(state) do
     # Implement replication to other nodes
-    if length(state.replication_nodes) > 0 do
-      Logger.debug(
-        "Replicating events to #{length(state.replication_nodes)} nodes"
-      )
+    case length(state.replication_nodes) do
+      0 -> state
+      node_count ->
+        Logger.debug(
+          "Replicating events to #{node_count} nodes"
+        )
+        state
     end
-
-    state
   end
 end

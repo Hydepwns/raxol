@@ -247,17 +247,6 @@ defmodule Raxol.System.Updater.State.Server do
     {:reply, result, state}
   end
 
-  @impl true
-  def handle_cast({:log_update, message}, state) do
-    log_file = Path.join(state.settings.download_path, "update.log")
-    timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
-    log_entry = "[#{timestamp}] #{message}\n"
-
-    File.write(log_file, log_entry, [:append])
-
-    {:noreply, state}
-  end
-
   # Handle statistics
   @impl true
   def handle_call(:get_update_stats, _from, state) do
@@ -305,6 +294,17 @@ defmodule Raxol.System.Updater.State.Server do
       error ->
         {:reply, error, state}
     end
+  end
+
+  @impl true
+  def handle_cast({:log_update, message}, state) do
+    log_file = Path.join(state.settings.download_path, "update.log")
+    timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
+    log_entry = "[#{timestamp}] #{message}\n"
+
+    File.write(log_file, log_entry, [:append])
+
+    {:noreply, state}
   end
 
   # Private helper functions

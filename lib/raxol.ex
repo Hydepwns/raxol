@@ -318,8 +318,10 @@ defmodule Raxol do
 
   ```elixir
   settings = Raxol.accessibility_settings()
-  if settings.high_contrast do
-    # Do something for high contrast mode
+  case settings.high_contrast do
+    true -> 
+      # Do something for high contrast mode
+    false -> :ok
   end
   ```
   """

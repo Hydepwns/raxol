@@ -279,10 +279,9 @@ defmodule Raxol.Style.Colors.Persistence do
   end
 
   defp normalize_color_value(v) when is_binary(v) do
-    if String.starts_with?(v, "#") do
-      Color.from_hex(v)
-    else
-      v
+    case String.starts_with?(v, "#") do
+      true -> Color.from_hex(v)
+      false -> v
     end
   end
 
@@ -316,10 +315,9 @@ defmodule Raxol.Style.Colors.Persistence do
   defp normalize_variants(other), do: other
 
   defp normalize_variant_key(k) when is_binary(k) do
-    if String.contains?(k, ":") do
-      k |> String.split(":") |> Enum.map(&String.to_atom/1) |> List.to_tuple()
-    else
-      String.to_atom(k)
+    case String.contains?(k, ":") do
+      true -> k |> String.split(":") |> Enum.map(&String.to_atom/1) |> List.to_tuple()
+      false -> String.to_atom(k)
     end
   end
 

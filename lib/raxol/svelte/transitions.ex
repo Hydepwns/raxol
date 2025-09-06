@@ -342,6 +342,11 @@ defmodule Raxol.Svelte.Animator do
     handle_animation_progress(animation_complete?(state.keyframes, elapsed), state)
   end
 
+  @impl GenServer
+  def handle_info(:animate_frame, state) do
+    {:noreply, state}
+  end
+
   defp handle_animation_progress(true, state) do
     # Animation finished
     {:stop, :normal, %{state | active: false}}
@@ -350,11 +355,6 @@ defmodule Raxol.Svelte.Animator do
   defp handle_animation_progress(false, state) do
     # Schedule next frame
     schedule_frame()
-    {:noreply, state}
-  end
-
-  @impl GenServer
-  def handle_info(:animate_frame, state) do
     {:noreply, state}
   end
 
@@ -388,18 +388,19 @@ defmodule Raxol.Svelte.Animator do
     apply_ease_in_out(t < 0.5, t)
   end
 
+  defp apply_easing(t, :bounce) do
+    n1 = 7.5625
+    d1 = 2.75
+    calculate_bounce(t, n1, d1)
+  end
+
+  # Helper functions for ease_in_out
   defp apply_ease_in_out(true, t) do
     2 * t * t
   end
 
   defp apply_ease_in_out(false, t) do
     1 - :math.pow(-2 * t + 2, 2) / 2
-  end
-
-  defp apply_easing(t, :bounce) do
-    n1 = 7.5625
-    d1 = 2.75
-    calculate_bounce(t, n1, d1)
   end
 
   defp calculate_bounce(t, n1, d1) when t < 1 / d1, do: n1 * t * t

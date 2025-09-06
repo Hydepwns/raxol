@@ -126,14 +126,16 @@ defmodule Raxol.Plugins.EventHandler.Common do
   defp validate_plugin_enabled(%{enabled: true}), do: :ok
 
   defp validate_plugin_enabled(plugin) do
-    if Map.get(plugin, :enabled, false), do: :ok, else: {:error, :disabled}
+    case Map.get(plugin, :enabled, false) do
+      true -> :ok
+      false -> {:error, :disabled}
+    end
   end
 
   defp validate_plugin_callback(plugin, callback_name, required_arity) do
-    if has_required_callback?(plugin, callback_name, required_arity) do
-      :ok
-    else
-      {:error, :missing_callback}
+    case has_required_callback?(plugin, callback_name, required_arity) do
+      true -> :ok
+      false -> {:error, :missing_callback}
     end
   end
 

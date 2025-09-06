@@ -10,10 +10,11 @@ defmodule Raxol.Style.Colors.Adaptive do
 
   ```elixir
   # Check if the terminal supports true color
-  if Raxol.Style.Colors.Adaptive.supports_true_color?() do
-    # Use true color features
-  else
-    # Fall back to 256 colors or 16 colors
+  case Raxol.Style.Colors.Adaptive.supports_true_color?() do
+    true -> 
+      # Use true color features
+    false ->
+      # Fall back to 256 colors or 16 colors
   end
 
   # Adapt a color to the current terminal capabilities
@@ -21,10 +22,11 @@ defmodule Raxol.Style.Colors.Adaptive do
   adapted_color = Raxol.Style.Colors.Adaptive.adapt_color(color)
 
   # Check if we're in a dark terminal
-  if Raxol.Style.Colors.Adaptive.dark_terminal?() do
-    # Use light text on dark background
-  else
-    # Use dark text on light background
+  case Raxol.Style.Colors.Adaptive.dark_terminal?() do
+    true ->
+      # Use light text on dark background
+    false ->
+      # Use dark text on light background
   end
   ```
   """

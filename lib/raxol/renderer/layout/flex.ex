@@ -98,9 +98,9 @@ defmodule Raxol.Renderer.Layout.Flex do
          space,
          gap
        ) do
-    x_start = x + case x == 0 do
-      true -> 0
-      false -> gap
+    x_start = x + case x do
+      0 -> 0
+      _ -> gap
     end
     needs_wrap = x > 0 and x_start + cw > space.width
 
@@ -166,9 +166,9 @@ defmodule Raxol.Renderer.Layout.Flex do
          space,
          gap
        ) do
-    y_start = y + case y == 0 do
-      true -> 0
-      false -> gap
+    y_start = y + case y do
+      0 -> 0
+      _ -> gap
     end
     needs_wrap = y > 0 and y_start + ch > space.height
 
@@ -238,7 +238,10 @@ defmodule Raxol.Renderer.Layout.Flex do
         Enum.zip(children, child_sizes),
         {[], 0},
         fn {child, {cw, ch}}, {acc, x} ->
-          x_start = x + if(x == 0, do: 0, else: gap)
+          x_start = x + case x do
+            0 -> 0
+            _ -> gap
+          end
 
           child_space =
             create_child_space(space, space.x + x_start, space.y, cw, ch)
@@ -259,7 +262,10 @@ defmodule Raxol.Renderer.Layout.Flex do
         Enum.zip(children, child_sizes),
         {[], 0},
         fn {child, {cw, ch}}, {acc, y} ->
-          y_start = y + if(y == 0, do: 0, else: gap)
+          y_start = y + case y do
+            0 -> 0
+            _ -> gap
+          end
 
           child_space =
             create_child_space(space, space.x, space.y + y_start, cw, ch)

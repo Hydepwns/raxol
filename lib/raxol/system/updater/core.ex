@@ -7,7 +7,6 @@ defmodule Raxol.System.Updater.Core do
   require Logger
 
   alias Raxol.System.Updater.{Network, Validation, State}
-  alias Raxol.Core.ErrorHandling
 
   @github_repo "username/raxol"
   @version Mix.Project.config()[:version]
@@ -40,7 +39,10 @@ defmodule Raxol.System.Updater.Core do
   def download_update(version) do
     settings = State.get_update_settings()
     platform = Validation.get_platform()
-    ext = if platform == "windows", do: "zip", else: "tar.gz"
+    ext = case platform == "windows" do
+      true -> "zip"
+      false -> "tar.gz"
+    end
 
     url =
       "https://github.com/#{@github_repo}/releases/download/v#{version}/raxol-#{version}-#{platform}.#{ext}"
@@ -57,7 +59,10 @@ defmodule Raxol.System.Updater.Core do
   def install_update(context, version) do
     settings = State.get_update_settings()
     platform = Validation.get_platform()
-    ext = if platform == "windows", do: "zip", else: "tar.gz"
+    ext = case platform == "windows" do
+      true -> "zip"
+      false -> "tar.gz"
+    end
     update_path = Path.join(settings.download_path, "update.#{ext}")
 
     with :ok <-
@@ -104,12 +109,15 @@ defmodule Raxol.System.Updater.Core do
   end
 
   def update(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = case is_map(opts) do
+      true -> Enum.into(opts, [])
+      false -> opts
+    end
     force = Keyword.get(opts, :force, false)
     use_delta = Keyword.get(opts, :use_delta, true)
     version = Keyword.get(opts, :version)
 
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       with {:ok, target_version} <- get_target_version(version, force) do
         apply_target_update(target_version, use_delta)
       end
@@ -125,7 +133,7 @@ defmodule Raxol.System.Updater.Core do
   def self_update(version \\ nil, opts \\ []) do
     use_delta = Keyword.get(opts, :use_delta, true)
 
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       handle_self_update(is_binary(version), version, use_delta)
     end)
     |> case do
@@ -326,7 +334,10 @@ defmodule Raxol.System.Updater.Core do
     platform = Validation.get_platform()
 
     # Determine file extension based on platform
-    ext = if platform == "windows", do: "zip", else: "tar.gz"
+    ext = case platform == "windows" do
+      true -> "zip"
+      false -> "tar.gz"
+    end
 
     # Download URL for the new version
     url =
@@ -337,7 +348,7 @@ defmodule Raxol.System.Updater.Core do
     _ = File.rm_rf(tmp_dir)
     :ok = File.mkdir_p(tmp_dir)
 
-    ErrorHandling.ensure_cleanup(
+    Raxol.Core.ErrorHandling.ensure_cleanup(
       fn ->
         # Download the update
         archive_path = Path.join(tmp_dir, "update.#{ext}")

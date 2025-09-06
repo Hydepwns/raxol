@@ -48,8 +48,6 @@ defmodule Raxol.DevTools.PropsValidator do
 
   require Logger
 
-  alias Raxol.Core.ErrorHandling
-
   defmodule ValidationError do
     defstruct [:field, :type, :message, :value, :suggestion]
 
@@ -200,7 +198,7 @@ defmodule Raxol.DevTools.PropsValidator do
 
   # Safe function call wrapper using functional error handling
   defp safe_call_props_function(component) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       :erlang.apply(component, :__props__, [])
     end)
     |> case do
@@ -317,7 +315,7 @@ defmodule Raxol.DevTools.PropsValidator do
 
   # Safe atom conversion wrapper using functional error handling
   defp safe_string_to_existing_atom(string) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       String.to_existing_atom(string)
     end)
     |> case do
@@ -486,7 +484,7 @@ defmodule Raxol.DevTools.PropsValidator do
 
   # Safe transform function wrapper using functional error handling
   defp safe_apply_transform(transform_fn, value) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       transform_fn.(value)
     end)
     |> case do
@@ -536,7 +534,7 @@ defmodule Raxol.DevTools.PropsValidator do
 
   ## Pattern matching helper functions for if statement elimination
 
-  defp validate_string_type(prop_name, value) when is_binary(value),
+  defp validate_string_type(_prop_name, value) when is_binary(value),
     do: {:ok, value}
 
   defp validate_string_type(prop_name, value) do
@@ -550,7 +548,7 @@ defmodule Raxol.DevTools.PropsValidator do
      )}
   end
 
-  defp validate_number_type(prop_name, value) when is_number(value),
+  defp validate_number_type(_prop_name, value) when is_number(value),
     do: {:ok, value}
 
   defp validate_number_type(prop_name, value) do
@@ -569,13 +567,13 @@ defmodule Raxol.DevTools.PropsValidator do
     end
   end
 
-  defp validate_boolean_type(prop_name, value) when is_boolean(value),
+  defp validate_boolean_type(_prop_name, value) when is_boolean(value),
     do: {:ok, value}
 
-  defp validate_boolean_type(prop_name, "true"), do: {:ok, true}
-  defp validate_boolean_type(prop_name, "false"), do: {:ok, false}
-  defp validate_boolean_type(prop_name, 1), do: {:ok, true}
-  defp validate_boolean_type(prop_name, 0), do: {:ok, false}
+  defp validate_boolean_type(_prop_name, "true"), do: {:ok, true}
+  defp validate_boolean_type(_prop_name, "false"), do: {:ok, false}
+  defp validate_boolean_type(_prop_name, 1), do: {:ok, true}
+  defp validate_boolean_type(_prop_name, 0), do: {:ok, false}
 
   defp validate_boolean_type(prop_name, value) do
     {:error,
@@ -588,7 +586,7 @@ defmodule Raxol.DevTools.PropsValidator do
      )}
   end
 
-  defp validate_atom_type(prop_name, value) when is_atom(value),
+  defp validate_atom_type(_prop_name, value) when is_atom(value),
     do: {:ok, value}
 
   defp validate_atom_type(prop_name, value) do
@@ -607,7 +605,7 @@ defmodule Raxol.DevTools.PropsValidator do
     end
   end
 
-  defp validate_list_type(prop_name, value) when is_list(value),
+  defp validate_list_type(_prop_name, value) when is_list(value),
     do: {:ok, value}
 
   defp validate_list_type(prop_name, value) do
@@ -621,7 +619,7 @@ defmodule Raxol.DevTools.PropsValidator do
      )}
   end
 
-  defp validate_map_type(prop_name, value) when is_map(value), do: {:ok, value}
+  defp validate_map_type(_prop_name, value) when is_map(value), do: {:ok, value}
 
   defp validate_map_type(prop_name, value) do
     {:error,
@@ -633,7 +631,7 @@ defmodule Raxol.DevTools.PropsValidator do
      )}
   end
 
-  defp validate_function_type(prop_name, value) when is_function(value),
+  defp validate_function_type(_prop_name, value) when is_function(value),
     do: {:ok, value}
 
   defp validate_function_type(prop_name, value) do
@@ -686,7 +684,7 @@ defmodule Raxol.DevTools.PropsValidator do
      )}
   end
 
-  defp validate_min_value(prop_name, value, min_val) when value >= min_val do
+  defp validate_min_value(_prop_name, value, min_val) when value >= min_val do
     {:ok, value}
   end
 
@@ -700,7 +698,7 @@ defmodule Raxol.DevTools.PropsValidator do
      )}
   end
 
-  defp validate_max_value(prop_name, value, max_val) when value <= max_val do
+  defp validate_max_value(_prop_name, value, max_val) when value <= max_val do
     {:ok, value}
   end
 
@@ -746,7 +744,7 @@ defmodule Raxol.DevTools.PropsValidator do
     end
   end
 
-  defp validate_function_arity(prop_name, value, actual_arity, expected_arity)
+  defp validate_function_arity(_prop_name, value, actual_arity, expected_arity)
        when actual_arity == expected_arity do
     {:ok, value}
   end

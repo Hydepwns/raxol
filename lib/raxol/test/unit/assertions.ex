@@ -12,7 +12,6 @@ defmodule Raxol.Test.Unit.Assertions do
   """
 
   import ExUnit.Assertions
-  alias Raxol.Core.ErrorHandling
 
   @doc """
   Asserts that a component's rendered output matches the expected output.
@@ -145,7 +144,7 @@ defmodule Raxol.Test.Unit.Assertions do
       end
   """
   def assert_handles_error(component, error_fn) do
-    case ErrorHandling.safe_call(error_fn) do
+    case Raxol.Core.ErrorHandling.safe_call(error_fn) do
       {:ok, _} ->
         flunk("Expected an error to be handled")
 

@@ -709,13 +709,14 @@ defmodule Raxol.DevTools.DebugInspector do
     # Slow average render time
     # > 60fps
     bottlenecks =
-      if profile.average_render_time > 16 do
-        [
-          "Slow average render time: #{Float.round(profile.average_render_time, 2)}ms"
-          | bottlenecks
-        ]
-      else
-        bottlenecks
+      case profile.average_render_time > 16 do
+        true ->
+          [
+            "Slow average render time: #{Float.round(profile.average_render_time, 2)}ms"
+            | bottlenecks
+          ]
+        false ->
+          bottlenecks
       end
 
     # Inconsistent render times

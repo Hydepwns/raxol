@@ -9,14 +9,15 @@ defmodule Raxol.Test.WindowTestHelper do
   def create_test_emulator do
     emu = Raxol.Terminal.Emulator.new(80, 24)
 
-    if is_map(emu),
-      do:
+    case is_map(emu) do
+      true ->
         emu
         |> Map.put_new(:style, %{})
         |> Map.put_new(:disabled, false)
         |> Map.put_new(:focused, false)
-        |> Map.put_new(:attrs, %{}),
-      else: emu
+        |> Map.put_new(:attrs, %{})
+      false -> emu
+    end
   end
 
   @doc """

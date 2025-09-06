@@ -26,7 +26,10 @@ defmodule Raxol.Test.ProcessNaming do
   def generate_name(module, suffix \\ "") do
     test_id = get_test_id()
     base_name = module |> to_string() |> String.replace("Elixir.", "")
-    name = if suffix == "", do: base_name, else: "#{base_name}_#{suffix}"
+    name = case suffix == "" do
+      true -> base_name
+      false -> "#{base_name}_#{suffix}"
+    end
     :"#{name}_#{test_id}"
   end
 
@@ -46,7 +49,10 @@ defmodule Raxol.Test.ProcessNaming do
   """
   def generate_name_with_prefix(prefix, suffix \\ "") do
     test_id = get_test_id()
-    name = if suffix == "", do: prefix, else: "#{prefix}_#{suffix}"
+    name = case suffix == "" do
+      true -> prefix
+      false -> "#{prefix}_#{suffix}"
+    end
     :"#{name}_#{test_id}"
   end
 

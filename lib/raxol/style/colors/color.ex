@@ -283,10 +283,10 @@ defmodule Raxol.Style.Colors.Color do
     blended_a = round(blended_a_float)
 
     # Decide if the result should have an alpha component
-    if color1.a != nil or color2.a != nil or blended_a != 255 do
-      from_rgba(r, g, b, blended_a)
-    else
-      from_rgb(r, g, b)
+    case {color1.a != nil or color2.a != nil, blended_a != 255} do
+      {true, _} -> from_rgba(r, g, b, blended_a)
+      {false, true} -> from_rgba(r, g, b, blended_a)
+      {false, false} -> from_rgb(r, g, b)
     end
   end
 

@@ -406,7 +406,7 @@ defmodule Raxol.Style.Colors.Utilities do
 
   # Helper functions for pattern matching refactoring
 
-  defp select_best_contrast(ratio_white, ratio_black, min_ratio, white, black)
+  defp select_best_contrast(ratio_white, ratio_black, min_ratio, white, _black)
        when ratio_white >= min_ratio and ratio_white >= ratio_black,
        do: white
 
@@ -414,7 +414,7 @@ defmodule Raxol.Style.Colors.Utilities do
        when ratio_black >= min_ratio,
        do: black
 
-  defp select_best_contrast(ratio_white, ratio_black, _min_ratio, white, black)
+  defp select_best_contrast(ratio_white, ratio_black, _min_ratio, white, _black)
        when ratio_white > ratio_black,
        do: white
 
@@ -431,9 +431,6 @@ defmodule Raxol.Style.Colors.Utilities do
     (g - b) / d + hue_adjustment(g < b)
   end
 
-  defp hue_adjustment(true), do: 6
-  defp hue_adjustment(false), do: 0
-
   defp calculate_hue(r, g, b, max, d) when max == g do
     (b - r) / d + 2
   end
@@ -441,6 +438,9 @@ defmodule Raxol.Style.Colors.Utilities do
   defp calculate_hue(r, g, b, max, d) when max == b do
     (r - g) / d + 4
   end
+
+  defp hue_adjustment(true), do: 6
+  defp hue_adjustment(false), do: 0
 
   defp hue_to_rgb_components(h, c, x) when h < 60, do: {c, x, 0}
   defp hue_to_rgb_components(h, c, x) when h < 120, do: {x, c, 0}

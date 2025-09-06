@@ -446,14 +446,17 @@ defmodule Raxol.DevTools.ComponentPreview do
               style: %{font_size: 16, font_weight: :bold}
             }
           },
-          if story.description do
-            %{
-              type: :text,
-              attrs: %{
-                content: story.description,
-                style: %{font_size: 14, color: :secondary}
+          case story.description do
+            nil ->
+              nil
+            description ->
+              %{
+                type: :text,
+                attrs: %{
+                  content: description,
+                  style: %{font_size: 14, color: :secondary}
+                }
               }
-            }
           end
         ]
         |> Enum.filter(&(&1 != nil))
@@ -466,8 +469,11 @@ defmodule Raxol.DevTools.ComponentPreview do
       attrs: %{gap: 10, margin_top: 15},
       children:
         [
-          if story.code_example do
-            code_example_section(story.code_example)
+          case story.code_example do
+            nil ->
+              nil
+            code_example ->
+              code_example_section(code_example)
           end,
           props_display(props)
         ]
@@ -630,14 +636,17 @@ defmodule Raxol.DevTools.ComponentPreview do
             story.props,
             build_preview_context(theme, {200, 100}, false)
           ),
-          if story.description do
-            %{
-              type: :text,
-              attrs: %{
-                content: story.description,
-                style: %{font_size: 12, color: :secondary, margin_top: 10}
+          case story.description do
+            nil ->
+              nil
+            description ->
+              %{
+                type: :text,
+                attrs: %{
+                  content: description,
+                  style: %{font_size: 12, color: :secondary, margin_top: 10}
+                }
               }
-            }
           end
         ]
         |> Enum.filter(&(&1 != nil))

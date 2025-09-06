@@ -23,7 +23,7 @@ defmodule Raxol.System.Updater.State do
 
   @deprecated "Use Raxol.System.Updater.State instead of Raxol.System.Updater.State"
 
-  @update_settings_file "~/.raxol/update_settings.json"
+  # @update_settings_file "~/.raxol/update_settings.json"
 
   # Ensure server is started
   defp ensure_server_started do

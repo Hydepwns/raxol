@@ -24,7 +24,6 @@ defmodule Raxol.Style.Colors.System do
 
   alias Raxol.Style.Colors.{System.Server, Utilities, Color}
   alias Raxol.UI.Theming.Theme
-  alias Raxol.Core.Events.Manager, as: EventManager
 
   @deprecated "Use Raxol.Style.Colors.System instead of Raxol.Style.Colors.System"
 
@@ -198,8 +197,10 @@ defmodule Raxol.Style.Colors.System do
     # For a specific theme, we need to temporarily apply it or calculate manually
     (theme.ui_mappings || %{})
     |> Enum.map(fn {role, color_name} ->
-      color_atom =
-        if is_atom(color_name), do: color_name, else: String.to_atom(color_name)
+      color_atom = case is_atom(color_name) do
+        true -> color_name
+        false -> String.to_atom(color_name)
+      end
 
       {role, get_color_from_theme(theme, color_atom)}
     end)

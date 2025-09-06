@@ -108,10 +108,10 @@ defmodule Raxol.Security.InputValidator do
     handle_required_check(is_required)
   end
 
+  defp check_required(value, _), do: {:ok, value}
+
   defp handle_required_check(true), do: {:error, "is required"}
   defp handle_required_check(false), do: {:ok, nil}
-
-  defp check_required(value, _), do: {:ok, value}
 
   defp check_type(nil, _), do: {:ok, nil}
 
@@ -175,9 +175,25 @@ defmodule Raxol.Security.InputValidator do
     handle_min_length_check(meets_min, value, min)
   end
 
+  defp apply_rule(value, {:max_length, max}) when is_binary(value) do
+    meets_max = String.length(value) <= max
+    handle_max_length_check(meets_max, value, max)
+  end
 
+  defp apply_rule(value, {:min, min}) when is_number(value) do
+    meets_min = value >= min
+    handle_min_value_check(meets_min, value, min)
+  end
 
+  defp apply_rule(value, {:max, max}) when is_number(value) do
+    meets_max = value <= max
+    handle_max_value_check(meets_max, value, max)
+  end
 
+  defp apply_rule(value, {:format, regex}) when is_binary(value) do
+    matches = Regex.match?(regex, value)
+    handle_format_check(matches, value)
+  end
 
   defp apply_rule(value, {:in, allowed}) do
     is_allowed = value in allowed

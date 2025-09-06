@@ -161,7 +161,10 @@ defmodule Raxol.Test.Visual.Assertions do
     output = Visual.capture_render(component)
     lines = String.split(output, "\n")
 
-    edges = if edges == :all, do: [:top, :bottom, :left, :right], else: edges
+    edges = case edges == :all do
+      true -> [:top, :bottom, :left, :right]
+      false -> edges
+    end
 
     Enum.each(edges, fn edge ->
       case edge do

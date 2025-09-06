@@ -54,7 +54,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     result = safe_execute_with_spy(pid, fun)
 
     # Always cleanup
-    Accessibility.disable(pid)
+    Accessibility.disable()
 
     EventManager.unregister_handler(
       :accessibility_announce,
@@ -93,7 +93,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     quote do
       announcements = Process.get(:accessibility_test_announcements, [])
 
-      validate_announcement_match(
+      Raxol.AccessibilityTestHelpers.validate_announcement_match(
         unquote(exact),
         announcements,
         unquote(expected),
@@ -134,7 +134,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     quote do
       announcements = Process.get(:accessibility_test_announcements, [])
 
-      validate_announcement_not_match(
+      Raxol.AccessibilityTestHelpers.validate_announcement_not_match(
         unquote(exact),
         announcements,
         unquote(expected),
@@ -186,7 +186,7 @@ defmodule Raxol.AccessibilityTestHelpers do
         assert_focus_on("search_button")
       end)
   """
-  def simulate_keyboard_navigation(steps, fun) when steps > 0 do
+  def simulate_keyboard_navigation(steps, _fun) when steps > 0 do
     Enum.each(1..steps, fn _ ->
       # Get current focus
       current = FocusManager.get_current_focus()
@@ -319,16 +319,16 @@ defmodule Raxol.AccessibilityTestHelpers do
   """
   def with_high_contrast(fun) do
     # Store current setting
-    previous = Accessibility.get_option(:high_contrast, nil)
+    previous = Map.get(Accessibility.get_preferences(), :high_contrast)
 
     # Enable high contrast
-    Accessibility.set_option(:high_contrast, true, nil)
+    Accessibility.set_high_contrast(true)
 
     # Execute function and ensure cleanup
     result = safe_execute_function(fun)
 
     # Always restore previous setting
-    Accessibility.set_option(:high_contrast, previous, nil)
+    Accessibility.set_high_contrast(previous || false)
 
     result
   end
@@ -349,26 +349,26 @@ defmodule Raxol.AccessibilityTestHelpers do
   def with_reduced_motion(fun_or_pid, fun \\ nil) do
     case {fun_or_pid, fun} do
       {pid, fun} when is_pid(pid) and is_function(fun, 0) ->
-        previous = Accessibility.get_option(:reduced_motion, pid)
-        Accessibility.set_option(:reduced_motion, true, pid)
+        previous = Map.get(Accessibility.get_preferences(), :reduced_motion)
+        Accessibility.set_reduced_motion(true)
 
         # Execute function and ensure cleanup
         result = safe_execute_function(fun)
 
         # Always restore
-        Accessibility.set_option(:reduced_motion, previous, pid)
+        Accessibility.set_reduced_motion(previous || false)
 
         result
 
       {fun, nil} when is_function(fun, 0) ->
-        previous = Accessibility.get_option(:reduced_motion, nil)
-        Accessibility.set_option(:reduced_motion, true, nil)
+        previous = Map.get(Accessibility.get_preferences(), :reduced_motion)
+        Accessibility.set_reduced_motion(true)
 
         # Execute function and ensure cleanup
         result = safe_execute_function(fun)
 
         # Always restore
-        Accessibility.set_option(:reduced_motion, previous, nil)
+        Accessibility.set_reduced_motion(previous || false)
 
         result
     end
@@ -440,61 +440,51 @@ defmodule Raxol.AccessibilityTestHelpers do
   defp get_minimum_ratio(:aaa, :normal), do: 7.0
   defp get_minimum_ratio(:aaa, :large), do: 4.5
 
-  # Helper functions for announcement validation
-  defp validate_announcement_present(announcements, expected, context)
-       when is_binary(expected) do
-    unless Enum.any?(announcements, &String.contains?(&1, expected)) do
-      flunk(
-        "Expected screen reader announcement containing \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
-      )
-    end
-  end
+  # Removed unused announcement validation helpers - these can be re-added if needed
 
-  defp validate_announcement_present(
-         announcements,
-         %Regex{} = expected,
-         context
-       ) do
-    unless Enum.any?(announcements, &Regex.match?(expected, &1)) do
-      flunk(
-        "Expected screen reader announcement matching #{inspect(expected)} was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
-      )
-    end
-  end
 
-  defp validate_announcement_present(_announcements, expected, _context) do
-    flunk("Invalid expected value for assert_announced: #{inspect(expected)}")
-  end
+  ## Pattern matching helper functions for announcement validation
 
-  defp validate_announcement_absent(announcements, expected, context)
-       when is_binary(expected) do
-    validate_announcement_not_contains(announcements, expected, context)
-  end
-
-  defp validate_announcement_absent(announcements, %Regex{} = expected, context) do
-    validate_announcement_not_matches_regex(announcements, expected, context)
-  end
-
-  defp validate_announcement_absent(_announcements, expected, _context) do
-    flunk("Invalid expected value for refute_announced: #{inspect(expected)}")
-  end
-
-  ## Pattern matching helper functions for if statement elimination
-
-  defp validate_announcement_match(true, announcements, expected, context) do
+  def validate_announcement_match(true, announcements, expected, context) do
     case Enum.member?(announcements, expected) do
-      true ->
-        :ok
-
-      false ->
-        flunk(
-          "Expected screen reader announcement \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
-        )
+      true -> :ok
+      false -> flunk("Expected exact announcement \"#{expected}\" not found.\n#{context}")
     end
   end
 
-  defp validate_announcement_match(false, announcements, expected, context) do
-    validate_announcement_present(announcements, expected, context)
+  def validate_announcement_match(false, announcements, expected, context) do
+    case Enum.any?(announcements, &String.contains?(&1, expected)) do
+      true -> :ok  
+      false -> flunk("No announcement containing \"#{expected}\" found.\n#{context}")
+    end
+  end
+
+  def validate_announcement_not_match(true, announcements, unexpected, context) do
+    case Enum.member?(announcements, unexpected) do
+      true -> flunk("Unexpected exact announcement \"#{unexpected}\" found.\n#{context}")
+      false -> :ok
+    end
+  end
+
+  def validate_announcement_not_match(false, announcements, unexpected, context) do
+    case Enum.any?(announcements, &String.contains?(&1, unexpected)) do
+      true -> flunk("Found announcement containing \"#{unexpected}\".\n#{context}")
+      false -> :ok
+    end
+  end
+
+  def validate_announcement_not_contains(announcements, unexpected, context) do
+    case Enum.any?(announcements, &String.contains?(&1, unexpected)) do
+      true -> flunk("Found announcement containing \"#{unexpected}\".\n#{context}")
+      false -> :ok
+    end
+  end
+
+  def validate_announcement_not_matches_regex(announcements, regex, context) do
+    case Enum.any?(announcements, &Regex.match?(regex, &1)) do
+      true -> flunk("Found announcement matching regex #{inspect(regex)}.\n#{context}")
+      false -> :ok
+    end
   end
 
   defp validate_no_announcements_made([], _context), do: :ok
@@ -505,21 +495,6 @@ defmodule Raxol.AccessibilityTestHelpers do
     )
   end
 
-  defp validate_announcement_not_match(true, announcements, expected, context) do
-    case Enum.member?(announcements, expected) do
-      true ->
-        flunk(
-          "Unexpected screen reader announcement \"#{expected}\" was made.\nActual announcements: #{inspect(announcements)}\n#{context}"
-        )
-
-      false ->
-        :ok
-    end
-  end
-
-  defp validate_announcement_not_match(false, announcements, expected, context) do
-    validate_announcement_absent(announcements, expected, context)
-  end
 
   defp validate_contrast_ratio_sufficient(
          ratio,
@@ -544,10 +519,8 @@ defmodule Raxol.AccessibilityTestHelpers do
        do: :ok
 
   defp get_next_focusable_element(current) do
-    case FocusManager.get_focus_direction() do
-      :backward -> FocusManager.get_previous_focusable(current)
-      _ -> FocusManager.get_next_focusable(current)
-    end
+    # Default to forward direction since get_focus_direction doesn't exist
+    FocusManager.get_next_focusable(current)
   end
 
   defp move_focus_if_available(nil), do: :ok
@@ -568,7 +541,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   defp set_keyboard_context_if_provided(nil), do: :ok
 
   defp set_keyboard_context_if_provided(shortcut_context) do
-    KeyboardShortcuts.set_context(shortcut_context)
+    KeyboardShortcuts.set_active_context(shortcut_context)
   end
 
   defp validate_shortcut_execution(true, _shortcut, _context), do: :ok
@@ -579,27 +552,4 @@ defmodule Raxol.AccessibilityTestHelpers do
     )
   end
 
-  defp validate_announcement_not_contains(announcements, expected, context) do
-    case Enum.any?(announcements, &String.contains?(&1, expected)) do
-      true ->
-        flunk(
-          "Unexpected screen reader announcement containing \"#{expected}\" was made.\nActual announcements: #{inspect(announcements)}\n#{context}"
-        )
-
-      false ->
-        :ok
-    end
-  end
-
-  defp validate_announcement_not_matches_regex(announcements, expected, context) do
-    case Enum.any?(announcements, &Regex.match?(expected, &1)) do
-      true ->
-        flunk(
-          "Unexpected screen reader announcement matching #{inspect(expected)} was made.\nActual announcements: #{inspect(announcements)}\n#{context}"
-        )
-
-      false ->
-        :ok
-    end
-  end
 end

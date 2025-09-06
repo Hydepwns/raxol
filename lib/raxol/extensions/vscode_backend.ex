@@ -10,7 +10,6 @@ defmodule Raxol.Extensions.VSCodeBackend do
   use GenServer
 
   alias Raxol.AI.{ContentGeneration, PerformanceOptimization}
-  alias Raxol.Core.ErrorHandling
   require Logger
 
   @json_start_marker "RAXOL-JSON-BEGIN"
@@ -139,7 +138,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
   Lists available components in the project.
   """
   def list_components do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            # Find all .ex files that look like components
            Path.wildcard("lib/**/*.ex")
            |> Enum.filter(&component_file?/1)
@@ -291,7 +290,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
   end
 
   defp analyze_component_file(file_path) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            content = File.read!(file_path)
            {:ok, ast} = Code.string_to_quoted(content)
 

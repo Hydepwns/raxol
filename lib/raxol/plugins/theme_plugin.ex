@@ -157,10 +157,9 @@ defmodule Raxol.Plugins.ThemePlugin do
           nil
       end
 
-    if theme_to_register do
-      Theme.register(theme_to_register)
-    else
-      {:error, :invalid_theme_input_for_registration}
+    case theme_to_register do
+      nil -> {:error, :invalid_theme_input_for_registration}
+      theme -> Theme.register(theme)
     end
   end
 
@@ -178,12 +177,9 @@ defmodule Raxol.Plugins.ThemePlugin do
   defp get_current_theme_from_config(config) do
     theme_name = Map.get(config, :theme, :default)
 
-    if theme_name == :default do
-      # Always use the default theme for consistency
-      Theme.default_theme()
-    else
-      # For specific themes, try to get them, fallback to default
-      Theme.get(theme_name) || Theme.default_theme()
+    case theme_name do
+      :default -> Theme.default_theme()
+      _ -> Theme.get(theme_name) || Theme.default_theme()
     end
   end
 

@@ -6,8 +6,6 @@ defmodule Raxol.Playground.Preview do
   generating terminal output that shows how the component will appear.
   """
 
-  alias Raxol.Core.ErrorHandling
-
   @doc """
   Generates a preview of a component with given props and state.
   """
@@ -26,7 +24,7 @@ defmodule Raxol.Playground.Preview do
   end
 
   defp render_component(component, themed_props, state) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       case component.module do
         # Text Components
         Raxol.UI.Text ->
@@ -646,7 +644,10 @@ defmodule Raxol.Playground.Preview do
        ) do
     option_lines =
       Enum.map(options, fn option ->
-        prefix = if option == selected, do: "✓", else: " "
+        prefix = case option == selected do
+          true -> "✓"
+          false -> " "
+        end
         option_str = " #{prefix} #{option}"
         padding = String.duplicate(" ", width - String.length(option_str) + 1)
         "│#{option_str}#{padding}│"

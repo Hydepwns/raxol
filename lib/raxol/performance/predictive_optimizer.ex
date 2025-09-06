@@ -20,8 +20,8 @@ defmodule Raxol.Performance.PredictiveOptimizer do
 
   alias Raxol.Performance.ETSCacheManager
 
-  # milliseconds
-  @prediction_window 1000
+  # milliseconds (used for prediction calculations)
+  # @prediction_window 1000
   @pattern_history_size 100
   # 70% probability threshold
   @cache_warm_threshold 0.7
@@ -271,7 +271,7 @@ defmodule Raxol.Performance.PredictiveOptimizer do
     %{model | sequence_patterns: Map.put(sequences, pattern_key, count)}
   end
 
-  defp update_operation_correlations(model, stats) do
+  defp update_operation_correlations(model, _stats) do
     # Identify correlated operations
     # Simplified implementation - real version would use statistical correlation
     model
@@ -404,7 +404,7 @@ defmodule Raxol.Performance.PredictiveOptimizer do
     # Analyze pattern history to predict next operations
     # Simplified implementation - real version would use Markov chains or similar
 
-    recent_patterns = :queue.to_list(history) |> Enum.take(-10)
+    _recent_patterns = :queue.to_list(history) |> Enum.take(-10)
 
     predictions =
       model.sequence_patterns

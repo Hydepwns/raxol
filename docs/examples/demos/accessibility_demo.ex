@@ -172,82 +172,89 @@ defmodule Raxol.Examples.AccessibilityDemo do
                   UI.column padding: 1 do
                     # Wrap all children in an explicit list
                     [
-                      if state.show_help do
-                        render_help_dialog()
-                      else
-                        # Form elements need to be a list too for the outer list
-                        [
-                          UI.row padding_bottom: 1 do
-                            label_element =
-                              UI.label("Username:", style: %{width: 10})
+                      case Map.get(state, :show_help, false) do
+                        true ->
+                          render_help_dialog()
 
-                            input_element =
-                              UI.text_input(
-                                id: "username_input",
-                                value: state.form_data.username,
-                                width: 30,
-                                focus: state.focused_element == "username_input"
-                              )
+                        false ->
+                          # Form elements need to be a list too for the outer list
+                          [
+                            UI.row padding_bottom: 1 do
+                              label_element =
+                                UI.label("Username:", style: %{width: 10})
 
-                            [label_element, input_element]
-                          end,
-                          UI.label(content: state.message),
-                          UI.label(
-                            content: "Focused: #{state.focused_element}"
-                          ),
-                          UI.button(
-                            label: "Search",
-                            id: "search_button",
-                            focused: state.focused_element == "search_button",
-                            on_click: {:activate, "search_button"}
-                          ),
-                          UI.button(
-                            label: "Settings",
-                            id: "settings_button",
-                            focused: state.focused_element == "settings_button",
-                            on_click: {:activate, "settings_button"}
-                          ),
-                          UI.button(
-                            label: "Help",
-                            id: "help_button",
-                            focused: state.focused_element == "help_button",
-                            on_click: {:activate, "help_button"}
-                          ),
-                          UI.checkbox(
-                            label: "High Contrast",
-                            id: "high_contrast_toggle",
-                            checked:
-                              UserPreferences.get([
-                                :accessibility,
-                                :high_contrast
-                              ]) || false,
-                            focused:
-                              state.focused_element == "high_contrast_toggle",
-                            on_change: {:toggle, :high_contrast}
-                          ),
-                          UI.checkbox(
-                            label: "Reduced Motion",
-                            id: "reduced_motion_toggle",
-                            checked:
-                              UserPreferences.get([
-                                :accessibility,
-                                :reduced_motion
-                              ]) || false,
-                            focused:
-                              state.focused_element == "reduced_motion_toggle",
-                            on_change: {:toggle, :reduced_motion}
-                          ),
-                          UI.checkbox(
-                            label: "Large Text",
-                            id: "large_text_toggle",
-                            checked:
-                              UserPreferences.get([:accessibility, :large_text]) ||
-                                false,
-                            focused:
-                              state.focused_element == "large_text_toggle",
-                            on_change: {:toggle, :large_text}
-                          )
-                        ]
+                              input_element =
+                                UI.text_input(
+                                  id: "username_input",
+                                  value: state.form_data.username,
+                                  width: 30,
+                                  focus:
+                                    state.focused_element == "username_input"
+                                )
+
+                              [label_element, input_element]
+                            end,
+                            UI.label(content: state.message),
+                            UI.label(
+                              content: "Focused: #{state.focused_element}"
+                            ),
+                            UI.button(
+                              label: "Search",
+                              id: "search_button",
+                              focused: state.focused_element == "search_button",
+                              on_click: {:activate, "search_button"}
+                            ),
+                            UI.button(
+                              label: "Settings",
+                              id: "settings_button",
+                              focused:
+                                state.focused_element == "settings_button",
+                              on_click: {:activate, "settings_button"}
+                            ),
+                            UI.button(
+                              label: "Help",
+                              id: "help_button",
+                              focused: state.focused_element == "help_button",
+                              on_click: {:activate, "help_button"}
+                            ),
+                            UI.checkbox(
+                              label: "High Contrast",
+                              id: "high_contrast_toggle",
+                              checked:
+                                UserPreferences.get([
+                                  :accessibility,
+                                  :high_contrast
+                                ]) || false,
+                              focused:
+                                state.focused_element == "high_contrast_toggle",
+                              on_change: {:toggle, :high_contrast}
+                            ),
+                            UI.checkbox(
+                              label: "Reduced Motion",
+                              id: "reduced_motion_toggle",
+                              checked:
+                                UserPreferences.get([
+                                  :accessibility,
+                                  :reduced_motion
+                                ]) || false,
+                              focused:
+                                state.focused_element == "reduced_motion_toggle",
+                              on_change: {:toggle, :reduced_motion}
+                            ),
+                            UI.checkbox(
+                              label: "Large Text",
+                              id: "large_text_toggle",
+                              checked:
+                                UserPreferences.get([
+                                  :accessibility,
+                                  :large_text
+                                ]) ||
+                                  false,
+                              focused:
+                                state.focused_element == "large_text_toggle",
+                              on_change: {:toggle, :large_text}
+                            )
+                          ]
                       end
                     ]
                   end
@@ -369,7 +376,10 @@ defmodule Raxol.Examples.AccessibilityDemo do
     end
 
     Accessibility.announce(
-      "#{setting |> Atom.to_string() |> String.replace("_", " ") |> String.capitalize()} #{if new_value, do: "enabled", else: "disabled"}.",
+      "#{setting |> Atom.to_string() |> String.replace("_", " ") |> String.capitalize()} #{case new_value do
+        true -> "enabled"
+        false -> "disabled"
+      end}.",
       [],
       UserPreferences
     )

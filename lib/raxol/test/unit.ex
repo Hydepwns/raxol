@@ -77,10 +77,12 @@ defmodule Raxol.Test.Unit do
       event_handler: mock_event_system
     }
 
-    if !(is_map(result) and Map.has_key?(result, :module) and
-           Map.has_key?(result, :state)) do
-      raise ArgumentError,
-            "setup_isolated_component/2 expected a map with :module and :state keys, got: #{inspect(result)}"
+    case {is_map(result), Map.has_key?(result, :module), Map.has_key?(result, :state)} do
+      {true, true, true} ->
+        :ok
+      _ ->
+        raise ArgumentError,
+              "setup_isolated_component/2 expected a map with :module and :state keys, got: #{inspect(result)}"
     end
 
     {:ok, result}

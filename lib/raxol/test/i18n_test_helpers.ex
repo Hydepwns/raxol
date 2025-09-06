@@ -17,8 +17,6 @@ defmodule Raxol.I18nTestHelpers do
   import ExUnit.Assertions
   import Raxol.AccessibilityTestHelpers
 
-  alias Raxol.Core.I18n, as: I18n
-  alias Raxol.Core.ErrorHandling
 
   @doc """
   Executes the given function with a specific locale set.
@@ -35,13 +33,13 @@ defmodule Raxol.I18nTestHelpers do
     original_locale = Gettext.get_locale()
 
     result =
-      ErrorHandling.ensure_cleanup(
+      Raxol.Core.ErrorHandling.ensure_cleanup(
         fn ->
-          Gettext.set_locale(locale)
+          Gettext.put_locale(locale)
           fun.()
         end,
         fn ->
-          Gettext.set_locale(original_locale)
+          Gettext.put_locale(original_locale)
         end
       )
 

@@ -551,7 +551,7 @@ defmodule Raxol.Playground do
   end
 
   defp handle_export_operation(component, state) do
-    code = CodeGenerator.generate_code(component, state.current_props)
+    code = CodeGenerator.generate(component, state.current_props)
     {:reply, {:ok, code}, state}
   end
 

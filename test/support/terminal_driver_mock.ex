@@ -34,8 +34,9 @@ defmodule Raxol.Terminal.DriverMock do
     Raxol.Core.Runtime.Log.info("Starting DriverMock for tests")
 
     # Register with dispatcher if provided
-    if dispatcher_pid do
-      send(dispatcher_pid, {:register_driver, self()})
+    case dispatcher_pid do
+      nil -> :ok
+      pid -> send(pid, {:register_driver, self()})
     end
 
     {:ok, %State{dispatcher_pid: dispatcher_pid}}
@@ -46,8 +47,9 @@ defmodule Raxol.Terminal.DriverMock do
     # Parse the test input and send to dispatcher
     event = parse_test_input(input_data)
 
-    if state.dispatcher_pid do
-      GenServer.cast(state.dispatcher_pid, {:event, event})
+    case state.dispatcher_pid do
+      nil -> :ok
+      pid -> GenServer.cast(pid, {:event, event})
     end
 
     {:noreply, state}

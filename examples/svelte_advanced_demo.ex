@@ -252,10 +252,9 @@ defmodule Examples.SvelteAdvancedDemo.NavItem do
   use Raxol.Svelte.Actions
   
   action :nav_tooltip, fn element, label ->
-    if element.collapsed do
-      Raxol.Svelte.Actions.Builtin.tooltip(element, label)
-    else
-      element
+    case element.collapsed do
+      true -> Raxol.Svelte.Actions.Builtin.tooltip(element, label)
+      false -> element
     end
   end
   

@@ -197,36 +197,38 @@ defmodule Raxol.Style.Colors.Formats do
   # --- Private Helpers ---
 
   defp parse_rgb_hex(hex) do
-    if byte_size(hex) == 6 do
-      <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
+    case byte_size(hex) do
+      6 ->
+        <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
 
-      with {r, ""} <- Integer.parse(r, 16),
-           {g, ""} <- Integer.parse(g, 16),
-           {b, ""} <- Integer.parse(b, 16) do
-        {r, g, b}
-      else
-        _ -> {:error, :invalid_hex}
-      end
-    else
-      {:error, :invalid_hex}
+        with {r, ""} <- Integer.parse(r, 16),
+             {g, ""} <- Integer.parse(g, 16),
+             {b, ""} <- Integer.parse(b, 16) do
+          {r, g, b}
+        else
+          _ -> {:error, :invalid_hex}
+        end
+      _ ->
+        {:error, :invalid_hex}
     end
   end
 
   defp parse_rgba_hex(hex) do
-    if byte_size(hex) == 8 do
-      <<r::binary-size(2), g::binary-size(2), b::binary-size(2),
-        a::binary-size(2)>> = hex
+    case byte_size(hex) do
+      8 ->
+        <<r::binary-size(2), g::binary-size(2), b::binary-size(2),
+          a::binary-size(2)>> = hex
 
-      with {r, ""} <- Integer.parse(r, 16),
-           {g, ""} <- Integer.parse(g, 16),
-           {b, ""} <- Integer.parse(b, 16),
-           {a, ""} <- Integer.parse(a, 16) do
-        {r, g, b, a}
-      else
-        _ -> {:error, :invalid_hex}
-      end
-    else
-      {:error, :invalid_hex}
+        with {r, ""} <- Integer.parse(r, 16),
+             {g, ""} <- Integer.parse(g, 16),
+             {b, ""} <- Integer.parse(b, 16),
+             {a, ""} <- Integer.parse(a, 16) do
+          {r, g, b, a}
+        else
+          _ -> {:error, :invalid_hex}
+        end
+      _ ->
+        {:error, :invalid_hex}
     end
   end
 

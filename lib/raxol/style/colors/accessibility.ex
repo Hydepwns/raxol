@@ -87,8 +87,14 @@ defmodule Raxol.Style.Colors.Accessibility do
   def contrast_ratio(color1, color2)
       when is_binary(color1) or is_binary(color2) do
     # Allow hex string input
-    c1 = if is_binary(color1), do: Color.from_hex(color1), else: color1
-    c2 = if is_binary(color2), do: Color.from_hex(color2), else: color2
+    c1 = case color1 do
+      color when is_binary(color) -> Color.from_hex(color)
+      color -> color
+    end
+    c2 = case color2 do
+      color when is_binary(color) -> Color.from_hex(color)
+      color -> color
+    end
     contrast_ratio(c1, c2)
   end
 

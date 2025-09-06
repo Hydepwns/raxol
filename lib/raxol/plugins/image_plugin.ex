@@ -195,8 +195,14 @@ defmodule Raxol.Plugins.ImagePlugin do
   defp generate_image_escape_sequence(base64_data, params) do
     width = get_dimension(params, :width)
     height = get_dimension(params, :height)
-    width_param = if width == 0, do: "auto", else: "#{width}"
-    height_param = if height == 0, do: "auto", else: "#{height}"
+    width_param = case width == 0 do
+      true -> "auto"
+      false -> "#{width}"
+    end
+    height_param = case height == 0 do
+      true -> "auto"
+      false -> "#{height}"
+    end
     preserve_aspect_flag = get_preserve_aspect_flag(params)
 
     case Base.decode64(base64_data) do

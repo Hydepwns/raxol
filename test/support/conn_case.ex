@@ -89,8 +89,9 @@ defmodule RaxolWeb.ConnCase do
   """
   def log_in_user(conn, user) do
     # Skip database operations when database is disabled
-    if Application.get_env(:raxol, :database_enabled, true) do
-      ensure_test_user_exists()
+    case Application.get_env(:raxol, :database_enabled, true) do
+      true -> ensure_test_user_exists()
+      false -> :ok
     end
 
     setup_user_session(conn, user)
@@ -98,15 +99,16 @@ defmodule RaxolWeb.ConnCase do
 
   defp ensure_test_user_exists do
     # Check if Accounts process is running
-    if Process.whereis(Raxol.Accounts) do
-      case Raxol.Accounts.get_user("user") do
-        {:error, :not_found} -> create_test_user()
-        {:error, _} -> create_test_user()
-        {:ok, _user} -> :ok
-      end
-    else
-      # If Accounts isn't running, skip user creation
-      :ok
+    case Process.whereis(Raxol.Accounts) do
+      nil ->
+        # If Accounts isn't running, skip user creation
+        :ok
+      _pid ->
+        case Raxol.Accounts.get_user("user") do
+          {:error, :not_found} -> create_test_user()
+          {:error, _} -> create_test_user()
+          {:ok, _user} -> :ok
+        end
     end
   end
 

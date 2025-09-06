@@ -10,7 +10,6 @@ defmodule Raxol.Tutorials.Runner do
   require Logger
 
   alias Raxol.Docs.InteractiveTutorial
-  alias Raxol.Core.ErrorHandling
   # Tutorial runner functionality - aliases will be added as needed
 
   defstruct [
@@ -431,7 +430,7 @@ defmodule Raxol.Tutorials.Runner do
     """
   end
 
-  defp format_progress(progress, nil), do: "No tutorial currently active."
+  defp format_progress(_progress, nil), do: "No tutorial currently active."
 
   defp format_progress(progress, current_tutorial) do
     completed_steps = Map.get(progress, {current_tutorial.id, :steps}, [])
@@ -469,7 +468,7 @@ defmodule Raxol.Tutorials.Runner do
   defp run_example_code(nil), do: {:error, "No example code available"}
 
   defp run_example_code(code) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            # Create a safe evaluation context
            Code.eval_string(code, [], __ENV__)
          end) do

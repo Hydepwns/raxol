@@ -196,11 +196,11 @@ defmodule Raxol.Svelte.ComponentState.Server do
 
     # Restore previous slots
     final_process_slots =
-      case previous_slots == %{} do
-        true ->
+      case previous_slots do
+        empty when empty == %{} ->
           Map.delete(temp_state.process_slots, pid)
-        false ->
-          Map.put(temp_state.process_slots, pid, previous_slots)
+        slots ->
+          Map.put(temp_state.process_slots, pid, slots)
       end
 
     final_state = %{temp_state | process_slots: final_process_slots}
@@ -264,12 +264,12 @@ defmodule Raxol.Svelte.ComponentState.Server do
   # Private helpers
 
   defp ensure_monitored(pid, state) do
-    case Map.has_key?(state.monitors, pid) do
-      true ->
-        state
-      false ->
+    case Map.get(state.monitors, pid) do
+      nil ->
         ref = Process.monitor(pid)
         %{state | monitors: Map.put(state.monitors, pid, ref)}
+      _ref ->
+        state
     end
   end
 end

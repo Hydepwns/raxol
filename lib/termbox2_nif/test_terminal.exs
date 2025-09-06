@@ -15,28 +15,32 @@ defmodule TerminalTest do
     result = :termbox2_nif.tb_init()
     IO.puts("Init result: #{inspect(result)}")
 
-    if result == 0 do
-      # Get terminal dimensions
-      width = :termbox2_nif.tb_width()
-      height = :termbox2_nif.tb_height()
-      IO.puts("Terminal dimensions: #{width}x#{height}")
+    case result do
+      0 ->
+        # Get terminal dimensions
+        width = :termbox2_nif.tb_width()
+        height = :termbox2_nif.tb_height()
+        IO.puts("Terminal dimensions: #{width}x#{height}")
 
-      # Clear screen
-      :termbox2_nif.tb_clear()
+        # Clear screen
+        :termbox2_nif.tb_clear()
 
-      # Draw a simple pattern
-      for y <- 0..(height - 1) do
-        for x <- 0..(width - 1) do
-          ch = if rem(x + y, 2) == 0, do: ?#, else: ?.
-          :termbox2_nif.tb_set_cell(x, y, ch, 0xFFFFFF, 0x000000)
+        # Draw a simple pattern
+        for y <- 0..(height - 1) do
+          for x <- 0..(width - 1) do
+            ch = case rem(x + y, 2) do
+              0 -> ?#
+              _ -> ?.
+            end
+            :termbox2_nif.tb_set_cell(x, y, ch, 0xFFFFFF, 0x000000)
+          end
         end
-      end
 
-      # Present the changes
-      :termbox2_nif.tb_present()
+        # Present the changes
+        :termbox2_nif.tb_present()
 
-      # Wait a bit to see the pattern
-      :timer.sleep(2000)
+        # Wait a bit to see the pattern
+        :timer.sleep(2000)
 
       # Shutdown termbox
       :termbox2_nif.tb_shutdown()

@@ -75,6 +75,13 @@ defmodule Raxol.Style.Colors.System.Server do
   end
 
   @doc """
+  Set the current theme.
+  """
+  def set_current_theme(theme_name) do
+    GenServer.call(__MODULE__, {:set_current_theme, theme_name})
+  end
+
+  @doc """
   Check if high contrast mode is enabled.
   """
   def get_high_contrast do
@@ -243,10 +250,8 @@ defmodule Raxol.Style.Colors.System.Server do
           {cached_color, state}
       end
 
-    case color do
-      {color_value, new_state} -> {:reply, color_value, new_state}
-      color_value -> {:reply, color_value, state}
-    end
+    {color_value, new_state} = color
+    {:reply, color_value, new_state}
   end
 
   # Handle theme retrieval
@@ -258,6 +263,12 @@ defmodule Raxol.Style.Colors.System.Server do
   @impl true
   def handle_call(:get_current_theme_name, _from, state) do
     {:reply, state.current_theme_name, state}
+  end
+
+  @impl true
+  def handle_call({:set_current_theme, theme_name}, _from, state) do
+    updated_state = %{state | current_theme_name: theme_name}
+    {:reply, :ok, updated_state}
   end
 
   @impl true

@@ -134,7 +134,10 @@ defmodule Raxol.Test.Visual do
   end
 
   defp write_cell_to_buffer({x, y, char, fg, bg, attrs}, buffer) do
-    actual_char = if is_nil(char), do: ~c" ", else: char
+    actual_char = case char do
+      nil -> ~c" "
+      char -> char
+    end
 
     Operations.write_char(buffer, x, y, actual_char, %{
       foreground: fg,

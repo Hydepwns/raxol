@@ -5,7 +5,6 @@ defmodule Raxol.Test.EventHelpers do
   """
 
   alias Raxol.Core.Events.Event
-  alias Raxol.Core.ErrorHandling
   import ExUnit.Assertions
 
   @doc """
@@ -86,7 +85,7 @@ defmodule Raxol.Test.EventHelpers do
   Verifies that error handling works properly between components.
   """
   def assert_error_contained(parent, child, error_fn) do
-    case ErrorHandling.safe_call(error_fn) do
+    case Raxol.Core.ErrorHandling.safe_call(error_fn) do
       {:ok, _} ->
         flunk("Expected an error but none was raised")
 

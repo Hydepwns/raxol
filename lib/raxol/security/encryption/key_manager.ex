@@ -199,14 +199,9 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
   @impl GenServer
   def handle_call({:generate_dek, purpose, opts}, _from, state) do
-    case generate_data_encryption_key(purpose, opts, state) do
-      {:ok, key, new_state} ->
-        audit_key_operation(:generate, key.id, purpose)
-        {:reply, {:ok, key}, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, key, new_state} = generate_data_encryption_key(purpose, opts, state)
+    audit_key_operation(:generate, key.id, purpose)
+    {:reply, {:ok, key}, new_state}
   end
 
   @impl GenServer
@@ -307,14 +302,9 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
   @impl GenServer
   def handle_call({:delete_key, key_id}, _from, state) do
-    case mark_key_deleted(key_id, state) do
-      {:ok, new_state} ->
-        audit_key_operation(:delete, key_id, nil)
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, new_state} = mark_key_deleted(key_id, state)
+    audit_key_operation(:delete, key_id, nil)
+    {:reply, :ok, new_state}
   end
 
   @impl GenServer
@@ -678,7 +668,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
   defp get_current_user do
     # Get from process dictionary or context
-    Raxol.Security.UserContext.Server.get_current_user("system")
+    Raxol.Security.UserContext.Server.get_current_user() || "system"
   end
 
   defp sanitize_key(key) do

@@ -20,7 +20,7 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
         %{width: width, height: height} = bounds,
         _state
       ) do
-    title = Map.get(opts, :title, "Treemap")
+    _title = Map.get(opts, :title, "Treemap")
 
     # Basic validation for bounds and data
     validate_and_render(width, height, data, bounds)

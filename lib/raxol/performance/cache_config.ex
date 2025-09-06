@@ -251,7 +251,21 @@ defmodule Raxol.Performance.CacheConfig do
   defp available_memory_budget do
     # Get available system memory and allocate 1% for caches
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           :memsup.get_system_memory_data()
+           # Check if :memsup is available, use fallback if not
+           case Code.ensure_loaded?(:memsup) do
+             true -> 
+               try do
+                 case function_exported?(:memsup, :get_system_memory_data, 0) do
+                   true ->
+                     apply(:memsup, :get_system_memory_data, [])
+                   false ->
+                     [{:system_total_memory, 1_048_576_000}]
+                 end
+               rescue
+                 _ -> [{:system_total_memory, 1_048_576_000}]  # 1GB fallback as list
+               end
+             false -> [{:system_total_memory, 1_048_576_000}]  # 1GB fallback as list
+           end
          end) do
       {:ok, %{available_memory: available}} ->
         # Max 10MB

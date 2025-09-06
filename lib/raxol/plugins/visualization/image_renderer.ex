@@ -7,7 +7,6 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Cell
   alias Raxol.Plugins.Visualization.DrawingUtils
-  alias Raxol.Core.ErrorHandling
 
   @doc """
   Public entry point for rendering image content.
@@ -23,31 +22,32 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
     title = Map.get(opts, :title, "Image")
     protocol = Map.get(opts, :protocol, detect_protocol(state))
 
-    if width < 1 or height < 1 do
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "[ImageRenderer] Bounds too small for image rendering: #{inspect(bounds)}",
-        %{}
-      )
+    case width < 1 or height < 1 do
+      true ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[ImageRenderer] Bounds too small for image rendering: #{inspect(bounds)}",
+          %{}
+        )
+        []
+      
+      false ->
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
+               case protocol do
+                 :sixel -> render_sixel(data, bounds, opts)
+                 :kitty -> render_kitty(data, bounds, opts)
+                 _ -> draw_placeholder(data, title, bounds)
+               end
+             end) do
+          {:ok, result} ->
+            result
 
-      []
-    else
-      case ErrorHandling.safe_call(fn ->
-             case protocol do
-               :sixel -> render_sixel(data, bounds, opts)
-               :kitty -> render_kitty(data, bounds, opts)
-               _ -> draw_placeholder(data, title, bounds)
-             end
-           end) do
-        {:ok, result} ->
-          result
+          {:error, e} ->
+            Raxol.Core.Runtime.Log.error(
+              "[ImageRenderer] Error rendering image: #{inspect(e)}"
+            )
 
-        {:error, e} ->
-          Raxol.Core.Runtime.Log.error(
-            "[ImageRenderer] Error rendering image: #{inspect(e)}"
-          )
-
-          DrawingUtils.draw_box_with_text("[Render Error]", bounds)
-      end
+            DrawingUtils.draw_box_with_text("[Render Error]", bounds)
+        end
     end
   end
 
@@ -107,16 +107,11 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   end
 
   defp load_image_data(data) when is_binary(data) do
-    # Handle file path
+    # First try as file path, then as raw data
     case File.read(data) do
       {:ok, content} -> {:ok, content}
-      {:error, reason} -> {:error, reason}
+      {:error, _reason} -> {:ok, data}  # Assume it's raw image data
     end
-  end
-
-  defp load_image_data(data) when is_binary(data) do
-    # Handle raw image data
-    {:ok, data}
   end
 
   defp load_image_data(_), do: {:error, :invalid_data}
@@ -134,7 +129,7 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
 
   defp decode_image(data) do
     # Use Mogrify to decode image data
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            Mogrify.open(data)
          end) do
       {:ok, image} -> {:ok, image}

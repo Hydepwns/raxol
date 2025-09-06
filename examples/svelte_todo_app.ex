@@ -51,9 +51,12 @@ defmodule Examples.SvelteTodoApp do
   # Reactive statements
   reactive_block do
     # Auto-save to localStorage-equivalent when todos change
-    reactive_stmt(if @total_count > 0 do
-      save_todos(@todos)
-    end)
+    reactive_stmt(
+      case @total_count > 0 do
+        true -> save_todos(@todos)
+        false -> nil
+      end
+    )
     
     # Status updates
     reactive_stmt(status = cond do
@@ -68,26 +71,27 @@ defmodule Examples.SvelteTodoApp do
   def add_todo do
     text = String.trim(get_state(:new_todo_text))
     
-    if text != "" do
-      new_todo = %{
-        id: :crypto.strong_rand_bytes(8) |> Base.encode64(),
-        text: text,
-        completed: false,
-        created_at: DateTime.utc_now()
-      }
-      
-      update_state(:todos, fn todos -> [new_todo | todos] end)
-      set_state(:new_todo_text, "")
+    case text do
+      "" -> nil
+      _ ->
+        new_todo = %{
+          id: :crypto.strong_rand_bytes(8) |> Base.encode64(),
+          text: text,
+          completed: false,
+          created_at: DateTime.utc_now()
+        }
+        
+        update_state(:todos, fn todos -> [new_todo | todos] end)
+        set_state(:new_todo_text, "")
     end
   end
   
   def toggle_todo(id) do
     update_state(:todos, fn todos ->
       Enum.map(todos, fn todo ->
-        if todo.id == id do
-          %{todo | completed: !todo.completed}
-        else
-          todo
+        case todo.id == id do
+          true -> %{todo | completed: !todo.completed}
+          false -> todo
         end
       end)
     end)
@@ -106,18 +110,18 @@ defmodule Examples.SvelteTodoApp do
   def save_todo(id, new_text) do
     text = String.trim(new_text)
     
-    if text == "" do
-      remove_todo(id)
-    else
-      update_state(:todos, fn todos ->
-        Enum.map(todos, fn todo ->
-          if todo.id == id do
-            %{todo | text: text}
-          else
-            todo
-          end
+    case text do
+      "" -> 
+        remove_todo(id)
+      _ ->
+        update_state(:todos, fn todos ->
+          Enum.map(todos, fn todo ->
+            case todo.id == id do
+              true -> %{todo | text: text}
+              false -> todo
+            end
+          end)
         end)
-      end)
     end
     
     set_state(:editing_id, nil)
@@ -149,10 +153,9 @@ defmodule Examples.SvelteTodoApp do
   
   # Template helpers
   defp filter_button_style(current_filter, button_filter) do
-    if current_filter == button_filter do
-      "selected"
-    else
-      "normal"
+    case current_filter == button_filter do
+      true -> "selected"
+      false -> "normal"
     end
   end
   

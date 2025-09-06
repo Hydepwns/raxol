@@ -74,6 +74,36 @@ defmodule Raxol.Test.Integration.HierarchySetup do
     )
   end
 
+  def setup_component_hierarchy(parent_struct, child_struct, opts)
+      when is_map(parent_struct) and is_map(child_struct) do
+    # Update the :state fields to reference each other
+    parent_state =
+      Map.put(parent_struct.state, :children, [child_struct.state.id])
+
+    child_state = Map.put(child_struct.state, :parent_id, parent_state.id)
+
+    # Update parent with child state in child_states field
+    parent_state =
+      Map.put(parent_state, :child_states, %{
+        child_struct.state.id => child_state
+      })
+
+    # Update the test component structs
+    parent_struct = %{parent_struct | state: parent_state}
+    child_struct = %{child_struct | state: child_state}
+
+    # Optionally mount components in ComponentManager if requested
+    mount_in_manager = Keyword.get(opts, :mount_in_manager, false)
+
+    maybe_mount_components(
+      parent_struct,
+      parent_state,
+      child_struct,
+      child_state,
+      mount_in_manager
+    )
+  end
+
   defp mount_components_conditionally(
          false,
          parent_struct,
@@ -149,36 +179,6 @@ defmodule Raxol.Test.Integration.HierarchySetup do
       {:error, _reason} ->
         {:ok, parent_struct, updated_children}
     end
-  end
-
-  def setup_component_hierarchy(parent_struct, child_struct, opts)
-      when is_map(parent_struct) and is_map(child_struct) do
-    # Update the :state fields to reference each other
-    parent_state =
-      Map.put(parent_struct.state, :children, [child_struct.state.id])
-
-    child_state = Map.put(child_struct.state, :parent_id, parent_state.id)
-
-    # Update parent with child state in child_states field
-    parent_state =
-      Map.put(parent_state, :child_states, %{
-        child_struct.state.id => child_state
-      })
-
-    # Update the test component structs
-    parent_struct = %{parent_struct | state: parent_state}
-    child_struct = %{child_struct | state: child_state}
-
-    # Optionally mount components in ComponentManager if requested
-    mount_in_manager = Keyword.get(opts, :mount_in_manager, false)
-
-    maybe_mount_components(
-      parent_struct,
-      parent_state,
-      child_struct,
-      child_state,
-      mount_in_manager
-    )
   end
 
   @doc """

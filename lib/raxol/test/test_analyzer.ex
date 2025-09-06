@@ -46,10 +46,9 @@ defmodule Raxol.TestAnalyzer do
     |> Enum.reduce([], fn line, acc ->
       case line do
         "test " <> rest ->
-          if String.contains?(rest, "invalid") do
-            [line | acc]
-          else
-            acc
+          case String.contains?(rest, "invalid") do
+            true -> [line | acc]
+            false -> acc
           end
 
         _ ->

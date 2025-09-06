@@ -225,10 +225,11 @@ defmodule Raxol.Architecture.EventSourcing.Event do
         Map.get(event, field) == nil
       end)
 
-    if Enum.empty?(missing_fields) do
-      {:ok, event}
-    else
-      {:error, {:missing_fields, missing_fields}}
+    case Enum.empty?(missing_fields) do
+      true ->
+        {:ok, event}
+      false ->
+        {:error, {:missing_fields, missing_fields}}
     end
   end
 

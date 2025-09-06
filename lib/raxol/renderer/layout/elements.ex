@@ -315,20 +315,21 @@ defmodule Raxol.Renderer.Layout.Elements do
       border: border
     }
 
-    if is_list(children) and children != [] do
-      inner_space = %{
-        x: space.x,
-        y: space.y,
-        width: elem(size, 0),
-        height: elem(size, 1)
-      }
+    case {is_list(children), children} do
+      {true, children} when children != [] ->
+        inner_space = %{
+          x: space.x,
+          y: space.y,
+          width: elem(size, 0),
+          height: elem(size, 1)
+        }
 
-      processed_children =
-        Raxol.Renderer.Layout.process_children(children, inner_space, [])
+        processed_children =
+          Raxol.Renderer.Layout.process_children(children, inner_space, [])
 
-      [Map.put(box, :children, processed_children) | acc]
-    else
-      [box | acc]
+        [Map.put(box, :children, processed_children) | acc]
+      _ ->
+        [box | acc]
     end
   end
 

@@ -283,7 +283,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
   end
 
   @impl GenServer
-  def handle_call({:execute, command, opts}, from, state) do
+  def handle_call({:execute, command, opts}, _from, state) do
     # Execute command synchronously
     case execute_command_internal(command, opts, state) do
       {:ok, result, new_state} ->
@@ -292,11 +292,8 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
       {:error, reason, new_state} ->
         {:reply, {:error, reason}, new_state}
 
-      {:async, execution_ref, new_state} ->
-        # Store the caller for async response
-        Process.monitor(elem(from, 0))
-        GenServer.reply(from, {:async, execution_ref})
-        {:noreply, new_state}
+      # Note: {:async, ...} clause removed as execute_command_internal/3 only returns
+      # {:ok, result, new_state} or {:error, reason, new_state} patterns
     end
   end
 
@@ -373,8 +370,8 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
         # Error handling for async commands (logging, dead letter queue, etc.)
         {:noreply, new_state}
 
-      {:async, _execution_ref, new_state} ->
-        {:noreply, new_state}
+      # Note: {:async, ...} clause removed as execute_command_internal/3 only returns
+      # {:ok, result, new_state} or {:error, reason, new_state} patterns
     end
   end
 

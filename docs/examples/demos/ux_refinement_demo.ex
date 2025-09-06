@@ -142,25 +142,25 @@ defmodule Raxol.Examples.UXRefinementDemo do
 
     # --- Conditionally create the focus ring component ---
     focus_ring_component =
-      if focused_position do
-        # Raxol.View.Elements.component(
-        #   Raxol.UI.Components.FocusRing,
-        #   id: :focus_ring,
-        #   model: state.focus_ring_model,
-        #   focused_element_id: focused_id,
-        #   focused_element_position: focused_position
-        # )
-        # Construct component map directly
-        %{
-          type: Raxol.UI.Components.FocusRing,
-          id: :focus_ring,
-          # Pass props directly, assuming component handles its own model state
-          # model: state.focus_ring_model,
-          focused_element_id: focused_id,
-          focused_element_position: focused_position
-        }
-      else
-        nil # Explicitly return nil if no position
+      case focused_position do
+        nil -> nil # Explicitly return nil if no position
+        _ ->
+          # Raxol.View.Elements.component(
+          #   Raxol.UI.Components.FocusRing,
+          #   id: :focus_ring,
+          #   model: state.focus_ring_model,
+          #   focused_element_id: focused_id,
+          #   focused_element_position: focused_position
+          # )
+          # Construct component map directly
+          %{
+            type: Raxol.UI.Components.FocusRing,
+            id: :focus_ring,
+            # Pass props directly, assuming component handles its own model state
+            # model: state.focus_ring_model,
+            focused_element_id: focused_id,
+            focused_element_position: focused_position
+          }
       end
 
     # Raxol.View.Elements.component Raxol.UI.Components.AppContainer, id: :app_container do
@@ -180,12 +180,12 @@ defmodule Raxol.Examples.UXRefinementDemo do
                   UI.column padding: 1 do
                     # Wrap all children in an explicit list
                     [
-                      if state.show_help do
-                        render_help_dialog()
-                      else
-                        # Form elements need to be a list too for the outer list
-                        [
-                          UI.row padding_bottom: 1 do
+                      case state.show_help do
+                        true -> render_help_dialog()
+                        false ->
+                          # Form elements need to be a list too for the outer list
+                          [
+                            UI.row padding_bottom: 1 do
                             label_element = Raxol.View.Elements.label("Username:", style: %{width: 10})
 
                             input_element =

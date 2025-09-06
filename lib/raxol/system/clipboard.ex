@@ -148,14 +148,14 @@ defmodule Raxol.System.Clipboard do
         {:ok, output}
 
       {output, exit_code} ->
-        if exit_code == 1 and String.trim(output) == "" do
-          {:ok, ""}
-        else
-          Raxol.Core.Runtime.Log.error(
-            "Failed to paste using xclip. Exit code: #{exit_code}, Output: #{output}"
-          )
+        case {exit_code, String.trim(output)} do
+          {1, ""} -> {:ok, ""}
+          _ ->
+            Raxol.Core.Runtime.Log.error(
+              "Failed to paste using xclip. Exit code: #{exit_code}, Output: #{output}"
+            )
 
-          {:error, {:xclip_failed, output}}
+            {:error, {:xclip_failed, output}}
         end
     end
   end
@@ -168,21 +168,22 @@ defmodule Raxol.System.Clipboard do
         {:ok, String.trim_trailing(output, "\r\n")}
 
       {output, exit_code} ->
-        if String.contains?(output, [
-             "Cannot retrieve the Clipboard.",
-             "Get-Clipboard: Failed to get clipboard content"
-           ]) do
-          Raxol.Core.Runtime.Log.debug(
-            "Clipboard appears empty or inaccessible via PowerShell."
-          )
+        case String.contains?(output, [
+               "Cannot retrieve the Clipboard.",
+               "Get-Clipboard: Failed to get clipboard content"
+             ]) do
+          true ->
+            Raxol.Core.Runtime.Log.debug(
+              "Clipboard appears empty or inaccessible via PowerShell."
+            )
 
-          {:ok, ""}
-        else
-          Raxol.Core.Runtime.Log.error(
-            "Failed to paste using PowerShell. Exit code: #{exit_code}, Output: #{output}"
-          )
+            {:ok, ""}
+          false ->
+            Raxol.Core.Runtime.Log.error(
+              "Failed to paste using PowerShell. Exit code: #{exit_code}, Output: #{output}"
+            )
 
-          {:error, {:powershell_get_clipboard_failed, output}}
+            {:error, {:powershell_get_clipboard_failed, output}}
         end
     end
   end

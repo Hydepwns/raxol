@@ -130,21 +130,17 @@ defmodule Raxol.DevTools.HotReload do
     # Start new watcher
     expanded_paths = expand_and_validate_paths(paths)
 
-    case start_file_watcher(expanded_paths) do
-      {:ok, watcher_pid} ->
-        final_state = %{
-          new_state
-          | watcher_pid: watcher_pid,
-            watched_paths: MapSet.new(expanded_paths)
-        }
+    # start_file_watcher/1 currently always returns {:ok, watcher_pid}
+    {:ok, watcher_pid} = start_file_watcher(expanded_paths)
+    
+    final_state = %{
+      new_state
+      | watcher_pid: watcher_pid,
+        watched_paths: MapSet.new(expanded_paths)
+    }
 
-        Logger.info("Hot reload started for paths: #{inspect(expanded_paths)}")
-        {:reply, :ok, final_state}
-
-      {:error, reason} ->
-        Logger.error("Failed to start file watcher: #{inspect(reason)}")
-        {:reply, {:error, reason}, new_state}
-    end
+    Logger.info("Hot reload started for paths: #{inspect(expanded_paths)}")
+    {:reply, :ok, final_state}
   end
 
   @impl GenServer
@@ -618,11 +614,11 @@ defmodule Raxol.DevTools.HotReload do
     end
   end
 
-  defp safe_process_file_list(files, parent_pid) do
+  defp safe_process_file_list(files, _parent_pid) do
     Task.async(fn ->
       Enum.each(files, fn file ->
-        if file_recently_modified?(file) do
-          send(parent_pid, {:file_event, file, [:modified]})
+        case file_recently_modified?(file) do
+          false -> :ok
         end
       end)
 
@@ -840,8 +836,9 @@ defmodule Raxol.DevTools.HotReload do
 
   defp safe_check_and_refresh_component(module) do
     Task.async(fn ->
-      if is_component_module?(module) do
-        trigger_component_refresh(module)
+      case is_component_module?(module) do
+        true -> trigger_component_refresh(module)
+        false -> :ok
       end
 
       :component_checked

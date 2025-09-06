@@ -231,13 +231,9 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
 
   @impl GenServer
   def handle_call({:delete, key, opts}, _from, state) do
-    case delete_encrypted(key, opts, state) do
-      {:ok, new_state} ->
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    # delete_encrypted/3 currently only returns {:ok, new_state}
+    {:ok, new_state} = delete_encrypted(key, opts, state)
+    {:reply, :ok, new_state}
   end
 
   @impl GenServer
@@ -265,13 +261,9 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
 
   @impl GenServer
   def handle_call({:reencrypt_all, new_key_id}, _from, state) do
-    case reencrypt_all_items(new_key_id, state) do
-      {:ok, count, new_state} ->
-        {:reply, {:ok, count}, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    # reencrypt_all_items/2 currently only returns {:ok, count, new_state}
+    {:ok, count, new_state} = reencrypt_all_items(new_key_id, state)
+    {:reply, {:ok, count}, new_state}
   end
 
   @impl GenServer
@@ -844,6 +836,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
   end
 
   defp get_current_user do
-    Raxol.Security.UserContext.Server.get_current_user("system")
+    # Fixed: Using get_current_user/0 instead of non-existent get_current_user/1
+    Raxol.Security.UserContext.Server.get_current_user()
   end
 end

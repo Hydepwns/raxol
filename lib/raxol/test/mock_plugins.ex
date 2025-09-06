@@ -108,10 +108,9 @@ defmodule Raxol.Test.MockPlugins do
       }
 
       final_state =
-        if Map.has_key?(config_or_state, :handled_events) do
-          Map.merge(initial_plugin_state_map, config_or_state)
-        else
-          initial_plugin_state_map
+        case Map.has_key?(config_or_state, :handled_events) do
+          true -> Map.merge(initial_plugin_state_map, config_or_state)
+          false -> initial_plugin_state_map
         end
 
       {:ok, final_state}
@@ -229,10 +228,9 @@ defmodule Raxol.Test.MockPlugins do
     def handle_command(command_name, _params, state) do
       case command_name do
         :induce_crash ->
-          if state.crash_on_command do
-            raise "Simulated plugin crash!"
-          else
-            {:ok, state, %{status: "crash averted"}}
+          case state.crash_on_command do
+            true -> raise "Simulated plugin crash!"
+            false -> {:ok, state, %{status: "crash averted"}}
           end
 
         :toggle_crash_on_command ->
