@@ -151,53 +151,46 @@ defmodule Raxol.Core.ErrorRecoveryTest do
     end
   end
 
-  describe "degrade_gracefully/2" do
+  describe "degrade_gracefully/3" do
     test "uses full implementation when feature is available" do
-      # Feature is available by default
-      import ErrorRecovery
-
       result =
-        degrade_gracefully :test_feature do
-          "full implementation"
-        else
-          "degraded implementation"
-        end
+        ErrorRecovery.degrade_gracefully(
+          :test_feature,
+          fn -> "full implementation" end,
+          fn -> "degraded implementation" end
+        )
 
-      assert result == "full implementation"
+      assert result == {:ok, "full implementation"}
     end
 
     test "falls back to degraded implementation on error" do
-      import ErrorRecovery
-
       result =
-        degrade_gracefully :failing_feature do
-          raise "Feature error"
-        else
-          "degraded implementation"
-        end
+        ErrorRecovery.degrade_gracefully(
+          :failing_feature,
+          fn -> raise "Feature error" end,
+          fn -> "degraded implementation" end
+        )
 
-      assert result == "degraded implementation"
+      assert result == {:ok, "degraded implementation"}
     end
 
     test "marks feature as degraded after failure" do
-      import ErrorRecovery
-
       # First call fails and marks feature as degraded
-      degrade_gracefully :auto_degrade_feature do
-        raise "Feature error"
-      else
-        "degraded"
-      end
+      ErrorRecovery.degrade_gracefully(
+        :auto_degrade_feature,
+        fn -> raise "Feature error" end,
+        fn -> "degraded" end
+      )
 
       # Second call should use degraded mode directly
       result =
-        degrade_gracefully :auto_degrade_feature do
-          "should not execute"
-        else
-          "still degraded"
-        end
+        ErrorRecovery.degrade_gracefully(
+          :auto_degrade_feature,
+          fn -> "should not execute" end,
+          fn -> "still degraded" end
+        )
 
-      assert result == "still degraded"
+      assert result == {:ok, "still degraded"}
     end
   end
 
