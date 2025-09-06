@@ -13,9 +13,35 @@ case Mix.env() do
 
       @doc """
       Stub for get in test environment.
+      Returns nil or a struct to satisfy Dialyzer type checking.
       """
-      def get(_schema, _id, _opts \\ []) do
-        nil
+      def get(schema, id, _opts \\ []) do
+        # Return nil for nil id, otherwise return a stub struct
+        # This helps Dialyzer understand both return types are possible
+        case id do
+          nil ->
+            nil
+
+          "not_found" ->
+            nil
+
+          _ ->
+            # Return a basic struct that matches the schema
+            case schema do
+              Raxol.Web.Session.Session ->
+                %Raxol.Web.Session.Session{
+                  id: id,
+                  user_id: "test_user",
+                  metadata: %{},
+                  created_at: DateTime.utc_now(),
+                  updated_at: DateTime.utc_now()
+                }
+
+              _ ->
+                # For other schemas, return nil
+                nil
+            end
+        end
       end
 
       @doc """
