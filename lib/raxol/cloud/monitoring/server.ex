@@ -70,12 +70,24 @@ defmodule Raxol.Cloud.Monitoring.Server do
 
   # Metrics API
 
+  def init_metrics(metrics_state) do
+    GenServer.call(__MODULE__, {:init_metrics, metrics_state})
+  end
+
+  def update_metrics(metrics_state) do
+    GenServer.call(__MODULE__, {:update_metrics, metrics_state})
+  end
+
   def record_metric(name, value, opts \\ []) do
     GenServer.cast(__MODULE__, {:record_metric, name, value, opts})
   end
 
   def record_metrics(metrics) do
     GenServer.cast(__MODULE__, {:record_metrics, metrics})
+  end
+
+  def get_metrics do
+    GenServer.call(__MODULE__, :get_all_metrics)
   end
 
   def get_metrics(name, opts \\ []) do
@@ -112,6 +124,20 @@ defmodule Raxol.Cloud.Monitoring.Server do
 
   def last_health_check_time do
     GenServer.call(__MODULE__, :last_health_check_time)
+  end
+
+  @doc """
+  Initializes health monitoring with given state.
+  """
+  def init_health(health_state) do
+    GenServer.call(__MODULE__, {:init_health, health_state})
+  end
+
+  @doc """
+  Updates health monitoring state.
+  """
+  def update_health(health_state) do
+    GenServer.call(__MODULE__, {:update_health, health_state})
   end
 
   # Alerts API
@@ -285,6 +311,23 @@ defmodule Raxol.Cloud.Monitoring.Server do
   end
 
   @impl true
+  def handle_call({:init_metrics, metrics_state}, _from, state) do
+    updated_state = %{state | metrics: Map.merge(state.metrics, %{state: metrics_state})}
+    {:reply, :ok, updated_state}
+  end
+
+  @impl true
+  def handle_call({:update_metrics, metrics_state}, _from, state) do
+    updated_state = %{state | metrics: Map.merge(state.metrics, %{state: metrics_state})}
+    {:reply, :ok, updated_state}
+  end
+
+  @impl true
+  def handle_call(:get_all_metrics, _from, state) do
+    {:reply, state.metrics.data, state}
+  end
+
+  @impl true
   def handle_call({:get_metrics, name, opts}, _from, state) do
     limit = Keyword.get(opts, :limit, 100)
     metrics = Map.get(state.metrics.data, name, []) |> Enum.take(limit)
@@ -360,6 +403,20 @@ defmodule Raxol.Cloud.Monitoring.Server do
   @impl true
   def handle_call(:last_health_check_time, _from, state) do
     {:reply, state.health.last_check, state}
+  end
+
+  @impl true
+  def handle_call({:init_health, health_state}, _from, state) do
+    updated_health = Map.merge(state.health, health_state)
+    updated_state = %{state | health: updated_health}
+    {:reply, :ok, updated_state}
+  end
+
+  @impl true
+  def handle_call({:update_health, health_state}, _from, state) do
+    updated_health = Map.merge(state.health, health_state)
+    updated_state = %{state | health: updated_health}
+    {:reply, :ok, updated_state}
   end
 
   @impl true

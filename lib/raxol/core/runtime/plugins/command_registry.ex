@@ -66,11 +66,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
             name == command_name
           end)
 
-        if updated_commands == namespace_commands do
-          {:error, :not_found}
-        else
-          updated_table = Map.put(table, namespace, updated_commands)
-          {:ok, updated_table}
+        case updated_commands == namespace_commands do
+          true ->
+            {:error, :not_found}
+          false ->
+            updated_table = Map.put(table, namespace, updated_commands)
+            {:ok, updated_table}
         end
 
       _ ->
@@ -173,10 +174,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
 
   defp check_command_conflicts(commands, command_table) do
     Enum.reduce_while(commands, :ok, fn {name, _, _}, :ok ->
-      if command_exists?(name, command_table) do
-        {:halt, {:error, {:command_exists, name}}}
-      else
-        {:cont, :ok}
+      case command_exists?(name, command_table) do
+        true ->
+          {:halt, {:error, {:command_exists, name}}}
+        false ->
+          {:cont, :ok}
       end
     end)
   end
@@ -320,9 +322,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   end
 
   defp validate_command_handler(handler) do
-    if is_function(handler, 2),
-      do: :ok,
-      else: {:error, :invalid_command_handler}
+    case is_function(handler, 2) do
+      true -> :ok
+      false -> {:error, :invalid_command_handler}
+    end
   end
 
   defp validate_command_metadata(metadata) do

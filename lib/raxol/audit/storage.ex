@@ -152,13 +152,9 @@ defmodule Raxol.Audit.Storage do
 
   @impl GenServer
   def handle_call({:delete_before, timestamp}, _from, state) do
-    case delete_old_events(timestamp, state) do
-      {:ok, count, new_state} ->
-        {:reply, {:ok, count}, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    # delete_old_events/2 always returns {:ok, count, new_state}, no error case possible
+    {:ok, count, new_state} = delete_old_events(timestamp, state)
+    {:reply, {:ok, count}, new_state}
   end
 
   @impl GenServer
@@ -180,10 +176,9 @@ defmodule Raxol.Audit.Storage do
 
   @impl GenServer
   def handle_info(:rotate_file, state) do
-    case rotate_log_file(state) do
-      {:ok, new_state} -> {:noreply, new_state}
-      {:error, _reason} -> {:noreply, state}
-    end
+    # rotate_log_file/1 currently always returns {:ok, new_state}
+    {:ok, new_state} = rotate_log_file(state)
+    {:noreply, new_state}
   end
 
   ## Pattern Matching Helper Functions for Storage Operations
@@ -497,18 +492,14 @@ defmodule Raxol.Audit.Storage do
     {to_delete, to_keep} =
       Enum.split_with(all_events, &(&1.timestamp < timestamp))
 
-    # Rewrite file with events to keep
-    case rewrite_events_file(to_keep, state) do
-      :ok ->
-        # Update indexes
-        new_indexes = rebuild_all_indexes(to_keep)
-        new_state = %{state | indexes: new_indexes}
+    # Rewrite file with events to keep (rewrite_events_file/2 always returns :ok)
+    :ok = rewrite_events_file(to_keep, state)
+    
+    # Update indexes
+    new_indexes = rebuild_all_indexes(to_keep)
+    new_state = %{state | indexes: new_indexes}
 
-        {:ok, length(to_delete), new_state}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    {:ok, length(to_delete), new_state}
   end
 
   defp rotate_log_file(state) do

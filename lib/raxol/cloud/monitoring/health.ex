@@ -55,7 +55,7 @@ defmodule Raxol.Cloud.Monitoring.Health do
   end
 
   defp get_health_state() do
-    Raxol.Cloud.Monitoring.Server.get_health() ||
+    Raxol.Cloud.Monitoring.Server.get_health_status() ||
       %{status: :unknown, last_check: nil, components: %{}, config: %{}}
   end
 

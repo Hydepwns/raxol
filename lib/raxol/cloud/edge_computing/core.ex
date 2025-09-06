@@ -77,7 +77,7 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
     state = %{state | resources: get_resource_info()}
 
     # Store state
-    Raxol.Cloud.EdgeComputing.Server.set_state(state)
+    Raxol.Cloud.EdgeComputing.Server.update_sync_state(state)
 
     # Initialize cache, queue and sync manager
     Cache.init(state.config)
@@ -173,7 +173,7 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
   end
 
   def get_state do
-    Raxol.Cloud.EdgeComputing.Server.get_state() || State.new()
+    Raxol.Cloud.EdgeComputing.Server.get_sync_state() || State.new()
   end
 
   def with_state(arg1, arg2 \\ nil) do
@@ -198,7 +198,7 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
     case {is_map(result), is_map(result) && Map.has_key?(result, :mode)} do
       {true, true} ->
         # If a state map is returned, update the state
-        Raxol.Cloud.EdgeComputing.Server.set_state(result)
+        Raxol.Cloud.EdgeComputing.Server.update_sync_state(result)
         result
 
       _ ->

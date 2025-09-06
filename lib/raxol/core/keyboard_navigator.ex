@@ -192,7 +192,7 @@ defmodule Raxol.Core.KeyboardNavigator do
     ensure_started()
     # Reset with empty spatial map
     current_state = Server.get_state()
-    new_state = %{current_state | spatial_map: %{}}
+    _new_state = %{current_state | spatial_map: %{}}
     :ok
   end
 
@@ -203,7 +203,7 @@ defmodule Raxol.Core.KeyboardNavigator do
     ensure_started()
     # Reset with empty navigation paths
     current_state = Server.get_state()
-    new_state = %{current_state | navigation_paths: %{}}
+    _new_state = %{current_state | navigation_paths: %{}}
     :ok
   end
 
@@ -218,10 +218,11 @@ defmodule Raxol.Core.KeyboardNavigator do
   # Private helper functions
 
   defp ensure_keyword_list(opts) when is_list(opts) do
-    if Keyword.keyword?(opts) do
-      opts
-    else
-      []
+    case Keyword.keyword?(opts) do
+      true ->
+        opts
+      false ->
+        []
     end
   end
 
@@ -231,18 +232,4 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   defp ensure_keyword_list(_), do: []
 
-  # Helper for backward compatibility
-  defp default_config do
-    %{
-      next_key: :tab,
-      previous_key: :tab,
-      activate_keys: [:enter, :space],
-      dismiss_key: :escape,
-      arrow_navigation: true,
-      vim_keys: false,
-      group_navigation: true,
-      spatial_navigation: false,
-      tab_navigation: true
-    }
-  end
 end

@@ -115,13 +115,14 @@ defmodule Raxol.Core.Metrics.Cloud do
 
     new_buffer = [metric | state.metrics_buffer]
 
-    if length(new_buffer) >= state.config.batch_size do
-      {new_state, _result} =
-        flush_metrics_to_cloud(%{state | metrics_buffer: new_buffer})
+    case length(new_buffer) >= state.config.batch_size do
+      true ->
+        {new_state, _result} =
+          flush_metrics_to_cloud(%{state | metrics_buffer: new_buffer})
 
-      {:noreply, new_state}
-    else
-      {:noreply, %{state | metrics_buffer: new_buffer}}
+        {:noreply, new_state}
+      false ->
+        {:noreply, %{state | metrics_buffer: new_buffer}}
     end
   end
 
@@ -140,23 +141,24 @@ defmodule Raxol.Core.Metrics.Cloud do
   end
 
   defp flush_metrics_to_cloud(state) do
-    if state.metrics_buffer == [] do
-      {state, :ok}
-    else
-      metrics = prepare_metrics_for_cloud(state.metrics_buffer)
-      result = send_metrics_to_cloud(metrics, state)
+    case state.metrics_buffer == [] do
+      true ->
+        {state, :ok}
+      false ->
+        metrics = prepare_metrics_for_cloud(state.metrics_buffer)
+        result = send_metrics_to_cloud(metrics, state)
 
-      # Send message back to test process if present, else to self
-      recipient = state.test_pid || self()
-      send(recipient, {:metrics_sent, result})
+        # Send message back to test process if present, else to self
+        recipient = state.test_pid || self()
+        send(recipient, {:metrics_sent, result})
 
-      new_state = %{
-        state
-        | metrics_buffer: [],
-          last_flush: System.system_time(:millisecond)
-      }
+        new_state = %{
+          state
+          | metrics_buffer: [],
+            last_flush: System.system_time(:millisecond)
+        }
 
-      {new_state, result}
+        {new_state, result}
     end
   end
 

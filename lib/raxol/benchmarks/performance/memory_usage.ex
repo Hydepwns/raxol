@@ -161,14 +161,15 @@ defmodule Raxol.Benchmarks.Performance.MemoryUsage do
     # Avoid division by zero
     denominator = n * sum_x_squared - sum_x * sum_x
 
-    if denominator == 0 do
-      false
-    else
-      slope = (n * sum_xy - sum_x * sum_y) / denominator
+    case denominator == 0 do
+      true ->
+        false
+      false ->
+        slope = (n * sum_xy - sum_x * sum_y) / denominator
 
-      # More lenient threshold - only flag significant memory growth
-      # Previous threshold of 100 was too aggressive
-      slope > 1000
+        # More lenient threshold - only flag significant memory growth
+        # Previous threshold of 100 was too aggressive
+        slope > 1000
     end
   end
 

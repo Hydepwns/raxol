@@ -149,8 +149,6 @@ defmodule Raxol.AI.ServiceAdapter do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            # Implementation for OpenAI API
            api_key = Application.get_env(:raxol, :openai_api_key)
-
-           api_key = Application.get_env(:raxol, :openai_api_key)
            make_openai_request(api_key, prompt, options)
          end) do
       {:ok, result} -> result
@@ -161,8 +159,6 @@ defmodule Raxol.AI.ServiceAdapter do
   defp anthropic_generate_content(prompt, options) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            # Implementation for Anthropic Claude API
-           api_key = Application.get_env(:raxol, :anthropic_api_key)
-
            api_key = Application.get_env(:raxol, :anthropic_api_key)
            make_anthropic_request(api_key, prompt, options)
          end) do
@@ -287,7 +283,9 @@ defmodule Raxol.AI.ServiceAdapter do
     end
   end
 
-  defp make_openai_request(nil, _prompt, _options), do: {:error, :api_key_not_configured}
+  defp make_openai_request(nil, _prompt, _options),
+    do: {:error, :api_key_not_configured}
+
   defp make_openai_request(api_key, prompt, options) do
     case HTTPoison.post(
            "https://api.openai.com/v1/completions",
@@ -319,7 +317,9 @@ defmodule Raxol.AI.ServiceAdapter do
     end
   end
 
-  defp make_anthropic_request(nil, _prompt, _options), do: {:error, :api_key_not_configured}
+  defp make_anthropic_request(nil, _prompt, _options),
+    do: {:error, :api_key_not_configured}
+
   defp make_anthropic_request(api_key, prompt, options) do
     case HTTPoison.post(
            "https://api.anthropic.com/v1/messages",

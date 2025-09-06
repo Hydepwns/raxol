@@ -12,7 +12,6 @@ defmodule Raxol.Animation.Gestures do
   """
 
   alias Raxol.Animation.Gestures.Server
-  alias Raxol.Animation.Physics.Vector
 
   @type position :: {integer(), integer()}
   @type gesture_type ::

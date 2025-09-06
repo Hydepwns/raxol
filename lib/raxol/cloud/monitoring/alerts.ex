@@ -8,7 +8,7 @@ defmodule Raxol.Cloud.Monitoring.Alerts do
       config: config
     }
 
-    Raxol.Cloud.Monitoring.Server.init_alerts(alerts_state)
+    Raxol.Cloud.Monitoring.Server.init_monitoring(alerts_state)
     :ok
   end
 

@@ -6,7 +6,6 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Utility do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Plugins.Manager.Lifecycle
-  alias Raxol.Core.ErrorHandling
 
   @type plugin_id :: String.t()
   @type state :: map()
@@ -115,7 +114,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Utility do
   @spec call_plugin_hook(String.t(), atom(), list(), map()) ::
           {:ok, term()} | {:error, term()}
   def call_plugin_hook(plugin_name, hook_name, args, plugin_state) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            apply(plugin_state.module, hook_name, [plugin_state | args])
          end) do
       {:ok, result} ->
@@ -155,7 +154,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Utility do
   """
   @spec handle_event(state(), map()) :: {:ok, state()} | {:error, term()}
   def handle_event(state, event) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            updated_metadata = process_event_metadata(state.metadata, event)
            updated_states = process_event_states(state.plugin_states, event)
 

@@ -56,10 +56,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
   Gets commands from a plugin module.
   """
   def get_plugin_commands(plugin) do
-    if function_exported?(plugin, :get_commands, 0) do
-      {:ok, plugin.get_commands()}
-    else
-      {:ok, []}
+    case function_exported?(plugin, :get_commands, 0) do
+      true -> {:ok, plugin.get_commands()}
+      false -> {:ok, []}
     end
   end
 

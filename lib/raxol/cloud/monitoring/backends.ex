@@ -7,7 +7,6 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   to external services.
   """
 
-  alias Raxol.Core.ErrorHandling
   require Logger
 
   @type backend_type :: :prometheus | :datadog | :new_relic | :grafana | :custom
@@ -89,7 +88,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   end
 
   defp start_prometheus_endpoint(port, path) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       # This would typically use a library like prometheus_ex
       # For now, we'll use a simple HTTP endpoint
       cowboy_opts = [port: port]
@@ -118,9 +117,10 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     # This would use prometheus_ex functions
     # :prometheus_gauge.set(metric_name, tags, value)
     # For now, store in process dictionary as placeholder
-    Raxol.Cloud.Monitoring.Server.put_prometheus_metric(
+    Raxol.Cloud.Monitoring.Server.set_prometheus_metric(
       metric_name,
-      {value, tags}
+      value,
+      tags
     )
   end
 
@@ -145,7 +145,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     config = Application.get_env(:raxol, :datadog_config, %{})
     api_key = Map.get(config, :api_key)
 
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       with {:ok, _} <- validate_api_key(api_key),
            datadog_metrics = Enum.map(metrics, &format_datadog_metric/1),
            payload = %{series: datadog_metrics},
@@ -174,7 +174,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     config = Application.get_env(:raxol, :datadog_config, %{})
     api_key = Map.get(config, :api_key)
 
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       with {:ok, _} <- validate_api_key(api_key),
            datadog_logs = Enum.map(logs, &format_datadog_log/1),
            headers = [
@@ -217,7 +217,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     config = Application.get_env(:raxol, :new_relic_config, %{})
     license_key = Map.get(config, :license_key)
 
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       with {:ok, _} <- validate_license_key(license_key),
            new_relic_metrics = Enum.map(metrics, &format_new_relic_metric/1),
            payload = %{metrics: new_relic_metrics},
@@ -246,7 +246,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     config = Application.get_env(:raxol, :new_relic_config, %{})
     license_key = Map.get(config, :license_key)
 
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       with {:ok, _} <- validate_license_key(license_key),
            new_relic_logs = Enum.map(logs, &format_new_relic_log/1),
            headers = [
@@ -296,7 +296,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     url = Map.get(config, :url)
     api_key = Map.get(config, :api_key)
 
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       with {:ok, _} <- validate_grafana_config(url, api_key),
            grafana_metrics = Enum.map(metrics, &format_grafana_metric/1),
            headers = [
@@ -350,7 +350,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     handler = Map.get(config, :metrics_handler)
 
     with {:ok, _} <- validate_metrics_handler(handler) do
-      ErrorHandling.safe_call(fn ->
+      Raxol.Core.ErrorHandling.safe_call(fn ->
         handler.(metrics)
         :ok
       end)
@@ -371,7 +371,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     handler = Map.get(config, :logs_handler)
 
     with {:ok, _} <- validate_logs_handler(handler) do
-      ErrorHandling.safe_call(fn ->
+      Raxol.Core.ErrorHandling.safe_call(fn ->
         handler.(logs)
         :ok
       end)

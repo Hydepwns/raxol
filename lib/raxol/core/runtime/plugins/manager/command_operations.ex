@@ -67,15 +67,16 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.CommandOperations do
 
   @doc false
   def call_plugin_hook(plugin_module, hook_name, args) do
-    if function_exported?(plugin_module, hook_name, length(args)) do
-      case Raxol.Core.ErrorHandling.safe_call(fn ->
-             apply(plugin_module, hook_name, args)
-           end) do
-        {:ok, result} -> {:ok, result}
-        {:error, reason} -> {:error, {:hook_error, reason}}
-      end
-    else
-      {:error, {:hook_not_found, hook_name}}
+    case function_exported?(plugin_module, hook_name, length(args)) do
+      true ->
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
+               apply(plugin_module, hook_name, args)
+             end) do
+          {:ok, result} -> {:ok, result}
+          {:error, reason} -> {:error, {:hook_error, reason}}
+        end
+      false ->
+        {:error, {:hook_not_found, hook_name}}
     end
   end
 

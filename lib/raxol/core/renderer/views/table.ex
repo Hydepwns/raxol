@@ -119,10 +119,9 @@ defmodule Raxol.Core.Renderer.Views.Table do
   end
 
   defp wrap_table_content(content, border) do
-    if border != :none do
-      View.border_wrap(border, do: content)
-    else
-      View.box(children: content)
+    case border do
+      :none -> View.box(children: content)
+      _ -> View.border_wrap(border, do: content)
     end
   end
 
@@ -336,11 +335,11 @@ defmodule Raxol.Core.Renderer.Views.Table do
 
   # Helper to pad cell content to the column width
   defp pad_cell_content(value, col) do
-    if component?(value) do
-      value
-    else
-      value_str = to_string_value(value)
-      align_text(value_str, col)
+    case component?(value) do
+      true -> value
+      false ->
+        value_str = to_string_value(value)
+        align_text(value_str, col)
     end
   end
 

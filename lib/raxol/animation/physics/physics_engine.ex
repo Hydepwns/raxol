@@ -151,6 +151,24 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
   end
 
   @doc """
+  Step function that is an alias for update - for compatibility.
+  """
+  def step(world, delta_time), do: update(world, delta_time)
+
+  @doc """
+  Create a new physics world - alias for new_world.
+  """
+  def create_world, do: new_world()
+
+  @doc """
+  Add object with position and properties - simplified API.
+  """
+  def add_object(world, id, properties) when is_binary(id) and is_map(properties) do
+    object = new_object(id, Map.to_list(properties))
+    add_object(world, object)
+  end
+
+  @doc """
   Creates a spring force between two objects.
   """
   def spring_force(

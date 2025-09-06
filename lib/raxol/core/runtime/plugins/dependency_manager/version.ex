@@ -23,17 +23,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
       case parsed_req do
         {:or, reqs} ->
           # reqs is a list of parsed requirements
-          if Enum.any?(reqs, &Version.match?(version, &1)) do
-            :ok
-          else
-            {:error, :version_mismatch}
+          case Enum.any?(reqs, &Version.match?(version, &1)) do
+            true ->
+              :ok
+            false ->
+              {:error, :version_mismatch}
           end
 
         req ->
-          if Version.match?(version, req) do
-            :ok
-          else
-            {:error, :version_mismatch}
+          case Version.match?(version, req) do
+            true ->
+              :ok
+            false ->
+              {:error, :version_mismatch}
           end
       end
     else
@@ -81,10 +83,11 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
         # Handle OR conditions
         parsed_reqs = Enum.map(multiple_reqs, &parse_single_requirement/1)
 
-        if Enum.all?(parsed_reqs, &match?({:ok, _}, &1)) do
-          {:ok, {:or, Enum.map(parsed_reqs, fn {:ok, parsed} -> parsed end)}}
-        else
-          {:error, :invalid_requirement_format}
+        case Enum.all?(parsed_reqs, &match?({:ok, _}, &1)) do
+          true ->
+            {:ok, {:or, Enum.map(parsed_reqs, fn {:ok, parsed} -> parsed end)}}
+          false ->
+            {:error, :invalid_requirement_format}
         end
     end
   end

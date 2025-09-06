@@ -4,9 +4,6 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
 
   @moduledoc false
 
-  # Process dictionary key for metrics
-  @metrics_key :raxol_monitoring_metrics
-
   def init(config) do
     metrics_state = %{
       metrics: %{},

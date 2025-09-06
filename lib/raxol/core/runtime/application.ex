@@ -85,7 +85,6 @@ defmodule Raxol.Core.Runtime.Application do
   @type element :: Raxol.Core.Renderer.Element.t()
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Core.ErrorHandling
 
   @doc """
   Initializes the application state.
@@ -166,10 +165,9 @@ defmodule Raxol.Core.Runtime.Application do
       end
 
       def subscribe_interval(interval, msg) do
-        if is_integer(interval) and interval > 0 do
-          Subscription.interval(interval, msg)
-        else
-          {:error, :invalid_argument}
+        case {is_integer(interval), interval > 0} do
+          {true, true} -> Subscription.interval(interval, msg)
+          _ -> {:error, :invalid_argument}
         end
       end
     end
@@ -222,7 +220,7 @@ defmodule Raxol.Core.Runtime.Application do
   # Private helper functions for delegate_init
 
   defp safely_call_init(app_module, context) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            result = app_module.init(context)
 
            Raxol.Core.Runtime.Log.debug(
@@ -289,7 +287,7 @@ defmodule Raxol.Core.Runtime.Application do
   end
 
   defp safely_call_update(app_module, message, current_model) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            app_module.update(message, current_model)
          end) do
       {:ok, result} ->
@@ -434,25 +432,26 @@ defmodule Raxol.Core.Runtime.Application do
   Returns the updated model and optional commands to execute.
   """
   def update(app_module, message, model) do
-    if function_exported?(app_module, :update, 2) do
-      case app_module.update(message, model) do
-        {updated_model, commands} when is_list(commands) ->
-          {updated_model, commands}
+    case function_exported?(app_module, :update, 2) do
+      true ->
+        case app_module.update(message, model) do
+          {updated_model, commands} when is_list(commands) ->
+            {updated_model, commands}
 
-        {updated_model, command} ->
-          {updated_model, [command]}
+          {updated_model, command} ->
+            {updated_model, [command]}
 
-        updated_model when is_map(updated_model) ->
-          {updated_model, []}
+          updated_model when is_map(updated_model) ->
+            {updated_model, []}
 
-        # Allow returning only commands? Maybe not standard TEA.
-        _ ->
-          # Assume no change if return value is unexpected
-          {model, []}
-      end
-    else
-      # Default implementation if update/2 is not defined
-      {model, []}
+          # Allow returning only commands? Maybe not standard TEA.
+          _ ->
+            # Assume no change if return value is unexpected
+            {model, []}
+        end
+      false ->
+        # Default implementation if update/2 is not defined
+        {model, []}
     end
   end
 

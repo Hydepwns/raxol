@@ -201,7 +201,10 @@ defmodule Raxol.Core.Accessibility.Preferences do
     handle_preference_changed({key_path, enabled}, user_preferences_pid_or_name)
 
     # Send text scale updated event
-    scale = if enabled, do: 1.5, else: 1.0
+    scale = case enabled do
+      true -> 1.5
+      false -> 1.0
+    end
     send(self(), {:text_scale_updated, user_preferences_pid_or_name, scale})
 
     :ok
@@ -263,7 +266,10 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
       [:accessibility, :large_text] ->
         # Example of dispatching an event for large text
-        scale = if value, do: 1.5, else: 1.0
+        scale = case value do
+          true -> 1.5
+          false -> 1.0
+        end
 
         EventManager.dispatch(
           {:text_scale_updated, user_preferences_pid_or_name, scale}

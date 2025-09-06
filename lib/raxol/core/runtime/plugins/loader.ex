@@ -7,8 +7,6 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   require Logger
   @behaviour Raxol.Core.Runtime.Plugins.LoaderBehaviour
 
-  alias Raxol.Core.ErrorHandling
-
   defstruct [
     :loaded_plugins,
     :plugin_configs,
@@ -228,7 +226,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   Checks if a module implements the given behaviour.
   """
   def behaviour_implemented?(module, behaviour) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            # Check if the module has the behaviour attribute
            module_info = module.module_info(:attributes)
            behaviours = Keyword.get_values(module_info, :behaviour)
@@ -262,7 +260,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
       false ->
         # Assume it's a module name
-        case ErrorHandling.safe_call(fn ->
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
                module = String.to_existing_atom(id)
 
                case Code.ensure_loaded(module) do

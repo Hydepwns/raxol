@@ -19,8 +19,9 @@ defmodule Raxol.Core.Performance.Monitor do
   Monitor.record_frame(monitor, 16)  # 16ms frame time
 
   # Check for jank
-  if Monitor.detect_jank?(monitor) do
-    Raxol.Core.Runtime.Log.warning_with_context("UI jank detected", %{})
+  case Monitor.detect_jank?(monitor) do
+    true -> Raxol.Core.Runtime.Log.warning_with_context("UI jank detected", %{})
+    false -> :ok
   end
 
   # Get performance metrics
@@ -158,9 +159,10 @@ defmodule Raxol.Core.Performance.Monitor do
     new_frame_times = [frame_time | state.frame_times] |> Enum.take(60)
 
     new_jank_count =
-      if detect_jank?(frame_time, state.jank_threshold),
-        do: state.jank_count + 1,
-        else: state.jank_count
+      case detect_jank?(frame_time, state.jank_threshold) do
+        true -> state.jank_count + 1
+        false -> state.jank_count
+      end
 
     {:noreply,
      %{state | frame_times: new_frame_times, jank_count: new_jank_count}}
@@ -204,8 +206,9 @@ defmodule Raxol.Core.Performance.Monitor do
   def handle_info(:check_memory, state) do
     memory_usage = get_memory_usage()
     # Send memory check message to parent process if specified
-    if state.parent_pid do
-      send(state.parent_pid, {:memory_check, memory_usage})
+    case state.parent_pid do
+      nil -> :ok
+      pid -> send(pid, {:memory_check, memory_usage})
     end
 
     send(self(), {:memory_check, memory_usage})
@@ -227,11 +230,13 @@ defmodule Raxol.Core.Performance.Monitor do
   end
 
   defp get_jank_threshold(base_threshold) do
-    if Raxol.Core.Preferences.get_preference(:reduced_motion, false) do
-      # Higher threshold for reduced motion (less sensitive to jank)
-      base_threshold * 2
-    else
-      base_threshold
+    case Raxol.Core.Preferences.get_preference(:reduced_motion, false) do
+      true ->
+        # Higher threshold for reduced motion (less sensitive to jank)
+        base_threshold * 2
+
+      false ->
+        base_threshold
     end
   end
 

@@ -16,7 +16,6 @@ defmodule Raxol.Core.I18n.Server do
   use GenServer
 
   alias Cldr
-  alias Raxol.Core.ErrorHandling
 
   defstruct [
     :config,
@@ -112,7 +111,10 @@ defmodule Raxol.Core.I18n.Server do
 
   @impl GenServer
   def init(config) do
-    config_map = if is_list(config), do: Enum.into(config, %{}), else: config
+    config_map = case is_list(config) do
+      true -> Enum.into(config, %{})
+      false -> config
+    end
 
     state = %__MODULE__{
       config: config_map,
@@ -131,7 +133,10 @@ defmodule Raxol.Core.I18n.Server do
 
   @impl GenServer
   def handle_call({:init_i18n, config}, _from, state) do
-    config_map = if is_list(config), do: Enum.into(config, %{}), else: config
+    config_map = case is_list(config) do
+      true -> Enum.into(config, %{})
+      false -> config
+    end
 
     new_state = %{
       state
@@ -160,7 +165,7 @@ defmodule Raxol.Core.I18n.Server do
 
     # Use EEx to evaluate the template with bindings
     translated =
-      case ErrorHandling.safe_call(fn ->
+      case Raxol.Core.ErrorHandling.safe_call(fn ->
              EEx.eval_string(template, bindings: bindings)
            end) do
         {:ok, result} -> result
@@ -174,27 +179,6 @@ defmodule Raxol.Core.I18n.Server do
   def handle_call({:set_locale, locale}, _from, state) do
     available_locales = Map.get(state.config, :available_locales, ["en"])
     handle_locale_change(Enum.member?(available_locales, locale), locale, state)
-  end
-
-  defp handle_locale_change(false, _locale, state) do
-    {:reply, {:error, :locale_not_available}, state}
-  end
-
-  defp handle_locale_change(true, locale, state) do
-    previous_locale = state.current_locale
-    new_state = %{state | current_locale: locale}
-    new_state = load_translations(new_state, locale)
-
-    # Broadcast locale change event
-    broadcast_locale_event(state.event_manager, previous_locale, locale, new_state)
-    {:reply, :ok, new_state}
-  end
-
-  defp broadcast_locale_event(nil, _previous_locale, _locale, _state), do: :ok
-  defp broadcast_locale_event(event_manager, previous_locale, locale, new_state) do
-    event = {:locale_changed, previous_locale, locale}
-    event_manager.broadcast(event)
-    handle_locale_changed(event, new_state)
   end
 
   @impl GenServer
@@ -212,7 +196,7 @@ defmodule Raxol.Core.I18n.Server do
   def handle_call({:format_currency, amount, currency_code}, _from, state)
       when is_number(amount) and is_binary(currency_code) do
     formatted =
-      case ErrorHandling.safe_call(fn ->
+      case Raxol.Core.ErrorHandling.safe_call(fn ->
              case Cldr.Number.to_string(amount,
                     currency: currency_code,
                     backend: Raxol.Cldr,
@@ -233,7 +217,7 @@ defmodule Raxol.Core.I18n.Server do
   def handle_call({:format_datetime, datetime}, _from, state)
       when is_struct(datetime, DateTime) do
     formatted =
-      case ErrorHandling.safe_call(fn ->
+      case Raxol.Core.ErrorHandling.safe_call(fn ->
              case Cldr.DateTime.to_string(datetime,
                     backend: Raxol.Cldr,
                     locale: state.current_locale
@@ -267,6 +251,29 @@ defmodule Raxol.Core.I18n.Server do
 
     new_state = %{state | translations: updated_translations}
     {:reply, :ok, new_state}
+  end
+
+  # Helper functions
+  defp handle_locale_change(false, _locale, state) do
+    {:reply, {:error, :locale_not_available}, state}
+  end
+
+  defp handle_locale_change(true, locale, state) do
+    previous_locale = state.current_locale
+    new_state = %{state | current_locale: locale}
+    new_state = load_translations(new_state, locale)
+
+    # Broadcast locale change event
+    broadcast_locale_event(state.event_manager, previous_locale, locale, new_state)
+    {:reply, :ok, new_state}
+  end
+
+  defp broadcast_locale_event(nil, _previous_locale, _locale, _state), do: :ok
+
+  defp broadcast_locale_event(event_manager, previous_locale, locale, new_state) do
+    event = {:locale_changed, previous_locale, locale}
+    event_manager.broadcast(event)
+    handle_locale_changed(event, new_state)
   end
 
   # Private Functions

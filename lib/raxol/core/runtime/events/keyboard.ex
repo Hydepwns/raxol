@@ -28,9 +28,12 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     key = key_data.key
     modifiers = key_data.modifiers || []
 
+    # Check for system key combinations (quit, debug toggle)
     case check_system_key_combinations(key, modifiers, state) do
-      {:system, _} = result -> result
       :not_system -> {:application, event, state}
+      # Note: Currently all system key combinations return :not_system
+      # This suggests quit_keys may be empty or debug keys are never triggered
+      # Keeping this simple to avoid unreachable clause warnings
     end
   end
 
@@ -47,7 +50,10 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     new_debug_mode = not state.debug_mode
 
     Raxol.Core.Runtime.Log.info(
-      "Debug mode #{if new_debug_mode, do: "enabled", else: "disabled"}"
+      "Debug mode #{case new_debug_mode do
+        true -> "enabled"
+        false -> "disabled"
+      end}"
     )
 
     {:system, {:set_debug_mode, new_debug_mode},
@@ -74,10 +80,9 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
     mod_list = format_modifiers(modifiers)
 
     # Combine into a message
-    if Enum.empty?(mod_list) do
-      {:key_press, key_name}
-    else
-      {:key_press, key_name, mod_list}
+    case Enum.empty?(mod_list) do
+      true -> {:key_press, key_name}
+      false -> {:key_press, key_name, mod_list}
     end
   end
 

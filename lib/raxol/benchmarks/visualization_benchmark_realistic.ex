@@ -244,10 +244,13 @@ defmodule Raxol.Benchmarks.VisualizationBenchmarkRealistic do
         Process.sleep(sleep_time)
 
         # Simulate data sampling for large datasets
-        if size > 100 do
-          # Add time for data sampling but less than full rendering
-          sampling_time = div(sleep_time, 5)
-          Process.sleep(sampling_time)
+        case size > 100 do
+          true ->
+            # Add time for data sampling but less than full rendering
+            sampling_time = div(sleep_time, 5)
+            Process.sleep(sampling_time)
+          false ->
+            :ok
         end
 
         "chart_cells_#{size}"

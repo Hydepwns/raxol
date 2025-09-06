@@ -4,7 +4,6 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
   """
 
   alias Raxol.Cloud.EdgeComputing.{Core, Queue}
-  alias Raxol.Core.ErrorHandling
 
   @doc """
   Executes a function at the edge or in the cloud based on current mode and conditions.
@@ -23,7 +22,10 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
       {:ok, result}
   """
   def execute(func, opts \\ []) when is_function(func, 0) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = case opts do
+      opts when is_map(opts) -> Enum.into(opts, [])
+      _ -> opts
+    end
     state = Core.get_state()
 
     execute_location = determine_execution_location(state, opts)
@@ -87,7 +89,10 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
   # Helper functions for pattern matching refactoring
 
   defp determine_hybrid_location(function_name) do
-    if prioritized_for_edge?(function_name), do: :edge, else: :hybrid
+    case prioritized_for_edge?(function_name) do
+      true -> :edge
+      false -> :hybrid
+    end
   end
 
   defp prioritized_for_edge?(function_name) do
@@ -105,7 +110,7 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
 
     task = Task.async(func)
 
-    case ErrorHandling.safe_call(fn -> Task.await(task, timeout) end) do
+    case Raxol.Core.ErrorHandling.safe_call(fn -> Task.await(task, timeout) end) do
       {:ok, result} ->
         {:ok, result}
 
@@ -130,27 +135,28 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
     state = Core.get_state()
 
     # Check if we're connected to the cloud
-    if state.cloud_status == :connected do
-      # Execute the function in the cloud
-      case ErrorHandling.safe_call(fn ->
-             # Simulate cloud execution
-             _result = func.()
-             :ok
-           end) do
-        {:ok, result} ->
-          {:ok, result}
+    case state.cloud_status do
+      :connected ->
+        # Execute the function in the cloud
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
+               # Simulate cloud execution
+               _result = func.()
+               :ok
+             end) do
+          {:ok, result} ->
+            {:ok, result}
 
-        {:error, _} ->
-          # In a real implementation, we would track attempts
-          {:ok, :retry}
-      end
-    else
-      # We're offline, queue the operation for later
-      operation_id =
-        Queue.enqueue_operation(:function, %{function: func, options: opts})
+          {:error, _} ->
+            # In a real implementation, we would track attempts
+            {:ok, :retry}
+        end
+      _ ->
+        # We're offline, queue the operation for later
+        operation_id =
+          Queue.enqueue_operation(:function, %{function: func, options: opts})
 
-      # Return queued status
-      {:ok, %{status: :queued, operation_id: operation_id}}
+        # Return queued status
+        {:ok, %{status: :queued, operation_id: operation_id}}
     end
   end
 

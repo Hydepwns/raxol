@@ -108,7 +108,7 @@ defmodule Raxol.Core.ErrorHandler do
           value -> {:ok, value}
         end
 
-      {:error, {error, stacktrace}} ->
+      {:error, {error, _stacktrace}} ->
         handle_rescued_error(
           operation,
           error,
@@ -193,80 +193,6 @@ defmodule Raxol.Core.ErrorHandler do
     {:ok, fallback}
   end
 
-  defp handle_caught_error(
-         operation,
-         kind,
-         reason,
-         context,
-         severity,
-         fallback,
-         retries_left,
-         retry_delay,
-         fun
-       ) do
-    execute_with_caught_retry(
-      retries_left > 0 and retriable_error?(kind, reason),
-      operation,
-      kind,
-      reason,
-      context,
-      severity,
-      fallback,
-      retries_left,
-      retry_delay,
-      fun
-    )
-  end
-
-  defp execute_with_caught_retry(
-         true,
-         operation,
-         kind,
-         reason,
-         context,
-         severity,
-         fallback,
-         retries_left,
-         retry_delay,
-         fun
-       ) do
-    log_retry(operation, {kind, reason}, retries_left)
-    Process.sleep(retry_delay)
-
-    do_execute(
-      operation,
-      fun,
-      context,
-      severity,
-      fallback,
-      retries_left - 1,
-      retry_delay
-    )
-  end
-
-  defp execute_with_caught_retry(
-         false,
-         operation,
-         kind,
-         reason,
-         context,
-         severity,
-         fallback,
-         _retries_left,
-         _retry_delay,
-         _fun
-       ) do
-    log_caught_error(operation, kind, reason, context, severity)
-    emit_telemetry(operation, :error, Map.put(context, :error_kind, kind))
-    handle_caught_fallback(fallback, kind, reason, context)
-  end
-
-  defp handle_caught_fallback(nil, kind, reason, context) do
-    {:error, :system, format_caught_error(kind, reason), context}
-  end
-  defp handle_caught_fallback(fallback, _kind, _reason, _context) do
-    {:ok, fallback}
-  end
 
   @doc """
   Creates a standardized error tuple.
@@ -386,9 +312,6 @@ defmodule Raxol.Core.ErrorHandler do
     end
   end
 
-  defp format_caught_error(kind, reason) do
-    "#{kind}: #{inspect(reason)}"
-  end
 
   defp format_log_message(operation, error) do
     "[#{operation}] #{format_error_message(error)}"
@@ -400,11 +323,6 @@ defmodule Raxol.Core.ErrorHandler do
   # defp classify_error(%Jason.DecodeError{}), do: :validation  # Commented out due to missing module
   defp classify_error(_error), do: :unknown
 
-  defp retriable_error?(:exit, {:timeout, _}), do: true
-  defp retriable_error?(:exit, {:noproc, _}), do: true
-  defp retriable_error?(:error, :closed), do: true
-  defp retriable_error?(:error, :econnrefused), do: true
-  defp retriable_error?(_, _), do: false
 
   defp log_retry(operation, error, retries_left) do
     Logger.info(
@@ -412,16 +330,6 @@ defmodule Raxol.Core.ErrorHandler do
     )
   end
 
-  defp log_caught_error(operation, kind, reason, context, severity) do
-    message = "[#{operation}] Caught #{kind}: #{inspect(reason)}"
-    metadata = Map.put(context, :error_kind, kind)
-
-    case severity do
-      :warning -> Logger.warning(message, metadata)
-      :error -> Logger.error(message, metadata)
-      _ -> Logger.error(message, metadata)
-    end
-  end
 
   defp emit_telemetry(operation, event, metadata) do
     :telemetry.execute(

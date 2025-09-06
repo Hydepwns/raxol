@@ -94,14 +94,15 @@ defmodule Raxol.Auth.Session do
       when is_binary(session_id) and is_binary(token) do
     case Manager.get_session(session_id) do
       {:ok, session} ->
-        if session.token == token && session.status == :active do
-          {:ok, session.user_id}
-        else
-          Raxol.Core.Runtime.Log.warning(
-            "Invalid session token or inactive session: #{session_id}"
-          )
+        case {session.token == token, session.status == :active} do
+          {true, true} ->
+            {:ok, session.user_id}
+          _ ->
+            Raxol.Core.Runtime.Log.warning(
+              "Invalid session token or inactive session: #{session_id}"
+            )
 
-          {:error, :invalid_token}
+            {:error, :invalid_token}
         end
 
       {:error, :not_found} ->

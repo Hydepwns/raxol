@@ -15,7 +15,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   alias Raxol.Core.Runtime.Command
   alias Raxol.Core.Events.Event
   alias Raxol.Core.UserPreferences
-  alias Raxol.Core.ErrorHandling
 
   @registry_name :raxol_event_subscriptions
 
@@ -74,7 +73,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   Dispatches an event to the appropriate handler based on event type and target.
   """
   def dispatch_event(event, state) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            do_dispatch_event(event, state)
          end) do
       {:ok, result} ->
@@ -341,7 +340,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp process_command_commands(state, updated_model, commands) do
     context = build_command_context(state)
 
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            process_commands(commands, context, state.command_module)
          end) do
       {:ok, _} -> :ok

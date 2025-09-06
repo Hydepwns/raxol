@@ -656,12 +656,12 @@ defmodule Raxol.Core.Renderer.View do
 
   # Helper functions for if statement elimination
 
-  defp validate_keyword_opts(opts, function_name) when is_list(opts) do
+  def validate_keyword_opts(opts, function_name) when is_list(opts) do
     require Keyword
     validate_keyword_list(opts, function_name)
   end
 
-  defp validate_keyword_opts(opts, function_name) do
+  def validate_keyword_opts(opts, function_name) do
     raise ArgumentError,
           "#{function_name} expects a keyword list as the first argument, got: #{inspect(opts)}"
   end
@@ -674,6 +674,4 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  defp ensure_keyword_list([tuple | _] = opts) when is_tuple(tuple), do: opts
-  defp ensure_keyword_list(_opts), do: []
 end

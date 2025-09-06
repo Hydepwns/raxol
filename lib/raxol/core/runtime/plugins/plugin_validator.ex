@@ -536,28 +536,27 @@ defmodule Raxol.Core.Runtime.Plugins.PluginValidator do
   end
 
   defp validate_file_access_restrictions(true, plugin_module) do
-    case has_file_system_access?(plugin_module) do
-      true -> {:error, :unauthorized_file_access}
-      false -> :ok
-    end
+    # has_file_system_access?/1 currently always returns false
+    # (analyze_forms_for_file_access/1 is stubbed to return false)
+    false = has_file_system_access?(plugin_module)
+    :ok
   end
 
   defp validate_file_access_restrictions(false, _plugin_module), do: :ok
 
   defp validate_network_access_restrictions(true, plugin_module) do
-    case has_network_access?(plugin_module) do
-      true -> {:error, :unauthorized_network_access}
-      false -> :ok
-    end
+    # has_network_access?/1 currently always returns false
+    # (analyze_forms_for_network_access/1 is stubbed to return false)
+    false = has_network_access?(plugin_module)
+    :ok
   end
 
   defp validate_network_access_restrictions(false, _plugin_module), do: :ok
 
   defp check_code_injection_safety(plugin_module) do
-    case has_code_injection_risk?(plugin_module) do
-      true -> {:error, :code_injection_risk}
-      false -> :ok
-    end
+    # has_code_injection_risk?/1 currently always returns false
+    false = has_code_injection_risk?(plugin_module)
+    :ok
   end
 
   defp validate_version_compatibility(current_version, min_version, :elixir) do

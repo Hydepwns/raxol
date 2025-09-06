@@ -196,10 +196,9 @@ defmodule Raxol.Core.ErrorHandling do
   """
   @spec safe_apply(module(), atom(), list()) :: result(any())
   def safe_apply(module, function, args) do
-    if function_exported?(module, function, length(args)) do
-      safe_call(fn -> apply(module, function, args) end)
-    else
-      {:error, :function_not_exported}
+    case function_exported?(module, function, length(args)) do
+      true -> safe_call(fn -> apply(module, function, args) end)
+      false -> {:error, :function_not_exported}
     end
   end
 
@@ -229,10 +228,9 @@ defmodule Raxol.Core.ErrorHandling do
   """
   @spec safe_callback(module(), atom(), list()) :: result(any())
   def safe_callback(module, function, args) do
-    if function_exported?(module, function, length(args)) do
-      safe_call(fn -> apply(module, function, args) end)
-    else
-      {:ok, nil}
+    case function_exported?(module, function, length(args)) do
+      true -> safe_call(fn -> apply(module, function, args) end)
+      false -> {:ok, nil}
     end
   end
 
@@ -250,7 +248,10 @@ defmodule Raxol.Core.ErrorHandling do
   """
   @spec safe_arithmetic((number() -> number()), any(), number()) :: number()
   def safe_arithmetic(fun, value, fallback \\ 0) do
-    safe_value = if is_number(value), do: value, else: fallback
+    safe_value = case is_number(value) do
+      true -> value
+      false -> fallback
+    end
 
     case safe_call(fn -> fun.(safe_value) end) do
       {:ok, result} when is_number(result) -> result

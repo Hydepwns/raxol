@@ -14,19 +14,7 @@ defmodule Raxol.Core.Performance.Optimizer do
   import Raxol.Core.Performance.Profiler
   require Logger
 
-  alias Raxol.Core.Performance.Memoization.Server, as: MemoServer
 
-  # Ensure server is started
-  defp ensure_memoization_server do
-    case Process.whereis(MemoServer) do
-      nil ->
-        {:ok, _pid} = MemoServer.start_link()
-        :ok
-
-      _pid ->
-        :ok
-    end
-  end
 
   @doc """
   Optimizes database queries to prevent N+1 problems.
@@ -278,29 +266,31 @@ defmodule Raxol.Core.Performance.Optimizer do
   """
   def with_pooled_connection(pool_name, fun) when is_function(fun, 1) do
     profile :pooled_connection, metadata: %{pool: pool_name} do
-      if poolboy_available?() do
-        :poolboy.transaction(pool_name, fun)
-      else
-        # Fallback to simple connection management
-        case get_or_create_connection(pool_name) do
-          {:ok, conn} ->
-            case Raxol.Core.ErrorHandling.safe_call(fn -> fun.(conn) end) do
-              {:ok, result} ->
-                return_connection(pool_name, conn)
-                result
+      case poolboy_available?() do
+        true ->
+          :poolboy.transaction(pool_name, fun)
 
-              {:error, reason} ->
-                return_connection(pool_name, conn)
-                {:error, reason}
-            end
+        false ->
+          # Fallback to simple connection management
+          case get_or_create_connection(pool_name) do
+            {:ok, conn} ->
+              case Raxol.Core.ErrorHandling.safe_call(fn -> fun.(conn) end) do
+                {:ok, result} ->
+                  return_connection(pool_name, conn)
+                  result
 
-          {:error, reason} ->
-            Logger.warning(
-              "Failed to get connection from pool #{pool_name}: #{inspect(reason)}"
-            )
+                {:error, reason} ->
+                  return_connection(pool_name, conn)
+                  {:error, reason}
+              end
 
-            {:error, :connection_unavailable}
-        end
+            {:error, reason} ->
+              Logger.warning(
+                "Failed to get connection from pool #{pool_name}: #{inspect(reason)}"
+              )
+
+              {:error, :connection_unavailable}
+          end
       end
     end
   end
@@ -308,10 +298,9 @@ defmodule Raxol.Core.Performance.Optimizer do
   def with_pooled_connection(pool_name, fun) when is_function(fun, 0) do
     # For compatibility with zero-arity functions
     profile :pooled_connection, metadata: %{pool: pool_name} do
-      if poolboy_available?() do
-        :poolboy.transaction(pool_name, fn _conn -> fun.() end)
-      else
-        fun.()
+      case poolboy_available?() do
+        true -> :poolboy.transaction(pool_name, fn _conn -> fun.() end)
+        false -> fun.()
       end
     end
   end
@@ -336,10 +325,9 @@ defmodule Raxol.Core.Performance.Optimizer do
       )
   """
   def init_connection_pool(pool_name, opts \\ []) do
-    if poolboy_available?() do
-      init_poolboy_pool(pool_name, opts)
-    else
-      init_simple_pool(pool_name, opts)
+    case poolboy_available?() do
+      true -> init_poolboy_pool(pool_name, opts)
+      false -> init_simple_pool(pool_name, opts)
     end
   end
 
@@ -516,10 +504,9 @@ defmodule Raxol.Core.Performance.Optimizer do
   defp get_from_cache(key) do
     case :persistent_term.get({:cache, key}, :not_found) do
       {:cached, value, expiry} ->
-        if expiry > System.system_time(:millisecond) do
-          {:ok, value}
-        else
-          :miss
+        case expiry > System.system_time(:millisecond) do
+          true -> {:ok, value}
+          false -> :miss
         end
 
       _ ->

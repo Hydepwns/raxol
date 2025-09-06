@@ -137,8 +137,9 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     metrics = initialize_metrics(config)
 
     # Start load monitoring
-    if config.adaptive_scaling do
-      schedule_load_monitoring()
+    case config.adaptive_scaling do
+      true -> schedule_load_monitoring()
+      false -> :ok
     end
 
     state = %State{
@@ -236,10 +237,9 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
 
     # Adaptive scaling based on load
     state_scaled =
-      if state.config.adaptive_scaling do
-        maybe_scale_workers(state_with_load)
-      else
-        state_with_load
+      case state.config.adaptive_scaling do
+        true -> maybe_scale_workers(state_with_load)
+        false -> state_with_load
       end
 
     # Update back-pressure status
@@ -288,28 +288,29 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
   end
 
   defp initialize_metrics(config) do
-    if config.enable_metrics do
-      %{
-        operations_completed: 0,
-        operations_failed: 0,
-        total_execution_time: 0,
-        average_latency: 0,
-        queue_size: 0,
-        worker_utilization: 0.0,
-        started_at: System.monotonic_time(:microsecond)
-      }
-    else
-      %{}
+    case config.enable_metrics do
+      true ->
+        %{
+          operations_completed: 0,
+          operations_failed: 0,
+          total_execution_time: 0,
+          average_latency: 0,
+          queue_size: 0,
+          worker_utilization: 0.0,
+          started_at: System.monotonic_time(:microsecond)
+        }
+
+      false ->
+        %{}
     end
   end
 
   defp check_back_pressure(state) do
     queue_size = :queue.len(state.operation_queue)
 
-    if queue_size > state.config.high_water_mark do
-      {:error, :back_pressure}
-    else
-      :ok
+    case queue_size > state.config.high_water_mark do
+      true -> {:error, :back_pressure}
+      false -> :ok
     end
   end
 

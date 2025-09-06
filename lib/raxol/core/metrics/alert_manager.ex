@@ -226,14 +226,15 @@ defmodule Raxol.Core.Metrics.AlertManager do
         {new_alert_state, should_trigger} =
           evaluate_alert(current_value, rule, alert_state)
 
-        if should_trigger do
-          trigger_alert(rule_id, rule, current_value, state)
-        else
-          %{
-            state
-            | alert_states:
-                Map.put(state.alert_states, rule_id, new_alert_state)
-          }
+        case should_trigger do
+          true ->
+            trigger_alert(rule_id, rule, current_value, state)
+          false ->
+            %{
+              state
+              | alert_states:
+                  Map.put(state.alert_states, rule_id, new_alert_state)
+            }
         end
 
       group_by ->
@@ -260,14 +261,15 @@ defmodule Raxol.Core.Metrics.AlertManager do
         {new_alert_state, should_trigger} =
           evaluate_alert(current_value, rule, alert_state)
 
-        if should_trigger do
-          trigger_alert(rule_id, rule, current_value, state)
-        else
-          %{
-            state
-            | alert_states:
-                Map.put(state.alert_states, rule_id, new_alert_state)
-          }
+        case should_trigger do
+          true ->
+            trigger_alert(rule_id, rule, current_value, state)
+          false ->
+            %{
+              state
+              | alert_states:
+                  Map.put(state.alert_states, rule_id, new_alert_state)
+            }
         end
     end
   end

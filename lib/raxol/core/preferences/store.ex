@@ -12,7 +12,10 @@ defmodule Raxol.Core.Preferences.Store do
   # Make public
   def save_to_preferences(config) do
     # Convert struct to map if necessary
-    config_map = if is_struct(config), do: Map.from_struct(config), else: config
+    config_map = case is_struct(config) do
+      true -> Map.from_struct(config)
+      false -> config
+    end
 
     pref_data =
       Map.take(config_map, [

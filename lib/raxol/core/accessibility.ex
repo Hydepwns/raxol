@@ -28,7 +28,6 @@ defmodule Raxol.Core.Accessibility do
   @behaviour Raxol.Core.Accessibility.Behaviour
 
   alias Raxol.Core.Accessibility.Server
-  alias Raxol.Core.Events.Manager, as: EventManager
 
   @doc """
   Ensures the Accessibility server is started.
@@ -45,6 +44,14 @@ defmodule Raxol.Core.Accessibility do
   end
 
   @doc """
+  Initialize accessibility with the given options.
+  """
+  def init(options \\ []) do
+    ensure_started()
+    enable(options)
+  end
+
+  @doc """
   Enable accessibility features with the given options.
 
   ## Options
@@ -55,6 +62,7 @@ defmodule Raxol.Core.Accessibility do
   - `:keyboard_focus` - Enable keyboard focus indicators (default: `true`)
   - `:silence_announcements` - Silence screen reader announcements (default: `false`)
   """
+  @impl true
   def enable(options \\ [], user_preferences_pid_or_name \\ nil) do
     ensure_started()
     Server.enable(options, user_preferences_pid_or_name)
@@ -63,7 +71,9 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Disable accessibility features.
   """
-  def disable do
+  @impl true
+  def disable(user_preferences_pid_or_name \\ nil) do
+    _ = user_preferences_pid_or_name
     ensure_started()
     Server.disable()
   end
@@ -71,6 +81,7 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Check if accessibility features are enabled.
   """
+  @impl true
   def enabled? do
     ensure_started()
     Server.enabled?()
@@ -84,9 +95,30 @@ defmodule Raxol.Core.Accessibility do
   - `:interrupt` - Whether to interrupt current announcement default: false
   - `:language` - Language for the announcement
   """
+  @impl true
   def announce(message, opts \\ []) do
     ensure_started()
     Server.announce(message, opts)
+    :ok
+  end
+
+  @doc """
+  Make an announcement with user preferences (behaviour callback).
+  """
+  @impl true
+  def announce(message, opts, _user_preferences_pid_or_name) do
+    ensure_started()
+    Server.announce(message, opts)
+    :ok
+  end
+
+  @doc """
+  Clear all announcements (behaviour callback).
+  """
+  @impl true
+  def clear_announcements do
+    ensure_started()
+    Server.clear_all_announcements()
     :ok
   end
 
@@ -128,6 +160,15 @@ defmodule Raxol.Core.Accessibility do
   def set_large_text(enabled) when is_boolean(enabled) do
     ensure_started()
     Server.set_large_text(enabled)
+  end
+
+  @doc """
+  Set large text mode with user preferences (behaviour callback).
+  """
+  @impl true
+  def set_large_text(enabled, user_preferences_pid_or_name \\ nil) when is_boolean(enabled) do
+    _ = user_preferences_pid_or_name
+    set_large_text(enabled)
   end
 
   @doc """
@@ -306,5 +347,81 @@ defmodule Raxol.Core.Accessibility do
     ensure_started()
     disable()
     enable()
+  end
+
+  # Missing behaviour callbacks
+
+  @impl true
+  def get_option(key, default \\ nil) do
+    ensure_started()
+    Server.get_option(key, default)
+  end
+
+  @impl true
+  def set_option(key, value) do
+    ensure_started()
+    Server.set_option(key, value)
+  end
+
+  @impl true
+  def get_component_hint(component_id, hint_level \\ :basic) do
+    ensure_started()
+    Server.get_component_hint(component_id, hint_level)
+  end
+
+  @impl true
+  def register_element_metadata(element_id, metadata) do
+    ensure_started()
+    Server.register_element_metadata(element_id, metadata)
+  end
+
+  @impl true
+  def get_element_metadata(element_id) do
+    ensure_started()
+    Server.get_element_metadata(element_id)
+  end
+
+  @impl true
+  def unregister_element_metadata(element_id) do
+    ensure_started()
+    Server.unregister_element_metadata(element_id)
+  end
+
+  @impl true
+  def register_component_style(component_type, style) do
+    ensure_started()
+    Server.register_component_style(component_type, style)
+  end
+
+  @impl true
+  def get_component_style(component_type) do
+    ensure_started()
+    Server.get_component_style(component_type)
+  end
+
+  @impl true
+  def unregister_component_style(component_type) do
+    ensure_started()
+    Server.unregister_component_style(component_type)
+  end
+
+  @impl true
+  def get_focus_history do
+    ensure_started()
+    Server.get_focus_history()
+  end
+
+  @impl true
+  def get_next_announcement(user_preferences_pid_or_name \\ nil) do
+    _ = user_preferences_pid_or_name
+    ensure_started()
+    Server.get_next_announcement()
+  end
+
+  def set_enabled(enabled) when is_boolean(enabled) do
+    case enabled do
+      true -> enable()
+      false -> disable()
+    end
   end
 end

@@ -300,8 +300,14 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     # Bresenham's line algorithm
     dx = abs(x2 - x1)
     dy = -abs(y2 - y1)
-    sx = if x1 < x2, do: 1, else: -1
-    sy = if y1 < y2, do: 1, else: -1
+    sx = case x1 < x2 do
+      true -> 1
+      false -> -1
+    end
+    sy = case y1 < y2 do
+      true -> 1
+      false -> -1
+    end
     err = dx + dy
 
     %{
@@ -433,16 +439,16 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   defp fit_sparkline_chars(chars, width) do
     char_count = length(chars)
 
-    case Integer.compare(char_count, width) do
-      :lt ->
+    cond do
+      char_count < width ->
         # Pad with spaces if not enough chars
         chars ++ List.duplicate(" ", width - char_count)
 
-      :gt ->
+      char_count > width ->
         # Truncate if too many chars
         Enum.take(chars, width)
 
-      :eq ->
+      true ->
         # Return as-is if just right
         chars
     end

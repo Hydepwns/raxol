@@ -129,9 +129,10 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
 
       path ->
         script =
-          if title,
-            do: ~s(display notification \"#{message}\" with title \"#{title}\"),
-            else: ~s(display notification \"#{message}\")
+          case title do
+            nil -> ~s(display notification \"#{message}\")
+            _ -> ~s(display notification \"#{message}\" with title \"#{title}\")
+          end
 
         {path, ["-e", script], :macos}
     end

@@ -72,11 +72,12 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
     # Convert list of cells to map for efficient lookup
     cell_map =
       Enum.reduce(cells, %{}, fn {x, y, ch, fg, bg, attrs}, acc ->
-        if x >= 0 and x < width and y >= 0 and y < height do
-          Map.put(acc, {x, y}, {ch, fg, bg, attrs})
-        else
-          # Skip cells outside the buffer dimensions
-          acc
+        case x >= 0 and x < width and y >= 0 and y < height do
+          true ->
+            Map.put(acc, {x, y}, {ch, fg, bg, attrs})
+          false ->
+            # Skip cells outside the buffer dimensions
+            acc
         end
       end)
 
@@ -122,12 +123,13 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
   Updated buffer.
   """
   def set_cell(buffer, x, y, ch, fg, bg, attrs \\ []) do
-    if x >= 0 and x < buffer.width and y >= 0 and y < buffer.height do
-      updated_cells = Map.put(buffer.cells, {x, y}, {ch, fg, bg, attrs})
-      %{buffer | cells: updated_cells, dirty: true}
-    else
-      # Ignore cells outside the buffer
-      buffer
+    case x >= 0 and x < buffer.width and y >= 0 and y < buffer.height do
+      true ->
+        updated_cells = Map.put(buffer.cells, {x, y}, {ch, fg, bg, attrs})
+        %{buffer | cells: updated_cells, dirty: true}
+      false ->
+        # Ignore cells outside the buffer
+        buffer
     end
   end
 
@@ -252,11 +254,12 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
         new_x = x + offset_x
         new_y = y + offset_y
 
-        if new_x >= 0 and new_x < buffer.width and new_y >= 0 and
-             new_y < buffer.height do
-          Map.put(acc, {new_x, new_y}, cell)
-        else
-          acc
+        case new_x >= 0 and new_x < buffer.width and new_y >= 0 and
+               new_y < buffer.height do
+          true ->
+            Map.put(acc, {new_x, new_y}, cell)
+          false ->
+            acc
         end
       end)
 

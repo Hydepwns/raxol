@@ -240,11 +240,12 @@ defmodule Raxol.Core.Performance.Caches.FontMetricsCache do
 
   defp build_string_width_key(string) do
     # Use hash for long strings to keep key size manageable
-    if String.length(string) > 50 do
-      hash = :crypto.hash(:sha256, string) |> Base.encode16()
-      @string_width_prefix <> "hash:" <> hash
-    else
-      @string_width_prefix <> string
+    case String.length(string) > 50 do
+      true ->
+        hash = :crypto.hash(:sha256, string) |> Base.encode16()
+        @string_width_prefix <> "hash:" <> hash
+      false ->
+        @string_width_prefix <> string
     end
   end
 
@@ -273,8 +274,12 @@ defmodule Raxol.Core.Performance.Caches.FontMetricsCache do
     round(size * line_height)
   end
 
-  # Telemetry
-  defp emit_telemetry(event, metadata \\ %{}) do
+  # Telemetry (commented out unused single-argument version)
+  # defp emit_telemetry(event) do
+  #   emit_telemetry(event, %{})
+  # end
+  
+  defp emit_telemetry(event, metadata) do
     :telemetry.execute(
       @telemetry_prefix ++ [event],
       %{count: 1},

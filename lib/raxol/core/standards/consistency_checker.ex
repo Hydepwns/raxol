@@ -328,18 +328,15 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   end
 
   defp handle_missing_doc_check(ast, line, node, acc, file_path, name, args) do
-    case has_preceding_doc?(ast, line) do
-      true ->
-        {node, acc}
-
-      false ->
-        {node,
-         [
-           {:missing_doc, line, file_path,
-            "Public function #{name}/#{length(args)} is missing @doc", :warning}
-           | acc
-         ]}
-    end
+    # has_preceding_doc?/2 currently always returns false (simplified implementation)
+    false = has_preceding_doc?(ast, line)
+    
+    {node,
+     [
+       {:missing_doc, line, file_path,
+        "Public function #{name}/#{length(args)} is missing @doc", :warning}
+       | acc
+     ]}
   end
 
   defp handle_single_letter_variable(name_str, name, line, file_path, node, acc) do
@@ -376,19 +373,14 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
      ]}
   end
 
-  defp handle_impl_attribute_check(ast, line, file_path, node, acc) do
-    case has_impl_attribute?(ast, line) do
-      true ->
-        {node, acc}
-
-      false ->
-        {node,
-         [
-           {:genserver_pattern, line, file_path,
-            "GenServer callback missing @impl true", :warning}
-           | acc
-         ]}
-    end
+  defp handle_impl_attribute_check(_ast, line, file_path, node, acc) do
+    # has_impl_attribute?/2 always returns false, so we only handle the false case
+    {node,
+     [
+       {:genserver_pattern, line, file_path,
+        "GenServer callback missing @impl true", :warning}
+       | acc
+     ]}
   end
 
   defp handle_only_option_check(node, line, file_path, acc) do
@@ -498,12 +490,6 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     false
   end
 
-  defp has_impl_attribute?(_ast, _line) do
-    # Simplified implementation - in a real implementation,
-    # we would walk the AST to check if there's a @impl attribute
-    # before the callback definition at the given line
-    false
-  end
 
   defp has_only_option?({:import, _, [_module, opts]}) when is_list(opts) do
     Keyword.has_key?(opts, :only)

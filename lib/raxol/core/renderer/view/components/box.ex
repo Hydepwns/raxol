@@ -52,11 +52,12 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     # Apply padding and border
     layout = apply_box_model(box, children_layout, available_size)
 
-    if layout == [] do
-      # If no children, return the box itself as a layout element with position and size
-      [Map.merge(box, %{position: {0, 0}, size: available_size})]
-    else
-      layout
+    case layout do
+      [] ->
+        # If no children, return the box itself as a layout element with position and size
+        [Map.merge(box, %{position: {0, 0}, size: available_size})]
+      _ ->
+        layout
     end
   end
 
@@ -180,10 +181,9 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
       )
 
     # Apply border if needed
-    if box.border != :none do
-      apply_border(layout, box.border)
-    else
-      layout
+    case box.border do
+      :none -> layout
+      _ -> apply_border(layout, box.border)
     end
   end
 

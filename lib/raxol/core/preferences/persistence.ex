@@ -3,7 +3,6 @@ defmodule Raxol.Core.Preferences.Persistence do
   Handles persistence (loading/saving) of user preferences to a file.
   """
   require Raxol.Core.Runtime.Log
-  alias Raxol.Core.ErrorHandling
 
   @default_filename "user_preferences.bin"
 
@@ -32,7 +31,7 @@ defmodule Raxol.Core.Preferences.Persistence do
 
     case File.read(path) do
       {:ok, binary_data} ->
-        case ErrorHandling.safe_deserialize(binary_data) do
+        case Raxol.Core.ErrorHandling.safe_deserialize(binary_data) do
           {:ok, preferences} when is_map(preferences) ->
             {:ok, preferences}
 
@@ -75,7 +74,7 @@ defmodule Raxol.Core.Preferences.Persistence do
   def save(preferences) when is_map(preferences) do
     path = preferences_path()
 
-    case ErrorHandling.safe_write_term(path, preferences) do
+    case Raxol.Core.ErrorHandling.safe_write_term(path, preferences) do
       {:ok, :ok} ->
         :ok
 

@@ -11,20 +11,24 @@ defmodule Raxol.Core.Runtime.ShutdownHelper do
       "[#{module_name}] Received :shutdown cast for #{inspect(state.app_name)}. Stopping dependent processes..."
     )
 
-    if state.dispatcher_pid do
-      Raxol.Core.Runtime.Log.info_with_context(
-        "[#{module_name}] Stopping Dispatcher PID: #{inspect(state.dispatcher_pid)}"
-      )
+    case state.dispatcher_pid do
+      nil -> :ok
+      pid ->
+        Raxol.Core.Runtime.Log.info_with_context(
+          "[#{module_name}] Stopping Dispatcher PID: #{inspect(pid)}"
+        )
 
-      GenServer.stop(state.dispatcher_pid, :shutdown, :infinity)
+        GenServer.stop(pid, :shutdown, :infinity)
     end
 
-    if state.plugin_manager do
-      Raxol.Core.Runtime.Log.info_with_context(
-        "[#{module_name}] Stopping PluginManager PID: #{inspect(state.plugin_manager)}"
-      )
+    case state.plugin_manager do
+      nil -> :ok
+      pid ->
+        Raxol.Core.Runtime.Log.info_with_context(
+          "[#{module_name}] Stopping PluginManager PID: #{inspect(pid)}"
+        )
 
-      GenServer.stop(state.plugin_manager, :shutdown, :infinity)
+        GenServer.stop(pid, :shutdown, :infinity)
     end
 
     {:stop, :normal, state}

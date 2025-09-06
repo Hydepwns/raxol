@@ -327,9 +327,10 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     # For now, just return the existing plugin state as enabled
     # This is a simple implementation that can be enhanced later
     plugin_id =
-      if is_map(plugin) and Map.has_key?(plugin, :name),
-        do: plugin.name,
-        else: "unknown"
+      case {is_map(plugin), Map.has_key?(plugin, :name)} do
+        {true, true} -> plugin.name
+        _ -> "unknown"
+      end
 
     case Map.get(plugin_states, plugin_id) do
       nil ->
@@ -350,9 +351,10 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     # For now, just return the existing plugin state as disabled
     # This is a simple implementation that can be enhanced later
     plugin_id =
-      if is_map(plugin) and Map.has_key?(plugin, :name),
-        do: plugin.name,
-        else: "unknown"
+      case {is_map(plugin), Map.has_key?(plugin, :name)} do
+        {true, true} -> plugin.name
+        _ -> "unknown"
+      end
 
     case Map.get(plugin_states, plugin_id) do
       nil ->

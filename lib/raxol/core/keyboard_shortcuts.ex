@@ -19,8 +19,8 @@ defmodule Raxol.Core.KeyboardShortcuts do
   - No global state pollution
   """
 
-  @behaviour Raxol.Core.KeyboardShortcutsBehaviour
-
+  # Removed non-existent @behaviour reference
+  
   alias Raxol.Core.KeyboardShortcuts.Server
   alias Raxol.Core.Events.Manager, as: EventManager
 
@@ -38,7 +38,6 @@ defmodule Raxol.Core.KeyboardShortcuts do
     end
   end
 
-  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Initialize the keyboard shortcuts manager.
 
@@ -59,7 +58,6 @@ defmodule Raxol.Core.KeyboardShortcuts do
     :ok
   end
 
-  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Clean up the keyboard shortcuts manager.
 
@@ -81,7 +79,6 @@ defmodule Raxol.Core.KeyboardShortcuts do
     :ok
   end
 
-  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Register a keyboard shortcut with a callback function.
 
@@ -115,7 +112,6 @@ defmodule Raxol.Core.KeyboardShortcuts do
     end
   end
 
-  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Unregister a keyboard shortcut.
 
@@ -128,7 +124,6 @@ defmodule Raxol.Core.KeyboardShortcuts do
     Server.unregister_shortcut(shortcut, context)
   end
 
-  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Set the active context for shortcuts.
 
@@ -139,7 +134,6 @@ defmodule Raxol.Core.KeyboardShortcuts do
     Server.set_active_context(context)
   end
 
-  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Get all shortcuts for a specific context.
 
@@ -150,7 +144,6 @@ defmodule Raxol.Core.KeyboardShortcuts do
     Server.get_shortcuts_for_context(context)
   end
 
-  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Show help text for available shortcuts.
 

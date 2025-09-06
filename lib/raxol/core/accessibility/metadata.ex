@@ -109,9 +109,10 @@ defmodule Raxol.Core.Accessibility.Metadata do
     # If element is a string ID, look up its metadata
     metadata = get_element_metadata(element)
 
-    if metadata,
-      do: safe_map_get(metadata, :label),
-      else: nil
+    case metadata do
+      nil -> nil
+      _ -> safe_map_get(metadata, :label)
+    end
   end
 
   def get_accessible_name(%{label: label}) do
@@ -124,9 +125,10 @@ defmodule Raxol.Core.Accessibility.Metadata do
     # If element has an ID but no label, try to get metadata by ID
     metadata = get_element_metadata(id)
 
-    if metadata,
-      do: safe_map_get(metadata, :label),
-      else: nil
+    case metadata do
+      nil -> nil
+      _ -> safe_map_get(metadata, :label)
+    end
   end
 
   def get_accessible_name(_element) do
@@ -139,6 +141,9 @@ defmodule Raxol.Core.Accessibility.Metadata do
   end
 
   defp safe_map_get(data, key, default \\ nil) do
-    if is_map(data), do: Map.get(data, key, default), else: default
+    case is_map(data) do
+      true -> Map.get(data, key, default)
+      false -> default
+    end
   end
 end

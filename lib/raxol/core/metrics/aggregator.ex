@@ -109,13 +109,14 @@ defmodule Raxol.Core.Metrics.Aggregator do
     sorted = Enum.sort(values)
     count = length(sorted)
 
-    if rem(count, 2) == 0 do
-      # Even number of elements - average of middle two
-      mid = div(count, 2)
-      (Enum.at(sorted, mid - 1) + Enum.at(sorted, mid)) / 2
-    else
-      # Odd number of elements - middle element
-      Enum.at(sorted, div(count, 2))
+    case rem(count, 2) == 0 do
+      true ->
+        # Even number of elements - average of middle two
+        mid = div(count, 2)
+        (Enum.at(sorted, mid - 1) + Enum.at(sorted, mid)) / 2
+      false ->
+        # Odd number of elements - middle element
+        Enum.at(sorted, div(count, 2))
     end
   end
 
@@ -123,12 +124,13 @@ defmodule Raxol.Core.Metrics.Aggregator do
     sorted = Enum.sort(values)
     count = length(sorted)
 
-    if count == 0 do
-      0
-    else
-      index = ceil(p * count) - 1
-      index = max(0, min(index, count - 1))
-      Enum.at(sorted, index)
+    case count == 0 do
+      true ->
+        0
+      false ->
+        index = ceil(p * count) - 1
+        index = max(0, min(index, count - 1))
+        Enum.at(sorted, index)
     end
   end
 

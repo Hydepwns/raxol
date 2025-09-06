@@ -16,7 +16,6 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   alias Raxol.UI.Layout.Engine, as: LayoutEngine
   alias Raxol.UI.Renderer, as: UIRenderer
   alias Raxol.UI.Theming.Theme
-  alias Raxol.Core.ErrorHandling
 
   defmodule State do
     @moduledoc false
@@ -152,7 +151,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       "Rendering Engine: Calling app_module.view(model)"
     )
 
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       case apply(app_module, :view, [model]) do
         view when not is_nil(view) ->
           Raxol.Core.Runtime.Log.debug(
@@ -179,7 +178,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       "Rendering Engine: Calculating layout with dimensions: #{inspect(dimensions)}"
     )
 
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       case LayoutEngine.apply_layout(view, dimensions) do
         positioned_elements when is_list(positioned_elements) ->
           Raxol.Core.Runtime.Log.debug(
@@ -204,7 +203,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       "Rendering Engine: Rendering to cells with theme: #{inspect(theme)}"
     )
 
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       case UIRenderer.render_to_cells(positioned_elements, theme) do
         cells when is_list(cells) ->
           Raxol.Core.Runtime.Log.debug(
@@ -225,7 +224,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   # Safe plugin transforms using functional error handling
   defp safe_apply_plugin_transforms(cells, state) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       case apply_plugin_transforms(cells, state) do
         processed_cells when is_list(processed_cells) ->
           {:ok, processed_cells}
@@ -313,10 +312,9 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   defp render_to_vscode(cells, state) do
-    if state.stdio_interface_pid do
-      send_buffer_to_vscode(cells, state)
-    else
-      {:error, :stdio_not_available}
+    case state.stdio_interface_pid do
+      nil -> {:error, :stdio_not_available}
+      _ -> send_buffer_to_vscode(cells, state)
     end
   end
 
@@ -466,7 +464,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   # Safe GenServer call wrapper using functional error handling
   defp safe_genserver_call(pid, message, timeout) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       GenServer.call(pid, message, timeout)
     end)
     |> case do
@@ -506,14 +504,15 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     )
 
     Enum.each(commands, fn command ->
-      if is_binary(command) do
-        # Write escape sequences or other commands directly to output
-        IO.write(command)
-      else
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Rendering Engine: Unknown plugin command format",
-          %{command: command}
-        )
+      case is_binary(command) do
+        true ->
+          # Write escape sequences or other commands directly to output
+          IO.write(command)
+        false ->
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "Rendering Engine: Unknown plugin command format",
+            %{command: command}
+          )
       end
     end)
   end
@@ -547,7 +546,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   # Safe GenServer cast wrapper using functional error handling
   defp safe_genserver_cast(pid, message) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       GenServer.cast(pid, message)
       :ok
     end)

@@ -73,6 +73,20 @@ defmodule Raxol.Core.Performance.Memoization.Server do
   end
 
   @doc """
+  Gets a memoized value if it exists (alternative name for get/1).
+  """
+  def get_memoized(key) do
+    get(key)
+  end
+
+  @doc """
+  Stores a memoized value (alternative name for put/2).
+  """
+  def memoize(key, value) do
+    put(key, value)
+  end
+
+  @doc """
   Gets cache statistics.
   """
   def stats do
@@ -219,7 +233,7 @@ defmodule Raxol.Core.Performance.Memoization.Server do
   @impl true
   def handle_info(:cleanup, state) do
     # Remove expired entries
-    now = System.monotonic_time(:millisecond)
+    _now = System.monotonic_time(:millisecond)
 
     cache = cleanup_expired_entries(state.ttl != :infinity, state.cache, state.ttl)
 

@@ -3,7 +3,6 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
   Handles accessibility-related events and notifications.
   """
 
-  alias Raxol.Core.Accessibility
   alias Raxol.Core.Accessibility.{Announcements, Metadata, Preferences}
   require Raxol.Core.Runtime.Log
 

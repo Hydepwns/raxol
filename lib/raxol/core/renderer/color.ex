@@ -72,29 +72,10 @@ defmodule Raxol.Core.Renderer.Color do
   @doc """
   Converts a color representation to its ANSI foreground escape code.
   """
-  def to_ansi(color)
-
   def to_ansi(:default), do: "\e[39m"
 
   def to_ansi(color) when is_atom(color) do
     process_ansi_atom_color(Enum.member?(@ansi_16_atoms, color), color)
-  end
-
-  defp process_ansi_atom_color(false, _color) do
-    raise ArgumentError, "Invalid color format"
-  end
-
-  defp process_ansi_atom_color(_is_member, color) do
-    code = @ansi_16_map[color]
-    format_ansi_code(code >= 8, code)
-  end
-
-  defp format_ansi_code(true, code) do
-    "\e[#{90 + (code - 8)}m"
-  end
-
-  defp format_ansi_code(_is_bright, code) do
-    "\e[#{30 + code}m"
   end
 
   def to_ansi(color) when is_integer(color) and color in 0..255//1 do
@@ -116,11 +97,26 @@ defmodule Raxol.Core.Renderer.Color do
     raise ArgumentError, "Invalid color format"
   end
 
+  defp process_ansi_atom_color(false, _color) do
+    raise ArgumentError, "Invalid color format"
+  end
+
+  defp process_ansi_atom_color(_is_member, color) do
+    code = @ansi_16_map[color]
+    format_ansi_code(code >= 8, code)
+  end
+
+  defp format_ansi_code(true, code) do
+    "\e[#{90 + (code - 8)}m"
+  end
+
+  defp format_ansi_code(_is_bright, code) do
+    "\e[#{30 + code}m"
+  end
+
   @doc """
   Converts a color representation to its ANSI background escape code.
   """
-  def to_bg_ansi(color)
-
   def to_bg_ansi(:default), do: "\e[49m"
 
   def to_bg_ansi(color) when is_atom(color) do
@@ -131,14 +127,6 @@ defmodule Raxol.Core.Renderer.Color do
       _ ->
         raise ArgumentError, "Invalid color format"
     end
-  end
-
-  defp format_bg_ansi_code(true, code) do
-    "\e[#{100 + (code - 8)}m"
-  end
-
-  defp format_bg_ansi_code(_is_bright, code) do
-    "\e[#{40 + code}m"
   end
 
   def to_bg_ansi(color) when is_integer(color) and color in 0..255//1 do
@@ -158,6 +146,14 @@ defmodule Raxol.Core.Renderer.Color do
 
   def to_bg_ansi(_invalid) do
     raise ArgumentError, "Invalid color format"
+  end
+
+  defp format_bg_ansi_code(true, code) do
+    "\e[#{100 + (code - 8)}m"
+  end
+
+  defp format_bg_ansi_code(_is_bright, code) do
+    "\e[#{40 + code}m"
   end
 
   @doc """
@@ -330,14 +326,6 @@ defmodule Raxol.Core.Renderer.Color do
     convert_rgb_to_ansi256(r == g and g == b, r, g, b)
   end
 
-  defp convert_rgb_to_ansi256(true, r, _g, _b) do
-    grayscale_to_ansi256(r)
-  end
-
-  defp convert_rgb_to_ansi256(_is_grayscale, r, g, b) do
-    color_cube_to_ansi256(r, g, b)
-  end
-
   def rgb_to_ansi256({r, g, b})
       when r < 0 or r > 255 or g < 0 or g > 255 or b < 0 or b > 255 do
     raise ArgumentError, "RGB values must be between 0 and 255"
@@ -345,6 +333,14 @@ defmodule Raxol.Core.Renderer.Color do
 
   def rgb_to_ansi256(_invalid) do
     raise ArgumentError, "Invalid RGB tuple"
+  end
+
+  defp convert_rgb_to_ansi256(true, r, _g, _b) do
+    grayscale_to_ansi256(r)
+  end
+
+  defp convert_rgb_to_ansi256(_is_grayscale, r, g, b) do
+    color_cube_to_ansi256(r, g, b)
   end
 
   defp grayscale_to_ansi256(r) when r < 4, do: 16

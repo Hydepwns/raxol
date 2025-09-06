@@ -266,6 +266,8 @@ defmodule Raxol.Animation.EnhancedTransitions do
     generate_bezier_points(control_points, resolution)
   end
 
+  defp generate_path_points(_params), do: []
+
   defp generate_bezier_points(control_points, resolution) when length(control_points) >= 4 do
     0..resolution
     |> Enum.map(fn i ->
@@ -274,8 +276,6 @@ defmodule Raxol.Animation.EnhancedTransitions do
     end)
   end
   defp generate_bezier_points(_control_points, _resolution), do: []
-
-  defp generate_path_points(_params), do: []
 
   defp calculate_bezier_point([p0, p1, p2, p3], t) do
     # Cubic Bezier curve calculation

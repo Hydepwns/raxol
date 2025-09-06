@@ -21,7 +21,10 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
       # Merge plugin_dirs and plugins_dir into a list of dirs
       plugin_dirs =
         (state.plugin_dirs || []) ++
-          if state.plugins_dir, do: [state.plugins_dir], else: []
+          case state.plugins_dir do
+            nil -> []
+            dir -> [dir]
+          end
 
       # Remove duplicates
       plugin_dirs = Enum.uniq(plugin_dirs)
@@ -49,7 +52,10 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
   def discover_plugins(state) do
     plugin_dirs =
       (state.plugin_dirs || []) ++
-        if state.plugins_dir, do: [state.plugins_dir], else: []
+        case state.plugins_dir do
+          nil -> []
+          dir -> [dir]
+        end
 
     plugin_dirs = Enum.uniq(plugin_dirs)
 

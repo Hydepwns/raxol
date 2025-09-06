@@ -68,7 +68,10 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
     new_state = %{state | interval_ms: ms}
 
     updated_state =
-      if state.enabled, do: schedule_render_tick(new_state), else: new_state
+      case state.enabled do
+        true -> schedule_render_tick(new_state)
+        false -> new_state
+      end
 
     {:noreply, updated_state}
   end

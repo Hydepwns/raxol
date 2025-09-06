@@ -63,14 +63,15 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
       plugin_module ->
         case Raxol.Core.ErrorHandling.safe_call(fn ->
                # Call the plugin's filter_event callback if it exists
-               if function_exported?(plugin_module, :filter_event, 2) do
-                 plugin_module.filter_event(
-                   event,
-                   Map.get(state.plugin_states, plugin_id)
-                 )
-               else
-                 # Plugin doesn't implement filtering, pass event through unchanged
-                 {:ok, event}
+               case function_exported?(plugin_module, :filter_event, 2) do
+                 true ->
+                   plugin_module.filter_event(
+                     event,
+                     Map.get(state.plugin_states, plugin_id)
+                   )
+                 false ->
+                   # Plugin doesn't implement filtering, pass event through unchanged
+                   {:ok, event}
                end
              end) do
           {:ok, result} ->

@@ -186,10 +186,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Lifecycle do
   defp load_plugin_wrapper(state, plugin_id) do
     # For now, just return success - this would need proper implementation
     # based on the actual state structure and requirements
-    if plugin_id == nil do
-      {:error, :invalid_plugin_id}
-    else
-      {:ok, state}
+    case plugin_id do
+      nil -> {:error, :invalid_plugin_id}
+      _ -> {:ok, state}
     end
   end
 
@@ -226,27 +225,24 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Lifecycle do
   end
 
   defp unload_plugin_wrapper(state, plugin_id) do
-    if plugin_id == nil do
-      {:error, :invalid_plugin_id}
-    else
-      {:ok, state}
+    case plugin_id do
+      nil -> {:error, :invalid_plugin_id}
+      _ -> {:ok, state}
     end
   end
 
   defp initialize_plugin_wrapper(state, plugin_id) do
-    if plugin_id == nil do
-      {:error, :invalid_plugin_id}
-    else
-      {:ok, state}
+    case plugin_id do
+      nil -> {:error, :invalid_plugin_id}
+      _ -> {:ok, state}
     end
   end
 
   defp validate_plugin_config_wrapper(config, _schema) do
     # Simple validation - just return ok for now
-    if config == nil do
-      {:error, :invalid_config}
-    else
-      {:ok, config}
+    case config do
+      nil -> {:error, :invalid_config}
+      _ -> {:ok, config}
     end
   end
 end

@@ -11,7 +11,6 @@ defmodule Raxol.Animation.Lifecycle do
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Core.Accessibility, as: Accessibility
-  alias Raxol.Core.ErrorHandling
   alias Raxol.Animation.StateManager, as: StateManager
   alias Raxol.Animation.Accessibility, as: AnimAccessibility
   alias Raxol.Animation.PathManager
@@ -288,7 +287,7 @@ defmodule Raxol.Animation.Lifecycle do
   defp call_on_complete_callback(%{on_complete: nil}), do: :ok
 
   defp call_on_complete_callback(%{on_complete: callback, context: context}) do
-    ErrorHandling.safe_call_with_logging(
+    Raxol.Core.ErrorHandling.safe_call_with_logging(
       fn -> callback.(context) end,
       "Error in animation on_complete callback"
     )

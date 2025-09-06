@@ -138,37 +138,6 @@ defmodule Raxol.Core.Accessibility.Announcements do
 
   # --- Private Functions ---
 
-  defp get_silence_setting(user_preferences_pid_or_name) do
-    case Raxol.Core.UserPreferences.get(
-           [:accessibility, :silence_announcements],
-           user_preferences_pid_or_name
-         ) do
-      true -> true
-      _ -> false
-    end
-  end
-
-  defp get_screen_reader_setting(user_preferences_pid_or_name) do
-    case Raxol.Core.UserPreferences.get(
-           [:accessibility, :screen_reader],
-           user_preferences_pid_or_name
-         ) do
-      false -> false
-      _ -> true
-    end
-  end
-
-  # Inserting announcement into queue by priority
-  defp insert_by_priority(queue, announcement, priority) do
-    # medium == normal
-    priority_order = %{high: 3, normal: 2, medium: 2, low: 1}
-    _announcement_priority = Map.get(priority_order, priority, 2)
-
-    Enum.sort_by(queue ++ [announcement], fn item ->
-      # Sort descending by priority
-      Map.get(priority_order, item.priority, 2) * -1
-    end)
-  end
 
   defp send_announcement_to_subscribers(message) do
     subscriptions = get_subscriptions()

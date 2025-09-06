@@ -98,12 +98,13 @@ defmodule Raxol.Benchmarks.Performance do
   end
 
   defp validate_results(results, opts) do
-    if opts[:compare_with_baseline] do
-      baseline = Validation.get_baseline_metrics()
-      validation = Validation.validate_metrics(results, baseline)
-      Map.put(results, :metrics_validation, validation)
-    else
-      results
+    case opts[:compare_with_baseline] do
+      true ->
+        baseline = Validation.get_baseline_metrics()
+        validation = Validation.validate_metrics(results, baseline)
+        Map.put(results, :metrics_validation, validation)
+      _ ->
+        results
     end
   end
 

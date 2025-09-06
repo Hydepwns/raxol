@@ -53,8 +53,9 @@ defmodule Raxol.Core.Runtime.EventSourceTest.TestEventSource do
 
   defp notify_subscribers(event, subscribers) do
     Enum.each(subscribers, fn pid ->
-      if Process.alive?(pid) do
-        send(pid, {:event, event})
+      case Process.alive?(pid) do
+        true -> send(pid, {:event, event})
+        false -> :ok
       end
     end)
   end

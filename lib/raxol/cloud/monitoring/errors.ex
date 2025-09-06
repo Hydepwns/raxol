@@ -9,7 +9,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
       config: config
     }
 
-    Raxol.Cloud.Monitoring.Server.init_errors(errors_state)
+    Raxol.Cloud.Monitoring.Server.init_monitoring(errors_state)
     :ok
   end
 
@@ -30,13 +30,10 @@ defmodule Raxol.Cloud.Monitoring.Errors do
     }
 
     # Add to errors history
-    updated_errors = [error_entry | errors_state.errors] |> Enum.take(1000)
+    _updated_errors = [error_entry | errors_state.errors] |> Enum.take(1000)
 
-    # Update errors state
-    Raxol.Cloud.Monitoring.Server.update_errors(%{
-      errors_state
-      | errors: updated_errors
-    })
+    # Record error using the existing function
+    Raxol.Cloud.Monitoring.Server.record_error(error_entry)
 
     # Send to backends
     send_error_to_backends(error_entry, errors_state.config)

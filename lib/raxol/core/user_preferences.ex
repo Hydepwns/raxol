@@ -191,6 +191,27 @@ defmodule Raxol.Core.UserPreferences do
   defp normalize_path(path) when is_atom(path), do: [path]
   defp normalize_path(path) when is_list(path), do: path
 
+  defp normalize_path(path) when is_binary(path) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           String.split(path, ".")
+           |> Enum.map(&String.to_existing_atom/1)
+         end) do
+      {:ok, result} ->
+        result
+
+      # safe_call/1 returns {:error, exception}, not {:error, {exception, stacktrace}}
+      {:error, %ArgumentError{}} ->
+        Raxol.Core.Runtime.Log.error(
+          "Invalid preference path string: #{inspect(path)} - cannot convert segments to atoms."
+        )
+
+        []
+
+      {:error, _} ->
+        []
+    end
+  end
+
   # Helper functions for if-statement elimination
   defp initialize_preferences(true) do
     Raxol.Core.Runtime.Log.info(
@@ -288,26 +309,6 @@ defmodule Raxol.Core.UserPreferences do
   defp merge_values(true, val1, val2), do: deep_merge(val1, val2)
   defp merge_values(false, _val1, val2), do: val2
 
-  defp normalize_path(path) when is_binary(path) do
-    case Raxol.Core.ErrorHandling.safe_call(fn ->
-           String.split(path, ".")
-           |> Enum.map(&String.to_existing_atom/1)
-         end) do
-      {:ok, result} ->
-        result
-
-      {:error, {%ArgumentError{}, _stacktrace}} ->
-        Raxol.Core.Runtime.Log.error(
-          "Invalid preference path string: #{inspect(path)} - cannot convert segments to atoms."
-        )
-
-        []
-
-      {:error, _} ->
-        []
-    end
-  end
-
   @doc """
   Returns the current theme id as an atom, defaulting to :default if not set or invalid.
   """
@@ -325,7 +326,8 @@ defmodule Raxol.Core.UserPreferences do
            String.to_existing_atom(theme)
          end) do
       {:ok, result} -> result
-      {:error, {%ArgumentError{}, _stacktrace}} -> :default
+      # safe_call/1 returns {:error, exception}, not {:error, {exception, stacktrace}}
+      {:error, %ArgumentError{}} -> :default
       {:error, _} -> :default
     end
   end

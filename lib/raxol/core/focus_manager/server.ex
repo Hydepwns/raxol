@@ -423,7 +423,7 @@ defmodule Raxol.Core.FocusManager.Server do
   end
 
   defp find_enabled_component_from_index(
-         components,
+         _components,
          start_index,
          _step,
          count,
@@ -473,7 +473,7 @@ defmodule Raxol.Core.FocusManager.Server do
 
   # Helper functions for pattern matching refactoring
 
-  defp determine_focus_group(group_opt, last_group) when group_opt != nil,
+  defp determine_focus_group(group_opt, _last_group) when group_opt != nil,
     do: group_opt
 
   defp determine_focus_group(_group_opt, last_group) when last_group != nil,

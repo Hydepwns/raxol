@@ -110,18 +110,19 @@ defmodule Raxol.Core.Runtime.Events.Converter do
     modifiers = extract_key_modifiers(mod)
 
     # If ch is non-zero, it's a character key
-    if ch != 0 do
-      Event.new(:key, %{
-        key: ch,
-        key_code: key,
-        modifiers: modifiers
-      })
-    else
-      # It's a special key (function key, arrow, etc.)
-      Event.new(:key, %{
-        key: key,
-        modifiers: modifiers
-      })
+    case ch do
+      0 ->
+        # It's a special key (function key, arrow, etc.)
+        Event.new(:key, %{
+          key: key,
+          modifiers: modifiers
+        })
+      _ ->
+        Event.new(:key, %{
+          key: ch,
+          key_code: key,
+          modifiers: modifiers
+        })
     end
   end
 

@@ -45,10 +45,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.ConfigOperations do
 
         # Initialize plugin state if the module supports it
         initial_state =
-          if function_exported?(plugin_module, :init, 1) do
-            apply(plugin_module, :init, [config])
-          else
-            %{}
+          case function_exported?(plugin_module, :init, 1) do
+            true -> apply(plugin_module, :init, [config])
+            false -> %{}
           end
 
         new_plugin_states =

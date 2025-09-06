@@ -81,10 +81,9 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
       uptime = System.monotonic_time(:microsecond) - state.created_at
 
       avg_execution_time =
-        if state.operations_completed > 0 do
-          state.total_execution_time / state.operations_completed
-        else
-          0
+        case state.operations_completed > 0 do
+          true -> state.total_execution_time / state.operations_completed
+          false -> 0
         end
 
       stats = %{
@@ -369,22 +368,23 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
   end
 
   defp create_overflow_worker(state) do
-    if length(state.overflow_workers) < state.max_overflow do
-      case start_worker(state.supervisor_pid) do
-        {:ok, worker_pid} ->
-          new_state = %{
-            state
-            | overflow_workers: [worker_pid | state.overflow_workers],
-              busy_workers: [worker_pid | state.busy_workers]
-          }
+    case length(state.overflow_workers) < state.max_overflow do
+      true ->
+        case start_worker(state.supervisor_pid) do
+          {:ok, worker_pid} ->
+            new_state = %{
+              state
+              | overflow_workers: [worker_pid | state.overflow_workers],
+                busy_workers: [worker_pid | state.busy_workers]
+            }
 
-          {:ok, worker_pid, new_state}
+            {:ok, worker_pid, new_state}
 
-        error ->
-          error
-      end
-    else
-      {:error, :max_overflow_reached}
+          error ->
+            error
+        end
+      false ->
+        {:error, :max_overflow_reached}
     end
   end
 

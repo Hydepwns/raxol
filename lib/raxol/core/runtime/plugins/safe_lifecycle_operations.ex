@@ -132,16 +132,16 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
     validate_plugin_id_length(String.length(plugin_id), plugin_id)
   end
 
+  defp validate_plugin_id(_) do
+    error(:validation, "Plugin ID must be a string")
+  end
+
   defp validate_plugin_id_length(0, _plugin_id) do
     error(:validation, "Plugin ID cannot be empty")
   end
 
   defp validate_plugin_id_length(_length, plugin_id) do
     {:ok, plugin_id}
-  end
-
-  defp validate_plugin_id(_) do
-    error(:validation, "Plugin ID must be a string")
   end
 
   defp validate_config(config) when is_map(config), do: {:ok, config}

@@ -290,10 +290,9 @@ defmodule Raxol.Animation.StateServer do
     updated_element_animations = Map.delete(element_animations, animation_name)
 
     updated_active_animations =
-      if map_size(updated_element_animations) == 0 do
-        Map.delete(state.active_animations, element_id)
-      else
-        Map.put(state.active_animations, element_id, updated_element_animations)
+      case map_size(updated_element_animations) do
+        0 -> Map.delete(state.active_animations, element_id)
+        _ -> Map.put(state.active_animations, element_id, updated_element_animations)
       end
 
     %{state | active_animations: updated_active_animations}
@@ -317,10 +316,9 @@ defmodule Raxol.Animation.StateServer do
             updated_element_animations =
               Map.delete(element_animations, animation_name)
 
-            if map_size(updated_element_animations) == 0 do
-              Map.delete(acc, element_id)
-            else
-              Map.put(acc, element_id, updated_element_animations)
+            case map_size(updated_element_animations) do
+              0 -> Map.delete(acc, element_id)
+              _ -> Map.put(acc, element_id, updated_element_animations)
             end
 
           _ ->

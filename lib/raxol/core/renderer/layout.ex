@@ -179,7 +179,10 @@ defmodule Raxol.Core.Renderer.Layout do
 
   defp layout_shadow_wrapper(shadow_view, available_space) do
     children = shadow_view.children
-    children_list = if is_list(children), do: children, else: [children]
+    children_list = case children do
+      children when is_list(children) -> children
+      children -> [children]
+    end
 
     Enum.flat_map(children_list, fn child ->
       layout_single_view(child, available_space)
@@ -190,7 +193,10 @@ defmodule Raxol.Core.Renderer.Layout do
     {offset_x, offset_y} = scroll_view.offset
 
     children = scroll_view.children
-    children_list = if is_list(children), do: children, else: [children]
+    children_list = case children do
+      children when is_list(children) -> children
+      children -> [children]
+    end
 
     positioned_children =
       Enum.flat_map(children_list, fn child ->
@@ -222,17 +228,18 @@ defmodule Raxol.Core.Renderer.Layout do
       |> Map.put(:position, {content_x, content_y})
       |> Map.put(:size, box_size)
 
-    if is_list(children) and children != [] do
-      [
-        positioned_box
-        | position_children(
-            children,
-            {content_x, content_y},
-            {content_width, content_height}
-          )
-      ]
-    else
-      [positioned_box]
+    case {is_list(children), children != []} do
+      {true, true} ->
+        [
+          positioned_box
+          | position_children(
+              children,
+              {content_x, content_y},
+              {content_width, content_height}
+            )
+        ]
+      _ ->
+        [positioned_box]
     end
   end
 
@@ -305,7 +312,10 @@ defmodule Raxol.Core.Renderer.Layout do
   def layout_checkbox(checkbox, {width, height}) do
     checked = Map.get(checkbox, :checked, false)
     label = Map.get(checkbox, :label, "")
-    checkbox_text = if checked, do: "[✓]", else: "[ ]"
+    checkbox_text = case checked do
+      true -> "[✓]"
+      false -> "[ ]"
+    end
     text = "#{checkbox_text} #{label}"
     text_width = String.length(text)
     text_height = 1
@@ -351,13 +361,22 @@ defmodule Raxol.Core.Renderer.Layout do
     {padding_top, padding_right, padding_bottom, padding_left} = padding
     {margin_top, _margin_right, _margin_bottom, margin_left} = margin
 
-    border_width = if border, do: 2, else: 0
+    border_width = case border do
+      true -> 2
+      false -> 0
+    end
 
     content_width = box_width - padding_left - padding_right - border_width
     content_height = box_height - padding_top - padding_bottom - border_width
 
-    content_x = margin_left + padding_left + if border, do: 1, else: 0
-    content_y = margin_top + padding_top + if border, do: 1, else: 0
+    content_x = margin_left + padding_left + case border do
+      true -> 1
+      false -> 0
+    end
+    content_y = margin_top + padding_top + case border do
+      true -> 1
+      false -> 0
+    end
 
     {content_x, content_y, max(0, content_width), max(0, content_height)}
   end

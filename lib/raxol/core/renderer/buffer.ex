@@ -76,10 +76,9 @@ defmodule Raxol.Core.Renderer.Buffer do
   end
 
   defp validate_char!(char) when is_binary(char) do
-    if String.length(char) == 1 do
-      char
-    else
-      raise ArgumentError, "Cell content must be a string of length 1"
+    case String.length(char) do
+      1 -> char
+      _ -> raise ArgumentError, "Cell content must be a string of length 1"
     end
   end
 
@@ -99,18 +98,20 @@ defmodule Raxol.Core.Renderer.Buffer do
   defp update_back_buffer!(buffer, {x, y}, cell) do
     {width, height} = buffer.back_buffer.size
 
-    if x >= 0 and x < width and y >= 0 and y < height do
-      back_buffer = buffer.back_buffer
+    case {x >= 0 and x < width, y >= 0 and y < height} do
+      {true, true} ->
+        back_buffer = buffer.back_buffer
 
-      updated_back_buffer = %{
-        back_buffer
-        | cells: Map.put(back_buffer.cells, {x, y}, cell),
-          damage: MapSet.put(back_buffer.damage, {x, y})
-      }
+        updated_back_buffer = %{
+          back_buffer
+          | cells: Map.put(back_buffer.cells, {x, y}, cell),
+            damage: MapSet.put(back_buffer.damage, {x, y})
+        }
 
-      %{buffer | back_buffer: updated_back_buffer}
-    else
-      buffer
+        %{buffer | back_buffer: updated_back_buffer}
+
+      _ ->
+        buffer
     end
   end
 
@@ -139,26 +140,28 @@ defmodule Raxol.Core.Renderer.Buffer do
     now = System.monotonic_time(:millisecond)
     frame_time = trunc(1000 / buffer.fps)
 
-    if now - buffer.last_frame_time >= frame_time do
-      new_empty_back_buffer = %{
-        cells: %{},
-        damage: MapSet.new([]),
-        size: buffer.back_buffer.size
-      }
+    case now - buffer.last_frame_time >= frame_time do
+      true ->
+        new_empty_back_buffer = %{
+          cells: %{},
+          damage: MapSet.new([]),
+          size: buffer.back_buffer.size
+        }
 
-      copied_back_buffer =
-        :erlang.term_to_binary(buffer.back_buffer) |> :erlang.binary_to_term()
+        copied_back_buffer =
+          :erlang.term_to_binary(buffer.back_buffer) |> :erlang.binary_to_term()
 
-      new_buffer = %__MODULE__{
-        front_buffer: copied_back_buffer,
-        back_buffer: new_empty_back_buffer,
-        fps: buffer.fps,
-        last_frame_time: now
-      }
+        new_buffer = %__MODULE__{
+          front_buffer: copied_back_buffer,
+          back_buffer: new_empty_back_buffer,
+          fps: buffer.fps,
+          last_frame_time: now
+        }
 
-      {new_buffer, true}
-    else
-      {buffer, false}
+        {new_buffer, true}
+
+      false ->
+        {buffer, false}
     end
   end
 
@@ -226,10 +229,12 @@ defmodule Raxol.Core.Renderer.Buffer do
   defp copy_cells(cells, {old_w, old_h}, {new_w, new_h}) do
     for y <- 0..(new_h - 1) do
       for x <- 0..(new_w - 1) do
-        if x < old_w and y < old_h do
-          Map.get(cells, {x, y}, Raxol.Terminal.Cell.new())
-        else
-          Raxol.Terminal.Cell.new()
+        case {x < old_w, y < old_h} do
+          {true, true} ->
+            Map.get(cells, {x, y}, Raxol.Terminal.Cell.new())
+
+          _ ->
+            Raxol.Terminal.Cell.new()
         end
       end
     end

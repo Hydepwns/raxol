@@ -447,8 +447,9 @@ defmodule Raxol.Core do
   ## Example
 
   ```elixir
-  if Raxol.Core.accessibility_enabled?() do
-    # Enable screen reader support
+  case Raxol.Core.accessibility_enabled?() do
+    true -> # Enable screen reader support
+    false -> # Use default behavior
   end
   ```
   """
@@ -539,19 +540,20 @@ defmodule Raxol.Core do
   # ============================================================================
 
   defp validate_application_module(app_module) do
-    if function_exported?(app_module, :init, 1) and
-         function_exported?(app_module, :update, 2) and
-         function_exported?(app_module, :view, 1) do
-      :ok
-    else
-      {:error, :invalid_application_module}
+    case {function_exported?(app_module, :init, 1),
+          function_exported?(app_module, :update, 2),
+          function_exported?(app_module, :view, 1)} do
+      {true, true, true} ->
+        :ok
+      _ ->
+        {:error, :invalid_application_module}
     end
   end
 
   defp initialize_core_systems(options) do
     Performance.init(Keyword.get(options, :performance, []))
     Metrics.init(Keyword.get(options, :metrics, []))
-    Accessibility.init(Keyword.get(options, :accessibility, []))
+    Raxol.Core.Accessibility.init(Keyword.get(options, :accessibility, []))
     ColorSystem.init(Keyword.get(options, :theme, :default))
 
     :ok

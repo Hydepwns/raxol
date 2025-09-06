@@ -78,29 +78,30 @@ defmodule Raxol.Animation.Adaptation do
           updated_instance = Map.put(instance, :animation, adapted_animation)
 
           # Handle disabled animations properly
-          if AnimAccessibility.disabled?(adapted_animation) do
-            # For disabled animations, mark as pending completion and ensure they complete quickly
-            updated_instance =
-              Map.put(updated_instance, :pending_completion, true)
+          case AnimAccessibility.disabled?(adapted_animation) do
+            true ->
+              # For disabled animations, mark as pending completion and ensure they complete quickly
+              updated_instance =
+                Map.put(updated_instance, :pending_completion, true)
 
-            # Immediately send completion message for disabled animations
-            Lifecycle.handle_animation_completion(
-              adapted_animation,
-              element_id,
-              animation_name,
-              updated_instance,
-              user_preferences_pid
-            )
+              # Immediately send completion message for disabled animations
+              Lifecycle.handle_animation_completion(
+                adapted_animation,
+                element_id,
+                animation_name,
+                updated_instance,
+                user_preferences_pid
+              )
 
-            # Return as completed due to disable
-            [{element_id, animation_name, updated_instance}]
-          else
-            # For enabled animations, remove pending_completion flag if it was set
-            _updated_instance =
-              Map.delete(updated_instance, :pending_completion)
+              # Return as completed due to disable
+              [{element_id, animation_name, updated_instance}]
+            false ->
+              # For enabled animations, remove pending_completion flag if it was set
+              _updated_instance =
+                Map.delete(updated_instance, :pending_completion)
 
-            # Not completed
-            []
+              # Not completed
+              []
           end
 
           # Update the instance in the state manager

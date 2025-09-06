@@ -130,18 +130,19 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
          plugin_states,
          command_table
        ) do
-    if function_exported?(plugin_module, :handle_event, 2) do
-      handle_plugin_event_call(
-        plugin_module,
-        plugin_id,
-        event,
-        plugin_state,
-        metadata,
-        plugin_states,
-        command_table
-      )
-    else
-      {:ok, {metadata, plugin_states, command_table}}
+    case function_exported?(plugin_module, :handle_event, 2) do
+      true ->
+        handle_plugin_event_call(
+          plugin_module,
+          plugin_id,
+          event,
+          plugin_state,
+          metadata,
+          plugin_states,
+          command_table
+        )
+      false ->
+        {:ok, {metadata, plugin_states, command_table}}
     end
   end
 

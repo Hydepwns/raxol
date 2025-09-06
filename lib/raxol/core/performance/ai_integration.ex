@@ -282,26 +282,27 @@ defmodule Raxol.Core.Performance.AIIntegration do
   defp call_openai_service(ai_data) do
     api_key = System.get_env("OPENAI_API_KEY")
 
-    if is_nil(api_key) do
-      Raxol.Core.Runtime.Log.warning(
-        "OpenAI API key not configured, falling back to mock analysis",
-        %{service: :openai, data: ai_data}
-      )
+    case is_nil(api_key) do
+      true ->
+        Raxol.Core.Runtime.Log.warning(
+          "OpenAI API key not configured, falling back to mock analysis",
+          %{service: :openai, data: ai_data}
+        )
 
-      generate_mock_analysis(ai_data)
-    else
-      case make_openai_request(ai_data, api_key) do
-        {:ok, response} ->
-          parse_openai_response(response)
+        generate_mock_analysis(ai_data)
+      false ->
+        case make_openai_request(ai_data, api_key) do
+          {:ok, response} ->
+            parse_openai_response(response)
 
-        {:error, reason} ->
-          Raxol.Core.Runtime.Log.warning(
-            "OpenAI API request failed, falling back to mock analysis",
-            %{service: :openai, error: reason, data: ai_data}
-          )
+          {:error, reason} ->
+            Raxol.Core.Runtime.Log.warning(
+              "OpenAI API request failed, falling back to mock analysis",
+              %{service: :openai, error: reason, data: ai_data}
+            )
 
-          generate_mock_analysis(ai_data)
-      end
+            generate_mock_analysis(ai_data)
+        end
     end
   end
 
@@ -406,7 +407,10 @@ defmodule Raxol.Core.Performance.AIIntegration do
     Expected Impact:
     #{format_impact(analysis.optimization_impact)}
 
-    #{if include_code_samples and analysis.code_suggestions, do: "Code Suggestions:\n#{format_code_suggestions(analysis.code_suggestions)}", else: ""}
+    #{case {include_code_samples, analysis.code_suggestions} do
+        {true, suggestions} when not is_nil(suggestions) -> "Code Suggestions:\n#{format_code_suggestions(suggestions)}"
+        _ -> ""
+      end}
 
     AI Confidence: #{Float.round(analysis.ai_confidence * 100, 1)}%
     """
@@ -453,7 +457,10 @@ defmodule Raxol.Core.Performance.AIIntegration do
           #{format_impact_html(analysis.optimization_impact)}
         </div>
 
-        #{if include_code_samples and analysis.code_suggestions, do: "<div class=\"section\"><h2>Code Suggestions</h2>#{format_code_suggestions_html(analysis.code_suggestions)}</div>", else: ""}
+        #{case {include_code_samples, analysis.code_suggestions} do
+          {true, suggestions} when not is_nil(suggestions) -> "<div class=\"section\"><h2>Code Suggestions</h2>#{format_code_suggestions_html(suggestions)}</div>"
+          _ -> ""
+        end}
 
         <div class="section">
           <p><strong>AI Confidence:</strong> #{Float.round(analysis.ai_confidence * 100, 1)}%</p>
@@ -479,7 +486,10 @@ defmodule Raxol.Core.Performance.AIIntegration do
     ## Expected Impact
     #{format_impact_markdown(analysis.optimization_impact)}
 
-    #{if include_code_samples and analysis.code_suggestions, do: "## Code Suggestions\n#{format_code_suggestions_markdown(analysis.code_suggestions)}", else: ""}
+    #{case {include_code_samples, analysis.code_suggestions} do
+        {true, suggestions} when not is_nil(suggestions) -> "## Code Suggestions\n#{format_code_suggestions_markdown(suggestions)}"
+        _ -> ""
+      end}
 
     **AI Confidence:** #{Float.round(analysis.ai_confidence * 100, 1)}%
     """
@@ -492,7 +502,10 @@ defmodule Raxol.Core.Performance.AIIntegration do
       Description: #{rec.description}
       Impact: #{rec.impact}
       Effort: #{rec.effort}
-      #{if rec.code_example, do: "Code: #{rec.code_example}", else: ""}
+      #{case rec.code_example do
+        nil -> ""
+        example -> "Code: #{example}"
+      end}
       """
     end)
   end
@@ -505,7 +518,10 @@ defmodule Raxol.Core.Performance.AIIntegration do
         <p><strong>Description:</strong> #{rec.description}</p>
         <p><strong>Impact:</strong> #{rec.impact}</p>
         <p><strong>Effort:</strong> #{rec.effort}</p>
-        #{if rec.code_example, do: "<div class=\"code-block\">#{rec.code_example}</div>", else: ""}
+        #{case rec.code_example do
+          nil -> ""
+          example -> "<div class=\"code-block\">#{example}</div>"
+        end}
       </div>
       """
     end)
@@ -518,7 +534,10 @@ defmodule Raxol.Core.Performance.AIIntegration do
       **Description:** #{rec.description}
       **Impact:** #{rec.impact}
       **Effort:** #{rec.effort}
-      #{if rec.code_example, do: "```\n#{rec.code_example}\n```", else: ""}
+      #{case rec.code_example do
+        nil -> ""
+        example -> "```\n#{example}\n```"
+      end}
       """
     end)
   end
@@ -691,15 +710,15 @@ defmodule Raxol.Core.Performance.AIIntegration do
     base_prompt =
       Map.get(base_prompts, issue_type, "How to improve performance")
 
-    if map_size(context) > 0 do
-      context_str =
-        context
-        |> Map.to_list()
-        |> Enum.map_join(", ", fn {k, v} -> "#{k}: #{v}" end)
+    case map_size(context) do
+      0 -> base_prompt
+      _ ->
+        context_str =
+          context
+          |> Map.to_list()
+          |> Enum.map_join(", ", fn {k, v} -> "#{k}: #{v}" end)
 
-      "#{base_prompt} in context: #{context_str}"
-    else
-      base_prompt
+        "#{base_prompt} in context: #{context_str}"
     end
   end
 
@@ -719,7 +738,10 @@ defmodule Raxol.Core.Performance.AIIntegration do
         recent_avg = Enum.sum(recent) / length(recent)
         older_avg = Enum.sum(older) / length(older)
 
-        trend = if recent_avg > older_avg * 1.1, do: "declining", else: "stable"
+        trend = case recent_avg > older_avg * 1.1 do
+          true -> "declining"
+          false -> "stable"
+        end
         confidence = min(abs(recent_avg - older_avg) / older_avg, 1.0)
 
         %{trend: trend, confidence: confidence}

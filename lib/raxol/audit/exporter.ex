@@ -96,14 +96,9 @@ defmodule Raxol.Audit.Exporter do
 
   @impl GenServer
   def handle_call({:export, format, filters, opts}, _from, state) do
-    case perform_export(format, filters, opts, state) do
-      {:ok, exported_data} ->
-        new_state = record_export(format, filters, state)
-        {:reply, {:ok, exported_data}, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, exported_data} = perform_export(format, filters, opts, state)
+    new_state = record_export(format, filters, state)
+    {:reply, {:ok, exported_data}, new_state}
   end
 
   @impl GenServer

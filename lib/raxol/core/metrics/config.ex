@@ -242,13 +242,12 @@ defmodule Raxol.Core.Metrics.Config do
   defp validate_flush_interval(_), do: {:error, :invalid_flush_interval}
 
   defp validate_enabled_metrics(metrics) when is_list(metrics) do
-    if Enum.all?(
-         metrics,
-         &(&1 in [:performance, :resource, :operation, :system, :custom])
-       ) do
-      :ok
-    else
-      {:error, :invalid_enabled_metrics}
+    case Enum.all?(
+           metrics,
+           &(&1 in [:performance, :resource, :operation, :system, :custom])
+         ) do
+      true -> :ok
+      false -> {:error, :invalid_enabled_metrics}
     end
   end
 
@@ -267,10 +266,9 @@ defmodule Raxol.Core.Metrics.Config do
   defp validate_storage_backend(_), do: {:error, :invalid_storage_backend}
 
   defp validate_retention_policies(policies) when is_list(policies) do
-    if Enum.all?(policies, &valid_retention_policy?/1) do
-      :ok
-    else
-      {:error, :invalid_retention_policies}
+    case Enum.all?(policies, &valid_retention_policy?/1) do
+      true -> :ok
+      false -> {:error, :invalid_retention_policies}
     end
   end
 

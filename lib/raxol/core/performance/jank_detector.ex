@@ -16,8 +16,9 @@ defmodule Raxol.Core.Performance.JankDetector do
   detector = JankDetector.record_frame(detector, 20)
 
   # Check for jank
-  if JankDetector.detect_jank?(detector) do
-    Raxol.Core.Runtime.Log.warning_with_context("Jank detected", %{})
+  case JankDetector.detect_jank?(detector) do
+    true -> Raxol.Core.Runtime.Log.warning_with_context("Jank detected", %{})
+    false -> :ok
   end
   ```
   """

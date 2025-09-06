@@ -16,29 +16,31 @@ defmodule Raxol.Animation.Interpolate do
   # Handle tuples of size 2 and 3 with a simpler implementation
   def value(from_tuple, to_tuple, t)
       when is_tuple(from_tuple) and is_tuple(to_tuple) do
-    if tuple_size(from_tuple) == tuple_size(to_tuple) and
-         numeric_is_tuple(from_tuple) and numeric_is_tuple(to_tuple) do
-      values =
-        for i <- 0..(tuple_size(from_tuple) - 1) do
-          from_val = elem(from_tuple, i)
-          to_val = elem(to_tuple, i)
-          value(from_val, to_val, t)
-        end
+    case {tuple_size(from_tuple) == tuple_size(to_tuple), 
+          numeric_is_tuple(from_tuple), numeric_is_tuple(to_tuple)} do
+      {true, true, true} ->
+        values =
+          for i <- 0..(tuple_size(from_tuple) - 1) do
+            from_val = elem(from_tuple, i)
+            to_val = elem(to_tuple, i)
+            value(from_val, to_val, t)
+          end
 
-      List.to_tuple(values)
-    else
-      from_tuple
+        List.to_tuple(values)
+      _ ->
+        from_tuple
     end
   end
 
   def value(from_list, to_list, t)
       when is_list(from_list) and is_list(to_list) and
              length(from_list) == length(to_list) do
-    if valid_number_lists?(from_list, to_list) do
-      Enum.zip(from_list, to_list)
-      |> Enum.map(fn {f, v} -> value(f, v, t) end)
-    else
-      from_list
+    case valid_number_lists?(from_list, to_list) do
+      true ->
+        Enum.zip(from_list, to_list)
+        |> Enum.map(fn {f, v} -> value(f, v, t) end)
+      false ->
+        from_list
     end
   end
 
@@ -96,8 +98,14 @@ defmodule Raxol.Animation.Interpolate do
     h_interpolated_raw = calculate_hue_interpolation(h1, diff, t)
 
     mod_val = h_interpolated_raw - Float.floor(h_interpolated_raw / 360) * 360
-    h_positive = if mod_val < 0, do: mod_val + 360, else: mod_val
-    round(h_positive) |> then(&if(&1 == 360, do: 0, else: &1))
+    h_positive = case mod_val < 0 do
+      true -> mod_val + 360
+      false -> mod_val
+    end
+    case round(h_positive) do
+      360 -> 0
+      other -> other
+    end
   end
 
   defp calculate_hue_interpolation(h1, diff, t) when abs(diff) <= 180,

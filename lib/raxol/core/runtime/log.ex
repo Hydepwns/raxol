@@ -49,7 +49,10 @@ defmodule Raxol.Core.Runtime.Log do
   end
 
   defp log(level, msg, context \\ nil) do
-    message = if context, do: "#{msg} | Context: #{inspect(context)}", else: msg
+    message = case context do
+      nil -> msg
+      _ -> "#{msg} | Context: #{inspect(context)}"
+    end
 
     case level do
       :info -> Logger.info(message)

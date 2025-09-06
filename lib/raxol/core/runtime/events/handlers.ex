@@ -9,7 +9,6 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Core.ErrorHandling
 
   @doc """
   Registers a new event handler for the specified event types.
@@ -67,7 +66,7 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
   end
 
   defp execute_handlers_in_order(handlers, event, state) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            Enum.reduce_while(
              handlers,
              {event, state},
@@ -114,7 +113,7 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
   end
 
   defp log_handler_error(error, event, state, stacktrace) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            Raxol.Core.Runtime.Log.error_with_stacktrace(
              "Error executing handlers",
              error,
@@ -134,19 +133,20 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
   end
 
   defp put_handler(id, handler) do
-    Raxol.Core.Events.Manager.Server.put_handler(id, handler)
+    Raxol.Core.Events.Manager.Server.register_handler(:event, id, handler)
   end
 
   defp get_handler(id) do
-    Raxol.Core.Events.Manager.Server.get_handler(id)
+    handlers = Raxol.Core.Events.Manager.Server.get_handlers()
+    Enum.find(handlers, fn {handler_id, _} -> handler_id == id end)
   end
 
   defp remove_handler(id) do
-    Process.delete({:handler, id})
+    Raxol.Core.Events.Manager.Server.unregister_handler(:event, id, nil)
   end
 
   defp get_all_handlers do
-    Raxol.Core.Events.Manager.Server.get_all_handlers()
+    Raxol.Core.Events.Manager.Server.get_handlers()
     |> Enum.filter(fn
       {{:handler, _id}, _value} -> true
       _ -> false

@@ -97,10 +97,9 @@ defmodule Raxol.Core.Runtime.EventSource do
 
       @impl GenServer
       def terminate(reason, state) do
-        if function_exported?(__MODULE__, :terminate, 2) do
-          __MODULE__.terminate(reason, state)
-        else
-          :ok
+        case function_exported?(__MODULE__, :terminate, 2) do
+          true -> __MODULE__.terminate(reason, state)
+          false -> :ok
         end
       end
 

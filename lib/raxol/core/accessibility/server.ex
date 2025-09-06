@@ -195,6 +195,28 @@ defmodule Raxol.Core.Accessibility.Server do
   end
 
   @doc """
+  Registers element metadata for a component.
+  """
+  def register_element_metadata(element_id, metadata) do
+    register_element_metadata(__MODULE__, element_id, metadata)
+  end
+
+  def register_element_metadata(server, element_id, metadata) do
+    GenServer.call(server, {:register_metadata, element_id, metadata})
+  end
+
+  @doc """
+  Gets element metadata for a component.
+  """
+  def get_element_metadata(element_id) do
+    get_element_metadata(__MODULE__, element_id)
+  end
+
+  def get_element_metadata(server, element_id) do
+    GenServer.call(server, {:get_metadata, element_id})
+  end
+
+  @doc """
   Gets accessibility metadata for a component.
   """
   def get_metadata(server \\ __MODULE__, component_id) do
@@ -213,6 +235,50 @@ defmodule Raxol.Core.Accessibility.Server do
   """
   def get_preferences(server \\ __MODULE__) do
     GenServer.call(server, :get_preferences)
+  end
+
+  @doc """
+  Adds an announcement to the queue.
+  """
+  def add_announcement(announcement, user_preferences_pid_or_name \\ nil) do
+    add_announcement(__MODULE__, announcement, user_preferences_pid_or_name)
+  end
+
+  def add_announcement(server, announcement, _user_preferences_pid_or_name) do
+    GenServer.cast(server, {:announce, announcement, []})
+  end
+
+  @doc """
+  Gets the next announcement from the queue.
+  """
+  def get_next_announcement(user_preferences_pid_or_name \\ nil) do
+    get_next_announcement(__MODULE__, user_preferences_pid_or_name)
+  end
+
+  def get_next_announcement(server, _user_preferences_pid_or_name) do
+    GenServer.call(server, :get_next_announcement)
+  end
+
+  @doc """
+  Clears all announcements from the queue.
+  """
+  def clear_all_announcements do
+    clear_all_announcements(__MODULE__)
+  end
+
+  def clear_all_announcements(server) do
+    GenServer.call(server, :clear_all_announcements)
+  end
+
+  @doc """
+  Clears announcements for a specific user.
+  """
+  def clear_announcements(user_preferences_pid_or_name) do
+    clear_announcements(__MODULE__, user_preferences_pid_or_name)
+  end
+
+  def clear_announcements(server, _user_preferences_pid_or_name) do
+    GenServer.call(server, :clear_all_announcements)
   end
 
   @doc """
@@ -245,10 +311,131 @@ defmodule Raxol.Core.Accessibility.Server do
   end
 
   @doc """
+  Checks if announcements should be made.
+  """
+  def should_announce?(user_preferences_pid_or_name \\ nil) do
+    # If user preferences provided, check if announcements are enabled
+    case user_preferences_pid_or_name do
+      nil -> true  # Default to allowing announcements
+      pid when is_pid(pid) ->
+        # Try to check user preferences, default to true if unavailable
+        try do
+          GenServer.call(pid, :get_silence_announcements, 1000)
+          |> case do
+            {:ok, silence} -> not silence
+            _ -> true
+          end
+        catch
+          :exit, _ -> true
+        end
+      name when is_atom(name) ->
+        case Process.whereis(name) do
+          nil -> true
+          pid -> should_announce?(pid)
+        end
+      _ -> true
+    end
+  end
+
+  @doc """
   Handles focus change events.
   """
   def handle_focus_change(server \\ __MODULE__, old_focus, new_focus) do
     GenServer.cast(server, {:handle_focus_change, old_focus, new_focus})
+  end
+
+  @doc """
+  Gets an option value.
+  """
+  def get_option(key, default \\ nil) do
+    get_option(__MODULE__, key, default)
+  end
+
+  def get_option(server, key, default) do
+    case GenServer.call(server, {:get_preference, key}) do
+      nil -> default
+      value -> value
+    end
+  end
+
+  @doc """
+  Sets an option value.
+  """
+  def set_option(key, value) do
+    set_option(__MODULE__, key, value)
+  end
+
+  def set_option(server, key, value) do
+    GenServer.call(server, {:set_preference, key, value})
+  end
+
+  @doc """
+  Gets a component hint.
+  """
+  def get_component_hint(component_id, hint_level \\ :normal) do
+    get_component_hint(__MODULE__, component_id, hint_level)
+  end
+
+  def get_component_hint(server, component_id, _hint_level) do
+    case GenServer.call(server, {:get_metadata, component_id}) do
+      nil -> nil
+      metadata -> Map.get(metadata, :hint)
+    end
+  end
+
+  @doc """
+  Registers component style.
+  """
+  def register_component_style(component_type, style) do
+    register_component_style(__MODULE__, component_type, style)
+  end
+
+  def register_component_style(server, component_type, style) do
+    GenServer.call(server, {:register_component_style, component_type, style})
+  end
+
+  @doc """
+  Gets component style.
+  """
+  def get_component_style(component_type) do
+    get_component_style(__MODULE__, component_type)
+  end
+
+  def get_component_style(server, component_type) do
+    GenServer.call(server, {:get_component_style, component_type})
+  end
+
+  @doc """
+  Unregisters component style.
+  """
+  def unregister_component_style(component_type) do
+    unregister_component_style(__MODULE__, component_type)
+  end
+
+  def unregister_component_style(server, component_type) do
+    GenServer.call(server, {:unregister_component_style, component_type})
+  end
+
+  @doc """
+  Unregisters element metadata.
+  """
+  def unregister_element_metadata(element_id) do
+    unregister_element_metadata(__MODULE__, element_id)
+  end
+
+  def unregister_element_metadata(server, element_id) do
+    GenServer.call(server, {:remove_metadata, element_id})
+  end
+
+  @doc """
+  Gets focus history.
+  """
+  def get_focus_history do
+    get_focus_history(__MODULE__)
+  end
+
+  def get_focus_history(server) do
+    GenServer.call(server, :get_focus_history)
   end
 
   # GenServer Callbacks
@@ -367,6 +554,62 @@ defmodule Raxol.Core.Accessibility.Server do
   @impl GenServer
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
+  end
+
+  @impl GenServer
+  def handle_call(:get_next_announcement, _from, state) do
+    case state.announcements.queue do
+      [] -> {:reply, nil, state}
+      [announcement | rest] ->
+        new_announcements = %{state.announcements | queue: rest}
+        new_state = %{state | announcements: new_announcements}
+        {:reply, announcement, new_state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call(:clear_all_announcements, _from, state) do
+    new_announcements = %{state.announcements | queue: []}
+    new_state = %{state | announcements: new_announcements}
+    {:reply, :ok, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:register_metadata, element_id, metadata}, _from, state) do
+    new_metadata = Map.put(state.metadata, element_id, metadata)
+    new_state = %{state | metadata: new_metadata}
+    {:reply, :ok, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:register_component_style, component_type, style}, _from, state) do
+    # Store component styles in metadata with a special key
+    style_key = {:component_style, component_type}
+    new_metadata = Map.put(state.metadata, style_key, style)
+    new_state = %{state | metadata: new_metadata}
+    {:reply, :ok, new_state}
+  end
+
+  @impl GenServer
+  def handle_call({:get_component_style, component_type}, _from, state) do
+    style_key = {:component_style, component_type}
+    style = Map.get(state.metadata, style_key)
+    {:reply, style, state}
+  end
+
+  @impl GenServer
+  def handle_call({:unregister_component_style, component_type}, _from, state) do
+    style_key = {:component_style, component_type}
+    new_metadata = Map.delete(state.metadata, style_key)
+    new_state = %{state | metadata: new_metadata}
+    {:reply, :ok, new_state}
+  end
+
+  @impl GenServer
+  def handle_call(:get_focus_history, _from, state) do
+    # Return focus history from metadata or empty list
+    focus_history = Map.get(state.metadata, :focus_history, [])
+    {:reply, focus_history, state}
   end
 
   @impl GenServer
@@ -533,7 +776,10 @@ defmodule Raxol.Core.Accessibility.Server do
     description = Map.get(metadata, :description, "")
 
     parts = [label, role]
-    parts = if description != "", do: parts ++ [description], else: parts
+    parts = case description != "" do
+      true -> parts ++ [description]
+      false -> parts
+    end
 
     Enum.join(parts, ", ")
   end

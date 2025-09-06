@@ -184,7 +184,7 @@ defmodule Raxol.Animation.Processor do
 
   defp interpolate_values(_f, t, _progress), do: t
 
-  defp calculate_animation_progress(animation, _elapsed, 0) do
+  defp calculate_animation_progress(_animation, _elapsed, 0) do
     # Handle zero duration case - animation completes immediately
     1.0
   end

@@ -84,10 +84,9 @@ defmodule Raxol.Animation.Physics.Vector do
   def normalize(%__MODULE__{} = v) do
     mag = magnitude(v)
 
-    if mag > 0 do
-      scale(v, 1.0 / mag)
-    else
-      v
+    case mag > 0 do
+      true -> scale(v, 1.0 / mag)
+      false -> v
     end
   end
 
@@ -131,10 +130,9 @@ defmodule Raxol.Animation.Physics.Vector do
     dot_product = dot(v1, v2)
     magnitudes = magnitude(v1) * magnitude(v2)
 
-    if magnitudes == 0 do
-      0
-    else
-      :math.acos(min(1, max(-1, dot_product / magnitudes)))
+    case magnitudes do
+      0 -> 0
+      _ -> :math.acos(min(1, max(-1, dot_product / magnitudes)))
     end
   end
 

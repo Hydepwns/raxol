@@ -276,7 +276,10 @@ defmodule Raxol.Config.Loader do
 
   defp atomize_keys(map) when is_map(map) do
     Enum.reduce(map, %{}, fn {key, value}, acc ->
-      atom_key = if is_binary(key), do: String.to_atom(key), else: key
+      atom_key = case is_binary(key) do
+        true -> String.to_atom(key)
+        false -> key
+      end
 
       normalized_value =
         case value do

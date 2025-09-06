@@ -58,16 +58,20 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
     |> String.split(" ")
     |> Enum.reduce({[], ""}, &process_word(&1, &2, width))
     |> (fn {lines, last_line} ->
-          if last_line == "", do: lines, else: lines ++ [last_line]
+          case last_line do
+            "" -> lines
+            _ -> lines ++ [last_line]
+          end
         end).()
   end
 
   defp process_word(word, {lines, current_line}, width) do
-    if String.length(current_line) + String.length(word) + 1 <= width do
-      new_line = build_line(current_line, word)
-      {lines, new_line}
-    else
-      {lines ++ [current_line], word}
+    case String.length(current_line) + String.length(word) + 1 <= width do
+      true ->
+        new_line = build_line(current_line, word)
+        {lines, new_line}
+      false ->
+        {lines ++ [current_line], word}
     end
   end
 

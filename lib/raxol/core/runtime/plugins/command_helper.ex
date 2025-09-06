@@ -48,10 +48,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
 
   defp safe_string_to_existing_atom(string) do
     # Safe conversion without try/catch
-    if atom_exists?(string) do
-      {:ok, String.to_existing_atom(string)}
-    else
-      {:error, :atom_not_found}
+    case atom_exists?(string) do
+      true ->
+        {:ok, String.to_existing_atom(string)}
+      false ->
+        {:error, :atom_not_found}
     end
   end
 
@@ -71,16 +72,17 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
 
   @impl Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
   def register_plugin_commands(plugin_module, _plugin_state, command_table) do
-    if function_exported?(plugin_module, :get_commands, 0) do
-      with {:ok, commands} <- safe_get_commands(plugin_module) do
-        process_commands(plugin_module, commands, command_table)
-      else
-        {:error, error} ->
-          log_command_error(plugin_module, error)
-          command_table
-      end
-    else
-      command_table
+    case function_exported?(plugin_module, :get_commands, 0) do
+      true ->
+        with {:ok, commands} <- safe_get_commands(plugin_module) do
+          process_commands(plugin_module, commands, command_table)
+        else
+          {:error, error} ->
+            log_command_error(plugin_module, error)
+            command_table
+        end
+      false ->
+        command_table
     end
   end
 
@@ -122,12 +124,13 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
               arity >= 0 do
     name_str = Atom.to_string(name) |> String.trim() |> String.downcase()
 
-    if valid_command_name?(name_str) and
-         function_exported?(plugin_module, function, arity) do
-      register_valid_command(acc, plugin_module, name_str, function, arity)
-    else
-      log_invalid_command(plugin_module, name_str, function, arity)
-      acc
+    case valid_command_name?(name_str) and
+           function_exported?(plugin_module, function, arity) do
+      true ->
+        register_valid_command(acc, plugin_module, name_str, function, arity)
+      false ->
+        log_invalid_command(plugin_module, name_str, function, arity)
+        acc
     end
   end
 

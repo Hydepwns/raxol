@@ -119,7 +119,7 @@ defmodule Raxol.Core.Runtime.Subscription do
   The event source should implement the `Raxol.Core.Runtime.EventSource`
   behaviour.
   """
-  def custom(source_module, init_args) when not is_atom(source_module) do
+  def custom(source_module, _init_args) when not is_atom(source_module) do
     {:error, :invalid_module}
   end
 
@@ -140,25 +140,27 @@ defmodule Raxol.Core.Runtime.Subscription do
   """
   def start(%__MODULE__{} = subscription, context) do
     # Validate context has required pid
-    unless Map.has_key?(context, :pid) do
-      {:error, :invalid_context}
-    else
-      case subscription do
-        %{type: :interval, data: data} ->
-          start_interval(data, context)
+    case Map.has_key?(context, :pid) do
+      false ->
+        {:error, :invalid_context}
 
-        %{type: :events, data: event_types} ->
-          start_event_subscription(event_types, context)
+      true ->
+        case subscription do
+          %{type: :interval, data: data} ->
+            start_interval(data, context)
 
-        %{type: :file_watch, data: data} ->
-          start_file_watch(data, context)
+          %{type: :events, data: event_types} ->
+            start_event_subscription(event_types, context)
 
-        %{type: :custom, data: data} ->
-          start_custom_subscription(data, context)
+          %{type: :file_watch, data: data} ->
+            start_file_watch(data, context)
 
-        %{type: _invalid_type, data: _data} ->
-          {:error, :invalid_subscription_type}
-      end
+          %{type: :custom, data: data} ->
+            start_custom_subscription(data, context)
+
+          %{type: _invalid_type, data: _data} ->
+            {:error, :invalid_subscription_type}
+        end
     end
   end
 
@@ -201,20 +203,24 @@ defmodule Raxol.Core.Runtime.Subscription do
   end
 
   defp stop_file_watch(watcher_pid) do
-    if Process.alive?(watcher_pid) do
-      Process.exit(watcher_pid, :normal)
-      :ok
-    else
-      {:error, :subscription_not_found}
+    case Process.alive?(watcher_pid) do
+      true ->
+        Process.exit(watcher_pid, :normal)
+        :ok
+
+      false ->
+        {:error, :subscription_not_found}
     end
   end
 
   defp stop_custom(source_pid) do
-    if Process.alive?(source_pid) do
-      Process.exit(source_pid, :normal)
-      :ok
-    else
-      {:error, :subscription_not_found}
+    case Process.alive?(source_pid) do
+      true ->
+        Process.exit(source_pid, :normal)
+        :ok
+
+      false ->
+        {:error, :subscription_not_found}
     end
   end
 
@@ -228,12 +234,16 @@ defmodule Raxol.Core.Runtime.Subscription do
       jitter: jitter
     } = data
 
-    if immediate do
-      send(context.pid, {:subscription, msg})
+    case immediate do
+      true -> send(context.pid, {:subscription, msg})
+      false -> :ok
     end
 
     # Calculate jitter safely, ensuring we don't call :rand.uniform with 0
-    jitter_ms = if jitter > 0, do: :rand.uniform(jitter), else: 0
+    jitter_ms = case jitter > 0 do
+      true -> :rand.uniform(jitter)
+      false -> 0
+    end
 
     # Add error handling for timer creation
     case :timer.send_interval(
@@ -263,15 +273,17 @@ defmodule Raxol.Core.Runtime.Subscription do
     %{path: path, events: events} = data
 
     # Check if file exists before starting watch
-    unless File.exists?(path) do
-      {:error, :invalid_file_path}
-    else
-      {:ok, pid} =
-        Task.start(fn ->
-          watch_file(path, events, context.pid)
-        end)
+    case File.exists?(path) do
+      false ->
+        {:error, :invalid_file_path}
 
-      {:ok, {:file_watch, pid}}
+      true ->
+        {:ok, pid} =
+          Task.start(fn ->
+            watch_file(path, events, context.pid)
+          end)
+
+        {:ok, {:file_watch, pid}}
     end
   end
 
@@ -292,11 +304,15 @@ defmodule Raxol.Core.Runtime.Subscription do
           :ok ->
             receive do
               {_watcher_pid, {:file_event, path, file_events}} ->
-                if Enum.any?(file_events, &(&1 in events)) do
-                  send(
-                    target_pid,
-                    {:subscription, {:file_change, path, file_events}}
-                  )
+                case Enum.any?(file_events, &(&1 in events)) do
+                  true ->
+                    send(
+                      target_pid,
+                      {:subscription, {:file_change, path, file_events}}
+                    )
+
+                  false ->
+                    :ok
                 end
             after
               5000 ->
