@@ -107,20 +107,22 @@ defmodule Raxol.Terminal.Config.Persistence do
   defp apply_migrations(config, current_version) do
     latest_version = Application.get_env(:raxol, :config_version, 1)
 
-    if current_version < latest_version do
-      # Apply migrations in sequence
-      Enum.reduce_while(
-        current_version..(latest_version - 1),
-        {:ok, config},
-        fn version, {:ok, current_config} ->
-          case apply_migration(current_config, version) do
-            {:ok, migrated_config} -> {:cont, {:ok, migrated_config}}
-            error -> {:halt, error}
+    case current_version < latest_version do
+      true ->
+        # Apply migrations in sequence
+        Enum.reduce_while(
+          current_version..(latest_version - 1),
+          {:ok, config},
+          fn version, {:ok, current_config} ->
+            case apply_migration(current_config, version) do
+              {:ok, migrated_config} -> {:cont, {:ok, migrated_config}}
+              error -> {:halt, error}
+            end
           end
-        end
-      )
-    else
-      {:ok, config}
+        )
+
+      false ->
+        {:ok, config}
     end
   end
 

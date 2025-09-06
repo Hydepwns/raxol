@@ -146,9 +146,10 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
       max_lines_in_region - insertion_point_in_region - count
 
     kept_scroll_lines =
-      if lines_after_insertion_count > 0,
-        do: Enum.take(scroll_after_insertion, lines_after_insertion_count),
-        else: []
+      case lines_after_insertion_count > 0 do
+        true -> Enum.take(scroll_after_insertion, lines_after_insertion_count)
+        false -> []
+      end
 
     # Reconstruct the scroll region
     new_scroll_region =
@@ -156,14 +157,15 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
 
     # Pad the scroll region to the correct size if needed
     padded_scroll_region =
-      if length(new_scroll_region) < max_lines_in_region do
-        new_scroll_region ++
-          List.duplicate(
-            blank_line,
-            max_lines_in_region - length(new_scroll_region)
-          )
-      else
-        Enum.take(new_scroll_region, max_lines_in_region)
+      case length(new_scroll_region) < max_lines_in_region do
+        true ->
+          new_scroll_region ++
+            List.duplicate(
+              blank_line,
+              max_lines_in_region - length(new_scroll_region)
+            )
+        false ->
+          Enum.take(new_scroll_region, max_lines_in_region)
       end
 
     # Combine all parts: lines before + modified scroll region + lines after (unchanged)

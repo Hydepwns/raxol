@@ -39,10 +39,11 @@ defmodule Raxol.Terminal.Scrollback.Manager do
     new_buffer = [line | state.scrollback_buffer]
 
     trimmed_buffer =
-      if length(new_buffer) > state.scrollback_limit do
-        Enum.take(new_buffer, state.scrollback_limit)
-      else
-        new_buffer
+      case length(new_buffer) > state.scrollback_limit do
+        true ->
+          Enum.take(new_buffer, state.scrollback_limit)
+        false ->
+          new_buffer
       end
 
     %{state | scrollback_buffer: trimmed_buffer}
@@ -69,13 +70,14 @@ defmodule Raxol.Terminal.Scrollback.Manager do
       when is_integer(limit) and limit > 0 do
     new_state = %{state | scrollback_limit: limit}
 
-    if length(new_state.scrollback_buffer) > limit do
-      %{
+    case length(new_state.scrollback_buffer) > limit do
+      true ->
+        %{
+          new_state
+          | scrollback_buffer: Enum.take(new_state.scrollback_buffer, limit)
+        }
+      false ->
         new_state
-        | scrollback_buffer: Enum.take(new_state.scrollback_buffer, limit)
-      }
-    else
-      new_state
     end
   end
 

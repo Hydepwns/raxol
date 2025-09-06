@@ -608,7 +608,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     end
   end
 
-  defp insert_chars_in_bounds(buffer, row, col, count, default_style)
+  defp insert_chars_in_bounds(buffer, row, col, _count, _default_style)
        when row >= buffer.height or col >= buffer.width do
     buffer
   end
@@ -631,7 +631,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     end
   end
 
-  defp delete_chars_in_bounds(buffer, row, col, count, default_style)
+  defp delete_chars_in_bounds(buffer, row, col, _count, _default_style)
        when row >= buffer.height or col >= buffer.width do
     buffer
   end
@@ -664,7 +664,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
 
   defp write_char_if_in_bounds(buffer, _row, _col, _char), do: buffer
 
-  defp write_string_if_valid_position(buffer, row, col, string)
+  defp write_string_if_valid_position(buffer, row, col, _string)
        when row < 0 or row >= buffer.height or col < 0 or col >= buffer.width do
     buffer
   end

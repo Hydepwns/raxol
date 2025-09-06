@@ -481,7 +481,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     calculate_adaptive_fps(system_load, battery_level, state.config.target_fps)
   end
 
-  defp calculate_adaptive_fps(system_load, battery_level, target_fps)
+  defp calculate_adaptive_fps(system_load, _battery_level, _target_fps)
        when system_load > 0.8,
        do: @text_editing_fps
 

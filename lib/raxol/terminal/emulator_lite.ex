@@ -117,7 +117,10 @@ defmodule Raxol.Terminal.EmulatorLite do
       cursor: cursor,
       main_screen_buffer: ScreenBuffer.new(width, height),
       alternate_screen_buffer:
-        if(create_alternate, do: ScreenBuffer.new(width, height), else: nil),
+        case create_alternate do
+          true -> ScreenBuffer.new(width, height)
+          false -> nil
+        end,
       active_buffer_type: :main,
       parser_state: nil,
       charset_state: default_charset_state(),
@@ -131,8 +134,14 @@ defmodule Raxol.Terminal.EmulatorLite do
       scrollback_limit: scrollback_limit,
       mode_manager: %ModeManager{},
       mode_state: %{},
-      command_history: if(enable_history, do: [], else: nil),
-      current_command_buffer: if(enable_history, do: "", else: nil),
+      command_history: case enable_history do
+        true -> []
+        false -> nil
+      end,
+      current_command_buffer: case enable_history do
+        true -> ""
+        false -> nil
+      end,
       max_command_history: 100,
       window_title: nil,
       window_state: default_window_state(width, height),
@@ -218,10 +227,10 @@ defmodule Raxol.Terminal.EmulatorLite do
       | cursor: %Cursor{position: {0, 0}, shape: :block, visible: true},
         main_screen_buffer: ScreenBuffer.new(width, height),
         alternate_screen_buffer:
-          if(emulator.alternate_screen_buffer,
-            do: ScreenBuffer.new(width, height),
-            else: nil
-          ),
+          case emulator.alternate_screen_buffer do
+            nil -> nil
+            _ -> ScreenBuffer.new(width, height)
+          end,
         active_buffer_type: :main,
         style: TextFormatting.new(),
         saved_style: nil,
@@ -229,9 +238,15 @@ defmodule Raxol.Terminal.EmulatorLite do
         last_col_exceeded: false,
         scroll_region: nil,
         scrollback_buffer: [],
-        command_history: if(emulator.command_history, do: [], else: nil),
+        command_history: case emulator.command_history do
+          nil -> nil
+          _ -> []
+        end,
         current_command_buffer:
-          if(emulator.current_command_buffer, do: "", else: nil),
+          case emulator.current_command_buffer do
+            nil -> nil
+            _ -> ""
+          end,
         output_buffer: ""
     }
   end
@@ -252,15 +267,15 @@ defmodule Raxol.Terminal.EmulatorLite do
             new_height
           ),
         alternate_screen_buffer:
-          if(emulator.alternate_screen_buffer,
-            do:
+          case emulator.alternate_screen_buffer do
+            nil -> nil
+            buffer ->
               ScreenBuffer.resize(
-                emulator.alternate_screen_buffer,
+                buffer,
                 new_width,
                 new_height
-              ),
-            else: nil
-          ),
+              )
+          end,
         cursor: constrain_cursor(emulator.cursor, new_width, new_height)
     }
   end

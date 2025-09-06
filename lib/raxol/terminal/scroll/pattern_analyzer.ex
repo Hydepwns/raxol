@@ -22,9 +22,10 @@ defmodule Raxol.Terminal.Scroll.PatternAnalyzer do
       |> Enum.count(fn [a, b] -> a.direction != b.direction end)
 
     alternation_ratio =
-      if length(history) > 1,
-        do: alternations / (length(history) - 1),
-        else: 0.0
+      case length(history) > 1 do
+        true -> alternations / (length(history) - 1)
+        false -> 0.0
+      end
 
     %{avg_lines: avg_lines, alternation_ratio: alternation_ratio}
   end

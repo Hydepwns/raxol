@@ -129,7 +129,7 @@ defmodule Raxol.Terminal.Buffer.Selection do
     end
   end
 
-  defp handle_region_extraction(buffer, start_x, start_y, end_x, end_y) when start_x == end_x and start_y == end_y do
+  defp handle_region_extraction(_buffer, start_x, start_y, end_x, end_y) when start_x == end_x and start_y == end_y do
     ""
   end
 

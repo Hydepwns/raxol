@@ -24,9 +24,17 @@ defmodule Raxol.Terminal.ScreenBuffer.MemoryUtils do
 
     # Calculate memory usage for other components
     # 4 integers * 8 bytes
-    selection_usage = if selection, do: 32, else: 0
+    selection_usage = case selection do
+      nil -> 0
+      false -> 0
+      _ -> 32
+    end
     # 2 integers * 8 bytes
-    scroll_region_usage = if scroll_region, do: 16, else: 0
+    scroll_region_usage = case scroll_region do
+      nil -> 0
+      false -> 0
+      _ -> 16
+    end
     # 4 integers * 8 bytes per region
     damage_regions_usage = length(damage_regions) * 32
 

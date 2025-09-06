@@ -34,14 +34,15 @@ defmodule Raxol.Terminal.ScreenBuffer.FileWatcher do
     current_time = System.monotonic_time(:millisecond)
     time_since_last = current_time - state.last_event_time
 
-    if time_since_last >= timeout do
-      %{state | pending_events: [], last_event_time: current_time}
-    else
-      %{
-        state
-        | pending_events: events ++ state.pending_events,
-          last_event_time: current_time
-      }
+    case time_since_last >= timeout do
+      true -> 
+        %{state | pending_events: [], last_event_time: current_time}
+      false ->
+        %{
+          state
+          | pending_events: events ++ state.pending_events,
+            last_event_time: current_time
+        }
     end
   end
 

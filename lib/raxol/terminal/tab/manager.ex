@@ -109,10 +109,10 @@ defmodule Raxol.Terminal.Tab.Manager do
           manager
           | tabs: Map.delete(manager.tabs, tab_id),
             active_tab:
-              if(manager.active_tab == tab_id,
-                do: nil,
-                else: manager.active_tab
-              )
+              case manager.active_tab == tab_id do
+                true -> nil
+                false -> manager.active_tab
+              end
         }
 
         {:ok, updated_manager}
@@ -335,7 +335,10 @@ defmodule Raxol.Terminal.Tab.Manager do
           state
           | tabs: Map.delete(state.tabs, tab_id),
             active_tab:
-              if(state.active_tab == tab_id, do: nil, else: state.active_tab)
+              case state.active_tab == tab_id do
+                true -> nil
+                false -> state.active_tab
+              end
         }
 
         {:reply, {:ok, updated_state}, updated_state}

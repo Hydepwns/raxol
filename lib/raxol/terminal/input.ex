@@ -80,45 +80,46 @@ defmodule Raxol.Terminal.Input do
     # Ensure completion_options is a list
     completion_options = input.completion_options || []
 
-    if completion_options == [] do
-      # First tab - get initial completions
-      options = callback.(buffer_string)
+    case completion_options == [] do
+      true ->
+        # First tab - get initial completions
+        options = callback.(buffer_string)
 
-      case options do
-        [] ->
-          # No matches, return unchanged
+        case options do
+          [] ->
+            # No matches, return unchanged
+            input
+
+          [single_match] ->
+            # Single match, complete immediately and clear options
+            %{
+              input
+              | buffer: string_to_buffer(single_match),
+                completion_options: [],
+                completion_index: 0
+            }
+
+          multiple_matches ->
+            # Multiple matches, set up for cycling
+            first_match = Enum.at(multiple_matches, 0)
+
+            %{
+              input
+              | buffer: string_to_buffer(first_match),
+                completion_options: multiple_matches,
+                completion_index: 0
+            }
+        end
+      false ->
+        # Subsequent tabs - cycle through existing options
+        next_index = rem(input.completion_index + 1, length(completion_options))
+        next_match = Enum.at(completion_options, next_index)
+
+        %{
           input
-
-        [single_match] ->
-          # Single match, complete immediately and clear options
-          %{
-            input
-            | buffer: string_to_buffer(single_match),
-              completion_options: [],
-              completion_index: 0
-          }
-
-        multiple_matches ->
-          # Multiple matches, set up for cycling
-          first_match = Enum.at(multiple_matches, 0)
-
-          %{
-            input
-            | buffer: string_to_buffer(first_match),
-              completion_options: multiple_matches,
-              completion_index: 0
-          }
-      end
-    else
-      # Subsequent tabs - cycle through existing options
-      next_index = rem(input.completion_index + 1, length(completion_options))
-      next_match = Enum.at(completion_options, next_index)
-
-      %{
-        input
-        | buffer: string_to_buffer(next_match),
-          completion_index: next_index
-      }
+          | buffer: string_to_buffer(next_match),
+            completion_index: next_index
+        }
     end
   end
 

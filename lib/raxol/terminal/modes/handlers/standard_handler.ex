@@ -132,10 +132,9 @@ defmodule Raxol.Terminal.Modes.Handlers.StandardHandler do
     main_buffer = resize_buffer(emulator.main_screen_buffer, target_width)
 
     alt_buffer =
-      if emulator.alternate_screen_buffer do
-        resize_buffer(emulator.alternate_screen_buffer, target_width)
-      else
-        nil
+      case emulator.alternate_screen_buffer do
+        nil -> nil
+        buffer -> resize_buffer(buffer, target_width)
       end
 
     %{

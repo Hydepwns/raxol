@@ -8,7 +8,6 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   require Logger
 
   alias Raxol.Core.ErrorRecovery
-  alias Raxol.Core.ErrorHandling
   alias Raxol.Terminal.Buffer.Manager
   alias Raxol.Terminal.Buffer.Manager.BufferImpl
 
@@ -304,10 +303,9 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp validate_input_size(data) do
-    if byte_size(data) > @max_input_size do
-      {:error, :input_too_large}
-    else
-      {:ok, :valid_size}
+    case byte_size(data) > @max_input_size do
+      true -> {:error, :input_too_large}
+      false -> {:ok, :valid_size}
     end
   end
 
@@ -340,7 +338,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
 
   defp safe_circuit_breaker_call(name, fun) do
     # Wrap the circuit breaker call to handle any exceptions
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       ErrorRecovery.with_circuit_breaker(name, fun)
     end)
     |> case do
@@ -377,7 +375,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp safe_retry_call(fun, opts) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       ErrorRecovery.with_retry(fun, opts)
     end)
     |> case do
@@ -423,7 +421,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp perform_resize_safe(manager_pid, width, height) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       perform_resize(manager_pid, width, height)
     end)
     |> case do
@@ -459,7 +457,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
     # Use Process.alive? to check before calling
     with true <- Process.alive?(pid),
          {:ok, _ref} <- safe_monitor_setup(pid) do
-      ErrorHandling.safe_call(fn ->
+      Raxol.Core.ErrorHandling.safe_call(fn ->
         GenServer.call(pid, message, timeout)
       end)
       |> case do
@@ -476,7 +474,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp safe_monitor_setup(pid) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       Process.monitor(pid)
       :monitored
     end)
@@ -513,7 +511,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp safe_manager_resize(manager_pid, width, height) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       Manager.resize(manager_pid, {width, height})
     end)
     |> case do
@@ -581,7 +579,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   end
 
   defp safe_monitor_process(pid) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       Process.monitor(pid)
       pid
     end)

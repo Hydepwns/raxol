@@ -166,32 +166,33 @@ defmodule Raxol.Terminal.ModeState do
 
   defp categorize_mode(_mode), do: :unknown
 
-  defp basic_mode?(mode) do
-    mode in [
-      :dectcem,
-      :decawm,
-      :decom,
-      :irm,
-      :lnm,
-      :decscnm,
-      :decarm,
-      :decinlm,
-      :focus_events,
-      :bracketed_paste
-    ]
-  end
+  # Helper functions for mode categorization (currently unused but kept for future use)
+  # defp basic_mode?(mode) do
+  #   mode in [
+  #     :dectcem,
+  #     :decawm,
+  #     :decom,
+  #     :irm,
+  #     :lnm,
+  #     :decscnm,
+  #     :decarm,
+  #     :decinlm,
+  #     :focus_events,
+  #     :bracketed_paste
+  #   ]
+  # end
 
-  defp mouse_mode?(mode) do
-    mode in [:mouse_report_x10, :mouse_report_cell_motion, :mouse_report_sgr]
-  end
+  # defp mouse_mode?(mode) do
+  #   mode in [:mouse_report_x10, :mouse_report_cell_motion, :mouse_report_sgr]
+  # end
 
-  defp column_mode?(mode) do
-    mode in [:deccolm_80, :deccolm_132]
-  end
+  # defp column_mode?(mode) do
+  #   mode in [:deccolm_80, :deccolm_132]
+  # end
 
-  defp alt_screen_mode?(mode) do
-    mode in [:alt_screen_buffer, :dec_alt_screen, :dec_alt_screen_save]
-  end
+  # defp alt_screen_mode?(mode) do
+  #   mode in [:alt_screen_buffer, :dec_alt_screen, :dec_alt_screen_save]
+  # end
 
   defp check_basic_mode(state, :dectcem), do: check_cursor_visible(state)
   defp check_basic_mode(state, :decawm), do: check_auto_wrap(state)

@@ -155,33 +155,35 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
     # Switch back to main buffer, restore state, and clear alt buffer
     with {:ok, emulator_with_restored_state} <- restore_terminal_state(emulator) do
       # Clear the alternate buffer before switching away
-      if alt_buf = emulator_with_restored_state.alternate_screen_buffer do
-        cleared_alt_buf =
-          @screen_buffer_module.clear(
-            alt_buf,
-            TextFormatting.new()
-          )
+      case emulator_with_restored_state.alternate_screen_buffer do
+        nil ->
+          {:ok, %{emulator_with_restored_state | active_buffer_type: :main}}
+        alt_buf ->
+          cleared_alt_buf =
+            @screen_buffer_module.clear(
+              alt_buf,
+              TextFormatting.new()
+            )
 
-        {:ok,
-         %{
-           emulator_with_restored_state
-           | alternate_screen_buffer: cleared_alt_buf,
-             active_buffer_type: :main
-         }}
-      else
-        {:ok, %{emulator_with_restored_state | active_buffer_type: :main}}
+          {:ok,
+           %{
+             emulator_with_restored_state
+             | alternate_screen_buffer: cleared_alt_buf,
+               active_buffer_type: :main
+           }}
       end
     end
   end
 
   defp create_or_get_alt_buffer(emulator) do
-    if alt_buffer = emulator.alternate_screen_buffer do
-      {:ok, alt_buffer}
-    else
-      {width, height} =
-        @screen_buffer_module.get_dimensions(emulator.main_screen_buffer)
+    case emulator.alternate_screen_buffer do
+      nil ->
+        {width, height} =
+          @screen_buffer_module.get_dimensions(emulator.main_screen_buffer)
 
-      {:ok, @screen_buffer_module.new(width, height)}
+        {:ok, @screen_buffer_module.new(width, height)}
+      alt_buffer ->
+        {:ok, alt_buffer}
     end
   end
 
@@ -212,25 +214,26 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
     {restored_state, new_stack} =
       terminal_state_module.restore_state(emulator.state_stack)
 
-    if restored_state do
-      # Apply the restored state
-      emulator_with_restored_state =
-        terminal_state_module.apply_restored_data(
-          emulator,
-          restored_state,
-          [
-            :cursor,
-            :style,
-            :charset_state,
-            :mode_manager,
-            :scroll_region,
-            :cursor_style
-          ]
-        )
+    case restored_state do
+      nil ->
+        {:ok, emulator}
+      state ->
+        # Apply the restored state
+        emulator_with_restored_state =
+          terminal_state_module.apply_restored_data(
+            emulator,
+            state,
+            [
+              :cursor,
+              :style,
+              :charset_state,
+              :mode_manager,
+              :scroll_region,
+              :cursor_style
+            ]
+          )
 
-      {:ok, %{emulator_with_restored_state | state_stack: new_stack}}
-    else
-      {:ok, emulator}
+        {:ok, %{emulator_with_restored_state | state_stack: new_stack}}
     end
   end
 

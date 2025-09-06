@@ -27,10 +27,11 @@ defmodule Raxol.Terminal.Buffer.OperationProcessor do
   """
   @spec process_operation(operation(), term()) :: term()
   def process_operation({:set_cell, x, y, cell}, buffer) do
-    if valid_coordinates?(buffer, x, y) do
-      Content.write_char(buffer, x, y, cell.char, cell)
-    else
-      buffer
+    case valid_coordinates?(buffer, x, y) do
+      true ->
+        Content.write_char(buffer, x, y, cell.char, cell)
+      false ->
+        buffer
     end
   end
 
@@ -42,10 +43,11 @@ defmodule Raxol.Terminal.Buffer.OperationProcessor do
   end
 
   def process_operation({:write_string, x, y, string}, buffer) do
-    if valid_coordinates?(buffer, x, y) do
-      Content.write_string(buffer, x, y, string)
-    else
-      buffer
+    case valid_coordinates?(buffer, x, y) do
+      true ->
+        Content.write_string(buffer, x, y, string)
+      false ->
+        buffer
     end
   end
 
@@ -57,11 +59,12 @@ defmodule Raxol.Terminal.Buffer.OperationProcessor do
   end
 
   def process_operation({:fill_region, x, y, width, height, cell}, buffer) do
-    if valid_coordinates?(buffer, x, y) and x + width <= buffer.width and
-         y + height <= buffer.height do
-      fill_region_helper(buffer, x, y, width, height, cell)
-    else
-      buffer
+    case valid_coordinates?(buffer, x, y) and x + width <= buffer.width and
+           y + height <= buffer.height do
+      true ->
+        fill_region_helper(buffer, x, y, width, height, cell)
+      false ->
+        buffer
     end
   end
 

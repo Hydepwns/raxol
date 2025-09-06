@@ -336,22 +336,23 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
   end
 
   defp set_mode_in_manager(emulator, mode_name, value) do
-    if value do
-      case Raxol.Terminal.ModeManager.set_mode(emulator, [mode_name]) do
-        {:ok, new_emulator} ->
-          handle_screen_buffer_switch(new_emulator, mode_name, value)
+    case value do
+      true ->
+        case Raxol.Terminal.ModeManager.set_mode(emulator, [mode_name]) do
+          {:ok, new_emulator} ->
+            handle_screen_buffer_switch(new_emulator, mode_name, value)
 
-        {:error, _} ->
-          emulator
-      end
-    else
-      case Raxol.Terminal.ModeManager.reset_mode(emulator, [mode_name]) do
-        {:ok, new_emulator} ->
-          handle_screen_buffer_switch(new_emulator, mode_name, value)
+          {:error, _} ->
+            emulator
+        end
+      false ->
+        case Raxol.Terminal.ModeManager.reset_mode(emulator, [mode_name]) do
+          {:ok, new_emulator} ->
+            handle_screen_buffer_switch(new_emulator, mode_name, value)
 
-        {:error, _} ->
-          emulator
-      end
+          {:error, _} ->
+            emulator
+        end
     end
   end
 

@@ -15,7 +15,10 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorParser do
     ]
 
     Enum.find_value(parsers, {:error, :unsupported_format}, fn {prefix, parser} ->
-      if String.starts_with?(spec, prefix), do: parser.(spec), else: nil
+      case String.starts_with?(spec, prefix) do
+        true -> parser.(spec)
+        false -> nil
+      end
     end)
   end
 
@@ -93,13 +96,14 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorParser do
   defp parse_hex_component(hex_str) do
     len = byte_size(hex_str)
 
-    if len >= 1 and len <= 4 do
-      case Integer.parse(hex_str, 16) do
-        {val, ""} -> {:ok, scale_hex_value(val, len)}
-        _ -> :error
-      end
-    else
-      :error
+    case len >= 1 and len <= 4 do
+      true ->
+        case Integer.parse(hex_str, 16) do
+          {val, ""} -> {:ok, scale_hex_value(val, len)}
+          _ -> :error
+        end
+      false ->
+        :error
     end
   end
 

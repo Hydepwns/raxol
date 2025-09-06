@@ -23,10 +23,11 @@ defmodule Raxol.Terminal.Emulator.Helpers do
   """
   @spec get_cursor_struct(Raxol.Terminal.Emulator.t()) :: Cursor.t()
   def get_cursor_struct(%Raxol.Terminal.Emulator{cursor: cursor}) do
-    if is_pid(cursor) do
-      GenServer.call(cursor, :get_state)
-    else
-      cursor
+    case is_pid(cursor) do
+      true ->
+        GenServer.call(cursor, :get_state)
+      false ->
+        cursor
     end
   end
 
@@ -64,15 +65,16 @@ defmodule Raxol.Terminal.Emulator.Helpers do
   def get_cursor_position_struct(
         %Raxol.Terminal.Emulator{cursor: cursor} = emulator
       ) do
-    if is_pid(cursor) do
-      get_cursor_struct(emulator).position
-    else
-      # Handle non-pid cursor (e.g., in test environments)
-      case cursor do
-        %{position: position} -> position
-        %{col: col, row: row} -> {col, row}
-        _ -> {0, 0}
-      end
+    case is_pid(cursor) do
+      true ->
+        get_cursor_struct(emulator).position
+      false ->
+        # Handle non-pid cursor (e.g., in test environments)
+        case cursor do
+          %{position: position} -> position
+          %{col: col, row: row} -> {col, row}
+          _ -> {0, 0}
+        end
     end
   end
 
@@ -92,24 +94,25 @@ defmodule Raxol.Terminal.Emulator.Helpers do
   @spec get_cursor_position(Raxol.Terminal.Emulator.t()) ::
           {non_neg_integer(), non_neg_integer()}
   def get_cursor_position(%Raxol.Terminal.Emulator{cursor: cursor} = emulator) do
-    if is_pid(cursor) do
-      cursor_struct = get_cursor_struct(emulator)
+    case is_pid(cursor) do
+      true ->
+        cursor_struct = get_cursor_struct(emulator)
 
-      case cursor_struct do
-        # Already in {row, col} format
-        %{position: {row, col}} -> {row, col}
-        # Use row/col fields directly
-        %{row: row, col: col} -> {row, col}
-        _ -> {0, 0}
-      end
-    else
-      case cursor do
-        # Already in {row, col} format
-        %{position: {row, col}} -> {row, col}
-        # Use row/col fields directly
-        %{row: row, col: col} -> {row, col}
-        _ -> {0, 0}
-      end
+        case cursor_struct do
+          # Already in {row, col} format
+          %{position: {row, col}} -> {row, col}
+          # Use row/col fields directly
+          %{row: row, col: col} -> {row, col}
+          _ -> {0, 0}
+        end
+      false ->
+        case cursor do
+          # Already in {row, col} format
+          %{position: {row, col}} -> {row, col}
+          # Use row/col fields directly
+          %{row: row, col: col} -> {row, col}
+          _ -> {0, 0}
+        end
     end
   end
 end

@@ -22,23 +22,18 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
 
     response = generate_dsr_response(code, emulator)
 
-    if response do
-      {:ok, OutputManager.write(emulator, response)}
-    else
-      {:error, :unknown_dsr_code, emulator}
+    case response do
+      nil -> {:error, :unknown_dsr_code, emulator}
+      _ -> {:ok, OutputManager.write(emulator, response)}
     end
   end
 
   @spec handle_c(Emulator.t(), list(integer()), String.t()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_c(emulator, _params, intermediates_buffer) do
+    # generate_da_response/1 always returns a string, never returns nil
     response = generate_da_response(intermediates_buffer)
-
-    if response do
-      {:ok, OutputManager.write(emulator, response)}
-    else
-      {:error, :invalid_da_response, emulator}
-    end
+    {:ok, OutputManager.write(emulator, response)}
   end
 
   @spec generate_dsr_response(non_neg_integer(), Emulator.t()) ::

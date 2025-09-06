@@ -561,7 +561,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
 
   defp clamp_cursor_right(col, cols, _max_width), do: col + cols
 
-  defp wrap_cursor_backward(col, max_width) when col > 0, do: col - 1
+  defp wrap_cursor_backward(col, _max_width) when col > 0, do: col - 1
   defp wrap_cursor_backward(_col, max_width), do: max_width
 
   defp move_cursor_if_tab_stop(emulator, tab_stops, new_col, row) do
@@ -571,7 +571,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     end
   end
 
-  defp handle_cursor_at_bottom_scroll_or_move(emulator, buffer, cursor, true) do
+  defp handle_cursor_at_bottom_scroll_or_move(emulator, buffer, _cursor, true) do
     # Use ScreenBuffer.scroll_down since we have a ScreenBuffer struct
     new_buffer = ScreenBuffer.scroll_down(buffer, 1)
     %{emulator | main_screen_buffer: new_buffer}
@@ -583,7 +583,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     %{emulator | main_screen_buffer: new_buffer}
   end
 
-  defp handle_next_line_scroll_or_move(emulator, buffer, cursor, true) do
+  defp handle_next_line_scroll_or_move(emulator, buffer, _cursor, true) do
     # Use ScreenBuffer.scroll_down since we have a ScreenBuffer struct
     new_buffer = ScreenBuffer.scroll_down(buffer, 1)
     new_cursor = %{new_buffer.cursor | x: 0}
@@ -596,7 +596,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Screen do
     %{emulator | main_screen_buffer: new_buffer}
   end
 
-  defp handle_cursor_at_top_scroll_or_move(emulator, buffer, cursor, true) do
+  defp handle_cursor_at_top_scroll_or_move(emulator, buffer, _cursor, true) do
     # Use ScreenBuffer.scroll_up since we have a ScreenBuffer struct
     {new_buffer, _scrolled_lines} = ScreenBuffer.scroll_up(buffer, 1)
     %{emulator | main_screen_buffer: new_buffer}

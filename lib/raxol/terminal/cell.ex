@@ -168,10 +168,9 @@ defmodule Raxol.Terminal.Cell do
     # Only apply the attribute if its value is different from the default.
     final_style_map =
       Enum.reduce(merge_style_map, cell_style_map, fn {key, value}, acc_style ->
-        if Map.get(default_style_map, key) != value do
-          Map.put(acc_style, key, value)
-        else
-          acc_style
+        case Map.get(default_style_map, key) != value do
+          true -> Map.put(acc_style, key, value)
+          false -> acc_style
         end
       end)
 

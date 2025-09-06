@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.TerminalUtils do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Core.ErrorHandling
 
   # Check if termbox2_nif is available at compile time
   @termbox2_available Code.ensure_loaded?(:termbox2_nif)
@@ -130,7 +129,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   @spec detect_with_io(atom()) ::
           {:ok, pos_integer(), pos_integer()} | {:error, term()}
   def detect_with_io(io_facade) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            with {:ok, width} when is_integer(width) and width > 0 <-
                   apply(io_facade, :columns, []),
                 {:ok, height} when is_integer(height) and height > 0 <-
@@ -195,7 +194,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   @spec detect_with_stty() ::
           {:ok, pos_integer(), pos_integer()} | {:error, term()}
   def detect_with_stty do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            case System.cmd("stty", ["size"]) do
              {output, 0} ->
                output = String.trim(output)

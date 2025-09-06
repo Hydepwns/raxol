@@ -47,10 +47,9 @@ defmodule Raxol.Terminal.Manager.EventHandler do
   Processes a terminal event and sends appropriate notifications.
   """
   def process_event(event, state) do
-    if is_nil(state.terminal) do
-      {:error, :no_terminal}
-    else
-      process_event_by_type(event, state)
+    case state.terminal do
+      nil -> {:error, :no_terminal}
+      _ -> process_event_by_type(event, state)
     end
   end
 

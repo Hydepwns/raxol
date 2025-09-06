@@ -283,13 +283,14 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
     # Ensure palette is initialized
     state_with_palette =
-      if map_size(state.palette) == 0 do
-        %{
+      case map_size(state.palette) == 0 do
+        true ->
+          %{
+            state
+            | palette: Raxol.Terminal.ANSI.SixelPalette.initialize_palette()
+          }
+        false ->
           state
-          | palette: Raxol.Terminal.ANSI.SixelPalette.initialize_palette()
-        }
-      else
-        state
       end
 
     Logger.debug(
@@ -329,10 +330,9 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
         # Preserve the original palette if the parser didn't modify it
         final_palette =
-          if map_size(parser_state.palette) == 0 do
-            state_with_palette.palette
-          else
-            parser_state.palette
+          case map_size(parser_state.palette) == 0 do
+            true -> state_with_palette.palette
+            false -> parser_state.palette
           end
 
         Logger.debug(

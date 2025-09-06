@@ -21,11 +21,12 @@ defmodule Raxol.Terminal.Buffer.Updater do
           list({non_neg_integer(), non_neg_integer(), map()})
         ) :: list({non_neg_integer(), non_neg_integer(), map()})
   def diff(%ScreenBuffer{} = buffer, changes) when is_list(changes) do
-    if valid_changes_format?(changes) do
-      Enum.filter(changes, &needs_update?(buffer, &1))
-    else
-      log_invalid_changes_format(changes)
-      []
+    case valid_changes_format?(changes) do
+      true ->
+        Enum.filter(changes, &needs_update?(buffer, &1))
+      false ->
+        log_invalid_changes_format(changes)
+        []
     end
   end
 
@@ -102,10 +103,11 @@ defmodule Raxol.Terminal.Buffer.Updater do
   # Applies a single cell update, handling wide characters.
   # Internal helper for update/2.
   defp apply_cell_update(%ScreenBuffer{} = buffer, x, y, %Cell{} = cell) do
-    if in_bounds?(buffer, x, y) do
-      update_cell_in_bounds(buffer, x, y, cell)
-    else
-      buffer
+    case in_bounds?(buffer, x, y) do
+      true ->
+        update_cell_in_bounds(buffer, x, y, cell)
+      false ->
+        buffer
     end
   end
 
@@ -145,14 +147,15 @@ defmodule Raxol.Terminal.Buffer.Updater do
   defp update_row_with_wide_char(row, x, cell, wide, width) do
     row_with_primary = List.replace_at(row, x, cell)
 
-    if wide and x + 1 < width do
-      List.replace_at(
-        row_with_primary,
-        x + 1,
-        Cell.new_wide_placeholder(cell.style)
-      )
-    else
-      row_with_primary
+    case wide and x + 1 < width do
+      true ->
+        List.replace_at(
+          row_with_primary,
+          x + 1,
+          Cell.new_wide_placeholder(cell.style)
+        )
+      false ->
+        row_with_primary
     end
   end
 end

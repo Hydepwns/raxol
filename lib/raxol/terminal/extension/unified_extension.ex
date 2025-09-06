@@ -150,8 +150,11 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
       commands: %{}
     }
 
-    if state.auto_load do
-      FileOperations.load_extensions_from_paths(state.extension_paths)
+    case state.auto_load do
+      true ->
+        FileOperations.load_extensions_from_paths(state.extension_paths)
+      false ->
+        :ok
     end
 
     {:ok, state}

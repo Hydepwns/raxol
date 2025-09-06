@@ -160,15 +160,18 @@ defmodule Raxol.Terminal.Config.AnimationCache do
            # We don't track original size in unified cache
            total_original_size: stats.size,
            average_size:
-             if(stats.size > 0, do: div(stats.size, stats.size), else: 0),
+             case stats.size > 0 do
+               true -> div(stats.size, stats.size)
+               false -> 0
+             end,
            # We don't track compression ratio in unified cache
            compression_ratio: 0,
            max_size: stats.max_size,
            used_percent:
-             if(stats.max_size > 0,
-               do: round(stats.size / stats.max_size * 100),
-               else: 0
-             ),
+             case stats.max_size > 0 do
+               true -> round(stats.size / stats.max_size * 100)
+               false -> 0
+             end,
            hit_count: Map.get(stats, :hit_count, 0),
            miss_count: Map.get(stats, :miss_count, 0),
            hit_ratio: Map.get(stats, :hit_ratio, 0.0)
@@ -224,16 +227,17 @@ defmodule Raxol.Terminal.Config.AnimationCache do
   # Private Functions
 
   defp handle_cache_success(animation_path, compressed_size, original_size) do
-    if original_size > 0 do
-      compression_ratio = round((1 - compressed_size / original_size) * 100)
+    case original_size > 0 do
+      true ->
+        compression_ratio = round((1 - compressed_size / original_size) * 100)
 
-      IO.puts(
-        "Animation cached: #{animation_path} (#{compressed_size} bytes, #{compression_ratio}% compression)"
-      )
-    else
-      IO.puts(
-        "Animation cached: #{animation_path} (#{compressed_size} bytes, empty original file)"
-      )
+        IO.puts(
+          "Animation cached: #{animation_path} (#{compressed_size} bytes, #{compression_ratio}% compression)"
+        )
+      false ->
+        IO.puts(
+          "Animation cached: #{animation_path} (#{compressed_size} bytes, empty original file)"
+        )
     end
 
     :ok
@@ -266,13 +270,14 @@ defmodule Raxol.Terminal.Config.AnimationCache do
   defp process_animation_file(file, directory) do
     path = Path.join(directory, file)
 
-    if File.regular?(path) do
-      case determine_animation_type(path) do
-        nil -> []
-        type -> [{path, type}]
-      end
-    else
-      []
+    case File.regular?(path) do
+      true ->
+        case determine_animation_type(path) do
+          nil -> []
+          type -> [{path, type}]
+        end
+      false ->
+        []
     end
   end
 

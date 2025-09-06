@@ -120,7 +120,10 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
         s = pz / 100.0
         # Clamp h to 0-360 range using fmod for floats
         h = :math.fmod(h, 360.0)
-        h = if h < 0.0, do: h + 360.0, else: h
+        h = case h < 0.0 do
+          true -> h + 360.0
+          false -> h
+        end
         hls_to_rgb(h, l, s)
 
       # RGB (R: Px, G: Py, B: Pz - all 0-100)
@@ -150,14 +153,19 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
     l = max(0.0, min(1.0, l))
     s = max(0.0, min(1.0, s))
 
-    if s == 0.0 do
-      # Achromatic
-      grey = round(l * 255)
-      {:ok, {grey, grey, grey}}
-    else
-      # Handle hue = 360.0 by treating it as 0.0
-      h = if h == 360.0, do: 0.0, else: h
-      calculate_chromatic_rgb(h, l, s)
+    case s == 0.0 do
+      true ->
+        # Achromatic
+        grey = round(l * 255)
+        {:ok, {grey, grey, grey}}
+
+      false ->
+        # Handle hue = 360.0 by treating it as 0.0
+        h = case h == 360.0 do
+          true -> 0.0
+          false -> h
+        end
+        calculate_chromatic_rgb(h, l, s)
     end
   end
 

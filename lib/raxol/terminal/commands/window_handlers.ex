@@ -106,8 +106,14 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
     x = Enum.at(params, 2, 0)
 
     # Ensure non-negative values, default to 0 for invalid input
-    safe_x = if is_integer(x) and x >= 0, do: x, else: 0
-    safe_y = if is_integer(y) and y >= 0, do: y, else: 0
+    safe_x = case is_integer(x) and x >= 0 do
+      true -> x
+      false -> 0
+    end
+    safe_y = case is_integer(y) and y >= 0 do
+      true -> y
+      false -> 0
+    end
 
     updated_window_state = %{emulator.window_state | position: {safe_x, safe_y}}
     updated_emulator = %{emulator | window_state: updated_window_state}
@@ -217,7 +223,10 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
     do: elem(emulator.window_state.size_pixels, 1)
 
   defp validate_dimension(value, fallback) do
-    if is_integer(value) and value > 0, do: value, else: fallback
+    case is_integer(value) and value > 0 do
+      true -> value
+      false -> fallback
+    end
   end
 
   defp resize_screen_buffer(buffer, width, height) do
@@ -329,7 +338,10 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
 
   def handle_report_state(emulator) do
     # Report window state via output buffer
-    state_code = if emulator.window_state.iconified, do: "2", else: "1"
+    state_code = case emulator.window_state.iconified do
+      true -> "2"
+      false -> "1"
+    end
     output = "\x1b[#{state_code}t"
     updated_emulator = %{emulator | output_buffer: output}
     {:ok, updated_emulator}

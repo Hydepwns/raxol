@@ -117,7 +117,10 @@ defmodule Raxol.Terminal.ANSI.SGRHandler do
 
   defp handle_param_range(param, style) do
     Enum.find_value(@param_range_handlers, style, fn {range, handler} ->
-      if param in range, do: handler.(param, style)
+      case param in range do
+        true -> handler.(param, style)
+        false -> nil
+      end
     end)
   end
 

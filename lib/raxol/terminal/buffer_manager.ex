@@ -64,7 +64,11 @@ defmodule Raxol.Terminal.BufferManager do
   @spec switch_buffer(Emulator.t()) :: Emulator.t()
   def switch_buffer(emulator) do
     new_type =
-      if emulator.active_buffer_type == :main, do: :alternate, else: :main
+      case emulator.active_buffer_type do
+        :main -> :alternate
+        :alternate -> :main
+        _ -> :main
+      end
 
     %{emulator | active_buffer_type: new_type}
   end

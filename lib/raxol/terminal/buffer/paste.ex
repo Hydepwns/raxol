@@ -85,13 +85,14 @@ defmodule Raxol.Terminal.Buffer.Paste do
     Enum.reduce_while(remaining_lines, {buffer, y + 1}, fn line,
                                                            {acc_buffer,
                                                             current_y} ->
-      if current_y < acc_buffer.height do
-        # Write the line starting from column 0
-        updated_buffer = Writer.write_string(acc_buffer, 0, current_y, line)
-        {:cont, {updated_buffer, current_y + 1}}
-      else
-        # Buffer is full, stop
-        {:halt, {acc_buffer, current_y}}
+      case current_y < acc_buffer.height do
+        true ->
+          # Write the line starting from column 0
+          updated_buffer = Writer.write_string(acc_buffer, 0, current_y, line)
+          {:cont, {updated_buffer, current_y + 1}}
+        false ->
+          # Buffer is full, stop
+          {:halt, {acc_buffer, current_y}}
       end
     end)
     |> elem(0)
@@ -110,12 +111,13 @@ defmodule Raxol.Terminal.Buffer.Paste do
   def ensure_space_for_text(buffer, x, y, text_length) do
     available_space = buffer.width - x
 
-    if text_length > available_space do
-      # Need to insert characters to make room
-      chars_to_insert = text_length - available_space
-      LineOperations.insert_chars_at(buffer, y, x, chars_to_insert)
-    else
-      buffer
+    case text_length > available_space do
+      true ->
+        # Need to insert characters to make room
+        chars_to_insert = text_length - available_space
+        LineOperations.insert_chars_at(buffer, y, x, chars_to_insert)
+      false ->
+        buffer
     end
   end
 
@@ -131,20 +133,21 @@ defmodule Raxol.Terminal.Buffer.Paste do
   def ensure_space_for_lines(buffer, y, lines_needed) do
     available_lines = buffer.height - y - 1
 
-    if lines_needed > available_lines do
-      # Need to insert lines to make room
-      lines_to_insert = lines_needed - available_lines
+    case lines_needed > available_lines do
+      true ->
+        # Need to insert lines to make room
+        lines_to_insert = lines_needed - available_lines
 
-      LineOperations.insert_lines(
-        buffer,
-        lines_to_insert,
-        y,
-        0,
-        buffer.height - 1,
-        buffer.height - 1
-      )
-    else
-      buffer
+        LineOperations.insert_lines(
+          buffer,
+          lines_to_insert,
+          y,
+          0,
+          buffer.height - 1,
+          buffer.height - 1
+        )
+      false ->
+        buffer
     end
   end
 end

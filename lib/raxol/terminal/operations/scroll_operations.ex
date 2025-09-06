@@ -19,10 +19,12 @@ defmodule Raxol.Terminal.Operations.ScrollOperations do
   def set_scroll_region(emulator, start_line, end_line) do
     # Handle case where start > end by swapping them
     {actual_start, actual_end} =
-      if start_line > end_line do
-        {end_line, start_line}
-      else
-        {start_line, end_line}
+      case start_line > end_line do
+        true ->
+          {end_line, start_line}
+
+        false ->
+          {start_line, end_line}
       end
 
     # Clamp to screen bounds

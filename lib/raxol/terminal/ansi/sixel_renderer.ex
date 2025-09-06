@@ -16,26 +16,28 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
   def render_image(state) do
     %{pixel_buffer: pixel_buffer, palette: palette, attributes: attrs} = state
 
-    if map_size(pixel_buffer) == 0 do
-      {:ok, ""}
-    else
-      {width, height, used_colors} = calculate_dimensions(pixel_buffer)
-      {pan, pad, ph, pv} = get_raster_attributes(attrs, width, height)
-      dcs_start = create_dcs_start(pan, pad, ph, pv)
-      color_definitions = create_color_definitions(palette, used_colors)
+    case map_size(pixel_buffer) do
+      0 ->
+        {:ok, ""}
 
-      sixel_pixel_data =
-        generate_pixel_data(pixel_buffer, width, height, used_colors)
+      _ ->
+        {width, height, used_colors} = calculate_dimensions(pixel_buffer)
+        {pan, pad, ph, pv} = get_raster_attributes(attrs, width, height)
+        dcs_start = create_dcs_start(pan, pad, ph, pv)
+        color_definitions = create_color_definitions(palette, used_colors)
 
-      dcs_end = "\e\\"
+        sixel_pixel_data =
+          generate_pixel_data(pixel_buffer, width, height, used_colors)
 
-      {:ok,
-       IO.iodata_to_binary([
-         dcs_start,
-         color_definitions,
-         sixel_pixel_data,
-         dcs_end
-       ])}
+        dcs_end = "\e\\"
+
+        {:ok,
+         IO.iodata_to_binary([
+           dcs_start,
+           color_definitions,
+           sixel_pixel_data,
+           dcs_end
+         ])}
     end
   end
 
@@ -59,7 +61,7 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
     {pan, pad, ph, pv}
   end
 
-  defp get_dimension(attrs, key, tuple_index, default) when is_map(attrs) do
+  defp get_dimension(attrs, key, _tuple_index, default) when is_map(attrs) do
     Map.get(attrs, key, default)
   end
 
@@ -195,24 +197,27 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
     {current_color, current_char} =
       get_column_values(column_pixels, simple_column?)
 
-    if simple_column? and current_color == last_color and
-         current_char == last_char do
-      {acc_commands, last_color, last_char, repeat_count + 1}
-    else
-      output_commands = format_output_commands(repeat_count, last_char)
-      current_commands = format_current_commands(column_pixels)
+    case {simple_column?, current_color == last_color, current_char == last_char} do
+      {true, true, true} ->
+        {acc_commands, last_color, last_char, repeat_count + 1}
 
-      {acc_commands ++ output_commands ++ current_commands, current_color,
-       current_char, 1}
+      _ ->
+        output_commands = format_output_commands(repeat_count, last_char)
+        current_commands = format_current_commands(column_pixels)
+
+        {acc_commands ++ output_commands ++ current_commands, current_color,
+         current_char, 1}
     end
   end
 
   defp get_column_values(column_pixels, simple_column?) do
-    if simple_column? do
-      [{color, bitmask}] = Map.to_list(column_pixels)
-      {color, <<bitmask + 63>>}
-    else
-      {nil, nil}
+    case simple_column? do
+      true ->
+        [{color, bitmask}] = Map.to_list(column_pixels)
+        {color, <<bitmask + 63>>}
+
+      false ->
+        {nil, nil}
     end
   end
 
@@ -228,7 +233,10 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
         [<<"#", Integer.to_string(color_index)::binary>>, <<bitmask + 63>>]
       end)
 
-    if map_size(column_pixels) > 1, do: commands ++ ["-"], else: commands
+    case map_size(column_pixels) > 1 do
+      true -> commands ++ ["-"]
+      false -> commands
+    end
   end
 
   defp format_band_output(nil, _, commands), do: commands

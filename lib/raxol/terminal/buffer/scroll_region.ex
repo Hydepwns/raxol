@@ -58,7 +58,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   def set_region(buffer, top, bottom) when top > bottom,
     do: %{buffer | scroll_region: nil, scroll_position: 0}
 
-  def set_region(buffer, top, bottom) when bottom >= buffer.height,
+  def set_region(buffer, _top, bottom) when bottom >= buffer.height,
     do: %{buffer | scroll_region: nil, scroll_position: 0}
 
   def set_region(buffer, top, bottom),

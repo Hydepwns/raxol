@@ -269,12 +269,13 @@ defmodule Raxol.Terminal.Events.Handlers do
     # Apply scroll operation based on direction and delta
     case direction do
       :vertical ->
-        if delta > 0 do
-          # Scroll down
-          Raxol.Terminal.Commands.Screen.scroll_down(emulator_state, delta)
-        else
-          # Scroll up
-          Raxol.Terminal.Commands.Screen.scroll_up(emulator_state, abs(delta))
+        case delta > 0 do
+          true ->
+            # Scroll down
+            Raxol.Terminal.Commands.Screen.scroll_down(emulator_state, delta)
+          false ->
+            # Scroll up
+            Raxol.Terminal.Commands.Screen.scroll_up(emulator_state, abs(delta))
         end
 
       :horizontal ->

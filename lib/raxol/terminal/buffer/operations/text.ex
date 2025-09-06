@@ -23,10 +23,11 @@ defmodule Raxol.Terminal.Buffer.Operations.Text do
       buffer
       |> Enum.with_index()
       |> Enum.map(fn {row, row_y} ->
-        if row_y == y do
-          replace_cell(row, x, char, style)
-        else
-          row
+        case row_y == y do
+          true ->
+            replace_cell(row, x, char, style)
+          false ->
+            row
         end
       end)
 
@@ -37,10 +38,11 @@ defmodule Raxol.Terminal.Buffer.Operations.Text do
   defp replace_cell(row, x, char, style) do
     Enum.with_index(row)
     |> Enum.map(fn {cell, col_x} ->
-      if col_x == x do
-        Cell.new(char, style)
-      else
-        cell
+      case col_x == x do
+        true ->
+          Cell.new(char, style)
+        false ->
+          cell
       end
     end)
   end
@@ -132,10 +134,11 @@ defmodule Raxol.Terminal.Buffer.Operations.Text do
   end
 
   defp handle_unknown_data(buffer, data) do
-    if is_binary(data) do
-      Raxol.Terminal.Buffer.Manager.BufferImpl.add(buffer, data)
-    else
-      buffer
+    case is_binary(data) do
+      true ->
+        Raxol.Terminal.Buffer.Manager.BufferImpl.add(buffer, data)
+      false ->
+        buffer
     end
   end
 

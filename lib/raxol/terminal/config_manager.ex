@@ -105,10 +105,9 @@ defmodule Raxol.Terminal.ConfigManager do
   defp validate_behavior(_behavior), do: :ok
 
   defp validate_memory_limit(limit) do
-    if is_integer(limit) and limit >= 0 do
-      :ok
-    else
-      {:error, "Invalid memory limit"}
+    case is_integer(limit) and limit >= 0 do
+      true -> :ok
+      false -> {:error, "Invalid memory limit"}
     end
   end
 

@@ -148,10 +148,9 @@ defmodule Raxol.Terminal.Buffer.Operations.Utils do
     buffer
     |> Enum.with_index()
     |> Enum.map(fn {row, row_y} ->
-      if row_y >= y and row_y < y + height do
-        fill_row_region(row, x, width, cell)
-      else
-        row
+      case row_y >= y and row_y < y + height do
+        true -> fill_row_region(row, x, width, cell)
+        false -> row
       end
     end)
   end
@@ -160,10 +159,9 @@ defmodule Raxol.Terminal.Buffer.Operations.Utils do
     row
     |> Enum.with_index()
     |> Enum.map(fn {col_cell, col_x} ->
-      if col_x >= x and col_x < x + width do
-        cell
-      else
-        col_cell
+      case col_x >= x and col_x < x + width do
+        true -> cell
+        false -> col_cell
       end
     end)
   end

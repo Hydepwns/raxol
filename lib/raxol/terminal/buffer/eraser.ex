@@ -539,7 +539,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
 
   # Helper functions to eliminate if statements
 
-  defp replace_cell_if_at_or_before_col(cell, cell_col, col, empty_cell)
+  defp replace_cell_if_at_or_before_col(_cell, cell_col, col, empty_cell)
        when cell_col <= col do
     empty_cell
   end
@@ -631,7 +631,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   defp clear_line_if_at_target_row(line, _line_row, _row, _col, _empty_cell),
     do: line
 
-  defp replace_cell_if_at_or_after_col(cell, cell_col, col, empty_cell)
+  defp replace_cell_if_at_or_after_col(_cell, cell_col, col, empty_cell)
        when cell_col >= col do
     empty_cell
   end
@@ -639,7 +639,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   defp replace_cell_if_at_or_after_col(cell, _cell_col, _col, _empty_cell),
     do: cell
 
-  defp clear_lines_below_if_needed(buffer, row, style)
+  defp clear_lines_below_if_needed(buffer, row, _style)
        when row + 1 >= buffer.height do
     buffer
   end

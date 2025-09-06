@@ -49,7 +49,6 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   use GenServer
   require Logger
-  alias Raxol.Core.ErrorHandling
 
   # @behaviour Raxol.Terminal.Rendering.Backend  # Commented out due to init/1 conflict with GenServer
 
@@ -232,18 +231,15 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     height = Keyword.get(opts, :height, 600)
     surface_id = generate_surface_id(width, height)
 
-    case create_render_surface(state, width, height) do
-      {:ok, surface} ->
-        new_state = %{
-          state
-          | surface_cache: Map.put(state.surface_cache, surface_id, surface)
-        }
+    # create_render_surface/3 currently always returns {:ok, surface}
+    {:ok, surface} = create_render_surface(state, width, height)
+    
+    new_state = %{
+      state
+      | surface_cache: Map.put(state.surface_cache, surface_id, surface)
+    }
 
-        {:reply, {:ok, surface_id}, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:reply, {:ok, surface_id}, new_state}
   end
 
   @impl GenServer
@@ -255,43 +251,32 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
         {:reply, {:error, :surface_not_found}, state}
 
       surface ->
-        case perform_render(state, surface, terminal_buffer, opts) do
-          :ok ->
-            end_time = System.monotonic_time(:microsecond)
-            # Convert to milliseconds
-            render_time = (end_time - start_time) / 1000
+        # perform_render/4 currently always returns :ok
+        :ok = perform_render(state, surface, terminal_buffer, opts)
+        
+        end_time = System.monotonic_time(:microsecond)
+        # Convert to milliseconds
+        render_time = (end_time - start_time) / 1000
 
-            new_stats = update_render_stats(state.render_stats, render_time)
-            new_state = %{state | render_stats: new_stats}
+        new_stats = update_render_stats(state.render_stats, render_time)
+        new_state = %{state | render_stats: new_stats}
 
-            {:reply, :ok, new_state}
-
-          {:error, reason} ->
-            {:reply, {:error, reason}, state}
-        end
+        {:reply, :ok, new_state}
     end
   end
 
   @impl GenServer
   def handle_call({:enable_effect, effect_type, params}, _from, state) do
-    case apply_effect(state, effect_type, params) do
-      {:ok, new_state} ->
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    # apply_effect/3 currently always returns {:ok, state}
+    {:ok, new_state} = apply_effect(state, effect_type, params)
+    {:reply, :ok, new_state}
   end
 
   @impl GenServer
   def handle_call({:disable_effect, effect_type}, _from, state) do
-    case remove_effect(state, effect_type) do
-      {:ok, new_state} ->
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    # remove_effect/2 currently always returns {:ok, state}
+    {:ok, new_state} = remove_effect(state, effect_type)
+    {:reply, :ok, new_state}
   end
 
   @impl GenServer
@@ -410,7 +395,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   end
 
   defp initialize_metal(config) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            # This would be actual Metal API calls through NIFs
            # For now, we simulate the initialization
            device = create_metal_device(config)
@@ -425,7 +410,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   end
 
   defp initialize_vulkan(config) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            # This would be actual Vulkan API calls through NIFs
            device = create_vulkan_device(config)
            queue = create_vulkan_queue(device)

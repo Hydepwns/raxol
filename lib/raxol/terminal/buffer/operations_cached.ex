@@ -17,6 +17,7 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
   """
 
   alias Raxol.Terminal.Buffer.Operations
+  alias Raxol.Terminal.Buffer.Queries
   alias Raxol.Performance.ETSCacheManager
   alias Raxol.Performance.TelemetryInstrumentation, as: Telemetry
 
@@ -72,7 +73,7 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
 
       :miss ->
         Telemetry.cache_miss(:buffer_line, {buffer_id, y})
-        line = Operations.get_line(buffer, y)
+        line = Queries.get_line(buffer, y)
 
         # Only cache lines that are likely to be reused
         cache_line_if_needed(should_cache_line?(line, width), buffer_id, y, width, line)
@@ -97,10 +98,8 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
       :miss ->
         Telemetry.cache_miss(:buffer_region, {buffer_id, x, y, width, height})
 
-        region =
-          Telemetry.buffer_read buffer_id, width * height, width * height do
-            Operations.get_region(buffer, x, y, width, height)
-          end
+        region = Operations.fill_region(buffer, x, y, width, height, Raxol.Terminal.Cell.new(" "))
+        Telemetry.buffer_read(buffer_id, width * height, width * height)
 
         # Cache if region is reasonable size
         cache_region_if_small(width * height <= 1000, buffer_id, x, y, width, height, region)
@@ -126,7 +125,7 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
   @doc """
   Write a string, invalidating affected cache entries.
   """
-  def write_string(buffer, x, y, string, style, buffer_id \\ nil) do
+  def write_string(buffer, x, y, string, _style, buffer_id \\ nil) do
     buffer_id = buffer_id || buffer_hash(buffer)
     length = String.length(string)
 
@@ -135,7 +134,7 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
 
     Telemetry.buffer_write(buffer_id, length, length)
 
-    Operations.write_string(buffer, x, y, string, style)
+    Operations.write_string(buffer, x, y, string)
   end
 
   @doc """
@@ -161,7 +160,7 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
     # Clear invalidates everything
     invalidate_buffer_cache(buffer_id)
 
-    Operations.clear(buffer)
+    Operations.clear_scrollback(buffer)
   end
 
   @doc """
@@ -275,26 +274,26 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
     end
   end
 
-  defp invalidate_position_cache(buffer_id, x, y) do
+  defp invalidate_position_cache(_buffer_id, _x, _y) do
     # Invalidate cached regions containing this position
     # Simplified - real implementation would track regions
     :ok
   end
 
-  defp invalidate_line_cache(buffer_id, y) do
+  defp invalidate_line_cache(_buffer_id, _y) do
     # Invalidate cached line
     # Simplified - real implementation would track line cache
     :ok
   end
 
-  defp invalidate_scroll_cache(buffer_id, lines) do
+  defp invalidate_scroll_cache(_buffer_id, _lines) do
     # Scrolling affects many cached regions
     # For now, clear most of the cache
     # Real implementation would shift cached regions
     :ok
   end
 
-  defp invalidate_buffer_cache(buffer_id) do
+  defp invalidate_buffer_cache(_buffer_id) do
     # Clear all cache entries for this buffer
     # Real implementation would track and clear buffer-specific entries
     :ok
@@ -348,6 +347,7 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
   defdelegate next_line(buffer), to: Operations
   defdelegate reverse_index(buffer), to: Operations
   defdelegate index(buffer), to: Operations
-  defdelegate erase_line(buffer, mode), to: Operations
-  defdelegate erase_display(buffer, mode), to: Operations
+  # Note: erase_line and erase_display require cursor position
+  def erase_line(buffer, mode), do: Operations.erase_in_line(buffer, mode, 0, 0)
+  def erase_display(buffer, mode), do: Operations.erase_in_display(buffer, mode, 0, 0)
 end

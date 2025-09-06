@@ -14,10 +14,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.CellOperations do
   @spec get_cell_at_coordinates(map(), non_neg_integer(), non_neg_integer()) ::
           {:valid, Cell.t()} | {:invalid, Cell.t()}
   def get_cell_at_coordinates(state, x, y) do
-    if coordinates_valid?(state, x, y) do
-      {:valid, extract_and_clean_cell(state, x, y)}
-    else
-      {:invalid, create_default_cell()}
+    case coordinates_valid?(state, x, y) do
+      true ->
+        {:valid, extract_and_clean_cell(state, x, y)}
+      false ->
+        {:invalid, create_default_cell()}
     end
   end
 
@@ -87,10 +88,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.CellOperations do
   defp extract_and_clean_cell(state, x, y) do
     cell = get_cell_from_buffer(state.active_buffer, x, y)
 
-    if cell_empty?(cell) do
-      create_default_cell()
-    else
-      clean_cell_style(cell)
+    case cell_empty?(cell) do
+      true ->
+        create_default_cell()
+      false ->
+        clean_cell_style(cell)
     end
   end
 
@@ -113,10 +115,11 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.CellOperations do
                 create_default_cell()
 
               cell ->
-                if is_list(cell) do
-                  List.first(cell) || create_default_cell()
-                else
-                  cell
+                case is_list(cell) do
+                  true ->
+                    List.first(cell) || create_default_cell()
+                  false ->
+                    cell
                 end
             end
         end

@@ -140,10 +140,9 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
 
     # If this is the first tab, make it active
     new_state =
-      if state.active_tab == nil do
-        %{new_state | active_tab: tab_id}
-      else
-        new_state
+      case state.active_tab do
+        nil -> %{new_state | active_tab: tab_id}
+        _ -> new_state
       end
 
     {:reply, {:ok, tab_id}, new_state}
@@ -212,13 +211,14 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
 
         # Update active tab if needed
         new_active_tab =
-          if state.active_tab == tab_id do
-            case Map.keys(new_tabs) do
-              [] -> nil
-              [first_tab | _] -> first_tab
-            end
-          else
-            state.active_tab
+          case state.active_tab == tab_id do
+            true ->
+              case Map.keys(new_tabs) do
+                [] -> nil
+                [first_tab | _] -> first_tab
+              end
+            false ->
+              state.active_tab
           end
 
         new_state = %{state | tabs: new_tabs, active_tab: new_active_tab}

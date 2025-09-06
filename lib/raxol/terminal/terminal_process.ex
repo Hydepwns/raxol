@@ -110,30 +110,21 @@ defmodule Raxol.Terminal.TerminalProcess do
 
   @impl GenServer
   def handle_call({:apply_config_changes, changes}, _from, state) do
-    case apply_configuration_changes(changes, state) do
-      {:ok, new_state} ->
-        updated_state = %{
-          new_state
-          | version: state.version + 1,
-            last_activity_at: System.system_time(:millisecond)
-        }
+    {:ok, new_state} = apply_configuration_changes(changes, state)
+    
+    updated_state = %{
+      new_state
+      | version: state.version + 1,
+        last_activity_at: System.system_time(:millisecond)
+    }
 
-        {:reply, {:ok, updated_state.config}, updated_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:reply, {:ok, updated_state.config}, updated_state}
   end
 
   @impl GenServer
   def handle_call({:send_input, input_message}, _from, state) do
-    case process_input(input_message, state) do
-      {:ok, new_state} ->
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, new_state} = process_input(input_message, state)
+    {:reply, :ok, new_state}
   end
 
   @impl GenServer
@@ -153,10 +144,9 @@ defmodule Raxol.Terminal.TerminalProcess do
 
   @impl GenServer
   def handle_call(:save_session, _from, state) do
-    case save_terminal_session(state) do
-      :ok -> {:reply, :ok, state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
-    end
+    # save_terminal_session/1 always returns :ok, no error case possible
+    :ok = save_terminal_session(state)
+    {:reply, :ok, state}
   end
 
   @impl GenServer
@@ -171,13 +161,9 @@ defmodule Raxol.Terminal.TerminalProcess do
 
   @impl GenServer
   def handle_call({:apply_theme, theme}, _from, state) do
-    case apply_theme_to_terminal(theme, state) do
-      {:ok, new_state} ->
-        {:reply, :ok, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    # apply_theme_to_terminal/2 always returns {:ok, new_state}, no error case possible
+    {:ok, new_state} = apply_theme_to_terminal(theme, state)
+    {:reply, :ok, new_state}
   end
 
   @impl GenServer
@@ -199,17 +185,8 @@ defmodule Raxol.Terminal.TerminalProcess do
   @impl GenServer
   def handle_info({:output, data}, state) do
     # Handle output from the terminal emulator
-    case process_output(data, state) do
-      {:ok, new_state} ->
-        {:noreply, new_state}
-
-      {:error, reason} ->
-        Logger.error(
-          "Failed to process output for terminal #{state.terminal_id}: #{inspect(reason)}"
-        )
-
-        {:noreply, state}
-    end
+    {:ok, new_state} = process_output(data, state)
+    {:noreply, new_state}
   end
 
   @impl GenServer
@@ -293,11 +270,9 @@ defmodule Raxol.Terminal.TerminalProcess do
     new_state =
       case Enum.any?(changes, fn c -> c.field in [:width, :height] end) do
         true ->
-          case update_emulator_dimensions(new_state) do
-            {:ok, updated_state} -> updated_state
-            # Keep old state on error
-            {:error, _reason} -> new_state
-          end
+          # update_emulator_dimensions/1 always returns {:ok, updated_state}, no error case possible
+          {:ok, updated_state} = update_emulator_dimensions(new_state)
+          updated_state
         
         false ->
           new_state

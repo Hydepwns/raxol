@@ -29,10 +29,9 @@ defmodule Raxol.Terminal.ANSI.Colors do
 
   def parse_color({r, g, b})
       when is_integer(r) and is_integer(g) and is_integer(b) do
-    if r in 0..255 and g in 0..255 and b in 0..255 do
-      {:ok, {r, g, b}}
-    else
-      {:error, :invalid_rgb}
+    case {r in 0..255, g in 0..255, b in 0..255} do
+      {true, true, true} -> {:ok, {r, g, b}}
+      _ -> {:error, :invalid_rgb}
     end
   end
 

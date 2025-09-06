@@ -34,10 +34,9 @@ defmodule Raxol.Terminal.Style.StyleProcessor do
 
     # Convert current_style to TextFormatting struct if it's a plain map
     current_style =
-      if Map.has_key?(current_style, :__struct__) do
-        current_style
-      else
-        Raxol.Terminal.ANSI.TextFormatting.new(current_style)
+      case Map.has_key?(current_style, :__struct__) do
+        true -> current_style
+        false -> Raxol.Terminal.ANSI.TextFormatting.new(current_style)
       end
 
     updated_style =

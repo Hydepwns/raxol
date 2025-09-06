@@ -77,10 +77,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
     name = Keyword.get(opts, :name)
     gen_server_opts = Keyword.delete(opts, :name)
 
-    if name do
-      GenServer.start_link(__MODULE__, gen_server_opts, name: name)
-    else
-      GenServer.start_link(__MODULE__, gen_server_opts)
+    case name do
+      nil -> GenServer.start_link(__MODULE__, gen_server_opts)
+      _ -> GenServer.start_link(__MODULE__, gen_server_opts, name: name)
     end
   end
 

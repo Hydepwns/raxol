@@ -150,6 +150,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.SequenceParser do
   Normalizes a parameter value.
   """
   def normalize_param(param) do
-    if param >= ?0 and param <= ?9, do: param - ?0, else: param
+    case param >= ?0 and param <= ?9 do
+      true -> param - ?0
+      false -> param
+    end
   end
 end

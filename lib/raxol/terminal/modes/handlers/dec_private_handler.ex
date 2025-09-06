@@ -116,7 +116,10 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   end
 
   def handle_cursor_keys_mode(value, emulator) do
-    cursor_mode = if value, do: :application, else: :normal
+    cursor_mode = case value do
+      true -> :application
+      false -> :normal
+    end
 
     {:ok,
      %{
@@ -205,8 +208,9 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     new_mode_manager = %{emulator.mode_manager | cursor_visible: value}
 
     # Update cursor manager if it's a PID
-    if is_pid(emulator.cursor) do
-      GenServer.call(emulator.cursor, {:set_visibility, value})
+    case is_pid(emulator.cursor) do
+      true -> GenServer.call(emulator.cursor, {:set_visibility, value})
+      false -> :ok
     end
 
     {:ok,
@@ -243,11 +247,17 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     new_mode_manager = %{
       emulator.mode_manager
       | alternate_buffer_active: value,
-        active_buffer_type: if(value, do: :alternate, else: :main)
+        active_buffer_type: case value do
+          true -> :alternate
+          false -> :main
+        end
     }
 
     # Update the active buffer type based on the mode
-    new_active_buffer_type = if value, do: :alternate, else: :main
+    new_active_buffer_type = case value do
+      true -> :alternate
+      false -> :main
+    end
 
     # Update emulator state
     new_emulator = %{
@@ -258,12 +268,13 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
     # Reset cursor position to (0, 0) when switching to alternate buffer
     new_emulator =
-      if value do
-        # Reset cursor to top-left when enabling alternate buffer
-        Raxol.Terminal.Cursor.Manager.set_position(new_emulator.cursor, {0, 0})
-        new_emulator
-      else
-        new_emulator
+      case value do
+        true ->
+          # Reset cursor to top-left when enabling alternate buffer
+          Raxol.Terminal.Cursor.Manager.set_position(new_emulator.cursor, {0, 0})
+          new_emulator
+        false ->
+          new_emulator
       end
 
     {:ok, new_emulator}
@@ -283,7 +294,10 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     new_mode_manager = %{
       emulator.mode_manager
       | alternate_buffer_active: value,
-        active_buffer_type: if(value, do: :alternate, else: :main)
+        active_buffer_type: case value do
+          true -> :alternate
+          false -> :main
+        end
     }
 
     Logger.debug(
@@ -291,7 +305,10 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     )
 
     # Update the active buffer type based on the mode
-    new_active_buffer_type = if value, do: :alternate, else: :main
+    new_active_buffer_type = case value do
+      true -> :alternate
+      false -> :main
+    end
 
     Logger.debug(
       "DECPrivateHandler.handle_alt_screen_save: setting active_buffer_type to #{inspect(new_active_buffer_type)}"
@@ -306,12 +323,13 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
     # Reset cursor position to (0, 0) when switching to alternate buffer
     new_emulator =
-      if value do
-        # Reset cursor to top-left when enabling alternate buffer
-        Raxol.Terminal.Cursor.Manager.set_position(new_emulator.cursor, {0, 0})
-        new_emulator
-      else
-        new_emulator
+      case value do
+        true ->
+          # Reset cursor to top-left when enabling alternate buffer
+          Raxol.Terminal.Cursor.Manager.set_position(new_emulator.cursor, {0, 0})
+          new_emulator
+        false ->
+          new_emulator
       end
 
     Logger.debug(
@@ -322,7 +340,10 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   end
 
   def handle_mouse_report_x10(value, emulator) do
-    mouse_mode = if value, do: :x10, else: :none
+    mouse_mode = case value do
+      true -> :x10
+      false -> :none
+    end
 
     {:ok,
      %{
@@ -332,7 +353,10 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   end
 
   def handle_mouse_report_cell_motion(value, emulator) do
-    mouse_mode = if value, do: :cell_motion, else: :none
+    mouse_mode = case value do
+      true -> :cell_motion
+      false -> :none
+    end
 
     {:ok,
      %{
@@ -342,7 +366,10 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   end
 
   def handle_mouse_report_sgr(value, emulator) do
-    mouse_mode = if value, do: :sgr, else: :none
+    mouse_mode = case value do
+      true -> :sgr
+      false -> :none
+    end
 
     {:ok,
      %{

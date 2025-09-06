@@ -225,10 +225,11 @@ defmodule Raxol.Terminal.Metrics.Manager do
   def get_characters_per_second(%__MODULE__{} = manager) do
     uptime = get_uptime(manager)
 
-    if uptime > 0 do
-      manager.characters_processed / (uptime / 1000)
-    else
-      0.0
+    case uptime > 0 do
+      true ->
+        manager.characters_processed / (uptime / 1000)
+      false ->
+        0.0
     end
   end
 
@@ -238,10 +239,11 @@ defmodule Raxol.Terminal.Metrics.Manager do
   def get_commands_per_second(%__MODULE__{} = manager) do
     uptime = get_uptime(manager)
 
-    if uptime > 0 do
-      manager.commands_processed / (uptime / 1000)
-    else
-      0.0
+    case uptime > 0 do
+      true ->
+        manager.commands_processed / (uptime / 1000)
+      false ->
+        0.0
     end
   end
 
@@ -251,10 +253,11 @@ defmodule Raxol.Terminal.Metrics.Manager do
   def get_error_rate(%__MODULE__{} = manager) do
     uptime = get_uptime(manager)
 
-    if uptime > 0 do
-      manager.errors_encountered / (uptime / 1000)
-    else
-      0.0
+    case uptime > 0 do
+      true ->
+        manager.errors_encountered / (uptime / 1000)
+      false ->
+        0.0
     end
   end
 

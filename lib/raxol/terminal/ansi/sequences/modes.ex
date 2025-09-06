@@ -32,19 +32,19 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
     mode_atom =
       ModeManager.lookup_private(mode) || ModeManager.lookup_standard(mode)
 
-    if mode_atom do
-      if enabled do
-        ModeManager.set_mode(emulator, [mode_atom])
-      else
-        ModeManager.reset_mode(emulator, [mode_atom])
-      end
-    else
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "[Sequences.Modes] Unknown mode code: #{mode}",
-        %{}
-      )
+    case mode_atom do
+      nil ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[Sequences.Modes] Unknown mode code: #{mode}",
+          %{}
+        )
 
-      emulator
+        emulator
+      _ ->
+        case enabled do
+          true -> ModeManager.set_mode(emulator, [mode_atom])
+          false -> ModeManager.reset_mode(emulator, [mode_atom])
+        end
     end
   end
 
@@ -93,7 +93,10 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
   Updated emulator state
   """
   def set_alternate_buffer(emulator, use_alternate) do
-    buffer_type = if use_alternate, do: :alternate, else: :main
+    buffer_type = case use_alternate do
+      true -> :alternate
+      false -> :main
+    end
     %{emulator | active_buffer_type: buffer_type}
   end
 

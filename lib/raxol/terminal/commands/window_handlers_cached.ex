@@ -8,7 +8,6 @@ defmodule Raxol.Terminal.Commands.WindowHandlersCached do
   """
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Font.Manager, as: FontManager
   alias Raxol.Core.Performance.Caches.FontMetricsCache
 

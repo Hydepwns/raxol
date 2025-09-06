@@ -45,10 +45,9 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
   """
   def start_link(opts \\ []) do
     name =
-      if Mix.env() == :test do
-        Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
-      else
-        opts[:name] || __MODULE__
+      case Mix.env() do
+        :test -> Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
+        _ -> opts[:name] || __MODULE__
       end
 
     GenServer.start_link(__MODULE__, opts, name: name)
@@ -262,10 +261,11 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
   end
 
   defp do_sync(sync_state, data, version, metadata, config) do
-    if version < sync_state.version do
-      {:error, :version_conflict}
-    else
-      case config.consistency do
+    case version < sync_state.version do
+      true ->
+        {:error, :version_conflict}
+      false ->
+        case config.consistency do
         :strong ->
           do_strong_sync(sync_state, data, version, metadata, config)
 

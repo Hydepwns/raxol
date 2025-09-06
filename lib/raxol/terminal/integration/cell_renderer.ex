@@ -28,16 +28,18 @@ defmodule Raxol.Terminal.Integration.CellRenderer do
 
   defp render_cell(cell, x_offset, y_offset) do
     # Check if we're in test mode
-    if Application.get_env(:raxol, :terminal_test_mode, false) do
-      # In test mode, just return success without calling termbox2
-      :ok
-    else
+    case Application.get_env(:raxol, :terminal_test_mode, false) do
+      true ->
+        # In test mode, just return success without calling termbox2
+        :ok
+      false ->
       char_s = cell.char
 
       codepoint =
-        if is_nil(char_s) or char_s == "",
-          do: ?\s,
-          else: hd(String.to_charlist(char_s))
+        case is_nil(char_s) or char_s == "" do
+          true -> ?\s
+          false -> hd(String.to_charlist(char_s))
+        end
 
       case :termbox2_nif.tb_set_cell(
              x_offset,

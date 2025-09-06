@@ -308,24 +308,26 @@ defmodule Raxol.Terminal.ANSI.SequenceHandlers do
     case String.split(remaining, "m", parts: 2) do
       [params, rest] when is_binary(params) ->
         # Validate that params contains only digits, semicolons, and colons, or is empty (reset)
-        if params == "" or String.match?(params, ~r/^[\d;:]*$/) do
-          # Disabled for performance
-          # File.write!(
-          #   "tmp/parse_sgr.log",
-          #   "parse_sgr MATCH: params=#{inspect(params)}, rest=#{inspect(rest)}\n",
-          #   [:append]
-          # )
+        case params == "" or String.match?(params, ~r/^[\d;:]*$/) do
+          true ->
+            # Disabled for performance
+            # File.write!(
+            #   "tmp/parse_sgr.log",
+            #   "parse_sgr MATCH: params=#{inspect(params)}, rest=#{inspect(rest)}\n",
+            #   [:append]
+            # )
 
-          {:sgr, params, rest, nil}
-        else
-          # Disabled for performance
-          # File.write!(
-          #   "tmp/parse_sgr.log",
-          #   "parse_sgr NO_MATCH: params=#{inspect(params)} (invalid format)\n",
-          #   [:append]
-          # )
+            {:sgr, params, rest, nil}
 
-          nil
+          false ->
+            # Disabled for performance
+            # File.write!(
+            #   "tmp/parse_sgr.log",
+            #   "parse_sgr NO_MATCH: params=#{inspect(params)} (invalid format)\n",
+            #   [:append]
+            # )
+
+            nil
         end
 
       _ ->

@@ -67,7 +67,10 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
     new_state = %{
       state
       | visible: visible,
-        state: if(visible, do: :visible, else: :hidden)
+        state: case visible do
+          true -> :visible
+          false -> :hidden
+        end
     }
 
     {:ok, new_state}
@@ -80,7 +83,10 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
     new_state = %{
       state
       | visible: visible,
-        state: if(visible, do: :visible, else: :hidden)
+        state: case visible do
+          true -> :visible
+          false -> :hidden
+        end
     }
 
     {new_state}
@@ -113,10 +119,9 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
   def handle_set_blink(state, blink) do
     new_state = %{state | blinking: blink}
 
-    if blink do
-      schedule_blink()
-    else
-      cancel_blink(state.blink_timer)
+    case blink do
+      true -> schedule_blink()
+      false -> cancel_blink(state.blink_timer)
     end
 
     {:ok, new_state}
@@ -313,13 +318,14 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
   Handles GenServer info for blink timer.
   """
   def handle_blink_info(state, _timer_id) do
-    if state.blinking do
-      new_blink_state = !state.blink
-      new_state = %{state | blink: new_blink_state}
-      schedule_blink()
-      {new_state}
-    else
-      {state}
+    case state.blinking do
+      true ->
+        new_blink_state = !state.blink
+        new_state = %{state | blink: new_blink_state}
+        schedule_blink()
+        {new_state}
+      false ->
+        {state}
     end
   end
 

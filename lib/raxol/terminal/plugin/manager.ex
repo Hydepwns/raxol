@@ -7,8 +7,6 @@ defmodule Raxol.Terminal.Plugin.Manager do
   - Plugin configuration and state management
   """
 
-  alias Raxol.Core.ErrorHandling
-
   @type plugin :: %{
           name: String.t(),
           version: String.t(),
@@ -179,18 +177,20 @@ defmodule Raxol.Terminal.Plugin.Manager do
       :state
     ]
 
-    if Enum.all?(required_fields, &Map.has_key?(plugin, &1)) do
-      :ok
-    else
-      {:error, :invalid_plugin}
+    case Enum.all?(required_fields, &Map.has_key?(plugin, &1)) do
+      true ->
+        :ok
+      false ->
+        {:error, :invalid_plugin}
     end
   end
 
   defp check_plugin_conflicts(manager, plugin) do
-    if Map.has_key?(manager.plugins, plugin.name) do
-      {:error, :plugin_already_loaded}
-    else
-      :ok
+    case Map.has_key?(manager.plugins, plugin.name) do
+      true ->
+        {:error, :plugin_already_loaded}
+      false ->
+        :ok
     end
   end
 
@@ -218,7 +218,7 @@ defmodule Raxol.Terminal.Plugin.Manager do
   end
 
   defp apply_hook(hook, args) do
-    case ErrorHandling.safe_call(fn -> hook.callback.(args) end) do
+    case Raxol.Core.ErrorHandling.safe_call(fn -> hook.callback.(args) end) do
       {:ok, result} -> result
       {:error, e} -> {:error, {:hook_error, e}}
     end

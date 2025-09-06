@@ -378,30 +378,16 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   """
   @spec decode_modifiers(integer()) :: MapSet.t(modifier())
   def decode_modifiers(button) do
-    modifiers = MapSet.new()
-
-    modifiers =
-      if (button &&& 0x4) != 0,
-        do: MapSet.put(modifiers, :shift),
-        else: modifiers
-
-    modifiers =
-      if (button &&& 0x8) != 0,
-        do: MapSet.put(modifiers, :alt),
-        else: modifiers
-
-    modifiers =
-      if (button &&& 0x10) != 0,
-        do: MapSet.put(modifiers, :ctrl),
-        else: modifiers
-
-    modifiers =
-      if (button &&& 0x20) != 0,
-        do: MapSet.put(modifiers, :meta),
-        else: modifiers
-
-    modifiers
+    []
+    |> add_modifier_if_set((button &&& 0x4) != 0, :shift)
+    |> add_modifier_if_set((button &&& 0x8) != 0, :alt)
+    |> add_modifier_if_set((button &&& 0x10) != 0, :ctrl)
+    |> add_modifier_if_set((button &&& 0x20) != 0, :meta)
+    |> MapSet.new()
   end
+
+  defp add_modifier_if_set(modifiers, true, modifier), do: [modifier | modifiers]
+  defp add_modifier_if_set(modifiers, false, _modifier), do: modifiers
 
   @doc """
   Decodes URXVT button state from a mouse event byte.

@@ -46,10 +46,9 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
 
     # Limit damage regions to prevent memory bloat
     limited_regions =
-      if length(damage_regions) > tracker.max_regions do
-        Enum.take(damage_regions, div(tracker.max_regions, 2))
-      else
-        damage_regions
+      case length(damage_regions) > tracker.max_regions do
+        true -> Enum.take(damage_regions, div(tracker.max_regions, 2))
+        false -> damage_regions
       end
 
     # Merge overlapping regions for efficiency
@@ -148,12 +147,13 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
          [{x3, y3, x4, y4} | merged_tail] = merged
        ) do
     # Check if regions overlap or are adjacent
-    if regions_overlap_or_adjacent({x1, y1, x2, y2}, {x3, y3, x4, y4}) do
-      # Merge the regions
-      merged_region = merge_two_regions({x1, y1, x2, y2}, {x3, y3, x4, y4})
-      merge_adjacent_regions(rest, [merged_region | merged_tail])
-    else
-      merge_adjacent_regions(rest, [{x1, y1, x2, y2} | merged])
+    case regions_overlap_or_adjacent({x1, y1, x2, y2}, {x3, y3, x4, y4}) do
+      true ->
+        # Merge the regions
+        merged_region = merge_two_regions({x1, y1, x2, y2}, {x3, y3, x4, y4})
+        merge_adjacent_regions(rest, [merged_region | merged_tail])
+      false ->
+        merge_adjacent_regions(rest, [{x1, y1, x2, y2} | merged])
     end
   end
 

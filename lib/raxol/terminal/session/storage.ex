@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.Session.Storage do
   """
 
   alias Raxol.Terminal.Session.Serializer
-  alias Raxol.Core.ErrorHandling
 
   @doc """
   Saves a session state to persistent storage.
@@ -30,7 +29,7 @@ defmodule Raxol.Terminal.Session.Storage do
 
     case File.read(storage_path) do
       {:ok, binary} ->
-        case ErrorHandling.safe_call(fn ->
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
                serialized = :erlang.binary_to_term(binary)
                Serializer.deserialize(serialized)
              end) do

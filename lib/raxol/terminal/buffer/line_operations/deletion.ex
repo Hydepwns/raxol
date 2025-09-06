@@ -227,7 +227,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
   defp handle_styled_deletion(false, buffer, _y, _count, _style, _top, _bottom),
     do: buffer
 
-  defp handle_delete_lines_in_scroll_region(true, buffer, lines, y, top, bottom) do
+  defp handle_delete_lines_in_scroll_region(true, buffer, lines, y, _top, bottom) do
     # Calculate how many lines we can actually delete within the region
     available_lines = bottom - y + 1
     lines_to_delete = min(lines, available_lines)

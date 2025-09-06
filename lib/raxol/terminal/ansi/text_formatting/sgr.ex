@@ -36,7 +36,10 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.SGR do
   @spec build_style_codes(Core.text_style()) :: [integer()]
   def build_style_codes(style) do
     Enum.reduce(@sgr_style_map, [], fn {attr, code}, acc ->
-      if Map.get(style, attr), do: [code] ++ acc, else: acc
+      case Map.get(style, attr) do
+        true -> [code] ++ acc
+        false -> acc
+      end
     end)
   end
 

@@ -8,7 +8,6 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   require Logger
 
   alias Raxol.Core.ErrorRecovery
-  alias Raxol.Core.ErrorHandling
   alias Raxol.Terminal.Emulator.Telemetry
 
   # 1MB max input
@@ -366,7 +365,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   defp safe_genserver_call(pid, message) do
     with true <- Process.alive?(pid) do
-      ErrorHandling.safe_call(fn ->
+      Raxol.Core.ErrorHandling.safe_call(fn ->
         GenServer.call(pid, message)
       end)
       |> case do
@@ -380,7 +379,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp perform_input_chunking(input) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       with {:ok, validated_input} <- validate_input(input) do
         chunks = chunk_input(validated_input)
         {:ok, chunks}
@@ -418,7 +417,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp process_chunk(chunk, state) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       # Placeholder for actual chunk processing
       # This would call into the actual emulator logic
       {:ok, Map.put(state, :last_chunk, chunk)}
@@ -437,7 +436,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp safe_state_update(state, key, value) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       updated = Map.put(state, key, value)
       {:ok, updated}
     end)
@@ -453,7 +452,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp perform_sequence_application(sequence, emulator_state) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       # Placeholder for sequence application logic
       {:ok, Map.put(emulator_state, :last_sequence, sequence)}
     end)
@@ -468,7 +467,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp perform_resize(emulator_state, width, height) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       # Placeholder for resize logic
       {:ok, Map.merge(emulator_state, %{width: width, height: height})}
     end)
@@ -557,7 +556,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp safe_state_copy(emulator_state) do
-    ErrorHandling.safe_call_with_default(
+    Raxol.Core.ErrorHandling.safe_call_with_default(
       fn ->
         # Create a safe copy of the state
         Map.new(emulator_state)
@@ -580,7 +579,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   defp perform_restore(checkpoint) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       # Restore from checkpoint
       {:ok, Map.new(checkpoint)}
     end)

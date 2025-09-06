@@ -163,15 +163,18 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   defp safe_process_unicode_char(char, buffer) do
     Task.async(fn ->
       # Validate Unicode character
-      if String.valid?(char) do
-        # Process the character based on its category
-        case Unicode.category(char) do
-          :control -> handle_control_character(char, buffer)
-          :combining -> handle_combining_character(char, buffer)
-          _ -> handle_printable_character(char, buffer)
-        end
-      else
-        {:error, :invalid_unicode}
+      case String.valid?(char) do
+        true ->
+          # Process the character based on its codepoint
+          codepoint = :binary.first(char)
+          cond do
+            codepoint < 32 or codepoint == 127 -> handle_control_character(char, buffer)
+            # Basic check for combining characters (this is simplified)
+            codepoint >= 0x0300 and codepoint <= 0x036F -> handle_combining_character(char, buffer)
+            true -> handle_printable_character(char, buffer)
+          end
+        false ->
+          {:error, :invalid_unicode}
       end
     end)
     |> Task.yield(500)
@@ -276,7 +279,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     {:ok, buffer}
   end
 
-  defp handle_combining_character(char, buffer) do
+  defp handle_combining_character(_char, buffer) do
     # Combining characters modify the previous character
     # For now, we'll just ignore them
     {:ok, buffer}
@@ -287,13 +290,14 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     x = buffer.cursor_x
     y = buffer.cursor_y
 
-    if x < buffer.width and y < buffer.height do
-      new_buffer =
-        ScreenBuffer.write_char(buffer, x, y, char, buffer.default_style)
+    case {x < buffer.width, y < buffer.height} do
+      {true, true} ->
+        new_buffer =
+          ScreenBuffer.write_char(buffer, x, y, char, buffer.default_style)
 
-      {:ok, %{new_buffer | cursor_x: x + 1}}
-    else
-      {:ok, buffer}
+        {:ok, %{new_buffer | cursor_x: x + 1}}
+      _ ->
+        {:ok, buffer}
     end
   end
 
@@ -322,7 +326,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
       buffer
       | cursor_x: 0,
         cursor_y: 0,
-        default_style: ScreenBuffer.default_style(),
+        default_style: Raxol.Terminal.TextFormatting.new(),
         insert_mode: false,
         auto_wrap_mode: true
     }

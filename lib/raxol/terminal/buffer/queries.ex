@@ -64,19 +64,20 @@ defmodule Raxol.Terminal.Buffer.Queries do
   @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           Cell.t()
   def get_cell(buffer, x, y) when x >= 0 and y >= 0 do
-    if x < buffer.width and y < buffer.height do
-      case buffer.cells do
-        nil ->
-          # Return a default cell if cells is nil
-          Cell.new()
+    case x < buffer.width and y < buffer.height do
+      true ->
+        case buffer.cells do
+          nil ->
+            # Return a default cell if cells is nil
+            Cell.new()
 
-        cells ->
-          cells
-          |> Enum.at(y)
-          |> Enum.at(x)
-      end
-    else
-      Cell.new()
+          cells ->
+            cells
+            |> Enum.at(y)
+            |> Enum.at(x)
+        end
+      false ->
+        Cell.new()
     end
   end
 

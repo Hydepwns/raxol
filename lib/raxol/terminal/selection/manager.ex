@@ -180,15 +180,15 @@ defmodule Raxol.Terminal.Selection.Manager do
     end)
   end
 
-  defp check_multiline_position(y, x, start_y, end_y, start_x, end_x)
+  defp check_multiline_position(y, x, start_y, _end_y, start_x, _end_x)
        when y == start_y,
        do: x >= start_x
 
-  defp check_multiline_position(y, x, start_y, end_y, start_x, end_x)
+  defp check_multiline_position(y, x, _start_y, end_y, _start_x, end_x)
        when y == end_y,
        do: x <= end_x
 
-  defp check_multiline_position(y, x, start_y, end_y, start_x, end_x)
+  defp check_multiline_position(y, _x, start_y, end_y, _start_x, _end_x)
        when y > start_y and y < end_y,
        do: true
 

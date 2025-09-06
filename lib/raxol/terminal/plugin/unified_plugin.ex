@@ -10,8 +10,6 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   use GenServer
   require Logger
 
-  alias Raxol.Core.ErrorHandling
-
   # Types
   @type plugin_id :: String.t()
   @type plugin_type :: :theme | :script | :extension
@@ -401,7 +399,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp safe_json_decode(content) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       case Jason.decode(content, keys: :atoms) do
         {:ok, decoded} -> {:ok, decoded}
         {:error, _} -> {:error, :invalid_json}
@@ -443,7 +441,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   defp safe_compile_quoted(ast) do
     compiled = Code.compile_quoted(ast)
 
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       case compiled do
         [{module, _bin} | _] -> {:ok, module}
         _ -> {:error, :compilation_failed}
@@ -646,7 +644,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
 
   # Safe function application helper using functional error handling
   defp safe_apply(module, function, args) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       apply(module, function, args)
     end)
     |> case do
@@ -696,7 +694,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   defp call_cleanup_if_exported(module, config, plugin_type) do
     case function_exported?(module, :cleanup, 1) do
       true ->
-        ErrorHandling.safe_call(fn -> module.cleanup(config) end)
+        Raxol.Core.ErrorHandling.safe_call(fn -> module.cleanup(config) end)
         |> case do
           {:ok, result} ->
             result

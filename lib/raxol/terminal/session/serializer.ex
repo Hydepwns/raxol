@@ -570,23 +570,15 @@ defmodule Raxol.Terminal.Session.Serializer do
   end
 
   defp safe_deserialize_cells(cells) when is_list(cells) do
-    result =
+    deserialized_rows =
       cells
       |> Enum.with_index()
-      |> Enum.reduce_while({:ok, []}, fn {row, row_idx}, {:ok, acc} ->
-        case safe_deserialize_row(row, row_idx) do
-          {:ok, deserialized_row} ->
-            {:cont, {:ok, acc ++ [deserialized_row]}}
-
-          {:error, reason} ->
-            {:halt, {:error, {:row_deserialization_failed, row_idx, reason}}}
-        end
+      |> Enum.map(fn {row, row_idx} ->
+        {:ok, deserialized_row} = safe_deserialize_row(row, row_idx)
+        deserialized_row
       end)
 
-    case result do
-      {:ok, deserialized} -> {:ok, deserialized}
-      error -> error
-    end
+    {:ok, deserialized_rows}
   end
 
   defp safe_deserialize_cells(nil) do

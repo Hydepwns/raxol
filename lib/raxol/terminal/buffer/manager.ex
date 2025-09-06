@@ -17,7 +17,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
   alias Raxol.Terminal.Buffer.{Operations, DamageTracker}
   alias Raxol.Terminal.MemoryManager
   alias Raxol.Terminal.Integration.Renderer
-  alias Raxol.Core.ErrorHandling
 
   @behaviour Behaviour
 
@@ -435,18 +434,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
     end
   end
 
-  defp safe_execute_operation(operation, state) do
-    ErrorHandling.safe_call(fn ->
-      operation.(state)
-    end)
-    |> case do
-      {:ok, result} -> {:ok, result}
-      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
-      {:error, {:throw, reason}} -> {:error, {:throw, reason}}
-      {:error, reason} -> {:error, {:exception, reason}}
-    end
-  end
-
   def handle_call({:write, data, opts}, _from, state) do
     with {:ok, new_buffer} <- safe_buffer_write(state.active_buffer, data, opts) do
       new_state = update_metrics(%{state | active_buffer: new_buffer}, :writes)
@@ -454,18 +441,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
     else
       {:error, reason} ->
         {:reply, {:error, reason}, state}
-    end
-  end
-
-  defp safe_buffer_write(buffer, data, opts) do
-    ErrorHandling.safe_call(fn ->
-      Operations.write(buffer, data, opts)
-    end)
-    |> case do
-      {:ok, new_buffer} -> {:ok, new_buffer}
-      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
-      {:error, {:throw, reason}} -> {:error, {:throw, reason}}
-      {:error, reason} -> {:error, {:write_exception, reason}}
     end
   end
 
@@ -477,18 +452,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
     else
       {:error, reason} ->
         {:reply, {:error, reason}, state}
-    end
-  end
-
-  defp safe_buffer_read(buffer, opts) do
-    ErrorHandling.safe_call(fn ->
-      Operations.read(buffer, opts)
-    end)
-    |> case do
-      {:ok, result} -> {:ok, result}
-      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
-      {:error, {:throw, reason}} -> {:error, {:throw, reason}}
-      {:error, reason} -> {:error, {:read_exception, reason}}
     end
   end
 
@@ -508,29 +471,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
     else
       {:error, reason} ->
         {:reply, {:error, reason}, state}
-    end
-  end
-
-  defp validate_resize_size(size) do
-    case size do
-      {width, height}
-      when is_integer(width) and is_integer(height) and width > 0 and height > 0 ->
-        {:ok, {width, height}}
-
-      _ ->
-        {:error, :invalid_size}
-    end
-  end
-
-  defp safe_buffer_resize(buffer, width, height) do
-    ErrorHandling.safe_call(fn ->
-      BufferImpl.resize(buffer, width, height)
-    end)
-    |> case do
-      {:ok, new_buffer} -> {:ok, new_buffer}
-      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
-      {:error, {:throw, reason}} -> {:error, {:throw, reason}}
-      {:error, reason} -> {:error, {:resize_exception, reason}}
     end
   end
 
@@ -702,6 +642,66 @@ defmodule Raxol.Terminal.Buffer.Manager do
   def handle_call(:get_back_buffer, _from, state) do
     # For now, return the same buffer as active (no back buffer implementation yet)
     {:reply, state.back_buffer, state}
+  end
+
+  # Helper functions for handle_call implementations
+  defp safe_execute_operation(operation, state) do
+    Raxol.Core.ErrorHandling.safe_call(fn ->
+      operation.(state)
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, reason}} -> {:error, {:throw, reason}}
+      {:error, reason} -> {:error, {:exception, reason}}
+    end
+  end
+
+  defp safe_buffer_write(buffer, data, opts) do
+    Raxol.Core.ErrorHandling.safe_call(fn ->
+      Operations.write(buffer, data, opts)
+    end)
+    |> case do
+      {:ok, new_buffer} -> {:ok, new_buffer}
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, reason}} -> {:error, {:throw, reason}}
+      {:error, reason} -> {:error, {:write_exception, reason}}
+    end
+  end
+
+  defp safe_buffer_read(buffer, opts) do
+    Raxol.Core.ErrorHandling.safe_call(fn ->
+      Operations.read(buffer, opts)
+    end)
+    |> case do
+      {:ok, result} -> {:ok, result}
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, reason}} -> {:error, {:throw, reason}}
+      {:error, reason} -> {:error, {:read_exception, reason}}
+    end
+  end
+
+  defp validate_resize_size(size) do
+    case size do
+      {width, height}
+      when is_integer(width) and is_integer(height) and width > 0 and height > 0 ->
+        {:ok, {width, height}}
+
+      _ ->
+        {:error, :invalid_size}
+    end
+  end
+
+  defp safe_buffer_resize(buffer, width, height) do
+    Raxol.Core.ErrorHandling.safe_call(fn ->
+      BufferImpl.resize(buffer, width, height)
+    end)
+    |> case do
+      {:ok, new_buffer} -> {:ok, new_buffer}
+      {:error, {:exit, reason}} -> {:error, {:exit, reason}}
+      {:error, {:throw, reason}} -> {:error, {:throw, reason}}
+      {:error, reason} -> {:error, {:resize_exception, reason}}
+    end
   end
 
   # Private functions

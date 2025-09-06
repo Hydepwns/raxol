@@ -9,7 +9,6 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   alias Raxol.Terminal.ModeManager
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Core.ErrorHandling
 
   @doc """
   Processes a single character codepoint.
@@ -160,7 +159,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   end
 
   defp get_cursor_position_safe(cursor) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            case cursor do
              cursor when is_pid(cursor) ->
                position = Raxol.Terminal.Cursor.Manager.get_position(cursor)
@@ -199,7 +198,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   end
 
   defp write_character(emulator, char_codepoint, opts) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            {translated_char, _new_charset_state} =
              CharacterSets.translate_char(
                char_codepoint,
@@ -324,7 +323,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
 
   # Last column exceeded without auto-wrap
   defp do_calculate_position(
-         {current_x, current_y},
+         {_current_x, current_y},
          buffer_width,
          _char_width,
          true,

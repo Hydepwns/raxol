@@ -47,7 +47,10 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
   defp parse_index_and_spec(index_str, spec) do
     case Integer.parse(index_str) do
       {index, ""} when index >= 0 and index <= 255 ->
-        if spec == "?", do: {:query, index}, else: {:set, index, spec}
+        case spec do
+          "?" -> {:query, index}
+          _ -> {:set, index, spec}
+        end
 
       _ ->
         {:error, {:invalid_index, index_str}}
@@ -63,7 +66,10 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
 
     Enum.find_value(color_parsers, {:error, :unsupported_format}, fn {check,
                                                                       parser} ->
-      if check.(spec), do: parser.(spec), else: nil
+      case check.(spec) do
+        true -> parser.(spec)
+        false -> nil
+      end
     end)
   end
 
@@ -136,10 +142,11 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
   defp parse_hex_component(hex_str) do
     len = byte_size(hex_str)
 
-    if len < 1 or len > 4 do
-      :error
-    else
-      parse_hex_value(hex_str, len)
+    case len < 1 or len > 4 do
+      true ->
+        :error
+      false ->
+        parse_hex_value(hex_str, len)
     end
   end
 

@@ -326,10 +326,12 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Basic do
     left = Enum.at(params, 0, 1)
     right = Enum.at(params, 1, emulator.width)
 
-    if left >= 1 and right <= emulator.width and left < right do
-      {:ok, %{emulator | horizontal_margins: {left - 1, right - 1}}}
-    else
-      {:ok, emulator}
+    case left >= 1 and right <= emulator.width and left < right do
+      true ->
+        {:ok, %{emulator | horizontal_margins: {left - 1, right - 1}}}
+
+      false ->
+        {:ok, emulator}
     end
   end
 

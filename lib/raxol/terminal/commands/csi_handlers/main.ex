@@ -37,7 +37,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Main do
     ]
 
     Enum.find_value(command_checkers, nil, fn {checker, type} ->
-      if checker.(byte), do: {type, byte}, else: nil
+      case checker.(byte) do
+        true -> {type, byte}
+        false -> nil
+      end
     end)
   end
 

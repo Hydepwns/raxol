@@ -139,21 +139,23 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   # Private helper functions
 
   defp clear_row_if_valid(cells, row_y, x, width, buffer, empty_cell) do
-    if row_y < buffer.height do
-      List.update_at(cells, row_y, fn row ->
-        clear_row_columns(row, x, width, buffer.width, empty_cell)
-      end)
-    else
-      cells
+    case row_y < buffer.height do
+      true ->
+        List.update_at(cells, row_y, fn row ->
+          clear_row_columns(row, x, width, buffer.width, empty_cell)
+        end)
+      false ->
+        cells
     end
   end
 
   defp clear_row_columns(row, x, width, buffer_width, empty_cell) do
     Enum.reduce(x..(x + width - 1), row, fn col_x, acc_row ->
-      if col_x < buffer_width do
-        List.replace_at(acc_row, col_x, empty_cell)
-      else
-        acc_row
+      case col_x < buffer_width do
+        true ->
+          List.replace_at(acc_row, col_x, empty_cell)
+        false ->
+          acc_row
       end
     end)
   end

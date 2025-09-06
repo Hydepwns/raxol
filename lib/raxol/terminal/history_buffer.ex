@@ -4,8 +4,6 @@ defmodule Raxol.Terminal.HistoryBuffer do
   This module handles the storage and retrieval of command history.
   """
 
-  alias Raxol.Core.ErrorHandling
-
   @type t :: %__MODULE__{
           commands: list(String.t()),
           position: integer(),
@@ -146,7 +144,7 @@ defmodule Raxol.Terminal.HistoryBuffer do
   """
   @spec save_to_file(t(), String.t()) :: :ok | {:error, String.t()}
   def save_to_file(buffer, file_path) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            File.write(file_path, Enum.join(buffer.commands, "\n"))
          end) do
       {:ok, result} -> result
@@ -159,7 +157,7 @@ defmodule Raxol.Terminal.HistoryBuffer do
   """
   @spec load_from_file(t(), String.t()) :: {:ok, t()} | {:error, String.t()}
   def load_from_file(buffer, file_path) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            case File.read(file_path) do
              {:ok, content} ->
                commands = String.split(content, "\n", trim: true)

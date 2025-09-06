@@ -70,39 +70,39 @@ defmodule Raxol.Terminal.Cache.EvictionHelpers do
   end
 
   defp do_evict_by(cache, size, needed_size, max_size, sort_fn, order, policy) do
-    if size + needed_size <= max_size do
-      {cache, size}
-    else
-      cache_list = Map.to_list(cache)
-      sorted = sort_cache_entries(cache_list, policy, sort_fn, order)
+    case size + needed_size <= max_size do
+      true ->
+        {cache, size}
+      false ->
+        cache_list = Map.to_list(cache)
+        sorted = sort_cache_entries(cache_list, policy, sort_fn, order)
 
-      case sorted do
-        [] ->
-          {cache, size}
+        case sorted do
+          [] ->
+            {cache, size}
 
-        [{key, entry} | _rest] ->
-          new_cache = Map.delete(cache, key)
-          new_size = size - entry.size
+          [{key, entry} | _rest] ->
+            new_cache = Map.delete(cache, key)
+            new_size = size - entry.size
 
-          do_evict_by(
-            new_cache,
-            new_size,
-            needed_size,
-            max_size,
-            sort_fn,
-            order,
-            policy
-          )
-      end
+            do_evict_by(
+              new_cache,
+              new_size,
+              needed_size,
+              max_size,
+              sort_fn,
+              order,
+              policy
+            )
+        end
     end
   end
 
   defp sort_cache_entries(cache_list, :lfu, _sort_fn, _order) do
     Enum.sort(cache_list, fn {_ka, a}, {_kb, b} ->
-      if a.access_count == b.access_count do
-        a.last_access < b.last_access
-      else
-        a.access_count < b.access_count
+      case a.access_count == b.access_count do
+        true -> a.last_access < b.last_access
+        false -> a.access_count < b.access_count
       end
     end)
   end

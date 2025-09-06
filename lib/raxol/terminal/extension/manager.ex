@@ -7,8 +7,6 @@ defmodule Raxol.Terminal.Extension.Manager do
   - Extension configuration and state management
   """
 
-  alias Raxol.Core.ErrorHandling
-
   @type extension :: %{
           name: String.t(),
           version: String.t(),
@@ -286,7 +284,7 @@ defmodule Raxol.Terminal.Extension.Manager do
   end
 
   defp apply_event_handler(event, args) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            event.handler.(args)
          end) do
       {:ok, result} -> result
@@ -295,7 +293,7 @@ defmodule Raxol.Terminal.Extension.Manager do
   end
 
   defp apply_command_handler(command, args) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            command.handler.(args)
          end) do
       {:ok, result} -> result

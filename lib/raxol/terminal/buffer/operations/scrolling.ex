@@ -9,10 +9,10 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   Checks if scrolling is needed and performs it if necessary.
   """
   def maybe_scroll(buffer) when is_list(buffer) do
-    # Check if we need to scroll
+    # Check if we need to scroll - currently always returns false
     case needs_scroll?(buffer) do
-      true -> scroll_up(buffer, 1)
       false -> buffer
+      # Note: true clause removed as needs_scroll? always returns false
     end
   end
 

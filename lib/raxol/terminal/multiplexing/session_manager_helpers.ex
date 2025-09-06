@@ -3,7 +3,6 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager.Helpers do
   Helper functions for SessionManager that were separated during refactoring.
   """
 
-  alias Raxol.Terminal.Multiplexing.SessionManager.{Session, Window, Pane}
   require Logger
 
   def start_cleanup_timer(interval_minutes) do

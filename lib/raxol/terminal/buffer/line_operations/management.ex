@@ -69,10 +69,11 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Management do
         []
 
       cells ->
-        if line_index >= 0 and line_index < length(cells) do
-          Enum.at(cells, line_index) || []
-        else
-          []
+        case line_index >= 0 and line_index < length(cells) do
+          true ->
+            Enum.at(cells, line_index) || []
+          false ->
+            []
         end
     end
   end
@@ -106,11 +107,12 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Management do
         buffer
 
       cells ->
-        if line_index >= 0 and line_index < length(cells) do
-          new_cells = List.replace_at(cells, line_index, new_line)
-          %{buffer | cells: new_cells}
-        else
-          buffer
+        case line_index >= 0 and line_index < length(cells) do
+          true ->
+            new_cells = List.replace_at(cells, line_index, new_line)
+            %{buffer | cells: new_cells}
+          false ->
+            buffer
         end
     end
   end
@@ -152,11 +154,12 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Management do
   @spec set_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) ::
           ScreenBuffer.t()
   def set_line(buffer, position, new_line) do
-    if position >= 0 and position < length(buffer.cells) do
-      new_cells = List.replace_at(buffer.cells, position, new_line)
-      %{buffer | cells: new_cells}
-    else
-      buffer
+    case position >= 0 and position < length(buffer.cells) do
+      true ->
+        new_cells = List.replace_at(buffer.cells, position, new_line)
+        %{buffer | cells: new_cells}
+      false ->
+        buffer
     end
   end
 

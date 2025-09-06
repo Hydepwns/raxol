@@ -395,8 +395,9 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
     |> Enum.each(fn {row, y} ->
       Enum.with_index(row)
       |> Enum.each(fn {cell, x} ->
-        if cell.char != " " do
-          BufferServer.set_cell(pid, x, y, cell)
+        case cell.char != " " do
+          true -> BufferServer.set_cell(pid, x, y, cell)
+          false -> :ok
         end
       end)
     end)

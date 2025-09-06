@@ -7,13 +7,15 @@ defmodule Raxol.Terminal.Split.Common do
   Common start_link logic for split-related GenServers.
   """
   def start_link(module, opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = case is_map(opts) do
+      true -> Enum.into(opts, [])
+      false -> opts
+    end
 
     name =
-      if Mix.env() == :test do
-        Raxol.Test.ProcessNaming.unique_name(module, opts)
-      else
-        Keyword.get(opts, :name, module)
+      case Mix.env() == :test do
+        true -> Raxol.Test.ProcessNaming.unique_name(module, opts)
+        false -> Keyword.get(opts, :name, module)
       end
 
     GenServer.start_link(module, opts, name: name)

@@ -351,13 +351,6 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     {:reply, :ok, state}
   end
 
-  defp set_cursor_visibility_if_available(visible) do
-    case Process.whereis(Raxol.Terminal.Render.UnifiedRenderer) do
-      nil -> :ok
-      _pid -> UnifiedRenderer.set_cursor_visibility(visible)
-    end
-  end
-
   def handle_call(:get_title, _from, state) do
     {:reply, {:ok, ""}, state}
   end
@@ -400,6 +393,14 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     }
 
     {:reply, :ok, new_state}
+  end
+
+  # Helper functions
+  defp set_cursor_visibility_if_available(visible) do
+    case Process.whereis(Raxol.Terminal.Render.UnifiedRenderer) do
+      nil -> :ok
+      _pid -> UnifiedRenderer.set_cursor_visibility(visible)
+    end
   end
 
   # Private Functions

@@ -33,18 +33,16 @@ defmodule Raxol.Terminal.Emulator.Dimensions do
       when width > 0 and height > 0 do
     # Resize main screen buffer
     main_buffer =
-      if emulator.main_screen_buffer do
-        ScreenBuffer.resize(emulator.main_screen_buffer, width, height)
-      else
-        ScreenBuffer.new(width, height)
+      case emulator.main_screen_buffer do
+        nil -> ScreenBuffer.new(width, height)
+        buffer -> ScreenBuffer.resize(buffer, width, height)
       end
 
     # Resize alternate screen buffer
     alternate_buffer =
-      if emulator.alternate_screen_buffer do
-        ScreenBuffer.resize(emulator.alternate_screen_buffer, width, height)
-      else
-        ScreenBuffer.new(width, height)
+      case emulator.alternate_screen_buffer do
+        nil -> ScreenBuffer.new(width, height)
+        buffer -> ScreenBuffer.resize(buffer, width, height)
       end
 
     # Update emulator with new dimensions and buffers

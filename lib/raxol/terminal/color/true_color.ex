@@ -607,7 +607,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
 
   defp hsl_to_rgb(h, s, l) do
     c = (1 - abs(2 * l - 1)) * s
-    x = c * (1 - abs(rem(h / 60, 2) - 1))
+    x = c * (1 - abs(rem(trunc(h / 60), 2) - 1))
     m = l - c / 2
 
     {r_prime, g_prime, b_prime} =
@@ -635,7 +635,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
   end
 
   defp calculate_hue(max_val, delta, r, g, b) when max_val == r do
-    rem((g - b) / delta + adjust_for_negative_hue(g, b), 6)
+    rem(trunc((g - b) / delta + adjust_for_negative_hue(g, b)), 6)
   end
 
   defp calculate_hue(max_val, delta, r, g, b) when max_val == g do
@@ -648,7 +648,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
 
   defp hsv_to_rgb(h, s, v) do
     c = v * s
-    x = c * (1 - abs(rem(h / 60, 2) - 1))
+    x = c * (1 - abs(rem(trunc(h / 60), 2) - 1))
     m = v - c
 
     {r_prime, g_prime, b_prime} =
@@ -837,7 +837,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     "##{pad_hex(r)}#{pad_hex(g)}#{pad_hex(b)}"
   end
 
-  defp check_true_color_support(colorterm, term)
+  defp check_true_color_support(colorterm, _term)
        when colorterm in ["truecolor", "24bit"],
        do: true
 
@@ -883,7 +883,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
 
   defp calculate_hsv_hue(delta, max_val, r, g, b) do
     case max_val do
-      ^r -> rem((g - b) / delta + adjust_for_negative_hue(g, b), 6)
+      ^r -> rem(trunc((g - b) / delta + adjust_for_negative_hue(g, b)), 6)
       ^g -> (b - r) / delta + 2
       ^b -> (r - g) / delta + 4
     end

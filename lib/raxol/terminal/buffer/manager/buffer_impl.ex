@@ -77,10 +77,11 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
   end
 
   def scroll_region(buffer, x, y, width, height, lines) do
-    if lines > 0 do
-      scroll_up(buffer, x, y, width, height, lines)
-    else
-      scroll_down(buffer, x, y, width, height, abs(lines))
+    case lines > 0 do
+      true ->
+        scroll_up(buffer, x, y, width, height, lines)
+      false ->
+        scroll_down(buffer, x, y, width, height, abs(lines))
     end
   end
 
@@ -130,11 +131,12 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
       active_cell = Map.get(active_buffer.cells, key)
       back_cell = Map.get(back_buffer.cells, key)
 
-      if active_cell != back_cell do
-        {x, y} = key_to_coords(key)
-        [{x, y, active_cell} | acc]
-      else
-        acc
+      case active_cell != back_cell do
+        true ->
+          {x, y} = key_to_coords(key)
+          [{x, y, active_cell} | acc]
+        false ->
+          acc
       end
     end)
     |> Enum.reverse()
@@ -300,12 +302,13 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
       |> Enum.reduce(cells, fn {char, offset}, acc ->
         pos_x = x + offset
 
-        if pos_x < buffer.width do
-          key = cell_key(pos_x, y)
-          cell = Cell.new(char)
-          Map.put(acc, key, cell)
-        else
-          acc
+        case pos_x < buffer.width do
+          true ->
+            key = cell_key(pos_x, y)
+            cell = Cell.new(char)
+            Map.put(acc, key, cell)
+          false ->
+            acc
         end
       end)
 

@@ -33,8 +33,9 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
     # Validate the style - only allow valid cursor styles
     valid_styles = [:block, :underline, :bar]
 
-    if style in valid_styles do
-      CursorManager.set_style(emulator.cursor, style)
+    case style in valid_styles do
+      true -> CursorManager.set_style(emulator.cursor, style)
+      false -> :ok
     end
 
     # If style is invalid, do nothing (maintain current style)
@@ -80,13 +81,14 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
   end
 
   def update_blink(emulator) do
-    if CursorManager.get_blink(emulator.cursor) do
-      # Toggle the blink state for blinking cursors
-      current_visible = CursorManager.get_visibility(emulator.cursor)
-      CursorManager.set_visibility(emulator.cursor, !current_visible)
-    else
-      # For non-blinking cursors, ensure they're visible
-      CursorManager.set_visibility(emulator.cursor, true)
+    case CursorManager.get_blink(emulator.cursor) do
+      true ->
+        # Toggle the blink state for blinking cursors
+        current_visible = CursorManager.get_visibility(emulator.cursor)
+        CursorManager.set_visibility(emulator.cursor, !current_visible)
+      false ->
+        # For non-blinking cursors, ensure they're visible
+        CursorManager.set_visibility(emulator.cursor, true)
     end
 
     emulator

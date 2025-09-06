@@ -25,7 +25,10 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
 
   # Client API
   def start_link(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = case is_map(opts) do
+      true -> Enum.into(opts, [])
+      false -> opts
+    end
     name = Keyword.get(opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, opts, name: name)
   end
@@ -110,8 +113,9 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
       theme_config: Map.get(opts, :theme_config, %{})
     }
 
-    if state.auto_load do
-      load_themes_from_paths(state.theme_paths)
+    case state.auto_load do
+      true -> load_themes_from_paths(state.theme_paths)
+      false -> :ok
     end
 
     {:ok, state}

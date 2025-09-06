@@ -98,14 +98,15 @@ defmodule Raxol.Terminal.Output.Manager do
 
         # Increment format_applications if any formatting rules exist
         updated_manager =
-          if length(manager.format_rules) > 0 do
-            %{
+          case length(manager.format_rules) > 0 do
+            true ->
+              %{
+                updated_manager
+                | metrics:
+                    update_metrics(updated_manager.metrics, :format_applications)
+              }
+            false ->
               updated_manager
-              | metrics:
-                  update_metrics(updated_manager.metrics, :format_applications)
-            }
-          else
-            updated_manager
           end
 
         {:ok, updated_manager}
@@ -226,12 +227,13 @@ defmodule Raxol.Terminal.Output.Manager do
     new_events = [event | events]
 
     # Simple size check - in a real implementation, you might want more sophisticated buffering
-    if length(new_events) * 100 > max_size do
-      # Keep only the most recent events
-      kept_events = Enum.take(new_events, div(max_size, 100))
-      %{buffer | events: kept_events}
-    else
-      %{buffer | events: new_events}
+    case length(new_events) * 100 > max_size do
+      true ->
+        # Keep only the most recent events
+        kept_events = Enum.take(new_events, div(max_size, 100))
+        %{buffer | events: kept_events}
+      false ->
+        %{buffer | events: new_events}
     end
   end
 

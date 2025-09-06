@@ -47,7 +47,10 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     * `:export_format` - Format for exporting metrics
   """
   def start_link(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = case is_map(opts) do
+      true -> Enum.into(opts, [])
+      false -> opts
+    end
     name = Keyword.get(opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, opts, name: name)
   end
@@ -335,15 +338,16 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
   defp percentile(sorted, p) do
     count = length(sorted)
 
-    if count == 0 do
-      nil
-    else
-      # For percentiles, we want the value at the p-th percentile position
-      # For a list of n elements, the p-th percentile is at position ceil(p * n)
-      index = ceil(p * count) - 1
-      # Clamp to valid range
-      index = max(0, min(index, count - 1))
-      Enum.at(sorted, index)
+    case count do
+      0 ->
+        nil
+      _ ->
+        # For percentiles, we want the value at the p-th percentile position
+        # For a list of n elements, the p-th percentile is at position ceil(p * n)
+        index = ceil(p * count) - 1
+        # Clamp to valid range
+        index = max(0, min(index, count - 1))
+        Enum.at(sorted, index)
     end
   end
 
@@ -453,17 +457,23 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
         :ok
 
       threshold ->
-        if exceeds_threshold?(metric.value, threshold) do
-          Logger.warning(
-            "Metric #{name} exceeded threshold: #{inspect(metric)}"
-          )
+        case exceeds_threshold?(metric.value, threshold) do
+          true ->
+            Logger.warning(
+              "Metric #{name} exceeded threshold: #{inspect(metric)}"
+            )
+          false ->
+            :ok
         end
     end
   end
 
   defp check_error_alerts(error, _thresholds) do
-    if error.severity == :critical do
-      Logger.error("Critical error occurred: #{inspect(error)}")
+    case error.severity do
+      :critical ->
+        Logger.error("Critical error occurred: #{inspect(error)}")
+      _ ->
+        :ok
     end
 
     :ok

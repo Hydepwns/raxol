@@ -28,10 +28,9 @@ defmodule Raxol.Terminal.Buffer.GenServerHelpers do
     # Ensure we have a valid name for GenServer
     valid_name = validate_genserver_name(name, module)
 
-    if valid_name do
-      GenServer.start_link(module, gen_server_opts, name: valid_name)
-    else
-      GenServer.start_link(module, gen_server_opts)
+    case valid_name do
+      nil -> GenServer.start_link(module, gen_server_opts)
+      name -> GenServer.start_link(module, gen_server_opts, name: name)
     end
   end
 

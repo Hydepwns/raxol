@@ -119,11 +119,12 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   # Private helper functions
 
   defp trim_scrollback(scrollback, limit) do
-    if length(scrollback) > limit do
-      scrollback
-      |> Enum.take(limit)
-    else
-      scrollback
+    case length(scrollback) > limit do
+      true ->
+        scrollback
+        |> Enum.take(limit)
+      false ->
+        scrollback
     end
   end
 

@@ -6,7 +6,6 @@ defmodule Raxol.Terminal.Integration.Renderer do
   alias Raxol.Terminal.Integration.State
   alias Raxol.Terminal.Buffer.Manager
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
-  alias Raxol.Core.ErrorHandling
   require Logger
 
   @doc """
@@ -313,19 +312,19 @@ defmodule Raxol.Terminal.Integration.Renderer do
     set_cursor_visibility_state(visible)
   end
 
-  defp validate_dimensions(width, height) when width <= 0 do
+  defp validate_dimensions(width, _height) when width <= 0 do
     {:error, {:invalid_width, width}}
   end
 
-  defp validate_dimensions(width, height) when height <= 0 do
+  defp validate_dimensions(_width, height) when height <= 0 do
     {:error, {:invalid_height, height}}
   end
 
-  defp validate_dimensions(width, height) when width > 1000 do
+  defp validate_dimensions(width, _height) when width > 1000 do
     {:error, {:width_too_large, width}}
   end
 
-  defp validate_dimensions(width, height) when height > 1000 do
+  defp validate_dimensions(_width, height) when height > 1000 do
     {:error, {:height_too_large, height}}
   end
 
@@ -360,7 +359,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
   defp init_terminal_by_mode(false) do
     IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_init()")
 
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            raw_init_result = :termbox2_nif.tb_init()
 
            case raw_init_result do
@@ -408,7 +407,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
   defp shutdown_terminal_by_mode(false) do
     IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_shutdown()")
 
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            :termbox2_nif.tb_shutdown()
            IO.puts("[Renderer] :termbox2_nif.tb_shutdown() called.")
            :ok

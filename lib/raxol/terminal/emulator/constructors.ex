@@ -225,10 +225,9 @@ defmodule Raxol.Terminal.Emulator.Constructors do
     plugin_manager = Map.get(opts, :plugin_manager)
     emulator = new(width, height, [])
 
-    if plugin_manager do
-      %{emulator | plugin_manager: plugin_manager}
-    else
-      emulator
+    case plugin_manager do
+      nil -> emulator
+      _ -> %{emulator | plugin_manager: plugin_manager}
     end
   end
 

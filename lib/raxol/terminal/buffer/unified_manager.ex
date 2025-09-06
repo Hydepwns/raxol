@@ -101,7 +101,10 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     * `{:ok, pid}` - The process ID of the started buffer manager
   """
   def start_link(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    opts = case is_map(opts) do
+      true -> Enum.into(opts, [])
+      false -> opts
+    end
     name = Keyword.get(opts, :name)
     gen_server_opts = Keyword.delete(opts, :name)
 
@@ -581,28 +584,6 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     handle_dimension_update(dimensions_changed, state, width, height)
   end
 
-  defp handle_dimension_update(false, state, _width, _height), do: {:ok, state}
-
-  defp handle_dimension_update(true, state, width, height) do
-    # Resize buffers
-    new_active_buffer =
-      ScreenBuffer.resize(state.active_buffer, height, width)
-
-    new_back_buffer = ScreenBuffer.resize(state.back_buffer, height, width)
-
-    # Clear cache since buffer dimensions changed
-    Cache.clear(:buffer)
-
-    {:ok,
-     %{
-       state
-       | width: width,
-         height: height,
-         active_buffer: new_active_buffer,
-         back_buffer: new_back_buffer
-     }}
-  end
-
   defp update_single_command(state, %{scrollback_limit: limit}) do
     # Update scrollback limit
     new_scrollback_buffer =
@@ -630,6 +611,28 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   defp update_single_command(state, _command) do
     # Unknown command, return state unchanged
     {:ok, state}
+  end
+
+  defp handle_dimension_update(false, state, _width, _height), do: {:ok, state}
+
+  defp handle_dimension_update(true, state, width, height) do
+    # Resize buffers
+    new_active_buffer =
+      ScreenBuffer.resize(state.active_buffer, height, width)
+
+    new_back_buffer = ScreenBuffer.resize(state.back_buffer, height, width)
+
+    # Clear cache since buffer dimensions changed
+    Cache.clear(:buffer)
+
+    {:ok,
+     %{
+       state
+       | width: width,
+         height: height,
+         active_buffer: new_active_buffer,
+         back_buffer: new_back_buffer
+     }}
   end
 
   defp process_write_data(state, data) when is_binary(data) do

@@ -20,7 +20,6 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ANSI.Monitor
   alias Raxol.Terminal.ANSI.WindowManipulation
-  alias Raxol.Core.ErrorHandling
 
   @type window_event_type ::
           :close
@@ -47,7 +46,7 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
   """
   @spec process_sequence(String.t(), list(String.t())) :: window_event() | nil
   def process_sequence(sequence, params) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            case get_sequence_handler(sequence) do
              nil -> nil
              handler -> handler.(params)
@@ -66,7 +65,7 @@ defmodule Raxol.Terminal.ANSI.WindowEvents do
   end
 
   defp handle_sequence_error(sequence, params, error, stacktrace) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            Monitor.record_error(
              sequence,
              "Window event error: #{inspect(error)}",

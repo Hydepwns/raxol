@@ -453,17 +453,13 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
         {:reply, {:error, :session_not_found}, state}
 
       session ->
-        case create_window_impl(state, session, opts) do
-          {:ok, window, new_state} ->
-            Logger.info(
-              "Created window '#{window.name}' in session #{session_id}"
-            )
+        {:ok, window, new_state} = create_window_impl(state, session, opts)
+        
+        Logger.info(
+          "Created window '#{window.name}' in session #{session_id}"
+        )
 
-            {:reply, {:ok, window.id}, new_state}
-
-          {:error, reason} ->
-            {:reply, {:error, reason}, state}
-        end
+        {:reply, {:ok, window.id}, new_state}
     end
   end
 
@@ -475,14 +471,9 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
       ) do
     case get_pane(state, session_id, window_id, pane_id) do
       {:ok, pane} ->
-        case split_pane_impl(state, pane, opts) do
-          {:ok, new_pane, new_state} ->
-            Logger.info("Split pane #{pane_id} in window #{window_id}")
-            {:reply, {:ok, new_pane.id}, new_state}
-
-          {:error, reason} ->
-            {:reply, {:error, reason}, state}
-        end
+        {:ok, new_pane, new_state} = split_pane_impl(state, pane, opts)
+        Logger.info("Split pane #{pane_id} in window #{window_id}")
+        {:reply, {:ok, new_pane.id}, new_state}
 
       {:error, reason} ->
         {:reply, {:error, reason}, state}

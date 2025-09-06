@@ -63,10 +63,12 @@ defmodule Raxol.Terminal.Input.CoreHandler do
     {parsed_emulator, parsed_parser_state, remaining_input_chunk} =
       Parser.parse_chunk(emulator, current_parser_state, input)
 
-    if remaining_input_chunk != "" do
-      Raxol.Core.Runtime.Log.debug(
-        "[InputHandler] Parser.parse_chunk returned remaining input: #{inspect(remaining_input_chunk)}"
-      )
+    case remaining_input_chunk do
+      "" -> :ok
+      _ ->
+        Raxol.Core.Runtime.Log.debug(
+          "[InputHandler] Parser.parse_chunk returned remaining input: #{inspect(remaining_input_chunk)}"
+        )
     end
 
     final_emulator_updated = %{

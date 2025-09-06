@@ -60,19 +60,17 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
     new_buffer = [line | scroll.buffer]
 
     new_buffer =
-      if length(new_buffer) > scroll.max_height do
-        Enum.take(new_buffer, scroll.max_height)
-      else
-        new_buffer
+      case length(new_buffer) > scroll.max_height do
+        true -> Enum.take(new_buffer, scroll.max_height)
+        false -> new_buffer
       end
 
     new_usage = calculate_memory_usage(new_buffer)
 
     {new_buffer, new_ratio} =
-      if new_usage > scroll.memory_limit do
-        compress_buffer(new_buffer)
-      else
-        {new_buffer, scroll.compression_ratio}
+      case new_usage > scroll.memory_limit do
+        true -> compress_buffer(new_buffer)
+        false -> {new_buffer, scroll.compression_ratio}
       end
 
     %{
@@ -176,10 +174,9 @@ defmodule Raxol.Terminal.Scroll.UnifiedScroll do
   def set_max_height(%__MODULE__{} = scroll, new_max_height)
       when is_integer(new_max_height) and new_max_height >= 0 do
     new_buffer =
-      if length(scroll.buffer) > new_max_height do
-        Enum.take(scroll.buffer, new_max_height)
-      else
-        scroll.buffer
+      case length(scroll.buffer) > new_max_height do
+        true -> Enum.take(scroll.buffer, new_max_height)
+        false -> scroll.buffer
       end
 
     new_memory_usage = calculate_memory_usage(new_buffer)

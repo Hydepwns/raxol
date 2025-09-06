@@ -148,12 +148,13 @@ defmodule Raxol.Terminal.EventProcessor do
     priority = Map.get(@event_priorities, type, 5)
     immediate_threshold = Keyword.get(options, :immediate_threshold, 2)
 
-    if priority <= immediate_threshold do
-      {updated_emulator, output} = process_event(event, emulator)
-      {:immediate, updated_emulator, output}
-    else
-      # Queue for batch processing
-      {:queued, emulator}
+    case priority <= immediate_threshold do
+      true ->
+        {updated_emulator, output} = process_event(event, emulator)
+        {:immediate, updated_emulator, output}
+      false ->
+        # Queue for batch processing
+        {:queued, emulator}
     end
   end
 
@@ -213,7 +214,10 @@ defmodule Raxol.Terminal.EventProcessor do
     case events do
       [first | rest] ->
         last = List.last(rest)
-        if first == last, do: [first], else: [first, last]
+        case first == last do
+          true -> [first]
+          false -> [first, last]
+        end
 
       [] ->
         []

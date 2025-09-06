@@ -108,12 +108,13 @@ defmodule Raxol.Terminal.SessionManager do
         {:reply, {:error, :not_found}, sessions}
 
       session ->
-        if session.token == token do
-          session = Map.put(session, :last_active, DateTime.utc_now())
-          sessions = Map.put(sessions, session_id, session)
-          {:reply, {:ok, session}, sessions}
-        else
-          {:reply, {:error, :invalid_token}, sessions}
+        case session.token == token do
+          true ->
+            session = Map.put(session, :last_active, DateTime.utc_now())
+            sessions = Map.put(sessions, session_id, session)
+            {:reply, {:ok, session}, sessions}
+          false ->
+            {:reply, {:error, :invalid_token}, sessions}
         end
     end
   end

@@ -49,11 +49,12 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
     prefix_len = 1 + String.length(params_str) + String.length(final_byte)
     remaining = String.slice(data, prefix_len..-1//1)
 
-    if mode_code do
-      {:ok, {:set_mode, :dec_private, mode_code, action}, remaining}
-    else
-      BaseParser.log_invalid_sequence("DEC Private CSI", data)
-      {:error, :invalid_sequence, remaining}
+    case mode_code do
+      nil ->
+        BaseParser.log_invalid_sequence("DEC Private CSI", data)
+        {:error, :invalid_sequence, remaining}
+      code ->
+        {:ok, {:set_mode, :dec_private, code, action}, remaining}
     end
   end
 
@@ -75,11 +76,12 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
         dispatch_csi(params, final_byte, remaining)
 
       _ ->
-        if BaseParser.valid_sequence_start?(data) do
-          {:incomplete, ""}
-        else
-          BaseParser.log_invalid_sequence("CSI", data)
-          {:error, :invalid_sequence, data}
+        case BaseParser.valid_sequence_start?(data) do
+          true ->
+            {:incomplete, ""}
+          false ->
+            BaseParser.log_invalid_sequence("CSI", data)
+            {:error, :invalid_sequence, data}
         end
     end
   end
@@ -266,11 +268,12 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
   defp dispatch_csi_set_mode(params, mode, set?, remaining) do
     mode_code = BaseParser.param_at(params, 0, 0)
 
-    if mode_code do
-      {:ok, {:set_mode, mode, mode_code, set?}, remaining}
-    else
-      BaseParser.log_invalid_sequence("CSI Set Mode", remaining)
-      {:error, :invalid_sequence, remaining}
+    case mode_code do
+      nil ->
+        BaseParser.log_invalid_sequence("CSI Set Mode", remaining)
+        {:error, :invalid_sequence, remaining}
+      code ->
+        {:ok, {:set_mode, mode, code, set?}, remaining}
     end
   end
 

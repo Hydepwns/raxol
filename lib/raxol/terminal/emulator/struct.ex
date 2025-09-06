@@ -176,10 +176,9 @@ defmodule Raxol.Terminal.Emulator.Struct do
   """
   @spec maybe_scroll(t()) :: t()
   def maybe_scroll(emulator) do
-    if needs_scroll?(emulator) do
-      perform_scroll(emulator)
-    else
-      emulator
+    case needs_scroll?(emulator) do
+      true -> perform_scroll(emulator)
+      false -> emulator
     end
   end
 

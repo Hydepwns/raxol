@@ -71,9 +71,10 @@ defmodule Raxol.Terminal.Commands.History do
         new_index = history.current_index - 1
 
         command =
-          if new_index == -1,
-            do: history.current_input,
-            else: Enum.at(history.commands, new_index)
+          case new_index do
+            -1 -> history.current_input
+            _ -> Enum.at(history.commands, new_index)
+          end
 
         {command, %{history | current_index: new_index}}
 
@@ -139,14 +140,15 @@ defmodule Raxol.Terminal.Commands.History do
     # On newline, add the current buffer to history if not empty, then clear buffer
     cmd = String.trim(emulator.current_command_buffer)
 
-    if cmd != "" do
-      updated_history =
-        [cmd | emulator.command_history]
-        |> Enum.take(emulator.max_command_history)
+    case cmd do
+      "" ->
+        %{emulator | current_command_buffer: ""}
+      _ ->
+        updated_history =
+          [cmd | emulator.command_history]
+          |> Enum.take(emulator.max_command_history)
 
-      %{emulator | command_history: updated_history, current_command_buffer: ""}
-    else
-      %{emulator | current_command_buffer: ""}
+        %{emulator | command_history: updated_history, current_command_buffer: ""}
     end
   end
 

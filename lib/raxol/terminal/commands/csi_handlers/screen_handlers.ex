@@ -10,15 +10,17 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.ScreenHandlers do
   """
   def handle_erase_display(emulator, mode) do
     # Only valid modes are 0, 1, and 2
-    if mode in [0, 1, 2] do
-      Screen.handle_command(
-        emulator,
-        [mode],
-        ?J
-      )
-    else
-      # Invalid mode, return emulator unchanged
-      emulator
+    case mode in [0, 1, 2] do
+      true ->
+        Screen.handle_command(
+          emulator,
+          [mode],
+          ?J
+        )
+
+      false ->
+        # Invalid mode, return emulator unchanged
+        emulator
     end
   end
 

@@ -33,25 +33,26 @@ defmodule Raxol.Terminal.Config.Validation do
     # Check for unknown keys in config
     unknown_keys = config_keys -- schema_keys
 
-    if unknown_keys != [] do
-      {:error,
-       "Unknown configuration keys at #{inspect(path)}: #{inspect(unknown_keys)}"}
-    else
-      # Validate each key in the config
-      Enum.reduce_while(config, {:ok, %{}}, fn {key, value}, {:ok, acc} ->
-        # Get schema for this key
-        key_schema = Map.get(schema, key)
-        key_path = path ++ [key]
+    case unknown_keys do
+      [] ->
+        # Validate each key in the config
+        Enum.reduce_while(config, {:ok, %{}}, fn {key, value}, {:ok, acc} ->
+          # Get schema for this key
+          key_schema = Map.get(schema, key)
+          key_path = path ++ [key]
 
-        # Validate value against schema
-        case validate_value_with_schema(value, key_path, key_schema) do
-          {:ok, validated_value} ->
-            {:cont, {:ok, Map.put(acc, key, validated_value)}}
+          # Validate value against schema
+          case validate_value_with_schema(value, key_path, key_schema) do
+            {:ok, validated_value} ->
+              {:cont, {:ok, Map.put(acc, key, validated_value)}}
 
-          {:error, reason} ->
-            {:halt, {:error, reason}}
-        end
-      end)
+            {:error, reason} ->
+              {:halt, {:error, reason}}
+          end
+        end)
+      _ ->
+        {:error,
+         "Unknown configuration keys at #{inspect(path)}: #{inspect(unknown_keys)}"}
     end
   end
 
@@ -137,11 +138,12 @@ defmodule Raxol.Terminal.Config.Validation do
     do: {:ok, value}
 
   defp validate_type(value, {:enum, options}, path) do
-    if value in options do
-      {:ok, value}
-    else
-      {:error,
-       "Value #{inspect(value)} at #{inspect(path)} is not one of #{inspect(options)}"}
+    case value in options do
+      true ->
+        {:ok, value}
+      false ->
+        {:error,
+         "Value #{inspect(value)} at #{inspect(path)} is not one of #{inspect(options)}"}
     end
   end
 

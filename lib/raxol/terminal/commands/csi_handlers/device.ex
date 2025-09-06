@@ -225,19 +225,28 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
   end
 
   def handle_report_window_state(emulator, _state) do
-    state = if emulator.window.maximized, do: 1, else: 0
+    state = case emulator.window.maximized do
+      true -> 1
+      false -> 0
+    end
     updated_emulator = Emulator.write_to_output(emulator, "\e[5;#{state}t")
     {:ok, updated_emulator}
   end
 
   def handle_window_action(emulator, 0) do
-    state = if emulator.window.maximized, do: 1, else: 0
+    state = case emulator.window.maximized do
+      true -> 1
+      false -> 0
+    end
     updated_emulator = Emulator.write_to_output(emulator, "\e[9;#{state}t")
     {:ok, updated_emulator}
   end
 
   def handle_window_action(emulator, 1) do
-    state = if emulator.window.maximized, do: 1, else: 0
+    state = case emulator.window.maximized do
+      true -> 1
+      false -> 0
+    end
     updated_emulator = Emulator.write_to_output(emulator, "\e[9;#{state}t")
 
     {:ok,
@@ -245,7 +254,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.Device do
   end
 
   def handle_unmaximize_window(emulator) do
-    state = if emulator.window.maximized, do: 1, else: 0
+    state = case emulator.window.maximized do
+      true -> 1
+      false -> 0
+    end
     updated_emulator = Emulator.write_to_output(emulator, "\e[10;#{state}t")
 
     {:ok,

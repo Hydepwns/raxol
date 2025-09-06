@@ -397,12 +397,6 @@ defmodule Raxol.Terminal.Renderer do
     apply_cursor_option(content, renderer.cursor, include_cursor)
   end
 
-  defp apply_cursor_option(content, cursor, true) do
-    content |> maybe_add_cursor(cursor, true)
-  end
-
-  defp apply_cursor_option(content, _cursor, false), do: content
-
   # Handle ScreenBuffer structs
   def get_content(%Raxol.Terminal.ScreenBuffer{} = buffer, opts) do
     _include_style = Keyword.get(opts, :include_style, true)
@@ -432,6 +426,12 @@ defmodule Raxol.Terminal.Renderer do
       other -> {:ok, other}
     end
   end
+
+  defp apply_cursor_option(content, cursor, true) do
+    content |> maybe_add_cursor(cursor, true)
+  end
+
+  defp apply_cursor_option(content, _cursor, false), do: content
 
   defp maybe_add_cursor(content, nil, _include_cursor), do: content
   defp maybe_add_cursor(content, cursor, true), do: {content, cursor}

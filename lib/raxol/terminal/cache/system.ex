@@ -163,19 +163,20 @@ defmodule Raxol.Terminal.Cache.System do
         entry_size = calculate_size(value)
 
         {updated_cache, updated_size} =
-          if namespace_state.size + entry_size > namespace_state.max_size do
-            {cache_after_eviction, size_after_eviction} =
-              evict_entries(
-                namespace_state.cache,
-                namespace_state.size,
-                entry_size,
-                state.eviction_policy,
-                namespace_state.max_size
-              )
+          case namespace_state.size + entry_size > namespace_state.max_size do
+            true ->
+              {cache_after_eviction, size_after_eviction} =
+                evict_entries(
+                  namespace_state.cache,
+                  namespace_state.size,
+                  entry_size,
+                  state.eviction_policy,
+                  namespace_state.max_size
+                )
 
-            {cache_after_eviction, size_after_eviction}
-          else
-            {namespace_state.cache, namespace_state.size}
+              {cache_after_eviction, size_after_eviction}
+            false ->
+              {namespace_state.cache, namespace_state.size}
           end
 
         entry = %{
@@ -278,10 +279,11 @@ defmodule Raxol.Terminal.Cache.System do
         {:reply, {:error, :not_found}, updated_state}
 
       entry ->
-        if expired?(entry) do
-          handle_expired_entry(entry, key, namespace_state, state, namespace)
-        else
-          handle_valid_entry(entry, key, namespace_state, state, namespace)
+        case expired?(entry) do
+          true ->
+            handle_expired_entry(entry, key, namespace_state, state, namespace)
+          false ->
+            handle_valid_entry(entry, key, namespace_state, state, namespace)
         end
     end
   end
@@ -360,7 +362,10 @@ defmodule Raxol.Terminal.Cache.System do
 
   defp calculate_hit_ratio(namespace_state) do
     total = namespace_state.hit_count + namespace_state.miss_count
-    if total > 0, do: namespace_state.hit_count / total, else: 0.0
+    case total > 0 do
+      true -> namespace_state.hit_count / total
+      false -> 0.0
+    end
   end
 
   defp evict_entries(cache, current_size, needed_size, policy, max_size) do

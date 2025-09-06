@@ -95,15 +95,16 @@ defmodule Raxol.Terminal.Commands.Screen do
       end
 
     # Only insert if cursor is within the scroll region
-    if cursor_y >= top && cursor_y <= bottom do
-      # Insert count lines at cursor_y
-      new_buffer =
-        ScreenBuffer.insert_lines(buffer, cursor_y, count, emulator.style)
+    case cursor_y >= top && cursor_y <= bottom do
+      true ->
+        # Insert count lines at cursor_y
+        new_buffer =
+          ScreenBuffer.insert_lines(buffer, cursor_y, count, emulator.style)
 
-      Emulator.update_active_buffer(emulator, new_buffer)
-    else
-      # Outside scroll region, do nothing
-      emulator
+        Emulator.update_active_buffer(emulator, new_buffer)
+      false ->
+        # Outside scroll region, do nothing
+        emulator
     end
   end
 
@@ -120,21 +121,22 @@ defmodule Raxol.Terminal.Commands.Screen do
       end
 
     # Only delete if cursor is within the scroll region
-    if cursor_y >= top && cursor_y <= bottom do
-      # Delete count lines at cursor_y, passing the scroll region
-      new_buffer =
-        ScreenBuffer.delete_lines(
-          buffer,
-          cursor_y,
-          count,
-          emulator.style,
-          {top, bottom}
-        )
+    case cursor_y >= top && cursor_y <= bottom do
+      true ->
+        # Delete count lines at cursor_y, passing the scroll region
+        new_buffer =
+          ScreenBuffer.delete_lines(
+            buffer,
+            cursor_y,
+            count,
+            emulator.style,
+            {top, bottom}
+          )
 
-      Emulator.update_active_buffer(emulator, new_buffer)
-    else
-      # Outside scroll region, do nothing
-      emulator
+        Emulator.update_active_buffer(emulator, new_buffer)
+      false ->
+        # Outside scroll region, do nothing
+        emulator
     end
   end
 

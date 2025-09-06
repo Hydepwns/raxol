@@ -27,10 +27,11 @@ defmodule Raxol.Terminal.Buffer.Common do
           non_neg_integer()
         ) :: {:ok, list(list(Cell.t()))} | {:error, atom()}
   def get_region_lines(lines, top, bottom) do
-    if top >= 0 and bottom < length(lines) and top <= bottom do
-      {:ok, Enum.slice(lines, top..bottom)}
-    else
-      {:error, :invalid_region}
+    case top >= 0 and bottom < length(lines) and top <= bottom do
+      true ->
+        {:ok, Enum.slice(lines, top..bottom)}
+      false ->
+        {:error, :invalid_region}
     end
   end
 

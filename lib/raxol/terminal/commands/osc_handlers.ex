@@ -40,7 +40,10 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
 
     result =
       Enum.find_value(command_groups, fn {commands, group} ->
-        if command in commands, do: {group, command}, else: nil
+        case command in commands do
+          true -> {group, command}
+          false -> nil
+        end
       end)
 
     result || :unsupported

@@ -42,10 +42,9 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Region do
       buffer.cells
       |> Enum.with_index()
       |> Enum.map(fn {row, row_y} ->
-        if row_in_region?(row_y, y, height) do
-          update_row_in_region(row, x, width, new_cell)
-        else
-          row
+        case row_in_region?(row_y, y, height) do
+          true -> update_row_in_region(row, x, width, new_cell)
+          false -> row
         end
       end)
 
@@ -83,10 +82,9 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Region do
     row
     |> Enum.with_index()
     |> Enum.map(fn {col_cell, col_x} ->
-      if col_in_region?(col_x, x, width) do
-        new_cell
-      else
-        col_cell
+      case col_in_region?(col_x, x, width) do
+        true -> new_cell
+        false -> col_cell
       end
     end)
   end

@@ -38,7 +38,10 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
     ]
 
     Enum.find_value(byte_handlers, fn {check, handler} ->
-      if check.(byte), do: handler.(), else: nil
+      case check.(byte) do
+        true -> handler.()
+        false -> nil
+      end
     end) || handle_unhandled_byte(emulator, parser_state, byte, rest)
   end
 

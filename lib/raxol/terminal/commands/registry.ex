@@ -130,18 +130,20 @@ defmodule Raxol.Terminal.Commands.Registry do
   defp validate_command(command) do
     required_fields = [:name, :description, :handler, :usage]
 
-    if Enum.all?(required_fields, &Map.has_key?(command, &1)) do
-      :ok
-    else
-      {:error, :invalid_command}
+    case Enum.all?(required_fields, &Map.has_key?(command, &1)) do
+      true ->
+        :ok
+      false ->
+        {:error, :invalid_command}
     end
   end
 
   defp check_name_conflict(registry, command) do
-    if Map.has_key?(registry.commands, command.name) do
-      {:error, :command_exists}
-    else
-      :ok
+    case Map.has_key?(registry.commands, command.name) do
+      true ->
+        {:error, :command_exists}
+      false ->
+        :ok
     end
   end
 
@@ -153,13 +155,14 @@ defmodule Raxol.Terminal.Commands.Registry do
   end
 
   defp validate_args(command, args) do
-    if command.completion do
-      case command.completion.(args) do
-        :ok -> :ok
-        {:error, reason} -> {:error, reason}
-      end
-    else
-      :ok
+    case command.completion do
+      nil ->
+        :ok
+      completion_fn ->
+        case completion_fn.(args) do
+          :ok -> :ok
+          {:error, reason} -> {:error, reason}
+        end
     end
   end
 

@@ -101,10 +101,9 @@ defmodule Raxol.Terminal.Buffer.MetricsTracker do
   # Private helper functions
 
   defp calculate_throughput(metrics) do
-    if metrics.performance.average_response_time > 0 do
-      1_000_000 / metrics.performance.average_response_time
-    else
-      0.0
+    case metrics.performance.average_response_time > 0 do
+      true -> 1_000_000 / metrics.performance.average_response_time
+      false -> 0.0
     end
   end
 end

@@ -31,13 +31,15 @@ defmodule Raxol.Terminal.Operations.TextOperations do
         _ -> 0
       end
 
-    if line >= 0 and line < height do
-      buffer.cells
-      |> Enum.at(line, [])
-      |> Enum.map_join("", &extract_char/1)
-      |> String.trim_trailing()
-    else
-      ""
+    case line >= 0 and line < height do
+      true ->
+        buffer.cells
+        |> Enum.at(line, [])
+        |> Enum.map_join("", &extract_char/1)
+        |> String.trim_trailing()
+
+      false ->
+        ""
     end
   end
 

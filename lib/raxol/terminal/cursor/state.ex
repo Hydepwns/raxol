@@ -92,15 +92,17 @@ defmodule Raxol.Terminal.Cursor.State do
   Restores the saved cursor position.
   """
   def restore_position(%Manager{} = state) do
-    if state.saved_row && state.saved_col do
-      %{
+    case state.saved_row && state.saved_col do
+      true ->
+        %{
+          state
+          | row: state.saved_row,
+            col: state.saved_col,
+            position: {state.saved_row, state.saved_col}
+        }
+
+      false ->
         state
-        | row: state.saved_row,
-          col: state.saved_col,
-          position: {state.saved_row, state.saved_col}
-      }
-    else
-      state
     end
   end
 

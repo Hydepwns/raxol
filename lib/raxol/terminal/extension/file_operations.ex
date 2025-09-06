@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.Extension.FileOperations do
   """
 
   require Logger
-  alias Raxol.Core.ErrorHandling
 
   @manifest_file "extension.json"
 
@@ -12,7 +11,7 @@ defmodule Raxol.Terminal.Extension.FileOperations do
   Exports an extension to a file or directory.
   """
   def export_extension(extension, path) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            # Create export directory if it doesn't exist
            export_dir = Path.dirname(path)
            File.mkdir_p!(export_dir)
@@ -55,7 +54,7 @@ defmodule Raxol.Terminal.Extension.FileOperations do
   Imports an extension from a file or directory.
   """
   def import_extension_from_path(path, opts) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            # Check if path is a directory or file
            case File.stat(path) do
              {:ok, %{type: :directory}} ->

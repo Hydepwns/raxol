@@ -171,29 +171,31 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
 
   defp handle_printable_char(emulator, parser_state, char_codepoint, rest) do
     # Check if we're in bracketed paste mode
-    if emulator.bracketed_paste_active do
-      # Accumulate the character in the bracketed paste buffer
-      char_string = List.to_string([char_codepoint])
-      updated_buffer = emulator.bracketed_paste_buffer <> char_string
-      updated_emulator = %{emulator | bracketed_paste_buffer: updated_buffer}
-      {:continue, updated_emulator, parser_state, rest}
-    else
-      # Normal processing for printable character
-      emulator_with_history =
-        History.maybe_add_to_history(emulator, char_codepoint)
+    case emulator.bracketed_paste_active do
+      true ->
+        # Accumulate the character in the bracketed paste buffer
+        char_string = List.to_string([char_codepoint])
+        updated_buffer = emulator.bracketed_paste_buffer <> char_string
+        updated_emulator = %{emulator | bracketed_paste_buffer: updated_buffer}
+        {:continue, updated_emulator, parser_state, rest}
 
-      {updated_emulator, _output_events} =
-        InputHandler.handle_printable_character(
-          emulator_with_history,
-          char_codepoint,
-          parser_state.params,
-          parser_state.single_shift
-        )
+      false ->
+        # Normal processing for printable character
+        emulator_with_history =
+          History.maybe_add_to_history(emulator, char_codepoint)
 
-      next_parser_state = %{parser_state | single_shift: nil}
+        {updated_emulator, _output_events} =
+          InputHandler.handle_printable_character(
+            emulator_with_history,
+            char_codepoint,
+            parser_state.params,
+            parser_state.single_shift
+          )
 
-      # Continue with remaining input
-      {:continue, updated_emulator, next_parser_state, rest}
+        next_parser_state = %{parser_state | single_shift: nil}
+
+        # Continue with remaining input
+        {:continue, updated_emulator, next_parser_state, rest}
     end
   end
 

@@ -12,17 +12,18 @@ defmodule TestEventSource do
 
   @impl GenServer
   def init({args, context}) do
-    if Map.get(args, :fail_init, false) do
-      {:stop, :init_failed}
-    else
-      state = %{
-        args: args,
-        context: context,
-        events: [],
-        subscribers: MapSet.new()
-      }
+    case Map.get(args, :fail_init, false) do
+      true ->
+        {:stop, :init_failed}
+      false ->
+        state = %{
+          args: args,
+          context: context,
+          events: [],
+          subscribers: MapSet.new()
+        }
 
-      {:ok, state}
+        {:ok, state}
     end
   end
 
@@ -69,8 +70,9 @@ defmodule TestEventSource do
 
   defp notify_subscribers(event, subscribers) do
     Enum.each(subscribers, fn pid ->
-      if Process.alive?(pid) do
-        send(pid, {:event, event})
+      case Process.alive?(pid) do
+        true -> send(pid, {:event, event})
+        false -> :ok
       end
     end)
   end

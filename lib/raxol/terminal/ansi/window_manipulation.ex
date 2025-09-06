@@ -221,7 +221,10 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   def format_state(state) do
     code =
       Enum.find_value(@window_states, fn {code, s} ->
-        if s == state, do: code
+        case s == state do
+          true -> code
+          false -> nil
+        end
       end)
 
     "\e[#{code}t"
@@ -237,7 +240,10 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   def format_border_style(style) do
     code =
       Enum.find_value(@border_styles, fn {code, s} ->
-        if s == style, do: code
+        case s == style do
+          true -> code
+          false -> nil
+        end
       end)
 
     "\e[#{code}b"

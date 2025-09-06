@@ -107,7 +107,10 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
   def init(opts) do
     # Handle both keyword lists and maps
-    opts_map = if is_map(opts), do: opts, else: Map.new(opts || [])
+    opts_map = case is_map(opts) do
+      true -> opts
+      false -> Map.new(opts || [])
+    end
 
     config = %{
       default_size: Map.get(opts_map, :default_size, {80, 24}),
@@ -243,10 +246,9 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
       window ->
         {new_size, new_previous_size} =
-          if maximized do
-            {state.config.max_size, window.size}
-          else
-            {window.previous_size || state.config.default_size, nil}
+          case maximized do
+            true -> {state.config.max_size, window.size}
+            false -> {window.previous_size || state.config.default_size, nil}
           end
 
         updated_window = %{
@@ -386,13 +388,14 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   end
 
   defp update_parent_window(window, state) do
-    if window.parent_id do
-      case Map.get(state.windows, window.parent_id) do
-        nil -> state
-        parent -> update_parent_children(parent, window.id, state)
-      end
-    else
-      state
+    case window.parent_id do
+      nil ->
+        state
+      parent_id ->
+        case Map.get(state.windows, parent_id) do
+          nil -> state
+          parent -> update_parent_children(parent, window.id, state)
+        end
     end
   end
 
@@ -408,11 +411,12 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   defp remove_window_and_update_active(window_id, state) do
     state = %{state | windows: Map.delete(state.windows, window_id)}
 
-    if state.active_window == window_id do
-      next_window_id = Map.keys(state.windows) |> List.first()
-      %{state | active_window: next_window_id}
-    else
-      state
+    case state.active_window == window_id do
+      true ->
+        next_window_id = Map.keys(state.windows) |> List.first()
+        %{state | active_window: next_window_id}
+      false ->
+        state
     end
   end
 

@@ -32,10 +32,9 @@ defmodule Raxol.Terminal.Sync.System do
   # Client API
   def start_link(opts \\ []) do
     name =
-      if Mix.env() == :test do
-        Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
-      else
-        Keyword.get(opts, :name, __MODULE__)
+      case Mix.env() do
+        :test -> Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
+        _ -> Keyword.get(opts, :name, __MODULE__)
       end
 
     GenServer.start_link(__MODULE__, opts, name: name)
@@ -198,9 +197,10 @@ defmodule Raxol.Terminal.Sync.System do
   defp resolve_conflict(new_metadata, existing_metadata) do
     case {new_metadata.consistency, existing_metadata.consistency} do
       {:strong, :strong} ->
-        if new_metadata.version > existing_metadata.version,
-          do: :use_new,
-          else: :keep_existing
+        case new_metadata.version > existing_metadata.version do
+          true -> :use_new
+          false -> :keep_existing
+        end
 
       {:strong, _} ->
         :use_new
@@ -209,9 +209,10 @@ defmodule Raxol.Terminal.Sync.System do
         :keep_existing
 
       {_, _} ->
-        if new_metadata.version > existing_metadata.version,
-          do: :use_new,
-          else: :conflict
+        case new_metadata.version > existing_metadata.version do
+          true -> :use_new
+          false -> :conflict
+        end
     end
   end
 

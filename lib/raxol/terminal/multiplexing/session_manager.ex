@@ -982,7 +982,7 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
          state,
          session_id,
          window_id,
-         pane_id
+         _pane_id
        ) do
     new_pane = split_existing_pane(pane, direction, config)
     updated_panes = [new_pane | window.panes]

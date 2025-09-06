@@ -96,7 +96,10 @@ defmodule Raxol.Terminal.Commands.Executor do
 
   defp find_command_type(final_byte) do
     Enum.find_value(@command_types, :unknown, fn {type, commands} ->
-      if final_byte in commands, do: {:ok, type}
+      case final_byte in commands do
+        true -> {:ok, type}
+        false -> nil
+      end
     end)
   end
 

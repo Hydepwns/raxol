@@ -10,7 +10,6 @@ defmodule Raxol.Terminal.TerminalRegistry do
   use GenServer
   require Logger
 
-  alias Raxol.Architecture.EventSourcing.EventStore
   alias Raxol.Events.{TerminalCreatedEvent, TerminalClosedEvent}
 
   defstruct [
@@ -111,11 +110,10 @@ defmodule Raxol.Terminal.TerminalRegistry do
       config: config
     }
 
-    # Subscribe to terminal events (skip in test mode to avoid circular dependencies)
+    # Subscribe to terminal events after initialization completes
+    # This avoids circular dependencies during startup
     unless Mix.env() == :test do
-      EventStore.subscribe(self(),
-        event_types: [TerminalCreatedEvent, TerminalClosedEvent]
-      )
+      Process.send_after(self(), :subscribe_to_events, 100)
     end
 
     Logger.info("Terminal registry initialized")
@@ -271,6 +269,18 @@ defmodule Raxol.Terminal.TerminalRegistry do
     }
 
     {:reply, stats, state}
+  end
+
+  @impl GenServer
+  def handle_info(:subscribe_to_events, state) do
+    # Subscribe to terminal events now that initialization is complete
+    Raxol.Architecture.EventSourcing.EventStore.subscribe(
+      Raxol.Architecture.EventSourcing.EventStore,
+      self(),
+      event_types: [TerminalCreatedEvent, TerminalClosedEvent]
+    )
+    Logger.debug("Terminal registry subscribed to event store")
+    {:noreply, state}
   end
 
   @impl GenServer

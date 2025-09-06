@@ -149,10 +149,9 @@ defmodule Raxol.Terminal.Commands.CSIHandlers.ModeHandlers do
 
   defp set_or_reset_mode(emulator, mode_name, enabled) do
     result =
-      if enabled do
-        Emulator.set_mode(emulator, mode_name)
-      else
-        Emulator.reset_mode(emulator, mode_name)
+      case enabled do
+        true -> Emulator.set_mode(emulator, mode_name)
+        false -> Emulator.reset_mode(emulator, mode_name)
       end
 
     case result do

@@ -161,23 +161,25 @@ defmodule Raxol.Terminal.ScreenBuffer.Core.Operations do
   """
   def erase_chars(buffer, x, y, count) do
     # Erase characters starting at position (x, y)
-    if y < length(buffer.cells) do
-      line = Enum.at(buffer.cells, y, [])
+    case y < length(buffer.cells) do
+      true ->
+        line = Enum.at(buffer.cells, y, [])
 
-      if x < length(line) do
-        # Replace characters from x to x+count with empty cells
-        new_line =
-          Enum.take(line, x) ++
-            List.duplicate(%{}, count) ++
-            Enum.drop(line, x + count)
+        case x < length(line) do
+          true ->
+            # Replace characters from x to x+count with empty cells
+            new_line =
+              Enum.take(line, x) ++
+                List.duplicate(%{}, count) ++
+                Enum.drop(line, x + count)
 
-        new_cells = List.replace_at(buffer.cells, y, new_line)
-        %{buffer | cells: new_cells}
-      else
+            new_cells = List.replace_at(buffer.cells, y, new_line)
+            %{buffer | cells: new_cells}
+          false ->
+            buffer
+        end
+      false ->
         buffer
-      end
-    else
-      buffer
     end
   end
 

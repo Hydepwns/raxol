@@ -52,7 +52,10 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   Updated emulator state
   """
   def move_cursor_up(emulator, n) do
-    n = if n <= 0, do: 1, else: n
+    n = case n <= 0 do
+      true -> 1
+      false -> n
+    end
     {cur_x, cur_y} = emulator.cursor.position
     new_y = max(0, cur_y - n)
     %{emulator | cursor: %{emulator.cursor | position: {cur_x, new_y}}}
@@ -71,7 +74,10 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   Updated emulator state
   """
   def move_cursor_down(emulator, n) do
-    n = if n <= 0, do: 1, else: n
+    n = case n <= 0 do
+      true -> 1
+      false -> n
+    end
     active_buffer = BufferManager.get_screen_buffer(emulator)
     height = ScreenBuffer.get_height(active_buffer)
     {cur_x, cur_y} = emulator.cursor.position
@@ -92,7 +98,10 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   Updated emulator state
   """
   def move_cursor_forward(emulator, n) do
-    n = if n <= 0, do: 1, else: n
+    n = case n <= 0 do
+      true -> 1
+      false -> n
+    end
     active_buffer = BufferManager.get_screen_buffer(emulator)
     width = ScreenBuffer.get_width(active_buffer)
     {cur_x, cur_y} = emulator.cursor.position
@@ -113,7 +122,10 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   Updated emulator state
   """
   def move_cursor_backward(emulator, n) do
-    n = if n <= 0, do: 1, else: n
+    n = case n <= 0 do
+      true -> 1
+      false -> n
+    end
     {cur_x, cur_y} = emulator.cursor.position
     new_x = max(0, cur_x - n)
     %{emulator | cursor: %{emulator.cursor | position: {new_x, cur_y}}}

@@ -289,10 +289,9 @@ defmodule Raxol.Terminal.Theme.Manager do
   defp validate_style(style) do
     required_fields = [:foreground, :background, :bold, :italic, :underline]
 
-    if Enum.all?(required_fields, &Map.has_key?(style, &1)) do
-      :ok
-    else
-      {:error, :invalid_style}
+    case Enum.all?(required_fields, &Map.has_key?(style, &1)) do
+      true -> :ok
+      false -> {:error, :invalid_style}
     end
   end
 

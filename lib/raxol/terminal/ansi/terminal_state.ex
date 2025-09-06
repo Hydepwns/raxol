@@ -53,10 +53,12 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
     saved_states = [state.current_state | state.saved_states]
 
     saved_states =
-      if length(saved_states) > state.max_saved_states do
-        Enum.take(saved_states, state.max_saved_states)
-      else
-        saved_states
+      case length(saved_states) > state.max_saved_states do
+        true ->
+          Enum.take(saved_states, state.max_saved_states)
+
+        false ->
+          saved_states
       end
 
     %{state | saved_states: saved_states}

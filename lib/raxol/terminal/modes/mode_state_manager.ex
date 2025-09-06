@@ -135,10 +135,9 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
   defp check_dependencies(_state, []), do: :ok
 
   defp check_dependencies(state, [dep | rest]) do
-    if mode_enabled?(state, dep) do
-      check_dependencies(state, rest)
-    else
-      {:error, [dep]}
+    case mode_enabled?(state, dep) do
+      true -> check_dependencies(state, rest)
+      false -> {:error, [dep]}
     end
   end
 
@@ -152,10 +151,9 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
   defp check_conflicts(_state, []), do: :ok
 
   defp check_conflicts(state, [conflict | rest]) do
-    if mode_enabled?(state, conflict) do
-      {:error, [conflict]}
-    else
-      check_conflicts(state, rest)
+    case mode_enabled?(state, conflict) do
+      true -> {:error, [conflict]}
+      false -> check_conflicts(state, rest)
     end
   end
 end
