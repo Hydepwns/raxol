@@ -110,7 +110,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
   # Handle nil case
   def validate_widgets(nil), do: false
 
-  defp select_widgets(loaded_widgets, default_widgets) when is_list(loaded_widgets) and loaded_widgets != [] do
+  defp select_widgets(loaded_widgets, _default_widgets) when is_list(loaded_widgets) and loaded_widgets != [] do
     Raxol.Core.Runtime.Log.info(
       "Initializing dashboard from saved layout with #{length(loaded_widgets)} widgets"
     )

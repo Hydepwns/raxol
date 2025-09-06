@@ -339,15 +339,9 @@ defmodule Raxol.UI.State.HooksFunctional do
     current_hook_index
   end
 
-  defp get_current_render_context do
-    Server.get_render_context()
-  end
+  # Removed unused function: get_current_render_context/0
 
-  defp dependencies_changed?(nil, _new_deps), do: true
-
-  defp dependencies_changed?(prev_deps, new_deps) do
-    prev_deps != new_deps
-  end
+  # Removed unused functions: dependencies_changed?/2
 
   defp request_component_update(component_id) do
     # Send update message to component process if available

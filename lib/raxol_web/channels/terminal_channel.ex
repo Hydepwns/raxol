@@ -176,6 +176,16 @@ defmodule RaxolWeb.TerminalChannel do
     handle_theme_change(theme in ["dark", "light", "high-contrast"], theme, state, socket)
   end
 
+  @impl Phoenix.Channel
+  def handle_in("set_scrollback_limit", %{"limit" => limit}, socket) do
+    state = socket.assigns.terminal_state
+    limit = case is_integer(limit) do
+      true -> limit
+      false -> String.to_integer("#{limit}")
+    end
+    handle_scrollback_limit_change(limit >= 100 and limit <= 10_000, limit, state, socket)
+  end
+
   defp handle_theme_change(false, _theme, _state, socket) do
     {:reply, {:error, %{reason: "invalid_theme"}}, socket}
   end
@@ -204,12 +214,6 @@ defmodule RaxolWeb.TerminalChannel do
     {:reply, :ok, socket}
   end
 
-  @impl Phoenix.Channel
-  def handle_in("set_scrollback_limit", %{"limit" => limit}, socket) do
-    state = socket.assigns.terminal_state
-    limit = if is_integer(limit), do: limit, else: String.to_integer("#{limit}")
-    handle_scrollback_limit_change(limit >= 100 and limit <= 10_000, limit, state, socket)
-  end
 
   defp handle_scrollback_limit_change(false, _limit, _state, socket) do
     {:reply, {:error, %{reason: "invalid_limit"}}, socket}

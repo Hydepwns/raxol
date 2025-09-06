@@ -81,6 +81,8 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
     check_keyed_consistency(children)
   end
 
+  defp are_children_consistently_keyed?(_other), do: false
+
   defp check_keyed_consistency([]), do: true
 
   defp check_keyed_consistency(children) do
@@ -89,8 +91,6 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
       _non_map_child -> false
     end)
   end
-
-  defp are_children_consistently_keyed?(_other), do: false
 
   defp validate_child_has_key!(nil, _list_name), do: :ok
 

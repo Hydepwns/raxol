@@ -173,7 +173,12 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
     fn component_module ->
       fn props, context ->
         # Get user context
-        user_context = Hooks.use_context(:user_context)
+        user_context_raw = Hooks.use_context(:user_context)
+        user_context = case user_context_raw do
+          nil -> %{authenticated: false}
+          map when is_map(map) -> Map.put_new(map, :authenticated, false)
+          _ -> %{authenticated: false}
+        end
 
         has_permission =
           Hooks.use_callback(
@@ -186,9 +191,9 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
 
         enhanced_props =
           Map.merge(props, %{
-            user: user_context.user,
-            authenticated: user_context.authenticated,
-            permissions: user_context.permissions,
+            user: Map.get(user_context, :user),
+            authenticated: Map.get(user_context, :authenticated, false),
+            permissions: Map.get(user_context, :permissions, []),
             has_permission: has_permission
           })
 
@@ -695,17 +700,6 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
     component_module.render(enhanced_props, context)
   end
 
-  defp render_based_on_data_state(
-         true,
-         _error,
-         _component_module,
-         enhanced_props,
-         _context,
-         loading_component,
-         _error_component
-       ) do
-    loading_component.(enhanced_props)
-  end
 
   defp render_based_on_data_state(
          false,

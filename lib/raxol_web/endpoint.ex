@@ -45,9 +45,7 @@ defmodule RaxolWeb.Endpoint do
     ]
 
   # Code reloading configuration using compile-time conditions
-  @code_reloading Application.get_env(:raxol, RaxolWeb.Endpoint, [])[
-                    :code_reloader
-                  ] || false
+  @code_reloading Application.compile_env(:raxol, [RaxolWeb.Endpoint, :code_reloader], false)
 
   case {@code_reloading, Mix.env()} do
     {true, :dev} ->

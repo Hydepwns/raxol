@@ -38,6 +38,9 @@ defmodule Raxol.UI.Layout.Containers do
     process_row_with_children(children, gap, justify, align, space, acc)
   end
 
+  # Catch-all clause for process_row
+  def process_row(_, _space, acc), do: acc
+
   defp process_row_with_children([], _gap, _justify, _align, _space, acc),
     do: acc
 
@@ -112,8 +115,6 @@ defmodule Raxol.UI.Layout.Containers do
     List.flatten(elements) ++ acc
   end
 
-  def process_row(_, _space, acc), do: acc
-
   @doc """
   Processes a column element, calculating layout for it and its children.
 
@@ -144,6 +145,8 @@ defmodule Raxol.UI.Layout.Containers do
     # Skip if no children
     process_column_with_children(children, gap, justify, align, space, acc)
   end
+
+  def process_column(_, _space, acc), do: acc
 
   defp process_column_with_children([], _gap, _justify, _align, _space, acc),
     do: acc
@@ -219,8 +222,6 @@ defmodule Raxol.UI.Layout.Containers do
     List.flatten(elements) ++ acc
   end
 
-  def process_column(_, _space, acc), do: acc
-
   @doc """
   Measures the space needed by a row element.
 
@@ -241,6 +242,8 @@ defmodule Raxol.UI.Layout.Containers do
     # Skip if no children
     measure_row_with_children(children, available_space)
   end
+
+  def measure_row(_, _available_space), do: %{width: 0, height: 0}
 
   defp measure_row_with_children([], _available_space),
     do: %{width: 0, height: 0}
@@ -271,8 +274,6 @@ defmodule Raxol.UI.Layout.Containers do
     }
   end
 
-  def measure_row(_, _available_space), do: %{width: 0, height: 0}
-
   @doc """
   Measures the space needed by a column element.
 
@@ -293,6 +294,8 @@ defmodule Raxol.UI.Layout.Containers do
     # Skip if no children
     measure_column_with_children(children, available_space)
   end
+
+  def measure_column(_, _available_space), do: %{width: 0, height: 0}
 
   defp measure_column_with_children([], _available_space),
     do: %{width: 0, height: 0}
@@ -322,8 +325,6 @@ defmodule Raxol.UI.Layout.Containers do
       height: min(column_height, available_space.height)
     }
   end
-
-  def measure_column(_, _available_space), do: %{width: 0, height: 0}
 
   ## Pattern matching helper functions for gap calculations
 

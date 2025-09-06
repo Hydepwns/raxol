@@ -442,7 +442,10 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     new_state = %{state | config: new_config}
 
     feature_name = Atom.to_string(feature) |> String.replace("_", " ")
-    status = if enabled, do: "enabled", else: "disabled"
+    status = case enabled do
+      true -> "enabled"
+      false -> "disabled"
+    end
     announce_to_screen_reader(new_state, "#{feature_name} #{status}", :polite)
 
     {:reply, :ok, new_state}
@@ -1123,59 +1126,52 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     live_regions
   end
 
-  defp announce_with_verbosity(:verbose, text, priority, state) do
-    # Include additional metadata in announcements
-    metadata = build_verbose_metadata(text, priority)
-    announce_text_with_metadata(state, text, priority, metadata)
-  end
+  # defp announce_with_verbosity(:verbose, text, priority, state) do
+  #   # Include additional metadata in announcements
+  #   metadata = build_verbose_metadata(text, priority)
+  #   announce_text_with_metadata(state, text, priority, metadata)
+  # end
+  #
+  # defp announce_with_verbosity(_verbosity, text, priority, state) do
+  #   announce_text(state, text, priority)
+  # end
 
-  defp announce_with_verbosity(_verbosity, text, priority, state) do
-    announce_text(state, text, priority)
-  end
+  # defp play_audio_cue_if_enabled(%{enable_audio_cues: true}, cue_type) do
+  #   play_audio_cue(cue_type)
+  # end
+  #
+  # defp play_audio_cue_if_enabled(_config, _cue_type), do: :ok
 
-  defp play_audio_cue_if_enabled(%{enable_audio_cues: true}, cue_type) do
-    play_audio_cue(cue_type)
-  end
+  # defp announce_shortcuts_if_present(shortcuts, state)
+  #      when map_size(shortcuts) > 0 do
+  #   shortcuts_text = format_shortcuts(shortcuts)
+  #   announce_text(state, "Available shortcuts: #{shortcuts_text}", :polite)
+  # end
+  #
+  # defp announce_shortcuts_if_present(_shortcuts, _state), do: :ok
 
-  defp play_audio_cue_if_enabled(_config, _cue_type), do: :ok
+  # defp announce_live_update_if_applicable(
+  #        %{config: %{live: true}} = component,
+  #        %{text: text} = _properties,
+  #        state
+  #      ) do
+  #   announce_text(
+  #     state,
+  #     text,
+  #     component.config[:live_priority] || :polite
+  #   )
+  # end
+  #
+  # defp announce_live_update_if_applicable(_component, _properties, _state),
+  #   do: :ok
 
-  defp announce_shortcuts_if_present(shortcuts, state)
-       when map_size(shortcuts) > 0 do
-    shortcuts_text = format_shortcuts(shortcuts)
-    announce_text(state, "Available shortcuts: #{shortcuts_text}", :polite)
-  end
+  # defp build_description("", config) do
+  #   # Generate description from attributes
+  #   generate_description_from_attributes(config)
+  # end
+  #
+  # defp build_description(description, _config), do: description
 
-  defp announce_shortcuts_if_present(_shortcuts, _state), do: :ok
-
-  defp announce_live_update_if_applicable(
-         %{config: %{live: true}} = component,
-         %{text: text} = _properties,
-         state
-       ) do
-    announce_text(
-      state,
-      text,
-      component.config[:live_priority] || :polite
-    )
-  end
-
-  defp announce_live_update_if_applicable(_component, _properties, _state),
-    do: :ok
-
-  defp build_description("", config) do
-    # Generate description from attributes
-    generate_description_from_attributes(config)
-  end
-
-  defp build_description(description, _config), do: description
-
-  defp detect_linux_screen_reader() do
-    case screen_reader_running?("orca") do
-      true -> :orca
-      # Default to Orca on Linux
-      false -> :orca
-    end
-  end
 
   # Pattern matching helper functions for accessibility features
 
@@ -1197,7 +1193,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
        ),
        do: new_state
 
-  defp handle_live_region_update(live, true, new_state, properties, component) do
+  defp handle_live_region_update(_live, true, new_state, properties, component) do
     announce_to_screen_reader(new_state, properties.text, component.config.live)
     update_live_regions(new_state, properties.text, component.config.live)
   end
@@ -1280,11 +1276,6 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
   # Helper functions for if statement refactoring
 
-  defp init_braille_if_enabled(%{enable_braille: true}),
-    do: init_braille_display()
-
-  defp init_braille_if_enabled(_config), do: nil
-
   defp announce_component_registration(
          %{config: %{verbosity_level: :verbose}} = state,
          validated_config
@@ -1359,59 +1350,47 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     })
   end
 
-  defp adjust_order_for_landmarks(base_order, landmarks)
-       when is_list(landmarks) do
-    adjust_for_navigation("navigation" in landmarks, base_order)
-  end
+  # defp adjust_order_for_landmarks(base_order, landmarks)
+  #      when is_list(landmarks) do
+  #   adjust_for_navigation("navigation" in landmarks, base_order)
+  # end
+  #
+  # defp adjust_order_for_landmarks(base_order, _landmarks), do: base_order
 
-  defp adjust_order_for_landmarks(base_order, _landmarks), do: base_order
+  # defp format_shortcut_suffix(shortcuts) when map_size(shortcuts) > 0,
+  #   do: ", shortcuts available"
+  #
+  # defp format_shortcut_suffix(_shortcuts), do: ""
 
-  defp format_shortcut_suffix(shortcuts) when map_size(shortcuts) > 0,
-    do: ", shortcuts available"
+  # Commented out unused functions
+  # defp update_region_if_matching(
+  #        region_id,
+  #        %{priority: priority} = region,
+  #        text,
+  #        priority
+  #      ) do
+  #   {region_id, %{region | last_announcement: text}}
+  # end
+  #
+  # defp update_region_if_matching(region_id, region, _text, _priority) do
+  #   {region_id, region}
+  # end
 
-  defp format_shortcut_suffix(_shortcuts), do: ""
-
-  defp update_region_if_matching(
-         region_id,
-         %{priority: priority} = region,
-         text,
-         priority
-       ) do
-    {region_id, %{region | last_announcement: text}}
-  end
-
-  defp update_region_if_matching(region_id, region, _text, _priority) do
-    {region_id, region}
-  end
-
-  defp update_live_regions_if_configured(live_regions, _component_id, %{
-         live: nil
-       }),
-       do: live_regions
-
-  defp update_live_regions_if_configured(live_regions, component_id, %{
-         live: live
-       }) do
-    Map.put(live_regions, component_id, %{
-      priority: live,
-      last_announcement: nil
-    })
-  end
 
   # Missing helper function implementations
-  defp announce_text(_state, _text, _priority), do: :ok
+  # defp announce_text(_state, _text, _priority), do: :ok
+  #
+  # defp announce_text_with_metadata(_state, _text, _priority, _metadata), do: :ok
 
-  defp announce_text_with_metadata(_state, _text, _priority, _metadata), do: :ok
+  # defp build_verbose_metadata(_text, _priority), do: %{}
 
-  defp build_verbose_metadata(_text, _priority), do: %{}
+  # defp play_audio_cue(_cue_type), do: :ok
 
-  defp play_audio_cue(_cue_type), do: :ok
+  # defp format_shortcuts(shortcuts) do
+  #   shortcuts
+  #   |> Map.keys()
+  #   |> Enum.join(", ")
+  # end
 
-  defp format_shortcuts(shortcuts) do
-    shortcuts
-    |> Map.keys()
-    |> Enum.join(", ")
-  end
-
-  defp generate_description_from_attributes(_config), do: "Component"
+  # defp generate_description_from_attributes(_config), do: "Component"
 end

@@ -175,7 +175,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     %{state | scroll_offset: new_scroll_offset}
   end
 
-  defp calculate_scroll_offset(index, scroll_offset, page_size)
+  defp calculate_scroll_offset(index, scroll_offset, _page_size)
        when index < scroll_offset,
        do: index
 
@@ -186,7 +186,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   defp calculate_scroll_offset(_index, scroll_offset, _page_size),
     do: scroll_offset
 
-  defp calculate_scroll_offset_with_max(index, scroll_offset, visible_height)
+  defp calculate_scroll_offset_with_max(index, scroll_offset, _visible_height)
        when index < scroll_offset,
        do: index
 

@@ -4,7 +4,6 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Core.ErrorHandling
 
   # User-specific config dir
   @layout_file Path.expand("~/.raxol/dashboard_layout.bin")
@@ -19,7 +18,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
   def save_layout(widgets) when is_list(widgets) do
     layout_file = @layout_file
 
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            :ok = File.mkdir_p(Path.dirname(layout_file))
 
            layout_data =
@@ -79,7 +78,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
   end
 
   defp load_existing_layout(layout_file) do
-    case ErrorHandling.safe_call(fn ->
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
            case File.read(layout_file) do
              {:ok, binary_data} -> process_layout_data(binary_data, layout_file)
              {:error, reason} -> handle_read_error(layout_file, reason)

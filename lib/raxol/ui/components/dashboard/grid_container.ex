@@ -335,7 +335,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     end
   end
 
-  defp validate_all_parent_bounds(parent_bounds, container_width, container_height, widget_config, grid_config, cell_width, cell_height, gap) do
+  defp validate_all_parent_bounds(parent_bounds, container_width, container_height, widget_config, _grid_config, cell_width, cell_height, gap) do
     case validate_parent_bounds_structure(parent_bounds, container_width, container_height) do
       :ok ->
         # Extract widget grid spec with defaults
@@ -414,7 +414,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     {:halt, %{cols: bp_cols, rows: bp_rows}}
   end
 
-  defp check_breakpoint_match(max_width, current_width, bp_cols, bp_rows, acc)
+  defp check_breakpoint_match(max_width, current_width, bp_cols, bp_rows, _acc)
        when current_width <= max_width do
     {:halt, %{cols: bp_cols, rows: bp_rows}}
   end

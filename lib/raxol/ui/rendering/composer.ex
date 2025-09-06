@@ -108,63 +108,11 @@ defmodule Raxol.UI.Rendering.Composer do
     )
   end
 
-  defp log_recomposition_reason(current_layout_node, previous_composed_node) do
-    handle_recomposition_logging(
-      is_map(previous_composed_node),
-      current_layout_node,
-      previous_composed_node
-    )
-  end
+  # Removed unused logging functions: log_recomposition_reason/2
 
-  defp log_recomposition_for_map(current_layout_node, previous_composed_node) do
-    reason =
-      determine_recomposition_reason(
-        current_layout_node,
-        previous_composed_node
-      )
+  # Removed unused function: log_recomposition_for_map/2
 
-    message =
-      case reason do
-        :missing_layout_attrs ->
-          "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - missing layout_attrs."
-
-        {:diff_change, diff_type} ->
-          "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - diff type: #{diff_type}"
-
-        {:type_mismatch, prev_type} ->
-          "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} vs prev #{prev_type} - type mismatch."
-
-        :other ->
-          "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - other reason or first time."
-      end
-
-    Raxol.Core.Runtime.Log.debug(message)
-  end
-
-  defp determine_recomposition_reason(
-         current_layout_node,
-         previous_composed_node
-       ) do
-    layout_attrs = current_layout_node[:layout_attrs]
-
-    case {is_map(layout_attrs),
-          layout_attrs && layout_attrs[:processed_with_diff],
-          current_layout_node_type(current_layout_node),
-          previous_composed_node[:original_type]} do
-      {false, _, _, _} ->
-        :missing_layout_attrs
-
-      {true, diff, _, _} when diff != :no_change ->
-        {:diff_change, diff}
-
-      {true, :no_change, current_type, prev_type}
-      when current_type != prev_type ->
-        {:type_mismatch, prev_type}
-
-      _ ->
-        :other
-    end
-  end
+  # Removed unused function: determine_recomposition_reason/2
 
   # Missing helper functions
 
@@ -183,20 +131,7 @@ defmodule Raxol.UI.Rendering.Composer do
   
   defp extract_child_from_list(true, _children, _idx), do: nil
 
-  defp handle_recomposition_logging(
-         false,
-         _current_layout_node,
-         _previous_composed_node
-       ),
-       do: :ok
-
-  defp handle_recomposition_logging(
-         true,
-         current_layout_node,
-         previous_composed_node
-       ) do
-    log_recomposition_for_map(current_layout_node, previous_composed_node)
-  end
+  # Removed unused function: handle_recomposition_logging/3
 
   defp handle_node_composition(
          true,

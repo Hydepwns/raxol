@@ -143,14 +143,14 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         %{
           padding: "0.5rem",
           background_color:
-            if(focused,
-              do:
+            case focused do
+              true ->
                 state.theme[:focused_bg] || state.style[:focused_bg] ||
-                  "#e6f3ff",
-              else:
+                  "#e6f3ff"
+              false ->
                 state.theme[:option_bg] || state.style[:option_bg] ||
                   "transparent"
-            ),
+            end,
           border_bottom: "1px solid #eee",
           cursor: "pointer"
         },
@@ -172,7 +172,10 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         %{
           type: :text,
           props: %{
-            content: if(selected, do: "✓ #{label}", else: "  #{label}"),
+            content: case selected do
+              true -> "✓ #{label}"
+              false -> "  #{label}"
+            end,
             style: get_option_text_style(selected, state, opt_style)
           }
         }
@@ -228,7 +231,10 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
                   border: "1px solid #ccc",
                   border_radius: "4px",
                   background_color:
-                    if(state.current_page == 0, do: "#f5f5f5", else: "white")
+                    case state.current_page == 0 do
+                      true -> "#f5f5f5"
+                      false -> "white"
+                    end
                 },
                 Map.merge(
                   state.theme[:pagination_button] || %{},
@@ -266,10 +272,10 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
                   border: "1px solid #ccc",
                   border_radius: "4px",
                   background_color:
-                    if(state.current_page >= total_pages - 1,
-                      do: "#f5f5f5",
-                      else: "white"
-                    )
+                    case state.current_page >= total_pages - 1 do
+                      true -> "#f5f5f5"
+                      false -> "white"
+                    end
                 },
                 Map.merge(
                   state.theme[:pagination_button] || %{},

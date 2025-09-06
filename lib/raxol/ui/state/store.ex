@@ -12,7 +12,6 @@ defmodule Raxol.UI.State.Store do
   """
 
   alias Raxol.UI.State.Management.Server
-  alias Raxol.Core.ErrorHandling
   require Logger
 
   # Store state structure (for compatibility)
@@ -158,6 +157,12 @@ defmodule Raxol.UI.State.Store do
     subscribe(path, callback, [])
   end
 
+  # Handle property test style: subscribe(store, callback) when store is first
+  def subscribe(store, callback)
+      when (is_pid(store) or is_atom(store)) and is_function(callback, 1) do
+    subscribe([], callback, [], store)
+  end
+
   def subscribe(path, callback, options)
       when is_list(path) and is_function(callback, 1) and is_list(options) do
     subscribe(path, callback, options, nil)
@@ -167,12 +172,6 @@ defmodule Raxol.UI.State.Store do
       when is_list(path) and is_function(callback, 1) and is_list(options) do
     ensure_server_started()
     Server.subscribe(path, callback, options)
-  end
-
-  # Handle property test style: subscribe(store, callback) when store is first
-  def subscribe(store, callback)
-      when (is_pid(store) or is_atom(store)) and is_function(callback, 1) do
-    subscribe([], callback, [], store)
   end
 
   @doc """
@@ -225,27 +224,30 @@ defmodule Raxol.UI.State.Store do
   # Handle function updates
   def update(store, path, fun) when is_function(fun, 1) do
     ensure_server_started()
-    path_list = if is_list(path), do: path, else: [path]
+    path_list = case is_list(path) do
+      true -> path
+      false -> [path]
+    end
 
     # Get current value, apply function, then update
     current_value = get_state(path_list, store)
 
     # Safely handle arithmetic operations using functional error handling
     new_value =
-      case ErrorHandling.safe_call(fn -> fun.(current_value) end) do
+      case Raxol.Core.ErrorHandling.safe_call(fn -> fun.(current_value) end) do
         {:ok, result} ->
           result
 
         {:error, %ArithmeticError{}} ->
           case current_value do
             nil ->
-              ErrorHandling.safe_call_with_default(fn -> fun.(0) end, 0)
+              Raxol.Core.ErrorHandling.safe_call_with_default(fn -> fun.(0) end, 0)
 
             n when is_number(n) ->
-              ErrorHandling.safe_call_with_default(fn -> fun.(n) end, n)
+              Raxol.Core.ErrorHandling.safe_call_with_default(fn -> fun.(n) end, n)
 
             _ ->
-              ErrorHandling.safe_call_with_default(fn -> fun.(0) end, 0)
+              Raxol.Core.ErrorHandling.safe_call_with_default(fn -> fun.(0) end, 0)
           end
 
         {:error, _} ->
@@ -259,7 +261,10 @@ defmodule Raxol.UI.State.Store do
   # Handle direct value updates
   def update(store, path, value) do
     ensure_server_started()
-    path_list = if is_list(path), do: path, else: [path]
+    path_list = case is_list(path) do
+      true -> path
+      false -> [path]
+    end
     update_state(path_list, value, store)
   end
 
@@ -323,9 +328,9 @@ defmodule Raxol.UI.State.Store do
   defp normalize_path(path) when is_list(path), do: path
   defp normalize_path(path), do: [path]
 
-  defp perform_delete([_key]) do
+  defp perform_delete([key]) do
     # Top-level key - set to nil
-    Server.update_state([_key], nil)
+    Server.update_state([key], nil)
   end
 
   defp perform_delete(path_list) do

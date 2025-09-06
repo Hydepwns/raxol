@@ -327,74 +327,6 @@ defmodule Raxol.UI.Components.Table do
     handle_button_click(button_id, state)
   end
 
-  defp handle_button_click(button_id, state) when is_binary(button_id) do
-    case categorize_button(button_id) do
-      :next_page -> handle_next_page_click(state)
-      :prev_page -> handle_prev_page_click(state)
-      {:sort, column_id} -> handle_sort_click(column_id, state)
-      :unknown -> {:ok, state}
-    end
-  end
-
-  defp handle_button_click(_button_id, state), do: {:ok, state}
-
-  defp categorize_button(button_id) do
-    Enum.find_value(
-      [
-        {&String.ends_with?(&1, "_next_page"), :next_page},
-        {&String.ends_with?(&1, "_prev_page"), :prev_page},
-        {&String.contains?(&1, "_sort_"),
-         fn id ->
-           column_id = String.replace(id, ~r/.*_sort_/, "") |> String.to_atom()
-           {:sort, column_id}
-         end}
-      ],
-      :unknown,
-      fn {predicate, result} ->
-        case predicate.(button_id) do
-          true ->
-            case result do
-              fun when is_function(fun) -> fun.(button_id)
-              value -> value
-            end
-
-          false ->
-            nil
-        end
-      end
-    )
-  end
-
-  defp handle_next_page_click(%{options: %{paginate: true}} = state) do
-    max_page = ceil(length(state.data) / state.page_size)
-    new_page = min(state.current_page + 1, max_page)
-    {:ok, %{state | current_page: new_page}}
-  end
-
-  defp handle_next_page_click(state) do
-    {:ok, state}
-  end
-
-  defp handle_prev_page_click(%{options: %{paginate: true}} = state) do
-    new_page = max(state.current_page - 1, 1)
-    {:ok, %{state | current_page: new_page}}
-  end
-
-  defp handle_prev_page_click(state) do
-    {:ok, state}
-  end
-
-  defp handle_sort_click(column_id, %{options: %{sortable: true}} = state) do
-    new_direction =
-      get_new_sort_direction(state.sort_by, state.sort_direction, column_id)
-
-    {:ok, %{state | sort_by: column_id, sort_direction: new_direction}}
-  end
-
-  defp handle_sort_click(_column_id, state) do
-    {:ok, state}
-  end
-
   def handle_event(
         {:text_input, input_id, value},
         _context,
@@ -462,6 +394,74 @@ defmodule Raxol.UI.Components.Table do
   end
 
   def handle_event(_event, _context, state), do: {:ok, state}
+
+  defp handle_button_click(button_id, state) when is_binary(button_id) do
+    case categorize_button(button_id) do
+      :next_page -> handle_next_page_click(state)
+      :prev_page -> handle_prev_page_click(state)
+      {:sort, column_id} -> handle_sort_click(column_id, state)
+      :unknown -> {:ok, state}
+    end
+  end
+
+  defp handle_button_click(_button_id, state), do: {:ok, state}
+
+  defp categorize_button(button_id) do
+    Enum.find_value(
+      [
+        {&String.ends_with?(&1, "_next_page"), :next_page},
+        {&String.ends_with?(&1, "_prev_page"), :prev_page},
+        {&String.contains?(&1, "_sort_"),
+         fn id ->
+           column_id = String.replace(id, ~r/.*_sort_/, "") |> String.to_atom()
+           {:sort, column_id}
+         end}
+      ],
+      :unknown,
+      fn {predicate, result} ->
+        case predicate.(button_id) do
+          true ->
+            case result do
+              fun when is_function(fun) -> fun.(button_id)
+              value -> value
+            end
+
+          false ->
+            nil
+        end
+      end
+    )
+  end
+
+  defp handle_next_page_click(%{options: %{paginate: true}} = state) do
+    max_page = ceil(length(state.data) / state.page_size)
+    new_page = min(state.current_page + 1, max_page)
+    {:ok, %{state | current_page: new_page}}
+  end
+
+  defp handle_next_page_click(state) do
+    {:ok, state}
+  end
+
+  defp handle_prev_page_click(%{options: %{paginate: true}} = state) do
+    new_page = max(state.current_page - 1, 1)
+    {:ok, %{state | current_page: new_page}}
+  end
+
+  defp handle_prev_page_click(state) do
+    {:ok, state}
+  end
+
+  defp handle_sort_click(column_id, %{options: %{sortable: true}} = state) do
+    new_direction =
+      get_new_sort_direction(state.sort_by, state.sort_direction, column_id)
+
+    {:ok, %{state | sort_by: column_id, sort_direction: new_direction}}
+  end
+
+  defp handle_sort_click(_column_id, state) do
+    {:ok, state}
+  end
 
   @spec unmount(map()) :: map()
   @impl Raxol.UI.Components.Base.Component

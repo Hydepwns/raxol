@@ -17,7 +17,6 @@ defmodule Raxol.UI.State.Management.Server do
   """
 
   use GenServer
-  alias Raxol.Core.ErrorHandling
   require Logger
 
   # Client API
@@ -158,6 +157,35 @@ defmodule Raxol.UI.State.Management.Server do
   def cancel_debounced(key) do
     GenServer.call(__MODULE__, {:cancel_debounced, self(), key})
   end
+
+  @doc """
+  Sets context for a component.
+  """
+  def set_context(component_id, context) do
+    GenServer.call(__MODULE__, {:set_context, component_id, context})
+  end
+
+  @doc """
+  Gets context for a component.
+  """
+  def get_context(component_id, default \\ nil) do
+    GenServer.call(__MODULE__, {:get_context, component_id, default})
+  end
+
+  @doc """
+  Sets a slot for a component.
+  """
+  def set_slot(component_id, slot_data) do
+    GenServer.call(__MODULE__, {:set_slot, component_id, slot_data})
+  end
+
+  # Missing function stubs to fix compilation warnings
+  def clear_component_context(_component_id), do: :ok
+  def get_cache(_key), do: :cache_miss
+  def get_all_hook_state(_component_id), do: %{}
+  def set_cache(_key, _value), do: :ok
+  def clear_hook_state(_component_id), do: :ok
+  def schedule_update(_component_id), do: :ok
 
   # Server Callbacks
 
@@ -448,7 +476,7 @@ defmodule Raxol.UI.State.Management.Server do
 
   defp apply_reducers(action, data, reducers) do
     Enum.reduce(reducers, data, fn reducer_fn, acc_data ->
-      case ErrorHandling.safe_call_with_logging(
+      case Raxol.Core.ErrorHandling.safe_call_with_logging(
              fn -> reducer_fn.(action, acc_data) end,
              "Error in reducer"
            ) do
@@ -488,7 +516,7 @@ defmodule Raxol.UI.State.Management.Server do
     end)
   end
 
-  defp notify_subscriber(subscription, value, state) do
+  defp notify_subscriber(subscription, value, _state) do
     # Handle debouncing if specified
     debounce_ms = Keyword.get(subscription.options, :debounce, 0)
 
@@ -508,7 +536,7 @@ defmodule Raxol.UI.State.Management.Server do
   end
 
   defp execute_callback(callback, value) do
-    ErrorHandling.safe_call_with_logging(
+    Raxol.Core.ErrorHandling.safe_call_with_logging(
       fn -> callback.(value) end,
       "Error in subscriber callback"
     )

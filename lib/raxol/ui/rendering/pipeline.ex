@@ -39,7 +39,10 @@ defmodule Raxol.UI.Rendering.Pipeline do
   alias Raxol.UI.Rendering.Pipeline.{State, Stages}
 
   # Animation tick interval in milliseconds
-  @animation_tick_interval_ms if Mix.env() == :test, do: 25, else: 16
+  @animation_tick_interval_ms (case Mix.env() do
+    :test -> 25
+    _ -> 16
+  end)
 
   require Raxol.Core.Runtime.Log
   require Logger

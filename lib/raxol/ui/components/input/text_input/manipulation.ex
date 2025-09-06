@@ -33,17 +33,18 @@ defmodule Raxol.UI.Components.Input.TextInput.Manipulation do
   Deletes a character forward from the current cursor position.
   """
   def delete_char_forward(state) do
-    if state.cursor_position < String.length(state.value) do
-      new_value =
-        state.value
-        |> String.split_at(state.cursor_position)
-        |> then(fn {before, rest} ->
-          before <> String.slice(rest, max(0, 1)..-1//1)
-        end)
+    case state.cursor_position < String.length(state.value) do
+      true ->
+        new_value =
+          state.value
+          |> String.split_at(state.cursor_position)
+          |> then(fn {before, rest} ->
+            before <> String.slice(rest, max(0, 1)..-1//1)
+          end)
 
-      %{state | value: new_value}
-    else
-      state
+        %{state | value: new_value}
+      false ->
+        state
     end
   end
 
@@ -65,17 +66,18 @@ defmodule Raxol.UI.Components.Input.TextInput.Manipulation do
     rest = String.slice(rest, max(0, selection_len)..-1)
     new_value = before <> text <> rest
 
-    if Validation.would_exceed_max_length?(state, new_value) do
-      state
-    else
-      state = %{
+    case Validation.would_exceed_max_length?(state, new_value) do
+      true ->
         state
-        | value: new_value,
-          cursor: position + String.length(text),
-          selection: nil
-      }
+      false ->
+        state = %{
+          state
+          | value: new_value,
+            cursor: position + String.length(text),
+            selection: nil
+        }
 
-      Validation.validate_input(state)
+        Validation.validate_input(state)
     end
   end
 end

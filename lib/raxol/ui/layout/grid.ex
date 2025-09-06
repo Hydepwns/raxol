@@ -16,7 +16,7 @@ defmodule Raxol.UI.Layout.Grid do
 
   A list of positioned elements with absolute coordinates.
   """
-  def process(%{type: :grid, attrs: attrs, children: []}, _space, acc) do
+  def process(%{type: :grid, attrs: _attrs, children: []}, _space, acc) do
     # Skip if no children
     acc
   end
@@ -86,8 +86,8 @@ defmodule Raxol.UI.Layout.Grid do
   def measure_grid(
         %{
           type: :grid,
-          attrs: %{width: width, height: height} = attrs,
-          children: children
+          attrs: %{width: width, height: height} = _attrs,
+          children: _children
         },
         available_space
       ) do

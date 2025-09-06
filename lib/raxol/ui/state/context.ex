@@ -42,7 +42,6 @@ defmodule Raxol.UI.State.Context do
   """
 
   alias Raxol.UI.State.Store, as: Store
-  alias Raxol.Core.ErrorHandling
 
   # Context definition structure
   defmodule ContextDef do
@@ -191,7 +190,7 @@ defmodule Raxol.UI.State.Context do
       when not is_nil(context_def) and not is_nil(render_fn) ->
         context_value = use_context(render_context, context_def.name)
 
-        case ErrorHandling.safe_call_with_logging(
+        case Raxol.Core.ErrorHandling.safe_call_with_logging(
                fn ->
                  rendered_element = render_fn.(context_value)
                  # Process the rendered element
@@ -329,7 +328,7 @@ defmodule Raxol.UI.State.Context do
     subscribers = Store.get_state([:context_subscribers, context_name], [])
 
     Enum.each(subscribers, fn {_subscriber_id, callback_fn} ->
-      ErrorHandling.safe_call_with_logging(
+      Raxol.Core.ErrorHandling.safe_call_with_logging(
         fn -> callback_fn.(new_value) end,
         "Error in context subscriber callback"
       )

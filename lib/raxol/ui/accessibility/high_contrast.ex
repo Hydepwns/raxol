@@ -627,7 +627,11 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     l2 = relative_luminance(r2, g2, b2)
 
     # Ensure lighter color is in numerator
-    {lighter, darker} = if l1 > l2, do: {l1, l2}, else: {l2, l1}
+    {lighter, darker} =
+      case l1 > l2 do
+        true -> {l1, l2}
+        false -> {l2, l1}
+      end
 
     # Calculate contrast ratio
     (lighter + 0.05) / (darker + 0.05)
@@ -653,8 +657,11 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     get_ratio_for_text_size(large_text, compliance_level)
   end
 
-  defp get_ratio_for_text_size(true, compliance_level), do: @large_text_ratios[compliance_level]
-  defp get_ratio_for_text_size(false, compliance_level), do: @wcag_ratios[compliance_level]
+  defp get_ratio_for_text_size(true, compliance_level),
+    do: @large_text_ratios[compliance_level]
+
+  defp get_ratio_for_text_size(false, compliance_level),
+    do: @wcag_ratios[compliance_level]
 
   defp get_achieved_compliance_level(ratio, large_text) do
     ratios = get_ratios_for_text_size(large_text)
@@ -907,7 +914,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
   defp init_ambient_light_sensor_with_config(true) do
     %{enabled: true, last_reading: 0.5, adjustment_factor: 1.0}
   end
-  
+
   defp init_ambient_light_sensor_with_config(false) do
     %{enabled: false}
   end

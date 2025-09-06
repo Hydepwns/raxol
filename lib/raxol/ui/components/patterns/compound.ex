@@ -198,16 +198,16 @@ defmodule Raxol.UI.Components.Patterns.Compound do
 
           _ ->
             # Get accordion context
-            accordion_context = Hooks.use_context(:accordion_context)
+            accordion_context = Hooks.use_context(:accordion_context) || %{}
 
             # Determine if this item is expanded
             is_expanded =
-              case accordion_context.accordion_type do
+              case Map.get(accordion_context, :accordion_type) do
                 :single ->
-                  accordion_context.expanded_items == value
+                  Map.get(accordion_context, :expanded_items) == value
 
                 :multiple ->
-                  MapSet.member?(accordion_context.expanded_items, value)
+                  MapSet.member?(Map.get(accordion_context, :expanded_items, MapSet.new()), value)
               end
 
             # Create item context
@@ -218,7 +218,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
               toggle:
                 case disabled do
                   true -> fn -> :ok end
-                  false -> fn -> accordion_context.toggle_item.(value) end
+                  false -> fn -> Map.get(accordion_context, :toggle_item, fn _ -> nil end).(value) end
                 end
             }
 
@@ -243,30 +243,30 @@ defmodule Raxol.UI.Components.Patterns.Compound do
         children = Map.get(props, :children, [])
 
         # Get item context
-        item_context = Hooks.use_context(:accordion_item_context)
+        item_context = Hooks.use_context(:accordion_item_context) || %{}
 
         %{
           type: :button,
           attrs: %{
-            disabled: item_context.disabled,
-            on_click: item_context.toggle,
-            aria_expanded: item_context.is_expanded,
-            aria_controls: "accordion-content-#{item_context.value}",
+            disabled: Map.get(item_context, :disabled),
+            on_click: Map.get(item_context, :toggle),
+            aria_expanded: Map.get(item_context, :is_expanded),
+            aria_controls: "accordion-content-#{Map.get(item_context, :value)}",
             style: %{
               display: :flex,
               align_items: :center,
               justify_content: :space_between,
               padding: 10,
               background:
-                case item_context.is_expanded do
+                case Map.get(item_context, :is_expanded) do
                   true -> :primary_light
                   false -> :transparent
                 end,
               border: :none,
               cursor:
-                case item_context.disabled do
+                case Map.get(item_context, :disabled) do
                   true -> :not_allowed
-                  false -> :pointer
+                  _ -> :pointer
                 end
             }
           },
@@ -277,7 +277,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
                   type: :text,
                   attrs: %{
                     content:
-                      case item_context.is_expanded do
+                      case Map.get(item_context, :is_expanded) do
                         true -> "−"
                         false -> "+"
                       end,
@@ -300,11 +300,11 @@ defmodule Raxol.UI.Components.Patterns.Compound do
         children = Map.get(props, :children, [])
 
         # Get item context
-        item_context = Hooks.use_context(:accordion_item_context)
+        item_context = Hooks.use_context(:accordion_item_context) || %{}
 
         render_accordion_content(
-          item_context.is_expanded,
-          item_context.value,
+          Map.get(item_context, :is_expanded),
+          Map.get(item_context, :value),
           children
         )
       end
@@ -369,15 +369,15 @@ defmodule Raxol.UI.Components.Patterns.Compound do
         children = Map.get(props, :children, [])
 
         # Get dropdown context
-        dropdown_context = Hooks.use_context(:dropdown_context)
+        dropdown_context = Hooks.use_context(:dropdown_context) || %{}
 
         %{
           type: :button,
           attrs: %{
             on_click: fn ->
-              dropdown_context.set_open.(not dropdown_context.is_open)
+              Map.get(dropdown_context, :set_open, fn _ -> nil end).(not Map.get(dropdown_context, :is_open, false))
             end,
-            aria_expanded: dropdown_context.is_open,
+            aria_expanded: Map.get(dropdown_context, :is_open),
             aria_haspopup: true,
             style: %{
               position: :relative,
@@ -400,11 +400,11 @@ defmodule Raxol.UI.Components.Patterns.Compound do
         children = Map.get(props, :children, [])
 
         # Get dropdown context
-        dropdown_context = Hooks.use_context(:dropdown_context)
+        dropdown_context = Hooks.use_context(:dropdown_context) || %{}
 
         render_dropdown_content(
-          dropdown_context.is_open,
-          dropdown_context.placement,
+          Map.get(dropdown_context, :is_open, false),
+          Map.get(dropdown_context, :placement, :bottom),
           children
         )
       end
@@ -429,7 +429,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
         children = Map.get(props, :children, [])
 
         # Get dropdown context
-        dropdown_context = Hooks.use_context(:dropdown_context)
+        dropdown_context = Hooks.use_context(:dropdown_context) || %{}
 
         handle_select =
           create_dropdown_item_handler(
@@ -538,7 +538,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
         tabs_context = Hooks.use_context(:tabs_context)
 
         container_type =
-          case tabs_context.orientation do
+          case Map.get(tabs_context || %{}, :orientation) do
             :horizontal -> :row
             :vertical -> :column
           end
@@ -547,18 +547,18 @@ defmodule Raxol.UI.Components.Patterns.Compound do
           type: container_type,
           attrs: %{
             role: :tablist,
-            aria_orientation: tabs_context.orientation,
+            aria_orientation: Map.get(tabs_context || %{}, :orientation),
             style: %{
               border_bottom:
-                if(tabs_context.orientation == :horizontal,
-                  do: "1px solid #e0e0e0",
-                  else: :none
-                ),
+                case Map.get(tabs_context || %{}, :orientation) do
+                  :horizontal -> "1px solid #e0e0e0"
+                  _ -> :none
+                end,
               border_right:
-                if(tabs_context.orientation == :vertical,
-                  do: "1px solid #e0e0e0",
-                  else: :none
-                )
+                case Map.get(tabs_context || %{}, :orientation) do
+                  :vertical -> "1px solid #e0e0e0"
+                  _ -> :none
+                end
             }
           },
           children: children
@@ -589,7 +589,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
           _ ->
             # Get tabs context
             tabs_context = Hooks.use_context(:tabs_context)
-            is_active = tabs_context.active_tab == value
+            is_active = Map.get(tabs_context || %{}, :active_tab) == value
 
             handle_click =
               create_tabs_click_handler(disabled, value, tabs_context)
@@ -604,21 +604,33 @@ defmodule Raxol.UI.Components.Patterns.Compound do
                 on_click: handle_click,
                 style: %{
                   padding: 12,
-                  background: if(is_active, do: :white, else: :transparent),
+                  background: case is_active do
+                    true -> :white
+                    false -> :transparent
+                  end,
                   border: :none,
                   border_bottom:
-                    if(is_active and tabs_context.orientation == :horizontal,
-                      do: "2px solid #007acc",
-                      else: :none
-                    ),
+                    case {is_active, Map.get(tabs_context || %{}, :orientation)} do
+                      {true, :horizontal} -> "2px solid #007acc"
+                      _ -> :none
+                    end,
                   border_right:
-                    if(is_active and tabs_context.orientation == :vertical,
-                      do: "2px solid #007acc",
-                      else: :none
-                    ),
-                  cursor: if(disabled, do: :not_allowed, else: :pointer),
-                  opacity: if(disabled, do: 0.5, else: 1.0),
-                  font_weight: if(is_active, do: :bold, else: :normal)
+                    case {is_active, Map.get(tabs_context || %{}, :orientation)} do
+                      {true, :vertical} -> "2px solid #007acc"
+                      _ -> :none
+                    end,
+                  cursor: case disabled do
+                    true -> :not_allowed
+                    false -> :pointer
+                  end,
+                  opacity: case disabled do
+                    true -> 0.5
+                    false -> 1.0
+                  end,
+                  font_weight: case is_active do
+                    true -> :bold
+                    false -> :normal
+                  end
                 }
               },
               children: children
@@ -651,7 +663,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
 
   # Helper functions (placeholders)
 
-  defp manage_dropdown_state(controlled_open, on_open_change, default_open)
+  defp manage_dropdown_state(controlled_open, on_open_change, _default_open)
        when controlled_open != nil do
     {controlled_open, create_controlled_change_handler(on_open_change)}
   end
@@ -761,7 +773,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   defp execute_on_select(nil, _value), do: :ok
   defp execute_on_select(on_select, value), do: on_select.(value)
 
-  defp manage_tabs_state(controlled_value, on_value_change, default_value)
+  defp manage_tabs_state(controlled_value, on_value_change, _default_value)
        when controlled_value != nil do
     {controlled_value, create_tabs_change_handler(on_value_change)}
   end
@@ -793,7 +805,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   defp handle_tabs_click(true, _value, _tabs_context), do: :ok
 
   defp handle_tabs_click(false, value, tabs_context) do
-    tabs_context.set_active_tab.(value)
+    Map.get(tabs_context || %{}, :set_active_tab, fn _ -> nil end).(value)
   end
 
   defp get_cursor_style(true), do: :not_allowed
@@ -805,50 +817,51 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   defp get_hover_background(true), do: :transparent
   defp get_hover_background(false), do: :primary_light
 
-  defp render_tabs_trigger_content(
-         is_active,
-         disabled,
-         tabs_context,
-         handle_click,
-         children,
-         value
-       ) do
-    %{
-      type: :button,
-      attrs: %{
-        role: :tab,
-        "aria-selected": is_active,
-        "aria-controls": "tab-panel-#{value}",
-        disabled: disabled,
-        on_click: handle_click,
-        style: %{
-          padding: 12,
-          background: get_tab_background(is_active),
-          border: :none,
-          border_bottom:
-            get_tab_border_bottom(is_active, tabs_context.orientation),
-          border_right:
-            get_tab_border_right(is_active, tabs_context.orientation),
-          cursor: get_cursor_style(disabled),
-          opacity: get_opacity_style(disabled),
-          font_weight: get_font_weight(is_active)
-        }
-      },
-      children: children
-    }
-  end
+  # Unused function - commented out to reduce warnings
+  # defp render_tabs_trigger_content(
+  #        is_active,
+  #        disabled,
+  #        tabs_context,
+  #        handle_click,
+  #        children,
+  #        value
+  #      ) do
+  #   %{
+  #     type: :button,
+  #     attrs: %{
+  #       role: :tab,
+  #       "aria-selected": is_active,
+  #       "aria-controls": "tab-panel-#{value}",
+  #       disabled: disabled,
+  #       on_click: handle_click,
+  #       style: %{
+  #         padding: 12,
+  #         background: get_tab_background(is_active),
+  #         border: :none,
+  #         border_bottom:
+  #           get_tab_border_bottom(is_active, tabs_context.orientation),
+  #         border_right:
+  #           get_tab_border_right(is_active, tabs_context.orientation),
+  #         cursor: get_cursor_style(disabled),
+  #         opacity: get_opacity_style(disabled),
+  #         font_weight: get_font_weight(is_active)
+  #       }
+  #     },
+  #     children: children
+  #   }
+  # end
 
-  defp get_tab_background(true), do: :white
-  defp get_tab_background(false), do: :transparent
+  # defp get_tab_background(true), do: :white
+  # defp get_tab_background(false), do: :transparent
 
-  defp get_tab_border_bottom(true, :horizontal), do: "2px solid #007acc"
-  defp get_tab_border_bottom(_, _), do: :none
+  # defp get_tab_border_bottom(true, :horizontal), do: "2px solid #007acc"
+  # defp get_tab_border_bottom(_, _), do: :none
 
-  defp get_tab_border_right(true, :vertical), do: "2px solid #007acc"
-  defp get_tab_border_right(_, _), do: :none
+  # defp get_tab_border_right(true, :vertical), do: "2px solid #007acc"
+  # defp get_tab_border_right(_, _), do: :none
 
-  defp get_font_weight(true), do: :bold
-  defp get_font_weight(false), do: :normal
+  # defp get_font_weight(true), do: :bold
+  # defp get_font_weight(false), do: :normal
 
   defp render_tabs_content_error do
     %{
@@ -859,7 +872,7 @@ defmodule Raxol.UI.Components.Patterns.Compound do
 
   defp render_tabs_content_panel(value, children) do
     tabs_context = Hooks.use_context(:tabs_context)
-    is_active = tabs_context.active_tab == value
+    is_active = Map.get(tabs_context || %{}, :active_tab) == value
     render_tabs_panel_if_active(is_active, value, children)
   end
 

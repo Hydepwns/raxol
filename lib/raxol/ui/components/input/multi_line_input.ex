@@ -565,7 +565,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     |> Enum.into(%{})
   end
 
-  defp calculate_scroll_row(cursor_row, scroll_row, height)
+  defp calculate_scroll_row(cursor_row, scroll_row, _height)
        when cursor_row < scroll_row,
        do: cursor_row
 

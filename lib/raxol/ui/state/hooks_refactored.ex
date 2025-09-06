@@ -26,20 +26,16 @@ defmodule Raxol.UI.State.HooksRefactored do
     end
   end
 
-  @doc """
-  Safely execute a function and return a Result type.
-  """
+  # Safely execute a function and return a Result type.
   @spec safe_execute((-> any()), any()) :: Result.t(any(), any())
-  defp safe_execute(fun, default \\ nil) when is_function(fun, 0) do
+  defp safe_execute(fun, default) when is_function(fun, 0) do
     case Raxol.Core.ErrorHandling.safe_call(fun) do
       {:ok, result} -> {:ok, result}
       {:error, {error, _stacktrace}} -> {:error, {error, default}}
     end
   end
 
-  @doc """
-  Execute a function with logging on error.
-  """
+  # Execute a function with logging on error.
   @spec execute_with_logging((-> any()), String.t(), any()) :: any()
   defp execute_with_logging(fun, context, default \\ nil) do
     case safe_execute(fun, default) do

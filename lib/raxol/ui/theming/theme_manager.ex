@@ -63,11 +63,12 @@ defmodule Raxol.UI.Theming.ThemeManager do
 
   @impl GenServer
   def handle_call({:set_theme, theme_id}, _from, state) do
-    if Map.has_key?(state.available_themes, theme_id) do
-      new_state = %{state | current_theme: theme_id}
-      {:reply, :ok, new_state}
-    else
-      {:reply, {:error, :theme_not_found}, state}
+    case Map.has_key?(state.available_themes, theme_id) do
+      true ->
+        new_state = %{state | current_theme: theme_id}
+        {:reply, :ok, new_state}
+      false ->
+        {:reply, {:error, :theme_not_found}, state}
     end
   end
 

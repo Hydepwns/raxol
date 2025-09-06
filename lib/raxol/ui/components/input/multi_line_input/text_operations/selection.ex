@@ -22,16 +22,17 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations.Selection do
     {start_row, start_col, end_row, end_col} =
       normalize_positions(start_pos, end_pos)
 
-    if start_row == end_row do
-      extract_single_line_selection(lines_list, start_row, start_col, end_col)
-    else
-      extract_multi_line_selection(
-        lines_list,
-        start_row,
-        start_col,
-        end_row,
-        end_col
-      )
+    case start_row == end_row do
+      true ->
+        extract_single_line_selection(lines_list, start_row, start_col, end_col)
+      false ->
+        extract_multi_line_selection(
+          lines_list,
+          start_row,
+          start_col,
+          end_row,
+          end_col
+        )
     end
   end
 

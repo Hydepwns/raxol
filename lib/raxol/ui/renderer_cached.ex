@@ -12,7 +12,7 @@ defmodule Raxol.UI.RendererCached do
   - Reduced CPU usage during animations and updates
   """
 
-  alias Raxol.UI.{Renderer, CellManager, ThemeResolver}
+  alias Raxol.UI.{Renderer, CellManager}
   alias Raxol.UI.Rendering.ComponentCache
   alias Raxol.UI.ThemeResolverCached
   alias Raxol.UI.StyleProcessorCached
@@ -56,7 +56,7 @@ defmodule Raxol.UI.RendererCached do
   Renders a virtual list with partial caching.
   Optimized for scrollable areas and long lists.
   """
-  def render_virtual_list(items, viewport, theme, render_fn) do
+  def render_virtual_list(items, viewport, _theme, render_fn) do
     visible_range = calculate_visible_range(items, viewport)
     region_id = {:virtual_list, viewport}
 
@@ -161,7 +161,7 @@ defmodule Raxol.UI.RendererCached do
   defp render_tree_recursive(%{visible: false}, _theme, _parent_style, _depth),
     do: []
 
-  defp render_tree_recursive(element, theme, parent_style, depth)
+  defp render_tree_recursive(_element, _theme, _parent_style, depth)
        when depth > 50 do
     # Prevent infinite recursion
     []
@@ -230,11 +230,11 @@ defmodule Raxol.UI.RendererCached do
   defp validate_element_type(true, element), do: {:ok, element}
   defp validate_element_type(false, _element), do: {:error, :missing_type}
 
-  defp calculate_visible_range(items, %{offset: offset, limit: limit}) do
+  defp calculate_visible_range(_items, %{offset: offset, limit: limit}) do
     offset..(offset + limit - 1)
   end
 
-  defp calculate_visible_range(items, %{
+  defp calculate_visible_range(_items, %{
          height: height,
          item_height: item_height
        }) do

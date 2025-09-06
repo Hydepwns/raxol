@@ -317,7 +317,7 @@ defmodule Raxol.UI.Components.Display.Table do
 
   defp calculate_data_widths(_, _), do: []
 
-  defp determine_sort_direction(current_sort_by, current_direction, new_column)
+  defp determine_sort_direction(current_sort_by, _current_direction, new_column)
        when current_sort_by != new_column,
        do: :asc
 

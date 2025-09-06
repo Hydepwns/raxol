@@ -18,6 +18,13 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
     validate_max_length(String.length(value) > max_length, max_length, state)
   end
 
+  defp get_validation_error(%{pattern: pattern, value: value})
+       when not is_nil(pattern) do
+    validate_pattern_match(Regex.match?(~r/^#{pattern}$/, value))
+  end
+
+  defp get_validation_error(_state), do: nil
+
   defp validate_max_length(true, max_length, _state) do
     "Maximum length is #{max_length} characters"
   end
@@ -27,15 +34,8 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
     check_other_validations(state)
   end
 
-  defp get_validation_error(%{pattern: pattern, value: value})
-       when not is_nil(pattern) do
-    validate_pattern_match(Regex.match?(~r/^#{pattern}$/, value))
-  end
-
   defp validate_pattern_match(true), do: nil
   defp validate_pattern_match(false), do: "Invalid input format"
-
-  defp get_validation_error(_state), do: nil
 
   defp check_other_validations(%{pattern: pattern, value: value})
        when not is_nil(pattern) do

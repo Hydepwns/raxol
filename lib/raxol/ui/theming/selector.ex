@@ -69,6 +69,21 @@ defmodule Raxol.UI.Theming.Selector do
     handle_key_event_by_expanded_state(expanded, component, key)
   end
 
+  def handle_event(component, {:key_press, :escape, _modifiers}, _context) do
+    # Escape key collapses the selector without changing the theme
+    expanded = component.state.expanded
+    handle_escape_by_expanded_state(expanded, component)
+  end
+
+  def handle_event(component, {:mouse_event, :click, _x, y, _button}, _context) do
+    expanded = component.state.expanded
+    handle_mouse_click_by_expanded_state(expanded, component, y)
+  end
+
+  def handle_event(component, _event, _context) do
+    {:ok, component}
+  end
+
   defp handle_key_event_by_expanded_state(true, component, key) do
     # Only handle up/down when expanded
     themes_count = length(component.state.themes)
@@ -92,23 +107,12 @@ defmodule Raxol.UI.Theming.Selector do
     {:ok, component}
   end
 
-  def handle_event(component, {:key_press, :escape, _modifiers}, _context) do
-    # Escape key collapses the selector without changing the theme
-    expanded = component.state.expanded
-    handle_escape_by_expanded_state(expanded, component)
-  end
-
   defp handle_escape_by_expanded_state(true, component) do
     {:ok, %{component | state: %{component.state | expanded: false}}}
   end
 
   defp handle_escape_by_expanded_state(false, component) do
     {:ok, component}
-  end
-
-  def handle_event(component, {:mouse_event, :click, _x, y, _button}, _context) do
-    expanded = component.state.expanded
-    handle_mouse_click_by_expanded_state(expanded, component, y)
   end
 
   defp handle_mouse_click_by_expanded_state(true, component, y) do
@@ -155,10 +159,6 @@ defmodule Raxol.UI.Theming.Selector do
   defp call_on_select_if_provided(on_select, theme_name)
        when is_function(on_select) do
     on_select.(theme_name)
-  end
-
-  def handle_event(component, _event, _context) do
-    {:ok, component}
   end
 
   @impl true

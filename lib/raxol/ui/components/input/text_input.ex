@@ -107,6 +107,14 @@ defmodule Raxol.UI.Components.Input.TextInput do
     handle_value_update(has_value, updated_state, new_props)
   end
 
+  def update(message, state) do
+    Raxol.Core.Runtime.Log.debug(
+      "[TextInput] Received unhandled message: #{inspect(message)}"
+    )
+
+    state
+  end
+
   defp handle_value_update(false, updated_state, _new_props), do: updated_state
 
   defp handle_value_update(true, updated_state, new_props) do
@@ -114,14 +122,6 @@ defmodule Raxol.UI.Components.Input.TextInput do
     value_length = String.length(new_value)
     # Move cursor to end of new value
     %{updated_state | cursor_pos: value_length}
-  end
-
-  def update(message, state) do
-    Raxol.Core.Runtime.Log.debug(
-      "[TextInput] Received unhandled message: #{inspect(message)}"
-    )
-
-    state
   end
 
   @doc """

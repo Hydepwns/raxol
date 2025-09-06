@@ -37,7 +37,6 @@ defmodule Raxol.Web.PersistentStore do
   # Database functionality - aliases
   # alias Raxol.Web.Session.Session  # Unused - commented out
   alias Raxol.Repo
-  alias Raxol.Core.ErrorHandling
 
   # Check if database functionality is available at runtime.
   defp database_available? do
@@ -698,14 +697,16 @@ defmodule Raxol.Web.PersistentStore do
 
     :ets.foldl(
       fn {session_id, session_state}, _acc ->
-        case Map.get(session_state, :expires_at) do
-          nil ->
+        expires_at = Map.get(session_state, :expires_at)
+        
+        cond do
+          is_nil(expires_at) ->
             :ok
-
-          expires_at when expires_at < now ->
+            
+          DateTime.compare(expires_at, now) == :lt ->
             :ets.delete(ets_table, session_id)
-
-          _ ->
+            
+          true ->
             :ok
         end
       end,
@@ -773,7 +774,7 @@ defmodule Raxol.Web.PersistentStore do
 
   defp execute_database_count(true) do
     # Simple count - in practice might be cached
-    ErrorHandling.safe_call_with_default(
+    Raxol.Core.ErrorHandling.safe_call_with_default(
       fn ->
         Repo.aggregate(Raxol.Web.Session.Session, :count, :id)
       end,

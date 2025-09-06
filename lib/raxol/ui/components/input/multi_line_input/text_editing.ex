@@ -124,7 +124,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextEditing do
     )
   end
 
-  defp at_document_start?(row, col), do: row == 0 and col == 0
+  # Unused - defined in navigation_helper.ex
+  # defp at_document_start?(row, col), do: row == 0 and col == 0
 
   defp calculate_previous_position(lines, row, col) do
     calculate_prev_position_by_column(col, row, lines)

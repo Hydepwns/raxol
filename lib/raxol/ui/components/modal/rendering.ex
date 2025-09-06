@@ -30,7 +30,7 @@ defmodule Raxol.UI.Components.Modal.Rendering do
 
   @doc "Renders the modal content based on type."
   @spec render_content(map()) :: any()
-  def render_content(%{content: content} = state) when is_binary(content) do
+  def render_content(%{content: content} = _state) when is_binary(content) do
     Raxol.View.Elements.label(content: content)
   end
 

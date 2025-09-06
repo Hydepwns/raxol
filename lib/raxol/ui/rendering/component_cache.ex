@@ -21,7 +21,7 @@ defmodule Raxol.UI.Rendering.ComponentCache do
   """
 
   alias Raxol.Performance.ETSCacheManager
-  alias Raxol.UI.{Renderer, ThemeResolver, StyleProcessor}
+  alias Raxol.UI.{Renderer, ThemeResolver}
 
   @telemetry_prefix [:raxol, :ui, :component_cache]
 
@@ -279,7 +279,7 @@ defmodule Raxol.UI.Rendering.ComponentCache do
 
   # Telemetry
 
-  defp emit_telemetry(event, metadata \\ %{}) do
+  defp emit_telemetry(event, metadata) do
     :telemetry.execute(
       @telemetry_prefix ++ [event],
       %{count: 1},

@@ -365,6 +365,8 @@ defmodule Raxol.UI.Layout.CSSGrid do
     end
   end
 
+  defp parse_track_by_type(_track_str, _available_size), do: Track.new(:auto, 0)
+
   defp parse_track_by_suffix(track_str, available_size) do
     with {:ok, result} <- try_parse_fr_track(track_str) do
       result
@@ -418,8 +420,6 @@ defmodule Raxol.UI.Layout.CSSGrid do
     end
   end
 
-  defp parse_track_by_type(_track_str, _available_size), do: Track.new(:auto, 0)
-
   defp parse_fr_track(track_str) do
     {value, "fr"} = Float.parse(track_str)
     Track.new(:fr, value)
@@ -435,9 +435,10 @@ defmodule Raxol.UI.Layout.CSSGrid do
     Track.new(:fixed, div(available_size * trunc(value), 100))
   end
 
-  defp parse_keyword_track("auto"), do: Track.new(:auto, 0)
-  defp parse_keyword_track("min-content"), do: Track.new(:min_content, 0)
-  defp parse_keyword_track("max-content"), do: Track.new(:max_content, 0)
+  # Unused function - commented out to reduce warnings
+  # defp parse_keyword_track("auto"), do: Track.new(:auto, 0)
+  # defp parse_keyword_track("min-content"), do: Track.new(:min_content, 0)
+  # defp parse_keyword_track("max-content"), do: Track.new(:max_content, 0)
 
   defp parse_fallback_track(track_str) do
     case Integer.parse(track_str) do
@@ -956,7 +957,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
   end
 
   defp position_grid_item(
-         cell,
+         _cell,
          item,
          column_positions,
          column_tracks,

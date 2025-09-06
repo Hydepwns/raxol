@@ -379,7 +379,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
          state,
          row,
          col,
-         lines,
+         _lines,
          current_line_length
        )
        when col < current_line_length do
@@ -419,7 +419,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
          end_of_line_index,
          current_index,
          row,
-         rest
+         _rest
        )
        when target_index <= end_of_line_index do
     # Target is within this line

@@ -61,8 +61,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.MessageRouter do
 
   defp find_handler(msg) do
     Enum.find_value(@message_handlers, fn {pattern, handler} ->
-      if matches_pattern?(msg, pattern) do
-        {handler, extract_args(msg, pattern)}
+      case matches_pattern?(msg, pattern) do
+        true -> {handler, extract_args(msg, pattern)}
+        false -> nil
       end
     end)
   end

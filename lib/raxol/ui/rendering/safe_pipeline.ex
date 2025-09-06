@@ -12,7 +12,6 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   import Raxol.Core.ErrorHandler
   import Raxol.Core.Performance.Profiler
   alias Raxol.Core.ErrorRecovery
-  alias Raxol.Core.ErrorHandling
   alias Raxol.UI.Rendering.Pipeline
 
   # Target 60 FPS
@@ -308,7 +307,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   end
 
   defp use_fallback_renderer(scene, state) do
-    case ErrorHandling.safe_call_with_logging(
+    case Raxol.Core.ErrorHandling.safe_call_with_logging(
            fn -> state.fallback_renderer.(scene) end,
            "Fallback renderer failed"
          ) do
@@ -333,7 +332,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
 
   defp perform_animation(animation, opts, %{pipeline: pipeline} = state)
        when is_pid(pipeline) do
-    case ErrorHandling.safe_call_with_logging(
+    case Raxol.Core.ErrorHandling.safe_call_with_logging(
            fn ->
              GenServer.cast(pipeline, {:animate, animation, opts})
              :ok

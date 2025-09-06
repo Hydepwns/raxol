@@ -16,7 +16,6 @@ defmodule Raxol.UI.State.Streams do
   """
 
   alias Raxol.UI.State.Store, as: Store
-  alias Raxol.Core.ErrorHandling
 
   require Logger
 
@@ -310,7 +309,7 @@ defmodule Raxol.UI.State.Streams do
   end
 
   defp safe_get_store_state(path, store) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       case Process.whereis(store) do
         nil ->
           {:error, :store_not_found}
@@ -326,7 +325,7 @@ defmodule Raxol.UI.State.Streams do
   end
 
   defp subscribe_to_store_safely(path, observer, store) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       Store.subscribe(
         path,
         fn new_value ->
@@ -348,10 +347,10 @@ defmodule Raxol.UI.State.Streams do
   @doc """
   Creates an observable from UI events.
   """
-  def from_events(event_type) do
+  def from_events(_event_type) do
     Observable.new(fn observer ->
       # Register event listener with safe handler
-      event_handler = fn event ->
+      _event_handler = fn event ->
         safe_apply(observer.next, event)
       end
 
@@ -727,7 +726,7 @@ defmodule Raxol.UI.State.Streams do
 
   @doc false
   def safe_apply(fun, arg \\ nil) when is_function(fun) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       arity = :erlang.fun_info(fun, :arity) |> elem(1)
 
       case arity do
@@ -746,7 +745,7 @@ defmodule Raxol.UI.State.Streams do
 
   @doc false
   def safe_apply_2(fun, arg1, arg2) when is_function(fun, 2) do
-    ErrorHandling.safe_call(fn ->
+    Raxol.Core.ErrorHandling.safe_call(fn ->
       fun.(arg1, arg2)
     end)
     |> case do
@@ -788,49 +787,50 @@ defmodule Raxol.UI.State.Streams do
   defp emit_if_skip_threshold_reached(_current, _count, _observer, _value),
     do: :ok
 
-  defp cancel_existing_timer(nil), do: :ok
-  defp cancel_existing_timer(timer), do: Process.cancel_timer(timer)
+  def cancel_existing_timer(nil), do: :ok
+  def cancel_existing_timer(timer), do: Process.cancel_timer(timer)
 
-  defp emit_debounced_value(nil, _observer), do: :ok
+  def emit_debounced_value(nil, _observer), do: :ok
 
-  defp emit_debounced_value(value, observer) do
+  def emit_debounced_value(value, observer) do
     Raxol.UI.State.Streams.safe_apply(observer.next, value)
   end
 
-  defp handle_combiner_update(%{errored: true} = state, _index, _value),
-    do: {:noreply, state}
+  # Unused functions - commented out to reduce warnings
+  # defp handle_combiner_update(%{errored: true} = state, _index, _value),
+  #   do: {:noreply, state}
 
-  defp handle_combiner_update(state, index, value) do
-    new_values = List.replace_at(state.values, index, value)
-    new_has_value = List.replace_at(state.has_value, index, true)
+  # defp handle_combiner_update(state, index, value) do
+  #   new_values = List.replace_at(state.values, index, value)
+  #   new_has_value = List.replace_at(state.has_value, index, true)
 
-    # Emit if all streams have emitted at least once
-    emit_combined_if_all_ready(new_has_value, new_values, state.observer)
+  #   # Emit if all streams have emitted at least once
+  #   emit_combined_if_all_ready(new_has_value, new_values, state.observer)
 
-    {:noreply, %{state | values: new_values, has_value: new_has_value}}
-  end
+  #   {:noreply, %{state | values: new_values, has_value: new_has_value}}
+  # end
 
-  defp emit_combined_if_all_ready(has_value_flags, values, observer) do
-    case Enum.all?(has_value_flags) do
-      true -> Raxol.UI.State.Streams.safe_apply(observer.next, values)
-      false -> :ok
-    end
-  end
+  # defp emit_combined_if_all_ready(has_value_flags, values, observer) do
+  #   case Enum.all?(has_value_flags) do
+  #     true -> Raxol.UI.State.Streams.safe_apply(observer.next, values)
+  #     false -> :ok
+  #   end
+  # end
 
-  defp handle_combiner_error(%{errored: true} = state, _error),
-    do: {:noreply, state}
+  # defp handle_combiner_error(%{errored: true} = state, _error),
+  #   do: {:noreply, state}
 
-  defp handle_combiner_error(state, error) do
-    Raxol.UI.State.Streams.safe_apply(state.observer.error, error)
-    {:noreply, %{state | errored: true}}
-  end
+  # defp handle_combiner_error(state, error) do
+  #   Raxol.UI.State.Streams.safe_apply(state.observer.error, error)
+  #   {:noreply, %{state | errored: true}}
+  # end
 
-  defp complete_if_all_streams_done(completed_flags, errored, observer) do
-    case {Enum.all?(completed_flags), errored} do
-      {true, false} -> Raxol.UI.State.Streams.safe_apply(observer.complete)
-      _ -> :ok
-    end
-  end
+  # defp complete_if_all_streams_done(completed_flags, errored, observer) do
+  #   case {Enum.all?(completed_flags), errored} do
+  #     {true, false} -> Raxol.UI.State.Streams.safe_apply(observer.complete)
+  #     _ -> :ok
+  #   end
+  # end
 
   defp unsubscribe_if_active(%{active: false} = subscription), do: subscription
 

@@ -198,7 +198,7 @@ defmodule Raxol.UI.ThemeResolverCached do
   @doc """
   Invalidate cache entries for a specific theme.
   """
-  def invalidate_theme(theme_id) do
+  def invalidate_theme(_theme_id) do
     # This would require more sophisticated cache management
     # For now, clear all style cache when a theme changes
     clear_cache()

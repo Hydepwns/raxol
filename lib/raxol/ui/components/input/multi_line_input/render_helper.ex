@@ -233,9 +233,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
          true,
          line_content,
          text_style,
-         cursor_style,
+         _cursor_style,
          safe_cursor_col,
-         safe_slice,
+         _safe_slice,
          line_len
        )
        when safe_cursor_col >= line_len do

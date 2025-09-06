@@ -401,12 +401,15 @@ defmodule Raxol.UI.Theming.Theme do
 
   def default_theme_id(), do: :default
 
-  if Code.ensure_loaded?(String.Chars) do
-    defimpl String.Chars, for: __MODULE__ do
-      def to_string(theme) do
-        "#<Theme id=#{inspect(theme.id)} name=#{inspect(theme.name)} colors=#{inspect(Map.keys(theme.colors))}>"
+  case Code.ensure_loaded?(String.Chars) do
+    true ->
+      defimpl String.Chars, for: __MODULE__ do
+        def to_string(theme) do
+          "#<Theme id=#{inspect(theme.id)} name=#{inspect(theme.name)} colors=#{inspect(Map.keys(theme.colors))}>"
+        end
       end
-    end
+    false ->
+      :ok
   end
 
   @doc """
