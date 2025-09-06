@@ -1,6 +1,6 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
   use ExUnit.Case, async: true
-  alias Raxol.Core.Runtime.Plugins.DependencyManager
+  # alias Raxol.Core.Runtime.Plugins.DependencyManager
 
   # This file now serves as a test suite coordinator
   # The actual tests have been split into focused modules:

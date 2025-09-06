@@ -603,11 +603,16 @@ defmodule Raxol.Core.Renderer.View do
     |> Map.put(:margin, normalized_margin)
   end
 
+  # Helper function for ensuring keyword lists (public for macro usage)
+  def ensure_keyword_list(opts) when is_list(opts), do: opts
+  def ensure_keyword_list(opts) when is_map(opts), do: Map.to_list(opts)
+  def ensure_keyword_list(_), do: []
+
   defmacro ensure_keyword(opts) do
     quote do
       case unquote(opts) do
         opts when is_list(opts) and length(opts) > 0 ->
-          ensure_keyword_list(opts)
+          Raxol.Core.Renderer.View.ensure_keyword_list(opts)
 
         opts when is_map(opts) ->
           Map.to_list(opts)
@@ -673,5 +678,4 @@ defmodule Raxol.Core.Renderer.View do
       _ -> raise ArgumentError, "Expected keyword list"
     end
   end
-
 end

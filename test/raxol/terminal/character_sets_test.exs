@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.CharacterSetsTest do
   use ExUnit.Case
   # Keep this alias for state management if needed later
-  alias Raxol.Terminal.CharacterSets
+  # alias Raxol.Terminal.CharacterSets
   # Add alias for translation functions
   alias Raxol.Terminal.ANSI.CharacterTranslations
 

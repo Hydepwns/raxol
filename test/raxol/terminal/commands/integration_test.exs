@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Commands.IntegrationTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Terminal.{Emulator, Window}
+  # alias Raxol.Terminal.{Emulator, Window}
   alias Raxol.Terminal.Commands.{CSIHandlers, OSCHandlers}
 
   defp unwrap_ok({:ok, value}), do: value

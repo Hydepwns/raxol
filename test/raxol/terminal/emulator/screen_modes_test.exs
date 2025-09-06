@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ModeManager
-  alias Raxol.Terminal.Modes.ModeStateManager
+  # alias Raxol.Terminal.Modes.ModeStateManager
 
   describe "screen mode functionality" do
     test ~c"initializes with default screen modes" do
@@ -47,11 +47,11 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       # Access screen_buffer field directly -> use main_screen_buffer
       buffer_before = Emulator.get_screen_buffer(emulator)
-      cell_a = ScreenBuffer.get_cell_at(buffer_before, 0, 0)
-      cell_b = ScreenBuffer.get_cell_at(buffer_before, 1, 0)
+      _cell_a = ScreenBuffer.get_cell_at(buffer_before, 0, 0)
+      _cell_b = ScreenBuffer.get_cell_at(buffer_before, 1, 0)
 
       # Save for later comparison, access field directly -> use main_screen_buffer
-      main_buffer_content = Emulator.get_screen_buffer(emulator)
+      _main_buffer_content = Emulator.get_screen_buffer(emulator)
 
       # Switch to alternate screen buffer
       {emulator, _} = Emulator.process_input(emulator, "\e[?1047h")

@@ -10,8 +10,8 @@ defmodule Raxol.Test.PerformanceViewGenerators do
   alias Raxol.Test.PerformanceTestData
 
   # Helper function for macro expansions
-  defp ensure_keyword_list(value) when is_list(value), do: value
-  defp ensure_keyword_list(value), do: [value]
+  # defp ensure_keyword_list(value) when is_list(value), do: value
+  # defp ensure_keyword_list(value), do: [value]
 
   def create_nested_structure(depth, current_depth \\ 0)
   def create_nested_structure(depth, depth), do: View.text("Leaf")

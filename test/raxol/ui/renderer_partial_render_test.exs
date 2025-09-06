@@ -38,7 +38,7 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     assert ops == [{:draw_text, 0, "Hello"}]
 
     # Apply a partial diff: update label text to "World"
-    diff = {:update, [0], :replace, %{type: :label, attrs: %{text: "World"}}}
+    _diff = {:update, [0], :replace, %{type: :label, attrs: %{text: "World"}}}
     # The pipeline expects {:update, path, changes}, so simulate a minimal diff
     # For our renderer, changes is a list of {idx, diff} for children
     diff =
