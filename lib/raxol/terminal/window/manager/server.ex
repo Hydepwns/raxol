@@ -359,8 +359,10 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   @impl GenServer
   def handle_call(:get_active_window, _from, state) do
     case state.active_window do
-      nil -> {:reply, nil, state}
-      id -> 
+      nil ->
+        {:reply, nil, state}
+
+      id ->
         case Map.get(state.windows, id) do
           nil -> {:reply, nil, state}
           window -> {:reply, {:ok, window}, state}
@@ -414,7 +416,13 @@ defmodule Raxol.Terminal.Window.Manager.Server do
         {:reply, {:error, :not_found}, state}
 
       window ->
-        updated_window = %{window | width: width, height: height, size: {width, height}}
+        updated_window = %{
+          window
+          | width: width,
+            height: height,
+            size: {width, height}
+        }
+
         new_windows = Map.put(state.windows, window_id, updated_window)
         new_state = %{state | windows: new_windows}
         {:reply, {:ok, updated_window}, new_state}
@@ -481,7 +489,7 @@ defmodule Raxol.Terminal.Window.Manager.Server do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
-      
+
       window ->
         updated_window = %{window | position: {x, y}}
         new_windows = Map.put(state.windows, window_id, updated_window)
@@ -495,10 +503,10 @@ defmodule Raxol.Terminal.Window.Manager.Server do
     case Map.get(state.windows, parent_id) do
       nil ->
         {:reply, {:error, :parent_not_found}, state}
-        
+
       parent ->
         child_id = "window_#{state.next_window_id}"
-        
+
         child = %Window{
           id: child_id,
           title: Map.get(config, :title, ""),
@@ -509,21 +517,22 @@ defmodule Raxol.Terminal.Window.Manager.Server do
           state: :inactive,
           parent: parent_id
         }
-        
+
         # Update parent to include child
         updated_parent = %{parent | children: [child_id | parent.children]}
-        
-        new_windows = 
+
+        new_windows =
           state.windows
           |> Map.put(child_id, child)
           |> Map.put(parent_id, updated_parent)
-        
-        new_state = %{state | 
-          windows: new_windows, 
-          window_order: [child_id | state.window_order],
-          next_window_id: state.next_window_id + 1
+
+        new_state = %{
+          state
+          | windows: new_windows,
+            window_order: [child_id | state.window_order],
+            next_window_id: state.next_window_id + 1
         }
-        
+
         {:reply, {:ok, child}, new_state}
     end
   end
@@ -533,10 +542,12 @@ defmodule Raxol.Terminal.Window.Manager.Server do
     case Map.get(state.windows, parent_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
-        
+
       parent ->
-        children = Enum.map(parent.children, &Map.get(state.windows, &1))
-                  |> Enum.filter(&(&1 != nil))
+        children =
+          Enum.map(parent.children, &Map.get(state.windows, &1))
+          |> Enum.filter(&(&1 != nil))
+
         {:reply, {:ok, children}, state}
     end
   end
@@ -546,12 +557,12 @@ defmodule Raxol.Terminal.Window.Manager.Server do
     case Map.get(state.windows, child_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
-        
+
       child ->
         case child.parent do
           nil ->
             {:reply, {:error, :no_parent}, state}
-            
+
           parent_id ->
             case Map.get(state.windows, parent_id) do
               nil -> {:reply, {:error, :parent_not_found}, state}
@@ -715,5 +726,4 @@ defmodule Raxol.Terminal.Window.Manager.Server do
   def get_parent_window(child_id) do
     GenServer.call(__MODULE__, {:get_parent_window, child_id})
   end
-
 end

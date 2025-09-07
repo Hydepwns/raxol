@@ -70,9 +70,11 @@ defmodule Raxol.Plugins.Manager.Events do
         case function_exported?(module, :handle_event, 2) do
           true ->
             handle_plugin_event(module, plugin, event, acc_manager)
+
           false ->
             {:cont, {:ok, acc_manager}}
         end
+
       false ->
         {:cont, {:ok, acc_manager}}
     end

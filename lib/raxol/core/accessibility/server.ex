@@ -157,8 +157,16 @@ defmodule Raxol.Core.Accessibility.Server do
     GenServer.call(server, {:set_preference, :large_text, enabled})
   end
 
-  def set_large_text_with_prefs(server \\ __MODULE__, enabled, user_preferences_pid) when is_boolean(enabled) do
-    GenServer.call(server, {:set_preference_with_prefs, :large_text, enabled, user_preferences_pid})
+  def set_large_text_with_prefs(
+        server \\ __MODULE__,
+        enabled,
+        user_preferences_pid
+      )
+      when is_boolean(enabled) do
+    GenServer.call(
+      server,
+      {:set_preference_with_prefs, :large_text, enabled, user_preferences_pid}
+    )
   end
 
   @doc """
@@ -320,7 +328,10 @@ defmodule Raxol.Core.Accessibility.Server do
   def should_announce?(user_preferences_pid_or_name \\ nil) do
     # If user preferences provided, check if announcements are enabled
     case user_preferences_pid_or_name do
-      nil -> true  # Default to allowing announcements
+      # Default to allowing announcements
+      nil ->
+        true
+
       pid when is_pid(pid) ->
         # Try to check user preferences, default to true if unavailable
         try do
@@ -332,12 +343,15 @@ defmodule Raxol.Core.Accessibility.Server do
         catch
           :exit, _ -> true
         end
+
       name when is_atom(name) ->
         case Process.whereis(name) do
           nil -> true
           pid -> should_announce?(pid)
         end
-      _ -> true
+
+      _ ->
+        true
     end
   end
 
@@ -500,7 +514,12 @@ defmodule Raxol.Core.Accessibility.Server do
     # Sync to UserPreferences if available
     if state.user_preferences_pid do
       pref_key = [:accessibility, key]
-      Raxol.Core.UserPreferences.set(pref_key, value, state.user_preferences_pid)
+
+      Raxol.Core.UserPreferences.set(
+        pref_key,
+        value,
+        state.user_preferences_pid
+      )
     end
 
     # Dispatch preference change event
@@ -510,7 +529,11 @@ defmodule Raxol.Core.Accessibility.Server do
   end
 
   @impl GenServer
-  def handle_call({:set_preference_with_prefs, key, value, user_preferences_pid}, _from, state) do
+  def handle_call(
+        {:set_preference_with_prefs, key, value, user_preferences_pid},
+        _from,
+        state
+      ) do
     new_preferences = Map.put(state.preferences, key, value)
     new_state = %{state | preferences: new_preferences}
 
@@ -528,10 +551,12 @@ defmodule Raxol.Core.Accessibility.Server do
 
   @impl GenServer
   def handle_call({:get_preference, key}, _from, state) do
-    value = case key do
-      :enabled -> state.enabled
-      _ -> Map.get(state.preferences, key, false)
-    end
+    value =
+      case key do
+        :enabled -> state.enabled
+        _ -> Map.get(state.preferences, key, false)
+      end
+
     {:reply, value, state}
   end
 
@@ -593,13 +618,23 @@ defmodule Raxol.Core.Accessibility.Server do
 
   @impl GenServer
   def handle_call(:get_next_announcement, _from, state) do
-    Raxol.Core.Runtime.Log.debug("get_next_announcement: queue length=#{length(state.announcements.queue)}")
+    Raxol.Core.Runtime.Log.debug(
+      "get_next_announcement: queue length=#{length(state.announcements.queue)}"
+    )
+
     case state.announcements.queue do
-      [] -> 
-        Raxol.Core.Runtime.Log.debug("get_next_announcement: queue is empty, returning nil")
+      [] ->
+        Raxol.Core.Runtime.Log.debug(
+          "get_next_announcement: queue is empty, returning nil"
+        )
+
         {:reply, nil, state}
+
       [announcement | rest] ->
-        Raxol.Core.Runtime.Log.debug("get_next_announcement: found announcement=#{announcement.message}")
+        Raxol.Core.Runtime.Log.debug(
+          "get_next_announcement: found announcement=#{announcement.message}"
+        )
+
         new_announcements = %{state.announcements | queue: rest}
         new_state = %{state | announcements: new_announcements}
         {:reply, announcement.message, new_state}
@@ -621,7 +656,11 @@ defmodule Raxol.Core.Accessibility.Server do
   end
 
   @impl GenServer
-  def handle_call({:register_component_style, component_type, style}, _from, state) do
+  def handle_call(
+        {:register_component_style, component_type, style},
+        _from,
+        state
+      ) do
     # Store component styles in metadata with a special key
     style_key = {:component_style, component_type}
     new_metadata = Map.put(state.metadata, style_key, style)
@@ -669,19 +708,31 @@ defmodule Raxol.Core.Accessibility.Server do
 
   defp handle_focus_change_with_state(state, new_focus) do
     should_announce = state.enabled && state.preferences.screen_reader
-    Raxol.Core.Runtime.Log.debug("handle_focus_change_with_state: new_focus=#{new_focus}, enabled=#{state.enabled}, screen_reader=#{state.preferences.screen_reader}, should_announce=#{should_announce}")
+
+    Raxol.Core.Runtime.Log.debug(
+      "handle_focus_change_with_state: new_focus=#{new_focus}, enabled=#{state.enabled}, screen_reader=#{state.preferences.screen_reader}, should_announce=#{should_announce}"
+    )
+
     handle_focus_announcement(should_announce, state, new_focus)
   end
 
-  defp handle_focus_announcement(false, state, _new_focus), do: {:noreply, state}
+  defp handle_focus_announcement(false, state, _new_focus),
+    do: {:noreply, state}
+
   defp handle_focus_announcement(true, state, new_focus) do
     # Get metadata for the new focus
     metadata = Map.get(state.metadata, new_focus, %{})
-    Raxol.Core.Runtime.Log.debug("handle_focus_announcement: new_focus=#{new_focus}, metadata=#{inspect(metadata)}")
+
+    Raxol.Core.Runtime.Log.debug(
+      "handle_focus_announcement: new_focus=#{new_focus}, metadata=#{inspect(metadata)}"
+    )
 
     # Create announcement based on metadata
     announcement_text = create_focus_announcement(new_focus, metadata)
-    Raxol.Core.Runtime.Log.debug("handle_focus_announcement: announcement_text=#{announcement_text}")
+
+    Raxol.Core.Runtime.Log.debug(
+      "handle_focus_announcement: announcement_text=#{announcement_text}"
+    )
 
     # Create announcement object directly
     announcement = %{
@@ -711,22 +762,39 @@ defmodule Raxol.Core.Accessibility.Server do
   end
 
   defp should_process_announcement?(state) do
-    result = state.enabled && state.preferences.screen_reader && !state.preferences.silence_announcements
-    Raxol.Core.Runtime.Log.debug("should_process_announcement? enabled=#{state.enabled}, screen_reader=#{state.preferences.screen_reader}, silence_announcements=#{state.preferences.silence_announcements}, result=#{result}")
+    result =
+      state.enabled && state.preferences.screen_reader &&
+        !state.preferences.silence_announcements
+
+    Raxol.Core.Runtime.Log.debug(
+      "should_process_announcement? enabled=#{state.enabled}, screen_reader=#{state.preferences.screen_reader}, silence_announcements=#{state.preferences.silence_announcements}, result=#{result}"
+    )
+
     result
   end
 
   defp handle_announcement_delivery(true, queue, announcement, callback) do
     # Immediate announcement when interrupt is true
-    Raxol.Core.Runtime.Log.debug("handle_announcement_delivery: interrupt=true, delivering immediately")
+    Raxol.Core.Runtime.Log.debug(
+      "handle_announcement_delivery: interrupt=true, delivering immediately"
+    )
+
     deliver_announcement(announcement, callback)
     # Still add to queue for testing/retrieval purposes (FIFO)
     new_queue = queue ++ [announcement]
-    Raxol.Core.Runtime.Log.debug("handle_announcement_delivery: added to queue, new length=#{length(new_queue)}")
+
+    Raxol.Core.Runtime.Log.debug(
+      "handle_announcement_delivery: added to queue, new length=#{length(new_queue)}"
+    )
+
     new_queue
   end
+
   defp handle_announcement_delivery(false, queue, announcement, callback) do
-    Raxol.Core.Runtime.Log.debug("handle_announcement_delivery: interrupt=false, checking queue")
+    Raxol.Core.Runtime.Log.debug(
+      "handle_announcement_delivery: interrupt=false, checking queue"
+    )
+
     handle_queue_delivery(Enum.empty?(queue), queue, announcement, callback)
   end
 
@@ -736,6 +804,7 @@ defmodule Raxol.Core.Accessibility.Server do
     # Add to queue for retrieval purposes (FIFO)
     queue ++ [announcement]
   end
+
   defp handle_queue_delivery(false, queue, announcement, callback) do
     # Queue announcement based on priority
     new_queue = insert_by_priority(queue, announcement)
@@ -792,10 +861,16 @@ defmodule Raxol.Core.Accessibility.Server do
   end
 
   defp process_announcement(state, message, opts) do
-    Raxol.Core.Runtime.Log.debug("process_announcement called with message: #{message}")
+    Raxol.Core.Runtime.Log.debug(
+      "process_announcement called with message: #{message}"
+    )
+
     should_process = should_process_announcement?(state)
-    Raxol.Core.Runtime.Log.debug("should_process_announcement?: #{should_process}")
-    
+
+    Raxol.Core.Runtime.Log.debug(
+      "should_process_announcement?: #{should_process}"
+    )
+
     case should_process do
       true ->
         priority = Keyword.get(opts, :priority, :medium)
@@ -807,15 +882,29 @@ defmodule Raxol.Core.Accessibility.Server do
           timestamp: DateTime.utc_now(),
           opts: opts
         }
-        Raxol.Core.Runtime.Log.debug("Created announcement object: #{inspect(announcement)}")
+
+        Raxol.Core.Runtime.Log.debug(
+          "Created announcement object: #{inspect(announcement)}"
+        )
 
         # Add to history
         new_history = [announcement | state.announcements.history]
-        limited_history = Enum.take(new_history, state.announcements.max_history)
+
+        limited_history =
+          Enum.take(new_history, state.announcements.max_history)
 
         # Process announcement and update queue
-        new_queue = handle_announcement_delivery(interrupt, state.announcements.queue, announcement, state.announcement_callback)
-        Raxol.Core.Runtime.Log.debug("New queue after delivery: #{inspect(new_queue)}")
+        new_queue =
+          handle_announcement_delivery(
+            interrupt,
+            state.announcements.queue,
+            announcement,
+            state.announcement_callback
+          )
+
+        Raxol.Core.Runtime.Log.debug(
+          "New queue after delivery: #{inspect(new_queue)}"
+        )
 
         new_announcements = %{
           state.announcements
@@ -824,22 +913,36 @@ defmodule Raxol.Core.Accessibility.Server do
         }
 
         new_state = %{state | announcements: new_announcements}
-        Raxol.Core.Runtime.Log.debug("Returning new state with queue length: #{length(new_state.announcements.queue)}")
+
+        Raxol.Core.Runtime.Log.debug(
+          "Returning new state with queue length: #{length(new_state.announcements.queue)}"
+        )
+
         new_state
+
       false ->
-        Raxol.Core.Runtime.Log.debug("Not processing announcement - conditions not met")
+        Raxol.Core.Runtime.Log.debug(
+          "Not processing announcement - conditions not met"
+        )
+
         state
     end
   end
 
   defp deliver_announcement(announcement, callback) do
-    Raxol.Core.Runtime.Log.debug("deliver_announcement: #{announcement.message}")
+    Raxol.Core.Runtime.Log.debug(
+      "deliver_announcement: #{announcement.message}"
+    )
+
     # Call the callback if provided
     call_callback_if_present(callback, announcement.message)
 
     # Dispatch event for other systems
     EventManager.dispatch({:screen_reader_announcement, announcement.message})
-    Raxol.Core.Runtime.Log.debug("deliver_announcement: dispatched screen reader event")
+
+    Raxol.Core.Runtime.Log.debug(
+      "deliver_announcement: dispatched screen reader event"
+    )
   end
 
   defp insert_by_priority(queue, announcement) do
@@ -865,18 +968,20 @@ defmodule Raxol.Core.Accessibility.Server do
 
     # Start with just the label
     parts = [label]
-    
+
     # Only add role if it was explicitly set (not default)
-    parts = case explicit_role do
-      nil -> parts
-      role -> parts ++ [role]
-    end
-    
+    parts =
+      case explicit_role do
+        nil -> parts
+        role -> parts ++ [role]
+      end
+
     # Add description if present
-    parts = case description != "" do
-      true -> parts ++ [description]
-      false -> parts
-    end
+    parts =
+      case description != "" do
+        true -> parts ++ [description]
+        false -> parts
+      end
 
     Enum.join(parts, ", ")
   end
@@ -903,7 +1008,10 @@ defmodule Raxol.Core.Accessibility.Server do
   end
 
   def handle_info(msg, state) do
-    Raxol.Core.Runtime.Log.error("#{__MODULE__} received unexpected message in handle_info/2: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.error(
+      "#{__MODULE__} received unexpected message in handle_info/2: #{inspect(msg)}"
+    )
+
     {:noreply, state}
   end
 

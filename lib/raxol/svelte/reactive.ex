@@ -270,6 +270,7 @@ defmodule Raxol.Svelte.Reactive do
         case function_exported?(__MODULE__, :execute_reactive_statements, 1) do
           true ->
             execute_reactive_statements(new_state)
+
           false ->
             :ok
         end

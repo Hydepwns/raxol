@@ -244,10 +244,18 @@ defmodule Raxol.Performance.TelemetryInstrumentation do
 
   defp handle_performance_event(event, measurements, metadata, _config) do
     # Log operations over 100μs
-    log_performance_if_slow(measurements.duration, event, measurements, metadata)
+    log_performance_if_slow(
+      measurements.duration,
+      event,
+      measurements,
+      metadata
+    )
   end
 
-  defp log_performance_if_slow(duration, _event, _measurements, _metadata) when duration <= 100, do: :ok
+  defp log_performance_if_slow(duration, _event, _measurements, _metadata)
+       when duration <= 100,
+       do: :ok
+
   defp log_performance_if_slow(_duration, event, measurements, metadata) do
     require Logger
 
@@ -275,12 +283,45 @@ defmodule Raxol.Performance.TelemetryInstrumentation do
   defp handle_slow_operation(event, measurements, metadata, %{
          threshold: threshold
        }) do
-    log_slow_operation_if_needed(measurements[:duration], measurements.duration, threshold, event, measurements, metadata)
+    log_slow_operation_if_needed(
+      measurements[:duration],
+      measurements.duration,
+      threshold,
+      event,
+      measurements,
+      metadata
+    )
   end
 
-  defp log_slow_operation_if_needed(nil, _duration, _threshold, _event, _measurements, _metadata), do: :ok
-  defp log_slow_operation_if_needed(_duration_key, duration, threshold, _event, _measurements, _metadata) when duration <= threshold, do: :ok
-  defp log_slow_operation_if_needed(_duration_key, _duration, threshold, event, measurements, metadata) do
+  defp log_slow_operation_if_needed(
+         nil,
+         _duration,
+         _threshold,
+         _event,
+         _measurements,
+         _metadata
+       ),
+       do: :ok
+
+  defp log_slow_operation_if_needed(
+         _duration_key,
+         duration,
+         threshold,
+         _event,
+         _measurements,
+         _metadata
+       )
+       when duration <= threshold,
+       do: :ok
+
+  defp log_slow_operation_if_needed(
+         _duration_key,
+         _duration,
+         threshold,
+         event,
+         measurements,
+         metadata
+       ) do
     require Logger
 
     Logger.warning("""

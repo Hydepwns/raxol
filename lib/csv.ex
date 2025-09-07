@@ -25,6 +25,7 @@ defmodule CSV do
       true ->
         escaped = String.replace(value, "\"", "\"\"")
         "\"#{escaped}\""
+
       false ->
         value
     end

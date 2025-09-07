@@ -228,6 +228,7 @@ defmodule Raxol.Terminal.Metrics.Manager do
     case uptime > 0 do
       true ->
         manager.characters_processed / (uptime / 1000)
+
       false ->
         0.0
     end
@@ -242,6 +243,7 @@ defmodule Raxol.Terminal.Metrics.Manager do
     case uptime > 0 do
       true ->
         manager.commands_processed / (uptime / 1000)
+
       false ->
         0.0
     end
@@ -256,6 +258,7 @@ defmodule Raxol.Terminal.Metrics.Manager do
     case uptime > 0 do
       true ->
         manager.errors_encountered / (uptime / 1000)
+
       false ->
         0.0
     end

@@ -249,6 +249,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmarkRealistic do
             # Add time for data sampling but less than full rendering
             sampling_time = div(sleep_time, 5)
             Process.sleep(sampling_time)
+
           false ->
             :ok
         end

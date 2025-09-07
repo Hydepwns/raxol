@@ -20,7 +20,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
 
   # Removed non-existent @behaviour reference
-  
+
   alias Raxol.Core.KeyboardShortcuts.Server
   alias Raxol.Core.Events.Manager, as: EventManager
 

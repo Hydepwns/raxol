@@ -454,10 +454,8 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
 
       session ->
         {:ok, window, new_state} = create_window_impl(state, session, opts)
-        
-        Logger.info(
-          "Created window '#{window.name}' in session #{session_id}"
-        )
+
+        Logger.info("Created window '#{window.name}' in session #{session_id}")
 
         {:reply, {:ok, window.id}, new_state}
     end

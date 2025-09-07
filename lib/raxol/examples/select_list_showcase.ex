@@ -460,7 +460,9 @@ defmodule Raxol.Examples.SelectListShowcase do
 
   # Render basic selection instead of if statement
   defp render_basic_selection(nil), do: label(text: "No fruit selected")
-  defp render_basic_selection(selected), do: label(text: "Selected fruit: #{selected}")
+
+  defp render_basic_selection(selected),
+    do: label(text: "Selected fruit: #{selected}")
 
   # Render multiple selection instead of if statement
   defp render_multiple_selection(selected, _users) when selected == [] do

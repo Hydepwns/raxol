@@ -297,16 +297,20 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
     {:stop, :normal, state}
   end
 
-  defp stop_file_watcher_if_exists(%{file_watcher_pid: pid} = state) when is_pid(pid) do
+  defp stop_file_watcher_if_exists(%{file_watcher_pid: pid} = state)
+       when is_pid(pid) do
     FileWatcher.stop(pid)
     state
   end
+
   defp stop_file_watcher_if_exists(state), do: state
 
-  defp cancel_tick_timer_if_exists(%{tick_timer: timer} = state) when is_reference(timer) do
+  defp cancel_tick_timer_if_exists(%{tick_timer: timer} = state)
+       when is_reference(timer) do
     Process.cancel_timer(timer)
     state
   end
+
   defp cancel_tick_timer_if_exists(state), do: state
 
   defp handle_internal_initialize(state) do
@@ -325,6 +329,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandlers do
       true ->
         {:ok, plugin_id} = extract_plugin_id_from_path(path)
         schedule_plugin_reload(plugin_id, path, state)
+
       false ->
         {:noreply, state}
     end

@@ -1,6 +1,6 @@
 defmodule Raxol.Test.FileWatcherTestHelper do
   @file_enabled Mix.env() == :test
-  
+
   case @file_enabled do
     true ->
       @moduledoc """
@@ -174,7 +174,7 @@ defmodule Raxol.Test.FileWatcherTestHelper do
         end
         """
       end
-      
+
     false ->
       @moduledoc false
   end

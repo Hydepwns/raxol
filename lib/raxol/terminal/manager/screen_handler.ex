@@ -116,12 +116,17 @@ defmodule Raxol.Terminal.Manager.ScreenHandler do
   end
 
   defp notify_runtime_process(nil, _updates, _emulator), do: :ok
+
   defp notify_runtime_process(runtime_pid, updates, emulator) do
     send(runtime_pid, {:terminal_screen_updated, updates, emulator})
   end
 
   defp send_error_if_runtime_present(nil, _action, _data), do: :ok
+
   defp send_error_if_runtime_present(runtime_pid, action, data) do
-    send(runtime_pid, {:terminal_error, :no_terminal, %{action: action, update: data}})
+    send(
+      runtime_pid,
+      {:terminal_error, :no_terminal, %{action: action, update: data}}
+    )
   end
 end

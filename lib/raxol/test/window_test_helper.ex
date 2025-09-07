@@ -16,7 +16,9 @@ defmodule Raxol.Test.WindowTestHelper do
         |> Map.put_new(:disabled, false)
         |> Map.put_new(:focused, false)
         |> Map.put_new(:attrs, %{})
-      false -> emu
+
+      false ->
+        emu
     end
   end
 

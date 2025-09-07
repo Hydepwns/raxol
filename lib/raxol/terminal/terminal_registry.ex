@@ -279,6 +279,7 @@ defmodule Raxol.Terminal.TerminalRegistry do
       self(),
       event_types: [TerminalCreatedEvent, TerminalClosedEvent]
     )
+
     Logger.debug("Terminal registry subscribed to event store")
     {:noreply, state}
   end

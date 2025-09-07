@@ -151,7 +151,14 @@ defmodule RaxolWeb.SettingsLive do
          ]) do
       {:ok, sanitized_params} when map_size(sanitized_params) > 0 ->
         changeset = Raxol.Auth.User.changeset(user, sanitized_params)
-        handle_profile_validation(changeset.valid?, changeset, user, sanitized_params, socket)
+
+        handle_profile_validation(
+          changeset.valid?,
+          changeset,
+          user,
+          sanitized_params,
+          socket
+        )
 
       {:ok, _empty_params} ->
         changeset = Raxol.Auth.User.changeset(user, user_params)
@@ -173,7 +180,13 @@ defmodule RaxolWeb.SettingsLive do
     password_confirmation = user_params["password_confirmation"]
 
     # Validate password confirmation
-    handle_password_confirmation(new_password != password_confirmation, user, current_password, new_password, socket)
+    handle_password_confirmation(
+      new_password != password_confirmation,
+      user,
+      current_password,
+      new_password,
+      socket
+    )
   end
 
   # Handle messages from child components
@@ -205,11 +218,23 @@ defmodule RaxolWeb.SettingsLive do
     Theme.dark_theme()
   end
 
-  defp handle_profile_validation(false, changeset, _user, _sanitized_params, socket) do
+  defp handle_profile_validation(
+         false,
+         changeset,
+         _user,
+         _sanitized_params,
+         socket
+       ) do
     {:noreply, assign(socket, :changeset, changeset)}
   end
 
-  defp handle_profile_validation(true, _changeset, user, sanitized_params, socket) do
+  defp handle_profile_validation(
+         true,
+         _changeset,
+         user,
+         sanitized_params,
+         socket
+       ) do
     # Update the user in the agent storage
     updated_user = %{
       user
@@ -228,7 +253,13 @@ defmodule RaxolWeb.SettingsLive do
      )}
   end
 
-  defp handle_password_confirmation(true, _user, _current_password, _new_password, socket) do
+  defp handle_password_confirmation(
+         true,
+         _user,
+         _current_password,
+         _new_password,
+         socket
+       ) do
     error_changeset = %Ecto.Changeset{
       data: %Raxol.Auth.User{},
       errors: [password_confirmation: {"does not match", []}],
@@ -241,7 +272,13 @@ defmodule RaxolWeb.SettingsLive do
      |> assign(:password_changeset, error_changeset)}
   end
 
-  defp handle_password_confirmation(false, user, current_password, new_password, socket) do
+  defp handle_password_confirmation(
+         false,
+         user,
+         current_password,
+         new_password,
+         socket
+       ) do
     # Update password using Accounts module
     case Accounts.update_password(user.id, current_password, new_password) do
       {:ok, updated_user} ->

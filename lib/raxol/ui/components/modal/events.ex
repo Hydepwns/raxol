@@ -197,6 +197,7 @@ defmodule Raxol.UI.Components.Modal.Events do
     case String.ends_with?(Atom.to_string(msg), "cancel") do
       true ->
         msg
+
       false ->
         msg
     end

@@ -715,6 +715,7 @@ defmodule Raxol.DevTools.DebugInspector do
             "Slow average render time: #{Float.round(profile.average_render_time, 2)}ms"
             | bottlenecks
           ]
+
         false ->
           bottlenecks
       end

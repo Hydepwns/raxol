@@ -86,7 +86,13 @@ defmodule Raxol.Core.Events.Manager.Server do
     - `:priority` - Handler priority (default: 50, lower = higher priority)
   """
   # Function heads to define defaults
-  def register_handler(server \\ __MODULE__, event_type, module_or_id, function_or_struct, opts \\ [])
+  def register_handler(
+        server \\ __MODULE__,
+        event_type,
+        module_or_id,
+        function_or_struct,
+        opts \\ []
+      )
 
   # Traditional module/function handler registration
   def register_handler(server, event_type, module, function, opts)
@@ -101,13 +107,16 @@ defmodule Raxol.Core.Events.Manager.Server do
 
   # Handler struct registration (used by Handlers module)
   def register_handler(server, event_type, handler_id, handler_struct, opts)
-      when is_atom(event_type) and is_atom(handler_id) and is_map(handler_struct) do
+      when is_atom(event_type) and is_atom(handler_id) and
+             is_map(handler_struct) do
     # Extract priority from handler struct or opts
-    priority = Map.get(handler_struct, :priority) || Keyword.get(opts, :priority, 50)
+    priority =
+      Map.get(handler_struct, :priority) || Keyword.get(opts, :priority, 50)
 
     GenServer.call(
       server,
-      {:register_handler_struct, event_type, handler_id, handler_struct, priority}
+      {:register_handler_struct, event_type, handler_id, handler_struct,
+       priority}
     )
   end
 
@@ -253,9 +262,10 @@ defmodule Raxol.Core.Events.Manager.Server do
     current_handlers = Map.get(state.handlers, event_type, [])
 
     # Check if handler already exists
-    handler_exists = Enum.any?(current_handlers, fn {m, f, _p} ->
-      m == module && f == function
-    end)
+    handler_exists =
+      Enum.any?(current_handlers, fn {m, f, _p} ->
+        m == module && f == function
+      end)
 
     updated_handlers =
       case handler_exists do
@@ -264,6 +274,7 @@ defmodule Raxol.Core.Events.Manager.Server do
           current_handlers
           |> Enum.reject(fn {m, f, _p} -> m == module && f == function end)
           |> Kernel.++([handler])
+
         false ->
           [handler | current_handlers]
       end
@@ -277,7 +288,8 @@ defmodule Raxol.Core.Events.Manager.Server do
 
   @impl GenServer
   def handle_call(
-        {:register_handler_struct, event_type, handler_id, handler_struct, priority},
+        {:register_handler_struct, event_type, handler_id, handler_struct,
+         priority},
         _from,
         state
       ) do
@@ -287,25 +299,28 @@ defmodule Raxol.Core.Events.Manager.Server do
     current_handlers = Map.get(state.handlers, event_type, [])
 
     # Check if handler already exists by ID
-    handler_exists = Enum.any?(current_handlers, fn 
-      {id, _struct, _p} when is_atom(id) -> id == handler_id
-      {_m, _f, _p} -> false  # Regular module/function handlers
-    end)
+    handler_exists =
+      Enum.any?(current_handlers, fn
+        {id, _struct, _p} when is_atom(id) -> id == handler_id
+        # Regular module/function handlers
+        {_m, _f, _p} -> false
+      end)
 
     updated_handlers =
       case handler_exists do
         true ->
           # Update existing handler
           current_handlers
-          |> Enum.reject(fn 
+          |> Enum.reject(fn
             {id, _struct, _p} when is_atom(id) -> id == handler_id
             _ -> false
           end)
           |> Kernel.++([handler_info])
+
         false ->
           [handler_info | current_handlers]
       end
-      |> Enum.sort_by(fn 
+      |> Enum.sort_by(fn
         {id, _struct, p} when is_atom(id) -> p
         {_m, _f, p} -> p
       end)
@@ -519,7 +534,8 @@ defmodule Raxol.Core.Events.Manager.Server do
           end
 
         # Handler struct (from Handlers module)
-        {handler_id, handler_struct, _priority} when is_atom(handler_id) and is_map(handler_struct) ->
+        {handler_id, handler_struct, _priority}
+        when is_atom(handler_id) and is_map(handler_struct) ->
           # Check if event passes filter
           if apply_filter?(event, handler_struct.filter) do
             case Raxol.Core.ErrorHandling.safe_call(fn ->
@@ -544,9 +560,10 @@ defmodule Raxol.Core.Events.Manager.Server do
 
     # Notify matching subscribers
     Enum.each(state.subscriptions, fn {_ref, subscription} ->
-      should_notify = event_type in subscription.event_types &&
-                      matches_filters?(event, subscription.filters)
-      
+      should_notify =
+        event_type in subscription.event_types &&
+          matches_filters?(event, subscription.filters)
+
       case should_notify do
         true -> send(subscription.pid, {:event, event})
         false -> :ok

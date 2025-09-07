@@ -16,7 +16,7 @@ defmodule Raxol.Animation.Interpolate do
   # Handle tuples of size 2 and 3 with a simpler implementation
   def value(from_tuple, to_tuple, t)
       when is_tuple(from_tuple) and is_tuple(to_tuple) do
-    case {tuple_size(from_tuple) == tuple_size(to_tuple), 
+    case {tuple_size(from_tuple) == tuple_size(to_tuple),
           numeric_is_tuple(from_tuple), numeric_is_tuple(to_tuple)} do
       {true, true, true} ->
         values =
@@ -27,6 +27,7 @@ defmodule Raxol.Animation.Interpolate do
           end
 
         List.to_tuple(values)
+
       _ ->
         from_tuple
     end
@@ -39,6 +40,7 @@ defmodule Raxol.Animation.Interpolate do
       true ->
         Enum.zip(from_list, to_list)
         |> Enum.map(fn {f, v} -> value(f, v, t) end)
+
       false ->
         from_list
     end
@@ -98,10 +100,13 @@ defmodule Raxol.Animation.Interpolate do
     h_interpolated_raw = calculate_hue_interpolation(h1, diff, t)
 
     mod_val = h_interpolated_raw - Float.floor(h_interpolated_raw / 360) * 360
-    h_positive = case mod_val < 0 do
-      true -> mod_val + 360
-      false -> mod_val
-    end
+
+    h_positive =
+      case mod_val < 0 do
+        true -> mod_val + 360
+        false -> mod_val
+      end
+
     case round(h_positive) do
       360 -> 0
       other -> other

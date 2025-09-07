@@ -112,7 +112,13 @@ defmodule Raxol.UI.Universal do
     # Broadcast to all registered event handlers
     Registry.dispatch(Raxol.Events, event, fn entries ->
       for {pid, handler} <- entries do
-        handle_universal_handler(is_function(handler), handler, pid, event, payload)
+        handle_universal_handler(
+          is_function(handler),
+          handler,
+          pid,
+          event,
+          payload
+        )
       end
     end)
   end
@@ -150,7 +156,13 @@ defmodule Raxol.UI.Universal do
       apply_property(element, prop, current_value)
     end)
 
-    continue_animation_if_needed(progress < 1.0, element, properties, duration, start_time)
+    continue_animation_if_needed(
+      progress < 1.0,
+      element,
+      properties,
+      duration,
+      start_time
+    )
   end
 
   defp ease_in_out(t) do
@@ -184,9 +196,22 @@ defmodule Raxol.UI.Universal do
     send(pid, {event, payload})
   end
 
-  defp continue_animation_if_needed(false, _element, _properties, _duration, _start_time), do: :ok
+  defp continue_animation_if_needed(
+         false,
+         _element,
+         _properties,
+         _duration,
+         _start_time
+       ),
+       do: :ok
 
-  defp continue_animation_if_needed(true, element, properties, duration, start_time) do
+  defp continue_animation_if_needed(
+         true,
+         element,
+         properties,
+         duration,
+         start_time
+       ) do
     # Continue animation
     # ~60 FPS
     Process.sleep(16)

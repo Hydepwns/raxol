@@ -26,6 +26,7 @@ defmodule Raxol.Terminal.Emulator.Helpers do
     case is_pid(cursor) do
       true ->
         GenServer.call(cursor, :get_state)
+
       false ->
         cursor
     end
@@ -68,6 +69,7 @@ defmodule Raxol.Terminal.Emulator.Helpers do
     case is_pid(cursor) do
       true ->
         get_cursor_struct(emulator).position
+
       false ->
         # Handle non-pid cursor (e.g., in test environments)
         case cursor do
@@ -105,6 +107,7 @@ defmodule Raxol.Terminal.Emulator.Helpers do
           %{row: row, col: col} -> {row, col}
           _ -> {0, 0}
         end
+
       false ->
         case cursor do
           # Already in {row, col} format

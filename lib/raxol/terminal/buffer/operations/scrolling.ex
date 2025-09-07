@@ -11,8 +11,9 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   def maybe_scroll(buffer) when is_list(buffer) do
     # Check if we need to scroll - currently always returns false
     case needs_scroll?(buffer) do
-      false -> buffer
-      # Note: true clause removed as needs_scroll? always returns false
+      false ->
+        buffer
+        # Note: true clause removed as needs_scroll? always returns false
     end
   end
 
@@ -71,11 +72,12 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
       )
 
     # Adjust cursor position if needed
-    new_cursor_y = 
+    new_cursor_y =
       case cursor_y >= lines do
         true -> cursor_y - lines
         false -> 0
       end
+
     {new_buffer, new_cursor_y, cursor_x}
   end
 
@@ -206,6 +208,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
           |> Enum.concat(Enum.drop(buffer, cursor_y))
 
         {new_buffer, cursor_y, cursor_x}
+
       false ->
         {buffer, cursor_y, cursor_x}
     end
@@ -239,6 +242,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
           |> Enum.concat(Enum.drop(buffer, cursor_y + count))
 
         {new_buffer, cursor_y, cursor_x}
+
       false ->
         {buffer, cursor_y, cursor_x}
     end

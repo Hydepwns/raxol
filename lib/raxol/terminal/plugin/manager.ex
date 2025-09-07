@@ -180,6 +180,7 @@ defmodule Raxol.Terminal.Plugin.Manager do
     case Enum.all?(required_fields, &Map.has_key?(plugin, &1)) do
       true ->
         :ok
+
       false ->
         {:error, :invalid_plugin}
     end
@@ -189,6 +190,7 @@ defmodule Raxol.Terminal.Plugin.Manager do
     case Map.has_key?(manager.plugins, plugin.name) do
       true ->
         {:error, :plugin_already_loaded}
+
       false ->
         :ok
     end

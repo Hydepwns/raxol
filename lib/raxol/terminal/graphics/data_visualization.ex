@@ -72,10 +72,39 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   alias Raxol.Terminal.Graphics.StreamingManager
 
   @type chart_id :: String.t()
-  @type data_point :: %{timestamp: non_neg_integer(), value: number(), series: String.t(), metadata: map()}
-  @type streaming_config :: %{max_points: non_neg_integer(), update_interval: non_neg_integer(), auto_scale: boolean(), buffer_size: non_neg_integer(), animation_enabled: boolean()}
-  @type visualization_type :: :line | :bar | :scatter | :heatmap | :histogram | :bubble | :treemap | :sparkline
-  @type chart_state :: %{id: chart_id(), type: visualization_type(), config: map(), data_buffer: [data_point()], bounds: map(), graphics_id: non_neg_integer(), last_update: non_neg_integer(), interactive: boolean(), animation_state: map()}
+  @type data_point :: %{
+          timestamp: non_neg_integer(),
+          value: number(),
+          series: String.t(),
+          metadata: map()
+        }
+  @type streaming_config :: %{
+          max_points: non_neg_integer(),
+          update_interval: non_neg_integer(),
+          auto_scale: boolean(),
+          buffer_size: non_neg_integer(),
+          animation_enabled: boolean()
+        }
+  @type visualization_type ::
+          :line
+          | :bar
+          | :scatter
+          | :heatmap
+          | :histogram
+          | :bubble
+          | :treemap
+          | :sparkline
+  @type chart_state :: %{
+          id: chart_id(),
+          type: visualization_type(),
+          config: map(),
+          data_buffer: [data_point()],
+          bounds: map(),
+          graphics_id: non_neg_integer(),
+          last_update: non_neg_integer(),
+          interactive: boolean(),
+          animation_state: map()
+        }
 
   defstruct [
     :active_charts,
@@ -118,8 +147,8 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
         animation: %{enabled: true, duration: 300}
       })
   """
-  @spec create_streaming_chart(visualization_type(), map()) :: 
-    {:ok, chart_id()} | {:error, term()}
+  @spec create_streaming_chart(visualization_type(), map()) ::
+          {:ok, chart_id()} | {:error, term()}
   def create_streaming_chart(type, config) do
     GenServer.call(__MODULE__, {:create_streaming_chart, type, config})
   end
@@ -182,7 +211,8 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
         tooltip_enabled: true
       })
   """
-  @spec create_heatmap([[number()]], map()) :: {:ok, chart_id()} | {:error, term()}
+  @spec create_heatmap([[number()]], map()) ::
+          {:ok, chart_id()} | {:error, term()}
   def create_heatmap(data, config) do
     GenServer.call(__MODULE__, {:create_heatmap, data, config})
   end
@@ -204,7 +234,8 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
         interactive: true
       })
   """
-  @spec create_scatter_plot([map()], map()) :: {:ok, chart_id()} | {:error, term()}
+  @spec create_scatter_plot([map()], map()) ::
+          {:ok, chart_id()} | {:error, term()}
   def create_scatter_plot(points, config) do
     GenServer.call(__MODULE__, {:create_scatter_plot, points, config})
   end
@@ -223,7 +254,8 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
         bounds: %{x: 0, y: 0, width: 60, height: 15}
       })
   """
-  @spec create_histogram([number()], map()) :: {:ok, chart_id()} | {:error, term()}
+  @spec create_histogram([number()], map()) ::
+          {:ok, chart_id()} | {:error, term()}
   def create_histogram(values, config) do
     GenServer.call(__MODULE__, {:create_histogram, values, config})
   end
@@ -242,7 +274,10 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   """
   @spec enable_interaction(chart_id(), map()) :: :ok | {:error, term()}
   def enable_interaction(chart_id, interaction_config) do
-    GenServer.call(__MODULE__, {:enable_interaction, chart_id, interaction_config})
+    GenServer.call(
+      __MODULE__,
+      {:enable_interaction, chart_id, interaction_config}
+    )
   end
 
   @doc """
@@ -259,8 +294,8 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
       # Export as SVG (if supported)
       {:ok, svg_data} = DataVisualization.export_chart(chart_id, :svg)
   """
-  @spec export_chart(chart_id(), :ascii | :json | :svg | :png) :: 
-    {:ok, binary()} | {:error, term()}
+  @spec export_chart(chart_id(), :ascii | :json | :svg | :png) ::
+          {:ok, binary()} | {:error, term()}
   def export_chart(chart_id, format) do
     GenServer.call(__MODULE__, {:export_chart, chart_id, format})
   end
@@ -284,42 +319,85 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
 
   @impl true
   def handle_call({:create_streaming_chart, type, config}, _from, state) do
-    case StreamingManager.handle_chart_creation(type, config, state,
-      fn chart_id, chart_type, cfg -> VisualizationHelpers.create_chart_visualization(chart_id, chart_type, cfg) end) do
+    case StreamingManager.handle_chart_creation(
+           type,
+           config,
+           state,
+           fn chart_id, chart_type, cfg ->
+             VisualizationHelpers.create_chart_visualization(
+               chart_id,
+               chart_type,
+               cfg
+             )
+           end
+         ) do
       {:reply, {:ok, chart_id}, updated_state} ->
         chart_state = Map.get(updated_state.active_charts, chart_id)
-        new_streaming = Map.put(updated_state.streaming_charts, chart_id, chart_state)
-        {:reply, {:ok, chart_id}, %{updated_state | streaming_charts: new_streaming}}
-      result -> result
+
+        new_streaming =
+          Map.put(updated_state.streaming_charts, chart_id, chart_state)
+
+        {:reply, {:ok, chart_id},
+         %{updated_state | streaming_charts: new_streaming}}
+
+      result ->
+        result
     end
   end
 
   @impl true
   def handle_call({:create_heatmap, data, config}, _from, state) do
-    StreamingManager.handle_chart_creation(:heatmap, config, state, 
-      fn _chart_id, _type, cfg -> ChartRenderers.create_heatmap_visualization(data, cfg) end)
+    StreamingManager.handle_chart_creation(
+      :heatmap,
+      config,
+      state,
+      fn _chart_id, _type, cfg ->
+        ChartRenderers.create_heatmap_visualization(data, cfg)
+      end
+    )
   end
 
   @impl true
   def handle_call({:create_scatter_plot, points, config}, _from, state) do
-    StreamingManager.handle_chart_creation(:scatter, config, state, 
-      fn _chart_id, _type, cfg -> ChartRenderers.create_scatter_visualization(points, cfg) end)
+    StreamingManager.handle_chart_creation(
+      :scatter,
+      config,
+      state,
+      fn _chart_id, _type, cfg ->
+        ChartRenderers.create_scatter_visualization(points, cfg)
+      end
+    )
   end
 
   @impl true
   def handle_call({:create_histogram, values, config}, _from, state) do
-    StreamingManager.handle_chart_creation(:histogram, config, state, 
-      fn _chart_id, _type, cfg -> ChartRenderers.create_histogram_visualization(values, cfg) end)
+    StreamingManager.handle_chart_creation(
+      :histogram,
+      config,
+      state,
+      fn _chart_id, _type, cfg ->
+        ChartRenderers.create_histogram_visualization(values, cfg)
+      end
+    )
   end
 
   @impl true
-  def handle_call({:enable_interaction, chart_id, interaction_config}, _from, state) do
+  def handle_call(
+        {:enable_interaction, chart_id, interaction_config},
+        _from,
+        state
+      ) do
     case Map.get(state.active_charts, chart_id) do
       nil ->
         {:reply, {:error, :chart_not_found}, state}
-        
+
       chart_state ->
-        :ok = VisualizationHelpers.setup_chart_interaction_with_config(chart_state, interaction_config)
+        :ok =
+          VisualizationHelpers.setup_chart_interaction_with_config(
+            chart_state,
+            interaction_config
+          )
+
         updated_chart = %{chart_state | interactive: true}
         new_active = Map.put(state.active_charts, chart_id, updated_chart)
         {:reply, :ok, %{state | active_charts: new_active}}
@@ -331,12 +409,12 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
     case Map.get(state.active_charts, chart_id) do
       nil ->
         {:reply, {:error, :chart_not_found}, state}
-        
+
       chart_state ->
         case ChartExport.export_chart_data(chart_state, format) do
           {:ok, exported_data} ->
             {:reply, {:ok, exported_data}, state}
-            
+
           {:error, reason} ->
             {:reply, {:error, reason}, state}
         end
@@ -352,9 +430,13 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   @impl true
   def handle_cast({:add_data_point, chart_id, data_point}, state) do
     case Map.get(state.streaming_charts, chart_id) do
-      nil -> {:noreply, state}
+      nil ->
+        {:noreply, state}
+
       chart_state ->
-        updated_chart = VisualizationHelpers.add_point_to_buffer(chart_state, data_point)
+        updated_chart =
+          VisualizationHelpers.add_point_to_buffer(chart_state, data_point)
+
         new_streaming = Map.put(state.streaming_charts, chart_id, updated_chart)
         {:noreply, %{state | streaming_charts: new_streaming}}
     end
@@ -363,9 +445,13 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   @impl true
   def handle_cast({:add_data_points, chart_id, data_points}, state) do
     case Map.get(state.streaming_charts, chart_id) do
-      nil -> {:noreply, state}
+      nil ->
+        {:noreply, state}
+
       chart_state ->
-        updated_chart = VisualizationHelpers.add_points_to_buffer(chart_state, data_points)
+        updated_chart =
+          VisualizationHelpers.add_points_to_buffer(chart_state, data_points)
+
         new_streaming = Map.put(state.streaming_charts, chart_id, updated_chart)
         {:noreply, %{state | streaming_charts: new_streaming}}
     end

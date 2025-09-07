@@ -179,7 +179,7 @@ defmodule Raxol.Renderer.Layout do
   def process_children(child, space, acc) when is_map(child) do
     normalized_child =
       case Map.has_key?(child, :type) and Map.has_key?(child, :position) and
-           Map.has_key?(child, :size) do
+             Map.has_key?(child, :size) do
         true -> child
         false -> ensure_required_keys(child, space, :box)
       end
@@ -192,7 +192,7 @@ defmodule Raxol.Renderer.Layout do
   # Helper to normalize child nodes
   defp normalize_child_node(child_node, space) when is_map(child_node) do
     case Map.has_key?(child_node, :type) and Map.has_key?(child_node, :position) and
-         Map.has_key?(child_node, :size) do
+           Map.has_key?(child_node, :size) do
       true -> child_node
       false -> ensure_required_keys(child_node, space, :box)
     end

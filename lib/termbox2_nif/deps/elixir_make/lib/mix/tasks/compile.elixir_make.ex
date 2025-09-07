@@ -127,7 +127,9 @@ defmodule Mix.Tasks.Compile.ElixirMake do
 
   @doc false
   def run(args) do
-    ensure_applications_if_available(function_exported?(Mix, :ensure_application!, 1))
+    ensure_applications_if_available(
+      function_exported?(Mix, :ensure_application!, 1)
+    )
 
     config = Mix.Project.config()
     app = config[:app]

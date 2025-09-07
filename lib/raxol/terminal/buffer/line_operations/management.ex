@@ -72,6 +72,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Management do
         case line_index >= 0 and line_index < length(cells) do
           true ->
             Enum.at(cells, line_index) || []
+
           false ->
             []
         end
@@ -111,6 +112,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Management do
           true ->
             new_cells = List.replace_at(cells, line_index, new_line)
             %{buffer | cells: new_cells}
+
           false ->
             buffer
         end
@@ -158,6 +160,7 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Management do
       true ->
         new_cells = List.replace_at(buffer.cells, position, new_line)
         %{buffer | cells: new_cells}
+
       false ->
         buffer
     end

@@ -290,6 +290,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
         )
 
         generate_mock_analysis(ai_data)
+
       false ->
         case make_openai_request(ai_data, api_key) do
           {:ok, response} ->
@@ -408,9 +409,9 @@ defmodule Raxol.Core.Performance.AIIntegration do
     #{format_impact(analysis.optimization_impact)}
 
     #{case {include_code_samples, analysis.code_suggestions} do
-        {true, suggestions} when not is_nil(suggestions) -> "Code Suggestions:\n#{format_code_suggestions(suggestions)}"
-        _ -> ""
-      end}
+      {true, suggestions} when not is_nil(suggestions) -> "Code Suggestions:\n#{format_code_suggestions(suggestions)}"
+      _ -> ""
+    end}
 
     AI Confidence: #{Float.round(analysis.ai_confidence * 100, 1)}%
     """
@@ -458,9 +459,9 @@ defmodule Raxol.Core.Performance.AIIntegration do
         </div>
 
         #{case {include_code_samples, analysis.code_suggestions} do
-          {true, suggestions} when not is_nil(suggestions) -> "<div class=\"section\"><h2>Code Suggestions</h2>#{format_code_suggestions_html(suggestions)}</div>"
-          _ -> ""
-        end}
+      {true, suggestions} when not is_nil(suggestions) -> "<div class=\"section\"><h2>Code Suggestions</h2>#{format_code_suggestions_html(suggestions)}</div>"
+      _ -> ""
+    end}
 
         <div class="section">
           <p><strong>AI Confidence:</strong> #{Float.round(analysis.ai_confidence * 100, 1)}%</p>
@@ -487,9 +488,9 @@ defmodule Raxol.Core.Performance.AIIntegration do
     #{format_impact_markdown(analysis.optimization_impact)}
 
     #{case {include_code_samples, analysis.code_suggestions} do
-        {true, suggestions} when not is_nil(suggestions) -> "## Code Suggestions\n#{format_code_suggestions_markdown(suggestions)}"
-        _ -> ""
-      end}
+      {true, suggestions} when not is_nil(suggestions) -> "## Code Suggestions\n#{format_code_suggestions_markdown(suggestions)}"
+      _ -> ""
+    end}
 
     **AI Confidence:** #{Float.round(analysis.ai_confidence * 100, 1)}%
     """
@@ -519,9 +520,9 @@ defmodule Raxol.Core.Performance.AIIntegration do
         <p><strong>Impact:</strong> #{rec.impact}</p>
         <p><strong>Effort:</strong> #{rec.effort}</p>
         #{case rec.code_example do
-          nil -> ""
-          example -> "<div class=\"code-block\">#{example}</div>"
-        end}
+        nil -> ""
+        example -> "<div class=\"code-block\">#{example}</div>"
+      end}
       </div>
       """
     end)
@@ -711,7 +712,9 @@ defmodule Raxol.Core.Performance.AIIntegration do
       Map.get(base_prompts, issue_type, "How to improve performance")
 
     case map_size(context) do
-      0 -> base_prompt
+      0 ->
+        base_prompt
+
       _ ->
         context_str =
           context
@@ -738,10 +741,12 @@ defmodule Raxol.Core.Performance.AIIntegration do
         recent_avg = Enum.sum(recent) / length(recent)
         older_avg = Enum.sum(older) / length(older)
 
-        trend = case recent_avg > older_avg * 1.1 do
-          true -> "declining"
-          false -> "stable"
-        end
+        trend =
+          case recent_avg > older_avg * 1.1 do
+            true -> "declining"
+            false -> "stable"
+          end
+
         confidence = min(abs(recent_avg - older_avg) / older_avg, 1.0)
 
         %{trend: trend, confidence: confidence}

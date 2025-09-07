@@ -297,8 +297,12 @@ defmodule Raxol.Web.StateSynchronizer do
           merge_vector_clocks(state.vector_clock, operation.vector_clock)
 
         {:noreply,
-         %{state | vector_clock: new_vector_clock, last_sync: DateTime.utc_now()}}
-      
+         %{
+           state
+           | vector_clock: new_vector_clock,
+             last_sync: DateTime.utc_now()
+         }}
+
       false ->
         # Resolve conflicts using operational transforms
         resolved_operation = resolve_conflicts(operation, conflicts)
@@ -550,7 +554,9 @@ defmodule Raxol.Web.StateSynchronizer do
       )
 
     case DateTime.compare(operation.timestamp, latest_conflict.timestamp) do
-      :gt -> operation
+      :gt ->
+        operation
+
       _ ->
         # Transform operation to resolve conflict
         transform_operation(operation, latest_conflict)

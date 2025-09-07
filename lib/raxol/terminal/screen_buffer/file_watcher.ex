@@ -35,8 +35,9 @@ defmodule Raxol.Terminal.ScreenBuffer.FileWatcher do
     time_since_last = current_time - state.last_event_time
 
     case time_since_last >= timeout do
-      true -> 
+      true ->
         %{state | pending_events: [], last_event_time: current_time}
+
       false ->
         %{
           state

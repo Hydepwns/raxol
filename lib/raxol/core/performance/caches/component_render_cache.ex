@@ -188,7 +188,6 @@ defmodule Raxol.Core.Performance.Caches.ComponentRenderCache do
   defp determine_table_cost(true), do: :high
   defp determine_table_cost(false), do: :medium
 
-
   # Private functions
 
   # Key builders
@@ -207,20 +206,26 @@ defmodule Raxol.Core.Performance.Caches.ComponentRenderCache do
   defp build_cells_key(element, theme) do
     # Hash element and theme for cache key
     element_hash = hash_element(element)
-    theme_hash = case theme do
-      nil -> "default"
-      _ -> :erlang.phash2(theme)
-    end
+
+    theme_hash =
+      case theme do
+        nil -> "default"
+        _ -> :erlang.phash2(theme)
+      end
+
     @cells_output_prefix <> "#{element_hash}:#{theme_hash}"
   end
 
   defp build_element_render_key(element, theme, parent_style) do
     # Hash all rendering inputs
     element_hash = hash_element(element)
-    theme_hash = case theme do
-      nil -> "default"
-      _ -> :erlang.phash2(theme)
-    end
+
+    theme_hash =
+      case theme do
+        nil -> "default"
+        _ -> :erlang.phash2(theme)
+      end
+
     style_hash = :erlang.phash2(parent_style)
     @element_render_prefix <> "#{element_hash}:#{theme_hash}:#{style_hash}"
   end

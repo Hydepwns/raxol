@@ -150,7 +150,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     |> case do
       {:ok, {:error, reason}} ->
         {:error, reason}
-      
+
       {:ok, result} ->
         {:ok, result}
 
@@ -170,12 +170,19 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
         true ->
           # Process the character based on its codepoint
           codepoint = :binary.first(char)
+
           cond do
-            codepoint < 32 or codepoint == 127 -> handle_control_character(char, buffer)
+            codepoint < 32 or codepoint == 127 ->
+              handle_control_character(char, buffer)
+
             # Basic check for combining characters (this is simplified)
-            codepoint >= 0x0300 and codepoint <= 0x036F -> handle_combining_character(char, buffer)
-            true -> handle_printable_character(char, buffer)
+            codepoint >= 0x0300 and codepoint <= 0x036F ->
+              handle_combining_character(char, buffer)
+
+            true ->
+              handle_printable_character(char, buffer)
           end
+
         false ->
           {:error, :invalid_unicode}
       end
@@ -236,24 +243,32 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     cond do
       String.starts_with?(param_str, "38;2;") ->
         # Foreground true color
-        color_parts = param_str |> String.replace_prefix("38;2;", "") |> String.split(";")
+        color_parts =
+          param_str |> String.replace_prefix("38;2;", "") |> String.split(";")
+
         case parse_rgb_values(color_parts) do
           {:ok, {r, g, b}} ->
             style = %{buffer.default_style | foreground: {r, g, b}}
             %{buffer | default_style: style}
-          _ -> buffer
+
+          _ ->
+            buffer
         end
-      
+
       String.starts_with?(param_str, "48;2;") ->
         # Background true color
-        color_parts = param_str |> String.replace_prefix("48;2;", "") |> String.split(";")
+        color_parts =
+          param_str |> String.replace_prefix("48;2;", "") |> String.split(";")
+
         case parse_rgb_values(color_parts) do
           {:ok, {r, g, b}} ->
             style = %{buffer.default_style | background: {r, g, b}}
             %{buffer | default_style: style}
-          _ -> buffer
+
+          _ ->
+            buffer
         end
-      
+
       true ->
         # Regular SGR parameters
         case Integer.parse(param_str) do
@@ -275,6 +290,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
       _ -> :error
     end
   end
+
   defp parse_rgb_values(_), do: :error
 
   defp apply_sgr_attribute(0, buffer) do
@@ -391,6 +407,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
           ScreenBuffer.write_char(buffer, x, y, char, buffer.default_style)
 
         {:ok, %{new_buffer | cursor_position: {x + 1, y}}}
+
       _ ->
         {:ok, buffer}
     end

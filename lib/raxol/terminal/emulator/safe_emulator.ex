@@ -265,14 +265,14 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
     case state.recovery_state do
       %{attempts: attempts} when attempts >= 3 ->
         {:reply, {:error, :max_recovery_attempts_exceeded}, state}
-      
+
       _ ->
         case perform_recovery(state) do
           {:ok, recovered_state} ->
             updated_recovery = update_recovery_attempts(state.recovery_state)
             new_state = %{recovered_state | recovery_state: updated_recovery}
             {:reply, :ok, new_state}
-          
+
           {:error, reason} ->
             {:reply, {:error, reason}, state}
         end
@@ -637,7 +637,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
     current_attempts = Map.get(recovery_state, :attempts, 0)
     %{recovery_state | attempts: current_attempts + 1}
   end
-  
+
   defp update_recovery_attempts(_recovery_state) do
     %{attempts: 1}
   end

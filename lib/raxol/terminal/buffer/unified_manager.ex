@@ -101,10 +101,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     * `{:ok, pid}` - The process ID of the started buffer manager
   """
   def start_link(opts \\ []) do
-    opts = case is_map(opts) do
-      true -> Enum.into(opts, [])
-      false -> opts
-    end
+    opts =
+      case is_map(opts) do
+        true -> Enum.into(opts, [])
+        false -> opts
+      end
+
     name = Keyword.get(opts, :name)
     gen_server_opts = Keyword.delete(opts, :name)
 

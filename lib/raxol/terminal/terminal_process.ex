@@ -111,7 +111,7 @@ defmodule Raxol.Terminal.TerminalProcess do
   @impl GenServer
   def handle_call({:apply_config_changes, changes}, _from, state) do
     {:ok, new_state} = apply_configuration_changes(changes, state)
-    
+
     updated_state = %{
       new_state
       | version: state.version + 1,
@@ -273,7 +273,7 @@ defmodule Raxol.Terminal.TerminalProcess do
           # update_emulator_dimensions/1 always returns {:ok, updated_state}, no error case possible
           {:ok, updated_state} = update_emulator_dimensions(new_state)
           updated_state
-        
+
         false ->
           new_state
       end
@@ -334,8 +334,11 @@ defmodule Raxol.Terminal.TerminalProcess do
 
     new_config =
       case theme.accessibility_options do
-        nil -> new_config
-        accessibility_options -> Map.put(new_config, :accessibility_options, accessibility_options)
+        nil ->
+          new_config
+
+        accessibility_options ->
+          Map.put(new_config, :accessibility_options, accessibility_options)
       end
 
     new_state = %{state | config: new_config, version: state.version + 1}

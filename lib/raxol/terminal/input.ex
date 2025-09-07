@@ -110,6 +110,7 @@ defmodule Raxol.Terminal.Input do
                 completion_index: 0
             }
         end
+
       false ->
         # Subsequent tabs - cycle through existing options
         next_index = rem(input.completion_index + 1, length(completion_options))

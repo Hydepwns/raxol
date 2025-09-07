@@ -314,17 +314,22 @@ defmodule Raxol.Terminal.EventHandler do
   defp handle_mouse_selection_drag(emulator, x, y) do
     alias Raxol.Terminal.Selection.Manager
 
-    case {emulator.selection_manager, emulator.selection_manager && emulator.selection_manager.active} do
-      {nil, _} -> 
+    case {emulator.selection_manager,
+          emulator.selection_manager && emulator.selection_manager.active} do
+      {nil, _} ->
         emulator
-      {_manager, false} -> 
+
+      {_manager, false} ->
         emulator
+
       {manager, true} ->
         # Convert screen coordinates to terminal coordinates
         {term_x, term_y} = convert_to_terminal_coordinates(emulator, x, y)
-        
+
         # Update selection end position
-        updated_selection_manager = Manager.update_selection(manager, {term_x, term_y})
+        updated_selection_manager =
+          Manager.update_selection(manager, {term_x, term_y})
+
         %{emulator | selection_manager: updated_selection_manager}
     end
   end
@@ -357,7 +362,8 @@ defmodule Raxol.Terminal.EventHandler do
   end
 
   defp handle_selection_drag_if_active(emulator, x, y) do
-    case {emulator.selection_manager, emulator.selection_manager && emulator.selection_manager.active} do
+    case {emulator.selection_manager,
+          emulator.selection_manager && emulator.selection_manager.active} do
       {nil, _} -> emulator
       {_manager, false} -> emulator
       {_manager, true} -> handle_mouse_selection_drag(emulator, x, y)

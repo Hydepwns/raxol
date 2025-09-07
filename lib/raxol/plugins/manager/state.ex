@@ -20,6 +20,7 @@ defmodule Raxol.Plugins.Manager.State do
     case is_struct(new_plugin_state, plugin.__struct__) do
       true ->
         %{manager | plugins: Map.put(manager.plugins, name, new_plugin_state)}
+
       false ->
         manager
     end

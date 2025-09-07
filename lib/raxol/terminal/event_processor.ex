@@ -152,6 +152,7 @@ defmodule Raxol.Terminal.EventProcessor do
       true ->
         {updated_emulator, output} = process_event(event, emulator)
         {:immediate, updated_emulator, output}
+
       false ->
         # Queue for batch processing
         {:queued, emulator}
@@ -214,6 +215,7 @@ defmodule Raxol.Terminal.EventProcessor do
     case events do
       [first | rest] ->
         last = List.last(rest)
+
         case first == last do
           true -> [first]
           false -> [first, last]

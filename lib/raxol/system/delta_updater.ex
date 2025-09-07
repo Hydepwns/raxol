@@ -26,7 +26,13 @@ defmodule Raxol.System.DeltaUpdater do
     full_size = full_asset["size"]
     delta_size = delta_asset["size"]
 
-    evaluate_delta_size(delta_size < full_size * 0.5, delta_size, full_size, delta_asset, full_asset)
+    evaluate_delta_size(
+      delta_size < full_size * 0.5,
+      delta_size,
+      full_size,
+      delta_asset,
+      full_asset
+    )
   end
 
   def apply_delta_update(delta_url, target_version) do
@@ -191,7 +197,13 @@ defmodule Raxol.System.DeltaUpdater do
 
   # Helper functions to eliminate if statements
 
-  defp evaluate_delta_size(false, _delta_size, _full_size, _delta_asset, _full_asset) do
+  defp evaluate_delta_size(
+         false,
+         _delta_size,
+         _full_size,
+         _delta_asset,
+         _full_asset
+       ) do
     {:error, :delta_too_large}
   end
 
@@ -218,5 +230,6 @@ defmodule Raxol.System.DeltaUpdater do
 
   defp validate_version_output(true), do: :ok
 
-  defp validate_version_output(false), do: {:error, :version_verification_failed}
+  defp validate_version_output(false),
+    do: {:error, :version_verification_failed}
 end

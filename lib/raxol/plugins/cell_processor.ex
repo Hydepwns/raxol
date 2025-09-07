@@ -74,7 +74,13 @@ defmodule Raxol.Plugins.CellProcessor do
     plugin_name = determine_plugin_for_placeholder(placeholder_value)
 
     {manager_after_processing, replacement_cells, new_commands} =
-      handle_plugin_lookup(plugin_name, acc_manager, placeholder_cell, emulator_state, placeholder_value)
+      handle_plugin_lookup(
+        plugin_name,
+        acc_manager,
+        placeholder_cell,
+        emulator_state,
+        placeholder_value
+      )
 
     {manager_after_processing, replacement_cells ++ processed_cells_rev,
      acc_commands ++ new_commands}
@@ -100,12 +106,24 @@ defmodule Raxol.Plugins.CellProcessor do
   # --- Private Helper Functions ---
 
   # Pattern matching for plugin lookup instead of if statement
-  defp handle_plugin_lookup(nil, acc_manager, _placeholder_cell, _emulator_state, placeholder_value) do
+  defp handle_plugin_lookup(
+         nil,
+         acc_manager,
+         _placeholder_cell,
+         _emulator_state,
+         placeholder_value
+       ) do
     log_unknown_placeholder(placeholder_value)
     {acc_manager, [], []}
   end
 
-  defp handle_plugin_lookup(plugin_name, acc_manager, placeholder_cell, emulator_state, _placeholder_value) do
+  defp handle_plugin_lookup(
+         plugin_name,
+         acc_manager,
+         placeholder_cell,
+         emulator_state,
+         _placeholder_value
+       ) do
     handle_placeholder_with_plugin(
       acc_manager,
       plugin_name,
@@ -124,7 +142,14 @@ defmodule Raxol.Plugins.CellProcessor do
          emulator_state
        ) do
     log_plugin_call_details(plugin_name, plugin, placeholder_cell)
-    call_plugin_handle_cells(manager, plugin_name, plugin, placeholder_cell, emulator_state)
+
+    call_plugin_handle_cells(
+      manager,
+      plugin_name,
+      plugin,
+      placeholder_cell,
+      emulator_state
+    )
   end
 
   defp handle_plugin_availability(
@@ -138,6 +163,7 @@ defmodule Raxol.Plugins.CellProcessor do
     Raxol.Core.Runtime.Log.debug(
       "[CellProcessor.process] Plugin #{plugin_name} disabled or does not implement handle_cells/3. Skipping."
     )
+
     {manager, [], []}
   end
 

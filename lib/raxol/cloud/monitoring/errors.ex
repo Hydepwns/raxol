@@ -2,7 +2,6 @@
 defmodule Raxol.Cloud.Monitoring.Errors do
   @moduledoc false
 
-
   def init(config) do
     errors_state = %{
       errors: [],

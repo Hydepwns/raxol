@@ -143,12 +143,17 @@ defmodule Raxol.Terminal.Commands.History do
     case cmd do
       "" ->
         %{emulator | current_command_buffer: ""}
+
       _ ->
         updated_history =
           [cmd | emulator.command_history]
           |> Enum.take(emulator.max_command_history)
 
-        %{emulator | command_history: updated_history, current_command_buffer: ""}
+        %{
+          emulator
+          | command_history: updated_history,
+            current_command_buffer: ""
+        }
     end
   end
 

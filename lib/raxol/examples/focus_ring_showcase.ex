@@ -63,6 +63,7 @@ defmodule Raxol.Examples.FocusRingShowcase do
           case next_index do
             0 ->
               cycle_next_in_list(state.current_component_type, @component_types)
+
             _ ->
               state.current_component_type
           end
@@ -79,6 +80,7 @@ defmodule Raxol.Examples.FocusRingShowcase do
           case state.demo_running do
             true ->
               [schedule({:demo_cycle}, 2000)]
+
             false ->
               []
           end
@@ -149,10 +151,12 @@ defmodule Raxol.Examples.FocusRingShowcase do
       {:toggle_reduced_motion} ->
         reduced_motion = !state.reduced_motion
         # When reduced motion is enabled, set animation to :none
-        animation = case reduced_motion do
-          true -> :none
-          false -> state.current_animation
-        end
+        animation =
+          case reduced_motion do
+            true -> :none
+            false -> state.current_animation
+          end
+
         updated_focus_ring = Map.put(state.focus_ring, :animation, animation)
 
         {%{
@@ -170,6 +174,7 @@ defmodule Raxol.Examples.FocusRingShowcase do
           case demo_running do
             true ->
               [schedule({:demo_cycle}, 2000)]
+
             false ->
               []
           end

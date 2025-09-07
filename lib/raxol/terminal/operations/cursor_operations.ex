@@ -86,6 +86,7 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
         # Toggle the blink state for blinking cursors
         current_visible = CursorManager.get_visibility(emulator.cursor)
         CursorManager.set_visibility(emulator.cursor, !current_visible)
+
       false ->
         # For non-blinking cursors, ensure they're visible
         CursorManager.set_visibility(emulator.cursor, true)

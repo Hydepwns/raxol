@@ -98,15 +98,25 @@ defmodule Raxol.Renderer.Layout.Flex do
          space,
          gap
        ) do
-    x_start = x + case x do
-      0 -> 0
-      _ -> gap
-    end
+    x_start =
+      x +
+        case x do
+          0 -> 0
+          _ -> gap
+        end
+
     needs_wrap = x > 0 and x_start + cw > space.width
 
     case needs_wrap do
       true ->
-        process_wrapped_row_wrap(child, {cw, ch}, {acc, x, y, line_h}, space, gap)
+        process_wrapped_row_wrap(
+          child,
+          {cw, ch},
+          {acc, x, y, line_h},
+          space,
+          gap
+        )
+
       false ->
         process_wrapped_row_no_wrap(
           child,
@@ -166,10 +176,13 @@ defmodule Raxol.Renderer.Layout.Flex do
          space,
          gap
        ) do
-    y_start = y + case y do
-      0 -> 0
-      _ -> gap
-    end
+    y_start =
+      y +
+        case y do
+          0 -> 0
+          _ -> gap
+        end
+
     needs_wrap = y > 0 and y_start + ch > space.height
 
     case needs_wrap do
@@ -181,6 +194,7 @@ defmodule Raxol.Renderer.Layout.Flex do
           space,
           gap
         )
+
       false ->
         process_wrapped_column_no_wrap(
           child,
@@ -238,10 +252,12 @@ defmodule Raxol.Renderer.Layout.Flex do
         Enum.zip(children, child_sizes),
         {[], 0},
         fn {child, {cw, ch}}, {acc, x} ->
-          x_start = x + case x do
-            0 -> 0
-            _ -> gap
-          end
+          x_start =
+            x +
+              case x do
+                0 -> 0
+                _ -> gap
+              end
 
           child_space =
             create_child_space(space, space.x + x_start, space.y, cw, ch)
@@ -262,10 +278,12 @@ defmodule Raxol.Renderer.Layout.Flex do
         Enum.zip(children, child_sizes),
         {[], 0},
         fn {child, {cw, ch}}, {acc, y} ->
-          y_start = y + case y do
-            0 -> 0
-            _ -> gap
-          end
+          y_start =
+            y +
+              case y do
+                0 -> 0
+                _ -> gap
+              end
 
           child_space =
             create_child_space(space, space.x, space.y + y_start, cw, ch)

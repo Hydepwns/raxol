@@ -244,10 +244,12 @@ defmodule Raxol.Terminal.Buffer.State do
           ScreenBuffer.t()
   def put_line(%{__struct__: _} = buffer, line_index, new_cells)
       when line_index >= 0 do
-    case {line_index < buffer.height, is_list(new_cells), length(new_cells) == buffer.width} do
+    case {line_index < buffer.height, is_list(new_cells),
+          length(new_cells) == buffer.width} do
       {true, true, true} ->
         updated_cells = List.replace_at(buffer.cells, line_index, new_cells)
         %{buffer | cells: updated_cells}
+
       _ ->
         buffer
     end

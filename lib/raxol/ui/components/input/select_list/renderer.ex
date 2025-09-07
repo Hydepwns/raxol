@@ -147,6 +147,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
               true ->
                 state.theme[:focused_bg] || state.style[:focused_bg] ||
                   "#e6f3ff"
+
               false ->
                 state.theme[:option_bg] || state.style[:option_bg] ||
                   "transparent"
@@ -172,10 +173,11 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         %{
           type: :text,
           props: %{
-            content: case selected do
-              true -> "✓ #{label}"
-              false -> "  #{label}"
-            end,
+            content:
+              case selected do
+                true -> "✓ #{label}"
+                false -> "  #{label}"
+              end,
             style: get_option_text_style(selected, state, opt_style)
           }
         }

@@ -345,6 +345,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandlers do
           {:error, _} ->
             emulator
         end
+
       false ->
         case Raxol.Terminal.ModeManager.reset_mode(emulator, [mode_name]) do
           {:ok, new_emulator} ->

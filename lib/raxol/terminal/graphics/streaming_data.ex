@@ -60,43 +60,54 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   alias Raxol.Terminal.Graphics.DataVisualization
 
   @type stream_id :: String.t()
-  @type data_source :: :websocket | :tcp | :udp | :file | :database | :http_poll | :message_queue
+  @type data_source ::
+          :websocket
+          | :tcp
+          | :udp
+          | :file
+          | :database
+          | :http_poll
+          | :message_queue
   @type window_type :: :sliding | :tumbling | :session
   @type sampling_strategy :: :uniform | :reservoir | :time_based | :adaptive
 
   @type stream_config :: %{
-    source_type: data_source(),
-    endpoint: String.t(),
-    buffer_size: non_neg_integer(),
-    window_type: window_type(),
-    window_size: non_neg_integer(),  # milliseconds
-    sampling_rate: float(),          # 0.0 - 1.0
-    sampling_strategy: sampling_strategy(),
-    aggregation: [atom()],           # [:sum, :avg, :max, :min]
-    filters: [function()],           # Data transformation functions
-    backpressure_strategy: :drop | :buffer | :throttle
-  }
+          source_type: data_source(),
+          endpoint: String.t(),
+          buffer_size: non_neg_integer(),
+          window_type: window_type(),
+          # milliseconds
+          window_size: non_neg_integer(),
+          # 0.0 - 1.0
+          sampling_rate: float(),
+          sampling_strategy: sampling_strategy(),
+          # [:sum, :avg, :max, :min]
+          aggregation: [atom()],
+          # Data transformation functions
+          filters: [function()],
+          backpressure_strategy: :drop | :buffer | :throttle
+        }
 
   @type data_window :: %{
-    id: String.t(),
-    start_time: non_neg_integer(),
-    end_time: non_neg_integer(),
-    data_points: [map()],
-    aggregations: map(),
-    metadata: map()
-  }
+          id: String.t(),
+          start_time: non_neg_integer(),
+          end_time: non_neg_integer(),
+          data_points: [map()],
+          aggregations: map(),
+          metadata: map()
+        }
 
   @type stream_state :: %{
-    id: stream_id(),
-    config: stream_config(),
-    connection: term(),
-    buffer: :queue.queue(),
-    current_window: data_window(),
-    completed_windows: [data_window()],
-    connected_visualizations: [String.t()],
-    statistics: map(),
-    last_activity: non_neg_integer()
-  }
+          id: stream_id(),
+          config: stream_config(),
+          connection: term(),
+          buffer: :queue.queue(),
+          current_window: data_window(),
+          completed_windows: [data_window()],
+          connected_visualizations: [String.t()],
+          statistics: map(),
+          last_activity: non_neg_integer()
+        }
 
   defstruct [
     :active_streams,
@@ -109,10 +120,12 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
     max_concurrent_streams: 20,
     default_buffer_size: 1000,
     max_window_history: 100,
-    cleanup_interval: 30_000,      # 30 seconds
+    # 30 seconds
+    cleanup_interval: 30_000,
     performance_monitoring: true,
     auto_scaling: true,
-    memory_limit: 100_000_000      # 100MB
+    # 100MB
+    memory_limit: 100_000_000
   }
 
   # Public API
@@ -176,9 +189,13 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
       # Multiple visualizations can connect to the same stream
       :ok = StreamingData.connect_to_visualization(stream_id, histogram_id)
   """
-  @spec connect_to_visualization(stream_id(), String.t()) :: :ok | {:error, term()}
+  @spec connect_to_visualization(stream_id(), String.t()) ::
+          :ok | {:error, term()}
   def connect_to_visualization(stream_id, visualization_id) do
-    GenServer.call(__MODULE__, {:connect_visualization, stream_id, visualization_id})
+    GenServer.call(
+      __MODULE__,
+      {:connect_visualization, stream_id, visualization_id}
+    )
   end
 
   @doc """
@@ -241,7 +258,10 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   """
   @spec update_stream_config(stream_id(), map()) :: :ok | {:error, term()}
   def update_stream_config(stream_id, config_updates) do
-    GenServer.call(__MODULE__, {:update_stream_config, stream_id, config_updates})
+    GenServer.call(
+      __MODULE__,
+      {:update_stream_config, stream_id, config_updates}
+    )
   end
 
   @doc """
@@ -264,7 +284,8 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
         limit: 20
       })
   """
-  @spec get_windowed_data(stream_id(), map()) :: {:ok, [data_window()]} | {:error, term()}
+  @spec get_windowed_data(stream_id(), map()) ::
+          {:ok, [data_window()]} | {:error, term()}
   def get_windowed_data(stream_id, options \\ %{}) do
     GenServer.call(__MODULE__, {:get_windowed_data, stream_id, options})
   end
@@ -274,7 +295,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   @impl true
   def init(opts) do
     config = Map.merge(@default_config, Map.new(opts))
-    
+
     initial_state = %__MODULE__{
       active_streams: %{},
       stream_connections: %{},
@@ -294,29 +315,38 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
     case validate_stream_config(config) do
       :ok ->
         stream_id = generate_stream_id()
-        
+
         {:ok, stream_state} = initialize_stream(stream_id, config)
         new_streams = Map.put(state.active_streams, stream_id, stream_state)
         {:reply, {:ok, stream_id}, %{state | active_streams: new_streams}}
-        
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
 
   @impl true
-  def handle_call({:connect_visualization, stream_id, visualization_id}, _from, state) do
+  def handle_call(
+        {:connect_visualization, stream_id, visualization_id},
+        _from,
+        state
+      ) do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:reply, {:error, :stream_not_found}, state}
-        
+
       stream_state ->
-        updated_visualizations = [visualization_id | stream_state.connected_visualizations]
-                                 |> Enum.uniq()
-        
-        updated_stream = %{stream_state | connected_visualizations: updated_visualizations}
+        updated_visualizations =
+          [visualization_id | stream_state.connected_visualizations]
+          |> Enum.uniq()
+
+        updated_stream = %{
+          stream_state
+          | connected_visualizations: updated_visualizations
+        }
+
         new_streams = Map.put(state.active_streams, stream_id, updated_stream)
-        
+
         {:reply, :ok, %{state | active_streams: new_streams}}
     end
   end
@@ -326,18 +356,20 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:reply, {:error, :stream_not_found}, state}
-        
+
       stream_state ->
         case establish_stream_connection(stream_state) do
           {:ok, connection} ->
             updated_stream = %{stream_state | connection: connection}
-            new_streams = Map.put(state.active_streams, stream_id, updated_stream)
-            
+
+            new_streams =
+              Map.put(state.active_streams, stream_id, updated_stream)
+
             # Start data processing for this stream
             schedule_stream_processing(stream_id)
-            
+
             {:reply, :ok, %{state | active_streams: new_streams}}
-            
+
           {:error, reason} ->
             {:reply, {:error, reason}, state}
         end
@@ -349,14 +381,14 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:reply, {:error, :stream_not_found}, state}
-        
+
       stream_state ->
         # Close connection
         :ok = close_stream_connection(stream_state.connection)
-        
+
         # Remove from active streams
         new_streams = Map.delete(state.active_streams, stream_id)
-        
+
         {:reply, :ok, %{state | active_streams: new_streams}}
     end
   end
@@ -366,7 +398,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:reply, {:error, :stream_not_found}, state}
-        
+
       stream_state ->
         stats = calculate_stream_statistics(stream_state)
         {:reply, stats, state}
@@ -374,16 +406,20 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   @impl true
-  def handle_call({:update_stream_config, stream_id, config_updates}, _from, state) do
+  def handle_call(
+        {:update_stream_config, stream_id, config_updates},
+        _from,
+        state
+      ) do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:reply, {:error, :stream_not_found}, state}
-        
+
       stream_state ->
         updated_config = Map.merge(stream_state.config, config_updates)
         updated_stream = %{stream_state | config: updated_config}
         new_streams = Map.put(state.active_streams, stream_id, updated_stream)
-        
+
         {:reply, :ok, %{state | active_streams: new_streams}}
     end
   end
@@ -393,9 +429,11 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:reply, {:error, :stream_not_found}, state}
-        
+
       stream_state ->
-        filtered_windows = filter_windowed_data(stream_state.completed_windows, options)
+        filtered_windows =
+          filter_windowed_data(stream_state.completed_windows, options)
+
         {:reply, {:ok, filtered_windows}, state}
     end
   end
@@ -405,17 +443,17 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:noreply, state}
-        
+
       stream_state ->
         updated_stream = process_incoming_data(stream_state, data_point)
         new_streams = Map.put(state.active_streams, stream_id, updated_stream)
-        
+
         # Update connected visualizations if window completed
         case window_completed?(updated_stream) do
           true -> update_connected_visualizations(updated_stream)
           false -> :ok
         end
-        
+
         {:noreply, %{state | active_streams: new_streams}}
     end
   end
@@ -425,15 +463,15 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:noreply, state}
-        
+
       stream_state ->
         # Process any pending data in the stream
         new_stream_state = process_stream_buffer(stream_state)
         new_streams = Map.put(state.active_streams, stream_id, new_stream_state)
-        
+
         # Schedule next processing cycle
         schedule_stream_processing(stream_id)
-        
+
         {:noreply, %{state | active_streams: new_streams}}
     end
   end
@@ -456,6 +494,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
 
   defp validate_stream_config(config) do
     required_fields = [:source_type, :endpoint, :buffer_size]
+
     case Enum.all?(required_fields, &Map.has_key?(config, &1)) do
       true -> :ok
       false -> {:error, :missing_required_fields}
@@ -478,7 +517,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
       statistics: initialize_stream_statistics(),
       last_activity: System.system_time(:millisecond)
     }
-    
+
     {:ok, stream_state}
   end
 
@@ -486,16 +525,16 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
     case stream_state.config.source_type do
       :websocket ->
         establish_websocket_connection(stream_state.config.endpoint)
-        
+
       :tcp ->
         establish_tcp_connection(stream_state.config.endpoint)
-        
+
       :http_poll ->
         establish_http_polling(stream_state.config)
-        
+
       :file ->
         establish_file_monitoring(stream_state.config.endpoint)
-        
+
       _ ->
         {:error, :unsupported_source_type}
     end
@@ -517,12 +556,14 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   defp establish_http_polling(config) do
     # Set up HTTP polling
     poll_interval = Map.get(config, :poll_interval, 5000)
+
     connection = %{
       type: :http_poll,
       endpoint: config.endpoint,
       interval: poll_interval,
       status: :polling
     }
+
     {:ok, connection}
   end
 
@@ -539,6 +580,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
 
   defp create_initial_window do
     now = System.system_time(:millisecond)
+
     %{
       id: generate_window_id(),
       start_time: now,
@@ -556,72 +598,77 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   defp process_incoming_data(stream_state, data_point) do
     # Add data point to current window
     updated_window = add_data_to_window(stream_state.current_window, data_point)
-    
+
     # Check if window should be completed
     case should_complete_window?(updated_window, stream_state.config) do
       true ->
         completed_window = finalize_window(updated_window, stream_state.config)
         new_window = create_initial_window()
-        
+
         %{
-          stream_state |
-          current_window: new_window,
-          completed_windows: [completed_window | stream_state.completed_windows]
-                             |> Enum.take(stream_state.config.max_window_history || 100)
+          stream_state
+          | current_window: new_window,
+            completed_windows:
+              [completed_window | stream_state.completed_windows]
+              |> Enum.take(stream_state.config.max_window_history || 100)
         }
-        
+
       false ->
         %{stream_state | current_window: updated_window}
     end
   end
 
   defp add_data_to_window(window, data_point) do
-    timestamp = Map.get(data_point, :timestamp, System.system_time(:millisecond))
-    
+    timestamp =
+      Map.get(data_point, :timestamp, System.system_time(:millisecond))
+
     %{
-      window |
-      data_points: [data_point | window.data_points],
-      end_time: max(window.end_time, timestamp)
+      window
+      | data_points: [data_point | window.data_points],
+        end_time: max(window.end_time, timestamp)
     }
   end
 
   defp should_complete_window?(window, config) do
-    window_size = Map.get(config, :window_size, 60_000)  # Default 1 minute
+    # Default 1 minute
+    window_size = Map.get(config, :window_size, 60_000)
     window.end_time - window.start_time >= window_size
   end
 
   defp finalize_window(window, config) do
     # Apply aggregations to the window data
     aggregations = calculate_window_aggregations(window.data_points, config)
-    
+
     %{
-      window |
-      aggregations: aggregations,
-      metadata: %{
-        data_count: length(window.data_points),
-        duration: window.end_time - window.start_time,
-        completed_at: System.system_time(:millisecond)
-      }
+      window
+      | aggregations: aggregations,
+        metadata: %{
+          data_count: length(window.data_points),
+          duration: window.end_time - window.start_time,
+          completed_at: System.system_time(:millisecond)
+        }
     }
   end
 
   defp calculate_window_aggregations(data_points, config) do
     aggregation_types = Map.get(config, :aggregation, [:avg])
-    
-    values = Enum.map(data_points, fn point -> 
-      Map.get(point, :value, 0)
-    end)
-    
+
+    values =
+      Enum.map(data_points, fn point ->
+        Map.get(point, :value, 0)
+      end)
+
     Enum.reduce(aggregation_types, %{}, fn agg_type, acc ->
-      result = case agg_type do
-        :avg -> average(values)
-        :sum -> Enum.sum(values)
-        :min -> Enum.min(values, fn -> 0 end)
-        :max -> Enum.max(values, fn -> 0 end)
-        :count -> length(values)
-        _ -> nil
-      end
-      
+      result =
+        case agg_type do
+          :avg -> average(values)
+          :sum -> Enum.sum(values)
+          :min -> Enum.min(values, fn -> 0 end)
+          :max -> Enum.max(values, fn -> 0 end)
+          :count -> length(values)
+          _ -> nil
+        end
+
       case result do
         nil -> acc
         value -> Map.put(acc, agg_type, value)
@@ -635,9 +682,10 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   defp window_completed?(stream_state) do
     # Check if the most recent operation completed a window
     case stream_state.completed_windows do
-      [latest | _] -> 
+      [latest | _] ->
         latest.metadata.completed_at >= stream_state.last_activity - 1000
-      [] -> 
+
+      [] ->
         false
     end
   end
@@ -650,6 +698,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
           data_points = convert_window_to_data_points(latest_window)
           DataVisualization.add_data_points(viz_id, data_points)
         end)
+
       [] ->
         :ok
     end
@@ -675,7 +724,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   defp calculate_stream_statistics(stream_state) do
     now = System.system_time(:millisecond)
     uptime = now - (stream_state.statistics.start_time || now)
-    
+
     %{
       throughput: calculate_throughput(stream_state),
       buffer_usage: calculate_buffer_usage(stream_state),
@@ -693,6 +742,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
         point_count = latest.metadata.data_count || 0
         duration_seconds = (latest.metadata.duration || 1) / 1000
         point_count / duration_seconds
+
       [] ->
         0.0
     end
@@ -711,6 +761,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   defp filter_by_time_range(windows, nil), do: windows
+
   defp filter_by_time_range(windows, {start_time, end_time}) do
     Enum.filter(windows, fn window ->
       window.start_time >= start_time and window.end_time <= end_time
@@ -740,15 +791,18 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   defp schedule_cleanup do
-    Process.send_after(self(), :cleanup, 60_000)  # Every minute
+    # Every minute
+    Process.send_after(self(), :cleanup, 60_000)
   end
 
   defp schedule_performance_collection do
-    Process.send_after(self(), :collect_performance, 10_000)  # Every 10 seconds
+    # Every 10 seconds
+    Process.send_after(self(), :collect_performance, 10_000)
   end
 
   defp schedule_stream_processing(stream_id) do
-    Process.send_after(self(), {:process_stream, stream_id}, 100)  # Every 100ms
+    # Every 100ms
+    Process.send_after(self(), {:process_stream, stream_id}, 100)
   end
 
   defp perform_cleanup(state) do

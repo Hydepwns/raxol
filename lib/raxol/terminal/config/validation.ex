@@ -50,6 +50,7 @@ defmodule Raxol.Terminal.Config.Validation do
               {:halt, {:error, reason}}
           end
         end)
+
       _ ->
         {:error,
          "Unknown configuration keys at #{inspect(path)}: #{inspect(unknown_keys)}"}
@@ -141,6 +142,7 @@ defmodule Raxol.Terminal.Config.Validation do
     case value in options do
       true ->
         {:ok, value}
+
       false ->
         {:error,
          "Value #{inspect(value)} at #{inspect(path)} is not one of #{inspect(options)}"}

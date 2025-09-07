@@ -13,18 +13,20 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
         # Export as ASCII representation
         ascii_data = generate_ascii_chart(chart_state)
         {:ok, ascii_data}
-        
+
       :json ->
         # Export as JSON data
-        json_data = chart_state.data_buffer
-                   |> Jason.encode!()
+        json_data =
+          chart_state.data_buffer
+          |> Jason.encode!()
+
         {:ok, json_data}
-        
+
       :csv ->
         # Export as CSV data
         csv_data = generate_csv_chart(chart_state)
         {:ok, csv_data}
-        
+
       _ ->
         {:error, :unsupported_format}
     end
@@ -37,10 +39,13 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
     case chart_state.type do
       :line ->
         generate_line_chart_ascii(chart_state.data_buffer)
+
       :bar ->
         generate_bar_chart_ascii(chart_state.data_buffer)
+
       :scatter ->
         generate_scatter_chart_ascii(chart_state.data_buffer)
+
       _ ->
         "Chart data:\n" <> inspect(chart_state.data_buffer)
     end
@@ -51,10 +56,12 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
   """
   def generate_csv_chart(chart_state) do
     headers = get_csv_headers(chart_state.type)
-    rows = chart_state.data_buffer
-           |> Enum.map(&format_data_point_as_csv(&1, chart_state.type))
-           |> Enum.join("\n")
-    
+
+    rows =
+      chart_state.data_buffer
+      |> Enum.map(&format_data_point_as_csv(&1, chart_state.type))
+      |> Enum.join("\n")
+
     headers <> "\n" <> rows
   end
 
@@ -76,20 +83,24 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
     case Enum.empty?(data_points) do
       true ->
         "No data available"
+
       false ->
         values = Enum.map(data_points, & &1.value)
         max_val = Enum.max(values)
         min_val = Enum.min(values)
         range = max_val - min_val
-        
+
         data_points
         |> Enum.with_index()
         |> Enum.map(fn {point, idx} ->
-          height = case range > 0 do
-            true -> trunc(10 * (point.value - min_val) / range)
-            false -> 5
-          end
-          String.pad_leading("#{idx}", 3) <> ": " <> String.duplicate("*", height)
+          height =
+            case range > 0 do
+              true -> trunc(10 * (point.value - min_val) / range)
+              false -> 5
+            end
+
+          String.pad_leading("#{idx}", 3) <>
+            ": " <> String.duplicate("*", height)
         end)
         |> Enum.join("\n")
     end
@@ -99,18 +110,23 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
     case Enum.empty?(data_points) do
       true ->
         "No data available"
+
       false ->
         max_val = data_points |> Enum.map(& &1.value) |> Enum.max()
-        
+
         data_points
         |> Enum.with_index()
         |> Enum.map(fn {point, idx} ->
-          bar_length = case max_val > 0 do
-            true -> trunc(20 * point.value / max_val)
-            false -> 1
-          end
+          bar_length =
+            case max_val > 0 do
+              true -> trunc(20 * point.value / max_val)
+              false -> 1
+            end
+
           label = Map.get(point, :label, "Item #{idx}")
-          String.pad_trailing(label, 10) <> " |" <> String.duplicate("=", bar_length) <> " #{point.value}"
+
+          String.pad_trailing(label, 10) <>
+            " |" <> String.duplicate("=", bar_length) <> " #{point.value}"
         end)
         |> Enum.join("\n")
     end
@@ -120,16 +136,17 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
     case Enum.empty?(data_points) do
       true ->
         "No data available"
+
       false ->
         "Scatter Plot Data:\n" <>
-        (data_points
-         |> Enum.with_index()
-         |> Enum.map(fn {point, idx} ->
-           x = Map.get(point, :x, idx)
-           y = Map.get(point, :y, point.value)
-           "(#{x}, #{y})"
-         end)
-         |> Enum.join(", "))
+          (data_points
+           |> Enum.with_index()
+           |> Enum.map(fn {point, idx} ->
+             x = Map.get(point, :x, idx)
+             y = Map.get(point, :y, point.value)
+             "(#{x}, #{y})"
+           end)
+           |> Enum.join(", "))
     end
   end
 
@@ -147,24 +164,32 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
     case chart_type do
       :line ->
         "#{Map.get(point, :index, 0)},#{point.value},#{point.timestamp}"
+
       :bar ->
         label = Map.get(point, :label, "")
         "\"#{label}\",#{point.value},#{point.timestamp}"
+
       :scatter ->
         x = Map.get(point, :x, 0)
         y = Map.get(point, :y, point.value)
         "#{x},#{y},#{point.timestamp}"
+
       :heatmap ->
         x = Map.get(point, :x, 0)
         y = Map.get(point, :y, 0)
         "#{x},#{y},#{point.value},#{point.timestamp}"
+
       _ ->
         "#{point.value},#{point.timestamp}"
     end
   end
 
   defp get_total_charts, do: :ets.info(:chart_registry, :size) || 0
-  defp get_active_charts, do: :ets.match(:chart_registry, {~c"_", %{active: true}}) |> length()
+
+  defp get_active_charts,
+    do: :ets.match(:chart_registry, {~c"_", %{active: true}}) |> length()
+
   defp get_memory_usage, do: :erlang.memory(:total)
-  defp get_average_render_time, do: 5.2  # Placeholder - would calculate from metrics
+  # Placeholder - would calculate from metrics
+  defp get_average_render_time, do: 5.2
 end

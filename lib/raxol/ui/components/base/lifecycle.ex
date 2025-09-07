@@ -34,7 +34,11 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   end
 
   defp call_mount_handler(component, context) do
-    has_mount_handler(function_exported?(component.__struct__, :mount, 2), component, context)
+    has_mount_handler(
+      function_exported?(component.__struct__, :mount, 2),
+      component,
+      context
+    )
   end
 
   defp has_mount_handler(true, component, context) do
@@ -68,7 +72,12 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   end
 
   defp call_update_handler(component, updated, context) do
-    has_update_handler(function_exported?(component.__struct__, :update, 3), component, updated, context)
+    has_update_handler(
+      function_exported?(component.__struct__, :update, 3),
+      component,
+      updated,
+      context
+    )
   end
 
   defp has_update_handler(true, component, updated, context) do
@@ -98,7 +107,11 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   end
 
   defp call_unmount_handler(component, context) do
-    has_unmount_handler(function_exported?(component.__struct__, :unmount, 2), component, context)
+    has_unmount_handler(
+      function_exported?(component.__struct__, :unmount, 2),
+      component,
+      context
+    )
   end
 
   defp has_unmount_handler(true, component, context) do
@@ -131,7 +144,11 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   end
 
   defp call_render_handler(component, context) do
-    has_render_handler(function_exported?(component.__struct__, :render, 2), component, context)
+    has_render_handler(
+      function_exported?(component.__struct__, :render, 2),
+      component,
+      context
+    )
   end
 
   defp has_render_handler(true, component, context) do
@@ -168,7 +185,12 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   end
 
   defp call_event_handler(component, event, context) do
-    has_event_handler(function_exported?(component.__struct__, :handle_event, 3), component, event, context)
+    has_event_handler(
+      function_exported?(component.__struct__, :handle_event, 3),
+      component,
+      event,
+      context
+    )
   end
 
   defp has_event_handler(true, component, event, context) do

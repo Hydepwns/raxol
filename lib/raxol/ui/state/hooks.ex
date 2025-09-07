@@ -112,7 +112,10 @@ defmodule Raxol.UI.State.Hooks do
         end
 
         cleanup =
-          case Raxol.Core.ErrorHandling.safe_call_with_logging(effect_fn, "Effect failed") do
+          case Raxol.Core.ErrorHandling.safe_call_with_logging(
+                 effect_fn,
+                 "Effect failed"
+               ) do
             {:ok, result} -> result
             {:error, _} -> nil
           end

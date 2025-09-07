@@ -183,10 +183,12 @@ defmodule Raxol.Core.Events.Subscription do
   defp add_filter(opts, _key, nil), do: opts
 
   defp add_filter(opts, key, value) do
-    opts = case is_list(opts) do
-      true -> opts
-      false -> []
-    end
+    opts =
+      case is_list(opts) do
+        true -> opts
+        false -> []
+      end
+
     Keyword.put(opts, key, value)
   end
 end

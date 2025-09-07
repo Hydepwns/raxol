@@ -442,10 +442,13 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     new_state = %{state | config: new_config}
 
     feature_name = Atom.to_string(feature) |> String.replace("_", " ")
-    status = case enabled do
-      true -> "enabled"
-      false -> "disabled"
-    end
+
+    status =
+      case enabled do
+        true -> "enabled"
+        false -> "disabled"
+      end
+
     announce_to_screen_reader(new_state, "#{feature_name} #{status}", :polite)
 
     {:reply, :ok, new_state}
@@ -1172,7 +1175,6 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   #
   # defp build_description(description, _config), do: description
 
-
   # Pattern matching helper functions for accessibility features
 
   defp handle_live_region_update(
@@ -1375,7 +1377,6 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   # defp update_region_if_matching(region_id, region, _text, _priority) do
   #   {region_id, region}
   # end
-
 
   # Missing helper function implementations
   # defp announce_text(_state, _text, _priority), do: :ok

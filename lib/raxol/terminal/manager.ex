@@ -327,7 +327,9 @@ defmodule Raxol.Terminal.Manager do
       {:error, reason} = error ->
         # Send error notification if runtime_pid is present
         case state.runtime_pid do
-          nil -> :ok
+          nil ->
+            :ok
+
           runtime_pid ->
             send(
               runtime_pid,
@@ -355,8 +357,11 @@ defmodule Raxol.Terminal.Manager do
 
   def handle_call(:get_terminal_state, _from, state) do
     case state.runtime_pid do
-      nil -> :ok
-      runtime_pid -> send(runtime_pid, {:terminal_state_queried, state.terminal})
+      nil ->
+        :ok
+
+      runtime_pid ->
+        send(runtime_pid, {:terminal_state_queried, state.terminal})
     end
 
     {:reply, state.terminal, state}

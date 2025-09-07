@@ -103,6 +103,7 @@ defmodule Raxol.Benchmarks.Performance do
         baseline = Validation.get_baseline_metrics()
         validation = Validation.validate_metrics(results, baseline)
         Map.put(results, :metrics_validation, validation)
+
       _ ->
         results
     end

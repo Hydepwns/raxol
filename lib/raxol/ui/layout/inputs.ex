@@ -14,10 +14,13 @@ defmodule Raxol.UI.Layout.Inputs do
   def measure(:text_input, attrs_map, available_space) do
     value = Map.get(attrs_map, :value, "")
     placeholder = Map.get(attrs_map, :placeholder, "")
-    display_text = case value == "" do
-      true -> placeholder
-      false -> value
-    end
+
+    display_text =
+      case value == "" do
+        true -> placeholder
+        false -> value
+      end
+
     padding = 4
     width = min(String.length(display_text) + padding, available_space.width)
     height = 3

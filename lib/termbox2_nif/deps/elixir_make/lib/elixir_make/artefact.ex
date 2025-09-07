@@ -175,12 +175,26 @@ defmodule ElixirMake.Artefact do
     IO.warn(
       ":availability key in elixir_make is deprecated, pass a function as :versions instead"
     )
+
     availability.(target, nif_version_for_target)
   end
 
-  defp check_availability(false, _availability, _target, _nif_version_for_target), do: true
+  defp check_availability(
+         false,
+         _availability,
+         _target,
+         _nif_version_for_target
+       ),
+       do: true
 
-  defp process_availability(true, config, target, nif_version_for_target, url_template, acc) do
+  defp process_availability(
+         true,
+         config,
+         target,
+         nif_version_for_target,
+         url_template,
+         acc
+       ) do
     archive_filename = archive_filename(config, target, nif_version_for_target)
 
     [
@@ -194,13 +208,33 @@ defmodule ElixirMake.Artefact do
     ]
   end
 
-  defp process_availability(false, _config, _target, _nif_version_for_target, _url_template, acc), do: acc
+  defp process_availability(
+         false,
+         _config,
+         _target,
+         _nif_version_for_target,
+         _url_template,
+         acc
+       ),
+       do: acc
 
-  defp select_nif_version(true, current_nif_version, _nif_versions, _current_target, _versions) do
+  defp select_nif_version(
+         true,
+         current_nif_version,
+         _nif_versions,
+         _current_target,
+         _versions
+       ) do
     current_nif_version
   end
 
-  defp select_nif_version(false, _current_nif_version, nif_versions, current_target, versions) do
+  defp select_nif_version(
+         false,
+         _current_nif_version,
+         nif_versions,
+         current_target,
+         versions
+       ) do
     fallback_version = nif_versions[:fallback_version] || (&fallback_version/1)
     opts = %{target: current_target, versions: versions}
     fallback_version.(opts)
@@ -264,9 +298,22 @@ defmodule ElixirMake.Artefact do
         Enum.reduce(versions, [], fn nif_version_for_target, acc ->
           availability = nif_versions[:availability]
 
-          available? = check_availability(is_function(availability, 2), availability, target, nif_version_for_target)
+          available? =
+            check_availability(
+              is_function(availability, 2),
+              availability,
+              target,
+              nif_version_for_target
+            )
 
-          process_availability(available?, config, target, nif_version_for_target, url_template, acc)
+          process_availability(
+            available?,
+            config,
+            target,
+            nif_version_for_target,
+            url_template,
+            acc
+          )
         end)
 
       archive_filenames ++ archives
@@ -286,7 +333,14 @@ defmodule ElixirMake.Artefact do
         versions =
           get_versions_for_target(nif_versions[:versions], current_target)
 
-        nif_version_to_use = select_nif_version(current_nif_version in versions, current_nif_version, nif_versions, current_target, versions)
+        nif_version_to_use =
+          select_nif_version(
+            current_nif_version in versions,
+            current_nif_version,
+            nif_versions,
+            current_target,
+            versions
+          )
 
         available_urls = available_target_urls(config, precompiler)
         target_at_nif_version = {current_target, nif_version_to_use}

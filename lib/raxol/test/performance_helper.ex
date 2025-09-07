@@ -135,7 +135,12 @@ defmodule Raxol.Test.PerformanceHelper do
 
   defp check_minimum_iterations(min_iterations, benchmark_result) do
     actual_iterations = length(benchmark_result.times)
-    validate_minimum_iterations(actual_iterations < min_iterations, actual_iterations, min_iterations)
+
+    validate_minimum_iterations(
+      actual_iterations < min_iterations,
+      actual_iterations,
+      min_iterations
+    )
   end
 
   defp validate_minimum_iterations(false, _actual, _min), do: :ok

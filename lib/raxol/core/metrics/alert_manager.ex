@@ -229,6 +229,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
         case should_trigger do
           true ->
             trigger_alert(rule_id, rule, current_value, state)
+
           false ->
             %{
               state
@@ -264,6 +265,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
         case should_trigger do
           true ->
             trigger_alert(rule_id, rule, current_value, state)
+
           false ->
             %{
               state

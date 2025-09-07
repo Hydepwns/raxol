@@ -29,6 +29,7 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
     case width <= 0 or height <= 0 do
       true ->
         {:stop, {:invalid_dimensions, {width, height}}}
+
       false ->
         # Create initial buffer
         buffer = ScreenBuffer.new(width, height)
@@ -71,9 +72,13 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
           {:reply, {:ok, cell}, new_state}
         else
           {:error, reason} ->
-            Logger.error("Failed to get cell at (#{x}, #{y}): #{inspect(reason)}")
+            Logger.error(
+              "Failed to get cell at (#{x}, #{y}): #{inspect(reason)}"
+            )
+
             {:reply, {:error, reason}, state}
         end
+
       false ->
         {:reply, {:error, :invalid_coordinates}, state}
     end
@@ -85,6 +90,7 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
       case OperationQueue.empty?(state.operation_queue) do
         true ->
           state
+
         false ->
           with {:ok, processed_state} <- safe_flush_operations(state) do
             processed_state
@@ -162,9 +168,13 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
           {:reply, :ok, new_state}
         else
           {:error, reason} ->
-            Logger.error("Failed to set cell at (#{x}, #{y}): #{inspect(reason)}")
+            Logger.error(
+              "Failed to set cell at (#{x}, #{y}): #{inspect(reason)}"
+            )
+
             {:reply, {:error, reason}, state}
         end
+
       false ->
         {:reply, {:error, :invalid_coordinates}, state}
     end

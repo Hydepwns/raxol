@@ -118,7 +118,7 @@ defmodule Raxol.UI.Components.CodeBlock do
       false -> Makeup.Styles.GithubLight
     end
   end
-  
+
   defp get_style(_style_opt), do: Makeup.Styles.GithubLight
 
   # Removed render_fallback/3 helper function

@@ -53,6 +53,7 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
       nil ->
         BaseParser.log_invalid_sequence("DEC Private CSI", data)
         {:error, :invalid_sequence, remaining}
+
       code ->
         {:ok, {:set_mode, :dec_private, code, action}, remaining}
     end
@@ -79,6 +80,7 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
         case BaseParser.valid_sequence_start?(data) do
           true ->
             {:incomplete, ""}
+
           false ->
             BaseParser.log_invalid_sequence("CSI", data)
             {:error, :invalid_sequence, data}
@@ -272,6 +274,7 @@ defmodule Raxol.Terminal.Escape.Parsers.CSIParser do
       nil ->
         BaseParser.log_invalid_sequence("CSI Set Mode", remaining)
         {:error, :invalid_sequence, remaining}
+
       code ->
         {:ok, {:set_mode, mode, code, set?}, remaining}
     end

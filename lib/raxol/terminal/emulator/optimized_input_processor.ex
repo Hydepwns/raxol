@@ -70,7 +70,9 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
   end
 
   defp handle_mouse_event(emulator, button, x, y, rest) do
-    output = get_mouse_output(emulator.mode_manager.mouse_report_mode, button, x, y)
+    output =
+      get_mouse_output(emulator.mode_manager.mouse_report_mode, button, x, y)
+
     handle_remaining_input(emulator, rest, output)
   end
 
@@ -93,7 +95,12 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
     {updated_emulator, output} =
       CoreHandler.process_terminal_input(emulator, input)
 
-    final_emulator = apply_cursor_check(needs_cursor_check?(updated_emulator), updated_emulator)
+    final_emulator =
+      apply_cursor_check(
+        needs_cursor_check?(updated_emulator),
+        updated_emulator
+      )
+
     {final_emulator, output}
   end
 
@@ -248,7 +255,9 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
     {final_emulator, iolist_to_binary([output | remaining_output])}
   end
 
-  defp apply_cursor_check(true, emulator), do: ensure_cursor_visible_optimized(emulator)
+  defp apply_cursor_check(true, emulator),
+    do: ensure_cursor_visible_optimized(emulator)
+
   defp apply_cursor_check(false, emulator), do: emulator
 
   defp handle_cursor_scroll(true, emu), do: {emu, scroll_once(emu)}

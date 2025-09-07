@@ -127,6 +127,7 @@ defmodule Raxol.Security.UserContext do
            case previous_user == "system" do
              true ->
                Server.clear_current_user()
+
              false ->
                Server.set_current_user(previous_user)
            end

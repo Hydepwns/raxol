@@ -379,22 +379,27 @@ defmodule Raxol.Extensions.VSCodeBackend do
     complexity = calculate_complexity(ast)
     functions = extract_functions(ast)
 
-    suggestions = []
-    |> add_complexity_suggestion(complexity)
-    |> add_size_suggestion(functions)
-    |> finalize_suggestions()
+    suggestions =
+      []
+      |> add_complexity_suggestion(complexity)
+      |> add_size_suggestion(functions)
+      |> finalize_suggestions()
 
     suggestions
   end
 
-  defp add_complexity_suggestion(suggestions, complexity) when complexity > 10 do
+  defp add_complexity_suggestion(suggestions, complexity)
+       when complexity > 10 do
     ["Consider breaking down complex functions" | suggestions]
   end
+
   defp add_complexity_suggestion(suggestions, _complexity), do: suggestions
 
-  defp add_size_suggestion(suggestions, functions) when length(functions) > 20 do
+  defp add_size_suggestion(suggestions, functions)
+       when length(functions) > 20 do
     ["Large module - consider splitting into smaller modules" | suggestions]
   end
+
   defp add_size_suggestion(suggestions, _functions), do: suggestions
 
   defp finalize_suggestions([]), do: ["Component looks well-structured"]

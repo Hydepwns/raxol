@@ -545,6 +545,7 @@ defmodule Raxol.Core do
           function_exported?(app_module, :view, 1)} do
       {true, true, true} ->
         :ok
+
       _ ->
         {:error, :invalid_application_module}
     end

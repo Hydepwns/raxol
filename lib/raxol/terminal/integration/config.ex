@@ -194,7 +194,8 @@ defmodule Raxol.Terminal.Integration.Config do
 
   defp validate_command_history_setting(_behavior), do: :ok
 
-  defp validate_memory_limit(memory_limit) when is_integer(memory_limit) and memory_limit > 0 do
+  defp validate_memory_limit(memory_limit)
+       when is_integer(memory_limit) and memory_limit > 0 do
     :ok
   end
 

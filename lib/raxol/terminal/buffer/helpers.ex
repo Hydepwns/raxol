@@ -52,7 +52,9 @@ defmodule Raxol.Terminal.Buffer.Helpers do
   """
   def process_batch(state) do
     case OperationQueue.empty?(state.operation_queue) do
-      true -> state
+      true ->
+        state
+
       false ->
         # Mark as processing
         new_queue = OperationQueue.mark_processing(state.operation_queue)
@@ -94,7 +96,10 @@ defmodule Raxol.Terminal.Buffer.Helpers do
             result
 
           {:error, reason} ->
-            Logger.error("Error processing batch operations: #{inspect(reason)}")
+            Logger.error(
+              "Error processing batch operations: #{inspect(reason)}"
+            )
+
             # Always reset processing flag, even on error
             final_queue =
               OperationQueue.mark_not_processing(state.operation_queue)

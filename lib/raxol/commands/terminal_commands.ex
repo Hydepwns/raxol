@@ -81,7 +81,9 @@ defmodule Raxol.Commands.CreateTerminalCommand do
   end
 
   defp check_user_authentication(user_id) when user_id != nil, do: :ok
-  defp check_user_authentication(_user_id), do: {:error, :user_not_authenticated}
+
+  defp check_user_authentication(_user_id),
+    do: {:error, :user_not_authenticated}
 
   defp generate_terminal_id do
     "term_" <>
@@ -392,5 +394,7 @@ defmodule Raxol.Commands.ApplyThemeCommand do
   end
 
   defp handle_color_validation_result([]), do: :ok
-  defp handle_color_validation_result(invalid_colors), do: {:error, {:invalid_colors, invalid_colors}}
+
+  defp handle_color_validation_result(invalid_colors),
+    do: {:error, {:invalid_colors, invalid_colors}}
 end

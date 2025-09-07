@@ -293,6 +293,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   end
 
   defp handle_test_cleanup(false), do: :ok
+
   defp handle_test_cleanup(true) do
     # Only try to reset if the process exists
     case Process.whereis(UserPreferences) do
@@ -307,6 +308,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   defp apply_theme_adjustments(true, theme, _mode) do
     Theme.adjust_for_high_contrast(theme)
   end
+
   defp apply_theme_adjustments(false, theme, _mode), do: theme
 
   defp get_text_scale_factor(true), do: 1.5

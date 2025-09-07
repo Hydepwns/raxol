@@ -43,6 +43,7 @@ defmodule Raxol.UI.Components.Input.TextInput.Manipulation do
           end)
 
         %{state | value: new_value}
+
       false ->
         state
     end
@@ -69,6 +70,7 @@ defmodule Raxol.UI.Components.Input.TextInput.Manipulation do
     case Validation.would_exceed_max_length?(state, new_value) do
       true ->
         state
+
       false ->
         state = %{
           state

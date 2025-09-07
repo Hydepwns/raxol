@@ -95,6 +95,7 @@ defmodule Raxol.Animation.Adaptation do
 
               # Return as completed due to disable
               [{element_id, animation_name, updated_instance}]
+
             false ->
               # For enabled animations, remove pending_completion flag if it was set
               _updated_instance =

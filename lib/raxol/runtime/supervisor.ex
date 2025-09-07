@@ -79,10 +79,16 @@ defmodule Raxol.Runtime.Supervisor do
          debug_mode: debug_mode
        }) do
     # Only start UserPreferences if not already running (in test mode it may be started by test_helper)
-    user_prefs_children = get_user_prefs_children(Mix.env() == :test and Process.whereis(Raxol.Core.UserPreferences))
+    user_prefs_children =
+      get_user_prefs_children(
+        Mix.env() == :test and Process.whereis(Raxol.Core.UserPreferences)
+      )
 
     # Only start Registry if not already running (in test mode it may be started by test_helper)
-    registry_children = get_registry_children(Mix.env() == :test and Process.whereis(:raxol_event_subscriptions))
+    registry_children =
+      get_registry_children(
+        Mix.env() == :test and Process.whereis(:raxol_event_subscriptions)
+      )
 
     user_prefs_children ++
       registry_children ++
@@ -137,15 +143,15 @@ defmodule Raxol.Runtime.Supervisor do
           restart: :permanent,
           type: :worker
         }
-      ] ++ get_terminal_driver_children(IO.ANSI.enabled?() or Mix.env() == :test)
+      ] ++
+      get_terminal_driver_children(IO.ANSI.enabled?() or Mix.env() == :test)
   end
 
   defp get_user_prefs_children(true), do: []
 
   defp get_user_prefs_children(false) do
     [
-      {Raxol.Core.UserPreferences,
-       get_user_prefs_args(Mix.env() == :test)}
+      {Raxol.Core.UserPreferences, get_user_prefs_args(Mix.env() == :test)}
     ]
   end
 
@@ -153,7 +159,9 @@ defmodule Raxol.Runtime.Supervisor do
   defp get_user_prefs_args(false), do: []
 
   defp get_registry_children(true), do: []
-  defp get_registry_children(false), do: [{Registry, keys: :duplicate, name: :raxol_event_subscriptions}]
+
+  defp get_registry_children(false),
+    do: [{Registry, keys: :duplicate, name: :raxol_event_subscriptions}]
 
   defp get_terminal_driver_children(true) do
     driver_module = get_driver_module(Mix.env() == :test)

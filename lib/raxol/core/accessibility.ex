@@ -88,8 +88,11 @@ defmodule Raxol.Core.Accessibility do
   end
 
   # Backward compatibility for tests that pass user_preferences_pid
-  def enabled?(user_preferences_pid_or_name) when is_pid(user_preferences_pid_or_name) or is_atom(user_preferences_pid_or_name) do
-    _ = user_preferences_pid_or_name  # Ignore the pid parameter
+  def enabled?(user_preferences_pid_or_name)
+      when is_pid(user_preferences_pid_or_name) or
+             is_atom(user_preferences_pid_or_name) do
+    # Ignore the pid parameter
+    _ = user_preferences_pid_or_name
     enabled?()
   end
 
@@ -137,13 +140,20 @@ defmodule Raxol.Core.Accessibility do
   end
 
   # Backward compatibility for tests that pass user_preferences_pid
-  def set_high_contrast(enabled, user_preferences_pid_or_name) when is_boolean(enabled) do
+  def set_high_contrast(enabled, user_preferences_pid_or_name)
+      when is_boolean(enabled) do
     ensure_started()
     # Update the accessibility server
     Server.set_high_contrast(enabled)
     # Also update UserPreferences directly for tests that check it
     pref_key = [:accessibility, :high_contrast]
-    Raxol.Core.UserPreferences.set(pref_key, enabled, user_preferences_pid_or_name)
+
+    Raxol.Core.UserPreferences.set(
+      pref_key,
+      enabled,
+      user_preferences_pid_or_name
+    )
+
     :ok
   end
 
@@ -157,7 +167,8 @@ defmodule Raxol.Core.Accessibility do
 
   # Backward compatibility function for tests
   def high_contrast_enabled?(user_preferences_pid_or_name) do
-    _ = user_preferences_pid_or_name  # Ignore the pid parameter
+    # Ignore the pid parameter
+    _ = user_preferences_pid_or_name
     high_contrast?()
   end
 
@@ -170,13 +181,20 @@ defmodule Raxol.Core.Accessibility do
   end
 
   # Backward compatibility for tests that pass user_preferences_pid
-  def set_reduced_motion(enabled, user_preferences_pid_or_name) when is_boolean(enabled) do
+  def set_reduced_motion(enabled, user_preferences_pid_or_name)
+      when is_boolean(enabled) do
     ensure_started()
     # Update the accessibility server
     Server.set_reduced_motion(enabled)
     # Also update UserPreferences directly for tests that check it
     pref_key = [:accessibility, :reduced_motion]
-    Raxol.Core.UserPreferences.set(pref_key, enabled, user_preferences_pid_or_name)
+
+    Raxol.Core.UserPreferences.set(
+      pref_key,
+      enabled,
+      user_preferences_pid_or_name
+    )
+
     :ok
   end
 
@@ -190,7 +208,8 @@ defmodule Raxol.Core.Accessibility do
 
   # Backward compatibility function for tests
   def reduced_motion_enabled?(user_preferences_pid_or_name) do
-    _ = user_preferences_pid_or_name  # Ignore the pid parameter
+    # Ignore the pid parameter
+    _ = user_preferences_pid_or_name
     reduced_motion?()
   end
 
@@ -206,18 +225,24 @@ defmodule Raxol.Core.Accessibility do
   Set large text mode with user preferences (behaviour callback).
   """
   @impl true
-  def set_large_text(enabled, user_preferences_pid_or_name) when is_boolean(enabled) do
+  def set_large_text(enabled, user_preferences_pid_or_name)
+      when is_boolean(enabled) do
     ensure_started()
     # Update the accessibility server
     Server.set_large_text(enabled)
     # Also update UserPreferences directly for tests that check it
     pref_key = [:accessibility, :large_text]
-    Raxol.Core.UserPreferences.set(pref_key, enabled, user_preferences_pid_or_name)
-    
+
+    Raxol.Core.UserPreferences.set(
+      pref_key,
+      enabled,
+      user_preferences_pid_or_name
+    )
+
     # Send text_scale_updated message for test compatibility
     scale = if enabled, do: 1.5, else: 1.0
     send(self(), {:text_scale_updated, user_preferences_pid_or_name, scale})
-    
+
     :ok
   end
 
@@ -231,7 +256,8 @@ defmodule Raxol.Core.Accessibility do
 
   # Backward compatibility function for tests
   def large_text_enabled?(user_preferences_pid_or_name) do
-    _ = user_preferences_pid_or_name  # Ignore the pid parameter
+    # Ignore the pid parameter
+    _ = user_preferences_pid_or_name
     large_text?()
   end
 
@@ -414,8 +440,11 @@ defmodule Raxol.Core.Accessibility do
   end
 
   # Backward compatibility for tests that pass user_preferences_pid
-  def get_option(key, user_preferences_pid_or_name, default) when is_pid(user_preferences_pid_or_name) or is_atom(user_preferences_pid_or_name) do
-    _ = user_preferences_pid_or_name  # Ignore the pid parameter
+  def get_option(key, user_preferences_pid_or_name, default)
+      when is_pid(user_preferences_pid_or_name) or
+             is_atom(user_preferences_pid_or_name) do
+    # Ignore the pid parameter
+    _ = user_preferences_pid_or_name
     get_option(key, default)
   end
 
@@ -491,8 +520,10 @@ defmodule Raxol.Core.Accessibility do
   def get_text_scale(_user_preferences_pid_or_name \\ nil) do
     # Text scale is related to large_text setting
     case large_text?() do
-      true -> 1.5  # 150% scale when large text is enabled
-      false -> 1.0 # Normal scale
+      # 150% scale when large text is enabled
+      true -> 1.5
+      # Normal scale
+      false -> 1.0
     end
   end
 end

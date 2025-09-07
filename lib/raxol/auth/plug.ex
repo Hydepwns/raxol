@@ -83,6 +83,7 @@ defmodule Raxol.Auth.Plug do
         Raxol.Core.Runtime.Log.debug(
           "Skipping permission check for #{inspect(module)}.#{action} - has_permission? not implemented."
         )
+
         conn
 
       false ->
@@ -107,7 +108,7 @@ defmodule Raxol.Auth.Plug do
         |> put_flash(:error, "You must be logged in to access this page")
         |> redirect(to: "/login")
         |> halt()
-        
+
       _user ->
         conn
     end

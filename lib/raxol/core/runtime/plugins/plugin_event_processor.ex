@@ -141,6 +141,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
           plugin_states,
           command_table
         )
+
       false ->
         {:ok, {metadata, plugin_states, command_table}}
     end

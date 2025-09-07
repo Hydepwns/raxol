@@ -47,6 +47,7 @@ defmodule Raxol.Test.BufferHelper do
           Raxol.Test.MetricsHelper.setup_metrics_test(
             Keyword.get(opts, :metrics_opts, [])
           )
+
         false ->
           nil
       end

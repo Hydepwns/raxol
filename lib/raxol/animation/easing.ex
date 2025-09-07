@@ -227,8 +227,6 @@ defmodule Raxol.Animation.Easing do
     (:math.sqrt(1 - t_minus_1 * t_minus_1) + 1) / 2
   end
 
-
-
   # --- Easing function stubs for test compatibility ---
   def linear(t), do: calculate_value(:linear, t)
   def ease_in_quad(t), do: calculate_value(:ease_in_quad, t)

@@ -121,6 +121,7 @@ defmodule Raxol.Core.Metrics.Cloud do
           flush_metrics_to_cloud(%{state | metrics_buffer: new_buffer})
 
         {:noreply, new_state}
+
       false ->
         {:noreply, %{state | metrics_buffer: new_buffer}}
     end
@@ -144,6 +145,7 @@ defmodule Raxol.Core.Metrics.Cloud do
     case state.metrics_buffer == [] do
       true ->
         {state, :ok}
+
       false ->
         metrics = prepare_metrics_for_cloud(state.metrics_buffer)
         result = send_metrics_to_cloud(metrics, state)

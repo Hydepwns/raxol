@@ -84,6 +84,7 @@ defmodule Raxol.UI.Components.Base do
   end
 
   defp handle_missing_props([]), do: :ok
+
   defp handle_missing_props(missing) do
     {:error, "Missing required props: #{Enum.join(missing, ", ")}"}
   end

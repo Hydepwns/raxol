@@ -32,28 +32,29 @@ defmodule Raxol.Terminal.Integration.CellRenderer do
       true ->
         # In test mode, just return success without calling termbox2
         :ok
+
       false ->
-      char_s = cell.char
+        char_s = cell.char
 
-      codepoint =
-        case is_nil(char_s) or char_s == "" do
-          true -> ?\s
-          false -> hd(String.to_charlist(char_s))
+        codepoint =
+          case is_nil(char_s) or char_s == "" do
+            true -> ?\s
+            false -> hd(String.to_charlist(char_s))
+          end
+
+        case :termbox2_nif.tb_set_cell(
+               x_offset,
+               y_offset,
+               codepoint,
+               cell.fg,
+               cell.bg
+             ) do
+          0 ->
+            :ok
+
+          error_code ->
+            {:error, {:set_cell_failed, {x_offset, y_offset, error_code}}}
         end
-
-      case :termbox2_nif.tb_set_cell(
-             x_offset,
-             y_offset,
-             codepoint,
-             cell.fg,
-             cell.bg
-           ) do
-        0 ->
-          :ok
-
-        error_code ->
-          {:error, {:set_cell_failed, {x_offset, y_offset, error_code}}}
-      end
     end
   end
 end

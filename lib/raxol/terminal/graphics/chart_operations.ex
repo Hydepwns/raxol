@@ -10,19 +10,20 @@ defmodule Raxol.Terminal.Graphics.ChartOperations do
   Updates all streaming charts in the given state.
   """
   def update_all_streaming_charts(state) do
-    updated_charts = 
+    updated_charts =
       state.active_charts
       |> Enum.map(fn {chart_id, chart} ->
         case should_update_chart?(chart) do
-          true -> 
+          true ->
             updated_chart = update_chart_visualization(chart)
             {chart_id, updated_chart}
-          false -> 
+
+          false ->
             {chart_id, chart}
         end
       end)
       |> Enum.into(%{})
-      
+
     %{state | active_charts: updated_charts}
   end
 
@@ -88,13 +89,13 @@ defmodule Raxol.Terminal.Graphics.ChartOperations do
     bins = Map.get(config, :bins, 10)
     {min_val, max_val} = Enum.min_max(values)
     bin_width = (max_val - min_val) / bins
-    
+
     # Create histogram bins
-    Enum.map(0..(bins-1), fn i ->
-      bin_start = min_val + (i * bin_width)
+    Enum.map(0..(bins - 1), fn i ->
+      bin_start = min_val + i * bin_width
       bin_end = bin_start + bin_width
       bin_values = Enum.filter(values, &(&1 >= bin_start and &1 < bin_end))
-      
+
       %{
         bin: i,
         start: bin_start,
@@ -110,7 +111,8 @@ defmodule Raxol.Terminal.Graphics.ChartOperations do
   """
   def get_scatter_points(chart_state) do
     chart_state.data_buffer
-    |> Enum.take(1000)  # Limit points for performance
+    # Limit points for performance
+    |> Enum.take(1000)
     |> Enum.map(fn point ->
       %{
         x: Map.get(point, :x, 0),
@@ -126,12 +128,13 @@ defmodule Raxol.Terminal.Graphics.ChartOperations do
   def process_chart_data_points(chart_state, new_data_points) do
     updated_buffer = new_data_points ++ chart_state.data_buffer
     max_points = Map.get(chart_state.config, :max_points, 1000)
-    
+
     trimmed_buffer = Enum.take(updated_buffer, max_points)
-    
-    %{chart_state | 
-      data_buffer: trimmed_buffer,
-      last_update: System.system_time(:millisecond)
+
+    %{
+      chart_state
+      | data_buffer: trimmed_buffer,
+        last_update: System.system_time(:millisecond)
     }
   end
 
@@ -141,12 +144,14 @@ defmodule Raxol.Terminal.Graphics.ChartOperations do
   def setup_streaming_connection(chart_id, stream_config) do
     # Setup streaming data connection
     Logger.info("Setting up streaming for chart #{chart_id}")
-    {:ok, %{
-      chart_id: chart_id,
-      stream_type: Map.get(stream_config, :type, :websocket),
-      buffer_size: Map.get(stream_config, :buffer_size, 1000),
-      update_interval: Map.get(stream_config, :update_interval, 100),
-      connected: true
-    }}
+
+    {:ok,
+     %{
+       chart_id: chart_id,
+       stream_type: Map.get(stream_config, :type, :websocket),
+       buffer_size: Map.get(stream_config, :buffer_size, 1000),
+       update_interval: Map.get(stream_config, :update_interval, 100),
+       connected: true
+     }}
   end
 end

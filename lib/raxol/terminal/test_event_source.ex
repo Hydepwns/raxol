@@ -15,6 +15,7 @@ defmodule TestEventSource do
     case Map.get(args, :fail_init, false) do
       true ->
         {:stop, :init_failed}
+
       false ->
         state = %{
           args: args,

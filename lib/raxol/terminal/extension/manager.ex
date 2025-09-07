@@ -328,6 +328,9 @@ defmodule Raxol.Terminal.Extension.Manager do
   defp check_extension_exists(true), do: {:error, :extension_already_loaded}
   defp check_extension_exists(false), do: :ok
 
-  defp handle_filtered_events([], acc, event_name), do: Map.delete(acc, event_name)
-  defp handle_filtered_events(filtered_events, acc, event_name), do: Map.put(acc, event_name, filtered_events)
+  defp handle_filtered_events([], acc, event_name),
+    do: Map.delete(acc, event_name)
+
+  defp handle_filtered_events(filtered_events, acc, event_name),
+    do: Map.put(acc, event_name, filtered_events)
 end

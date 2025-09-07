@@ -303,7 +303,9 @@ defmodule Raxol.Terminal.OutputManager do
   defp format_control_char(char) do
     case Map.get(@control_char_map, char) do
       nil ->
-        case Raxol.Core.ErrorHandling.safe_call(fn -> process_unmapped_char(char) end) do
+        case Raxol.Core.ErrorHandling.safe_call(fn ->
+               process_unmapped_char(char)
+             end) do
           {:ok, result} -> result
           {:error, _} -> char
         end

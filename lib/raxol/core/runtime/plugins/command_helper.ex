@@ -51,6 +51,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     case atom_exists?(string) do
       true ->
         {:ok, String.to_existing_atom(string)}
+
       false ->
         {:error, :atom_not_found}
     end
@@ -81,6 +82,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
             log_command_error(plugin_module, error)
             command_table
         end
+
       false ->
         command_table
     end
@@ -128,6 +130,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
            function_exported?(plugin_module, function, arity) do
       true ->
         register_valid_command(acc, plugin_module, name_str, function, arity)
+
       false ->
         log_invalid_command(plugin_module, name_str, function, arity)
         acc

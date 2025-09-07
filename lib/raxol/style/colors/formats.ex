@@ -208,6 +208,7 @@ defmodule Raxol.Style.Colors.Formats do
         else
           _ -> {:error, :invalid_hex}
         end
+
       _ ->
         {:error, :invalid_hex}
     end
@@ -227,6 +228,7 @@ defmodule Raxol.Style.Colors.Formats do
         else
           _ -> {:error, :invalid_hex}
         end
+
       _ ->
         {:error, :invalid_hex}
     end

@@ -614,6 +614,7 @@ defmodule Raxol.Web.StateMachine do
           line: env.line,
           description:
             "State machine validation failed: undefined states #{inspect(undefined_states)}"
+
       false ->
         :ok
     end
@@ -635,6 +636,7 @@ defmodule Raxol.Web.StateMachine do
           file: env.file,
           line: env.line
         )
+
       false ->
         :ok
     end

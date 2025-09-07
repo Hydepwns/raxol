@@ -93,6 +93,7 @@ defmodule RaxolWeb.Settings.PasswordComponent do
          socket
          |> put_flash(:error, "Password confirmation does not match.")
          |> assign(:password_changeset, error_changeset)}
+
       false ->
         # Update password using Accounts module
         case Accounts.update_password(user.id, current_password, new_password) do
@@ -128,7 +129,10 @@ defmodule RaxolWeb.Settings.PasswordComponent do
 
             {:noreply,
              socket
-             |> put_flash(:error, "Failed to update password: #{inspect(reason)}")
+             |> put_flash(
+               :error,
+               "Failed to update password: #{inspect(reason)}"
+             )
              |> assign(:password_changeset, error_changeset)}
         end
     end

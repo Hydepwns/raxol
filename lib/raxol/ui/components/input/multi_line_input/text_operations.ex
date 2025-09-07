@@ -44,6 +44,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations do
             end_col,
             replacement
           )
+
         false ->
           MultiLine.handle_multi_line_replacement(
             lines_list,
@@ -74,6 +75,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextOperations do
     case length(lines) do
       1 ->
         SingleLine.insert_text(lines_list, row, col, text)
+
       _ ->
         MultiLine.insert_multi_line_text(lines_list, row, col, text)
     end

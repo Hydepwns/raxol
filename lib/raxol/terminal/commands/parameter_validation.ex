@@ -130,6 +130,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   @spec validate_range(list(integer() | nil), integer(), integer()) :: integer()
   def validate_range(params, min, max) do
     value = Enum.at(params, 0)
+
     case is_integer(value) do
       true -> max(min, min(value, max))
       false -> min

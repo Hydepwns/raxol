@@ -228,6 +228,7 @@ defmodule Raxol.Architecture.EventSourcing.Event do
     case Enum.empty?(missing_fields) do
       true ->
         {:ok, event}
+
       false ->
         {:error, {:missing_fields, missing_fields}}
     end

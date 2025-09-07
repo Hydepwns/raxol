@@ -53,7 +53,7 @@ defmodule Raxol.Test.Integration.ComponentManagement do
       true ->
         {new_state, _commands} = component.module.mount(mounted_state)
         %{component | state: new_state}
-      
+
       false ->
         %{component | state: mounted_state}
     end
@@ -96,7 +96,7 @@ defmodule Raxol.Test.Integration.ComponentManagement do
             Raxol.UI.Components.Integration.ComponentIntegrationTest.ChildComponent,
           state: child_state
         }
-      
+
       false ->
         nil
     end

@@ -330,7 +330,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   defp handle_missing_doc_check(ast, line, node, acc, file_path, name, args) do
     # has_preceding_doc?/2 currently always returns false (simplified implementation)
     false = has_preceding_doc?(ast, line)
-    
+
     {node,
      [
        {:missing_doc, line, file_path,
@@ -489,7 +489,6 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     # before the function definition at the given line
     false
   end
-
 
   defp has_only_option?({:import, _, [_module, opts]}) when is_list(opts) do
     Keyword.has_key?(opts, :only)

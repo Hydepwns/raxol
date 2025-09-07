@@ -102,6 +102,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorParser do
           {val, ""} -> {:ok, scale_hex_value(val, len)}
           _ -> :error
         end
+
       false ->
         :error
     end

@@ -190,6 +190,7 @@ defmodule Raxol.Svelte.Store do
               acc
               |> put_in([:values, name], new_value)
               |> notify_subscribers(name)
+
             false ->
               acc
           end

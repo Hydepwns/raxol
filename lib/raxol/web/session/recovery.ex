@@ -14,7 +14,9 @@ defmodule Raxol.Web.Session.Recovery do
   """
   def init do
     # Skip database operations in test environment
-    handle_init_environment(function_exported?(Mix, :env, 0) and Mix.env() == :test)
+    handle_init_environment(
+      function_exported?(Mix, :env, 0) and Mix.env() == :test
+    )
   end
 
   @doc """

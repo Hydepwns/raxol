@@ -2,7 +2,6 @@
 defmodule Raxol.Cloud.Monitoring.Health do
   @moduledoc false
 
-
   def init(config) do
     health_state = %{
       status: :unknown,
@@ -80,7 +79,9 @@ defmodule Raxol.Cloud.Monitoring.Health do
 
   # Helper function for pattern matching instead of if statement
   defp determine_overall_status(component_results) do
-    has_unhealthy = Enum.any?(component_results, fn {_, status} -> status == :unhealthy end)
+    has_unhealthy =
+      Enum.any?(component_results, fn {_, status} -> status == :unhealthy end)
+
     get_status_from_health_check(has_unhealthy)
   end
 

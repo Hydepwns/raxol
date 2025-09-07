@@ -241,7 +241,11 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
   Applies optimistic locking to prevent concurrent modifications.
   """
   def with_optimistic_lock(resource, expected_version, update_fn) do
-    handle_version_check(resource.version == expected_version, resource, update_fn)
+    handle_version_check(
+      resource.version == expected_version,
+      resource,
+      update_fn
+    )
   end
 
   @doc """
@@ -258,7 +262,10 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
         end
       end)
 
-    handle_precondition_validation(Enum.empty?(failed_preconditions), failed_preconditions)
+    handle_precondition_validation(
+      Enum.empty?(failed_preconditions),
+      failed_preconditions
+    )
   end
 
   @doc """

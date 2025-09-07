@@ -50,7 +50,6 @@ defmodule Raxol.Cloud.EdgeComputing.Core do
     end
   end
 
-
   @doc """
   Initializes the edge computing system.
   """

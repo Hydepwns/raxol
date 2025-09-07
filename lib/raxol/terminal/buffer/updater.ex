@@ -24,6 +24,7 @@ defmodule Raxol.Terminal.Buffer.Updater do
     case valid_changes_format?(changes) do
       true ->
         Enum.filter(changes, &needs_update?(buffer, &1))
+
       false ->
         log_invalid_changes_format(changes)
         []
@@ -106,6 +107,7 @@ defmodule Raxol.Terminal.Buffer.Updater do
     case in_bounds?(buffer, x, y) do
       true ->
         update_cell_in_bounds(buffer, x, y, cell)
+
       false ->
         buffer
     end
@@ -154,6 +156,7 @@ defmodule Raxol.Terminal.Buffer.Updater do
           x + 1,
           Cell.new_wide_placeholder(cell.style)
         )
+
       false ->
         row_with_primary
     end

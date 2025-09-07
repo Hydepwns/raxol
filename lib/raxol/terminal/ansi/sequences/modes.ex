@@ -40,6 +40,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
         )
 
         emulator
+
       _ ->
         case enabled do
           true -> ModeManager.set_mode(emulator, [mode_atom])
@@ -93,10 +94,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
   Updated emulator state
   """
   def set_alternate_buffer(emulator, use_alternate) do
-    buffer_type = case use_alternate do
-      true -> :alternate
-      false -> :main
-    end
+    buffer_type =
+      case use_alternate do
+        true -> :alternate
+        false -> :main
+      end
+
     %{emulator | active_buffer_type: buffer_type}
   end
 

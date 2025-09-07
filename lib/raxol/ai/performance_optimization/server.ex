@@ -269,9 +269,17 @@ defmodule Raxol.AI.PerformanceOptimization.Server do
   end
 
   defp handle_init_optimizer(true, opts, state) do
-    enabled_features = MapSet.union(state.enabled_features, MapSet.new(opts[:features] || []))
+    enabled_features =
+      MapSet.union(state.enabled_features, MapSet.new(opts[:features] || []))
+
     optimization_level = opts[:level] || state.optimization_level
-    {:reply, :ok, %{state | enabled_features: enabled_features, optimization_level: optimization_level}}
+
+    {:reply, :ok,
+     %{
+       state
+       | enabled_features: enabled_features,
+         optimization_level: optimization_level
+     }}
   end
 
   # Remove duplicated handle_call functions - they should all be grouped together above
@@ -282,8 +290,12 @@ defmodule Raxol.AI.PerformanceOptimization.Server do
 
   defp handle_should_render(true, component_name, context, state) do
     # Check if component should render based on performance metrics
-    metrics = Map.get(state.render_metrics, component_name, %{count: 0, avg_time: 0})
-    should_render = should_component_render(component_name, context, metrics, state)
+    metrics =
+      Map.get(state.render_metrics, component_name, %{count: 0, avg_time: 0})
+
+    should_render =
+      should_component_render(component_name, context, metrics, state)
+
     {:reply, should_render, state}
   end
 
@@ -298,25 +310,44 @@ defmodule Raxol.AI.PerformanceOptimization.Server do
   end
 
   # Private helper functions - keeping only used functions
-  
-  defp get_refresh_rate_for_component(false, _adaptive_enabled, _component_name, _state) do
-    60  # Default refresh rate when AI optimization disabled
+
+  defp get_refresh_rate_for_component(
+         false,
+         _adaptive_enabled,
+         _component_name,
+         _state
+       ) do
+    # Default refresh rate when AI optimization disabled
+    60
   end
 
-  defp get_refresh_rate_for_component(true, _adaptive_enabled, _component_name, state) do
+  defp get_refresh_rate_for_component(
+         true,
+         _adaptive_enabled,
+         _component_name,
+         state
+       ) do
     # Simple rate based on optimization level
     case state.optimization_level do
       :aggressive -> 30
-      :balanced -> 60  
+      :balanced -> 60
       :minimal -> 120
     end
   end
 
-  defp get_prefetch_recommendations_for_component(false, _current_component, _state) do
+  defp get_prefetch_recommendations_for_component(
+         false,
+         _current_component,
+         _state
+       ) do
     []
   end
 
-  defp get_prefetch_recommendations_for_component(true, _current_component, _state) do
+  defp get_prefetch_recommendations_for_component(
+         true,
+         _current_component,
+         _state
+       ) do
     # Simple static recommendations
     ["preload_common_data"]
   end
@@ -328,7 +359,7 @@ defmodule Raxol.AI.PerformanceOptimization.Server do
   defp analyze_performance_for_components(true, state) do
     state.render_metrics
     |> Enum.filter(fn {_name, metrics} -> metrics.avg_time > 50 end)
-    |> Enum.map(fn {name, metrics} -> 
+    |> Enum.map(fn {name, metrics} ->
       %{component: name, avg_time: metrics.avg_time}
     end)
   end
@@ -340,5 +371,4 @@ defmodule Raxol.AI.PerformanceOptimization.Server do
   defp get_suggestions_for_component(true, _component_name, _state) do
     ["Consider performance optimization"]
   end
-
 end

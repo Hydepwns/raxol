@@ -224,10 +224,12 @@ defmodule Raxol.UI.State.Store do
   # Handle function updates
   def update(store, path, fun) when is_function(fun, 1) do
     ensure_server_started()
-    path_list = case is_list(path) do
-      true -> path
-      false -> [path]
-    end
+
+    path_list =
+      case is_list(path) do
+        true -> path
+        false -> [path]
+      end
 
     # Get current value, apply function, then update
     current_value = get_state(path_list, store)
@@ -241,13 +243,22 @@ defmodule Raxol.UI.State.Store do
         {:error, %ArithmeticError{}} ->
           case current_value do
             nil ->
-              Raxol.Core.ErrorHandling.safe_call_with_default(fn -> fun.(0) end, 0)
+              Raxol.Core.ErrorHandling.safe_call_with_default(
+                fn -> fun.(0) end,
+                0
+              )
 
             n when is_number(n) ->
-              Raxol.Core.ErrorHandling.safe_call_with_default(fn -> fun.(n) end, n)
+              Raxol.Core.ErrorHandling.safe_call_with_default(
+                fn -> fun.(n) end,
+                n
+              )
 
             _ ->
-              Raxol.Core.ErrorHandling.safe_call_with_default(fn -> fun.(0) end, 0)
+              Raxol.Core.ErrorHandling.safe_call_with_default(
+                fn -> fun.(0) end,
+                0
+              )
           end
 
         {:error, _} ->
@@ -261,10 +272,13 @@ defmodule Raxol.UI.State.Store do
   # Handle direct value updates
   def update(store, path, value) do
     ensure_server_started()
-    path_list = case is_list(path) do
-      true -> path
-      false -> [path]
-    end
+
+    path_list =
+      case is_list(path) do
+        true -> path
+        false -> [path]
+      end
+
     update_state(path_list, value, store)
   end
 

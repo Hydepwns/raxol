@@ -179,7 +179,8 @@ defmodule Raxol.Core.ColorSystem do
 
   defp do_get_color(theme, _theme_id, color_name) do
     # Get the active accessibility variant (e.g., :high_contrast)
-    active_variant_id = Raxol.Core.Accessibility.ThemeIntegration.get_active_variant()
+    active_variant_id =
+      Raxol.Core.Accessibility.ThemeIntegration.get_active_variant()
 
     # Check variant palette first, then base palette
     # Get variant palette safely
@@ -298,7 +299,9 @@ defmodule Raxol.Core.ColorSystem do
       {:ok, %{name: "default", colors: %{...}}}
   """
   def get_current_theme do
-    theme_id = Raxol.Style.Colors.System.Server.get_current_theme_name() || :default
+    theme_id =
+      Raxol.Style.Colors.System.Server.get_current_theme_name() || :default
+
     theme = Theme.get(theme_id)
     format_theme_result(theme)
   end

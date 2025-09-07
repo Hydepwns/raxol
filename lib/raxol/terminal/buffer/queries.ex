@@ -76,6 +76,7 @@ defmodule Raxol.Terminal.Buffer.Queries do
             |> Enum.at(y)
             |> Enum.at(x)
         end
+
       false ->
         Cell.new()
     end

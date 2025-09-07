@@ -34,6 +34,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
       "[ChartRenderer] Bounds too small for chart rendering: #{inspect(bounds)}",
       %{}
     )
+
     DrawingUtils.draw_box_with_text("!", bounds)
   end
 
@@ -54,6 +55,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
         Raxol.Core.Runtime.Log.error(
           "[ChartRenderer] Error rendering chart: #{inspect(reason)}"
         )
+
         DrawingUtils.draw_box_with_text("[Render Error]", bounds)
     end
   end
@@ -83,7 +85,14 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     )
   end
 
-  defp handle_chart_validation(_validation, data, _title, bounds, _width, _height) do
+  defp handle_chart_validation(
+         _validation,
+         data,
+         _title,
+         bounds,
+         _width,
+         _height
+       ) do
     message = get_chart_error_message(data)
     DrawingUtils.draw_box_with_text(message, bounds)
   end
@@ -92,7 +101,14 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
   defp get_chart_error_message(_), do: "!"
 
   # Pattern matching for max value check instead of if statement
-  defp handle_max_value_check(true, _value, _max_value, _min_value, _chart_height), do: 0
+  defp handle_max_value_check(
+         true,
+         _value,
+         _max_value,
+         _min_value,
+         _chart_height
+       ),
+       do: 0
 
   defp handle_max_value_check(false, value, max_value, min_value, chart_height) do
     round(chart_height * (value - min_value) / max(1, max_value - min_value))
@@ -190,10 +206,12 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     num_bars = Enum.count(data)
     total_bar_area_width = max(1, chart_width - (num_bars - 1))
     bar_width = max(1, div(total_bar_area_width, num_bars))
-    spacing = case num_bars > 1 do
-      true -> 1
-      false -> 0
-    end
+
+    spacing =
+      case num_bars > 1 do
+        true -> 1
+        false -> 0
+      end
 
     Enum.reduce(Enum.with_index(data), {grid, 4}, fn {{label, value}, _index},
                                                      {acc_grid, current_x} ->
@@ -216,7 +234,13 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
   end
 
   defp calculate_bar_height(value, max_value, min_value, chart_height) do
-    handle_max_value_check(max_value == 0, value, max_value, min_value, chart_height)
+    handle_max_value_check(
+      max_value == 0,
+      value,
+      max_value,
+      min_value,
+      chart_height
+    )
   end
 
   defp draw_bar(grid, bar_width, bar_start_y, height, current_x) do
@@ -262,21 +286,28 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
   defp sample_chart_data(data) when is_list(data) do
     data_length = length(data)
 
-    handle_sampling_decision(data_length <= @max_chart_data_points, data, data_length)
+    handle_sampling_decision(
+      data_length <= @max_chart_data_points,
+      data,
+      data_length
+    )
   end
 
   # Return non-lists as is
   defp sample_chart_data(other), do: other
 
   defp log_sampling(original_data, sampled_data) do
-    data_length = case original_data do
-      data when is_list(data) -> length(data)
-      _ -> 0
-    end
-    sampled_length = case sampled_data do
-      data when is_list(data) -> length(data)
-      _ -> 0
-    end
+    data_length =
+      case original_data do
+        data when is_list(data) -> length(data)
+        _ -> 0
+      end
+
+    sampled_length =
+      case sampled_data do
+        data when is_list(data) -> length(data)
+        _ -> 0
+      end
 
     handle_sampling_log(
       {data_length != sampled_length, data_length > 0},

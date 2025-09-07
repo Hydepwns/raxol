@@ -221,6 +221,7 @@ defmodule Raxol.Core.KeyboardNavigator do
     case Keyword.keyword?(opts) do
       true ->
         opts
+
       false ->
         []
     end
@@ -231,5 +232,4 @@ defmodule Raxol.Core.KeyboardNavigator do
   end
 
   defp ensure_keyword_list(_), do: []
-
 end

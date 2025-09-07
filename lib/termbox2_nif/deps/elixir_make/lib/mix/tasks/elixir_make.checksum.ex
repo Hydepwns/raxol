@@ -61,7 +61,12 @@ defmodule Mix.Tasks.ElixirMake.Checksum do
               [{{target, nif_version_to_use}, url}]
 
             {:error, {:unavailable_target, current_target, error}} ->
-              recover = get_unavailable_target_recovery(function_exported?(precompiler, :unavailable_target, 1), precompiler, current_target)
+              recover =
+                get_unavailable_target_recovery(
+                  function_exported?(precompiler, :unavailable_target, 1),
+                  precompiler,
+                  current_target
+                )
 
               case recover do
                 :compile ->
@@ -126,7 +131,9 @@ defmodule Mix.Tasks.ElixirMake.Checksum do
   end
 
   defp handle_download_failure(false, result) do
-    msg = "Could not finish the download of NIF artifacts. Reason: #{inspect(result)}"
+    msg =
+      "Could not finish the download of NIF artifacts. Reason: #{inspect(result)}"
+
     Mix.shell().error(msg)
   end
 

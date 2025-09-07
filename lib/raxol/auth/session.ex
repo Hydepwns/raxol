@@ -97,6 +97,7 @@ defmodule Raxol.Auth.Session do
         case {session.token == token, session.status == :active} do
           {true, true} ->
             {:ok, session.user_id}
+
           _ ->
             Raxol.Core.Runtime.Log.warning(
               "Invalid session token or inactive session: #{session_id}"

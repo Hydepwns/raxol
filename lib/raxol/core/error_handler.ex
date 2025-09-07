@@ -119,7 +119,7 @@ defmodule Raxol.Core.ErrorHandler do
           retry_delay,
           fun
         )
-        
+
       {:error, {error, _stacktrace}} ->
         handle_rescued_error(
           operation,
@@ -201,10 +201,10 @@ defmodule Raxol.Core.ErrorHandler do
   defp handle_fallback(nil, error, context) do
     {:error, :runtime, format_error_message(error), context}
   end
+
   defp handle_fallback(fallback, _error, _context) do
     {:ok, fallback}
   end
-
 
   @doc """
   Creates a standardized error tuple.
@@ -324,7 +324,6 @@ defmodule Raxol.Core.ErrorHandler do
     end
   end
 
-
   defp format_log_message(operation, error) do
     "[#{operation}] #{format_error_message(error)}"
   end
@@ -332,16 +331,15 @@ defmodule Raxol.Core.ErrorHandler do
   defp classify_error(%ArgumentError{}), do: :validation
   defp classify_error(%RuntimeError{}), do: :runtime
   defp classify_error(%File.Error{}), do: :system
+
   # defp classify_error(%Jason.DecodeError{}), do: :validation  # Commented out due to missing module
   defp classify_error(_error), do: :unknown
-
 
   defp log_retry(operation, error, retries_left) do
     Logger.info(
       "[#{operation}] Retrying after error: #{inspect(error)}. Retries left: #{retries_left}"
     )
   end
-
 
   defp emit_telemetry(operation, event, metadata) do
     :telemetry.execute(

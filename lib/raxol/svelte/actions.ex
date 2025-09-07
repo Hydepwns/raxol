@@ -65,6 +65,7 @@ defmodule Raxol.Svelte.Actions do
           case function_exported?(__MODULE__, action_name, 2) do
             true ->
               apply(__MODULE__, action_name, [acc, params])
+
             false ->
               acc
           end

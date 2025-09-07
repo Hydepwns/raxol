@@ -363,18 +363,25 @@ defmodule Raxol.UI.Theming.Colors do
   # Generate 216 colors (6x6x6 cube)
   @ansi_216_colors (for r <- 0..5, g <- 0..5, b <- 0..5 do
                       index = 16 + 36 * r + 6 * g + b
-                      red = case r == 0 do
-                        true -> 0
-                        false -> 55 + r * 40
-                      end
-                      green = case g == 0 do
-                        true -> 0
-                        false -> 55 + g * 40
-                      end
-                      blue = case b == 0 do
-                        true -> 0
-                        false -> 55 + b * 40
-                      end
+
+                      red =
+                        case r == 0 do
+                          true -> 0
+                          false -> 55 + r * 40
+                        end
+
+                      green =
+                        case g == 0 do
+                          true -> 0
+                          false -> 55 + g * 40
+                        end
+
+                      blue =
+                        case b == 0 do
+                          true -> 0
+                          false -> 55 + b * 40
+                        end
+
                       {index, {red, green, blue}}
                     end)
 

@@ -248,10 +248,11 @@ defmodule Raxol.Core.ErrorHandling do
   """
   @spec safe_arithmetic((number() -> number()), any(), number()) :: number()
   def safe_arithmetic(fun, value, fallback \\ 0) do
-    safe_value = case is_number(value) do
-      true -> value
-      false -> fallback
-    end
+    safe_value =
+      case is_number(value) do
+        true -> value
+        false -> fallback
+      end
 
     case safe_call(fn -> fun.(safe_value) end) do
       {:ok, result} when is_number(result) -> result

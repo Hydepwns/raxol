@@ -31,6 +31,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
         log_char_write(char, x, y, cell_style)
         cells = update_cells(buffer, x, y, char, cell_style, width)
         %{buffer | cells: cells}
+
       false ->
         buffer
     end
@@ -181,7 +182,10 @@ defmodule Raxol.Terminal.Buffer.Writer do
       {true, true} ->
         row
         |> List.update_at(x, fn _ -> new_cell end)
-        |> List.update_at(x + 1, fn _ -> Cell.new_wide_placeholder(cell_style) end)
+        |> List.update_at(x + 1, fn _ ->
+          Cell.new_wide_placeholder(cell_style)
+        end)
+
       _ ->
         List.update_at(row, x, fn _ -> new_cell end)
     end
@@ -212,6 +216,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
           {new_buffer, new_x}
         end)
         |> elem(0)
+
       false ->
         buffer
     end

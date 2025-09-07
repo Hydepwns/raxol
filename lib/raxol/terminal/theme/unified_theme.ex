@@ -25,10 +25,12 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
 
   # Client API
   def start_link(opts \\ []) do
-    opts = case is_map(opts) do
-      true -> Enum.into(opts, [])
-      false -> opts
-    end
+    opts =
+      case is_map(opts) do
+        true -> Enum.into(opts, [])
+        false -> opts
+      end
+
     name = Keyword.get(opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, opts, name: name)
   end

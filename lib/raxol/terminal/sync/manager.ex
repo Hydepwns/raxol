@@ -295,12 +295,12 @@ defmodule Raxol.Terminal.Sync.Manager do
     end
   end
 
-  defp check_strong_consistency(new_version, existing_version) 
-       when new_version > existing_version, 
+  defp check_strong_consistency(new_version, existing_version)
+       when new_version > existing_version,
        do: :update
-  
-  defp check_strong_consistency(_new_version, _existing_version), 
-       do: :keep_existing
+
+  defp check_strong_consistency(_new_version, _existing_version),
+    do: :keep_existing
 
   defp check_eventual_consistency(new_version, existing_version)
        when new_version > existing_version,

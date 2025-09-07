@@ -206,6 +206,7 @@ defmodule Raxol.Style.Colors.Advanced do
 
   defp normalize_hue(hue) do
     normalized = rem(round(hue), 360)
+
     case normalized < 0 do
       true -> normalized + 360
       false -> normalized
@@ -260,10 +261,11 @@ defmodule Raxol.Style.Colors.Advanced do
     h = calculate_hue(delta, c_max, r_prime, g_prime, b_prime)
 
     # Ensure hue is positive
-    h = case h < 0 do
-      true -> h + 360
-      false -> h
-    end
+    h =
+      case h < 0 do
+        true -> h + 360
+        false -> h
+      end
 
     l = (c_max + c_min) / 2
 
@@ -305,18 +307,23 @@ defmodule Raxol.Style.Colors.Advanced do
     y = xyz.y / 100.0
     z = xyz.z / 108.883
 
-    x = case x > 0.008856 do
-      true -> :math.pow(x, 1 / 3)
-      false -> 7.787 * x + 16 / 116
-    end
-    y = case y > 0.008856 do
-      true -> :math.pow(y, 1 / 3)
-      false -> 7.787 * y + 16 / 116
-    end
-    z = case z > 0.008856 do
-      true -> :math.pow(z, 1 / 3)
-      false -> 7.787 * z + 16 / 116
-    end
+    x =
+      case x > 0.008856 do
+        true -> :math.pow(x, 1 / 3)
+        false -> 7.787 * x + 16 / 116
+      end
+
+    y =
+      case y > 0.008856 do
+        true -> :math.pow(y, 1 / 3)
+        false -> 7.787 * y + 16 / 116
+      end
+
+    z =
+      case z > 0.008856 do
+        true -> :math.pow(z, 1 / 3)
+        false -> 7.787 * z + 16 / 116
+      end
 
     l = 116 * y - 16
     a = 500 * (x - y)
@@ -344,6 +351,7 @@ defmodule Raxol.Style.Colors.Advanced do
         %{h: h, s: s} = rgb_to_hsl(color)
         # Increase lightness to 30%
         hsl_to_rgb({h, s, 0.3})
+
       false ->
         color
     end

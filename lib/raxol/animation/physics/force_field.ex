@@ -171,6 +171,7 @@ defmodule Raxol.Animation.Physics.ForceField do
     case check_distance_within_radius(field.radius, distance) do
       :out_of_range ->
         %Vector{}
+
       :within_range ->
         direction = normalize_direction(direction, distance)
         force_magnitude = calculate_force_magnitude(field, distance)
@@ -179,13 +180,17 @@ defmodule Raxol.Animation.Physics.ForceField do
   end
 
   defp check_distance_within_radius(:infinity, _distance), do: :within_range
-  defp check_distance_within_radius(radius, distance) when distance > radius, do: :out_of_range
+
+  defp check_distance_within_radius(radius, distance) when distance > radius,
+    do: :out_of_range
+
   defp check_distance_within_radius(_radius, _distance), do: :within_range
 
   defp normalize_direction(direction, distance) do
     case distance > 0 do
       true ->
         Vector.scale(direction, 1 / distance)
+
       false ->
         theta = :rand.uniform() * 2 * :math.pi()
         phi = :rand.uniform() * :math.pi()
@@ -225,6 +230,7 @@ defmodule Raxol.Animation.Physics.ForceField do
     case check_distance_within_radius(field.radius, distance) do
       :out_of_range ->
         %Vector{}
+
       :within_range ->
         calculate_vortex_force_at_point(field, to_object, distance)
     end
@@ -243,6 +249,7 @@ defmodule Raxol.Animation.Physics.ForceField do
         tangent = Vector.cross(field.direction, perp_normalized)
         force_magnitude = calculate_force_magnitude(field, distance)
         Vector.scale(tangent, force_magnitude)
+
       false ->
         %Vector{}
     end

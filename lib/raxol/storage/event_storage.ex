@@ -358,7 +358,9 @@ defmodule Raxol.Storage.EventStorage.Memory do
         Raxol.Core.ErrorHandling.safe_call(fn ->
           {event_ids, final_state} =
             Enum.reduce(events, {[], state}, fn event, {acc_ids, acc_state} ->
-              {:ok, event_id, new_state} = do_append_event(event, stream_name, acc_state)
+              {:ok, event_id, new_state} =
+                do_append_event(event, stream_name, acc_state)
+
               {[event_id | acc_ids], new_state}
             end)
 

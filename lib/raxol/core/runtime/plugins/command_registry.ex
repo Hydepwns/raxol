@@ -69,6 +69,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
         case updated_commands == namespace_commands do
           true ->
             {:error, :not_found}
+
           false ->
             updated_table = Map.put(table, namespace, updated_commands)
             {:ok, updated_table}
@@ -177,6 +178,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
       case command_exists?(name, command_table) do
         true ->
           {:halt, {:error, {:command_exists, name}}}
+
         false ->
           {:cont, :ok}
       end

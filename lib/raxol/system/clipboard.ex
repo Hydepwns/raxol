@@ -149,7 +149,9 @@ defmodule Raxol.System.Clipboard do
 
       {output, exit_code} ->
         case {exit_code, String.trim(output)} do
-          {1, ""} -> {:ok, ""}
+          {1, ""} ->
+            {:ok, ""}
+
           _ ->
             Raxol.Core.Runtime.Log.error(
               "Failed to paste using xclip. Exit code: #{exit_code}, Output: #{output}"
@@ -178,6 +180,7 @@ defmodule Raxol.System.Clipboard do
             )
 
             {:ok, ""}
+
           false ->
             Raxol.Core.Runtime.Log.error(
               "Failed to paste using PowerShell. Exit code: #{exit_code}, Output: #{output}"

@@ -26,6 +26,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
           case Enum.any?(reqs, &Version.match?(version, &1)) do
             true ->
               :ok
+
             false ->
               {:error, :version_mismatch}
           end
@@ -34,6 +35,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
           case Version.match?(version, req) do
             true ->
               :ok
+
             false ->
               {:error, :version_mismatch}
           end
@@ -86,6 +88,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
         case Enum.all?(parsed_reqs, &match?({:ok, _}, &1)) do
           true ->
             {:ok, {:or, Enum.map(parsed_reqs, fn {:ok, parsed} -> parsed end)}}
+
           false ->
             {:error, :invalid_requirement_format}
         end

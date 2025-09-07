@@ -163,7 +163,8 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
   @doc """
   Add object with position and properties - simplified API.
   """
-  def add_object(world, id, properties) when is_binary(id) and is_map(properties) do
+  def add_object(world, id, properties)
+      when is_binary(id) and is_map(properties) do
     object = new_object(id, Map.to_list(properties))
     add_object(world, object)
   end

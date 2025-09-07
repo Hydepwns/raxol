@@ -37,10 +37,12 @@ defmodule Raxol.Cloud.Integrations do
       :ok
   """
   def init(opts \\ []) do
-    opts = case opts do
-      opts when is_map(opts) -> Enum.into(opts, [])
-      opts -> opts
-    end
+    opts =
+      case opts do
+        opts when is_map(opts) -> Enum.into(opts, [])
+        opts -> opts
+      end
+
     # Extract configuration for each component
     edge_opts = Keyword.get(opts, :edge, [])
     monitoring_opts = Keyword.get(opts, :monitoring, [])
@@ -90,10 +92,12 @@ defmodule Raxol.Cloud.Integrations do
       {:ok, result}
   """
   def execute(fun, opts \\ []) do
-    opts = case opts do
-      opts when is_map(opts) -> Enum.into(opts, [])
-      opts -> opts
-    end
+    opts =
+      case opts do
+        opts when is_map(opts) -> Enum.into(opts, [])
+        opts -> opts
+      end
+
     start_time = :os.system_time(:millisecond)
 
     result =
@@ -144,10 +148,12 @@ defmodule Raxol.Cloud.Integrations do
       {:ok, %{deployment_id: "dep-12345", status: :in_progress}}
   """
   def deploy(opts) do
-    opts = case opts do
-      opts when is_map(opts) -> Enum.into(opts, [])
-      opts -> opts
-    end
+    opts =
+      case opts do
+        opts when is_map(opts) -> Enum.into(opts, [])
+        opts -> opts
+      end
+
     required = [:component, :version, :environment]
 
     case validate_required_options(opts, required) do
@@ -200,10 +206,12 @@ defmodule Raxol.Cloud.Integrations do
       ]}
   """
   def discover_services(opts \\ []) do
-    opts = case opts do
-      opts when is_map(opts) -> Enum.into(opts, [])
-      opts -> opts
-    end
+    opts =
+      case opts do
+        opts when is_map(opts) -> Enum.into(opts, [])
+        opts -> opts
+      end
+
     type = Keyword.get(opts, :type, :all)
     provider = Keyword.get(opts, :provider, :all)
     region = Keyword.get(opts, :region)
@@ -279,10 +287,12 @@ defmodule Raxol.Cloud.Integrations do
       {:ok, %{registration_id: "reg-12345", status: :registered}}
   """
   def register_service(opts) do
-    opts = case opts do
-      opts when is_map(opts) -> Enum.into(opts, [])
-      opts -> opts
-    end
+    opts =
+      case opts do
+        opts when is_map(opts) -> Enum.into(opts, [])
+        opts -> opts
+      end
+
     required = [:name, :type, :endpoint]
 
     case validate_required_options(opts, required) do
@@ -332,10 +342,12 @@ defmodule Raxol.Cloud.Integrations do
       {:ok, %{service: "api-server", current: 2, target: 4, status: :scaling}}
   """
   def scale(opts) do
-    opts = case opts do
-      opts when is_map(opts) -> Enum.into(opts, [])
-      opts -> opts
-    end
+    opts =
+      case opts do
+        opts when is_map(opts) -> Enum.into(opts, [])
+        opts -> opts
+      end
+
     required = [:service]
 
     case validate_required_options(opts, required) do
@@ -500,7 +512,7 @@ defmodule Raxol.Cloud.Integrations do
     # Report EdgeComputing status in monitoring
     edge_status = EdgeComputing.status()
     cloud_connected = Map.get(edge_status, :cloud_status) == :connected
-    
+
     Monitoring.record_metric("edge.status", 1,
       tags: [
         "mode:#{Map.get(edge_status, :mode, :unknown)}",

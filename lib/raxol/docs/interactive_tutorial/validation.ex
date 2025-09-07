@@ -28,13 +28,17 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
 
   defp validate_solution_result(false), do: {:error, "Solution is incorrect"}
 
-  defp validate_output_match(true), do: {:ok, "Solution matches expected output"}
+  defp validate_output_match(true),
+    do: {:ok, "Solution matches expected output"}
 
-  defp validate_output_match(false), do: {:error, "Solution does not match expected output"}
+  defp validate_output_match(false),
+    do: {:error, "Solution does not match expected output"}
 
-  defp validate_multiple_choice_answer(true), do: {:ok, "Correct answer selected"}
+  defp validate_multiple_choice_answer(true),
+    do: {:ok, "Correct answer selected"}
 
-  defp validate_multiple_choice_answer(false), do: {:error, "Incorrect answer selected"}
+  defp validate_multiple_choice_answer(false),
+    do: {:error, "Incorrect answer selected"}
 
   @doc """
   Validates a user's solution for an exercise with custom validation function.
@@ -62,7 +66,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   Validates code syntax.
   """
   def validate_syntax(code) when is_binary(code) do
-    case Raxol.Core.ErrorHandling.safe_call(fn -> Code.string_to_quoted!(code) end) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           Code.string_to_quoted!(code)
+         end) do
       {:ok, _} ->
         {:ok, "Code syntax is valid"}
 

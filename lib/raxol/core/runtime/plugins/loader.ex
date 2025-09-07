@@ -217,6 +217,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
           state when is_map(state) -> {:ok, state}
           _ -> {:error, :invalid_init_return}
         end
+
       false ->
         {:ok, %{}}
     end
@@ -232,7 +233,9 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
            behaviours = Keyword.get_values(module_info, :behaviour)
 
            case behaviour in behaviours do
-             true -> true
+             true ->
+               true
+
              false ->
                # Fallback: check if the module has the required callbacks
                # This is a simplified check - in a real implementation you'd check all callbacks

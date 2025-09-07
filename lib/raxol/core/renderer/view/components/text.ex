@@ -70,6 +70,7 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
       true ->
         new_line = build_line(current_line, word)
         {lines, new_line}
+
       false ->
         {lines ++ [current_line], word}
     end

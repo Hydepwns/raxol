@@ -206,6 +206,7 @@ defmodule Raxol.Benchmark.Suites.TerminalBenchmarks do
           "\e[#{color}m#{word}\e[0m"
         end)
         |> Enum.join(" ")
+
       false ->
         text
     end

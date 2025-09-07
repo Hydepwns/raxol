@@ -29,10 +29,12 @@ defmodule Raxol.Style.Colors.HSL do
 
     h = _calculate_hue(r_norm, g_norm, b_norm, max, delta)
     l = (max + min) / 2
-    s = case delta do
-      +0.0 -> +0.0
-      _ -> delta / (1 - abs(2 * l - 1))
-    end
+
+    s =
+      case delta do
+        +0.0 -> +0.0
+        _ -> delta / (1 - abs(2 * l - 1))
+      end
 
     {h, s, l}
   end
@@ -54,8 +56,10 @@ defmodule Raxol.Style.Colors.HSL do
   defp normalize_hue(hue) do
     # Ensure hue is always positive
     case hue < 0 do
-      true -> hue + 360.0
-      false -> 
+      true ->
+        hue + 360.0
+
+      false ->
         hue
         |> then(&rem(round(&1), 360))
     end

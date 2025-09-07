@@ -17,6 +17,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.CellOperations do
     case coordinates_valid?(state, x, y) do
       true ->
         {:valid, extract_and_clean_cell(state, x, y)}
+
       false ->
         {:invalid, create_default_cell()}
     end
@@ -91,6 +92,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.CellOperations do
     case cell_empty?(cell) do
       true ->
         create_default_cell()
+
       false ->
         clean_cell_style(cell)
     end
@@ -118,6 +120,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.CellOperations do
                 case is_list(cell) do
                   true ->
                     List.first(cell) || create_default_cell()
+
                   false ->
                     cell
                 end

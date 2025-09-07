@@ -228,6 +228,7 @@ defmodule Raxol.Terminal.Session.Serializer do
       true ->
         serialized = Enum.map(results, fn {:ok, data} -> data end)
         {:ok, serialized}
+
       false ->
         {:error, {:multiple_buffer_errors, errors}}
     end
@@ -282,6 +283,7 @@ defmodule Raxol.Terminal.Session.Serializer do
       true ->
         serialized = Enum.map(results, fn {:ok, data} -> data end)
         {:ok, serialized}
+
       false ->
         {:error, {:cell_errors, errors}}
     end
@@ -556,6 +558,7 @@ defmodule Raxol.Terminal.Session.Serializer do
       true ->
         deserialized = Enum.map(results, fn {:ok, data} -> data end)
         {:ok, deserialized}
+
       false ->
         {:error, {:multiple_buffer_errors, errors}}
     end
@@ -598,6 +601,7 @@ defmodule Raxol.Terminal.Session.Serializer do
       true ->
         deserialized = Enum.map(results, fn {:ok, data} -> data end)
         {:ok, deserialized}
+
       false ->
         # Log errors but continue with default cells
         Raxol.Core.Runtime.Log.warning(

@@ -300,10 +300,14 @@ defmodule Raxol.Terminal.Integration.State do
   end
 
   defp cleanup_buffer_manager(nil), do: :ok
-  defp cleanup_buffer_manager(buffer_manager), do: UnifiedManager.cleanup(buffer_manager)
+
+  defp cleanup_buffer_manager(buffer_manager),
+    do: UnifiedManager.cleanup(buffer_manager)
 
   defp cleanup_scroll_buffer(nil), do: :ok
-  defp cleanup_scroll_buffer(scroll_buffer), do: UnifiedScroll.cleanup(scroll_buffer)
+
+  defp cleanup_scroll_buffer(scroll_buffer),
+    do: UnifiedScroll.cleanup(scroll_buffer)
 
   defp cleanup_renderer(nil), do: :ok
   defp cleanup_renderer(renderer), do: UnifiedRenderer.cleanup(renderer)

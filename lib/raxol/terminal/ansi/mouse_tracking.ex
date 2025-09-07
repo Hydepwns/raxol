@@ -184,6 +184,7 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
         # Fallback to the old logic for other protocols
         button = Map.get(@mouse_buttons, button_code &&& 0x03)
         action = Map.get(@mouse_actions, button_code)
+
         case {button, action} do
           {nil, _} -> nil
           {_, nil} -> nil
@@ -207,6 +208,7 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
         x = String.to_integer(x)
         y = String.to_integer(y)
         event = parse_mouse_event(button, x, y)
+
         case {kind, event} do
           {"m", nil} -> nil
           {"m", e} -> put_elem(e, 1, :release)

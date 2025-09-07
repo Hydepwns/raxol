@@ -211,5 +211,7 @@ defmodule Raxol.Style do
   defp maybe_put_key(false, acc, _key, _value), do: acc
 
   defp maybe_convert_color_to_ansi(nil, _type), do: nil
-  defp maybe_convert_color_to_ansi(color, type), do: Colors.Color.to_ansi(color, type)
+
+  defp maybe_convert_color_to_ansi(color, type),
+    do: Colors.Color.to_ansi(color, type)
 end

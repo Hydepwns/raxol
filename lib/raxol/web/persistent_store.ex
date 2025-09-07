@@ -597,8 +597,14 @@ defmodule Raxol.Web.PersistentStore do
       session ->
         # Convert database record to session state format
         # Pattern match to ensure we have the right struct
-        %{id: sid, user_id: uid, created_at: created, updated_at: updated, metadata: meta} = session
-        
+        %{
+          id: sid,
+          user_id: uid,
+          created_at: created,
+          updated_at: updated,
+          metadata: meta
+        } = session
+
         session_state = %{
           session_id: sid,
           user_id: uid,

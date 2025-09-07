@@ -184,7 +184,12 @@ defmodule Raxol.Terminal.Extension.FileOperations do
         extension_path = Path.join(base_path, Atom.to_string(type))
 
         # If the extension directory doesn't exist, use the base path
-        final_path = determine_final_path(File.exists?(extension_path), extension_path, base_path)
+        final_path =
+          determine_final_path(
+            File.exists?(extension_path),
+            extension_path,
+            base_path
+          )
 
         {:ok,
          Raxol.Terminal.Extension.StateManager.load_extension_state(
@@ -357,7 +362,8 @@ defmodule Raxol.Terminal.Extension.FileOperations do
     end
   end
 
-  defp copy_source_files_if_exists(%{path: path}, dest_path) when is_binary(path) do
+  defp copy_source_files_if_exists(%{path: path}, dest_path)
+       when is_binary(path) do
     handle_source_file_copy(File.exists?(path), path, dest_path)
   end
 
@@ -369,7 +375,9 @@ defmodule Raxol.Terminal.Extension.FileOperations do
 
   defp handle_source_file_copy(false, _source_path, _dest_path), do: :ok
 
-  defp determine_final_path(true, extension_path, _base_path), do: extension_path
+  defp determine_final_path(true, extension_path, _base_path),
+    do: extension_path
+
   defp determine_final_path(false, _extension_path, base_path), do: base_path
 
   defp check_type_match(true, type), do: type

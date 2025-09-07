@@ -61,12 +61,25 @@ defmodule Raxol.Terminal.Extension.HookManager do
          state
        ) do
     hook_exists = hook_name in extension.hooks
-    handle_registration_by_existence(hook_exists, extension_id, hook_name, callback, state)
+
+    handle_registration_by_existence(
+      hook_exists,
+      extension_id,
+      hook_name,
+      callback,
+      state
+    )
   end
 
   defp handle_hook_unregistration(extension, extension_id, hook_name, state) do
     hook_exists = hook_name in extension.hooks
-    handle_unregistration_by_existence(hook_exists, extension_id, hook_name, state)
+
+    handle_unregistration_by_existence(
+      hook_exists,
+      extension_id,
+      hook_name,
+      state
+    )
   end
 
   defp build_callback_map(callback, extension_id) do
@@ -107,7 +120,13 @@ defmodule Raxol.Terminal.Extension.HookManager do
   end
 
   # Helper functions for pattern matching instead of if statements
-  defp handle_registration_by_existence(true, extension_id, hook_name, callback, state) do
+  defp handle_registration_by_existence(
+         true,
+         extension_id,
+         hook_name,
+         callback,
+         state
+       ) do
     callback_map = build_callback_map(callback, extension_id)
 
     new_hooks =
@@ -122,7 +141,13 @@ defmodule Raxol.Terminal.Extension.HookManager do
     {:ok, new_state}
   end
 
-  defp handle_registration_by_existence(false, _extension_id, _hook_name, _callback, _state) do
+  defp handle_registration_by_existence(
+         false,
+         _extension_id,
+         _hook_name,
+         _callback,
+         _state
+       ) do
     {:error, :hook_not_found}
   end
 
@@ -132,7 +157,12 @@ defmodule Raxol.Terminal.Extension.HookManager do
     {:ok, new_state}
   end
 
-  defp handle_unregistration_by_existence(false, _extension_id, _hook_name, _state) do
+  defp handle_unregistration_by_existence(
+         false,
+         _extension_id,
+         _hook_name,
+         _state
+       ) do
     {:error, :hook_not_found}
   end
 end

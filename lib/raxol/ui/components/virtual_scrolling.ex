@@ -1175,7 +1175,6 @@ defmodule Raxol.UI.Components.VirtualScrolling do
 
   ## Helper functions for refactored code
 
-
   defp build_scroll_state(true, scroll_state, clamped_position) do
     %{
       scroll_state
@@ -1188,7 +1187,6 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   defp build_scroll_state(false, scroll_state, clamped_position) do
     %{scroll_state | position: clamped_position}
   end
-
 
   # Removed unused function: handle_search_matches/3
 
@@ -1256,7 +1254,6 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   end
 
   defp announce_scroll_if_enabled(_state, _index), do: :ok
-
 
   defp update_height_cache_for_invalidation(
          %{config: %{item_height: :variable}} = state,
@@ -1352,6 +1349,4 @@ defmodule Raxol.UI.Components.VirtualScrolling do
   defp calculate_cache_hit_rate(performance_monitor, cache_total) do
     performance_monitor.cache_hits / cache_total
   end
-
-
 end

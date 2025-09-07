@@ -23,7 +23,8 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     offset = Keyword.get(opts, :offset, {0, 0})
 
     # Validate offset
-    case {is_tuple(offset), tuple_size(offset), is_integer(elem(offset, 0)), is_integer(elem(offset, 1))} do
+    case {is_tuple(offset), tuple_size(offset), is_integer(elem(offset, 0)),
+          is_integer(elem(offset, 1))} do
       {true, 2, true, true} -> :ok
       _ -> raise ArgumentError, "Scroll offset must be a tuple of two integers"
     end
@@ -70,6 +71,7 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
           scrollbar_info,
           {viewport_width, viewport_height}
         )
+
       false ->
         clipped_content
     end
@@ -106,8 +108,11 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
         needed: vertical_needed,
         position:
           case vertical_needed do
-            true -> calculate_scrollbar_position(content_height, viewport_height)
-            false -> 0
+            true ->
+              calculate_scrollbar_position(content_height, viewport_height)
+
+            false ->
+              0
           end
       }
     }

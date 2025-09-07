@@ -295,11 +295,12 @@ defmodule Raxol.UI.Rendering.Renderer do
   end
 
   # Helper functions for pattern matching refactoring
-  
+
   defp notify_test_pid_for_render(true, test_pid, ops) do
     Logger.debug(
       "[Renderer] Sending {:renderer_rendered, ops} to test_pid #{inspect(test_pid)} with ops=#{inspect(ops)}"
     )
+
     send(test_pid, {:renderer_rendered, ops})
   end
 
@@ -315,7 +316,13 @@ defmodule Raxol.UI.Rendering.Renderer do
 
   defp send_rendered_ops_to_test_pid(false, _test_pid, _ops), do: nil
 
-  defp send_partial_update_to_test_pid(true, test_pid, path, updated_subtree, updated_tree) do
+  defp send_partial_update_to_test_pid(
+         true,
+         test_pid,
+         path,
+         updated_subtree,
+         updated_tree
+       ) do
     Raxol.Core.Runtime.Log.debug(
       "Renderer: Sending {:renderer_partial_update, #{inspect(path)}, #{inspect(updated_subtree)}, #{inspect(updated_tree)}} to test_pid #{inspect(test_pid)}"
     )
@@ -326,7 +333,13 @@ defmodule Raxol.UI.Rendering.Renderer do
     )
   end
 
-  defp send_partial_update_to_test_pid(false, _test_pid, _path, _updated_subtree, _updated_tree) do
+  defp send_partial_update_to_test_pid(
+         false,
+         _test_pid,
+         _path,
+         _updated_subtree,
+         _updated_tree
+       ) do
     Raxol.Core.Runtime.Log.debug(
       "Renderer: No test_pid set, not sending partial update message"
     )

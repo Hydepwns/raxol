@@ -22,10 +22,12 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
       {:ok, result}
   """
   def execute(func, opts \\ []) when is_function(func, 0) do
-    opts = case opts do
-      opts when is_map(opts) -> Enum.into(opts, [])
-      _ -> opts
-    end
+    opts =
+      case opts do
+        opts when is_map(opts) -> Enum.into(opts, [])
+        _ -> opts
+      end
+
     state = Core.get_state()
 
     execute_location = determine_execution_location(state, opts)
@@ -150,6 +152,7 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
             # In a real implementation, we would track attempts
             {:ok, :retry}
         end
+
       _ ->
         # We're offline, queue the operation for later
         operation_id =

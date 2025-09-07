@@ -87,6 +87,7 @@ defmodule Raxol.UI.Components.HintDisplay do
   end
 
   defp render_hints(false, _state), do: nil
+
   defp render_hints(true, state) do
     # Format hints (example: key: desc)
     hint_texts =

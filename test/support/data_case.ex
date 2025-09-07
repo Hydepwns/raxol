@@ -48,6 +48,7 @@ defmodule Raxol.DataCase do
         # For MockDB, just execute the function directly
         # Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
         fun.()
+
       false ->
         fun.()
     end

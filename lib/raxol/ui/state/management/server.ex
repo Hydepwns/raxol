@@ -253,12 +253,14 @@ defmodule Raxol.UI.State.Management.Server do
     # Debug logging
     require Logger
     Logger.debug("get_state path_list: #{inspect(path_list)}")
-    
-    store_keys = case state.store_data do
-      map when is_map(map) -> Map.keys(map)
-      list when is_list(list) -> Keyword.keys(list)
-      other -> "Unknown type: #{inspect(other)}"
-    end
+
+    store_keys =
+      case state.store_data do
+        map when is_map(map) -> Map.keys(map)
+        list when is_list(list) -> Keyword.keys(list)
+        other -> "Unknown type: #{inspect(other)}"
+      end
+
     Logger.debug("store_data type: #{inspect(state.store_data)}")
     Logger.debug("store_data keys: #{inspect(store_keys)}")
 
@@ -285,11 +287,12 @@ defmodule Raxol.UI.State.Management.Server do
 
   @impl true
   def handle_call({:subscribe, id, path, callback, options}, _from, state) do
-    normalized_path = case path do
-      p when is_list(p) -> Enum.map(p, &normalize_key/1)
-      p -> [normalize_key(p)]
-    end
-    
+    normalized_path =
+      case path do
+        p when is_list(p) -> Enum.map(p, &normalize_key/1)
+        p -> [normalize_key(p)]
+      end
+
     subscription = %{
       id: id,
       path: normalized_path,

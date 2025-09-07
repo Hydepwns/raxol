@@ -59,36 +59,39 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
 
   @type operation_type :: atom()
   @type operation_id :: String.t()
-  @type timestamp :: non_neg_integer()  # microseconds
+  # microseconds
+  @type timestamp :: non_neg_integer()
 
   @type operation_metrics :: %{
-    type: operation_type(),
-    start_time: timestamp(),
-    end_time: timestamp(),
-    duration: non_neg_integer(),  # microseconds
-    cpu_usage: float(),
-    gpu_usage: float(),
-    memory_used: non_neg_integer(),  # bytes
-    cache_hits: non_neg_integer(),
-    cache_misses: non_neg_integer(),
-    metadata: map()
-  }
+          type: operation_type(),
+          start_time: timestamp(),
+          end_time: timestamp(),
+          # microseconds
+          duration: non_neg_integer(),
+          cpu_usage: float(),
+          gpu_usage: float(),
+          # bytes
+          memory_used: non_neg_integer(),
+          cache_hits: non_neg_integer(),
+          cache_misses: non_neg_integer(),
+          metadata: map()
+        }
 
   @type performance_stats :: %{
-    operation_counts: map(),
-    latency_percentiles: map(),
-    throughput: map(),
-    resource_utilization: map(),
-    cache_performance: map(),
-    error_rates: map()
-  }
+          operation_counts: map(),
+          latency_percentiles: map(),
+          throughput: map(),
+          resource_utilization: map(),
+          cache_performance: map(),
+          error_rates: map()
+        }
 
   @type alert_config :: %{
-    threshold: float(),
-    comparison: :greater_than | :less_than | :equals,
-    consecutive_violations: non_neg_integer(),
-    callback: function() | nil
-  }
+          threshold: float(),
+          comparison: :greater_than | :less_than | :equals,
+          consecutive_violations: non_neg_integer(),
+          callback: function() | nil
+        }
 
   defstruct [
     :config,
@@ -102,9 +105,12 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   ]
 
   @default_config %{
-    sampling_rate: 50,          # samples per second
-    retention_period: 1800,     # 30 minutes
-    max_history_size: 10000,    # maximum operations to keep
+    # samples per second
+    sampling_rate: 50,
+    # 30 minutes
+    retention_period: 1800,
+    # maximum operations to keep
+    max_history_size: 10000,
     enable_system_monitoring: true,
     enable_gpu_monitoring: true,
     enable_cache_monitoring: true,
@@ -142,7 +148,8 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
         operation: :scale
       })
   """
-  @spec start_operation(operation_type(), map()) :: {:ok, operation_id()} | {:error, term()}
+  @spec start_operation(operation_type(), map()) ::
+          {:ok, operation_id()} | {:error, term()}
   def start_operation(operation_type, metadata \\ %{}) do
     GenServer.call(__MODULE__, {:start_operation, operation_type, metadata})
   end
@@ -236,7 +243,7 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   @impl true
   def init(config) do
     merged_config = Map.merge(@default_config, config)
-    
+
     initial_state = %__MODULE__{
       config: merged_config,
       active_operations: %{},
@@ -259,7 +266,7 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   def handle_call({:start_operation, operation_type, metadata}, _from, state) do
     operation_id = generate_operation_id()
     start_time = System.monotonic_time(:microsecond)
-    
+
     operation_data = %{
       id: operation_id,
       type: operation_type,
@@ -267,9 +274,9 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
       metadata: metadata,
       system_metrics_start: capture_system_metrics()
     }
-    
+
     new_active = Map.put(state.active_operations, operation_id, operation_data)
-    
+
     {:reply, {:ok, operation_id}, %{state | active_operations: new_active}}
   end
 
@@ -278,41 +285,65 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
     case Map.get(state.active_operations, operation_id) do
       nil ->
         {:reply, {:error, :operation_not_found}, state}
-        
+
       operation_data ->
         end_time = System.monotonic_time(:microsecond)
         system_metrics_end = capture_system_metrics()
-        
+
         completed_operation = %{
           type: operation_data.type,
           start_time: operation_data.start_time,
           end_time: end_time,
           duration: end_time - operation_data.start_time,
-          cpu_usage: calculate_cpu_usage(operation_data.system_metrics_start, system_metrics_end),
-          gpu_usage: calculate_gpu_usage(operation_data.system_metrics_start, system_metrics_end),
-          memory_used: calculate_memory_used(operation_data.system_metrics_start, system_metrics_end),
+          cpu_usage:
+            calculate_cpu_usage(
+              operation_data.system_metrics_start,
+              system_metrics_end
+            ),
+          gpu_usage:
+            calculate_gpu_usage(
+              operation_data.system_metrics_start,
+              system_metrics_end
+            ),
+          memory_used:
+            calculate_memory_used(
+              operation_data.system_metrics_start,
+              system_metrics_end
+            ),
           cache_hits: Map.get(result, :cache_hits, 0),
           cache_misses: Map.get(result, :cache_misses, 0),
           metadata: Map.merge(operation_data.metadata, result),
           success: Map.get(result, :success, true)
         }
-        
+
         # Update state
         new_active = Map.delete(state.active_operations, operation_id)
         new_completed = [completed_operation | state.completed_operations]
-        new_history = add_to_history(completed_operation, state.performance_history, state.config)
-        
+
+        new_history =
+          add_to_history(
+            completed_operation,
+            state.performance_history,
+            state.config
+          )
+
         # Check alerts
-        new_alert_states = check_alerts(completed_operation, state.alert_configs, state.alert_states)
-        
+        new_alert_states =
+          check_alerts(
+            completed_operation,
+            state.alert_configs,
+            state.alert_states
+          )
+
         new_state = %{
-          state |
-          active_operations: new_active,
-          completed_operations: limit_list(new_completed, state.config.max_history_size),
-          performance_history: new_history,
-          alert_states: new_alert_states
+          state
+          | active_operations: new_active,
+            completed_operations:
+              limit_list(new_completed, state.config.max_history_size),
+            performance_history: new_history,
+            alert_states: new_alert_states
         }
-        
+
         {:reply, :ok, new_state}
     end
   end
@@ -334,9 +365,13 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
     case validate_alert_config(alert_config) do
       :ok ->
         new_configs = Map.put(state.alert_configs, alert_name, alert_config)
-        new_states = Map.put(state.alert_states, alert_name, initialize_alert_state())
-        {:reply, :ok, %{state | alert_configs: new_configs, alert_states: new_states}}
-        
+
+        new_states =
+          Map.put(state.alert_states, alert_name, initialize_alert_state())
+
+        {:reply, :ok,
+         %{state | alert_configs: new_configs, alert_states: new_states}}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -351,30 +386,35 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   @impl true
   def handle_call(:reset_statistics, _from, state) do
     new_state = %{
-      state |
-      active_operations: %{},
-      completed_operations: [],
-      performance_history: [],
-      alert_states: Map.new(state.alert_configs, fn {name, _} -> {name, initialize_alert_state()} end)
+      state
+      | active_operations: %{},
+        completed_operations: [],
+        performance_history: [],
+        alert_states:
+          Map.new(state.alert_configs, fn {name, _} ->
+            {name, initialize_alert_state()}
+          end)
     }
-    
+
     {:reply, :ok, new_state}
   end
 
   @impl true
   def handle_cast({:record_metric, metric_name, value, metadata}, state) do
-    timestamp = Map.get(metadata, :timestamp, System.monotonic_time(:microsecond))
-    
+    timestamp =
+      Map.get(metadata, :timestamp, System.monotonic_time(:microsecond))
+
     metric_entry = %{
       name: metric_name,
       value: value,
       timestamp: timestamp,
       metadata: metadata
     }
-    
+
     # Update system metrics
-    new_system_metrics = update_system_metric(state.system_metrics, metric_entry)
-    
+    new_system_metrics =
+      update_system_metric(state.system_metrics, metric_entry)
+
     {:noreply, %{state | system_metrics: new_system_metrics}}
   end
 
@@ -437,7 +477,8 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   defp get_gpu_memory_usage do
     # In a real implementation, this would query GPU memory usage
     # For now, return a simulated value
-    :rand.uniform() * 1024 * 1024 * 1024  # Up to 1GB
+    # Up to 1GB
+    :rand.uniform() * 1024 * 1024 * 1024
   end
 
   defp calculate_cpu_usage(start_metrics, end_metrics) do
@@ -469,7 +510,7 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
 
   defp calculate_performance_stats(state) do
     operations = state.completed_operations
-    
+
     %{
       operation_counts: calculate_operation_counts(operations),
       latency_percentiles: calculate_latency_percentiles(operations),
@@ -490,13 +531,15 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
 
   defp calculate_latency_percentiles(operations) do
     durations = Enum.map(operations, & &1.duration)
-    
+
     case durations do
-      [] -> %{p50: 0, p90: 0, p95: 0, p99: 0}
+      [] ->
+        %{p50: 0, p90: 0, p95: 0, p99: 0}
+
       _ ->
         sorted = Enum.sort(durations)
         count = length(sorted)
-        
+
         %{
           p50: percentile(sorted, count, 0.50),
           p90: percentile(sorted, count, 0.90),
@@ -517,15 +560,20 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
 
   defp calculate_throughput(operations) do
     case operations do
-      [] -> %{ops_per_second: 0.0}
+      [] ->
+        %{ops_per_second: 0.0}
+
       _ ->
         # Calculate operations per second over the last minute
         now = System.monotonic_time(:microsecond)
-        one_minute_ago = now - 60_000_000  # 60 seconds in microseconds
-        
-        recent_ops = Enum.filter(operations, fn op -> op.end_time > one_minute_ago end)
+        # 60 seconds in microseconds
+        one_minute_ago = now - 60_000_000
+
+        recent_ops =
+          Enum.filter(operations, fn op -> op.end_time > one_minute_ago end)
+
         ops_per_second = length(recent_ops) / 60.0
-        
+
         %{
           ops_per_second: ops_per_second,
           total_operations: length(operations)
@@ -535,12 +583,14 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
 
   defp calculate_resource_utilization(operations) do
     case operations do
-      [] -> %{avg_cpu: 0.0, avg_gpu: 0.0, avg_memory: 0}
+      [] ->
+        %{avg_cpu: 0.0, avg_gpu: 0.0, avg_memory: 0}
+
       _ ->
         cpu_usage = Enum.map(operations, & &1.cpu_usage)
         gpu_usage = Enum.map(operations, & &1.gpu_usage)
         memory_usage = Enum.map(operations, & &1.memory_used)
-        
+
         %{
           avg_cpu: Enum.sum(cpu_usage) / length(cpu_usage),
           avg_gpu: Enum.sum(gpu_usage) / length(gpu_usage),
@@ -556,12 +606,13 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
     total_hits = Enum.sum(Enum.map(operations, & &1.cache_hits))
     total_misses = Enum.sum(Enum.map(operations, & &1.cache_misses))
     total_requests = total_hits + total_misses
-    
-    hit_rate = case total_requests do
-      0 -> 0.0
-      _ -> total_hits / total_requests
-    end
-    
+
+    hit_rate =
+      case total_requests do
+        0 -> 0.0
+        _ -> total_hits / total_requests
+      end
+
     %{
       hit_rate: hit_rate,
       total_hits: total_hits,
@@ -573,12 +624,13 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   defp calculate_error_rates(operations) do
     total_ops = length(operations)
     failed_ops = Enum.count(operations, fn op -> not op.success end)
-    
-    error_rate = case total_ops do
-      0 -> 0.0
-      _ -> failed_ops / total_ops
-    end
-    
+
+    error_rate =
+      case total_ops do
+        0 -> 0.0
+        _ -> failed_ops / total_ops
+      end
+
     %{
       error_rate: error_rate,
       total_errors: failed_ops,
@@ -597,23 +649,33 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   defp evaluate_alert(operation, config, current_state) do
     # Check if the operation violates the alert threshold
     value = get_alert_value(operation, config)
-    violated = case config.comparison do
-      :greater_than -> value > config.threshold
-      :less_than -> value < config.threshold
-      :equals -> value == config.threshold
-    end
-    
+
+    violated =
+      case config.comparison do
+        :greater_than -> value > config.threshold
+        :less_than -> value < config.threshold
+        :equals -> value == config.threshold
+      end
+
     case violated do
       true ->
         consecutive = current_state.consecutive_violations + 1
+
         case consecutive >= config.consecutive_violations do
           true ->
             # Trigger alert
             trigger_alert(config, operation, value)
-            %{current_state | consecutive_violations: consecutive, last_triggered: System.system_time(:millisecond)}
+
+            %{
+              current_state
+              | consecutive_violations: consecutive,
+                last_triggered: System.system_time(:millisecond)
+            }
+
           false ->
             %{current_state | consecutive_violations: consecutive}
         end
+
       false ->
         %{current_state | consecutive_violations: 0}
     end
@@ -622,7 +684,8 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   defp get_alert_value(operation, _config) do
     # Extract the relevant value for the alert from the operation
     # This is a simplified implementation
-    operation.duration / 1000  # Convert to milliseconds
+    # Convert to milliseconds
+    operation.duration / 1000
   end
 
   defp trigger_alert(config, operation, value) do
@@ -633,8 +696,11 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
         rescue
           error -> Logger.error("Alert callback failed: #{inspect(error)}")
         end
+
       _ ->
-        Logger.warning("Performance alert triggered: #{inspect(config)} value: #{value}")
+        Logger.warning(
+          "Performance alert triggered: #{inspect(config)} value: #{value}"
+        )
     end
   end
 
@@ -647,6 +713,7 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
 
   defp validate_alert_config(config) do
     required_fields = [:threshold, :comparison, :consecutive_violations]
+
     case Enum.all?(required_fields, &Map.has_key?(config, &1)) do
       true -> :ok
       false -> {:error, :missing_required_fields}
@@ -669,6 +736,7 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
         refs = []
         # In a real implementation, would start system monitoring processes
         refs
+
       false ->
         []
     end
@@ -679,9 +747,10 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
       name when name in [:cpu_usage, :memory_usage, :gpu_usage] ->
         samples_key = String.to_atom("#{name}_samples")
         current_samples = Map.get(system_metrics, samples_key, [])
-        new_samples = [metric_entry | Enum.take(current_samples, 99)]  # Keep last 100 samples
+        # Keep last 100 samples
+        new_samples = [metric_entry | Enum.take(current_samples, 99)]
         Map.put(system_metrics, samples_key, new_samples)
-        
+
       _ ->
         custom_metrics = Map.get(system_metrics, :custom_metrics, %{})
         new_custom = Map.put(custom_metrics, metric_entry.name, metric_entry)
@@ -697,11 +766,13 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   end
 
   defp filter_by_operation_types(history, nil), do: history
+
   defp filter_by_operation_types(history, types) do
     Enum.filter(history, fn op -> op.type in types end)
   end
 
   defp filter_by_time_range(history, nil), do: history
+
   defp filter_by_time_range(history, {start_time, end_time}) do
     Enum.filter(history, fn op ->
       op.start_time >= start_time and op.end_time <= end_time
@@ -718,15 +789,18 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
       summary: "Performance report placeholder",
       recommendations: []
     }
+
     {:ok, report}
   end
 
   defp schedule_cleanup do
-    Process.send_after(self(), :cleanup, 300_000)  # Every 5 minutes
+    # Every 5 minutes
+    Process.send_after(self(), :cleanup, 300_000)
   end
 
   defp schedule_analysis do
-    Process.send_after(self(), :analysis, 60_000)   # Every minute
+    # Every minute
+    Process.send_after(self(), :analysis, 60_000)
   end
 
   defp perform_cleanup(state) do
@@ -734,11 +808,12 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
     now = System.monotonic_time(:microsecond)
     retention_microseconds = state.config.retention_period * 1_000_000
     cutoff = now - retention_microseconds
-    
-    new_history = Enum.filter(state.performance_history, fn op ->
-      op.end_time > cutoff
-    end)
-    
+
+    new_history =
+      Enum.filter(state.performance_history, fn op ->
+        op.end_time > cutoff
+      end)
+
     %{state | performance_history: new_history}
   end
 

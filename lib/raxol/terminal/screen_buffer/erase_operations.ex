@@ -144,6 +144,7 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
         List.update_at(cells, row_y, fn row ->
           clear_row_columns(row, x, width, buffer.width, empty_cell)
         end)
+
       false ->
         cells
     end
@@ -154,6 +155,7 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
       case col_x < buffer_width do
         true ->
           List.replace_at(acc_row, col_x, empty_cell)
+
         false ->
           acc_row
       end

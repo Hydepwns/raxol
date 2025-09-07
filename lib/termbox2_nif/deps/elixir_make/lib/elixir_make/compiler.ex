@@ -236,7 +236,9 @@ defmodule ElixirMake.Compiler do
 
   defp maybe_warn_about_spaces(false, _cwd), do: :ok
 
-  defp maybe_print_verbose_info(true, exec, args), do: print_verbose_info(exec, args)
+  defp maybe_print_verbose_info(true, exec, args),
+    do: print_verbose_info(exec, args)
+
   defp maybe_print_verbose_info(false, _exec, _args), do: :ok
 
   defp format_arg_with_spaces(true, arg), do: inspect(arg)

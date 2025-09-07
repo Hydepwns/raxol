@@ -111,10 +111,11 @@ defmodule Raxol.Core.I18n.Server do
 
   @impl GenServer
   def init(config) do
-    config_map = case is_list(config) do
-      true -> Enum.into(config, %{})
-      false -> config
-    end
+    config_map =
+      case is_list(config) do
+        true -> Enum.into(config, %{})
+        false -> config
+      end
 
     state = %__MODULE__{
       config: config_map,
@@ -133,10 +134,11 @@ defmodule Raxol.Core.I18n.Server do
 
   @impl GenServer
   def handle_call({:init_i18n, config}, _from, state) do
-    config_map = case is_list(config) do
-      true -> Enum.into(config, %{})
-      false -> config
-    end
+    config_map =
+      case is_list(config) do
+        true -> Enum.into(config, %{})
+        false -> config
+      end
 
     new_state = %{
       state
@@ -264,7 +266,13 @@ defmodule Raxol.Core.I18n.Server do
     new_state = load_translations(new_state, locale)
 
     # Broadcast locale change event
-    broadcast_locale_event(state.event_manager, previous_locale, locale, new_state)
+    broadcast_locale_event(
+      state.event_manager,
+      previous_locale,
+      locale,
+      new_state
+    )
+
     {:reply, :ok, new_state}
   end
 
@@ -340,11 +348,13 @@ defmodule Raxol.Core.I18n.Server do
 
   defp handle_rtl_change(false, _event_manager, _new_rtl), do: :ok
   defp handle_rtl_change(true, nil, _new_rtl), do: :ok
+
   defp handle_rtl_change(true, event_manager, new_rtl) do
     event_manager.broadcast({:rtl_changed, new_rtl})
   end
 
   defp update_accessibility_direction(nil, _new_rtl), do: :ok
+
   defp update_accessibility_direction(accessibility_module, new_rtl) do
     direction = get_direction(new_rtl)
     accessibility_module.set_option(:direction, direction)

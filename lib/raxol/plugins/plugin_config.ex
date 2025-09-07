@@ -121,6 +121,7 @@ defmodule Raxol.Plugins.PluginConfig do
     case plugin_name in config.enabled_plugins do
       true ->
         config
+
       false ->
         %{config | enabled_plugins: [plugin_name | config.enabled_plugins]}
     end

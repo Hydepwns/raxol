@@ -179,7 +179,8 @@ defmodule Raxol.System.Platform do
         true
 
       # Graphics protocol features
-      feature when feature in [:kitty_graphics, :sixel_graphics, :iterm2_graphics] ->
+      feature
+      when feature in [:kitty_graphics, :sixel_graphics, :iterm2_graphics] ->
         detect_graphics_protocol_support(feature)
 
       # Platform-specific features
@@ -350,7 +351,7 @@ defmodule Raxol.System.Platform do
         }
   def detect_graphics_support do
     terminal_type = detect_terminal_type()
-    
+
     %{
       kitty_graphics: detect_graphics_protocol_support(:kitty_graphics),
       sixel_graphics: detect_graphics_protocol_support(:sixel_graphics),
@@ -397,31 +398,31 @@ defmodule Raxol.System.Platform do
       System.get_env("WEZTERM_EXECUTABLE"),
       System.get_env("ALACRITTY_LOG")
     } do
-      {"xterm-kitty", _, _, _, _} -> 
+      {"xterm-kitty", _, _, _, _} ->
         :kitty
-      
-      {_, _, kitty_id, _, _} when not is_nil(kitty_id) -> 
+
+      {_, _, kitty_id, _, _} when not is_nil(kitty_id) ->
         :kitty
-      
-      {_, _, _, wezterm, _} when not is_nil(wezterm) -> 
+
+      {_, _, _, wezterm, _} when not is_nil(wezterm) ->
         :wezterm
-      
-      {"wezterm", _, _, _, _} -> 
+
+      {"wezterm", _, _, _, _} ->
         :wezterm
-      
-      {_, "iTerm.app", _, _, _} -> 
+
+      {_, "iTerm.app", _, _, _} ->
         :iterm2
-      
-      {_, _, _, _, alacritty} when not is_nil(alacritty) -> 
+
+      {_, _, _, _, alacritty} when not is_nil(alacritty) ->
         :alacritty
-      
-      {"alacritty", _, _, _, _} -> 
+
+      {"alacritty", _, _, _, _} ->
         :alacritty
-      
+
       {term, _, _, _, _} when not is_nil(term) ->
         detect_terminal_from_term(term)
-      
-      _ -> 
+
+      _ ->
         :unknown
     end
   end
@@ -441,7 +442,8 @@ defmodule Raxol.System.Platform do
 
   defp detect_terminal_capabilities(:kitty) do
     %{
-      max_image_size: 100_000_000,  # 100MB
+      # 100MB
+      max_image_size: 100_000_000,
       supports_animation: true,
       supports_transparency: true,
       supports_chunked_transmission: true,
@@ -452,7 +454,8 @@ defmodule Raxol.System.Platform do
 
   defp detect_terminal_capabilities(:wezterm) do
     %{
-      max_image_size: 50_000_000,  # 50MB
+      # 50MB
+      max_image_size: 50_000_000,
       supports_animation: true,
       supports_transparency: true,
       supports_chunked_transmission: true,
@@ -463,7 +466,8 @@ defmodule Raxol.System.Platform do
 
   defp detect_terminal_capabilities(:iterm2) do
     %{
-      max_image_size: 10_000_000,  # 10MB
+      # 10MB
+      max_image_size: 10_000_000,
       supports_animation: false,
       supports_transparency: true,
       supports_chunked_transmission: false,
@@ -474,7 +478,8 @@ defmodule Raxol.System.Platform do
 
   defp detect_terminal_capabilities(:xterm) do
     %{
-      max_image_size: 1_000_000,  # 1MB (Sixel)
+      # 1MB (Sixel)
+      max_image_size: 1_000_000,
       supports_animation: false,
       supports_transparency: false,
       supports_chunked_transmission: false,
@@ -498,7 +503,8 @@ defmodule Raxol.System.Platform do
   defp check_wezterm_kitty_support do
     # WezTerm supports Kitty graphics protocol since v20220408
     case System.get_env("WEZTERM_VERSION") do
-      nil -> true  # Assume recent version
+      # Assume recent version
+      nil -> true
       version -> version >= "20220408"
     end
   end
@@ -506,15 +512,19 @@ defmodule Raxol.System.Platform do
   defp check_iterm2_kitty_support do
     # iTerm2 has limited Kitty graphics protocol support since 3.5
     case System.get_env("TERM_PROGRAM_VERSION") do
-      nil -> false
-      version -> 
+      nil ->
+        false
+
+      version ->
         case String.split(version, ".") do
           [major | _] when is_binary(major) ->
             case Integer.parse(major) do
               {maj_num, _} -> maj_num >= 3
               _ -> false
             end
-          _ -> false
+
+          _ ->
+            false
         end
     end
   end
@@ -527,17 +537,21 @@ defmodule Raxol.System.Platform do
   defp check_xterm_sixel_support do
     # Check if xterm was compiled with Sixel support
     case System.get_env("XTERM_VERSION") do
-      nil -> 
+      nil ->
         # Unknown version - check environment for Sixel indicators
         check_environment_sixel_support()
+
       version ->
         # Sixel support added in xterm 334+
         case Integer.parse(version) do
-          {num, _} when num >= 334 -> true
-          {_num, _} -> 
+          {num, _} when num >= 334 ->
+            true
+
+          {_num, _} ->
             # Version < 334, but still check environment variables
             check_environment_sixel_support()
-          _ -> 
+
+          _ ->
             # Unparseable version, check environment
             check_environment_sixel_support()
         end
@@ -547,9 +561,9 @@ defmodule Raxol.System.Platform do
   defp check_environment_sixel_support do
     # Check TERM environment for Sixel indicators
     term = System.get_env("TERM", "")
-    
+
     String.contains?(term, "sixel") or
-    System.get_env("COLORTERM") == "sixel"
+      System.get_env("COLORTERM") == "sixel"
   end
 
   # Platform-specific detection helpers

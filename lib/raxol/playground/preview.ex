@@ -644,10 +644,12 @@ defmodule Raxol.Playground.Preview do
        ) do
     option_lines =
       Enum.map(options, fn option ->
-        prefix = case option == selected do
-          true -> "✓"
-          false -> " "
-        end
+        prefix =
+          case option == selected do
+            true -> "✓"
+            false -> " "
+          end
+
         option_str = " #{prefix} #{option}"
         padding = String.duplicate(" ", width - String.length(option_str) + 1)
         "│#{option_str}#{padding}│"

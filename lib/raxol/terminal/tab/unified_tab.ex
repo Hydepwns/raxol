@@ -217,6 +217,7 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
                 [] -> nil
                 [first_tab | _] -> first_tab
               end
+
             false ->
               state.active_tab
           end

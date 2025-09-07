@@ -127,7 +127,9 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   defp commit_to_renderer(painted_output, renderer_module) do
     renderer = renderer_module || Raxol.UI.Rendering.Renderer
 
-    case Raxol.Core.ErrorHandling.safe_call(fn -> renderer.render(painted_output) end) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           renderer.render(painted_output)
+         end) do
       {:ok, _} ->
         Logger.debug(
           "Pipeline: Committed output to renderer #{inspect(renderer)}"

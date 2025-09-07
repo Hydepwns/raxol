@@ -291,8 +291,15 @@ defmodule Raxol.Animation.StateServer do
 
     updated_active_animations =
       case map_size(updated_element_animations) do
-        0 -> Map.delete(state.active_animations, element_id)
-        _ -> Map.put(state.active_animations, element_id, updated_element_animations)
+        0 ->
+          Map.delete(state.active_animations, element_id)
+
+        _ ->
+          Map.put(
+            state.active_animations,
+            element_id,
+            updated_element_animations
+          )
       end
 
     %{state | active_animations: updated_active_animations}

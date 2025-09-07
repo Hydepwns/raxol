@@ -316,8 +316,11 @@ defmodule Raxol.Style.Colors.Persistence do
 
   defp normalize_variant_key(k) when is_binary(k) do
     case String.contains?(k, ":") do
-      true -> k |> String.split(":") |> Enum.map(&String.to_atom/1) |> List.to_tuple()
-      false -> String.to_atom(k)
+      true ->
+        k |> String.split(":") |> Enum.map(&String.to_atom/1) |> List.to_tuple()
+
+      false ->
+        String.to_atom(k)
     end
   end
 

@@ -13,6 +13,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
     case num_options == 0 do
       true ->
         1
+
       false ->
         ceil(num_options / page_size)
     end
@@ -61,6 +62,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
     case state.is_filtering do
       true ->
         state.filtered_options || []
+
       false ->
         state.options
     end

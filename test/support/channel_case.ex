@@ -54,6 +54,7 @@ defmodule RaxolWeb.ChannelCase do
           Supervisor.start_link([{Phoenix.PubSub, name: Raxol.PubSub}],
             strategy: :one_for_one
           )
+
       _pid ->
         :ok
     end

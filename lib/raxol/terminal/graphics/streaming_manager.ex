@@ -33,7 +33,8 @@ defmodule Raxol.Terminal.Graphics.StreamingManager do
       active_charts: map_size(state.active_charts),
       streaming_charts: map_size(state.streaming_charts),
       performance_metrics: state.performance_metrics,
-      uptime: System.system_time(:millisecond) - state.performance_metrics.started_at
+      uptime:
+        System.system_time(:millisecond) - state.performance_metrics.started_at
     }
   end
 
@@ -44,10 +45,11 @@ defmodule Raxol.Terminal.Graphics.StreamingManager do
     updated_buffer = [data_point | chart_state.data_buffer]
     max_points = Map.get(chart_state.config, :max_points, 1000)
     trimmed_buffer = Enum.take(updated_buffer, max_points)
-    
-    %{chart_state | 
-      data_buffer: trimmed_buffer,
-      last_update: System.system_time(:millisecond)
+
+    %{
+      chart_state
+      | data_buffer: trimmed_buffer,
+        last_update: System.system_time(:millisecond)
     }
   end
 
@@ -58,10 +60,11 @@ defmodule Raxol.Terminal.Graphics.StreamingManager do
     updated_buffer = data_points ++ chart_state.data_buffer
     max_points = Map.get(chart_state.config, :max_points, 1000)
     trimmed_buffer = Enum.take(updated_buffer, max_points)
-    
-    %{chart_state | 
-      data_buffer: trimmed_buffer,
-      last_update: System.system_time(:millisecond)
+
+    %{
+      chart_state
+      | data_buffer: trimmed_buffer,
+        last_update: System.system_time(:millisecond)
     }
   end
 
@@ -82,44 +85,67 @@ defmodule Raxol.Terminal.Graphics.StreamingManager do
   """
   def cleanup_expired_charts(state) do
     current_time = System.system_time(:millisecond)
-    expiry_time = 24 * 60 * 60 * 1000  # 24 hours in milliseconds
+    # 24 hours in milliseconds
+    expiry_time = 24 * 60 * 60 * 1000
 
-    active_charts = state.active_charts
-    |> Enum.reject(fn {_id, chart} ->
-      current_time - chart.last_update > expiry_time
-    end)
-    |> Enum.into(%{})
+    active_charts =
+      state.active_charts
+      |> Enum.reject(fn {_id, chart} ->
+        current_time - chart.last_update > expiry_time
+      end)
+      |> Enum.into(%{})
 
-    streaming_charts = state.streaming_charts
-    |> Enum.reject(fn {_id, chart} ->
-      current_time - chart.last_update > expiry_time
-    end)
-    |> Enum.into(%{})
+    streaming_charts =
+      state.streaming_charts
+      |> Enum.reject(fn {_id, chart} ->
+        current_time - chart.last_update > expiry_time
+      end)
+      |> Enum.into(%{})
 
-    %{state | 
-      active_charts: active_charts,
-      streaming_charts: streaming_charts
-    }
+    %{state | active_charts: active_charts, streaming_charts: streaming_charts}
   end
 
   @doc """
   Updates performance metrics after an operation.
   """
   def update_metrics(state, operation) do
-    updated_metrics = case operation do
-      :chart_created ->
-        %{state.performance_metrics | charts_created: state.performance_metrics.charts_created + 1}
-      :data_point_processed ->
-        %{state.performance_metrics | data_points_processed: state.performance_metrics.data_points_processed + 1}
-      :update_rendered ->
-        %{state.performance_metrics | updates_rendered: state.performance_metrics.updates_rendered + 1}
-      :interaction_handled ->
-        %{state.performance_metrics | interactions_handled: state.performance_metrics.interactions_handled + 1}
-      :export_performed ->
-        %{state.performance_metrics | exports_performed: state.performance_metrics.exports_performed + 1}
-      _ ->
-        state.performance_metrics
-    end
+    updated_metrics =
+      case operation do
+        :chart_created ->
+          %{
+            state.performance_metrics
+            | charts_created: state.performance_metrics.charts_created + 1
+          }
+
+        :data_point_processed ->
+          %{
+            state.performance_metrics
+            | data_points_processed:
+                state.performance_metrics.data_points_processed + 1
+          }
+
+        :update_rendered ->
+          %{
+            state.performance_metrics
+            | updates_rendered: state.performance_metrics.updates_rendered + 1
+          }
+
+        :interaction_handled ->
+          %{
+            state.performance_metrics
+            | interactions_handled:
+                state.performance_metrics.interactions_handled + 1
+          }
+
+        :export_performed ->
+          %{
+            state.performance_metrics
+            | exports_performed: state.performance_metrics.exports_performed + 1
+          }
+
+        _ ->
+          state.performance_metrics
+      end
 
     %{state | performance_metrics: updated_metrics}
   end
@@ -148,20 +174,28 @@ defmodule Raxol.Terminal.Graphics.StreamingManager do
     case validate_chart_config(type, config) do
       :ok ->
         chart_id = generate_chart_id()
+
         case chart_creation_fn.(chart_id, type, config) do
           {:ok, chart_id, graphics_id} ->
-            chart_state = create_chart_state(chart_id, type, config, graphics_id)
+            chart_state =
+              create_chart_state(chart_id, type, config, graphics_id)
+
             setup_chart_if_interactive(chart_state)
-            
+
             new_active = Map.put(state.active_charts, chart_id, chart_state)
-            updated_state = update_metrics(%{state | active_charts: new_active}, :chart_created)
-            
+
+            updated_state =
+              update_metrics(
+                %{state | active_charts: new_active},
+                :chart_created
+              )
+
             {:reply, {:ok, chart_id}, updated_state}
-            
+
           {:error, reason} ->
             {:reply, {:error, reason}, state}
         end
-        
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -169,7 +203,10 @@ defmodule Raxol.Terminal.Graphics.StreamingManager do
 
   # Private helper functions
   defp default_bounds, do: %{x: 0, y: 0, width: 60, height: 20}
-  defp generate_chart_id, do: :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+
+  defp generate_chart_id,
+    do: :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+
   defp validate_chart_config(_type, config) do
     case Map.get(config, :bounds) do
       nil -> {:error, :missing_bounds}
@@ -177,7 +214,7 @@ defmodule Raxol.Terminal.Graphics.StreamingManager do
       _ -> {:error, :invalid_bounds}
     end
   end
-  
+
   defp initialize_animation_state(config) do
     case Map.get(config, :animation, %{}) do
       %{enabled: true} = anim_config ->
@@ -187,20 +224,22 @@ defmodule Raxol.Terminal.Graphics.StreamingManager do
           easing: Map.get(anim_config, :easing, :ease_out),
           active: false
         }
+
       _ ->
         %{enabled: false}
     end
   end
-  
+
   defp setup_chart_if_interactive(chart_state) do
     case chart_state.interactive do
       true -> setup_chart_interaction(chart_state)
       false -> :ok
     end
   end
-  
+
   defp setup_chart_interaction(_chart_state) do
     # Would call MouseInteraction.register_interactive_element/2
-    :ok  # Simplified for extraction
+    # Simplified for extraction
+    :ok
   end
 end

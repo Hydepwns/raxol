@@ -157,7 +157,8 @@ defmodule Raxol.UI.Components.Selection.List do
     base_style = %{width: :fill}
     selected_style = %{bg: :blue, fg: :white}
 
-    style = get_item_style(selected? and state.focused, base_style, selected_style)
+    style =
+      get_item_style(selected? and state.focused, base_style, selected_style)
 
     # Use the custom renderer or default
     content = state.item_renderer.(item_data)
@@ -173,12 +174,16 @@ defmodule Raxol.UI.Components.Selection.List do
 
   # --- Internal Logic Helpers ---
 
-  defp get_item_style(true, base_style, selected_style), do: Map.merge(base_style, selected_style)
+  defp get_item_style(true, base_style, selected_style),
+    do: Map.merge(base_style, selected_style)
+
   defp get_item_style(false, base_style, _selected_style), do: base_style
 
   defp get_selection_commands(nil, _selected_item), do: []
   defp get_selection_commands(_on_select, nil), do: []
-  defp get_selection_commands(on_select, selected_item), do: [{on_select, selected_item}]
+
+  defp get_selection_commands(on_select, selected_item),
+    do: [{on_select, selected_item}]
 
   defp select_item(index, state) do
     new_index = clamp(index, 0, length(state.items) - 1)

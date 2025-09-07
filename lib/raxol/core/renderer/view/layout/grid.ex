@@ -7,6 +7,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
   defp validate_columns(columns) when is_integer(columns) and columns < 1 do
     raise ArgumentError, "Grid must have at least 1 column"
   end
+
   defp validate_columns(_), do: :ok
 
   @doc """
@@ -330,6 +331,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
         # Add child with position information
         child_with_pos = Map.put(child, :grid_position, {col, row})
         %{grid | children: [child_with_pos | grid.children]}
+
       _ ->
         grid
     end
@@ -400,8 +402,11 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     invalid_children = Enum.filter(children, &(!valid_child_structure?(&1)))
 
     case Enum.empty?(invalid_children) do
-      true -> :ok
-      false -> {:error, "Invalid child structure found: #{inspect(invalid_children)}"}
+      true ->
+        :ok
+
+      false ->
+        {:error, "Invalid child structure found: #{inspect(invalid_children)}"}
     end
   end
 
@@ -423,8 +428,11 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
       end)
 
     case Enum.empty?(invalid_positions) do
-      true -> :ok
-      false -> {:error, "Invalid grid positions found: #{inspect(invalid_positions)}"}
+      true ->
+        :ok
+
+      false ->
+        {:error, "Invalid grid positions found: #{inspect(invalid_positions)}"}
     end
   end
 

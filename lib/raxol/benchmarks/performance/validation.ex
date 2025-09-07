@@ -75,7 +75,9 @@ defmodule Raxol.Benchmarks.Performance.Validation do
     get_pass_percentage(passed, total)
   end
 
-  defp get_pass_percentage(passed, total) when total > 0, do: passed / total * 100
+  defp get_pass_percentage(passed, total) when total > 0,
+    do: passed / total * 100
+
   defp get_pass_percentage(_passed, _total), do: 0
 
   defp determine_status(pass_percentage) when pass_percentage >= 95,
@@ -106,7 +108,10 @@ defmodule Raxol.Benchmarks.Performance.Validation do
   end
 
   defp load_baseline_file(platform_file) when true do
-    load_platform_or_default_baseline(File.exists?(platform_file), platform_file)
+    load_platform_or_default_baseline(
+      File.exists?(platform_file),
+      platform_file
+    )
   end
 
   defp load_platform_or_default_baseline(true, platform_file) do
@@ -114,6 +119,7 @@ defmodule Raxol.Benchmarks.Performance.Validation do
     |> File.read!()
     |> Jason.decode!(keys: :atoms)
   end
+
   defp load_platform_or_default_baseline(false, _platform_file) do
     # Fall back to default baseline
     Path.join("priv/baseline_metrics", "default_baseline.json")
@@ -121,8 +127,11 @@ defmodule Raxol.Benchmarks.Performance.Validation do
     |> Jason.decode!(keys: :atoms)
   end
 
-  defp validate_memory_leak(true), do: %{status: :fail, message: "Memory leak detected", detected: true}
-  defp validate_memory_leak(_), do: %{status: :pass, message: "No memory leak detected", detected: false}
+  defp validate_memory_leak(true),
+    do: %{status: :fail, message: "Memory leak detected", detected: true}
+
+  defp validate_memory_leak(_),
+    do: %{status: :pass, message: "No memory leak detected", detected: false}
 
   # Private helper functions
 
@@ -204,7 +213,12 @@ defmodule Raxol.Benchmarks.Performance.Validation do
     do: %{status: :skip, message: "No baseline for comparison"}
 
   defp validate_metric_value(result_value, baseline_value, comparator, label) do
-    create_validation_result(comparator.(result_value, baseline_value), label, result_value, baseline_value)
+    create_validation_result(
+      comparator.(result_value, baseline_value),
+      label,
+      result_value,
+      baseline_value
+    )
   end
 
   defp create_validation_result(true, label, result_value, baseline_value) do
@@ -213,6 +227,7 @@ defmodule Raxol.Benchmarks.Performance.Validation do
       message: "#{label}: #{result_value} (baseline: #{baseline_value})"
     }
   end
+
   defp create_validation_result(false, label, result_value, baseline_value) do
     %{
       status: :fail,

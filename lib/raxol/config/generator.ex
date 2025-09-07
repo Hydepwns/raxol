@@ -152,11 +152,24 @@ defmodule Raxol.Config.Generator do
 
   # Private functions - Pattern Matching Helpers
 
-  defp maybe_add_metadata(true, config, schema, include_comments, include_examples) do
+  defp maybe_add_metadata(
+         true,
+         config,
+         schema,
+         include_comments,
+         include_examples
+       ) do
     add_metadata_to_config(config, schema, include_comments, include_examples)
   end
 
-  defp maybe_add_metadata(false, config, _schema, _include_comments, _include_examples), do: config
+  defp maybe_add_metadata(
+         false,
+         config,
+         _schema,
+         _include_comments,
+         _include_examples
+       ),
+       do: config
 
   defp handle_schema_value(true, key, value, acc) do
     Map.put(acc, key, value.default)
@@ -164,7 +177,13 @@ defmodule Raxol.Config.Generator do
 
   defp handle_schema_value(false, key, value, acc) do
     nested_defaults = extract_defaults_from_schema(value)
-    handle_nested_defaults(map_size(nested_defaults) > 0, key, nested_defaults, acc)
+
+    handle_nested_defaults(
+      map_size(nested_defaults) > 0,
+      key,
+      nested_defaults,
+      acc
+    )
   end
 
   defp handle_nested_defaults(true, key, nested_defaults, acc) do
@@ -192,7 +211,13 @@ defmodule Raxol.Config.Generator do
 
     config = extract_defaults_from_schema(schema)
 
-    maybe_add_metadata(include_comments or include_examples, config, schema, include_comments, include_examples)
+    maybe_add_metadata(
+      include_comments or include_examples,
+      config,
+      schema,
+      include_comments,
+      include_examples
+    )
   end
 
   defp extract_defaults_from_schema(schema) when is_map(schema) do

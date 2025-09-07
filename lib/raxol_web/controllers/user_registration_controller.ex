@@ -24,6 +24,7 @@ defmodule RaxolWeb.UserRegistrationController do
         |> UserAuth.log_in_user(user)
         |> put_flash(:info, "User created successfully.")
         |> redirect(to: "/")
+
       false ->
         conn
         |> put_flash(:error, "Registration failed.")

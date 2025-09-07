@@ -277,6 +277,7 @@ defmodule Raxol.Core.Config.Manager do
             Logger.error("Failed to load config file: #{inspect(e)}")
             {:error, :invalid_config_file}
         end
+
       false ->
         Logger.warning("Config file not found: #{file}")
         {:ok, %{}}
@@ -294,6 +295,7 @@ defmodule Raxol.Core.Config.Manager do
         validate_terminal_config(config.terminal)
         validate_buffer_config(config.buffer)
         validate_renderer_config(config.renderer)
+
       false ->
         {:error,
          "Missing required configuration fields: #{Enum.join(missing_fields, ", ")}"}
@@ -321,6 +323,7 @@ defmodule Raxol.Core.Config.Manager do
     case Enum.empty?(missing_fields) do
       true ->
         :ok
+
       false ->
         {:error,
          "Missing required #{section} configuration fields: #{Enum.join(missing_fields, ", ")}"}
@@ -449,6 +452,7 @@ defmodule Raxol.Core.Config.Manager do
           {:ok, content} -> decode_json_content(content)
           {:error, reason} -> {:error, reason}
         end
+
       false ->
         {:error, :file_not_found}
     end

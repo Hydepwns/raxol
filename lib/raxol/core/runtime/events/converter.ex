@@ -117,6 +117,7 @@ defmodule Raxol.Core.Runtime.Events.Converter do
           key: key,
           modifiers: modifiers
         })
+
       _ ->
         Event.new(:key, %{
           key: ch,

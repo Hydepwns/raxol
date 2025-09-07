@@ -164,6 +164,7 @@ defmodule Raxol.Benchmarks.Performance.MemoryUsage do
     case denominator == 0 do
       true ->
         false
+
       false ->
         slope = (n * sum_xy - sum_x * sum_y) / denominator
 

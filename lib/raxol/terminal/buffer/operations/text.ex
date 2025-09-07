@@ -26,6 +26,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Text do
         case row_y == y do
           true ->
             replace_cell(row, x, char, style)
+
           false ->
             row
         end
@@ -41,6 +42,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Text do
       case col_x == x do
         true ->
           Cell.new(char, style)
+
         false ->
           cell
       end
@@ -137,6 +139,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Text do
     case is_binary(data) do
       true ->
         Raxol.Terminal.Buffer.Manager.BufferImpl.add(buffer, data)
+
       false ->
         buffer
     end

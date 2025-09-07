@@ -95,10 +95,10 @@ defmodule Raxol.Terminal.Cursor.State do
     case {state.saved_row, state.saved_col} do
       {nil, _} ->
         state
-        
+
       {_, nil} ->
         state
-        
+
       {row, col} ->
         %{
           state

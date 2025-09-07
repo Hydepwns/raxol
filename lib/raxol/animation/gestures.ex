@@ -260,6 +260,7 @@ defmodule Raxol.Animation.Gestures do
   defp calculate_direction(true, dx, _dy) do
     determine_horizontal_direction(dx > 0)
   end
+
   defp calculate_direction(false, _dx, dy) do
     determine_vertical_direction(dy > 0)
   end
@@ -280,6 +281,7 @@ defmodule Raxol.Animation.Gestures do
   defp calculate_velocity(true, _x1, _y1, _x2, _y2, _time_diff_ms) do
     %{x: 0, y: 0}
   end
+
   defp calculate_velocity(false, x1, y1, x2, y2, time_diff_ms) do
     %{
       # px/second

@@ -97,7 +97,11 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   def resize(buffer, new_width, new_height) do
     # Validate input dimensions
-    validate_dimensions(new_width <= 0 or new_height <= 0, new_width, new_height)
+    validate_dimensions(
+      new_width <= 0 or new_height <= 0,
+      new_width,
+      new_height
+    )
 
     # Create a new ScreenBuffer with the new dimensions
     default_cell = %Raxol.Terminal.Cell{

@@ -17,7 +17,6 @@ defmodule Raxol.I18nTestHelpers do
   import ExUnit.Assertions
   import Raxol.AccessibilityTestHelpers
 
-
   @doc """
   Executes the given function with a specific locale set.
 
@@ -204,13 +203,19 @@ defmodule Raxol.I18nTestHelpers do
 
         default_locale = RaxolWeb.Gettext.get_locale()
 
-        compare_with_default_locale(locale, default_locale, component_id, label_type, label)
+        compare_with_default_locale(
+          locale,
+          default_locale,
+          component_id,
+          label_type,
+          label
+        )
       end)
     end)
   end
 
   # Helper functions to eliminate if statements
-  
+
   defp execute_with_rtl_locale(nil, _fun) do
     flunk("No RTL locale available for testing")
   end
@@ -219,7 +224,8 @@ defmodule Raxol.I18nTestHelpers do
     with_locale(rtl_locale, fun)
   end
 
-  defp validate_binding_values(bindings, formatted, _key) when map_size(bindings) > 0 do
+  defp validate_binding_values(bindings, formatted, _key)
+       when map_size(bindings) > 0 do
     Enum.each(bindings, fn {_key, value} ->
       assert String.contains?(formatted, to_string(value)),
              # {value}" for key "#{key}". Formatted: "#{formatted}""
@@ -229,9 +235,22 @@ defmodule Raxol.I18nTestHelpers do
 
   defp validate_binding_values(_bindings, _formatted, _key), do: :ok
 
-  defp compare_with_default_locale(locale, locale, _component_id, _label_type, _label), do: :ok
+  defp compare_with_default_locale(
+         locale,
+         locale,
+         _component_id,
+         _label_type,
+         _label
+       ),
+       do: :ok
 
-  defp compare_with_default_locale(_locale, default_locale, component_id, label_type, label) do
+  defp compare_with_default_locale(
+         _locale,
+         default_locale,
+         component_id,
+         label_type,
+         label
+       ) do
     default_label =
       with_locale(default_locale, fn ->
         default_metadata =
@@ -240,7 +259,12 @@ defmodule Raxol.I18nTestHelpers do
         Map.get(default_metadata, label_type)
       end)
 
-    validate_translation_difference(default_label, label, component_id, label_type)
+    validate_translation_difference(
+      default_label,
+      label,
+      component_id,
+      label_type
+    )
   end
 
   defp validate_translation_difference(nil, _label, _component_id, _label_type) do
@@ -250,20 +274,37 @@ defmodule Raxol.I18nTestHelpers do
     )
   end
 
-  defp validate_translation_difference(default_label, label, _component_id, _label_type) do
+  defp validate_translation_difference(
+         default_label,
+         label,
+         _component_id,
+         _label_type
+       ) do
     refute label == default_label,
            # {component_id}" "#{label_type}" label ("#{label}") was not translated from default locale ("#{default_label}")"
            "Component "
   end
 
-  defp validate_shortcut_data(nil, _shortcut_id, _locale, _expected_key, _expected_description) do
+  defp validate_shortcut_data(
+         nil,
+         _shortcut_id,
+         _locale,
+         _expected_key,
+         _expected_description
+       ) do
     flunk(
       # {shortcut_id}" not found in current context for locale "#{locale}""
       "Shortcut with ID "
     )
   end
 
-  defp validate_shortcut_data(shortcut_data, _shortcut_id, _locale, expected_key, expected_description) do
+  defp validate_shortcut_data(
+         shortcut_data,
+         _shortcut_id,
+         _locale,
+         expected_key,
+         expected_description
+       ) do
     actual_key = shortcut_data.key_combo
     actual_description = shortcut_data.description
 
@@ -305,7 +346,13 @@ defmodule Raxol.I18nTestHelpers do
       shortcut_data =
         Enum.find(all_shortcuts, fn s -> s.name == shortcut_id end)
 
-      validate_shortcut_data(shortcut_data, shortcut_id, locale, expected_key, expected_description)
+      validate_shortcut_data(
+        shortcut_data,
+        shortcut_id,
+        locale,
+        expected_key,
+        expected_description
+      )
     end)
   end
 

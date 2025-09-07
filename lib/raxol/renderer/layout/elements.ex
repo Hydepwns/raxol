@@ -232,6 +232,7 @@ defmodule Raxol.Renderer.Layout.Elements do
           })
           | acc
         ]
+
       false ->
         # For non-table elements, process normally
         [element_map | acc]
@@ -328,6 +329,7 @@ defmodule Raxol.Renderer.Layout.Elements do
           Raxol.Renderer.Layout.process_children(children, inner_space, [])
 
         [Map.put(box, :children, processed_children) | acc]
+
       _ ->
         [box | acc]
     end

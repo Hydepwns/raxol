@@ -83,7 +83,7 @@ defmodule Raxol.Core.Renderer.Manager do
       true ->
         damage = Buffer.get_damage(buffer)
         render_damage(damage)
-      
+
       false ->
         :ok
     end
@@ -146,7 +146,7 @@ defmodule Raxol.Core.Renderer.Manager do
       true ->
         # Convert view to buffer cells
         render_view(view, buffer)
-      
+
       false ->
         buffer
     end

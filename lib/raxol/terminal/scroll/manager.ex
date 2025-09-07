@@ -266,6 +266,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
           | predictor: Predictor.predict(predictor, direction, amount)
         }
         |> update_metrics(:prediction)
+
       _ ->
         manager
     end
@@ -279,6 +280,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
           | optimizer: Optimizer.optimize(optimizer, direction, amount)
         }
         |> update_metrics(:optimization)
+
       _ ->
         manager
     end
@@ -288,6 +290,7 @@ defmodule Raxol.Terminal.Scroll.Manager do
     case {sync, manager.sync} do
       {true, sync_module} when not is_nil(sync_module) ->
         %{manager | sync: Sync.sync(sync_module, direction, amount)}
+
       _ ->
         manager
     end

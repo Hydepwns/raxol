@@ -51,6 +51,7 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
             ETSCacheManager.cache_buffer_region(buffer_id, x, y, 1, 1, cell)
             cell
         end
+
       false ->
         # Don't cache cold regions
         Operations.get_cell(buffer, x, y)
@@ -76,7 +77,13 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
         line = Queries.get_line(buffer, y)
 
         # Only cache lines that are likely to be reused
-        cache_line_if_needed(should_cache_line?(line, width), buffer_id, y, width, line)
+        cache_line_if_needed(
+          should_cache_line?(line, width),
+          buffer_id,
+          y,
+          width,
+          line
+        )
 
         line
     end
@@ -98,11 +105,28 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
       :miss ->
         Telemetry.cache_miss(:buffer_region, {buffer_id, x, y, width, height})
 
-        region = Operations.fill_region(buffer, x, y, width, height, Raxol.Terminal.Cell.new(" "))
+        region =
+          Operations.fill_region(
+            buffer,
+            x,
+            y,
+            width,
+            height,
+            Raxol.Terminal.Cell.new(" ")
+          )
+
         Telemetry.buffer_read(buffer_id, width * height, width * height)
 
         # Cache if region is reasonable size
-        cache_region_if_small(width * height <= 1000, buffer_id, x, y, width, height, region)
+        cache_region_if_small(
+          width * height <= 1000,
+          buffer_id,
+          x,
+          y,
+          width,
+          height,
+          region
+        )
 
         region
     end
@@ -300,10 +324,11 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
   end
 
   # Helper functions for if statement refactoring
-  
+
   defp cache_line_if_needed(true, buffer_id, y, width, line) do
     ETSCacheManager.cache_buffer_region(buffer_id, 0, y, width, 1, line)
   end
+
   defp cache_line_if_needed(false, _buffer_id, _y, _width, _line), do: :ok
 
   defp cache_region_if_small(true, buffer_id, x, y, width, height, region) do
@@ -316,9 +341,20 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
       region
     )
   end
-  defp cache_region_if_small(false, _buffer_id, _x, _y, _width, _height, _region), do: :ok
+
+  defp cache_region_if_small(
+         false,
+         _buffer_id,
+         _x,
+         _y,
+         _width,
+         _height,
+         _region
+       ),
+       do: :ok
 
   defp cache_viewport(nil, _buffer, _buffer_id), do: :ok
+
   defp cache_viewport(viewport, buffer, buffer_id) do
     get_region(
       buffer,
@@ -331,6 +367,7 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
   end
 
   defp cache_cursor_lines(nil, _buffer, _buffer_id), do: :ok
+
   defp cache_cursor_lines(cursor, buffer, buffer_id) do
     for y <-
           max(0, cursor.y - 5)..min(
@@ -349,5 +386,7 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
   defdelegate index(buffer), to: Operations
   # Note: erase_line and erase_display require cursor position
   def erase_line(buffer, mode), do: Operations.erase_in_line(buffer, mode, 0, 0)
-  def erase_display(buffer, mode), do: Operations.erase_in_display(buffer, mode, 0, 0)
+
+  def erase_display(buffer, mode),
+    do: Operations.erase_in_display(buffer, mode, 0, 0)
 end

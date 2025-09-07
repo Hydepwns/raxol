@@ -13,12 +13,12 @@ defmodule Raxol.Terminal.Session.Storage do
     case Serializer.serialize(session) do
       {:ok, serialized_data} ->
         storage_path = get_storage_path(session.id)
-        
+
         case File.write(storage_path, :erlang.term_to_binary(serialized_data)) do
           :ok -> :ok
           {:error, reason} -> {:error, reason}
         end
-        
+
       {:error, reason} ->
         {:error, reason}
     end

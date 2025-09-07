@@ -704,6 +704,7 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
               acc_state
           end
         end)
+
       false ->
         state
     end
@@ -858,11 +859,11 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   defp replicate_to_nodes(state) do
     # Implement replication to other nodes
     case length(state.replication_nodes) do
-      0 -> state
+      0 ->
+        state
+
       node_count ->
-        Logger.debug(
-          "Replicating events to #{node_count} nodes"
-        )
+        Logger.debug("Replicating events to #{node_count} nodes")
         state
     end
   end

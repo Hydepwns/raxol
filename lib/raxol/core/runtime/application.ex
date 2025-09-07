@@ -449,6 +449,7 @@ defmodule Raxol.Core.Runtime.Application do
             # Assume no change if return value is unexpected
             {model, []}
         end
+
       false ->
         # Default implementation if update/2 is not defined
         {model, []}

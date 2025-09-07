@@ -66,7 +66,6 @@ defmodule Raxol.Svelte.Context do
       @contexts %{}
       @context_subscriptions %{}
       @before_compile Raxol.Svelte.Context
-      
     end
   end
 
@@ -156,8 +155,12 @@ defmodule Raxol.Svelte.Context do
 
         # Immediately call with current value
         current_value = find_context_value(key, state, nil)
-        
-        maybe_call_callback_with_value(current_value != nil, callback, current_value)
+
+        maybe_call_callback_with_value(
+          current_value != nil,
+          callback,
+          current_value
+        )
 
         {:reply, subscription_id, new_state}
       end
@@ -247,7 +250,8 @@ defmodule Raxol.Svelte.Context do
         Task.start(fn -> callback.(current_value) end)
       end
 
-      defp maybe_call_callback_with_value(false, _callback, _current_value), do: :ok
+      defp maybe_call_callback_with_value(false, _callback, _current_value),
+        do: :ok
 
       defp handle_context_render_update(true, state) do
         send(self(), :render)
@@ -357,7 +361,7 @@ defmodule Raxol.Svelte.Context.ThemeProvider do
   @moduledoc """
   Built-in theme context provider.
   """
-  
+
   # Simplified implementation without unused macro functions
   use GenServer
 
@@ -382,22 +386,25 @@ defmodule Raxol.Svelte.Context.ThemeProvider do
     {:ok, state}
   end
 
-  @impl GenServer  
+  @impl GenServer
   def handle_call(:get_theme_data, _from, state) do
     theme_data = %{
       name: state.theme,
       colors: get_theme_colors(state.theme),
       spacing: get_theme_spacing(state.theme)
     }
+
     {:reply, theme_data, state}
   end
 
   @impl GenServer
   def handle_call(:toggle_theme, _from, state) do
-    new_theme = case state.theme do
-      "light" -> "dark"
-      _ -> "light"
-    end
+    new_theme =
+      case state.theme do
+        "light" -> "dark"
+        _ -> "light"
+      end
+
     new_state = %{state | theme: new_theme}
     {:reply, new_theme, new_state}
   end
@@ -445,12 +452,16 @@ defmodule Raxol.Svelte.Context.AuthProvider do
   @moduledoc """
   Built-in authentication context provider.
   """
-  
+
   # Simplified implementation without unused macro functions
   use GenServer
 
   def start_link(initial_user \\ nil) do
-    GenServer.start_link(__MODULE__, %{user: initial_user, loading: false, error: nil})
+    GenServer.start_link(__MODULE__, %{
+      user: initial_user,
+      loading: false,
+      error: nil
+    })
   end
 
   def get_auth_data(pid) do
@@ -482,19 +493,20 @@ defmodule Raxol.Svelte.Context.AuthProvider do
       error: state.error,
       is_authenticated: state.user != nil
     }
+
     {:reply, auth_data, state}
   end
 
   @impl GenServer
   def handle_call({:login, credentials}, _from, state) do
     new_state = %{state | loading: true, error: nil}
-    
+
     # Simulate async authentication
     Task.start(fn ->
       user = authenticate(credentials)
       GenServer.cast(self(), {:login_complete, user})
     end)
-    
+
     {:reply, :ok, new_state}
   end
 

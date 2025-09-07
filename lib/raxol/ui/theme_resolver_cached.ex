@@ -206,7 +206,9 @@ defmodule Raxol.UI.ThemeResolverCached do
 
   # Private cache helpers
 
-  defp resolve_variant_color_with_cache(nil, _attrs, _theme, _color_type), do: nil
+  defp resolve_variant_color_with_cache(nil, _attrs, _theme, _color_type),
+    do: nil
+
   defp resolve_variant_color_with_cache(variant_name, attrs, theme, color_type) do
     cache_key = {:variant_color, variant_name, get_theme_id(theme), color_type}
 
@@ -222,7 +224,11 @@ defmodule Raxol.UI.ThemeResolverCached do
   end
 
   defp get_component_styles_with_cache(nil, _theme), do: %{}
-  defp get_component_styles_with_cache(_component_type, theme) when not is_map(theme), do: %{}
+
+  defp get_component_styles_with_cache(_component_type, theme)
+       when not is_map(theme),
+       do: %{}
+
   defp get_component_styles_with_cache(component_type, theme) do
     cache_key = {:component_styles, component_type, get_theme_id(theme)}
 

@@ -152,9 +152,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   end
 
   defp do_update(version, use_delta) do
-    IO.puts(
-      "Updating to version v#{version} #{get_update_message(use_delta)}"
-    )
+    IO.puts("Updating to version v#{version} #{get_update_message(use_delta)}")
 
     case Updater.self_update(version, use_delta: use_delta) do
       :ok ->
@@ -215,7 +213,9 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
     "\e[31m#{text}\e[0m"
   end
 
-  defp get_check_result(version, _opts) when version != nil, do: {:update_available, version}
+  defp get_check_result(version, _opts) when version != nil,
+    do: {:update_available, version}
+
   defp get_check_result(nil, opts) do
     IO.puts("Checking for updates...")
     Updater.check_for_updates(opts)
@@ -242,7 +242,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
         IO.puts(error_msg("Error checking for updates: #{reason}"))
     end
   end
-  
+
   defp handle_delta_info_check(version, _opts) do
     # Check delta info for the specified version
     check_delta_for_version(version)

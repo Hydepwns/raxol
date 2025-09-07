@@ -292,8 +292,8 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
       {:error, reason, new_state} ->
         {:reply, {:error, reason}, new_state}
 
-      # Note: {:async, ...} clause removed as execute_command_internal/3 only returns
-      # {:ok, result, new_state} or {:error, reason, new_state} patterns
+        # Note: {:async, ...} clause removed as execute_command_internal/3 only returns
+        # {:ok, result, new_state} or {:error, reason, new_state} patterns
     end
   end
 
@@ -370,8 +370,8 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
         # Error handling for async commands (logging, dead letter queue, etc.)
         {:noreply, new_state}
 
-      # Note: {:async, ...} clause removed as execute_command_internal/3 only returns
-      # {:ok, result, new_state} or {:error, reason, new_state} patterns
+        # Note: {:async, ...} clause removed as execute_command_internal/3 only returns
+        # {:ok, result, new_state} or {:error, reason, new_state} patterns
     end
   end
 

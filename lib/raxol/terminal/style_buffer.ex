@@ -182,5 +182,7 @@ defmodule Raxol.Terminal.StyleBuffer do
   def validate_style(_), do: {:error, "Style must be a map"}
 
   defp validate_key_result(true, _invalid_keys), do: :ok
-  defp validate_key_result(false, invalid_keys), do: {:error, "Invalid style keys: #{inspect(invalid_keys)}"}
+
+  defp validate_key_result(false, invalid_keys),
+    do: {:error, "Invalid style keys: #{inspect(invalid_keys)}"}
 end

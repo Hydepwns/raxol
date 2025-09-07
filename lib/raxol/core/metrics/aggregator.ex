@@ -114,6 +114,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
         # Even number of elements - average of middle two
         mid = div(count, 2)
         (Enum.at(sorted, mid - 1) + Enum.at(sorted, mid)) / 2
+
       false ->
         # Odd number of elements - middle element
         Enum.at(sorted, div(count, 2))
@@ -127,6 +128,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
     case count == 0 do
       true ->
         0
+
       false ->
         index = ceil(p * count) - 1
         index = max(0, min(index, count - 1))

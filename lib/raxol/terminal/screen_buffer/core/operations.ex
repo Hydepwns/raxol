@@ -175,9 +175,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Core.Operations do
 
             new_cells = List.replace_at(buffer.cells, y, new_line)
             %{buffer | cells: new_cells}
+
           false ->
             buffer
         end
+
       false ->
         buffer
     end

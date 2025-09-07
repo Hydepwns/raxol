@@ -7,10 +7,11 @@ defmodule Raxol.Terminal.Split.Common do
   Common start_link logic for split-related GenServers.
   """
   def start_link(module, opts \\ []) do
-    opts = case is_map(opts) do
-      true -> Enum.into(opts, [])
-      false -> opts
-    end
+    opts =
+      case is_map(opts) do
+        true -> Enum.into(opts, [])
+        false -> opts
+      end
 
     name =
       case Mix.env() == :test do

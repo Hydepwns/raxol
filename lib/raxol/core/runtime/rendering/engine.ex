@@ -508,6 +508,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         true ->
           # Write escape sequences or other commands directly to output
           IO.write(command)
+
         false ->
           Raxol.Core.Runtime.Log.warning_with_context(
             "Rendering Engine: Unknown plugin command format",

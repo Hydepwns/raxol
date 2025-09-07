@@ -164,6 +164,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
               blank_line,
               max_lines_in_region - length(new_scroll_region)
             )
+
         false ->
           Enum.take(new_scroll_region, max_lines_in_region)
       end

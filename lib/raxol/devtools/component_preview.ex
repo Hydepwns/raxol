@@ -449,6 +449,7 @@ defmodule Raxol.DevTools.ComponentPreview do
           case story.description do
             nil ->
               nil
+
             description ->
               %{
                 type: :text,
@@ -472,6 +473,7 @@ defmodule Raxol.DevTools.ComponentPreview do
           case story.code_example do
             nil ->
               nil
+
             code_example ->
               code_example_section(code_example)
           end,
@@ -639,6 +641,7 @@ defmodule Raxol.DevTools.ComponentPreview do
           case story.description do
             nil ->
               nil
+
             description ->
               %{
                 type: :text,

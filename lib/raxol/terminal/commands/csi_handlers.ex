@@ -145,13 +145,17 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   # Bracketed paste handling
   def handle_bracketed_paste_start(emulator) do
     case emulator.mode_manager.bracketed_paste_mode do
-      true -> %{emulator | bracketed_paste_active: true, bracketed_paste_buffer: ""}
-      false -> emulator
+      true ->
+        %{emulator | bracketed_paste_active: true, bracketed_paste_buffer: ""}
+
+      false ->
+        emulator
     end
   end
 
   def handle_bracketed_paste_end(emulator) do
-    case emulator.mode_manager.bracketed_paste_mode and emulator.bracketed_paste_active do
+    case emulator.mode_manager.bracketed_paste_mode and
+           emulator.bracketed_paste_active do
       true ->
         # Process the accumulated paste buffer as a single paste event
         updated_emulator =
@@ -162,6 +166,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
           | bracketed_paste_active: false,
             bracketed_paste_buffer: ""
         }
+
       false ->
         %{emulator | bracketed_paste_active: false, bracketed_paste_buffer: ""}
     end

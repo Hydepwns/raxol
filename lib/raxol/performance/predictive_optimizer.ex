@@ -191,10 +191,15 @@ defmodule Raxol.Performance.PredictiveOptimizer do
 
   defp update_pattern_history(history, pattern) do
     new_queue = :queue.in(pattern, history)
-    trim_pattern_history(:queue.len(new_queue) > @pattern_history_size, new_queue)
+
+    trim_pattern_history(
+      :queue.len(new_queue) > @pattern_history_size,
+      new_queue
+    )
   end
 
   defp trim_pattern_history(false, queue), do: queue
+
   defp trim_pattern_history(true, queue) do
     {_, trimmed} = :queue.out(queue)
     trimmed

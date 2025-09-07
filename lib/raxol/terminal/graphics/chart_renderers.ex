@@ -26,12 +26,12 @@ defmodule Raxol.Terminal.Graphics.ChartRenderers do
   """
   def create_heatmap_visualization(data, config) do
     chart_id = generate_chart_id()
-    
+
     case UnifiedGraphics.create_graphics(config) do
       {:ok, graphics_id} ->
         :ok = render_heatmap(graphics_id, data, config)
         {:ok, chart_id, graphics_id}
-        
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -42,12 +42,12 @@ defmodule Raxol.Terminal.Graphics.ChartRenderers do
   """
   def create_scatter_visualization(points, config) do
     chart_id = generate_chart_id()
-    
+
     case UnifiedGraphics.create_graphics(config) do
       {:ok, graphics_id} ->
         :ok = render_scatter_plot(graphics_id, points, config)
         {:ok, chart_id, graphics_id}
-        
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -58,12 +58,12 @@ defmodule Raxol.Terminal.Graphics.ChartRenderers do
   """
   def create_histogram_visualization(values, config) do
     chart_id = generate_chart_id()
-    
+
     case UnifiedGraphics.create_graphics(config) do
       {:ok, graphics_id} ->
         :ok = render_histogram(graphics_id, values, config)
         {:ok, chart_id, graphics_id}
-        
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -91,13 +91,13 @@ defmodule Raxol.Terminal.Graphics.ChartRenderers do
     bins = Map.get(config, :bins, 10)
     {min_val, max_val} = Enum.min_max(values)
     bin_width = (max_val - min_val) / bins
-    
+
     # Create histogram bins
-    Enum.map(0..(bins-1), fn i ->
-      bin_start = min_val + (i * bin_width)
+    Enum.map(0..(bins - 1), fn i ->
+      bin_start = min_val + i * bin_width
       bin_end = bin_start + bin_width
       bin_values = Enum.filter(values, &(&1 >= bin_start and &1 < bin_end))
-      
+
       %{
         bin: i,
         start: bin_start,

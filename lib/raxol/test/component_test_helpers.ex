@@ -88,6 +88,7 @@ defmodule Raxol.ComponentTestHelpers do
         end)
 
         %{component | state: new_state}
+
       false ->
         component
     end
@@ -98,6 +99,7 @@ defmodule Raxol.ComponentTestHelpers do
       true ->
         new_state = component.module.unmount(component.state)
         %{component | state: new_state}
+
       false ->
         component
     end

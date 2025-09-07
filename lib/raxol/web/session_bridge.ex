@@ -394,20 +394,27 @@ defmodule Raxol.Web.SessionBridge do
   # Helper functions for pattern matching refactoring
 
   defp notify_terminal_if_active(nil, _changes), do: :ok
+
   defp notify_terminal_if_active(terminal_pid, changes) do
     send(terminal_pid, {:state_update, changes})
   end
 
-  defp handle_process_by_type(true, pid, state), do: handle_web_client_disconnect(pid, state)
+  defp handle_process_by_type(true, pid, state),
+    do: handle_web_client_disconnect(pid, state)
+
   defp handle_process_by_type(false, _pid, state), do: {:noreply, state}
 
-  defp determine_interface_after_disconnect(true, _current_interface), do: :terminal
-  defp determine_interface_after_disconnect(false, current_interface), do: current_interface
+  defp determine_interface_after_disconnect(true, _current_interface),
+    do: :terminal
+
+  defp determine_interface_after_disconnect(false, current_interface),
+    do: current_interface
 
   defp schedule_cleanup_if_no_clients(true) do
     # 30 second grace period
     Process.send_after(self(), :cleanup_session, 30_000)
   end
+
   defp schedule_cleanup_if_no_clients(false), do: :ok
 
   # Helper for handling process down events
@@ -427,7 +434,10 @@ defmodule Raxol.Web.SessionBridge do
     new_web_pids = MapSet.delete(state.web_pids, pid)
 
     new_interface =
-      determine_interface_after_disconnect(MapSet.size(new_web_pids) == 0 and state.terminal_pid, state.current_interface)
+      determine_interface_after_disconnect(
+        MapSet.size(new_web_pids) == 0 and state.terminal_pid,
+        state.current_interface
+      )
 
     new_state = %{
       state
@@ -439,7 +449,9 @@ defmodule Raxol.Web.SessionBridge do
     broadcast_event(state.session_id, {:web_client_disconnected, pid})
 
     # If no clients remain, schedule cleanup
-    schedule_cleanup_if_no_clients(MapSet.size(new_web_pids) == 0 and is_nil(state.terminal_pid))
+    schedule_cleanup_if_no_clients(
+      MapSet.size(new_web_pids) == 0 and is_nil(state.terminal_pid)
+    )
 
     {:noreply, new_state}
   end

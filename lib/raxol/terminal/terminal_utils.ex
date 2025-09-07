@@ -46,11 +46,14 @@ defmodule Raxol.Terminal.TerminalUtils do
         Raxol.Core.Runtime.Log.debug(
           "[TerminalUtils] TTY detected, attempting detect_with_termbox..."
         )
+
         detect_with_termbox()
+
       _ ->
         Raxol.Core.Runtime.Log.debug(
           "[TerminalUtils] Not a real TTY, skipping detect_with_termbox."
         )
+
         {:error, :not_a_tty}
     end
   end
@@ -60,6 +63,7 @@ defmodule Raxol.Terminal.TerminalUtils do
       "Detected invalid terminal dimensions (0x?). Using defaults.",
       %{}
     )
+
     {default_width, default_height}
   end
 
@@ -68,6 +72,7 @@ defmodule Raxol.Terminal.TerminalUtils do
       "Detected invalid terminal dimensions (?x0). Using defaults.",
       %{}
     )
+
     {default_width, default_height}
   end
 
@@ -178,8 +183,9 @@ defmodule Raxol.Terminal.TerminalUtils do
     height = get_termbox_height()
 
     case {is_integer(width) and width > 0, is_integer(height) and height > 0} do
-      {true, true} -> 
+      {true, true} ->
         {:ok, width, height}
+
       _ ->
         error = {:error, :invalid_termbox_dimensions}
         Raxol.Core.Runtime.Log.debug("termbox2_nif error: #{inspect(error)}")

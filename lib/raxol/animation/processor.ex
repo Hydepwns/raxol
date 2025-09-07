@@ -127,8 +127,9 @@ defmodule Raxol.Animation.Processor do
     is_disabled = AnimAccessibility.disabled?(animation)
     is_pending_completion = Map.get(instance, :pending_completion, false)
 
-    should_complete = elapsed >= duration or (is_disabled and is_pending_completion)
-    
+    should_complete =
+      elapsed >= duration or (is_disabled and is_pending_completion)
+
     case should_complete do
       true ->
         # Calculate final value and apply to state before completion
@@ -149,6 +150,7 @@ defmodule Raxol.Animation.Processor do
 
         # Mark as completed
         {updated_state, [{element_id, animation_name} | completed_list]}
+
       false ->
         # Calculate current value and apply to state
         progress = calculate_animation_progress(animation, elapsed, duration)

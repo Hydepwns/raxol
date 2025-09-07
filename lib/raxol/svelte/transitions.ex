@@ -83,7 +83,12 @@ defmodule Raxol.Svelte.Transitions do
         )
       end
 
-      defp handle_enter_transition(transition_fn, element, _transition_name, params) do
+      defp handle_enter_transition(
+             transition_fn,
+             element,
+             _transition_name,
+             params
+           ) do
         transition_fn.(element, Map.put(params, :direction, :enter))
       end
 
@@ -100,7 +105,12 @@ defmodule Raxol.Svelte.Transitions do
         )
       end
 
-      defp handle_exit_transition(transition_fn, element, _transition_name, params) do
+      defp handle_exit_transition(
+             transition_fn,
+             element,
+             _transition_name,
+             params
+           ) do
         transition_fn.(element, Map.put(params, :direction, :exit))
       end
     end
@@ -339,7 +349,10 @@ defmodule Raxol.Svelte.Animator do
     apply_animation_frame(state.element, current_props)
 
     # Check if animation is complete
-    handle_animation_progress(animation_complete?(state.keyframes, elapsed), state)
+    handle_animation_progress(
+      animation_complete?(state.keyframes, elapsed),
+      state
+    )
   end
 
   @impl GenServer
@@ -365,15 +378,42 @@ defmodule Raxol.Svelte.Animator do
 
   defp calculate_current_properties(keyframes, elapsed) do
     Enum.map(keyframes, fn {property, from, to, duration, easing, delay} ->
-      calculate_keyframe_property(elapsed >= delay, property, from, to, duration, easing, delay, elapsed)
+      calculate_keyframe_property(
+        elapsed >= delay,
+        property,
+        from,
+        to,
+        duration,
+        easing,
+        delay,
+        elapsed
+      )
     end)
   end
 
-  defp calculate_keyframe_property(false, property, from, _to, _duration, _easing, _delay, _elapsed) do
+  defp calculate_keyframe_property(
+         false,
+         property,
+         from,
+         _to,
+         _duration,
+         _easing,
+         _delay,
+         _elapsed
+       ) do
     {property, from}
   end
 
-  defp calculate_keyframe_property(true, property, from, to, duration, easing, delay, elapsed) do
+  defp calculate_keyframe_property(
+         true,
+         property,
+         from,
+         to,
+         duration,
+         easing,
+         delay,
+         elapsed
+       ) do
     progress = min((elapsed - delay) / duration, 1.0)
     eased_progress = apply_easing(progress, easing)
     current_value = interpolate(from, to, eased_progress)

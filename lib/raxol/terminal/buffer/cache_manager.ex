@@ -84,13 +84,15 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
     * Updated cache manager instance
   """
   def put(%__MODULE__{} = cache, key, value) do
-    cache = case cache.current_size >= cache.max_size do
-      true ->
-        # Evict least recently used entry
-        evict_lru(cache)
-      false ->
-        cache
-    end
+    cache =
+      case cache.current_size >= cache.max_size do
+        true ->
+          # Evict least recently used entry
+          evict_lru(cache)
+
+        false ->
+          cache
+      end
 
     entry = %{
       data: value,
@@ -156,6 +158,7 @@ defmodule Raxol.Terminal.Buffer.CacheManager do
 
   defp calculate_hit_ratio(%__MODULE__{} = cache) do
     total = cache.hit_count + cache.miss_count
+
     case total > 0 do
       true -> cache.hit_count / total
       false -> 0.0

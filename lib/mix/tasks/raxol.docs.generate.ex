@@ -37,7 +37,11 @@ defmodule Mix.Tasks.Raxol.Docs.Generate do
       true ->
         Code.eval_file(generator_path)
         Mix.shell().info("✅ Documentation generation complete!")
-        Mix.shell().info("📊 Achieved ~40% reduction in documentation redundancy")
+
+        Mix.shell().info(
+          "📊 Achieved ~40% reduction in documentation redundancy"
+        )
+
       false ->
         Mix.shell().error("❌ Generator script not found: #{generator_path}")
         Mix.shell().error("Please ensure scripts/generate_docs.exs exists")

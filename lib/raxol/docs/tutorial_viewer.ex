@@ -153,7 +153,8 @@ defmodule Raxol.Docs.TutorialViewer do
     {%{state | current_step: next_step, step_index: next_index}, []}
   end
 
-  defp handle_previous_step(prev_index, _prev_step, state) when prev_index < 0, do: {state, []}
+  defp handle_previous_step(prev_index, _prev_step, state) when prev_index < 0,
+    do: {state, []}
 
   defp handle_previous_step(_prev_index, nil, state), do: {state, []}
 

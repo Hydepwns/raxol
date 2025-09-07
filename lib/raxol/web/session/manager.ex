@@ -53,14 +53,19 @@ defmodule Raxol.Web.Session.Manager do
     # Monitor is a GenServer and should be started by a supervisor
     # In test environment, we can skip starting the monitor
     case {function_exported?(Mix, :env, 0), Mix.env()} do
-      {true, :test} -> :ok
+      {true, :test} ->
+        :ok
+
       {true, _env} ->
         # Only start monitor in non-test environments where supervisor is available
         case Process.whereis(Monitor) do
-          nil -> :ok  # Monitor not started, let supervisor handle it
+          # Monitor not started, let supervisor handle it
+          nil -> :ok
           _pid -> :ok
         end
-      {false, _} -> :ok
+
+      {false, _} ->
+        :ok
     end
 
     state = %{
@@ -92,15 +97,24 @@ defmodule Raxol.Web.Session.Manager do
     # In test environment, skip database writes to avoid schema issues
     case {function_exported?(Mix, :env, 0), Mix.env()} do
       {true, :test} ->
-        new_state = %{state | sessions: Map.put(state.sessions, session_id, session)}
+        new_state = %{
+          state
+          | sessions: Map.put(state.sessions, session_id, session)
+        }
+
         {:reply, {:ok, session}, new_state}
-      
+
       _env ->
         # Store session
         case Storage.store(session) do
           {:ok, _} ->
-            new_state = %{state | sessions: Map.put(state.sessions, session_id, session)}
+            new_state = %{
+              state
+              | sessions: Map.put(state.sessions, session_id, session)
+            }
+
             {:reply, {:ok, session}, new_state}
+
           {:error, reason} ->
             {:reply, {:error, reason}, state}
         end
@@ -118,14 +132,17 @@ defmodule Raxol.Web.Session.Manager do
         case {function_exported?(Mix, :env, 0), Mix.env()} do
           {true, :test} ->
             {:reply, {:ok, updated_session}, state}
+
           _env ->
             case Storage.store(updated_session) do
               {:ok, _} ->
                 {:reply, {:ok, updated_session}, state}
+
               {:error, reason} ->
                 Raxol.Core.Runtime.Log.error(
                   "Failed to update session last_active time: #{inspect(reason)}"
                 )
+
                 {:reply, {:ok, session}, state}
             end
         end
@@ -151,14 +168,17 @@ defmodule Raxol.Web.Session.Manager do
         case {function_exported?(Mix, :env, 0), Mix.env()} do
           {true, :test} ->
             {:reply, {:ok, updated_session}, state}
+
           _env ->
             case Storage.store(updated_session) do
               {:ok, _} ->
                 {:reply, {:ok, updated_session}, state}
+
               {:error, reason} ->
                 Raxol.Core.Runtime.Log.error(
                   "Failed to update session metadata: #{inspect(reason)}"
                 )
+
                 {:reply, {:error, reason}, state}
             end
         end

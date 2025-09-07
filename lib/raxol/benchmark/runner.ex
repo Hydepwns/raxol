@@ -59,6 +59,7 @@ defmodule Raxol.Benchmark.Runner do
       true ->
         Logger.warning("Performance regressions detected!")
         Analyzer.report_regressions(regressions)
+
       false ->
         :ok
     end

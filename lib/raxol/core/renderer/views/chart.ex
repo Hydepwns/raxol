@@ -179,14 +179,42 @@ defmodule Raxol.Core.Renderer.Views.Chart do
 
   defp create_bars(series, min, max, width, height, orientation) do
     total_points = Enum.sum(Enum.map(series, &length(&1.data)))
-    create_bars_with_points(total_points == 0, series, min, max, width, height, orientation, total_points)
+
+    create_bars_with_points(
+      total_points == 0,
+      series,
+      min,
+      max,
+      width,
+      height,
+      orientation,
+      total_points
+    )
   end
 
-  defp create_bars_with_points(true, _series, _min, _max, _width, _height, orientation, _total_points) do
+  defp create_bars_with_points(
+         true,
+         _series,
+         _min,
+         _max,
+         _width,
+         _height,
+         orientation,
+         _total_points
+       ) do
     empty_bars_flex(orientation)
   end
 
-  defp create_bars_with_points(false, series, min, max, width, height, orientation, total_points) do
+  defp create_bars_with_points(
+         false,
+         series,
+         min,
+         max,
+         width,
+         height,
+         orientation,
+         total_points
+       ) do
     config = bar_config(orientation, min, max, width, height, total_points)
     bars = create_bars_for_series(series, config)
 
@@ -300,14 +328,19 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     # Bresenham's line algorithm
     dx = abs(x2 - x1)
     dy = -abs(y2 - y1)
-    sx = case x1 < x2 do
-      true -> 1
-      false -> -1
-    end
-    sy = case y1 < y2 do
-      true -> 1
-      false -> -1
-    end
+
+    sx =
+      case x1 < x2 do
+        true -> 1
+        false -> -1
+      end
+
+    sy =
+      case y1 < y2 do
+        true -> 1
+        false -> -1
+      end
+
     err = dx + dy
 
     %{
@@ -501,7 +534,8 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     scale_value_with_range(max == min, value, min, max, new_min, new_max)
   end
 
-  defp scale_value_with_range(true, _value, _min, _max, new_min, _new_max), do: new_min
+  defp scale_value_with_range(true, _value, _min, _max, new_min, _new_max),
+    do: new_min
 
   defp scale_value_with_range(false, value, min, max, new_min, new_max) do
     (value - min) / (max - min) * (new_max - new_min) + new_min

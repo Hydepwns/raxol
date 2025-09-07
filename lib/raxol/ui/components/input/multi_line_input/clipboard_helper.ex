@@ -17,9 +17,15 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
       )
 
     case {start_pos, end_pos, start_pos == end_pos} do
-      {nil, _, _} -> {state, []}
-      {_, nil, _} -> {state, []}
-      {_, _, true} -> {state, []}
+      {nil, _, _} ->
+        {state, []}
+
+      {_, nil, _} ->
+        {state, []}
+
+      {_, _, true} ->
+        {state, []}
+
       {_, _, false} ->
         lines = String.split(state.value, "\n")
         start_index = TextHelper.pos_to_index(lines, start_pos)
@@ -30,7 +36,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
 
         # Use exclusive end position to match the fixed coordinate system
         selected_text =
-          String.slice(Enum.join(lines, "\n"), norm_start, norm_end - norm_start)
+          String.slice(
+            Enum.join(lines, "\n"),
+            norm_start,
+            norm_end - norm_start
+          )
 
         {state, [%Command{type: :clipboard_write, data: selected_text}]}
     end
@@ -47,9 +57,15 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
       )
 
     case {start_pos, end_pos, start_pos == end_pos} do
-      {nil, _, _} -> {state, []}
-      {_, nil, _} -> {state, []}
-      {_, _, true} -> {state, []}
+      {nil, _, _} ->
+        {state, []}
+
+      {_, nil, _} ->
+        {state, []}
+
+      {_, _, true} ->
+        {state, []}
+
       {_, _, false} ->
         # Get the selected text as a string
         lines = String.split(state.value, "\n")
@@ -61,7 +77,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper do
 
         # Use exclusive end position to match the fixed coordinate system
         selected_text =
-          String.slice(Enum.join(lines, "\n"), norm_start, norm_end - norm_start)
+          String.slice(
+            Enum.join(lines, "\n"),
+            norm_start,
+            norm_end - norm_start
+          )
 
         # Delete the selection
         {new_state, _} = TextHelper.delete_selection(state)

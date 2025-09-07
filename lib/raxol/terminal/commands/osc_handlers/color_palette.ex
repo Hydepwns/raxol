@@ -145,6 +145,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers.ColorPalette do
     case len < 1 or len > 4 do
       true ->
         :error
+
       false ->
         parse_hex_value(hex_str, len)
     end

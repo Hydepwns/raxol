@@ -207,7 +207,10 @@ defmodule Raxol.UI.Components.Patterns.Compound do
                   Map.get(accordion_context, :expanded_items) == value
 
                 :multiple ->
-                  MapSet.member?(Map.get(accordion_context, :expanded_items, MapSet.new()), value)
+                  MapSet.member?(
+                    Map.get(accordion_context, :expanded_items, MapSet.new()),
+                    value
+                  )
               end
 
             # Create item context
@@ -217,8 +220,15 @@ defmodule Raxol.UI.Components.Patterns.Compound do
               disabled: disabled,
               toggle:
                 case disabled do
-                  true -> fn -> :ok end
-                  false -> fn -> Map.get(accordion_context, :toggle_item, fn _ -> nil end).(value) end
+                  true ->
+                    fn -> :ok end
+
+                  false ->
+                    fn ->
+                      Map.get(accordion_context, :toggle_item, fn _ -> nil end).(
+                        value
+                      )
+                    end
                 end
             }
 
@@ -375,7 +385,9 @@ defmodule Raxol.UI.Components.Patterns.Compound do
           type: :button,
           attrs: %{
             on_click: fn ->
-              Map.get(dropdown_context, :set_open, fn _ -> nil end).(not Map.get(dropdown_context, :is_open, false))
+              Map.get(dropdown_context, :set_open, fn _ -> nil end).(
+                not Map.get(dropdown_context, :is_open, false)
+              )
             end,
             aria_expanded: Map.get(dropdown_context, :is_open),
             aria_haspopup: true,
@@ -604,10 +616,11 @@ defmodule Raxol.UI.Components.Patterns.Compound do
                 on_click: handle_click,
                 style: %{
                   padding: 12,
-                  background: case is_active do
-                    true -> :white
-                    false -> :transparent
-                  end,
+                  background:
+                    case is_active do
+                      true -> :white
+                      false -> :transparent
+                    end,
                   border: :none,
                   border_bottom:
                     case {is_active, Map.get(tabs_context || %{}, :orientation)} do
@@ -619,18 +632,21 @@ defmodule Raxol.UI.Components.Patterns.Compound do
                       {true, :vertical} -> "2px solid #007acc"
                       _ -> :none
                     end,
-                  cursor: case disabled do
-                    true -> :not_allowed
-                    false -> :pointer
-                  end,
-                  opacity: case disabled do
-                    true -> 0.5
-                    false -> 1.0
-                  end,
-                  font_weight: case is_active do
-                    true -> :bold
-                    false -> :normal
-                  end
+                  cursor:
+                    case disabled do
+                      true -> :not_allowed
+                      false -> :pointer
+                    end,
+                  opacity:
+                    case disabled do
+                      true -> 0.5
+                      false -> 1.0
+                    end,
+                  font_weight:
+                    case is_active do
+                      true -> :bold
+                      false -> :normal
+                    end
                 }
               },
               children: children

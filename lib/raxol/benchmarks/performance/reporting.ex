@@ -164,12 +164,16 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
 
     print_detailed_if_needed(detailed, validation)
   end
+
   defp print_validation_results(_results, _detailed), do: :ok
 
-  defp print_detailed_if_needed(true, validation), do: print_detailed_validation(validation)
+  defp print_detailed_if_needed(true, validation),
+    do: print_detailed_validation(validation)
+
   defp print_detailed_if_needed(false, _validation), do: :ok
 
-  defp print_category_results(category_results) when map_size(category_results) > 0 do
+  defp print_category_results(category_results)
+       when map_size(category_results) > 0 do
     Enum.each(category_results, fn
       {_metric, %{status: status, message: message}} ->
         status_icon = get_status_icon(status)
@@ -179,6 +183,7 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
         IO.puts("  ? Unknown validation result format")
     end)
   end
+
   defp print_category_results(_category_results) do
     IO.puts("  No validation results available")
   end
@@ -189,9 +194,16 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
   defp get_status_icon(_), do: "-"
 
   defp add_performance_recommendation(results, recommendations) do
-    render_time = get_in(results, [:render_performance, :full_screen_render_time_ms])
-    add_recommendation_if_needed(render_time, 16, :performance,
-      "Consider optimizing full screen rendering", recommendations)
+    render_time =
+      get_in(results, [:render_performance, :full_screen_render_time_ms])
+
+    add_recommendation_if_needed(
+      render_time,
+      16,
+      :performance,
+      "Consider optimizing full screen rendering",
+      recommendations
+    )
   end
 
   defp add_memory_recommendation(results, recommendations) do
@@ -199,19 +211,37 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
     add_recommendation_if_leak(memory_leak, recommendations)
   end
 
-  defp add_recommendation_if_needed(value, threshold, category, message, recommendations) 
-    when value > threshold do
+  defp add_recommendation_if_needed(
+         value,
+         threshold,
+         category,
+         message,
+         recommendations
+       )
+       when value > threshold do
     [%{category: category, message: message} | recommendations]
   end
-  defp add_recommendation_if_needed(_value, _threshold, _category, _message, recommendations) do
+
+  defp add_recommendation_if_needed(
+         _value,
+         _threshold,
+         _category,
+         _message,
+         recommendations
+       ) do
     recommendations
   end
 
   defp add_recommendation_if_leak(true, recommendations) do
-    [%{
-      category: :memory,
-      message: "Memory leak detected - investigate resource cleanup"
-    } | recommendations]
+    [
+      %{
+        category: :memory,
+        message: "Memory leak detected - investigate resource cleanup"
+      }
+      | recommendations
+    ]
   end
-  defp add_recommendation_if_leak(_memory_leak, recommendations), do: recommendations
+
+  defp add_recommendation_if_leak(_memory_leak, recommendations),
+    do: recommendations
 end

@@ -12,7 +12,9 @@ defmodule Raxol.Core.Runtime.ShutdownHelper do
     )
 
     case state.dispatcher_pid do
-      nil -> :ok
+      nil ->
+        :ok
+
       pid ->
         Raxol.Core.Runtime.Log.info_with_context(
           "[#{module_name}] Stopping Dispatcher PID: #{inspect(pid)}"
@@ -22,7 +24,9 @@ defmodule Raxol.Core.Runtime.ShutdownHelper do
     end
 
     case state.plugin_manager do
-      nil -> :ok
+      nil ->
+        :ok
+
       pid ->
         Raxol.Core.Runtime.Log.info_with_context(
           "[#{module_name}] Stopping PluginManager PID: #{inspect(pid)}"

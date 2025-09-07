@@ -233,7 +233,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
     # create_render_surface/3 currently always returns {:ok, surface}
     {:ok, surface} = create_render_surface(state, width, height)
-    
+
     new_state = %{
       state
       | surface_cache: Map.put(state.surface_cache, surface_id, surface)
@@ -253,7 +253,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
       surface ->
         # perform_render/4 currently always returns :ok
         :ok = perform_render(state, surface, terminal_buffer, opts)
-        
+
         end_time = System.monotonic_time(:microsecond)
         # Convert to milliseconds
         render_time = (end_time - start_time) / 1000
@@ -318,7 +318,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
           {:error, reason} ->
             {:reply, {:error, reason}, state}
         end
-      
+
       true ->
         updated_state = %{state | config: merged_config}
         {:reply, :ok, updated_state}

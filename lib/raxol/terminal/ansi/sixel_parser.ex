@@ -159,7 +159,11 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
           {:ok, {r, g, b}} ->
             new_palette = Map.put(state.palette, pc, {r, g, b})
 
-            parse(remaining_data, %{state | palette: new_palette, color_index: pc})
+            parse(remaining_data, %{
+              state
+              | palette: new_palette,
+                color_index: pc
+            })
 
           {:error, reason} ->
             Raxol.Core.Runtime.Log.warning_with_context(
@@ -169,6 +173,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
 
             parse(remaining_data, state)
         end
+
       false ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "Sixel Parser: Invalid color index ##{pc}. Skipping.",
@@ -312,6 +317,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
     pixels =
       Enum.reduce(0..5, %{}, fn bit_index, acc ->
         set? = Bitwise.band(pattern_int, Bitwise.bsl(1, bit_index)) != 0
+
         case set? do
           true -> Map.put(acc, {x, y + bit_index}, color)
           false -> acc

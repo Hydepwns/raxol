@@ -30,6 +30,7 @@ defmodule Raxol.Terminal.Buffer.OperationProcessor do
     case valid_coordinates?(buffer, x, y) do
       true ->
         Content.write_char(buffer, x, y, cell.char, cell)
+
       false ->
         buffer
     end
@@ -46,6 +47,7 @@ defmodule Raxol.Terminal.Buffer.OperationProcessor do
     case valid_coordinates?(buffer, x, y) do
       true ->
         Content.write_string(buffer, x, y, string)
+
       false ->
         buffer
     end
@@ -63,6 +65,7 @@ defmodule Raxol.Terminal.Buffer.OperationProcessor do
            y + height <= buffer.height do
       true ->
         fill_region_helper(buffer, x, y, width, height, cell)
+
       false ->
         buffer
     end

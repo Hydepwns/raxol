@@ -146,6 +146,7 @@ defmodule Raxol.Core.ErrorRecovery do
             mark_feature_degraded(feature, error)
             safe_execute(degraded_fn)
         end
+
       false ->
         safe_execute(degraded_fn)
     end
@@ -307,6 +308,7 @@ defmodule Raxol.Core.ErrorRecovery do
         case circuit.success_count >= 3 do
           true ->
             %{circuit | state: :closed, failure_count: 0, success_count: 0}
+
           false ->
             %{circuit | success_count: circuit.success_count + 1}
         end
@@ -327,6 +329,7 @@ defmodule Raxol.Core.ErrorRecovery do
             failure_count: new_failure_count,
             last_failure_time: System.system_time(:millisecond)
         }
+
       false ->
         %{circuit | failure_count: new_failure_count}
     end

@@ -622,6 +622,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
       true ->
         Logger.debug("Running FPS optimization")
         calculate_optimal_fps(state)
+
       false ->
         state
     end

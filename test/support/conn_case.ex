@@ -103,6 +103,7 @@ defmodule RaxolWeb.ConnCase do
       nil ->
         # If Accounts isn't running, skip user creation
         :ok
+
       _pid ->
         case Raxol.Accounts.get_user("user") do
           {:error, :not_found} -> create_test_user()

@@ -113,6 +113,7 @@ defmodule Raxol.Terminal.SessionManager do
             session = Map.put(session, :last_active, DateTime.utc_now())
             sessions = Map.put(sessions, session_id, session)
             {:reply, {:ok, session}, sessions}
+
           false ->
             {:reply, {:error, :invalid_token}, sessions}
         end

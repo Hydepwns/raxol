@@ -137,7 +137,13 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
 
   # Helper functions to eliminate if statements
 
-  defp handle_next_step_transition(false, _tutorial, _current_index, tutorial_id, state) do
+  defp handle_next_step_transition(
+         false,
+         _tutorial,
+         _current_index,
+         tutorial_id,
+         state
+       ) do
     # This was the last step, mark tutorial as completed
     state
     |> State.mark_completed(tutorial_id)
@@ -145,7 +151,13 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
     |> then(fn _ -> {:ok, :tutorial_completed} end)
   end
 
-  defp handle_next_step_transition(true, tutorial, current_index, tutorial_id, state) do
+  defp handle_next_step_transition(
+         true,
+         tutorial,
+         current_index,
+         tutorial_id,
+         state
+       ) do
     next_step = Enum.at(tutorial.steps, current_index + 1)
 
     updated_state =
@@ -160,11 +172,23 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
     {:ok, State.get_current_step(updated_state), updated_state}
   end
 
-  defp handle_previous_step_transition(false, _steps, _current_index, _tutorial_id, _state) do
+  defp handle_previous_step_transition(
+         false,
+         _steps,
+         _current_index,
+         _tutorial_id,
+         _state
+       ) do
     {:error, "Already at first step"}
   end
 
-  defp handle_previous_step_transition(true, steps, current_index, tutorial_id, state) do
+  defp handle_previous_step_transition(
+         true,
+         steps,
+         current_index,
+         tutorial_id,
+         state
+       ) do
     prev_step = Enum.at(steps, current_index - 1)
 
     updated_state = %{

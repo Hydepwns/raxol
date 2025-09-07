@@ -69,6 +69,7 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
                      event,
                      Map.get(state.plugin_states, plugin_id)
                    )
+
                  false ->
                    # Plugin doesn't implement filtering, pass event through unchanged
                    {:ok, event}

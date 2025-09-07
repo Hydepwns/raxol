@@ -28,10 +28,12 @@ defmodule TerminalTest do
         # Draw a simple pattern
         for y <- 0..(height - 1) do
           for x <- 0..(width - 1) do
-            ch = case rem(x + y, 2) do
-              0 -> ?#
-              _ -> ?.
-            end
+            ch =
+              case rem(x + y, 2) do
+                0 -> ?#
+                _ -> ?.
+              end
+
             :termbox2_nif.tb_set_cell(x, y, ch, 0xFFFFFF, 0x000000)
           end
         end
@@ -42,8 +44,8 @@ defmodule TerminalTest do
         # Wait a bit to see the pattern
         :timer.sleep(2000)
 
-      # Shutdown termbox
-      :termbox2_nif.tb_shutdown()
+        # Shutdown termbox
+        :termbox2_nif.tb_shutdown()
     end
   end
 end

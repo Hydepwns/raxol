@@ -54,14 +54,14 @@ defmodule Raxol.Terminal.Graphics.VisualizationHelpers do
     # Render initial empty chart
     bounds = Map.get(config, :bounds, default_bounds())
     title = Map.get(config, :title, "Chart")
-    
+
     _rendered_content = %{
       type: type,
       bounds: bounds,
       title: title,
       elements: []
     }
-    
+
     :ok
   end
 
@@ -101,7 +101,7 @@ defmodule Raxol.Terminal.Graphics.VisualizationHelpers do
         # Initialize chart rendering
         :ok = render_initial_chart(graphics_id, type, config)
         {:ok, chart_id, graphics_id}
-        
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -133,7 +133,7 @@ defmodule Raxol.Terminal.Graphics.VisualizationHelpers do
   def add_point_to_buffer(chart_state, data_point) do
     updated_buffer = [data_point | chart_state.data_buffer]
     max_points = get_max_points(chart_state.config)
-    
+
     trimmed_buffer = Enum.take(updated_buffer, max_points)
     %{chart_state | data_buffer: trimmed_buffer}
   end
@@ -144,7 +144,7 @@ defmodule Raxol.Terminal.Graphics.VisualizationHelpers do
   def add_points_to_buffer(chart_state, data_points) do
     updated_buffer = data_points ++ chart_state.data_buffer
     max_points = get_max_points(chart_state.config)
-    
+
     trimmed_buffer = Enum.take(updated_buffer, max_points)
     %{chart_state | data_buffer: trimmed_buffer}
   end

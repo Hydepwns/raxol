@@ -8,6 +8,7 @@ defmodule RaxolWeb.MonitoringLive do
     case connected?(socket) do
       true ->
         _ = :timer.send_interval(5000, :update_metrics)
+
       false ->
         :ok
     end

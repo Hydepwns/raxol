@@ -175,6 +175,7 @@ defmodule Raxol.Terminal.Cache.System do
                 )
 
               {cache_after_eviction, size_after_eviction}
+
             false ->
               {namespace_state.cache, namespace_state.size}
           end
@@ -282,6 +283,7 @@ defmodule Raxol.Terminal.Cache.System do
         case expired?(entry) do
           true ->
             handle_expired_entry(entry, key, namespace_state, state, namespace)
+
           false ->
             handle_valid_entry(entry, key, namespace_state, state, namespace)
         end
@@ -362,6 +364,7 @@ defmodule Raxol.Terminal.Cache.System do
 
   defp calculate_hit_ratio(namespace_state) do
     total = namespace_state.hit_count + namespace_state.miss_count
+
     case total > 0 do
       true -> namespace_state.hit_count / total
       false -> 0.0

@@ -32,11 +32,15 @@ defmodule Raxol.Core.Accessibility.Preferences do
     case is_nil(value) do
       true ->
         default
+
       false ->
         # If the value is a process name, return the default instead
         case value do
-          pid_or_name when is_atom(pid_or_name) or is_pid(pid_or_name) -> default
-          _ -> value
+          pid_or_name when is_atom(pid_or_name) or is_pid(pid_or_name) ->
+            default
+
+          _ ->
+            value
         end
     end
   end
@@ -65,6 +69,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
     case Mix.env() do
       :test ->
         get_option_test(key, user_preferences_pid_or_name, default)
+
       _ ->
         get_pref(key, default, user_preferences_pid_or_name)
     end
@@ -76,8 +81,10 @@ defmodule Raxol.Core.Accessibility.Preferences do
     case target_pid_or_name == self() do
       true ->
         default
+
       false ->
         value = UserPreferences.get(pref_key(key), target_pid_or_name)
+
         case value do
           nil -> default
           _ -> value
@@ -201,10 +208,12 @@ defmodule Raxol.Core.Accessibility.Preferences do
     handle_preference_changed({key_path, enabled}, user_preferences_pid_or_name)
 
     # Send text scale updated event
-    scale = case enabled do
-      true -> 1.5
-      false -> 1.0
-    end
+    scale =
+      case enabled do
+        true -> 1.5
+        false -> 1.0
+      end
+
     send(self(), {:text_scale_updated, user_preferences_pid_or_name, scale})
 
     :ok
@@ -235,8 +244,11 @@ defmodule Raxol.Core.Accessibility.Preferences do
           # Default to 1.0 for any other value
           _ -> 1.0
         end
+
       _ ->
-        large_text_enabled = get_option(:large_text, user_preferences_pid_or_name)
+        large_text_enabled =
+          get_option(:large_text, user_preferences_pid_or_name)
+
         case large_text_enabled do
           true -> 1.5
           _ -> 1.0
@@ -266,10 +278,11 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
       [:accessibility, :large_text] ->
         # Example of dispatching an event for large text
-        scale = case value do
-          true -> 1.5
-          false -> 1.0
-        end
+        scale =
+          case value do
+            true -> 1.5
+            false -> 1.0
+          end
 
         EventManager.dispatch(
           {:text_scale_updated, user_preferences_pid_or_name, scale}

@@ -47,10 +47,12 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     * `:export_format` - Format for exporting metrics
   """
   def start_link(opts \\ []) do
-    opts = case is_map(opts) do
-      true -> Enum.into(opts, [])
-      false -> opts
-    end
+    opts =
+      case is_map(opts) do
+        true -> Enum.into(opts, [])
+        false -> opts
+      end
+
     name = Keyword.get(opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, opts, name: name)
   end
@@ -341,6 +343,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     case count do
       0 ->
         nil
+
       _ ->
         # For percentiles, we want the value at the p-th percentile position
         # For a list of n elements, the p-th percentile is at position ceil(p * n)
@@ -462,6 +465,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
             Logger.warning(
               "Metric #{name} exceeded threshold: #{inspect(metric)}"
             )
+
           false ->
             :ok
         end
@@ -472,6 +476,7 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
     case error.severity do
       :critical ->
         Logger.error("Critical error occurred: #{inspect(error)}")
+
       _ ->
         :ok
     end

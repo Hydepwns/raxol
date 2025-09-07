@@ -133,6 +133,7 @@ defmodule Raxol.Terminal.Commands.Registry do
     case Enum.all?(required_fields, &Map.has_key?(command, &1)) do
       true ->
         :ok
+
       false ->
         {:error, :invalid_command}
     end
@@ -142,6 +143,7 @@ defmodule Raxol.Terminal.Commands.Registry do
     case Map.has_key?(registry.commands, command.name) do
       true ->
         {:error, :command_exists}
+
       false ->
         :ok
     end
@@ -158,6 +160,7 @@ defmodule Raxol.Terminal.Commands.Registry do
     case command.completion do
       nil ->
         :ok
+
       completion_fn ->
         case completion_fn.(args) do
           :ok -> :ok

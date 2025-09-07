@@ -408,6 +408,7 @@ defmodule Raxol.UI.Theming.Theme do
           "#<Theme id=#{inspect(theme.id)} name=#{inspect(theme.name)} colors=#{inspect(Map.keys(theme.colors))}>"
         end
       end
+
     false ->
       :ok
   end
@@ -456,6 +457,7 @@ defmodule Raxol.UI.Theming.Theme do
       case {is_map(v1), is_map(v2)} do
         {true, true} ->
           deep_merge(v1, v2)
+
         _ ->
           v2
       end
@@ -478,6 +480,7 @@ defmodule Raxol.UI.Theming.Theme do
     case {Enum.any?(rest, &(&1 == :button)), Map.has_key?(value, :background)} do
       {true, false} ->
         Map.put(value, :background, "#000000")
+
       _ ->
         value
     end

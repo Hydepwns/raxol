@@ -57,41 +57,42 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   use GenServer
   require Logger
 
-  @type memory_budget :: non_neg_integer()  # bytes
+  # bytes
+  @type memory_budget :: non_neg_integer()
   @type allocation_id :: String.t()
   @type pool_id :: atom()
 
   @type memory_stats :: %{
-    total_budget: memory_budget(),
-    allocated: non_neg_integer(),
-    available: non_neg_integer(),
-    peak_usage: non_neg_integer(),
-    allocation_count: non_neg_integer(),
-    pool_stats: map(),
-    fragmentation_ratio: float()
-  }
+          total_budget: memory_budget(),
+          allocated: non_neg_integer(),
+          available: non_neg_integer(),
+          peak_usage: non_neg_integer(),
+          allocation_count: non_neg_integer(),
+          pool_stats: map(),
+          fragmentation_ratio: float()
+        }
 
   @type allocation_info :: %{
-    id: allocation_id(),
-    size: non_neg_integer(),
-    type: atom(),
-    usage: :read_only | :write_only | :read_write,
-    lifetime: :short | :medium | :long,
-    allocated_at: non_neg_integer(),
-    last_accessed: non_neg_integer(),
-    reference_count: non_neg_integer()
-  }
+          id: allocation_id(),
+          size: non_neg_integer(),
+          type: atom(),
+          usage: :read_only | :write_only | :read_write,
+          lifetime: :short | :medium | :long,
+          allocated_at: non_neg_integer(),
+          last_accessed: non_neg_integer(),
+          reference_count: non_neg_integer()
+        }
 
   @type memory_pool :: %{
-    id: pool_id(),
-    chunk_size: non_neg_integer(),
-    chunk_count: non_neg_integer(),
-    max_chunks: non_neg_integer(),
-    available_chunks: [term()],
-    allocated_chunks: [term()],
-    allocation_strategy: :fifo | :lifo | :lru | :adaptive,
-    created_at: non_neg_integer()
-  }
+          id: pool_id(),
+          chunk_size: non_neg_integer(),
+          chunk_count: non_neg_integer(),
+          max_chunks: non_neg_integer(),
+          available_chunks: [term()],
+          allocated_chunks: [term()],
+          allocation_strategy: :fifo | :lifo | :lru | :adaptive,
+          created_at: non_neg_integer()
+        }
 
   defstruct [
     :config,
@@ -103,15 +104,22 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   ]
 
   @default_config %{
-    total_budget: 128_000_000,    # 128MB default budget
-    pool_strategy: :adaptive,      # :fixed, :adaptive, :dynamic
-    gc_strategy: :generational,    # :mark_sweep, :generational, :incremental
-    gc_threshold: 0.8,            # Trigger GC at 80% memory usage
-    defrag_threshold: 0.3,        # Defragment at 30% fragmentation
+    # 128MB default budget
+    total_budget: 128_000_000,
+    # :fixed, :adaptive, :dynamic
+    pool_strategy: :adaptive,
+    # :mark_sweep, :generational, :incremental
+    gc_strategy: :generational,
+    # Trigger GC at 80% memory usage
+    gc_threshold: 0.8,
+    # Defragment at 30% fragmentation
+    defrag_threshold: 0.3,
     monitoring_enabled: true,
     allocation_tracking: true,
-    pool_growth_factor: 1.5,      # Grow pools by 50% when needed
-    chunk_alignment: 64           # 64-byte alignment for GPU compatibility
+    # Grow pools by 50% when needed
+    pool_growth_factor: 1.5,
+    # 64-byte alignment for GPU compatibility
+    chunk_alignment: 64
   }
 
   # Public API
@@ -144,7 +152,8 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
         lifetime: :medium
       })
   """
-  @spec allocate(non_neg_integer(), map()) :: {:ok, {allocation_id(), term()}} | {:error, term()}
+  @spec allocate(non_neg_integer(), map()) ::
+          {:ok, {allocation_id(), term()}} | {:error, term()}
   def allocate(size, metadata \\ %{}) do
     GenServer.call(__MODULE__, {:allocate, size, metadata})
   end
@@ -182,7 +191,8 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   @doc """
   Allocates memory from a specific pool.
   """
-  @spec allocate_from_pool(pool_id(), map()) :: {:ok, {allocation_id(), term()}} | {:error, term()}
+  @spec allocate_from_pool(pool_id(), map()) ::
+          {:ok, {allocation_id(), term()}} | {:error, term()}
   def allocate_from_pool(pool_id, metadata \\ %{}) do
     GenServer.call(__MODULE__, {:allocate_from_pool, pool_id, metadata})
   end
@@ -232,7 +242,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   @impl true
   def init(config) do
     merged_config = Map.merge(@default_config, config)
-    
+
     initial_state = %__MODULE__{
       config: merged_config,
       allocations: %{},
@@ -252,12 +262,16 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   def handle_call({:allocate, size, metadata}, _from, state) do
     case can_allocate?(size, state) do
       true ->
-        {:ok, allocation_id, buffer, new_state} = perform_allocation(size, metadata, state)
+        {:ok, allocation_id, buffer, new_state} =
+          perform_allocation(size, metadata, state)
+
         {:reply, {:ok, {allocation_id, buffer}}, new_state}
-        
+
       false ->
         # Try garbage collection and retry
-        {:ok, allocation_id, buffer, new_state} = attempt_gc_and_retry(size, metadata, state)
+        {:ok, allocation_id, buffer, new_state} =
+          attempt_gc_and_retry(size, metadata, state)
+
         {:reply, {:ok, {allocation_id, buffer}}, new_state}
     end
   end
@@ -267,14 +281,16 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
     case Map.get(state.allocations, allocation_id) do
       nil ->
         {:reply, {:error, :allocation_not_found}, state}
-        
+
       allocation_info ->
         new_allocations = Map.delete(state.allocations, allocation_id)
-        new_stats = update_stats_after_deallocation(state.stats, allocation_info)
-        
+
+        new_stats =
+          update_stats_after_deallocation(state.stats, allocation_info)
+
         # Perform actual memory deallocation
         :ok = free_memory_buffer(allocation_info)
-        
+
         {:reply, :ok, %{state | allocations: new_allocations, stats: new_stats}}
     end
   end
@@ -285,7 +301,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
       nil ->
         {:ok, pool, new_state} = create_memory_pool(pool_id, config, state)
         {:reply, {:ok, pool}, new_state}
-        
+
       _existing_pool ->
         {:reply, {:error, :pool_already_exists}, state}
     end
@@ -296,22 +312,25 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
     case Map.get(state.memory_pools, pool_id) do
       nil ->
         {:reply, {:error, :pool_not_found}, state}
-        
+
       pool ->
-        {:ok, allocation_id, buffer, new_state} = allocate_from_memory_pool(pool, metadata, state)
+        {:ok, allocation_id, buffer, new_state} =
+          allocate_from_memory_pool(pool, metadata, state)
+
         {:reply, {:ok, {allocation_id, buffer}}, new_state}
     end
   end
 
   @impl true
   def handle_call({:return_to_pool, pool_id, allocation_id}, _from, state) do
-    case {Map.get(state.memory_pools, pool_id), Map.get(state.allocations, allocation_id)} do
+    case {Map.get(state.memory_pools, pool_id),
+          Map.get(state.allocations, allocation_id)} do
       {nil, _} ->
         {:reply, {:error, :pool_not_found}, state}
-        
+
       {_, nil} ->
         {:reply, {:error, :allocation_not_found}, state}
-        
+
       {pool, allocation} ->
         {:error, reason} = return_allocation_to_pool(pool, allocation, state)
         {:reply, {:error, reason}, state}
@@ -343,7 +362,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
         new_config = Map.put(state.config, :total_budget, new_budget)
         new_stats = Map.put(state.stats, :total_budget, new_budget)
         {:reply, :ok, %{state | config: new_config, stats: new_stats}}
-        
+
       false ->
         {:reply, {:error, :invalid_budget}, state}
     end
@@ -372,9 +391,10 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
 
   defp perform_allocation(size, metadata, state) do
     allocation_id = generate_allocation_id()
-    
+
     # Allocate actual memory buffer
     {:ok, buffer} = allocate_memory_buffer(size, metadata)
+
     allocation_info = %{
       id: allocation_id,
       size: size,
@@ -385,30 +405,34 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
       last_accessed: System.system_time(:millisecond),
       reference_count: 1
     }
-    
+
     new_allocations = Map.put(state.allocations, allocation_id, allocation_info)
     new_stats = update_stats_after_allocation(state.stats, allocation_info)
-    
+
     new_state = %{state | allocations: new_allocations, stats: new_stats}
     {:ok, allocation_id, buffer, new_state}
   end
 
   defp attempt_gc_and_retry(size, metadata, state) do
     {:ok, new_state, _stats} = perform_garbage_collection(state)
+
     case can_allocate?(size, new_state) do
       true -> perform_allocation(size, metadata, new_state)
-      false -> {:ok, generate_allocation_id(), <<>>, state}  # Return empty buffer
+      # Return empty buffer
+      false -> {:ok, generate_allocation_id(), <<>>, state}
     end
   end
 
   defp create_memory_pool(pool_id, config, state) do
-    chunk_size = Map.get(config, :chunk_size, 1024 * 1024)  # 1MB default
+    # 1MB default
+    chunk_size = Map.get(config, :chunk_size, 1024 * 1024)
     initial_count = Map.get(config, :initial_count, 10)
     max_count = Map.get(config, :max_count, 100)
     strategy = Map.get(config, :strategy, :lru)
-    
+
     # Pre-allocate initial chunks
     {:ok, chunks} = pre_allocate_chunks(chunk_size, initial_count)
+
     pool = %{
       id: pool_id,
       chunk_size: chunk_size,
@@ -419,10 +443,10 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
       allocation_strategy: strategy,
       created_at: System.system_time(:millisecond)
     }
-    
+
     new_pools = Map.put(state.memory_pools, pool_id, pool)
     new_state = %{state | memory_pools: new_pools}
-    
+
     {:ok, pool, new_state}
   end
 
@@ -432,10 +456,10 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
         # Try to grow the pool
         # No chunks available, return empty allocation
         {:ok, generate_allocation_id(), <<>>, state}
-        
+
       [chunk | remaining] ->
         allocation_id = generate_allocation_id()
-        
+
         allocation_info = %{
           id: allocation_id,
           size: pool.chunk_size,
@@ -447,24 +471,26 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
           reference_count: 1,
           pool_id: pool.id
         }
-        
+
         updated_pool = %{
-          pool |
-          available_chunks: remaining,
-          allocated_chunks: [chunk | pool.allocated_chunks]
+          pool
+          | available_chunks: remaining,
+            allocated_chunks: [chunk | pool.allocated_chunks]
         }
-        
-        new_allocations = Map.put(state.allocations, allocation_id, allocation_info)
+
+        new_allocations =
+          Map.put(state.allocations, allocation_id, allocation_info)
+
         new_pools = Map.put(state.memory_pools, pool.id, updated_pool)
         new_stats = update_stats_after_allocation(state.stats, allocation_info)
-        
+
         new_state = %{
-          state |
-          allocations: new_allocations,
-          memory_pools: new_pools,
-          stats: new_stats
+          state
+          | allocations: new_allocations,
+            memory_pools: new_pools,
+            stats: new_stats
         }
-        
+
         {:ok, allocation_id, chunk, new_state}
     end
   end
@@ -472,37 +498,44 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   defp perform_garbage_collection(state) do
     # Identify candidates for collection based on lifetime and access patterns
     candidates = identify_gc_candidates(state.allocations)
-    
+
     # Collect unused allocations
-    {collected_allocations, remaining_allocations} = 
+    {collected_allocations, remaining_allocations} =
       collect_unused_allocations(candidates, state.allocations)
-    
+
     # Update statistics
-    freed_memory = Enum.reduce(collected_allocations, 0, fn {_id, info}, acc ->
-      acc + info.size
-    end)
-    
+    freed_memory =
+      Enum.reduce(collected_allocations, 0, fn {_id, info}, acc ->
+        acc + info.size
+      end)
+
     new_stats = %{
-      state.stats |
-      allocated: state.stats.allocated - freed_memory,
-      allocation_count: state.stats.allocation_count - length(collected_allocations)
+      state.stats
+      | allocated: state.stats.allocated - freed_memory,
+        allocation_count:
+          state.stats.allocation_count - length(collected_allocations)
     }
-    
+
     new_state = %{state | allocations: remaining_allocations, stats: new_stats}
-    
-    Logger.info("GC collected #{length(collected_allocations)} allocations, freed #{freed_memory} bytes")
-    
+
+    Logger.info(
+      "GC collected #{length(collected_allocations)} allocations, freed #{freed_memory} bytes"
+    )
+
     {:ok, new_state, new_stats}
   end
 
   defp identify_gc_candidates(allocations) do
     now = System.system_time(:millisecond)
-    
+
     Enum.filter(allocations, fn {_id, info} ->
       case info.lifetime do
-        :short -> now - info.last_accessed > 60_000   # 1 minute
-        :medium -> now - info.last_accessed > 300_000 # 5 minutes
-        :long -> now - info.last_accessed > 1800_000  # 30 minutes
+        # 1 minute
+        :short -> now - info.last_accessed > 60_000
+        # 5 minutes
+        :medium -> now - info.last_accessed > 300_000
+        # 30 minutes
+        :long -> now - info.last_accessed > 1800_000
       end
     end)
   end
@@ -528,9 +561,11 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   end
 
   defp pre_allocate_chunks(chunk_size, count) do
-    chunks = Enum.map(1..count, fn _ ->
-      :binary.copy(<<0>>, chunk_size)
-    end)
+    chunks =
+      Enum.map(1..count, fn _ ->
+        :binary.copy(<<0>>, chunk_size)
+      end)
+
     {:ok, chunks}
   end
 
@@ -563,20 +598,23 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
       true ->
         {:ok, pid} = Task.start_link(fn -> monitoring_loop() end)
         pid
+
       false ->
         nil
     end
   end
 
   defp monitoring_loop do
-    :timer.sleep(5000)  # Monitor every 5 seconds
+    # Monitor every 5 seconds
+    :timer.sleep(5000)
     stats = GenServer.call(__MODULE__, :get_stats)
     send(self(), {:monitoring, stats})
     monitoring_loop()
   end
 
   defp schedule_maintenance do
-    Process.send_after(self(), :maintenance, 30_000)  # Every 30 seconds
+    # Every 30 seconds
+    Process.send_after(self(), :maintenance, 30_000)
   end
 
   defp perform_maintenance(state) do
@@ -589,12 +627,16 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
 
   defp check_memory_pressure(state) do
     usage_ratio = state.stats.allocated / state.stats.total_budget
-    
+
     case usage_ratio > state.config.gc_threshold do
       true ->
-        Logger.info("Memory pressure detected (#{Float.round(usage_ratio * 100, 1)}%), triggering GC")
+        Logger.info(
+          "Memory pressure detected (#{Float.round(usage_ratio * 100, 1)}%), triggering GC"
+        )
+
         {:ok, new_state, _stats} = perform_garbage_collection(state)
         new_state
+
       false ->
         state
     end
@@ -602,24 +644,30 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
 
   defp cleanup_stale_pools(state), do: state
   defp update_fragmentation_stats(state), do: state
-  defp return_allocation_to_pool(_pool, _allocation, _state), do: {:error, :not_implemented}
+
+  defp return_allocation_to_pool(_pool, _allocation, _state),
+    do: {:error, :not_implemented}
+
   defp perform_defragmentation(state), do: {:ok, state, state.stats}
   defp calculate_current_stats(state), do: state.stats
+
   defp update_stats_after_allocation(stats, allocation_info) do
     %{
-      stats |
-      allocated: stats.allocated + allocation_info.size,
-      available: stats.available - allocation_info.size,
-      allocation_count: stats.allocation_count + 1,
-      peak_usage: max(stats.peak_usage, stats.allocated + allocation_info.size)
+      stats
+      | allocated: stats.allocated + allocation_info.size,
+        available: stats.available - allocation_info.size,
+        allocation_count: stats.allocation_count + 1,
+        peak_usage:
+          max(stats.peak_usage, stats.allocated + allocation_info.size)
     }
   end
+
   defp update_stats_after_deallocation(stats, allocation_info) do
     %{
-      stats |
-      allocated: stats.allocated - allocation_info.size,
-      available: stats.available + allocation_info.size,
-      allocation_count: stats.allocation_count - 1
+      stats
+      | allocated: stats.allocated - allocation_info.size,
+        available: stats.available + allocation_info.size,
+        allocation_count: stats.allocation_count - 1
     }
   end
 end

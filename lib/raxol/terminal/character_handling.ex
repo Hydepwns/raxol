@@ -233,6 +233,7 @@ defmodule Raxol.Terminal.CharacterHandling do
           current_width + char_width,
           acc <> <<char::utf8>>
         )
+
       false ->
         {acc, <<char::utf8, rest::binary>>}
     end

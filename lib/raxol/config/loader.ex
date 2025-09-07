@@ -190,15 +190,34 @@ defmodule Raxol.Config.Loader do
     |> Enum.sort()
   end
 
-  defp process_file_event(false, _event_key, _file_path, paths, callback, processed_events) do
+  defp process_file_event(
+         false,
+         _event_key,
+         _file_path,
+         paths,
+         callback,
+         processed_events
+       ) do
     watch_loop(paths, callback, processed_events)
   end
 
-  defp process_file_event(true, event_key, file_path, paths, callback, processed_events) do
+  defp process_file_event(
+         true,
+         event_key,
+         file_path,
+         paths,
+         callback,
+         processed_events
+       ) do
     handle_file_change(file_path in paths, file_path, callback)
-    
-    new_processed = reset_processed_events_if_needed(MapSet.size(processed_events) > 100, processed_events, event_key)
-    
+
+    new_processed =
+      reset_processed_events_if_needed(
+        MapSet.size(processed_events) > 100,
+        processed_events,
+        event_key
+      )
+
     Process.send_after(self(), {:remove_event, event_key}, 1000)
     watch_loop(paths, callback, new_processed)
   end
@@ -276,10 +295,11 @@ defmodule Raxol.Config.Loader do
 
   defp atomize_keys(map) when is_map(map) do
     Enum.reduce(map, %{}, fn {key, value}, acc ->
-      atom_key = case is_binary(key) do
-        true -> String.to_atom(key)
-        false -> key
-      end
+      atom_key =
+        case is_binary(key) do
+          true -> String.to_atom(key)
+          false -> key
+        end
 
       normalized_value =
         case value do

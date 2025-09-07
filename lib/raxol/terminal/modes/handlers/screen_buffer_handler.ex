@@ -158,6 +158,7 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
       case emulator_with_restored_state.alternate_screen_buffer do
         nil ->
           {:ok, %{emulator_with_restored_state | active_buffer_type: :main}}
+
         alt_buf ->
           cleared_alt_buf =
             @screen_buffer_module.clear(
@@ -182,6 +183,7 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
           @screen_buffer_module.get_dimensions(emulator.main_screen_buffer)
 
         {:ok, @screen_buffer_module.new(width, height)}
+
       alt_buffer ->
         {:ok, alt_buffer}
     end
@@ -217,6 +219,7 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
     case restored_state do
       nil ->
         {:ok, emulator}
+
       state ->
         # Apply the restored state
         emulator_with_restored_state =

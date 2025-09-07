@@ -143,7 +143,14 @@ defmodule Raxol.Core.Performance.Memoization.Server do
 
       {value, timestamp} ->
         # Cache hit - check if expired
-        handle_cache_hit(expired?(timestamp, state.ttl), value, timestamp, cache_key, fun, state)
+        handle_cache_hit(
+          expired?(timestamp, state.ttl),
+          value,
+          timestamp,
+          cache_key,
+          fun,
+          state
+        )
     end
   end
 
@@ -156,7 +163,12 @@ defmodule Raxol.Core.Performance.Memoization.Server do
         {:reply, :miss, %{state | misses: state.misses + 1}}
 
       {value, timestamp} ->
-        handle_get_cache_hit(expired?(timestamp, state.ttl), value, cache_key, state)
+        handle_get_cache_hit(
+          expired?(timestamp, state.ttl),
+          value,
+          cache_key,
+          state
+        )
     end
   end
 
@@ -209,7 +221,12 @@ defmodule Raxol.Core.Performance.Memoization.Server do
     stats = %{
       hits: state.hits,
       misses: state.misses,
-      hit_rate: calculate_hit_rate(state.hits + state.misses > 0, state.hits, state.misses),
+      hit_rate:
+        calculate_hit_rate(
+          state.hits + state.misses > 0,
+          state.hits,
+          state.misses
+        ),
       total_entries: total_entries,
       processes_count: processes_count
     }
@@ -235,7 +252,8 @@ defmodule Raxol.Core.Performance.Memoization.Server do
     # Remove expired entries
     _now = System.monotonic_time(:millisecond)
 
-    cache = cleanup_expired_entries(state.ttl != :infinity, state.cache, state.ttl)
+    cache =
+      cleanup_expired_entries(state.ttl != :infinity, state.cache, state.ttl)
 
     # Schedule next cleanup
     schedule_cleanup()
@@ -269,7 +287,13 @@ defmodule Raxol.Core.Performance.Memoization.Server do
       cache
       |> Enum.filter(fn {{p, _}, _} -> p == pid end)
 
-    handle_eviction(length(process_entries) > max_entries, cache, pid, process_entries, max_entries)
+    handle_eviction(
+      length(process_entries) > max_entries,
+      cache,
+      pid,
+      process_entries,
+      max_entries
+    )
   end
 
   defp handle_cache_hit(true, _value, _timestamp, cache_key, fun, state) do
@@ -327,7 +351,8 @@ defmodule Raxol.Core.Performance.Memoization.Server do
     |> Map.merge(entries_to_keep)
   end
 
-  defp handle_eviction(false, cache, _pid, _process_entries, _max_entries), do: cache
+  defp handle_eviction(false, cache, _pid, _process_entries, _max_entries),
+    do: cache
 
   defp schedule_cleanup do
     Process.send_after(self(), :cleanup, 60_000)

@@ -289,6 +289,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
             state
             | palette: Raxol.Terminal.ANSI.SixelPalette.initialize_palette()
           }
+
         false ->
           state
       end

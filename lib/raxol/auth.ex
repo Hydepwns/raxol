@@ -385,7 +385,9 @@ defmodule Raxol.Auth do
   defp handle_password_validation(false), do: {:error, :invalid_credentials}
 
   # Calculate lock time instead of if statement
-  defp calculate_lock_time(true), do: DateTime.add(DateTime.utc_now(), 900, :second)
+  defp calculate_lock_time(true),
+    do: DateTime.add(DateTime.utc_now(), 900, :second)
+
   defp calculate_lock_time(false), do: nil
 
   defp get_user_with_role(user_id) do

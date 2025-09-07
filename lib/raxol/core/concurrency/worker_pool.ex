@@ -383,6 +383,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
           error ->
             error
         end
+
       false ->
         {:error, :max_overflow_reached}
     end

@@ -197,7 +197,8 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
     {current_color, current_char} =
       get_column_values(column_pixels, simple_column?)
 
-    case {simple_column?, current_color == last_color, current_char == last_char} do
+    case {simple_column?, current_color == last_color,
+          current_char == last_char} do
       {true, true, true} ->
         {acc_commands, last_color, last_char, repeat_count + 1}
 

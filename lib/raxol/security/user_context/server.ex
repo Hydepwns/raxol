@@ -205,6 +205,7 @@ defmodule Raxol.Security.UserContext.Server do
       case Map.has_key?(state.contexts, pid) do
         true ->
           Map.delete(state.contexts, pid)
+
         false ->
           state.contexts
       end
@@ -216,6 +217,7 @@ defmodule Raxol.Security.UserContext.Server do
           ref = Map.get(state.monitors, pid)
           Process.demonitor(ref)
           %{state | monitors: Map.delete(state.monitors, pid)}
+
         false ->
           state
       end
@@ -263,6 +265,7 @@ defmodule Raxol.Security.UserContext.Server do
     case Map.has_key?(state.monitors, pid) do
       true ->
         state
+
       false ->
         ref = Process.monitor(pid)
         %{state | monitors: Map.put(state.monitors, pid, ref)}

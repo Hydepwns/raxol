@@ -152,6 +152,7 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
         # Merge the regions
         merged_region = merge_two_regions({x1, y1, x2, y2}, {x3, y3, x4, y4})
         merge_adjacent_regions(rest, [merged_region | merged_tail])
+
       false ->
         merge_adjacent_regions(rest, [{x1, y1, x2, y2} | merged])
     end

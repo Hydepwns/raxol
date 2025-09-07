@@ -116,6 +116,7 @@ defmodule Raxol.Web.Session.Monitor do
     case durations == [] do
       true ->
         0
+
       false ->
         Enum.sum(durations) / length(durations)
     end

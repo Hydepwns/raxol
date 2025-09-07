@@ -53,6 +53,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
                 effective_bottom
               )
         }
+
       _ ->
         buffer
     end
@@ -110,6 +111,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
                 effective_top
               )
         }
+
       _ ->
         buffer
     end

@@ -42,6 +42,7 @@ defmodule Raxol.Terminal.Scrollback.Manager do
       case length(new_buffer) > state.scrollback_limit do
         true ->
           Enum.take(new_buffer, state.scrollback_limit)
+
         false ->
           new_buffer
       end
@@ -76,6 +77,7 @@ defmodule Raxol.Terminal.Scrollback.Manager do
           new_state
           | scrollback_buffer: Enum.take(new_state.scrollback_buffer, limit)
         }
+
       false ->
         new_state
     end

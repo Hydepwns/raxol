@@ -273,6 +273,7 @@ defmodule Raxol.Terminal.Events.Handlers do
           true ->
             # Scroll down
             Raxol.Terminal.Commands.Screen.scroll_down(emulator_state, delta)
+
           false ->
             # Scroll up
             Raxol.Terminal.Commands.Screen.scroll_up(emulator_state, abs(delta))

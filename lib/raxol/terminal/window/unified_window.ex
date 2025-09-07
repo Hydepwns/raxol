@@ -107,10 +107,11 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
   def init(opts) do
     # Handle both keyword lists and maps
-    opts_map = case is_map(opts) do
-      true -> opts
-      false -> Map.new(opts || [])
-    end
+    opts_map =
+      case is_map(opts) do
+        true -> opts
+        false -> Map.new(opts || [])
+      end
 
     config = %{
       default_size: Map.get(opts_map, :default_size, {80, 24}),
@@ -391,6 +392,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     case window.parent_id do
       nil ->
         state
+
       parent_id ->
         case Map.get(state.windows, parent_id) do
           nil -> state
@@ -415,6 +417,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
       true ->
         next_window_id = Map.keys(state.windows) |> List.first()
         %{state | active_window: next_window_id}
+
       false ->
         state
     end

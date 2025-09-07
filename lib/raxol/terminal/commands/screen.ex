@@ -102,6 +102,7 @@ defmodule Raxol.Terminal.Commands.Screen do
           ScreenBuffer.insert_lines(buffer, cursor_y, count, emulator.style)
 
         Emulator.update_active_buffer(emulator, new_buffer)
+
       false ->
         # Outside scroll region, do nothing
         emulator
@@ -134,6 +135,7 @@ defmodule Raxol.Terminal.Commands.Screen do
           )
 
         Emulator.update_active_buffer(emulator, new_buffer)
+
       false ->
         # Outside scroll region, do nothing
         emulator

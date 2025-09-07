@@ -67,6 +67,7 @@ defmodule Raxol.UI.Theming.ThemeManager do
       true ->
         new_state = %{state | current_theme: theme_id}
         {:reply, :ok, new_state}
+
       false ->
         {:reply, {:error, :theme_not_found}, state}
     end

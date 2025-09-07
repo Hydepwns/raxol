@@ -84,7 +84,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     url_regex = ~r{(https?://[\w./?=&\-]+)}
 
     case String.contains?(output, "http://") or
-         String.contains?(output, "https://") do
+           String.contains?(output, "https://") do
       true ->
         modified_output =
           String.replace(output, url_regex, fn url ->
@@ -92,6 +92,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
           end)
 
         {:ok, plugin_state, modified_output}
+
       false ->
         {:ok, plugin_state}
     end

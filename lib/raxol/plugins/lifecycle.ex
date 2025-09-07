@@ -181,7 +181,11 @@ defmodule Raxol.Plugins.Lifecycle do
   end
 
   defp call_plugin_stop_with_config(_plugin, module, plugin_config) do
-    handle_plugin_stop(function_exported?(module, :stop, 1), module, plugin_config)
+    handle_plugin_stop(
+      function_exported?(module, :stop, 1),
+      module,
+      plugin_config
+    )
   end
 
   defp handle_plugin_stop(false, _module, _plugin_config) do
@@ -343,7 +347,11 @@ defmodule Raxol.Plugins.Lifecycle do
   end
 
   defp start_plugin_if_supported(plugin, manager) do
-    check_start_function_support(function_exported?(plugin.module, :start, 1), plugin, manager)
+    check_start_function_support(
+      function_exported?(plugin.module, :start, 1),
+      plugin,
+      manager
+    )
   end
 
   defp check_start_function_support(false, _plugin, manager) do

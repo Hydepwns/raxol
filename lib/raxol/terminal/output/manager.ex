@@ -103,8 +103,12 @@ defmodule Raxol.Terminal.Output.Manager do
               %{
                 updated_manager
                 | metrics:
-                    update_metrics(updated_manager.metrics, :format_applications)
+                    update_metrics(
+                      updated_manager.metrics,
+                      :format_applications
+                    )
               }
+
             false ->
               updated_manager
           end
@@ -232,6 +236,7 @@ defmodule Raxol.Terminal.Output.Manager do
         # Keep only the most recent events
         kept_events = Enum.take(new_events, div(max_size, 100))
         %{buffer | events: kept_events}
+
       false ->
         %{buffer | events: new_events}
     end

@@ -131,7 +131,9 @@ defmodule Mix.Tasks.Raxol.Examples do
   end
 
   defp add_theme_config(config, nil), do: config
-  defp add_theme_config(config, theme), do: [{:theme, String.to_atom(theme)} | config]
+
+  defp add_theme_config(config, theme),
+    do: [{:theme, String.to_atom(theme)} | config]
 
   defp add_width_config(config, nil), do: config
   defp add_width_config(config, width), do: [{:width, width} | config]

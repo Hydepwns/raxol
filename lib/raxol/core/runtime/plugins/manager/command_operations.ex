@@ -75,6 +75,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.CommandOperations do
           {:ok, result} -> {:ok, result}
           {:error, reason} -> {:error, {:hook_error, reason}}
         end
+
       false ->
         {:error, {:hook_not_found, hook_name}}
     end

@@ -30,6 +30,7 @@ defmodule Raxol.Terminal.Buffer.Common do
     case top >= 0 and bottom < length(lines) and top <= bottom do
       true ->
         {:ok, Enum.slice(lines, top..bottom)}
+
       false ->
         {:error, :invalid_region}
     end

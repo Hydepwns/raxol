@@ -80,6 +80,7 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
     case lines > 0 do
       true ->
         scroll_up(buffer, x, y, width, height, lines)
+
       false ->
         scroll_down(buffer, x, y, width, height, abs(lines))
     end
@@ -135,6 +136,7 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
         true ->
           {x, y} = key_to_coords(key)
           [{x, y, active_cell} | acc]
+
         false ->
           acc
       end
@@ -307,6 +309,7 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferImpl do
             key = cell_key(pos_x, y)
             cell = Cell.new(char)
             Map.put(acc, key, cell)
+
           false ->
             acc
         end

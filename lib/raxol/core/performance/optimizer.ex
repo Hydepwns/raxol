@@ -14,8 +14,6 @@ defmodule Raxol.Core.Performance.Optimizer do
   import Raxol.Core.Performance.Profiler
   require Logger
 
-
-
   @doc """
   Optimizes database queries to prevent N+1 problems.
 

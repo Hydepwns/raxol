@@ -324,6 +324,7 @@ defmodule Raxol.Security.SessionManager do
     case active_count >= max_concurrent do
       true ->
         {:error, :limit_exceeded}
+
       false ->
         :ok
     end
@@ -337,6 +338,7 @@ defmodule Raxol.Security.SessionManager do
     case byte_size(token1) == byte_size(token2) do
       true ->
         :crypto.hash_equals(token1, token2)
+
       false ->
         false
     end
@@ -368,6 +370,7 @@ defmodule Raxol.Security.SessionManager do
     case length(expired) > 0 do
       true ->
         Logger.info("Cleaned up #{length(expired)} expired sessions")
+
       false ->
         :ok
     end

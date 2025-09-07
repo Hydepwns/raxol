@@ -27,6 +27,7 @@ defmodule Raxol.Test.PerformanceViewGenerators do
         View.flex direction: :row do
           children
         end
+
       _ ->
         View.grid columns: 3 do
           children
@@ -40,6 +41,7 @@ defmodule Raxol.Test.PerformanceViewGenerators do
     case Enum.empty?(children) do
       true ->
         1
+
       false ->
         1 + Enum.sum(Enum.map(children, &count_nested_views/1))
     end
@@ -156,6 +158,7 @@ defmodule Raxol.Test.PerformanceViewGenerators do
             main_content
           ]
         )
+
       false ->
         View.box(children: [main_content])
     end
@@ -177,6 +180,7 @@ defmodule Raxol.Test.PerformanceViewGenerators do
             item
             | sales: Enum.map(item.sales, fn _ -> :rand.uniform(1000) end)
           }
+
         false ->
           item
       end

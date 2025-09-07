@@ -80,6 +80,7 @@ defmodule Raxol.Test.AssertionHelpers do
 
         assert output == expected,
                "Component output does not match snapshot: #{snapshot_name}"
+
       false ->
         File.write!(snapshot_path, output)
     end

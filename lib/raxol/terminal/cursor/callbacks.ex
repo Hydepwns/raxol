@@ -67,10 +67,11 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
     new_state = %{
       state
       | visible: visible,
-        state: case visible do
-          true -> :visible
-          false -> :hidden
-        end
+        state:
+          case visible do
+            true -> :visible
+            false -> :hidden
+          end
     }
 
     {:ok, new_state}
@@ -83,10 +84,11 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
     new_state = %{
       state
       | visible: visible,
-        state: case visible do
-          true -> :visible
-          false -> :hidden
-        end
+        state:
+          case visible do
+            true -> :visible
+            false -> :hidden
+          end
     }
 
     {new_state}
@@ -324,6 +326,7 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
         new_state = %{state | blink: new_blink_state}
         schedule_blink()
         {new_state}
+
       false ->
         {state}
     end

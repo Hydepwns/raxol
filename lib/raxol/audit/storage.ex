@@ -494,7 +494,7 @@ defmodule Raxol.Audit.Storage do
 
     # Rewrite file with events to keep (rewrite_events_file/2 always returns :ok)
     :ok = rewrite_events_file(to_keep, state)
-    
+
     # Update indexes
     new_indexes = rebuild_all_indexes(to_keep)
     new_state = %{state | indexes: new_indexes}

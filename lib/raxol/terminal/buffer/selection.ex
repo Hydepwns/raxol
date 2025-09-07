@@ -119,6 +119,7 @@ defmodule Raxol.Terminal.Buffer.Selection do
     case out_of_bounds?(buffer, start_x, start_y, end_x, end_y) do
       true ->
         ""
+
       false ->
         # Ensure start coordinates are less than or equal to end coordinates
         {start_x, end_x} = {min(start_x, end_x), max(start_x, end_x)}
@@ -129,7 +130,8 @@ defmodule Raxol.Terminal.Buffer.Selection do
     end
   end
 
-  defp handle_region_extraction(_buffer, start_x, start_y, end_x, end_y) when start_x == end_x and start_y == end_y do
+  defp handle_region_extraction(_buffer, start_x, start_y, end_x, end_y)
+       when start_x == end_x and start_y == end_y do
     ""
   end
 
@@ -210,7 +212,8 @@ defmodule Raxol.Terminal.Buffer.Selection do
     end
   end
 
-  defp get_position_if_different(start_x, start_y, end_x, end_y) when start_x == end_x and start_y == end_y do
+  defp get_position_if_different(start_x, start_y, end_x, end_y)
+       when start_x == end_x and start_y == end_y do
     nil
   end
 

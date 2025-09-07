@@ -90,6 +90,7 @@ defmodule Raxol.Terminal.Buffer.Paste do
           # Write the line starting from column 0
           updated_buffer = Writer.write_string(acc_buffer, 0, current_y, line)
           {:cont, {updated_buffer, current_y + 1}}
+
         false ->
           # Buffer is full, stop
           {:halt, {acc_buffer, current_y}}
@@ -116,6 +117,7 @@ defmodule Raxol.Terminal.Buffer.Paste do
         # Need to insert characters to make room
         chars_to_insert = text_length - available_space
         LineOperations.insert_chars_at(buffer, y, x, chars_to_insert)
+
       false ->
         buffer
     end
@@ -146,6 +148,7 @@ defmodule Raxol.Terminal.Buffer.Paste do
           buffer.height - 1,
           buffer.height - 1
         )
+
       false ->
         buffer
     end

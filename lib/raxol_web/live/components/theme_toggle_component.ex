@@ -36,10 +36,12 @@ defmodule RaxolWeb.ThemeToggleComponent do
 
   def handle_event("toggle_theme", _params, socket) do
     current_theme = get_connect_params(socket)["theme"] || "light"
-    new_theme = case current_theme == "light" do
-      true -> "dark"
-      false -> "light"
-    end
+
+    new_theme =
+      case current_theme == "light" do
+        true -> "dark"
+        false -> "light"
+      end
 
     {:noreply,
      socket

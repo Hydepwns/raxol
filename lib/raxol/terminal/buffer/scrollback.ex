@@ -123,6 +123,7 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
       true ->
         scrollback
         |> Enum.take(limit)
+
       false ->
         scrollback
     end

@@ -207,7 +207,8 @@ defmodule Raxol.Terminal.ControlCodes do
     )
 
     # 1. Check for pending wrap
-    emulator_after_pending_wrap = handle_pending_wrap(emulator.last_col_exceeded, emulator)
+    emulator_after_pending_wrap =
+      handle_pending_wrap(emulator.last_col_exceeded, emulator)
 
     # 2. Perform CR logic on potentially updated state
     Raxol.Core.Runtime.Log.debug("[handle_cr] Moving cursor to column 0")
@@ -592,6 +593,7 @@ defmodule Raxol.Terminal.ControlCodes do
   end
 
   defp restore_cursor_state(nil, _emulator_cursor), do: :ok
+
   defp restore_cursor_state(cursor_data, emulator_cursor) do
     # Restore cursor position
     Raxol.Terminal.Cursor.Manager.set_position(
@@ -621,12 +623,24 @@ defmodule Raxol.Terminal.ControlCodes do
   defp get_target_column(true, _current_col), do: 0
   defp get_target_column(_line_feed_mode, current_col), do: current_col
 
-  defp apply_map_cursor_adjustment(true, moved_cursor, _cursor, current_col, line_feed_mode) do
+  defp apply_map_cursor_adjustment(
+         true,
+         moved_cursor,
+         _cursor,
+         current_col,
+         line_feed_mode
+       ) do
     target_col = get_target_column(line_feed_mode, current_col)
     Raxol.Terminal.Cursor.Manager.move_to_column(moved_cursor, target_col)
   end
 
-  defp apply_map_cursor_adjustment(_has_keys, _moved_cursor, cursor, _current_col, _line_feed_mode) do
+  defp apply_map_cursor_adjustment(
+         _has_keys,
+         _moved_cursor,
+         cursor,
+         _current_col,
+         _line_feed_mode
+       ) do
     cursor
   end
 end

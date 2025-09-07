@@ -45,15 +45,21 @@ defmodule Raxol.Animation.PathManager do
   def qualify_path(animation_def, path, element_id) do
     case path do
       [:elements, id | _] ->
-        id_str = case is_binary(id) do
-          true -> id
-          false -> to_string(id)
-        end
+        id_str =
+          case is_binary(id) do
+            true -> id
+            false -> to_string(id)
+          end
+
         elem_id_str = to_string(element_id)
 
         case {id == element_id, id_str == elem_id_str} do
-          {true, _} -> animation_def
-          {false, true} -> animation_def
+          {true, _} ->
+            animation_def
+
+          {false, true} ->
+            animation_def
+
           {false, false} ->
             Map.put(
               animation_def,

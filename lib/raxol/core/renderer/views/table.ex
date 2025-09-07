@@ -336,7 +336,9 @@ defmodule Raxol.Core.Renderer.Views.Table do
   # Helper to pad cell content to the column width
   defp pad_cell_content(value, col) do
     case component?(value) do
-      true -> value
+      true ->
+        value
+
       false ->
         value_str = to_string_value(value)
         align_text(value_str, col)

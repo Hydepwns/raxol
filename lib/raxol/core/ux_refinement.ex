@@ -114,11 +114,12 @@ defmodule Raxol.Core.UXRefinement do
     case feature_enabled?(:accessibility) do
       true ->
         Server.get_accessibility_metadata(@server, component_id)
-      
+
       false ->
         Raxol.Core.Runtime.Log.debug(
           "[UXRefinement] Accessibility not enabled, metadata retrieval skipped for #{component_id}"
         )
+
         nil
     end
   end
@@ -174,11 +175,12 @@ defmodule Raxol.Core.UXRefinement do
           opts,
           user_preferences_pid_or_name
         )
-      
+
       false ->
         Raxol.Core.Runtime.Log.debug(
           "[UXRefinement] Accessibility not enabled, announcement skipped: #{message}"
         )
+
         :ok
     end
   end

@@ -104,6 +104,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
     case MapSet.member?(visited, normalized_plugin_id) do
       true ->
         {:error, :circular_dependency, [normalized_plugin_id]}
+
       false ->
         visited = MapSet.put(visited, normalized_plugin_id)
         deps = Map.get(graph, normalized_plugin_id, [])
@@ -114,9 +115,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
           &process_dependency(&1, &2, graph, visited)
         )
         |> case do
-        {:ok, deps} -> {:ok, Enum.uniq(deps)}
-        error -> error
-      end
+          {:ok, deps} -> {:ok, Enum.uniq(deps)}
+          error -> error
+        end
     end
   end
 

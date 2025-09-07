@@ -20,7 +20,9 @@ defmodule Mix.Tasks.ElixirMake.Precompile do
 
   @impl true
   def run(args) do
-    ensure_applications_if_available(function_exported?(Mix, :ensure_application!, 1))
+    ensure_applications_if_available(
+      function_exported?(Mix, :ensure_application!, 1)
+    )
 
     config = Mix.Project.config()
     paths = config[:make_precompiler_priv_paths] || ["."]
@@ -58,7 +60,10 @@ defmodule Mix.Tasks.ElixirMake.Precompile do
 
       Artefact.write_checksums!(precompiled_artefacts)
 
-      call_post_precompile_if_available(function_exported?(precompiler, :post_precompile, 0), precompiler)
+      call_post_precompile_if_available(
+        function_exported?(precompiler, :post_precompile, 0),
+        precompiler
+      )
     after
       app_priv = Path.join(Mix.Project.app_path(config), "priv")
 
@@ -109,8 +114,11 @@ defmodule Mix.Tasks.ElixirMake.Precompile do
     precompiler.post_precompile_target(target)
   end
 
-  defp call_post_precompile_target_if_available(false, _precompiler, _target), do: :ok
+  defp call_post_precompile_target_if_available(false, _precompiler, _target),
+    do: :ok
 
-  defp call_post_precompile_if_available(true, precompiler), do: precompiler.post_precompile()
+  defp call_post_precompile_if_available(true, precompiler),
+    do: precompiler.post_precompile()
+
   defp call_post_precompile_if_available(false, _precompiler), do: :ok
 end

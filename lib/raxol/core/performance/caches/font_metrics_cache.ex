@@ -244,6 +244,7 @@ defmodule Raxol.Core.Performance.Caches.FontMetricsCache do
       true ->
         hash = :crypto.hash(:sha256, string) |> Base.encode16()
         @string_width_prefix <> "hash:" <> hash
+
       false ->
         @string_width_prefix <> string
     end
@@ -278,7 +279,7 @@ defmodule Raxol.Core.Performance.Caches.FontMetricsCache do
   # defp emit_telemetry(event) do
   #   emit_telemetry(event, %{})
   # end
-  
+
   defp emit_telemetry(event, metadata) do
     :telemetry.execute(
       @telemetry_prefix ++ [event],

@@ -234,6 +234,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
         IO.puts(
           "Animation cached: #{animation_path} (#{compressed_size} bytes, #{compression_ratio}% compression)"
         )
+
       false ->
         IO.puts(
           "Animation cached: #{animation_path} (#{compressed_size} bytes, empty original file)"
@@ -276,6 +277,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
           nil -> []
           type -> [{path, type}]
         end
+
       false ->
         []
     end

@@ -386,7 +386,9 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     |> MapSet.new()
   end
 
-  defp add_modifier_if_set(modifiers, true, modifier), do: [modifier | modifiers]
+  defp add_modifier_if_set(modifiers, true, modifier),
+    do: [modifier | modifiers]
+
   defp add_modifier_if_set(modifiers, false, _modifier), do: modifiers
 
   @doc """

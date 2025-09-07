@@ -154,7 +154,16 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
         # --- End Debug Logging ---
 
         # Validate parent_bounds values
-        validate_all_parent_bounds(parent_bounds, container_width, container_height, widget_config, grid_config, cell_width, cell_height, gap)
+        validate_all_parent_bounds(
+          parent_bounds,
+          container_width,
+          container_height,
+          widget_config,
+          grid_config,
+          cell_width,
+          cell_height,
+          gap
+        )
 
       {:error, bounds} ->
         bounds
@@ -335,8 +344,21 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     end
   end
 
-  defp validate_all_parent_bounds(parent_bounds, container_width, container_height, widget_config, _grid_config, cell_width, cell_height, gap) do
-    case validate_parent_bounds_structure(parent_bounds, container_width, container_height) do
+  defp validate_all_parent_bounds(
+         parent_bounds,
+         container_width,
+         container_height,
+         widget_config,
+         _grid_config,
+         cell_width,
+         cell_height,
+         gap
+       ) do
+    case validate_parent_bounds_structure(
+           parent_bounds,
+           container_width,
+           container_height
+         ) do
       :ok ->
         # Extract widget grid spec with defaults
         grid_spec =
@@ -351,19 +373,32 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
         height_cells = get_height_cells(grid_spec)
 
         # Validate cell dimensions
-        validate_cell_dimensions_and_calculate(cell_width, cell_height, parent_bounds, col_start, row_start, width_cells, height_cells, gap)
+        validate_cell_dimensions_and_calculate(
+          cell_width,
+          cell_height,
+          parent_bounds,
+          col_start,
+          row_start,
+          width_cells,
+          height_cells,
+          gap
+        )
 
       {:error, bounds} ->
         bounds
     end
   end
 
-  defp validate_parent_bounds_structure(parent_bounds, container_width, container_height) do
-    case (is_map(parent_bounds) and
-            is_number(Map.get(parent_bounds, :x)) and
-            is_number(Map.get(parent_bounds, :y)) and
-            is_number(container_width) and
-            is_number(container_height)) do
+  defp validate_parent_bounds_structure(
+         parent_bounds,
+         container_width,
+         container_height
+       ) do
+    case is_map(parent_bounds) and
+           is_number(Map.get(parent_bounds, :x)) and
+           is_number(Map.get(parent_bounds, :y)) and
+           is_number(container_width) and
+           is_number(container_height) do
       true ->
         :ok
 
@@ -376,8 +411,17 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     end
   end
 
-  defp validate_cell_dimensions_and_calculate(cell_width, cell_height, parent_bounds, col_start, row_start, width_cells, height_cells, gap) do
-    case (is_number(cell_width) and is_number(cell_height)) do
+  defp validate_cell_dimensions_and_calculate(
+         cell_width,
+         cell_height,
+         parent_bounds,
+         col_start,
+         row_start,
+         width_cells,
+         height_cells,
+         gap
+       ) do
+    case is_number(cell_width) and is_number(cell_height) do
       true ->
         x_pos =
           parent_bounds.x + (col_start - 1) * cell_width +

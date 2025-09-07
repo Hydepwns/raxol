@@ -44,25 +44,25 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   alias Raxol.Terminal.Graphics.ImageProcessor
 
   @type gpu_context :: %{
-    backend: :metal | :vulkan | :opengl | :software,
-    device: term(),
-    command_queue: term(),
-    memory_pool: term(),
-    texture_atlas: term()
-  }
+          backend: :metal | :vulkan | :opengl | :software,
+          device: term(),
+          command_queue: term(),
+          memory_pool: term(),
+          texture_atlas: term()
+        }
 
   @type graphics_operation :: %{
-    type: :scale | :rotate | :filter | :composite | :effect,
-    parameters: map(),
-    priority: :low | :normal | :high | :critical
-  }
+          type: :scale | :rotate | :filter | :composite | :effect,
+          parameters: map(),
+          priority: :low | :normal | :high | :critical
+        }
 
   @type batch_job :: %{
-    id: String.t(),
-    operations: [graphics_operation()],
-    graphics_data: [binary()],
-    callback: function() | nil
-  }
+          id: String.t(),
+          operations: [graphics_operation()],
+          graphics_data: [binary()],
+          callback: function() | nil
+        }
 
   defstruct [
     :gpu_context,
@@ -76,10 +76,14 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   ]
 
   @default_config %{
-    backend: :auto,  # Auto-detect best available backend
-    memory_limit: 256_000_000,  # 256MB GPU memory limit
-    texture_atlas_size: 4096,   # 4K texture atlas
-    batch_size: 16,             # Operations per batch
+    # Auto-detect best available backend
+    backend: :auto,
+    # 256MB GPU memory limit
+    memory_limit: 256_000_000,
+    # 4K texture atlas
+    texture_atlas_size: 4096,
+    # Operations per batch
+    batch_size: 16,
     cache_enabled: true,
     performance_monitoring: true,
     fallback_to_cpu: true
@@ -120,9 +124,13 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
         quality: :high
       })
   """
-  @spec process_graphics(gpu_context(), binary(), map()) :: {:ok, binary()} | {:error, term()}
+  @spec process_graphics(gpu_context(), binary(), map()) ::
+          {:ok, binary()} | {:error, term()}
   def process_graphics(context, graphics_data, operations) do
-    GenServer.call(__MODULE__, {:process_graphics, context, graphics_data, operations})
+    GenServer.call(
+      __MODULE__,
+      {:process_graphics, context, graphics_data, operations}
+    )
   end
 
   @doc """
@@ -149,19 +157,26 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
       
       {:ok, results} = GPUAccelerator.batch_process(context, graphics)
   """
-  @spec batch_process(gpu_context(), [{binary(), map()}], map()) :: 
-    {:ok, [binary()]} | {:error, term()}
+  @spec batch_process(gpu_context(), [{binary(), map()}], map()) ::
+          {:ok, [binary()]} | {:error, term()}
   def batch_process(context, graphics_list, options \\ %{}) do
-    GenServer.call(__MODULE__, {:batch_process, context, graphics_list, options}, 30_000)
+    GenServer.call(
+      __MODULE__,
+      {:batch_process, context, graphics_list, options},
+      30_000
+    )
   end
 
   @doc """
   Creates optimized texture atlas for frequently used graphics.
   """
-  @spec create_texture_atlas(gpu_context(), [binary()], map()) :: 
-    {:ok, term()} | {:error, term()}
+  @spec create_texture_atlas(gpu_context(), [binary()], map()) ::
+          {:ok, term()} | {:error, term()}
   def create_texture_atlas(context, graphics_list, options \\ %{}) do
-    GenServer.call(__MODULE__, {:create_texture_atlas, context, graphics_list, options})
+    GenServer.call(
+      __MODULE__,
+      {:create_texture_atlas, context, graphics_list, options}
+    )
   end
 
   @doc """
@@ -185,7 +200,7 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   @impl true
   def init(opts) do
     config = Map.merge(@default_config, Map.new(opts))
-    
+
     initial_state = %__MODULE__{
       gpu_context: nil,
       base_accelerator: nil,
@@ -205,7 +220,7 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
     case initialize_gpu_acceleration(Map.merge(state.config, config)) do
       {:ok, gpu_state} ->
         {:reply, {:ok, gpu_state.gpu_context}, gpu_state}
-        
+
       {:error, reason} ->
         Logger.warning("GPU acceleration unavailable: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -213,47 +228,68 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   end
 
   @impl true
-  def handle_call({:process_graphics, context, graphics_data, operations}, _from, state) do
+  def handle_call(
+        {:process_graphics, context, graphics_data, operations},
+        _from,
+        state
+      ) do
     start_time = System.monotonic_time(:microsecond)
-    
-    result = case state.gpu_context do
-      nil ->
-        # Fallback to CPU processing
-        fallback_cpu_process(graphics_data, operations)
-        
-      ^context ->
-        # GPU processing
-        gpu_process_graphics(graphics_data, operations, state)
-        
-      _ ->
-        {:error, :invalid_context}
-    end
-    
+
+    result =
+      case state.gpu_context do
+        nil ->
+          # Fallback to CPU processing
+          fallback_cpu_process(graphics_data, operations)
+
+        ^context ->
+          # GPU processing
+          gpu_process_graphics(graphics_data, operations, state)
+
+        _ ->
+          {:error, :invalid_context}
+      end
+
     # Update metrics
     process_time = System.monotonic_time(:microsecond) - start_time
-    new_metrics = update_performance_metrics(state.performance_metrics, process_time, result)
-    
+
+    new_metrics =
+      update_performance_metrics(
+        state.performance_metrics,
+        process_time,
+        result
+      )
+
     {:reply, result, %{state | performance_metrics: new_metrics}}
   end
 
   @impl true
-  def handle_call({:batch_process, context, graphics_list, options}, _from, state) do
+  def handle_call(
+        {:batch_process, context, graphics_list, options},
+        _from,
+        state
+      ) do
     case state.gpu_context do
       nil ->
         {:reply, {:error, :gpu_not_available}, state}
-        
+
       ^context ->
         {:ok, results} = gpu_batch_process(graphics_list, options, state)
         {:reply, {:ok, results}, state}
-        
+
       _ ->
         {:reply, {:error, :invalid_context}, state}
     end
   end
 
   @impl true
-  def handle_call({:create_texture_atlas, context, graphics_list, options}, _from, state) do
-    {:ok, atlas} = create_gpu_texture_atlas(context, graphics_list, options, state)
+  def handle_call(
+        {:create_texture_atlas, context, graphics_list, options},
+        _from,
+        state
+      ) do
+    {:ok, atlas} =
+      create_gpu_texture_atlas(context, graphics_list, options, state)
+
     {:reply, {:ok, atlas}, state}
   end
 
@@ -276,7 +312,6 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
          {:ok, context} <- create_graphics_context(base_accelerator, config),
          {:ok, pipeline} <- setup_graphics_pipeline(context),
          {:ok, memory_manager} <- initialize_memory_manager(context, config) do
-      
       state = %__MODULE__{
         gpu_context: context,
         base_accelerator: base_accelerator,
@@ -287,7 +322,7 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
         performance_metrics: initialize_metrics(),
         config: config
       }
-      
+
       {:ok, state}
     else
       {:error, reason} -> {:error, reason}
@@ -304,13 +339,13 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
           opengl_available?() -> {:ok, :opengl}
           true -> {:ok, :software}
         end
-        
+
       backend when backend in [:metal, :vulkan, :opengl, :software] ->
         case backend_available?(backend) do
           true -> {:ok, backend}
           false -> {:error, {:backend_unavailable, backend}}
         end
-        
+
       _ ->
         {:error, :invalid_backend}
     end
@@ -319,24 +354,26 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   defp metal_available? do
     # Check for macOS and Metal support
     case :os.type() do
-      {:unix, :darwin} -> 
+      {:unix, :darwin} ->
         # On macOS, Metal is generally available
         System.get_env("RAXOL_DISABLE_METAL") != "true"
-      _ -> false
+
+      _ ->
+        false
     end
   end
 
   defp vulkan_available? do
     # Check for Vulkan runtime
     System.find_executable("vulkaninfo") != nil or
-    File.exists?("/usr/lib/libvulkan.so") or
-    File.exists?("/usr/local/lib/libvulkan.so")
+      File.exists?("/usr/lib/libvulkan.so") or
+      File.exists?("/usr/local/lib/libvulkan.so")
   end
 
   defp opengl_available? do
     # Basic OpenGL availability check
     not is_nil(System.get_env("DISPLAY")) or
-    :os.type() == {:win32, :nt}
+      :os.type() == {:win32, :nt}
   end
 
   defp backend_available?(backend) do
@@ -357,7 +394,7 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
       memory_pool: create_memory_pool(config),
       texture_atlas: create_texture_atlas_context(config)
     }
-    
+
     {:ok, context}
   end
 
@@ -366,9 +403,12 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
       total_memory: config.memory_limit,
       used_memory: 0,
       pools: %{
-        small: create_pool_bucket(1024 * 1024),      # 1MB chunks
-        medium: create_pool_bucket(16 * 1024 * 1024), # 16MB chunks
-        large: create_pool_bucket(64 * 1024 * 1024)   # 64MB chunks
+        # 1MB chunks
+        small: create_pool_bucket(1024 * 1024),
+        # 16MB chunks
+        medium: create_pool_bucket(16 * 1024 * 1024),
+        # 64MB chunks
+        large: create_pool_bucket(64 * 1024 * 1024)
       }
     }
   end
@@ -402,13 +442,16 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
       compute_shaders: setup_compute_shaders(),
       buffers: setup_pipeline_buffers()
     }
-    
+
     {:ok, pipeline}
   end
 
   defp setup_render_passes do
     %{
-      image_processing: %{type: :compute, operations: [:scale, :rotate, :filter]},
+      image_processing: %{
+        type: :compute,
+        operations: [:scale, :rotate, :filter]
+      },
       effects: %{type: :fragment, operations: [:blur, :glow, :shadow]},
       composition: %{type: :render, operations: [:blend, :composite]}
     }
@@ -436,9 +479,10 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
       total_budget: config.memory_limit,
       current_usage: 0,
       allocation_strategy: :first_fit,
-      gc_threshold: config.memory_limit * 0.8  # Trigger GC at 80%
+      # Trigger GC at 80%
+      gc_threshold: config.memory_limit * 0.8
     }
-    
+
     {:ok, memory_manager}
   end
 
@@ -447,12 +491,12 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
     # For now, simulate GPU processing
     try do
       # Simulate GPU processing time (much faster than CPU)
-      :timer.sleep(div(byte_size(graphics_data), 1_000_000) + 1)  # ~1ms per MB
-      
+      # ~1ms per MB
+      :timer.sleep(div(byte_size(graphics_data), 1_000_000) + 1)
+
       # Return processed data (in real implementation, this would be GPU-processed)
       processed_data = simulate_gpu_operations(graphics_data, operations)
       {:ok, processed_data}
-      
     rescue
       error -> {:error, {:gpu_processing_failed, error}}
     end
@@ -465,12 +509,13 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
 
   defp gpu_batch_process(graphics_list, _options, _state) do
     # Parallel GPU processing of multiple graphics
-    tasks = Enum.map(graphics_list, fn {graphics_data, operations} ->
-      Task.async(fn ->
-        simulate_gpu_operations(graphics_data, operations)
+    tasks =
+      Enum.map(graphics_list, fn {graphics_data, operations} ->
+        Task.async(fn ->
+          simulate_gpu_operations(graphics_data, operations)
+        end)
       end)
-    end)
-    
+
     results = Enum.map(tasks, &Task.await(&1, 10_000))
     {:ok, results}
   end
@@ -483,29 +528,35 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
       graphics_count: length(graphics_list),
       created_at: System.system_time(:millisecond)
     }
-    
+
     {:ok, atlas}
   end
 
   defp simulate_gpu_operations(graphics_data, operations) do
     # Simulate various GPU operations
     data = graphics_data
-    
-    data = case Map.get(operations, :scale) do
-      nil -> data
-      _scale -> data  # In real implementation, would GPU-scale the image
-    end
-    
-    data = case Map.get(operations, :rotation) do
-      nil -> data
-      _rotation -> data  # In real implementation, would GPU-rotate the image
-    end
-    
-    data = case Map.get(operations, :effects) do
-      nil -> data
-      _effects -> data  # In real implementation, would apply GPU effects
-    end
-    
+
+    data =
+      case Map.get(operations, :scale) do
+        nil -> data
+        # In real implementation, would GPU-scale the image
+        _scale -> data
+      end
+
+    data =
+      case Map.get(operations, :rotation) do
+        nil -> data
+        # In real implementation, would GPU-rotate the image
+        _rotation -> data
+      end
+
+    data =
+      case Map.get(operations, :effects) do
+        nil -> data
+        # In real implementation, would apply GPU effects
+        _effects -> data
+      end
+
     data
   end
 
@@ -525,18 +576,19 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
     operation_count = metrics.operations_count + 1
     total_time = metrics.total_processing_time + process_time_microseconds
     avg_time = total_time / operation_count
-    
-    error_count = case result do
-      {:error, _} -> metrics.error_count + 1
-      _ -> metrics.error_count
-    end
-    
+
+    error_count =
+      case result do
+        {:error, _} -> metrics.error_count + 1
+        _ -> metrics.error_count
+      end
+
     %{
-      metrics |
-      operations_count: operation_count,
-      total_processing_time: total_time,
-      avg_processing_time: avg_time,
-      error_count: error_count
+      metrics
+      | operations_count: operation_count,
+        total_processing_time: total_time,
+        avg_processing_time: avg_time,
+        error_count: error_count
     }
   end
 

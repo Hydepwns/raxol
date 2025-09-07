@@ -134,14 +134,16 @@ defmodule Raxol.Terminal.EmulatorLite do
       scrollback_limit: scrollback_limit,
       mode_manager: %ModeManager{},
       mode_state: %{},
-      command_history: case enable_history do
-        true -> []
-        false -> nil
-      end,
-      current_command_buffer: case enable_history do
-        true -> ""
-        false -> nil
-      end,
+      command_history:
+        case enable_history do
+          true -> []
+          false -> nil
+        end,
+      current_command_buffer:
+        case enable_history do
+          true -> ""
+          false -> nil
+        end,
       max_command_history: 100,
       window_title: nil,
       window_state: default_window_state(width, height),
@@ -238,10 +240,11 @@ defmodule Raxol.Terminal.EmulatorLite do
         last_col_exceeded: false,
         scroll_region: nil,
         scrollback_buffer: [],
-        command_history: case emulator.command_history do
-          nil -> nil
-          _ -> []
-        end,
+        command_history:
+          case emulator.command_history do
+            nil -> nil
+            _ -> []
+          end,
         current_command_buffer:
           case emulator.current_command_buffer do
             nil -> nil
@@ -268,7 +271,9 @@ defmodule Raxol.Terminal.EmulatorLite do
           ),
         alternate_screen_buffer:
           case emulator.alternate_screen_buffer do
-            nil -> nil
+            nil ->
+              nil
+
             buffer ->
               ScreenBuffer.resize(
                 buffer,

@@ -99,7 +99,12 @@ defmodule Raxol.Plugins.ClipboardPlugin do
         selection_end: end_pos,
         last_cells_at_selection: cells
       } ->
-        process_valid_selection(valid_selection?(start_pos, end_pos, cells), start_pos, end_pos, cells)
+        process_valid_selection(
+          valid_selection?(start_pos, end_pos, cells),
+          start_pos,
+          end_pos,
+          cells
+        )
 
       _ ->
         {:error, :no_selection}
@@ -180,9 +185,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
 
     case get_clipboard_content() do
       {:ok, content} when content != "" ->
-        Raxol.Core.Runtime.Log.debug(
-          "[Clipboard] Pasting content: #{content}"
-        )
+        Raxol.Core.Runtime.Log.debug("[Clipboard] Pasting content: #{content}")
         # Return command for Runtime to handle
         {:ok, state, {:command, {:paste, content}}}
 
@@ -190,12 +193,14 @@ defmodule Raxol.Plugins.ClipboardPlugin do
         Raxol.Core.Runtime.Log.debug(
           "[Clipboard] Clipboard is empty, nothing to paste."
         )
+
         {:ok, state}
 
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "[Clipboard] Failed to get clipboard content: #{inspect(reason)}"
         )
+
         {:ok, state}
     end
   end
@@ -218,6 +223,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     Raxol.Core.Runtime.Log.debug(
       "[Clipboard] No complete selection available for copy."
     )
+
     {:ok, state}
   end
 

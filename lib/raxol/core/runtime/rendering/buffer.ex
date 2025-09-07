@@ -75,6 +75,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
         case x >= 0 and x < width and y >= 0 and y < height do
           true ->
             Map.put(acc, {x, y}, {ch, fg, bg, attrs})
+
           false ->
             # Skip cells outside the buffer dimensions
             acc
@@ -127,6 +128,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
       true ->
         updated_cells = Map.put(buffer.cells, {x, y}, {ch, fg, bg, attrs})
         %{buffer | cells: updated_cells, dirty: true}
+
       false ->
         # Ignore cells outside the buffer
         buffer
@@ -258,6 +260,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
                new_y < buffer.height do
           true ->
             Map.put(acc, {new_x, new_y}, cell)
+
           false ->
             acc
         end

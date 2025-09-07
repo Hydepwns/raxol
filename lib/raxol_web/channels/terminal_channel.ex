@@ -173,17 +173,31 @@ defmodule RaxolWeb.TerminalChannel do
   @impl Phoenix.Channel
   def handle_in("theme", %{"theme" => theme}, socket) do
     state = socket.assigns.terminal_state
-    handle_theme_change(theme in ["dark", "light", "high-contrast"], theme, state, socket)
+
+    handle_theme_change(
+      theme in ["dark", "light", "high-contrast"],
+      theme,
+      state,
+      socket
+    )
   end
 
   @impl Phoenix.Channel
   def handle_in("set_scrollback_limit", %{"limit" => limit}, socket) do
     state = socket.assigns.terminal_state
-    limit = case is_integer(limit) do
-      true -> limit
-      false -> String.to_integer("#{limit}")
-    end
-    handle_scrollback_limit_change(limit >= 100 and limit <= 10_000, limit, state, socket)
+
+    limit =
+      case is_integer(limit) do
+        true -> limit
+        false -> String.to_integer("#{limit}")
+      end
+
+    handle_scrollback_limit_change(
+      limit >= 100 and limit <= 10_000,
+      limit,
+      state,
+      socket
+    )
   end
 
   defp handle_theme_change(false, _theme, _state, socket) do
@@ -213,7 +227,6 @@ defmodule RaxolWeb.TerminalChannel do
 
     {:reply, :ok, socket}
   end
-
 
   defp handle_scrollback_limit_change(false, _limit, _state, socket) do
     {:reply, {:error, %{reason: "invalid_limit"}}, socket}
@@ -340,7 +353,10 @@ defmodule RaxolWeb.TerminalChannel do
   end
 
   defp validate_dimensions(width, height) do
-    dimensions_valid = is_integer(width) and is_integer(height) and width > 0 and height > 0 and width <= 200 and height <= 100
+    dimensions_valid =
+      is_integer(width) and is_integer(height) and width > 0 and height > 0 and
+        width <= 200 and height <= 100
+
     validate_dimensions_result(dimensions_valid)
   end
 

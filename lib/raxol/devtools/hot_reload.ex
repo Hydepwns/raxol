@@ -132,7 +132,7 @@ defmodule Raxol.DevTools.HotReload do
 
     # start_file_watcher/1 currently always returns {:ok, watcher_pid}
     {:ok, watcher_pid} = start_file_watcher(expanded_paths)
-    
+
     final_state = %{
       new_state
       | watcher_pid: watcher_pid,

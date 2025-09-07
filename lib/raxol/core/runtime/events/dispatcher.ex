@@ -134,7 +134,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     new_theme_id =
       Map.get(updated_model, :current_theme_id, state.current_theme_id)
 
-    apply_theme_update(new_theme_id == state.current_theme_id, state, updated_model, new_theme_id)
+    apply_theme_update(
+      new_theme_id == state.current_theme_id,
+      state,
+      updated_model,
+      new_theme_id
+    )
   end
 
   defp log_update_error(state, message, event, reason) do
@@ -459,7 +464,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # --- Helper Functions for Pattern Matching ---
 
-  defp send_test_ready_message(:test), do: send(self(), {:dispatcher_ready, self()})
+  defp send_test_ready_message(:test),
+    do: send(self(), {:dispatcher_ready, self()})
+
   defp send_test_ready_message(_env), do: :ok
 
   defp apply_theme_update(true, state, updated_model, _new_theme_id) do
@@ -471,11 +478,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     %{state | model: updated_model, current_theme_id: new_theme_id}
   end
 
-  defp broadcast_event_if_valid(event_type, event_data) 
+  defp broadcast_event_if_valid(event_type, event_data)
        when is_atom(event_type) and is_map(event_data) do
     Raxol.Core.Runtime.Log.debug(
       "[Dispatcher] Broadcasting event: #{inspect(event_type)} via internal broadcast"
     )
+
     _ = __MODULE__.broadcast(event_type, event_data)
   end
 
@@ -501,7 +509,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   defp handle_filtered_event(nil, state), do: {:ok, state}
-  defp handle_filtered_event(filtered_event, state), do: handle_event(filtered_event, state)
+
+  defp handle_filtered_event(filtered_event, state),
+    do: handle_event(filtered_event, state)
 
   # --- Command Processing ---
 

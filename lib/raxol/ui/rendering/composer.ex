@@ -124,11 +124,12 @@ defmodule Raxol.UI.Rendering.Composer do
   end
 
   defp extract_child_from_list(false, _children, _idx), do: nil
-  
-  defp extract_child_from_list(true, children, idx) when idx < length(children) do
+
+  defp extract_child_from_list(true, children, idx)
+       when idx < length(children) do
     Enum.at(children, idx)
   end
-  
+
   defp extract_child_from_list(true, _children, _idx), do: nil
 
   # Removed unused function: handle_recomposition_logging/3

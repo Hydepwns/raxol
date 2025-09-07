@@ -213,7 +213,12 @@ defmodule Raxol.Terminal.Extension.StateManager do
 
   defp load_extension_config(path, default_config) do
     config_path = Path.join(path, @config_file)
-    handle_config_loading(File.exists?(config_path), config_path, default_config)
+
+    handle_config_loading(
+      File.exists?(config_path),
+      config_path,
+      default_config
+    )
   end
 
   defp handle_script_loading(true, script_path) do

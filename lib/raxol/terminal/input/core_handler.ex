@@ -64,7 +64,9 @@ defmodule Raxol.Terminal.Input.CoreHandler do
       Parser.parse_chunk(emulator, current_parser_state, input)
 
     case remaining_input_chunk do
-      "" -> :ok
+      "" ->
+        :ok
+
       _ ->
         Raxol.Core.Runtime.Log.debug(
           "[InputHandler] Parser.parse_chunk returned remaining input: #{inspect(remaining_input_chunk)}"

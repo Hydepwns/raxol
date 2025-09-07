@@ -32,7 +32,11 @@ defmodule Raxol.UI.RendererCached do
     default_theme = theme || ThemeResolverCached.get_default_theme()
 
     # Check if we can use batch rendering
-    choose_render_strategy(should_batch_render?(elements), elements, default_theme)
+    choose_render_strategy(
+      should_batch_render?(elements),
+      elements,
+      default_theme
+    )
   end
 
   @doc """
@@ -45,7 +49,12 @@ defmodule Raxol.UI.RendererCached do
     case validate_element(element) do
       {:ok, valid_element} ->
         # Check if element is cacheable
-        choose_render_method(cacheable_element?(valid_element), valid_element, theme, parent_style)
+        choose_render_method(
+          cacheable_element?(valid_element),
+          valid_element,
+          theme,
+          parent_style
+        )
 
       {:error, _reason} ->
         []
@@ -124,8 +133,11 @@ defmodule Raxol.UI.RendererCached do
 
   # Private functions
 
-  defp choose_render_strategy(true, elements, theme), do: render_batch_cached(elements, theme)
-  defp choose_render_strategy(false, elements, theme), do: render_individual_cached(elements, theme)
+  defp choose_render_strategy(true, elements, theme),
+    do: render_batch_cached(elements, theme)
+
+  defp choose_render_strategy(false, elements, theme),
+    do: render_individual_cached(elements, theme)
 
   defp choose_render_method(true, element, theme, parent_style) do
     ComponentCache.render_cached(element, theme, parent_style)
@@ -169,7 +181,13 @@ defmodule Raxol.UI.RendererCached do
 
   defp render_tree_recursive(element, theme, parent_style, depth) do
     # Render current element
-    element_cells = choose_render_method(cacheable_element?(element), element, theme, parent_style)
+    element_cells =
+      choose_render_method(
+        cacheable_element?(element),
+        element,
+        theme,
+        parent_style
+      )
 
     # Render children if present
     children_cells =

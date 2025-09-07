@@ -29,6 +29,7 @@ defmodule Raxol.Core.Renderer.View.Style.Border do
     case border_type in valid_styles do
       false ->
         raise ArgumentError, "Invalid border style: #{inspect(border_type)}"
+
       true ->
         :ok
     end

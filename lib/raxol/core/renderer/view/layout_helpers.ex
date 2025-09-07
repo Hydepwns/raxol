@@ -41,6 +41,7 @@ defmodule Raxol.Core.Renderer.View.LayoutHelpers do
       false ->
         raise ArgumentError,
               "LayoutHelpers.panel macro expects a keyword list as the first argument, got: #{inspect(opts)}"
+
       true ->
         :ok
     end
@@ -61,8 +62,18 @@ defmodule Raxol.Core.Renderer.View.LayoutHelpers do
         fg: fg,
         bg: bg
       ]
-      |> Keyword.merge(case title do nil -> []; _ -> [title: title] end)
-      |> Keyword.merge(case style do [] -> []; _ -> [style: style] end)
+      |> Keyword.merge(
+        case title do
+          nil -> []
+          _ -> [title: title]
+        end
+      )
+      |> Keyword.merge(
+        case style do
+          [] -> []
+          _ -> [style: style]
+        end
+      )
 
     # Note: This will need to be updated to use the new Box module
     # For now, we'll delegate to the main View module

@@ -125,7 +125,13 @@ defmodule Raxol.Svelte.Compiler do
 
         # Elements with only static props
         {element, _, props} = node, acc when is_atom(element) ->
-          handle_static_element(all_static_props?(props), node, element, props, acc)
+          handle_static_element(
+            all_static_props?(props),
+            node,
+            element,
+            props,
+            acc
+          )
 
         node, acc ->
           {node, acc}
@@ -146,7 +152,13 @@ defmodule Raxol.Svelte.Compiler do
           dynamic_props =
             Enum.filter(props, fn {_k, v} -> is_dynamic_value?(v) end)
 
-          handle_dynamic_element(dynamic_props != [], node, element, dynamic_props, acc)
+          handle_dynamic_element(
+            dynamic_props != [],
+            node,
+            element,
+            dynamic_props,
+            acc
+          )
 
         node, acc ->
           {node, acc}
@@ -160,7 +172,13 @@ defmodule Raxol.Svelte.Compiler do
       Macro.prewalk(ast, [], fn
         # Custom components (capitalized)
         {component, _, props} = node, acc when is_atom(component) ->
-          handle_component_name(component_name?(component), node, component, props, acc)
+          handle_component_name(
+            component_name?(component),
+            node,
+            component,
+            props,
+            acc
+          )
 
         node, acc ->
           {node, acc}
@@ -189,7 +207,13 @@ defmodule Raxol.Svelte.Compiler do
 
           new_directives = events ++ uses
 
-          handle_new_directives(new_directives != [], node, element, new_directives, acc)
+          handle_new_directives(
+            new_directives != [],
+            node,
+            element,
+            new_directives,
+            acc
+          )
 
         node, acc ->
           {node, acc}

@@ -212,7 +212,6 @@ defmodule Raxol.Security.InputValidator do
     {:error, "must be at least #{min} characters"}
   end
 
-
   defp handle_max_length_check(true, value, _max), do: {:ok, value}
 
   defp handle_max_length_check(false, _value, max) do
@@ -220,11 +219,10 @@ defmodule Raxol.Security.InputValidator do
   end
 
   defp handle_allowed_check(true, value, _allowed), do: {:ok, value}
-  
+
   defp handle_allowed_check(false, _value, allowed) do
     {:error, "must be one of: #{inspect(allowed)}"}
   end
-
 
   defp handle_min_value_check(true, value, _min), do: {:ok, value}
 
@@ -232,17 +230,14 @@ defmodule Raxol.Security.InputValidator do
     {:error, "must be at least #{min}"}
   end
 
-
   defp handle_max_value_check(true, value, _max), do: {:ok, value}
 
   defp handle_max_value_check(false, _value, max) do
     {:error, "must be at most #{max}"}
   end
 
-
   defp handle_format_check(true, value), do: {:ok, value}
   defp handle_format_check(false, _value), do: {:error, "has invalid format"}
-
 
   defp sanitize_if_needed(value, %{sanitize: true, rules: rules})
        when is_binary(value) do

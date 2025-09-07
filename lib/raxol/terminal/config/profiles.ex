@@ -187,7 +187,9 @@ defmodule Raxol.Terminal.Config.Profiles do
 
   defp validate_profile_name(name) when is_binary(name) do
     case String.match?(name, ~r/^[a-zA-Z0-9_\-. ]+$/) do
-      true -> :ok
+      true ->
+        :ok
+
       false ->
         {:error,
          "Profile name contains invalid characters (allowed: letters, numbers, spaces, underscores, hyphens, periods)"}

@@ -2,7 +2,6 @@
 defmodule Raxol.Cloud.Monitoring.Alerts do
   @moduledoc false
 
-
   def init(config) do
     alerts_state = %{
       config: config

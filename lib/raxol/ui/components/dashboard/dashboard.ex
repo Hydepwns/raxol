@@ -77,7 +77,12 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
     widgets = select_widgets(loaded_widgets, default_widgets)
 
     # Verify widgets are valid before initializing
-    create_model_with_validation(validate_widgets(widgets), widgets, default_widgets, grid_config)
+    create_model_with_validation(
+      validate_widgets(widgets),
+      widgets,
+      default_widgets,
+      grid_config
+    )
   end
 
   @spec validate_widgets(list() | nil) :: boolean()
@@ -110,7 +115,8 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
   # Handle nil case
   def validate_widgets(nil), do: false
 
-  defp select_widgets(loaded_widgets, _default_widgets) when is_list(loaded_widgets) and loaded_widgets != [] do
+  defp select_widgets(loaded_widgets, _default_widgets)
+       when is_list(loaded_widgets) and loaded_widgets != [] do
     Raxol.Core.Runtime.Log.info(
       "Initializing dashboard from saved layout with #{length(loaded_widgets)} widgets"
     )
@@ -126,11 +132,21 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
     default_widgets
   end
 
-  defp create_model_with_validation(true, widgets, _default_widgets, grid_config) do
+  defp create_model_with_validation(
+         true,
+         widgets,
+         _default_widgets,
+         grid_config
+       ) do
     {:ok, %Model{widgets: widgets, grid_config: grid_config}}
   end
 
-  defp create_model_with_validation(false, _widgets, default_widgets, grid_config) do
+  defp create_model_with_validation(
+         false,
+         _widgets,
+         default_widgets,
+         grid_config
+       ) do
     Raxol.Core.Runtime.Log.error(
       "Invalid widget configurations in saved layout, using defaults"
     )
@@ -141,16 +157,13 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
   defp render_widget_with_module(nil, _widget_state, widget_id) do
     # Error case: widget state doesn't specify its module
     UI.box title: "Error" do
-      UI.label(
-        content: "Error: Module missing for widget #{widget_id}"
-      )
+      UI.label(content: "Error: Module missing for widget #{widget_id}")
     end
   end
 
   defp render_widget_with_module(widget_module, widget_state, widget_id) do
     # Place the widget in its container (placeholder for grid_item)
-    UI.box title:
-             Map.get(widget_state, :title, "Widget #{widget_id}"),
+    UI.box title: Map.get(widget_state, :title, "Widget #{widget_id}"),
            border: :rounded,
            # Add some margin for spacing
            style: %{margin: 1} do

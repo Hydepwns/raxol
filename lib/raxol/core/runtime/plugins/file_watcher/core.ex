@@ -29,6 +29,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Core do
 
             {nil, false}
         end
+
       false ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "[#{__MODULE__}] FileSystem dependency not found. Cannot enable plugin reloading.",
@@ -54,6 +55,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Core do
 
         # Return state with updated reverse map
         %{state | reverse_plugin_paths: new_reverse_paths}
+
       false ->
         # File watching not enabled
         state

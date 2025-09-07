@@ -174,11 +174,13 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
       fn props, context ->
         # Get user context
         user_context_raw = Hooks.use_context(:user_context)
-        user_context = case user_context_raw do
-          nil -> %{authenticated: false}
-          map when is_map(map) -> Map.put_new(map, :authenticated, false)
-          _ -> %{authenticated: false}
-        end
+
+        user_context =
+          case user_context_raw do
+            nil -> %{authenticated: false}
+            map when is_map(map) -> Map.put_new(map, :authenticated, false)
+            _ -> %{authenticated: false}
+          end
 
         has_permission =
           Hooks.use_callback(
@@ -699,7 +701,6 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
        ) do
     component_module.render(enhanced_props, context)
   end
-
 
   defp render_based_on_data_state(
          false,

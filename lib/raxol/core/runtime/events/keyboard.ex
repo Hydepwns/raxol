@@ -30,10 +30,11 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
 
     # Check for system key combinations (quit, debug toggle)
     case check_system_key_combinations(key, modifiers, state) do
-      :not_system -> {:application, event, state}
-      # Note: Currently all system key combinations return :not_system
-      # This suggests quit_keys may be empty or debug keys are never triggered
-      # Keeping this simple to avoid unreachable clause warnings
+      :not_system ->
+        {:application, event, state}
+        # Note: Currently all system key combinations return :not_system
+        # This suggests quit_keys may be empty or debug keys are never triggered
+        # Keeping this simple to avoid unreachable clause warnings
     end
   end
 

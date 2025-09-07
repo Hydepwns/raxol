@@ -194,6 +194,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
           extract_lines_from_region(buffer, scroll_start, scroll_end)
 
         {clear_region(buffer, scroll_start, scroll_end), scrolled_lines}
+
       false ->
         scroll_region_up_with_lines(buffer, scroll_start, scroll_end, lines)
     end
@@ -396,7 +397,9 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
          empty_line
        ) do
     case idx < scroll_start do
-      true -> line
+      true ->
+        line
+
       false ->
         transform_line_in_region(
           idx,

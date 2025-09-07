@@ -27,19 +27,23 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
         # Get accessible name/label for the element if metadata exists
         announcement = Metadata.get_accessible_name(new_element)
 
-        Raxol.Core.Runtime.Log.debug("Got announcement: #{inspect(announcement)}")
+        Raxol.Core.Runtime.Log.debug(
+          "Got announcement: #{inspect(announcement)}"
+        )
 
         case announcement do
-          nil -> :ok
+          nil ->
+            :ok
+
           ann ->
             Announcements.announce(ann, [], user_preferences_pid_or_name)
-            Raxol.Core.Runtime.Log.debug(
-              "Announcement made: #{inspect(ann)}"
-            )
+            Raxol.Core.Runtime.Log.debug("Announcement made: #{inspect(ann)}")
         end
 
-        Raxol.Core.Runtime.Log.debug("Focus changed to: #{inspect(new_element)}")
-        
+        Raxol.Core.Runtime.Log.debug(
+          "Focus changed to: #{inspect(new_element)}"
+        )
+
       false ->
         Raxol.Core.Runtime.Log.debug(
           "Screen reader disabled for: #{inspect(user_preferences_pid_or_name)}"
@@ -140,6 +144,7 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
           "Theme: #{theme.name}"
         end
       end
+
     false ->
       :ok
   end

@@ -28,8 +28,9 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
           "[ImageRenderer] Bounds too small for image rendering: #{inspect(bounds)}",
           %{}
         )
+
         []
-      
+
       false ->
         case Raxol.Core.ErrorHandling.safe_call(fn ->
                case protocol do
@@ -110,7 +111,8 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
     # First try as file path, then as raw data
     case File.read(data) do
       {:ok, content} -> {:ok, content}
-      {:error, _reason} -> {:ok, data}  # Assume it's raw image data
+      # Assume it's raw image data
+      {:error, _reason} -> {:ok, data}
     end
   end
 

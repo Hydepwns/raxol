@@ -102,7 +102,11 @@ defmodule Raxol.Test.Visual do
   end
 
   defp extract_render_context(component_or_map_or_view, opts) do
-    handle_render_context_extraction(view_is_map(component_or_map_or_view), component_or_map_or_view, opts)
+    handle_render_context_extraction(
+      view_is_map(component_or_map_or_view),
+      component_or_map_or_view,
+      opts
+    )
   end
 
   defp handle_render_context_extraction(true, component_or_map_or_view, opts) do
@@ -134,10 +138,11 @@ defmodule Raxol.Test.Visual do
   end
 
   defp write_cell_to_buffer({x, y, char, fg, bg, attrs}, buffer) do
-    actual_char = case char do
-      nil -> ~c" "
-      char -> char
-    end
+    actual_char =
+      case char do
+        nil -> ~c" "
+        char -> char
+      end
 
     Operations.write_char(buffer, x, y, actual_char, %{
       foreground: fg,
@@ -435,7 +440,8 @@ defmodule Raxol.Test.Visual do
           "setup_visual_component/2 expected a map with :module and :state keys, got: #{inspect(component)}"
   end
 
-  defp validate_render_component_structure!(component_map) when is_map(component_map) do
+  defp validate_render_component_structure!(component_map)
+       when is_map(component_map) do
     validate_render_component_keys!(component_map)
   end
 
@@ -451,7 +457,8 @@ defmodule Raxol.Test.Visual do
           "render_component/2 expected a map with :module and :state keys, got: #{inspect(component_map)}"
   end
 
-  defp compare_render_output(current, expected) when current == expected, do: :ok
+  defp compare_render_output(current, expected) when current == expected,
+    do: :ok
 
   defp compare_render_output(current, expected) do
     {:diff, compute_visual_diff(expected, current)}

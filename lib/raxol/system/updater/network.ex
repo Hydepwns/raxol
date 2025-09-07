@@ -88,14 +88,18 @@ defmodule Raxol.System.Updater.Network do
   end
 
   def find_executable(dir, platform) do
-    executable_name = case platform do
-      "windows" -> "raxol.exe"
-      _ -> "raxol"
-    end
+    executable_name =
+      case platform do
+        "windows" -> "raxol.exe"
+        _ -> "raxol"
+      end
+
     executable_path = Path.join(dir, executable_name)
 
     case File.exists?(executable_path) do
-      true -> executable_path
+      true ->
+        executable_path
+
       false ->
         # Search recursively in subdirectories
         case find_file_recursive(dir, executable_name) do
@@ -138,6 +142,7 @@ defmodule Raxol.System.Updater.Network do
         Process.sleep(500)
         # Exit the current Elixir application
         System.stop(0)
+
       _ ->
         # On Unix systems, we can replace the current executable directly
         # The new process will start with the updated executable

@@ -73,6 +73,7 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
           true ->
             config = Mix.Project.config()
             to_string(config[:version] || "0.0.0")
+
           false ->
             "0.0.0"
         end

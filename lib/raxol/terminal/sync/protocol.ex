@@ -264,16 +264,20 @@ defmodule Raxol.Terminal.Sync.Protocol do
   defp handle_ack_version_check(false), do: {:error, :version_mismatch}
 
   defp handle_resolve_version_check(true, state), do: {:ok, state}
-  defp handle_resolve_version_check(false, _state), do: {:error, :version_mismatch}
+
+  defp handle_resolve_version_check(false, _state),
+    do: {:error, :version_mismatch}
 
   defp resolve_strong_consistency(true), do: :accept
   defp resolve_strong_consistency(false), do: :reject
 
-  defp resolve_eventual_consistency(message_version, current_version) when message_version > current_version do
+  defp resolve_eventual_consistency(message_version, current_version)
+       when message_version > current_version do
     :accept
   end
 
-  defp resolve_eventual_consistency(message_version, current_version) when message_version == current_version do
+  defp resolve_eventual_consistency(message_version, current_version)
+       when message_version == current_version do
     :conflict
   end
 

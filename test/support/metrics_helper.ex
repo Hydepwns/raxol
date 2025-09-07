@@ -214,7 +214,15 @@ defmodule Raxol.Test.MetricsHelper do
         :ok
 
       {:error, _} ->
-        handle_metric_wait_timeout(System.monotonic_time(:millisecond) >= end_time, name, type, expected_value, opts, check_interval, end_time)
+        handle_metric_wait_timeout(
+          System.monotonic_time(:millisecond) >= end_time,
+          name,
+          type,
+          expected_value,
+          opts,
+          check_interval,
+          end_time
+        )
     end
   end
 
@@ -472,13 +480,14 @@ defmodule Raxol.Test.MetricsHelper do
   end
 
   # Helper functions for pattern matching refactoring
-  
+
   defp start_collector_if_enabled(opts) do
     should_start = Keyword.get(opts, :start_collector, true)
     start_collector_conditional(should_start, opts)
   end
 
   defp start_collector_conditional(false, _opts), do: nil
+
   defp start_collector_conditional(true, opts) do
     case Raxol.Core.Metrics.UnifiedCollector.start_link(
            Keyword.get(opts, :collector_opts,
@@ -500,23 +509,34 @@ defmodule Raxol.Test.MetricsHelper do
   end
 
   defp stop_collector_if_alive(collector) when collector != nil and true do
-    stop_process_if_alive(collector, &Raxol.Core.Metrics.UnifiedCollector.stop/1)
+    stop_process_if_alive(
+      collector,
+      &Raxol.Core.Metrics.UnifiedCollector.stop/1
+    )
   end
+
   defp stop_collector_if_alive(_collector), do: :ok
 
   defp stop_aggregator_if_alive(aggregator) when aggregator != nil and true do
     stop_process_if_alive(aggregator, &Raxol.Core.Metrics.Aggregator.stop/1)
   end
+
   defp stop_aggregator_if_alive(_aggregator), do: :ok
 
   defp stop_visualizer_if_alive(visualizer) when visualizer != nil and true do
     stop_process_if_alive(visualizer, &Raxol.Core.Metrics.Visualizer.stop/1)
   end
+
   defp stop_visualizer_if_alive(_visualizer), do: :ok
 
-  defp stop_alert_manager_if_alive(alert_manager) when alert_manager != nil and true do
-    stop_process_if_alive(alert_manager, &Raxol.Core.Metrics.AlertManager.stop/1)
+  defp stop_alert_manager_if_alive(alert_manager)
+       when alert_manager != nil and true do
+    stop_process_if_alive(
+      alert_manager,
+      &Raxol.Core.Metrics.AlertManager.stop/1
+    )
   end
+
   defp stop_alert_manager_if_alive(_alert_manager), do: :ok
 
   defp stop_process_if_alive(pid, stop_func) do
@@ -526,11 +546,36 @@ defmodule Raxol.Test.MetricsHelper do
     end
   end
 
-  defp handle_metric_wait_timeout(true, _name, _type, _expected_value, _opts, _check_interval, _end_time) do
+  defp handle_metric_wait_timeout(
+         true,
+         _name,
+         _type,
+         _expected_value,
+         _opts,
+         _check_interval,
+         _end_time
+       ) do
     {:error, :timeout}
   end
-  defp handle_metric_wait_timeout(false, name, type, expected_value, opts, check_interval, end_time) do
+
+  defp handle_metric_wait_timeout(
+         false,
+         name,
+         type,
+         expected_value,
+         opts,
+         check_interval,
+         end_time
+       ) do
     Process.sleep(check_interval)
-    wait_for_metric_loop(name, type, expected_value, opts, check_interval, end_time)
+
+    wait_for_metric_loop(
+      name,
+      type,
+      expected_value,
+      opts,
+      check_interval,
+      end_time
+    )
   end
 end

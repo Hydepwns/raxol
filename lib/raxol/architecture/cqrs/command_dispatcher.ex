@@ -327,31 +327,32 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
     case length(commands) > state.config.batch_size_limit do
       true ->
         {:error, :batch_too_large, state}
+
       false ->
         batch_start_time = System.monotonic_time(:microsecond)
 
-      {results, final_state} =
-        Enum.reduce(commands, {[], state}, fn command,
-                                              {acc_results, acc_state} ->
-          case do_dispatch_command(command, opts, acc_state) do
-            {:ok, result, new_state} ->
-              {[{:ok, result} | acc_results], new_state}
+        {results, final_state} =
+          Enum.reduce(commands, {[], state}, fn command,
+                                                {acc_results, acc_state} ->
+            case do_dispatch_command(command, opts, acc_state) do
+              {:ok, result, new_state} ->
+                {[{:ok, result} | acc_results], new_state}
 
-            {:error, reason, new_state} ->
-              {[{:error, reason} | acc_results], new_state}
-          end
-        end)
+              {:error, reason, new_state} ->
+                {[{:error, reason} | acc_results], new_state}
+            end
+          end)
 
-      batch_time = System.monotonic_time(:microsecond) - batch_start_time
+        batch_time = System.monotonic_time(:microsecond) - batch_start_time
 
-      # Update batch metrics
-      metrics_state =
-        update_metrics(final_state, :batch_executed, %{
-          batch_size: length(commands),
-          execution_time_us: batch_time
-        })
+        # Update batch metrics
+        metrics_state =
+          update_metrics(final_state, :batch_executed, %{
+            batch_size: length(commands),
+            execution_time_us: batch_time
+          })
 
-      {:ok, Enum.reverse(results), metrics_state}
+        {:ok, Enum.reverse(results), metrics_state}
     end
   end
 
@@ -471,6 +472,7 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
               failure_count: new_failure_count,
               opened_at: System.system_time(:millisecond)
           }
+
         false ->
           %{current_breaker | failure_count: new_failure_count}
       end

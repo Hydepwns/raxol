@@ -56,6 +56,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
       [] ->
         # If no children, return the box itself as a layout element with position and size
         [Map.merge(box, %{position: {0, 0}, size: available_size})]
+
       _ ->
         layout
     end

@@ -264,14 +264,15 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     case version < sync_state.version do
       true ->
         {:error, :version_conflict}
+
       false ->
         case config.consistency do
-        :strong ->
-          do_strong_sync(sync_state, data, version, metadata, config)
+          :strong ->
+            do_strong_sync(sync_state, data, version, metadata, config)
 
-        :eventual ->
-          do_eventual_sync(sync_state, data, version, metadata, config)
-      end
+          :eventual ->
+            do_eventual_sync(sync_state, data, version, metadata, config)
+        end
     end
   end
 

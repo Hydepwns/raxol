@@ -95,11 +95,21 @@ defmodule Raxol.Terminal.Extension.LifecycleManager do
   end
 
   defp handle_extension_activation(extension, extension_id, state) do
-    handle_activation_by_status(extension.status, extension, extension_id, state)
+    handle_activation_by_status(
+      extension.status,
+      extension,
+      extension_id,
+      state
+    )
   end
 
   defp handle_extension_deactivation(extension, extension_id, state) do
-    handle_deactivation_by_status(extension.status, extension, extension_id, state)
+    handle_deactivation_by_status(
+      extension.status,
+      extension,
+      extension_id,
+      state
+    )
   end
 
   defp initialize_extension(extension) do

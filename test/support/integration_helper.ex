@@ -224,7 +224,14 @@ defmodule Raxol.Test.IntegrationHelper do
         :ok
 
       {:error, _} ->
-        handle_wait_timeout(System.monotonic_time(:millisecond) >= end_time, state, conditions, opts, check_interval, end_time)
+        handle_wait_timeout(
+          System.monotonic_time(:millisecond) >= end_time,
+          state,
+          conditions,
+          opts,
+          check_interval,
+          end_time
+        )
     end
   end
 
@@ -301,7 +308,7 @@ defmodule Raxol.Test.IntegrationHelper do
   end
 
   # Helper functions for pattern matching refactoring
-  
+
   defp setup_metrics_component(components, opts, state) do
     case :metrics in components do
       true ->
@@ -309,7 +316,9 @@ defmodule Raxol.Test.IntegrationHelper do
           Raxol.Test.MetricsHelper.setup_metrics_test(
             Keyword.get(opts, :metrics_opts, [])
           )
+
         Map.put(state, :metrics, metrics_state)
+
       false ->
         state
     end
@@ -322,7 +331,9 @@ defmodule Raxol.Test.IntegrationHelper do
           Raxol.Test.BufferHelper.setup_buffer_test(
             Keyword.get(opts, :buffer_opts, [])
           )
+
         Map.put(state, :buffer, buffer_state)
+
       false ->
         state
     end
@@ -335,31 +346,51 @@ defmodule Raxol.Test.IntegrationHelper do
           Raxol.Test.RendererHelper.setup_renderer_test(
             Keyword.get(opts, :renderer_opts, [])
           )
+
         Map.put(state, :renderer, renderer_state)
+
       false ->
         state
     end
   end
 
   defp cleanup_metrics_component(nil), do: :ok
+
   defp cleanup_metrics_component(metrics_state) do
     Raxol.Test.MetricsHelper.cleanup_metrics_test(metrics_state)
   end
 
   defp cleanup_buffer_component(nil), do: :ok
+
   defp cleanup_buffer_component(buffer_state) do
     Raxol.Test.BufferHelper.cleanup_buffer_test(buffer_state)
   end
 
   defp cleanup_renderer_component(nil), do: :ok
+
   defp cleanup_renderer_component(renderer_state) do
     Raxol.Test.RendererHelper.cleanup_renderer_test(renderer_state)
   end
 
-  defp handle_wait_timeout(true, _state, _conditions, _opts, _check_interval, _end_time) do
+  defp handle_wait_timeout(
+         true,
+         _state,
+         _conditions,
+         _opts,
+         _check_interval,
+         _end_time
+       ) do
     {:error, :timeout}
   end
-  defp handle_wait_timeout(false, state, conditions, opts, check_interval, end_time) do
+
+  defp handle_wait_timeout(
+         false,
+         state,
+         conditions,
+         opts,
+         check_interval,
+         end_time
+       ) do
     Process.sleep(check_interval)
     wait_for_components_loop(state, conditions, opts, check_interval, end_time)
   end

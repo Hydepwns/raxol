@@ -73,6 +73,7 @@ defmodule Raxol.Terminal.Cache.EvictionHelpers do
     case size + needed_size <= max_size do
       true ->
         {cache, size}
+
       false ->
         cache_list = Map.to_list(cache)
         sorted = sort_cache_entries(cache_list, policy, sort_fn, order)

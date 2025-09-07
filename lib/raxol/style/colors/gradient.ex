@@ -340,7 +340,11 @@ defmodule Raxol.Style.Colors.Gradient do
     color_count = length(colors)
     char_count = length(graphemes)
 
-    handle_color_distribution(color_count >= char_count, color_count, char_count)
+    handle_color_distribution(
+      color_count >= char_count,
+      color_count,
+      char_count
+    )
   end
 
   # Combine colors with text characters
@@ -365,11 +369,15 @@ defmodule Raxol.Style.Colors.Gradient do
 
   # Handle segment end decision instead of if statement
   defp handle_segment_end(true, segment_colors), do: segment_colors
-  defp handle_segment_end(false, segment_colors), do: Enum.drop(segment_colors, -1)
+
+  defp handle_segment_end(false, segment_colors),
+    do: Enum.drop(segment_colors, -1)
 
   # Calculate position index instead of if statement
   defp calculate_position_index(true, colors, _position), do: length(colors) - 1
-  defp calculate_position_index(false, colors, position), do: trunc(position * length(colors))
+
+  defp calculate_position_index(false, colors, position),
+    do: trunc(position * length(colors))
 
   # Calculate segment intervals instead of if statement
   defp calculate_segment_intervals(true, base_intervals), do: base_intervals + 1

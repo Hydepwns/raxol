@@ -257,6 +257,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
 
   # Helper function for pattern matching instead of if statement
   defp log_health_check(:healthy, _measurements, _metadata), do: :ok
+
   defp log_health_check(status, measurements, _metadata) do
     Logger.info("""
     Emulator health check:

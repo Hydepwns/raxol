@@ -135,7 +135,9 @@ defmodule Raxol.Examples.ComponentShowcase do
               end
             ]
           }
-        false -> nil
+
+        false ->
+          nil
       end,
       column do
         panel title: "Raxol Component Showcase", border: :single do
@@ -267,7 +269,9 @@ defmodule Raxol.Examples.ComponentShowcase do
                   id: :spinner_loading,
                   assigns: %{label: "Loading..."}
                 }
-              false -> nil
+
+              false ->
+                nil
             end
 
             %{

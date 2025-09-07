@@ -199,6 +199,7 @@ defmodule Raxol.Svelte.ComponentState.Server do
       case previous_slots do
         empty when empty == %{} ->
           Map.delete(temp_state.process_slots, pid)
+
         slots ->
           Map.put(temp_state.process_slots, pid, slots)
       end
@@ -268,6 +269,7 @@ defmodule Raxol.Svelte.ComponentState.Server do
       nil ->
         ref = Process.monitor(pid)
         %{state | monitors: Map.put(state.monitors, pid, ref)}
+
       _ref ->
         state
     end

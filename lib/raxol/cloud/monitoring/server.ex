@@ -312,13 +312,21 @@ defmodule Raxol.Cloud.Monitoring.Server do
 
   @impl true
   def handle_call({:init_metrics, metrics_state}, _from, state) do
-    updated_state = %{state | metrics: Map.merge(state.metrics, %{state: metrics_state})}
+    updated_state = %{
+      state
+      | metrics: Map.merge(state.metrics, %{state: metrics_state})
+    }
+
     {:reply, :ok, updated_state}
   end
 
   @impl true
   def handle_call({:update_metrics, metrics_state}, _from, state) do
-    updated_state = %{state | metrics: Map.merge(state.metrics, %{state: metrics_state})}
+    updated_state = %{
+      state
+      | metrics: Map.merge(state.metrics, %{state: metrics_state})
+    }
+
     {:reply, :ok, updated_state}
   end
 
@@ -370,8 +378,11 @@ defmodule Raxol.Cloud.Monitoring.Server do
           :unknown
 
         results ->
-          has_critical = Enum.any?(results, fn {_, status} -> status.level == :critical end)
-          has_warning = Enum.any?(results, fn {_, status} -> status.level == :warning end)
+          has_critical =
+            Enum.any?(results, fn {_, status} -> status.level == :critical end)
+
+          has_warning =
+            Enum.any?(results, fn {_, status} -> status.level == :warning end)
 
           cond do
             has_critical -> :critical
@@ -388,7 +399,11 @@ defmodule Raxol.Cloud.Monitoring.Server do
       response_time: System.monotonic_time() - System.monotonic_time()
     }
 
-    updated_health = %{state.health | status: overall_status, last_check: DateTime.utc_now()}
+    updated_health = %{
+      state.health
+      | status: overall_status,
+        last_check: DateTime.utc_now()
+    }
 
     new_state = %{state | health: updated_health}
 
@@ -464,7 +479,6 @@ defmodule Raxol.Cloud.Monitoring.Server do
     )
   end
 
-
   # Alert handlers
 
   @impl true
@@ -491,7 +505,6 @@ defmodule Raxol.Cloud.Monitoring.Server do
 
     {:noreply, %{state | alerts: updated_alerts}}
   end
-
 
   @impl true
   def handle_cast({:process_alert, alert, _opts}, state) do
@@ -520,7 +533,6 @@ defmodule Raxol.Cloud.Monitoring.Server do
         {:noreply, state}
     end
   end
-
 
   @impl true
   def handle_cast({:set_prometheus_metric, metric_name, value, tags}, state) do

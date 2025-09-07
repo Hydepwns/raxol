@@ -95,7 +95,9 @@ defmodule Raxol.UI.Components.Modal.Rendering do
   end
 
   defp render_spacer_element(false), do: nil
-  defp render_spacer_element(_condition), do: Raxol.View.Elements.label(content: "")
+
+  defp render_spacer_element(_condition),
+    do: Raxol.View.Elements.label(content: "")
 
   @doc "Renders button row."
   @spec render_button_row(list()) :: any()
@@ -231,6 +233,7 @@ defmodule Raxol.UI.Components.Modal.Rendering do
   end
 
   defp render_error_element(nil), do: nil
+
   defp render_error_element(error) do
     Raxol.View.Elements.row style: %{width: :fill} do
       Raxol.View.Elements.label(
@@ -243,6 +246,7 @@ defmodule Raxol.UI.Components.Modal.Rendering do
   @doc "Renders field label if present."
   @spec render_field_label(String.t() | nil) :: any()
   def render_field_label(nil), do: nil
+
   def render_field_label(label) do
     Raxol.View.Elements.label(content: label, style: %{width: 15})
   end

@@ -145,7 +145,12 @@ defmodule Raxol.Style.Colors.HotReload do
     last_modified = get_path_modification_times(path)
 
     # Add path to watched_paths if not already present
-    watched_paths = update_watched_paths(path in state.watched_paths, path, state.watched_paths)
+    watched_paths =
+      update_watched_paths(
+        path in state.watched_paths,
+        path,
+        state.watched_paths
+      )
 
     %{
       state
@@ -285,8 +290,12 @@ defmodule Raxol.Style.Colors.HotReload do
   end
 
   defp update_watched_paths(true, _path, watched_paths), do: watched_paths
-  defp update_watched_paths(false, path, watched_paths), do: [path | watched_paths]
 
-  defp send_theme_to_pid(true, pid, theme), do: send(pid, {:theme_reloaded, theme})
+  defp update_watched_paths(false, path, watched_paths),
+    do: [path | watched_paths]
+
+  defp send_theme_to_pid(true, pid, theme),
+    do: send(pid, {:theme_reloaded, theme})
+
   defp send_theme_to_pid(false, _pid, _theme), do: :ok
 end

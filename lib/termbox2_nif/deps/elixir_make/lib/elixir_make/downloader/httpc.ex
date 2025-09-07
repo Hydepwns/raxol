@@ -12,9 +12,13 @@ defmodule ElixirMake.Downloader.Httpc do
     {:ok, _} = Application.ensure_all_started(:ssl)
     {:ok, _} = Application.ensure_all_started(:public_key)
 
-    setup_http_proxy(System.get_env("HTTP_PROXY") || System.get_env("http_proxy"))
+    setup_http_proxy(
+      System.get_env("HTTP_PROXY") || System.get_env("http_proxy")
+    )
 
-    setup_https_proxy(System.get_env("HTTPS_PROXY") || System.get_env("https_proxy"))
+    setup_https_proxy(
+      System.get_env("HTTPS_PROXY") || System.get_env("https_proxy")
+    )
 
     # https://erlef.github.io/security-wg/secure_coding_and_deployment_hardening/inets
     # TODO: This may no longer be necessary from Erlang/OTP 25.0 or later.
@@ -72,9 +76,11 @@ defmodule ElixirMake.Downloader.Httpc do
       _ -> nil
     end
   end
+
   defp get_cacerts_if_supported(_otp_version), do: nil
 
   defp setup_http_proxy(nil), do: :ok
+
   defp setup_http_proxy(proxy) do
     Mix.shell().info("Using HTTP_PROXY: #{proxy}")
     %{host: host, port: port} = URI.parse(proxy)
@@ -83,6 +89,7 @@ defmodule ElixirMake.Downloader.Httpc do
   end
 
   defp setup_https_proxy(nil), do: :ok
+
   defp setup_https_proxy(proxy) do
     Mix.shell().info("Using HTTPS_PROXY: #{proxy}")
     %{host: host, port: port} = URI.parse(proxy)

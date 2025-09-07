@@ -98,6 +98,7 @@ defmodule Raxol.Svelte.Component do
             rendered = render_component(state)
             write_to_terminal(state.terminal, rendered)
             {:noreply, %{state | dirty: false}}
+
           false ->
             {:noreply, state}
         end
@@ -174,6 +175,7 @@ defmodule Raxol.Svelte.Component do
       true ->
         # Compile to direct buffer operations at compile time
         compile_to_buffer_ops(template_ast)
+
       false ->
         # Keep as runtime template
         quote do

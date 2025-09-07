@@ -45,7 +45,10 @@ defmodule Raxol.UI.Rendering.Pipeline.Animation do
   """
   @spec maybe_stop_animation_ticker(state()) :: state()
   def maybe_stop_animation_ticker(state) do
-    should_stop = :queue.is_empty(state.animation_frame_requests) and not is_nil(state.animation_ticker_ref)
+    should_stop =
+      :queue.is_empty(state.animation_frame_requests) and
+        not is_nil(state.animation_ticker_ref)
+
     stop_animation_ticker(should_stop, state)
   end
 
@@ -102,7 +105,10 @@ defmodule Raxol.UI.Rendering.Pipeline.Animation do
     state_cleared = %{state_after_requests | animation_ticker_ref: nil}
 
     # Restart ticker if there are more requests
-    restart_ticker_if_needed(:queue.is_empty(state_cleared.animation_frame_requests), state_cleared)
+    restart_ticker_if_needed(
+      :queue.is_empty(state_cleared.animation_frame_requests),
+      state_cleared
+    )
   end
 
   defp restart_ticker_if_needed(true, state_cleared) do
