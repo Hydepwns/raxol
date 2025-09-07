@@ -1,4 +1,3 @@
-
 defmodule Raxol.Core.Renderer.ViewTest do
   @moduledoc """
   Tests for the view module, including creation, layout,
@@ -163,7 +162,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
 
     test "handles invalid scroll offset" do
       assert_raise ArgumentError,
-                   "Scroll offset must be a tuple of two integers",
+                   "errors were found at the given arguments:\n\n  * 1st argument: not a tuple\n",
                    fn ->
                      View.scroll_wrap offset: "invalid" do
                        View.text("A")
