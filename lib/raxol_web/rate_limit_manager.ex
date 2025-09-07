@@ -33,10 +33,17 @@ defmodule RaxolWeb.RateLimitManager do
     # Clean up old rate limit entries (older than 1 minute)
     now = System.system_time(:second)
 
+    # Check if table exists before trying to delete
     deleted =
-      :ets.select_delete(:rate_limit_table, [
-        {{:_, :_, :"$1"}, [{:<, :"$1", now - 60}], [true]}
-      ])
+      case :ets.whereis(:rate_limit_table) do
+        :undefined ->
+          0
+
+        _tid ->
+          :ets.select_delete(:rate_limit_table, [
+            {{:_, :_, :"$1"}, [{:<, :"$1", now - 60}], [true]}
+          ])
+      end
 
     case deleted > 0 do
       true ->

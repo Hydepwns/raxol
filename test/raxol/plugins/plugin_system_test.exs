@@ -240,7 +240,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
 
     test "processes mouse events through plugins" do
       {:ok, manager_struct} = Raxol.Plugins.Manager.Core.new()
-      emulator = Raxol.Terminal.Emulator.new(100, 24)
+      _emulator = Raxol.Terminal.Emulator.new(100, 24)
 
       {:ok, manager_with_plugin} =
         Raxol.Plugins.Manager.Core.load_plugin(manager_struct, HyperlinkPlugin)

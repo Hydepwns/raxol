@@ -27,7 +27,7 @@ defmodule RaxolWeb.TerminalChannelTest do
   # Helper to flush and print all messages in the mailbox
   defp flush_mailbox do
     receive do
-      msg ->
+      _msg ->
         flush_mailbox()
     after
       100 -> :ok
@@ -151,9 +151,9 @@ defmodule RaxolWeb.TerminalChannelTest do
         create_emulator_struct()
       end)
 
-      expect(RendererMock, :new, fn _buffer ->
+      expect(RendererMock, :new, fn buffer ->
         %Raxol.Terminal.Renderer{
-          screen_buffer: _buffer,
+          screen_buffer: buffer,
           cursor: {0, 0},
           theme: %{},
           font_settings: %{}

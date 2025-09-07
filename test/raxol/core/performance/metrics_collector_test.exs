@@ -82,7 +82,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
 
       # Initial update
       collector = MetricsCollector.update_memory_usage(collector)
-      initial_memory = collector.memory_usage
+      _initial_memory = collector.memory_usage
 
       # Create some garbage to trigger GC
       _garbage = Enum.map(1..1000, & &1)
@@ -101,7 +101,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
 
       # Initial update
       collector = MetricsCollector.update_memory_usage(collector)
-      initial_memory = collector.memory_usage
+      _initial_memory = collector.memory_usage
 
       # Create some garbage and force it to stay in memory
       garbage = Enum.map(1..10000, & &1)
@@ -113,7 +113,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
       collector = MetricsCollector.update_memory_usage(collector)
 
       # Calculate trend
-      trend = MetricsCollector.get_memory_trend(collector)
+      _trend = MetricsCollector.get_memory_trend(collector)
 
       # Memory should be growing (or at least not decreasing significantly)
       # The trend might be small or even negative due to GC, so we'll be more lenient

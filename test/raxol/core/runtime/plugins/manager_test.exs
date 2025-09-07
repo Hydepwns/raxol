@@ -57,7 +57,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       assert state.file_watcher_pid == nil
     end
 
-    test "handles initialization errors", %{plugin: plugin} do
+    test "handles initialization errors", %{plugin: _plugin} do
       # expect(LoaderMock, :initialize_plugin, fn _module, _config ->
       #   {:error, :initialization_failed}
       # end)
@@ -77,7 +77,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       #   {:ok, Map.put(state, :event_processed, true)}
       # end)
 
-      {:ok, state} =
+      {:ok, _state} =
         Raxol.Core.Runtime.Plugins.Manager.init(%{
           plugin: plugin
           # file_watcher_module: FileWatcherMock,
@@ -98,7 +98,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       #   {:error, :event_processing_failed}
       # end)
 
-      {:ok, state} =
+      {:ok, _state} =
         Raxol.Core.Runtime.Plugins.Manager.init(%{
           plugin: plugin
           # file_watcher_module: FileWatcherMock,
@@ -119,7 +119,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       #   {:ok, Map.put(state, :command_processed, true)}
       # end)
 
-      {:ok, state} =
+      {:ok, _state} =
         Raxol.Core.Runtime.Plugins.Manager.init(%{
           plugin: plugin
           # file_watcher_module: FileWatcherMock,
@@ -141,7 +141,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       #   {:error, :command_processing_failed}
       # end)
 
-      {:ok, state} =
+      {:ok, _state} =
         Raxol.Core.Runtime.Plugins.Manager.init(%{
           plugin: plugin
           # file_watcher_module: FileWatcherMock,
@@ -163,7 +163,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       #   [:test_command1, :test_command2]
       # end)
 
-      {:ok, state} =
+      {:ok, _state} =
         Raxol.Core.Runtime.Plugins.Manager.init(%{
           plugin: plugin
           # file_watcher_module: FileWatcherMock,
@@ -187,7 +187,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       #   }
       # end)
 
-      {:ok, state} =
+      {:ok, _state} =
         Raxol.Core.Runtime.Plugins.Manager.init(%{
           plugin: plugin
           # file_watcher_module: FileWatcherMock,

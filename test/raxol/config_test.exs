@@ -1,7 +1,6 @@
 defmodule Raxol.ConfigTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Config
   alias Raxol.Config.{Schema, Loader, Generator}
 
   describe "configuration loading" do
