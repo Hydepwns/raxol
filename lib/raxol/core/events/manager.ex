@@ -117,7 +117,7 @@ defmodule Raxol.Core.Events.Manager do
   """
   def subscribe(event_types, opts \\ []) when is_list(event_types) do
     ensure_started()
-    Server.subscribe(event_types, opts)
+    Server.subscribe(Server, event_types, opts)
   end
 
   @doc """
@@ -125,7 +125,7 @@ defmodule Raxol.Core.Events.Manager do
   """
   def unsubscribe(ref) when is_integer(ref) do
     ensure_started()
-    Server.unsubscribe(ref)
+    Server.unsubscribe(Server, ref)
   end
 
   @doc """
