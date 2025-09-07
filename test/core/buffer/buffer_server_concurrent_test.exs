@@ -70,7 +70,7 @@ defmodule Raxol.Core.Buffer.BufferServerConcurrentTest do
     test "handles concurrent writes to same region", %{buffer_pid: pid} do
       # Create writers that write to the same region
       writers =
-        Enum.map(1..5, fn writer_id ->
+        Enum.map(1..5, fn _writer_id ->
           Task.async(fn ->
             Enum.each(0..4, fn y ->
               Enum.each(0..4, fn x ->
@@ -115,9 +115,9 @@ defmodule Raxol.Core.Buffer.BufferServerConcurrentTest do
         end)
 
       writers =
-        Enum.map(1..2, fn writer_id ->
+        Enum.map(1..2, fn _writer_id ->
           Task.async(fn ->
-            Enum.each(1..10, fn i ->
+            Enum.each(1..10, fn _i ->
               x = :rand.uniform(80) - 1
               y = :rand.uniform(24) - 1
               cell = Cell.new("W", TextFormatting.new(fg: :green))
@@ -151,7 +151,7 @@ defmodule Raxol.Core.Buffer.BufferServerConcurrentTest do
 
         # Writer
         Task.async(fn ->
-          Enum.each(1..10, fn i ->
+          Enum.each(1..10, fn _i ->
             x = :rand.uniform(80) - 1
             y = :rand.uniform(24) - 1
             cell = Cell.new("W", TextFormatting.new(fg: :yellow))
@@ -285,7 +285,7 @@ defmodule Raxol.Core.Buffer.BufferServerConcurrentTest do
     test "handles high concurrency stress test", %{buffer_pid: pid} do
       # Create many concurrent operations
       operations =
-        Enum.flat_map(1..20, fn i ->
+        Enum.flat_map(1..20, fn _i ->
           [
             # Reader
             Task.async(fn ->
@@ -298,7 +298,7 @@ defmodule Raxol.Core.Buffer.BufferServerConcurrentTest do
 
             # Writer
             Task.async(fn ->
-              Enum.each(1..50, fn j ->
+              Enum.each(1..50, fn _j ->
                 x = :rand.uniform(80) - 1
                 y = :rand.uniform(24) - 1
                 cell = Cell.new("W", TextFormatting.new(fg: :blue))

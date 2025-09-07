@@ -264,18 +264,35 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
   end
 
   defp safe_apply_operation(operation, buffer) do
-    Task.async(fn -> operation.(buffer) end)
-    |> Task.yield(2000)
-    |> case do
-      {:ok, result} ->
-        {:ok, result}
+    try do
+      task =
+        Task.async(fn ->
+          try do
+            operation.(buffer)
+          rescue
+            error -> {:error, error}
+          catch
+            :exit, reason -> {:error, {:exit, reason}}
+            :throw, value -> {:error, {:throw, value}}
+          end
+        end)
 
-      {:exit, reason} ->
-        {:error, {:exit, reason}}
+      case Task.yield(task, 2000) do
+        {:ok, {:error, error}} ->
+          {:error, error}
 
-      nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
-        {:error, :timeout}
+        {:ok, result} ->
+          {:ok, result}
+
+        {:exit, reason} ->
+          {:error, {:exit, reason}}
+
+        nil ->
+          Task.shutdown(task, :brutal_kill)
+          {:error, :timeout}
+      end
+    rescue
+      error -> {:error, error}
     end
   end
 
