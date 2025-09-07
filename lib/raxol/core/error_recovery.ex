@@ -364,60 +364,139 @@ defmodule Raxol.Core.ErrorRecovery do
   end
 
   defp safe_execute(fun) when is_function(fun, 0) do
-    task =
-      Task.async(fn ->
-        fun.()
-      end)
+    # Use Task.Supervisor to isolate crashes
+    task_result =
+      try do
+        task =
+          Task.async(fn ->
+            try do
+              {:ok, fun.()}
+            rescue
+              e -> {:error, :runtime, Exception.message(e), %{exception: e}}
+            catch
+              :exit, reason ->
+                {:error, :exit, inspect(reason), %{reason: reason}}
 
-    # Default timeout of 5 seconds
-    case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, result} ->
-        {:ok, result}
+              kind, payload ->
+                {:error, kind, inspect(payload), %{payload: payload}}
+            end
+          end)
 
-      nil ->
-        {:error, :execution_timeout, "Function execution timed out", %{}}
+        # Default timeout of 5 seconds
+        case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
+          {:ok, {:ok, result}} ->
+            {:ok, result}
 
-      {:exit, reason} ->
-        {:error, :execution_failed, format_error(reason), %{reason: reason}}
-    end
+          {:ok, {:error, _, _, _} = error} ->
+            error
+
+          nil ->
+            {:error, :execution_timeout, "Function execution timed out", %{}}
+
+          {:exit, reason} ->
+            {:error, :execution_failed, format_error(reason), %{reason: reason}}
+        end
+      catch
+        :exit, {:timeout, _} ->
+          {:error, :execution_timeout, "Function execution timed out", %{}}
+
+        :exit, reason ->
+          {:error, :execution_failed, format_error(reason), %{reason: reason}}
+      end
+
+    task_result
   end
 
   defp safe_execute_with_arg(fun, arg) when is_function(fun, 1) do
-    task =
-      Task.async(fn ->
-        fun.(arg)
-      end)
+    task_result =
+      try do
+        task =
+          Task.async(fn ->
+            try do
+              {:ok, fun.(arg)}
+            rescue
+              e -> {:error, :runtime, Exception.message(e), %{exception: e}}
+            catch
+              :exit, reason ->
+                {:error, :exit, inspect(reason), %{reason: reason}}
 
-    case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, result} ->
-        {:ok, result}
+              kind, payload ->
+                {:error, kind, inspect(payload), %{payload: payload}}
+            end
+          end)
 
-      nil ->
-        {:error, :execution_timeout, "Function execution timed out", %{}}
+        case Task.yield(task, 5000) || Task.shutdown(task, :brutal_kill) do
+          {:ok, {:ok, result}} ->
+            {:ok, result}
 
-      {:exit, reason} ->
-        {:error, :execution_failed, format_error(reason), %{reason: reason}}
-    end
+          {:ok, {:error, _, _, _} = error} ->
+            error
+
+          nil ->
+            {:error, :execution_timeout, "Function execution timed out", %{}}
+
+          {:exit, reason} ->
+            {:error, :execution_failed, format_error(reason), %{reason: reason}}
+        end
+      catch
+        :exit, {:timeout, _} ->
+          {:error, :execution_timeout, "Function execution timed out", %{}}
+
+        :exit, reason ->
+          {:error, :execution_failed, format_error(reason), %{reason: reason}}
+      end
+
+    task_result
   end
 
   defp safe_cleanup(cleanup_fun, resource) do
-    task =
-      Task.async(fn ->
-        cleanup_fun.(resource)
-      end)
+    task_result =
+      try do
+        task =
+          Task.async(fn ->
+            try do
+              cleanup_fun.(resource)
+              :ok
+            rescue
+              e ->
+                Logger.error(
+                  "Cleanup failed with exception: #{Exception.message(e)}"
+                )
 
-    case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, _} ->
-        :ok
+                {:error, :cleanup_failed}
+            catch
+              :exit, reason ->
+                Logger.error("Cleanup failed: #{inspect(reason)}")
+                {:error, :cleanup_failed}
 
-      nil ->
-        Logger.error("Cleanup timed out")
-        {:error, :cleanup_timeout}
+              kind, payload ->
+                Logger.error("Cleanup failed: #{kind} - #{inspect(payload)}")
+                {:error, :cleanup_failed}
+            end
+          end)
 
-      {:exit, reason} ->
-        Logger.error("Cleanup failed: #{inspect(reason)}")
-        {:error, {:cleanup_failed, reason}}
-    end
+        case Task.yield(task, 1000) || Task.shutdown(task, :brutal_kill) do
+          {:ok, :ok} ->
+            :ok
+
+          {:ok, {:error, _} = error} ->
+            error
+
+          nil ->
+            Logger.error("Cleanup timed out")
+            {:error, :cleanup_timeout}
+
+          {:exit, reason} ->
+            Logger.error("Cleanup task failed: #{inspect(reason)}")
+            {:error, {:cleanup_failed, reason}}
+        end
+      catch
+        :exit, reason ->
+          Logger.error("Cleanup task crashed: #{inspect(reason)}")
+          {:error, {:cleanup_failed, reason}}
+      end
+
+    task_result
   end
 
   defp format_error(reason) when is_binary(reason), do: reason
