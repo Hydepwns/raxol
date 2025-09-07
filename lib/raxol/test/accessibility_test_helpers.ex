@@ -83,8 +83,9 @@ defmodule Raxol.AccessibilityTestHelpers do
     )
 
     # Clean up ETS table if we created it
-    if table_created do
-      :ets.delete(:accessibility_test_announcements)
+    case table_created do
+      true -> :ets.delete(:accessibility_test_announcements)
+      false -> :ok
     end
 
     result

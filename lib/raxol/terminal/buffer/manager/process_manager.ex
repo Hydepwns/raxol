@@ -8,10 +8,9 @@ defmodule Raxol.Terminal.Buffer.Manager.ProcessManager do
   Gets the buffer manager PID for the current environment.
   """
   def get_buffer_manager_pid do
-    if Mix.env() == :test do
-      find_buffer_manager_in_test()
-    else
-      Raxol.Terminal.Buffer.Manager
+    case Mix.env() do
+      :test -> find_buffer_manager_in_test()
+      _ -> Raxol.Terminal.Buffer.Manager
     end
   end
 

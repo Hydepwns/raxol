@@ -536,21 +536,23 @@ defmodule Raxol.Core.Events.Manager.Server do
         # Handler struct (from Handlers module)
         {handler_id, handler_struct, _priority}
         when is_atom(handler_id) and is_map(handler_struct) ->
-          # Check if event passes filter
-          if apply_filter?(event, handler_struct.filter) do
-            case Raxol.Core.ErrorHandling.safe_call(fn ->
-                   handler_struct.handler_fun.(event, %{})
-                 end) do
-              {:ok, _result} ->
-                Raxol.Core.Runtime.Log.debug(
-                  "Successfully called handler: #{inspect(handler_id)}.#{inspect(:handle_focus_change_event)}"
-                )
+          # Check if event passes filter and execute handler
+          case apply_filter?(event, handler_struct.filter) do
+            true ->
+              case Raxol.Core.ErrorHandling.safe_call(fn ->
+                     handler_struct.handler_fun.(event, %{})
+                   end) do
+                {:ok, _result} ->
+                  Raxol.Core.Runtime.Log.debug(
+                    "Successfully called handler: #{inspect(handler_id)}.#{inspect(:handle_focus_change_event)}"
+                  )
 
-              {:error, reason} ->
-                Logger.error(
-                  "Event handler #{handler_id} failed: #{inspect(reason)}"
-                )
-            end
+                {:error, reason} ->
+                  Logger.error(
+                    "Event handler #{handler_id} failed: #{inspect(reason)}"
+                  )
+              end
+            false -> :ok
           end
 
         _ ->

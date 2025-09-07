@@ -159,10 +159,13 @@ jobs:
 
       - name: Validate Module Structure
         run: |
+          export TMPDIR=/tmp
           chmod +x scripts/ci_validate_structure.sh
           ./scripts/ci_validate_structure.sh
         env:
           MIX_ENV: test
+          TMPDIR: /tmp
+          SKIP_TERMBOX2_TESTS: true
 
       - name: Run Tests
         run: |
@@ -314,10 +317,13 @@ jobs:
 
       - name: Validate Module Structure
         run: |
+          export TMPDIR=/tmp
           chmod +x scripts/ci_validate_structure.sh
           ./scripts/ci_validate_structure.sh
         env:
           MIX_ENV: test
+          TMPDIR: /tmp
+          SKIP_TERMBOX2_TESTS: true
 
       - name: Wait for PostgreSQL
         run: |

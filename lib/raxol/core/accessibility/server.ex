@@ -475,8 +475,9 @@ defmodule Raxol.Core.Accessibility.Server do
     }
 
     # Sync preferences with UserPreferences if pid is provided
-    if user_preferences_pid do
-      sync_preferences_to_user_preferences(preferences, user_preferences_pid)
+    case user_preferences_pid do
+      nil -> :ok
+      pid -> sync_preferences_to_user_preferences(preferences, pid)
     end
 
     # Register event handlers
@@ -512,14 +513,13 @@ defmodule Raxol.Core.Accessibility.Server do
     new_state = %{state | preferences: new_preferences}
 
     # Sync to UserPreferences if available
-    if state.user_preferences_pid do
-      pref_key = [:accessibility, key]
+    case state.user_preferences_pid do
+      nil ->
+        :ok
 
-      Raxol.Core.UserPreferences.set(
-        pref_key,
-        value,
-        state.user_preferences_pid
-      )
+      pid ->
+        pref_key = [:accessibility, key]
+        Raxol.Core.UserPreferences.set(pref_key, value, pid)
     end
 
     # Dispatch preference change event
@@ -538,9 +538,13 @@ defmodule Raxol.Core.Accessibility.Server do
     new_state = %{state | preferences: new_preferences}
 
     # Sync to UserPreferences using provided pid
-    if user_preferences_pid do
-      pref_key = [:accessibility, key]
-      Raxol.Core.UserPreferences.set(pref_key, value, user_preferences_pid)
+    case user_preferences_pid do
+      nil ->
+        :ok
+
+      pid ->
+        pref_key = [:accessibility, key]
+        Raxol.Core.UserPreferences.set(pref_key, value, pid)
     end
 
     # Dispatch preference change event
