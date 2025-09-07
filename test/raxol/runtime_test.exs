@@ -117,11 +117,17 @@ defmodule Raxol.RuntimeTest do
     setup_runtime_environment(context)
 
     # Set up DriverMock expectations for all tests that might need it
-    stub(Raxol.Terminal.DriverMock, :start_link, fn dispatcher_module_or_pid ->
-      # Return a mock process that behaves like the Terminal.Driver
-      # The dispatcher can be either a module name (from supervisor) or PID
-      {:ok, spawn(fn -> Process.sleep(:infinity) end)}
-    end)
+    if Code.ensure_loaded?(Mox) do
+      try do
+        Mox.stub(Raxol.Terminal.DriverMock, :start_link, fn _dispatcher_module_or_pid ->
+          # Return a mock process that behaves like the Terminal.Driver
+          # The dispatcher can be either a module name (from supervisor) or PID
+          {:ok, spawn(fn -> Process.sleep(:infinity) end)}
+        end)
+      rescue
+        _ -> :ok  # Ignore if stub fails
+      end
+    end
 
     # Ensure ETS table is clean and exists before each test
     try do

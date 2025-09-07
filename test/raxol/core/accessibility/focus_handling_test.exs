@@ -8,7 +8,7 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
 
   alias Raxol.Core.Accessibility, as: Accessibility
   alias Raxol.Core.UserPreferences
-  alias Raxol.Core.Accessibility, as: AccessibilityTestHelper, as: Helper
+  alias Raxol.Core.AccessibilityTestHelper, as: Helper
 
   setup :verify_on_exit!
   setup :set_mox_global
@@ -39,6 +39,10 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
 
       Accessibility.clear_announcements()
       Raxol.Core.Events.Manager.dispatch({:focus_change, nil, "search_button"})
+      
+      # Wait for async event processing - give it time to complete
+      Process.sleep(10)
+      
       assert Accessibility.get_next_announcement(pref_pid) == "Search"
     end
 
@@ -71,6 +75,9 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
         {:focus_change, "text_input", "submit_button"}
       )
 
+      # Wait for async event processing
+      Process.sleep(10)
+
       assert Accessibility.get_next_announcement(pref_pid) == "Search"
       assert Accessibility.get_next_announcement(pref_pid) == "Username"
       assert Accessibility.get_next_announcement(pref_pid) == "Submit Form"
@@ -89,6 +96,9 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       Raxol.Core.Events.Manager.dispatch({:focus_change, nil, "el1"})
       Raxol.Core.Events.Manager.dispatch({:focus_change, "el1", "el2"})
 
+      # Wait for async event processing
+      Process.sleep(10)
+
       assert Accessibility.get_next_announcement(pref_pid) == "Element One"
       assert Accessibility.get_next_announcement(pref_pid) == "Element Two"
       assert Accessibility.get_next_announcement(pref_pid) == nil
@@ -105,6 +115,9 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       Accessibility.clear_announcements()
       Raxol.Core.Events.Manager.dispatch({:focus_change, nil, "button1"})
 
+      # Wait for async event processing
+      Process.sleep(10)
+
       assert Accessibility.get_next_announcement(pref_pid) == "OK"
       assert Accessibility.get_next_announcement(pref_pid) == nil
     end
@@ -118,6 +131,9 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
 
       Accessibility.clear_announcements()
       Raxol.Core.Events.Manager.dispatch({:focus_change, nil, "my_element"})
+
+      # Wait for async event processing
+      Process.sleep(10)
 
       assert Accessibility.get_next_announcement(pref_pid) ==
                "My Special Element"

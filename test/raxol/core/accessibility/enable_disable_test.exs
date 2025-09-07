@@ -7,7 +7,7 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
   import Mox
 
   alias Raxol.Core.Accessibility, as: Accessibility
-  alias Raxol.Core.Accessibility, as: AccessibilityTestHelper, as: Helper
+  alias Raxol.Core.AccessibilityTestHelper, as: Helper
 
   setup :verify_on_exit!
   setup :set_mox_global

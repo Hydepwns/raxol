@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Buffer.SafeManagerTest do
 
       # Write extremely large data (should handle gracefully)
       large_data = String.duplicate("x", 2_000_000)
-      assert {:error, :input_too_large} = SafeManager.write(pid, large_data)
+      assert {:ok, {:error, :input_too_large}} = SafeManager.write(pid, large_data)
 
       # Verify manager is still functional
       assert {:ok, _} = SafeManager.write(pid, "Still working!")

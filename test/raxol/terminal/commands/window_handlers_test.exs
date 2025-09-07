@@ -375,11 +375,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     test "unmaximizes window", %{emulator: emulator} do
       emulator = %{
         emulator
-        | window_state:
-            Window.Manager.update_window_state(
-              emulator.window_state,
-              :maximized
-            )
+        | window_state: %{emulator.window_state | maximized: true}
       }
 
       result = CSIHandlers.handle_window_unmaximize(emulator)
@@ -394,11 +390,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     test "exits fullscreen mode", %{emulator: emulator} do
       emulator = %{
         emulator
-        | window_state:
-            Window.Manager.update_window_state(
-              emulator.window_state,
-              :fullscreen
-            )
+        | window_state: %{emulator.window_state | maximized: true}
       }
 
       result = CSIHandlers.handle_window_unfullscreen(emulator)
@@ -413,11 +405,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     test "unminimizes window", %{emulator: emulator} do
       emulator = %{
         emulator
-        | window_state:
-            Window.Manager.update_window_state(
-              emulator.window_state,
-              :minimized
-            )
+        | window_state: %{emulator.window_state | iconified: true}
       }
 
       result = CSIHandlers.handle_window_unminimize(emulator)
@@ -432,11 +420,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     test "deiconifies window", %{emulator: emulator} do
       emulator = %{
         emulator
-        | window_state:
-            Window.Manager.update_window_state(
-              emulator.window_state,
-              :minimized
-            )
+        | window_state: %{emulator.window_state | iconified: true}
       }
 
       result = CSIHandlers.handle_window_deiconify(emulator)

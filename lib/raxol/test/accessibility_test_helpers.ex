@@ -41,11 +41,31 @@ defmodule Raxol.AccessibilityTestHelpers do
   """
   def with_screen_reader_spy(pid, fun)
       when is_pid(pid) and is_function(fun, 0) do
-    # Initialize announcement spy
-    Process.put(:accessibility_test_announcements, [])
-    # Register spy handler
+    # Create ETS table for cross-process communication
+    table_created =
+      case :ets.whereis(:accessibility_test_announcements) do
+        :undefined ->
+          :ets.new(:accessibility_test_announcements, [
+            :set,
+            :public,
+            :named_table
+          ])
+
+          true
+
+        _tid ->
+          false
+      end
+
+    # Initialize announcements in ETS
+    :ets.insert(:accessibility_test_announcements, {:announcements, []})
+
+    # Store test process PID for handler to send messages back
+    Process.put(:test_process_pid, self())
+
+    # Register spy handler for the correct event
     EventManager.register_handler(
-      :accessibility_announce,
+      :screen_reader_announcement,
       __MODULE__,
       :handle_announcement_spy
     )
@@ -57,10 +77,15 @@ defmodule Raxol.AccessibilityTestHelpers do
     Accessibility.disable()
 
     EventManager.unregister_handler(
-      :accessibility_announce,
+      :screen_reader_announcement,
       __MODULE__,
       :handle_announcement_spy
     )
+
+    # Clean up ETS table if we created it
+    if table_created do
+      :ets.delete(:accessibility_test_announcements)
+    end
 
     result
   end
@@ -91,7 +116,21 @@ defmodule Raxol.AccessibilityTestHelpers do
     context = Keyword.get(opts, :context, "")
 
     quote do
-      announcements = Process.get(:accessibility_test_announcements, [])
+      # Give the handler time to process the event
+      Process.sleep(20)
+
+      # Try ETS table first, fall back to process dictionary
+      announcements =
+        case :ets.whereis(:accessibility_test_announcements) do
+          :undefined ->
+            Process.get(:accessibility_test_announcements, [])
+
+          tid ->
+            case :ets.lookup(tid, :announcements) do
+              [{:announcements, msgs}] -> msgs
+              [] -> []
+            end
+        end
 
       Raxol.AccessibilityTestHelpers.validate_announcement_match(
         unquote(exact),
@@ -118,7 +157,19 @@ defmodule Raxol.AccessibilityTestHelpers do
       assert_no_announcements()
   """
   def assert_no_announcements(opts \\ []) do
-    announcements = Process.get(:accessibility_test_announcements, [])
+    # Try ETS table first, fall back to process dictionary
+    announcements =
+      case :ets.whereis(:accessibility_test_announcements) do
+        :undefined ->
+          Process.get(:accessibility_test_announcements, [])
+
+        tid ->
+          case :ets.lookup(tid, :announcements) do
+            [{:announcements, msgs}] -> msgs
+            [] -> []
+          end
+      end
+
     context = Keyword.get(opts, :context, "")
 
     validate_no_announcements_made(announcements, context)
@@ -387,11 +438,35 @@ defmodule Raxol.AccessibilityTestHelpers do
   @doc """
   Spy handler for screen reader announcements.
   """
-  def handle_announcement_spy({:accessibility_announce, message}) do
-    # Record the announcement
-    announcements = Process.get(:accessibility_test_announcements, [])
-    updated_announcements = [message | announcements]
-    Process.put(:accessibility_test_announcements, updated_announcements)
+  def handle_announcement_spy({:screen_reader_announcement, message}) do
+    # Store in a way that's accessible across processes
+    # Use an ETS table if it exists, otherwise try to send to the test process
+    case :ets.whereis(:accessibility_test_announcements) do
+      :undefined ->
+        # Try to store in local process dictionary as fallback
+        announcements = Process.get(:accessibility_test_announcements, [])
+        updated_announcements = [message | announcements]
+        Process.put(:accessibility_test_announcements, updated_announcements)
+
+        # Also try to send to the test process if we can identify it
+        case Process.get(:test_process_pid) do
+          nil ->
+            :ok
+
+          pid when is_pid(pid) ->
+            send(pid, {:announcement_captured, message})
+        end
+
+      tid ->
+        # Store in ETS table (accessible across processes)
+        case :ets.lookup(tid, :announcements) do
+          [] ->
+            :ets.insert(tid, {:announcements, [message]})
+
+          [{:announcements, existing}] ->
+            :ets.insert(tid, {:announcements, [message | existing]})
+        end
+    end
 
     :ok
   end
@@ -442,48 +517,71 @@ defmodule Raxol.AccessibilityTestHelpers do
 
   # Removed unused announcement validation helpers - these can be re-added if needed
 
-
   ## Pattern matching helper functions for announcement validation
 
   def validate_announcement_match(true, announcements, expected, context) do
     case Enum.member?(announcements, expected) do
-      true -> :ok
-      false -> flunk("Expected exact announcement \"#{expected}\" not found.\n#{context}")
+      true ->
+        :ok
+
+      false ->
+        flunk(
+          "Expected exact announcement \"#{expected}\" not found.\n#{context}"
+        )
     end
   end
 
   def validate_announcement_match(false, announcements, expected, context) do
     case Enum.any?(announcements, &String.contains?(&1, expected)) do
-      true -> :ok  
-      false -> flunk("No announcement containing \"#{expected}\" found.\n#{context}")
+      true ->
+        :ok
+
+      false ->
+        flunk("No announcement containing \"#{expected}\" found.\n#{context}")
     end
   end
 
   def validate_announcement_not_match(true, announcements, unexpected, context) do
     case Enum.member?(announcements, unexpected) do
-      true -> flunk("Unexpected exact announcement \"#{unexpected}\" found.\n#{context}")
-      false -> :ok
+      true ->
+        flunk(
+          "Unexpected exact announcement \"#{unexpected}\" found.\n#{context}"
+        )
+
+      false ->
+        :ok
     end
   end
 
   def validate_announcement_not_match(false, announcements, unexpected, context) do
     case Enum.any?(announcements, &String.contains?(&1, unexpected)) do
-      true -> flunk("Found announcement containing \"#{unexpected}\".\n#{context}")
-      false -> :ok
+      true ->
+        flunk("Found announcement containing \"#{unexpected}\".\n#{context}")
+
+      false ->
+        :ok
     end
   end
 
   def validate_announcement_not_contains(announcements, unexpected, context) do
     case Enum.any?(announcements, &String.contains?(&1, unexpected)) do
-      true -> flunk("Found announcement containing \"#{unexpected}\".\n#{context}")
-      false -> :ok
+      true ->
+        flunk("Found announcement containing \"#{unexpected}\".\n#{context}")
+
+      false ->
+        :ok
     end
   end
 
   def validate_announcement_not_matches_regex(announcements, regex, context) do
     case Enum.any?(announcements, &Regex.match?(regex, &1)) do
-      true -> flunk("Found announcement matching regex #{inspect(regex)}.\n#{context}")
-      false -> :ok
+      true ->
+        flunk(
+          "Found announcement matching regex #{inspect(regex)}.\n#{context}"
+        )
+
+      false ->
+        :ok
     end
   end
 
@@ -494,7 +592,6 @@ defmodule Raxol.AccessibilityTestHelpers do
       "Expected no screen reader announcements, but got: #{inspect(announcements)}\n#{context}"
     )
   end
-
 
   defp validate_contrast_ratio_sufficient(
          ratio,
@@ -551,5 +648,4 @@ defmodule Raxol.AccessibilityTestHelpers do
       "Keyboard shortcut \"#{shortcut}\" did not trigger any action.\n#{context}"
     )
   end
-
 end

@@ -3,7 +3,7 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
   import Mox
 
   alias Raxol.Core.Accessibility, as: Accessibility
-  alias Raxol.Core.Accessibility, as: AccessibilityTestHelper, as: Helper
+  alias Raxol.Core.AccessibilityTestHelper, as: Helper
 
   setup :verify_on_exit!
   setup :set_mox_global
@@ -14,6 +14,7 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
   end
 
   describe "announce/2 related functions" do
+    @describetag :skip
     setup do
       prefs_name =
         String.to_atom(

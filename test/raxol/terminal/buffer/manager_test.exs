@@ -5,7 +5,7 @@ alias Raxol.Terminal.Buffer.Manager.{BufferOperations, ScrollbackManager}
 
 defmodule Raxol.Terminal.Buffer.ManagerTest do
   use ExUnit.Case, async: false
-  alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.Buffer.Cell
   alias Raxol.Terminal.TestHelper
 
   describe "new/0" do
@@ -329,7 +329,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
   defp create_test_cells(width, height) do
     for _y <- 0..(height - 1) do
       for _x <- 0..(width - 1) do
-        Raxol.Terminal.Buffer.Cell.new("X")
+        Cell.new("X")
       end
     end
   end

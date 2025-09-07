@@ -116,7 +116,7 @@ defmodule Raxol.Terminal.DriverTestHelper do
   def assert_mouse_event(x, y, button) do
     assert_receive {:"$gen_cast",
                     {:dispatch,
-                     %Event{type: :mouse, data: %{x: x, y: y, button: button}}}},
+                     %Event{type: :mouse, data: %{x: ^x, y: ^y, button: ^button}}}},
                    500
   end
 
@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.DriverTestHelper do
                     {:dispatch,
                      %Event{
                        type: :resize,
-                       data: %{width: width, height: height}
+                       data: %{width: ^width, height: ^height}
                      }}},
                    2000
   end

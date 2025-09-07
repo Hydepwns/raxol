@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Theme.ManagerTest do
       assert manager.current_theme.name == "default"
       assert manager.current_theme.description == "Default terminal theme"
       assert manager.current_theme.author == "Raxol"
-      assert manager.current_theme.version == "1.0.0"
+      assert manager.current_theme.version == "1.0.1"
       assert map_size(manager.themes) == 1
       assert map_size(manager.custom_styles) == 0
       assert manager.metrics.theme_switches == 0

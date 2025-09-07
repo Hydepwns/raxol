@@ -23,13 +23,13 @@ defmodule Raxol.Animation.FrameworkTest do
   end
 
   # Helper to flush the mailbox
-  defp flush_mailbox do
-    receive do
-      _ -> flush_mailbox()
-    after
-      0 -> :ok
-    end
-  end
+  # defp flush_mailbox do
+  #   receive do
+  #     _ -> flush_mailbox()
+  #   after
+  #     0 -> :ok
+  #   end
+  # end
 
   # Start UserPreferences for these tests
   setup do
@@ -235,35 +235,43 @@ defmodule Raxol.Animation.FrameworkTest do
 
     @tag :event_manager
     test "event manager is working", %{
-      user_preferences_pid: user_preferences_pid
+      user_preferences_pid: _user_preferences_pid
     } do
       # Test that EventManager is working by dispatching an event
       # and checking if the accessibility spy handler receives it
 
-      # First, set up the spy handler
-      Process.put(:accessibility_test_announcements, [])
+      # Create an ETS table for cross-process announcement storage
+      :ets.new(:accessibility_test_announcements, [:set, :public, :named_table])
+      :ets.insert(:accessibility_test_announcements, {:announcements, []})
 
       Raxol.Core.Events.Manager.register_handler(
-        :accessibility_announce,
+        :screen_reader_announcement,
         Raxol.AccessibilityTestHelpers,
         :handle_announcement_spy
       )
 
       # Dispatch an accessibility event
       Raxol.Core.Events.Manager.dispatch(
-        {:accessibility_announce, "test message"}
+        {:screen_reader_announcement, "test message"}
       )
 
-      # Check if the spy handler received it
-      announcements = Process.get(:accessibility_test_announcements, [])
+      # Give the handler time to process
+      Process.sleep(10)
+
+      # Check if the spy handler received it (from ETS table)
+      announcements = case :ets.lookup(:accessibility_test_announcements, :announcements) do
+        [{:announcements, msgs}] -> msgs
+        [] -> []
+      end
       assert "test message" in announcements
 
       # Clean up
       Raxol.Core.Events.Manager.unregister_handler(
-        :accessibility_announce,
+        :screen_reader_announcement,
         Raxol.AccessibilityTestHelpers,
         :handle_announcement_spy
       )
+      :ets.delete(:accessibility_test_announcements)
     end
 
     test "accessibility system is working", %{
