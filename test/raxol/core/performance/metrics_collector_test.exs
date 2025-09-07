@@ -82,7 +82,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
 
       # Initial update
       collector = MetricsCollector.update_memory_usage(collector)
-      _initial_memory = collector.memory_usage
+      initial_memory = collector.memory_usage
 
       # Create some garbage to trigger GC
       _garbage = Enum.map(1..1000, & &1)
@@ -101,6 +101,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
 
       # Initial update
       collector = MetricsCollector.update_memory_usage(collector)
+      # initial_memory is not used in assertions, so keep it prefixed
       _initial_memory = collector.memory_usage
 
       # Create some garbage and force it to stay in memory

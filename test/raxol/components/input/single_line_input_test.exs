@@ -1,6 +1,6 @@
 defmodule Raxol.UI.Components.Input.SingleLineInputTest do
-  use ExUnit.Case, async: true
-  
+  use ExUnit.Case, async: false
+
   alias Raxol.UI.Components.Input.SingleLineInput
   alias Raxol.Core.Events.Event
 
