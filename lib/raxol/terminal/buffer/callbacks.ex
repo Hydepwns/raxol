@@ -297,18 +297,25 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
   end
 
   defp safe_write_char(buffer, x, y, cell) do
-    Task.async(fn -> Content.write_char(buffer, x, y, cell.char, cell) end)
-    |> Task.yield(1000)
-    |> case do
-      {:ok, result} ->
-        {:ok, result}
+    # Validate cell has required fields
+    case Map.has_key?(cell, :char) do
+      false ->
+        {:error, :invalid_cell}
 
-      {:exit, reason} ->
-        {:error, {:exit, reason}}
+      true ->
+        Task.async(fn -> Content.write_char(buffer, x, y, cell.char, cell) end)
+        |> Task.yield(1000)
+        |> case do
+          {:ok, result} ->
+            {:ok, result}
 
-      nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
-        {:error, :timeout}
+          {:exit, reason} ->
+            {:error, {:exit, reason}}
+
+          nil ->
+            Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+            {:error, :timeout}
+        end
     end
   end
 end

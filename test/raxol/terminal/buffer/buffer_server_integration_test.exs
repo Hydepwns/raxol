@@ -2,7 +2,6 @@ defmodule Raxol.Terminal.Buffer.BufferServerRefactoredIntegrationTest do
   use ExUnit.Case, async: false
 
   alias Raxol.Terminal.Buffer.BufferServer
-  alias Raxol.Terminal.Buffer, as: Buffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 
