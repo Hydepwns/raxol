@@ -552,7 +552,9 @@ defmodule Raxol.Core.Events.Manager.Server do
                     "Event handler #{handler_id} failed: #{inspect(reason)}"
                   )
               end
-            false -> :ok
+
+            false ->
+              :ok
           end
 
         _ ->
