@@ -89,6 +89,13 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @doc """
+  Triggers recovery mechanism manually.
+  """
+  def recover(pid \\ __MODULE__) do
+    GenServer.call(pid, :recover)
+  end
+
+  @doc """
   Gets the current terminal state with error recovery.
   """
   def get_state(pid \\ __MODULE__) do
@@ -151,7 +158,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
                process_chunks_safely(chunks, state.emulator_state),
              {:ok, updated_state} <-
                update_state_safely(state, new_emulator_state) do
-          {:reply, {:ok, :processed}, updated_state}
+          {:reply, {:ok, :ok}, updated_state}
         else
           {:error, reason} ->
             Telemetry.record_error(:processing_error, reason)
@@ -170,7 +177,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
              perform_sequence_application(valid_sequence, state.emulator_state),
            {:ok, updated_state} <-
              update_state_safely(state, new_emulator_state) do
-        {:reply, {:ok, :handled}, updated_state}
+        {:reply, :ok, updated_state}
       else
         {:error, reason} ->
           Telemetry.record_error(:sequence_error, reason)
@@ -190,7 +197,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
                perform_resize(state.emulator_state, width, height),
              {:ok, updated_state} <-
                update_state_safely(state, new_emulator_state) do
-          {:reply, {:ok, :resized}, updated_state}
+          {:reply, {:ok, :ok}, updated_state}
         else
           {:error, reason} ->
             Telemetry.record_error(:resize_error, reason)
@@ -250,6 +257,25 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
       {:error, reason} ->
         Telemetry.record_error(:restore_error, reason)
         {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl true
+  def handle_call(:recover, _from, state) do
+    case state.recovery_state do
+      %{attempts: attempts} when attempts >= 3 ->
+        {:reply, {:error, :max_recovery_attempts_exceeded}, state}
+      
+      _ ->
+        case perform_recovery(state) do
+          {:ok, recovered_state} ->
+            updated_recovery = update_recovery_attempts(state.recovery_state)
+            new_state = %{recovered_state | recovery_state: updated_recovery}
+            {:reply, :ok, new_state}
+          
+          {:error, reason} ->
+            {:reply, {:error, reason}, state}
+        end
     end
   end
 
@@ -605,6 +631,15 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
     # Attempt to recover from errors
     recover_from_checkpoint(state.last_checkpoint, state)
+  end
+
+  defp update_recovery_attempts(recovery_state) when is_map(recovery_state) do
+    current_attempts = Map.get(recovery_state, :attempts, 0)
+    %{recovery_state | attempts: current_attempts + 1}
+  end
+  
+  defp update_recovery_attempts(_recovery_state) do
+    %{attempts: 1}
   end
 
   defp process_with_retry(input, state) do

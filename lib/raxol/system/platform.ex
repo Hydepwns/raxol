@@ -527,12 +527,19 @@ defmodule Raxol.System.Platform do
   defp check_xterm_sixel_support do
     # Check if xterm was compiled with Sixel support
     case System.get_env("XTERM_VERSION") do
-      nil -> false  # Unknown version
+      nil -> 
+        # Unknown version - check environment for Sixel indicators
+        check_environment_sixel_support()
       version ->
         # Sixel support added in xterm 334+
         case Integer.parse(version) do
-          {num, _} -> num >= 334
-          _ -> false
+          {num, _} when num >= 334 -> true
+          {_num, _} -> 
+            # Version < 334, but still check environment variables
+            check_environment_sixel_support()
+          _ -> 
+            # Unparseable version, check environment
+            check_environment_sixel_support()
         end
     end
   end

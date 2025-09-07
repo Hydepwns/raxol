@@ -148,6 +148,9 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     Task.async(fn -> parse_true_color(color_str) end)
     |> Task.yield(500)
     |> case do
+      {:ok, {:error, reason}} ->
+        {:error, reason}
+      
       {:ok, result} ->
         {:ok, result}
 
@@ -229,10 +232,103 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
   # --- SGR Parameter Processing ---
 
   defp process_sgr_param(param_str, buffer) do
-    case Integer.parse(param_str) do
-      {param, ""} -> apply_sgr_attribute(param, buffer)
-      _ -> buffer
+    # Check for true color sequences first
+    cond do
+      String.starts_with?(param_str, "38;2;") ->
+        # Foreground true color
+        color_parts = param_str |> String.replace_prefix("38;2;", "") |> String.split(";")
+        case parse_rgb_values(color_parts) do
+          {:ok, {r, g, b}} ->
+            style = %{buffer.default_style | foreground: {r, g, b}}
+            %{buffer | default_style: style}
+          _ -> buffer
+        end
+      
+      String.starts_with?(param_str, "48;2;") ->
+        # Background true color
+        color_parts = param_str |> String.replace_prefix("48;2;", "") |> String.split(";")
+        case parse_rgb_values(color_parts) do
+          {:ok, {r, g, b}} ->
+            style = %{buffer.default_style | background: {r, g, b}}
+            %{buffer | default_style: style}
+          _ -> buffer
+        end
+      
+      true ->
+        # Regular SGR parameters
+        case Integer.parse(param_str) do
+          {param, ""} -> apply_sgr_attribute(param, buffer)
+          _ -> buffer
+        end
     end
+  end
+
+  defp parse_rgb_values([r_str, g_str, b_str]) do
+    with {r, ""} <- Integer.parse(r_str),
+         {g, ""} <- Integer.parse(g_str),
+         {b, ""} <- Integer.parse(b_str),
+         true <- r >= 0 and r <= 255,
+         true <- g >= 0 and g <= 255,
+         true <- b >= 0 and b <= 255 do
+      {:ok, {r, g, b}}
+    else
+      _ -> :error
+    end
+  end
+  defp parse_rgb_values(_), do: :error
+
+  defp apply_sgr_attribute(0, buffer) do
+    # Reset all attributes
+    style = Raxol.Terminal.TextFormatting.new()
+    %{buffer | default_style: style}
+  end
+
+  defp apply_sgr_attribute(1, buffer) do
+    # Bold
+    style = %{buffer.default_style | bold: true}
+    %{buffer | default_style: style}
+  end
+
+  defp apply_sgr_attribute(2, buffer) do
+    # Faint
+    style = %{buffer.default_style | faint: true}
+    %{buffer | default_style: style}
+  end
+
+  defp apply_sgr_attribute(3, buffer) do
+    # Italic
+    style = %{buffer.default_style | italic: true}
+    %{buffer | default_style: style}
+  end
+
+  defp apply_sgr_attribute(4, buffer) do
+    # Underline
+    style = %{buffer.default_style | underline: true}
+    %{buffer | default_style: style}
+  end
+
+  defp apply_sgr_attribute(22, buffer) do
+    # Not bold/faint
+    style = %{buffer.default_style | bold: false, faint: false}
+    %{buffer | default_style: style}
+  end
+
+  defp apply_sgr_attribute(23, buffer) do
+    # Not italic
+    style = %{buffer.default_style | italic: false}
+    %{buffer | default_style: style}
+  end
+
+  defp apply_sgr_attribute(39, buffer) do
+    # Default foreground color
+    style = %{buffer.default_style | foreground: nil}
+    %{buffer | default_style: style}
+  end
+
+  defp apply_sgr_attribute(49, buffer) do
+    # Default background color
+    style = %{buffer.default_style | background: nil}
+    %{buffer | default_style: style}
   end
 
   defp apply_sgr_attribute(param, buffer) when param >= 90 and param <= 97 do
@@ -287,15 +383,14 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
 
   defp handle_printable_character(char, buffer) do
     # Add the character to the current cursor position
-    x = buffer.cursor_x
-    y = buffer.cursor_y
+    {x, y} = buffer.cursor_position
 
     case {x < buffer.width, y < buffer.height} do
       {true, true} ->
         new_buffer =
           ScreenBuffer.write_char(buffer, x, y, char, buffer.default_style)
 
-        {:ok, %{new_buffer | cursor_x: x + 1}}
+        {:ok, %{new_buffer | cursor_position: {x + 1, y}}}
       _ ->
         {:ok, buffer}
     end
@@ -324,8 +419,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
     # Reset terminal to initial state
     reset_buffer = %{
       buffer
-      | cursor_x: 0,
-        cursor_y: 0,
+      | cursor_position: {0, 0},
         default_style: Raxol.Terminal.TextFormatting.new(),
         insert_mode: false,
         auto_wrap_mode: true

@@ -10,12 +10,17 @@ defmodule Raxol.Terminal.Session.Storage do
   """
   @spec save_session(Raxol.Terminal.Session.t()) :: :ok | {:error, term()}
   def save_session(session) do
-    serialized = Serializer.serialize(session)
-    storage_path = get_storage_path(session.id)
-
-    case File.write(storage_path, :erlang.term_to_binary(serialized)) do
-      :ok -> :ok
-      {:error, reason} -> {:error, reason}
+    case Serializer.serialize(session) do
+      {:ok, serialized_data} ->
+        storage_path = get_storage_path(session.id)
+        
+        case File.write(storage_path, :erlang.term_to_binary(serialized_data)) do
+          :ok -> :ok
+          {:error, reason} -> {:error, reason}
+        end
+        
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -30,10 +35,11 @@ defmodule Raxol.Terminal.Session.Storage do
     case File.read(storage_path) do
       {:ok, binary} ->
         case Raxol.Core.ErrorHandling.safe_call(fn ->
-               serialized = :erlang.binary_to_term(binary)
-               Serializer.deserialize(serialized)
+               serialized_data = :erlang.binary_to_term(binary)
+               Serializer.deserialize(serialized_data)
              end) do
-          {:ok, result} -> result
+          {:ok, {:ok, result}} -> {:ok, result}
+          {:ok, {:error, _reason}} -> {:error, :invalid_session_data}
           {:error, _} -> {:error, :invalid_session_data}
         end
 

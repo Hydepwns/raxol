@@ -85,19 +85,29 @@ defmodule Raxol.Core.Events.Manager.Server do
   - `opts` - Options including:
     - `:priority` - Handler priority (default: 50, lower = higher priority)
   """
-  def register_handler(
-        server \\ __MODULE__,
-        event_type,
-        module,
-        function,
-        opts \\ []
-      )
+  # Function heads to define defaults
+  def register_handler(server \\ __MODULE__, event_type, module_or_id, function_or_struct, opts \\ [])
+
+  # Traditional module/function handler registration
+  def register_handler(server, event_type, module, function, opts)
       when is_atom(event_type) and is_atom(module) and is_atom(function) do
     priority = Keyword.get(opts, :priority, 50)
 
     GenServer.call(
       server,
       {:register_handler, event_type, module, function, priority}
+    )
+  end
+
+  # Handler struct registration (used by Handlers module)
+  def register_handler(server, event_type, handler_id, handler_struct, opts)
+      when is_atom(event_type) and is_atom(handler_id) and is_map(handler_struct) do
+    # Extract priority from handler struct or opts
+    priority = Map.get(handler_struct, :priority) || Keyword.get(opts, :priority, 50)
+
+    GenServer.call(
+      server,
+      {:register_handler_struct, event_type, handler_id, handler_struct, priority}
     )
   end
 
@@ -258,6 +268,47 @@ defmodule Raxol.Core.Events.Manager.Server do
           [handler | current_handlers]
       end
       |> Enum.sort_by(fn {_m, _f, p} -> p end)
+
+    new_handlers = Map.put(state.handlers, event_type, updated_handlers)
+    new_state = %{state | handlers: new_handlers}
+
+    {:reply, :ok, new_state}
+  end
+
+  @impl GenServer
+  def handle_call(
+        {:register_handler_struct, event_type, handler_id, handler_struct, priority},
+        _from,
+        state
+      ) do
+    # For handler structs, we store them differently to support function handlers
+    handler_info = {handler_id, handler_struct, priority}
+
+    current_handlers = Map.get(state.handlers, event_type, [])
+
+    # Check if handler already exists by ID
+    handler_exists = Enum.any?(current_handlers, fn 
+      {id, _struct, _p} when is_atom(id) -> id == handler_id
+      {_m, _f, _p} -> false  # Regular module/function handlers
+    end)
+
+    updated_handlers =
+      case handler_exists do
+        true ->
+          # Update existing handler
+          current_handlers
+          |> Enum.reject(fn 
+            {id, _struct, _p} when is_atom(id) -> id == handler_id
+            _ -> false
+          end)
+          |> Kernel.++([handler_info])
+        false ->
+          [handler_info | current_handlers]
+      end
+      |> Enum.sort_by(fn 
+        {id, _struct, p} when is_atom(id) -> p
+        {_m, _f, p} -> p
+      end)
 
     new_handlers = Map.put(state.handlers, event_type, updated_handlers)
     new_state = %{state | handlers: new_handlers}
@@ -451,17 +502,43 @@ defmodule Raxol.Core.Events.Manager.Server do
       "Found #{length(handlers)} handlers for event type #{inspect(event_type)}"
     )
 
-    Enum.each(handlers, fn {module, function, _priority} ->
-      case Raxol.Core.ErrorHandling.safe_apply(module, function, [event]) do
-        {:ok, _result} ->
-          Raxol.Core.Runtime.Log.debug(
-            "Successfully called handler: #{inspect(module)}.#{inspect(function)}"
-          )
+    Enum.each(handlers, fn handler ->
+      case handler do
+        # Traditional module/function handler
+        {module, function, _priority} when is_atom(module) and is_atom(function) ->
+          case Raxol.Core.ErrorHandling.safe_apply(module, function, [event]) do
+            {:ok, _result} ->
+              Raxol.Core.Runtime.Log.debug(
+                "Successfully called handler: #{inspect(module)}.#{inspect(function)}"
+              )
 
-        {:error, reason} ->
-          Logger.error(
-            "Event handler #{module}.#{function} failed: #{inspect(reason)}"
-          )
+            {:error, reason} ->
+              Logger.error(
+                "Event handler #{module}.#{function} failed: #{inspect(reason)}"
+              )
+          end
+
+        # Handler struct (from Handlers module)
+        {handler_id, handler_struct, _priority} when is_atom(handler_id) and is_map(handler_struct) ->
+          # Check if event passes filter
+          if apply_filter?(event, handler_struct.filter) do
+            case Raxol.Core.ErrorHandling.safe_call(fn ->
+                   handler_struct.handler_fun.(event, %{})
+                 end) do
+              {:ok, _result} ->
+                Raxol.Core.Runtime.Log.debug(
+                  "Successfully called handler: #{inspect(handler_id)}.#{inspect(:handle_focus_change_event)}"
+                )
+
+              {:error, reason} ->
+                Logger.error(
+                  "Event handler #{handler_id} failed: #{inspect(reason)}"
+                )
+            end
+          end
+
+        _ ->
+          Logger.warning("Unknown handler format: #{inspect(handler)}")
       end
     end)
 
@@ -507,5 +584,14 @@ defmodule Raxol.Core.Events.Manager.Server do
           false
       end
     end)
+  end
+
+  # Helper for handler filter evaluation
+  defp apply_filter?(event, filter) do
+    case filter do
+      nil -> true
+      fun when is_function(fun, 1) -> fun.(event)
+      _ -> true
+    end
   end
 end

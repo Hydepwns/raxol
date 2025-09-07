@@ -777,6 +777,7 @@ defmodule Raxol.Audit.Analyzer do
 
   defp update_known_ips(ips, %{ip_address: nil}), do: ips
   defp update_known_ips(ips, %{ip_address: ip}), do: MapSet.put(ips, ip)
+  defp update_known_ips(ips, _event), do: ips
 
   defp update_common_events(events, event) do
     event_type = Map.get(event, :event_type)

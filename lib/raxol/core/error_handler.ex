@@ -108,6 +108,18 @@ defmodule Raxol.Core.ErrorHandler do
           value -> {:ok, value}
         end
 
+      {:error, error} when is_exception(error) ->
+        handle_rescued_error(
+          operation,
+          error,
+          context,
+          severity,
+          fallback,
+          retries_left,
+          retry_delay,
+          fun
+        )
+        
       {:error, {error, _stacktrace}} ->
         handle_rescued_error(
           operation,

@@ -246,9 +246,21 @@ defmodule Raxol.UI.State.Management.Server do
   def handle_call({:get_state, path}, _from, state) do
     path_list =
       case path do
-        p when is_list(p) -> p
-        p -> [p]
+        p when is_list(p) -> Enum.map(p, &normalize_key/1)
+        p -> [normalize_key(p)]
       end
+
+    # Debug logging
+    require Logger
+    Logger.debug("get_state path_list: #{inspect(path_list)}")
+    
+    store_keys = case state.store_data do
+      map when is_map(map) -> Map.keys(map)
+      list when is_list(list) -> Keyword.keys(list)
+      other -> "Unknown type: #{inspect(other)}"
+    end
+    Logger.debug("store_data type: #{inspect(state.store_data)}")
+    Logger.debug("store_data keys: #{inspect(store_keys)}")
 
     value = get_in(state.store_data, path_list)
     {:reply, value, state}
@@ -258,8 +270,8 @@ defmodule Raxol.UI.State.Management.Server do
   def handle_call({:update_state, path, value}, _from, state) do
     path_list =
       case path do
-        p when is_list(p) -> p
-        p -> [p]
+        p when is_list(p) -> Enum.map(p, &normalize_key/1)
+        p -> [normalize_key(p)]
       end
 
     new_data = put_in(state.store_data, path_list, value)
@@ -273,9 +285,14 @@ defmodule Raxol.UI.State.Management.Server do
 
   @impl true
   def handle_call({:subscribe, id, path, callback, options}, _from, state) do
+    normalized_path = case path do
+      p when is_list(p) -> Enum.map(p, &normalize_key/1)
+      p -> [normalize_key(p)]
+    end
+    
     subscription = %{
       id: id,
-      path: path,
+      path: normalized_path,
       callback: callback,
       options: options
     }
@@ -557,4 +574,10 @@ defmodule Raxol.UI.State.Management.Server do
     |> Enum.reject(fn {{p, _}, _} -> p == pid end)
     |> Enum.into(%{})
   end
+
+  # Convert PIDs and other non-atom keys to strings for use with Access protocol
+  defp normalize_key(key) when is_pid(key), do: inspect(key)
+  defp normalize_key(key) when is_atom(key), do: key
+  defp normalize_key(key) when is_binary(key), do: key
+  defp normalize_key(key), do: inspect(key)
 end

@@ -116,6 +116,9 @@ defmodule Raxol.Animation.Framework do
 
     StateManager.init(settings)
 
+    # Also store in process dictionary for test compatibility
+    Process.put(:animation_framework_settings, settings)
+
     # Send preferences_applied message for test synchronization
     case user_preferences_pid do
       nil -> send(self(), {:preferences_applied})

@@ -38,8 +38,11 @@ defmodule Raxol.Terminal.Window.Manager do
   def ensure_started do
     case Process.whereis(Server) do
       nil ->
-        {:ok, _pid} = Server.start_link()
-        :ok
+        case Server.start_link() do
+          {:ok, _pid} -> :ok
+          {:error, {:already_started, _pid}} -> :ok
+          error -> error
+        end
 
       _pid ->
         :ok
@@ -297,6 +300,46 @@ defmodule Raxol.Terminal.Window.Manager do
       {:ok, _} -> true
       {:error, :not_found} -> false
     end
+  end
+
+  @doc """
+  Sets the window position.
+  """
+  @spec set_window_position(window_id(), integer(), integer()) ::
+          {:ok, Window.t()} | {:error, :not_found}
+  def set_window_position(id, x, y) do
+    ensure_started()
+    Server.set_window_position(id, x, y)
+  end
+
+  @doc """
+  Creates a child window.
+  """
+  @spec create_child_window(window_id(), Config.t()) ::
+          {:ok, Window.t()} | {:error, term()}
+  def create_child_window(parent_id, config) do
+    ensure_started()
+    Server.create_child_window(parent_id, config)
+  end
+
+  @doc """
+  Gets child windows of a parent.
+  """
+  @spec get_child_windows(window_id()) ::
+          {:ok, [Window.t()]} | {:error, :not_found}
+  def get_child_windows(parent_id) do
+    ensure_started()
+    Server.get_child_windows(parent_id)
+  end
+
+  @doc """
+  Gets the parent window of a child.
+  """
+  @spec get_parent_window(window_id()) ::
+          {:ok, Window.t()} | {:error, :not_found | :no_parent}
+  def get_parent_window(child_id) do
+    ensure_started()
+    Server.get_parent_window(child_id)
   end
 
   @doc """

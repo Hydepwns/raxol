@@ -26,7 +26,6 @@ LDFLAGS ?= -shared
 
 # Set platform-specific compile and linker flags
 ifeq ($(shell uname),Darwin)
-	CFLAGS += -undefined dynamic_lookup
 	LDFLAGS += -undefined dynamic_lookup
 endif
 
