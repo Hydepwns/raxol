@@ -145,7 +145,7 @@ defmodule Raxol.Core.UserPreferences do
     {:reply, :ok, new_state}
   end
 
-  defp schedule_save(state = %State{save_timer: existing_timer}) do
+  defp schedule_save(%State{save_timer: existing_timer} = state) do
     cancel_save_timer(existing_timer)
 
     timer_id = System.unique_integer([:positive])

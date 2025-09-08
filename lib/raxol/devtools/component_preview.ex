@@ -768,7 +768,7 @@ defmodule Raxol.DevTools.ComponentPreview do
         %{
           type: :checkbox,
           attrs: %{
-            checked: !!current_value,
+            checked: current_value == true,
             on_change: fn checked ->
               update_props(%{prop_name => checked})
             end

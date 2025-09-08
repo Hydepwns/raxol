@@ -489,7 +489,21 @@ defmodule Raxol.Style.Colors.System.Server do
   end
 
   defp handle_contrast_adjustment(true, color, _background_color) do
-    Utilities.increase_contrast(color)
+    # Already has good contrast, but still increase it for high contrast mode
+    increased = Utilities.increase_contrast(color)
+    # Make sure we return a different color for high contrast mode
+    if increased.hex == color.hex do
+      # If increase_contrast didn't change the color, adjust it slightly
+      # Darken light colors, lighten dark colors
+      luminance = Utilities.relative_luminance(color)
+      if luminance > 0.5 do
+        Color.darken(color, 0.2)
+      else
+        Color.lighten(color, 0.2)
+      end
+    else
+      increased
+    end
   end
 
   defp handle_contrast_adjustment(false, color, background_color) do

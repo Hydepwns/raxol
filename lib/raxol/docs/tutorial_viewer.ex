@@ -132,7 +132,7 @@ defmodule Raxol.Docs.TutorialViewer do
   # --- View Functions ---
 
   @impl Raxol.Core.Runtime.Application
-  def view(model = %__MODULE__{}) do
+  def view(%__MODULE__{} = model) do
     case model.status do
       :selecting_tutorial ->
         render_tutorial_selection(model)

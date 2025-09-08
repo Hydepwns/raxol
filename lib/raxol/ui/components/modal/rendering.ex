@@ -170,7 +170,7 @@ defmodule Raxol.UI.Components.Modal.Rendering do
   def render_checkbox(field, common_props) do
     checkbox_props =
       Map.merge(common_props, %{
-        "checked" => !!field.value,
+        "checked" => field.value == true,
         "label" => "",
         "on_toggle" => {:field_update, field.id}
       })

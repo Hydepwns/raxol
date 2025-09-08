@@ -68,7 +68,7 @@ defmodule Raxol.Database.ConnectionManager do
   """
   @spec ensure_connection() :: :ok
   def ensure_connection do
-    repo_process_exists = !!Process.whereis(Repo)
+    repo_process_exists = Process.whereis(Repo) != nil
     handle_connection_check(repo_process_exists)
     :ok
   end
@@ -106,7 +106,7 @@ defmodule Raxol.Database.ConnectionManager do
   @spec restart_connection() :: :ok
   def restart_connection do
     # Only attempt restart if the Repo process exists
-    repo_process_exists = !!Process.whereis(Repo)
+    repo_process_exists = Process.whereis(Repo) != nil
     handle_connection_restart(repo_process_exists)
     :ok
   end

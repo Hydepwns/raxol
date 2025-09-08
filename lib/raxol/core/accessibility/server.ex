@@ -525,6 +525,16 @@ defmodule Raxol.Core.Accessibility.Server do
     # Dispatch preference change event
     EventManager.dispatch({:accessibility_preference_changed, key, value})
 
+    # Special handling for high contrast to notify ColorSystem
+    if key == :high_contrast do
+      # Notify ColorSystem.Server directly
+      if Process.whereis(Raxol.Style.Colors.System.Server) do
+        Raxol.Style.Colors.System.handle_high_contrast(
+          {:accessibility_high_contrast, value}
+        )
+      end
+    end
+
     {:reply, :ok, new_state}
   end
 
@@ -549,6 +559,16 @@ defmodule Raxol.Core.Accessibility.Server do
 
     # Dispatch preference change event
     EventManager.dispatch({:accessibility_preference_changed, key, value})
+
+    # Special handling for high contrast to notify ColorSystem
+    if key == :high_contrast do
+      # Notify ColorSystem.Server directly
+      if Process.whereis(Raxol.Style.Colors.System.Server) do
+        Raxol.Style.Colors.System.handle_high_contrast(
+          {:accessibility_high_contrast, value}
+        )
+      end
+    end
 
     {:reply, :ok, new_state}
   end

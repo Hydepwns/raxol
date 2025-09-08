@@ -303,7 +303,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:noreply, state}
   end
 
-  defp maybe_process_initial_commands(state = %State{}) do
+  defp maybe_process_initial_commands(%State{} = state) do
     ready_to_process =
       state.dispatcher_ready && state.plugin_manager_ready &&
         Enum.any?(state.initial_commands)
@@ -423,7 +423,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
     handle_plugin_manager_cleanup(plugin_manager_alive, state)
 
-    has_registry_table = !!state.command_registry_table
+    has_registry_table = state.command_registry_table != nil
     handle_registry_table_cleanup(has_registry_table, state)
 
     :ok
