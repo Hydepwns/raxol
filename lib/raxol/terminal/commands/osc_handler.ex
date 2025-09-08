@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Commands.OSCHandler do
   @moduledoc false
 
-  alias Raxol.Terminal.{Emulator, Commands.OSCHandlers}
+  alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
   @spec handle(Emulator.t(), non_neg_integer(), String.t()) ::
@@ -51,43 +51,43 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
 
   defp handle_standalone_ops(emulator, command, data) do
     case command do
-      4 -> OSCHandler.ColorPalette.handle_4(emulator, data)
-      51 -> OSCHandler.Selection.handle_51(emulator, data)
+      4 -> __MODULE__.ColorPalette.handle_4(emulator, data)
+      51 -> __MODULE__.Selection.handle_51(emulator, data)
     end
   end
 
   defp handle_window_ops(emulator, command, data) do
     case command do
-      0 -> OSCHandler.Window.handle_0(emulator, data)
-      1 -> OSCHandler.Window.handle_1(emulator, data)
-      2 -> OSCHandler.Window.handle_2(emulator, data)
-      7 -> OSCHandler.Window.handle_7(emulator, data)
-      8 -> OSCHandler.Window.handle_8(emulator, data)
-      1337 -> OSCHandler.Window.handle_1337(emulator, data)
+      0 -> __MODULE__.Window.handle_0(emulator, data)
+      1 -> __MODULE__.Window.handle_1(emulator, data)
+      2 -> __MODULE__.Window.handle_2(emulator, data)
+      7 -> __MODULE__.Window.handle_7(emulator, data)
+      8 -> __MODULE__.Window.handle_8(emulator, data)
+      1337 -> __MODULE__.Window.handle_1337(emulator, data)
     end
   end
 
   defp handle_clipboard_ops(emulator, command, data) do
     case command do
-      9 -> OSCHandler.Clipboard.handle_9(emulator, data)
-      52 -> OSCHandler.Clipboard.handle_52(emulator, data)
+      9 -> __MODULE__.Clipboard.handle_9(emulator, data)
+      52 -> __MODULE__.Clipboard.handle_52(emulator, data)
     end
   end
 
   defp handle_color_ops(emulator, command, data) do
     case command do
-      10 -> OSCHandler.Color.handle_10(emulator, data)
-      11 -> OSCHandler.Color.handle_11(emulator, data)
-      17 -> OSCHandler.Color.handle_17(emulator, data)
-      19 -> OSCHandler.Color.handle_19(emulator, data)
+      10 -> __MODULE__.Color.handle_10(emulator, data)
+      11 -> __MODULE__.Color.handle_11(emulator, data)
+      17 -> __MODULE__.Color.handle_17(emulator, data)
+      19 -> __MODULE__.Color.handle_19(emulator, data)
     end
   end
 
   defp handle_cursor_ops(emulator, command, data) do
     case command do
-      12 -> OSCHandler.Cursor.handle_12(emulator, data)
-      50 -> OSCHandler.Cursor.handle_50(emulator, data)
-      112 -> OSCHandler.Cursor.handle_112(emulator, data)
+      12 -> __MODULE__.Cursor.handle_12(emulator, data)
+      50 -> __MODULE__.Cursor.handle_50(emulator, data)
+      112 -> __MODULE__.Cursor.handle_112(emulator, data)
     end
   end
 

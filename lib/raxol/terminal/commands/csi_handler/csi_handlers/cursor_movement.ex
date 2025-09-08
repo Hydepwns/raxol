@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Commands.CursorHandlerMovement do
+defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovement do
   @moduledoc """
   Handlers for cursor movement CSI commands.
   """

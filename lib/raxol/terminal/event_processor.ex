@@ -18,16 +18,16 @@ defmodule Raxol.Terminal.EventProcessor do
 
   # Pre-compiled event handlers for maximum performance
   @event_handlers %{
-    window: &Handlers.handle_window_event/2,
-    mode: &Handlers.handle_mode_event/2,
-    focus: &Handlers.handle_focus_event/2,
-    clipboard: &Handlers.handle_clipboard_event/2,
-    selection: &Handlers.handle_selection_event/2,
-    paste: &Handlers.handle_paste_event/2,
-    cursor: &Handlers.handle_cursor_event/2,
-    scroll: &Handlers.handle_scroll_event/2,
-    keyboard: &Handlers.handle_keyboard_event/2,
-    mouse: &Handlers.handle_mouse_event/2
+    window: &Handler.handle_window_event/2,
+    mode: &Handler.handle_mode_event/2,
+    focus: &Handler.handle_focus_event/2,
+    clipboard: &Handler.handle_clipboard_event/2,
+    selection: &Handler.handle_selection_event/2,
+    paste: &Handler.handle_paste_event/2,
+    cursor: &Handler.handle_cursor_event/2,
+    scroll: &Handler.handle_scroll_event/2,
+    keyboard: &Handler.handle_keyboard_event/2,
+    mouse: &Handler.handle_mouse_event/2
   }
 
   # Event priority levels for processing order

@@ -26,7 +26,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   # Delegated operation modules
   alias Raxol.Core.Runtime.Plugins.Manager.{
     Lifecycle,
-    EventHandlers,
+    EventHandler,
     Utility
   }
 
@@ -153,13 +153,13 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   end
 
   @impl GenServer
-  defdelegate handle_call(message, from, state), to: EventHandlers
+  defdelegate handle_call(message, from, state), to: EventHandler
 
   @impl GenServer
-  defdelegate handle_cast(message, state), to: EventHandlers
+  defdelegate handle_cast(message, state), to: EventHandler
 
   @impl GenServer
-  defdelegate handle_info(message, state), to: EventHandlers
+  defdelegate handle_info(message, state), to: EventHandler
 
   @impl GenServer
   def terminate(reason, state) when is_map(state) do
