@@ -3,7 +3,7 @@ defmodule Raxol.Core.Preferences.Store do
   Handles storage and retrieval of user preferences.
   """
 
-  # --- Function Moved from Raxol.Terminal.Configuration ---
+  # --- Function Moved from Raxol.Terminal.Config ---
 
   # Assuming 't' is the old Configuration struct or a map
   alias Raxol.Core.UserPreferences

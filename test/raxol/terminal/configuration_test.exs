@@ -1,14 +1,14 @@
-defmodule Raxol.Terminal.ConfigurationTest do
+defmodule Raxol.Terminal.ConfigTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Terminal.Configuration
+  alias Raxol.Terminal.Config
   # We might need these later if we add tests for them
   # alias Raxol.Terminal.Config.Profiles
   # alias Raxol.Terminal.Config.Application
 
   describe "new/0 and new/1" do
     test "creates a configuration with default values" do
-      config = Configuration.new()
+      config = Config.new()
 
       # Assert it's the correct struct type
       assert is_struct(config, Configuration)
@@ -22,14 +22,14 @@ defmodule Raxol.Terminal.ConfigurationTest do
 
     # This test seems redundant now as new/1 implicitly tests merging
     # test 'new/0 detects color mode based on terminal capabilities' do
-    #   config = Configuration.new()
+    #   config = Config.new()
     #   # This needs mocking Capabilities or running in a known terminal
     #   # assert config.color_mode in [:basic, :true_color, :palette]
     # end
 
     # This test seems redundant
     # test 'new/0 creates a configuration with detected terminal type' do
-    #   config = Configuration.new()
+    #   config = Config.new()
     #   # Needs mocking Capabilities
     #   # assert config.terminal_type in [
     #   #   :iterm2,
@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.ConfigurationTest do
 
     # This test seems redundant
     # test 'new/0 sets appropriate scrollback limit based on terminal type' do
-    #   config = Configuration.new()
+    #   config = Config.new()
     #   # Needs mocking Capabilities
     #   # assert is_integer(config.scrollback_limit)
     # end
@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.ConfigurationTest do
         theme: %{primary: "blue"}
       ]
 
-      config = Configuration.new(opts)
+      config = Config.new(opts)
 
       # Assert it's the correct struct type
       assert is_struct(config, Configuration)
@@ -79,7 +79,7 @@ defmodule Raxol.Terminal.ConfigurationTest do
 
     # This test seems redundant
     # test 'new/0 sets appropriate theme based on terminal type and color mode' do
-    #   config = Configuration.new()
+    #   config = Config.new()
     #   # Complex assertion, depends on Defaults, Capabilities, Profiles?
     #   # assert is_map(config.theme)
     # end
@@ -87,7 +87,7 @@ defmodule Raxol.Terminal.ConfigurationTest do
 
   describe "update/2" do
     test "updates existing configuration struct" do
-      config = Configuration.new()
+      config = Config.new()
 
       updated_config =
         Configuration.update(config, width: 120, cursor_blink: false)
