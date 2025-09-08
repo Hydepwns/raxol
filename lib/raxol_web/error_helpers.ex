@@ -1,4 +1,4 @@
-defmodule RaxolWeb.ErrorHelpers do
+defmodule RaxolWeb.ErrorHelper do
   @moduledoc """
   Helper functions for consistent error handling in RaxolWeb.
 

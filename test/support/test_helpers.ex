@@ -178,10 +178,10 @@ defmodule Raxol.Test.Helpers do
 
     # Calculate expected pixel dimensions
     char_width_px =
-      Raxol.Terminal.Commands.WindowHandlers.default_char_width_px()
+      Raxol.Terminal.Commands.WindowHandler.default_char_width_px()
 
     char_height_px =
-      Raxol.Terminal.Commands.WindowHandlers.default_char_height_px()
+      Raxol.Terminal.Commands.WindowHandler.default_char_height_px()
 
     expected_pixel_width = expected_width * char_width_px
     expected_pixel_height = expected_height * char_height_px

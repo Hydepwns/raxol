@@ -1,6 +1,6 @@
-defmodule Raxol.Terminal.Commands.ModeHandlersTest do
+defmodule Raxol.Terminal.Commands.ModeHandlerTest do
   use ExUnit.Case, async: false
-  alias Raxol.Terminal.Commands.ModeHandlers
+  alias Raxol.Terminal.Commands.ModeHandler
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager

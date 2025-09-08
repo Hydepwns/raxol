@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   @spec handle_csi_sequence(Emulator.t(), String.t(), list(String.t())) ::
           Emulator.t()
   def handle_csi_sequence(emulator, command, params) do
-    CSIHandlers.handle_csi_sequence(emulator, command, params)
+    CSIHandler.handle_csi_sequence(emulator, command, params)
   end
 
   @doc """
@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   @spec handle_osc_sequence(Emulator.t(), String.t(), String.t()) ::
           Emulator.t()
   def handle_osc_sequence(emulator, command, data) do
-    OSCHandlers.handle_osc_sequence(emulator, command, data)
+    OSCHandler.handle_osc_sequence(emulator, command, data)
   end
 
   @doc """

@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.EventProcessor do
 
   alias Raxol.Core.Events.Event
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Events.Handlers
+  alias Raxol.Terminal.Events.Handler
 
   # Pre-compiled event handlers for maximum performance
   @event_handlers %{

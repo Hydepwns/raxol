@@ -493,3 +493,304 @@ mix test test/raxol/system/platform_graphics_test.exs
 **Sprint Status**: ✅ **COMPLETE AND SUCCESSFUL**
 
 **Last Test Fix**: 2025-09-07 - All animation framework tests resolved
+
+---
+
+## Sprint 21: CI Test Suite Stabilization - IN PROGRESS
+
+**Target**: Achieve 100% CI pass rate  
+**Status**: SIGNIFICANT PROGRESS - Major issues resolved
+**Started**: 2025-09-07  
+**Progress**: 2025-09-07 Session 4
+
+### Major Achievements This Session
+
+**Issues Successfully Resolved:**
+- Fixed UXRefinementTest and SubscriptionTest failures (all tests now passing)
+- Fixed ErrorRecoveryTest Task.async exceptions (all tests now passing)  
+- Fixed SingleLineInputTest async race condition (test now passing)
+- Fixed MetricsCollectorTest compilation error (test now passing)
+- All previously identified critical failures are now resolved locally
+
+**CI Status Progress:**
+- Format job: PASSING
+- Docs job: PASSING
+- Test jobs: Improved from 10 critical failures to different test categories
+
+### Current CI Test Failures (Different from Original Issues)
+
+**New failure categories identified:**
+1. **Config Manager Test**: Configuration file handling errors
+2. **Theme Resolver Tests**: Cache performance test failures  
+3. **Accessibility Metadata Tests**: Component style test failures
+4. **Performance Tests**: Layout cache performance issues
+5. **I18n Accessibility Tests**: Locale handling failures
+6. **Window Manager Test**: Window listing functionality
+
+### Technical Progress Made
+
+**Code Quality Improvements:**
+- All Mox mock integration issues resolved
+- Event subscription system stabilized  
+- Error recovery system exception handling fixed
+- Async test timing issues resolved
+- Compilation errors eliminated
+
+**Test Stability Improvements:**
+- Cross-process mock access implemented
+- Task.async exception handling improved
+- Test isolation enhanced
+- Race condition mitigations added
+
+### Next Steps for Complete Resolution
+
+**Phase 2 Required** (Future session):
+1. **Fix Config Manager Tests**: Handle configuration file error scenarios
+2. **Fix Theme Cache Tests**: Resolve cache performance assertion issues  
+3. **Fix Accessibility Tests**: Component style registration problems
+4. **Fix Performance Tests**: Layout cache timing and performance metrics
+5. **Fix I18n Tests**: Locale and accessibility integration issues
+6. **Fix Window Manager Tests**: Window enumeration functionality
+
+### Success Metrics Achieved This Session
+
+- Original 10 critical test failures: RESOLVED
+- UXRefinementTest: 100% passing (14/14 tests)
+- ErrorRecoveryTest: 100% passing (19/19 tests)
+- SingleLineInputTest: 100% passing (11/11 tests)  
+- MetricsCollectorTest: 100% passing (10/10 tests)
+- Compilation errors: ELIMINATED
+- Format and Docs CI jobs: STABLE PASSING
+
+**Current Status**: Foundation stabilized, new test categories identified for Phase 2
+
+---
+
+## Sprint 22: Codebase Consistency Cleanup
+
+**Target**: Fix naming conventions and module organization inconsistencies
+**Status**: PLANNED
+**Priority**: HIGH - Clean architecture before v2.0.0
+**Estimated**: 1-2 weeks
+
+### Phase 1: Module Naming Convention Fixes (HIGH PRIORITY)
+
+#### 1.1 Handler/Handlers Naming Standardization
+**Issue**: 59 modules use plural "Handlers" instead of singular "Handler"
+**Impact**: Violates Elixir conventions where modules should be singular
+
+**Files to Rename** (plural to singular):
+- [ ] `Raxol.Terminal.Commands.CSIHandlers` → `CSIHandler`
+- [ ] `Raxol.Terminal.Commands.BufferHandlers` → `BufferHandler`
+- [ ] `Raxol.Terminal.Commands.WindowHandlers` → `WindowHandler`
+- [ ] `Raxol.Terminal.Commands.EraseHandlers` → `EraseHandler`
+- [ ] `Raxol.Terminal.Commands.OSCHandlers` → `OSCHandler`
+- [ ] `Raxol.Terminal.Commands.DCSHandlers` → `DCSHandler`
+- [ ] `Raxol.Terminal.Commands.CursorHandlers` → `CursorHandler`
+- [ ] `Raxol.Terminal.Commands.DeviceHandlers` → `DeviceHandler`
+- [ ] `Raxol.Terminal.Commands.ModeHandlers` → `ModeHandler`
+- [ ] `Raxol.Terminal.Events.Handlers` → `EventHandler`
+- [ ] `Raxol.Terminal.CursorHandlers` → `CursorHandler`
+- [ ] `Raxol.Terminal.ModeHandlers` → `ModeHandler`
+- [ ] `Raxol.Terminal.Buffer.Handlers` → `BufferHandler`
+- [ ] `Raxol.Terminal.ANSI.SequenceHandlers` → `SequenceHandler`
+- [ ] `Raxol.Terminal.Emulator.CommandHandlers` → `CommandHandler`
+- [ ] `Raxol.Core.Accessibility.EventHandlers` → `EventHandler`
+- [ ] `Raxol.Core.Runtime.Events.Handlers` → `EventHandler`
+- [ ] `Raxol.Core.Runtime.Plugins.Manager.EventHandlers` → `EventHandler`
+- [ ] All `OSCHandlers.*` submodules → `OSCHandler.*`
+- [ ] All `CSIHandlers.*` submodules → `CSIHandler.*`
+- [ ] All `Modes.Handlers.*` → `Modes.Handler.*`
+
+#### 1.2 Fix Missing Module Namespace
+- [ ] Fix `lib/raxol/terminal/event_handlers.ex` - missing `Raxol.Terminal` namespace
+  - Current: `defmodule EventHandlers`
+  - Should be: `defmodule Raxol.Terminal.EventHandlers`
+
+#### 1.3 Helper/Helpers Naming Standardization
+**Issue**: Inconsistent use of singular vs plural
+**Impact**: 14 files use "Helpers" (plural), 34 files use "Helper" (singular)
+
+**Files to Rename** (standardize to singular):
+- [ ] `Raxol.Terminal.Buffer.Helpers` → `Helper`
+- [ ] `Raxol.Terminal.Emulator.Helpers` → `Helper`
+- [ ] `Raxol.Terminal.Buffer.GenServerHelpers` → `GenServerHelper`
+- [ ] `Raxol.Terminal.Cache.EvictionHelpers` → `EvictionHelper`
+- [ ] `RaxolWeb.ErrorHelpers` → `ErrorHelper`
+- [ ] Test helpers: Standardize naming pattern
+  - [ ] `accessibility_test_helpers.ex` → `accessibility_test_helper.ex`
+  - [ ] `component_test_helpers.ex` → `component_test_helper.ex`
+  - [ ] `i18n_test_helpers.ex` → `i18n_test_helper.ex`
+
+### Phase 2: Module Consolidation (MEDIUM PRIORITY)
+
+#### 2.1 Consolidate Duplicated Handler Modules
+**Issue**: Multiple modules handling same functionality
+
+**Window Handlers** - Consolidate into single module:
+- [ ] Merge `Raxol.Terminal.Commands.WindowHandlers`
+- [ ] Merge `Raxol.Terminal.Commands.WindowHandlersCached`
+- [ ] Merge `Raxol.Terminal.Commands.CSIHandlers.WindowHandlers`
+- [ ] Target: Single `Raxol.Terminal.Commands.WindowHandler`
+
+**Cursor Handlers** - Consolidate into single module:
+- [ ] Merge `Raxol.Terminal.CursorHandlers`
+- [ ] Merge `Raxol.Terminal.Commands.CursorHandlers`
+- [ ] Merge `Raxol.Terminal.Commands.CSIHandlers.Cursor`
+- [ ] Target: Single `Raxol.Terminal.Commands.CursorHandler`
+
+#### 2.2 Operations Naming Consistency
+**Issue**: Inconsistent singular/plural usage
+
+- [ ] Consider renaming for consistency:
+  - `Raxol.Terminal.Buffer.OperationProcessor` → `OperationsProcessor`
+  - `Raxol.Terminal.Buffer.OperationQueue` → `OperationsQueue`
+  - (To match plural pattern used in `CursorOperations`, `TextOperations`, etc.)
+
+#### 2.3 Config vs Configuration Standardization
+**Issue**: Both "Config" and "Configuration" used inconsistently
+
+- [ ] Standardize naming (recommend "Config" as it's more common):
+  - `Raxol.Terminal.Configuration` → `Raxol.Terminal.Config` (or merge with existing Config)
+  - Document the standard for future modules
+
+#### 2.4 Manager vs Server GenServer Naming
+**Issue**: 151 Manager modules vs 24 Server modules with no clear distinction
+
+- [ ] Establish clear convention:
+  - "Manager" for stateful process managing resources
+  - "Server" for stateless service processes
+  - Document the distinction in development guidelines
+- [ ] Review and rename modules to follow convention
+
+#### 2.5 Impl vs Implementation Suffix
+**Issue**: Using abbreviated "Impl" suffix
+
+- [ ] Consider standardizing:
+  - Current: `BehaviourImpl`, `BufferImpl`, `InteractionImpl`
+  - Decision: Keep "Impl" (shorter) or expand to "Implementation"
+  - Apply consistently across codebase
+
+### Phase 3: Error Handling Architecture (LOW PRIORITY)
+
+#### 3.1 Clarify Error Handling Module Responsibilities
+**Issue**: Multiple overlapping error handling modules
+
+Current modules needing clarification:
+- [ ] Document clear separation of concerns:
+  - `Raxol.Core.ErrorHandler` - Centralized error classification
+  - `Raxol.Core.ErrorHandling` - Functional error patterns (Result types)
+  - `Raxol.Core.ErrorRecovery` - Recovery strategies
+  - `Raxol.Plugins.Lifecycle.ErrorHandling` - Plugin-specific errors
+
+- [ ] Consider consolidating or clearly documenting the purpose of each
+
+### Phase 4: Test Organization Review (LOWEST PRIORITY)
+
+#### 4.1 Review Test Helper Organization
+**Current State**: Actually well-organized but could be clearer
+- Test helpers in `lib/raxol/test/` (40 files)
+- Actual tests in `test/` (357 files)
+
+- [ ] Add clear documentation explaining the separation
+- [ ] Consider renaming `lib/raxol/test/` to `lib/raxol/test_helpers/` for clarity
+
+#### 4.2 Test File Naming Conventions
+**Issue**: Mixed patterns in test file naming
+
+- [ ] Standardize test helper file extensions:
+  - Some use `.ex` in `lib/raxol/test/`
+  - Some use `.exs` in `test/support/`
+  - Decision: `.ex` for compiled helpers, `.exs` for test-only scripts
+- [ ] Standardize test helper naming:
+  - `_test_helper` vs `_test_helpers`
+  - `test_helper` vs `test_helpers`
+  - Recommend: singular `_test_helper` for consistency
+
+### Phase 5: Module Suffix Patterns (LOWEST PRIORITY)
+
+#### 5.1 Base/Core/Main/Basic Standardization
+**Issue**: Multiple suffixes used without clear convention
+
+- [ ] Establish clear guidelines:
+  - "Base": For abstract base modules/behaviors
+  - "Core": For central/essential functionality
+  - "Main": For entry points (limit usage)
+  - "Basic": For simple implementations (avoid if possible)
+- [ ] Document when to use each suffix
+- [ ] Review existing usage for consistency
+
+#### 5.2 Cache vs Cached Naming
+**Issue**: Both patterns used for different purposes
+
+- [ ] Clarify naming convention:
+  - `*_cache`: For cache management modules
+  - `*_cached`: For cached versions of existing modules
+- [ ] Document the distinction
+- [ ] Ensure consistent application
+
+### Implementation Strategy
+
+1. **Preparation Phase**:
+   - [ ] Create comprehensive list of all references to renamed modules
+   - [ ] Run full test suite to establish baseline
+   - [ ] Create automated script to update module references
+
+2. **Execution Phase**:
+   - [ ] Rename modules in batches (10-15 at a time)
+   - [ ] Update all references using grep/sed automation
+   - [ ] Run tests after each batch
+   - [ ] Update documentation references
+
+3. **Validation Phase**:
+   - [ ] Full test suite must pass
+   - [ ] No compilation warnings
+   - [ ] Update CHANGELOG.md with breaking changes
+   - [ ] Update migration guide for users
+
+### Success Metrics
+
+- [ ] All modules follow Elixir naming conventions (singular for modules)
+- [ ] Handler/Handlers standardized to singular
+- [ ] Helper/Helpers standardized to singular
+- [ ] No duplicate handler modules for same functionality
+- [ ] Clear separation of error handling concerns
+- [ ] Config/Configuration naming standardized
+- [ ] Manager/Server distinction documented and applied
+- [ ] Test file naming conventions standardized
+- [ ] Module suffix patterns documented
+- [ ] 100% test pass rate maintained
+- [ ] Zero compilation warnings
+- [ ] Documentation updated with naming conventions
+
+### Breaking Changes Notice
+
+**IMPORTANT**: These changes will be breaking for any code that directly references these modules. Will require major version bump (v2.0.0) if external APIs are affected.
+
+### Migration Support
+
+- [ ] Create automated migration script for users
+- [ ] Provide compatibility aliases (deprecated) for one version cycle
+- [ ] Clear upgrade guide with before/after examples
+
+### Estimated Impact
+
+**Total Modules to Rename/Refactor**:
+- Handler/Handlers: ~59 modules
+- Helper/Helpers: ~14 modules  
+- Config/Configuration: 2 modules
+- Duplicate handlers to consolidate: ~6 modules
+- Test files to rename: ~20 files
+- **Total**: ~100+ module changes
+
+**Risk Assessment**:
+- High risk: Module renames will break external dependencies
+- Medium risk: Test suite may need significant updates
+- Low risk: Internal refactoring with proper testing
+
+**Recommendation**: 
+- Execute in v2.0.0 branch
+- Provide migration tooling
+- Maintain v1.x branch for stability
+
+**Current Status**: Ready to begin Sprint 22 implementation

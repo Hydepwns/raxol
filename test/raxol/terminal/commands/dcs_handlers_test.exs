@@ -1,8 +1,8 @@
-defmodule Raxol.Terminal.Commands.DCSHandlersTest do
+defmodule Raxol.Terminal.Commands.DCSHandlerTest do
   use ExUnit.Case, async: true
   import ExUnit.CaptureLog
 
-  alias Raxol.Terminal.Commands.DCSHandlers
+  alias Raxol.Terminal.Commands.DCSHandler
   alias Raxol.Terminal.Emulator
   # Only keeping aliases that are actually used
 
@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
 
       updated_emulator =
         unwrap_ok(
-          DCSHandlers.handle_dcs(
+          DCSHandler.handle_dcs(
             emulator,
             params,
             intermediates,
@@ -74,7 +74,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
 
       updated_emulator =
         unwrap_ok(
-          DCSHandlers.handle_dcs(
+          DCSHandler.handle_dcs(
             emulator,
             params,
             intermediates,
@@ -98,7 +98,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
 
       updated_emulator =
         unwrap_ok(
-          DCSHandlers.handle_dcs(
+          DCSHandler.handle_dcs(
             emulator,
             params,
             intermediates,
@@ -121,7 +121,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
 
       updated_emulator =
         unwrap_ok(
-          DCSHandlers.handle_dcs(
+          DCSHandler.handle_dcs(
             emulator,
             params,
             intermediates,
@@ -143,7 +143,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
 
       updated_emulator =
         unwrap_ok(
-          DCSHandlers.handle_dcs(
+          DCSHandler.handle_dcs(
             emulator,
             params,
             intermediates,
@@ -166,7 +166,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       log =
         capture_log(fn ->
           updated_emulator =
-            case DCSHandlers.handle_dcs(
+            case DCSHandler.handle_dcs(
                    emulator,
                    params,
                    intermediates,
@@ -222,7 +222,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
 
       # Mock SixelGraphics.process_sequence to return a predictable state
       # This makes the test more robust to changes in SixelGraphics internal parsing
-      # and focuses on the integration logic of DCSHandlers.
+      # and focuses on the integration logic of DCSHandler.
       # However, direct mocking isn't straightforward without a mocking library here.
       # So, we'll test the integration, assuming SixelGraphics produces expected output for simple input.
       # If SixelGraphics.new() initializes palette with color 1 as blue {0,0,255}:
@@ -230,7 +230,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
 
       updated_emulator =
         unwrap_ok(
-          DCSHandlers.handle_dcs(
+          DCSHandler.handle_dcs(
             emulator,
             params,
             intermediates,
@@ -288,7 +288,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
 
       updated_emulator =
         unwrap_ok(
-          DCSHandlers.handle_dcs(emulator, [], "\"", ?q, sixel_data_string)
+          DCSHandler.handle_dcs(emulator, [], "\"", ?q, sixel_data_string)
         )
 
       refute is_nil(updated_emulator.sixel_state)
@@ -312,7 +312,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       # For now, check that sixel_state is still a SixelGraphics struct and not just a fresh Map.get default.
       updated_emulator =
         unwrap_ok(
-          DCSHandlers.handle_dcs(emulator, [], "\"", ?q, sixel_data_string)
+          DCSHandler.handle_dcs(emulator, [], "\"", ?q, sixel_data_string)
         )
 
       refute is_nil(updated_emulator.sixel_state)
@@ -336,7 +336,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       log =
         capture_log(fn ->
           updated_emulator =
-            case DCSHandlers.handle_dcs(
+            case DCSHandler.handle_dcs(
                    emulator,
                    # Empty params
                    [],

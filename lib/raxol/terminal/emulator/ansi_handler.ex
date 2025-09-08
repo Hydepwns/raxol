@@ -10,9 +10,9 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
   """
 
   alias Raxol.Terminal.{
-    ANSI.SequenceHandlers,
+    ANSI.SequenceHandler,
     ANSI.SGRProcessor,
-    Commands.CursorHandlers,
+    Commands.CursorHandler,
     Operations.ScreenOperations,
     ModeManager
   }
@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
   def handle_ansi_sequences(<<>>, emulator), do: {emulator, <<>>}
 
   def handle_ansi_sequences(rest, emulator) do
-    case SequenceHandlers.parse_ansi_sequence(rest) do
+    case SequenceHandler.parse_ansi_sequence(rest) do
       {:osc, remaining, _} ->
         handle_ansi_sequences(remaining, emulator)
 
@@ -83,26 +83,26 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
   end
 
   defp handle_sequence_type({:csi_cursor_pos, params, remaining, _}, emulator) do
-    {CursorHandlers.handle_cup(params, emulator), remaining}
+    {CursorHandler.handle_cup(params, emulator), remaining}
   end
 
   defp handle_sequence_type({:csi_cursor_up, params, remaining, _}, emulator) do
-    {CursorHandlers.handle_A(params, emulator), remaining}
+    {CursorHandler.handle_A(params, emulator), remaining}
   end
 
   defp handle_sequence_type({:csi_cursor_down, params, remaining, _}, emulator) do
-    {CursorHandlers.handle_B(params, emulator), remaining}
+    {CursorHandler.handle_B(params, emulator), remaining}
   end
 
   defp handle_sequence_type(
          {:csi_cursor_forward, params, remaining, _},
          emulator
        ) do
-    {CursorHandlers.handle_C(params, emulator), remaining}
+    {CursorHandler.handle_C(params, emulator), remaining}
   end
 
   defp handle_sequence_type({:csi_cursor_back, params, remaining, _}, emulator) do
-    {CursorHandlers.handle_D(params, emulator), remaining}
+    {CursorHandler.handle_D(params, emulator), remaining}
   end
 
   defp handle_sequence_type({:csi_cursor_show, remaining, _}, emulator) do
@@ -186,7 +186,7 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
        ) do
     # DEBUG: handle_parsed_sequence cursor_horizontal_absolute col=#{inspect(col)}
 
-    result = CursorHandlers.handle_G(emulator, [col + 1])
+    result = CursorHandler.handle_G(emulator, [col + 1])
     # DEBUG output removed
     {result, remaining}
   end

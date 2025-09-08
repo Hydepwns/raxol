@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Commands.WindowHandlersCached do
+defmodule Raxol.Terminal.Commands.WindowHandlerCached do
   @moduledoc """
   Cached version of window handlers using font metrics cache.
 
@@ -99,7 +99,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersCached do
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_t(emulator, params) do
     # Delegate to original WindowHandlers for non-metric operations
-    Raxol.Terminal.Commands.WindowHandlers.handle_t(emulator, params)
+    Raxol.Terminal.Commands.WindowHandler.handle_t(emulator, params)
   end
 
   # Private functions

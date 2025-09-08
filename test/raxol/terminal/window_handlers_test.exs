@@ -19,15 +19,15 @@ defmodule Raxol.Terminal.WindowHandlersTest do
     }
 
     # Test resize with only width
-    result1 = WindowHandlers.resize(emulator, [800])
+    result1 = WindowHandler.resize(emulator, [800])
     assert result1.window_state.size_pixels == {800, 600}
 
     # Test resize with width and height
-    result2 = WindowHandlers.resize(result1, [1024, 768])
+    result2 = WindowHandler.resize(result1, [1024, 768])
     assert result2.window_state.size_pixels == {1024, 768}
 
     # Test resize with invalid parameters (should keep previous)
-    result3 = WindowHandlers.resize(result2, ["invalid", "params"])
+    result3 = WindowHandler.resize(result2, ["invalid", "params"])
     assert result3.window_state.size_pixels == {1024, 768}
   end
 end

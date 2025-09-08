@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Commands.DeviceHandlersTest do
+defmodule Raxol.Terminal.Commands.DeviceHandlerTest do
   use ExUnit.Case, async: false
   alias Raxol.Terminal.{Commands.DeviceHandlers, Emulator, OutputManager}
   alias Raxol.Terminal.ScreenBuffer

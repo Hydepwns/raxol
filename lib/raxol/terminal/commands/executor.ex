@@ -3,9 +3,9 @@ defmodule Raxol.Terminal.Commands.Executor do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.Parser
-  alias Raxol.Terminal.Commands.CSIHandlers
-  alias Raxol.Terminal.Commands.OSCHandlers
-  alias Raxol.Terminal.Commands.DCSHandlers
+  alias Raxol.Terminal.Commands.CSIHandler
+  alias Raxol.Terminal.Commands.OSCHandler
+  alias Raxol.Terminal.Commands.DCSHandler
   require Raxol.Core.Runtime.Log
 
   @basic_commands [?m, ?H, ?r, ?J, ?K]
@@ -15,13 +15,13 @@ defmodule Raxol.Terminal.Commands.Executor do
   @scs_commands [?(, ?), ?*, ?+]
 
   @command_map %{
-    basic: &CSIHandlers.handle_basic_command/3,
-    cursor: &CSIHandlers.handle_cursor_command/3,
-    screen: &CSIHandlers.handle_screen_command/3,
-    device: &CSIHandlers.handle_device_command/4,
-    mode: &CSIHandlers.handle_h_or_l/4,
-    scs: &CSIHandlers.handle_scs/3,
-    deccusr: &CSIHandlers.handle_q_deccusr/2
+    basic: &CSIHandler.handle_basic_command/3,
+    cursor: &CSIHandler.handle_cursor_command/3,
+    screen: &CSIHandler.handle_screen_command/3,
+    device: &CSIHandler.handle_device_command/4,
+    mode: &CSIHandler.handle_h_or_l/4,
+    scs: &CSIHandler.handle_scs/3,
+    deccusr: &CSIHandler.handle_q_deccusr/2
   }
 
   @command_types %{
@@ -237,7 +237,7 @@ defmodule Raxol.Terminal.Commands.Executor do
   end
 
   defp dispatch_osc_command(emulator, ps_code, pt) do
-    OSCHandlers.handle(emulator, ps_code, pt)
+    OSCHandler.handle(emulator, ps_code, pt)
   end
 
   @spec execute_dcs_command(
@@ -306,7 +306,7 @@ defmodule Raxol.Terminal.Commands.Executor do
          data_string
        ) do
     # Always use the 5-argument version of handle_dcs which properly handles all cases
-    case DCSHandlers.handle_dcs(
+    case DCSHandler.handle_dcs(
            emulator,
            params_buffer,
            intermediates_buffer,
@@ -341,7 +341,7 @@ defmodule Raxol.Terminal.Commands.Executor do
     case intermediates_buffer do
       "" ->
         # Simple DCS command without intermediates
-        DCSHandlers.handle_dcs(emulator, params_without_final, data_string)
+        DCSHandler.handle_dcs(emulator, params_without_final, data_string)
 
       _ ->
         # DCS command with intermediates - need to pass final byte
@@ -355,7 +355,7 @@ defmodule Raxol.Terminal.Commands.Executor do
             {:error, :malformed_dcs, emulator}
 
           final_byte ->
-            DCSHandlers.handle_dcs(
+            DCSHandler.handle_dcs(
               emulator,
               params_without_final,
               intermediates_buffer,

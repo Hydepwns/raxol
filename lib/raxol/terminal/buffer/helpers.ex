@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Buffer.Helpers do
+defmodule Raxol.Terminal.Buffer.Helper do
   @moduledoc """
   Helper functions for the buffer server.
   """

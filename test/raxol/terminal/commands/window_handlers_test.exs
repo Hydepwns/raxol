@@ -1,14 +1,14 @@
-defmodule Raxol.Terminal.Commands.WindowHandlersTest do
+defmodule Raxol.Terminal.Commands.WindowHandlerTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.Commands.WindowHandlers
+  alias Raxol.Terminal.Commands.WindowHandler
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.{Window}
-  alias Raxol.Terminal.Commands.CSIHandlers
+  alias Raxol.Terminal.Commands.CSIHandler
 
   # Default char dimensions from WindowHandlers for calculations
-  @default_char_width_px WindowHandlers.default_char_width_px()
-  @default_char_height_px WindowHandlers.default_char_height_px()
+  @default_char_width_px WindowHandler.default_char_width_px()
+  @default_char_height_px WindowHandler.default_char_height_px()
   # Hardcoded default desktop columns
   @default_desktop_cols 160
   # Hardcoded default desktop rows
@@ -30,19 +30,19 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
         | window_state: %{emulator.window_state | iconified: true}
       }
 
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator_iconified, [1]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator_iconified, [1]))
       assert new_emulator.window_state.iconified == false
     end
 
     test "handles window iconify (op 2)", %{emulator: emulator} do
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [2]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [2]))
       assert new_emulator.window_state.iconified == true
     end
 
     test "handles window move (op 3)", %{emulator: emulator} do
       # Params: [op, y, x]
       # y=20, x=10
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [3, 20, 10]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [3, 20, 10]))
       # {x,y}
       assert new_emulator.window_state.position == {10, 20}
     end
@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       expected_char_w = div(px_w, @default_char_width_px)
 
       new_emulator =
-        unwrap_ok(WindowHandlers.handle_t(emulator, [4, px_h, px_w]))
+        unwrap_ok(WindowHandler.handle_t(emulator, [4, px_h, px_w]))
 
       assert new_emulator.window_state.size ==
                {expected_char_w, expected_char_h}
@@ -72,17 +72,17 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     end
 
     test "handles window raise (op 5)", %{emulator: emulator} do
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [5]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [5]))
       assert new_emulator.window_state.stacking_order == :above
     end
 
     test "handles window lower (op 6)", %{emulator: emulator} do
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [6]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [6]))
       assert new_emulator.window_state.stacking_order == :below
     end
 
     test "handles window refresh (op 7) as no-op", %{emulator: emulator} do
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [7]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [7]))
       # Check that the window state hasn't changed instead of full equality
       assert new_emulator.window_state == emulator.window_state
       assert new_emulator.width == emulator.width
@@ -93,7 +93,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       initial_char_w = emulator.window_state.size |> elem(0)
       initial_char_h = emulator.window_state.size |> elem(1)
 
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [9]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [9]))
       assert new_emulator.window_state.maximized == true
       # Default maximized char dimensions from WindowHandlers
       assert new_emulator.window_state.size == {160, 60}
@@ -109,10 +109,10 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       initial_char_w = emulator.window_state.size |> elem(0)
       initial_char_h = emulator.window_state.size |> elem(1)
 
-      emulator_maximized = unwrap_ok(WindowHandlers.handle_t(emulator, [9]))
+      emulator_maximized = unwrap_ok(WindowHandler.handle_t(emulator, [9]))
 
       new_emulator =
-        unwrap_ok(WindowHandlers.handle_t(emulator_maximized, [10]))
+        unwrap_ok(WindowHandler.handle_t(emulator_maximized, [10]))
 
       assert new_emulator.window_state.maximized == false,
              "Expected maximized to be false, got: #{inspect(new_emulator.window_state.maximized)}"
@@ -132,7 +132,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
 
   describe "handle_t/2 - Window Reports" do
     test "handles report window state (op 11) - normal", %{emulator: emulator} do
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [11]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [11]))
       assert new_emulator.output_buffer == "\e[1t"
     end
 
@@ -145,7 +145,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       }
 
       new_emulator =
-        unwrap_ok(WindowHandlers.handle_t(emulator_iconified, [11]))
+        unwrap_ok(WindowHandler.handle_t(emulator_iconified, [11]))
 
       assert new_emulator.output_buffer == "\e[2t"
     end
@@ -160,7 +160,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       }
 
       new_emulator =
-        unwrap_ok(WindowHandlers.handle_t(positioned_emulator, [14]))
+        unwrap_ok(WindowHandler.handle_t(positioned_emulator, [14]))
 
       # y,x
       assert new_emulator.output_buffer == "\e[3;20;10t"
@@ -172,20 +172,20 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       # Initial char size 80x24 -> 640x384 pixels
       px_w = 80 * @default_char_width_px
       px_h = 24 * @default_char_height_px
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [13]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [13]))
       # height, width
       assert new_emulator.output_buffer == "\e[4;#{px_h};#{px_w}t"
     end
 
     test "handles report text area size in chars (op 18)", %{emulator: emulator} do
       # Initial char size 80x24
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [18]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [18]))
       # rows, cols
       assert new_emulator.output_buffer == "\e[8;24;80t"
     end
 
     test "handles report desktop size in chars (op 19)", %{emulator: emulator} do
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [19]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [19]))
       # rows, cols
       assert new_emulator.output_buffer ==
                "\e[9;#{@default_desktop_rows};#{@default_desktop_cols}t"
@@ -194,7 +194,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
 
   describe "handle_t/2 - General and Parameter Edge Cases" do
     test "handles unknown window operation", %{emulator: emulator} do
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [999]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [999]))
       # Should be no-op, logs warning
       # Check that the window state hasn't changed instead of full equality
       assert new_emulator.window_state == emulator.window_state
@@ -203,7 +203,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     end
 
     test "handles empty parameter list for op (no-op)", %{emulator: emulator} do
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, []))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, []))
       # Check that the window state hasn't changed instead of full equality
       assert new_emulator.window_state == emulator.window_state
       assert new_emulator.width == emulator.width
@@ -211,7 +211,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     end
 
     test "handles nil operation parameter", %{emulator: emulator} do
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [nil]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [nil]))
       # Check that the window state hasn't changed instead of full equality
       assert new_emulator.window_state == emulator.window_state
       assert new_emulator.width == emulator.width
@@ -223,7 +223,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       emulator: emulator
     } do
       # y, x
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [3, -20, -10]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [3, -20, -10]))
       # Defaults to {0,0}
       assert new_emulator.window_state.position == {0, 0}
     end
@@ -231,7 +231,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     test "handles missing parameters for window move (op 3)", %{
       emulator: emulator
     } do
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [3]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [3]))
       # Defaults
       assert new_emulator.window_state.position == {0, 0}
     end
@@ -240,7 +240,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       emulator: emulator
     } do
       # y=10, x defaults to 0
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [3, 10]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [3, 10]))
       # {x,y}
       assert new_emulator.window_state.position == {0, 10}
     end
@@ -251,13 +251,13 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     } do
       # Test negative values
       new_emulator_neg =
-        unwrap_ok(WindowHandlers.handle_t(emulator, [4, -100, -50]))
+        unwrap_ok(WindowHandler.handle_t(emulator, [4, -100, -50]))
 
       Raxol.Test.Helpers.assert_window_size(new_emulator_neg, 80, 24)
 
       # Test zero values
       new_emulator_zero =
-        unwrap_ok(WindowHandlers.handle_t(emulator, [4, 0, 0]))
+        unwrap_ok(WindowHandler.handle_t(emulator, [4, 0, 0]))
 
       Raxol.Test.Helpers.assert_window_size(new_emulator_zero, 80, 24)
     end
@@ -265,7 +265,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     test "handles missing parameters for window resize (op 4)", %{
       emulator: emulator
     } do
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [4]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [4]))
       Raxol.Test.Helpers.assert_window_size(new_emulator, 80, 24)
     end
 
@@ -273,7 +273,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       emulator: emulator
     } do
       # height_px=160, width_px defaults
-      new_emulator = unwrap_ok(WindowHandlers.handle_t(emulator, [4, 160]))
+      new_emulator = unwrap_ok(WindowHandler.handle_t(emulator, [4, 160]))
 
       # Calculate expected dimensions: 640/8 = 80 chars wide, 160/16 = 10 chars high
       expected_width = div(640, @default_char_width_px)
@@ -289,7 +289,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     # General invalid param types
     test "handles non-integer parameters for move (op 3)", %{emulator: emulator} do
       new_emulator =
-        unwrap_ok(WindowHandlers.handle_t(emulator, [3, "invalid", "invalid"]))
+        unwrap_ok(WindowHandler.handle_t(emulator, [3, "invalid", "invalid"]))
 
       assert new_emulator.window_state.position == {0, 0}
     end
@@ -298,7 +298,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       emulator: emulator
     } do
       new_emulator =
-        unwrap_ok(WindowHandlers.handle_t(emulator, [4, "invalid", "invalid"]))
+        unwrap_ok(WindowHandler.handle_t(emulator, [4, "invalid", "invalid"]))
 
       Raxol.Test.Helpers.assert_window_size(new_emulator, 80, 24)
     end
@@ -306,7 +306,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
 
   describe "window size reporting" do
     test "reports window size in characters", %{emulator: emulator} do
-      result = CSIHandlers.handle_window_size_report(emulator)
+      result = CSIHandler.handle_window_size_report(emulator)
       assert result.output_buffer =~ ~r/\x1B\[8;24;80t/
     end
 
@@ -316,7 +316,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
         | window_state: %{emulator.window_state | size: {100, 75}}
       }
 
-      result = CSIHandlers.handle_window_size_pixels(emulator)
+      result = CSIHandler.handle_window_size_pixels(emulator)
       # 100 * 8 = 800, 75 * 16 = 1200
       assert result.output_buffer =~ ~r/\x1B\[4;1200;800t/
     end
@@ -327,7 +327,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
         | window_state: %{emulator.window_state | size: {0, 0}}
       }
 
-      result = CSIHandlers.handle_window_size_report(emulator)
+      result = CSIHandler.handle_window_size_report(emulator)
       assert result.output_buffer =~ ~r/\x1B\[8;0;0t/
     end
 
@@ -337,19 +337,19 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
         | window_state: %{emulator.window_state | size: {0, 0}}
       }
 
-      result = CSIHandlers.handle_window_size_report(emulator)
+      result = CSIHandler.handle_window_size_report(emulator)
       assert result.output_buffer =~ ~r/\x1B\[8;0;0t/
     end
   end
 
   describe "window stacking" do
     test "raises window to front", %{emulator: emulator} do
-      result = CSIHandlers.handle_window_raise(emulator)
+      result = CSIHandler.handle_window_raise(emulator)
       assert result.window_state.stacking_order == :above
     end
 
     test "lowers window to back", %{emulator: emulator} do
-      result = CSIHandlers.handle_window_lower(emulator)
+      result = CSIHandler.handle_window_lower(emulator)
       assert result.window_state.stacking_order == :below
     end
 
@@ -358,9 +358,9 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     } do
       result =
         emulator
-        |> CSIHandlers.handle_window_raise()
-        |> CSIHandlers.handle_window_lower()
-        |> CSIHandlers.handle_window_raise()
+        |> CSIHandler.handle_window_raise()
+        |> CSIHandler.handle_window_lower()
+        |> CSIHandler.handle_window_raise()
 
       assert result.window_state.stacking_order == :above
     end
@@ -368,7 +368,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
 
   describe "window state" do
     test "maximizes window", %{emulator: emulator} do
-      result = CSIHandlers.handle_window_maximize(emulator)
+      result = CSIHandler.handle_window_maximize(emulator)
       assert result.window_state.maximized == true
     end
 
@@ -378,12 +378,12 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
         | window_state: %{emulator.window_state | maximized: true}
       }
 
-      result = CSIHandlers.handle_window_unmaximize(emulator)
+      result = CSIHandler.handle_window_unmaximize(emulator)
       assert result.window_state.maximized == false
     end
 
     test "enters fullscreen mode", %{emulator: emulator} do
-      result = CSIHandlers.handle_window_fullscreen(emulator)
+      result = CSIHandler.handle_window_fullscreen(emulator)
       assert result.window_state.stacking_order == :fullscreen
     end
 
@@ -393,12 +393,12 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
         | window_state: %{emulator.window_state | maximized: true}
       }
 
-      result = CSIHandlers.handle_window_unfullscreen(emulator)
+      result = CSIHandler.handle_window_unfullscreen(emulator)
       assert result.window_state.stacking_order == :normal
     end
 
     test "minimizes window", %{emulator: emulator} do
-      result = CSIHandlers.handle_window_minimize(emulator)
+      result = CSIHandler.handle_window_minimize(emulator)
       assert result.window_state.iconified == true
     end
 
@@ -408,12 +408,12 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
         | window_state: %{emulator.window_state | iconified: true}
       }
 
-      result = CSIHandlers.handle_window_unminimize(emulator)
+      result = CSIHandler.handle_window_unminimize(emulator)
       assert result.window_state.iconified == false
     end
 
     test "iconifies window", %{emulator: emulator} do
-      result = CSIHandlers.handle_window_iconify(emulator)
+      result = CSIHandler.handle_window_iconify(emulator)
       assert result.window_state.iconified == true
     end
 
@@ -423,17 +423,17 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
         | window_state: %{emulator.window_state | iconified: true}
       }
 
-      result = CSIHandlers.handle_window_deiconify(emulator)
+      result = CSIHandler.handle_window_deiconify(emulator)
       assert result.window_state.iconified == false
     end
 
     test "handles state transitions correctly", %{emulator: emulator} do
       result =
         emulator
-        |> CSIHandlers.handle_window_maximize()
-        |> CSIHandlers.handle_window_fullscreen()
-        |> CSIHandlers.handle_window_unfullscreen()
-        |> CSIHandlers.handle_window_unmaximize()
+        |> CSIHandler.handle_window_maximize()
+        |> CSIHandler.handle_window_fullscreen()
+        |> CSIHandler.handle_window_unfullscreen()
+        |> CSIHandler.handle_window_unmaximize()
 
       assert result.window_state.maximized == false
       assert result.window_state.stacking_order == :normal
@@ -447,7 +447,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
         | window_title: "Test Title"
       }
 
-      result = CSIHandlers.handle_window_title(emulator)
+      result = CSIHandler.handle_window_title(emulator)
       assert result.output_buffer =~ ~r/\x1B\]0;Test Title\x07/
     end
 
@@ -457,7 +457,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
         | window_state: %{emulator.window_state | icon_name: "Test Icon"}
       }
 
-      result = CSIHandlers.handle_window_icon_name(emulator)
+      result = CSIHandler.handle_window_icon_name(emulator)
       assert result.output_buffer =~ ~r/\x1B\]1;Test Icon\x07/
     end
 
@@ -467,7 +467,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
         | window_title: "Test Title"
       }
 
-      result = CSIHandlers.handle_window_icon_title(emulator)
+      result = CSIHandler.handle_window_icon_title(emulator)
       assert result.output_buffer =~ ~r/\x1B\]2;Test Title\x07/
     end
 
@@ -478,12 +478,12 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
           window_state: %{emulator.window_state | icon_name: "Test Icon"}
       }
 
-      result = CSIHandlers.handle_window_icon_title_name(emulator)
+      result = CSIHandler.handle_window_icon_title_name(emulator)
       assert result.output_buffer =~ ~r/\x1B\]3;Test Title;Test Icon\x07/
     end
 
     test "handles empty titles", %{emulator: emulator} do
-      result = CSIHandlers.handle_window_title(emulator)
+      result = CSIHandler.handle_window_title(emulator)
       assert result.output_buffer =~ ~r/\x1B\]0;\x07/
     end
 
@@ -493,7 +493,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
         | window_title: "Test\nTitle\r"
       }
 
-      result = CSIHandlers.handle_window_title(emulator)
+      result = CSIHandler.handle_window_title(emulator)
       assert result.output_buffer =~ ~r/\x1B\]0;Test\nTitle\r\x07/
     end
   end
@@ -506,7 +506,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
         | window_state: %{emulator.window_state | size: {100, 50}}
       }
 
-      result = CSIHandlers.handle_window_save_title(emulator)
+      result = CSIHandler.handle_window_save_title(emulator)
       assert result.window_state.saved_size == {100, 50}
     end
 
@@ -521,12 +521,12 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
           }
       }
 
-      result = CSIHandlers.handle_window_restore_title(emulator)
+      result = CSIHandler.handle_window_restore_title(emulator)
       assert result.window_state.size == {100, 50}
     end
 
     test "handles restore without saved size", %{emulator: emulator} do
-      result = CSIHandlers.handle_window_restore_title(emulator)
+      result = CSIHandler.handle_window_restore_title(emulator)
       # Default size
       assert result.window_state.size == {80, 24}
     end
@@ -542,7 +542,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
           }
       }
 
-      result = CSIHandlers.handle_window_restore_title(emulator)
+      result = CSIHandler.handle_window_restore_title(emulator)
       assert result.window_state.size == {100, 50}
     end
   end

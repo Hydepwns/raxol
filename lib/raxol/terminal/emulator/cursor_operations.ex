@@ -97,7 +97,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
     {_current_x, current_y} =
       Raxol.Terminal.Emulator.Helpers.get_cursor_position(emulator)
 
-    Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(
+    Raxol.Terminal.Commands.CursorHandler.move_cursor_to(
       emulator,
       current_y,
       column
@@ -112,7 +112,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
     {_current_x, current_y} =
       Raxol.Terminal.Emulator.Helpers.get_cursor_position(emulator)
 
-    Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(
+    Raxol.Terminal.Commands.CursorHandler.move_cursor_to(
       emulator,
       current_y,
       0
@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @spec move_cursor_to(emulator(), non_neg_integer(), non_neg_integer()) ::
           emulator()
   def move_cursor_to(emulator, x, y) do
-    Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(emulator, x, y)
+    Raxol.Terminal.Commands.CursorHandler.move_cursor_to(emulator, x, y)
   end
 
   @doc """
@@ -143,7 +143,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @spec move_cursor(emulator(), non_neg_integer(), non_neg_integer()) ::
           emulator()
   def move_cursor(emulator, x, y) do
-    Raxol.Terminal.Commands.CursorHandlers.move_cursor_to(emulator, x, y)
+    Raxol.Terminal.Commands.CursorHandler.move_cursor_to(emulator, x, y)
   end
 
   @doc """

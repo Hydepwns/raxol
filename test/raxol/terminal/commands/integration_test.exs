@@ -18,11 +18,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "window resize with cursor position", %{emulator: emulator} do
       result =
         emulator
-        |> OSCHandlers.handle_window_size(100, 50)
+        |> OSCHandler.handle_window_size(100, 50)
         |> unwrap_ok()
-        |> CSIHandlers.handle_cursor_position(20, 20)
+        |> CSIHandler.handle_cursor_position(20, 20)
         |> unwrap_ok()
-        |> OSCHandlers.handle_window_title("Test")
+        |> OSCHandler.handle_window_title("Test")
         |> unwrap_ok()
 
       assert Raxol.Terminal.Cursor.Manager.get_position(result.cursor) ==
@@ -32,11 +32,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "color changes with text attributes", %{emulator: emulator} do
       result =
         emulator
-        |> OSCHandlers.handle_foreground_color("#FF0000")
+        |> OSCHandler.handle_foreground_color("#FF0000")
         |> unwrap_ok()
-        |> CSIHandlers.handle_text_attributes([1, 4])
+        |> CSIHandler.handle_text_attributes([1, 4])
         |> unwrap_ok()
-        |> OSCHandlers.handle_background_color("#0000FF")
+        |> OSCHandler.handle_background_color("#0000FF")
         |> unwrap_ok()
 
       # Check that the operations completed without error
@@ -46,11 +46,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "window state with cursor visibility", %{emulator: emulator} do
       result =
         emulator
-        |> CSIHandlers.handle_mode_change(25, false)
+        |> CSIHandler.handle_mode_change(25, false)
         |> unwrap_ok()
-        |> OSCHandlers.handle_window_maximize()
+        |> OSCHandler.handle_window_maximize()
         |> unwrap_ok()
-        |> CSIHandlers.handle_mode_change(25, true)
+        |> CSIHandler.handle_mode_change(25, true)
         |> unwrap_ok()
 
       assert Raxol.Terminal.Window.Manager.get_window_state(
@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     } do
       result1 =
         emulator
-        |> CSIHandlers.handle_cursor_position(10, 10)
+        |> CSIHandler.handle_cursor_position(10, 10)
         |> unwrap_ok()
 
       IO.puts(
@@ -76,7 +76,7 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
 
       result2 =
         result1
-        |> OSCHandlers.handle_window_title("Test")
+        |> OSCHandler.handle_window_title("Test")
         |> unwrap_ok()
 
       IO.puts(
@@ -85,7 +85,7 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
 
       result =
         result2
-        |> OSCHandlers.handle_window_size(100, 50)
+        |> OSCHandler.handle_window_size(100, 50)
         |> unwrap_ok()
 
       IO.puts(
@@ -98,11 +98,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "preserves text attributes after mode changes", %{emulator: emulator} do
       result =
         emulator
-        |> CSIHandlers.handle_text_attributes([1, 4, 31])
+        |> CSIHandler.handle_text_attributes([1, 4, 31])
         |> unwrap_ok()
-        |> CSIHandlers.handle_mode_change(4, true)
+        |> CSIHandler.handle_mode_change(4, true)
         |> unwrap_ok()
-        |> CSIHandlers.handle_mode_change(25, false)
+        |> CSIHandler.handle_mode_change(25, false)
         |> unwrap_ok()
 
       # Check that the operations completed without error
@@ -112,11 +112,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "preserves window state after cursor operations", %{emulator: emulator} do
       result =
         emulator
-        |> OSCHandlers.handle_window_maximize()
+        |> OSCHandler.handle_window_maximize()
         |> unwrap_ok()
-        |> CSIHandlers.handle_cursor_position(10, 10)
+        |> CSIHandler.handle_cursor_position(10, 10)
         |> unwrap_ok()
-        |> CSIHandlers.handle_cursor_up(5)
+        |> CSIHandler.handle_cursor_up(5)
         |> unwrap_ok()
 
       assert Raxol.Terminal.Window.Manager.get_window_state(
@@ -129,11 +129,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "scroll with cursor position", %{emulator: emulator} do
       result =
         emulator
-        |> CSIHandlers.handle_cursor_position(10, 10)
+        |> CSIHandler.handle_cursor_position(10, 10)
         |> unwrap_ok()
-        |> CSIHandlers.handle_scroll_up(5)
+        |> CSIHandler.handle_scroll_up(5)
         |> unwrap_ok()
-        |> CSIHandlers.handle_cursor_position(20, 20)
+        |> CSIHandler.handle_cursor_position(20, 20)
         |> unwrap_ok()
 
       # Check that the operations completed without error
@@ -143,11 +143,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "erase with text attributes", %{emulator: emulator} do
       result =
         emulator
-        |> CSIHandlers.handle_text_attributes([1, 4])
+        |> CSIHandler.handle_text_attributes([1, 4])
         |> unwrap_ok()
-        |> CSIHandlers.handle_erase_display(0)
+        |> CSIHandler.handle_erase_display(0)
         |> unwrap_ok()
-        |> CSIHandlers.handle_text_attributes([0])
+        |> CSIHandler.handle_text_attributes([0])
         |> unwrap_ok()
 
       # Check that the operations completed without error
@@ -157,11 +157,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "scroll with window size", %{emulator: emulator} do
       result =
         emulator
-        |> OSCHandlers.handle_window_size(100, 50)
+        |> OSCHandler.handle_window_size(100, 50)
         |> unwrap_ok()
-        |> CSIHandlers.handle_scroll_up(10)
+        |> CSIHandler.handle_scroll_up(10)
         |> unwrap_ok()
-        |> CSIHandlers.handle_scroll_down(5)
+        |> CSIHandler.handle_scroll_down(5)
         |> unwrap_ok()
 
       assert Raxol.Terminal.Window.Manager.get_window_size(
@@ -174,11 +174,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "insert mode with cursor position", %{emulator: emulator} do
       result =
         emulator
-        |> CSIHandlers.handle_mode_change(4, true)
+        |> CSIHandler.handle_mode_change(4, true)
         |> unwrap_ok()
-        |> CSIHandlers.handle_cursor_position(10, 10)
+        |> CSIHandler.handle_cursor_position(10, 10)
         |> unwrap_ok()
-        |> CSIHandlers.handle_mode_change(4, false)
+        |> CSIHandler.handle_mode_change(4, false)
         |> unwrap_ok()
 
       # Check that the operations completed without error
@@ -188,11 +188,11 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "cursor visibility with window state", %{emulator: emulator} do
       result =
         emulator
-        |> CSIHandlers.handle_mode_change(25, false)
+        |> CSIHandler.handle_mode_change(25, false)
         |> unwrap_ok()
-        |> OSCHandlers.handle_window_fullscreen()
+        |> OSCHandler.handle_window_fullscreen()
         |> unwrap_ok()
-        |> CSIHandlers.handle_mode_change(25, true)
+        |> CSIHandler.handle_mode_change(25, true)
         |> unwrap_ok()
 
       assert Raxol.Terminal.Cursor.Manager.get_visibility(result.cursor) == true
@@ -205,13 +205,13 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "multiple mode changes", %{emulator: emulator} do
       result =
         emulator
-        |> CSIHandlers.handle_mode_change(4, true)
+        |> CSIHandler.handle_mode_change(4, true)
         |> unwrap_ok()
-        |> CSIHandlers.handle_mode_change(25, false)
+        |> CSIHandler.handle_mode_change(25, false)
         |> unwrap_ok()
-        |> CSIHandlers.handle_mode_change(4, false)
+        |> CSIHandler.handle_mode_change(4, false)
         |> unwrap_ok()
-        |> CSIHandlers.handle_mode_change(25, true)
+        |> CSIHandler.handle_mode_change(25, true)
         |> unwrap_ok()
 
       assert Raxol.Terminal.Cursor.Manager.get_visibility(result.cursor) == true
@@ -222,9 +222,9 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "recovers from invalid window size", %{emulator: emulator} do
       result =
         emulator
-        |> OSCHandlers.handle_window_size(-100, -50)
+        |> OSCHandler.handle_window_size(-100, -50)
         |> unwrap_ok()
-        |> OSCHandlers.handle_window_size(100, 50)
+        |> OSCHandler.handle_window_size(100, 50)
         |> unwrap_ok()
 
       assert Raxol.Terminal.Window.Manager.get_window_size(
@@ -235,9 +235,9 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "recovers from invalid cursor position", %{emulator: emulator} do
       result =
         emulator
-        |> CSIHandlers.handle_cursor_position(-10, -10)
+        |> CSIHandler.handle_cursor_position(-10, -10)
         |> unwrap_ok()
-        |> CSIHandlers.handle_cursor_position(10, 10)
+        |> CSIHandler.handle_cursor_position(10, 10)
         |> unwrap_ok()
 
       assert Raxol.Terminal.Cursor.Manager.get_position(result.cursor) == {9, 9}
@@ -246,9 +246,9 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "recovers from invalid color settings", %{emulator: emulator} do
       result =
         emulator
-        |> OSCHandlers.handle_foreground_color("invalid")
+        |> OSCHandler.handle_foreground_color("invalid")
         |> unwrap_ok()
-        |> OSCHandlers.handle_foreground_color("#FF0000")
+        |> OSCHandler.handle_foreground_color("#FF0000")
         |> unwrap_ok()
 
       # Check that the operations completed without error

@@ -198,7 +198,7 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
   end
 
   def handle_call(:get_content, _from, state) do
-    content = Raxol.Terminal.Buffer.Helpers.buffer_to_string(state.buffer)
+    content = Raxol.Terminal.Buffer.Helper.buffer_to_string(state.buffer)
     {:reply, {:ok, content}, state}
   end
 
@@ -235,7 +235,7 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
 
       # Update metrics based on operation types
       new_metrics =
-        Raxol.Terminal.Buffer.Helpers.update_metrics_for_operations(
+        Raxol.Terminal.Buffer.Helper.update_metrics_for_operations(
           operations,
           state.metrics,
           start_time

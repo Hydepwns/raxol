@@ -1,6 +1,6 @@
-defmodule Raxol.Terminal.Commands.BufferHandlersTest do
+defmodule Raxol.Terminal.Commands.BufferHandlerTest do
   use ExUnit.Case, async: false
-  alias Raxol.Terminal.Commands.BufferHandlers
+  alias Raxol.Terminal.Commands.BufferHandler
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # (x, y) format
       CursorManager.set_position(emulator.cursor, {0, 5})
 
-      result_emulator = unwrap_ok(BufferHandlers.handle_L(emulator, [2]))
+      result_emulator = unwrap_ok(BufferHandler.handle_L(emulator, [2]))
 
       # After inserting 2 lines at row 5:
       # - Lines 0-4 stay the same
@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # (x, y) format
       CursorManager.set_position(emulator.cursor, {0, 5})
 
-      result_emulator = unwrap_ok(BufferHandlers.handle_L(emulator, []))
+      result_emulator = unwrap_ok(BufferHandler.handle_L(emulator, []))
       # Default is 1 line when no parameter given
       # get_line trims trailing spaces, so a blank line will be empty string
       assert get_line(result_emulator, 5) == ""
@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # (x, y) format
       CursorManager.set_position(emulator.cursor, {0, 5})
 
-      result_emulator = unwrap_ok(BufferHandlers.handle_M(emulator, [2]))
+      result_emulator = unwrap_ok(BufferHandler.handle_M(emulator, [2]))
       assert get_line(result_emulator, 5) == "Line 7"
       assert get_line(result_emulator, 6) == "Line 8"
       assert get_line(result_emulator, 8) == ""
@@ -64,7 +64,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # (x, y) format
       CursorManager.set_position(emulator.cursor, {0, 5})
 
-      result_emulator = unwrap_ok(BufferHandlers.handle_M(emulator, []))
+      result_emulator = unwrap_ok(BufferHandler.handle_M(emulator, []))
       assert get_line(result_emulator, 5) == "Line 6"
       assert get_line(result_emulator, 9) == ""
     end
@@ -78,7 +78,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       emulator = set_line_chars(emulator, 5, line_content)
       CursorManager.set_position(emulator.cursor, {5, 5})
 
-      result_emulator = unwrap_ok(BufferHandlers.handle_P(emulator, [2]))
+      result_emulator = unwrap_ok(BufferHandler.handle_P(emulator, [2]))
       assert get_line_raw(result_emulator, 5) == "01234789  "
     end
 
@@ -87,7 +87,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       emulator = set_line_chars(emulator, 5, line_content)
       CursorManager.set_position(emulator.cursor, {5, 5})
 
-      result_emulator = unwrap_ok(BufferHandlers.handle_P(emulator, []))
+      result_emulator = unwrap_ok(BufferHandler.handle_P(emulator, []))
       assert get_line_raw(result_emulator, 5) == "012346789 "
     end
   end
@@ -100,7 +100,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       emulator = set_line_chars(emulator, 5, line_content)
       CursorManager.set_position(emulator.cursor, {5, 5})
 
-      result_emulator = unwrap_ok(BufferHandlers.handle_at(emulator, [2]))
+      result_emulator = unwrap_ok(BufferHandler.handle_at(emulator, [2]))
 
       assert get_line_raw(result_emulator, 5) == "01234  567"
     end
@@ -110,7 +110,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       emulator = set_line_chars(emulator, 5, line_content)
       CursorManager.set_position(emulator.cursor, {5, 5})
 
-      result_emulator = unwrap_ok(BufferHandlers.handle_at(emulator, []))
+      result_emulator = unwrap_ok(BufferHandler.handle_at(emulator, []))
       assert get_line_raw(result_emulator, 5) == "01234 5678"
     end
   end
@@ -123,7 +123,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       emulator = set_line_chars(emulator, 5, line_content)
       CursorManager.set_position(emulator.cursor, {5, 5})
 
-      result_emulator = unwrap_ok(BufferHandlers.handle_X(emulator, [2]))
+      result_emulator = unwrap_ok(BufferHandler.handle_X(emulator, [2]))
       assert get_line_raw(result_emulator, 5) == "01234  789"
     end
 
@@ -132,7 +132,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       emulator = set_line_chars(emulator, 5, line_content)
       CursorManager.set_position(emulator.cursor, {5, 5})
 
-      result_emulator = unwrap_ok(BufferHandlers.handle_X(emulator, []))
+      result_emulator = unwrap_ok(BufferHandler.handle_X(emulator, []))
       assert get_line_raw(result_emulator, 5) == "01234 6789"
     end
   end
