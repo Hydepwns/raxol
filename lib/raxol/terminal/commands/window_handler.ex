@@ -382,4 +382,46 @@ defmodule Raxol.Terminal.Commands.WindowHandler do
     updated_emulator = %{emulator | output_buffer: output}
     {:ok, updated_emulator}
   end
+    
+  # Caching support functions
+  # Originally from WindowHandler module
+  
+  alias Raxol.Terminal.Font.Manager, as: FontManager
+  alias Raxol.Core.Performance.Caches.FontMetricsCache
+  
+  @default_font_size 14
+  @default_line_height 1.143
+  
+  @doc """
+  Gets cached font dimensions for performance.
+  """
+  def get_cached_char_dimensions() do
+    font_manager = get_default_font_manager()
+    FontMetricsCache.get_font_dimensions(font_manager)
+  end
+  
+  defp get_default_font_manager() do
+    %FontManager{
+      font_family: "monospace",
+      font_size: @default_font_size,
+      line_height: @default_line_height
+    }
+  end
+  
+  @doc """
+  Cached version of char width calculation.
+  """
+  def cached_char_width_px() do
+    {char_width, _} = get_cached_char_dimensions()
+    char_width
+  end
+  
+  @doc """
+  Cached version of char height calculation.
+  """
+  def cached_char_height_px() do
+    {_, char_height} = get_cached_char_dimensions()
+    char_height
+  end
+
 end

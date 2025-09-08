@@ -221,7 +221,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.Basic do
         case emulator.saved_cursor do
           %{row: row, col: col} ->
             # Use terminal cursor positioning
-            Raxol.Terminal.Commands.CSIHandler.CursorMovement.handle_cursor_position(
+            Raxol.Terminal.Commands.CursorHandlerMovement.handle_cursor_position(
               emulator,
               [col, row]
             )
