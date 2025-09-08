@@ -4,18 +4,8 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   This is a simplified version that delegates to the available handler modules.
   """
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.WindowHandler
-
-  alias Raxol.Terminal.Commands.CSIHandler.{
-    CursorMovement,
-    ScreenHandler,
-    DeviceHandler,
-    TextHandler,
-    ModeHandler,
-    CharsetHandler,
-    Cursor
-  }
+  alias Raxol.Terminal.Commands.CSIHandler.{CursorMovement, Cursor}
 
   require Raxol.Core.Runtime.Log
   require Logger
@@ -64,25 +54,52 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     emulator
   end
 
-  # Window handler delegations
-  defdelegate handle_window_maximize(emulator), to: WindowHandler
-  defdelegate handle_window_unmaximize(emulator), to: WindowHandler
-  defdelegate handle_window_minimize(emulator), to: WindowHandler
-  defdelegate handle_window_unminimize(emulator), to: WindowHandler
-  defdelegate handle_window_iconify(emulator), to: WindowHandler
-  defdelegate handle_window_deiconify(emulator), to: WindowHandler
-  defdelegate handle_window_raise(emulator), to: WindowHandler
-  defdelegate handle_window_lower(emulator), to: WindowHandler
-  defdelegate handle_window_fullscreen(emulator), to: WindowHandler
-  defdelegate handle_window_unfullscreen(emulator), to: WindowHandler
-  defdelegate handle_window_title(emulator), to: WindowHandler
-  defdelegate handle_window_icon_name(emulator), to: WindowHandler
-  defdelegate handle_window_icon_title(emulator), to: WindowHandler
-  defdelegate handle_window_icon_title_name(emulator), to: WindowHandler
-  defdelegate handle_window_save_title(emulator), to: WindowHandler
-  defdelegate handle_window_restore_title(emulator), to: WindowHandler
-  defdelegate handle_window_size_report(emulator), to: WindowHandler
-  defdelegate handle_window_size_pixels(emulator), to: WindowHandler
+  # Window handler delegations - only delegate functions that exist
+  defdelegate handle_iconify(emulator), to: WindowHandler
+  defdelegate handle_deiconify(emulator), to: WindowHandler
+  defdelegate handle_raise(emulator), to: WindowHandler
+  defdelegate handle_lower(emulator), to: WindowHandler
+  defdelegate handle_window_title(emulator, params), to: WindowHandler
+  defdelegate handle_icon_name(emulator, params), to: WindowHandler
+  defdelegate handle_icon_title(emulator, params), to: WindowHandler
+
+  # Handler functions for Executor compatibility
+  def handle_basic_command(emulator, params, final_byte) do
+    handle_csi_sequence(emulator, final_byte, params)
+  end
+
+  def handle_cursor_command(emulator, params, final_byte) do
+    case Cursor.handle_command(emulator, params, final_byte) do
+      {:error, :unknown_cursor_command, _} -> emulator
+      {:ok, updated_emulator} -> updated_emulator
+      updated_emulator -> updated_emulator
+    end
+  end
+
+  def handle_screen_command(emulator, _params, _final_byte) do
+    # Screen commands not yet implemented
+    emulator
+  end
+
+  def handle_device_command(emulator, _params, _intermediates, _final_byte) do
+    # Device commands not yet implemented
+    emulator
+  end
+
+  def handle_h_or_l(emulator, _params, _intermediates, _final_byte) do
+    # Mode commands not yet implemented
+    emulator
+  end
+
+  def handle_scs(emulator, _params_buffer, _final_byte) do
+    # SCS commands not yet implemented
+    emulator
+  end
+
+  def handle_q_deccusr(emulator, _params) do
+    # DECCUSR command not yet implemented
+    emulator
+  end
 
   # Bracketed paste handling
   def handle_bracketed_paste_start(emulator) do

@@ -133,3 +133,4 @@ The project includes a NIF (Native Implemented Function) for termbox2:
 - Themes are stored in `priv/themes/` as JSON files
 - Configuration uses TOML format where applicable
 - Full test coverage target is 100% (currently at 98.7%)
+- never add coauthored by claude, emojis or other claude metadata to any commit messages

@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Input.ControlSequenceHandler do
   """
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Commands.{CSIHandlers, OSCHandlers}
+  alias Raxol.Terminal.Commands.{CSIHandler, OSCHandler}
 
   require Raxol.Core.Runtime.Log
 
