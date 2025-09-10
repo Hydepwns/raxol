@@ -122,8 +122,8 @@ defmodule Mix.Tasks.Raxol.Check.Tests do
         failures = parse_test_failures(output)
         maybe_print_output(output, verbose)
 
-        failure_summary = format_failure_summary(failures)
-        {:error, "Tests failed (exit code: #{exit_code})\n#{failure_summary}"}
+        # Return structured error for better formatting
+        {:error, %{failures: failures, exit_code: exit_code, output: output}}
 
       nil ->
         {:error, "Test execution timed out after #{timeout}ms"}
@@ -143,9 +143,16 @@ defmodule Mix.Tasks.Raxol.Check.Tests do
     |> Enum.filter(&String.contains?(&1, "test/"))
     |> Enum.filter(&String.contains?(&1, ".exs:"))
     |> Enum.map(fn line ->
-      case Regex.run(~r/(test\/[^:]+:\d+)/, line) do
-        [_, location] -> location
-        _ -> nil
+      case Regex.run(~r/(test\/[^:]+):(\d+)/, line) do
+        [_, file, line_num] ->
+          %{
+            file: file,
+            line: String.to_integer(line_num),
+            test: extract_test_name(line)
+          }
+
+        _ ->
+          nil
       end
     end)
     |> Enum.reject(&is_nil/1)
@@ -154,12 +161,10 @@ defmodule Mix.Tasks.Raxol.Check.Tests do
     |> Enum.take(5)
   end
 
-  defp format_failure_summary([]), do: ""
-
-  defp format_failure_summary(failures) do
-    "Failed tests:\n" <>
-      Enum.map_join(failures, "\n", fn location ->
-        "  • #{location}"
-      end)
+  defp extract_test_name(line) do
+    case Regex.run(~r/test ([^\(]+)/, line) do
+      [_, name] -> String.trim(name)
+      _ -> "Unknown test"
+    end
   end
 end
