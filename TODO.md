@@ -226,5 +226,192 @@ end
 
 ---
 
+## 🚀 Sprint 27: Pre-commit System Modernization - PLANNED
+
+**Status**: PLANNED (2025-09-10)
+**Goal**: Create world-class, native Elixir pre-commit system that's DRY and idiomatic
+
+### Current Issues Identified
+- **Redundant Formatting**: Both standalone `mix format` and Raxol pre-commit check formatting
+- **Unclear Messaging**: "Running Raxol pre-commit checks..." followed by similar checks
+- **Non-idiomatic**: Custom scripts instead of native Elixir tooling
+- **Not DRY**: Duplicate functionality across multiple systems
+
+### Architecture Plan
+
+#### Phase 1: Consolidate Existing Hooks
+**Goal**: Eliminate redundancy and clarify responsibilities
+
+**Tasks**:
+- [ ] **Audit Current Pre-commit Setup**
+  - Document all existing Git hooks (`.git/hooks/`)
+  - Catalog all pre-commit scripts and their responsibilities
+  - Map current check overlap (formatting, linting, link validation)
+  
+- [ ] **Create Single Entry Point**
+  - Consolidate to single `mix raxol.pre_commit` task
+  - Remove duplicate `mix format` calls
+  - Eliminate redundant "Running Raxol pre-commit checks" messaging
+
+#### Phase 2: Native Elixir Implementation  
+**Goal**: Replace custom scripts with idiomatic Elixir Mix tasks
+
+**Core Mix Tasks to Create**:
+```elixir
+# Primary orchestrator
+mix raxol.pre_commit            # Single entry point for all checks
+
+# Individual check tasks (composable)
+mix raxol.check.format         # Code formatting (wraps mix format)  
+mix raxol.check.compile        # Compilation warnings
+mix raxol.check.credo          # Style and consistency
+mix raxol.check.dialyzer       # Type checking
+mix raxol.check.docs           # Documentation links and consistency
+mix raxol.check.tests          # Critical test subset for speed
+mix raxol.check.security       # Security vulnerabilities
+```
+
+**Implementation Strategy**:
+- [ ] **Create `lib/mix/tasks/raxol/` directory structure**
+- [ ] **Implement base `Mix.Tasks.Raxol.PreCommit` module**
+  - Parallel execution of independent checks
+  - Configurable check sets (fast/full/custom)
+  - Clear progress reporting with timing
+  - Exit codes that respect Git workflow
+  
+- [ ] **Implement individual check modules**
+  - Each check as separate Mix task for composability  
+  - Consistent API: `{:ok, results} | {:error, failures}`
+  - Rich terminal output with colors and symbols
+  - Performance metrics and timing
+
+#### Phase 3: Advanced Features
+**Goal**: Make pre-commit system best-in-class
+
+**Performance Optimizations**:
+- [ ] **Parallel Check Execution**
+  - Run independent checks concurrently
+  - Smart dependency ordering (compile before dialyzer)
+  - Resource-aware scheduling
+  
+- [ ] **Incremental Checking** 
+  - Only check files modified since last commit
+  - Cache check results for unchanged files
+  - Intelligent dependency tracking
+
+**Developer Experience**:
+- [ ] **Configuration System**
+  ```elixir
+  # config/dev.exs
+  config :raxol, :pre_commit,
+    checks: [:format, :compile, :credo, :docs],
+    parallel: true,
+    fail_fast: false,
+    timeout: 30_000
+  ```
+
+- [ ] **Rich Terminal Output**
+  - Progress bars for long-running checks
+  - Color-coded results (green/red/yellow)
+  - Clear error messages with fix suggestions
+  - Performance timing for each check
+
+#### Phase 4: Integration & Polish
+**Goal**: Seamless integration with development workflow
+
+**Git Integration**:
+- [ ] **Smart Hook Installation**
+  ```bash
+  mix raxol.install_hooks    # Install/update Git hooks
+  mix raxol.uninstall_hooks  # Clean removal
+  ```
+
+- [ ] **Bypass Mechanisms**
+  ```bash
+  git commit --no-verify              # Standard Git bypass
+  RAXOL_SKIP_CHECKS=docs git commit   # Skip specific checks
+  ```
+
+**CI/CD Integration**:
+- [ ] **GitHub Actions Integration**
+  - Reuse same Mix tasks in CI
+  - Generate check reports for PRs
+  - Cache results across builds
+
+### Technical Implementation Details
+
+#### Mix Task Structure
+```elixir
+defmodule Mix.Tasks.Raxol.PreCommit do
+  use Mix.Task
+  
+  @shortdoc "Run all pre-commit checks"
+  
+  def run(args) do
+    config = parse_config(args)
+    
+    checks = [
+      {Mix.Tasks.Raxol.Check.Format, []},
+      {Mix.Tasks.Raxol.Check.Compile, []},
+      {Mix.Tasks.Raxol.Check.Credo, []},
+      {Mix.Tasks.Raxol.Check.Docs, []}
+    ]
+    
+    results = if config.parallel do
+      run_parallel(checks)
+    else
+      run_sequential(checks)
+    end
+    
+    handle_results(results, config)
+  end
+end
+```
+
+#### Check Interface
+```elixir
+defmodule Mix.Tasks.Raxol.Check.Behaviour do
+  @callback run(opts :: keyword()) :: 
+    {:ok, %{passed: integer(), details: [term()]}} |
+    {:error, %{failed: integer(), details: [term()]}}
+end
+```
+
+#### Configuration Schema
+```elixir
+defmodule Raxol.PreCommit.Config do
+  defstruct [
+    checks: [:format, :compile, :credo, :docs],
+    parallel: true,
+    fail_fast: false,
+    timeout: 30_000,
+    output: :rich,  # :rich | :simple | :json
+    cache: true
+  ]
+end
+```
+
+### Success Metrics
+- [ ] **Performance**: Sub-10 second pre-commit time for typical changes
+- [ ] **Reliability**: 99%+ success rate (no false positives/negatives)  
+- [ ] **Developer Experience**: Clear, actionable error messages
+- [ ] **Maintainability**: Single source of truth for all checks
+- [ ] **Extensibility**: Easy to add new checks via plugin system
+
+### Migration Plan
+1. **Week 1**: Implement basic Mix task structure and format check
+2. **Week 2**: Add remaining core checks (compile, credo, docs)
+3. **Week 3**: Implement parallel execution and configuration
+4. **Week 4**: Polish UI/UX, add caching, comprehensive testing
+5. **Week 5**: Documentation, migration guide, rollout
+
+### Rollback Strategy
+- Keep existing scripts during transition
+- Feature flag new system (`RAXOL_NEW_PRECOMMIT=true`)
+- A/B testing with development team
+- Gradual migration with fallback options
+
+---
+
 **Last Updated**: 2025-09-10
-**Status**: v1.1.0 Released | Sprint 25-26 Complete | All Major Issues Fixed | Technical Debt Cleanup Complete
+**Status**: v1.1.0 Released | Sprint 25-26 Complete | Sprint 27 Pre-commit Modernization PLANNED
