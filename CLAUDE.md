@@ -21,6 +21,9 @@ SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test --max-failures 5
 
 ### Building & Compilation
 ```bash
+# Set TMPDIR to avoid nix-shell issues (especially on macOS)
+export TMPDIR=/tmp
+
 # Compile with test environment and skip termbox2 tests
 SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix compile
 
@@ -33,6 +36,12 @@ mix format
 # Check formatting
 mix format --check-formatted
 ```
+
+#### Troubleshooting Compilation Issues
+If you encounter compilation errors with the NIF (Native Implemented Function):
+1. Ensure gcc and make are installed: `gcc --version && make --version`
+2. Set TMPDIR environment variable: `export TMPDIR=/tmp`
+3. The Makefile now automatically handles TMPDIR issues
 
 ### Code Quality
 ```bash

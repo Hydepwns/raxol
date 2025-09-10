@@ -31,7 +31,7 @@ Documentation for the Raxol full-stack terminal application framework.
 
 Guides organized by topic:
 
-- [**Getting Started**](./examples/guides/01_getting_started/) - Installation and first app
+- [**Getting Started**](./getting-started.md) - Installation and first app
 - [**Core Concepts**](./examples/guides/02_core_concepts/) - Framework fundamentals  
 - [**Components & Layout**](./examples/guides/03_components_and_layout/) - UI building blocks and layout
 - [**Extensions**](./examples/guides/04_extending_raxol/) - Plugins and customization
@@ -49,7 +49,7 @@ Guides organized by topic:
 
 ### Interactive Learning
 - **Interactive Tutorial**: `mix raxol.tutorial` - Hands-on learning with code execution
-- [**Getting Started Tutorial**](./tutorials/01_getting_started.md) - Hands-on introduction (401 lines)
+- [**Getting Started Guide**](./getting-started.md) - Comprehensive getting started guide
 - [**Component Deep Dive**](./tutorials/02_component_deep_dive.md) - Advanced component patterns
 - [**Terminal Emulation**](./tutorials/03_terminal_emulation.md) - Terminal implementation details
 - **Component Playground**: `mix raxol.playground` - Live component testing and preview
@@ -94,4 +94,4 @@ A terminal framework for Elixir that enables building terminal applications with
 
 ---
 
-**Need something specific?** Use the search function or browse the guides above. Most questions are answered in the [Getting Started](./examples/guides/01_getting_started/) section.
+**Need something specific?** Use the search function or browse the guides above. Most questions are answered in the [Getting Started](./getting-started.md) guide.

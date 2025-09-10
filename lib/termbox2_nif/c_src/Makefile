@@ -1,3 +1,7 @@
+# Handle temporary directory issues (especially on macOS with nix-shell)
+TMPDIR ?= /tmp
+export TMPDIR
+
 # If this is not set, the build will fail
 ERL_EI_INCLUDE_DIR ?= $(shell erl -eval 'io:format("~s", [lists:concat([code:root_dir(), "/usr/include"])])' -s init stop -noshell)
 ERL_EI_LIBDIR ?= $(shell erl -eval 'io:format("~s", [lists:concat([code:root_dir(), "/usr/lib"])])' -s init stop -noshell)

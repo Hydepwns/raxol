@@ -39,23 +39,42 @@ defmodule Raxol.MixProject do
         "MIX_APP_PATH" => "priv"
       },
       dialyzer: [
-        # Add core Elixir apps needed for tests
-        plt_add_apps: [:ex_unit],
-        # Optional: Path to ignore file
-        ignore_warnings: "dialyzer.ignore-warnings",
-        # Common flags
-        flags: [
-          :unmatched_returns,
-          :error_handling,
-          :underspecs
-          # Add other flags as needed, e.g., :missing_return for stricter checks
+        # PLT Configuration for caching
+        plt_core_path: "priv/plts/core.plt",
+        plt_local_path: "priv/plts/local.plt",
+
+        # Add applications to PLT for better analysis
+        plt_add_apps: [
+          :ex_unit,
+          :mix,
+          :phoenix,
+          :phoenix_live_view,
+          :ecto,
+          :postgrex,
+          :jason,
+          :plug
         ],
-        # You can skip checks for modules by adding them to the `ignore_modules` list below.
-        plt_core_path: "priv/plts",
-        # plt_add_apps: [:mix], # Specify apps to add to PLT list
-        # plt_file: {:no_warn, "priv/plts/core"},
+
+        # Analysis flags for comprehensive checking
+        flags: [
+          :error_handling,
+          :underspecs,
+          :unmatched_returns,
+          :race_conditions,
+          :unknown
+        ],
+
+        # Ignore warnings file
+        ignore_warnings: ".dialyzer_ignore.exs",
+
+        # List of paths to include in analysis
+        paths: [
+          "_build/#{Mix.env()}/lib/raxol/ebin"
+        ],
+
+        # Modules to ignore (can be added as needed)
         ignore_modules: [
-          # Suppress persistent spurious warnings
+          # Add modules that consistently produce false positives
         ]
       ]
     ]
@@ -186,8 +205,13 @@ defmodule Raxol.MixProject do
 
       # Code quality
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.38", only: :dev, runtime: false},
       {:earmark, "~> 1.4", only: :dev},
+
+      # Security scanning
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
+      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
 
       # Testing
       {:mox, "~> 1.2", only: :test},
@@ -260,6 +284,10 @@ defmodule Raxol.MixProject do
       ],
       "explain.credo": ["run scripts/explain_credo_warning.exs"],
       lint: ["credo"],
+      # Dialyzer commands
+      "dialyzer.setup": ["dialyzer --plt"],
+      "dialyzer.check": ["dialyzer --format dialyxir"],
+      "dialyzer.clean": ["cmd rm -rf priv/plts/*.plt"],
       # Unified development commands
       "dev.test": ["cmd scripts/dev.sh test"],
       "dev.test-all": ["cmd scripts/dev.sh test-all"],
@@ -276,7 +304,7 @@ defmodule Raxol.MixProject do
 
   defp description do
     """
-    The Next.js of Terminal UIs - Build blazing-fast, interactive terminal applications with React-style components, 60fps animations, and seamless web continuity. Enterprise-ready with 3.3μs parsing performance.
+    The Next.js of Terminal UIs - Build blazing-fast, interactive terminal applications with React-style components, 60fps animations, and seamless web continuity. Enterprise-compliant with 3.3μs parsing performance.
     """
   end
 
@@ -284,7 +312,7 @@ defmodule Raxol.MixProject do
     [
       name: "raxol",
       files:
-        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG.md docs examples),
+        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG.md docs docs/examples),
       maintainers: ["DROO AMOR"],
       licenses: ["MIT"],
       links: %{
@@ -301,34 +329,30 @@ defmodule Raxol.MixProject do
 
   defp docs do
     [
-      main: "01_getting_started",
+      main: "readme",
       logo: "assets/logo.svg",
       extras: [
         "README.md",
-        "docs/API.md",
+        "docs/getting-started.md",
+        "docs/api-reference.md",
         "docs/CONFIGURATION.md",
-        "CONTRIBUTING.md",
-        "docs/tutorials/01_getting_started.md",
         "docs/tutorials/02_component_deep_dive.md",
         "docs/tutorials/03_terminal_emulation.md",
-        "docs/examples/guides/01_getting_started/quick_start.md",
-        "docs/examples/guides/02_core_concepts/terminal_emulator.md",
-        "docs/examples/snippets/README.md"
+        "CONTRIBUTING.md"
       ],
       groups_for_extras: [
         "Getting Started": [
           "README.md",
-          "docs/tutorials/01_getting_started.md",
-          "docs/examples/guides/01_getting_started/quick_start.md"
+          "docs/getting-started.md"
         ],
         Tutorials: [
           "docs/tutorials/02_component_deep_dive.md",
-          "docs/tutorials/03_terminal_emulation.md",
-          "docs/examples/guides/02_core_concepts/terminal_emulator.md"
+          "docs/tutorials/03_terminal_emulation.md"
         ],
-        "API Reference": ["docs/API.md"],
-        Configuration: ["docs/CONFIGURATION.md"],
-        Examples: ["docs/examples/snippets/README.md"],
+        Reference: [
+          "docs/api-reference.md",
+          "docs/CONFIGURATION.md"
+        ],
         Contributing: ["CONTRIBUTING.md"]
       ],
       groups_for_modules: [

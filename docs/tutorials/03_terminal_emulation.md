@@ -6,7 +6,7 @@ title: Terminal Emulation and ANSI Sequences
 difficulty: intermediate
 estimated_time: 20
 tags: [terminal, ansi, escape-sequences, vt100, emulation]
-prerequisites: [getting_started]
+prerequisites: []
 ---
 
 ## Master Raxol's Terminal Emulation
@@ -783,6 +783,6 @@ You've mastered Raxol's terminal emulation features! You now understand:
 
 ## Next Steps
 
-- Build [Terminal Applications](building_apps.md)
-- Explore [Performance Optimization](performance.md)
-- Learn [Testing Strategies](testing.md)
+- Return to [Component Deep Dive](02_component_deep_dive.md)
+- Check the [API Reference](../api-reference.md)
+- Read the [Architecture Guide](../ARCHITECTURE.md)

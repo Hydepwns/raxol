@@ -1,0 +1,203 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # Run security scan daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+env:
+  ELIXIR_VERSION: "1.17.3"
+  OTP_VERSION: "27.0"
+
+jobs:
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Elixir
+        uses: ./.github/actions/setup-elixir
+        with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
+      
+      - name: Check for vulnerable dependencies
+        run: |
+          # Install mix_audit if not present
+          if ! mix help deps.audit &>/dev/null; then
+            mix archive.install hex mix_audit --force
+          fi
+          
+          mix deps.audit
+        continue-on-error: true
+      
+      - name: Check for outdated dependencies
+        run: |
+          mix hex.outdated
+        continue-on-error: true
+
+  static-analysis:
+    name: Static Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Elixir
+        uses: ./.github/actions/setup-elixir
+        with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
+      
+      - name: Run Sobelow
+        run: |
+          # Install Sobelow if not in deps
+          if ! mix help sobelow &>/dev/null; then
+            mix archive.install hex sobelow --force
+          fi
+          
+          mix sobelow --config || mix sobelow --skip
+        continue-on-error: true
+
+  semgrep:
+    name: Semgrep Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+            p/elixir
+        continue-on-error: true
+
+  secrets-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for scanning
+      
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+        continue-on-error: true
+      
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  npm-audit:
+    name: NPM Security Audit
+    runs-on: ubuntu-latest
+    if: hashFiles('**/package-lock.json') != ''
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Run npm audit
+        run: |
+          # Check all directories with package.json
+          for dir in . extensions/vscode frontend assets; do
+            if [ -f "$dir/package.json" ]; then
+              echo "Auditing $dir..."
+              (cd "$dir" && npm audit --audit-level=moderate || true)
+            fi
+          done
+
+  snyk-cli:
+    name: Snyk Security Scan (CLI)
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'  # Skip on scheduled runs to save API quota
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js for Snyk CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install and run Snyk CLI
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -z "$SNYK_TOKEN" ]; then
+            echo "⚠️ SNYK_TOKEN not configured, skipping Snyk scan"
+            exit 0
+          fi
+          
+          # Install Snyk CLI
+          npm install -g snyk
+          
+          # Authenticate
+          snyk auth $SNYK_TOKEN
+          
+          # Test for vulnerabilities
+          snyk test --severity-threshold=high || true
+          
+          # Monitor project (only on main branch push)
+          if [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            snyk monitor || true
+          fi
+        continue-on-error: true
+
+  security-report:
+    name: Security Report
+    needs: [dependency-audit, static-analysis, semgrep, secrets-scan, npm-audit, snyk-cli]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Generate security summary
+        run: |
+          echo "## 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Audit | ${{ needs.dependency-audit.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Static Analysis | ${{ needs.static-analysis.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Semgrep | ${{ needs.semgrep.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret Detection | ${{ needs.secrets-scan.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| NPM Audit | ${{ needs.npm-audit.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Snyk | ${{ needs.snyk-cli.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Run time: $(date)" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Create issue for critical findings
+        if: github.event_name == 'schedule' && (needs.dependency-audit.result == 'failure' || needs.secrets-scan.result == 'failure')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().split('T')[0];
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔒 Security scan findings - ${date}`,
+              body: `Automated security scan found potential issues. Please review the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).`,
+              labels: ['security', 'automated']
+            });

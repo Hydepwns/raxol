@@ -2,58 +2,20 @@ defmodule Raxol.UI.Components.Patterns.Compound do
   @moduledoc """
   Compound Components pattern for Raxol UI.
 
-  Compound components are a pattern where components are designed to work together
-  as a cohesive unit. They share implicit state and provide a flexible, composable API.
+  Components designed to work together with shared implicit state and flexible
+  composition. Parent manages shared state, children handle individual concerns.
 
-  Think of HTML elements like `<select>` and `<option>`, or `<table>`, `<tr>`, and `<td>`.
-  The parent component manages shared state and behavior, while child components
-  handle their individual concerns.
+  ## Usage
 
-  ## Benefits
-
-  - Flexible composition
-  - Implicit state sharing
-  - Clean separation of concerns
-  - Intuitive API design
-  - Reusable sub-components
-
-  ## Examples
-
-      # Accordion compound component
+      # Accordion example
       %{
         type: :accordion,
         children: [
           %{
             type: :accordion_item,
-            attrs: %{value: "item1"},
             children: [
-              %{type: :accordion_trigger, attrs: %{}, children: [text("Section 1")]},
-              %{type: :accordion_content, children: [text("Content for section 1")]}
-            ]
-          },
-          %{
-            type: :accordion_item,
-            attrs: %{value: "item2"},
-            children: [
-              %{type: :accordion_trigger, children: [text("Section 2")]},
-              %{type: :accordion_content, children: [text("Content for section 2")]}
-            ]
-          }
-        ]
-      }
-      
-      # Dropdown compound component
-      %{
-        type: :dropdown,
-        children: [
-          %{type: :dropdown_trigger, children: [text("Options")]},
-          %{
-            type: :dropdown_content,
-            children: [
-              %{type: :dropdown_item, attrs: %{value: "edit"}, children: [text("Edit")]},
-              %{type: :dropdown_item, attrs: %{value: "delete"}, children: [text("Delete")]},
-              %{type: :dropdown_separator},
-              %{type: :dropdown_item, attrs: %{value: "share"}, children: [text("Share")]}
+              %{type: :accordion_trigger, children: [text("Section 1")]},
+              %{type: :accordion_content, children: [text("Content 1")]}
             ]
           }
         ]

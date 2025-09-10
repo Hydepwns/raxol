@@ -13,8 +13,9 @@ defmodule Mix.Tasks.Raxol.PreCommit do
     * `--only` - Run only specific checks (comma-separated)
     * `--skip` - Skip specific checks (comma-separated)
     * `--quiet` - Minimal output
-    * `--verbose` - Detailed output with timing
+    * `--verbose` - Detailed output with timing and cache info
     * `--fix` - Auto-fix issues when possible (currently: format)
+    * `--no-cache` - Disable cache, run all checks fresh
     
   ## Examples
 
@@ -24,6 +25,9 @@ defmodule Mix.Tasks.Raxol.PreCommit do
       # Run with auto-fix
       mix raxol.pre_commit --fix
       
+      # Force fresh check without cache
+      mix raxol.pre_commit --no-cache
+      
       # Run only format and compile checks
       mix raxol.pre_commit --only format,compile
       
@@ -32,19 +36,24 @@ defmodule Mix.Tasks.Raxol.PreCommit do
       
       # Sequential execution with fail-fast
       mix raxol.pre_commit --no-parallel --fail-fast
+      
+      # Verbose output with cache statistics
+      mix raxol.pre_commit --verbose
   """
 
   use Mix.Task
+  alias Raxol.PreCommit.{Config, Progress, ErrorFormatter, Metrics}
 
   @shortdoc "Run all pre-commit checks"
 
-  @default_checks [:format, :compile, :credo, :tests, :docs]
   @check_modules %{
     format: Mix.Tasks.Raxol.Check.Format,
     compile: Mix.Tasks.Raxol.Check.Compile,
     credo: Mix.Tasks.Raxol.Check.Credo,
     tests: Mix.Tasks.Raxol.Check.Tests,
-    docs: Mix.Tasks.Raxol.Check.Docs
+    docs: Mix.Tasks.Raxol.Check.Docs,
+    dialyzer: Mix.Tasks.Raxol.Check.Dialyzer,
+    security: Mix.Tasks.Raxol.Check.Security
   }
 
   @impl Mix.Task
@@ -58,7 +67,8 @@ defmodule Mix.Tasks.Raxol.PreCommit do
           skip: :string,
           quiet: :boolean,
           verbose: :boolean,
-          fix: :boolean
+          fix: :boolean,
+          no_cache: :boolean
         ],
         aliases: [
           p: :parallel,
@@ -68,7 +78,8 @@ defmodule Mix.Tasks.Raxol.PreCommit do
         ]
       )
 
-    config = build_config(opts)
+    # Load configuration from all sources
+    config = Config.load(build_cli_config(opts))
 
     unless config.quiet do
       IO.puts("\n🚀 Running Raxol Pre-commit Checks\n")
@@ -76,10 +87,25 @@ defmodule Mix.Tasks.Raxol.PreCommit do
 
     start_time = System.monotonic_time(:millisecond)
 
+    # Start progress indicator if enabled
+    maybe_start_progress(config)
+
     checks = determine_checks(config)
+
+    # Initialize all checks in progress display
+    maybe_init_checks(checks, config)
+
     results = run_checks(checks, config)
 
+    # Stop progress indicator
+    maybe_stop_progress(config)
+
     elapsed = System.monotonic_time(:millisecond) - start_time
+
+    # Record metrics unless disabled
+    unless Map.get(config, :skip_metrics, false) do
+      Metrics.record_run(results, elapsed, config)
+    end
 
     print_summary(results, elapsed, config)
 
@@ -87,17 +113,38 @@ defmodule Mix.Tasks.Raxol.PreCommit do
     System.halt(exit_code)
   end
 
-  defp build_config(opts) do
-    %{
-      parallel: Keyword.get(opts, :parallel, true),
-      fail_fast: Keyword.get(opts, :fail_fast, false),
-      only: parse_check_list(Keyword.get(opts, :only)),
-      skip: parse_check_list(Keyword.get(opts, :skip)),
-      quiet: Keyword.get(opts, :quiet, false),
-      verbose: Keyword.get(opts, :verbose, false),
-      auto_fix: Keyword.get(opts, :fix, false)
-    }
+  defp build_cli_config(opts) do
+    # Build config map from CLI options
+    cli_config = %{}
+
+    cli_config = maybe_put(cli_config, :parallel, Keyword.get(opts, :parallel))
+
+    cli_config =
+      maybe_put(cli_config, :fail_fast, Keyword.get(opts, :fail_fast))
+
+    cli_config = maybe_put(cli_config, :quiet, Keyword.get(opts, :quiet))
+    cli_config = maybe_put(cli_config, :verbose, Keyword.get(opts, :verbose))
+    cli_config = maybe_put(cli_config, :auto_fix, Keyword.get(opts, :fix))
+    cli_config = maybe_put(cli_config, :no_cache, Keyword.get(opts, :no_cache))
+
+    # Handle special cases
+    cli_config =
+      case Keyword.get(opts, :only) do
+        nil -> cli_config
+        only_str -> Map.put(cli_config, :checks, parse_check_list(only_str))
+      end
+
+    cli_config =
+      case Keyword.get(opts, :skip) do
+        nil -> cli_config
+        skip_str -> Map.put(cli_config, :skip, parse_check_list(skip_str))
+      end
+
+    cli_config
   end
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
   defp parse_check_list(nil), do: []
 
@@ -109,34 +156,50 @@ defmodule Mix.Tasks.Raxol.PreCommit do
   end
 
   defp determine_checks(config) do
+    # Get checks from config (defaults, file config, or CLI override)
+    base_checks =
+      Map.get(config, :checks, [:format, :compile, :credo, :tests, :docs])
+
+    # Apply skip filter if present
+    skip_list = Map.get(config, :skip, [])
+
     checks =
-      if config.only != [] do
-        config.only
-      else
-        @default_checks
+      case skip_list do
+        [] -> base_checks
+        skips -> Enum.reject(base_checks, &(&1 in skips))
       end
 
     checks
-    |> Enum.reject(&(&1 in config.skip))
     |> Enum.map(&{&1, Map.get(@check_modules, &1)})
     |> Enum.filter(fn {_, module} -> module != nil end)
   end
 
   defp run_checks(checks, %{parallel: true, fail_fast: false} = config) do
+    # Smart parallel execution with CPU core detection
+    max_concurrency = determine_concurrency(checks)
+
     checks
     |> Task.async_stream(
       fn {name, module} ->
-        {name, run_single_check(module, config)}
+        maybe_start_check(name, config)
+        check_config = Config.get_check_config(config, name)
+        result = run_single_check(module, check_config)
+        maybe_update_check_status(name, result, config)
+        {name, result}
       end,
       ordered: true,
-      timeout: 30_000
+      timeout: 30_000,
+      max_concurrency: max_concurrency
     )
     |> Enum.map(fn {:ok, result} -> result end)
   end
 
   defp run_checks(checks, %{parallel: false} = config) do
     Enum.reduce_while(checks, [], fn {name, module}, acc ->
-      result = run_single_check(module, config)
+      maybe_start_check(name, config)
+      check_config = Config.get_check_config(config, name)
+      result = run_single_check(module, check_config)
+      maybe_update_check_status(name, result, config)
       new_acc = [{name, result} | acc]
 
       if config.fail_fast and result.status == :error do
@@ -151,6 +214,23 @@ defmodule Mix.Tasks.Raxol.PreCommit do
   defp run_checks(checks, config) do
     # Parallel with fail-fast (more complex, simplified for now)
     run_checks(checks, %{config | parallel: false})
+  end
+
+  defp determine_concurrency(checks) do
+    # Get CPU cores available
+    cpu_cores = System.schedulers_online()
+
+    # Determine check dependencies
+    # compile must run before tests (tests might need compiled code)
+    has_compile = Enum.any?(checks, fn {name, _} -> name == :compile end)
+    has_tests = Enum.any?(checks, fn {name, _} -> name == :tests end)
+
+    cond do
+      # If we have dependent checks, limit concurrency
+      has_compile and has_tests -> min(2, cpu_cores)
+      # Otherwise use available cores, but cap at check count
+      true -> min(length(checks), cpu_cores)
+    end
   end
 
   defp run_single_check(module, config) do
@@ -233,8 +313,19 @@ defmodule Mix.Tasks.Raxol.PreCommit do
         check_name = name |> to_string() |> String.capitalize()
         IO.puts("  #{icon} #{check_name}#{time_str}")
 
-        if result.status == :error and result[:reason] do
-          IO.puts("     #{result.reason}")
+        # Show detailed error information for failures
+        case {result.status, result[:reason], config.verbose} do
+          {:error, reason, true} when is_map(reason) ->
+            ErrorFormatter.print_error(name, reason, verbose: true, color: true)
+
+          {:error, reason, _} when is_binary(reason) ->
+            IO.puts("     #{reason}")
+
+          {:warning, reason, _} when is_binary(reason) ->
+            IO.puts("     #{reason}")
+
+          _ ->
+            :ok
         end
       end)
 
@@ -251,14 +342,82 @@ defmodule Mix.Tasks.Raxol.PreCommit do
 
       IO.puts("Time: #{format_time(total_elapsed)}\n")
 
-      if all_passed?(results) do
-        IO.puts("✨ All checks passed! Ready to commit.")
-      else
-        IO.puts("❌ Pre-commit checks failed. Please fix the issues above.")
+      case all_passed?(results) do
+        true ->
+          IO.puts("✨ All checks passed! Ready to commit.")
+
+        false ->
+          IO.puts("❌ Pre-commit checks failed. Please fix the issues above.")
+          # Show error summary if not verbose (verbose shows full errors inline)
+          unless config.verbose do
+            ErrorFormatter.print_summary(results, color: true)
+          end
       end
     end
   end
 
   defp format_time(ms) when ms < 1000, do: "#{ms}ms"
   defp format_time(ms), do: "#{Float.round(ms / 1000, 1)}s"
+
+  # Progress indicator helpers
+
+  defp maybe_start_progress(config) do
+    case Progress.enabled?(config) do
+      true ->
+        {:ok, _} =
+          Progress.start_link(
+            verbose: Map.get(config, :verbose, false),
+            parallel: Map.get(config, :parallel, true)
+          )
+
+      false ->
+        :ok
+    end
+  end
+
+  defp maybe_stop_progress(config) do
+    case Progress.enabled?(config) do
+      true -> Progress.stop()
+      false -> :ok
+    end
+  catch
+    :exit, _ -> :ok
+  end
+
+  defp maybe_init_checks(checks, config) do
+    case Progress.enabled?(config) do
+      true ->
+        Enum.each(checks, fn {name, _module} ->
+          Progress.init_check(name)
+        end)
+
+      false ->
+        :ok
+    end
+  end
+
+  defp maybe_start_check(name, config) do
+    case Progress.enabled?(config) do
+      true -> Progress.start_check(name)
+      false -> :ok
+    end
+  catch
+    :exit, _ -> :ok
+  end
+
+  defp maybe_update_check_status(name, result, config) do
+    case Progress.enabled?(config) do
+      true ->
+        case result.status do
+          :ok -> Progress.complete_check(name, result[:elapsed])
+          :warning -> Progress.warn_check(name, result[:reason])
+          :error -> Progress.fail_check(name, result[:reason])
+        end
+
+      false ->
+        :ok
+    end
+  catch
+    :exit, _ -> :ok
+  end
 end

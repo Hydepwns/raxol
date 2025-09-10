@@ -1,77 +1,26 @@
 defmodule Raxol.UI.Layout.Responsive do
   @moduledoc """
-  Responsive layout system for Raxol UI components with breakpoint support.
+  Responsive layout system with breakpoint support for terminal UI components.
 
-  This module provides responsive design capabilities similar to CSS media queries
-  and responsive frameworks like Bootstrap, Tailwind CSS, and Material-UI.
-
-  ## Features
-
-  - Breakpoint-based responsive design
-  - Container queries (element-based breakpoints)
-  - Responsive typography scaling
-  - Adaptive spacing and sizing
-  - Orientation-based layouts
-  - Terminal size detection and adaptation
+  Provides breakpoint-based responsive design with container queries, responsive
+  typography, and adaptive spacing. Supports terminal size detection and adaptation.
 
   ## Breakpoints
 
-  Default breakpoints (based on terminal column widths):
-  - `:xs` (extra-small): 0-39 columns
-  - `:sm` (small): 40-79 columns  
-  - `:md` (medium): 80-119 columns
-  - `:lg` (large): 120-159 columns
-  - `:xl` (extra-large): 160+ columns
+  Default breakpoints based on terminal columns: `:xs` (0-39), `:sm` (40-79), 
+  `:md` (80-119), `:lg` (120-159), `:xl` (160+).
 
-  ## Example Usage
+  ## Usage
 
-      # Responsive container
       %{
         type: :responsive,
         attrs: %{
           breakpoints: %{
             xs: %{flex_direction: :column, gap: 5},
-            sm: %{flex_direction: :row, gap: 10},
-            md: %{flex_direction: :row, gap: 15, padding: 20},
-            lg: %{flex_direction: :row, gap: 20, padding: 30}
-          },
-          container_query: %{
-            min_width: 100,
-            styles: %{justify_content: :center}
+            md: %{flex_direction: :row, gap: 15}
           }
         },
-        children: [
-          %{
-            type: :text,
-            attrs: %{
-              content: "Responsive Text",
-              responsive: %{
-                xs: %{font_size: :small},
-                md: %{font_size: :medium},
-                lg: %{font_size: :large}
-              }
-            }
-          }
-        ]
-      }
-      
-      # Grid with responsive columns
-      %{
-        type: :responsive_grid,
-        attrs: %{
-          columns: %{
-            xs: 1,
-            sm: 2, 
-            md: 3,
-            lg: 4
-          },
-          gap: %{
-            xs: 5,
-            md: 10,
-            lg: 15
-          }
-        },
-        children: grid_items
+        children: children
       }
   """
 

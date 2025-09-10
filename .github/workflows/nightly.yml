@@ -1,0 +1,328 @@
+name: Nightly Build
+
+on:
+  schedule:
+    # Run at 2 AM UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_matrix:
+        description: 'Run full test matrix'
+        type: boolean
+        default: true
+      performance_tests:
+        description: 'Run performance benchmarks'
+        type: boolean
+        default: true
+
+env:
+  MIX_ENV: test
+  SKIP_TERMBOX2_TESTS: true
+
+jobs:
+  test-matrix:
+    name: Test Matrix (${{ matrix.elixir }}/${{ matrix.otp }}/${{ matrix.os }})
+    if: github.event.inputs.test_matrix != 'false'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        elixir: ["1.15.7", "1.16.3", "1.17.3"]
+        otp: ["26.0", "26.2", "27.0"]
+        exclude:
+          # Exclude incompatible combinations
+          - elixir: "1.15.7"
+            otp: "27.0"
+          - elixir: "1.16.3"
+            otp: "26.0"
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Setup OS dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf m4 libncurses5-dev \
+            libssl-dev libgl1-mesa-dev libglu1-mesa-dev libpng-dev openssl \
+            postgresql postgresql-contrib
+          
+          sudo service postgresql start
+          sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+          sudo -u postgres psql -c "CREATE DATABASE raxol_test;"
+      
+      - name: Setup OS dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install openssl@1.1 postgresql@14
+          echo "LDFLAGS=-L$(brew --prefix openssl@1.1)/lib" >> $GITHUB_ENV
+          echo "CFLAGS=-I$(brew --prefix openssl@1.1)/include" >> $GITHUB_ENV
+          
+          brew services start postgresql@14 || true
+          sleep 5
+          createuser -s postgres || true
+          psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" postgres || true
+          createdb -U postgres raxol_test || true
+      
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            priv/plts
+          key: ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-
+      
+      - name: Install dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          mix deps.compile
+      
+      - name: Run full test suite
+        run: |
+          mix test --cover
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: raxol_test
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.elixir }}-${{ matrix.otp }}
+          path: |
+            _build/test/lib/*/test-results.xml
+            cover/
+          retention-days: 30
+
+  performance-benchmarks:
+    name: Performance Benchmarks
+    if: github.event.inputs.performance_tests != 'false'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.17.3"
+          otp-version: "27.0"
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-bench-${{ hashFiles('**/mix.lock') }}
+      
+      - name: Install dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          mix deps.compile
+      
+      - name: Run parser benchmarks
+        run: |
+          mix run bench/parser_benchmarks.exs
+          mix run bench/parser_profiling.exs
+      
+      - name: Run render benchmarks
+        run: |
+          mix run bench/render_benchmarks.exs || true
+      
+      - name: Run memory profiling
+        run: |
+          mix run bench/memory_profiling.exs || true
+      
+      - name: Generate performance report
+        run: |
+          echo "## 📊 Performance Report" > performance-report.md
+          echo "" >> performance-report.md
+          echo "Date: $(date)" >> performance-report.md
+          echo "" >> performance-report.md
+          
+          if [ -d "bench/output" ]; then
+            echo "### Benchmark Results" >> performance-report.md
+            for file in bench/output/*.json; do
+              if [ -f "$file" ]; then
+                echo "#### $(basename $file .json)" >> performance-report.md
+                echo '```json' >> performance-report.md
+                cat "$file" | jq '.' >> performance-report.md || cat "$file" >> performance-report.md
+                echo '```' >> performance-report.md
+              fi
+            done
+          fi
+          
+          cat performance-report.md >> $GITHUB_STEP_SUMMARY
+      
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results-$(date +%Y%m%d)
+          path: |
+            bench/output/
+            performance-report.md
+          retention-days: 90
+      
+      - name: Compare with baseline
+        run: |
+          # TODO: Implement performance regression detection
+          echo "Performance comparison will be implemented"
+
+  dialyzer-full:
+    name: Full Dialyzer Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.17.3"
+          otp-version: "27.0"
+      
+      - name: Cache dependencies and PLTs
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            priv/plts
+          key: plt-${{ runner.os }}-27.0-1.17.3-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            plt-${{ runner.os }}-27.0-1.17.3-
+      
+      - name: Install dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          mix deps.compile
+      
+      - name: Build PLTs
+        run: |
+          mix dialyzer --plt
+      
+      - name: Run Dialyzer
+        run: |
+          mix dialyzer --format github
+
+  integration-tests:
+    name: Extended Integration Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: raxol_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.17.3"
+          otp-version: "27.0"
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+      
+      - name: Install dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          mix deps.compile
+      
+      - name: Run integration tests
+        run: |
+          mix test --only integration --only slow
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: raxol_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+
+  report:
+    name: Nightly Report
+    needs: [test-matrix, performance-benchmarks, dialyzer-full, integration-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# 🌙 Nightly Build Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Matrix | ${{ needs.test-matrix.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Performance | ${{ needs.performance-benchmarks.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dialyzer | ${{ needs.dialyzer-full.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration | ${{ needs.integration-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Create issue on failure
+        if: contains(needs.*.result, 'failure')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().split('T')[0];
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🌙 Nightly build failure - ${date}`,
+              body: `The nightly build failed. Please check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.`,
+              labels: ['bug', 'nightly-build']
+            });

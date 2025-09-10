@@ -112,8 +112,9 @@ mix raxol.tutorial
 # Component playground
 mix raxol.playground
 
-# Run tests (100% passing!)
+# Run tests and pre-commit
 mix test
+mix raxol.pre_commit
 ```
 
 > **Note for existing clones**: The repository history was recently updated. If you cloned this repo before September 2025, please reset your local copy using the commands shown above.
@@ -210,7 +211,7 @@ end
 │         (TUI Apps • Plugins • Extensions)                │
 ├──────────────────────────────────────────────────────────┤
 │               Multi-Framework UI Layer                   │
-│    React • Svelte • LiveView • HEEx • Raw                │
+│      React • Svelte • LiveView • HEEx • Raw              │
 │     (Universal: Actions • Slots • Context)               │
 ├──────────────────────────────────────────────────────────┤
 │               Session Continuity Layer                   │

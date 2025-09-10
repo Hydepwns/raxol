@@ -234,7 +234,7 @@ end
 
 - [Functional Programming Migration Guide](../guides/FUNCTIONAL_PROGRAMMING_MIGRATION.md)
 - [Error Handling Style Guide](../ERROR_HANDLING_GUIDE.md)
-- [Raxol.Core.ErrorHandling API Documentation](../API_REFERENCE.md#error-handling-v110)
+- [Raxol.Core.ErrorHandling API Documentation](../api-reference.md#error-handling)
 - Performance benchmarks: `test/performance/`
 
 ---

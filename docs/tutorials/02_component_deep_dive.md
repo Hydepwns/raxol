@@ -6,7 +6,7 @@ title: Deep Dive into Raxol Components
 difficulty: intermediate
 estimated_time: 25
 tags: [components, lifecycle, state, props]
-prerequisites: [getting_started]
+prerequisites: []
 ---
 
 ## Understanding Raxol's Component System
@@ -721,5 +721,5 @@ You've mastered Raxol's component system! You now understand:
 ## Next Steps
 
 - Explore [Terminal Emulation](03_terminal_emulation.md)
-- Learn about [Advanced Input Handling](advanced_input.md)
-- Build [Production Applications](production_apps.md)
+- Return to [Getting Started](../getting-started.md)
+- Check the [API Reference](../api-reference.md)

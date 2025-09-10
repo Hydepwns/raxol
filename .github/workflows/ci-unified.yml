@@ -1,0 +1,555 @@
+name: Unified CI Pipeline
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+    inputs:
+      skip_heavy_checks:
+        description: 'Skip heavy checks (Dialyzer, full test suite)'
+        type: boolean
+        default: false
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  MIX_ENV: test
+  SKIP_TERMBOX2_TESTS: true
+  TMPDIR: /tmp
+  ELIXIR_VERSION: "1.17.3"
+  OTP_VERSION: "27.0"
+
+jobs:
+  # ========================================
+  # Setup and Cache Preparation
+  # ========================================
+  setup:
+    name: Setup & Cache
+    runs-on: ubuntu-latest
+    outputs:
+      elixir-version: ${{ env.ELIXIR_VERSION }}
+      otp-version: ${{ env.OTP_VERSION }}
+      cache-key: ${{ steps.cache-key.outputs.key }}
+      deps-cache-hit: ${{ steps.deps-cache.outputs.cache-hit }}
+      should-run-heavy: ${{ steps.check-changes.outputs.should-run-heavy }}
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for change detection
+      
+      - name: Detect changed files
+        id: check-changes
+        run: |
+          # Check if we should run heavy checks
+          if [ "${{ github.event.inputs.skip_heavy_checks }}" == "true" ]; then
+            echo "should-run-heavy=false" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" == "push" ]; then
+            echo "should-run-heavy=true" >> $GITHUB_OUTPUT
+          else
+            # For PRs, check if critical files changed
+            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+            if echo "$CHANGED_FILES" | grep -qE "(mix\.exs|mix\.lock|lib/.*\.ex$)"; then
+              echo "should-run-heavy=true" >> $GITHUB_OUTPUT
+            else
+              echo "should-run-heavy=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+      
+      - name: Generate cache keys
+        id: cache-key
+        run: |
+          echo "key=deps-${{ runner.os }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-${{ hashFiles('**/mix.lock') }}" >> $GITHUB_OUTPUT
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
+      
+      - name: Cache dependencies
+        id: deps-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            .raxol_cache
+          key: ${{ steps.cache-key.outputs.key }}
+          restore-keys: |
+            deps-${{ runner.os }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-
+            deps-${{ runner.os }}-
+      
+      - name: Install dependencies
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          mix deps.compile
+
+  # ========================================
+  # Fast Checks (Always Run)
+  # ========================================
+  format:
+    name: Format Check
+    needs: setup
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ needs.setup.outputs.elixir-version }}
+          otp-version: ${{ needs.setup.outputs.otp-version }}
+      
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            .raxol_cache
+          key: ${{ needs.setup.outputs.cache-key }}
+      
+      - name: Check formatting
+        run: mix format --check-formatted
+
+  compile:
+    name: Compilation Check
+    needs: setup
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ needs.setup.outputs.elixir-version }}
+          otp-version: ${{ needs.setup.outputs.otp-version }}
+      
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            .raxol_cache
+          key: ${{ needs.setup.outputs.cache-key }}
+      
+      - name: Compile with warnings as errors
+        run: mix compile --warnings-as-errors
+
+  # ========================================
+  # Parallel Test Execution
+  # ========================================
+  test-unit:
+    name: Unit Tests
+    needs: [setup, compile]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ needs.setup.outputs.elixir-version }}
+          otp-version: ${{ needs.setup.outputs.otp-version }}
+      
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            .raxol_cache
+          key: ${{ needs.setup.outputs.cache-key }}
+      
+      - name: Run unit tests
+        run: |
+          mix test --exclude integration --exclude property --exclude slow \
+            --cover --export-coverage unit
+        env:
+          MIX_TEST_PARTITION: 1
+      
+      - name: Upload coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-unit
+          path: cover/unit.coverdata
+
+  test-integration:
+    name: Integration Tests
+    needs: [setup, compile]
+    runs-on: ubuntu-latest
+    if: needs.setup.outputs.should-run-heavy == 'true'
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: raxol_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ needs.setup.outputs.elixir-version }}
+          otp-version: ${{ needs.setup.outputs.otp-version }}
+      
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            .raxol_cache
+          key: ${{ needs.setup.outputs.cache-key }}
+      
+      - name: Run integration tests
+        run: |
+          mix test --only integration \
+            --cover --export-coverage integration
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: raxol_test
+          MIX_TEST_PARTITION: 2
+      
+      - name: Upload coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-integration
+          path: cover/integration.coverdata
+
+  test-property:
+    name: Property Tests
+    needs: [setup, compile]
+    runs-on: ubuntu-latest
+    if: needs.setup.outputs.should-run-heavy == 'true'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ needs.setup.outputs.elixir-version }}
+          otp-version: ${{ needs.setup.outputs.otp-version }}
+      
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            .raxol_cache
+          key: ${{ needs.setup.outputs.cache-key }}
+      
+      - name: Run property tests
+        run: |
+          mix test test/property \
+            --cover --export-coverage property
+        env:
+          MIX_TEST_PARTITION: 3
+      
+      - name: Upload coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-property
+          path: cover/property.coverdata
+
+  # ========================================
+  # Code Quality Checks
+  # ========================================
+  credo:
+    name: Credo Analysis
+    needs: [setup, compile]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ needs.setup.outputs.elixir-version }}
+          otp-version: ${{ needs.setup.outputs.otp-version }}
+      
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            .raxol_cache
+          key: ${{ needs.setup.outputs.cache-key }}
+      
+      - name: Run Credo
+        run: mix credo --strict || true
+
+  dialyzer:
+    name: Dialyzer
+    needs: [setup, compile]
+    runs-on: ubuntu-latest
+    if: needs.setup.outputs.should-run-heavy == 'true'
+    continue-on-error: true
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ needs.setup.outputs.elixir-version }}
+          otp-version: ${{ needs.setup.outputs.otp-version }}
+      
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            .raxol_cache
+          key: ${{ needs.setup.outputs.cache-key }}
+      
+      - name: Restore PLT cache
+        uses: actions/cache@v3
+        with:
+          path: priv/plts
+          key: plt-${{ runner.os }}-${{ needs.setup.outputs.otp-version }}-${{ needs.setup.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            plt-${{ runner.os }}-${{ needs.setup.outputs.otp-version }}-${{ needs.setup.outputs.elixir-version }}-
+            plt-${{ runner.os }}-
+      
+      - name: Run Dialyzer
+        run: mix dialyzer || true
+
+  # ========================================
+  # Security Scanning
+  # ========================================
+  security:
+    name: Security Scan
+    needs: setup
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ needs.setup.outputs.elixir-version }}
+          otp-version: ${{ needs.setup.outputs.otp-version }}
+      
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            .raxol_cache
+          key: ${{ needs.setup.outputs.cache-key }}
+      
+      - name: Check for vulnerable dependencies
+        run: |
+          mix deps.audit || true
+      
+      - name: Run Sobelow security check
+        run: |
+          mix sobelow --config || true
+        continue-on-error: true
+
+  # ========================================
+  # Cross-Platform Testing
+  # ========================================
+  test-cross-platform:
+    name: Test ${{ matrix.os }}
+    needs: [setup, compile]
+    runs-on: ${{ matrix.os }}
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+        include:
+          - os: macos-latest
+            platform: macos
+          - os: windows-latest
+            platform: windows
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install macOS dependencies
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install openssl@1.1 postgresql@14
+          echo "LDFLAGS=-L$(brew --prefix openssl@1.1)/lib" >> $GITHUB_ENV
+          echo "CFLAGS=-I$(brew --prefix openssl@1.1)/include" >> $GITHUB_ENV
+          
+          # Start PostgreSQL
+          brew services start postgresql@14 || true
+          sleep 5
+          createuser -s postgres || true
+          psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" postgres || true
+          createdb -U postgres raxol_test || true
+      
+      - name: Install Windows dependencies
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install openssl postgresql14 --no-progress
+          echo "POSTGRES_HOST=localhost" >> $env:GITHUB_ENV
+          echo "POSTGRES_PORT=5432" >> $env:GITHUB_ENV
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ needs.setup.outputs.elixir-version }}
+          otp-version: ${{ needs.setup.outputs.otp-version }}
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ needs.setup.outputs.otp-version }}-${{ needs.setup.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ needs.setup.outputs.otp-version }}-${{ needs.setup.outputs.elixir-version }}-
+      
+      - name: Install dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          mix deps.compile
+      
+      - name: Run tests
+        run: mix test --exclude slow --exclude docker
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: raxol_test
+          PLATFORM: ${{ matrix.platform }}
+
+  # ========================================
+  # Coverage Report
+  # ========================================
+  coverage:
+    name: Coverage Report
+    needs: [test-unit, test-integration, test-property]
+    runs-on: ubuntu-latest
+    if: always() && needs.test-unit.result == 'success'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ needs.setup.outputs.elixir-version }}
+          otp-version: ${{ needs.setup.outputs.otp-version }}
+      
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: cover
+      
+      - name: Merge coverage reports
+        run: |
+          mix coveralls.json --import-cover cover/**/*.coverdata
+      
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./cover/excoveralls.json
+          flags: unittests
+          name: raxol-coverage
+          fail_ci_if_error: false
+      
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverage = JSON.parse(fs.readFileSync('./cover/excoveralls.json', 'utf8'));
+            const percentage = coverage.percentage;
+            
+            const comment = `## 📊 Coverage Report
+            
+            **Total Coverage:** ${percentage}%
+            
+            | Type | Coverage |
+            |------|----------|
+            | Unit Tests | ✅ |
+            | Integration Tests | ${{ needs.test-integration.result == 'success' && '✅' || '⏭️' }} |
+            | Property Tests | ${{ needs.test-property.result == 'success' && '✅' || '⏭️' }} |
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # ========================================
+  # Final Status Check
+  # ========================================
+  ci-status:
+    name: CI Status
+    needs: [format, compile, test-unit, credo, security]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Check status
+        run: |
+          # Required checks
+          if [ "${{ needs.format.result }}" != "success" ]; then
+            echo "❌ Format check failed"
+            exit 1
+          fi
+          
+          if [ "${{ needs.compile.result }}" != "success" ]; then
+            echo "❌ Compilation check failed"
+            exit 1
+          fi
+          
+          if [ "${{ needs.test-unit.result }}" != "success" ]; then
+            echo "❌ Unit tests failed"
+            exit 1
+          fi
+          
+          if [ "${{ needs.security.result }}" != "success" ]; then
+            echo "⚠️ Security scan found issues (non-blocking)"
+          fi
+          
+          echo "✅ All required checks passed!"

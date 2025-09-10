@@ -1,0 +1,64 @@
+name: 'Setup Elixir Environment'
+description: 'Set up Elixir, OTP, and restore caches'
+
+inputs:
+  elixir-version:
+    description: 'Elixir version to install'
+    required: false
+    default: '1.17.3'
+  otp-version:
+    description: 'OTP version to install'
+    required: false
+    default: '27.0'
+  cache-key:
+    description: 'Cache key for dependencies'
+    required: false
+    default: ''
+  install-deps:
+    description: 'Whether to install dependencies'
+    required: false
+    default: 'true'
+  use-container:
+    description: 'Use Docker container for CI'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Elixir (native)
+      if: inputs.use-container == 'false'
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: ${{ inputs.elixir-version }}
+        otp-version: ${{ inputs.otp-version }}
+    
+    - name: Cache dependencies
+      if: inputs.cache-key != ''
+      uses: actions/cache@v3
+      with:
+        path: |
+          deps
+          _build
+          .raxol_cache
+          priv/plts
+        key: ${{ inputs.cache-key }}
+        restore-keys: |
+          deps-${{ runner.os }}-${{ inputs.otp-version }}-${{ inputs.elixir-version }}-
+          deps-${{ runner.os }}-
+    
+    - name: Install Hex and Rebar
+      if: inputs.use-container == 'false'
+      shell: bash
+      run: |
+        mix local.hex --force
+        mix local.rebar --force
+    
+    - name: Install dependencies
+      if: inputs.install-deps == 'true'
+      shell: bash
+      run: |
+        mix deps.get
+        mix deps.compile
+      env:
+        MIX_ENV: test

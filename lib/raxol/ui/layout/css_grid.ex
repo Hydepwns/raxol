@@ -2,53 +2,19 @@ defmodule Raxol.UI.Layout.CSSGrid do
   @moduledoc """
   CSS Grid layout system for Raxol UI components.
 
-  This module provides CSS Grid-compatible layout calculations with support for:
-  - Grid template rows and columns with various unit types (fr, px, auto, %, min-content, max-content)
-  - Grid areas and item placement (grid-row, grid-column, grid-area)
-  - Grid gaps (row-gap, column-gap, gap)
-  - Alignment properties (justify-items, align-items, justify-content, align-content)
-  - Auto-placement algorithm
-  - Grid line naming
-  - Subgrid (basic support)
+  Provides CSS Grid-compatible layout with template rows/columns, grid areas,
+  gaps, alignment properties, auto-placement, and grid line naming.
 
-  ## Example Usage
+  ## Usage
 
-      # CSS Grid container
       %{
         type: :css_grid,
         attrs: %{
           grid_template_columns: "1fr 200px 1fr",
           grid_template_rows: "auto 1fr auto",
-          gap: 10,
-          grid_template_areas: ~S(
-            "header header header"
-            "sidebar content content"
-            "footer footer footer"
-          ),
-          justify_items: :center,
-          align_items: :stretch
+          gap: 10
         },
-        children: [
-          %{type: :text, attrs: %{content: "Header", grid_area: "header"}},
-          %{type: :text, attrs: %{content: "Sidebar", grid_area: "sidebar"}},
-          %{type: :text, attrs: %{content: "Content", grid_area: "content"}},
-          %{type: :text, attrs: %{content: "Footer", grid_area: "footer"}}
-        ]
-      }
-      
-      # Explicit grid positioning
-      %{
-        type: :css_grid,
-        attrs: %{
-          grid_template_columns: "repeat(3, 1fr)",
-          grid_template_rows: "repeat(3, 100px)",
-          gap: %{row: 10, column: 15}
-        },
-        children: [
-          %{type: :text, attrs: %{content: "A", grid_column: "1 / 3", grid_row: "1"}},
-          %{type: :text, attrs: %{content: "B", grid_column: "3", grid_row: "1 / 3"}},
-          %{type: :text, attrs: %{content: "C", grid_column: "1 / 2", grid_row: "2 / 4"}}
-        ]
+        children: children
       }
   """
 

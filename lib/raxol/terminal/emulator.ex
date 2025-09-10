@@ -1,106 +1,27 @@
 defmodule Raxol.Terminal.Emulator do
   @moduledoc """
-  Enterprise-grade terminal emulator with complete VT100/ANSI support.
+  Enterprise-grade terminal emulator with VT100/ANSI support and high-performance parsing.
 
-  This module provides a high-performance terminal emulator that achieves
-  3.3μs/op parsing performance through optimized pattern matching and 
-  efficient buffer management. It supports modern terminal features including
-  true color, mouse tracking, Sixel graphics, and collaborative editing.
+  Provides full terminal emulation with true color, mouse tracking, alternate screen,
+  and modern features. Uses modular architecture with separate coordinators for
+  buffer, mode, input, and output operations.
 
-  ## Features
+  ## Usage
 
-  * **Full VT100/ANSI Compliance** - Complete escape sequence support
-  * **True Color Support** - 24-bit RGB color with 256-color fallback
-  * **Mouse Tracking** - Click, drag, scroll wheel, and selection
-  * **Bracketed Paste** - Safe multi-line paste handling
-  * **Alternate Screen** - Full-screen application support
-  * **Sixel Graphics** - Bitmap graphics in terminal
-  * **UTF-8 Support** - Full Unicode character handling
-  * **Scrollback Buffer** - Configurable history with search
-
-  ## Architecture
-
-  The emulator uses a modular architecture for maintainability:
-
-  * `Coordinator` - Orchestrates emulator operations
-  * `ModeOperations` - Terminal modes (insert, wrap, mouse, etc.)
-  * `BufferOperations` - Screen buffer and scrollback management
-  * `InputOperations` - Keyboard and mouse input processing
-  * `OutputOperations` - Rendering and output generation
-
-  ## Quick Start
-
-      # Standard emulator for full terminal emulation
+      # Create standard emulator
       emulator = Raxol.Terminal.Emulator.new(80, 24)
-      
-      # Lightweight emulator for performance-critical paths
-      emulator = Raxol.Terminal.Emulator.new_lite(80, 24)
-      
-      # Minimal emulator for fastest operations (no history)
-      emulator = Raxol.Terminal.Emulator.new_minimal(80, 24)
 
-  ## Common Operations
-
-      # Process ANSI text with colors
+      # Process input with colors
       {emulator, output} = Raxol.Terminal.Emulator.process_input(
         emulator, 
-        "\\e[1;31mRed Bold\\e[0m Normal \\e[4;36mCyan Underline\\e[0m"
+        "\\e[1;31mRed Bold\\e[0m Normal text"
       )
-      
-      # Cursor control
-      emulator = emulator
-        |> Raxol.Terminal.Emulator.move_cursor(10, 5)
-        |> Raxol.Terminal.Emulator.set_cursor_style(:block)
-        |> Raxol.Terminal.Emulator.set_cursor_blink(true)
-      
-      # Screen operations
-      emulator = emulator
-        |> Raxol.Terminal.Emulator.clear_screen()
-        |> Raxol.Terminal.Emulator.scroll_up(3)
-        |> Raxol.Terminal.Emulator.erase_line(:to_end)
-      
-      # Text selection
-      emulator = emulator
-        |> Raxol.Terminal.Emulator.start_selection(5, 2)
-        |> Raxol.Terminal.Emulator.update_selection(20, 7)
-      
-      selected = Raxol.Terminal.Emulator.get_selection(emulator)
 
   ## Performance Modes
 
-  Three emulator modes optimize for different use cases:
-
-  | Mode | Startup | Memory | Features | Use Case |
-  |------|---------|--------|----------|----------|
-  | `new/2` | ~95ms | 2.8MB | Full | Interactive terminals |
-  | `new_lite/3` | ~30ms | 1.2MB | Most | Automation, testing |
-  | `new_minimal/2` | <10ms | 8.8KB | Basic | High-frequency ops |
-
-  ## Advanced Features
-
-      # Alternate screen for full-screen apps
-      emulator = Raxol.Terminal.Emulator.switch_to_alternate_screen(emulator)
-      # ... run full-screen app ...
-      emulator = Raxol.Terminal.Emulator.switch_to_normal_screen(emulator)
-      
-      # Bracketed paste mode
-      emulator = Raxol.Terminal.Emulator.set_mode(emulator, :bracketed_paste)
-      {emulator, paste_data} = Raxol.Terminal.Emulator.process_input(
-        emulator,
-        "\\e[200~multi\\nline\\npaste\\e[201~"
-      )
-      
-      # Save and restore terminal state
-      emulator = Raxol.Terminal.Emulator.save_state(emulator)
-      # ... modify terminal ...
-      emulator = Raxol.Terminal.Emulator.restore_state(emulator)
-
-  ## Performance Characteristics
-
-  * **Parsing**: 3.3μs/op (300K ops/sec)
-  * **Rendering**: 1.3μs for simple content
-  * **Memory**: 2.8MB per session
-  * **Scrollback**: O(1) append, O(n) search
+  * `new/2` - Full features (2.8MB, ~95ms startup)  
+  * `new_lite/3` - Most features (1.2MB, ~30ms startup)
+  * `new_minimal/2` - Basic only (8.8KB, <10ms startup)
   """
 
   alias Raxol.Terminal.Emulator.Coordinator
