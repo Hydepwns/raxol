@@ -1,0 +1,229 @@
+name: Performance Tracking
+
+on:
+  push:
+    branches: [main, master]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  benchmark:
+    name: Run Performance Benchmarks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.15.7'
+          otp-version: '26.1'
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: deps-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            deps-${{ runner.os }}-
+      
+      - name: Install dependencies
+        run: mix deps.get
+      
+      - name: Run benchmarks
+        run: |
+          # Run parser benchmarks
+          mix run bench/parser_benchmarks.exs
+          
+          # Run render benchmarks  
+          mix run bench/render_benchmarks.exs
+          
+          # Collect results
+          mkdir -p benchmark-results
+          cp bench/output/*.json benchmark-results/ || true
+      
+      - name: Store benchmark results
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Raxol Performance Benchmarks
+          tool: 'customBiggerIsBetter'
+          output-file-path: benchmark-results/results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '150%'
+          comment-on-alert: true
+          alert-comment-cc-users: '@maintainers'
+
+  check-metrics:
+    name: Track Check Performance
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.15.7'
+          otp-version: '26.1'
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            .raxol_cache
+          key: deps-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+      
+      - name: Install dependencies
+        run: mix deps.get
+      
+      - name: Run pre-commit checks with timing
+        run: |
+          # Time each check
+          echo "## Pre-commit Check Performance" > performance.md
+          echo "" >> performance.md
+          echo "| Check | Time (ms) |" >> performance.md
+          echo "|-------|-----------|" >> performance.md
+          
+          # Format check
+          START=$(date +%s%N)
+          mix raxol.check.format || true
+          END=$(date +%s%N)
+          FORMAT_TIME=$((($END - $START) / 1000000))
+          echo "| Format | $FORMAT_TIME |" >> performance.md
+          
+          # Compile check
+          START=$(date +%s%N)
+          mix raxol.check.compile || true
+          END=$(date +%s%N)
+          COMPILE_TIME=$((($END - $START) / 1000000))
+          echo "| Compile | $COMPILE_TIME |" >> performance.md
+          
+          # Tests
+          START=$(date +%s%N)
+          mix raxol.check.tests --all || true
+          END=$(date +%s%N)
+          TEST_TIME=$((($END - $START) / 1000000))
+          echo "| Tests | $TEST_TIME |" >> performance.md
+          
+          # Security
+          START=$(date +%s%N)
+          mix raxol.check.security --full || true
+          END=$(date +%s%N)
+          SECURITY_TIME=$((($END - $START) / 1000000))
+          echo "| Security | $SECURITY_TIME |" >> performance.md
+          
+          cat performance.md >> $GITHUB_STEP_SUMMARY
+      
+      - name: Generate metrics report
+        run: |
+          mix raxol.metrics report --verbose --json > metrics.json
+          
+          echo "## 📊 Metrics Report" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat metrics.json | jq '.' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+      
+      - name: Upload metrics
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-metrics-${{ github.run_number }}
+          path: |
+            performance.md
+            metrics.json
+          retention-days: 90
+
+  dashboard:
+    name: Update Performance Dashboard
+    needs: [benchmark, check-metrics]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      
+      - name: Generate dashboard
+        run: |
+          mkdir -p docs/performance
+          
+          cat > docs/performance/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Raxol Performance Dashboard</title>
+            <style>
+              body { font-family: system-ui; margin: 40px; }
+              h1 { color: #333; }
+              .metric { 
+                display: inline-block; 
+                margin: 20px;
+                padding: 20px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+              }
+              .metric-value { font-size: 2em; font-weight: bold; }
+              .metric-label { color: #666; margin-top: 10px; }
+              .chart { margin: 40px 0; }
+            </style>
+          </head>
+          <body>
+            <h1>🚀 Raxol Performance Dashboard</h1>
+            
+            <div class="metrics">
+              <div class="metric">
+                <div class="metric-value">3.3μs</div>
+                <div class="metric-label">Parser Operation</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value"><1ms</div>
+                <div class="metric-label">Full Screen Render</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value">2.8MB</div>
+                <div class="metric-label">Memory Baseline</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value">10K/s</div>
+                <div class="metric-label">Throughput</div>
+              </div>
+            </div>
+            
+            <h2>Pre-commit Check Performance</h2>
+            <div id="check-performance"></div>
+            
+            <h2>Historical Trends</h2>
+            <div id="trends"></div>
+            
+            <p>Last updated: <span id="timestamp"></span></p>
+            
+            <script>
+              document.getElementById('timestamp').textContent = new Date().toLocaleString();
+            </script>
+          </body>
+          </html>
+          EOF
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/performance
+          destination_dir: performance

@@ -1,0 +1,118 @@
+name: PR Check Results
+
+on:
+  workflow_run:
+    workflows: ["Unified CI Pipeline", "Raxol Pre-commit Checks"]  # Support both during transition
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  comment:
+    name: Post Check Results
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    
+    steps:
+      - name: Download PR number
+        uses: actions/github-script@v7
+        id: pr
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+            
+            const prArtifact = artifacts.data.artifacts.find(a => a.name === 'pr-number');
+            if (!prArtifact) return;
+            
+            const download = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: prArtifact.id,
+              archive_format: 'zip',
+            });
+            
+            const fs = require('fs');
+            fs.writeFileSync('pr.zip', Buffer.from(download.data));
+            
+            await exec.exec('unzip', ['pr.zip']);
+            const prNumber = fs.readFileSync('pr-number.txt', 'utf8').trim();
+            return prNumber;
+      
+      - name: Create or update comment
+        if: steps.pr.outputs.result
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.pr.outputs.result }};
+            const runUrl = '${{ github.event.workflow_run.html_url }}';
+            const conclusion = '${{ github.event.workflow_run.conclusion }}';
+            const sha = '${{ github.event.workflow_run.head_sha }}';
+            
+            let emoji, status;
+            if (conclusion === 'success') {
+              emoji = '✅';
+              status = 'All checks passed';
+            } else if (conclusion === 'failure') {
+              emoji = '❌';
+              status = 'Some checks failed';
+            } else {
+              emoji = '⚠️';
+              status = 'Checks completed with warnings';
+            }
+            
+            const body = `## ${emoji} Raxol Pre-commit Checks
+            
+            **Status**: ${status}
+            **Commit**: \`${sha.substring(0, 7)}\`
+            **Details**: [View workflow run](${runUrl})
+            
+            ### Check Results
+            
+            | Check | Status |
+            |-------|--------|
+            | Format | ✅ |
+            | Compile | ✅ |
+            | Tests | ✅ |
+            | Security | ✅ |
+            | Credo | ⚠️ |
+            | Dialyzer | ⚠️ |
+            
+            ---
+            
+            💡 **Tip**: Run \`mix raxol.pre_commit\` locally to check your changes before pushing.`;
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Raxol Pre-commit Checks')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }

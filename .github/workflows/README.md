@@ -4,13 +4,25 @@ This directory contains GitHub Actions workflows for CI, testing, and releases.
 
 ## Workflow Files
 
-- **`ci.yml`**: Main CI workflow (push/PR to main branches).
-- **`cross_platform_tests.yml`**: Verifies compatibility on Linux, macOS, Windows.
-- **`ci-local.yml`**: Simplified CI for local `act` testing.
-- **`ci-local-deps.yml`**: Tests dependencies locally.
-- **`test-snyk.yml`**: Security testing with Snyk.
-- **`release.yml`**: Creates releases.
-- **`dummy-test.yml`**: Quick workflow for verifying `act` setup.
+### Core Workflows
+- **`ci-unified.yml`**: Main unified CI pipeline with parallelized testing, smart caching, and conditional execution
+- **`security.yml`**: Comprehensive security scanning (dependencies, secrets, SAST)
+- **`nightly.yml`**: Nightly regression testing with full test matrix
+- **`release.yml`**: Automated release creation and publishing
+
+### Supporting Workflows
+- **`cross_platform_tests.yml`**: Cross-platform compatibility testing
+- **`performance-tracking.yml`**: Performance benchmarking and tracking
+- **`pr-comment.yml`**: Automated PR feedback and status updates
+- **`raxol-checks.yml`**: Pre-commit checks (being deprecated in favor of ci-unified.yml)
+
+### Legacy/Testing Workflows
+- **`ci.yml`**: Original CI workflow (being replaced by ci-unified.yml)
+- **`ci-local.yml`**: Simplified CI for local `act` testing
+- **`ci-local-deps.yml`**: Tests dependencies locally
+- **`test-snyk.yml`**: Security testing with Snyk
+- **`dummy-test.yml`**: Quick workflow for verifying `act` setup
+- **`macos-ci-fix.yml`**: macOS-specific CI fixes
 
 ## Local Testing with `act`
 
@@ -48,6 +60,31 @@ The `dummy-test.yml` workflow uses mock setups for quick verification without ru
 - Troubleshooting `act` or workflow configuration.
 - Verifying local setup.
 - Testing new workflow steps quickly.
+
+## Reusable Actions
+
+The `.github/actions/` directory contains reusable composite actions:
+
+- **`setup-elixir`**: Sets up Elixir/OTP with caching
+- **`run-tests`**: Runs tests with coverage and artifact upload
+
+## CI/CD Architecture
+
+### Unified CI Pipeline (`ci-unified.yml`)
+- **Parallel test execution**: Tests split into unit, integration, and property tests
+- **Smart caching**: Unified cache strategy with dependency detection
+- **Conditional execution**: Heavy checks only run when needed
+- **Fast feedback**: Format and compile checks run first
+
+### Security Scanning (`security.yml`)
+- **No Docker dependencies**: Uses CLI tools directly
+- **Multiple scanners**: Semgrep, Sobelow, TruffleHog, Gitleaks
+- **Automated reporting**: Creates issues for critical findings
+
+### Nightly Builds (`nightly.yml`)
+- **Full test matrix**: Multiple Elixir/OTP versions
+- **Performance benchmarking**: Track performance over time
+- **Extended integration tests**: Include slow/heavy tests
 
 ### Tips for macOS ARM (M1/M2/M3)
 
