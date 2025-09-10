@@ -157,7 +157,7 @@ defmodule Raxol.MixProject do
       # Syntax highlighting core
       {:makeup, "~> 1.2"},
       # Elixir syntax highlighting
-      {:makeup_elixir, "~> 0.16"},
+      {:makeup_elixir, "~> 1.0"},
       # System clipboard access
       {:clipboard, "~> 0.2.1"},
       # Efficient circular buffer implementation
