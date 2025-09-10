@@ -25,7 +25,12 @@ defmodule Raxol.Terminal.Commands.EraseHandler do
           end
 
         false ->
-          {0, 0}
+          # Handle struct-based cursor (used in tests and some configurations)
+          case emulator.cursor do
+            %{position: pos} when is_tuple(pos) -> pos
+            %{row: row, col: col} -> {row, col}
+            _ -> {0, 0}
+          end
       end
 
     blank_style = Raxol.Terminal.ANSI.TextFormatting.new()

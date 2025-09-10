@@ -1,4 +1,6 @@
 defmodule Raxol.Test.Integration.Assertions do
+  alias Raxol.Core.Runtime.ProcessStore
+
   @moduledoc """
   Provides custom assertions for integration testing of Raxol components.
 
@@ -149,7 +151,7 @@ defmodule Raxol.Test.Integration.Assertions do
       when is_list(components) do
     # Track event propagation
     ref = System.unique_integer([:positive])
-    Process.put(ref, [])
+    ProcessStore.put(ref, [])
 
     # Use Task to ensure cleanup happens
     task =
@@ -159,13 +161,13 @@ defmodule Raxol.Test.Integration.Assertions do
         Raxol.Test.Integration.simulate_user_action(first, event)
 
         # Get propagation history
-        history = Process.get(ref)
+        history = ProcessStore.get(ref)
 
         # Run verification
         result = verification_fn.(history)
 
         # Cleanup
-        Process.delete(ref)
+        ProcessStore.delete(ref)
 
         {:ok, result}
       end)
@@ -175,15 +177,15 @@ defmodule Raxol.Test.Integration.Assertions do
         result
 
       {:ok, {:error, error}} ->
-        Process.delete(ref)
+        ProcessStore.delete(ref)
         flunk("Event propagation failed: #{inspect(error)}")
 
       nil ->
-        Process.delete(ref)
+        ProcessStore.delete(ref)
         flunk("Event propagation timed out")
 
       {:exit, reason} ->
-        Process.delete(ref)
+        ProcessStore.delete(ref)
         flunk("Event propagation failed: #{inspect(reason)}")
     end
   end

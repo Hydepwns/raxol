@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Emulator.Output do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-  alias Raxol.Terminal.Parser
+  alias Raxol.Terminal.TerminalParser, as: Parser
 
   @doc """
   Processes output data and updates the emulator state.
@@ -46,18 +46,27 @@ defmodule Raxol.Terminal.Emulator.Output do
   Processes the output buffer and updates the emulator state.
   """
   def process_buffer(%EmulatorStruct{} = emulator) do
-    case Parser.parse(emulator.parser_state, emulator.output_buffer) do
-      {:ok, new_state, commands} ->
-        updated_emulator = %{
-          emulator
-          | parser_state: new_state,
-            output_buffer: ""
+    case Parser.parse_chunk(
+           emulator,
+           emulator.parser_state,
+           emulator.output_buffer
+         ) do
+      {updated_emulator, new_parser_state, remaining_buffer} ->
+        final_emulator = %{
+          updated_emulator
+          | parser_state: new_parser_state,
+            output_buffer: remaining_buffer
         }
 
-        {:ok, updated_emulator, commands}
+        # For compatibility, return empty commands list since parse_chunk doesn't return commands
+        {:ok, final_emulator, []}
 
-      {:error, reason} ->
-        {:error, reason}
+      unexpected_result ->
+        Raxol.Core.Runtime.Log.error(
+          "[Output.process_buffer] Parser returned unexpected result: #{inspect(unexpected_result)}"
+        )
+
+        {:error, "Parser call failed: #{inspect(unexpected_result)}"}
     end
   end
 

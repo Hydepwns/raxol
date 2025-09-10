@@ -9,6 +9,7 @@ defmodule Raxol.Core.Runtime.Events.Handler do
   """
 
   require Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.ProcessStore
 
   @doc """
   Registers a new event handler for the specified event types.
@@ -145,7 +146,7 @@ defmodule Raxol.Core.Runtime.Events.Handler do
     end)
 
     # Store the handler config for retrieval
-    Process.put({:handler_config, id}, handler)
+    ProcessStore.put({:handler_config, id}, handler)
     {:ok, id}
   end
 
@@ -191,8 +192,8 @@ defmodule Raxol.Core.Runtime.Events.Handler do
   end
 
   defp get_all_stored_handlers do
-    # Get all handler configs from process dictionary
-    Process.get()
+    # Get all handler configs from store
+    ProcessStore.get_all()
     |> Enum.filter(fn
       {{key, _id}, _handler} when key == :handler_config -> true
       _ -> false
@@ -201,20 +202,20 @@ defmodule Raxol.Core.Runtime.Events.Handler do
   end
 
   defp get_handler(id) do
-    case Process.get({:handler_config, id}) do
+    case ProcessStore.get({:handler_config, id}) do
       nil -> nil
       handler -> {id, handler}
     end
   end
 
   defp remove_handler(id) do
-    case Process.get({:handler_config, id}) do
+    case ProcessStore.get({:handler_config, id}) do
       nil ->
         {:error, :not_found}
 
       handler ->
-        # Remove from process dictionary
-        Process.delete({:handler_config, id})
+        # Remove from store
+        ProcessStore.delete({:handler_config, id})
 
         # Try to unregister from EventManager (though this is complex with the current design)
         Enum.each(handler.event_types, fn event_type ->

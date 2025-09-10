@@ -55,6 +55,7 @@ defmodule Raxol.Animation.Framework do
   alias Raxol.Animation.AnimationProcessor, as: Processor
   alias Raxol.Animation.Lifecycle
   alias Raxol.Animation.Adaptation
+  alias Raxol.Core.Runtime.ProcessStore
 
   @animation_fps 30
   @animation_frame_ms round(1000 / @animation_fps)
@@ -116,8 +117,8 @@ defmodule Raxol.Animation.Framework do
 
     StateManager.init(settings)
 
-    # Also store in process dictionary for test compatibility
-    Process.put(:animation_framework_settings, settings)
+    # Also store in ProcessStore for test compatibility
+    ProcessStore.put(:animation_framework_settings, settings)
 
     # Send preferences_applied message for test synchronization
     case user_preferences_pid do

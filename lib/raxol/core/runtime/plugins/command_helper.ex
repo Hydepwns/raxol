@@ -356,7 +356,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
            end
          end) do
       {:ok, result} -> result
-      {:error, {error, _stacktrace}} -> {:error, {:exception, error}}
+      {:error, %RuntimeError{} = error} -> {:error, {:exception, error}}
+      {:error, error} -> {:error, {:exception, error}}
     end
   end
 end

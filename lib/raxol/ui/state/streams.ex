@@ -1,4 +1,6 @@
 defmodule Raxol.UI.State.Streams do
+  alias Raxol.Core.Runtime.ProcessStore
+
   @moduledoc """
   Reactive streams system for real-time data flow in Raxol UI.
 
@@ -542,15 +544,15 @@ defmodule Raxol.UI.State.Streams do
       # Use as a reference holder
       :atomics.put(accumulator, 1, 0)
       acc_ref = make_ref()
-      Process.put({:stream_accumulator, acc_ref}, initial)
+      ProcessStore.put({:stream_accumulator, acc_ref}, initial)
 
       new_observer =
         Observer.new(
           fn value ->
-            current_acc = Process.get({:stream_accumulator, acc_ref})
+            current_acc = ProcessStore.get({:stream_accumulator, acc_ref})
 
             with {:ok, new_acc} <- safe_apply_2(reducer_fn, current_acc, value) do
-              Process.put({:stream_accumulator, acc_ref}, new_acc)
+              ProcessStore.put({:stream_accumulator, acc_ref}, new_acc)
               :ok
             else
               {:error, reason} ->
@@ -559,8 +561,8 @@ defmodule Raxol.UI.State.Streams do
           end,
           observer.error,
           fn ->
-            final_value = Process.get({:stream_accumulator, acc_ref})
-            Process.delete({:stream_accumulator, acc_ref})
+            final_value = ProcessStore.get({:stream_accumulator, acc_ref})
+            ProcessStore.delete({:stream_accumulator, acc_ref})
             safe_apply(observer.next, final_value)
             safe_apply(observer.complete)
           end
