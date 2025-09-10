@@ -15,6 +15,7 @@ usage() {
     echo "  test-all          - Run all test suites (unit, integration, platform)"
     echo "  format            - Format code with mix format"
     echo "  check             - Run all quality checks (dialyzer, credo, docs)"
+    echo "  dialyzer          - Run Dialyzer with PLT caching"
     echo "  setup             - Setup development environment"
     echo "  db                - Database operations (setup, check, diagnose)"
     echo "  release           - Create release"
@@ -24,6 +25,7 @@ usage() {
     echo "  $0 test terminal          # Run tests matching 'terminal'"
     echo "  $0 test-all              # Run comprehensive test suite"
     echo "  $0 check                 # Run pre-commit checks"
+    echo "  $0 dialyzer              # Run Dialyzer static analysis"
 }
 
 run_tests() {
@@ -65,10 +67,17 @@ run_checks() {
         mix run scripts/pre_commit_check.exs
     else
         # Fallback individual checks
-        mix dialyzer
+        mix raxol.dialyzer --check
         mix credo
         mix docs
     fi
+}
+
+run_dialyzer() {
+    echo "Running Dialyzer static analysis with PLT caching..."
+    
+    # Use our enhanced Dialyzer task
+    mix raxol.dialyzer "$@"
 }
 
 setup_env() {
@@ -117,6 +126,10 @@ case ${1:-""} in
         ;;
     check)
         run_checks
+        ;;
+    dialyzer)
+        shift
+        run_dialyzer "$@"
         ;;
     setup)
         setup_env
