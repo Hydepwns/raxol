@@ -18,6 +18,7 @@ defmodule Raxol.Examples.AccessibilityDemo do
   require Raxol.View.Elements
   alias Raxol.View.Elements, as: UI
   alias Raxol.Core.AccessibilityRefactored, as: AccessibilityRefactored
+  alias Raxol.Core.Runtime.ProcessStore
   alias Raxol.Core.FocusManagerRefactored, as: FocusManagerRefactored
   alias Raxol.Core.UserPreferences
 
@@ -148,7 +149,7 @@ defmodule Raxol.Examples.AccessibilityDemo do
   @dialyzer {:nowarn_function, view: 1}
   def view(state) do
     # --- Calculate focus position BEFORE the main component list ---
-    element_registry = Process.get(:element_position_registry, %{})
+    element_registry = ProcessStore.get(:element_position_registry, %{})
     focused_position = Map.get(element_registry, state.focused_element)
 
     # --- Conditionally create the focus ring component ---
