@@ -1,0 +1,140 @@
+defmodule Raxol.UI.Components.Modal.Core do
+  @moduledoc """
+  Core state management and initialization for the Modal component.
+  """
+
+  require Raxol.Core.Runtime.Log
+
+  @doc "Initializes the Modal component state from props."
+  @spec init(map()) :: map()
+  def init(props) do
+    state = %Raxol.UI.Components.Modal{
+      id: Map.get(props, :id, nil),
+      visible: Map.get(props, :visible, false),
+      title: Map.get(props, :title, "Modal"),
+      content: Map.get(props, :content),
+      buttons: Map.get(props, :buttons, []),
+      type: Map.get(props, :type, :alert),
+      width: Map.get(props, :width, 50),
+      style: Map.get(props, :style, %{}) || %{}
+    }
+
+    Raxol.Core.Runtime.Log.debug(
+      "Modal init with props type: #{inspect(Map.get(props, :type, :alert))}, state type: #{inspect(state.type)}"
+    )
+
+    initialize_form_state(state, props)
+  end
+
+  # Helper to initialize form state based on props
+  defp initialize_form_state(%{type: :prompt} = state, props) do
+    # Get initial value for prompt
+    initial_value = Map.get(props, :input_value, "")
+    # Treat prompt as a single-field form
+    field = %{
+      id: :prompt_input,
+      type: :text_input,
+      label: state.content || "Value:",
+      value: initial_value,
+      props: %{},
+      validate: Map.get(props, :validate)
+    }
+
+    %{
+      state
+      | form_state: %{fields: [normalize_field(field)], focus_index: 0},
+        content: nil
+    }
+  end
+
+  defp initialize_form_state(%{type: :form} = state, props) do
+    fields = Map.get(props, :fields, []) |> Enum.map(&normalize_field/1)
+    %{state | form_state: %{fields: fields, focus_index: 0}}
+  end
+
+  defp initialize_form_state(state, _props) do
+    state
+  end
+
+  # Ensure basic field structure including :error
+  defp normalize_field(field) when is_map(field) do
+    Map.merge(
+      %{
+        id: nil,
+        type: nil,
+        label: "",
+        value: nil,
+        props: %{},
+        validate: nil,
+        error: nil
+      },
+      field
+    )
+  end
+
+  # Ignore invalid field defs
+  defp normalize_field(_), do: nil
+
+  @doc "Handles show/hide state changes."
+  @spec handle_show(map()) :: {map(), list()}
+  def handle_show(state) do
+    cmd = Raxol.UI.Components.Modal.State.set_focus_command(state)
+    new_state = %Raxol.UI.Components.Modal{state | visible: true}
+
+    send(
+      self(),
+      {:modal_state_changed, Map.get(state, :id, nil), :visible, true}
+    )
+
+    {new_state, [cmd]}
+  end
+
+  @doc "Handles hiding the modal."
+  @spec handle_hide(map()) :: {map(), list()}
+  def handle_hide(state) do
+    new_state = %Raxol.UI.Components.Modal{state | visible: false}
+
+    send(
+      self(),
+      {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+    )
+
+    {new_state, []}
+  end
+
+  @doc "Handles cancel operations."
+  @spec handle_cancel(map(), any()) :: {map(), list()}
+  def handle_cancel(state, original_msg) do
+    new_state = %Raxol.UI.Components.Modal{state | visible: false}
+
+    send(
+      self(),
+      {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+    )
+
+    {new_state, [original_msg]}
+  end
+
+  @doc "Handles button click operations."
+  @spec handle_button_click(map(), any()) :: {map(), list()}
+  def handle_button_click(state, btn_msg) do
+    new_state = %Raxol.UI.Components.Modal{state | visible: false}
+
+    send(
+      self(),
+      {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+    )
+
+    {new_state, [btn_msg]}
+  end
+
+  @doc "Handles unknown messages."
+  @spec handle_unknown_message(map(), any()) :: {map(), list()}
+  def handle_unknown_message(state, msg) do
+    Raxol.Core.Runtime.Log.warning(
+      "Modal #{Map.get(state, :id, nil)} received unknown message: #{inspect(msg)}"
+    )
+
+    {state, []}
+  end
+end
