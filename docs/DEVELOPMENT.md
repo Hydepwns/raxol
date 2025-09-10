@@ -11,7 +11,7 @@ tags: [development, setup, nix, workflow]
 
 This guide explains how to set up and work with the Raxol development environment using Nix.
 
-> **📚 For Architecture Context**: See [Architecture Decision Records](./adr/README.md) for detailed background on all major architectural decisions and design rationale.
+Architecture context: See [Architecture Decision Records](./adr/README.md) for background on architectural decisions and design rationale.
 
 ## Recent Infrastructure Improvements
 
@@ -237,7 +237,7 @@ As of v1.1.0, Raxol follows strict functional programming principles with a 97.1
 #### Error Handling Patterns (Required for all new code)
 
 ```elixir
-# ✅ GOOD: Use Result types with explicit error handling
+# GOOD: Use Result types with explicit error handling
 alias Raxol.Core.ErrorHandling
 
 def process_data(input) do
@@ -248,19 +248,19 @@ def process_data(input) do
   end
 end
 
-# ✅ GOOD: Use safe_call for potentially failing operations
+# GOOD: Use safe_call for potentially failing operations
 def fetch_user_data(user_id) do
   ErrorHandling.safe_call(fn -> 
     Database.get_user!(user_id)
   end)
 end
 
-# ✅ GOOD: Use safe_genserver_call for server operations  
+# GOOD: Use safe_genserver_call for server operations  
 def get_server_state(server) do
   ErrorHandling.safe_genserver_call(server, :get_state, 5000)
 end
 
-# ✅ GOOD: Use safe_call_with_info for debugging
+# GOOD: Use safe_call_with_info for debugging
 def debug_operation(data) do
   case ErrorHandling.safe_call_with_info(fn -> complex_operation(data) end) do
     {:ok, result} -> result
@@ -303,13 +303,13 @@ end
 #### Pattern Matching Best Practices
 
 ```elixir
-# ✅ GOOD: Use function heads for pattern matching
+# GOOD: Use function heads for pattern matching
 def process_message({:data, payload}), do: handle_data(payload)
 def process_message({:error, reason}), do: handle_error(reason)
 def process_message({:command, cmd}), do: execute_command(cmd)
 def process_message(_unknown), do: {:error, :unknown_message}
 
-# ✅ GOOD: Use guard clauses
+# GOOD: Use guard clauses
 def validate_age(age) when is_integer(age) and age >= 0 and age <= 150 do
   {:ok, age}
 end
@@ -319,7 +319,7 @@ def validate_age(_), do: {:error, :invalid_age}
 #### Pipeline Composition
 
 ```elixir
-# ✅ GOOD: Use pipeline-friendly functions
+# GOOD: Use pipeline-friendly functions
 def process_order(order_data) do
   order_data
   |> validate_order()
@@ -339,7 +339,7 @@ end
 #### State Management
 
 ```elixir
-# ✅ GOOD: Use immutable state transformations
+# GOOD: Use immutable state transformations
 def update_user(user, changes) do
   user
   |> Map.merge(changes)
@@ -362,12 +362,12 @@ end
 - **Benchmarking**: Profile before optimizing (use `Raxol.Benchmark`)
 
 ```elixir
-# ✅ GOOD: Tail-recursive accumulator pattern
+# GOOD: Tail-recursive accumulator pattern
 def sum_list(list, acc \\ 0)
 def sum_list([], acc), do: acc
 def sum_list([h | t], acc), do: sum_list(t, acc + h)
 
-# ✅ GOOD: Stream processing for large data
+# GOOD: Stream processing for large data
 def process_large_file(path) do
   path
   |> File.stream!()

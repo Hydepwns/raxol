@@ -168,7 +168,7 @@ def load_from_file(path) do
   ErrorHandling.safe_read_term(path)
 end
 
-# Safe serialization to file  
+# Safe serialization to file
 def save_to_file(path, data) do
   ErrorHandling.safe_write_term(path, data)
 end
@@ -222,7 +222,7 @@ end
 
 # Safe percentage calculations
 def calculate_percentage(part, total) do
-  ErrorHandling.safe_arithmetic(fn _ -> 
+  ErrorHandling.safe_arithmetic(fn _ ->
     if total > 0, do: (part / total) * 100, else: 0
   end, part, 0)
 end
@@ -248,7 +248,7 @@ end
 # Ensure cleanup is called
 def with_database_connection(fun) do
   ErrorHandling.with_cleanup(
-    fn -> 
+    fn ->
       {:ok, conn} = Database.connect()
       {:ok, conn}
     end,
@@ -331,7 +331,7 @@ try do
   result = operation()
   {:ok, result}
 rescue
-  e -> 
+  e ->
     Logger.error("Failed: #{inspect(e)}")
     {:error, :failed}
 end
@@ -361,7 +361,7 @@ end
 #### After:
 ```elixir
 ErrorHandling.with_cleanup(
-  fn -> 
+  fn ->
     resource = acquire_resource()
     {:ok, process_resource(resource)}
   end,
@@ -431,24 +431,24 @@ end
 ```elixir
 defmodule MyModuleTest do
   use ExUnit.Case
-  
+
   describe "error handling" do
     test "handles missing data gracefully" do
       assert {:error, :not_found} = MyModule.fetch(999)
     end
-    
+
     test "provides default on error" do
       result = MyModule.fetch_with_default(999, "default")
       assert result == "default"
     end
-    
+
     test "logs errors appropriately" do
       import ExUnit.CaptureLog
-      
+
       log = capture_log(fn ->
         MyModule.risky_operation()
       end)
-      
+
       assert log =~ "Operation failed"
     end
   end

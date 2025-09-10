@@ -9,7 +9,7 @@ tags: [components, guide, terminal, web, ui]
 
 # Component Guide
 
-Complete guide to Raxol's component system for building applications that work seamlessly in both terminal and web environments.
+Guide to Raxol's component system for building applications that work in both terminal and web environments.
 
 ## Quick Reference
 

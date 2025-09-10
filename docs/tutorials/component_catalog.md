@@ -1,6 +1,6 @@
 # Component Catalog
 
-This tutorial will cover the comprehensive catalog of UI components available in Raxol.
+This tutorial will cover the catalog of UI components available in Raxol.
 
 ## Coming Soon
 

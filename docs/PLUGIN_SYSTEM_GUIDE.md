@@ -13,20 +13,20 @@ tags: [plugins, extensions, development, guide]
 
 The Raxol plugin system enables you to extend the framework's functionality at runtime without modifying core code. Plugins can add new commands, hook into system events, provide custom UI components, and integrate with external services.
 
-> **📚 Architecture Context**: See [ADR-0005: Runtime Plugin System Architecture](./adr/0005-runtime-plugin-system-architecture.md) for the complete architectural decision context, alternatives considered, and technical implementation details.
+Architecture Context: See [ADR-0005: Runtime Plugin System Architecture](./adr/0005-runtime-plugin-system-architecture.md) for the architectural decision context, alternatives considered, and technical implementation details.
 
 ## Plugin Architecture
 
 ```
 ┌─────────────────────────────────────────────┐
-│              Plugin Manager                  │
+│              Plugin Manager                 │
 ├─────────────────────────────────────────────┤
 │  Lifecycle │ Registry │ Events │ Config     │
 ├─────────────────────────────────────────────┤
-│                 Plugins                      │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐       │
-│  │Plugin A │ │Plugin B │ │Plugin C │  ...  │
-│  └─────────┘ └─────────┘ └─────────┘       │
+│                 Plugins                     │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐        │
+│  │Plugin A │ │Plugin B │ │Plugin C │  ...   │
+│  └─────────┘ └─────────┘ └─────────┘        │
 └─────────────────────────────────────────────┘
 ```
 
@@ -37,7 +37,7 @@ The Raxol plugin system enables you to extend the framework's functionality at r
 ```elixir
 defmodule MyPlugin do
   use Raxol.Plugin
-  
+
   @moduledoc """
   A sample plugin that adds custom functionality to Raxol.
   """
@@ -158,10 +158,10 @@ defmodule EventPlugin do
 
   def handle_event({:terminal_resize, %{width: w, height: h}}, state) do
     IO.puts("Terminal resized to #{w}x#{h}")
-    
+
     # Emit custom event
     emit_event({:custom, :terminal_resized}, %{width: w, height: h})
-    
+
     {:ok, state}
   end
 
@@ -184,7 +184,7 @@ defmodule TaskPlugin do
   def init(config) do
     # Schedule periodic task
     schedule_task(:check_updates, 60_000)  # Every minute
-    
+
     {:ok, %{config: config, last_check: nil}}
   end
 
@@ -310,7 +310,7 @@ end
 
 defp setup_wizard(_args, state) do
   # Return interactive prompt
-  {:prompt, 
+  {:prompt,
     %{
       question: "Enter your API key:",
       type: :password,
@@ -388,7 +388,7 @@ defmodule HTTPPlugin do
 
   defp http_get([url], state) do
     full_url = build_url(url, state)
-    
+
     case HTTPoison.get(full_url, state.headers) do
       {:ok, %{status_code: 200, body: body}} ->
         {:ok, format_response(body), state}
@@ -401,9 +401,9 @@ defmodule HTTPPlugin do
 
   defp format_response(body) do
     case Jason.decode(body) do
-      {:ok, json} -> 
+      {:ok, json} ->
         Jason.encode!(json, pretty: true)
-      {:error, _} -> 
+      {:error, _} ->
         body
     end
   end
@@ -441,7 +441,7 @@ defmodule DatabasePlugin do
 
   defp format_query_result(%{columns: columns, rows: rows}) do
     # Format as table
-    {:table, 
+    {:table,
       [
         headers: columns,
         rows: rows,
@@ -572,7 +572,7 @@ def handle_command("slow-operation", args, state) do
   Task.async(fn ->
     perform_slow_operation(args)
   end)
-  
+
   {:ok, "Operation started in background", state}
 end
 
@@ -598,15 +598,15 @@ defmodule MyPluginTest do
   end
 
   test "hello command", %{state: state} do
-    assert {:ok, "Hello, World!", _} = 
+    assert {:ok, "Hello, World!", _} =
       MyPlugin.hello_command([], state)
-    
-    assert {:ok, "Hello, Alice!", _} = 
+
+    assert {:ok, "Hello, Alice!", _} =
       MyPlugin.hello_command(["Alice"], state)
   end
 
   test "handles errors gracefully", %{state: state} do
-    assert {:error, _, _} = 
+    assert {:error, _, _} =
       MyPlugin.dangerous_command(["invalid"], state)
   end
 end
@@ -633,7 +633,7 @@ def init(config) do
   if config[:debug] do
     Logger.configure(level: :debug)
   end
-  
+
   Logger.debug("Plugin initializing with config: #{inspect(config)}")
   {:ok, %{config: config}}
 end

@@ -305,31 +305,31 @@ end
 ## Validation
 
 ### Success Metrics (Achieved)
-- ✅ **Performance Improvement**: 42,000x faster batch operations than legacy system
-- ✅ **Operation Latency**: <100μs for typical buffer operations
-- ✅ **Memory Efficiency**: 60% reduction in memory usage for typical terminal content
-- ✅ **Concurrent Access**: 100+ concurrent operations without performance degradation
-- ✅ **Rendering Performance**: 90% reduction in rendering time through damage tracking
-- ✅ **Scalability**: Linear performance scaling with actual content changes
+- **Performance Improvement**: 42,000x faster batch operations than legacy system
+- **Operation Latency**: <100μs for typical buffer operations
+- **Memory Efficiency**: 60% reduction in memory usage for typical terminal content
+- **Concurrent Access**: 100+ concurrent operations without performance degradation
+- **Rendering Performance**: 90% reduction in rendering time through damage tracking
+- **Scalability**: Linear performance scaling with actual content changes
 
 ### Technical Validation
-- ✅ **Modular Architecture**: Clean separation between operation processing, damage tracking, metrics
-- ✅ **Thread Safety**: No race conditions or data corruption in concurrent testing
-- ✅ **Memory Management**: Automatic cleanup and configurable memory limits
-- ✅ **Performance Monitoring**: Comprehensive metrics collection and analysis
-- ✅ **API Consistency**: Backwards-compatible API with legacy buffer interface
+- **Modular Architecture**: Clean separation between operation processing, damage tracking, metrics
+- **Thread Safety**: No race conditions or data corruption in concurrent testing
+- **Memory Management**: Automatic cleanup and configurable memory limits
+- **Performance Monitoring**: Comprehensive metrics collection and analysis
+- **API Consistency**: Backwards-compatible API with legacy buffer interface
 
 ### Production Validation
-- ✅ **Stress Testing**: Sustained 10,000+ operations/second without degradation
-- ✅ **Memory Pressure**: Graceful handling of low-memory conditions
-- ✅ **Long-running Sessions**: No memory leaks in 24+ hour terminal sessions
-- ✅ **Large Buffers**: Efficient handling of 100MB+ scrollback buffers
+- **Stress Testing**: Sustained 10,000+ operations/second without degradation
+- **Memory Pressure**: Graceful handling of low-memory conditions
+- **Long-running Sessions**: No memory leaks in 24+ hour terminal sessions
+- **Large Buffers**: Efficient handling of 100MB+ scrollback buffers
 
 ## References
 
 - [BufferServer Implementation](../../lib/raxol/terminal/buffer/buffer_server.ex)
 - [Damage Tracker](../../lib/raxol/terminal/buffer/damage_tracker.ex)
-- [Buffer Manager](../../lib/raxol/terminal/buffer/manager.ex)
+- [Buffer Manager](../../lib/raxol/terminal/buffer/buffer_manager.ex)
 - [Performance Benchmarks](../../lib/raxol/benchmarks/visualization_benchmark.ex)
 - [Architecture Documentation](../ARCHITECTURE.md#terminal-core)
 

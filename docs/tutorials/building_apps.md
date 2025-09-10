@@ -50,7 +50,7 @@ end
 
 ## Error Handling
 
-Use `Raxol.Core.ErrorHandling`. See [Error Handling Guide](../ERROR_HANDLING_GUIDE.md) and [Quick Reference](../ERROR_HANDLING_QUICK_REFERENCE.md).
+Use `Raxol.Core.ErrorHandling`. See [Error Handling Guide](../ERROR_HANDLING_GUIDE.md).
 
 ```elixir
 alias Raxol.Core.ErrorHandling, as: EH

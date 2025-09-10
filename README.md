@@ -11,7 +11,7 @@
 
 ## What is Raxol?
 
-Raxol is a production-ready, high-performance terminal application framework that brings modern UI development patterns to the terminal. 
+Raxol is a high-performance terminal application framework that brings modern UI development patterns to the terminal.
 
 Think **React, Svelte, LiveView** meets tmux, or *Next.js* for the terminal.
 Choose your preferred UI paradigm, with free enterprise features built-in.
@@ -20,7 +20,7 @@ Choose your preferred UI paradigm, with free enterprise features built-in.
 
 - **World-Class Performance**: 3.3μs parser operations, 2.8MB memory per session
 - **Multi-Framework Support**: Choose React, Svelte, LiveView, or HEEx - use what you know best
-- **Enterprise Ready**: Audit logging, encryption, SAML/OIDC support, compliance (SOC2/HIPAA/GDPR)
+- **Enterprise Compliant**: Audit logging, encryption, SAML/OIDC support, compliance (SOC2/HIPAA/GDPR)
 - **Innovation First**: Sixel graphics, WASH-style session continuity, real-time collaboration
 
 ## Use Cases
@@ -51,7 +51,7 @@ Choose your preferred UI paradigm, with free enterprise features built-in.
 
 ### Multi-Framework UI System
 - **React-Style Components** - Familiar React patterns with hooks and lifecycle
-- **Svelte-Style Components** - Reactive architecture with compile-time optimization  
+- **Svelte-Style Components** - Reactive architecture with compile-time optimization
 - **LiveView Integration** - Phoenix LiveView components work seamlessly
 - **HEEx Templates** - Use Phoenix templates in terminal applications
 - **Raw Terminal Access** - Direct buffer manipulation for maximum performance
@@ -72,13 +72,13 @@ Choose your preferred UI paradigm, with free enterprise features built-in.
 
 ## Performance Metrics
 
-| Metric | Performance | Industry Standard |
-|--------|------------|-------------------|
-| Parser Speed | **3.3μs/op** | 100μs/op |
+| Metric       | Performance       | Standard     |
+|--------------|-------------------|--------------|
+| Parser Speed | **3.3μs/op**      | 100μs/op     |
 | Memory Usage | **2.8MB/session** | 10MB/session |
-| Startup Time | **<10ms** | 100ms |
-| Test Coverage | **100%** | 80% |
-| Render Speed | **1.3μs** | 10μs |
+| Startup Time | **<10ms**         | 100ms        |
+| Test Coverage| **100%**          | 80%          |
+| Render Speed | **1.3μs**         | 10μs         |
 
 ## Quick Start
 
@@ -137,22 +137,21 @@ mix test
   - Event handling - keyboard, mouse, custom
 
   # Framework Comparison Table
-  ┌─────────────┬──────────────┬─────────────────┬──────────────┬───────────┐
+  ┌─────────────┬──────────────┬─────────────────┬────────────────┐
   │ Framework   │ Paradigm     │ Best For        │ Learning Curve │
-  ├─────────────┼──────────────┼─────────────────┼──────────┼───────────────┤
-  │ React       │ Virtual DOM  │ Familiar APIs   │ Easy            │
-  │ Svelte      │ Reactive     │ Performance     │ Medium          │
-  │ LiveView    │ Server-side  │ Real-time apps  │ Easy            │
-  │ HEEx        │ Templates    │ Simple UIs      │ Very Easy       │
-  │ Raw         │ Direct       │ Maximum control │ Hard            │
-  └─────────────┴──────────────┴─────────────────┴──────────────┴───────────┘
-```
-  
+  ├─────────────┼──────────────┼─────────────────┼────────────────┤
+  │ React       │ Virtual DOM  │ Familiar APIs   │ Easy           │
+  │ Svelte      │ Reactive     │ Performance     │ Medium         │
+  │ LiveView    │ Server-side  │ Real-time apps  │ Easy           │
+  │ HEEx        │ Templates    │ Simple UIs      │ Very Easy      │
+  │ Raw         │ Direct       │ Maximum control │ Hard           │
+  └─────────────┴──────────────┴─────────────────┴────────────────┘
+
 #### React-Style
-```elixir  
+```elixir
 defmodule MyApp do
   use Raxol.Component
-  
+
   def render(assigns) do
     ~H"""
     <Box padding={2}>
@@ -168,7 +167,7 @@ end
 ```elixir
 defmodule MyApp do
   use Raxol.Svelte.Component
-  
+
   state :count, 0
   reactive :doubled, do: @count * 2
 
@@ -207,21 +206,21 @@ end
 
 ```bash
 ┌──────────────────────────────────────────────────────────┐
-│                    Applications                         │
-│         (TUI Apps • Plugins • Extensions)               │
+│                    Applications                          │
+│         (TUI Apps • Plugins • Extensions)                │
 ├──────────────────────────────────────────────────────────┤
-│               Multi-Framework UI Layer                  │
-│    React • Svelte • LiveView • HEEx • Raw               │
-│     (Universal: Actions • Slots • Context)              │
+│               Multi-Framework UI Layer                   │
+│    React • Svelte • LiveView • HEEx • Raw                │
+│     (Universal: Actions • Slots • Context)               │
 ├──────────────────────────────────────────────────────────┤
-│               Session Continuity Layer                  │
-│     (WASH Bridge • State Sync • Collaboration)          │
+│               Session Continuity Layer                   │
+│     (WASH Bridge • State Sync • Collaboration)           │
 ├──────────────────────────────────────────────────────────┤
-│               Terminal Emulator Core                    │
-│      (Parser • Buffer • Input • Rendering)              │
+│               Terminal Emulator Core                     │
+│      (Parser • Buffer • Input • Rendering)               │
 ├──────────────────────────────────────────────────────────┤
-│                Platform Services                        │
-│   (Security • Metrics • Persistence • Plugins)          │
+│                Platform Services                         │
+│   (Security • Metrics • Persistence • Plugins)           │
 └──────────────────────────────────────────────────────────┘
 ```
 

@@ -126,6 +126,14 @@ The project includes a NIF (Native Implemented Function) for termbox2:
 - Built automatically via `elixir_make` 
 - Makefile handles compilation during `mix deps.compile`
 
+### Naming Conventions
+
+Follow established patterns documented in `docs/development/NAMING_CONVENTIONS.md`:
+- Module files use `<domain>_<function>.ex` format (e.g., `cursor_manager.ex`, `buffer_server.ex`)
+- Avoid generic names like `manager.ex`, `handler.ex`, `server.ex`
+- All 154+ duplicate filenames resolved in Sprint 22-23
+- Consistent naming prevents compilation conflicts and improves navigation
+
 ### Important Notes
 
 - Always use absolute paths when working with files

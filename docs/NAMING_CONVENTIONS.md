@@ -8,12 +8,12 @@ This document outlines the naming conventions used throughout the Raxol codebase
 
 **Rule**: Module names should always be singular.
 
-✅ **Correct**:
+**Correct**:
 - `Raxol.Terminal.Commands.WindowHandler`
 - `Raxol.Terminal.Events.Handler`
 - `Raxol.Terminal.Buffer.Helper`
 
-❌ **Incorrect**:
+**Incorrect**:
 - `Raxol.Terminal.Commands.WindowHandlers`
 - `Raxol.Terminal.Events.Handlers`
 - `Raxol.Terminal.Buffer.Helpers`
@@ -55,22 +55,22 @@ Use `Server` suffix for stateless service processes that provide functionality w
 
 **Rule**: Use `Config` not `Configuration` for brevity and consistency.
 
-✅ **Correct**: `Raxol.Terminal.Config`
-❌ **Incorrect**: `Raxol.Terminal.Configuration`
+**Correct**: `Raxol.Terminal.Config`
+**Incorrect**: `Raxol.Terminal.Configuration`
 
 ### Handler Modules
 
 **Rule**: Use singular `Handler` suffix.
 
-✅ **Correct**: `Raxol.Terminal.Commands.CursorHandler`
-❌ **Incorrect**: `Raxol.Terminal.Commands.CursorHandlers`
+**Correct**: `Raxol.Terminal.Commands.CursorHandler`
+**Incorrect**: `Raxol.Terminal.Commands.CursorHandlers`
 
 ### Helper Modules
 
 **Rule**: Use singular `Helper` suffix.
 
-✅ **Correct**: `Raxol.Terminal.Buffer.Helper`
-❌ **Incorrect**: `Raxol.Terminal.Buffer.Helpers`
+**Correct**: `Raxol.Terminal.Buffer.Helper`
+**Incorrect**: `Raxol.Terminal.Buffer.Helpers`
 
 ### Implementation Modules
 

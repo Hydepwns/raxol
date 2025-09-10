@@ -13,7 +13,7 @@ tags: [web, interface, phoenix, liveview, guide]
 
 Raxol's web interface enables you to access terminal applications through any modern web browser. Built on Phoenix LiveView, it provides real-time, bidirectional communication between the browser and your terminal application with support for multiple users, collaboration features, and persistent sessions.
 
-> **📚 Architecture Context**: See [ADR-0008: Phoenix LiveView Integration Architecture](./adr/0008-phoenix-liveview-integration-architecture.md) for technical details and [ADR-0004: WASH-Style Web Continuity](./adr/0004-wash-style-web-continuity.md) for the continuity system design.
+Architecture Context: See [ADR-0008: Phoenix LiveView Integration Architecture](./adr/0008-phoenix-liveview-integration-architecture.md) for technical details and [ADR-0004: WASH-Style Web Continuity](./adr/0004-wash-style-web-continuity.md) for the continuity system design.
 
 ## Key Features
 

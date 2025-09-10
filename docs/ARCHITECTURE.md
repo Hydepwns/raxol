@@ -13,7 +13,7 @@ tags: [architecture, documentation, design]
 
 ## System Overview
 
-Raxol is a full-stack terminal application framework that enables building sophisticated terminal applications with both local and web interfaces. The framework combines a powerful terminal emulator core with a component-based UI system, real-time web capabilities, and an extensible plugin architecture.
+Raxol is a terminal application framework that enables building terminal applications with both local and web interfaces. The framework combines a terminal emulator core with a component-based UI system, real-time web capabilities, and a plugin architecture.
 
 ```mermaid
 graph TB
@@ -152,7 +152,7 @@ graph TB
     Registry[Command Registry]
     Hooks[Event Hooks]
     Config[Configuration]
-    
+
     Plugin1[Git Plugin]
     Plugin2[Docker Plugin]
     Plugin3[Custom Plugin]
@@ -161,11 +161,11 @@ graph TB
     Manager --> Registry
     Manager --> Hooks
     Manager --> Config
-    
+
     Plugin1 --> Registry
     Plugin2 --> Registry
     Plugin3 --> Registry
-    
+
     Plugin1 --> Hooks
     Plugin2 --> Hooks
     Plugin3 --> Hooks

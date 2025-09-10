@@ -69,4 +69,4 @@ Track key metrics:
 
 ---
 
-*See [Performance Benchmarks](../PERFORMANCE_BENCHMARKS.md).*
+*See [Performance Targets](../bench/PERFORMANCE_TARGETS.md).*
