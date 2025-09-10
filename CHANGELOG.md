@@ -1,5 +1,56 @@
 ## [1.2.0] - 2025-09-10
 
+### Sprint 28: Process-Based Test Migration - COMPLETE
+
+- **Test Suite Stabilization**: Fixed remaining process-based test failures
+  - Fixed `CommandHelper.safe_execute/1` error handling to properly match error tuples
+  - Updated `Web.SupervisorTest` to handle already-running supervisor processes
+  - Fixed `KeyboardShortcutsTest` module alias syntax error
+  - Resolved `performance_optimization_test.exs` compilation error (duplicate ExUnit.run)
+  - All core tests now passing (excluding keyboard shortcuts needing API updates)
+
+- **Termbox2 NIF Testing**: Enhanced termbox2 NIF test coverage
+  - Created comprehensive `Termbox2LoadingTest` to verify NIF loading without TTY
+  - Verified all termbox2 functions are properly exported
+  - Confirmed NIF compilation and shared library generation
+  - Added tests for priv directory structure and C source files
+  - All 9 termbox loading tests passing
+
+- **Dialyzer Integration Fix**: Resolved compilation errors
+  - Fixed import conflict in `Mix.Tasks.Raxol.Dialyzer` (removed duplicate Mix.Shell.IO import)
+  - Dialyzer tasks now compile and run successfully
+
+- **Security Scanning Integration**: Added comprehensive security tooling
+  - Integrated Sobelow for Phoenix security analysis
+  - Added mix_audit for dependency vulnerability checking
+  - Created `mix raxol.security` task for unified security scanning
+  - Checks for hardcoded secrets, insecure configurations, and file permissions
+  - All dependency vulnerability checks passing
+
+### Sprint 27: Technical Debt Elimination - COMPLETE
+
+- **Process Dictionary Migration**: Complete elimination of Process dictionary usage (20 files)
+  - Migrated all Process.get/put/delete calls to use `Raxol.Core.Runtime.ProcessStore`
+  - Updated test files to use ProcessStore for cross-process test synchronization
+  - Modified animation framework to use ProcessStore for test compatibility
+  - Updated demo/example files to use ProcessStore patterns
+  - Enhanced documentation to show ProcessStore as recommended approach
+  - Made tests async-safe by removing Process dictionary dependencies
+
+- **Configuration System Consolidation**: Unified configuration management
+  - Confirmed removal of redundant generated config files (dev_generated.exs, test_generated.exs, prod_generated.exs)
+  - Validated that main environment files (dev.exs, test.exs, prod.exs) contain all necessary configuration
+  - Eliminated duplication between generated and manual config files
+  - Maintained standard Elixir configuration patterns
+
+- **Development Scripts Organization**: Streamlined scripts directory
+  - Archived 20 unused development scripts into organized subdirectories:
+    - `scripts/archived/deprecated-by-dev-sh/` - 6 scripts replaced by unified dev.sh tool
+    - `scripts/archived/sprint-refactoring/` - 12 scripts from module refactoring sprints
+    - `scripts/archived/old-experiments/` - 2 experimental testing scripts
+  - Updated DEPRECATED.md with comprehensive archival documentation
+  - Preserved all active development tools while cleaning main scripts directory
+
 ### Sprint 25: Final Test Suite Resolution - COMPLETE
 
 - **InputBuffer Module Implementation**: Complete implementation of missing InputBuffer functionality

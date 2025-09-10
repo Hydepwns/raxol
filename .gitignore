@@ -89,9 +89,14 @@ bench/results/
 # VS Code Extension
 /extensions/vscode/out/
 
-# Dialyzer Persistent Lookup Tables
+# Dialyzer Persistent Lookup Tables and artifacts
 /priv/plts/*.plt
 /priv/plts/*.plt.hash
+.dialyzer.plt
+.dialyzer_core.plt
+dialyzer.ignore-warnings
+_dialyzer.plt
+_dialyzer_core.plt
 
 # Misc
 .DS_Store

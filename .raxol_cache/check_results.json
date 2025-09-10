@@ -1,0 +1,314 @@
+{
+  "lib/raxol/pre_commit/metrics.ex|format": {
+    "hash": "D32EC75468FBA592B614041EB031D5343B6CA26E5174ED7879F710E8911C8406",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:40:30.664153Z"
+  },
+  "scripts/archived/sprint-refactoring/refactor_module_names.exs|format": {
+    "hash": "62590BF0FCA29B8B9784579F00806773CF8F6C21E2325086E887D1E896593CA2",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:29:56.646791Z"
+  },
+  "scripts/archived/sprint-refactoring/sprint9_pattern_matching.exs|format": {
+    "hash": "FB2315C1B801F1A1395D656D5C141E26148AD747E296A1099E3FA3FCD8E774D1",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:29:55.709081Z"
+  },
+  "scripts/archived/old-experiments/test_hot_reload_refactoring.exs|format": {
+    "hash": "2E0F16897643CC3125D0C45B0766AAD633BFEB0546B6700D1DD365183492E409",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:29:57.945783Z"
+  },
+  "lib/mix/tasks/raxol.check.tests.ex|format": {
+    "hash": "B965BE4B142AA85673613DC67CCAD1EE68C56C6893D09B4FDC74794A21820521",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:40:38.981045Z"
+  },
+  "lib/raxol/pre_commit/cache.ex|format": {
+    "hash": "E849F9B69FF87D23259A63AC8E36BDAE3C73F86B634F7A8ACBCBF3B474AF2A05",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T20:39:40.475961Z"
+  },
+  "lib/raxol/pre_commit/progress.ex|format": {
+    "hash": "DB1E4BEA4AD75996CB9A448028E85B7B2F79E8903FBE71B0109427CB26210568",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:40:29.954579Z"
+  },
+  "scripts/archived/sprint-refactoring/fix_remaining_references.exs|format": {
+    "hash": "E1B11BDF99E94F64FB0DB2A6FE72CCD4267426D0D4082F961C97902DC373A217",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:29:57.096280Z"
+  },
+  "lib/mix/tasks/raxol.check.dialyzer.ex|format": {
+    "hash": "FACAC35C3244F31DDA40382FD211998D9E6A8C535DEDE782A89FC4CC67C77385",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:40:39.771567Z"
+  },
+  "docs/examples/demos/accessibility_demo.ex|format": {
+    "hash": "2B2FF6229163A3190753390DF46C40A3A8BAA5DB818CE1B70957D60CAD5A4A66",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T21:27:37.385864Z"
+  },
+  "lib/raxol/pre_commit/config.ex|format": {
+    "hash": "FF39A4827F2EB9D5F737402FBD2A0D3BAFE1B431CEE85F73C8641009E2CE771A",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:40:32.399038Z"
+  },
+  "scripts/archived/old-experiments/test_safe_emulator_refactoring.exs|format": {
+    "hash": "70CDD9A07F218A47D57213085DA9EA419ECE0ED0BD744366F322F449D74F5D3C",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:29:57.729752Z"
+  },
+  "mix.exs|format": {
+    "hash": "2EF2D219B3E16ED78FC273AB02CD6DC1DFC10F41EDE5570254E305E9BC6B06F9",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:39:39.773926Z"
+  },
+  "lib/raxol/ui/layout/responsive.ex|format": {
+    "hash": "8DA5A32FC688BB6B6C0AF9CE772268104678F2F4C7F404AAE9CA05EE14C69D4F",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T14:59:30.489022Z"
+  },
+  "lib/raxol/ui/layout/css_grid.ex|format": {
+    "hash": "44924DE73A180F51E4A9A977C0F5B17604DD2812CDCEF565DA940140C2CE5212",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T14:59:30.926853Z"
+  },
+  "lib/mix/tasks/raxol.uninstall_hooks.ex|format": {
+    "hash": "7DEF238F6211BB9B06BCBA0D2AB39887C4F10E74B78C422F03FC21F7D7F80448",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:40:36.180345Z"
+  },
+  "lib/mix/tasks/raxol.check.security.ex|format": {
+    "hash": "7850626E2D8C68DE85BE6A75AEA32070B1DC45CF8E33E9D0975046F9352C4489",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:40:39.366169Z"
+  },
+  "lib/raxol/terminal/emulator.ex|format": {
+    "hash": "0954399704FCA0ADDC3B13C41A490955BA5740E350DD8F341AA2E0760D7B3EFD",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T14:59:31.840968Z"
+  },
+  "lib/mix/tasks/raxol.update_hooks.ex|format": {
+    "hash": "2816E1D8A98BFB1E631FF94E64047CC63CB7171BE798706BCD8CC4869690DFD1",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:40:34.338206Z"
+  },
+  "docs/examples/demos/ux_refinement_demo.ex|format": {
+    "hash": "616F48285E6B0270E3539E9CC93DBB86FD1F66685AC3A9F5FAFB033DCF61EB5F",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:27:37.071388Z"
+  },
+  "scripts/archived/sprint-refactoring/sprint9_analysis.exs|format": {
+    "hash": "B69BBD299BD898B8F5AC300EE31C7E0C3D361D24679884BD958B7F487AB17E2B",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:29:56.188195Z"
+  },
+  "lib/mix/tasks/raxol.metrics.ex|format": {
+    "hash": "AF56B8A2E50730058D795B99EA8B7493D4AC790DC0A0EEEA91F82DE45E626D5D",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:40:37.355633Z"
+  },
+  "lib/mix/tasks/raxol.check.compile.ex|format": {
+    "hash": "BB31D67E84B278DDC0B9AEB229F6D197B93AE4BFC0CC7AD08E2C290654C22B2E",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T14:59:35.185900Z"
+  },
+  "lib/mix/tasks/raxol.check.format.ex|format": {
+    "hash": "61B210E7648E6B9BAE7491705871CAF1EAE0B7D8796885EFB99506FB8E76C307",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T20:39:41.942843Z"
+  },
+  "scripts/archived/sprint-refactoring/migrate_to_refactored.exs|format": {
+    "hash": "E055E502D6CA39745FBAFB9784505046D0133830226584C9B2DEED0785053BF6",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:29:56.888199Z"
+  },
+  "scripts/archived/sprint-refactoring/replace_with_refactored.exs|format": {
+    "hash": "F5C00D1FD6A8B8150B3C4D4ED9C83F6E1A86659CD3F7A05348C9AE80E8DFE50C",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:29:56.419483Z"
+  },
+  "scripts/archived/sprint-refactoring/fix_refactored_references.exs|format": {
+    "hash": "3C33938534548F3EC1722683F2BA8895FC78573ABABC7A7877CB16F2C0436B38",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:29:57.311776Z"
+  },
+  "lib/mix/tasks/raxol.security.ex|format": {
+    "hash": "5549329B8699EFFEC13D1E9E504A4451B3B56EC1DC0394D81AD8ACA9CB0C0466",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:40:36.942254Z"
+  },
+  "lib/mix/tasks/raxol.install_hooks.ex|format": {
+    "hash": "948AAF0C37A6214E4A6F4A2E56424A00019F5D52B34DE6891F770485868E3CE4",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:40:38.121580Z"
+  },
+  "lib/raxol/component.ex|format": {
+    "hash": "5823F6C3024F6DB6C48A45617D3FFC369D8BE9C1CA71912380DA2E7DB9F72C2E",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T14:59:33.290873Z"
+  },
+  "lib/raxol/pre_commit/git_helper.ex|format": {
+    "hash": "5754117C73A910D17147ED3B248937D72BEE9AFC48AF4B6B94FE346682ADC48B",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T15:02:10.626497Z"
+  },
+  "lib/mix/tasks/raxol.check.docs.ex|format": {
+    "hash": "A75D33D81CD99A763A569B66752186219E38B56A9D3BF6BC10DA20B8BE6EF17A",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T14:59:34.461414Z"
+  },
+  "lib/mix/tasks/raxol.check.credo.ex|format": {
+    "hash": "D424D1099361323AB17C7B93DC4A95F349BB63EFE11EE1610753DDB848BDD02E",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T14:59:34.813370Z"
+  },
+  "lib/raxol/ui/components/patterns/compound.ex|format": {
+    "hash": "8F65540750FCA3F051A27F4866546D4229FB376815FF7423A3A6839ABF0B57D8",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T14:59:31.438694Z"
+  },
+  "lib/mix/tasks/raxol.dialyzer.ex|format": {
+    "hash": "96E5854FDE8E74186CE182D5979626665A3BFB4FBD17563469055F96FDF38332",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:40:38.562215Z"
+  },
+  "scripts/archived/sprint-refactoring/fix_module_names.exs|format": {
+    "hash": "6D8BA4A58DF42FB25B1506DCE3FA2DBD66C2F70294D53BC641A71E8B44F992E8",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:29:57.511160Z"
+  },
+  "scripts/archived/sprint-refactoring/sprint9_automated_refactor.exs|format": {
+    "hash": "F6A6D87F723B958D7AAF9972F95D5BB624E2F95999D6B69192E070B4A2AABC3D",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:29:55.969064Z"
+  },
+  "lib/raxol/pre_commit/error_formatter.ex|format": {
+    "hash": "B87EDB05EBF9D6063FFA2D4CB68E8E3EC6F5F8C531CA98C769AF4E87F10F851C",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T20:40:31.245295Z"
+  },
+  "lib/mix/tasks/raxol.pre_commit.ex|format": {
+    "hash": "4C3F1049AC14C3EEFAFAF2022F4D7D66A66AD39A897660B199D578D08AE9BEF9",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T20:39:41.150196Z"
+  }
+}
