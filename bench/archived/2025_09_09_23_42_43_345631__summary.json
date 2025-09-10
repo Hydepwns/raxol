@@ -1,0 +1,28 @@
+{
+  "timestamp": "2025-09-09T23:42:43.345631Z",
+  "duration": 29277,
+  "environment": {
+    "os": "unix_darwin",
+    "cpu_count": 8,
+    "total_memory": 603506481
+  },
+  "scenarios": [
+    {
+      "max": 3066595.8,
+      "min": 0.0,
+      "name": "fast operation",
+      "average": 17.710940891405013,
+      "std_dev": 1767.3376899053576,
+      "memory_average": 0.0
+    },
+    {
+      "max": 35936500,
+      "min": 1111917,
+      "name": "slow operation",
+      "average": 2214997.98488217,
+      "std_dev": 1873923.2448714687,
+      "memory_average": 0.0
+    }
+  ],
+  "suite_name": "Test Suite"
+}
