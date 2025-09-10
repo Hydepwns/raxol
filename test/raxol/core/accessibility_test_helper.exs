@@ -34,7 +34,7 @@ defmodule Raxol.Core.AccessibilityTestHelper do
 
   def setup_test_preferences(prefs_name) do
     # Ensure EventManager is started
-    Raxol.Core.Events.Manager.init()
+    Raxol.Core.Events.EventManager.init()
 
     pid =
       start_supervised!({UserPreferences, [test_mode?: true, name: prefs_name]})
@@ -54,7 +54,7 @@ defmodule Raxol.Core.AccessibilityTestHelper do
 
     on_exit(fn ->
       # Only clean up EventManager
-      Raxol.Core.Events.Manager.cleanup()
+      Raxol.Core.Events.EventManager.cleanup()
     end)
 
     {:ok, prefs_name: prefs_name, pref_pid: pid}
@@ -62,7 +62,7 @@ defmodule Raxol.Core.AccessibilityTestHelper do
 
   def setup_test_preferences_with_events(prefs_name) do
     # Ensure EventManager is started
-    Raxol.Core.Events.Manager.init()
+    Raxol.Core.Events.EventManager.init()
 
     # Check if UserPreferences is already running
     pid_of_prefs = get_or_start_preferences()
@@ -80,7 +80,7 @@ defmodule Raxol.Core.AccessibilityTestHelper do
       cleanup_process_if_alive(pid_of_prefs)
 
       # Only clean up EventManager
-      Raxol.Core.Events.Manager.cleanup()
+      Raxol.Core.Events.EventManager.cleanup()
     end)
 
     {:ok, prefs_name: prefs_name, pref_pid: pid_of_prefs}
@@ -111,7 +111,7 @@ defmodule Raxol.Core.AccessibilityTestHelper do
   def clear_test_state(prefs_name) do
     Raxol.Core.Accessibility.clear_announcements()
     Raxol.Core.Accessibility.disable(prefs_name)
-    Raxol.Core.Events.Manager.cleanup()
+    Raxol.Core.Events.EventManager.cleanup()
   end
 
   defp get_or_start_preferences do

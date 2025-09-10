@@ -6,7 +6,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   require Logger
 
   alias Raxol.Core.Runtime.Events.Dispatcher
-  alias Raxol.Core.Runtime.Plugins.Manager
+  alias Raxol.Core.Runtime.Plugins.PluginManager, as: Manager
   alias Raxol.Core.CompilerState
 
   defmodule State do

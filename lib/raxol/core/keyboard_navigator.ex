@@ -26,8 +26,8 @@ defmodule Raxol.Core.KeyboardNavigator do
   - Configurable navigation strategies
   """
 
-  alias Raxol.Core.KeyboardNavigator.Server
-  alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.KeyboardNavigator.NavigatorServer, as: Server
+  alias Raxol.Core.Events.EventManager, as: EventManager
 
   @doc """
   Ensures the Keyboard Navigator server is started.

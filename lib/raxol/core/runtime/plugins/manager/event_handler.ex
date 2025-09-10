@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandler do
+defmodule Raxol.Core.Runtime.Plugins.PluginManager.EventHandler do
   @moduledoc """
   Handles GenServer event callbacks and message processing for the plugin manager.
   """
@@ -9,7 +9,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.EventHandler do
   alias Raxol.Core.Runtime.Plugins.FileWatcher
   alias Raxol.Core.Runtime.Plugins.TimerManager
   alias Raxol.Core.Runtime.Plugins.CommandHandler
-  alias Raxol.Core.Runtime.Plugins.Manager.{Lifecycle, State}
+  alias Raxol.Core.Runtime.Plugins.PluginManager.{Lifecycle, State}
 
   @type state :: map()
   @type from :: {pid(), reference()}

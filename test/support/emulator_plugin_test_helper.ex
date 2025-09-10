@@ -5,7 +5,7 @@ defmodule Raxol.EmulatorPluginTestHelper do
   """
 
   import ExUnit.Callbacks, only: [on_exit: 1]
-  alias Raxol.Core.Runtime.Plugins.Manager
+  alias Raxol.Core.Runtime.Plugins.PluginManager, as: Manager
   alias Raxol.Terminal.Emulator
 
   @doc """

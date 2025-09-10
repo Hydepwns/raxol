@@ -10,8 +10,8 @@ defmodule RaxolWeb.SettingsLiveTest do
 
   setup_all do
     # Start the session manager if not already running
-    unless Process.whereis(Raxol.Web.Session.Manager) do
-      start_supervised!({Raxol.Web.Session.Manager, []})
+    unless Process.whereis(Raxol.Web.Session.SessionManager) do
+      start_supervised!({Raxol.Web.Session.SessionManager, []})
     end
     # Start the accounts agent globally if not already running
     unless Process.whereis(Raxol.Accounts) do

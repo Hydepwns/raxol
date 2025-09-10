@@ -14,7 +14,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   """
 
   # --- Event Management ---
-  alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.Events.EventManager, as: EventManager
 
   @doc """
   Subscribe to runtime events.

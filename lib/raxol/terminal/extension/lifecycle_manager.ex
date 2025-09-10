@@ -25,7 +25,7 @@ defmodule Raxol.Terminal.Extension.LifecycleManager do
         {:error, {:module_load_failed, reason}}
 
       _ ->
-        case Raxol.Terminal.Extension.Validator.validate_extension(
+        case Raxol.Terminal.Extension.ExtensionValidator.validate_extension(
                extension_state
              ) do
           :ok ->

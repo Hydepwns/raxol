@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Parser.States.DesignateCharsetState do
   """
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Parser.State
+  alias Raxol.Terminal.Parser.ParserState, as: State
   alias Raxol.Terminal.ANSI.CharacterSets
   require Raxol.Core.Runtime.Log
 

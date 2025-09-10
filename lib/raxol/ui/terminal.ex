@@ -17,7 +17,7 @@ defmodule Raxol.UI.Terminal do
   """
 
   alias Raxol.Style.Colors.System, as: ColorSystem
-  alias Raxol.Core.I18n, as: I18n, as: I18n
+  alias Raxol.Core.I18n
 
   @spec clear() :: :ok
   @doc """

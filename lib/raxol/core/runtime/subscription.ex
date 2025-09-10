@@ -191,7 +191,7 @@ defmodule Raxol.Core.Runtime.Subscription do
   end
 
   defp stop_events(actual_id) when is_integer(actual_id) do
-    case Raxol.Core.Events.Manager.unsubscribe(actual_id) do
+    case Raxol.Core.Events.EventManager.unsubscribe(actual_id) do
       :ok -> :ok
       {:error, :not_found} -> {:error, :subscription_not_found}
       {:error, reason} -> {:error, reason}
@@ -261,7 +261,7 @@ defmodule Raxol.Core.Runtime.Subscription do
   end
 
   defp start_event_subscription(event_types, _context) do
-    case Raxol.Core.Events.Manager.subscribe(event_types, []) do
+    case Raxol.Core.Events.EventManager.subscribe(event_types, []) do
       {:ok, subscription_id} ->
         {:ok, {:events, subscription_id}}
 

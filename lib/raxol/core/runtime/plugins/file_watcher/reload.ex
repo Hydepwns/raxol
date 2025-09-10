@@ -11,19 +11,19 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
   """
   def reload_plugin(plugin_id, path) do
     # Verify the plugin exists and is loaded
-    case Raxol.Core.Runtime.Plugins.Manager.get_plugin(plugin_id) do
+    case Raxol.Core.Runtime.Plugins.PluginManager.get_plugin(plugin_id) do
       {:ok, _plugin} ->
         # Attempt to reload the plugin
         case Raxol.Core.ErrorHandling.safe_call(fn ->
                # First unload the plugin
                # unload_plugin uses GenServer.cast and always returns :ok
-               Raxol.Core.Runtime.Plugins.Manager.unload_plugin(plugin_id)
+               Raxol.Core.Runtime.Plugins.PluginManager.unload_plugin(plugin_id)
 
                # Give it a moment to unload
                Process.sleep(10)
 
                # Then reload it
-               case Raxol.Core.Runtime.Plugins.Manager.load_plugin(
+               case Raxol.Core.Runtime.Plugins.PluginManager.load_plugin(
                       plugin_id,
                       %{}
                     ) do

@@ -20,7 +20,7 @@ defmodule Raxol.Cloud.EdgeComputing do
   * Edge-to-cloud data streaming
   """
 
-  alias Raxol.Cloud.EdgeComputing.Server
+  alias Raxol.Cloud.EdgeComputing.EdgeServer, as: Server
   require Logger
 
   @deprecated "Use Raxol.Cloud.EdgeComputing instead of Raxol.Cloud.EdgeComputing"

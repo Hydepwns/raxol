@@ -16,7 +16,7 @@ defmodule Raxol.Svelte.Slots do
   @compile {:no_warn_undefined,
             [{:handle_cast, 2}, {:code_change, 3}, {:terminate, 2}]}
 
-  alias Raxol.Svelte.ComponentState.Server
+  alias Raxol.Svelte.ComponentState.SvelteStateServer, as: Server
 
   # Ensure server is started
   defp ensure_server_started do

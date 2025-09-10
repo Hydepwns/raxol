@@ -1,7 +1,7 @@
 defmodule Raxol.MixProject do
   use Mix.Project
 
-  @version "1.0.1"
+  @version "1.2.0"
   @source_url "https://github.com/Hydepwns/raxol"
 
   def project do
@@ -156,9 +156,6 @@ defmodule Raxol.MixProject do
       {:plug_cowboy, "~> 2.7"},
       {:phoenix_live_dashboard, "~> 0.8.7", only: :dev},
       {:phoenix_live_reload, "~> 1.6", only: :dev}
-      # NOTE: surface and sourceror commented out - evaluate if needed
-      # {:surface, "~> 0.12.1"},
-      # {:sourceror, "~> 1.0.0"}
     ]
   end
 
@@ -206,8 +203,6 @@ defmodule Raxol.MixProject do
 
       # Development utilities
       {:file_system, "~> 0.2", only: [:dev, :test]}
-      # NOTE: Local JSON parser commented out - evaluate if needed
-      # {:json, path: "lib/json"}
     ]
   end
 

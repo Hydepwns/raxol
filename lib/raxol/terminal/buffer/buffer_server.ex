@@ -55,7 +55,7 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
   alias Raxol.Terminal.Buffer.Operations, as: Buffer
   alias Raxol.Terminal.Cell
   # Refactored modules
-  alias Raxol.Terminal.Buffer.{Callbacks, Handler}
+  alias Raxol.Terminal.Buffer.{Callbacks, BufferHandler}
 
   @type t :: pid()
 
@@ -481,20 +481,24 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
 
   @impl GenServer
   def handle_cast({:set_cell, x, y, cell}, state),
-    do: Handler.handle_cast({:set_cell, x, y, cell}, state)
+    do: BufferHandler.handle_cast({:set_cell, x, y, cell}, state)
 
   def handle_cast({:write_string, x, y, string}, state),
-    do: Handler.handle_cast({:write_string, x, y, string}, state)
+    do: BufferHandler.handle_cast({:write_string, x, y, string}, state)
 
   def handle_cast({:fill_region, x, y, width, height, cell}, state),
-    do: Handler.handle_cast({:fill_region, x, y, width, height, cell}, state)
+    do:
+      BufferHandler.handle_cast(
+        {:fill_region, x, y, width, height, cell},
+        state
+      )
 
   def handle_cast({:scroll, lines}, state),
-    do: Handler.handle_cast({:scroll, lines}, state)
+    do: BufferHandler.handle_cast({:scroll, lines}, state)
 
   def handle_cast({:resize, width, height}, state),
-    do: Handler.handle_cast({:resize, width, height}, state)
+    do: BufferHandler.handle_cast({:resize, width, height}, state)
 
   def handle_cast({:batch_operations, operations}, state),
-    do: Handler.handle_cast({:batch_operations, operations}, state)
+    do: BufferHandler.handle_cast({:batch_operations, operations}, state)
 end

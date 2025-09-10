@@ -1,46 +1,52 @@
 defmodule Raxol.Core.UXRefinement do
   @moduledoc """
-  Refactored UX refinement module that uses GenServer for state management.
+  Refactored UX refinement module that uses GenUxServer for state management.
 
   This module provides the same API as the original UXRefinement module but
-  delegates all state management to a supervised GenServer, eliminating
+  delegates all state management to a supervised GenUxServer, eliminating
   Process dictionary usage.
 
   ## Migration Notes
 
   This module maintains backward compatibility with the original API.
-  The main difference is that it requires starting the UXRefinement.Server
+  The main difference is that it requires starting the UXRefinement.UxServer
   as part of your supervision tree:
 
       children = [
-        {Raxol.Core.UXRefinement.Server, name: Raxol.Core.UXRefinement.Server}
+        {Raxol.Core.UXRefinement.UxServer, name: Raxol.Core.UXRefinement.UxServer}
       ]
       
       Supervisor.start_link(children, strategy: :one_for_one)
   """
 
-  alias Raxol.Core.UXRefinement.Server
+  alias Raxol.Core.UXRefinement.UxServer
 
-  @server Raxol.Core.UXRefinement.Server
+  @server Raxol.Core.UXRefinement.UxServer
 
   @doc """
   Initialize the UX refinement system.
 
-  This now initializes the GenServer state instead of Process dictionary.
+  This now initializes the GenUxServer state instead of Process dictionary.
   """
   def init do
     ensure_server_started()
-    Server.init_system(@server)
+    UxServer.init_system(@server)
   end
 
   @doc """
   Enable a UX refinement feature.
 
-  Delegates to the GenServer for state management.
+  Delegates to the GenUxServer for state management.
   """
   def enable_feature(feature, opts \\ [], user_preferences_pid_or_name \\ nil) do
     ensure_server_started()
-    Server.enable_feature(@server, feature, opts, user_preferences_pid_or_name)
+
+    UxServer.enable_feature(
+      @server,
+      feature,
+      opts,
+      user_preferences_pid_or_name
+    )
   end
 
   @doc """
@@ -48,7 +54,7 @@ defmodule Raxol.Core.UXRefinement do
   """
   def disable_feature(feature) do
     ensure_server_started()
-    Server.disable_feature(@server, feature)
+    UxServer.disable_feature(@server, feature)
   end
 
   @doc """
@@ -56,7 +62,7 @@ defmodule Raxol.Core.UXRefinement do
   """
   def feature_enabled?(feature) do
     ensure_server_started()
-    Server.feature_enabled?(@server, feature)
+    UxServer.feature_enabled?(@server, feature)
   end
 
   @doc """
@@ -65,7 +71,7 @@ defmodule Raxol.Core.UXRefinement do
   def register_hint(component_id, hint) when is_binary(hint) do
     ensure_server_started()
     ensure_feature_enabled(:hints, component_id)
-    Server.register_hint(@server, component_id, hint)
+    UxServer.register_hint(@server, component_id, hint)
   end
 
   @doc """
@@ -74,7 +80,7 @@ defmodule Raxol.Core.UXRefinement do
   def register_component_hint(component_id, hint_info) do
     ensure_server_started()
     ensure_feature_enabled(:hints, component_id)
-    Server.register_component_hint(@server, component_id, hint_info)
+    UxServer.register_component_hint(@server, component_id, hint_info)
   end
 
   @doc """
@@ -83,7 +89,7 @@ defmodule Raxol.Core.UXRefinement do
   def get_hint(component_id) do
     ensure_server_started()
     ensure_feature_enabled(:hints, component_id)
-    Server.get_hint(@server, component_id)
+    UxServer.get_hint(@server, component_id)
   end
 
   @doc """
@@ -93,7 +99,7 @@ defmodule Raxol.Core.UXRefinement do
       when level in [:basic, :detailed, :examples] do
     ensure_server_started()
     ensure_feature_enabled(:hints, component_id)
-    Server.get_component_hint(@server, component_id, level)
+    UxServer.get_component_hint(@server, component_id, level)
   end
 
   @doc """
@@ -102,7 +108,7 @@ defmodule Raxol.Core.UXRefinement do
   def get_component_shortcuts(component_id) do
     ensure_server_started()
     ensure_feature_enabled(:hints, component_id)
-    Server.get_component_shortcuts(@server, component_id)
+    UxServer.get_component_shortcuts(@server, component_id)
   end
 
   @doc """
@@ -113,7 +119,7 @@ defmodule Raxol.Core.UXRefinement do
 
     case feature_enabled?(:accessibility) do
       true ->
-        Server.get_accessibility_metadata(@server, component_id)
+        UxServer.get_accessibility_metadata(@server, component_id)
 
       false ->
         Raxol.Core.Runtime.Log.debug(
@@ -129,7 +135,7 @@ defmodule Raxol.Core.UXRefinement do
   """
   def register_accessibility_metadata(component_id, metadata) do
     ensure_server_started()
-    Server.register_accessibility_metadata(@server, component_id, metadata)
+    UxServer.register_accessibility_metadata(@server, component_id, metadata)
   end
 
   @doc """
@@ -191,7 +197,7 @@ defmodule Raxol.Core.UXRefinement do
     case Process.whereis(@server) do
       nil ->
         # Start the server if not running
-        {:ok, _pid} = Server.start_link(name: @server)
+        {:ok, _pid} = UxServer.start_link(name: @server)
         :ok
 
       _pid ->

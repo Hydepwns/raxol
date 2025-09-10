@@ -190,7 +190,7 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
     row_clamped = max(0, min(row_0, emulator.height - 1))
 
     cursor = emulator.cursor
-    {current_col, _} = get_cursor_position(cursor)
+    {_, current_col} = get_cursor_position(cursor)
     updated_cursor = set_cursor_position(cursor, {row_clamped, current_col})
 
     {:ok, %{emulator | cursor: updated_cursor}}
@@ -376,23 +376,31 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
 
   defp set_cursor_position(cursor, position) when is_pid(cursor) do
     CursorManager.set_position(cursor, position)
-    cursor
   end
 
   defp set_cursor_position(cursor, position) when is_map(cursor) do
     {row, col} = position
-    %{cursor | position: {row, col}, row: row, col: col}
+
+    # Check if cursor has both row and col fields
+    if Map.has_key?(cursor, :row) and Map.has_key?(cursor, :col) do
+      # Also update position field if it exists
+      if Map.has_key?(cursor, :position) do
+        %{cursor | row: row, col: col, position: {row, col}}
+      else
+        %{cursor | row: row, col: col}
+      end
+    else
+      # If cursor doesn't have expected fields, just return it unchanged
+      cursor
+    end
   end
 
   # Fallback clause for any other cursor type
   defp set_cursor_position(cursor, {row, col}) do
-    # Try to handle any cursor type that might have position, row, col fields
+    # Try to handle any cursor type that might have row and col fields
     case cursor do
-      %{position: _} when is_map(cursor) ->
-        %{cursor | position: {row, col}}
-
       %{row: _, col: _} when is_map(cursor) ->
-        %{cursor | row: row, col: col, position: {row, col}}
+        %{cursor | row: row, col: col}
 
       _ ->
         # If we can't handle it, return the cursor unchanged

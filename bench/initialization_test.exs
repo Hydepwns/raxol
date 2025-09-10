@@ -10,7 +10,7 @@ IO.puts("=" <> String.duplicate("=", 40))
 # Force module loading by accessing them
 modules = [
   Raxol.Terminal.Parser,
-  Raxol.Terminal.Parser.State,
+  Raxol.Terminal.Parser.ParserState,
   Raxol.Terminal.Parser.States.GroundState,
   Raxol.Terminal.Input.InputHandler,
   Raxol.Terminal.Input.CharacterProcessor,

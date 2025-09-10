@@ -107,7 +107,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
 
   setup do
     # Initialize any required dependencies
-    Raxol.Core.Events.Manager.init()
+    Raxol.Core.Events.EventManager.init()
 
     on_exit(fn ->
       # Clean up any enabled features
@@ -125,8 +125,8 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       end)
 
       # Clean up EventManager
-      if Process.whereis(Raxol.Core.Events.Manager),
-        do: Raxol.Core.Events.Manager.cleanup()
+      if Process.whereis(Raxol.Core.Events.EventManager),
+        do: Raxol.Core.Events.EventManager.cleanup()
     end)
 
     :ok

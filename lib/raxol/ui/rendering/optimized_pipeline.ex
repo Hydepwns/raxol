@@ -39,11 +39,11 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
     quote do
       cache_key = {unquote(name), unquote(opts[:key])}
 
-      case Raxol.UI.State.Management.Server.get_cache(cache_key) do
+      case Raxol.UI.State.Management.StateManagementServer.get_cache(cache_key) do
         :cache_miss ->
           result = unquote(block)
 
-          Raxol.UI.State.Management.Server.set_cache(
+          Raxol.UI.State.Management.StateManagementServer.set_cache(
             cache_key,
             {result, System.monotonic_time(:millisecond)}
           )
@@ -62,11 +62,11 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
       ttl = unquote(opts[:ttl])
       current_time = System.monotonic_time(:millisecond)
 
-      case Raxol.UI.State.Management.Server.get_cache(cache_key) do
+      case Raxol.UI.State.Management.StateManagementServer.get_cache(cache_key) do
         :cache_miss ->
           result = unquote(block)
 
-          Raxol.UI.State.Management.Server.set_cache(
+          Raxol.UI.State.Management.StateManagementServer.set_cache(
             cache_key,
             {result, current_time}
           )

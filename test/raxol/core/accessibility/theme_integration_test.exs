@@ -6,7 +6,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   use ExUnit.Case, async: false
 
   alias Raxol.Core.Accessibility.ThemeIntegration
-  alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.Events.EventManager, as: EventManager
   alias Raxol.Core.UserPreferences
 
   setup do
@@ -36,19 +36,29 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       # Verify event handlers are registered
       handlers = EventManager.get_handlers()
 
-      assert Enum.member?(
+      # Handlers are stored as 3-tuples with priority
+      assert Enum.any?(
                handlers[:accessibility_high_contrast] || [],
-               {ThemeIntegration, :handle_high_contrast}
+               fn
+                 {ThemeIntegration, :handle_high_contrast, _priority} -> true
+                 _ -> false
+               end
              )
 
-      assert Enum.member?(
+      assert Enum.any?(
                handlers[:accessibility_reduced_motion] || [],
-               {ThemeIntegration, :handle_reduced_motion}
+               fn
+                 {ThemeIntegration, :handle_reduced_motion, _priority} -> true
+                 _ -> false
+               end
              )
 
-      assert Enum.member?(
+      assert Enum.any?(
                handlers[:accessibility_large_text] || [],
-               {ThemeIntegration, :handle_large_text}
+               fn
+                 {ThemeIntegration, :handle_large_text, _priority} -> true
+                 _ -> false
+               end
              )
     end
   end

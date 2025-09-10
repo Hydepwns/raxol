@@ -19,7 +19,7 @@ defmodule Raxol.Core.Accessibility.Metadata do
   def register_element_metadata(element_id, metadata)
       when is_binary(element_id) and is_map(metadata) do
     # Delegate to the GenServer for metadata storage
-    alias Raxol.Core.Accessibility.Server
+    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
     Server.register_element_metadata(element_id, metadata)
     :ok
   end
@@ -42,7 +42,7 @@ defmodule Raxol.Core.Accessibility.Metadata do
   """
   def get_element_metadata(element_id) when is_binary(element_id) do
     # Delegate to the GenServer for metadata retrieval
-    alias Raxol.Core.Accessibility.Server
+    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
     Server.get_element_metadata(element_id)
   end
 
@@ -62,7 +62,7 @@ defmodule Raxol.Core.Accessibility.Metadata do
   def register_component_style(component_type, style)
       when is_atom(component_type) and is_map(style) do
     # Delegate to the GenServer for component style storage
-    alias Raxol.Core.Accessibility.Server
+    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
     Server.register_component_style(component_type, style)
     :ok
   end
@@ -85,7 +85,7 @@ defmodule Raxol.Core.Accessibility.Metadata do
   """
   def get_component_style(component_type) when is_atom(component_type) do
     # Delegate to the GenServer for component style retrieval
-    alias Raxol.Core.Accessibility.Server
+    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
     Server.get_component_style(component_type)
   end
 

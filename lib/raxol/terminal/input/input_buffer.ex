@@ -1,410 +1,246 @@
 defmodule Raxol.Terminal.Input.InputBuffer do
-  alias Raxol.Terminal.Input.Types
-  alias Raxol.Terminal.Input.InputBufferUtils
-
   @moduledoc """
-  Handles input buffering for the terminal emulator.
-  Provides functionality for storing, retrieving, and manipulating input data.
+  A simple data structure for managing input buffer state.
+
+  This module provides a stateless API for managing input buffer data,
+  separate from the GenServer-based Buffer module that handles process-based buffering.
   """
 
-  defstruct [
-    :contents,
-    :max_size,
-    :overflow_mode,
-    :escape_sequence,
-    :escape_sequence_mode,
-    cursor_pos: 0,
-    width: 80
-  ]
+  defstruct contents: "",
+            max_size: 1024,
+            overflow_mode: :truncate
 
-  @type t :: Types.input_buffer()
+  @type overflow_mode :: :truncate | :wrap | :error
+  @type t :: %__MODULE__{
+          contents: binary(),
+          max_size: non_neg_integer(),
+          overflow_mode: overflow_mode()
+        }
 
   @doc """
   Creates a new input buffer with default values.
   """
-  def new(max_size \\ 1024, overflow_mode \\ :truncate) do
+  @spec new() :: t()
+  def new do
+    %__MODULE__{}
+  end
+
+  @doc """
+  Creates a new input buffer with custom max_size and overflow_mode.
+  """
+  @spec new(non_neg_integer(), overflow_mode()) :: t()
+  def new(max_size, overflow_mode) do
     %__MODULE__{
-      contents: "",
       max_size: max_size,
-      overflow_mode: overflow_mode,
-      escape_sequence: "",
-      escape_sequence_mode: false,
-      cursor_pos: 0,
-      width: 80
+      overflow_mode: overflow_mode
     }
   end
 
   @doc """
-  Appends data to the buffer, handling escape sequences appropriately.
+  Gets the current contents of the buffer.
   """
-  def append(%__MODULE__{} = buffer, data) when is_binary(data) do
-    process_append_data(buffer.escape_sequence_mode, buffer, data)
-  end
+  @spec get_contents(t()) :: binary()
+  def get_contents(%__MODULE__{contents: contents}), do: contents
 
-  defp process_append_data(true, buffer, data) do
-    handle_escape_sequence(buffer, data)
-  end
+  @doc """
+  Gets the maximum size of the buffer.
+  """
+  @spec max_size(t()) :: non_neg_integer()
+  def max_size(%__MODULE__{max_size: max_size}), do: max_size
 
-  defp process_append_data(false, buffer, data) do
-    case data do
-      "\e" ->
-        %{buffer | escape_sequence_mode: true, escape_sequence: "\e"}
+  @doc """
+  Gets the overflow mode of the buffer.
+  """
+  @spec overflow_mode(t()) :: overflow_mode()
+  def overflow_mode(%__MODULE__{overflow_mode: overflow_mode}),
+    do: overflow_mode
 
-      _ ->
-        append_to_contents(buffer, data)
-    end
+  @doc """
+  Sets the contents of the buffer, handling overflow according to the buffer's mode.
+  """
+  @spec set_contents(t(), binary()) :: t()
+  def set_contents(%__MODULE__{} = buffer, new_contents) do
+    processed_contents = handle_overflow(buffer, new_contents)
+    %{buffer | contents: processed_contents}
   end
 
   @doc """
   Prepends data to the buffer.
   """
-  def prepend(%__MODULE__{} = buffer, data) when is_binary(data) do
-    new_contents = data <> buffer.contents
-    handle_overflow(buffer, new_contents, :prepend)
+  @spec prepend(t(), binary()) :: t()
+  def prepend(
+        %__MODULE__{
+          contents: current_contents,
+          max_size: max_size,
+          overflow_mode: overflow_mode
+        } = buffer,
+        new_data
+      ) do
+    combined_contents = new_data <> current_contents
+
+    processed_contents =
+      case overflow_mode do
+        :truncate when byte_size(combined_contents) > max_size ->
+          # For prepend + truncate, keep the rightmost content
+          start_pos = byte_size(combined_contents) - max_size
+          binary_part(combined_contents, start_pos, max_size)
+
+        :wrap when byte_size(combined_contents) > max_size ->
+          # For prepend + wrap, keep the leftmost content
+          binary_part(combined_contents, 0, max_size)
+
+        _ ->
+          handle_overflow(buffer, combined_contents)
+      end
+
+    %{buffer | contents: processed_contents}
   end
 
   @doc """
-  Sets the buffer contents.
+  Appends data to the buffer.
   """
-  def set_contents(%__MODULE__{} = buffer, contents) when is_binary(contents) do
-    handle_overflow(buffer, contents)
+  @spec append(t(), binary()) :: t()
+  def append(%__MODULE__{contents: current_contents} = buffer, new_data) do
+    combined_contents = current_contents <> new_data
+    processed_contents = handle_overflow(buffer, combined_contents)
+    %{buffer | contents: processed_contents}
   end
 
   @doc """
-  Gets the buffer contents.
+  Clears the buffer contents.
   """
-  def get_contents(%__MODULE__{} = buffer) do
-    buffer.contents
-  end
-
-  @doc """
-  Clears the buffer.
-  """
+  @spec clear(t()) :: t()
   def clear(%__MODULE__{} = buffer) do
     %{buffer | contents: ""}
   end
 
   @doc """
+  Gets the current size (byte count) of the buffer contents.
+  """
+  @spec size(t()) :: non_neg_integer()
+  def size(%__MODULE__{contents: contents}), do: byte_size(contents)
+
+  @doc """
   Checks if the buffer is empty.
   """
-  def empty?(%__MODULE__{} = buffer) do
-    buffer.contents == ""
-  end
-
-  @doc """
-  Gets the current size of the buffer.
-  """
-  def size(%__MODULE__{} = buffer) do
-    String.length(buffer.contents)
-  end
-
-  @doc """
-  Gets the maximum size of the buffer.
-  """
-  def max_size(%__MODULE__{} = buffer) do
-    buffer.max_size
-  end
+  @spec empty?(t()) :: boolean()
+  def empty?(%__MODULE__{contents: ""}), do: true
+  def empty?(%__MODULE__{}), do: false
 
   @doc """
   Sets the maximum size of the buffer.
-  If the current content exceeds the new max size, it will be handled
-  according to the current overflow mode.
   """
-  def set_max_size(%__MODULE__{} = buffer, max_size)
-      when is_integer(max_size) and max_size > 0 do
-    # Update the max_size first
-    new_buffer = %{buffer | max_size: max_size}
-    # Then, handle potential overflow of existing content with the new size
-    handle_overflow(new_buffer, new_buffer.contents)
+  @spec set_max_size(t(), non_neg_integer()) :: t()
+  def set_max_size(%__MODULE__{} = buffer, new_max_size) do
+    updated_buffer = %{buffer | max_size: new_max_size}
+    processed_contents = handle_overflow(updated_buffer, buffer.contents)
+    %{updated_buffer | contents: processed_contents}
   end
 
   @doc """
   Sets the overflow mode of the buffer.
   """
-  def set_overflow_mode(%__MODULE__{} = buffer, mode)
-      when mode in [:truncate, :error, :wrap] do
-    %{buffer | overflow_mode: mode}
+  @spec set_overflow_mode(t(), overflow_mode()) :: t()
+  def set_overflow_mode(%__MODULE__{} = buffer, new_overflow_mode) do
+    %{buffer | overflow_mode: new_overflow_mode}
   end
 
   @doc """
-  Gets the overflow mode of the buffer.
+  Removes the last character from the buffer (backspace).
   """
-  def overflow_mode(%__MODULE__{} = buffer) do
-    buffer.overflow_mode
-  end
+  @spec backspace(t()) :: t()
+  def backspace(%__MODULE__{contents: ""} = buffer), do: buffer
 
-  @doc """
-  Removes the last character from the buffer.
-  Uses graphemes to handle multi-byte characters correctly.
-  """
   def backspace(%__MODULE__{contents: contents} = buffer) do
-    perform_backspace(String.length(contents) > 0, contents, buffer)
-  end
-
-  defp perform_backspace(false, _contents, buffer), do: buffer
-
-  defp perform_backspace(true, contents, buffer) do
-    new_contents =
-      contents |> String.graphemes() |> Enum.drop(-1) |> Enum.join()
-
+    graphemes = String.graphemes(contents)
+    new_contents = graphemes |> Enum.drop(-1) |> Enum.join()
     %{buffer | contents: new_contents}
   end
 
   @doc """
   Removes the first character from the buffer.
   """
-  def delete_first(%__MODULE__{} = buffer) do
-    perform_delete_first(String.length(buffer.contents) > 0, buffer)
-  end
+  @spec delete_first(t()) :: t()
+  def delete_first(%__MODULE__{contents: ""} = buffer), do: buffer
 
-  defp perform_delete_first(false, buffer), do: buffer
-
-  defp perform_delete_first(true, buffer) do
-    %{buffer | contents: String.slice(buffer.contents, 1..-1//1)}
+  def delete_first(%__MODULE__{contents: contents} = buffer) do
+    graphemes = String.graphemes(contents)
+    new_contents = graphemes |> Enum.drop(1) |> Enum.join()
+    %{buffer | contents: new_contents}
   end
 
   @doc """
   Inserts a character at the specified position.
-  Raises ArgumentError if position is out of bounds.
   """
-  def insert_at(%__MODULE__{} = buffer, position, char) when is_binary(char) do
-    content_len = String.length(buffer.contents)
-    _char_len = String.length(char)
+  @spec insert_at(t(), non_neg_integer(), binary()) :: t()
+  def insert_at(%__MODULE__{contents: contents} = buffer, position, char) do
+    graphemes = String.graphemes(contents)
+    length = length(graphemes)
 
-    validate_position_and_insert(position, content_len, buffer, char)
-  end
+    if position < 0 or position > length do
+      raise ArgumentError, "Position out of bounds"
+    end
 
-  defp validate_position_and_insert(position, content_len, _buffer, _char)
-       when position < 0 or position > content_len do
-    raise ArgumentError, "Position out of bounds"
-  end
-
-  defp validate_position_and_insert(position, _content_len, buffer, char) do
-    # Ensure positive step
-    new_contents =
-      String.slice(buffer.contents, 0, position) <>
-        char <>
-        String.slice(buffer.contents, position..-1//1)
-
-    # After insertion, check for overflow
-    handle_overflow(buffer, new_contents)
+    {before, after_part} = Enum.split(graphemes, position)
+    new_contents = (before ++ [char] ++ after_part) |> Enum.join()
+    processed_contents = handle_overflow(buffer, new_contents)
+    %{buffer | contents: processed_contents}
   end
 
   @doc """
   Replaces a character at the specified position.
-  Raises ArgumentError if position is out of bounds.
   """
-  def replace_at(%__MODULE__{} = buffer, position, char) when is_binary(char) do
-    content_len = String.length(buffer.contents)
-    _char_len = String.length(char)
+  @spec replace_at(t(), non_neg_integer(), binary()) :: t()
+  def replace_at(%__MODULE__{contents: contents} = buffer, position, char) do
+    graphemes = String.graphemes(contents)
+    length = length(graphemes)
 
-    validate_position_and_replace(position, content_len, buffer, char)
-  end
-
-  defp validate_position_and_replace(position, content_len, _buffer, _char)
-       when position < 0 or position >= content_len do
-    raise ArgumentError, "Position out of bounds"
-  end
-
-  defp validate_position_and_replace(position, _content_len, buffer, char) do
-    # Calculate slices carefully
-    prefix = String.slice(buffer.contents, 0, position)
-    # Ensure positive step
-    suffix =
-      String.slice(buffer.contents, (position + String.length(char))..-1//1)
-
-    new_contents = prefix <> char <> suffix
-
-    # After replacement, check for overflow (char might be longer than replaced section)
-    handle_overflow(buffer, new_contents)
-  end
-
-  @doc """
-  Handles escape sequence processing.
-  """
-  def handle_escape_sequence(%__MODULE__{} = buffer, data) do
-    new_sequence = buffer.escape_sequence <> data
-
-    case data do
-      # End of escape sequence
-      <<c>> when c >= ?@ and c <= ?~ ->
-        %{
-          buffer
-          | contents: buffer.contents <> new_sequence,
-            escape_sequence: "",
-            escape_sequence_mode: false
-        }
-
-      # More escape sequence data
-      _ ->
-        %{buffer | escape_sequence: new_sequence}
+    if position < 0 or position >= length do
+      raise ArgumentError, "Position out of bounds"
     end
+
+    new_graphemes = List.replace_at(graphemes, position, char)
+    new_contents = Enum.join(new_graphemes)
+    processed_contents = handle_overflow(buffer, new_contents)
+    %{buffer | contents: processed_contents}
   end
 
-  defp append_to_contents(%__MODULE__{} = buffer, data) do
-    new_contents = buffer.contents <> data
-    handle_overflow(buffer, new_contents, :append)
-  end
+  # Private helper functions
 
-  @doc false
   defp handle_overflow(
-         %__MODULE__{} = buffer,
-         new_contents,
-         operation \\ :append
+         %__MODULE__{max_size: max_size, overflow_mode: mode},
+         contents
        ) do
-    content_len = String.length(new_contents)
+    content_length = byte_size(contents)
 
-    handle_buffer_size(
-      content_len <= buffer.max_size,
-      buffer,
-      new_contents,
-      content_len,
-      operation
-    )
-  end
-
-  defp handle_buffer_size(true, buffer, new_contents, _content_len, _operation) do
-    %{buffer | contents: new_contents}
-  end
-
-  defp handle_buffer_size(false, buffer, new_contents, content_len, operation) do
-    case buffer.overflow_mode do
-      :truncate ->
-        final_contents =
-          select_content_for_overflow(
-            new_contents,
-            content_len,
-            buffer.max_size,
-            operation,
-            :truncate
-          )
-
-        %{buffer | contents: final_contents}
-
-      :error ->
-        raise RuntimeError, "Buffer overflow"
-
-      :wrap ->
-        final_contents =
-          select_content_for_overflow(
-            new_contents,
-            content_len,
-            buffer.max_size,
-            operation,
-            :wrap
-          )
-
-        %{buffer | contents: final_contents}
+    if content_length <= max_size do
+      contents
+    else
+      apply_overflow_mode(mode, contents, max_size)
     end
   end
 
-  defp select_content_for_overflow(
-         new_contents,
-         content_len,
-         max_size,
-         operation,
-         mode
-       ) do
-    case {operation, mode} do
-      {:prepend, :truncate} ->
-        String.slice(new_contents, max(0, content_len - max_size)..-1//1)
+  defp apply_overflow_mode(:truncate, contents, max_size) do
+    binary_part(contents, 0, max_size)
+  end
 
-      {:prepend, :wrap} ->
-        String.slice(new_contents, 0, max_size)
+  defp apply_overflow_mode(:wrap, contents, max_size) do
+    content_length = byte_size(contents)
 
-      {_, :truncate} ->
-        String.slice(new_contents, 0, max_size)
-
-      {_, :wrap} ->
-        String.slice(new_contents, max(0, content_len - max_size)..-1//1)
+    if content_length <= max_size do
+      contents
+    else
+      # Take the last max_size bytes
+      start_pos = content_length - max_size
+      binary_part(contents, start_pos, max_size)
     end
   end
 
-  def handle_resize(%__MODULE__{} = buffer, new_width) do
-    perform_resize(new_width <= 0, buffer, new_width)
+  defp apply_overflow_mode(:error, contents, max_size) do
+    if byte_size(contents) > max_size do
+      raise RuntimeError, "Buffer overflow"
+    else
+      contents
+    end
   end
-
-  defp perform_resize(true, buffer, _new_width), do: buffer
-
-  defp perform_resize(false, buffer, new_width) do
-    {original_logical_line_index, original_pos_in_line} =
-      InputBufferUtils.find_logical_position(
-        buffer.contents,
-        buffer.cursor_pos
-      )
-
-    {new_contents, line_mapping} =
-      wrap_contents_with_mapping(buffer.contents, new_width)
-
-    new_cursor_pos =
-      InputBufferUtils.calculate_new_cursor_pos_v2(
-        line_mapping,
-        String.split(new_contents, "\n"),
-        original_logical_line_index,
-        original_pos_in_line,
-        new_contents
-      )
-
-    %{
-      buffer
-      | contents: new_contents,
-        width: new_width,
-        cursor_pos: new_cursor_pos
-    }
-  end
-
-  defp wrap_contents_with_mapping(contents, new_width) do
-    logical_lines_old = String.split(contents, "\n")
-
-    {wrapped_lines_new_list, {_final_wrapped_idx, line_mapping}} =
-      Enum.map_reduce(Enum.with_index(logical_lines_old), {0, %{}}, fn {line,
-                                                                        old_idx},
-                                                                       {current_wrapped_idx,
-                                                                        acc_mapping} ->
-        newly_wrapped_lines = InputBufferUtils.wrap_line(line, new_width)
-        num_lines_produced = length(newly_wrapped_lines)
-
-        indices =
-          Enum.to_list(
-            current_wrapped_idx..(current_wrapped_idx + num_lines_produced - 1)
-          )
-
-        {newly_wrapped_lines,
-         {current_wrapped_idx + num_lines_produced,
-          Map.put(acc_mapping, old_idx, indices)}}
-      end)
-
-    {Enum.join(List.flatten(wrapped_lines_new_list), "\n"), line_mapping}
-  end
-
-  def move_cursor_to_end_of_line(
-        %__MODULE__{contents: contents, cursor_pos: cursor_pos} = buffer
-      ) do
-    # 1. Find the index of the logical line the cursor is currently on
-    {logical_line_index, _pos_in_line} =
-      InputBufferUtils.find_logical_position(contents, cursor_pos)
-
-    # 2. Calculate the character offset for the end of that logical line
-    logical_lines = String.split(contents, "\n")
-
-    new_cursor_pos =
-      Enum.reduce(0..logical_line_index, 0, fn i, acc ->
-        # Add length of the current line
-        current_line_len = String.length(Enum.at(logical_lines, i))
-
-        # Add 1 for the newline, unless it's the very last line being considered *and* it's the last line of the buffer
-        newline_char_count = if i < logical_line_index, do: 1, else: 0
-        acc + current_line_len + newline_char_count
-      end)
-
-    %{buffer | cursor_pos: new_cursor_pos}
-  end
-
-  # This function appears unused currently.
-  # defp insert_at_index(str, index, char) do
-  #   {prefix, suffix} = String.split_at(str, index)
-  #   # Calculate char length for accurate cursor positioning after insert
-  #   _char_len = String.length(char) # Prefix with _ as it seems unused below
-  #   prefix <> char <> suffix
-  # end
 end

@@ -58,7 +58,7 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
 
       System.delete_env("COLORTERM")
       System.delete_env("NO_COLOR")
-      System.put_env("TERM", "xterm-kitty")
+      System.put_env("TERM", "kitty")
 
       # Reset detection cache AFTER setting env vars
       Adaptive.reset_detection()

@@ -668,7 +668,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
   defp get_current_user do
     # Get from process dictionary or context
-    Raxol.Security.UserContext.Server.get_current_user() || "system"
+    Raxol.Security.UserContext.ContextServer.get_current_user() || "system"
   end
 
   defp sanitize_key(key) do

@@ -42,8 +42,7 @@ defmodule Raxol.Core do
 
   alias Raxol.Core.Runtime.{
     Lifecycle,
-    Supervisor,
-    Plugins.Manager
+    Supervisor
   }
 
   alias Raxol.Core.{
@@ -227,7 +226,10 @@ defmodule Raxol.Core do
   """
   @spec load_plugin(plugin_id(), keyword()) :: {:ok, map()} | {:error, term()}
   def load_plugin(plugin_id, options \\ []) do
-    case Manager.load_plugin(plugin_id, options) do
+    case Raxol.Core.Runtime.Plugins.PluginManager.load_plugin(
+           plugin_id,
+           options
+         ) do
       {:ok, plugin_info} ->
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Plugin loaded: #{inspect(plugin_id)}"
@@ -264,7 +266,7 @@ defmodule Raxol.Core do
   """
   @spec unload_plugin(plugin_id()) :: :ok | {:error, term()}
   def unload_plugin(plugin_id) do
-    :ok = Manager.unload_plugin(plugin_id)
+    :ok = Raxol.Core.Runtime.Plugins.PluginManager.unload_plugin(plugin_id)
 
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Plugin unloaded: #{inspect(plugin_id)}"
@@ -290,7 +292,7 @@ defmodule Raxol.Core do
   """
   @spec list_plugins() :: {:ok, [plugin_id()]} | {:error, term()}
   def list_plugins do
-    case Manager.list_plugins() do
+    case Raxol.Core.Runtime.Plugins.PluginManager.list_plugins() do
       {:ok, plugins} -> {:ok, plugins}
       {:error, reason} -> {:error, reason}
     end

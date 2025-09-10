@@ -49,7 +49,7 @@ defmodule Raxol.I18nAccessibilityTest do
   # ^^^ This note should now be outdated if the issue was local defmock attempts.
 
   Mox.defmock(AccessibilityMock, for: Raxol.Core.Accessibility.Behaviour)
-  Mox.defmock(EventManagerMock, for: Raxol.Core.Events.Manager.Behaviour)
+  Mox.defmock(EventManagerMock, for: Raxol.Core.Events.EventManager.Behaviour)
 
   setup :verify_on_exit!
 

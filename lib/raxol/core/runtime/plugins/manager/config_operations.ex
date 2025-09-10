@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Runtime.Plugins.Manager.ConfigOperations do
+defmodule Raxol.Core.Runtime.Plugins.PluginManager.ConfigOperations do
   @moduledoc """
   Configuration management operations for plugin manager.
   Handles plugin configuration retrieval and updates.

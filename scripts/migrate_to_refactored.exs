@@ -13,7 +13,7 @@ defmodule MigrateToRefactored do
     "Raxol.Core.Accessibility" => "Raxol.Core.AccessibilityRefactored",
     "Raxol.Core.KeyboardNavigator" => "Raxol.Core.KeyboardNavigatorRefactored",
     "Raxol.Core.KeyboardShortcuts" => "Raxol.Core.KeyboardShortcutsRefactored",
-    "Raxol.Core.Events.Manager" => "Raxol.Core.Events.ManagerRefactored",
+    "Raxol.Core.Events.EventManager" => "Raxol.Core.Events.EventManagerRefactored",
     "Raxol.Core.Performance.Optimizer" => "Raxol.Core.Performance.OptimizerRefactored",
     
     # UI modules
@@ -40,7 +40,7 @@ defmodule MigrateToRefactored do
     "alias Raxol.Core.Accessibility" => "alias Raxol.Core.AccessibilityRefactored, as: Accessibility",
     "alias Raxol.Core.KeyboardNavigator" => "alias Raxol.Core.KeyboardNavigatorRefactored, as: KeyboardNavigator",
     "alias Raxol.Core.KeyboardShortcuts" => "alias Raxol.Core.KeyboardShortcutsRefactored, as: KeyboardShortcuts",
-    "alias Raxol.Core.Events.Manager" => "alias Raxol.Core.Events.ManagerRefactored, as: Manager",
+    "alias Raxol.Core.Events.EventManager" => "alias Raxol.Core.Events.EventManagerRefactored, as: Manager",
     "alias Raxol.Core.Performance.Optimizer" => "alias Raxol.Core.Performance.OptimizerRefactored, as: Optimizer",
     "alias Raxol.UI.State.Store" => "alias Raxol.UI.State.StoreRefactored, as: Store",
     "alias Raxol.UI.State.Hooks" => "alias Raxol.UI.State.HooksRefactored, as: Hooks",

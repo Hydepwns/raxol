@@ -837,6 +837,6 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
 
   defp get_current_user do
     # Fixed: Using get_current_user/0 instead of non-existent get_current_user/1
-    Raxol.Security.UserContext.Server.get_current_user()
+    Raxol.Security.UserContext.ContextServer.get_current_user()
   end
 end

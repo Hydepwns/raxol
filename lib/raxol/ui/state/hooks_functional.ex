@@ -8,7 +8,7 @@ defmodule Raxol.UI.State.HooksFunctional do
   REFACTORED: All try/catch blocks replaced with Task-based safe execution.
   """
 
-  alias Raxol.UI.State.Management.Server
+  alias Raxol.UI.State.Management.StateManagementServer, as: Server
   require Logger
 
   # Ensure server is started

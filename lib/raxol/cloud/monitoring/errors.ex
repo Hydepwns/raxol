@@ -8,7 +8,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
       config: config
     }
 
-    Raxol.Cloud.Monitoring.Server.init_monitoring(errors_state)
+    Raxol.Cloud.Monitoring.MonitoringServer.init_monitoring(errors_state)
     :ok
   end
 
@@ -32,7 +32,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
     _updated_errors = [error_entry | errors_state.errors] |> Enum.take(1000)
 
     # Record error using the existing function
-    Raxol.Cloud.Monitoring.Server.record_error(error_entry)
+    Raxol.Cloud.Monitoring.MonitoringServer.record_error(error_entry)
 
     # Send to backends
     send_error_to_backends(error_entry, errors_state.config)
@@ -75,7 +75,8 @@ defmodule Raxol.Cloud.Monitoring.Errors do
   # Private helpers
 
   defp get_errors_state() do
-    Raxol.Cloud.Monitoring.Server.get_errors() || %{errors: [], config: %{}}
+    Raxol.Cloud.Monitoring.MonitoringServer.get_errors() ||
+      %{errors: [], config: %{}}
   end
 
   # Helper functions for pattern matching refactoring

@@ -87,7 +87,9 @@ defmodule Raxol.Test.FileWatcherTestHelper do
       """
       def start_manager do
         {:ok, pid} =
-          Raxol.Core.Runtime.Plugins.Manager.start_link(runtime_pid: self())
+          Raxol.Core.Runtime.Plugins.PluginManager.start_link(
+            runtime_pid: self()
+          )
 
         pid
       end

@@ -29,8 +29,8 @@ defmodule RaxolWeb.TerminalLiveTest do
     conn = log_in_user(conn, user)
 
     # Ensure required processes are started
-    unless Process.whereis(Raxol.Web.Session.Manager) do
-      start_supervised!({Raxol.Web.Session.Manager, []})
+    unless Process.whereis(Raxol.Web.Session.SessionManager) do
+      start_supervised!({Raxol.Web.Session.SessionManager, []})
     end
 
     {:ok, conn: conn, user: user}

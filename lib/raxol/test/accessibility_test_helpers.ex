@@ -18,7 +18,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   alias Raxol.Style.Colors.Utilities
   alias Raxol.Core.FocusManager, as: FocusManager
   alias Raxol.Core.KeyboardShortcuts, as: KeyboardShortcuts
-  alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.Events.EventManager, as: EventManager
 
   import ExUnit.Assertions
 

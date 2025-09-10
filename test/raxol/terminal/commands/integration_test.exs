@@ -2,7 +2,7 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
   use ExUnit.Case, async: true
 
   # alias Raxol.Terminal.{Emulator, Window}
-  alias Raxol.Terminal.Commands.{CSIHandlers, OSCHandlers}
+  alias Raxol.Terminal.Commands.{CSIHandler, OSCHandler}
 
   defp unwrap_ok({:ok, value}), do: value
   defp unwrap_ok({:error, _reason, value}), do: value
@@ -65,11 +65,14 @@ defmodule Raxol.Terminal.Commands.IntegrationTest do
     test "preserves cursor position after window operations", %{
       emulator: emulator
     } do
+      IO.puts("Initial cursor type: #{inspect(emulator.cursor)}")
+      
       result1 =
         emulator
         |> CSIHandler.handle_cursor_position(10, 10)
         |> unwrap_ok()
 
+      IO.puts("Result1 cursor type: #{inspect(result1.cursor)}")
       IO.puts(
         "After cursor position: #{inspect(Raxol.Terminal.Cursor.Manager.get_position(result1.cursor))}"
       )

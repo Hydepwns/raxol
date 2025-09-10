@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.PluginManager do
   """
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Core.Runtime.Plugins.Manager
+  alias Raxol.Core.Runtime.Plugins.PluginManager, as: Manager
   require Raxol.Core.Runtime.Log
 
   @doc """

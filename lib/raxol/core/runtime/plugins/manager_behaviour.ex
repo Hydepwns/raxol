@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Runtime.Plugins.Manager.Behaviour do
+defmodule Raxol.Core.Runtime.Plugins.PluginManager.Behaviour do
   @moduledoc """
   Defines the behaviour for plugin management functionality.
   This is used for mocking in tests.

@@ -11,7 +11,7 @@ IO.puts("Parser Chain Profiling")
 IO.puts("=" <> String.duplicate("=", 40))
 
 emulator = Emulator.new_minimal(80, 24)
-parser_state = %Raxol.Terminal.Parser.State{state: :ground}
+parser_state = %Raxol.Terminal.Parser.ParserState{state: :ground}
 
 # Warm up
 Parser.parse(emulator, "\e[31m")

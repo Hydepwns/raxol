@@ -33,6 +33,6 @@ defmodule Raxol.Web.SupervisorTest do
 
     # Check for specific expected children
     child_modules = Enum.map(children, fn {mod, _, _, _} -> mod end)
-    assert Raxol.Web.Manager in child_modules
+    assert Raxol.Web.WebManager in child_modules
   end
 end

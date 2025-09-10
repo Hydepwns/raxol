@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.Buffer.Updater do
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.CharacterHandling
 
-  import Raxol.Terminal.Buffer.State, only: [get_cell_at: 3]
+  import Raxol.Terminal.Buffer.BufferState, only: [get_cell_at: 3]
 
   @doc """
   Calculates the difference between the current buffer state and a list of desired cell changes.

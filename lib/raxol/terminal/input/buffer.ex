@@ -48,395 +48,87 @@ defmodule Raxol.Terminal.Input.Buffer do
 
   # Server Callbacks
 
-  @impl GenServer
+  @impl true
   def init(opts) do
-    max_size = Keyword.get(opts, :max_size, 1024)
-    {:ok, new(max_size)}
+    max_buffer_size = Keyword.get(opts, :max_buffer_size, 1024)
+    callback_timeout = Keyword.get(opts, :callback_timeout, 50)
+
+    {:ok,
+     %{
+       buffer: "",
+       max_buffer_size: max_buffer_size,
+       callback: nil,
+       callback_timeout: callback_timeout,
+       timer_ref: nil
+     }}
   end
 
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
-    {:reply, state, state}
-  end
+  @impl true
+  def handle_cast({:feed_input, input}, state) do
+    updated_buffer = state.buffer <> input
+    truncated_buffer = truncate_buffer(updated_buffer, state.max_buffer_size)
 
-  @impl GenServer
-  def handle_cast({:add_event, event}, state) do
-    case add(state, event) do
-      {:ok, new_state} -> {:noreply, new_state}
-      {:error, _reason} -> {:noreply, state}
+    new_state = %{state | buffer: truncated_buffer}
+
+    case state.callback do
+      nil ->
+        {:noreply, new_state}
+
+      callback when is_function(callback, 1) ->
+        # Reset timer if it exists
+        new_state_with_timer = cancel_existing_timer(new_state)
+
+        # Start new timer
+        timer_ref =
+          Process.send_after(self(), :flush_callback, state.callback_timeout)
+
+        {:noreply, %{new_state_with_timer | timer_ref: timer_ref}}
     end
   end
 
-  @impl GenServer
-  def handle_cast({:feed_input, input}, state) do
-    {:ok, new_state} = process_input(state, input)
-    # Callback is already completed synchronously in process_input
-    # Now schedule delayed stop
-    Process.send_after(self(), :delayed_stop, 10)
-    {:noreply, new_state}
-  end
-
-  @impl GenServer
+  @impl true
   def handle_cast({:register_callback, callback}, state) do
     {:noreply, %{state | callback: callback}}
   end
 
-  @impl GenServer
+  @impl true
   def handle_cast(:clear_buffer, state) do
-    # Clear buffer first, then schedule delayed stop
-    Process.send_after(self(), :delayed_stop, 10)
-    {:noreply, clear(state)}
+    new_state = cancel_existing_timer(%{state | buffer: ""})
+    {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_info(:timeout, state) do
-    # Timeout reached, schedule delayed stop
-    Process.send_after(self(), :delayed_stop, 10)
-    {:noreply, state}
-  end
-
-  @impl GenServer
-  def handle_info(:delayed_stop, state) do
-    {:stop, :normal, state}
-  end
-
-  @doc """
-  Creates a new input buffer with the given size.
-  """
-  def new(max_size) when is_integer(max_size) and max_size > 0 do
-    %{
-      buffer: [],
-      max_size: max_size,
-      current_size: 0,
-      callback: nil,
-      # String buffer for partial sequences
-      input_buffer: ""
-    }
-  end
-
-  @doc """
-  Adds an event to the input buffer.
-  """
-  def add(buffer, event) do
-    add_to_buffer(buffer.current_size >= buffer.max_size, buffer, event)
-  end
-
-  @doc """
-  Gets the current buffer contents.
-  """
-  def get_contents(buffer) do
-    buffer.buffer
-  end
-
-  @doc """
-  Clears the input buffer.
-  """
-  def clear(buffer) do
-    %{buffer | buffer: [], current_size: 0}
-  end
-
-  # Private functions
-
-  defp process_input(state, input) do
-    # Parse the input and create appropriate events
-    case parse_input_sequence(state, input) do
-      {:ok, events, new_state} ->
-        case new_state.callback do
-          nil ->
-            {:ok, new_state}
-
-          callback ->
-            case Raxol.Core.ErrorHandling.safe_call(fn ->
-                   # Call callback for each event synchronously
-                   # This ensures the callback completes before we schedule the delayed stop
-                   Enum.each(events, fn event ->
-                     callback.(event)
-                   end)
-                 end) do
-              {:ok, _result} -> {:ok, new_state}
-              {:error, _reason} -> {:ok, new_state}
-            end
+  @impl true
+  def handle_info(:flush_callback, state) do
+    case {state.callback, state.buffer} do
+      {callback, buffer} when is_function(callback, 1) and buffer != "" ->
+        try do
+          callback.(buffer)
+        rescue
+          error ->
+            # Log error but continue
+            require Logger
+            Logger.error("Input buffer callback error: #{inspect(error)}")
         end
 
-      {:buffer, new_state} ->
-        # Partial sequence, buffer it and don't call callback yet
-        {:ok, new_state}
+        {:noreply, %{state | buffer: "", timer_ref: nil}}
 
-      {:error, _reason} ->
-        {:ok, state}
+      _ ->
+        {:noreply, %{state | timer_ref: nil}}
     end
   end
 
-  defp parse_input_sequence(state, input) do
-    # If we have buffered input, combine it with new input
-    combined_input = state.input_buffer <> input
+  # Private helpers
 
-    case parse_events_recursive(combined_input, []) do
-      {:ok, events, remaining} ->
-        # If there's remaining input, buffer it
-        new_state = update_input_buffer(remaining, state)
-        {:ok, events, new_state}
-
-      {:buffer, remaining} ->
-        # Partial sequence, buffer the remaining input
-        {:buffer, %{state | input_buffer: remaining}}
-
-      {:error, _reason} ->
-        {:error, :parse_error}
-    end
+  defp truncate_buffer(buffer, max_size) when byte_size(buffer) > max_size do
+    binary_part(buffer, byte_size(buffer) - max_size, max_size)
   end
 
-  defp parse_events_recursive("", events) do
-    {:ok, events, ""}
-  end
+  defp truncate_buffer(buffer, _max_size), do: buffer
 
-  defp parse_events_recursive(input, events) do
-    case parse_next_event(input) do
-      {:ok, event, remaining_input} ->
-        parse_events_recursive(remaining_input, events ++ [event])
+  defp cancel_existing_timer(%{timer_ref: nil} = state), do: state
 
-      {:buffer, remaining_input} ->
-        # Partial sequence, buffer it
-        {:buffer, remaining_input}
-
-      {:error, _reason} ->
-        handle_parse_error(input, events)
-    end
-  end
-
-  defp handle_parse_error(input, events) do
-    case parse_single_character(input) do
-      {:ok, event, remaining_input} ->
-        parse_events_recursive(remaining_input, events ++ [event])
-
-      {:error, _reason} ->
-        # If we still can't parse, skip the first character and continue
-        handle_unparseable_input(input, events)
-    end
-  end
-
-  defp parse_next_event(input) do
-    parsers = [
-      &parse_mouse_event/1,
-      &parse_key_event_3_params/1,
-      &parse_key_event_2_params/1,
-      &parse_incomplete_escape/1,
-      &parse_single_character_event/1,
-      &parse_control_character/1
-    ]
-
-    Enum.find_value(parsers, fn parser ->
-      parser.(input)
-    end)
-  end
-
-  defp parse_incomplete_escape(input) do
-    check_incomplete_escape(input)
-  end
-
-  defp parse_single_character_event(input) do
-    parse_single_char_if_valid(input)
-  end
-
-  defp parse_control_character(input) do
-    parse_control_if_present(input)
-  end
-
-  defp parse_mouse_event(input) do
-    parse_mouse_if_matches(input)
-  end
-
-  defp parse_key_event_3_params(input) do
-    parse_key_3_params_if_matches(input)
-  end
-
-  defp parse_key_event_2_params(input) do
-    parse_key_2_params_if_matches(input)
-  end
-
-  defp parse_mouse_button(button_code) do
-    case button_code do
-      "0" -> :left
-      "1" -> :middle
-      "2" -> :right
-      _ -> :left
-    end
-  end
-
-  defp parse_mouse_action(action_code) do
-    case action_code do
-      "0" -> :press
-      "1" -> :release
-      "2" -> :move
-      _ -> :press
-    end
-  end
-
-  defp parse_single_character(input) do
-    parse_single_char_with_check(input)
-  end
-
-  defp parse_modifiers(params) do
-    modifier_map = %{
-      "1" => [:shift],
-      "2" => [:shift],
-      "3" => [:alt],
-      "4" => [:shift, :alt],
-      "5" => [:ctrl],
-      "6" => [:shift, :ctrl],
-      "7" => [:alt, :ctrl],
-      "8" => [:shift, :alt, :ctrl]
-    }
-
-    modifiers = Enum.flat_map(params, &Map.get(modifier_map, &1, []))
-
-    # Remove duplicates and sort in the order [:shift, :ctrl, :alt]
-    order = %{shift: 0, ctrl: 1, alt: 2}
-    modifiers |> Enum.uniq() |> Enum.sort_by(&Map.get(order, &1, 99))
-  end
-
-  # Helper functions for if statement elimination
-
-  defp add_to_buffer(true, _buffer, _event) do
-    {:error, :buffer_full}
-  end
-
-  defp add_to_buffer(false, buffer, event) do
-    new_buffer = %{
-      buffer
-      | buffer: buffer.buffer ++ [event],
-        current_size: buffer.current_size + 1
-    }
-
-    {:ok, new_buffer}
-  end
-
-  defp update_input_buffer("", state) do
-    %{state | input_buffer: ""}
-  end
-
-  defp update_input_buffer(remaining, state) do
-    %{state | input_buffer: remaining}
-  end
-
-  defp handle_unparseable_input(input, events) when byte_size(input) > 0 do
-    parse_events_recursive(String.slice(input, 1..-1//1), events)
-  end
-
-  defp handle_unparseable_input(_input, events) do
-    {:ok, events, ""}
-  end
-
-  defp check_incomplete_escape("\e"), do: {:buffer, "\e"}
-  defp check_incomplete_escape("\e[" <> _), do: {:buffer, "\e"}
-  defp check_incomplete_escape(_input), do: nil
-
-  defp parse_single_char_if_valid(input) when byte_size(input) >= 1 do
-    char = String.first(input)
-
-    case String.match?(char, ~r/[\x00-\x1F]/) do
-      true ->
-        nil
-
-      false ->
-        event = %Raxol.Terminal.Input.Event.KeyEvent{key: char, modifiers: []}
-        remaining = String.slice(input, 1..-1//1)
-        {:ok, event, remaining}
-    end
-  end
-
-  defp parse_single_char_if_valid(_input), do: nil
-
-  defp parse_control_if_present(input) when byte_size(input) >= 1 do
-    {:error, :unrecognized_sequence}
-  end
-
-  defp parse_control_if_present(_input), do: nil
-
-  defp parse_mouse_if_matches(input) do
-    mouse_regex = ~r/^\e\[(\d+);(\d+);(\d+);(\d+)M/
-
-    case String.match?(input, mouse_regex) do
-      true ->
-        [_, button_code, action_code, x, y] = Regex.run(mouse_regex, input)
-
-        button = parse_mouse_button(button_code)
-        action = parse_mouse_action(action_code)
-
-        event = %Raxol.Terminal.Input.Event.MouseEvent{
-          button: button,
-          action: action,
-          x: String.to_integer(x),
-          y: String.to_integer(y)
-        }
-
-        sequence_length =
-          String.length("\e[#{button_code};#{action_code};#{x};#{y}M")
-
-        remaining = String.slice(input, sequence_length..-1//1)
-        {:ok, event, remaining}
-
-      false ->
-        nil
-    end
-  end
-
-  defp parse_key_3_params_if_matches(input) do
-    key_regex = ~r/^\e\[(\d+);(\d+);(\d+)([A-Z])/
-
-    case String.match?(input, key_regex) do
-      true ->
-        [_, param1, param2, param3, key] = Regex.run(key_regex, input)
-
-        modifiers = parse_modifiers([param1, param2, param3])
-
-        event = %Raxol.Terminal.Input.Event.KeyEvent{
-          key: key,
-          modifiers: modifiers
-        }
-
-        sequence_length =
-          String.length("\e[#{param1};#{param2};#{param3}#{key}")
-
-        remaining = String.slice(input, sequence_length..-1//1)
-        {:ok, event, remaining}
-
-      false ->
-        nil
-    end
-  end
-
-  defp parse_key_2_params_if_matches(input) do
-    key_regex = ~r/^\e\[(\d+);(\d+)([A-Z])/
-
-    case String.match?(input, key_regex) do
-      true ->
-        [_, modifier_code, key_code, key] = Regex.run(key_regex, input)
-
-        modifiers = parse_modifiers([modifier_code, key_code])
-
-        event = %Raxol.Terminal.Input.Event.KeyEvent{
-          key: key,
-          modifiers: modifiers
-        }
-
-        sequence_length = String.length("\e[#{modifier_code};#{key_code}#{key}")
-        remaining = String.slice(input, sequence_length..-1//1)
-        {:ok, event, remaining}
-
-      false ->
-        nil
-    end
-  end
-
-  defp parse_single_char_with_check(input) when byte_size(input) >= 1 do
-    char = String.first(input)
-    event = %Raxol.Terminal.Input.Event.KeyEvent{key: char, modifiers: []}
-    remaining = String.slice(input, 1..-1//1)
-    {:ok, event, remaining}
-  end
-
-  defp parse_single_char_with_check(_input) do
-    {:error, :empty_input}
+  defp cancel_existing_timer(%{timer_ref: timer_ref} = state) do
+    Process.cancel_timer(timer_ref)
+    %{state | timer_ref: nil}
   end
 end

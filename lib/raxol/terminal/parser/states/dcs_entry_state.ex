@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
   """
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Parser.State
+  alias Raxol.Terminal.Parser.ParserState, as: State
   require Raxol.Core.Runtime.Log
 
   @doc """

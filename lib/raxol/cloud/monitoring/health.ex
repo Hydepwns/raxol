@@ -10,7 +10,7 @@ defmodule Raxol.Cloud.Monitoring.Health do
       config: config
     }
 
-    Raxol.Cloud.Monitoring.Server.init_health(health_state)
+    Raxol.Cloud.Monitoring.MonitoringServer.init_health(health_state)
     :ok
   end
 
@@ -39,7 +39,7 @@ defmodule Raxol.Cloud.Monitoring.Health do
         components: Map.merge(health_state.components, component_results)
     }
 
-    Raxol.Cloud.Monitoring.Server.update_health(updated_health_state)
+    Raxol.Cloud.Monitoring.MonitoringServer.update_health(updated_health_state)
 
     %{
       status: status,
@@ -54,7 +54,7 @@ defmodule Raxol.Cloud.Monitoring.Health do
   end
 
   defp get_health_state() do
-    Raxol.Cloud.Monitoring.Server.get_health_status() ||
+    Raxol.Cloud.Monitoring.MonitoringServer.get_health_status() ||
       %{status: :unknown, last_check: nil, components: %{}, config: %{}}
   end
 

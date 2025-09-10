@@ -13,7 +13,7 @@ defmodule Raxol.UI.Interactions.DragDrop do
   """
 
   alias Raxol.Animation.Framework
-  alias Raxol.Core.Accessibility, as: Accessibility
+  alias Raxol.Core.Accessibility
 
   @type drag_state :: %{
           active: boolean(),

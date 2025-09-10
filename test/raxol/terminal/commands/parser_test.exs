@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Commands.ParserTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Terminal.Commands.Parser
+  alias Raxol.Terminal.Commands.CommandsParser, as: Parser
 
   describe "parse_params/1" do
     test ~c"parses empty string as empty list" do

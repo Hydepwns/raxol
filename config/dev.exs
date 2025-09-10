@@ -63,3 +63,24 @@ config :raxol, :web,
   session_timeout: 3600,
   debug_mode: false,
   enable_hot_reload: true
+
+# AI Service Configuration
+config :raxol, :ai_service,
+  local_endpoint:
+    System.get_env("AI_LOCAL_ENDPOINT", "http://localhost:8080/v1/completions"),
+  timeout: String.to_integer(System.get_env("AI_TIMEOUT", "30000"))
+
+# Streaming Data Configuration  
+config :raxol, :streaming,
+  default_websocket_endpoint:
+    System.get_env("WS_ENDPOINT", "ws://localhost:8080"),
+  metrics_path: "/metrics",
+  data_path: "/data"
+
+# Task timeouts
+config :raxol, :timeouts,
+  task_yield: String.to_integer(System.get_env("TASK_YIELD_TIMEOUT", "3000")),
+  task_yield_long:
+    String.to_integer(System.get_env("TASK_YIELD_LONG_TIMEOUT", "30000")),
+  circuit_breaker_reset:
+    String.to_integer(System.get_env("CIRCUIT_BREAKER_RESET", "30000"))

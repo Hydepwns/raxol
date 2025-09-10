@@ -60,7 +60,7 @@ defmodule Raxol.Core.Performance do
 
       _pid ->
         # Store collector in memoization cache
-        Raxol.Core.Performance.Memoization.Server.put(
+        Raxol.Core.Performance.Memoization.MemoizationServer.put(
           :metrics_collector,
           collector
         )
@@ -90,7 +90,11 @@ defmodule Raxol.Core.Performance do
 
       _pid ->
         # Store jank detector in memoization cache
-        Raxol.Core.Performance.Memoization.Server.put(:jank_detector, detector)
+        Raxol.Core.Performance.Memoization.MemoizationServer.put(
+          :jank_detector,
+          detector
+        )
+
         :ok
     end
   end
@@ -165,7 +169,9 @@ defmodule Raxol.Core.Performance do
   defp safe_get_collector do
     task =
       Task.async(fn ->
-        Raxol.Core.Performance.Memoization.Server.get(:metrics_collector)
+        Raxol.Core.Performance.Memoization.MemoizationServer.get(
+          :metrics_collector
+        )
       end)
 
     case Task.yield(task, 1000) || Task.shutdown(task) do
@@ -247,7 +253,9 @@ defmodule Raxol.Core.Performance do
        when name in ["render_time", "frame_time"] do
     task =
       Task.async(fn ->
-        case Raxol.Core.Performance.Memoization.Server.get(:metrics_collector) do
+        case Raxol.Core.Performance.Memoization.MemoizationServer.get(
+               :metrics_collector
+             ) do
           {:ok, collector} ->
             Raxol.Core.Performance.MetricsCollector.record_frame(
               collector,

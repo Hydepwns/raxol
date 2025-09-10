@@ -2,11 +2,11 @@ defmodule Raxol.Terminal.Input.ProcessorTest do
   use ExUnit.Case, async: true
 
   alias Raxol.Terminal.Input.{
-    Processor,
     # Event,
     Event.MouseEvent,
     Event.KeyEvent
   }
+  alias Raxol.Terminal.Input.InputProcessor, as: Processor
 
   describe "input processing" do
     test ~c"processes regular character input" do

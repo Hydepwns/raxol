@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Runtime.Plugins.Manager.CommandOperations do
+defmodule Raxol.Core.Runtime.Plugins.PluginManager.CommandOperations do
   @moduledoc """
   Command handling operations for plugin manager.
   Manages plugin command execution, hooks, and command processing.

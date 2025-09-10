@@ -105,7 +105,7 @@ defmodule Raxol.RuntimeTest do
   end
 
   alias Raxol.Runtime.Supervisor, as: RuntimeSupervisor
-  alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
+  alias Raxol.Core.Runtime.Plugins.PluginManager, as: PluginManager
   alias Raxol.Core.Runtime.Events.Dispatcher
   alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
   alias Raxol.Terminal.Driver, as: TerminalDriver

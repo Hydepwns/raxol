@@ -11,7 +11,7 @@ defmodule Raxol.UI.State.Store do
   eliminating Process dictionary usage while maintaining full functionality.
   """
 
-  alias Raxol.UI.State.Management.Server
+  alias Raxol.UI.State.Management.StateManagementServer, as: Server
   require Logger
 
   # Store state structure (for compatibility)

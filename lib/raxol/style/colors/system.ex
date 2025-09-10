@@ -22,10 +22,9 @@ defmodule Raxol.Style.Colors.System do
   require Raxol.Core.Runtime.Log
   require Logger
 
-  alias Raxol.Style.Colors.{System.Server, Utilities, Color}
+  alias Raxol.Style.Colors.{Utilities, Color}
+  alias Raxol.Style.Colors.System.ColorSystemServer, as: Server
   alias Raxol.UI.Theming.Theme
-
-  @deprecated "Use Raxol.Style.Colors.System instead of Raxol.Style.Colors.System"
 
   @default_theme :default
 

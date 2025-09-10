@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Config.Persistence do
   """
 
   alias Raxol.Terminal.Config
-  alias Raxol.Terminal.Config.Validator
+  alias Raxol.Terminal.Config.ConfigValidator, as: Validator
 
   @doc """
   Saves a configuration to persistent storage.

@@ -1,13 +1,13 @@
 defmodule Raxol.Cloud.Monitoring do
   @moduledoc """
-  Refactored Cloud Monitoring module with GenServer-based state management.
+  Refactored Cloud Monitoring module with GenMonitoringServer-based state management.
 
   This module provides backward compatibility while eliminating Process dictionary usage.
-  All state is now managed through the Cloud.Monitoring.Server GenServer.
+  All state is now managed through the Cloud.Monitoring.MonitoringServer GenMonitoringServer.
 
   ## Migration Notes
 
-  This module replaces direct Process dictionary usage with supervised GenServer state.
+  This module replaces direct Process dictionary usage with supervised GenMonitoringServer state.
   The API remains the same, but the implementation is now OTP-compliant and more robust.
 
   ## Features Maintained
@@ -20,15 +20,15 @@ defmodule Raxol.Cloud.Monitoring do
   * Integration with popular monitoring services
   """
 
-  alias Raxol.Cloud.Monitoring.Server
+  alias Raxol.Cloud.Monitoring.MonitoringServer
 
   @deprecated "Use Raxol.Cloud.Monitoring instead of Raxol.Cloud.Monitoring"
 
   # Ensure server is started
   defp ensure_server_started do
-    case Process.whereis(Server) do
+    case Process.whereis(MonitoringServer) do
       nil ->
-        {:ok, _pid} = Server.start_link()
+        {:ok, _pid} = MonitoringServer.start_link()
         :ok
 
       _pid ->
@@ -56,7 +56,7 @@ defmodule Raxol.Cloud.Monitoring do
   """
   def init(opts \\ []) do
     ensure_server_started()
-    Server.init_monitoring(opts)
+    MonitoringServer.init_monitoring(opts)
   end
 
   @doc """
@@ -64,7 +64,7 @@ defmodule Raxol.Cloud.Monitoring do
   """
   def update_config(_state \\ nil, config) do
     ensure_server_started()
-    Server.update_config(config)
+    MonitoringServer.update_config(config)
   end
 
   @doc """
@@ -72,7 +72,7 @@ defmodule Raxol.Cloud.Monitoring do
   """
   def start do
     ensure_server_started()
-    Server.start_monitoring()
+    MonitoringServer.start_monitoring()
   end
 
   @doc """
@@ -80,7 +80,7 @@ defmodule Raxol.Cloud.Monitoring do
   """
   def stop do
     ensure_server_started()
-    Server.stop_monitoring()
+    MonitoringServer.stop_monitoring()
   end
 
   @doc """
@@ -99,7 +99,7 @@ defmodule Raxol.Cloud.Monitoring do
   """
   def record_metric(name, value, opts \\ []) do
     ensure_server_started()
-    Server.record_metric(name, value, opts)
+    MonitoringServer.record_metric(name, value, opts)
     :ok
   end
 
@@ -116,7 +116,7 @@ defmodule Raxol.Cloud.Monitoring do
   """
   def record_metrics(metrics) do
     ensure_server_started()
-    Server.record_metrics(metrics)
+    MonitoringServer.record_metrics(metrics)
     :ok
   end
 
@@ -138,7 +138,7 @@ defmodule Raxol.Cloud.Monitoring do
   """
   def record_error(error, opts \\ []) do
     ensure_server_started()
-    Server.record_error(error, opts)
+    MonitoringServer.record_error(error, opts)
     :ok
   end
 
@@ -157,7 +157,7 @@ defmodule Raxol.Cloud.Monitoring do
   """
   def run_health_check(opts \\ []) do
     ensure_server_started()
-    Server.run_health_check(opts)
+    MonitoringServer.run_health_check(opts)
   end
 
   @doc """
@@ -175,7 +175,7 @@ defmodule Raxol.Cloud.Monitoring do
   """
   def trigger_alert(type, data, opts \\ []) do
     ensure_server_started()
-    Server.trigger_alert(type, data, opts)
+    MonitoringServer.trigger_alert(type, data, opts)
     :ok
   end
 
@@ -184,7 +184,7 @@ defmodule Raxol.Cloud.Monitoring do
   """
   def status do
     ensure_server_started()
-    Server.get_status()
+    MonitoringServer.get_status()
   end
 
   @doc """
@@ -204,7 +204,7 @@ defmodule Raxol.Cloud.Monitoring do
   """
   def get_metrics(name, opts \\ []) do
     ensure_server_started()
-    Server.get_metrics(name, opts)
+    MonitoringServer.get_metrics(name, opts)
   end
 
   @doc """
@@ -225,7 +225,7 @@ defmodule Raxol.Cloud.Monitoring do
   """
   def get_errors(opts \\ []) do
     ensure_server_started()
-    Server.get_errors(opts)
+    MonitoringServer.get_errors(opts)
   end
 
   @doc """
@@ -246,6 +246,6 @@ defmodule Raxol.Cloud.Monitoring do
   """
   def get_alerts(opts \\ []) do
     ensure_server_started()
-    Server.get_alerts(opts)
+    MonitoringServer.get_alerts(opts)
   end
 end

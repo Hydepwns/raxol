@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       # Access field on returned struct
       assert buffer.height == 24
       # Assert against the Manager struct
-      assert is_pid(cursor)
+      assert is_struct(cursor, CursorManager)
       # Access scroll_region field directly
       assert emulator.scroll_region == nil
       # Access style field directly and compare with default using constructor

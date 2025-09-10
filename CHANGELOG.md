@@ -1,3 +1,78 @@
+## [1.2.0] - 2025-09-10
+
+### Sprint 25: Final Test Suite Resolution - COMPLETE
+
+- **InputBuffer Module Implementation**: Complete implementation of missing InputBuffer functionality
+  - Fixed module name conflicts causing compilation errors
+  - Implemented all 39 required functions (append, prepend, clear, size, etc.)
+  - Added proper overflow handling for truncate, wrap, and error modes
+  - Fixed error message formatting to match test expectations
+  - All 39 InputBuffer tests now passing (was 6 critical failures)
+
+- **Major Test Issues Resolved**: Fixed all remaining Sprint 25 test failures (13/13 complete)
+  - ColorSystem high contrast accessibility integration
+  - Mouse input integration tests (click/selection modes)  
+  - UI rendering pipeline parameter validation fixes
+  - Interlacing mode CSI handler mappings
+  - InputBuffer module functionality complete
+
+### Sprint 26: Technical Debt & Codebase Cleanup - COMPLETE
+
+- **Repository Organization**: Comprehensive cleanup and maintenance
+  - Removed crash dump files (6.8MB storage freed)
+  - Archived Sprint 23 refactoring scripts to `scripts/archived/sprint23-refactoring/`
+  - Created `bench/archived/` for historical benchmark data
+  - Cleaned temporary testing artifacts from root directory
+
+- **Documentation & Standards**: Established comprehensive development guidelines
+  - Created `docs/development/NAMING_CONVENTIONS.md` with complete module naming standards
+  - Documented Sprint 22-23 refactoring patterns (`<domain>_<function>.ex`)
+  - Verified no duplicate JSON libraries (Jason as primary)
+  - Applied consistent code formatting across entire codebase
+
+- **Technical Debt Reduction**: Addressed major backlog items
+  - Audited Process dictionary usage (20 files, mostly test compatibility)
+  - Organized 99 development scripts for better maintainability
+  - Eliminated development clutter and improved repository structure
+  - Enhanced code consistency and developer experience
+
+### Previous API Fixes (from earlier 1.2.0 work)
+
+- **GenServer Delegation Corrections**: Fixed parameter passing issues in FocusManager and KeyboardShortcuts modules
+  - Fixed all 16 FocusManager API functions to properly pass server parameter to GenServer calls
+  - Fixed all 14 KeyboardShortcuts API functions to properly pass server parameter to GenServer calls  
+  - Resolves `GenServer.whereis/1` errors where component IDs were being interpreted as server names
+  - Restores intended functionality for focus management and keyboard shortcuts in production
+
+- **Duplicate Filename Prevention System**: Comprehensive tooling to detect and prevent duplicate filenames
+  - Added standalone script (`scripts/check_duplicate_filenames.exs`) with severity classification and rename suggestions
+  - Added Mix task (`lib/mix/tasks/raxol.check.duplicates.ex`) with configurable options and strict mode
+  - Added Credo integration (`lib/raxol/credo/duplicate_filename_check.ex`) for existing linting workflow
+
+### Usage
+
+```bash
+# Check for duplicate filenames
+mix raxol.check.duplicates
+
+# With rename suggestions  
+mix raxol.check.duplicates --suggest-fixes
+
+# Strict mode (fails on duplicates)
+mix raxol.check.duplicates --strict
+
+# Run as part of Credo checks
+mix credo
+```
+
+### Impact
+
+- **Test Suite Excellence**: 100% of major test issues resolved across all sprints
+- **Code Quality**: Comprehensive naming conventions and organization standards
+- **Repository Health**: Clean structure with archived historical artifacts  
+- **Developer Experience**: Clear documentation and development guidelines
+- **Technical Debt**: Systematic cleanup of backlog items for maintainability
+
 ## [1.0.1] - 2025-08-11
 
 ### Changed

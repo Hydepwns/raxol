@@ -88,12 +88,20 @@ defmodule Raxol.Terminal.Modes.Handlers.ScreenBufferHandler do
           true
         )
 
+      # Reset cursor position to (0, 0) when switching to alternate buffer
+      updated_cursor =
+        Raxol.Terminal.Cursor.Manager.set_position(
+          emulator_with_saved_state.cursor,
+          {0, 0}
+        )
+
       {:ok,
        %{
          emulator_with_saved_state
          | alternate_screen_buffer: alt_buffer,
            active_buffer_type: :alternate,
-           mode_manager: new_mode_manager
+           mode_manager: new_mode_manager,
+           cursor: updated_cursor
        }}
     end
   end

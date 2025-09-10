@@ -21,8 +21,8 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
   # Removed non-existent @behaviour reference
 
-  alias Raxol.Core.KeyboardShortcuts.Server
-  alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.KeyboardShortcuts.ShortcutsServer, as: Server
+  alias Raxol.Core.Events.EventManager, as: EventManager
 
   @doc """
   Ensures the Keyboard Shortcuts server is started.
@@ -46,7 +46,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def init do
     ensure_started()
-    Server.init_shortcuts()
+    Server.init_shortcuts(Server)
 
     # Register this module's handler with EventManager
     EventManager.register_handler(
@@ -75,7 +75,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     )
 
     # Clear all shortcuts
-    Server.clear_all()
+    Server.clear_all(Server)
     :ok
   end
 
@@ -97,13 +97,14 @@ defmodule Raxol.Core.KeyboardShortcuts do
   def register_shortcut(shortcut, name, callback, opts \\ []) do
     ensure_started()
 
-    case Server.register_shortcut(shortcut, name, callback, opts) do
+    case Server.register_shortcut(Server, shortcut, name, callback, opts) do
       :ok ->
         :ok
 
       {:error, :conflict} ->
         # For backward compatibility, silently override on conflict
         Server.register_shortcut(
+          Server,
           shortcut,
           name,
           callback,
@@ -121,7 +122,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def unregister_shortcut(shortcut, context \\ :global) do
     ensure_started()
-    Server.unregister_shortcut(shortcut, context)
+    Server.unregister_shortcut(Server, shortcut, context)
   end
 
   @doc """
@@ -131,7 +132,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def set_active_context(context) do
     ensure_started()
-    Server.set_active_context(context)
+    Server.set_active_context(Server, context)
   end
 
   @doc """
@@ -141,7 +142,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def get_shortcuts_for_context(context \\ :global) do
     ensure_started()
-    Server.get_shortcuts_for_context(context)
+    Server.get_shortcuts_for_context(Server, context)
   end
 
   @doc """
@@ -151,7 +152,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def show_shortcuts_help do
     ensure_started()
-    help_text = Server.generate_shortcuts_help()
+    help_text = Server.generate_shortcuts_help(Server)
     IO.puts(help_text)
     :ok
   end
@@ -163,7 +164,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def handle_keyboard_event(event) do
     ensure_started()
-    Server.handle_keyboard_event(event)
+    Server.handle_keyboard_event(Server, event)
     :ok
   end
 
@@ -174,7 +175,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def get_active_context do
     ensure_started()
-    Server.get_active_context()
+    Server.get_active_context(Server)
   end
 
   @doc """
@@ -182,7 +183,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def get_available_shortcuts do
     ensure_started()
-    Server.get_available_shortcuts()
+    Server.get_available_shortcuts(Server)
   end
 
   @doc """
@@ -198,7 +199,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def set_enabled(enabled) when is_boolean(enabled) do
     ensure_started()
-    Server.set_enabled(enabled)
+    Server.set_enabled(Server, enabled)
   end
 
   @doc """
@@ -206,7 +207,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def enabled? do
     ensure_started()
-    Server.enabled?()
+    Server.enabled?(Server)
   end
 
   @doc """
@@ -220,7 +221,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   def set_conflict_resolution(strategy)
       when strategy in [:first, :last, :priority] do
     ensure_started()
-    Server.set_conflict_resolution(strategy)
+    Server.set_conflict_resolution(Server, strategy)
   end
 
   @doc """
@@ -228,7 +229,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def clear_all do
     ensure_started()
-    Server.clear_all()
+    Server.clear_all(Server)
   end
 
   @doc """
@@ -236,7 +237,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def clear_context(context) do
     ensure_started()
-    Server.clear_context(context)
+    Server.clear_context(Server, context)
   end
 
   @doc """
@@ -270,7 +271,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def shortcut_registered?(shortcut, context \\ :global) do
     ensure_started()
-    shortcuts = Server.get_shortcuts_for_context(context)
+    shortcuts = Server.get_shortcuts_for_context(Server, context)
 
     # Parse the shortcut to get the key
     parsed = parse_shortcut_string(shortcut)

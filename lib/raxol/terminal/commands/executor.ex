@@ -2,7 +2,7 @@ defmodule Raxol.Terminal.Commands.Executor do
   @moduledoc false
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Commands.Parser
+  alias Raxol.Terminal.Commands.CommandsParser, as: Parser
   alias Raxol.Terminal.Commands.CSIHandler
   alias Raxol.Terminal.Commands.OSCHandler
   alias Raxol.Terminal.Commands.DCSHandler

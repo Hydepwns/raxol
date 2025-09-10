@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Parser.StateManagerBehaviour do
   """
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
-  alias Raxol.Terminal.Parser.State
+  alias Raxol.Terminal.Parser.ParserState, as: State
 
   @type t :: term()
 

@@ -121,3 +121,8 @@ bench/output/
 bench/results/**/*.benchee
 bench/results/**/*_summary.json
 bench/snapshots/
+*.tar
+erl_crash.dump
+vscode-raxol/node_modules/
+bench/output/*.html
+bench/output/*.json

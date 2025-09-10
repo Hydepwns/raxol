@@ -1,11 +1,11 @@
-defmodule Raxol.Core.Runtime.Plugins.Manager.Utility do
+defmodule Raxol.Core.Runtime.Plugins.PluginManager.Utility do
   @moduledoc """
   Utility functions and legacy compatibility helpers for the plugin manager.
   """
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Core.Runtime.Plugins.Manager.Lifecycle
+  alias Raxol.Core.Runtime.Plugins.PluginManager.Lifecycle
 
   @type plugin_id :: String.t()
   @type state :: map()

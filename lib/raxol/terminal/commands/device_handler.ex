@@ -30,10 +30,23 @@ defmodule Raxol.Terminal.Commands.DeviceHandler do
 
   @spec handle_c(Emulator.t(), list(integer()), String.t()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_c(emulator, _params, intermediates_buffer) do
-    # generate_da_response/1 always returns a string, never returns nil
-    response = generate_da_response(intermediates_buffer)
-    {:ok, OutputManager.write(emulator, response)}
+  def handle_c(emulator, params, intermediates_buffer) do
+    # Only respond to DA requests with no params or param 0
+    case {params, intermediates_buffer} do
+      {[], _} ->
+        # Primary or Secondary DA with no params
+        response = generate_da_response(intermediates_buffer)
+        {:ok, OutputManager.write(emulator, response)}
+
+      {[0], _} ->
+        # Primary or Secondary DA with param 0
+        response = generate_da_response(intermediates_buffer)
+        {:ok, OutputManager.write(emulator, response)}
+
+      _ ->
+        # Ignore DA with other params
+        {:ok, emulator}
+    end
   end
 
   @spec generate_dsr_response(non_neg_integer(), Emulator.t()) ::
@@ -64,10 +77,10 @@ defmodule Raxol.Terminal.Commands.DeviceHandler do
   @spec generate_da_response(String.t()) :: String.t()
   defp generate_da_response(intermediates_buffer) do
     case intermediates_buffer do
-      # Secondary DA: VT220
-      ">" -> "\e[>0;1;0c"
-      # Primary DA: VT220
-      _ -> "\e[?1;2c"
+      # Secondary DA: xterm-like response
+      ">" -> "\e[>0;0;0c"
+      # Primary DA: VT102 response
+      _ -> "\e[?6c"
     end
   end
 end

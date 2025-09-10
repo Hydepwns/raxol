@@ -69,7 +69,7 @@ defmodule Raxol.UI.Components.VirtualScrolling do
 
   alias Raxol.UI.Events.ScrollTracker
   # Performance alias will be added when memory management is needed
-  alias Raxol.Core.Accessibility, as: Accessibility
+  alias Raxol.Core.Accessibility
 
   defstruct [
     :config,

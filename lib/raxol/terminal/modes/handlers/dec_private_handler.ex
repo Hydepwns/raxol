@@ -208,16 +208,15 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     # Update both mode manager and cursor manager
     new_mode_manager = %{emulator.mode_manager | cursor_visible: value}
 
-    # Update cursor manager if it's a PID
-    case is_pid(emulator.cursor) do
-      true -> GenServer.call(emulator.cursor, {:set_visibility, value})
-      false -> :ok
-    end
+    # Update cursor struct's visibility field
+    updated_cursor =
+      Raxol.Terminal.Cursor.Manager.set_visibility(emulator.cursor, value)
 
     {:ok,
      %{
        emulator
-       | mode_manager: new_mode_manager
+       | mode_manager: new_mode_manager,
+         cursor: updated_cursor
      }}
   end
 
@@ -289,69 +288,13 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   end
 
   def handle_alt_screen_save(value, emulator) do
-    require Logger
-
-    Logger.debug(
-      "DECPrivateHandler.handle_alt_screen_save called with value=#{inspect(value)}"
-    )
-
-    Logger.debug(
-      "DECPrivateHandler.handle_alt_screen_save: initial mode_manager=#{inspect(emulator.mode_manager)}"
-    )
-
-    new_mode_manager = %{
-      emulator.mode_manager
-      | alternate_buffer_active: value,
-        active_buffer_type:
-          case value do
-            true -> :alternate
-            false -> :main
-          end
-    }
-
-    Logger.debug(
-      "DECPrivateHandler.handle_alt_screen_save: new_mode_manager=#{inspect(new_mode_manager)}"
-    )
-
-    # Update the active buffer type based on the mode
-    new_active_buffer_type =
-      case value do
-        true -> :alternate
-        false -> :main
-      end
-
-    Logger.debug(
-      "DECPrivateHandler.handle_alt_screen_save: setting active_buffer_type to #{inspect(new_active_buffer_type)}"
-    )
-
-    # Reset cursor position to top-left when switching buffers
-    new_emulator = %{
+    # Mode 1047 should be handled by ScreenBufferHandler
+    # Route to ScreenBufferHandler for alt screen save functionality
+    Raxol.Terminal.Modes.Handlers.ScreenBufferHandler.handle_mode_change(
+      :dec_alt_screen_save,
+      value,
       emulator
-      | mode_manager: new_mode_manager,
-        active_buffer_type: new_active_buffer_type
-    }
-
-    # Reset cursor position to (0, 0) when switching to alternate buffer
-    new_emulator =
-      case value do
-        true ->
-          # Reset cursor to top-left when enabling alternate buffer
-          Raxol.Terminal.Cursor.Manager.set_position(
-            new_emulator.cursor,
-            {0, 0}
-          )
-
-          new_emulator
-
-        false ->
-          new_emulator
-      end
-
-    Logger.debug(
-      "DECPrivateHandler.handle_alt_screen_save: returning new_emulator with mode_manager=#{inspect(new_emulator.mode_manager)}, active_buffer_type=#{inspect(new_emulator.active_buffer_type)}"
     )
-
-    {:ok, new_emulator}
   end
 
   def handle_mouse_report_x10(value, emulator) do

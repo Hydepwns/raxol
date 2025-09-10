@@ -38,7 +38,7 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       })
 
       Accessibility.clear_announcements()
-      Raxol.Core.Events.Manager.dispatch({:focus_change, nil, "search_button"})
+      Raxol.Core.Events.EventManager.dispatch({:focus_change, nil, "search_button"})
       
       # Wait for async event processing - give it time to complete
       Process.sleep(10)
@@ -52,7 +52,7 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
          } do
       Accessibility.clear_announcements()
 
-      Raxol.Core.Events.Manager.dispatch(
+      Raxol.Core.Events.EventManager.dispatch(
         {:focus_change, nil, "unknown_element"}
       )
 
@@ -65,13 +65,13 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       Helper.register_test_elements()
       Accessibility.clear_announcements()
 
-      Raxol.Core.Events.Manager.dispatch({:focus_change, nil, "search_button"})
+      Raxol.Core.Events.EventManager.dispatch({:focus_change, nil, "search_button"})
 
-      Raxol.Core.Events.Manager.dispatch(
+      Raxol.Core.Events.EventManager.dispatch(
         {:focus_change, "search_button", "text_input"}
       )
 
-      Raxol.Core.Events.Manager.dispatch(
+      Raxol.Core.Events.EventManager.dispatch(
         {:focus_change, "text_input", "submit_button"}
       )
 
@@ -93,8 +93,8 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
 
       Accessibility.clear_announcements()
 
-      Raxol.Core.Events.Manager.dispatch({:focus_change, nil, "el1"})
-      Raxol.Core.Events.Manager.dispatch({:focus_change, "el1", "el2"})
+      Raxol.Core.Events.EventManager.dispatch({:focus_change, nil, "el1"})
+      Raxol.Core.Events.EventManager.dispatch({:focus_change, "el1", "el2"})
 
       # Wait for async event processing
       Process.sleep(10)
@@ -113,7 +113,7 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       Accessibility.register_element_metadata("link_about", %{label: "About Us"})
 
       Accessibility.clear_announcements()
-      Raxol.Core.Events.Manager.dispatch({:focus_change, nil, "button1"})
+      Raxol.Core.Events.EventManager.dispatch({:focus_change, nil, "button1"})
 
       # Wait for async event processing
       Process.sleep(10)
@@ -130,7 +130,7 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       })
 
       Accessibility.clear_announcements()
-      Raxol.Core.Events.Manager.dispatch({:focus_change, nil, "my_element"})
+      Raxol.Core.Events.EventManager.dispatch({:focus_change, nil, "my_element"})
 
       # Wait for async event processing
       Process.sleep(10)
@@ -148,7 +148,7 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
       Accessibility.register_element_metadata("no_label_element", %{})
       Accessibility.clear_announcements()
 
-      Raxol.Core.Events.Manager.dispatch(
+      Raxol.Core.Events.EventManager.dispatch(
         {:focus_change, nil, "no_label_element"}
       )
 
@@ -156,7 +156,7 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
 
       Accessibility.clear_announcements()
 
-      Raxol.Core.Events.Manager.dispatch(
+      Raxol.Core.Events.EventManager.dispatch(
         {:focus_change, nil, "completely_unknown_element"}
       )
 
@@ -175,7 +175,7 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
 
       Accessibility.clear_announcements()
 
-      Raxol.Core.Events.Manager.dispatch(
+      Raxol.Core.Events.EventManager.dispatch(
         {:focus_change, nil, "button_no_speak"}
       )
 

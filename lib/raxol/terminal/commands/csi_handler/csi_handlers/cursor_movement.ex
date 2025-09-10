@@ -17,7 +17,13 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovement do
         _height = Raxol.Terminal.ScreenBuffer.get_height(active_buffer)
 
         new_row = max(0, cursor.row - amount)
-        updated_cursor = %{cursor | row: new_row}
+
+        updated_cursor = %{
+          cursor
+          | row: new_row,
+            position: {new_row, cursor.col}
+        }
+
         %{emulator | cursor: updated_cursor}
 
       _ ->
@@ -46,7 +52,13 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovement do
         height = Raxol.Terminal.ScreenBuffer.get_height(active_buffer)
 
         new_row = min(height - 1, cursor.row + amount)
-        updated_cursor = %{cursor | row: new_row}
+
+        updated_cursor = %{
+          cursor
+          | row: new_row,
+            position: {new_row, cursor.col}
+        }
+
         %{emulator | cursor: updated_cursor}
 
       _ ->
@@ -142,7 +154,8 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovement do
           %{
             cursor
             | row: row_clamped,
-              col: col_clamped
+              col: col_clamped,
+              position: {row_clamped, col_clamped}
           }
 
         %{position: _} = cursor ->
@@ -156,8 +169,6 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovement do
             emulator.cursor,
             {row_clamped, col_clamped}
           )
-
-          emulator.cursor
       end
 
     {:ok, %{emulator | cursor: updated_cursor}}
@@ -166,11 +177,14 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovement do
   @doc """
   Handles cursor position with parameter parsing.
   """
-  def handle_cursor_position(emulator, col, row)
-      when is_integer(col) and is_integer(row) do
-    # Handle direct col/row parameters (3-argument version for tests)
-    # The test calls handle_cursor_position(emulator, 5, 15) expecting col=5, row=15
-    # These are already 0-indexed coordinates, so use them directly
+  def handle_cursor_position(emulator, row, col)
+      when is_integer(row) and is_integer(col) do
+    # Handle direct row/col parameters (3-argument version for tests)
+    # The test calls handle_cursor_position(emulator, 20, 20) expecting row=20, col=20
+    # Convert from 1-indexed ANSI coordinates to 0-indexed internal coordinates
+    row = max(0, row - 1)
+    col = max(0, col - 1)
+
     case emulator.cursor do
       %{row: _, col: _} = cursor ->
         # For test cursors that have row/col fields (like CursorManager)
@@ -182,12 +196,19 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovement do
         row_clamped = max(0, min(row, height - 1))
         col_clamped = max(0, min(col, width - 1))
 
-        updated_cursor = %{cursor | row: row_clamped, col: col_clamped}
+        updated_cursor = %{
+          cursor
+          | row: row_clamped,
+            col: col_clamped,
+            position: {row_clamped, col_clamped}
+        }
+
         %{emulator | cursor: updated_cursor}
 
       _ ->
         # For PID-based cursors, use the standard handler
-        result = Cursor.handle_command(emulator, [col, row], ?H)
+        # ANSI cursor position command uses [row, col] order (1-indexed)
+        result = Cursor.handle_command(emulator, [row + 1, col + 1], ?H)
 
         case result do
           {:ok, updated_emulator} -> updated_emulator

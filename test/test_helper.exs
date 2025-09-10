@@ -214,7 +214,7 @@ IO.puts("[TestHelper] Starting event registry...")
 
 # Initialize the EventManager for tests
 IO.puts("[TestHelper] Initializing EventManager...")
-Raxol.Core.Events.Manager.init()
+Raxol.Core.Events.EventManager.init()
 
 # Only start the endpoint if it's not already running
 if Process.whereis(RaxolWeb.Endpoint) do

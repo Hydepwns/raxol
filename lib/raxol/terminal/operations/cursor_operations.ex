@@ -48,8 +48,8 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
   end
 
   def set_cursor_visibility(emulator, visible) do
-    CursorManager.set_visibility(emulator.cursor, visible)
-    emulator
+    updated_cursor = CursorManager.set_visibility(emulator.cursor, visible)
+    %{emulator | cursor: updated_cursor}
   end
 
   def cursor_blinking?(emulator) do
@@ -57,14 +57,17 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
   end
 
   def set_cursor_blink(emulator, blinking) do
-    CursorManager.set_blink(emulator.cursor, blinking)
-    emulator
+    updated_cursor = CursorManager.set_blink(emulator.cursor, blinking)
+    %{emulator | cursor: updated_cursor}
   end
 
   def toggle_visibility(emulator) do
     current_visible = CursorManager.get_visibility(emulator.cursor)
-    CursorManager.set_visibility(emulator.cursor, !current_visible)
-    emulator
+
+    updated_cursor =
+      CursorManager.set_visibility(emulator.cursor, !current_visible)
+
+    %{emulator | cursor: updated_cursor}
   end
 
   def toggle_blink(emulator) do

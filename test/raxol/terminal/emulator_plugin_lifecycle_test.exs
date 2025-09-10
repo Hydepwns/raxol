@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.EmulatorPluginLifecycleTest do
   use ExUnit.Case
 
-  alias Raxol.Core.Runtime.Plugins.Manager
+  alias Raxol.Core.Runtime.Plugins.PluginManager
   alias Raxol.Terminal.Emulator
 
   setup context do

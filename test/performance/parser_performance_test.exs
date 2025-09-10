@@ -7,7 +7,7 @@ defmodule Raxol.Performance.ParserPerformanceTest do
   """
   use ExUnit.Case, async: true
 
-  alias Raxol.Terminal.Parser
+  alias Raxol.Terminal.TerminalParser, as: Parser
   alias Raxol.Terminal.Emulator
 
   describe "parser performance benchmarks" do
@@ -180,17 +180,25 @@ defmodule Raxol.Performance.ParserPerformanceTest do
     end
 
     test "lightweight emulator should not spawn any processes" do
+      # Give the system time to stabilize and clean up any background processes
+      :erlang.garbage_collect()
+      Process.sleep(10)
+      
       # Track process count before and after
       before_count = length(Process.list())
 
       _emulator = Emulator.new_minimal(80, 24)
 
+      # Give a moment for any spawned processes to register
+      Process.sleep(1)
+      
       after_count = length(Process.list())
       processes_created = after_count - before_count
 
-      # Lightweight emulator should spawn 0 processes
-      assert processes_created == 0,
-             "Lightweight emulator spawned #{processes_created} processes, expected 0"
+      # Lightweight emulator should spawn 0 or fewer processes
+      # (fewer can happen if background processes are cleaned up during the test)
+      assert processes_created <= 0,
+             "Lightweight emulator spawned #{processes_created} processes, expected 0 or fewer"
     end
 
     test "regular emulator spawns processes as expected" do

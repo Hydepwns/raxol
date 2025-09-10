@@ -20,7 +20,7 @@ defmodule Raxol.Core.FocusManager do
 
   @behaviour Raxol.Core.FocusManager.Behaviour
 
-  alias Raxol.Core.FocusManager.Server
+  alias Raxol.Core.FocusManager.FocusServer, as: Server
 
   @doc """
   Ensures the FocusManager server is started.
@@ -43,7 +43,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def register_focusable(component_id, tab_index, opts \\ []) do
     ensure_started()
-    Server.register_focusable(component_id, tab_index, opts)
+    Server.register_focusable(Server, component_id, tab_index, opts)
   end
 
   @doc """
@@ -52,7 +52,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def unregister_focusable(component_id) do
     ensure_started()
-    Server.unregister_focusable(component_id)
+    Server.unregister_focusable(Server, component_id)
   end
 
   @doc """
@@ -61,7 +61,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def set_initial_focus(component_id) do
     ensure_started()
-    Server.set_initial_focus(component_id)
+    Server.set_initial_focus(Server, component_id)
   end
 
   @doc """
@@ -70,7 +70,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def set_focus(component_id) do
     ensure_started()
-    Server.set_focus(component_id)
+    Server.set_focus(Server, component_id)
   end
 
   @doc """
@@ -79,7 +79,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def focus_next(opts \\ []) do
     ensure_started()
-    Server.focus_next(opts)
+    Server.focus_next(Server, opts)
   end
 
   @doc """
@@ -88,7 +88,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def focus_previous(opts \\ []) do
     ensure_started()
-    Server.focus_previous(opts)
+    Server.focus_previous(Server, opts)
   end
 
   @doc """
@@ -97,7 +97,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def get_focused_element do
     ensure_started()
-    Server.get_focused_element()
+    Server.get_focused_element(Server)
   end
 
   @doc """
@@ -114,7 +114,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def get_focus_history do
     ensure_started()
-    Server.get_focus_history()
+    Server.get_focus_history(Server)
   end
 
   @doc """
@@ -123,7 +123,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def get_next_focusable(current_focus_id) do
     ensure_started()
-    Server.get_next_focusable(current_focus_id)
+    Server.get_next_focusable(Server, current_focus_id)
   end
 
   @doc """
@@ -132,7 +132,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def get_previous_focusable(current_focus_id) do
     ensure_started()
-    Server.get_previous_focusable(current_focus_id)
+    Server.get_previous_focusable(Server, current_focus_id)
   end
 
   @doc """
@@ -141,7 +141,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def has_focus?(component_id) do
     ensure_started()
-    Server.has_focus?(component_id)
+    Server.has_focus?(Server, component_id)
   end
 
   @doc """
@@ -150,7 +150,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def return_to_previous do
     ensure_started()
-    Server.return_to_previous()
+    Server.return_to_previous(Server)
   end
 
   @doc """
@@ -159,7 +159,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def enable_component(component_id) do
     ensure_started()
-    Server.enable_component(component_id)
+    Server.enable_component(Server, component_id)
   end
 
   @doc """
@@ -168,7 +168,7 @@ defmodule Raxol.Core.FocusManager do
   @impl Raxol.Core.FocusManager.Behaviour
   def disable_component(component_id) do
     ensure_started()
-    Server.disable_component(component_id)
+    Server.disable_component(Server, component_id)
   end
 
   @doc """
@@ -178,7 +178,7 @@ defmodule Raxol.Core.FocusManager do
   def register_focus_change_handler(handler_fun)
       when is_function(handler_fun, 2) do
     ensure_started()
-    Server.register_focus_change_handler(handler_fun)
+    Server.register_focus_change_handler(Server, handler_fun)
   end
 
   @doc """
@@ -188,6 +188,6 @@ defmodule Raxol.Core.FocusManager do
   def unregister_focus_change_handler(handler_fun)
       when is_function(handler_fun, 2) do
     ensure_started()
-    Server.unregister_focus_change_handler(handler_fun)
+    Server.unregister_focus_change_handler(Server, handler_fun)
   end
 end

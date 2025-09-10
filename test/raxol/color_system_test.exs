@@ -113,7 +113,7 @@ defmodule Raxol.ColorSystemTest do
 
       # Subscribe to both theme change and accessibility preference events
       {:ok, ref} =
-        Raxol.Core.Events.Manager.subscribe([
+        Raxol.Core.Events.EventManager.subscribe([
           :theme_changed,
           :accessibility_preference_changed
         ])
@@ -148,7 +148,7 @@ defmodule Raxol.ColorSystemTest do
       background = ColorSystem.get_color(:background)
 
       # Cleanup subscription
-      Raxol.Core.Events.Manager.unsubscribe(ref)
+      Raxol.Core.Events.EventManager.unsubscribe(ref)
 
       # Raxol.Core.Runtime.Log.info("[Test Log] Background (post high-contrast): #{inspect(background)}")
 
@@ -178,7 +178,7 @@ defmodule Raxol.ColorSystemTest do
         )
       end
       
-      Raxol.Core.Events.Manager.register_handler(
+      Raxol.Core.Events.EventManager.register_handler(
         :theme_changed,
         self(),
         handler_fn

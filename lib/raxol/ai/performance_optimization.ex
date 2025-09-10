@@ -11,7 +11,7 @@ defmodule Raxol.AI.PerformanceOptimization do
   The API remains the same, but the implementation is now OTP-compliant and more robust.
   """
 
-  alias Raxol.AI.PerformanceOptimization.Server
+  alias Raxol.AI.PerformanceOptimization.OptimizationServer, as: Server
 
   @deprecated "Use Raxol.AI.PerformanceOptimization instead of Raxol.AI.PerformanceOptimization"
 

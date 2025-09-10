@@ -159,7 +159,7 @@ defmodule Raxol.Terminal.Emulator do
     state_stack: [],
 
     # Parser state
-    parser_state: %Raxol.Terminal.Parser.State{state: :ground},
+    parser_state: %Raxol.Terminal.Parser.ParserState{state: :ground},
 
     # Command history
     command_history: [],
@@ -698,6 +698,27 @@ defmodule Raxol.Terminal.Emulator do
   Processes input and returns updated emulator with output.
   """
   def process_input(emulator, input) do
+    # Quick fix for scroll region setting
+    emulator =
+      case input do
+        <<"\e[", rest::binary>> when byte_size(rest) > 0 ->
+          case Regex.run(~r/^(\d+);(\d+)r/, rest) do
+            [_, top, bottom] ->
+              top_i = String.to_integer(top) - 1
+              bottom_i = String.to_integer(bottom) - 1
+              %{emulator | scroll_region: {top_i, bottom_i}}
+
+            _ ->
+              case rest do
+                "r" <> _ -> %{emulator | scroll_region: nil}
+                _ -> emulator
+              end
+          end
+
+        _ ->
+          emulator
+      end
+
     # Delegate to input processor
     case Raxol.Terminal.Input.CoreHandler.process_terminal_input(
            emulator,

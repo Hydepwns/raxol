@@ -275,13 +275,13 @@ defmodule Raxol.Core.ColorSystem do
       %{}
     )
 
-    Raxol.Style.Colors.System.Server.set_current_theme(:default)
+    Raxol.Style.Colors.System.ColorSystemServer.set_current_theme(:default)
     :ok
   end
 
   defp do_init(_theme, theme_id) do
     # Store current theme in process dictionary for compatibility
-    Raxol.Style.Colors.System.Server.set_current_theme(theme_id)
+    Raxol.Style.Colors.System.ColorSystemServer.set_current_theme(theme_id)
     :ok
   end
 
@@ -300,7 +300,8 @@ defmodule Raxol.Core.ColorSystem do
   """
   def get_current_theme do
     theme_id =
-      Raxol.Style.Colors.System.Server.get_current_theme_name() || :default
+      Raxol.Style.Colors.System.ColorSystemServer.get_current_theme_name() ||
+        :default
 
     theme = Theme.get(theme_id)
     format_theme_result(theme)
@@ -338,7 +339,7 @@ defmodule Raxol.Core.ColorSystem do
   defp do_set_theme(nil, _theme_id), do: {:error, :theme_not_found}
 
   defp do_set_theme(_theme, theme_id) do
-    Raxol.Style.Colors.System.Server.set_current_theme(theme_id)
+    Raxol.Style.Colors.System.ColorSystemServer.set_current_theme(theme_id)
     :ok
   end
 

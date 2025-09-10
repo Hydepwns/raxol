@@ -11,7 +11,7 @@ defmodule Raxol.Animation.Gestures do
   eliminating Process dictionary usage while maintaining full functionality.
   """
 
-  alias Raxol.Animation.Gestures.Server
+  alias Raxol.Animation.Gestures.GestureServer, as: Server
 
   @type position :: {integer(), integer()}
   @type gesture_type ::

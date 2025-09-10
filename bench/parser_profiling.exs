@@ -49,7 +49,7 @@ IO.puts("ANSI color (1k iterations): #{Float.round(time_color/1_000, 2)} μs/op"
 # Test 5: Just the parser state creation
 {time_state, _} = :timer.tc(fn ->
   Enum.each(1..100_000, fn _ ->
-    %Raxol.Terminal.Parser.State{}
+    %Raxol.Terminal.Parser.ParserState{}
   end)
 end)
 IO.puts("Parser state creation (100k iterations): #{Float.round(time_state/100_000, 2)} μs/op")

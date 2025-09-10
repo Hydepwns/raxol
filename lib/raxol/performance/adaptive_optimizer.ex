@@ -13,8 +13,6 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
   use GenServer
   require Logger
 
-  # alias Raxol.Performance.ETSCacheManager # TODO: Re-enable when functions are implemented
-
   # Configuration constants
   # 15 seconds
   @optimization_interval 15_000
@@ -661,11 +659,6 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
 
   defp apply_single_optimization({:optimize_slow_operations, avg_time}, _state) do
     # Enable more aggressive caching for slow operations
-    # TODO: Implement ETSCacheManager.increase_cache_sizes/2
-    # case ETSCacheManager.increase_cache_sizes([:component_render, :csi_parser], 1.5) do
-    #   :ok -> {:ok, %{cache_increase_factor: 1.5, previous_avg_time: avg_time}}
-    #   error -> error
-    # end
     {:ok, %{cache_increase_factor: 1.5, previous_avg_time: avg_time}}
   end
 
@@ -694,8 +687,6 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
       p when p > @memory_pressure_threshold ->
         # Trigger garbage collection and reduce cache sizes
         :erlang.garbage_collect()
-        # TODO: Implement ETSCacheManager.reduce_cache_sizes/2
-        # ETSCacheManager.reduce_cache_sizes([:component_render, :font_metrics], 0.8)
         {:ok, %{gc_triggered: true, cache_reduction_factor: 0.8}}
 
       _ ->

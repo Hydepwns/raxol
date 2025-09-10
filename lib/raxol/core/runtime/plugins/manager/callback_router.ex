@@ -1,10 +1,10 @@
-defmodule Raxol.Core.Runtime.Plugins.Manager.CallbackRouter do
+defmodule Raxol.Core.Runtime.Plugins.PluginManager.CallbackRouter do
   @moduledoc """
   Routes GenServer callbacks to appropriate operation modules.
   Centralizes callback handling and delegates to specialized modules.
   """
 
-  alias Raxol.Core.Runtime.Plugins.Manager.{
+  alias Raxol.Core.Runtime.Plugins.PluginManager.{
     LifecycleOperations,
     StateOperations,
     ConfigOperations,

@@ -7,10 +7,10 @@ defmodule Raxol.Core.I18n do
 
   ## Migration Guide
 
-  1. Add the I18n.Server to your supervision tree:
+  1. Add the I18n.I18nServer to your supervision tree:
 
       children = [
-        {Raxol.Core.I18n.Server, name: Raxol.Core.I18n.Server, config: config}
+        {Raxol.Core.I18n.I18nServer, name: Raxol.Core.I18n.I18nServer, config: config}
       ]
       
   2. Replace `Raxol.Core.I18n` with `Raxol.Core.I18n` in your code
@@ -18,9 +18,9 @@ defmodule Raxol.Core.I18n do
   3. All API calls remain the same
   """
 
-  alias Raxol.Core.I18n.Server
+  alias Raxol.Core.I18n.I18nServer
 
-  @server Raxol.Core.I18n.Server
+  @server Raxol.Core.I18n.I18nServer
 
   @doc """
   Initialize the i18n framework.
@@ -29,7 +29,7 @@ defmodule Raxol.Core.I18n do
   """
   def init(config \\ []) do
     ensure_server_started(config)
-    Server.init_i18n(@server, config)
+    I18nServer.init_i18n(@server, config)
   end
 
   @doc """
@@ -45,7 +45,7 @@ defmodule Raxol.Core.I18n do
   """
   def t(key, bindings \\ %{}) do
     ensure_server_started()
-    Server.t(@server, key, bindings)
+    I18nServer.t(@server, key, bindings)
   end
 
   @doc """
@@ -61,7 +61,7 @@ defmodule Raxol.Core.I18n do
   """
   def set_locale(locale) do
     ensure_server_started()
-    Server.set_locale(@server, locale)
+    I18nServer.set_locale(@server, locale)
   end
 
   @doc """
@@ -74,7 +74,7 @@ defmodule Raxol.Core.I18n do
   """
   def get_locale do
     ensure_server_started()
-    Server.get_locale(@server)
+    I18nServer.get_locale(@server)
   end
 
   @doc """
@@ -92,7 +92,7 @@ defmodule Raxol.Core.I18n do
   """
   def rtl? do
     ensure_server_started()
-    Server.rtl?(@server)
+    I18nServer.rtl?(@server)
   end
 
   @doc """
@@ -110,7 +110,7 @@ defmodule Raxol.Core.I18n do
   def format_currency(amount, currency_code)
       when is_number(amount) and is_binary(currency_code) do
     ensure_server_started()
-    Server.format_currency(@server, amount, currency_code)
+    I18nServer.format_currency(@server, amount, currency_code)
   end
 
   @doc """
@@ -124,7 +124,7 @@ defmodule Raxol.Core.I18n do
   """
   def format_datetime(datetime) when is_struct(datetime, DateTime) do
     ensure_server_started()
-    Server.format_datetime(@server, datetime)
+    I18nServer.format_datetime(@server, datetime)
   end
 
   @doc """
@@ -150,7 +150,15 @@ defmodule Raxol.Core.I18n do
         :ok
 
       pid ->
-        GenServer.stop(pid, :normal, 5000)
+        # Use try/catch because the process might be stopped between
+        # the whereis check and the stop call
+        try do
+          GenServer.stop(pid, :normal, 5000)
+        catch
+          :exit, {:noproc, _} -> :ok
+          :exit, {:normal, _} -> :ok
+        end
+
         :ok
     end
   end
@@ -160,7 +168,7 @@ defmodule Raxol.Core.I18n do
   """
   def available_locales do
     ensure_server_started()
-    Server.available_locales(@server)
+    I18nServer.available_locales(@server)
   end
 
   @doc """
@@ -176,7 +184,7 @@ defmodule Raxol.Core.I18n do
   """
   def add_translations(locale, translations) when is_map(translations) do
     ensure_server_started()
-    Server.add_translations(@server, locale, translations)
+    I18nServer.add_translations(@server, locale, translations)
   end
 
   # Private Functions
@@ -185,7 +193,7 @@ defmodule Raxol.Core.I18n do
     case Process.whereis(@server) do
       nil ->
         # Start the server if not running
-        {:ok, _pid} = Server.start_link(name: @server, config: config)
+        {:ok, _pid} = I18nServer.start_link(name: @server, config: config)
         :ok
 
       _pid ->

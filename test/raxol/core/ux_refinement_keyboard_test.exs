@@ -6,7 +6,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
   # Aliases for mocks will be used directly, e.g., Raxol.Mocks.AccessibilityMock
   # alias Raxol.Core.Accessibility, as: Accessibility # Removed
   # alias Raxol.Core.Accessibility, as: Accessibility.Mock
-  alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.Events.EventManager, as: EventManager
   # alias Raxol.Core.FocusManager, as: FocusManager # Removed
   # alias Raxol.Core.KeyboardShortcuts, as: KeyboardShortcuts # Removed
   alias Raxol.Core.UXRefinement, as: UXRefinement, as: UXRefinement
@@ -24,24 +24,41 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
   setup do
     # Initialize event manager for tests
     EventManager.init()
+    
+    # Start UX refinement server for tests
+    case Raxol.Core.UXRefinement.UxServer.start_link() do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
 
     on_exit(fn ->
-      # Clean up any enabled features
-      [
-        :keyboard_shortcuts,
-        :events,
-        :focus_management,
-        :accessibility,
-        :hints
-      ]
-      |> Enum.each(fn feature ->
-        if UXRefinement.feature_enabled?(feature) do
-          UXRefinement.disable_feature(feature)
-        end
-      end)
+      # Clean up any enabled features - check if process is alive first
+      if Process.whereis(Raxol.Core.UXRefinement.UxServer) do
+        [
+          :keyboard_shortcuts,
+          :events,
+          :focus_management,
+          :accessibility,
+          :hints
+        ]
+        |> Enum.each(fn feature ->
+          try do
+            if UXRefinement.feature_enabled?(feature) do
+              UXRefinement.disable_feature(feature)
+            end
+          rescue
+            _ -> :ok
+          end
+        end)
+      end
 
       # Clean up EventManager
       if Process.whereis(EventManager), do: EventManager.cleanup()
+      
+      # Stop UX refinement server
+      if Process.whereis(Raxol.Core.UXRefinement.UxServer) do
+        GenServer.stop(Raxol.Core.UXRefinement.UxServer, :normal)
+      end
     end)
 
     :ok
@@ -202,66 +219,72 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
 
   describe "shortcut handling specific to UXRefinement callbacks" do
     test "shortcut callback from register_component_hint triggers FocusManager.set_focus" do
-      # Configure the application to use the mock in this test
-      original_config = Application.get_env(:raxol, :focus_manager_impl)
-
-      Application.put_env(
-        :raxol,
-        :focus_manager_impl,
-        Raxol.Mocks.FocusManagerMock
-      )
-
+      # Override config to use real implementations for this test
+      original_ks_config = Application.get_env(:raxol, :keyboard_shortcuts_module)
+      original_fm_config = Application.get_env(:raxol, :focus_manager_module)
+      
+      Application.put_env(:raxol, :keyboard_shortcuts_module, Raxol.Core.KeyboardShortcuts)
+      Application.put_env(:raxol, :keyboard_shortcuts_impl, Raxol.Core.KeyboardShortcuts)
+      Application.put_env(:raxol, :focus_manager_module, Raxol.Core.FocusManager)
+      Application.put_env(:raxol, :focus_manager_impl, Raxol.Core.FocusManager)
+      
       on_exit(fn ->
-        if original_config do
-          Application.put_env(:raxol, :focus_manager_impl, original_config)
+        if original_ks_config do
+          Application.put_env(:raxol, :keyboard_shortcuts_module, original_ks_config)
+          Application.put_env(:raxol, :keyboard_shortcuts_impl, original_ks_config)
         else
+          Application.delete_env(:raxol, :keyboard_shortcuts_module)
+          Application.delete_env(:raxol, :keyboard_shortcuts_impl)
+        end
+        
+        if original_fm_config do
+          Application.put_env(:raxol, :focus_manager_module, original_fm_config)
+          Application.put_env(:raxol, :focus_manager_impl, original_fm_config)
+        else
+          Application.delete_env(:raxol, :focus_manager_module)
           Application.delete_env(:raxol, :focus_manager_impl)
         end
       end)
-
-      stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
-      stub(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
-
-      stub(Raxol.Mocks.FocusManagerMock, :register_focus_change_handler, fn _ ->
-        :ok
-      end)
-
-      UXRefinement.enable_feature(:keyboard_shortcuts)
+      
+      # Use real implementations
+      alias Raxol.Core.KeyboardShortcuts
+      alias Raxol.Core.FocusManager
+      
+      # Enable features which will start the real servers
+      UXRefinement.enable_feature(:keyboard_shortcuts) 
       UXRefinement.enable_feature(:focus_management)
-      UXRefinement.enable_feature(:accessibility)
-
-      callback_ref = System.unique_integer([:positive])
-      Process.put(callback_ref, nil)
-
-      stub(
-        Raxol.Mocks.KeyboardShortcutsMock,
-        :register_shortcut,
-        fn _key, _name, cb_fun, _opts ->
-          Process.put(callback_ref, cb_fun)
-          :ok
-        end
-      )
-
+      UXRefinement.enable_feature(:hints)
+      
       component_id = "search_button_focus"
-
+      
+      # Register the component as focusable first - use string ID as FocusManager expects
+      FocusManager.register_focusable(component_id, 1)
+      
+      # Get initial focus state
+      initial_focus = FocusManager.get_current_focus()
+      
+      # Register component hint which should create the shortcut
       UXRefinement.register_component_hint(component_id, %{
         shortcuts: [{"Alt+F", "Focus This Component"}]
       })
-
-      shortcut_callback = Process.get(callback_ref)
-
-      if !is_function(shortcut_callback, 0) do
-        flunk(
-          "Shortcut callback was not captured. KeyboardShortcuts.register_shortcut mock might not have been called correctly."
-        )
-      end
-
-      expect(Raxol.Mocks.FocusManagerMock, :set_focus, fn id ->
-        assert id == component_id
-        :ok
-      end)
-
-      shortcut_callback.()
+      
+      # Get component-specific shortcuts (shortcuts are registered in the component's context)
+      component_shortcuts = KeyboardShortcuts.get_shortcuts_for_context(component_id)
+      
+      # Find the shortcut we registered (should be in component-specific shortcuts as "alt_f")
+      our_shortcut = Map.get(component_shortcuts, "alt_f")
+      
+      assert our_shortcut != nil, "Shortcut alt_f should have been registered in component context"
+      
+      callback = our_shortcut.callback
+      
+      # Execute the shortcut callback
+      callback.()
+      
+      # Verify that focus was set to our component
+      current_focus = FocusManager.get_current_focus()
+      assert current_focus == component_id, "Focus should have been set to #{component_id}, but was #{inspect(current_focus)}"
+      assert current_focus != initial_focus, "Focus should have changed"
     end
   end
 

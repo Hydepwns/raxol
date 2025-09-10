@@ -6,9 +6,10 @@ defmodule Raxol.Terminal.CommandProcessor do
 
   alias Raxol.Terminal.Commands.{
     Executor,
-    Parser,
     ParameterValidation
   }
+
+  alias Raxol.Terminal.Commands.CommandsParser, as: Parser
 
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log

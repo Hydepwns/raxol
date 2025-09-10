@@ -12,7 +12,7 @@ defmodule Raxol.Terminal.Buffer.OperationProcessor do
   require Logger
   alias Raxol.Terminal.Buffer.Content
   alias Raxol.Terminal.Buffer.Operations, as: Buffer
-  alias Raxol.Terminal.Buffer.State
+  alias Raxol.Terminal.Buffer.BufferState, as: State
 
   @type operation ::
           {:set_cell, non_neg_integer(), non_neg_integer(), term()}

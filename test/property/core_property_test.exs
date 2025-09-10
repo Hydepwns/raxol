@@ -2,7 +2,7 @@ defmodule Raxol.Property.CoreTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
 
-  alias Raxol.Terminal.ANSI.Parser
+  alias Raxol.Terminal.ANSI.AnsiParser, as: Parser
   alias Raxol.Terminal.Buffer
 
   describe "Parser property tests" do
@@ -167,10 +167,6 @@ defmodule Raxol.Property.CoreTest do
         :reset -> "\e[0m"
       end
     end
-  end
-
-  defp cursor_movement do
-    member_of([:up, :down, :left, :right])
   end
 
   defp terminal_mode do

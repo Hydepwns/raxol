@@ -58,6 +58,11 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ApplyHandlers do
   def apply_handler(emulator, :scroll_down, lines),
     do: ScreenHandlers.handle_scroll_down(emulator, lines)
 
+  def apply_handler(emulator, :set_scroll_region, region) do
+    # Set the scroll region on the emulator
+    {:ok, %{emulator | scroll_region: region}}
+  end
+
   def apply_handler(emulator, :device_status, params),
     do: DeviceHandlers.handle_device_status(emulator, params)
 

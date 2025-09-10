@@ -28,7 +28,7 @@
       # If you create your own checks, you must specify the source files for
       # them here, so they can be loaded by Credo before running the analysis.
       #
-      requires: [],
+      requires: ["lib/raxol/credo/duplicate_filename_check.ex"],
       #
       # If you want to enforce a style guide and need a more traditional linting
       # experience, you can change `strict` to `true` below:
@@ -74,6 +74,16 @@
         # set this value to 0 (zero).
         {Credo.Check.Design.TagTODO, exit_status: 0},
         {Credo.Check.Design.TagFIXME},
+
+        #
+        ## Custom Raxol Checks
+        #
+        {Raxol.Credo.DuplicateFilenameCheck,
+         [
+           exclude_files: ["mix.exs", "README.md", ".gitignore"],
+           max_duplicates: 1,
+           include_tests: true
+         ]},
 
         #
         ## Readability Checks

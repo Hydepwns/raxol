@@ -15,7 +15,7 @@ defmodule Raxol.UI.State.Streams do
   - Combining multiple streams
   """
 
-  alias Raxol.UI.State.Store, as: Store
+  alias Raxol.UI.State.Store
 
   require Logger
 

@@ -8,7 +8,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
 
   # require Raxol.Core.Runtime.Log  # Commented out due to missing module
 
-  alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.Events.EventManager, as: EventManager
   alias Raxol.Core.UserPreferences
   alias Raxol.UI.Theming.Theme
 

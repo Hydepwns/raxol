@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.WindowHandlersTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.{Emulator, Commands.WindowHandlers}
+  alias Raxol.Terminal.{Emulator, Commands.WindowHandler}
 
   test "resize window with partial parameters" do
     emulator = %Emulator{

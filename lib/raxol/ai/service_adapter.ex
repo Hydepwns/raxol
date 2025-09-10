@@ -118,8 +118,10 @@ defmodule Raxol.AI.ServiceAdapter do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            # Implementation for local AI service  
            # This would call a local LLM server or use a local model
+           endpoint = Application.get_env(:raxol, :ai_service)[:local_endpoint]
+
            case HTTPoison.post(
-                  "http://localhost:8080/v1/completions",
+                  endpoint,
                   Jason.encode!(%{
                     prompt: prompt,
                     max_tokens: Map.get(options, :max_tokens, 100),

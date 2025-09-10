@@ -5,7 +5,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
   Handles screen reader announcements and announcement queue management.
   """
 
-  alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.Events.EventManager, as: EventManager
   # require Raxol.Core.Runtime.Log  # Commented out due to missing module
 
   # Start the Agent for global subscription storage
@@ -81,13 +81,13 @@ defmodule Raxol.Core.Accessibility.Announcements do
 
   defp should_announce?(user_preferences_pid_or_name) do
     # Delegate to the GenServer for state checking
-    alias Raxol.Core.Accessibility.Server
+    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
     Server.should_announce?(user_preferences_pid_or_name)
   end
 
   defp process_announcement(message, opts, user_preferences_pid_or_name) do
     # Delegate to the GenServer for announcement processing
-    alias Raxol.Core.Accessibility.Server
+    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
 
     announcement = %{
       message: message,
@@ -114,7 +114,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
   """
   def get_next_announcement(user_preferences_pid_or_name) do
     # Delegate to the GenServer for queue management
-    alias Raxol.Core.Accessibility.Server
+    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
     Server.get_next_announcement(user_preferences_pid_or_name)
   end
 
@@ -128,7 +128,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
   """
   def clear_announcements do
     # Delegate to the GenServer for clearing all announcements
-    alias Raxol.Core.Accessibility.Server
+    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
     Server.clear_all_announcements()
 
     # Send announcements_cleared messages to subscribers
@@ -146,7 +146,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
   """
   def clear_announcements(user_preferences_pid_or_name) do
     # Delegate to the GenServer for clearing user-specific announcements
-    alias Raxol.Core.Accessibility.Server
+    alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
     Server.clear_announcements(user_preferences_pid_or_name)
     :ok
   end

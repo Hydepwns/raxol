@@ -74,7 +74,7 @@ end
 # Test parser state transitions
 IO.puts("\n3. State machine transitions:")
 
-parser_state = %Raxol.Terminal.Parser.State{state: :ground}
+parser_state = %Raxol.Terminal.Parser.ParserState{state: :ground}
 
 # Test ground state with plain text
 {time_ground, _} = :timer.tc(fn ->

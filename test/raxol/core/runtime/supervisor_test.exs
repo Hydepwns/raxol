@@ -56,8 +56,8 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
     for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
   )
 
-  Mox.defmock(Raxol.Core.Runtime.Plugins.ManagerMock,
-    for: Raxol.Core.Runtime.Plugins.Manager.Behaviour
+  Mox.defmock(Raxol.Core.Runtime.Plugins.PluginManagerMock,
+    for: Raxol.Core.Runtime.Plugins.PluginManager.Behaviour
   )
 
   # DriverMock already defined in test/support/terminal_driver_mock.ex
@@ -81,14 +81,14 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
       init_arg = %{
         dispatcher_module: Raxol.Core.Runtime.Events.DispatcherMock,
         rendering_engine_module: Raxol.Core.Runtime.Rendering.EngineMock,
-        plugin_manager_module: Raxol.Core.Runtime.Plugins.ManagerMock,
+        plugin_manager_module: Raxol.Core.Runtime.Plugins.PluginManagerMock,
         app_module: TestApp,
         width: 80,
         height: 24
       }
 
       # Expectation for Plugins.ManagerMock.start_link/1
-      expect(Raxol.Core.Runtime.Plugins.ManagerMock, :start_link, fn _args ->
+      expect(Raxol.Core.Runtime.Plugins.PluginManagerMock, :start_link, fn _args ->
         {:ok, spawn(fn -> :ok end)}
       end)
 

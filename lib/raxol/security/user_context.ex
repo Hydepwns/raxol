@@ -11,7 +11,7 @@ defmodule Raxol.Security.UserContext do
   with proper OTP-compliant state management.
   """
 
-  alias Raxol.Security.UserContext.Server
+  alias Raxol.Security.UserContext.ContextServer, as: Server
 
   # Ensure server is started
   defp ensure_server_started do

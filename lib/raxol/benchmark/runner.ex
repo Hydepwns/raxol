@@ -214,7 +214,7 @@ defmodule Raxol.Benchmark.Runner do
       name: "Plugin System",
       benchmarks: %{
         "Plugin load" => fn ->
-          Raxol.Core.Runtime.Plugins.Manager.load_plugin(TestPlugin)
+          Raxol.Core.Runtime.Plugins.PluginManager.load_plugin(TestPlugin)
         end,
         "Plugin message" => fn ->
           send_plugin_message(:test_message, %{data: "test"})

@@ -4,10 +4,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
   execution, and error handling.
   """
   use ExUnit.Case, async: false
-  import Raxol.Test.TestHelper
   
   alias Raxol.Core.Runtime.Plugins.{CommandHelper, CommandRegistry}
-  alias Raxol.Core.Runtime.Plugins.State, as: ManagerState
+  alias Raxol.Core.Runtime.Plugins.PluginsState, as: ManagerState
 
   @moduledoc false
   defmodule TestCommandHandler do

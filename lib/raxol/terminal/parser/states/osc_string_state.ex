@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
   """
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Parser.State
+  alias Raxol.Terminal.Parser.ParserState, as: State
   alias Raxol.Terminal.Commands.Executor
   require Raxol.Core.Runtime.Log
 

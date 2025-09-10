@@ -102,7 +102,8 @@ defmodule Raxol.UI.Rendering.Composer do
 
   defp get_previous_child(previous_composed_node, idx) do
     extract_child_at_index(
-      is_map(previous_composed_node) && previous_composed_node[:children],
+      is_map(previous_composed_node) &&
+        is_list(previous_composed_node[:children]),
       previous_composed_node,
       idx
     )

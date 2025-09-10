@@ -6,7 +6,7 @@ defmodule Raxol.UI.State.HooksRefactored do
   This provides better composability and explicit error handling.
   """
 
-  alias Raxol.UI.State.Management.Server
+  alias Raxol.UI.State.Management.StateManagementServer, as: Server
   require Logger
 
   # Result type for safe operations

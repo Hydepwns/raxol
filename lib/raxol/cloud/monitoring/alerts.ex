@@ -7,7 +7,7 @@ defmodule Raxol.Cloud.Monitoring.Alerts do
       config: config
     }
 
-    Raxol.Cloud.Monitoring.Server.init_monitoring(alerts_state)
+    Raxol.Cloud.Monitoring.MonitoringServer.init_monitoring(alerts_state)
     :ok
   end
 
@@ -33,7 +33,7 @@ defmodule Raxol.Cloud.Monitoring.Alerts do
   # Private helpers
 
   defp get_alerts_state() do
-    Raxol.Cloud.Monitoring.Server.get_alerts() || %{config: %{}}
+    Raxol.Cloud.Monitoring.MonitoringServer.get_alerts() || %{config: %{}}
   end
 
   defp send_notifications(_alert, _config) do

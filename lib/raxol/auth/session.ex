@@ -4,10 +4,10 @@ defmodule Raxol.Auth.Session do
 
   This module provides session creation, validation, and cleanup
   functionality for the Auth module. It acts as a bridge between
-  the Auth module and the Web.Session.Manager.
+  the Auth module and the Web.Session.SessionManager.
   """
 
-  alias Raxol.Web.Session.Manager
+  alias Raxol.Web.Session.SessionManager, as: Manager
   require Raxol.Core.Runtime.Log
 
   @doc """

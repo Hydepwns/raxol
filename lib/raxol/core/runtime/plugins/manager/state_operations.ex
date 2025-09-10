@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Runtime.Plugins.Manager.StateOperations do
+defmodule Raxol.Core.Runtime.Plugins.PluginManager.StateOperations do
   @moduledoc """
   State management operations for plugin manager.
   Handles plugin state queries, updates, and configuration management.

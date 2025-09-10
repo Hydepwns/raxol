@@ -11,7 +11,7 @@ defmodule Raxol.UI.State.Hooks do
   to the UI.State.Management.Server, eliminating Process dictionary usage.
   """
 
-  alias Raxol.UI.State.Management.Server
+  alias Raxol.UI.State.Management.StateManagementServer, as: Server
   require Logger
 
   # Ensure server is started

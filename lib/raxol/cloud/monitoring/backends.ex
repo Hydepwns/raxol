@@ -117,7 +117,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
     # This would use prometheus_ex functions
     # :prometheus_gauge.set(metric_name, tags, value)
     # For now, store in process dictionary as placeholder
-    Raxol.Cloud.Monitoring.Server.set_prometheus_metric(
+    Raxol.Cloud.Monitoring.MonitoringServer.set_prometheus_metric(
       metric_name,
       value,
       tags

@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Events.Manager.Behaviour do
+defmodule Raxol.Core.Events.EventManager.Behaviour do
   @moduledoc """
   Behaviour definition for event managers.
 

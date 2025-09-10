@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
+defmodule Raxol.Core.Runtime.Plugins.PluginManagerTest do
   @moduledoc """
   Tests for the plugin manager, including initialization, event handling,
   command processing, and metadata retrieval.
@@ -42,7 +42,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
   describe "init/1" do
     test "initializes with default state", %{plugin: plugin} do
       assert {:ok, state} =
-               Raxol.Core.Runtime.Plugins.Manager.init(%{
+               Raxol.Core.Runtime.Plugins.PluginManager.init(%{
                  plugin: plugin
                  # file_watcher_module: FileWatcherMock,
                  # loader_module: LoaderMock
@@ -63,7 +63,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       # end)
 
       # assert {:error, :initialization_failed} =
-      #          Raxol.Core.Runtime.Plugins.Manager.init(%{
+      #          Raxol.Core.Runtime.Plugins.PluginManager.init(%{
       #            plugin: plugin,
       #            file_watcher_module: FileWatcherMock,
       #            loader_module: LoaderMock
@@ -78,14 +78,14 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       # end)
 
       {:ok, _state} =
-        Raxol.Core.Runtime.Plugins.Manager.init(%{
+        Raxol.Core.Runtime.Plugins.PluginManager.init(%{
           plugin: plugin
           # file_watcher_module: FileWatcherMock,
           # loader_module: LoaderMock
         })
 
       # assert {:ok, new_state} =
-      #          Raxol.Core.Runtime.Plugins.Manager.handle_event(
+      #          Raxol.Core.Runtime.Plugins.PluginManager.handle_event(
       #            :test_event,
       #            state
       #          )
@@ -99,14 +99,14 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       # end)
 
       {:ok, _state} =
-        Raxol.Core.Runtime.Plugins.Manager.init(%{
+        Raxol.Core.Runtime.Plugins.PluginManager.init(%{
           plugin: plugin
           # file_watcher_module: FileWatcherMock,
           # loader_module: LoaderMock
         })
 
       # assert {:error, :event_processing_failed} =
-      #          Raxol.Core.Runtime.Plugins.Manager.handle_event(
+      #          Raxol.Core.Runtime.Plugins.PluginManager.handle_event(
       #            :test_event,
       #            state
       #          )
@@ -120,14 +120,14 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       # end)
 
       {:ok, _state} =
-        Raxol.Core.Runtime.Plugins.Manager.init(%{
+        Raxol.Core.Runtime.Plugins.PluginManager.init(%{
           plugin: plugin
           # file_watcher_module: FileWatcherMock,
           # loader_module: LoaderMock
         })
 
       # assert {:ok, new_state} =
-      #          Raxol.Core.Runtime.Plugins.Manager.handle_command(
+      #          Raxol.Core.Runtime.Plugins.PluginManager.handle_command(
       #            :test_command,
       #            [],
       #            state
@@ -142,14 +142,14 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       # end)
 
       {:ok, _state} =
-        Raxol.Core.Runtime.Plugins.Manager.init(%{
+        Raxol.Core.Runtime.Plugins.PluginManager.init(%{
           plugin: plugin
           # file_watcher_module: FileWatcherMock,
           # loader_module: LoaderMock
         })
 
       # assert {:error, :command_processing_failed} =
-      #          Raxol.Core.Runtime.Plugins.Manager.handle_command(
+      #          Raxol.Core.Runtime.Plugins.PluginManager.handle_command(
       #            :test_command,
       #            [],
       #            state
@@ -164,14 +164,14 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       # end)
 
       {:ok, _state} =
-        Raxol.Core.Runtime.Plugins.Manager.init(%{
+        Raxol.Core.Runtime.Plugins.PluginManager.init(%{
           plugin: plugin
           # file_watcher_module: FileWatcherMock,
           # loader_module: LoaderMock
         })
 
       # assert [:test_command1, :test_command2] =
-      #          Raxol.Core.Runtime.Plugins.Manager.get_commands(state)
+      #          Raxol.Core.Runtime.Plugins.PluginManager.get_commands(state)
     end
   end
 
@@ -188,7 +188,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       # end)
 
       {:ok, _state} =
-        Raxol.Core.Runtime.Plugins.Manager.init(%{
+        Raxol.Core.Runtime.Plugins.PluginManager.init(%{
           plugin: plugin
           # file_watcher_module: FileWatcherMock,
           # loader_module: LoaderMock
@@ -200,7 +200,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       #          description: "Test plugin",
       #          author: "Test Author",
       #          dependencies: []
-      #        } = Raxol.Core.Runtime.Plugins.Manager.get_metadata(state)
+      #        } = Raxol.Core.Runtime.Plugins.PluginManager.get_metadata(state)
     end
   end
 end

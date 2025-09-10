@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
   Measures performance of parsing and processing ANSI sequences.
   """
 
-  alias Raxol.Terminal.ANSI.Parser
+  alias Raxol.Terminal.ANSI.AnsiParser, as: Parser
 
   @doc """
   Runs a benchmark suite on the ANSI handling system.

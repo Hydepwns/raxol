@@ -6,7 +6,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   # Must be false due to Process dictionary usage
   use ExUnit.Case, async: false
   
-  alias Raxol.Core.Events.Manager, as: Manager, as: EventManager
+  alias Raxol.Core.Events.EventManager, as: Manager, as: EventManager
   alias Raxol.Core.KeyboardShortcuts, as: KeyboardShortcuts
 
   setup do

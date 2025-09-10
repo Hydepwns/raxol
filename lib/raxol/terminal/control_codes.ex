@@ -380,9 +380,10 @@ defmodule Raxol.Terminal.ControlCodes do
         }
 
         # Restore cursor position and attributes using CursorManager
-        restore_cursor_state(restored_state_data.cursor, emulator.cursor)
+        updated_cursor =
+          restore_cursor_state(restored_state_data.cursor, emulator.cursor)
 
-        emulator
+        %{emulator | cursor: updated_cursor}
 
       [] ->
         # No saved state to restore
@@ -592,32 +593,38 @@ defmodule Raxol.Terminal.ControlCodes do
     %{emulator | cursor: cursor}
   end
 
-  defp restore_cursor_state(nil, _emulator_cursor), do: :ok
+  defp restore_cursor_state(nil, emulator_cursor), do: emulator_cursor
 
   defp restore_cursor_state(cursor_data, emulator_cursor) do
     # Restore cursor position
-    Raxol.Terminal.Cursor.Manager.set_position(
-      emulator_cursor,
-      cursor_data.position
-    )
+    cursor =
+      Raxol.Terminal.Cursor.Manager.set_position(
+        emulator_cursor,
+        cursor_data.position
+      )
 
     # Restore cursor visibility
-    Raxol.Terminal.Cursor.Manager.set_visibility(
-      emulator_cursor,
-      cursor_data.visible
-    )
+    cursor =
+      Raxol.Terminal.Cursor.Manager.set_visibility(
+        cursor,
+        cursor_data.visible
+      )
 
     # Restore cursor style
-    Raxol.Terminal.Cursor.Manager.set_style(
-      emulator_cursor,
-      cursor_data.style
-    )
+    cursor =
+      Raxol.Terminal.Cursor.Manager.set_style(
+        cursor,
+        cursor_data.style
+      )
 
     # Restore cursor blinking state
-    Raxol.Terminal.Cursor.Manager.set_blink(
-      emulator_cursor,
-      cursor_data.blink_state
-    )
+    cursor =
+      Raxol.Terminal.Cursor.Manager.set_blink(
+        cursor,
+        cursor_data.blink_state
+      )
+
+    cursor
   end
 
   defp get_target_column(true, _current_col), do: 0

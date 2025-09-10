@@ -1,10 +1,22 @@
 defmodule Raxol.Terminal.Window.ManagerTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Raxol.Terminal.{Window, Window.Manager, Config}
 
   setup do
-    # Start the window registry
+    # Start the window registry and manager server
+    # Stop any existing server first to avoid conflicts
+    case Process.whereis(Raxol.Terminal.Window.Registry) do
+      nil -> :ok
+      pid -> GenServer.stop(pid, :normal, 5000)
+    end
+    
+    case Process.whereis(Raxol.Terminal.Window.Manager.WindowManagerServer) do
+      nil -> :ok
+      pid -> GenServer.stop(pid, :normal, 5000)
+    end
+    
     start_supervised!(Window.Registry)
+    start_supervised!(Raxol.Terminal.Window.Manager.WindowManagerServer)
     :ok
   end
 

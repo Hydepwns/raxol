@@ -182,7 +182,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Erasing do
   defp map_cells_up_to_column(line, col) do
     Enum.with_index(line)
     |> Enum.map(fn {cell, cell_col} ->
-      case cell_col < col do
+      case cell_col <= col do
         true -> Cell.new(" ")
         false -> cell
       end

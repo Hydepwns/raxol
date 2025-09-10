@@ -1,11 +1,11 @@
-defmodule Raxol.Core.Events.ManagerTest do
+defmodule Raxol.Core.Events.EventManagerTest do
   @moduledoc """
   Tests for the event manager, including initialization, handler registration,
   and event dispatching.
   """
   use ExUnit.Case, async: false
 
-  alias Raxol.Core.Events.Manager, as: Manager, as: EventManager
+  alias Raxol.Core.Events.EventManager, as: EventManager
 
   setup do
     # Initialize event manager for tests
@@ -42,7 +42,7 @@ defmodule Raxol.Core.Events.ManagerTest do
       # Verify handler was registered
       handlers = EventManager.get_handlers()
       assert Map.has_key?(handlers, :test_event)
-      assert handlers[:test_event] == [{__MODULE__, :dummy_handler}]
+      assert handlers[:test_event] == [{__MODULE__, :dummy_handler, 50}]
     end
 
     test "can register multiple handlers for same event type" do
@@ -58,8 +58,8 @@ defmodule Raxol.Core.Events.ManagerTest do
 
       event_handlers = Map.get(handlers, :test_event)
       assert length(event_handlers) == 2
-      assert Enum.member?(event_handlers, {__MODULE__, :dummy_handler})
-      assert Enum.member?(event_handlers, {__MODULE__, :another_handler})
+      assert Enum.member?(event_handlers, {__MODULE__, :dummy_handler, 50})
+      assert Enum.member?(event_handlers, {__MODULE__, :another_handler, 50})
     end
 
     test "doesn't register the same handler twice" do
@@ -70,7 +70,7 @@ defmodule Raxol.Core.Events.ManagerTest do
       # Verify handler was registered only once
       handlers = EventManager.get_handlers()
       assert Map.has_key?(handlers, :test_event)
-      assert Map.get(handlers, :test_event) == [{__MODULE__, :dummy_handler}]
+      assert Map.get(handlers, :test_event) == [{__MODULE__, :dummy_handler, 50}]
     end
   end
 
@@ -89,7 +89,9 @@ defmodule Raxol.Core.Events.ManagerTest do
 
       # Verify handler was unregistered
       handlers = EventManager.get_handlers()
-      assert Map.get(handlers, :test_event) == []
+      # When all handlers are removed, the key may be removed entirely or set to empty list
+      event_handlers = Map.get(handlers, :test_event, [])
+      assert event_handlers == []
     end
 
     test "only unregisters the specified handler" do
@@ -103,7 +105,7 @@ defmodule Raxol.Core.Events.ManagerTest do
       # Verify only that handler was unregistered
       handlers = EventManager.get_handlers()
       assert Map.has_key?(handlers, :test_event)
-      assert Map.get(handlers, :test_event) == [{__MODULE__, :another_handler}]
+      assert Map.get(handlers, :test_event) == [{__MODULE__, :another_handler, 50}]
     end
 
     test "does nothing for unregistered handler" do

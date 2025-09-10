@@ -2,7 +2,7 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
   use ExUnit.Case, async: false
   import ExUnit.CaptureLog
 
-  alias Raxol.Core.Runtime.Events.Handler
+  alias Raxol.Core.Runtime.Events.Handler, as: Handlers
 
   setup do
     # Create a sample event and state for testing

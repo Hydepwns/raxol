@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
   """
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Parser.State
+  alias Raxol.Terminal.Parser.ParserState, as: State
   require Raxol.Core.Runtime.Log
   require Logger
 
@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
         # )
 
         # Build a parser state for CSI param with empty params_buffer
-        csi_parser_state = %Raxol.Terminal.Parser.State{
+        csi_parser_state = %Raxol.Terminal.Parser.ParserState{
           state: :csi_param,
           params_buffer: ""
         }
@@ -44,7 +44,10 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       _ ->
         # Existing logic: transition to CSIEntryState for param accumulation
-        next_parser_state = %Raxol.Terminal.Parser.State{state: :csi_entry}
+        next_parser_state = %Raxol.Terminal.Parser.ParserState{
+          state: :csi_entry
+        }
+
         {:continue, emulator, next_parser_state, rest}
     end
   end
