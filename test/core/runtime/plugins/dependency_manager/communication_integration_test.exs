@@ -1,6 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CommunicationIntegrationTest do
   use ExUnit.Case, async: true
   alias Raxol.Core.Runtime.Plugins.DependencyManager
+  alias Raxol.Core.Runtime.ProcessStore
 
   describe "plugin communication during lifecycle" do
     defmodule CommunicatingPluginA do
@@ -18,11 +19,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CommunicationIntegrationT
         }
       end
 
-
       @impl true
       def init(config) do
         # Send message to plugin B during init
-        Process.put(:plugin_a_init_message, "A initialized")
+        ProcessStore.put(:plugin_a_init_message, "A initialized")
 
         plugin = %Raxol.Plugins.Plugin{
           name: "communicating_plugin_a",
@@ -40,20 +40,20 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CommunicationIntegrationT
       @impl Raxol.Plugins.LifecycleBehaviour
       def start(config) do
         # Send message to plugin B during start
-        Process.put(:plugin_a_start_message, "A started")
+        ProcessStore.put(:plugin_a_start_message, "A started")
         {:ok, Map.put(config, :start_message, "A started")}
       end
 
       @impl Raxol.Plugins.LifecycleBehaviour
       def stop(config) do
         # Send message to plugin B during stop
-        Process.put(:plugin_a_stop_message, "A stopped")
+        ProcessStore.put(:plugin_a_stop_message, "A stopped")
         {:ok, config}
       end
 
       @impl true
       def cleanup(config) do
-        Process.put(:communicating_plugin_a_cleanup, true)
+        ProcessStore.put(:communicating_plugin_a_cleanup, true)
         :ok
       end
 
@@ -79,11 +79,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CommunicationIntegrationT
         }
       end
 
-
       @impl true
       def init(config) do
         # Receive message from plugin A during init
-        Process.put(:plugin_b_init_message, "B initialized")
+        ProcessStore.put(:plugin_b_init_message, "B initialized")
 
         plugin = %Raxol.Plugins.Plugin{
           name: "communicating_plugin_b",
@@ -101,20 +100,20 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CommunicationIntegrationT
       @impl Raxol.Plugins.LifecycleBehaviour
       def start(config) do
         # Receive message from plugin A during start
-        Process.put(:plugin_b_start_message, "B started")
+        ProcessStore.put(:plugin_b_start_message, "B started")
         {:ok, Map.put(config, :start_message, "B started")}
       end
 
       @impl Raxol.Plugins.LifecycleBehaviour
       def stop(config) do
         # Receive message from plugin A during stop
-        Process.put(:plugin_b_stop_message, "B stopped")
+        ProcessStore.put(:plugin_b_stop_message, "B stopped")
         {:ok, config}
       end
 
       @impl true
       def cleanup(config) do
-        Process.put(:communicating_plugin_b_cleanup, true)
+        ProcessStore.put(:communicating_plugin_b_cleanup, true)
         :ok
       end
 
@@ -136,12 +135,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CommunicationIntegrationT
         ])
 
       # Verify initialization communication
-      assert Process.get(:plugin_b_init_message) == "B initialized"
-      assert Process.get(:plugin_a_init_message) == "A initialized"
+      assert ProcessStore.get(:plugin_b_init_message) == "B initialized"
+      assert ProcessStore.get(:plugin_a_init_message) == "A initialized"
 
       # Verify startup communication
-      assert Process.get(:plugin_b_start_message) == "B started"
-      assert Process.get(:plugin_a_start_message) == "A started"
+      assert ProcessStore.get(:plugin_b_start_message) == "B started"
+      assert ProcessStore.get(:plugin_a_start_message) == "A started"
 
       # Verify plugin states
       plugin_a_state = updated_manager.loaded_plugins["communicating_plugin_a"]
@@ -166,8 +165,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CommunicationIntegrationT
                )
 
       # Verify shutdown communication
-      assert Process.get(:plugin_a_stop_message) == "A stopped"
-      assert Process.get(:plugin_b_stop_message) == "B stopped"
+      assert ProcessStore.get(:plugin_a_stop_message) == "A stopped"
+      assert ProcessStore.get(:plugin_b_stop_message) == "B stopped"
     end
   end
 end

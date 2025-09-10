@@ -3,11 +3,12 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   Tests for the keyboard shortcuts system, including initialization,
   registration, unregistration, context management, and event handling.
   """
-  # Must be false due to Process dictionary usage
-  use ExUnit.Case, async: false
-  
-  alias Raxol.Core.Events.EventManager, as: Manager, as: EventManager
-  alias Raxol.Core.KeyboardShortcuts, as: KeyboardShortcuts
+  # Can be async now that we use ProcessStore
+  use ExUnit.Case, async: true
+
+  alias Raxol.Core.Events.EventManager
+  alias Raxol.Core.KeyboardShortcuts
+  alias Raxol.Core.Runtime.ProcessStore
 
   setup do
     # Ensure UserPreferences is started
@@ -36,7 +37,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       KeyboardShortcuts.init()
 
       # Check registry structure
-      shortcuts = Process.get(:keyboard_shortcuts)
+      shortcuts = ProcessStore.get(:keyboard_shortcuts)
       assert shortcuts != nil
       assert Map.has_key?(shortcuts, :global)
       assert Map.has_key?(shortcuts, :contexts)
@@ -48,13 +49,13 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   describe "cleanup/0" do
     test "cleans up keyboard shortcuts registry" do
       # Ensure we have registry
-      assert Process.get(:keyboard_shortcuts) != nil
+      assert ProcessStore.get(:keyboard_shortcuts) != nil
 
       # Clean up
       KeyboardShortcuts.cleanup()
 
       # Check registry is removed
-      assert Process.get(:keyboard_shortcuts) == nil
+      assert ProcessStore.get(:keyboard_shortcuts) == nil
     end
   end
 
@@ -72,7 +73,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
                )
 
       # Check registry
-      shortcuts = Process.get(:keyboard_shortcuts)
+      shortcuts = ProcessStore.get(:keyboard_shortcuts)
       assert Map.has_key?(shortcuts.global, :save)
 
       # Check shortcut definition
@@ -103,7 +104,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
                )
 
       # Check registry
-      shortcuts = Process.get(:keyboard_shortcuts)
+      shortcuts = ProcessStore.get(:keyboard_shortcuts)
       assert Map.has_key?(shortcuts.contexts, :main_menu)
       assert Map.has_key?(shortcuts.contexts.main_menu, :file_menu)
 
@@ -131,7 +132,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
                )
 
       # Check registry
-      shortcuts = Process.get(:keyboard_shortcuts)
+      shortcuts = ProcessStore.get(:keyboard_shortcuts)
       assert Map.has_key?(shortcuts.global, :complex)
 
       # Check key combo parsing
@@ -149,14 +150,14 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       KeyboardShortcuts.register_shortcut("Ctrl+S", :save, fn -> nil end)
 
       # Verify it exists
-      shortcuts = Process.get(:keyboard_shortcuts)
+      shortcuts = ProcessStore.get(:keyboard_shortcuts)
       assert Map.has_key?(shortcuts.global, :save)
 
       # Unregister it
       assert :ok = KeyboardShortcuts.unregister_shortcut(:save)
 
       # Check it's gone
-      shortcuts = Process.get(:keyboard_shortcuts)
+      shortcuts = ProcessStore.get(:keyboard_shortcuts)
       refute Map.has_key?(shortcuts.global, :save)
     end
 
@@ -167,7 +168,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       )
 
       # Verify it exists
-      shortcuts = Process.get(:keyboard_shortcuts)
+      shortcuts = ProcessStore.get(:keyboard_shortcuts)
       assert Map.has_key?(shortcuts.contexts, :main_menu)
       assert Map.has_key?(shortcuts.contexts.main_menu, :file_menu)
 
@@ -175,22 +176,22 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       assert :ok = KeyboardShortcuts.unregister_shortcut(:file_menu, :main_menu)
 
       # Check it's gone
-      shortcuts = Process.get(:keyboard_shortcuts)
+      shortcuts = ProcessStore.get(:keyboard_shortcuts)
       assert Map.has_key?(shortcuts.contexts, :main_menu)
       refute Map.has_key?(shortcuts.contexts.main_menu, :file_menu)
     end
   end
 
-  describe "set_context/1 and get_current_context/0" do
+  describe "set_active_context/1 and get_active_context/0" do
     test "sets and gets current context" do
       # Default should be :global
-      assert KeyboardShortcuts.get_current_context() == :global
+      assert KeyboardShortcuts.get_active_context() == :global
 
       # Set context
-      assert :ok = KeyboardShortcuts.set_context(:editor)
+      assert :ok = KeyboardShortcuts.set_active_context(:editor)
 
       # Get context
-      assert KeyboardShortcuts.get_current_context() == :editor
+      assert KeyboardShortcuts.get_active_context() == :editor
     end
   end
 
@@ -275,7 +276,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       )
 
       # Set current context
-      KeyboardShortcuts.set_context(:main_menu)
+      KeyboardShortcuts.set_active_context(:main_menu)
 
       # Get shortcuts for current context (nil)
       shortcuts = KeyboardShortcuts.get_shortcuts_for_context()
@@ -310,74 +311,76 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
     end
   end
 
-  describe "trigger_shortcut/2" do
-    test "triggers shortcut callback" do
-      # Store test process pid
-      test_pid = self()
-
-      # Register a global shortcut
-      KeyboardShortcuts.register_shortcut("Ctrl+S", :save, fn ->
-        send(test_pid, :save_triggered)
-      end)
-
-      # Trigger shortcut
-      assert :ok = KeyboardShortcuts.trigger_shortcut(:save)
-
-      # Check callback was called
-      assert_received :save_triggered
-    end
-
-    test "returns error for non-existent shortcut" do
-      # Trigger non-existent shortcut
-      assert {:error, :shortcut_not_found} =
-               KeyboardShortcuts.trigger_shortcut(:nonexistent)
-    end
-
-    test "finds shortcut in specified context" do
-      # Store test process pid
-      test_pid = self()
-
-      # Register a context-specific shortcut
-      KeyboardShortcuts.register_shortcut(
-        "Alt+F",
-        :file_menu,
-        fn ->
-          send(test_pid, :file_menu_triggered)
-        end,
-        context: :main_menu
-      )
-
-      # Trigger shortcut in context
-      assert :ok = KeyboardShortcuts.trigger_shortcut(:file_menu, :main_menu)
-
-      # Check callback was called
-      assert_received :file_menu_triggered
-    end
-
-    test "finds shortcut in current context when nil is passed" do
-      # Store test process pid
-      test_pid = self()
-
-      # Register a context-specific shortcut
-      KeyboardShortcuts.register_shortcut(
-        "Alt+F",
-        :file_menu,
-        fn ->
-          send(test_pid, :file_menu_triggered)
-        end,
-        context: :main_menu
-      )
-
-      # Set current context
-      KeyboardShortcuts.set_context(:main_menu)
-
-      # Trigger shortcut in current context (nil)
-      assert :ok = KeyboardShortcuts.trigger_shortcut(:file_menu)
-
-      # Check callback was called
-      assert_received :file_menu_triggered
-    end
-  end
+  # NOTE: trigger_shortcut/2 was removed from the module
+  # These tests are commented out as they test a non-existent function
+  # describe "trigger_shortcut/2" do
+  #   test "triggers shortcut callback" do
+  #     # Store test process pid
+  #     test_pid = self()
+  #
+  #     # Register a global shortcut
+  #     KeyboardShortcuts.register_shortcut("Ctrl+S", :save, fn ->
+  #       send(test_pid, :save_triggered)
+  #     end)
+  #
+  #     # Trigger shortcut
+  #     assert :ok = KeyboardShortcuts.trigger_shortcut(:save)
+  #
+  #     # Check callback was called
+  #     assert_received :save_triggered
+  #   end
+  #
+  #   test "returns error for non-existent shortcut" do
+  #     # Trigger non-existent shortcut
+  #     assert {:error, :shortcut_not_found} =
+  #              KeyboardShortcuts.trigger_shortcut(:nonexistent)
+  #   end
+  #
+  #   test "finds shortcut in specified context" do
+  #     # Store test process pid
+  #     test_pid = self()
+  #
+  #     # Register a context-specific shortcut
+  #     KeyboardShortcuts.register_shortcut(
+  #       "Alt+F",
+  #       :file_menu,
+  #       fn ->
+  #         send(test_pid, :file_menu_triggered)
+  #       end,
+  #       context: :main_menu
+  #     )
+  #
+  #     # Trigger shortcut in context
+  #     assert :ok = KeyboardShortcuts.trigger_shortcut(:file_menu, :main_menu)
+  #
+  #     # Check callback was called
+  #     assert_received :file_menu_triggered
+  #   end
+  #
+  #   test "finds shortcut in current context when nil is passed" do
+  #     # Store test process pid
+  #     test_pid = self()
+  #
+  #     # Register a context-specific shortcut
+  #     KeyboardShortcuts.register_shortcut(
+  #       "Alt+F",
+  #       :file_menu,
+  #       fn ->
+  #         send(test_pid, :file_menu_triggered)
+  #       end,
+  #       context: :main_menu
+  #     )
+  #
+  #     # Set current context
+  #     KeyboardShortcuts.set_active_context(:main_menu)
+  #
+  #     # Trigger shortcut in current context (nil)
+  #     assert :ok = KeyboardShortcuts.trigger_shortcut(:file_menu)
+  #
+  #     # Check callback was called
+  #     assert_received :file_menu_triggered
+  #   end
+  # end
 
   describe "handle_keyboard_event/1" do
     test "executes callback for matching shortcut" do
@@ -411,7 +414,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       )
 
       # Set current context
-      KeyboardShortcuts.set_context(:main_menu)
+      KeyboardShortcuts.set_active_context(:main_menu)
 
       # Dispatch keyboard event
       EventManager.dispatch({:keyboard_event, {:key, "f", [:alt]}})

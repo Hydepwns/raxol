@@ -10,13 +10,21 @@ defmodule Raxol.Web.SupervisorTest do
         )
     end
 
-    # Start the web supervisor for testing with error handling
-    case Raxol.Web.Supervisor.start_link([]) do
-      {:ok, pid} ->
-        {:ok, %{supervisor_pid: pid}}
+    # Check if web supervisor is already running
+    case Process.whereis(Raxol.Web.Supervisor) do
+      nil ->
+        # Start the web supervisor for testing with error handling
+        case Raxol.Web.Supervisor.start_link([]) do
+          {:ok, pid} ->
+            {:ok, %{supervisor_pid: pid}}
 
-      {:error, reason} ->
-        flunk("Failed to start Web.Supervisor: #{inspect(reason)}")
+          {:error, reason} ->
+            flunk("Failed to start Web.Supervisor: #{inspect(reason)}")
+        end
+
+      pid when is_pid(pid) ->
+        # Supervisor already running, use existing pid
+        {:ok, %{supervisor_pid: pid}}
     end
   end
 

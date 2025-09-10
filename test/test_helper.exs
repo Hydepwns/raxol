@@ -111,6 +111,9 @@ IO.puts("[TestHelper] Initializing UserPreferences...")
 # Start the Accessibility Announcements Agent for global subscription storage
 {:ok, _} = Raxol.Core.Accessibility.Announcements.start_link([])
 
+# Start ProcessStore for replacing Process dictionary usage
+{:ok, _} = Raxol.Core.Runtime.ProcessStore.start_link()
+
 # Set up global test configuration
 IO.puts("[TestHelper] Setting up global test configuration...")
 

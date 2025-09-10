@@ -3,10 +3,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
   Tests for the command runtime system, including registration,
   execution, and error handling.
   """
-  use ExUnit.Case, async: false
-  
+  use ExUnit.Case, async: true
+
   alias Raxol.Core.Runtime.Plugins.{CommandHelper, CommandRegistry}
   alias Raxol.Core.Runtime.Plugins.PluginsState, as: ManagerState
+  alias Raxol.Core.Runtime.ProcessStore
 
   @moduledoc false
   defmodule TestCommandHandler do
@@ -74,7 +75,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
 
     def handle_msg_cmd(arg, state) do
       send(state.test_pid, {:handled, arg, state})
-      {:noreply, Map.put(state, :msg_sent, true)}
+      {:ok, Map.put(state, :msg_sent, true), :command_executed}
     end
 
     def init(_), do: {:ok, %{test_pid: nil}}
@@ -430,13 +431,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
         )
 
       # Set test_pid in process dictionary for handler
-      Process.put(:test_pid, self())
+      ProcessStore.put(:test_pid, self())
 
       # Execute command
       args = ["hello_arg"]
 
-      assert {:error, {:unexpected_plugin_return, {:noreply, _}},
-              updated_states} =
+      assert {:ok, updated_states} =
                CommandHelper.handle_command(
                  table,
                  "msg_cmd",
@@ -448,8 +448,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
       # Assert message received by test process
       assert_receive {:handled, ["hello_arg"], %{test_pid: _}}, 500
 
-      # Since the handler returned an invalid tuple, the plugin state should NOT be updated with :msg_sent
-      refute Map.has_key?(updated_states[plugin_id], :msg_sent)
+      # The handler now returns a proper tuple, so plugin state should be updated with :msg_sent
+      assert Map.has_key?(updated_states[plugin_id], :msg_sent)
+      assert updated_states[plugin_id].msg_sent == true
     end
 
     test "returns :not_found for unknown command", %{

@@ -1,5 +1,6 @@
 defmodule Raxol.UI.Components.Input.CheckboxTest do
   use ExUnit.Case, async: true
+  alias Raxol.Core.Runtime.ProcessStore
 
   alias Raxol.UI.Components.Input.Checkbox
   # alias Raxol.Core.Events.Event # Commented out until needed
@@ -356,52 +357,52 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     test "calls on_toggle callback with new state when toggled" do
       # Use Process dictionary to track if callback was called
       on_toggle_func = fn checked_state ->
-        Process.put(:toggled_to, checked_state)
+        ProcessStore.put(:toggled_to, checked_state)
       end
 
       state = init_state(checked: false, on_toggle: on_toggle_func)
 
       # Reset tracker
-      Process.put(:toggled_to, nil)
+      ProcessStore.put(:toggled_to, nil)
 
       {:noreply, new_state, _cmds} =
         Checkbox.handle_event(click_event(), %{}, state)
 
       assert new_state.checked == true
-      assert Process.get(:toggled_to) == true
+      assert ProcessStore.get(:toggled_to) == true
 
       # Reset tracker
-      Process.put(:toggled_to, nil)
+      ProcessStore.put(:toggled_to, nil)
 
       {:noreply, final_state, _cmds} =
         Checkbox.handle_event(space_keypress_event(), %{}, new_state)
 
       assert final_state.checked == false
-      assert Process.get(:toggled_to) == false
+      assert ProcessStore.get(:toggled_to) == false
     end
 
     test "does not call on_toggle callback when not toggled" do
       # Use Process dictionary to track if callback was called
-      on_toggle_func = fn _ -> Process.put(:toggle_called, true) end
+      on_toggle_func = fn _ -> ProcessStore.put(:toggle_called, true) end
 
       state =
         init_state(checked: false, disabled: true, on_toggle: on_toggle_func)
 
       # Reset tracker
-      Process.put(:toggle_called, false)
+      ProcessStore.put(:toggle_called, false)
 
       {:noreply, _new_state, _cmds} =
         Checkbox.handle_event(click_event(), %{}, state)
 
-      assert Process.get(:toggle_called) == false
+      assert ProcessStore.get(:toggle_called) == false
 
       # Reset tracker
-      Process.put(:toggle_called, false)
+      ProcessStore.put(:toggle_called, false)
 
       {:noreply, _final_state, _cmds} =
         Checkbox.handle_event(other_keypress_event(), %{}, state)
 
-      assert Process.get(:toggle_called) == false
+      assert ProcessStore.get(:toggle_called) == false
     end
   end
 end

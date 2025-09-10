@@ -45,11 +45,16 @@ defmodule Raxol.Style.Colors.SystemTest do
     Theme.register(Theme.new(high_contrast_theme_attrs()))
 
     # Initialize system with mocked event manager
-    Application.put_env(:raxol, :event_manager, Raxol.Core.Events.EventManagerRefactoredMock)
+    Application.put_env(
+      :raxol,
+      :event_manager,
+      Raxol.Core.Events.EventManagerRefactoredMock
+    )
+
     System.init()
 
     # Explicitly set the process dictionary for the current theme
-    Process.put(:color_system_current_theme, :standard)
+    Raxol.Core.Runtime.ProcessStore.put(:color_system_current_theme, :standard)
 
     {:ok, context}
   end

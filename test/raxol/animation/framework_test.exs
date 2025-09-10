@@ -8,8 +8,9 @@ defmodule Raxol.Animation.FrameworkTest do
   alias Raxol.Core.Accessibility, as: Accessibility
   alias Raxol.Core.UserPreferences
   alias Raxol.Test.EventAssertions
+  alias Raxol.Core.Runtime.ProcessStore
   import Raxol.AccessibilityTestHelpers
-  
+
   Logger.debug("Starting FrameworkTest module")
 
   # Helper to wait for animation completion
@@ -105,7 +106,7 @@ defmodule Raxol.Animation.FrameworkTest do
       assert :ok == Framework.init(%{}, user_preferences_pid)
 
       # Verify default settings
-      settings = Process.get(:animation_framework_settings, %{})
+      settings = ProcessStore.get(:animation_framework_settings, %{})
       assert settings.reduced_motion == false
       assert settings.default_duration == 300
 
@@ -259,10 +260,12 @@ defmodule Raxol.Animation.FrameworkTest do
       Process.sleep(10)
 
       # Check if the spy handler received it (from ETS table)
-      announcements = case :ets.lookup(:accessibility_test_announcements, :announcements) do
-        [{:announcements, msgs}] -> msgs
-        [] -> []
-      end
+      announcements =
+        case :ets.lookup(:accessibility_test_announcements, :announcements) do
+          [{:announcements, msgs}] -> msgs
+          [] -> []
+        end
+
       assert "test message" in announcements
 
       # Clean up
@@ -271,6 +274,7 @@ defmodule Raxol.Animation.FrameworkTest do
         Raxol.AccessibilityTestHelpers,
         :handle_announcement_spy
       )
+
       :ets.delete(:accessibility_test_announcements)
     end
 
@@ -304,7 +308,7 @@ defmodule Raxol.Animation.FrameworkTest do
         Accessibility.announce("Test announcement", [], user_preferences_pid)
 
         # Debug: Check what announcements were made
-        announcements = Process.get(:accessibility_test_announcements, [])
+        announcements = ProcessStore.get(:accessibility_test_announcements, [])
         Logger.debug("Current announcements: #{inspect(announcements)}")
 
         # Verify announcement was made
@@ -361,7 +365,7 @@ defmodule Raxol.Animation.FrameworkTest do
         wait_for_animation_start("test_element", animation.name)
 
         # Debug: Check what announcements were made
-        announcements = Process.get(:accessibility_test_announcements, [])
+        announcements = ProcessStore.get(:accessibility_test_announcements, [])
         Logger.debug("Current announcements: #{inspect(announcements)}")
 
         # Verify announcement was made using the spy helper

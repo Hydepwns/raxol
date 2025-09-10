@@ -1,5 +1,6 @@
 defmodule Raxol.ColorSystemTest do
   use ExUnit.Case, async: false
+  alias Raxol.Core.Runtime.ProcessStore
   import Raxol.AccessibilityTestHelpers
 
   alias Raxol.Core.Accessibility, as: Accessibility
@@ -134,7 +135,9 @@ defmodule Raxol.ColorSystemTest do
       # Enable high contrast mode
       Accessibility.set_high_contrast(true)
       # Wait for high contrast change to be applied
-      assert_receive {:event, {:accessibility_preference_changed, :high_contrast, true}}, 100
+      assert_receive {:event,
+                      {:accessibility_preference_changed, :high_contrast, true}},
+                     100
 
       # Get the primary color after high contrast
       high_contrast_primary = ColorSystem.get_color(:primary)
@@ -177,7 +180,7 @@ defmodule Raxol.ColorSystemTest do
           __MODULE__.UserPreferences
         )
       end
-      
+
       Raxol.Core.Events.EventManager.register_handler(
         :theme_changed,
         self(),
@@ -185,7 +188,7 @@ defmodule Raxol.ColorSystemTest do
       )
 
       # Ensure queue is clear before test
-      Process.put(:accessibility_announcements, [])
+      ProcessStore.put(:accessibility_announcements, [])
 
       # Set the theme preference
       UserPreferences.set(:theme, :dark, __MODULE__.UserPreferences)
@@ -197,7 +200,7 @@ defmodule Raxol.ColorSystemTest do
       Process.sleep(50)
 
       # Get announcements directly from the process dictionary queue
-      announcements = Process.get(:accessibility_announcements, [])
+      announcements = ProcessStore.get(:accessibility_announcements, [])
 
       # Assert announcement was made (should contain theme name)
       assert Enum.any?(announcements, fn announcement ->
@@ -214,7 +217,7 @@ defmodule Raxol.ColorSystemTest do
       UserPreferences.save!(__MODULE__.UserPreferences)
 
       # Reset preferences to defaults
-      Process.put(:user_preferences, %{})
+      ProcessStore.put(:user_preferences, %{})
 
       # Load preferences (Not needed - loaded on init)
       # UserPreferences.load()
@@ -348,7 +351,7 @@ defmodule Raxol.ColorSystemTest do
       Framework.init(%{}, __MODULE__.UserPreferences)
 
       # Get the setting directly from the process dictionary
-      settings = Process.get(:animation_framework_settings, %{})
+      settings = ProcessStore.get(:animation_framework_settings, %{})
       reduced_motion_enabled = Map.get(settings, :reduced_motion, false)
 
       # Verify animation framework respects this setting
@@ -362,7 +365,7 @@ defmodule Raxol.ColorSystemTest do
       )
 
       Framework.init(%{}, __MODULE__.UserPreferences)
-      settings_after = Process.get(:animation_framework_settings, %{})
+      settings_after = ProcessStore.get(:animation_framework_settings, %{})
       refute Map.get(settings_after, :reduced_motion, false)
     end
   end

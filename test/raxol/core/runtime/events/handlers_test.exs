@@ -1,5 +1,6 @@
 defmodule Raxol.Core.Runtime.Events.HandlerTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case
+  alias Raxol.Core.Runtime.ProcessStore
   import ExUnit.CaptureLog
 
   alias Raxol.Core.Runtime.Events.Handler, as: Handlers
@@ -64,15 +65,15 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
       execution_order = []
 
       # Store execution_order in process dictionary to track updates across function calls
-      Process.put(:execution_order, execution_order)
+      ProcessStore.put(:execution_order, execution_order)
 
       # Register handlers with different priorities
       Handlers.register_handler(
         :handler1,
         [:test_event],
         fn e, s ->
-          current = Process.get(:execution_order)
-          Process.put(:execution_order, current ++ [:handler1])
+          current = ProcessStore.get(:execution_order)
+          ProcessStore.put(:execution_order, current ++ [:handler1])
           {:ok, e, s}
         end,
         priority: 30
@@ -82,8 +83,8 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
         :handler2,
         [:test_event],
         fn e, s ->
-          current = Process.get(:execution_order)
-          Process.put(:execution_order, current ++ [:handler2])
+          current = ProcessStore.get(:execution_order)
+          ProcessStore.put(:execution_order, current ++ [:handler2])
           {:ok, e, s}
         end,
         priority: 10
@@ -93,8 +94,8 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
         :handler3,
         [:test_event],
         fn e, s ->
-          current = Process.get(:execution_order)
-          Process.put(:execution_order, current ++ [:handler3])
+          current = ProcessStore.get(:execution_order)
+          ProcessStore.put(:execution_order, current ++ [:handler3])
           {:ok, e, s}
         end,
         priority: 20
@@ -104,7 +105,11 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
       assert {:ok, ^event, ^state} = Handlers.execute_handlers(event, state)
 
       # Check the execution order
-      assert Process.get(:execution_order) == [:handler2, :handler3, :handler1]
+      assert ProcessStore.get(:execution_order) == [
+               :handler2,
+               :handler3,
+               :handler1
+             ]
     end
 
     test "filters events based on filter function", %{

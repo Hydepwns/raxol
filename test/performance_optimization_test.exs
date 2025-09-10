@@ -124,5 +124,5 @@ defmodule PerformanceOptimizationTest do
 end
 
 # Run the tests
-ExUnit.start()
-ExUnit.run()
+# ExUnit.start()
+# ExUnit.run()

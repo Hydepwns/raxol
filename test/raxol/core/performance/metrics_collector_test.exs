@@ -3,9 +3,10 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
   Tests for the metrics collector, including frame time recording, FPS calculation,
   memory usage tracking, garbage collection statistics, and error handling.
   """
-  use ExUnit.Case
-  
+  use ExUnit.Case, async: true
+
   alias Raxol.Core.Performance.MetricsCollector
+  alias Raxol.Core.Runtime.ProcessStore
 
   describe "Metrics Collector" do
     test "creates new collector" do
@@ -108,7 +109,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
       garbage = Enum.map(1..10000, & &1)
 
       # Ensure garbage stays in memory by referencing it
-      Process.put(:test_garbage, garbage)
+      ProcessStore.put(:test_garbage, garbage)
 
       # Update again
       collector = MetricsCollector.update_memory_usage(collector)
@@ -121,7 +122,7 @@ defmodule Raxol.Core.Performance.MetricsCollectorTest do
       assert collector.memory_usage > 0
 
       # Clean up
-      Process.delete(:test_garbage)
+      ProcessStore.delete(:test_garbage)
     end
 
     test "collects garbage collection statistics" do

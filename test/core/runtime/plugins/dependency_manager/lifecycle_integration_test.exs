@@ -1,6 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest do
   use ExUnit.Case, async: true
   alias Raxol.Core.Runtime.Plugins.DependencyManager
+  alias Raxol.Core.Runtime.ProcessStore
 
   describe "plugin lifecycle events" do
     defmodule LifecycleTestPluginA do
@@ -20,7 +21,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
 
       @impl true
       def init(config) do
-        Process.put(:lifecycle_plugin_a_init, true)
+        ProcessStore.put(:lifecycle_plugin_a_init, true)
 
         plugin = %Raxol.Plugins.Plugin{
           name: "lifecycle_plugin_a",
@@ -37,19 +38,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
 
       @impl Raxol.Plugins.LifecycleBehaviour
       def start(config) do
-        Process.put(:lifecycle_plugin_a_start, true)
+        ProcessStore.put(:lifecycle_plugin_a_start, true)
         {:ok, config}
       end
 
       @impl Raxol.Plugins.LifecycleBehaviour
       def stop(config) do
-        Process.put(:lifecycle_plugin_a_stop, true)
+        ProcessStore.put(:lifecycle_plugin_a_stop, true)
         {:ok, config}
       end
 
       @impl true
       def cleanup(_config) do
-        Process.put(:lifecycle_plugin_a_cleanup, true)
+        ProcessStore.put(:lifecycle_plugin_a_cleanup, true)
         :ok
       end
 
@@ -78,7 +79,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
 
       @impl true
       def init(config) do
-        Process.put(:lifecycle_plugin_b_init, true)
+        ProcessStore.put(:lifecycle_plugin_b_init, true)
 
         plugin = %Raxol.Plugins.Plugin{
           name: "lifecycle_plugin_b",
@@ -95,19 +96,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
 
       @impl Raxol.Plugins.LifecycleBehaviour
       def start(config) do
-        Process.put(:lifecycle_plugin_b_start, true)
+        ProcessStore.put(:lifecycle_plugin_b_start, true)
         {:ok, config}
       end
 
       @impl Raxol.Plugins.LifecycleBehaviour
       def stop(config) do
-        Process.put(:lifecycle_plugin_b_stop, true)
+        ProcessStore.put(:lifecycle_plugin_b_stop, true)
         {:ok, config}
       end
 
       @impl true
       def cleanup(_config) do
-        Process.put(:lifecycle_plugin_b_cleanup, true)
+        ProcessStore.put(:lifecycle_plugin_b_cleanup, true)
         :ok
       end
 
@@ -120,15 +121,15 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
     end
 
     setup do
-      # Clear any existing process dictionary entries
-      Process.delete(:lifecycle_plugin_a_init)
-      Process.delete(:lifecycle_plugin_a_start)
-      Process.delete(:lifecycle_plugin_a_stop)
-      Process.delete(:lifecycle_plugin_a_cleanup)
-      Process.delete(:lifecycle_plugin_b_init)
-      Process.delete(:lifecycle_plugin_b_start)
-      Process.delete(:lifecycle_plugin_b_stop)
-      Process.delete(:lifecycle_plugin_b_cleanup)
+      # Clear any existing process store entries
+      ProcessStore.delete(:lifecycle_plugin_a_init)
+      ProcessStore.delete(:lifecycle_plugin_a_start)
+      ProcessStore.delete(:lifecycle_plugin_a_stop)
+      ProcessStore.delete(:lifecycle_plugin_a_cleanup)
+      ProcessStore.delete(:lifecycle_plugin_b_init)
+      ProcessStore.delete(:lifecycle_plugin_b_start)
+      ProcessStore.delete(:lifecycle_plugin_b_stop)
+      ProcessStore.delete(:lifecycle_plugin_b_cleanup)
       :ok
     end
 
@@ -140,12 +141,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
         Raxol.Plugins.Manager.State.load_plugins(manager, plugins)
 
       # Verify initialization order (B should initialize before A)
-      assert Process.get(:lifecycle_plugin_b_init)
-      assert Process.get(:lifecycle_plugin_a_init)
+      assert ProcessStore.get(:lifecycle_plugin_b_init)
+      assert ProcessStore.get(:lifecycle_plugin_a_init)
 
       # Verify startup order (B should start before A)
-      assert Process.get(:lifecycle_plugin_b_start)
-      assert Process.get(:lifecycle_plugin_a_start)
+      assert ProcessStore.get(:lifecycle_plugin_b_start)
+      assert ProcessStore.get(:lifecycle_plugin_a_start)
 
       # Unload plugins
       assert {:ok, _} =
@@ -161,8 +162,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
                )
 
       # Verify stop order (A should stop before B)
-      assert Process.get(:lifecycle_plugin_a_stop)
-      assert Process.get(:lifecycle_plugin_b_stop)
+      assert ProcessStore.get(:lifecycle_plugin_a_stop)
+      assert ProcessStore.get(:lifecycle_plugin_b_stop)
     end
 
     test ~c"lifecycle events handle errors gracefully" do
@@ -323,13 +324,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
 
         @impl Raxol.Plugins.LifecycleBehaviour
         def stop(config) do
-          Process.put(:final_state, config)
+          ProcessStore.put(:final_state, config)
           {:ok, config}
         end
 
         @impl true
         def cleanup(config) do
-          Process.put(:state_test_plugin_cleanup, true)
+          ProcessStore.put(:state_test_plugin_cleanup, true)
           :ok
         end
 
@@ -359,7 +360,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
                  "state_test_plugin"
                )
 
-      final_state = Process.get(:final_state)
+      final_state = ProcessStore.get(:final_state)
       assert final_state.init_state == "initialized"
       assert final_state.start_state == "started"
     end
@@ -422,13 +423,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
           assert config.setting2 == "default2"
           assert config.custom_setting == "custom"
           assert config.runtime_setting == "runtime"
-          Process.put(:final_config, config)
+          ProcessStore.put(:final_config, config)
           {:ok, config}
         end
 
         @impl true
         def cleanup(config) do
-          Process.put(:config_test_plugin_cleanup, true)
+          ProcessStore.put(:config_test_plugin_cleanup, true)
           :ok
         end
 
@@ -478,7 +479,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.LifecycleIntegrationTest 
                  "config_test_plugin"
                )
 
-      final_config = Process.get(:final_config)
+      final_config = ProcessStore.get(:final_config)
       assert final_config.setting1 == "custom1"
       assert final_config.setting2 == "default2"
       assert final_config.setting3 == "new"
