@@ -68,11 +68,11 @@ defmodule Raxol.Animation.DSL do
     end
 
     def add_animation(sequence, animation) do
-      %{sequence | animations: sequence.animations ++ [animation]}
+      %{sequence | animations: [animation | sequence.animations]}
     end
 
     def add_condition(sequence, condition) do
-      %{sequence | conditions: sequence.conditions ++ [condition]}
+      %{sequence | conditions: [condition | sequence.conditions]}
     end
   end
 
@@ -104,7 +104,7 @@ defmodule Raxol.Animation.DSL do
     end
 
     def add_stage(choreo, name, sequence) do
-      %{choreo | stages: choreo.stages ++ [{name, sequence}]}
+      %{choreo | stages: [{name, sequence} | choreo.stages]}
     end
   end
 
@@ -646,7 +646,7 @@ defmodule Raxol.Animation.DSL do
   def execute_choreography(%Choreography{} = choreo, element_id, options \\ %{}) do
     total_delay = 0
 
-    Enum.reduce(choreo.stages, total_delay, fn {stage_name, sequence},
+    _final_delay = Enum.reduce(choreo.stages, total_delay, fn {stage_name, sequence},
                                                acc_delay ->
       # Execute this stage with accumulated delay
       stage_options = Map.put(options, :delay, acc_delay)

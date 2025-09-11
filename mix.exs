@@ -1,7 +1,7 @@
 defmodule Raxol.MixProject do
   use Mix.Project
 
-  @version "1.2.0"
+  @version "1.2.1"
   @source_url "https://github.com/Hydepwns/raxol"
 
   def project do
@@ -312,7 +312,7 @@ defmodule Raxol.MixProject do
     [
       name: "raxol",
       files:
-        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG.md docs docs/examples),
+        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG.md docs examples),
       maintainers: ["DROO AMOR"],
       licenses: ["MIT"],
       links: %{
@@ -333,25 +333,17 @@ defmodule Raxol.MixProject do
       logo: "assets/logo.svg",
       extras: [
         "README.md",
-        "docs/getting-started.md",
-        "docs/api-reference.md",
-        "docs/CONFIGURATION.md",
-        "docs/tutorials/02_component_deep_dive.md",
-        "docs/tutorials/03_terminal_emulation.md",
+        "CHANGELOG.md",
+        "LICENSE.md",
         "CONTRIBUTING.md"
       ],
       groups_for_extras: [
         "Getting Started": [
-          "README.md",
-          "docs/getting-started.md"
+          "README.md"
         ],
-        Tutorials: [
-          "docs/tutorials/02_component_deep_dive.md",
-          "docs/tutorials/03_terminal_emulation.md"
-        ],
-        Reference: [
-          "docs/api-reference.md",
-          "docs/CONFIGURATION.md"
+        "Project Info": [
+          "CHANGELOG.md",
+          "LICENSE.md"
         ],
         Contributing: ["CONTRIBUTING.md"]
       ],

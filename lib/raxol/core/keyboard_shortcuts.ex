@@ -65,8 +65,6 @@ defmodule Raxol.Core.KeyboardShortcuts do
   and unregisters event handlers.
   """
   def cleanup do
-    ensure_started()
-
     # Unregister event handler
     EventManager.unregister_handler(
       :keyboard_event,
@@ -74,8 +72,10 @@ defmodule Raxol.Core.KeyboardShortcuts do
       :handle_keyboard_event
     )
 
-    # Clear all shortcuts
-    Server.clear_all(Server)
+    # Stop the server if it's running
+    if pid = Process.whereis(Server) do
+      GenServer.stop(pid, :normal)
+    end
     :ok
   end
 
@@ -140,9 +140,10 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
   Returns a map of shortcut definitions for the given context.
   """
-  def get_shortcuts_for_context(context \\ :global) do
+  def get_shortcuts_for_context(context \\ nil) do
     ensure_started()
-    Server.get_shortcuts_for_context(Server, context)
+    actual_context = context || get_active_context()
+    Server.get_shortcuts_for_context(Server, actual_context)
   end
 
   @doc """
@@ -154,7 +155,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     ensure_started()
     help_text = Server.generate_shortcuts_help(Server)
     IO.puts(help_text)
-    :ok
+    {:ok, help_text}
   end
 
   @doc """

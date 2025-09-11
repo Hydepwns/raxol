@@ -83,14 +83,14 @@ defmodule Raxol.Terminal.TerminalUtils do
 
   defp get_termbox_width do
     case @termbox2_available do
-      true -> apply(:termbox2_nif, :tb_width, [])
+      true -> :termbox2_nif.tb_width()
       false -> 0
     end
   end
 
   defp get_termbox_height do
     case @termbox2_available do
-      true -> apply(:termbox2_nif, :tb_height, [])
+      true -> :termbox2_nif.tb_height()
       false -> 0
     end
   end

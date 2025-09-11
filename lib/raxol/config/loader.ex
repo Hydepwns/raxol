@@ -434,38 +434,22 @@ defmodule Raxol.Config.Loader do
   end
 
   defp encode_json(config, pretty) do
-    stringified = stringify_keys(config)
+    stringified = Raxol.Utils.MapUtils.stringify_keys(config)
     Jason.encode(stringified, pretty: pretty)
   end
 
   defp encode_toml(config) do
     # Would need a TOML encoder - using simplified version
-    stringified = stringify_keys(config)
+    stringified = Raxol.Utils.MapUtils.stringify_keys(config)
     {:ok, inspect(stringified)}
   end
 
   defp encode_yaml(config) do
     # Would need a YAML encoder
-    stringified = stringify_keys(config)
+    stringified = Raxol.Utils.MapUtils.stringify_keys(config)
     {:ok, inspect(stringified)}
   end
 
-  defp stringify_keys(map) when is_map(map) do
-    Enum.reduce(map, %{}, fn {key, value}, acc ->
-      string_key = to_string(key)
-
-      stringified_value =
-        case value do
-          v when is_map(v) -> stringify_keys(v)
-          v when is_list(v) -> Enum.map(v, &stringify_keys/1)
-          v -> v
-        end
-
-      Map.put(acc, string_key, stringified_value)
-    end)
-  end
-
-  defp stringify_keys(value), do: value
 
   defp ensure_directory(path) do
     path

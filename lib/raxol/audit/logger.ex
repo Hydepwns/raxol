@@ -21,12 +21,10 @@ defmodule Raxol.Audit.Logger do
 
   alias Raxol.Architecture.EventSourcing.EventStore
   alias Raxol.Audit.{Events, Storage, Analyzer, Exporter}
-
+  
   alias Raxol.Audit.Events.{
     AuthorizationEvent,
-    ConfigurationChangeEvent,
-    ComplianceEvent,
-    DataPrivacyEvent
+    ConfigurationChangeEvent
   }
 
   defstruct [
@@ -185,20 +183,14 @@ defmodule Raxol.Audit.Logger do
   Logs a compliance-related activity.
   """
   def log_compliance(framework, requirement, activity, status, opts \\ []) do
-    event = %ComplianceEvent{
-      event_id: generate_event_id(),
-      timestamp: System.system_time(:millisecond),
-      compliance_framework: framework,
-      requirement: requirement,
-      activity: activity,
-      status: status,
-      evidence: Keyword.get(opts, :evidence),
-      auditor_id: Keyword.get(opts, :auditor_id),
-      findings: Keyword.get(opts, :findings),
-      remediation_required: Keyword.get(opts, :remediation_required, false),
-      due_date: Keyword.get(opts, :due_date),
-      metadata: Keyword.get(opts, :metadata, %{})
-    }
+    # Use the Events module to create the event, avoiding duplication
+    event = Raxol.Audit.Events.compliance_event(
+      framework,
+      requirement,
+      activity,
+      status,
+      opts
+    )
 
     severity =
       case status do
@@ -213,20 +205,13 @@ defmodule Raxol.Audit.Logger do
   Logs a data privacy request (GDPR).
   """
   def log_privacy_request(data_subject_id, request_type, status, opts \\ []) do
-    event = %DataPrivacyEvent{
-      event_id: generate_event_id(),
-      timestamp: System.system_time(:millisecond),
-      data_subject_id: data_subject_id,
-      request_type: request_type,
-      status: status,
-      processor_id: Keyword.get(opts, :processor_id),
-      data_categories: Keyword.get(opts, :data_categories),
-      legal_basis: Keyword.get(opts, :legal_basis),
-      retention_period: Keyword.get(opts, :retention_period),
-      third_parties: Keyword.get(opts, :third_parties),
-      cross_border_transfer: Keyword.get(opts, :cross_border_transfer, false),
-      metadata: Keyword.get(opts, :metadata, %{})
-    }
+    # Use the Events module to create the event, avoiding duplication
+    event = Raxol.Audit.Events.privacy_event(
+      data_subject_id,
+      request_type,
+      status,
+      opts
+    )
 
     log_event(event, :privacy, :medium)
   end

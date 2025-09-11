@@ -366,7 +366,7 @@ defmodule Raxol.Config.Generator do
   defp write_json_file(config, path, opts) do
     pretty = Keyword.get(opts, :pretty, true)
 
-    case Jason.encode(stringify_keys(config), pretty: pretty) do
+    case Jason.encode(Raxol.Utils.MapUtils.stringify_keys(config), pretty: pretty) do
       {:ok, content} -> File.write(path, content)
       {:error, reason} -> {:error, reason}
     end
@@ -466,22 +466,6 @@ defmodule Raxol.Config.Generator do
     end
   end
 
-  defp stringify_keys(map) when is_map(map) do
-    Enum.reduce(map, %{}, fn {key, value}, acc ->
-      string_key = to_string(key)
-
-      stringified_value =
-        case value do
-          v when is_map(v) -> stringify_keys(v)
-          v when is_list(v) -> Enum.map(v, &stringify_keys/1)
-          v -> v
-        end
-
-      Map.put(acc, string_key, stringified_value)
-    end)
-  end
-
-  defp stringify_keys(value), do: value
 
   defp ensure_directory(path) do
     path

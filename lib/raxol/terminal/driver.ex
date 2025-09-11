@@ -429,14 +429,14 @@ defmodule Raxol.Terminal.Driver do
 
   defp call_termbox_init do
     case @termbox2_available do
-      true -> apply(:termbox2_nif, :tb_init, [])
+      true -> :termbox2_nif.tb_init()
       false -> 0
     end
   end
 
   defp terminate_termbox do
     case @termbox2_available do
-      true -> apply(:termbox2_nif, :tb_shutdown, [])
+      true -> :termbox2_nif.tb_shutdown()
       false -> :ok
     end
   end
@@ -450,14 +450,14 @@ defmodule Raxol.Terminal.Driver do
 
   defp get_termbox_width do
     case @termbox2_available do
-      true -> apply(:termbox2_nif, :tb_width, [])
+      true -> :termbox2_nif.tb_width()
       false -> 80
     end
   end
 
   defp get_termbox_height do
     case @termbox2_available do
-      true -> apply(:termbox2_nif, :tb_height, [])
+      true -> :termbox2_nif.tb_height()
       false -> 24
     end
   end

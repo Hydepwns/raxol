@@ -553,7 +553,7 @@ defmodule Raxol.Config do
   end
 
   defp encode_json(config, pretty) do
-    Jason.encode(stringify_keys(config), pretty: pretty)
+    Jason.encode(Raxol.Utils.MapUtils.stringify_keys(config), pretty: pretty)
   end
 
   # Utility functions
@@ -613,22 +613,6 @@ defmodule Raxol.Config do
 
   defp atomize_keys(value), do: value
 
-  defp stringify_keys(map) when is_map(map) do
-    Enum.reduce(map, %{}, fn {key, value}, acc ->
-      string_key = to_string(key)
-
-      stringified_value =
-        case value do
-          v when is_map(v) -> stringify_keys(v)
-          v when is_list(v) -> Enum.map(v, &stringify_keys/1)
-          v -> v
-        end
-
-      Map.put(acc, string_key, stringified_value)
-    end)
-  end
-
-  defp stringify_keys(value), do: value
 
   defp sanitize_config(config) do
     # Remove sensitive values from being stored

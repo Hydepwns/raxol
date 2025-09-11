@@ -81,7 +81,7 @@ defmodule Raxol.UI.Components.Terminal do
     )
 
     # Placeholder: Append key to buffer for simple echo
-    new_buffer = state.buffer ++ ["Key: #{inspect(event.data.key)}"]
+    new_buffer = ["Key: #{inspect(event.data.key)}" | state.buffer]
     {%{state | buffer: new_buffer}, []}
   end
 

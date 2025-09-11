@@ -243,7 +243,7 @@ end
 
 ```bash
 # Run the Svelte-style demo
-mix run examples/svelte_demo.ex
+mix run examples/svelte/svelte_demo.ex
 
 # Try the counter example
 iex -S mix

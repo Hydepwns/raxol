@@ -385,7 +385,7 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
           # Check for key combinations
           new_combinations =
             check_key_combinations(
-              pressed_keys ++ [key],
+              [key | pressed_keys],
               track_combinations
             )
 

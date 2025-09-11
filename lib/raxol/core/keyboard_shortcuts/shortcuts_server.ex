@@ -185,13 +185,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
 
   @impl GenServer
   def handle_call(:init_shortcuts, _from, state) do
-    # Register event handler for keyboard events
-    EventManager.register_handler(
-      :keyboard_event,
-      __MODULE__,
-      :handle_keyboard_event
-    )
-
+    # Event handler registration is done by the main KeyboardShortcuts module
     {:reply, :ok, state}
   end
 
@@ -203,7 +197,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
       ) do
     context = Keyword.get(opts, :context, :global)
     description = Keyword.get(opts, :description, "")
-    priority = Keyword.get(opts, :priority, 5)
+    priority = Keyword.get(opts, :priority, :medium)
     override = Keyword.get(opts, :override, false)
 
     parsed_shortcut = parse_shortcut(shortcut)
@@ -235,8 +229,15 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
 
   @impl GenServer
   def handle_call({:unregister_shortcut, shortcut, context}, _from, state) do
-    parsed_shortcut = parse_shortcut(shortcut)
-    new_state = remove_shortcut_from_state(state, parsed_shortcut, context)
+    new_state = 
+      if is_atom(shortcut) or (is_binary(shortcut) and not String.contains?(shortcut, "+")) do
+        # Unregister by name
+        remove_shortcut_by_name(state, shortcut, context)
+      else
+        # Unregister by shortcut string
+        parsed_shortcut = parse_shortcut(shortcut)
+        remove_shortcut_from_state(state, parsed_shortcut, context)
+      end
     {:reply, :ok, new_state}
   end
 
@@ -389,6 +390,36 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     )
   end
 
+  defp remove_shortcut_by_name(state, name, :global) do
+    shortcuts = state.shortcuts.global
+    key_to_remove = Enum.find_value(shortcuts, fn {key, shortcut} ->
+      if shortcut.name == name, do: key
+    end)
+    
+    if key_to_remove do
+      update_in(state, [:shortcuts, :global], &Map.delete(&1, key_to_remove))
+    else
+      state
+    end
+  end
+
+  defp remove_shortcut_by_name(state, name, context) do
+    shortcuts = Map.get(state.shortcuts.contexts, context, %{})
+    key_to_remove = Enum.find_value(shortcuts, fn {key, shortcut} ->
+      if shortcut.name == name, do: key
+    end)
+    
+    if key_to_remove do
+      update_in(
+        state,
+        [:shortcuts, :contexts, context],
+        &Map.delete(&1 || %{}, key_to_remove)
+      )
+    else
+      state
+    end
+  end
+
   defp find_matching_shortcut(state, key_str)
        when state.active_context != :global do
     context_shortcuts =
@@ -413,6 +444,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
         announce_shortcut_execution(shortcut)
 
       {:error, reason} ->
+        require Logger
         Logger.error("Shortcut callback failed: #{inspect(reason)}")
     end
   end
@@ -520,10 +552,32 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
   end
 
   defp shortcut_key(parsed_shortcut) do
-    modifiers_str = Enum.join(parsed_shortcut.modifiers, "_")
-    "#{modifiers_str}_#{parsed_shortcut.key}"
+    modifiers_str = 
+      if parsed_shortcut.modifiers == [] do
+        ""
+      else
+        Enum.join(parsed_shortcut.modifiers, "_") <> "_"
+      end
+    "#{modifiers_str}#{parsed_shortcut.key}"
   end
 
+  defp process_keyboard_event({:keyboard_event, {:key, key, modifiers}}, state) do
+    # Convert key to atom if needed
+    key_atom = if is_binary(key), do: String.to_atom(key), else: key
+    
+    parsed = %{
+      key: key_atom,
+      modifiers: Enum.sort(modifiers || [])
+    }
+
+    key_str = shortcut_key(parsed)
+    
+    # Look for matching shortcut in active context first, then global
+    shortcut = find_matching_shortcut(state, key_str)
+
+    execute_shortcut_callback(shortcut)
+  end
+  
   defp process_keyboard_event({:keyboard_event, key_data}, state)
        when is_map(key_data) do
     key = key_data[:key]
@@ -555,13 +609,13 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
   end
 
   defp format_shortcuts_group(title, shortcuts) when map_size(shortcuts) > 0 do
-    header = "#{title} Shortcuts:\n"
+    header = "Available keyboard shortcuts for #{title}:\n"
 
     shortcuts_text =
       shortcuts
       |> Enum.sort_by(fn {_key, def} -> def.priority end)
       |> Enum.map(fn {_key, def} ->
-        "  #{def.raw} - #{def.description || def.name}"
+        "  #{def.raw}: #{def.description || def.name}"
       end)
       |> Enum.join("\n")
 
