@@ -157,7 +157,7 @@ defmodule Raxol.MixProject do
       # Syntax highlighting core
       {:makeup, "~> 1.2"},
       # Elixir syntax highlighting
-      {:makeup_elixir, "~> 0.16"},
+      {:makeup_elixir, "~> 1.0.1"},
       # System clipboard access
       {:clipboard, "~> 0.2.1"},
       # Efficient circular buffer implementation
@@ -174,14 +174,14 @@ defmodule Raxol.MixProject do
       {:phoenix_html, "~> 4.0"},
       {:plug_cowboy, "~> 2.7"},
       {:phoenix_live_dashboard, "~> 0.8.7", only: :dev},
-      {:phoenix_live_reload, "~> 1.6", only: :dev}
+      {:phoenix_live_reload, "~> 1.6.1", only: :dev}
     ]
   end
 
   defp database_deps do
     [
       {:ecto_sql, "~> 3.12"},
-      {:postgrex, "~> 0.20.0", runtime: false},
+      {:postgrex, "~> 0.21.1", runtime: false},
       # Password hashing
       {:bcrypt_elixir, "~> 3.3"}
     ]
@@ -257,9 +257,9 @@ defmodule Raxol.MixProject do
   defp i18n_deps do
     [
       {:ex_cldr, "~> 2.15"},
-      {:ex_cldr_numbers, "~> 2.12"},
+      {:ex_cldr_numbers, "~> 2.35.2"},
       {:ex_cldr_currencies, "~> 2.5"},
-      {:ex_cldr_dates_times, "~> 2.14"}
+      {:ex_cldr_dates_times, "~> 2.23.0"}
     ]
   end
 

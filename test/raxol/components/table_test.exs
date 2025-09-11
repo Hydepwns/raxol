@@ -50,7 +50,7 @@ defmodule Raxol.UI.Components.TableTest do
         flunk("UserPreferences failed to start: #{inspect(other_error)}")
     end
 
-    case Raxol.Core.Renderer.Manager.start_link([]) do
+    case Raxol.Core.Renderer.RendererManager.start_link([]) do
       {:ok, _pid} ->
         :ok
 
