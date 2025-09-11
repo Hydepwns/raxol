@@ -1,121 +1,123 @@
-# 🛠️ Raxol Scripts
+# Scripts Directory Structure
 
-Welcome! This directory contains helper scripts for development, testing, and quality assurance in Raxol.
+This directory contains organized utility scripts for the Raxol project. Scripts are categorized by function for better maintainability and discoverability.
 
----
+## Directory Organization
 
-## 🗂️ What's Inside
-
-- **Pre-Commit & Quality Checks:**
-  Scripts to ensure code quality before every commit.
-- **Validation Scripts:**
-  Tools for performance, accessibility, and end-to-end validation.
-- **Testing Scripts:**
-  Helpers for running and automating various test suites.
-- **Database Scripts:**
-  Utilities for managing the development/test database.
-- **Build & Release Scripts:**
-  Tools for building and releasing Raxol.
-- **Development Utilities:**
-  Miscellaneous helpers for day-to-day development.
-- **Git Pre-Commit Hook:**
-  Automates formatting and quality checks on commit.
-
----
-
-## ✅ Pre-Commit & Quality Checks
-
-- `pre_commit_check.exs` — Runs all checks (Dialyzer, Credo, Format, Docs, Links, Coverage).
-- `check_type_safety.exs` — Runs Dialyzer.
-- `check_documentation.exs` — Checks documentation consistency.
-- `check_style.exs` — Runs Credo.
-- `check_links.exs` — Checks for broken links in Markdown.
-- `check_coverage.exs` — Checks test coverage.
-- `format_before_commit.sh` — Runs `mix format`.
-- `explain_credo_warning.exs` — Explains specific Credo warnings.
-
-Run any script with:
-
-```bash
-mix run scripts/<script_name>.exs
-# or
-./scripts/<script_name>.sh
+```
+scripts/
+├── ci/              # CI/CD related scripts
+├── dev/             # Development utilities
+├── testing/         # Test-related scripts
+├── docs/            # Documentation generation
+├── quality/         # Code quality and checks
+├── db/              # Database utilities
+├── visualization/   # Visualization and demo scripts
+├── bin/             # Executable scripts
+├── archived/        # Archived/deprecated scripts
+└── dev.sh          # Main development script (entry point)
 ```
 
----
+## Main Entry Point
 
-## 🧪 Validation & Testing Scripts
+### `dev.sh`
+The unified development script that provides convenient access to common tasks:
+- `./dev.sh test [pattern]` - Run tests with optional pattern filter
+- `./dev.sh test-all` - Run comprehensive test suite
+- `./dev.sh format` - Format code
+- `./dev.sh check` - Run quality checks
+- `./dev.sh dialyzer` - Run Dialyzer analysis
+- `./dev.sh setup` - Setup development environment
+- `./dev.sh db [action]` - Database operations
+- `./dev.sh release` - Create release
+- `./dev.sh clean` - Clean build artifacts
 
-- `validate_performance.exs` — Validates performance benchmarks.
-- `validate_accessibility.exs` — Checks accessibility standards.
-- `validate_e2e.exs` — Validates end-to-end test setup/results.
+## Directory Contents
 
-### General Testing
+### `ci/` - CI/CD Scripts
+- `build_and_test.sh` - Build and test automation
+- `ci_validate_structure.sh` - Validate project structure
+- `migrate-workflows.sh` - Migrate CI workflows
+- `rollback-workflows.sh` - Rollback CI workflows
 
-- `run-local-tests.sh` — Runs the main test suite.
-- `test_workflow.sh` — Executes a multi-step test workflow.
-- `run_platform_tests.exs` — Runs platform-specific tests.
+### `dev/` - Development Utilities
+- `release.exs` - Release management
+- `install_pre_commit.sh` - Pre-commit hook installation
+- `run_native_terminal.sh` - Native terminal testing
+- `verify_nix_env.sh` - Nix environment verification
+- Various cleanup and refactoring utilities
 
-### Dashboard/UI Testing
+### `testing/` - Testing Scripts
+- `run_tests.sh` - Test runner
+- `check_coverage.exs` - Coverage analysis
+- `analyze_tests.exs` - Test analysis
+- `run_platform_tests.exs` - Platform-specific tests
+- `summarize_test_errors.sh` - Error summary generation
+- Various test utilities
 
-- `run_all_dashboard_tests.sh` — Runs all UI/dashboard tests.
-- `run_dashboard_integration_test.sh` — UI/dashboard integration tests.
+### `quality/` - Code Quality
+- `pre_commit_check.exs` - Pre-commit validation
+- `code_quality_metrics.exs` - Quality metrics
+- `check_style.exs` - Style checking
+- `check_duplicate_filenames.exs` - Duplicate detection
+- `explain_credo_warning.exs` - Credo warning explanations
+- Various validation scripts
 
-### Visualization Testing
+### `db/` - Database Utilities
+- `setup_db.sh` - Database setup
+- `check_db.exs` - Connectivity check
+- `diagnose_db.exs` - Database diagnostics
 
-- `run_visualization_tests.exs` — Visualization component tests.
-- `run_visualization_benchmark.exs` — Visualization benchmarks.
+### `visualization/` - Visualization & Demos
+- `demo_videos.sh` - Demo video generation
+- `demo_showcase.md` - Demo documentation
+- `test_visualization.exs` - Visualization tests
+- `run_visualization_tests.exs` - Visualization test suite
 
-### Terminal Testing & Verification
+### `docs/` - Documentation Generation
+- `generate_docs.exs` - Main documentation generator
+- `generate_api_docs.exs` - API documentation
+- `simple_doc_generator.exs` - Simple doc generation
+- `check_links.js` - Link validation
+- `maintenance.js` - Documentation maintenance
+- `search.js` - Documentation search
 
-- `native_terminal_test.sh` — Runs tests in a native terminal.
-- `run_native_terminal.sh` — Runs the app/tests in a native terminal.
-- `verify_terminal_dimensions.exs` — Verifies terminal dimension handling.
-- `verify_terminal_compatibility.exs` — Checks terminal compatibility.
+### `bin/` - Executable Scripts
+- `demo.exs` - Demo runner
+- `run_showcase.exs` - Showcase runner
 
-### VS Code Testing
+### `archived/` - Archived Scripts
+Contains deprecated, experimental, and refactoring scripts from previous sprints. These are kept for reference but are not actively maintained.
 
-- `vs_code_test.sh` — Tests for the VS Code integration.
-
----
-
-## 🗄️ Database Scripts
-
-- `setup_db.sh` — Sets up database schemas, users, and data.
-- `check_db.exs` — Checks database status/integrity.
-- `diagnose_db.exs` — Provides database diagnostics.
-
----
-
-## 🚀 Build & Release Scripts
-
-- `release.exs` — Creates project releases (tagging, artifacts).
-
----
-
-## ⚙️ Development Utilities
-
-- `run.exs` — Runs the main application or a specific entry point.
-- `generate_elements_table.exs` — Generates UI element documentation.
-- `run-local-actions.sh` — Simulates GitHub Actions locally.
-
----
-
-## 🪝 Git Pre-Commit Hook
-
-Install with:
+## Usage Examples
 
 ```bash
-./scripts/install_pre_commit.sh
+# Run all tests
+./dev.sh test-all
+
+# Run tests matching a pattern
+./dev.sh test terminal
+
+# Check code quality before committing
+./dev.sh check
+
+# Setup development environment
+./dev.sh setup
+
+# Database operations
+./dev.sh db setup
+./dev.sh db check
+./dev.sh db diagnose
+
+# Create a release
+./dev.sh release
 ```
 
-This will:
+## Adding New Scripts
 
-- Format staged Elixir files with `mix format`
-- Run basic code quality checks
-
-If you have issues, check permissions or re-run the install script.
-
----
-
-Happy scripting!
+When adding new scripts:
+1. Place them in the appropriate subdirectory based on function
+2. Update this README with a description
+3. If commonly used, consider adding to `dev.sh` for easier access
+4. Follow existing naming conventions (snake_case for scripts)
+5. Add proper documentation headers in the script itself

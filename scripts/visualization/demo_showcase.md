@@ -120,7 +120,7 @@ mix raxol.playground
 Use our demo recording script:
 
 ```bash
-./scripts/demo_videos.sh
+./scripts/visualization/demo_videos.sh
 ```
 
 This will guide you through recording demos using asciinema and converting them to GIFs.

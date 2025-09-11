@@ -46,13 +46,13 @@ run_all_tests() {
     mix test --include=integration
     
     # Platform-specific tests
-    if command -v mix run scripts/run_platform_tests.exs >/dev/null; then
-        mix run scripts/run_platform_tests.exs
+    if command -v mix run scripts/testing/run_platform_tests.exs >/dev/null; then
+        mix run scripts/testing/run_platform_tests.exs
     fi
     
     # Visualization tests
-    if [ -f "$SCRIPT_DIR/test_visualization.exs" ]; then
-        mix run scripts/test_visualization.exs
+    if [ -f "$SCRIPT_DIR/visualization/test_visualization.exs" ]; then
+        mix run scripts/visualization/test_visualization.exs
     fi
 }
 
@@ -63,8 +63,8 @@ run_checks() {
     mix format --check-formatted
     
     # Run comprehensive checks
-    if [ -f "$SCRIPT_DIR/pre_commit_check.exs" ]; then
-        mix run scripts/pre_commit_check.exs
+    if [ -f "$SCRIPT_DIR/quality/pre_commit_check.exs" ]; then
+        mix run scripts/quality/pre_commit_check.exs
     else
         # Fallback individual checks
         mix raxol.dialyzer --check
@@ -86,8 +86,8 @@ setup_env() {
     mix deps.get
     mix deps.compile
     
-    if [ -f "$SCRIPT_DIR/setup_db.sh" ]; then
-        bash "$SCRIPT_DIR/setup_db.sh"
+    if [ -f "$SCRIPT_DIR/db/setup_db.sh" ]; then
+        bash "$SCRIPT_DIR/db/setup_db.sh"
     fi
     
     echo "Environment setup complete!"
@@ -98,13 +98,13 @@ db_operations() {
     
     case $action in
         setup)
-            bash "$SCRIPT_DIR/setup_db.sh"
+            bash "$SCRIPT_DIR/db/setup_db.sh"
             ;;
         check)
-            mix run scripts/check_db.exs
+            mix run scripts/db/check_db.exs
             ;;
         diagnose)
-            mix run scripts/diagnose_db.exs
+            mix run scripts/db/diagnose_db.exs
             ;;
         *)
             echo "Unknown db action: $action"
@@ -138,7 +138,7 @@ case ${1:-""} in
         db_operations "$2"
         ;;
     release)
-        mix run scripts/release.exs
+        mix run scripts/dev/release.exs
         ;;
     clean)
         mix clean
