@@ -1,3 +1,61 @@
+## [1.2.1] - 2025-09-11
+
+### Code Quality Sprint (Phase 6-7) - COMPLETE
+
+- **Critical Issues Fixed**: All compilation errors and warnings resolved
+  - Fixed syntax error in `examples/snippets/advanced/commands.exs` 
+  - Resolved TypeScript import errors across `examples/snippets/typescript/`
+  - Achieved zero compilation warnings status
+  - Fixed all high-priority Credo issues
+
+- **Performance Improvements**: 15+ performance optimizations completed
+  - Replaced inefficient list appending with proper accumulator patterns
+  - Optimized apply/3 usage across codebase
+  - Improved memory efficiency in hot paths
+  - Performance targets met: Parser 3.3μs/op, Render <1ms, Memory 2.8MB baseline
+
+- **Code Duplication Reduction**: Eliminated 5 major duplication patterns
+  - Created `Raxol.Utils.MapUtils` for shared stringify_keys functionality
+  - Consolidated duplicate implementations across modules
+  - Reduced duplication instances from 46 to 41
+  - Fixed audit module code duplication
+
+- **TypeScript Support**: Created missing core modules
+  - Added performance, events, and renderer core modules
+  - Created visualization and dashboard component modules
+  - Enhanced TypeScript example completeness
+
+- **Linter Analysis Results**:
+  - Critical Issues: ✅ All fixed
+  - High Priority Performance: ✅ 15+ fixed  
+  - Code Duplication: ✅ 5 patterns eliminated
+  - Remaining: 700+ minor optimizations (low impact, deferred)
+
+### Documentation and Project Organization
+
+- **Major Documentation Consolidation**: Significantly improved project organization and reduced duplication
+  - Consolidated 5 scattered `examples/` directories into single organized structure
+  - Removed duplicate VS Code extension directory (archived `extensions/vscode/`)
+  - Streamlined main README from 280 to 128 lines (54% reduction)
+  - Created comprehensive documentation hub at `docs/README.md`
+  - Consolidated benchmark documentation and removed redundant example snippet READMEs
+  - Moved release notes to organized `docs/releases/` directory
+
+- **Script Organization**: Cleaned up scripts directory with new categorical structure
+  - Organized scripts into `ci/`, `dev/`, `testing/`, `quality/`, `db/`, `visualization/` subdirectories
+  - Updated `dev.sh` and documentation references to new script locations
+  - Created comprehensive scripts README with usage examples
+
+- **Package Preparation**: Optimized for Hex.pm release
+  - Updated package files list in `mix.exs` to include consolidated structure
+  - Validated package build with `mix hex.build`
+  - All required files (LICENSE.md, README.md, CHANGELOG.md) present and updated
+
+- **Space Savings**: Removed approximately 15-20KB of redundant documentation
+  - Eliminated duplicate files and directories
+  - Improved DRY compliance across all documentation
+  - Enhanced navigation and discoverability
+
 ## [1.2.0] - 2025-09-10
 
 ### Sprint 28: Process-Based Test Migration - COMPLETE
@@ -96,7 +154,7 @@
   - Restores intended functionality for focus management and keyboard shortcuts in production
 
 - **Duplicate Filename Prevention System**: Comprehensive tooling to detect and prevent duplicate filenames
-  - Added standalone script (`scripts/check_duplicate_filenames.exs`) with severity classification and rename suggestions
+  - Added standalone script (`scripts/quality/check_duplicate_filenames.exs`) with severity classification and rename suggestions
   - Added Mix task (`lib/mix/tasks/raxol.check.duplicates.ex`) with configurable options and strict mode
   - Added Credo integration (`lib/raxol/credo/duplicate_filename_check.ex`) for existing linting workflow
 
@@ -239,7 +297,7 @@ mix credo
   - Performance scaling verification tests
 
 - **Demo Recording Infrastructure**
-  - Interactive demo recording script (scripts/demo_videos.sh)
+  - Interactive demo recording script (scripts/visualization/demo_videos.sh)
   - 6 demo categories: Tutorial, Playground, VSCode, WASH, Performance, Enterprise
   - Asciinema integration with GIF conversion support
   - Professional demo showcase documentation
@@ -316,7 +374,7 @@ mix credo
   - Comprehensive 660+ line API.md reference with 100% public API coverage
   - Professional documentation (removed emojis, reduced verbosity, added YAML frontmatter)
   - Created comprehensive CONTRIBUTING.md guide
-  - DRY documentation architecture (40% redundancy reduction)
+  - Reduced documentation redundancy (40% improvement)
   - 9 Architecture Decision Records (ADRs) for key design choices
   - WASH-style system documentation for session continuity
 

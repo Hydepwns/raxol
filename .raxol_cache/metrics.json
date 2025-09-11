@@ -2,6 +2,130 @@
   {
     "cache_stats": {
       "enabled": true,
+      "hit_rate": 24.4
+    },
+    "checks": {
+      "format": {
+        "cached": false,
+        "elapsed": 23,
+        "error_count": 0,
+        "status": "ok"
+      },
+      "security": {
+        "cached": false,
+        "elapsed": 1006,
+        "error_count": 0,
+        "status": "warning"
+      }
+    },
+    "git_branch": "master",
+    "git_sha": "2f4ced6e",
+    "parallel": true,
+    "system": {
+      "cpu_count": 8,
+      "elixir_version": "1.17.1",
+      "os": "unix",
+      "otp_version": "25"
+    },
+    "timestamp": "2025-09-10T21:47:39.299223Z",
+    "total_time": 1012
+  },
+  {
+    "cache_stats": {
+      "enabled": true,
+      "hit_rate": 24.4
+    },
+    "checks": {
+      "format": {
+        "cached": false,
+        "elapsed": 3475,
+        "error_count": 0,
+        "status": "ok"
+      },
+      "security": {
+        "cached": false,
+        "elapsed": 1291,
+        "error_count": 0,
+        "status": "warning"
+      }
+    },
+    "git_branch": "master",
+    "git_sha": "4945b328",
+    "parallel": true,
+    "system": {
+      "cpu_count": 8,
+      "elixir_version": "1.17.1",
+      "os": "unix",
+      "otp_version": "25"
+    },
+    "timestamp": "2025-09-10T21:35:59.555299Z",
+    "total_time": 3478
+  },
+  {
+    "cache_stats": {
+      "enabled": true,
+      "hit_rate": 27.9
+    },
+    "checks": {
+      "format": {
+        "cached": false,
+        "elapsed": 7402,
+        "error_count": 0,
+        "status": "ok"
+      },
+      "security": {
+        "cached": false,
+        "elapsed": 1478,
+        "error_count": 0,
+        "status": "warning"
+      }
+    },
+    "git_branch": "master",
+    "git_sha": "1048e378",
+    "parallel": true,
+    "system": {
+      "cpu_count": 8,
+      "elixir_version": "1.17.1",
+      "os": "unix",
+      "otp_version": "25"
+    },
+    "timestamp": "2025-09-10T21:35:24.980883Z",
+    "total_time": 7505
+  },
+  {
+    "cache_stats": {
+      "enabled": true,
+      "hit_rate": 35.2
+    },
+    "checks": {
+      "format": {
+        "cached": false,
+        "elapsed": 1193,
+        "error_count": 0,
+        "status": "ok"
+      },
+      "security": {
+        "cached": false,
+        "elapsed": 3034,
+        "error_count": 0,
+        "status": "warning"
+      }
+    },
+    "git_branch": "master",
+    "git_sha": "ba897a27",
+    "parallel": true,
+    "system": {
+      "cpu_count": 8,
+      "elixir_version": "1.17.1",
+      "os": "unix",
+      "otp_version": "25"
+    },
+    "timestamp": "2025-09-10T21:31:55.290504Z",
+    "total_time": 3039
+  },
+  {
+    "cache_stats": {
+      "enabled": true,
       "hit_rate": 36.5
     },
     "checks": {

@@ -2,7 +2,7 @@
 [
   inputs: [
     "*.{ex,exs}",
-    "{config,lib}/**/*.{ex,exs}",
+    "{config,lib,examples}/**/*.{ex,exs}",
     "test/*.exs",
     "test/support/**/*.ex",
     "priv/*/seeds.exs"

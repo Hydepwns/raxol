@@ -36,23 +36,23 @@ Use [act](https://github.com/nektos/act) to run workflows locally for debugging.
 
 ### Running Workflows Locally (`run-local-actions.sh`)
 
-Use the helper script `./scripts/run-local-actions.sh`:
+Use the helper script `./scripts/dev/run-local-actions.sh`:
 
 ```bash
 # Run the default CI workflow (ci.yml)
-./scripts/run-local-actions.sh
+./scripts/dev/run-local-actions.sh
 
 # Run a specific workflow (-w) and job (-j)
-./scripts/run-local-actions.sh -w cross_platform_tests.yml -j test_linux
+./scripts/dev/run-local-actions.sh -w cross_platform_tests.yml -j test_linux
 
 # Enable verbose debugging (-d)
-./scripts/run-local-actions.sh -d
+./scripts/dev/run-local-actions.sh -d
 
 # List available workflows and options (-h)
-./scripts/run-local-actions.sh -h
+./scripts/dev/run-local-actions.sh -h
 
 # Run the dummy test to quickly verify setup
-./scripts/run-local-actions.sh -w dummy-test.yml
+./scripts/dev/run-local-actions.sh -w dummy-test.yml
 ```
 
 The `dummy-test.yml` workflow uses mock setups for quick verification without running the full suite. It's useful for:
@@ -106,11 +106,11 @@ These images can provide specific Erlang/Elixir versions or pre-installed depend
 
 - **GitHub Authentication**: If seeing `authentication required` errors, provide a token:
   - `export GITHUB_TOKEN=your_personal_access_token`
-  - Or pass directly: `GITHUB_TOKEN=... ./scripts/run-local-actions.sh ...`
+  - Or pass directly: `GITHUB_TOKEN=... ./scripts/dev/run-local-actions.sh ...`
   - Use `dummy-test.yml` if the workflow doesn't require GitHub access.
 - **PostgreSQL Connection (macOS)**: Ensure PostgreSQL (e.g., `postgresql@14`) is running locally (`brew services start postgresql@14`). Port 5433 is often used in tests.
 - **Docker/Orbstack**: Ensure the daemon is running (`docker ps`).
-- **Permissions**: Make scripts executable (`chmod +x ./scripts/run-local-actions.sh`).
+- **Permissions**: Make scripts executable (`chmod +x ./scripts/dev/run-local-actions.sh`).
 - **Architecture**: Ensure correct architecture flags in `.actrc` if on ARM.
 
 Refer to the official [act documentation](https://github.com/nektos/act) and [GitHub Actions documentation](https://docs.github.com/en/actions) for more details.

@@ -3,107 +3,30 @@
 [![CI](https://github.com/Hydepwns/raxol/workflows/CI/badge.svg)](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-300%2B%20files-brightgreen.svg)](https://github.com/Hydepwns/raxol/actions)
 [![Coverage](https://img.shields.io/badge/coverage-98.7%25-brightgreen.svg)](https://codecov.io/gh/Hydepwns/raxol)
-[![Warnings](https://img.shields.io/badge/warnings-0-brightgreen.svg)](https://github.com/Hydepwns/raxol)
 [![Performance](https://img.shields.io/badge/parser-3.3μs%2Fop-blue.svg)](bench/README.md)
 [![Hex.pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
 [![Documentation](https://img.shields.io/badge/docs-hexdocs-purple.svg)](https://hexdocs.pm/raxol)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 
-## What is Raxol?
+## High-Performance Terminal Application Framework
 
-Raxol is a high-performance terminal application framework that brings modern UI development patterns to the terminal.
-
-Think **React, Svelte, LiveView** meets tmux, or *Next.js* for the terminal.
-Choose your preferred UI paradigm, with free enterprise features built-in.
+Raxol brings modern UI development patterns to the terminal. Think **React, Svelte, LiveView** meets tmux.
 
 ### Why Raxol?
 
 - **World-Class Performance**: 3.3μs parser operations, 2.8MB memory per session
-- **Multi-Framework Support**: Choose React, Svelte, LiveView, or HEEx - use what you know best
-- **Enterprise Compliant**: Audit logging, encryption, SAML/OIDC support, compliance (SOC2/HIPAA/GDPR)
-- **Innovation First**: Sixel graphics, WASH-style session continuity, real-time collaboration
-
-## Use Cases
-
-### Perfect For
-- **Terminal IDEs** - Build the next vim/emacs
-- **DevOps Tools** - Modern k9s, lazygit alternatives
-- **System Monitoring** - Real-time dashboards
-- **Database Clients** - Interactive SQL/NoSQL tools
-- **Chat Applications** - Terminal-based communication tools
-- **Games** - Roguelikes, MUDs, interactive fiction
-
-### Real-World Applications
-- Internal DevOps tooling
-- Customer support interfaces
-- Infrastructure monitoring
-- Interactive programming education
-
-## Key Features
-
-### Core Terminal Framework
-- **Full VT100/ANSI Compliance** - Complete terminal emulation with modern extensions
-- **Sixel Graphics** - Native image support in the terminal
-- **Mouse Support** - Click, drag, selection with full event handling
-- **Tab Completion** - Intelligent autocomplete with context awareness
-- **Command History** - Multi-layer persistence with search
-- **GPU Acceleration** - Hardware-accelerated rendering pipeline
-
-### Multi-Framework UI System
-- **React-Style Components** - Familiar React patterns with hooks and lifecycle
-- **Svelte-Style Components** - Reactive architecture with compile-time optimization
-- **LiveView Integration** - Phoenix LiveView components work seamlessly
-- **HEEx Templates** - Use Phoenix templates in terminal applications
-- **Raw Terminal Access** - Direct buffer manipulation for maximum performance
-- **Universal Features** - Actions, transitions, context, slots available across all frameworks
-
-### WASH-Style Session Continuity
-- **Seamless Migration** - Move between terminal and web without losing state
-- **Real-time Collaboration** - Google Docs-style multi-user editing
-- **Persistent State** - Automatic state preservation across restarts
-- **CRDT Synchronization** - Conflict-free collaborative editing
-
-### Enterprise Security & Compliance
-- **Audit Logging** - SOC2/HIPAA/GDPR/PCI-DSS compliant logging
-- **Encryption** - AES-256-GCM with key rotation and HSM support
-- **SIEM Integration** - Splunk, Elasticsearch, QRadar, Sentinel
-- **Access Control** - RBAC with fine-grained permissions
-- **Threat Detection** - Real-time anomaly detection and alerting
-
-## Performance Metrics
-
-| Metric       | Performance       | Standard     |
-|--------------|-------------------|--------------|
-| Parser Speed | **3.3μs/op**      | 100μs/op     |
-| Memory Usage | **2.8MB/session** | 10MB/session |
-| Startup Time | **<10ms**         | 100ms        |
-| Test Coverage| **100%**          | 80%          |
-| Render Speed | **1.3μs**         | 10μs         |
+- **Multi-Framework Support**: Choose React, Svelte, LiveView, or HEEx patterns
+- **Enterprise Ready**: Audit logging, encryption, SAML/OIDC, compliance (SOC2/HIPAA/GDPR)
+- **Innovation First**: Sixel graphics, session continuity, real-time collaboration
 
 ## Quick Start
 
-### Installation
-
-```elixir
-# Add to mix.exs
-def deps do
-  [
-    {:raxol, "~> 1.0.1"}
-  ]
-end
-```
-
-### Try It Now
-
 ```bash
+# Add to mix.exs
+{:raxol, "~> 1.2.1"}
+
 # Clone and explore
 git clone https://github.com/Hydepwns/raxol.git
 cd raxol
-
-# IMPORTANT: If you have a previous clone, reset your local copy:
-# git fetch origin
-# git reset --hard origin/master
-
 mix deps.get
 
 # Interactive tutorial (5 minutes)
@@ -111,44 +34,21 @@ mix raxol.tutorial
 
 # Component playground
 mix raxol.playground
-
-# Run tests and pre-commit
-mix test
-mix raxol.pre_commit
 ```
 
-> **Note for existing clones**: The repository history was recently updated. If you cloned this repo before September 2025, please reset your local copy using the commands shown above.
+> **Note**: If you cloned before September 2025, reset with: `git fetch origin && git reset --hard origin/master`
 
-### Choose Your Framework
+## Choose Your Framework
 
-- Use whatever you're comfortable with:
-```bash
-  use Raxol.UI, framework: :react      # Familiar React patterns
-  use Raxol.UI, framework: :svelte     # Reactive with compile-time optimization
-  use Raxol.UI, framework: :liveview   # Phoenix LiveView patterns
-  use Raxol.UI, framework: :heex       # Phoenix templates
-  use Raxol.UI, framework: :raw        # Direct terminal control
+```elixir
+use Raxol.UI, framework: :react      # Familiar React patterns
+use Raxol.UI, framework: :svelte     # Reactive with compile-time optimization
+use Raxol.UI, framework: :liveview   # Phoenix LiveView patterns
+use Raxol.UI, framework: :heex       # Phoenix templates
+use Raxol.UI, framework: :raw        # Direct terminal control
+```
 
-  #Universal Features (Work Across ALL Frameworks)
-  - Actions system - use:tooltip, use:draggable, etc.
-  - Transitions & animations - 60 FPS engine
-  - Context API - no prop drilling
-  - Slot system - component composition
-  - Theme system - unified styling
-  - Event handling - keyboard, mouse, custom
-
-  # Framework Comparison Table
-  ┌─────────────┬──────────────┬─────────────────┬────────────────┐
-  │ Framework   │ Paradigm     │ Best For        │ Learning Curve │
-  ├─────────────┼──────────────┼─────────────────┼────────────────┤
-  │ React       │ Virtual DOM  │ Familiar APIs   │ Easy           │
-  │ Svelte      │ Reactive     │ Performance     │ Medium         │
-  │ LiveView    │ Server-side  │ Real-time apps  │ Easy           │
-  │ HEEx        │ Templates    │ Simple UIs      │ Very Easy      │
-  │ Raw         │ Direct       │ Maximum control │ Hard           │
-  └─────────────┴──────────────┴─────────────────┴────────────────┘
-
-#### React-Style
+### React-Style Example
 ```elixir
 defmodule MyApp do
   use Raxol.Component
@@ -164,110 +64,58 @@ defmodule MyApp do
 end
 ```
 
-#### Svelte-Style
-```elixir
-defmodule MyApp do
-  use Raxol.Svelte.Component
+[View more examples →](examples/README.md)
 
-  state :count, 0
-  reactive :doubled, do: @count * 2
+## Key Features
 
-  def render(assigns) do
-    ~H"""
-    <Box padding={2} use:tooltip="Reactive component">
-      <Text>Count: {@count} Doubled: {@doubled}</Text>
-      <Button on_click={&increment/0} in:scale>+1</Button>
-    </Box>
-    """
-  end
-end
-```
+### Core Terminal Framework
+- Full VT100/ANSI compliance with modern extensions
+- Sixel graphics and GPU acceleration
+- Mouse support with full event handling
+- Tab completion and command history
 
-#### LiveView-Style
-```elixir
-defmodule MyApp do
-  use Raxol.LiveView
+### Multi-Framework UI System
+- Universal features across all frameworks (actions, transitions, context, slots)
+- 60 FPS animation engine
+- Component composition and theming
 
-  def mount(_params, _session, socket) do
-    {:ok, assign(socket, count: 0)}
-  end
+### Enterprise Features
+- WASH-style session continuity
+- Real-time collaboration with CRDT sync
+- SOC2/HIPAA/GDPR compliant audit logging
+- AES-256-GCM encryption with key rotation
 
-  def render(assigns) do
-    ~H"""
-    <Box padding={2}>
-      <Text>Count: {@count}</Text>
-      <Button phx-click="increment">+1</Button>
-    </Box>
-    """
-  end
-end
-```
+## Performance Metrics
 
-## Architecture
-
-```bash
-┌──────────────────────────────────────────────────────────┐
-│                    Applications                          │
-│         (TUI Apps • Plugins • Extensions)                │
-├──────────────────────────────────────────────────────────┤
-│               Multi-Framework UI Layer                   │
-│      React • Svelte • LiveView • HEEx • Raw              │
-│     (Universal: Actions • Slots • Context)               │
-├──────────────────────────────────────────────────────────┤
-│               Session Continuity Layer                   │
-│     (WASH Bridge • State Sync • Collaboration)           │
-├──────────────────────────────────────────────────────────┤
-│               Terminal Emulator Core                     │
-│      (Parser • Buffer • Input • Rendering)               │
-├──────────────────────────────────────────────────────────┤
-│                Platform Services                         │
-│   (Security • Metrics • Persistence • Plugins)           │
-└──────────────────────────────────────────────────────────┘
-```
-
+| Metric       | Raxol         | Industry Standard |
+|--------------|---------------|-------------------|
+| Parser Speed | **3.3μs/op**  | 100μs/op          |
+| Memory Usage | **2.8MB**     | 10MB/session      |
+| Startup Time | **<10ms**     | 100ms             |
+| Test Coverage| **100%**      | 80%               |
 
 ## Documentation
 
-### Getting Started
-- **[Interactive Tutorial](doc/01_getting_started.html)** - Learn by doing with `mix raxol.tutorial`
-- **[Code Examples](https://hexdocs.pm/raxol/Raxol.Examples.html)** - Working examples and snippets
-- **[Component Playground](doc/02_component_deep_dive.html)** - Try components live with `mix raxol.playground`
+**[Documentation Hub](docs/README.md)** - Complete documentation index
 
-### Developer Resources
-- **[API Reference](https://hexdocs.pm/raxol)** - Complete API documentation
-- **[Component Catalog](https://hexdocs.pm/raxol/Raxol.UI.html)** - Pre-built UI components
-- **[Architecture Guide](https://hexdocs.pm/raxol/Raxol.Core.html)** - System design and patterns
-- **[Contributing Guide](CONTRIBUTING.md)** - Join the development
+### Quick Links
+- [Interactive Tutorial](https://hexdocs.pm/raxol/tutorial.html)
+- [API Reference](https://hexdocs.pm/raxol)
+- [Component Catalog](https://hexdocs.pm/raxol/components.html)
+- [Architecture Decisions](docs/adr/README.md)
+- [Contributing](CONTRIBUTING.md)
 
-### Advanced Topics
-- **[Benchmarks](bench/README.md)** - Performance measurements and optimization
-- **[Architecture Decisions](https://hexdocs.pm/raxol/Raxol.Architecture.html)** - ADR documentation
-- **[Consolidated Guide](https://hexdocs.pm/raxol)** - Comprehensive documentation
-- **[Web Interface](https://hexdocs.pm/raxol/Raxol.LiveView.html)** - Browser integration
-
-## VSCode Extension
-
-Install our VSCode extension for the best development experience:
+## VS Code Extension
 
 ```bash
 code --install-extension raxol-1.0.1.vsix
 ```
 
-Features:
-- Syntax highlighting for Raxol components
-- IntelliSense autocomplete
-- Component snippets
-- Live preview
-- Integrated terminal
+Features: Syntax highlighting, IntelliSense, component snippets, live preview
 
-## Roadmap
+## Use Cases
 
-### Coming Soon
-- Plugin marketplace
-- Cloud-native deployment
-- AI-powered autocomplete
-- WebAssembly support
-- Mobile terminal apps
+Perfect for terminal IDEs, DevOps tools, system monitoring, database clients, chat applications, and games.
 
 ## License
 
@@ -277,4 +125,4 @@ MIT License - see [LICENSE.md](LICENSE.md)
 
 **Ready to build the future of terminal applications?**
 
-[Get Started](https://hexdocs.pm/raxol) • [View Source](https://github.com/Hydepwns/raxol) • [Report Issues](https://github.com/Hydepwns/raxol/issues)
+[Get Started](docs/README.md) • [View Source](https://github.com/Hydepwns/raxol) • [Report Issues](https://github.com/Hydepwns/raxol/issues)

@@ -1,4 +1,12 @@
 {
+  "test/core/runtime/plugins/dependency_manager/communication_integration_test.exs|format": {
+    "hash": "0DB953420EEDBDD324C8D5D3F5E972815F5AEEDD394C110B78DDD4B8B1A72B76",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:24.493070Z"
+  },
   "lib/raxol/pre_commit/metrics.ex|format": {
     "hash": "D32EC75468FBA592B614041EB031D5343B6CA26E5174ED7879F710E8911C8406",
     "result": {
@@ -39,6 +47,14 @@
     },
     "timestamp": "2025-09-10T20:40:38.981045Z"
   },
+  "lib/raxol/test/integration/assertions.ex|format": {
+    "hash": "E65541BF6EED39CE144C84B9A17601BED4620E630F7DFA67CB9E9A1FBFFF243C",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:56.819681Z"
+  },
   "lib/raxol/pre_commit/cache.ex|format": {
     "hash": "E849F9B69FF87D23259A63AC8E36BDAE3C73F86B634F7A8ACBCBF3B474AF2A05",
     "result": {
@@ -46,6 +62,22 @@
       "status": "ok"
     },
     "timestamp": "2025-09-10T20:39:40.475961Z"
+  },
+  ".dialyzer_ignore.exs|format": {
+    "hash": "ACB7DB0A4536C6398BE9945E263EF187194F49100D7B49D1BD862EADFA02962D",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:31:52.841853Z"
+  },
+  "lib/raxol/ui/state/streams.ex|format": {
+    "hash": "81B9EF9F5D905B44070553D57BFAA97EB565DA4957545ADCED44CF8720DECF8C",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:56.513355Z"
   },
   "lib/raxol/pre_commit/progress.ex|format": {
     "hash": "DB1E4BEA4AD75996CB9A448028E85B7B2F79E8903FBE71B0109427CB26210568",
@@ -79,6 +111,30 @@
     },
     "timestamp": "2025-09-10T21:27:37.385864Z"
   },
+  "lib/raxol/core/runtime/process_store.ex|format": {
+    "hash": "A51956D5DC29BC2C226A66CF60EF3A52745AEB86602CB9715E148311C4313E6A",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:58.201515Z"
+  },
+  "lib/raxol/terminal/commands/erase_handler.ex|format": {
+    "hash": "A04CF76B40E14F2732DDF0B658A0CA3C29F6FD0949AA2CE8D210E4A5B6C33459",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:57.906023Z"
+  },
+  "test/raxol/style/colors/system_test.exs|format": {
+    "hash": "D97E02E43E8054BD6E91DD422B14D37F8DFD3B9AC8647FFD4284730F21E571B4",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:19.944156Z"
+  },
   "lib/raxol/pre_commit/config.ex|format": {
     "hash": "FF39A4827F2EB9D5F737402FBD2A0D3BAFE1B431CEE85F73C8641009E2CE771A",
     "result": {
@@ -87,6 +143,22 @@
     },
     "timestamp": "2025-09-10T20:40:32.399038Z"
   },
+  "test/raxol/web/supervisor_test.exs|format": {
+    "hash": "95AD2D2AE1A88616478772D309D56B08D433D19083296F051B64429D723A67B9",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:19.097423Z"
+  },
+  "test/termbox2_nif/termbox2_loading_test.exs|format": {
+    "hash": "1A1D7BCEBAD4A91140CC43213BA2C3A4F8398F743AED788CC2A393D36128F86E",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:18.809828Z"
+  },
   "scripts/archived/old-experiments/test_safe_emulator_refactoring.exs|format": {
     "hash": "70CDD9A07F218A47D57213085DA9EA419ECE0ED0BD744366F322F449D74F5D3C",
     "result": {
@@ -94,6 +166,22 @@
       "status": "needs_formatting"
     },
     "timestamp": "2025-09-10T21:29:57.729752Z"
+  },
+  "lib/raxol/terminal/emulator/output.ex|format": {
+    "hash": "02EF6E4DBEAA5D3A79A93DD5721D36D734F687048B1C600875452710571B56CF",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:57.621738Z"
+  },
+  "test/raxol/color_system_test.exs|format": {
+    "hash": "E0A6B97C5439BAF0BBF6F344893EABED62A70984D38F3E9675F944178B895241",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:21.587755Z"
   },
   "mix.exs|format": {
     "hash": "2EF2D219B3E16ED78FC273AB02CD6DC1DFC10F41EDE5570254E305E9BC6B06F9",
@@ -111,6 +199,14 @@
     },
     "timestamp": "2025-09-10T14:59:30.489022Z"
   },
+  "test/raxol/core/performance/metrics_collector_test.exs|format": {
+    "hash": "47CEAD7070B184A84D497FEBE0C54BCABC7C8FD6008CD9B0708093E1EFA79BFB",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:21.025548Z"
+  },
   "lib/raxol/ui/layout/css_grid.ex|format": {
     "hash": "44924DE73A180F51E4A9A977C0F5B17604DD2812CDCEF565DA940140C2CE5212",
     "result": {
@@ -126,6 +222,14 @@
       "status": "needs_formatting"
     },
     "timestamp": "2025-09-10T20:40:36.180345Z"
+  },
+  "test/raxol/core/runtime/events/handlers_test.exs|format": {
+    "hash": "DB42B0A7101E52A0F7F84E7F5B70F9FB104F2BF37F947CE3C0175FD02DAF83D2",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:20.704428Z"
   },
   "lib/mix/tasks/raxol.check.security.ex|format": {
     "hash": "7850626E2D8C68DE85BE6A75AEA32070B1DC45CF8E33E9D0975046F9352C4489",
@@ -183,6 +287,14 @@
     },
     "timestamp": "2025-09-10T14:59:35.185900Z"
   },
+  "lib/raxol/test/accessibility_test_helpers.ex|format": {
+    "hash": "F61AE9B41041136318C881A3F1704F93D935CA00B9FAE77ADBA950D24C110920",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:57.098068Z"
+  },
   "lib/mix/tasks/raxol.check.format.ex|format": {
     "hash": "61B210E7648E6B9BAE7491705871CAF1EAE0B7D8796885EFB99506FB8E76C307",
     "result": {
@@ -198,6 +310,14 @@
       "status": "needs_formatting"
     },
     "timestamp": "2025-09-10T21:29:56.888199Z"
+  },
+  "test/core/runtime/plugins/dependency_manager/lifecycle_integration_test.exs|format": {
+    "hash": "3F47E899077F8A188215C6F452983465FDBA8152E0B1B49A245BD984E47BC3A0",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T21:35:23.896801Z"
   },
   "scripts/archived/sprint-refactoring/replace_with_refactored.exs|format": {
     "hash": "F5C00D1FD6A8B8150B3C4D4ED9C83F6E1A86659CD3F7A05348C9AE80E8DFE50C",
@@ -215,6 +335,14 @@
     },
     "timestamp": "2025-09-10T21:29:57.311776Z"
   },
+  "test/test_helper.exs|format": {
+    "hash": "CFF16D9145A882C04C8E9537BCFDE85453C41B39F3A630181FDA73808F5FFE62",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T21:35:18.256500Z"
+  },
   "lib/mix/tasks/raxol.security.ex|format": {
     "hash": "5549329B8699EFFEC13D1E9E504A4451B3B56EC1DC0394D81AD8ACA9CB0C0466",
     "result": {
@@ -230,6 +358,14 @@
       "status": "needs_formatting"
     },
     "timestamp": "2025-09-10T20:40:38.121580Z"
+  },
+  "test/raxol/animation/framework_test.exs|format": {
+    "hash": "1B4A9D906B3C9107DB483909C75F9E3DCD02F10F3B9F2245A4758E0C4BB6E5E9",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:22.865217Z"
   },
   "lib/raxol/component.ex|format": {
     "hash": "5823F6C3024F6DB6C48A45617D3FFC369D8BE9C1CA71912380DA2E7DB9F72C2E",
@@ -247,6 +383,14 @@
     },
     "timestamp": "2025-09-10T15:02:10.626497Z"
   },
+  "test/raxol/ui/components/input/checkbox_test.exs|format": {
+    "hash": "8014781111D88E727EACDFF396C7D61649912AA25B1540CA4CCAC5DFF29E6A15",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T21:35:19.460917Z"
+  },
   "lib/mix/tasks/raxol.check.docs.ex|format": {
     "hash": "A75D33D81CD99A763A569B66752186219E38B56A9D3BF6BC10DA20B8BE6EF17A",
     "result": {
@@ -254,6 +398,14 @@
       "status": "ok"
     },
     "timestamp": "2025-09-10T14:59:34.461414Z"
+  },
+  "lib/raxol/animation/framework.ex|format": {
+    "hash": "0CBEE476DD4173471D0EB0736A1AF8350E876FAAB7B0CCB05A902FC89F785637",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T21:35:59.196161Z"
   },
   "lib/mix/tasks/raxol.check.credo.ex|format": {
     "hash": "D424D1099361323AB17C7B93DC4A95F349BB63EFE11EE1610753DDB848BDD02E",
@@ -279,6 +431,22 @@
     },
     "timestamp": "2025-09-10T20:40:38.562215Z"
   },
+  ".raxol.exs|format": {
+    "hash": "B5B19BA40A3272E44651C0088FBA717398D03F96374366F0ACB370EA5E86C6E5",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:31:52.593330Z"
+  },
+  "lib/raxol/terminal/input/buffer.ex|format": {
+    "hash": "5851121132B350F0EC7CF66A77100DEA426E7D4E1EBB71896516AAB5120A0E49",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:57.359632Z"
+  },
   "scripts/archived/sprint-refactoring/fix_module_names.exs|format": {
     "hash": "6D8BA4A58DF42FB25B1506DCE3FA2DBD66C2F70294D53BC641A71E8B44F992E8",
     "result": {
@@ -287,6 +455,22 @@
     },
     "timestamp": "2025-09-10T21:29:57.511160Z"
   },
+  "test/performance_optimization_test.exs|format": {
+    "hash": "0957B82C26EA8CCD6D2FBBB508E4BB9E0DF16394933A1192E0C3AF8F837184D7",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T21:35:23.378273Z"
+  },
+  "test/raxol/core/keyboard_shortcuts_test.exs|format": {
+    "hash": "CED6E70900C90768E9C92026217535929A44EEEFC91DFCC74ADA2D1D5B64B362",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:21.334791Z"
+  },
   "scripts/archived/sprint-refactoring/sprint9_automated_refactor.exs|format": {
     "hash": "F6A6D87F723B958D7AAF9972F95D5BB624E2F95999D6B69192E070B4A2AABC3D",
     "result": {
@@ -294,6 +478,30 @@
       "status": "needs_formatting"
     },
     "timestamp": "2025-09-10T21:29:55.969064Z"
+  },
+  "lib/raxol/core/runtime/plugins/command_helper.ex|format": {
+    "hash": "CF855286F80A3255B6B23218B21BFE956B058398D8B575C1474E5D6E6227B867",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T21:35:58.712972Z"
+  },
+  "lib/raxol/core/runtime/events/events_handler.ex|format": {
+    "hash": "7D08BB1CEE95F9C8D97A60BF23835C8ABEE3C5DD8A59483F7843161CAC65858D",
+    "result": {
+      "details": null,
+      "status": "ok"
+    },
+    "timestamp": "2025-09-10T21:35:58.980269Z"
+  },
+  "test/raxol/core/runtime/plugins/commands_test.exs|format": {
+    "hash": "BF3462FAAF96FA985A85F157388216ED77D38D7BE09C7DEE05F8DA9D1C21AA35",
+    "result": {
+      "details": null,
+      "status": "needs_formatting"
+    },
+    "timestamp": "2025-09-10T21:35:20.308559Z"
   },
   "lib/raxol/pre_commit/error_formatter.ex|format": {
     "hash": "B87EDB05EBF9D6063FFA2D4CB68E8E3EC6F5F8C531CA98C769AF4E87F10F851C",
