@@ -128,7 +128,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulatorTest do
       # This would require simulating an error condition
       # that triggers buffering behavior
       assert {:ok, state} = SafeEmulator.get_state(pid)
-      assert length(state.buffer) == 0
+      assert Enum.empty?(state.buffer)
     end
   end
 

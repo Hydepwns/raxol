@@ -8,7 +8,6 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
 
   alias Raxol.Core.Events.EventManager
   alias Raxol.Core.KeyboardShortcuts
-  alias Raxol.Core.Runtime.ProcessStore
 
   setup do
     # Ensure UserPreferences is started
@@ -19,7 +18,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
     # Initialize event manager for tests
     EventManager.init()
 
-    # Initialize KeyboardShortcuts
+    # Initialize KeyboardShortcuts (this also ensures it's started and registers handlers)
     KeyboardShortcuts.init()
 
     on_exit(fn ->
@@ -36,26 +35,22 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       # Re-init for test coverage
       KeyboardShortcuts.init()
 
-      # Check registry structure
-      shortcuts = ProcessStore.get(:keyboard_shortcuts)
-      assert shortcuts != nil
-      assert Map.has_key?(shortcuts, :global)
-      assert Map.has_key?(shortcuts, :contexts)
-      assert is_map(shortcuts.global)
-      assert is_map(shortcuts.contexts)
+      # Check server is running
+      assert Process.whereis(Raxol.Core.KeyboardShortcuts.ShortcutsServer) != nil
     end
   end
 
   describe "cleanup/0" do
     test "cleans up keyboard shortcuts registry" do
-      # Ensure we have registry
-      assert ProcessStore.get(:keyboard_shortcuts) != nil
+      # Ensure server is running
+      KeyboardShortcuts.ensure_started()
+      assert Process.whereis(Raxol.Core.KeyboardShortcuts.ShortcutsServer) != nil
 
       # Clean up
       KeyboardShortcuts.cleanup()
 
-      # Check registry is removed
-      assert ProcessStore.get(:keyboard_shortcuts) == nil
+      # Check server is stopped
+      assert Process.whereis(Raxol.Core.KeyboardShortcuts.ShortcutsServer) == nil
     end
   end
 
@@ -72,12 +67,12 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
                  description: "Save document"
                )
 
-      # Check registry
-      shortcuts = ProcessStore.get(:keyboard_shortcuts)
-      assert Map.has_key?(shortcuts.global, :save)
+      # Check registry via API
+      shortcuts = KeyboardShortcuts.get_shortcuts_for_context(:global)
+      assert Map.has_key?(shortcuts, "ctrl_s")
 
       # Check shortcut definition
-      shortcut = shortcuts.global.save
+      shortcut = shortcuts["ctrl_s"]
       assert shortcut.name == :save
       assert shortcut.description == "Save document"
       assert shortcut.priority == :medium
@@ -85,10 +80,10 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
 
       # Check key combo parsing
       key_combo = shortcut.key_combo
-      assert key_combo.key == "s"
-      assert key_combo.ctrl == true
-      assert key_combo.alt == false
-      assert key_combo.shift == false
+      assert key_combo.key == :s
+      assert :ctrl in key_combo.modifiers
+      refute :alt in key_combo.modifiers
+      refute :shift in key_combo.modifiers
     end
 
     test "registers context-specific shortcut" do
@@ -103,23 +98,22 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
                  priority: :high
                )
 
-      # Check registry
-      shortcuts = ProcessStore.get(:keyboard_shortcuts)
-      assert Map.has_key?(shortcuts.contexts, :main_menu)
-      assert Map.has_key?(shortcuts.contexts.main_menu, :file_menu)
+      # Check registry via API
+      shortcuts = KeyboardShortcuts.get_shortcuts_for_context(:main_menu)
+      assert Map.has_key?(shortcuts, "alt_f")
 
       # Check shortcut definition
-      shortcut = shortcuts.contexts.main_menu.file_menu
+      shortcut = shortcuts["alt_f"]
       assert shortcut.name == :file_menu
       assert shortcut.description == "Open file menu"
       assert shortcut.priority == :high
 
       # Check key combo parsing
       key_combo = shortcut.key_combo
-      assert key_combo.key == "f"
-      assert key_combo.ctrl == false
-      assert key_combo.alt == true
-      assert key_combo.shift == false
+      assert key_combo.key == :f
+      refute :ctrl in key_combo.modifiers
+      assert :alt in key_combo.modifiers
+      refute :shift in key_combo.modifiers
     end
 
     test "handles complex key combinations" do
@@ -131,16 +125,17 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
                  fn -> nil end
                )
 
-      # Check registry
-      shortcuts = ProcessStore.get(:keyboard_shortcuts)
-      assert Map.has_key?(shortcuts.global, :complex)
+      # Check registry via API
+      shortcuts = KeyboardShortcuts.get_shortcuts_for_context(:global)
+      # Modifiers are sorted alphabetically by the server
+      assert Map.has_key?(shortcuts, "alt_ctrl_shift_x")
 
       # Check key combo parsing
-      key_combo = shortcuts.global.complex.key_combo
-      assert key_combo.key == "x"
-      assert key_combo.ctrl == true
-      assert key_combo.alt == true
-      assert key_combo.shift == true
+      key_combo = shortcuts["alt_ctrl_shift_x"].key_combo
+      assert key_combo.key == :x
+      assert :ctrl in key_combo.modifiers
+      assert :alt in key_combo.modifiers
+      assert :shift in key_combo.modifiers
     end
   end
 
@@ -150,15 +145,15 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       KeyboardShortcuts.register_shortcut("Ctrl+S", :save, fn -> nil end)
 
       # Verify it exists
-      shortcuts = ProcessStore.get(:keyboard_shortcuts)
-      assert Map.has_key?(shortcuts.global, :save)
+      shortcuts = KeyboardShortcuts.get_shortcuts_for_context(:global)
+      assert Map.has_key?(shortcuts, "ctrl_s")
 
       # Unregister it
       assert :ok = KeyboardShortcuts.unregister_shortcut(:save)
 
       # Check it's gone
-      shortcuts = ProcessStore.get(:keyboard_shortcuts)
-      refute Map.has_key?(shortcuts.global, :save)
+      shortcuts = KeyboardShortcuts.get_shortcuts_for_context(:global)
+      refute Map.has_key?(shortcuts, "ctrl_s")
     end
 
     test "unregisters context-specific shortcut" do
@@ -168,17 +163,15 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       )
 
       # Verify it exists
-      shortcuts = ProcessStore.get(:keyboard_shortcuts)
-      assert Map.has_key?(shortcuts.contexts, :main_menu)
-      assert Map.has_key?(shortcuts.contexts.main_menu, :file_menu)
+      shortcuts = KeyboardShortcuts.get_shortcuts_for_context(:main_menu)
+      assert Map.has_key?(shortcuts, "alt_f")
 
       # Unregister it
       assert :ok = KeyboardShortcuts.unregister_shortcut(:file_menu, :main_menu)
 
       # Check it's gone
-      shortcuts = ProcessStore.get(:keyboard_shortcuts)
-      assert Map.has_key?(shortcuts.contexts, :main_menu)
-      refute Map.has_key?(shortcuts.contexts.main_menu, :file_menu)
+      shortcuts = KeyboardShortcuts.get_shortcuts_for_context(:main_menu)
+      refute Map.has_key?(shortcuts, "alt_f")
     end
   end
 
@@ -209,19 +202,21 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       # Get shortcuts
       shortcuts = KeyboardShortcuts.get_shortcuts_for_context(:global)
 
-      # Check results
-      assert length(shortcuts) == 2
+      # Check results - shortcuts is a map
+      assert map_size(shortcuts) == 2
 
       # Find save shortcut
-      save_shortcut = Enum.find(shortcuts, fn s -> s.name == :save end)
+      save_shortcut = shortcuts["ctrl_s"]
       assert save_shortcut != nil
-      assert save_shortcut.key_combo == "Ctrl+S"
+      assert save_shortcut.name == :save
+      assert save_shortcut.raw == "Ctrl+S"
       assert save_shortcut.description == "Save document"
 
       # Find open shortcut
-      open_shortcut = Enum.find(shortcuts, fn s -> s.name == :open end)
+      open_shortcut = shortcuts["ctrl_o"]
       assert open_shortcut != nil
-      assert open_shortcut.key_combo == "Ctrl+O"
+      assert open_shortcut.name == :open
+      assert open_shortcut.raw == "Ctrl+O"
       assert open_shortcut.description == "Open document"
     end
 
@@ -242,28 +237,22 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
         description: "Open edit menu"
       )
 
-      # Get shortcuts for context
+      # Get shortcuts for context - only returns context shortcuts, not merged with global
       shortcuts = KeyboardShortcuts.get_shortcuts_for_context(:main_menu)
 
-      # Check results - should include global and context-specific
-      assert length(shortcuts) == 3
-
-      # Check for global shortcut
-      save_shortcut = Enum.find(shortcuts, fn s -> s.name == :save end)
-      assert save_shortcut != nil
+      # Check results - context-specific shortcuts only
+      assert map_size(shortcuts) == 2
 
       # Check for context-specific shortcuts
-      file_menu_shortcut =
-        Enum.find(shortcuts, fn s -> s.name == :file_menu end)
-
+      file_menu_shortcut = shortcuts["alt_f"]
       assert file_menu_shortcut != nil
-      assert file_menu_shortcut.key_combo == "Alt+F"
+      assert file_menu_shortcut.name == :file_menu
+      assert file_menu_shortcut.raw == "Alt+F"
 
-      edit_menu_shortcut =
-        Enum.find(shortcuts, fn s -> s.name == :edit_menu end)
-
+      edit_menu_shortcut = shortcuts["alt_e"]
       assert edit_menu_shortcut != nil
-      assert edit_menu_shortcut.key_combo == "Alt+E"
+      assert edit_menu_shortcut.name == :edit_menu
+      assert edit_menu_shortcut.raw == "Alt+E"
     end
 
     test "gets shortcuts for current context when nil is passed" do
@@ -278,11 +267,12 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       # Set current context
       KeyboardShortcuts.set_active_context(:main_menu)
 
-      # Get shortcuts for current context (nil)
+      # Get shortcuts for current context (nil) - returns context shortcuts only
       shortcuts = KeyboardShortcuts.get_shortcuts_for_context()
 
-      # Should include both global and context-specific
-      assert length(shortcuts) == 2
+      # Should only include context-specific shortcuts (not merged with global)
+      assert map_size(shortcuts) == 1
+      assert Map.has_key?(shortcuts, "alt_f")
     end
   end
 
@@ -395,6 +385,9 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       # Dispatch keyboard event
       EventManager.dispatch({:keyboard_event, {:key, "s", [:ctrl]}})
 
+      # Wait a bit for async processing
+      Process.sleep(50)
+      
       # Check callback was called
       assert_received :save_triggered
     end
@@ -419,6 +412,9 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       # Dispatch keyboard event
       EventManager.dispatch({:keyboard_event, {:key, "f", [:alt]}})
 
+      # Wait a bit for async processing
+      Process.sleep(50)
+      
       # Check callback was called
       assert_received :file_menu_triggered
     end
@@ -435,6 +431,9 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       # Dispatch keyboard event with multiple modifiers
       EventManager.dispatch({:keyboard_event, {:key, "x", [:ctrl, :shift]}})
 
+      # Wait a bit for async processing
+      Process.sleep(50)
+      
       # Check callback was called
       assert_received :cut_triggered
     end
@@ -459,11 +458,14 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       )
 
       # Set context
-      KeyboardShortcuts.set_context(:editor)
+      KeyboardShortcuts.set_active_context(:editor)
 
       # Dispatch keyboard event matching context shortcut
       EventManager.dispatch({:keyboard_event, {:key, "s", [:alt]}})
 
+      # Wait a bit for async processing
+      Process.sleep(50)
+      
       # Should trigger context version
       assert_received :context_save_triggered
       refute_received :global_save_triggered
@@ -495,11 +497,14 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       )
 
       # Set context
-      KeyboardShortcuts.set_context(:editor)
+      KeyboardShortcuts.set_active_context(:editor)
 
       # Dispatch keyboard event
       EventManager.dispatch({:keyboard_event, {:key, "p", [:ctrl]}})
 
+      # Wait a bit for async processing
+      Process.sleep(50)
+      
       # Should trigger high priority first
       assert_received :print_high_triggered
     end
