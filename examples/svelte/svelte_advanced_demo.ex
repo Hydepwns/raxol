@@ -1,97 +1,98 @@
 defmodule Examples.SvelteAdvancedDemo do
   @moduledoc """
   Advanced Svelte-style demo showcasing all the new features:
-  
+
   - Actions (use: directive)
   - Transitions and animations
   - Context API
   - Slots and component composition
   - Compile-time optimization
-  
+
   This creates a complete dashboard application with multiple components
   that demonstrate the power of the Svelte-style architecture.
   """
-  
+
   use Raxol.Svelte.Component, optimize: :compile_time
   use Raxol.Svelte.Context
   use Raxol.Svelte.Actions
   use Raxol.Svelte.Slots
   use Raxol.Svelte.Transitions
   use Raxol.Svelte.Reactive
-  
+
   # App state
-  state :current_page, :dashboard
-  state :sidebar_collapsed, false
-  state :modal_visible, false
-  state :notifications, []
-  
+  state(:current_page, :dashboard)
+  state(:sidebar_collapsed, false)
+  state(:modal_visible, false)
+  state(:notifications, [])
+
   # Actions
-  action :tooltip, fn element, text ->
+  action(:tooltip, fn element, text ->
     Raxol.Svelte.Actions.Builtin.tooltip(element, text)
-  end
-  
-  action :auto_save, fn element, save_fn ->
+  end)
+
+  action(:auto_save, fn element, save_fn ->
     element
     |> Map.put(:on_blur, fn -> save_fn.() end)
     |> Map.put(:on_change, fn value ->
       # Debounced auto-save
       Process.send_after(self(), {:auto_save, value, save_fn}, 1000)
     end)
-  end
-  
+  end)
+
   # Transitions
-  transition :slide_fade, fn element, params ->
+  transition(:slide_fade, fn element, params ->
     duration = Map.get(params, :duration, 300)
-    
+
     case Map.get(params, :direction) do
       :enter ->
         [
           {:x, element.x - element.width, element.x, duration, :ease_out, 0},
           {:opacity, 0, 1, duration, :ease_out, 100}
         ]
+
       :exit ->
         [
           {:x, element.x, element.x + element.width, duration, :ease_in, 0},
           {:opacity, 1, 0, duration, :ease_in, 0}
         ]
     end
-  end
-  
+  end)
+
   # Reactive declarations (using reactive macro instead of $: syntax for valid Elixir)
   reactive :page_title do
     case @current_page do
       :dashboard -> "Dashboard"
-      :analytics -> "Analytics"  
+      :analytics -> "Analytics"
       :settings -> "Settings"
       _ -> "App"
     end
   end
-  
+
   reactive :has_notifications do
     length(@notifications) > 0
   end
-  
+
   reactive :notification_count do
     length(@notifications)
   end
-  
+
   # Event handlers
   def navigate_to(page) do
     set_state(:current_page, page)
   end
-  
+
   def toggle_sidebar do
-    update_state(:sidebar_collapsed, & !&1)
+    update_state(:sidebar_collapsed, &(!&1))
   end
-  
+
   def show_modal do
     set_state(:modal_visible, true)
   end
-  
+
   def hide_modal do
     set_state(:modal_visible, false)
   end
-  
+
   def add_notification(message, type \\ :info) do
     notification = %{
       id: :crypto.strong_rand_bytes(4) |> Base.encode64(),
@@ -99,36 +100,36 @@ defmodule Examples.SvelteAdvancedDemo do
       type: type,
       timestamp: DateTime.utc_now()
     }
-    
+
     update_state(:notifications, fn notifications ->
       [notification | notifications]
     end)
-    
+
     # Auto-remove after 5 seconds
     Process.send_after(self(), {:remove_notification, notification.id}, 5000)
   end
-  
+
   def remove_notification(id) do
     update_state(:notifications, fn notifications ->
       Enum.reject(notifications, fn n -> n.id == id end)
     end)
   end
-  
+
   # Message handling for auto-remove
   def handle_info({:remove_notification, id}, state) do
     remove_notification(id)
     {:noreply, state}
   end
-  
+
   def handle_info({:auto_save, value, save_fn}, state) do
     save_fn.(value)
     {:noreply, state}
   end
-  
+
   def handle_info(msg, state) do
     super(msg, state)
   end
-  
+
   # Main render function
   def render(assigns) do
     ~H"""
@@ -201,10 +202,14 @@ defmodule Examples.SvelteAdvancedDemo.Navigation do
   use Raxol.Svelte.Component
   use Raxol.Svelte.Context
   use Raxol.Svelte.Transitions
-  
-  def render(%{current_page: current, collapsed: collapsed, on_navigate: on_navigate}) do
+
+  def render(%{
+        current_page: current,
+        collapsed: collapsed,
+        on_navigate: on_navigate
+      }) do
     theme = get_context(:theme)
-    
+
     ~H"""
     <Box class="navigation" padding={1}>
       {#if !collapsed}
@@ -250,17 +255,23 @@ defmodule Examples.SvelteAdvancedDemo.NavItem do
   use Raxol.Svelte.Component
   use Raxol.Svelte.Context
   use Raxol.Svelte.Actions
-  
-  action :nav_tooltip, fn element, label ->
+
+  action(:nav_tooltip, fn element, label ->
     case element.collapsed do
       true -> Raxol.Svelte.Actions.Builtin.tooltip(element, label)
       false -> element
     end
-  end
-  
-  def render(%{icon: icon, label: label, active: active, collapsed: collapsed, on_click: on_click}) do
+  end)
+
+  def render(%{
+        icon: icon,
+        label: label,
+        active: active,
+        collapsed: collapsed,
+        on_click: on_click
+      }) do
     theme = get_context(:theme)
-    
+
     ~H"""
     <Button
       variant={if active, do: "primary", else: "ghost"}
@@ -283,10 +294,15 @@ defmodule Examples.SvelteAdvancedDemo.TopBar do
   use Raxol.Svelte.Component
   use Raxol.Svelte.Context
   use Raxol.Svelte.Actions
-  
-  def render(%{title: title, notification_count: count, on_toggle_sidebar: on_toggle, on_show_modal: on_show_modal}) do
+
+  def render(%{
+        title: title,
+        notification_count: count,
+        on_toggle_sidebar: on_toggle,
+        on_show_modal: on_show_modal
+      }) do
     theme = get_context(:theme)
-    
+
     ~H"""
     <Row 
       class="top-bar" 
@@ -329,7 +345,7 @@ defmodule Examples.SvelteAdvancedDemo.DashboardPage do
   use Raxol.Svelte.Context
   use Raxol.Svelte.Slots
   use Raxol.Svelte.Transitions
-  
+
   def render(_assigns) do
     ~H"""
     <Box class="dashboard" spacing={2}>
@@ -371,7 +387,7 @@ defmodule Examples.SvelteAdvancedDemo.DashboardPage do
     </Box>
     """
   end
-  
+
   defp sample_data do
     [
       %{name: "John Doe", email: "john@example.com", status: "active"},
@@ -385,16 +401,17 @@ defmodule Examples.SvelteAdvancedDemo.StatsCard do
   use Raxol.Svelte.Component
   use Raxol.Svelte.Context
   use Raxol.Svelte.Transitions
-  
+
   def render(%{title: title, value: value, change: change}) do
     theme = get_context(:theme)
-    
-    change_color = cond do
-      String.starts_with?(change, "+") -> "green"
-      String.starts_with?(change, "-") -> "red"
-      true -> "gray"
-    end
-    
+
+    change_color =
+      cond do
+        String.starts_with?(change, "+") -> "green"
+        String.starts_with?(change, "-") -> "red"
+        true -> "gray"
+      end
+
     ~H"""
     <Box 
       class="stats-card"
@@ -415,11 +432,11 @@ end
 defmodule Examples.SvelteAdvancedDemo.ExampleModal do
   use Raxol.Svelte.Slots.Modal
   use Raxol.Svelte.Actions
-  
-  action :click_outside, fn element, callback ->
+
+  action(:click_outside, fn element, callback ->
     Raxol.Svelte.Actions.Builtin.click_outside(element, callback)
-  end
-  
+  end)
+
   def render(%{on_close: on_close}) do
     ~H"""
     <Modal visible={true} use:click_outside={on_close}>
@@ -457,7 +474,7 @@ end
 defmodule Examples.SvelteAdvancedDemo.NotificationContainer do
   use Raxol.Svelte.Component
   use Raxol.Svelte.Transitions
-  
+
   def render(%{notifications: notifications}) do
     ~H"""
     <Box class="notifications" position="fixed" top={2} right={2} spacing={1}>
@@ -477,9 +494,9 @@ defmodule Examples.SvelteAdvancedDemo.NotificationContainer do
     </Box>
     """
   end
-  
+
   defp notification_bg_color(:info), do: "blue"
-  defp notification_bg_color(:success), do: "green"  
+  defp notification_bg_color(:success), do: "green"
   defp notification_bg_color(:warning), do: "yellow"
   defp notification_bg_color(:error), do: "red"
   defp notification_bg_color(_), do: "gray"

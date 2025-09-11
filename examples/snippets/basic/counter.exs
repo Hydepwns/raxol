@@ -1,0 +1,114 @@
+# Counter Example
+#
+# A simple counter application demonstrating Raxol basics.
+#
+# Usage:
+#   elixir examples/snippets/basic/counter.exs
+
+defmodule CounterExample do
+  # Use the Application behaviour via `use`
+  use Raxol.Core.Runtime.Application
+
+  # Import the View DSL elements
+  import Raxol.View.Elements
+
+  alias Raxol.Core.Events.Event
+  alias Raxol.Core.Commands.Command
+  require Raxol.Core.Runtime.Log
+
+  @impl true
+  def init(_context) do
+    # Initial state
+    Raxol.Core.Runtime.Log.debug("CounterExample: init/1")
+    {:ok, %{count: 0}}
+  end
+
+  @impl true
+  def update(message, model) do
+    Raxol.Core.Runtime.Log.debug(
+      "CounterExample: update/2 received message: \#{inspect(message)}"
+    )
+
+    case message do
+      # Handle internal button click messages
+      :increment ->
+        # Return :ok, model, commands
+        {:ok, %{model | count: model.count + 1}, []}
+
+      :decrement ->
+        {:ok, %{model | count: model.count - 1}, []}
+
+      :reset ->
+        {:ok, %{model | count: 0}, []}
+
+      # Handle direct key presses from TerminalDriver
+      %Event{type: :key, data: %{key: :char, char: "q"}} ->
+        # Command to quit the application
+        {:ok, model, [Command.new(:quit)]}
+
+      # Example: '+' key increments
+      %Event{type: :key, data: %{key: :char, char: "+"}} ->
+        {:ok, %{model | count: model.count + 1}, []}
+
+      # Example: '-' key decrements
+      %Event{type: :key, data: %{key: :char, char: "-"}} ->
+        {:ok, %{model | count: model.count - 1}, []}
+
+      # Handle Ctrl+C from TerminalDriver
+      %Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
+        {:ok, model, [Command.new(:quit)]}
+
+      # Ignore other events
+      _ ->
+        # Always return :ok tuple
+        {:ok, model, []}
+    end
+  end
+
+  @impl true
+  def view(model) do
+    Raxol.Core.Runtime.Log.debug("CounterExample: view/1")
+    # Use the Raxol.View.Elements DSL
+    view do
+      column style: %{padding: 1, gap: 1, align_items: :center} do
+        text(content: "Counter Example", style: [:bold])
+
+        box style: %{
+              padding: 1,
+              border: :single,
+              width: 20,
+              justify_content: :center
+            } do
+          text(content: "Count: \#{model.count}", style: [:bold])
+        end
+
+        row style: %{gap: 1} do
+          # Buttons send their message on click
+          button(label: "Increment (+)", message: :increment)
+          button(label: "Reset", message: :reset)
+          button(label: "Decrement (-)", message: :decrement)
+        end
+
+        text(
+          content: "Press '+' or '-' keys, or click buttons.",
+          style: %{margin_top: 1}
+        )
+
+        text(content: "Press 'q' or Ctrl+C to quit")
+      end
+    end
+  end
+
+  @impl true
+  def subscriptions(_model) do
+    []
+  end
+end
+
+Raxol.Core.Runtime.Log.info("CounterExample: Starting Raxol...")
+# Run the example using the standard start_link for scripts
+{:ok, _pid} = Raxol.start_link(CounterExample, [])
+Raxol.Core.Runtime.Log.info("CounterExample: Raxol started. Running...")
+
+# For CI/test/demo: sleep for 2 seconds, then exit. Adjust as needed.
+Process.sleep(2000)
