@@ -36,14 +36,14 @@ lib/raxol/core/events/event_manager.ex         # Clear: event management
 ## Tools Provided
 
 ### 1. Standalone Script
-**Location:** `scripts/check_duplicate_filenames.exs`
+**Location:** `scripts/quality/check_duplicate_filenames.exs`
 
 ```bash
 # Basic check
-mix run scripts/check_duplicate_filenames.exs
+mix run scripts/quality/check_duplicate_filenames.exs
 
 # With rename suggestions  
-mix run scripts/check_duplicate_filenames.exs --fix-suggestions
+mix run scripts/quality/check_duplicate_filenames.exs --fix-suggestions
 ```
 
 **Features:**

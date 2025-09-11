@@ -1,30 +1,92 @@
-# Raxol Documentation
+# Raxol Documentation Hub
 
-Terminal framework with modern UI patterns and web support.
+Central navigation for all Raxol documentation.
 
-## Start Here
-- **[Quick Reference](QUICK_REFERENCE.md)** - Commands & patterns
-- **[Getting Started](getting-started.md)** - Installation & first app
-- **[API Reference](api-reference.md)** - Complete API
+## Documentation Categories
 
-## Core Guides
-- **[Terminal](terminal.md)** | **[Components](components.md)** | **[Testing](testing.md)**
-- **[Performance](performance.md)** | **[Security](security.md)** | **[Accessibility](accessibility.md)**
+### Getting Started
+- [**Quick Start Guide**](../README.md#quick-start) - Installation and first steps
+- [**Interactive Tutorial**](guides/tutorial.md) - Learn Raxol interactively
+- [**Examples**](../examples/README.md) - Code examples and patterns
 
-## Development
-- **[Development](development.md)** - Setup, config, troubleshooting
-- **[Advanced](advanced.md)** - Plugins, FP patterns, web interface
-- **[ADRs](adr/)** - Architecture decisions
+### Developer Guides
+- [**Development Guide**](development.md) - Contributing and development setup
+- [**Architecture Guide**](ARCHITECTURE.md) - System design and patterns
+- [**API Reference**](https://hexdocs.pm/raxol) - Complete API documentation
 
-## Framework
+### Framework Documentation
+- [**Multi-Framework UI**](guides/multi-framework.md) - React, Svelte, LiveView patterns
+- [**Terminal Subsystem**](../lib/raxol/terminal/README.md) - Terminal emulation details
+- [**Component Catalog**](guides/components.md) - Available UI components
 
-Terminal application framework for Elixir with:
-- **VT100/ANSI** compliance, Sixel graphics
-- **React-style** components with lifecycle
-- **Phoenix LiveView** web interface
-- **3.3μs parser**, <1ms render, 10K ops/sec
-- **Enterprise** auth, encryption, audit logging
+### Performance & Testing
+- [**Benchmarking Guide**](bench/README.md) - Performance testing
+- [**Test Suite**](../test/README.md) - Testing framework and patterns
+- [**Metrics System**](../lib/raxol/core/metrics/README.md) - Performance monitoring
 
-## Links
+### Advanced Topics
+- [**Architecture Decisions**](adr/README.md) - ADR documentation
+- [**Security & Compliance**](guides/security.md) - Enterprise features
+- [**Plugin Development**](guides/plugins.md) - Extending Raxol
 
-[GitHub](https://github.com/Hydepwns/raxol) | [Hex.pm](https://hex.pm/packages/raxol) | [Issues](https://github.com/Hydepwns/raxol/issues)
+### Tools & Automation
+- [**Scripts**](../scripts/README.md) - Development scripts and tools
+- [**CI/CD Workflows**](../.github/workflows/README.md) - GitHub Actions setup
+- [**VS Code Extension**](../vscode-raxol/README.md) - IDE integration
+
+### Standards & Guidelines
+- [**Naming Conventions**](development/NAMING_CONVENTIONS.md) - Code organization
+- [**Duplicate Prevention**](development/duplicate_filename_prevention.md) - File naming
+- [**Contributing**](../CONTRIBUTING.md) - Contribution guidelines
+
+## Quick Links
+
+| Resource | Description |
+|----------|-------------|
+| [HexDocs](https://hexdocs.pm/raxol) | Official API documentation |
+| [GitHub](https://github.com/Hydepwns/raxol) | Source code repository |
+| [Issues](https://github.com/Hydepwns/raxol/issues) | Bug reports and features |
+| [Changelog](../CHANGELOG.md) | Version history |
+
+## Documentation Structure
+
+```
+docs/
+├── README.md           # This file - Documentation hub
+├── guides/            # User and developer guides
+├── development/       # Development documentation
+├── adr/              # Architecture Decision Records
+├── bench/            # Benchmarking documentation
+└── releases/         # Release notes and history
+```
+
+## Quick Commands
+
+```bash
+# Interactive tutorial
+mix raxol.tutorial
+
+# Component playground
+mix raxol.playground
+
+# Run tests
+mix test
+
+# Run benchmarks
+mix run bench/scripts/ansi_parser_bench.exs
+
+# Generate docs
+mix docs
+```
+
+## Documentation Updates
+
+To update documentation:
+1. Follow patterns in existing docs
+2. Update this index if adding new sections
+3. Keep examples executable
+4. Run `mix docs` to verify generation
+
+---
+
+For questions or improvements, please [open an issue](https://github.com/Hydepwns/raxol/issues).
