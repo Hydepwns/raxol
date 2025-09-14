@@ -76,6 +76,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     if pid = Process.whereis(Server) do
       GenServer.stop(pid, :normal)
     end
+
     :ok
   end
 
@@ -163,8 +164,15 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
   This function is called by the EventManager when keyboard events occur.
   """
-  def handle_keyboard_event(event) do
+  def handle_keyboard_event(event_type, event_data) do
     ensure_started()
+    # Create event struct from the separate type and data parameters
+    event = %Raxol.Core.Events.Event{
+      type: event_type,
+      data: event_data,
+      timestamp: DateTime.utc_now()
+    }
+
     Server.handle_keyboard_event(Server, event)
     :ok
   end

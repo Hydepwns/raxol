@@ -4,7 +4,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
   registration, unregistration, context management, and event handling.
   """
   # Can be async now that we use ProcessStore
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Raxol.Core.Events.EventManager
   alias Raxol.Core.KeyboardShortcuts
@@ -15,16 +15,34 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
       start_supervised!({Raxol.Core.UserPreferences, [test_mode?: true]})
     end
 
-    # Initialize event manager for tests
+    # Start and initialize event manager for tests
+    case EventManager.start_link() do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+      error -> raise "Failed to start EventManager: #{inspect(error)}"
+    end
     EventManager.init()
 
     # Initialize KeyboardShortcuts (this also ensures it's started and registers handlers)
     KeyboardShortcuts.init()
 
     on_exit(fn ->
-      # Clean up
-      KeyboardShortcuts.cleanup()
-      if Process.whereis(EventManager), do: EventManager.cleanup()
+      # Clean up - be defensive about process cleanup
+      try do
+        if Process.whereis(KeyboardShortcuts.Server) do
+          KeyboardShortcuts.cleanup()
+        end
+      catch
+        :exit, _ -> :ok
+      end
+      
+      try do
+        if Process.whereis(EventManager) do
+          EventManager.cleanup()
+        end
+      catch
+        :exit, _ -> :ok
+      end
     end)
 
     :ok

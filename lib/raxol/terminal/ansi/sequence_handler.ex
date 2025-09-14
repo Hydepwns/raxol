@@ -11,7 +11,7 @@ defmodule Raxol.Terminal.ANSI.SequenceHandler do
   def parse_ansi_sequence(rest) do
     # Disabled for performance
     # File.write!(
-    #   "tmp/parse_ansi_sequence.log",
+    #   ".tmp/parse_ansi_sequence.log",
     #   "parse_ansi_sequence input: #{inspect(rest)}\n",
     #   [:append]
     # )
@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.ANSI.SequenceHandler do
       nil ->
         # Disabled for performance
         # File.write!(
-        #   "tmp/parse_ansi_sequence.log",
+        #   ".tmp/parse_ansi_sequence.log",
         #   "parse_ansi_sequence result: nil\n",
         #   [:append]
         # )
@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.ANSI.SequenceHandler do
       result ->
         # Disabled for performance
         # File.write!(
-        #   "tmp/parse_ansi_sequence.log",
+        #   ".tmp/parse_ansi_sequence.log",
         #   "parse_ansi_sequence result: #{inspect(result)}\n",
         #   [:append]
         # )
@@ -312,7 +312,7 @@ defmodule Raxol.Terminal.ANSI.SequenceHandler do
           true ->
             # Disabled for performance
             # File.write!(
-            #   "tmp/parse_sgr.log",
+            #   ".tmp/parse_sgr.log",
             #   "parse_sgr MATCH: params=#{inspect(params)}, rest=#{inspect(rest)}\n",
             #   [:append]
             # )
@@ -322,7 +322,7 @@ defmodule Raxol.Terminal.ANSI.SequenceHandler do
           false ->
             # Disabled for performance
             # File.write!(
-            #   "tmp/parse_sgr.log",
+            #   ".tmp/parse_sgr.log",
             #   "parse_sgr NO_MATCH: params=#{inspect(params)} (invalid format)\n",
             #   [:append]
             # )
@@ -333,7 +333,7 @@ defmodule Raxol.Terminal.ANSI.SequenceHandler do
       _ ->
         # Disabled for performance
         # File.write!(
-        #   "tmp/parse_sgr.log",
+        #   ".tmp/parse_sgr.log",
         #   "parse_sgr NO_MATCH: no 'm' found in #{inspect(remaining)}\n",
         #   [:append]
         # )
@@ -345,7 +345,7 @@ defmodule Raxol.Terminal.ANSI.SequenceHandler do
   def parse_sgr(_input) do
     # Disabled for performance
     # File.write!(
-    #   "tmp/parse_sgr.log",
+    #   ".tmp/parse_sgr.log",
     #   "parse_sgr NO_MATCH: input=#{inspect(input)} (no ESC[)\n",
     #   [:append]
     # )

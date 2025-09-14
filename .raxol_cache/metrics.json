@@ -7,6 +7,31 @@
     "checks": {
       "format": {
         "cached": false,
+        "elapsed": 55,
+        "error_count": 0,
+        "status": "ok"
+      }
+    },
+    "git_branch": "master",
+    "git_sha": "8eb1d91d",
+    "parallel": true,
+    "system": {
+      "cpu_count": 8,
+      "elixir_version": "1.17.1",
+      "os": "unix",
+      "otp_version": "25"
+    },
+    "timestamp": "2025-09-12T23:17:53.025440Z",
+    "total_time": 67
+  },
+  {
+    "cache_stats": {
+      "enabled": true,
+      "hit_rate": 24.4
+    },
+    "checks": {
+      "format": {
+        "cached": false,
         "elapsed": 23,
         "error_count": 0,
         "status": "ok"

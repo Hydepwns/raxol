@@ -19,13 +19,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
            state
          ) do
       {:ok, {updated_metadata, updated_states, updated_table}} ->
-        updated_state =
-          Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
-            state,
-            updated_metadata,
-            updated_states,
-            updated_table
-          )
+        # Merge the updated state components
+        updated_state = %{
+          state
+          | metadata: updated_metadata,
+            plugin_states: updated_states,
+            table: updated_table
+        }
 
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Successfully reloaded plugin by ID: #{plugin_id_string}",
@@ -60,13 +60,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
            state
          ) do
       {:ok, {updated_metadata, updated_states, updated_table}} ->
-        updated_state =
-          Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
-            state,
-            updated_metadata,
-            updated_states,
-            updated_table
-          )
+        # Merge the updated state components
+        updated_state = %{
+          state
+          | metadata: updated_metadata,
+            plugin_states: updated_states,
+            table: updated_table
+        }
 
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Successfully reloaded plugin: #{plugin_id}",

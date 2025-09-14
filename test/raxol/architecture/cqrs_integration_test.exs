@@ -33,7 +33,7 @@ defmodule Raxol.Architecture.CQRSIntegrationTest do
   end
 
   describe "CQRS Command Processing" do
-    test "can dispatch terminal creation command", %{dispatcher: dispatcher} do
+    test "can dispatch terminal creation command", %{dispatcher: _dispatcher} do
       # Create a valid terminal creation command
       command_attrs = %{
         user_id: "test_user_123",

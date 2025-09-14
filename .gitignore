@@ -43,7 +43,7 @@ priv/termbox2_nif.so
 raxol-*.tar
 
 # Temporary files, for example, from tests.
-/tmp/*
+.tmp/
 !/tmp/.gitkeep
 
 # Environment files
@@ -53,7 +53,9 @@ raxol-*.tar
 # Use .secrets.example as a template instead
 
 # Security: Never commit encryption keys or sensitive data
-data/keys/
+priv/data/keys/
+priv/data/audit/
+priv/data/events/
 *.key
 *.pem
 *.p12
@@ -63,7 +65,7 @@ data/keys/
 # Database files
 *.sqlite3
 *.sqlite3-journal
-.postgres/
+docker/postgres-data/
 
 # Node.js dependencies
 /node_modules/
@@ -116,9 +118,24 @@ priv/themes/staged_version.json
 # Editor / Development Artifacts
 preferences.json
 
+# Cache directories
+.raxol_cache/
+**/.cache/
+**/cache/
+
+# Coverage reports
+/coverage/
+**/coverage/
+test/js/coverage/
+
+# Logs
+*.log
+logs/
+**/*.log
+
 # Heavy Documentation build artifacts
 docs/search-index.json
-tmp/eviction_debug.log
+.tmp/eviction_debug.log
 last_test_output.txt
 
 # Benchmark artifacts
@@ -128,6 +145,5 @@ bench/results/**/*_summary.json
 bench/snapshots/
 *.tar
 erl_crash.dump
-vscode-raxol/node_modules/
 bench/output/*.html
 bench/output/*.json

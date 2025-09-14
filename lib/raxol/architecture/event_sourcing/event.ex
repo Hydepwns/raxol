@@ -38,7 +38,7 @@ defmodule Raxol.Architecture.EventSourcing.Event do
       end
   """
 
-  # @derive Jason.Encoder
+  # # @derive Jason.Encoder
   defstruct [
     :id,
     :stream_name,
@@ -70,7 +70,7 @@ defmodule Raxol.Architecture.EventSourcing.Event do
 
   defmacro __using__(_opts) do
     quote do
-      @derive Jason.Encoder
+      # @derive Jason.Encoder
 
       @doc """
       Creates a new event with metadata.
@@ -329,7 +329,7 @@ defmodule Raxol.Architecture.EventSourcing.EventStream do
   Represents a stream of events for a specific aggregate.
   """
 
-  # @derive Jason.Encoder
+  # # @derive Jason.Encoder
   defstruct [
     :name,
     :version,
@@ -354,7 +354,7 @@ defmodule Raxol.Architecture.EventSourcing.Snapshot do
   Represents a snapshot of aggregate state at a specific version.
   """
 
-  # @derive Jason.Encoder
+  # # @derive Jason.Encoder
   defstruct [
     :stream_name,
     :version,

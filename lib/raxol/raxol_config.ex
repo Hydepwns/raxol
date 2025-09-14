@@ -613,7 +613,6 @@ defmodule Raxol.Config do
 
   defp atomize_keys(value), do: value
 
-
   defp sanitize_config(config) do
     # Remove sensitive values from being stored
     config

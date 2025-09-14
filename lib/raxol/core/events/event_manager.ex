@@ -1,45 +1,45 @@
 defmodule Raxol.Core.Events.EventManager do
   @moduledoc """
-  Refactored Events.Manager that delegates to GenServer implementation.
+  High-performance event management system using GenServer with ETS for fast lookups.
 
-  This module provides the same API as the original Events.Manager but uses
-  a supervised GenServer with PubSub pattern instead of the Process dictionary
-  for state management.
+  Provides pub/sub functionality, event handler registration, and efficient event dispatching
+  across the application. Supports both synchronous and asynchronous event handling.
 
-  ## Migration Notice
-  This module is a drop-in replacement for `Raxol.Core.Events.EventManager`.
-  All functions maintain backward compatibility while providing improved
-  fault tolerance and functional programming patterns.
-
-  ## Benefits over Process Dictionary
-  - Supervised state management with fault tolerance
-  - Pure functional event handling
-  - Process monitoring for automatic cleanup
-  - Priority-based handler execution
-  - Optional event history tracking
-  - Better debugging and testing capabilities
-  - No global state pollution
-
-  ## New Features
-  - Priority handlers: Execute handlers in defined order
-  - Process monitoring: Automatic cleanup when subscribers die
-  - Event history: Optional tracking of dispatched events
-  - Synchronous dispatch: Wait for handlers to complete
+  ## Features
+  - Fast handler lookup using ETS
+  - Subscription-based event streaming
+  - Handler registration with pattern matching
+  - Event filtering and routing
+  - Automatic cleanup of dead processes
   """
 
-  @behaviour Raxol.Core.Events.EventManager.Behaviour
+  use GenServer
+  require Logger
 
-  alias Raxol.Core.Events.EventManager.EventManagerServer, as: Server
-  require Raxol.Core.Runtime.Log
+  @type event_type :: atom()
+  @type event_data :: map()
+  @type handler_fun :: atom() | {module(), atom()} | function()
+  @type filter_opts :: keyword()
+  @type subscription_ref :: reference()
+
+  # Client API
 
   @doc """
-  Ensures the Events.Manager server is started.
-  Called automatically when using any function.
+  Starts the event manager GenServer.
   """
-  def ensure_started do
-    case Process.whereis(Server) do
+  @spec start_link(keyword()) :: {:ok, pid()}
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @doc """
+  Initializes the event manager state.
+  """
+  @spec init() :: :ok
+  def init() do
+    case GenServer.whereis(__MODULE__) do
       nil ->
-        {:ok, _pid} = Server.start_link()
+        Logger.warning("EventManager not started, call start_link/1 first")
         :ok
 
       _pid ->
@@ -48,249 +48,300 @@ defmodule Raxol.Core.Events.EventManager do
   end
 
   @doc """
-  Initialize the event manager.
-
-  This resets the event manager state while preserving configuration.
-  For backward compatibility with Process dictionary version.
+  Notifies all registered handlers of an event.
   """
-  def init do
-    ensure_started()
-    Server.init_manager()
+  @spec notify(pid(), event_type(), event_data()) :: :ok
+  def notify(manager_pid \\ __MODULE__, event_type, event_data) do
+    GenServer.cast(manager_pid, {:notify, event_type, event_data})
   end
 
   @doc """
-  Register an event handler.
-
-  ## Parameters
-  - `event_type` - The type of event to handle
-  - `module` - The module containing the handler function
-  - `function` - The function to call when the event occurs
+  Registers a handler for specific event types.
 
   ## Examples
-  ```elixir
-  EventManager.register_handler(:click, MyModule, :handle_click)
-  ```
+
+      register_handler(:keyboard, MyModule, :handle_keyboard)
+      register_handler([:mouse, :touch], self(), :handle_input)
   """
-  def register_handler(event_type, module, function)
-      when is_atom(event_type) and is_atom(module) and is_atom(function) do
-    ensure_started()
-    Server.register_handler(event_type, module, function)
+  @spec register_handler(
+          event_type() | [event_type()],
+          pid() | module(),
+          handler_fun()
+        ) :: :ok
+  def register_handler(event_types, target, handler)
+      when is_list(event_types) do
+    Enum.each(event_types, &register_handler(&1, target, handler))
+  end
+
+  def register_handler(event_type, target, handler) do
+    GenServer.call(__MODULE__, {:register_handler, event_type, target, handler})
   end
 
   @doc """
-  Register an event handler with priority.
-
-  Lower priority numbers execute first.
-  Default priority is 50.
+  Unregisters a handler for specific event types.
   """
-  def register_handler_with_priority(event_type, module, function, priority)
-      when is_atom(event_type) and is_atom(module) and is_atom(function) and
-             is_integer(priority) do
-    ensure_started()
-    Server.register_handler(event_type, module, function, priority: priority)
+  @spec unregister_handler(
+          event_type() | [event_type()],
+          pid() | module(),
+          handler_fun()
+        ) :: :ok
+  def unregister_handler(event_types, target, handler)
+      when is_list(event_types) do
+    Enum.each(event_types, &unregister_handler(&1, target, handler))
+  end
+
+  def unregister_handler(event_type, target, handler) do
+    GenServer.call(
+      __MODULE__,
+      {:unregister_handler, event_type, target, handler}
+    )
   end
 
   @doc """
-  Unregister an event handler.
-  """
-  def unregister_handler(event_type, module, function)
-      when is_atom(event_type) and is_atom(module) and is_atom(function) do
-    ensure_started()
-    Server.unregister_handler(event_type, module, function)
-  end
-
-  @doc """
-  Subscribe to events with optional filters.
-
-  ## Parameters
-  - `event_types` - List of event types to subscribe to
-  - `opts` - Optional filters and options
-
-  ## Returns
-  - `{:ok, ref}` - Subscription reference for later unsubscribe
+  Subscribes to event streams with optional filtering.
 
   ## Examples
-  ```elixir
-  {:ok, ref} = EventManager.subscribe([:click, :key_press])
-  {:ok, ref} = EventManager.subscribe([:mouse], button: :left)
-  ```
+
+      {:ok, ref} = subscribe([:keyboard, :mouse])
+      {:ok, ref} = subscribe([:focus], filter: [component_id: "main"])
   """
-  def subscribe(event_types, opts \\ []) when is_list(event_types) do
-    ensure_started()
-    Server.subscribe(Server, event_types, opts)
+  @spec subscribe([event_type()], filter_opts()) ::
+          {:ok, subscription_ref()} | {:error, term()}
+  def subscribe(event_types, opts \\ [])
+
+  def subscribe(event_types, opts) do
+    GenServer.call(__MODULE__, {:subscribe, event_types, opts, self()})
   end
 
   @doc """
-  Unsubscribe from events using the subscription reference.
+  Unsubscribes from event streams.
   """
-  def unsubscribe(ref) when is_integer(ref) do
-    ensure_started()
-    Server.unsubscribe(Server, ref)
+  @spec unsubscribe(subscription_ref()) :: :ok
+  def unsubscribe(ref) do
+    GenServer.call(__MODULE__, {:unsubscribe, ref})
   end
 
   @doc """
-  Dispatch an event to all registered handlers and subscribers.
-
-  This is asynchronous - handlers are executed in a cast.
-  Use `dispatch_sync/1` if you need to wait for completion.
+  Dispatches an event to all handlers and subscribers.
   """
-  def dispatch(event) do
-    ensure_started()
+  @spec dispatch(
+          {event_type(), event_data()}
+          | {event_type(), term(), term()}
+          | event_type()
+        ) :: :ok
+  def dispatch({event_type, key, value}) do
+    notify(__MODULE__, event_type, %{key => value})
+  end
 
-    Raxol.Core.Runtime.Log.debug(
-      "EventManager.dispatch called with event: #{inspect(event)}"
+  def dispatch({event_type, event_data}) do
+    notify(__MODULE__, event_type, event_data)
+  end
+
+  def dispatch(event_type) when is_atom(event_type) do
+    notify(__MODULE__, event_type, %{})
+  end
+
+  @doc """
+  Cleans up the event manager and all resources.
+  """
+  @spec cleanup() :: :ok
+  def cleanup() do
+    case GenServer.whereis(__MODULE__) do
+      nil -> :ok
+      pid -> GenServer.stop(pid)
+    end
+  end
+
+  # GenServer Implementation
+
+  @impl GenServer
+  def init(opts) do
+    # Create ETS tables for fast lookups
+    handlers_table = :ets.new(:event_handlers, [:bag, :protected])
+    subscriptions_table = :ets.new(:event_subscriptions, [:bag, :protected])
+
+    state = %{
+      handlers: handlers_table,
+      subscriptions: subscriptions_table,
+      config: opts
+    }
+
+    Logger.info(
+      "Event Manager started with tables #{inspect(handlers_table)}, #{inspect(subscriptions_table)}"
     )
 
-    Server.dispatch(event)
+    {:ok, state}
+  end
+
+  @impl GenServer
+  def handle_call(
+        {:register_handler, event_type, target, handler},
+        _from,
+        state
+      ) do
+    handler_entry = {event_type, target, handler, :os.system_time(:millisecond)}
+    :ets.insert(state.handlers, handler_entry)
+    {:reply, :ok, state}
+  end
+
+  @impl GenServer
+  def handle_call(
+        {:unregister_handler, event_type, target, handler},
+        _from,
+        state
+      ) do
+    # Remove all matching entries
+    match_spec = [
+      {
+        {event_type, target, handler, :_},
+        [],
+        [true]
+      }
+    ]
+
+    :ets.select_delete(state.handlers, match_spec)
+    {:reply, :ok, state}
+  end
+
+  @impl GenServer
+  def handle_call({:subscribe, event_types, opts, subscriber_pid}, _from, state) do
+    ref = make_ref()
+    filter = Keyword.get(opts, :filter, [])
+
+    Enum.each(event_types, fn event_type ->
+      entry = {event_type, subscriber_pid, ref, filter}
+      :ets.insert(state.subscriptions, entry)
+    end)
+
+    # Monitor the subscriber to clean up on death
+    Process.monitor(subscriber_pid)
+
+    {:reply, {:ok, ref}, state}
+  end
+
+  @impl GenServer
+  def handle_call({:unsubscribe, ref}, _from, state) do
+    # Remove all subscriptions with this ref
+    match_spec = [
+      {
+        {:_, :_, ref, :_},
+        [],
+        [true]
+      }
+    ]
+
+    :ets.select_delete(state.subscriptions, match_spec)
+    {:reply, :ok, state}
+  end
+
+  @impl GenServer
+  def handle_cast({:notify, event_type, event_data}, state) do
+    # Dispatch to handlers
+    dispatch_to_handlers(state.handlers, event_type, event_data)
+
+    # Dispatch to subscribers
+    dispatch_to_subscribers(state.subscriptions, event_type, event_data)
+
+    {:noreply, state}
+  end
+
+  @impl GenServer
+  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+    # Clean up dead process handlers and subscriptions
+    cleanup_dead_process(state, pid)
+    {:noreply, state}
+  end
+
+  @impl GenServer
+  def handle_info(msg, state) do
+    Logger.debug("EventManager received unexpected message: #{inspect(msg)}")
+    {:noreply, state}
+  end
+
+  @impl GenServer
+  def terminate(reason, state) do
+    Logger.info("Event Manager terminating: #{inspect(reason)}")
+    :ets.delete(state.handlers)
+    :ets.delete(state.subscriptions)
     :ok
   end
 
-  @doc """
-  Dispatch an event synchronously.
+  # Private Implementation
 
-  Waits for all handlers to complete before returning.
-  Useful for testing or when handler completion is required.
-  """
-  def dispatch_sync(event) do
-    ensure_started()
-    Server.dispatch_sync(event)
-  end
+  defp dispatch_to_handlers(handlers_table, event_type, event_data) do
+    handlers = :ets.lookup(handlers_table, event_type)
 
-  @doc """
-  Broadcast an event to all subscribers.
-
-  Ignores subscription filters - all subscribers receive the event.
-  """
-  def broadcast(event) do
-    ensure_started()
-    Server.broadcast(event)
-    :ok
-  end
-
-  @doc """
-  Get all registered event handlers.
-
-  Returns a map of event_type => [{module, function, priority}]
-  """
-  def get_handlers do
-    ensure_started()
-    Server.get_handlers()
-  end
-
-  @doc """
-  Clear all event handlers.
-  """
-  def clear_handlers do
-    ensure_started()
-    Server.clear_handlers()
-  end
-
-  @doc """
-  Cleans up the event manager state.
-
-  Clears all handlers and subscriptions.
-  For backward compatibility with Process dictionary version.
-  """
-  def cleanup do
-    ensure_started()
-    Server.clear_handlers()
-    Server.clear_subscriptions()
-    :ok
-  end
-
-  @doc """
-  Triggers an event with a type and payload.
-
-  Alias for dispatch/1 for API compatibility.
-  """
-  def trigger(event_type, payload) do
-    ensure_started()
-    Server.trigger(event_type, payload)
-    :ok
-  end
-
-  # Additional helper functions
-
-  @doc """
-  Get all active subscriptions.
-
-  Returns a map of ref => subscription details.
-  Useful for debugging and monitoring.
-  """
-  def get_subscriptions do
-    ensure_started()
-    Server.get_subscriptions()
-  end
-
-  @doc """
-  Get event history (if enabled).
-
-  ## Parameters
-  - `limit` - Optional limit on number of events to return
-
-  ## Returns
-  List of {event, timestamp} tuples, newest first.
-  """
-  def get_event_history(limit \\ nil) do
-    ensure_started()
-    Server.get_event_history(limit)
-  end
-
-  @doc """
-  Clear event history.
-  """
-  def clear_history do
-    ensure_started()
-    Server.clear_history()
-  end
-
-  @doc """
-  Subscribe a specific process to events.
-
-  Useful for subscribing other processes besides the caller.
-  """
-  def subscribe_process(pid, event_types, opts \\ [])
-      when is_pid(pid) and is_list(event_types) do
-    ensure_started()
-    Server.subscribe_pid(pid, event_types, opts)
-  end
-
-  @doc """
-  Count active subscriptions.
-  """
-  def count_subscriptions do
-    ensure_started()
-    subscriptions = Server.get_subscriptions()
-    map_size(subscriptions)
-  end
-
-  @doc """
-  Count registered handlers.
-  """
-  def count_handlers do
-    ensure_started()
-    handlers = Server.get_handlers()
-
-    Enum.reduce(handlers, 0, fn {_event_type, handler_list}, acc ->
-      acc + length(handler_list)
+    Enum.each(handlers, fn {^event_type, target, handler, _timestamp} ->
+      safe_call_handler(target, handler, event_type, event_data)
     end)
   end
 
-  @doc """
-  Check if a specific handler is registered.
-  """
-  def handler_registered?(event_type, module, function) do
-    ensure_started()
-    handlers = Server.get_handlers()
+  defp dispatch_to_subscribers(subscriptions_table, event_type, event_data) do
+    subscribers = :ets.lookup(subscriptions_table, event_type)
 
-    case Map.get(handlers, event_type) do
-      nil ->
-        false
+    Enum.each(subscribers, fn {^event_type, pid, _ref, filter} ->
+      if event_matches_filter?(event_data, filter) do
+        safe_send_event(pid, event_type, event_data)
+      end
+    end)
+  end
 
-      handler_list ->
-        Enum.any?(handler_list, fn {m, f, _p} ->
-          m == module && f == function
-        end)
+  defp safe_call_handler(target, handler, event_type, event_data)
+       when is_pid(target) do
+    if Process.alive?(target) do
+      send(target, {handler, event_type, event_data})
     end
+  end
+
+  defp safe_call_handler(target, handler, event_type, event_data)
+       when is_atom(target) do
+    try do
+      apply(target, handler, [event_type, event_data])
+    rescue
+      error ->
+        Logger.error("Handler #{target}.#{handler} failed: #{inspect(error)}")
+    end
+  end
+
+  defp safe_call_handler({module, function}, _handler, event_type, event_data) do
+    safe_call_handler(module, function, event_type, event_data)
+  end
+
+  defp safe_send_event(pid, event_type, event_data) do
+    if Process.alive?(pid) do
+      send(pid, {:event, event_type, event_data})
+    end
+  end
+
+  defp event_matches_filter?(_event_data, []), do: true
+
+  defp event_matches_filter?(event_data, filter) do
+    Enum.all?(filter, fn {key, expected_value} ->
+      Map.get(event_data, key) == expected_value
+    end)
+  end
+
+  defp cleanup_dead_process(state, dead_pid) do
+    # Remove handlers for dead process
+    handler_match_spec = [
+      {
+        {:_, dead_pid, :_, :_},
+        [],
+        [true]
+      }
+    ]
+
+    :ets.select_delete(state.handlers, handler_match_spec)
+
+    # Remove subscriptions for dead process
+    subscription_match_spec = [
+      {
+        {:_, dead_pid, :_, :_},
+        [],
+        [true]
+      }
+    ]
+
+    :ets.select_delete(state.subscriptions, subscription_match_spec)
   end
 end

@@ -1,11 +1,23 @@
 defmodule Raxol.Core.Runtime.Plugins.Registry do
   @moduledoc """
   Plugin registry using GenServer for state management.
-  Manages information about loaded plugins and their metadata.
+
+  @deprecated "Use Raxol.Core.UnifiedRegistry with :plugins type instead"
+
+  This module has been consolidated into the unified registry system.
+  For new code, use:
+
+      # Instead of Registry.register_plugin(id, metadata)
+      UnifiedRegistry.register(:plugins, id, metadata)
+      
+      # Instead of Registry.list_plugins()
+      UnifiedRegistry.list(:plugins)
   """
 
   use GenServer
   require Raxol.Core.Runtime.Log
+
+  alias Raxol.Core.UnifiedRegistry
 
   # Public API
 
@@ -19,26 +31,37 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
   @doc """
   Registers a plugin with its metadata.
   """
+  @deprecated "Use UnifiedRegistry.register(:plugins, plugin_id, metadata) instead"
   @spec register_plugin(atom(), map()) :: :ok
   def register_plugin(plugin_id, metadata)
       when is_atom(plugin_id) and is_map(metadata) do
-    GenServer.call(__MODULE__, {:register_plugin, plugin_id, metadata})
+    UnifiedRegistry.register(:plugins, plugin_id, metadata)
   end
 
   @doc """
   Unregisters a plugin by its ID.
   """
+  @deprecated "Use UnifiedRegistry.unregister(:plugins, plugin_id) instead"
   @spec unregister_plugin(atom()) :: :ok
   def unregister_plugin(plugin_id) when is_atom(plugin_id) do
-    GenServer.call(__MODULE__, {:unregister_plugin, plugin_id})
+    UnifiedRegistry.unregister(:plugins, plugin_id)
   end
 
   @doc """
   Lists all registered plugins as {plugin_id, metadata} tuples.
   """
+  @deprecated "Use UnifiedRegistry.list(:plugins) instead"
   @spec list_plugins() :: list({atom(), map()})
   def list_plugins do
-    GenServer.call(__MODULE__, :list_plugins)
+    case UnifiedRegistry.list(:plugins) do
+      plugins when is_list(plugins) ->
+        Enum.map(plugins, fn plugin_data ->
+          {plugin_data.id, plugin_data}
+        end)
+
+      _ ->
+        []
+    end
   end
 
   # GenServer Callbacks

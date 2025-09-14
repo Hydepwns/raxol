@@ -1,0 +1,187 @@
+defmodule Mix.Tasks.Raxol.Check.Docs do
+  @moduledoc """
+  Check for broken links in documentation files.
+
+  Validates internal links in markdown files to ensure documentation integrity.
+  """
+
+  use Mix.Task
+
+  @shortdoc "Check documentation links"
+
+  @link_regex ~r/\[[^\]]*\]\(([^\s\)]+)[^)]*\)/
+
+  @impl Mix.Task
+  def run(config \\ %{}) do
+    verbose = Map.get(config, :verbose, false)
+
+    if verbose, do: IO.puts("  Scanning documentation files...")
+
+    # Get all markdown files
+    markdown_files = find_markdown_files()
+
+    if Enum.empty?(markdown_files) do
+      {:ok, "No markdown files found"}
+    else
+      if verbose,
+        do: IO.puts("  Checking links in #{length(markdown_files)} files...")
+
+      check_links(markdown_files, config)
+    end
+  end
+
+  defp find_markdown_files do
+    Path.wildcard("**/*.md")
+    |> Enum.reject(&should_ignore_file?/1)
+    |> Enum.filter(&File.exists?/1)
+  end
+
+  defp should_ignore_file?(path) do
+    String.starts_with?(path, "deps/") or
+      String.starts_with?(path, "_build/") or
+      String.starts_with?(path, "node_modules/") or
+      String.contains?(path, "/node_modules/") or
+      String.starts_with?(path, "lib/termbox2_nif/c_src/termbox2/") or
+      String.starts_with?(path, "docs_backup")
+  end
+
+  defp check_links(files, config) do
+    # Build a set of all markdown files for quick lookup
+    all_files = MapSet.new(files)
+
+    # Check each file for broken links
+    broken_links =
+      Enum.reduce(files, [], fn file, acc ->
+        case check_file_links(file, all_files) do
+          {:ok, []} -> acc
+          {:ok, broken} -> acc ++ broken
+          # Skip files that can't be read
+          {:error, _} -> acc
+        end
+      end)
+
+    format_result(broken_links, config)
+  end
+
+  defp check_file_links(file, all_files) do
+    case File.read(file) do
+      {:ok, content} ->
+        links = Regex.scan(@link_regex, content, capture: :all_but_first)
+
+        broken =
+          Enum.reduce(links, [], fn [url], acc ->
+            case check_single_link(url, file, all_files) do
+              :ok ->
+                acc
+
+              {:error, reason} ->
+                [%{file: file, url: url, reason: reason} | acc]
+            end
+          end)
+
+        {:ok, broken}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp check_single_link(url, source_file, all_files) do
+    cond do
+      # Skip external links
+      String.starts_with?(url, "http://") or
+        String.starts_with?(url, "https://") or
+          String.starts_with?(url, "//") ->
+        :ok
+
+      # Skip anchor-only links (same file)
+      String.starts_with?(url, "#") ->
+        # Could validate anchors but skip for now
+        :ok
+
+      # Check internal file links
+      true ->
+        check_internal_link(url, source_file, all_files)
+    end
+  end
+
+  defp check_internal_link(url, source_file, all_files) do
+    # Remove any anchor from the URL
+    path_part = url |> String.split("#") |> List.first()
+
+    # Resolve the target path
+    target = resolve_path(path_part, source_file)
+
+    # Check if target exists
+    cond do
+      # Check if it's a markdown file in our set
+      MapSet.member?(all_files, target) ->
+        :ok
+
+      # Check if it's a directory
+      File.dir?(target) ->
+        :ok
+
+      # Check if it's any other file type
+      File.exists?(target) ->
+        :ok
+
+      # File not found
+      true ->
+        {:error, "File not found: #{target}"}
+    end
+  end
+
+  defp resolve_path(path, source_file) do
+    if String.starts_with?(path, "/") do
+      # Absolute path (from project root)
+      String.trim_leading(path, "/")
+    else
+      # Relative path
+      source_dir = Path.dirname(source_file)
+
+      Path.join(source_dir, path)
+      |> Path.expand()
+      |> Path.relative_to_cwd()
+    end
+  end
+
+  defp format_result([], _config) do
+    {:ok, "All documentation links valid"}
+  end
+
+  defp format_result(broken_links, config) do
+    count = length(broken_links)
+
+    details =
+      if Map.get(config, :verbose, false) do
+        format_detailed_links(broken_links)
+      else
+        format_summary_links(broken_links)
+      end
+
+    message = """
+    Found #{count} broken link(s):
+    #{details}
+
+    Please fix the broken links in documentation.
+    """
+
+    {:error, message}
+  end
+
+  defp format_summary_links(broken_links) do
+    broken_links
+    |> Enum.take(10)
+    |> Enum.map_join("\n", fn %{file: file, url: url} ->
+      "  #{file}: #{url}"
+    end)
+  end
+
+  defp format_detailed_links(broken_links) do
+    broken_links
+    |> Enum.map_join("\n", fn %{file: file, url: url, reason: reason} ->
+      "  #{file}:\n    Link: #{url}\n    Reason: #{reason}"
+    end)
+  end
+end

@@ -1,16 +1,16 @@
 defmodule Raxol.Utils.MapUtils do
   @moduledoc """
   Common utility functions for map operations.
-  
+
   This module consolidates frequently used map transformation functions
   to avoid code duplication across the codebase.
   """
 
   @doc """
   Recursively converts all map keys to strings.
-  
+
   ## Examples
-  
+
       iex> Raxol.Utils.MapUtils.stringify_keys(%{foo: "bar", nested: %{key: "value"}})
       %{"foo" => "bar", "nested" => %{"key" => "value"}}
       
@@ -37,9 +37,9 @@ defmodule Raxol.Utils.MapUtils do
 
   @doc """
   Recursively converts all map keys to atoms.
-  
+
   ## Examples
-  
+
       iex> Raxol.Utils.MapUtils.atomize_keys(%{"foo" => "bar", "nested" => %{"key" => "value"}})
       %{foo: "bar", nested: %{key: "value"}}
       
@@ -49,7 +49,7 @@ defmodule Raxol.Utils.MapUtils do
   @spec atomize_keys(any()) :: any()
   def atomize_keys(map) when is_map(map) do
     Enum.reduce(map, %{}, fn {key, value}, acc ->
-      atom_key = 
+      atom_key =
         cond do
           is_atom(key) -> key
           is_binary(key) -> String.to_atom(key)
@@ -72,9 +72,9 @@ defmodule Raxol.Utils.MapUtils do
   @doc """
   Safely atomizes keys, only converting strings that already exist as atoms.
   This prevents atom exhaustion attacks.
-  
+
   ## Examples
-  
+
       iex> Raxol.Utils.MapUtils.safe_atomize_keys(%{"foo" => "bar"})
       %{"foo" => "bar"}  # "foo" atom doesn't exist
       

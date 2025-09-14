@@ -20,9 +20,11 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
     clamped_row = max(0, min(row, height - 1))
     clamped_col = max(0, min(col, width - 1))
 
-    # CursorManager.set_position expects {row, col} tuple
-    CursorManager.set_position(emulator.cursor, {clamped_row, clamped_col})
-    emulator
+    # CursorManager.set_position expects {row, col} tuple and returns updated cursor
+    updated_cursor =
+      CursorManager.set_position(emulator.cursor, {clamped_row, clamped_col})
+
+    %{emulator | cursor: updated_cursor}
   end
 
   def get_cursor_style(emulator) do
@@ -34,13 +36,14 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
     valid_styles = [:block, :underline, :bar]
 
     case style in valid_styles do
-      true -> CursorManager.set_style(emulator.cursor, style)
-      false -> :ok
+      true ->
+        updated_cursor = CursorManager.set_style(emulator.cursor, style)
+        %{emulator | cursor: updated_cursor}
+
+      false ->
+        # If style is invalid, do nothing (maintain current style)
+        emulator
     end
-
-    # If style is invalid, do nothing (maintain current style)
-
-    emulator
   end
 
   def cursor_visible?(emulator) do
@@ -72,15 +75,15 @@ defmodule Raxol.Terminal.Operations.CursorOperations do
 
   def toggle_blink(emulator) do
     current_blinking = CursorManager.get_blink(emulator.cursor)
-    CursorManager.set_blink(emulator.cursor, !current_blinking)
-    emulator
+    updated_cursor = CursorManager.set_blink(emulator.cursor, !current_blinking)
+    %{emulator | cursor: updated_cursor}
   end
 
   def set_blink_rate(emulator, rate) do
     # For now, just set the blink state based on rate
     blinking = rate > 0
-    CursorManager.set_blink(emulator.cursor, blinking)
-    emulator
+    updated_cursor = CursorManager.set_blink(emulator.cursor, blinking)
+    %{emulator | cursor: updated_cursor}
   end
 
   def update_blink(emulator) do

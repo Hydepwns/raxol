@@ -9,8 +9,8 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
   alias Raxol.Core.Runtime.Lifecycle
   alias Raxol.Core.Runtime.Application
 
-  @moduledoc false
   defmodule TestApp do
+    @moduledoc false
     @behaviour Application
 
     @impl Application
@@ -40,8 +40,8 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
     def app_name, do: :test_app
   end
 
-  @moduledoc false
   defmodule MockTerminalUtils do
+    @moduledoc false
     def set_terminal_title(_title), do: :ok
     def initialize_terminal(_width, _height), do: :ok
     def restore_terminal, do: :ok

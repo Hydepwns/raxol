@@ -31,12 +31,7 @@ defmodule Raxol.Terminal.Sync.System do
 
   # Client API
   def start_link(opts \\ []) do
-    name =
-      case Mix.env() do
-        :test -> Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
-        _ -> Keyword.get(opts, :name, __MODULE__)
-      end
-
+    name = Keyword.get(opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 

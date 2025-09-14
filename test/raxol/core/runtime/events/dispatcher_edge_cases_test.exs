@@ -4,13 +4,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
   import Mox
 
   alias Raxol.Core.Events.Event
-  alias Raxol.Core.Runtime.Command
   alias Raxol.Core.Runtime.Events.Dispatcher
-  alias Phoenix.PubSub
-  alias Raxol.Core.UserPreferences
-  alias Raxol.UI.Theming.Theme
   alias Raxol.Core.UserPreferences.Behaviour, as: UserPreferencesBehaviour
-  alias Raxol.UI.Theming.ThemeBehaviour
 
   # Mox defmocks
   defmock(UserPreferencesMock, for: UserPreferencesBehaviour)

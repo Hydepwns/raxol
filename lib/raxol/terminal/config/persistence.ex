@@ -86,7 +86,7 @@ defmodule Raxol.Terminal.Config.Persistence do
   # Private functions
 
   defp get_storage_dir do
-    base_dir = Application.get_env(:raxol, :config_storage_dir, "tmp/configs")
+    base_dir = Application.get_env(:raxol, :config_storage_dir, ".tmp/configs")
     File.mkdir_p!(base_dir)
     base_dir
   end

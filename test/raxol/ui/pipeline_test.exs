@@ -3,8 +3,10 @@ defmodule Raxol.UI.Rendering.PipelineTest do
 
   alias Raxol.UI.Rendering.Pipeline
 
+  import Raxol.Test.UnifiedTestHelper
+
   setup do
-    Raxol.Test.Helpers.setup_rendering_test()
+    setup_rendering_test()
   end
 
   test "starts and initializes state", _context do
@@ -17,7 +19,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
 
     Pipeline.update_tree(tree)
-    Raxol.Test.Helpers.assert_render_event("Hello")
+    assert_render_event("Hello")
   end
 
   test "trigger_render/1 uses the current tree if data is nil", _context do
@@ -26,7 +28,7 @@ defmodule Raxol.UI.Rendering.PipelineTest do
     Raxol.UI.Rendering.Renderer.set_test_pid(self())
 
     Pipeline.trigger_render(nil)
-    Raxol.Test.Helpers.assert_render_event("World", 200)
+    assert_render_event("World", 200)
   end
 
   test "trigger_render/1 uses provided data if not nil", _context do

@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   """
 
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.BufferManager
+  alias Raxol.Terminal.Buffer.Manager, as: BufferManager
 
   @doc """
   Move cursor to absolute position.

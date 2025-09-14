@@ -2,7 +2,7 @@ import EventMacroHelpers
 
 defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
   use ExUnit.Case, async: false
-  import Raxol.Test.TestHelper, only: [create_test_component: 2]
+  import Raxol.Test.UnifiedTestHelper, only: [create_test_component: 2]
 
   import Raxol.ComponentTestHelpers,
     only: [simulate_event_sequence: 2, simulate_lifecycle: 2]

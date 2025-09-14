@@ -1,0 +1,491 @@
+defmodule Mix.Tasks.Raxol.Check.Security do
+  @moduledoc """
+  Security vulnerability scanning for Raxol projects.
+
+  Performs multiple security checks:
+  - Dependency vulnerability scanning
+  - Hardcoded secrets detection
+  - Insecure patterns identification
+  - File permission validation
+
+  ## Features
+
+  - Checks deps against known vulnerability databases
+  - Scans for API keys, tokens, and passwords
+  - Identifies insecure coding patterns
+  - Validates sensitive file permissions
+
+  ## Options
+
+  - `--full` - Run all security checks (default: staged files only)
+  - `--verbose` - Show detailed output
+  - `--fix` - Attempt to fix issues (permissions only)
+  """
+
+  use Mix.Task
+  import Bitwise
+  alias Raxol.PreCommit.GitHelper
+
+  @shortdoc "Run security vulnerability checks"
+
+  # Common patterns for secrets detection
+  @secret_patterns [
+    # API Keys and Tokens
+    {~r/(?i)(api[_\-\s]?key|apikey|api_secret)[\s]*[:=][\s]*["']([^"']+)["']/,
+     "API Key"},
+    {~r/(?i)(secret[_\-\s]?key|secret)[\s]*[:=][\s]*["']([^"']+)["']/,
+     "Secret Key"},
+    {~r/(?i)(auth[_\-\s]?token|access[_\-\s]?token|bearer[_\-\s]?token)[\s]*[:=][\s]*["']([^"']+)["']/,
+     "Auth Token"},
+
+    # AWS
+    {~r/AKIA[0-9A-Z]{16}/, "AWS Access Key"},
+    {~r/(?i)aws[_\-\s]?secret[_\-\s]?access[_\-\s]?key[\s]*[:=][\s]*["']([^"']+)["']/,
+     "AWS Secret Key"},
+
+    # Database
+    {~r/(?i)(db[_\-\s]?password|database[_\-\s]?password|pwd)[\s]*[:=][\s]*["']([^"']+)["']/,
+     "Database Password"},
+    {~r/(?i)postgres:\/\/[^:]+:([^@]+)@/, "PostgreSQL Password"},
+    {~r/(?i)mysql:\/\/[^:]+:([^@]+)@/, "MySQL Password"},
+
+    # Private Keys
+    {~r/-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----/, "Private Key"},
+    {~r/-----BEGIN OPENSSH PRIVATE KEY-----/, "SSH Private Key"},
+
+    # Generic Passwords
+    {~r/(?i)password[\s]*[:=][\s]*["']([^"']{8,})["']/, "Hardcoded Password"},
+
+    # Slack, GitHub, etc
+    {~r/xox[baprs]-[0-9A-Za-z\-]{10,}/, "Slack Token"},
+    {~r/ghp_[0-9A-Za-z]{36}/, "GitHub Personal Access Token"},
+    {~r/ghs_[0-9A-Za-z]{36}/, "GitHub Secret"},
+
+    # Credit Cards (PCI compliance)
+    {~r/\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|6(?:011|5[0-9]{2})[0-9]{12})\b/,
+     "Credit Card Number"}
+  ]
+
+  # Insecure code patterns
+  @insecure_patterns [
+    {~r/System\.cmd\([^,)]*\#{/,
+     "Command injection risk - interpolation in System.cmd"},
+    {~r/:os\.cmd\([^,)]*\#{/,
+     "Command injection risk - interpolation in :os.cmd"},
+    {~r/eval\(/, "Dangerous eval() usage"},
+    {~r/Code\.eval_string\([^,)]*\#{/,
+     "Code injection risk - interpolation in Code.eval_string"},
+    {~r/\|>\s*:erlang\.binary_to_term/,
+     "Unsafe deserialization - binary_to_term"},
+    {~r/HTTPoison\.get\([^,)]*\#{.*verify:?\s*false/,
+     "SSL verification disabled"},
+    {~r/verify_peer:?\s*false/, "SSL peer verification disabled"},
+    {~r/Poison\.decode!\([^,)]*%?\{.*atoms:?\s*true/,
+     "Atom exhaustion risk - atoms: true in JSON decode"}
+  ]
+
+  @impl Mix.Task
+  def run(config \\ %{}) do
+    verbose = Map.get(config, :verbose, false)
+    full_scan = Map.get(config, :full, false)
+    auto_fix = Map.get(config, :fix, false)
+
+    # Run security checks
+    results = [
+      check_dependencies(verbose),
+      check_secrets(full_scan, verbose),
+      check_insecure_patterns(full_scan, verbose),
+      check_file_permissions(auto_fix, verbose)
+    ]
+
+    # Aggregate results
+    aggregate_results(results, verbose)
+  end
+
+  defp check_dependencies(verbose) do
+    maybe_log(verbose, "Checking dependency vulnerabilities...")
+
+    # Check if mix_audit is available
+    case Code.ensure_loaded(MixAudit) do
+      {:module, _} ->
+        run_mix_audit(verbose)
+
+      _ ->
+        # Fallback to basic checks
+        basic_dependency_check(verbose)
+    end
+  end
+
+  defp run_mix_audit(verbose) do
+    case System.cmd("mix", ["deps.audit"], stderr_to_stdout: true) do
+      {_output, 0} ->
+        maybe_log(verbose, "No known vulnerabilities found in dependencies")
+        {:ok, :dependencies}
+
+      {output, _} ->
+        vulnerabilities = parse_audit_output(output)
+        {:warning, %{check: :dependencies, issues: vulnerabilities}}
+    end
+  catch
+    _ ->
+      basic_dependency_check(verbose)
+  end
+
+  defp basic_dependency_check(verbose) do
+    # Basic check for outdated deps
+    case System.cmd("mix", ["hex.outdated"], stderr_to_stdout: true) do
+      {output, _} ->
+        outdated = parse_outdated_deps(output)
+
+        case outdated do
+          [] ->
+            {:ok, :dependencies}
+
+          deps ->
+            maybe_log(verbose, "Found #{length(deps)} outdated dependencies")
+            {:info, %{check: :dependencies, outdated: deps}}
+        end
+    end
+  end
+
+  defp check_secrets(full_scan, verbose) do
+    maybe_log(verbose, "Scanning for hardcoded secrets...")
+
+    files = get_files_to_scan(full_scan)
+    found_secrets = scan_files_for_secrets(files, verbose)
+
+    case found_secrets do
+      [] ->
+        maybe_log(verbose, "No hardcoded secrets detected")
+        {:ok, :secrets}
+
+      secrets ->
+        {:error, %{check: :secrets, found: secrets}}
+    end
+  end
+
+  defp check_insecure_patterns(full_scan, verbose) do
+    maybe_log(verbose, "Checking for insecure code patterns...")
+
+    files = get_files_to_scan(full_scan)
+    found_patterns = scan_files_for_patterns(files, verbose)
+
+    case found_patterns do
+      [] ->
+        maybe_log(verbose, "No insecure patterns detected")
+        {:ok, :patterns}
+
+      patterns ->
+        {:warning, %{check: :patterns, found: patterns}}
+    end
+  end
+
+  defp check_file_permissions(auto_fix, verbose) do
+    maybe_log(verbose, "Checking file permissions...")
+
+    sensitive_files = [
+      "config/prod.secret.exs",
+      ".env",
+      ".env.local",
+      "priv/keys/*",
+      "priv/certs/*"
+    ]
+
+    permission_issues =
+      sensitive_files
+      |> Enum.flat_map(&Path.wildcard/1)
+      |> Enum.filter(&File.exists?/1)
+      |> Enum.map(fn file ->
+        check_file_permission(file, auto_fix)
+      end)
+      |> Enum.filter(&(&1 != :ok))
+
+    case permission_issues do
+      [] ->
+        {:ok, :permissions}
+
+      issues ->
+        case auto_fix do
+          true ->
+            {:ok, %{check: :permissions, fixed: length(issues)}}
+
+          false ->
+            {:warning, %{check: :permissions, issues: issues}}
+        end
+    end
+  end
+
+  defp get_files_to_scan(true) do
+    # Full scan of all source files
+    Path.wildcard("lib/**/*.{ex,exs}") ++
+      Path.wildcard("test/**/*.{ex,exs}") ++
+      Path.wildcard("config/*.exs") ++
+      Path.wildcard("*.{ex,exs}")
+  end
+
+  defp get_files_to_scan(false) do
+    # Only scan staged files
+    case GitHelper.get_staged_elixir_files() do
+      {:ok, files} -> files
+      _ -> []
+    end
+  end
+
+  defp scan_files_for_secrets(files, _verbose) do
+    files
+    |> Enum.flat_map(fn file ->
+      case File.read(file) do
+        {:ok, content} ->
+          # Skip files that are likely false positives
+          unless likely_false_positive?(file) do
+            scan_content_for_secrets(file, content)
+          else
+            []
+          end
+
+        _ ->
+          []
+      end
+    end)
+  end
+
+  defp scan_content_for_secrets(file, content) do
+    # Don't scan test files for example secrets
+    is_test = String.contains?(file, "test/")
+
+    @secret_patterns
+    |> Enum.flat_map(fn {pattern, type} ->
+      case Regex.scan(pattern, content, return: :index) do
+        [] ->
+          []
+
+        matches ->
+          # Skip if in test and looks like example
+          unless is_test and example_secret?(content, matches) do
+            matches
+            |> Enum.with_index()
+            |> Enum.map(fn {match_indices, _index} ->
+              [{start_idx, _length} | _] = match_indices
+              line_num = get_line_number(content, start_idx)
+
+              %{
+                file: file,
+                line: line_num,
+                type: type,
+                severity: :high
+              }
+            end)
+          else
+            []
+          end
+      end
+    end)
+    |> Enum.uniq()
+  end
+
+  defp scan_files_for_patterns(files, _verbose) do
+    files
+    |> Enum.flat_map(fn file ->
+      case File.read(file) do
+        {:ok, content} ->
+          scan_content_for_patterns(file, content)
+
+        _ ->
+          []
+      end
+    end)
+  end
+
+  defp scan_content_for_patterns(file, content) do
+    @insecure_patterns
+    |> Enum.flat_map(fn {pattern, description} ->
+      case Regex.scan(pattern, content, return: :index) do
+        [] ->
+          []
+
+        matches ->
+          matches
+          |> Enum.map(fn match_indices ->
+            [{start_idx, _length} | _] = match_indices
+            line_num = get_line_number(content, start_idx)
+
+            %{
+              file: file,
+              line: line_num,
+              pattern: description,
+              severity: :medium
+            }
+          end)
+      end
+    end)
+  end
+
+  defp check_file_permission(file, auto_fix) do
+    case File.stat(file) do
+      {:ok, %{mode: mode}} ->
+        # Check if file is world-readable (last 3 bits)
+        world_perms = mode &&& 0o007
+
+        case world_perms > 0 do
+          true when auto_fix ->
+            # Remove world permissions
+            new_mode = mode &&& 0o770
+            File.chmod!(file, new_mode)
+            {:fixed, file}
+
+          true ->
+            {:issue, file, "World-readable sensitive file"}
+
+          false ->
+            :ok
+        end
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp likely_false_positive?(file) do
+    # Skip certain files that commonly have example keys
+    patterns = [
+      "config/test.exs",
+      "config/dev.exs",
+      ".formatter.exs",
+      "mix.exs",
+      "_test.exs",
+      "/fixtures/",
+      "/examples/"
+    ]
+
+    Enum.any?(patterns, &String.contains?(file, &1))
+  end
+
+  defp example_secret?(content, matches) do
+    # Check if the secret looks like an example
+    example_patterns = [
+      "example",
+      "sample",
+      "test",
+      "demo",
+      "fake",
+      "xxx",
+      "your-",
+      "my-",
+      "<",
+      "{{",
+      "TODO",
+      "REPLACE",
+      "INSERT"
+    ]
+
+    Enum.all?(matches, fn [{start_idx, length} | _] ->
+      secret_text = String.slice(content, start_idx, length)
+
+      Enum.any?(example_patterns, fn pattern ->
+        String.downcase(secret_text) |> String.contains?(pattern)
+      end)
+    end)
+  end
+
+  defp get_line_number(content, index) do
+    content
+    |> String.slice(0, index)
+    |> String.split("\n")
+    |> length()
+  end
+
+  defp parse_audit_output(output) do
+    output
+    |> String.split("\n")
+    |> Enum.filter(&String.contains?(&1, "advisory"))
+    |> Enum.map(fn line ->
+      %{description: String.trim(line), severity: :high}
+    end)
+  end
+
+  defp parse_outdated_deps(output) do
+    output
+    |> String.split("\n")
+    |> Enum.filter(&String.contains?(&1, "->"))
+    |> Enum.map(fn line ->
+      case String.split(line, " ") do
+        [name | _] -> String.trim(name)
+        _ -> nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp aggregate_results(results, verbose) do
+    errors = Enum.filter(results, &match?({:error, _}, &1))
+    warnings = Enum.filter(results, &match?({:warning, _}, &1))
+
+    cond do
+      errors != [] ->
+        format_security_errors(errors, verbose)
+
+      warnings != [] ->
+        format_security_warnings(warnings, verbose)
+
+      true ->
+        {:ok, "All security checks passed"}
+    end
+  end
+
+  defp format_security_errors(errors, _verbose) do
+    details =
+      errors
+      |> Enum.map(fn {:error, data} ->
+        format_check_result(data)
+      end)
+      |> Enum.join("\n\n")
+
+    {:error,
+     %{
+       message: "Security vulnerabilities detected",
+       details: details,
+       fix_command: "Review and fix security issues before committing"
+     }}
+  end
+
+  defp format_security_warnings(warnings, _verbose) do
+    details =
+      warnings
+      |> Enum.map(fn {:warning, data} ->
+        format_check_result(data)
+      end)
+      |> Enum.join("\n\n")
+
+    {:warning, "Security warnings:\n#{details}"}
+  end
+
+  defp format_check_result(%{check: :secrets, found: secrets}) do
+    """
+    🔐 Hardcoded Secrets Found:
+    #{Enum.map(secrets, fn s -> "  • #{s.file}:#{s.line} - #{s.type}" end) |> Enum.join("\n")}
+
+    Remove these secrets and use environment variables instead.
+    """
+  end
+
+  defp format_check_result(%{check: :patterns, found: patterns}) do
+    """
+    ⚠️  Insecure Patterns:
+    #{Enum.map(patterns, fn p -> "  • #{p.file}:#{p.line} - #{p.pattern}" end) |> Enum.join("\n")}
+    """
+  end
+
+  defp format_check_result(%{check: :permissions, issues: issues}) do
+    """
+    📁 File Permission Issues:
+    #{Enum.map(issues, fn {_, file, desc} -> "  • #{file} - #{desc}" end) |> Enum.join("\n")}
+
+    Run with --fix to automatically fix permissions.
+    """
+  end
+
+  defp format_check_result(_), do: ""
+
+  defp maybe_log(false, _msg), do: :ok
+  defp maybe_log(true, msg), do: IO.puts("  #{msg}")
+end

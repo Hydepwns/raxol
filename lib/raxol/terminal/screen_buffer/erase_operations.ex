@@ -12,21 +12,33 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   Erases from cursor to end of display.
   """
   def erase_from_cursor_to_end(buffer, x, y, _top, bottom) do
-    # Clear from cursor to end of line
-    line = Enum.at(buffer.cells, y, [])
+    # IO.puts("[DEBUG] erase_from_cursor_to_end called with x=#{x}, y=#{y}, bottom=#{bottom}")
+
     empty_cell = Cell.new()
 
-    # Preserve existing cells before cursor, clear from cursor onwards
-    preserved_cells = Enum.take(line, x)
-    cleared_cells = List.duplicate(empty_cell, buffer.width - x)
-    cleared_line = preserved_cells ++ cleared_cells
-
-    new_cells = List.replace_at(buffer.cells, y, cleared_line)
-
-    # Clear remaining lines
+    # Process each line
     new_cells =
-      Enum.reduce((y + 1)..bottom, new_cells, fn line_num, acc ->
-        List.replace_at(acc, line_num, List.duplicate(empty_cell, buffer.width))
+      Enum.with_index(buffer.cells)
+      |> Enum.map(fn {line, line_idx} ->
+        cond do
+          # Lines before cursor row remain unchanged
+          line_idx < y ->
+            line
+
+          # Cursor row: clear from cursor position to end
+          line_idx == y ->
+            preserved_cells = Enum.take(line, x)
+            cleared_cells = List.duplicate(empty_cell, buffer.width - x)
+            preserved_cells ++ cleared_cells
+
+          # Lines after cursor row: clear entirely if within bottom
+          line_idx <= bottom ->
+            List.duplicate(empty_cell, buffer.width)
+
+          # Lines beyond bottom remain unchanged
+          true ->
+            line
+        end
       end)
 
     %{buffer | cells: new_cells}
@@ -36,25 +48,33 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   Erases from start to cursor position.
   """
   def erase_from_start_to_cursor(buffer, x, y, top, _bottom) do
-    # DEBUG: erase_from_start_to_cursor called with x=#{x}, y=#{y}, top=#{top}, bottom=#{bottom}
-
-    # Clear from start of line to cursor (inclusive)
-    line = Enum.at(buffer.cells, y, [])
     empty_cell = Cell.new()
-    # Clear from start of line to cursor position (inclusive)
-    cleared_line = List.duplicate(empty_cell, x + 1) ++ Enum.drop(line, x + 1)
-    new_cells = List.replace_at(buffer.cells, y, cleared_line)
 
-    # Clear all previous lines completely
-    # DEBUG output removed
-
+    # Process each line
     new_cells =
-      Enum.reduce(top..(y - 1), new_cells, fn line_num, acc ->
-        # DEBUG output removed
-        List.replace_at(acc, line_num, List.duplicate(empty_cell, buffer.width))
+      Enum.with_index(buffer.cells)
+      |> Enum.map(fn {line, line_idx} ->
+        cond do
+          # Lines before top remain unchanged
+          line_idx < top ->
+            line
+
+          # Lines from top to before cursor row: clear entirely
+          line_idx < y ->
+            List.duplicate(empty_cell, buffer.width)
+
+          # Cursor row: clear from start to cursor position (inclusive)
+          line_idx == y ->
+            cleared_cells = List.duplicate(empty_cell, x + 1)
+            preserved_cells = Enum.drop(line, x + 1)
+            cleared_cells ++ preserved_cells
+
+          # Lines after cursor row remain unchanged
+          true ->
+            line
+        end
       end)
 
-    # DEBUG output removed
     %{buffer | cells: new_cells}
   end
 
@@ -163,12 +183,13 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   end
 
   defp erase_line_to_end(buffer, x, y) do
-    _line = Enum.at(buffer.cells, y, [])
+    line = Enum.at(buffer.cells, y, [])
     empty_cell = Cell.new()
 
-    cleared_line =
-      List.duplicate(empty_cell, x) ++
-        List.duplicate(empty_cell, buffer.width - x)
+    # Preserve cells before cursor, clear from cursor to end
+    preserved_cells = Enum.take(line, x)
+    cleared_cells = List.duplicate(empty_cell, buffer.width - x)
+    cleared_line = preserved_cells ++ cleared_cells
 
     new_cells = List.replace_at(buffer.cells, y, cleared_line)
     %{buffer | cells: new_cells}
@@ -183,8 +204,10 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   end
 
   defp erase_entire_line(buffer, y) do
+    empty_cell = Cell.new()
+
     new_cells =
-      List.replace_at(buffer.cells, y, List.duplicate(%{}, buffer.width))
+      List.replace_at(buffer.cells, y, List.duplicate(empty_cell, buffer.width))
 
     %{buffer | cells: new_cells}
   end

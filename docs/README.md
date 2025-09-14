@@ -2,37 +2,37 @@
 
 Central navigation for all Raxol documentation.
 
-## Documentation Categories
+## Quick Navigation
 
-### Getting Started
-- [**Quick Start Guide**](../README.md#quick-start) - Installation and first steps
-- [**Interactive Tutorial**](guides/tutorial.md) - Learn Raxol interactively
-- [**Examples**](../examples/README.md) - Code examples and patterns
+### Essentials
+- [Installation](../README.md#installation)
+- [Getting Started](getting-started.md)
+- [API Reference](api-reference.md)
+- [Examples](../examples/README.md)
 
-### Developer Guides
-- [**Development Guide**](development.md) - Contributing and development setup
-- [**Architecture Guide**](ARCHITECTURE.md) - System design and patterns
-- [**API Reference**](https://hexdocs.pm/raxol) - Complete API documentation
+### Core Documentation
+- [Development](development.md)
+- [Terminal System](../lib/raxol/terminal/README.md)
+- [UI Components](components.md)
+- [Performance](performance.md)
+- [Testing](testing.md)
+- [Security](security.md)
 
-### Framework Documentation
-- [**Multi-Framework UI**](guides/multi-framework.md) - React, Svelte, LiveView patterns
-- [**Terminal Subsystem**](../lib/raxol/terminal/README.md) - Terminal emulation details
-- [**Component Catalog**](guides/components.md) - Available UI components
+### Guides
+- [Custom Components](guides/custom_components.md)
+- [Performance Optimization](guides/performance_optimization.md)
+- [Accessibility](guides/accessibility_implementation_guide.md)
+- [Multi-Framework](guides/multi_framework_migration_guide.md)
 
-### Performance & Testing
-- [**Benchmarking Guide**](bench/README.md) - Performance testing
-- [**Test Suite**](../test/README.md) - Testing framework and patterns
-- [**Metrics System**](../lib/raxol/core/metrics/README.md) - Performance monitoring
-
-### Advanced Topics
-- [**Architecture Decisions**](adr/README.md) - ADR documentation
-- [**Security & Compliance**](guides/security.md) - Enterprise features
-- [**Plugin Development**](guides/plugins.md) - Extending Raxol
+### Advanced
+- [Architecture Decisions](adr/)
+- [Benchmarks](bench/)
+- [Cloud Integration](../lib/raxol/cloud/README.md)
+- [Svelte Framework](../lib/raxol/svelte/README.md)
 
 ### Tools & Automation
 - [**Scripts**](../scripts/README.md) - Development scripts and tools
 - [**CI/CD Workflows**](../.github/workflows/README.md) - GitHub Actions setup
-- [**VS Code Extension**](../vscode-raxol/README.md) - IDE integration
 
 ### Standards & Guidelines
 - [**Naming Conventions**](development/NAMING_CONVENTIONS.md) - Code organization

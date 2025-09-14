@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.Config.ManagerTest do
   use ExUnit.Case
-  alias Raxol.Terminal.{Config.Manager, TestHelper}
+  alias Raxol.Terminal.Config.Manager
 
   describe "new/0" do
     test "creates a new config manager with default values" do
@@ -17,12 +17,12 @@ defmodule Raxol.Terminal.Config.ManagerTest do
 
   describe "get_setting/2" do
     test "returns nil for non-existent setting" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       assert Manager.get_setting(emulator, :non_existent) == nil
     end
 
     test "returns setting value when it exists" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       emulator = Manager.set_setting(emulator, :test_setting, "value")
       assert Manager.get_setting(emulator, :test_setting) == "value"
     end
@@ -30,13 +30,13 @@ defmodule Raxol.Terminal.Config.ManagerTest do
 
   describe "set_setting/3" do
     test "sets a new setting value" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       emulator = Manager.set_setting(emulator, :test_setting, "value")
       assert Manager.get_setting(emulator, :test_setting) == "value"
     end
 
     test "updates existing setting value" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       emulator = Manager.set_setting(emulator, :test_setting, "old")
       emulator = Manager.set_setting(emulator, :test_setting, "new")
       assert Manager.get_setting(emulator, :test_setting) == "new"
@@ -45,12 +45,12 @@ defmodule Raxol.Terminal.Config.ManagerTest do
 
   describe "get_preference/2" do
     test "returns nil for non-existent preference" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       assert Manager.get_preference(emulator, :non_existent) == nil
     end
 
     test "returns preference value when it exists" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       emulator = Manager.set_preference(emulator, :test_pref, "value")
       assert Manager.get_preference(emulator, :test_pref) == "value"
     end
@@ -58,13 +58,13 @@ defmodule Raxol.Terminal.Config.ManagerTest do
 
   describe "set_preference/3" do
     test "sets a new preference value" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       emulator = Manager.set_preference(emulator, :test_pref, "value")
       assert Manager.get_preference(emulator, :test_pref) == "value"
     end
 
     test "updates existing preference value" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       emulator = Manager.set_preference(emulator, :test_pref, "old")
       emulator = Manager.set_preference(emulator, :test_pref, "new")
       assert Manager.get_preference(emulator, :test_pref) == "new"
@@ -73,12 +73,12 @@ defmodule Raxol.Terminal.Config.ManagerTest do
 
   describe "get_environment/2" do
     test "returns nil for non-existent environment variable" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       assert Manager.get_environment(emulator, "NON_EXISTENT") == nil
     end
 
     test "returns environment variable value when it exists" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       emulator = Manager.set_environment(emulator, "TEST_VAR", "value")
       assert Manager.get_environment(emulator, "TEST_VAR") == "value"
     end
@@ -86,13 +86,13 @@ defmodule Raxol.Terminal.Config.ManagerTest do
 
   describe "set_environment/3" do
     test "sets a new environment variable" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       emulator = Manager.set_environment(emulator, "TEST_VAR", "value")
       assert Manager.get_environment(emulator, "TEST_VAR") == "value"
     end
 
     test "updates existing environment variable" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       emulator = Manager.set_environment(emulator, "TEST_VAR", "old")
       emulator = Manager.set_environment(emulator, "TEST_VAR", "new")
       assert Manager.get_environment(emulator, "TEST_VAR") == "new"
@@ -101,12 +101,12 @@ defmodule Raxol.Terminal.Config.ManagerTest do
 
   describe "get_all_environment/1" do
     test "returns empty map initially" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       assert Manager.get_all_environment(emulator) == %{}
     end
 
     test "returns all environment variables" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       emulator = Manager.set_environment(emulator, "VAR1", "value1")
       emulator = Manager.set_environment(emulator, "VAR2", "value2")
       env = Manager.get_all_environment(emulator)
@@ -117,7 +117,7 @@ defmodule Raxol.Terminal.Config.ManagerTest do
 
   describe "set_environment_variables/2" do
     test "sets multiple environment variables" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       vars = %{"VAR1" => "value1", "VAR2" => "value2"}
       emulator = Manager.set_environment_variables(emulator, vars)
       assert Manager.get_environment(emulator, "VAR1") == "value1"
@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.Config.ManagerTest do
     end
 
     test "merges with existing environment variables" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       emulator = Manager.set_environment(emulator, "VAR1", "old")
       vars = %{"VAR1" => "new", "VAR2" => "value2"}
       emulator = Manager.set_environment_variables(emulator, vars)
@@ -136,7 +136,7 @@ defmodule Raxol.Terminal.Config.ManagerTest do
 
   describe "clear_environment/1" do
     test "removes all environment variables" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       emulator = Manager.set_environment(emulator, "VAR1", "value1")
       emulator = Manager.set_environment(emulator, "VAR2", "value2")
       emulator = Manager.clear_environment(emulator)
@@ -146,7 +146,7 @@ defmodule Raxol.Terminal.Config.ManagerTest do
 
   describe "reset_config_manager/1" do
     test "resets config manager to initial state" do
-      emulator = TestHelper.create_test_emulator()
+      emulator = UnifiedTestHelper.create_test_emulator()
       emulator = Manager.set_setting(emulator, :test_setting, "value")
       emulator = Manager.set_preference(emulator, :test_pref, "value")
       emulator = Manager.set_environment(emulator, "TEST_VAR", "value")

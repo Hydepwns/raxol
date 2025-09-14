@@ -83,11 +83,15 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
     end
   end
 
-  defp handle_cursor_ops(emulator, command, data) do
+  defp handle_cursor_ops(emulator, command, _data) do
     case command do
-      12 -> __MODULE__.Cursor.handle_12(emulator, data)
-      50 -> __MODULE__.Cursor.handle_50(emulator, data)
-      112 -> __MODULE__.Cursor.handle_112(emulator, data)
+      # Set cursor color
+      12 -> {:ok, emulator}
+      # Set cursor shape  
+      50 -> {:ok, emulator}
+      # Reset cursor color
+      112 -> {:ok, emulator}
+      _ -> {:ok, emulator}
     end
   end
 

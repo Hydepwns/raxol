@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.ConfigTest do
   use Raxol.DataCase
   import Mox
   # import Raxol.TestHelpers
-  import Raxol.Test.TestHelper
+  import Raxol.Test.UnifiedTestHelper
 
   # Aliases for the modules under test
   alias Raxol.Terminal.Config
@@ -64,8 +64,8 @@ defmodule Raxol.Terminal.ConfigTest do
 
   setup do
     # Clean up any existing config files
-    File.rm_rf!("tmp/configs")
-    File.mkdir_p!("tmp/configs")
+    File.rm_rf!(".tmp/configs")
+    File.mkdir_p!(".tmp/configs")
 
     config = Config.new()
     %{config: config}
@@ -309,7 +309,7 @@ defmodule Raxol.Terminal.ConfigTest do
       assert {:error, _} = Config.load("nonexistent")
 
       # Try to load invalid configuration file
-      File.write!("tmp/configs/invalid.config", "invalid data")
+      File.write!(".tmp/configs/invalid.config", "invalid data")
       assert {:error, _} = Config.load("invalid")
     end
   end

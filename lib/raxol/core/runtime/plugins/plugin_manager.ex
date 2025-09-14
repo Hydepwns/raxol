@@ -19,7 +19,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
   @type plugin_state :: map()
 
   use GenServer
-  @behaviour Raxol.Core.Runtime.Plugins.PluginManager.Behaviour
+
+  # Note: PluginManager.Behaviour does not exist, removing the behaviour declaration
 
   require Raxol.Core.Runtime.Log
 
@@ -30,7 +31,6 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
     Utility
   }
 
-  @impl true
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -121,7 +121,6 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
     GenServer.call(__MODULE__, :list_plugins)
   end
 
-  @impl true
   def get_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:get_plugin, plugin_id})
   end
@@ -142,12 +141,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
     GenServer.call(__MODULE__, {:load_plugin_by_module, module, config})
   end
 
-  @impl true
   def load_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:load_plugin, plugin_id})
   end
 
-  @impl true
   def unload_plugin(plugin_id) do
     GenServer.cast(__MODULE__, {:unload_plugin, plugin_id})
   end

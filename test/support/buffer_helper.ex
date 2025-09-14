@@ -30,14 +30,9 @@ defmodule Raxol.Test.BufferHelper do
     # Create test buffer
     _buffer =
       Raxol.Terminal.Buffer.Manager.initialize_buffers(
-        manager,
         80,
         24,
-        Keyword.get(opts, :buffer_opts,
-          type: :standard,
-          size: {80, 24},
-          scrollback: 1000
-        )
+        Keyword.get(opts, :buffer_opts, 1000)
       )
 
     # Setup metrics if enabled
@@ -94,16 +89,11 @@ defmodule Raxol.Test.BufferHelper do
       iex> create_test_buffer(manager, type: :standard, size: {80, 24})
       {:ok, buffer}
   """
-  def create_test_buffer(manager, opts \\ []) do
+  def create_test_buffer(_manager, opts \\ []) do
     Raxol.Terminal.Buffer.Manager.initialize_buffers(
-      manager,
       80,
       24,
-      Keyword.get(opts, :buffer_opts,
-        type: :standard,
-        size: {80, 24},
-        scrollback: 1000
-      )
+      Keyword.get(opts, :scrollback, 1000)
     )
   end
 

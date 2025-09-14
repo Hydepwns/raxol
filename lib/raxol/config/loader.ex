@@ -450,7 +450,6 @@ defmodule Raxol.Config.Loader do
     {:ok, inspect(stringified)}
   end
 
-
   defp ensure_directory(path) do
     path
     |> Path.dirname()

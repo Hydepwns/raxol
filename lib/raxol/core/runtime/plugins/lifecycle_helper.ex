@@ -12,7 +12,6 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     PluginEventProcessor,
     PluginReloader,
     PluginUnloader,
-    PluginStateManager,
     PluginInitializer,
     PluginLifecycleCallbacks,
     PluginErrorHandler
@@ -87,7 +86,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
          plugin_config: plugin_config
        }) do
     with {:ok, initial_state} <-
-           PluginStateManager.initialize_plugin_state(plugin_module, config),
+           StateManager.initialize_plugin_state(plugin_module, config),
          :ok <-
            register_plugin_components(%{
              plugin_id: plugin_id,
@@ -122,20 +121,16 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
          initial_state: initial_state,
          command_table: command_table,
          plugin_metadata: plugin_metadata,
-         plugins: plugins,
-         metadata: metadata,
-         plugin_states: plugin_states,
-         load_order: load_order,
+         plugins: _plugins,
+         metadata: _metadata,
+         plugin_states: _plugin_states,
+         load_order: _load_order,
          plugin_config: plugin_config
        }) do
     with :ok <-
-           PluginStateManager.update_plugin_state(
+           StateManager.update_plugin_state_legacy(
              plugin_id,
              initial_state,
-             plugins,
-             metadata,
-             plugin_states,
-             load_order,
              plugin_config
            ),
          :ok <-
@@ -170,10 +165,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   end
 
   defp register_plugin(plugin_id, plugin_metadata) do
-    Raxol.Core.Runtime.Plugins.Registry.register_plugin(
-      plugin_id,
-      plugin_metadata
-    )
+    Raxol.Core.UnifiedRegistry.register(:plugins, plugin_id, plugin_metadata)
   end
 
   @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour

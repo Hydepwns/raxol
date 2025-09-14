@@ -7,16 +7,18 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferOperations do
   @doc """
   Resets a buffer manager to initial state.
   """
-  def reset_buffer_manager(
-        %Raxol.Terminal.Buffer.Manager.TestBufferManager{} = mgr
-      ) do
-    %Raxol.Terminal.Buffer.Manager.TestBufferManager{
-      scrollback_size: mgr.scrollback_size,
-      active: nil,
-      alternate: nil,
-      scrollback: []
-    }
-  end
+
+  # TODO: TestBufferManager struct needs to be defined or this clause removed
+  # def reset_buffer_manager(
+  #       %Raxol.Terminal.Buffer.Manager.TestBufferManager{} = mgr
+  #     ) do
+  #   %Raxol.Terminal.Buffer.Manager.TestBufferManager{
+  #     scrollback_size: mgr.scrollback_size,
+  #     active: nil,
+  #     alternate: nil,
+  #     scrollback: []
+  #   }
+  # end
 
   def reset_buffer_manager(%{buffer: _} = emulator) do
     %{emulator | buffer: Raxol.Terminal.Buffer.Manager.new()}
@@ -47,10 +49,12 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferOperations do
   @doc """
   Gets the active buffer.
   """
-  def get_screen_buffer(%Raxol.Terminal.Buffer.Manager.TestBufferManager{
-        active: active
-      }),
-      do: active
+
+  # TODO: TestBufferManager struct needs to be defined
+  # def get_screen_buffer(%Raxol.Terminal.Buffer.Manager.TestBufferManager{
+  #       active: active
+  #     }),
+  #     do: active
 
   def get_screen_buffer(%{active: active}), do: active
 
@@ -64,15 +68,16 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferOperations do
   @doc """
   Gets the alternate buffer.
   """
-  def get_alternate_buffer(%Raxol.Terminal.Buffer.Manager.TestBufferManager{
-        alternate: alternate
-      }),
-      do: alternate
+
+  # TODO: TestBufferManager struct needs to be defined
+  # def get_alternate_buffer(%Raxol.Terminal.Buffer.Manager.TestBufferManager{
+  #       alternate: alternate
+  #     }),
+  #     do: alternate
 
   def get_alternate_buffer(%{alternate: alternate}), do: alternate
 
-  def get_alternate_buffer(%Raxol.Terminal.Buffer.Manager{} = state),
-    do: {:ok, state.back_buffer}
+  # Legacy type-specific implementation removed - using pattern matching instead
 
   def get_alternate_buffer(%Raxol.Terminal.Emulator{} = emulator) do
     emulator.alternate
@@ -84,13 +89,15 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferOperations do
   @doc """
   Switches between active and alternate buffers.
   """
-  def switch_buffers(
-        %Raxol.Terminal.Buffer.Manager.TestBufferManager{
-          active: a,
-          alternate: b
-        } = mgr
-      ),
-      do: %{mgr | active: b, alternate: a}
+
+  # TODO: TestBufferManager struct needs to be defined
+  # def switch_buffers(
+  #       %Raxol.Terminal.Buffer.Manager.TestBufferManager{
+  #         active: a,
+  #         alternate: b
+  #       } = mgr
+  #     ),
+  #     do: %{mgr | active: b, alternate: a}
 
   def switch_buffers(%Raxol.Terminal.Emulator{} = emulator) do
     %{emulator | active: emulator.alternate, alternate: emulator.active}
@@ -102,17 +109,18 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferOperations do
   @doc """
   Sets the active buffer.
   """
-  def set_active_buffer(
-        %Raxol.Terminal.Buffer.Manager.TestBufferManager{} = mgr,
-        buffer
-      ),
-      do: %{mgr | active: buffer}
+
+  # TODO: TestBufferManager struct needs to be defined
+  # def set_active_buffer(
+  #       %Raxol.Terminal.Buffer.Manager.TestBufferManager{} = mgr,
+  #       buffer
+  #     ),
+  #     do: %{mgr | active: buffer}
 
   def set_active_buffer(nil, buffer),
     do: Raxol.Terminal.Buffer.Manager.new() |> set_active_buffer(buffer)
 
-  def set_active_buffer(%Raxol.Terminal.Buffer.Manager{} = manager, buffer),
-    do: %{manager | active_buffer: buffer}
+  # Legacy type-specific implementation removed - using pattern matching instead
 
   def set_active_buffer(%Raxol.Terminal.Emulator{} = emulator, buffer) do
     %{emulator | active: buffer}
@@ -127,17 +135,18 @@ defmodule Raxol.Terminal.Buffer.Manager.BufferOperations do
   @doc """
   Sets the alternate buffer.
   """
-  def set_alternate_buffer(
-        %Raxol.Terminal.Buffer.Manager.TestBufferManager{} = mgr,
-        buffer
-      ),
-      do: %{mgr | alternate: buffer}
+
+  # TODO: TestBufferManager struct needs to be defined
+  # def set_alternate_buffer(
+  #       %Raxol.Terminal.Buffer.Manager.TestBufferManager{} = mgr,
+  #       buffer
+  #     ),
+  #     do: %{mgr | alternate: buffer}
 
   def set_alternate_buffer(nil, buffer),
     do: Raxol.Terminal.Buffer.Manager.new() |> set_alternate_buffer(buffer)
 
-  def set_alternate_buffer(%Raxol.Terminal.Buffer.Manager{} = manager, buffer),
-    do: %{manager | back_buffer: buffer}
+  # Legacy type-specific implementation removed - using pattern matching instead
 
   def set_alternate_buffer(%Raxol.Terminal.Emulator{} = emulator, buffer) do
     %{emulator | alternate: buffer}

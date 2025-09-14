@@ -30,7 +30,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginUnloader do
   Cleans up plugin state and metadata.
   """
   def cleanup_plugin_state(plugin_id, metadata, states, command_table) do
-    Raxol.Core.Runtime.Plugins.Registry.unregister_plugin(plugin_id)
+    Raxol.Core.UnifiedRegistry.unregister(:plugins, plugin_id)
     meta = Map.delete(metadata, plugin_id)
     sts = Map.delete(states, plugin_id)
     {:ok, {meta, sts, command_table}}

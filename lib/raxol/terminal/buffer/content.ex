@@ -33,9 +33,8 @@ defmodule Raxol.Terminal.Buffer.Content do
   defp do_write_char(false, buffer, _x, _y, _char, _style), do: buffer
 
   defp do_write_char(true, buffer, x, y, char, style) do
-    cell = Cell.new(char, style)
-    updated_cells = update_cell_at(buffer.cells, x, y, cell)
-    %{buffer | cells: updated_cells}
+    # Use Writer module to handle wide characters properly
+    Raxol.Terminal.Buffer.Writer.write_char(buffer, x, y, char, style)
   end
 
   @doc """

@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
   defp unwrap_ok(value) when is_map(value), do: value
 
   defp new_emulator() do
-    TestHelper.create_test_emulator_with_struct_cursor()
+    Raxol.Test.UnifiedTestHelper.create_test_emulator_with_struct_cursor()
   end
 
   describe "handle_s/2 (Save Cursor Position - SCP)" do
@@ -191,7 +191,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
 
       assert result_technical.charset_state.g0 == :dec_special_graphics
 
-      initial_g0_for_portuguese_call = emulator.charset_state.g0
+      _initial_g0_for_portuguese_call = emulator.charset_state.g0
       portuguese_char_code = ?'
 
       result_portuguese =
@@ -208,7 +208,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
     test "handles unknown code/final_byte combination gracefully", %{
       emulator: emulator
     } do
-      initial_charset_state = emulator.charset_state
+      _initial_charset_state = emulator.charset_state
       result = unwrap_ok(CSIHandler.handle_scs(emulator, "99", 40))
       # Unknown code "99" defaults to ASCII, so G0 should be updated
       assert result.charset_state.g0 == :us_ascii
@@ -261,7 +261,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
     end
 
     test "handles invalid final_byte gracefully", %{emulator: emulator} do
-      original_g0 = emulator.charset_state.g0
+      _original_g0 = emulator.charset_state.g0
       result = CSIHandler.handle_scs(emulator, "99", ?Z)
       assert {:error, :invalid_charset_designation, _} = result
       # The emulator should be unchanged when there's an error

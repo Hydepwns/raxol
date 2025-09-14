@@ -229,8 +229,9 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
 
   @impl GenServer
   def handle_call({:unregister_shortcut, shortcut, context}, _from, state) do
-    new_state = 
-      if is_atom(shortcut) or (is_binary(shortcut) and not String.contains?(shortcut, "+")) do
+    new_state =
+      if is_atom(shortcut) or
+           (is_binary(shortcut) and not String.contains?(shortcut, "+")) do
         # Unregister by name
         remove_shortcut_by_name(state, shortcut, context)
       else
@@ -238,6 +239,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
         parsed_shortcut = parse_shortcut(shortcut)
         remove_shortcut_from_state(state, parsed_shortcut, context)
       end
+
     {:reply, :ok, new_state}
   end
 
@@ -392,10 +394,12 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
 
   defp remove_shortcut_by_name(state, name, :global) do
     shortcuts = state.shortcuts.global
-    key_to_remove = Enum.find_value(shortcuts, fn {key, shortcut} ->
-      if shortcut.name == name, do: key
-    end)
-    
+
+    key_to_remove =
+      Enum.find_value(shortcuts, fn {key, shortcut} ->
+        if shortcut.name == name, do: key
+      end)
+
     if key_to_remove do
       update_in(state, [:shortcuts, :global], &Map.delete(&1, key_to_remove))
     else
@@ -405,10 +409,12 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
 
   defp remove_shortcut_by_name(state, name, context) do
     shortcuts = Map.get(state.shortcuts.contexts, context, %{})
-    key_to_remove = Enum.find_value(shortcuts, fn {key, shortcut} ->
-      if shortcut.name == name, do: key
-    end)
-    
+
+    key_to_remove =
+      Enum.find_value(shortcuts, fn {key, shortcut} ->
+        if shortcut.name == name, do: key
+      end)
+
     if key_to_remove do
       update_in(
         state,
@@ -552,33 +558,43 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
   end
 
   defp shortcut_key(parsed_shortcut) do
-    modifiers_str = 
+    modifiers_str =
       if parsed_shortcut.modifiers == [] do
         ""
       else
         Enum.join(parsed_shortcut.modifiers, "_") <> "_"
       end
+
     "#{modifiers_str}#{parsed_shortcut.key}"
   end
 
-  defp process_keyboard_event({:keyboard_event, {:key, key, modifiers}}, state) do
+  defp process_keyboard_event(
+         %Raxol.Core.Events.Event{
+           type: :keyboard_event,
+           data: {:key, key, modifiers}
+         },
+         state
+       ) do
     # Convert key to atom if needed
     key_atom = if is_binary(key), do: String.to_atom(key), else: key
-    
+
     parsed = %{
       key: key_atom,
       modifiers: Enum.sort(modifiers || [])
     }
 
     key_str = shortcut_key(parsed)
-    
+
     # Look for matching shortcut in active context first, then global
     shortcut = find_matching_shortcut(state, key_str)
 
     execute_shortcut_callback(shortcut)
   end
-  
-  defp process_keyboard_event({:keyboard_event, key_data}, state)
+
+  defp process_keyboard_event(
+         %Raxol.Core.Events.Event{type: :keyboard_event, data: key_data},
+         state
+       )
        when is_map(key_data) do
     key = key_data[:key]
     modifiers = key_data[:modifiers] || []

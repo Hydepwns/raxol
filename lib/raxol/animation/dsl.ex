@@ -646,16 +646,17 @@ defmodule Raxol.Animation.DSL do
   def execute_choreography(%Choreography{} = choreo, element_id, options \\ %{}) do
     total_delay = 0
 
-    _final_delay = Enum.reduce(choreo.stages, total_delay, fn {stage_name, sequence},
-                                               acc_delay ->
-      # Execute this stage with accumulated delay
-      stage_options = Map.put(options, :delay, acc_delay)
-      execute(sequence, "#{element_id}_#{stage_name}", stage_options)
+    _final_delay =
+      Enum.reduce(choreo.stages, total_delay, fn {stage_name, sequence},
+                                                 acc_delay ->
+        # Execute this stage with accumulated delay
+        stage_options = Map.put(options, :delay, acc_delay)
+        execute(sequence, "#{element_id}_#{stage_name}", stage_options)
 
-      # Calculate delay for next stage
-      stage_duration = calculate_sequence_duration(sequence)
-      acc_delay + stage_duration
-    end)
+        # Calculate delay for next stage
+        stage_duration = calculate_sequence_duration(sequence)
+        acc_delay + stage_duration
+      end)
 
     :ok
   end

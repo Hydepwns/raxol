@@ -1,11 +1,7 @@
 defmodule Raxol.Terminal.Integration.IOIntegrationTest do
   use ExUnit.Case
 
-  alias Raxol.Terminal.{
-    IO.UnifiedIO,
-    Integration.State,
-    Integration.Main
-  }
+  alias Raxol.Terminal.Integration.Main
 
   setup do
     # Start the UnifiedIO process

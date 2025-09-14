@@ -42,7 +42,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
 
   @default_config %{
     backend: :file,
-    base_path: "data/encrypted",
+    base_path: "priv/data/encrypted",
     # Compress if larger than 1KB
     compress_threshold: 1024,
     # 1MB chunks for streaming
@@ -836,7 +836,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
   end
 
   defp get_current_user do
-    # Fixed: Using get_current_user/0 instead of non-existent get_current_user/1
-    Raxol.Security.UserContext.ContextServer.get_current_user()
+    # Fixed: Using UserContext wrapper to ensure server is started
+    Raxol.Security.UserContext.get_current_user()
   end
 end

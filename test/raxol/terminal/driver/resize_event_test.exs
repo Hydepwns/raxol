@@ -2,7 +2,6 @@ defmodule Raxol.Terminal.Driver.ResizeEventTest do
   use ExUnit.Case
   import Mox
 
-  alias Raxol.Terminal.Driver
   alias Raxol.Terminal.DriverTestHelper, as: Helper
 
   setup :verify_on_exit!
@@ -70,8 +69,8 @@ defmodule Raxol.Terminal.Driver.ResizeEventTest do
     end
   end
 
-  @tag :skip
   describe "handle_info({:signal, :SIGWINCH})" do
+    @describetag :skip
     test ~c"sends resize event when SIGWINCH is received" do
       test_pid = self()
       driver_pid = Helper.start_driver(test_pid)

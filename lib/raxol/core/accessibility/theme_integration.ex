@@ -127,7 +127,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
     #   "ThemeIntegration handling high contrast event: #{enabled}"
     # )
 
-    EventManager.trigger(:ui_refresh_required, %{reason: :theme_change})
+    EventManager.dispatch({:ui_refresh_required, %{reason: :theme_change}})
 
     EventManager.dispatch({:theme_changed, %{high_contrast: enabled}})
 

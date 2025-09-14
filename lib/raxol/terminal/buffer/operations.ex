@@ -9,7 +9,13 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @behaviour Raxol.Terminal.Buffer.OperationsBehaviour
 
   # Alias the new modules
-  alias Raxol.Terminal.Buffer.Operations.{Text, Scrolling, Erasing, Utils}
+  alias Raxol.Terminal.Buffer.Operations.{
+    Text,
+    Scrolling,
+    Erasing,
+    Utils,
+    Elements
+  }
 
   @doc """
   Resizes the buffer to the specified dimensions.
@@ -348,5 +354,26 @@ defmodule Raxol.Terminal.Buffer.Operations do
   """
   def fill_region(buffer, x, y, width, height, cell) do
     Utils.fill_region(buffer, x, y, width, height, cell)
+  end
+
+  @doc """
+  Moves an element to a new position in the terminal buffer.
+  """
+  def move_element(element, new_x, new_y) do
+    Elements.move_element(element, new_x, new_y)
+  end
+
+  @doc """
+  Sets the opacity of an element in the terminal buffer.
+  """
+  def set_element_opacity(element, opacity) do
+    Elements.set_element_opacity(element, opacity)
+  end
+
+  @doc """
+  Resizes an element in the terminal buffer.
+  """
+  def resize_element(element, new_width, new_height) do
+    Elements.resize_element(element, new_width, new_height)
   end
 end

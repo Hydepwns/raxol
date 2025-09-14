@@ -9,8 +9,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
   alias Raxol.Core.Runtime.Plugins.PluginsState, as: ManagerState
   alias Raxol.Core.Runtime.ProcessStore
 
-  @moduledoc false
   defmodule TestCommandHandler do
+    @moduledoc false
     def execute(args, context) do
       # Return args and context to verify they were passed correctly
       {:ok, %{args: args, context: context}}

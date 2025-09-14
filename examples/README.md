@@ -1,114 +1,88 @@
 # Raxol Examples
 
-Comprehensive collection of examples demonstrating Raxol's features and capabilities.
+Comprehensive collection of examples demonstrating Raxol's features and capabilities, organized by complexity and purpose.
 
 ## Quick Start
 
 ```bash
-# Run basic examples
-mix run examples/snippets/basic/counter.exs
+# Start with basics
+elixir examples/getting_started/hello_world.exs
 
-# Run Svelte examples
-mix run examples/svelte/svelte_counter.ex
+# Try a simple app
+mix run examples/apps/todo_app.ex
 
-# Run component showcases
+# Explore components
 mix run examples/components/component_showcase.ex
+
+# Run framework examples  
+mix run examples/frameworks/svelte/svelte_counter.ex
 ```
 
 ## Directory Structure
 
+The examples are organized by learning progression and purpose:
+
 ```
 examples/
-├── README.md           # This file
-├── snippets/           # Small, focused examples organized by category
-├── basic/              # Simple examples for getting started
-├── advanced/           # Complex examples with multiple features
-├── components/         # Component library showcases
-├── svelte/             # Svelte-style reactive examples
-├── showcases/          # Full-featured demonstration apps
-└── demos/              # Interactive demonstration scripts
+├── README.md              # This guide
+├── getting_started/       # Beginner-friendly examples  
+├── scripts/              # Quick script examples (.exs files)
+├── components/           # Component showcases and demos
+├── apps/                 # Complete application examples
+├── frameworks/           # Framework integration examples  
+└── advanced/             # Complex patterns and optimizations
 ```
 
-## Categories
+## Learning Path
 
-### Snippets (`snippets/`)
-Small, focused code examples organized by category. These are perfect for learning specific concepts.
+### 🚀 Getting Started (`getting_started/`)
+Perfect for beginners - start here to learn Raxol basics.
+- `hello_world.exs` - Your first Raxol application
+- `counter.exs` - Basic state management and events  
+- `form.ex` - Simple input handling
 
-**Available categories:**
-- Basic patterns and state management
-- Advanced integrations and complex features
-- Interactive showcases and demonstrations
-- Without-runtime examples for low-level usage
+[→ Getting Started Guide](getting_started/README.md)
 
-[→ Browse all snippets](snippets/README.md)
+### ⚡ Scripts (`scripts/`)
+Quick script examples for specific features (run with `elixir`).
+- `rendering.exs` - Basic rendering patterns
+- `event_handling.exs` - Interactive event examples
+- `clock.exs` - Live updates with subscriptions
 
-### Svelte Examples (`svelte/`)
-Reactive programming examples using Raxol's Svelte-style component system.
+[→ Script Examples](scripts/README.md)
 
-**Examples:**
-- `svelte_counter.ex` - Simple reactive counter
-- `svelte_demo.ex` - Basic Svelte patterns
-- `svelte_advanced_demo.ex` - Advanced reactive features
-- `svelte_todo_app.ex` - Complete todo application
-- `run_svelte_demos.ex` - Demo runner script
+### 🧩 Components (`components/`)
+Learn Raxol's component system with focused examples.
+- **Forms:** Input handling, validation, data binding
+- **Displays:** Progress bars, tables, data visualization  
+- **Navigation:** Menus, lists, selection components
+- **Accessibility:** Focus management, screen readers
 
-**Run:**
-```bash
-mix run examples/svelte/svelte_counter.ex
-```
+[→ Component Guide](components/README.md)
 
-### Component Showcases (`components/`)
-Demonstrations of Raxol's built-in component library and patterns.
+### 🏗️ Complete Apps (`apps/`)
+Real-world applications showing architectural patterns.
+- `file_browser/` - Multi-module file manager with preview
+- `terminal_editor/` - Full-featured text editor
+- `system_monitor.ex` - Live system monitoring dashboard
+- `todo_app.ex` - Feature-rich task management
 
-**Examples:**
-- `component_showcase.ex` - Overview of all available components
-- `focus_ring_showcase.ex` - Focus management and accessibility
-- `select_list_showcase.ex` - Selection and list components
-- `form.ex` - Form handling patterns
+[→ Application Examples](apps/README.md)
 
-**Run:**
-```bash
-mix run examples/components/component_showcase.ex
-```
+### 🔧 Frameworks (`frameworks/`)
+Integration examples for different UI frameworks.
+- **Svelte:** Reactive components and state management
+- **TypeScript:** Type-safe Raxol development
 
-### Advanced Examples (`advanced/`)
-Complex examples showing integration patterns and advanced features.
+[→ Framework Integration](frameworks/README.md)
 
-**Examples:**
-- `multi_framework_demo.ex` - Using multiple UI frameworks together
-- `todo_app.ex` - Full-featured todo application
+### ⚡ Advanced (`advanced/`)
+Complex patterns for experienced developers.
+- **Performance:** Optimization techniques and monitoring
+- **Architecture:** Large-scale application design patterns
+- **Integrations:** Cloud services, external APIs
 
-**Run:**
-```bash
-mix run examples/advanced/multi_framework_demo.ex
-```
-
-### Interactive Demos (`demos/`)
-Live demonstrations of specific Raxol features and systems.
-
-**Examples:**
-- `accessibility_demo.ex` - Accessibility features demonstration
-- `color_system_demo.ex` - Color and theming system
-- `ux_refinement_demo.ex` - UX enhancement features
-- `integrated_accessibility_demo.ex` - Complete accessibility showcase
-- `form.ex` - Interactive form handling
-
-**Run:**
-```bash
-mix run examples/demos/accessibility_demo.ex
-```
-
-### Showcases (`showcases/`)
-Complete applications demonstrating real-world usage patterns.
-
-**Examples:**
-- `showcase.ex` - Comprehensive feature showcase
-- `showcase_app.ex` - Application-style demonstration
-
-**Run:**
-```bash
-mix run examples/showcases/showcase.ex
-```
+[→ Advanced Patterns](advanced/README.md)
 
 ## Creating Your Own Example
 

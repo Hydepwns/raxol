@@ -1,0 +1,594 @@
+defmodule Mix.Tasks.Raxol.Docs do
+  use Mix.Task
+
+  @shortdoc "Launch Raxol documentation command palette"
+
+  @moduledoc """
+  Interactive documentation system with searchable command palette.
+
+  Provides fast access to all Raxol documentation, API references, examples,
+  and guides through a powerful search interface.
+
+  ## Usage
+
+      mix raxol.docs
+      mix raxol.docs --mode terminal
+      mix raxol.docs --mode web --port 4000
+      mix raxol.docs --search "component api"
+      
+  ## Modes
+
+  * `terminal` - Terminal-based command palette (default)
+  * `web` - Web-based documentation with search
+
+  ## Options
+
+  * `--mode` - Interface mode (terminal, web)
+  * `--port` - Port for web mode (default: 4000)
+  * `--search` - Start with initial search query
+  * `--category` - Filter by category (api, component, guide, example)
+  * `--rebuild` - Rebuild documentation index
+
+  ## Search Features
+
+  * Fuzzy search across all documentation
+  * Search by module, function, component name
+  * Tag-based filtering
+  * Category-specific search
+  * Acronym matching (e.g., "UI" matches "Raxol.UI")
+  * Typo tolerance
+
+  ## Categories
+
+  * **API** - Module and function documentation
+  * **Components** - Component library reference
+  * **Examples** - Interactive examples and tutorials
+  * **Guides** - Development guides and best practices
+  * **Performance** - Optimization and profiling tools
+  * **Debugging** - Debugging and inspection utilities
+
+  ## Examples
+
+      # Launch documentation browser
+      mix raxol.docs
+      
+      # Search for specific topic
+      mix raxol.docs --search "terminal cursor"
+      
+      # Filter by category
+      mix raxol.docs --category component
+      
+      # Launch web interface
+      mix raxol.docs --mode web --port 8080
+      
+      # Rebuild search index
+      mix raxol.docs --rebuild
+  """
+
+  @impl true
+  def run(args) do
+    {opts, _, _} =
+      OptionParser.parse(args,
+        switches: [
+          mode: :string,
+          port: :integer,
+          search: :string,
+          category: :string,
+          rebuild: :boolean,
+          help: :boolean
+        ],
+        aliases: [
+          m: :mode,
+          p: :port,
+          s: :search,
+          c: :category,
+          r: :rebuild,
+          h: :help
+        ]
+      )
+
+    if opts[:help] do
+      show_help()
+    else
+      start_docs_system(opts)
+    end
+  end
+
+  defp start_docs_system(opts) do
+    mode = Keyword.get(opts, :mode, "terminal")
+
+    Mix.shell().info("Starting Raxol Documentation System...")
+
+    # Ensure Raxol is started
+    Application.ensure_all_started(:raxol)
+
+    # Start command palette server
+    {:ok, _pid} = Raxol.Docs.CommandPalette.start_link()
+
+    # Rebuild index if requested
+    if opts[:rebuild] do
+      Mix.shell().info("Rebuilding documentation index...")
+      Raxol.Docs.CommandPalette.rebuild_index()
+    end
+
+    case mode do
+      "terminal" ->
+        launch_terminal_docs(opts)
+
+      "web" ->
+        launch_web_docs(opts)
+
+      _ ->
+        Mix.shell().error("Unknown mode: #{mode}. Use 'terminal' or 'web'")
+        System.halt(1)
+    end
+  end
+
+  defp launch_terminal_docs(opts) do
+    initial_search = Keyword.get(opts, :search)
+    category_filter = parse_category(Keyword.get(opts, :category))
+
+    Mix.shell().info("Launching terminal documentation interface...")
+
+    # Show welcome message
+    print_welcome_message()
+
+    # Show categories
+    show_available_categories()
+
+    # Perform initial search if provided
+    if initial_search do
+      perform_and_display_search(initial_search, category_filter)
+    end
+
+    # Start interactive loop
+    start_interactive_docs_loop()
+  end
+
+  defp launch_web_docs(opts) do
+    port = Keyword.get(opts, :port, 4000)
+
+    Mix.shell().info("Starting web documentation server on port #{port}...")
+
+    case Raxol.Docs.CommandPalette.launch(:web) do
+      :ok ->
+        Mix.shell().info(
+          "Documentation available at: http://localhost:#{port}/docs"
+        )
+
+        :timer.sleep(:infinity)
+
+      {:error, reason} ->
+        Mix.shell().error(
+          "Failed to start web documentation: #{inspect(reason)}"
+        )
+
+        System.halt(1)
+    end
+  end
+
+  defp start_interactive_docs_loop do
+    loop_state = %{
+      last_results: [],
+      current_category: nil,
+      history: []
+    }
+
+    interactive_loop(loop_state)
+  end
+
+  defp interactive_loop(state) do
+    prompt =
+      case state.current_category do
+        nil -> "#{IO.ANSI.green()}docs>#{IO.ANSI.reset()} "
+        category -> "#{IO.ANSI.green()}docs:#{category}>#{IO.ANSI.reset()} "
+      end
+
+    input = IO.gets(prompt) |> String.trim()
+
+    case parse_docs_command(input, state) do
+      {:exit} ->
+        IO.puts("Goodbye! 📚")
+        :ok
+
+      {:error, message} ->
+        IO.puts("#{IO.ANSI.red()}Error: #{message}#{IO.ANSI.reset()}")
+        interactive_loop(state)
+
+      {:ok, new_state} ->
+        interactive_loop(new_state)
+    end
+  end
+
+  defp parse_docs_command(input, state) do
+    case String.split(input, " ", parts: 2) do
+      ["exit"] ->
+        {:exit}
+
+      ["quit"] ->
+        {:exit}
+
+      ["q"] ->
+        {:exit}
+
+      ["help"] ->
+        show_interactive_help()
+        {:ok, state}
+
+      ["categories"] ->
+        show_available_categories()
+        {:ok, state}
+
+      ["category", cat_name] ->
+        case parse_category(cat_name) do
+          nil ->
+            {:error, "Unknown category: #{cat_name}"}
+
+          category ->
+            new_state = %{state | current_category: category}
+            IO.puts("Filtering by category: #{category}")
+            {:ok, new_state}
+        end
+
+      ["clear"] ->
+        new_state = %{state | current_category: nil}
+        IO.puts("Category filter cleared")
+        {:ok, new_state}
+
+      ["exec", num_str] ->
+        execute_search_result(num_str, state)
+
+      ["show", num_str] ->
+        show_search_result_details(num_str, state)
+
+      ["history"] ->
+        show_search_history(state)
+        {:ok, state}
+
+      ["rebuild"] ->
+        IO.puts("Rebuilding documentation index...")
+        Raxol.Docs.CommandPalette.rebuild_index()
+        IO.puts("Index rebuilt successfully")
+        {:ok, state}
+
+      _ ->
+        # Treat as search query
+        perform_interactive_search(input, state)
+    end
+  end
+
+  defp perform_interactive_search(query, state) when query != "" do
+    search_opts =
+      case state.current_category do
+        nil -> [limit: 15]
+        category -> [limit: 15, category: category]
+      end
+
+    results = Raxol.Docs.CommandPalette.search(query, search_opts)
+    display_search_results(results, query)
+
+    # Add to history
+    new_history = [{query, results} | state.history] |> Enum.take(10)
+    new_state = %{state | last_results: results, history: new_history}
+
+    {:ok, new_state}
+  end
+
+  defp perform_interactive_search("", state) do
+    if state.last_results == [] do
+      IO.puts("Enter a search query, or type 'help' for commands")
+    else
+      display_search_results(state.last_results, "previous search")
+    end
+
+    {:ok, state}
+  end
+
+  defp execute_search_result(num_str, state) do
+    case parse_result_number(num_str, state.last_results) do
+      nil ->
+        {:error, "Invalid result number"}
+
+      result ->
+        IO.puts("Executing: #{result.title}")
+
+        case Raxol.Docs.CommandPalette.execute_command(result.id) do
+          {:ok, output} ->
+            IO.puts(output)
+            {:ok, state}
+
+          {:error, reason} ->
+            {:error, "Execution failed: #{reason}"}
+        end
+    end
+  end
+
+  defp show_search_result_details(num_str, state) do
+    case parse_result_number(num_str, state.last_results) do
+      nil ->
+        {:error, "Invalid result number"}
+
+      result ->
+        display_result_details(result)
+        {:ok, state}
+    end
+  end
+
+  defp show_search_history(state) do
+    IO.puts("\n#{IO.ANSI.bright()}Search History:#{IO.ANSI.reset()}")
+
+    if state.history == [] do
+      IO.puts("No search history yet")
+    else
+      state.history
+      |> Enum.with_index(1)
+      |> Enum.each(fn {{query, _results}, index} ->
+        IO.puts("  #{index}. #{query}")
+      end)
+    end
+
+    IO.puts("")
+  end
+
+  defp perform_and_display_search(query, category_filter) do
+    search_opts =
+      case category_filter do
+        nil -> [limit: 20]
+        category -> [limit: 20, category: category]
+      end
+
+    results = Raxol.Docs.CommandPalette.search(query, search_opts)
+    display_search_results(results, query)
+  end
+
+  defp display_search_results([], query) do
+    IO.puts("\nNo results found for: \"#{query}\"")
+
+    IO.puts(
+      "Try different keywords or check available categories with 'categories'"
+    )
+  end
+
+  defp display_search_results(results, query) do
+    IO.puts(
+      "\n#{IO.ANSI.bright()}Search Results for \"#{query}\" (#{length(results)} found):#{IO.ANSI.reset()}"
+    )
+
+    IO.puts("")
+
+    results
+    |> Enum.with_index(1)
+    |> Enum.each(fn {result, index} ->
+      score_indicator = get_score_indicator(Map.get(result, :score, 1.0))
+      category_color = get_category_color(result.category)
+
+      IO.puts(
+        "#{score_indicator} #{IO.ANSI.yellow()}[#{index}]#{IO.ANSI.reset()} #{result.title}"
+      )
+
+      IO.puts(
+        "    #{category_color}#{String.upcase(to_string(result.category))}#{IO.ANSI.reset()} • #{result.description}"
+      )
+
+      # Show tags if available
+      if result[:tags] && length(result.tags) > 0 do
+        tags_str = result.tags |> Enum.take(3) |> Enum.join(", ")
+
+        IO.puts(
+          "    #{IO.ANSI.light_black()}Tags: #{tags_str}#{IO.ANSI.reset()}"
+        )
+      end
+
+      IO.puts("")
+    end)
+
+    IO.puts(
+      "#{IO.ANSI.light_black()}Use 'exec <number>' to execute, 'show <number>' for details#{IO.ANSI.reset()}"
+    )
+  end
+
+  defp display_result_details(result) do
+    IO.puts("""
+
+    #{IO.ANSI.bright()}#{result.title}#{IO.ANSI.reset()}
+    #{String.duplicate("─", String.length(result.title))}
+
+    #{IO.ANSI.cyan()}Category:#{IO.ANSI.reset()} #{result.category}
+    #{IO.ANSI.cyan()}Type:#{IO.ANSI.reset()} #{result.type}
+
+    #{IO.ANSI.cyan()}Description:#{IO.ANSI.reset()}
+    #{result.description}
+
+    #{if result[:tags] do
+      "#{IO.ANSI.cyan()}Tags:#{IO.ANSI.reset()} #{Enum.join(result.tags, ", ")}\n"
+    else
+      ""
+    end}
+    #{if result[:module] do
+      "#{IO.ANSI.cyan()}Module:#{IO.ANSI.reset()} #{inspect(result.module)}\n"
+    else
+      ""
+    end}
+    #{if result[:function] do
+      "#{IO.ANSI.cyan()}Function:#{IO.ANSI.reset()} #{result.function}/#{result.arity}\n"
+    else
+      ""
+    end}
+
+    #{IO.ANSI.light_black()}ID: #{result.id}#{IO.ANSI.reset()}
+    """)
+  end
+
+  defp parse_result_number(num_str, results) do
+    case Integer.parse(num_str) do
+      {num, ""} when num >= 1 and num <= length(results) ->
+        Enum.at(results, num - 1)
+
+      _ ->
+        nil
+    end
+  end
+
+  defp parse_category(nil), do: nil
+
+  defp parse_category(category_str) do
+    category_atom = String.to_atom(category_str)
+
+    if category_atom in [
+         :api,
+         :component,
+         :example,
+         :guide,
+         :reference,
+         :performance,
+         :debugging
+       ] do
+      category_atom
+    else
+      nil
+    end
+  end
+
+  defp print_welcome_message do
+    IO.puts("""
+    #{IO.ANSI.cyan()}╔══════════════════════════════════════════════════════╗
+    ║            Raxol Documentation System 📚             ║
+    ║                                                      ║
+    ║  Searchable docs, examples, and API reference       ║
+    ╚══════════════════════════════════════════════════════╝#{IO.ANSI.reset()}
+
+    #{IO.ANSI.green()}Quick Commands:#{IO.ANSI.reset()}
+      • Type any search term (e.g., "button component", "terminal api")
+      • #{IO.ANSI.yellow()}categories#{IO.ANSI.reset()} - Show all available categories
+      • #{IO.ANSI.yellow()}category <name>#{IO.ANSI.reset()} - Filter by category
+      • #{IO.ANSI.yellow()}exec <number>#{IO.ANSI.reset()} - Execute a search result
+      • #{IO.ANSI.yellow()}show <number>#{IO.ANSI.reset()} - Show detailed info
+      • #{IO.ANSI.yellow()}help#{IO.ANSI.reset()} - Show all commands
+      • #{IO.ANSI.yellow()}exit#{IO.ANSI.reset()} - Exit documentation system
+    """)
+  end
+
+  defp show_available_categories do
+    categories = Raxol.Docs.CommandPalette.get_categories()
+
+    IO.puts("""
+
+    #{IO.ANSI.bright()}Available Categories:#{IO.ANSI.reset()}
+
+    #{Enum.map(categories, fn category ->
+      color = get_category_color(category)
+      description = get_category_description(category)
+      "  • #{color}#{category}#{IO.ANSI.reset()} - #{description}"
+    end) |> Enum.join("\n")}
+
+    Use: #{IO.ANSI.yellow()}category <name>#{IO.ANSI.reset()} to filter by category
+    """)
+  end
+
+  defp show_interactive_help do
+    IO.puts("""
+
+    #{IO.ANSI.bright()}Interactive Documentation Commands:#{IO.ANSI.reset()}
+
+    #{IO.ANSI.green()}Search:#{IO.ANSI.reset()}
+      <query>              - Search documentation (fuzzy search enabled)
+      category <name>      - Filter by category (api, component, etc.)
+      clear                - Clear category filter
+
+    #{IO.ANSI.green()}Results:#{IO.ANSI.reset()}
+      exec <number>        - Execute a command from search results
+      show <number>        - Show detailed information
+      history              - Show search history
+
+    #{IO.ANSI.green()}System:#{IO.ANSI.reset()}
+      categories           - List all available categories
+      rebuild              - Rebuild documentation index
+      help                 - Show this help message
+      exit, quit, q        - Exit documentation system
+
+    #{IO.ANSI.yellow()}Search Tips:#{IO.ANSI.reset()}
+    • Use partial matches: "btn" finds "button" 
+    • Try acronyms: "UI" finds "Raxol.UI"
+    • Search by tags: "input", "terminal", "performance"
+    • Combine terms: "component button", "terminal cursor"
+    """)
+  end
+
+  defp get_score_indicator(score) when score > 0.8, do: "🎯"
+  defp get_score_indicator(score) when score > 0.6, do: "✅"
+  defp get_score_indicator(score) when score > 0.4, do: "⚡"
+  defp get_score_indicator(_), do: "💡"
+
+  defp get_category_color(:api), do: IO.ANSI.blue()
+  defp get_category_color(:component), do: IO.ANSI.green()
+  defp get_category_color(:example), do: IO.ANSI.magenta()
+  defp get_category_color(:guide), do: IO.ANSI.cyan()
+  defp get_category_color(:reference), do: IO.ANSI.blue()
+  defp get_category_color(:performance), do: IO.ANSI.red()
+  defp get_category_color(:debugging), do: IO.ANSI.yellow()
+  defp get_category_color(_), do: IO.ANSI.light_black()
+
+  defp get_category_description(:api), do: "Module and function documentation"
+  defp get_category_description(:component), do: "UI component library"
+
+  defp get_category_description(:example),
+    do: "Interactive examples and tutorials"
+
+  defp get_category_description(:guide),
+    do: "Development guides and best practices"
+
+  defp get_category_description(:reference), do: "Complete API reference"
+
+  defp get_category_description(:performance),
+    do: "Performance optimization tools"
+
+  defp get_category_description(:debugging),
+    do: "Debugging and inspection utilities"
+
+  defp get_category_description(:development),
+    do: "Development tools and utilities"
+
+  defp get_category_description(_), do: "Documentation and resources"
+
+  defp show_help do
+    Mix.shell().info("""
+    Raxol Documentation System
+
+    Interactive documentation browser with powerful search capabilities.
+
+    USAGE:
+        mix raxol.docs [OPTIONS]
+
+    OPTIONS:
+        -m, --mode MODE        Interface mode: terminal (default) or web
+        -p, --port PORT        Port for web mode (default: 4000)
+        -s, --search QUERY     Start with initial search query
+        -c, --category CAT     Filter by category
+        -r, --rebuild          Rebuild documentation index
+        -h, --help             Show this help
+
+    CATEGORIES:
+        api          Module and function documentation
+        component    UI component library reference  
+        example      Interactive examples and tutorials
+        guide        Development guides and best practices
+        performance  Optimization and profiling tools
+        debugging    Debugging and inspection utilities
+
+    EXAMPLES:
+        mix raxol.docs
+        mix raxol.docs --search "terminal api"
+        mix raxol.docs --category component
+        mix raxol.docs --mode web --port 8080
+        mix raxol.docs --rebuild
+        
+    SEARCH FEATURES:
+        • Fuzzy matching with typo tolerance
+        • Search by module, function, or component name
+        • Tag-based filtering
+        • Acronym matching (e.g., "UI" matches "Raxol.UI")
+        • Category-specific search
+        • Smart ranking based on relevance
+    """)
+  end
+end

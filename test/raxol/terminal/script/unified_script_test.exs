@@ -145,14 +145,14 @@ defmodule Raxol.Terminal.Script.UnifiedScriptTest do
   describe "script management" do
     test "lists scripts with filters" do
       # Load different scripts
-      assert {:ok, elixir_id} =
+      assert {:ok, _elixir_id} =
                UnifiedScript.load_script(
                  "def hello do end",
                  :elixir,
                  name: "Elixir Script"
                )
 
-      assert {:ok, lua_id} =
+      assert {:ok, _lua_id} =
                UnifiedScript.load_script(
                  "function hello() end",
                  :lua,

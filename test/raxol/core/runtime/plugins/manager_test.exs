@@ -5,7 +5,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerTest do
   """
   use ExUnit.Case, async: false
   import Mox
-  import Raxol.Test.Support.TestHelper
+  import Raxol.Test.UnifiedTestHelper
 
   setup :verify_on_exit!
 

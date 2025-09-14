@@ -13,11 +13,7 @@ defmodule Raxol.Terminal.Split.Common do
         false -> opts
       end
 
-    name =
-      case Mix.env() == :test do
-        true -> Raxol.Test.ProcessNaming.unique_name(module, opts)
-        false -> Keyword.get(opts, :name, module)
-      end
+    name = Keyword.get(opts, :name, module)
 
     GenServer.start_link(module, opts, name: name)
   end

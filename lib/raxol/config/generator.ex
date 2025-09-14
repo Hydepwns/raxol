@@ -366,7 +366,9 @@ defmodule Raxol.Config.Generator do
   defp write_json_file(config, path, opts) do
     pretty = Keyword.get(opts, :pretty, true)
 
-    case Jason.encode(Raxol.Utils.MapUtils.stringify_keys(config), pretty: pretty) do
+    case Jason.encode(Raxol.Utils.MapUtils.stringify_keys(config),
+           pretty: pretty
+         ) do
       {:ok, content} -> File.write(path, content)
       {:error, reason} -> {:error, reason}
     end
@@ -465,7 +467,6 @@ defmodule Raxol.Config.Generator do
       _ -> :toml
     end
   end
-
 
   defp ensure_directory(path) do
     path

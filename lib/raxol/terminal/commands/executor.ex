@@ -187,7 +187,17 @@ defmodule Raxol.Terminal.Commands.Executor do
     {:error, reason}
   end
 
+  defp log_and_return_result({:error, reason, emulator}) do
+    require Logger
+    Logger.error("Executor error: #{inspect(reason)}")
+    emulator
+  end
+
   defp log_and_return_result(%Raxol.Terminal.Emulator{} = emulator) do
+    emulator
+  end
+
+  defp log_and_return_result(%Raxol.Terminal.EmulatorLite{} = emulator) do
     emulator
   end
 

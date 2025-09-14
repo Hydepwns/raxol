@@ -406,7 +406,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
   ]
 
   @default_config %{
-    data_directory: "data/events",
+    data_directory: "priv/data/events",
     # 100MB
     max_file_size: 100_000_000,
     compression_enabled: true,

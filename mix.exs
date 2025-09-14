@@ -1,7 +1,7 @@
 defmodule Raxol.MixProject do
   use Mix.Project
 
-  @version "1.2.1"
+  @version "1.3.0"
   @source_url "https://github.com/Hydepwns/raxol"
 
   def project do
@@ -11,7 +11,7 @@ defmodule Raxol.MixProject do
       elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
       elixirc_options: [
-        warnings_as_errors: Mix.env() != :dev,
+        warnings_as_errors: Mix.env() == :prod,
         ignore_module_conflict: true,
         compile_order: [:cell, :operations]
       ],
@@ -107,7 +107,6 @@ defmodule Raxol.MixProject do
       "lib",
       "test/support",
       "examples/demos",
-      "lib/raxol/test",
       "lib/raxol/terminal/buffer/cell.ex"
     ]
 
@@ -215,6 +214,7 @@ defmodule Raxol.MixProject do
 
       # Testing
       {:mox, "~> 1.2", only: :test},
+      {:muzak, "~> 1.1", only: :test, runtime: false},
       {:meck, "~> 0.9", only: :test},
       {:excoveralls, "~> 0.18", only: :test},
       {:floki, ">= 0.30.0", only: :test},

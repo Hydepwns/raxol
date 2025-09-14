@@ -479,36 +479,40 @@ defmodule Raxol.Svelte.Animator do
   end
 
   defp apply_property_update(element, :x, value) do
-    # TODO: Implement when Terminal.Buffer.move_element is available
-    # Raxol.Terminal.Buffer.move_element(element, round(value), element.y)
-    Map.put(element, :x, round(value))
+    new_x = round(value)
+    # TODO: Implement element movement in UI layer
+    Map.put(element, :x, new_x)
   end
 
   defp apply_property_update(element, :y, value) do
-    # TODO: Implement when Terminal.Buffer.move_element is available
-    # Raxol.Terminal.Buffer.move_element(element, element.x, round(value))
-    Map.put(element, :y, round(value))
+    new_y = round(value)
+    # TODO: Implement element movement in UI layer
+    Map.put(element, :y, new_y)
   end
 
   defp apply_property_update(element, :opacity, value) do
-    # TODO: Implement when Terminal.Buffer.set_element_opacity is available
-    # Raxol.Terminal.Buffer.set_element_opacity(element, value)
+    # TODO: Implement opacity in UI layer
+    # Raxol.Terminal.BufferManager.set_element_opacity(element, value)
     Map.put(element, :opacity, value)
   end
 
   defp apply_property_update(element, :scale_x, value) do
-    new_width = round(Map.get(element, :original_width, element.width) * value)
-    # TODO: Implement when Terminal.Buffer.resize_element is available
-    # Raxol.Terminal.Buffer.resize_element(element, new_width, element.height)
+    new_width =
+      round(
+        Map.get(element, :original_width, Map.get(element, :width, 1)) * value
+      )
+
+    # TODO: Implement element resizing in UI layer
     Map.put(element, :width, new_width)
   end
 
   defp apply_property_update(element, :scale_y, value) do
     new_height =
-      round(Map.get(element, :original_height, element.height) * value)
+      round(
+        Map.get(element, :original_height, Map.get(element, :height, 1)) * value
+      )
 
-    # TODO: Implement when Terminal.Buffer.resize_element is available  
-    # Raxol.Terminal.Buffer.resize_element(element, element.width, new_height)
+    # TODO: Implement element resizing in UI layer
     Map.put(element, :height, new_height)
   end
 

@@ -21,7 +21,7 @@ defmodule Raxol.Audit.Logger do
 
   alias Raxol.Architecture.EventSourcing.EventStore
   alias Raxol.Audit.{Events, Storage, Analyzer, Exporter}
-  
+
   alias Raxol.Audit.Events.{
     AuthorizationEvent,
     ConfigurationChangeEvent
@@ -184,13 +184,14 @@ defmodule Raxol.Audit.Logger do
   """
   def log_compliance(framework, requirement, activity, status, opts \\ []) do
     # Use the Events module to create the event, avoiding duplication
-    event = Raxol.Audit.Events.compliance_event(
-      framework,
-      requirement,
-      activity,
-      status,
-      opts
-    )
+    event =
+      Raxol.Audit.Events.compliance_event(
+        framework,
+        requirement,
+        activity,
+        status,
+        opts
+      )
 
     severity =
       case status do
@@ -206,12 +207,13 @@ defmodule Raxol.Audit.Logger do
   """
   def log_privacy_request(data_subject_id, request_type, status, opts \\ []) do
     # Use the Events module to create the event, avoiding duplication
-    event = Raxol.Audit.Events.privacy_event(
-      data_subject_id,
-      request_type,
-      status,
-      opts
-    )
+    event =
+      Raxol.Audit.Events.privacy_event(
+        data_subject_id,
+        request_type,
+        status,
+        opts
+      )
 
     log_event(event, :privacy, :medium)
   end

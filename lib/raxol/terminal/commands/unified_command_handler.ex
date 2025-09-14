@@ -490,6 +490,13 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
   defp perform_screen_erase(emulator, mode) do
     {active_buffer, cursor_pos, default_style} = get_buffer_state(emulator)
 
+    Raxol.Core.Runtime.Log.debug(
+      "perform_screen_erase: mode=#{mode}, cursor_pos=#{inspect(cursor_pos)}"
+    )
+
+    # Ensure buffer has the correct cursor position
+    active_buffer = %{active_buffer | cursor_position: cursor_pos}
+
     new_buffer =
       case mode do
         0 ->
@@ -518,6 +525,9 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
   defp perform_line_erase(emulator, mode) do
     {active_buffer, cursor_pos, default_style} = get_buffer_state(emulator)
 
+    # Ensure buffer has the correct cursor position
+    active_buffer = %{active_buffer | cursor_position: cursor_pos}
+
     new_buffer =
       case mode do
         0 ->
@@ -544,6 +554,9 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
   defp perform_character_erase(emulator, count) do
     {active_buffer, cursor_pos, _default_style} = get_buffer_state(emulator)
 
+    # Ensure buffer has the correct cursor position
+    active_buffer = %{active_buffer | cursor_position: cursor_pos}
+
     {row, col} = cursor_pos
     new_buffer = Eraser.erase_chars(active_buffer, row, col, count)
 
@@ -564,6 +577,7 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
     case Map.get(emulator, :active_buffer_type, :main) do
       :alternate ->
         %{emulator | alternate_screen_buffer: new_buffer}
+
       _ ->
         %{emulator | main_screen_buffer: new_buffer}
     end
@@ -619,13 +633,37 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
   defp apply_dec_private_mode(emulator, mode, action) do
     # Apply DEC private mode settings
     case {mode, action} do
-      {1, :set} -> %{emulator | cursor_keys_mode: :application}
-      {1, :reset} -> %{emulator | cursor_keys_mode: :normal}
-      {25, :set} -> %{emulator | cursor_visible: true}
-      {25, :reset} -> %{emulator | cursor_visible: false}
-      {47, :set} -> switch_to_alternate_screen(emulator)
-      {47, :reset} -> switch_to_main_screen(emulator)
-      _ -> emulator
+      {1, :set} ->
+        %{emulator | cursor_keys_mode: :application}
+
+      {1, :reset} ->
+        %{emulator | cursor_keys_mode: :normal}
+
+      {25, :set} ->
+        %{emulator | cursor_visible: true}
+
+      {25, :reset} ->
+        %{emulator | cursor_visible: false}
+
+      {47, :set} ->
+        switch_to_alternate_screen(emulator)
+
+      {47, :reset} ->
+        switch_to_main_screen(emulator)
+
+      # Mode 1049: Save cursor & switch to alternate screen buffer
+      {1049, :set} ->
+        emulator
+        |> save_cursor_position()
+        |> switch_to_alternate_screen_with_clear()
+
+      {1049, :reset} ->
+        emulator
+        |> switch_to_main_screen()
+        |> restore_cursor_position()
+
+      _ ->
+        emulator
     end
   end
 
@@ -959,10 +997,60 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
   defp set_current_text_style(emulator, style),
     do: %{emulator | current_style: style}
 
-  defp switch_to_alternate_screen(emulator),
-    do: %{emulator | screen_mode: :alternate}
+  defp switch_to_alternate_screen(emulator) do
+    # Switch to alternate screen buffer, preserving main buffer
+    %{emulator | screen_mode: :alternate, active_buffer_type: :alternate}
+  end
 
-  defp switch_to_main_screen(emulator), do: %{emulator | screen_mode: :main}
+  defp switch_to_alternate_screen_with_clear(emulator) do
+    # Switch to alternate screen and clear it
+    emulator
+    |> switch_to_alternate_screen()
+    |> clear_alternate_buffer()
+  end
+
+  defp switch_to_main_screen(emulator) do
+    %{emulator | screen_mode: :main, active_buffer_type: :main}
+  end
+
+  defp save_cursor_position(emulator) do
+    cursor = emulator.cursor
+
+    updated_cursor = %{
+      cursor
+      | saved_row: cursor.row,
+        saved_col: cursor.col,
+        saved_position: {cursor.row, cursor.col}
+    }
+
+    %{emulator | cursor: updated_cursor}
+  end
+
+  defp restore_cursor_position(emulator) do
+    cursor = emulator.cursor
+
+    {new_row, new_col} =
+      case {cursor.saved_row, cursor.saved_col} do
+        {nil, nil} -> {0, 0}
+        {row, col} -> {row, col}
+      end
+
+    updated_cursor = %{
+      cursor
+      | row: new_row,
+        col: new_col,
+        position: {new_row, new_col}
+    }
+
+    %{emulator | cursor: updated_cursor}
+  end
+
+  defp clear_alternate_buffer(emulator) do
+    # Clear the alternate buffer by creating a new blank one
+    blank_buffer = ScreenBuffer.new(emulator.width, emulator.height)
+    %{emulator | alternate_screen_buffer: blank_buffer}
+  end
+
   defp clear_tab_at_cursor(emulator), do: {:ok, emulator}
   defp clear_all_tabs(emulator), do: {:ok, emulator}
   defp apply_color_palette_change(emulator, _color_spec), do: {:ok, emulator}

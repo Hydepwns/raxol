@@ -2,12 +2,20 @@ defmodule Raxol.Terminal.Registry do
   @moduledoc """
   Terminal registry module.
 
-  This module manages the registry of terminal sessions, including:
-  - Session registration
-  - Session lookup
-  - Session cleanup
+  @deprecated "Use Raxol.Core.UnifiedRegistry with :sessions type instead"
+
+  This module has been consolidated into the unified registry system.
+  For new code, use:
+
+      # Instead of Registry.register(id, state)
+      UnifiedRegistry.register(:sessions, id, state)
+      
+      # Instead of Registry.lookup(id)
+      UnifiedRegistry.lookup(:sessions, id)
   """
   use GenServer
+
+  alias Raxol.Core.UnifiedRegistry
   # Define the @registry attribute to fix the compiler warning
   # @registry __MODULE__
 
@@ -19,24 +27,33 @@ defmodule Raxol.Terminal.Registry do
     {:ok, %{}}
   end
 
+  @deprecated "Use UnifiedRegistry.register(:sessions, id, state) instead"
   def register(id, state) do
-    GenServer.call(__MODULE__, {:register, id, state})
+    UnifiedRegistry.register(:sessions, id, state)
   end
 
+  @deprecated "Use UnifiedRegistry.unregister(:sessions, id) instead"
   def unregister(id) do
-    GenServer.call(__MODULE__, {:unregister, id})
+    UnifiedRegistry.unregister(:sessions, id)
   end
 
+  @deprecated "Use UnifiedRegistry.lookup(:sessions, id) instead"
   def lookup(id) do
-    GenServer.call(__MODULE__, {:lookup, id})
+    case UnifiedRegistry.lookup(:sessions, id) do
+      # Maintain legacy format
+      {:ok, data} -> [{self(), data}]
+      {:error, :not_found} -> []
+    end
   end
 
+  @deprecated "Use UnifiedRegistry.list(:sessions) instead"
   def list do
-    GenServer.call(__MODULE__, :list)
+    UnifiedRegistry.list(:sessions) |> Enum.map(& &1.id)
   end
 
+  @deprecated "Use UnifiedRegistry.count(:sessions) instead"
   def count do
-    GenServer.call(__MODULE__, :count)
+    UnifiedRegistry.count(:sessions)
   end
 
   def match(pattern) do

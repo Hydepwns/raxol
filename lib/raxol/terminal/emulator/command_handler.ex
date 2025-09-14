@@ -382,7 +382,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   defp log_sgr_debug(_msg) do
     # Disabled for performance - uncomment for debugging
-    # File.write!("tmp/sgr_debug.log", msg <> "\n", [:append])
+    # File.write!(".tmp/sgr_debug.log", msg <> "\n", [:append])
     :ok
   end
 

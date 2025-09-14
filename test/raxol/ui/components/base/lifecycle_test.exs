@@ -2,10 +2,10 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
   use ExUnit.Case, async: true
   doctest Raxol.UI.Components.Base.Lifecycle
 
-  import Raxol.Test.TestHelper
+  import Raxol.Test.UnifiedTestHelper
 
   import Raxol.UI.Components.Base.Lifecycle,
-    only: [mount: 3, render: 2, process_event: 3, update: 2, unmount: 2]
+    only: [mount: 3, render: 2, process_event: 3, unmount: 2]
 
   # Define a test component that implements the Component behavior
   defmodule TestComponent do
@@ -116,10 +116,10 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       {rendered, _view} = render(component, context)
 
       # Render should be idempotent - verify by rendering multiple times
-      {rendered_element_map, _view2} = render(rendered, context)
+      {rendered_element_map, view2} = render(rendered, context)
 
       # Asserting on the returned element map instead.
-      assert %{type: :test_component} = _view2
+      assert %{type: :test_component} = view2
       assert Map.has_key?(rendered_element_map, :render_count)
     end
 

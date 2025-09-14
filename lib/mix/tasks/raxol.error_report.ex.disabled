@@ -1,0 +1,300 @@
+defmodule Mix.Tasks.Raxol.ErrorReport do
+  @moduledoc """
+  Generate comprehensive error reports using Phase 4.3 Error Experience system.
+
+  ## Usage
+
+  Generate a session report:
+      mix raxol.error_report --session
+      
+  Generate a report for queued errors:
+      mix raxol.error_report --process-queue
+      
+  Export reports in different formats:
+      mix raxol.error_report --export --format json
+      
+  Get reporting statistics:
+      mix raxol.error_report --stats
+      
+  Configure reporting:
+      mix raxol.error_report --config level=comprehensive format=markdown
+      
+  ## Options
+
+    * `--session` - Generate a comprehensive session report
+    * `--process-queue` - Process queued errors and generate batch report
+    * `--export` - Export existing reports
+    * `--stats` - Show reporting statistics and configuration
+    * `--config` - Update reporter configuration
+    * `--format FORMAT` - Report format (text, json, markdown, html)
+    * `--level LEVEL` - Report detail level (minimal, standard, comprehensive) 
+    * `--output PATH` - Output file path for reports
+    * `--no-persist` - Don't save reports to disk automatically
+    * `--include-performance` - Include Phase 3 performance analysis
+    * `--include-patterns` - Include error pattern learning data
+    * `--include-suggestions` - Include fix suggestions
+    
+  ## Examples
+
+      # Generate comprehensive session report in markdown
+      mix raxol.error_report --session --level comprehensive --format markdown
+      
+      # Process error queue with minimal output
+      mix raxol.error_report --process-queue --level minimal --format json
+      
+      # Update configuration for future reports
+      mix raxol.error_report --config level=standard format=markdown auto_persist=true
+      
+      # Export reports for sharing
+      mix raxol.error_report --export --format json --output error_summary.json
+  """
+
+  use Mix.Task
+  alias Raxol.Core.ErrorReporter
+
+  @impl Mix.Task
+  def run(args) do
+    Application.ensure_all_started(:raxol)
+
+    {options, [], []} =
+      OptionParser.parse(args,
+        strict: [
+          session: :boolean,
+          process_queue: :boolean,
+          export: :boolean,
+          stats: :boolean,
+          config: :string,
+          format: :string,
+          level: :string,
+          output: :string,
+          no_persist: :boolean,
+          include_performance: :boolean,
+          include_patterns: :boolean,
+          include_suggestions: :boolean,
+          help: :boolean
+        ]
+      )
+
+    cond do
+      options[:help] ->
+        print_help()
+
+      options[:stats] ->
+        show_stats()
+
+      options[:config] ->
+        update_config(options)
+
+      options[:session] ->
+        generate_session_report(options)
+
+      options[:process_queue] ->
+        process_error_queue(options)
+
+      options[:export] ->
+        export_reports(options)
+
+      true ->
+        Mix.shell().info("Use --help to see available options")
+        show_stats()
+    end
+  end
+
+  defp print_help do
+    Mix.shell().info(@moduledoc)
+  end
+
+  defp show_stats do
+    case ErrorReporter.get_stats() do
+      stats ->
+        Mix.shell().info("""
+
+        #{IO.ANSI.cyan()}Raxol Error Reporter Statistics#{IO.ANSI.reset()}
+        #{String.duplicate("=", 35)}
+
+        Session ID: #{stats.session_id}
+        Errors Processed: #{stats.error_count}
+        Queued Errors: #{stats.queued_errors}
+        Last Report: #{format_datetime(stats.last_report_time)}
+
+        #{IO.ANSI.green()}Configuration:#{IO.ANSI.reset()}
+        - Level: #{stats.config.level}
+        - Format: #{stats.config.format}
+        - Auto Persist: #{stats.config.auto_persist}
+        - Include Performance: #{stats.config.include_performance}
+        - Include Patterns: #{stats.config.include_patterns}
+        - Include Suggestions: #{stats.config.include_suggestions}
+
+        Reports Directory: #{stats.reports_directory}
+        """)
+    end
+  rescue
+    error ->
+      Mix.shell().error("Failed to get statistics: #{inspect(error)}")
+  end
+
+  defp update_config(options) do
+    config_string = options[:config]
+
+    try do
+      config_updates = parse_config_string(config_string)
+
+      case ErrorReporter.update_config(config_updates) do
+        {:ok, new_config} ->
+          Mix.shell().info(
+            "#{IO.ANSI.green()}Configuration updated successfully!#{IO.ANSI.reset()}"
+          )
+
+          Mix.shell().info(
+            "New configuration: #{inspect(new_config, pretty: true)}"
+          )
+
+        {:error, reason} ->
+          Mix.shell().error(
+            "Failed to update configuration: #{inspect(reason)}"
+          )
+      end
+    catch
+      :error, reason ->
+        Mix.shell().error("Invalid configuration format: #{inspect(reason)}")
+
+        Mix.shell().info(
+          "Example: --config level=comprehensive,format=markdown,auto_persist=true"
+        )
+    end
+  end
+
+  defp generate_session_report(options) do
+    report_opts = build_report_options(options)
+
+    Mix.shell().info(
+      "#{IO.ANSI.cyan()}Generating session report...#{IO.ANSI.reset()}"
+    )
+
+    case ErrorReporter.generate_session_report(report_opts) do
+      {:ok, report} ->
+        handle_report_output(report, options, "session_report")
+
+        Mix.shell().info(
+          "#{IO.ANSI.green()}Session report generated successfully!#{IO.ANSI.reset()}"
+        )
+
+      {:error, reason} ->
+        Mix.shell().error(
+          "Failed to generate session report: #{inspect(reason)}"
+        )
+    end
+  end
+
+  defp process_error_queue(options) do
+    report_opts = build_report_options(options)
+
+    Mix.shell().info(
+      "#{IO.ANSI.cyan()}Processing error queue...#{IO.ANSI.reset()}"
+    )
+
+    case ErrorReporter.process_queue(report_opts) do
+      {:ok, report}
+      when is_binary(report) and report != "No queued errors to process" ->
+        handle_report_output(report, options, "batch_report")
+
+        Mix.shell().info(
+          "#{IO.ANSI.green()}Batch report generated successfully!#{IO.ANSI.reset()}"
+        )
+
+      {:ok, message} ->
+        Mix.shell().info("#{IO.ANSI.yellow()}#{message}#{IO.ANSI.reset()}")
+
+      {:error, reason} ->
+        Mix.shell().error("Failed to process queue: #{inspect(reason)}")
+    end
+  end
+
+  defp export_reports(options) do
+    export_opts = %{
+      format: options[:format] || "json",
+      output_path: options[:output],
+      include_all: true
+    }
+
+    Mix.shell().info("#{IO.ANSI.cyan()}Exporting reports...#{IO.ANSI.reset()}")
+
+    case ErrorReporter.export_reports(export_opts) do
+      {:ok, result} ->
+        Mix.shell().info(
+          "#{IO.ANSI.green()}Reports exported successfully!#{IO.ANSI.reset()}"
+        )
+
+        Mix.shell().info("Export result: #{inspect(result, pretty: true)}")
+
+      {:error, reason} ->
+        Mix.shell().error("Failed to export reports: #{inspect(reason)}")
+    end
+  end
+
+  defp build_report_options(options) do
+    base_options = []
+
+    base_options
+    |> add_option_if_present(:level, options[:level])
+    |> add_option_if_present(:format, options[:format])
+    |> add_option_if_present(:auto_persist, not options[:no_persist])
+    |> add_option_if_present(
+      :include_performance,
+      options[:include_performance]
+    )
+    |> add_option_if_present(:include_patterns, options[:include_patterns])
+    |> add_option_if_present(
+      :include_suggestions,
+      options[:include_suggestions]
+    )
+    |> Enum.into(%{})
+  end
+
+  defp add_option_if_present(options, _key, nil), do: options
+
+  defp add_option_if_present(options, key, value),
+    do: [{key, parse_option_value(value)} | options]
+
+  defp parse_option_value("true"), do: true
+  defp parse_option_value("false"), do: false
+  defp parse_option_value("minimal"), do: :minimal
+  defp parse_option_value("standard"), do: :standard
+  defp parse_option_value("comprehensive"), do: :comprehensive
+  defp parse_option_value("text"), do: :text
+  defp parse_option_value("json"), do: :json
+  defp parse_option_value("markdown"), do: :markdown
+  defp parse_option_value("html"), do: :html
+  defp parse_option_value(value), do: value
+
+  defp parse_config_string(config_string) do
+    config_string
+    |> String.split(",")
+    |> Enum.map(&String.split(&1, "=", parts: 2))
+    |> Enum.map(fn [key, value] ->
+      {String.to_atom(String.trim(key)), parse_option_value(String.trim(value))}
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp handle_report_output(report, options, report_type) do
+    if output_path = options[:output] do
+      File.write!(output_path, report)
+      Mix.shell().info("Report written to: #{output_path}")
+    else
+      # Print to stdout if no output file specified
+      Mix.shell().info(
+        "\n#{IO.ANSI.bright()}#{String.upcase(report_type)}#{IO.ANSI.reset()}"
+      )
+
+      Mix.shell().info(String.duplicate("=", String.length(report_type) + 10))
+      Mix.shell().info(report)
+    end
+  end
+
+  defp format_datetime(nil), do: "Never"
+
+  defp format_datetime(datetime) do
+    Calendar.strftime(datetime, "%Y-%m-%d %H:%M:%S UTC")
+  end
+end

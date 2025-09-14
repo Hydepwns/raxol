@@ -160,9 +160,15 @@ defmodule Raxol.Terminal.Commands.History do
   @spec maybe_add_to_history(Emulator.t(), integer()) :: Emulator.t()
   def maybe_add_to_history(emulator, char)
       when is_integer(char) and char >= 32 and char <= 0x10FFFF do
-    # Append printable character to current_command_buffer
-    new_buffer = emulator.current_command_buffer <> <<char::utf8>>
-    %{emulator | current_command_buffer: new_buffer}
+    # Skip history if disabled (current_command_buffer is nil)
+    case emulator.current_command_buffer do
+      nil ->
+        emulator
+
+      buffer ->
+        new_buffer = buffer <> <<char::utf8>>
+        %{emulator | current_command_buffer: new_buffer}
+    end
   end
 
   @spec maybe_add_to_history(Emulator.t(), any()) :: Emulator.t()

@@ -16,24 +16,24 @@ Raxol brings modern UI development patterns to the terminal. Think **React, Svel
 - **World-Class Performance**: 3.3μs parser operations, 2.8MB memory per session
 - **Multi-Framework Support**: Choose React, Svelte, LiveView, or HEEx patterns
 - **Enterprise Ready**: Audit logging, encryption, SAML/OIDC, compliance (SOC2/HIPAA/GDPR)
-- **Innovation First**: Sixel graphics, session continuity, real-time collaboration
+- **Innovation First**: Sixel graphics, WASH session continuity, real-time collaboration
 
 ## Quick Start
 
 ```bash
 # Add to mix.exs
-{:raxol, "~> 1.2.1"}
+{:raxol, "~> 1.4.1"}
 
 # Clone and explore
 git clone https://github.com/Hydepwns/raxol.git
 cd raxol
 mix deps.get
 
-# Interactive tutorial (5 minutes)
-mix raxol.tutorial
+# Run quality checks
+mix raxol.check
 
-# Component playground
-mix raxol.playground
+# Run tests
+mix raxol.test
 ```
 
 > **Note**: If you cloned before September 2025, reset with: `git fetch origin && git reset --hard origin/master`
@@ -92,18 +92,11 @@ end
 | Parser Speed | **3.3μs/op**  | 100μs/op          |
 | Memory Usage | **2.8MB**     | 10MB/session      |
 | Startup Time | **<10ms**     | 100ms             |
-| Test Coverage| **100%**      | 80%               |
+| Test Coverage| **98.7%**     | 80%               |
 
 ## Documentation
 
 **[Documentation Hub](docs/README.md)** - Complete documentation index
-
-### Quick Links
-- [Interactive Tutorial](https://hexdocs.pm/raxol/tutorial.html)
-- [API Reference](https://hexdocs.pm/raxol)
-- [Component Catalog](https://hexdocs.pm/raxol/components.html)
-- [Architecture Decisions](docs/adr/README.md)
-- [Contributing](CONTRIBUTING.md)
 
 ## VS Code Extension
 
@@ -120,9 +113,3 @@ Perfect for terminal IDEs, DevOps tools, system monitoring, database clients, ch
 ## License
 
 MIT License - see [LICENSE.md](LICENSE.md)
-
----
-
-**Ready to build the future of terminal applications?**
-
-[Get Started](docs/README.md) • [View Source](https://github.com/Hydepwns/raxol) • [Report Issues](https://github.com/Hydepwns/raxol/issues)

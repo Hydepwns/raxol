@@ -2,7 +2,6 @@ defmodule Raxol.Performance.ComponentCacheTest do
   use ExUnit.Case, async: false
   
   alias Raxol.UI.RendererCached
-  alias Raxol.UI.Rendering.ComponentCache
   alias Raxol.Performance.ETSCacheManager
   alias Raxol.UI.ThemeResolver
   
@@ -97,7 +96,7 @@ defmodule Raxol.Performance.ComponentCacheTest do
       viewport = %{offset: 10, limit: 10}
       theme = ThemeResolver.get_default_theme()
       
-      render_fn = fn item, index ->
+      render_fn = fn _item, index ->
         [{0, index, "I", :white, :black, []}]
       end
       
@@ -117,7 +116,7 @@ defmodule Raxol.Performance.ComponentCacheTest do
       viewport2 = %{offset: 20, limit: 10}
       theme = ThemeResolver.get_default_theme()
       
-      render_fn = fn item, index ->
+      render_fn = fn _item, index ->
         [{0, index, "I", :white, :black, []}]
       end
       
@@ -158,7 +157,7 @@ defmodule Raxol.Performance.ComponentCacheTest do
     
     test "handles deep nesting with recursion limit" do
       # Create deeply nested structure
-      deep_tree = Enum.reduce(1..60, %{type: :text, text: "Leaf", x: 0, y: 0}, fn i, acc ->
+      deep_tree = Enum.reduce(1..60, %{type: :text, text: "Leaf", x: 0, y: 0}, fn _i, acc ->
         %{type: :box, x: 0, y: 0, width: 10, height: 10, children: [acc]}
       end)
       

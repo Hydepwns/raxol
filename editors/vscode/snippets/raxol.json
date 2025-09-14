@@ -1,0 +1,161 @@
+{
+  "Raxol Component": {
+    "prefix": "raxol-component",
+    "description": "Create a new Raxol component",
+    "body": [
+      "defmodule ${1:ComponentName} do",
+      "  @moduledoc \"\"\"",
+      "  ${2:Component description}",
+      "  \"\"\"",
+      "",
+      "  use Raxol.UI.Components.Base.Component",
+      "",
+      "  def init(props) do",
+      "    Map.merge(%{${3:}}, props)",
+      "  end",
+      "",
+      "  def mount(state) do",
+      "    {state, []}",
+      "  end",
+      "",
+      "  def update(${4:message}, state) do",
+      "    ${5:# Handle component messages}",
+      "    state",
+      "  end",
+      "",
+      "  def render(state, context) do",
+      "    ${6:# Render component UI}",
+      "    text(\"${1:ComponentName}\")",
+      "  end",
+      "",
+      "  def handle_event(${7:event}, state, context) do",
+      "    ${8:# Handle UI events}",
+      "    {state, []}",
+      "  end",
+      "end"
+    ]
+  },
+  "Raxol Application": {
+    "prefix": "raxol-app",
+    "description": "Create a new Raxol application",
+    "body": [
+      "defmodule ${1:AppName} do",
+      "  @moduledoc \"\"\"",
+      "  ${2:Application description}",
+      "  \"\"\"",
+      "",
+      "  @behaviour Raxol.Core.Runtime.Application",
+      "",
+      "  require Raxol.Core.Renderer.View",
+      "  alias Raxol.Core.Runtime.Events.Event",
+      "",
+      "  def init(_opts) do",
+      "    {%{${3:}}, []}",
+      "  end",
+      "",
+      "  def update(model, %Event{type: ${4::command}, data: ${5:action}}) do",
+      "    ${6:# Handle events}",
+      "    {model, []}",
+      "  end",
+      "",
+      "  def update(model, _event), do: {model, []}",
+      "",
+      "  def view(model) do",
+      "    Raxol.Core.Renderer.View.column [] do",
+      "      [",
+      "        ${7:# Render UI}",
+      "      ]",
+      "    end",
+      "  end",
+      "end"
+    ]
+  },
+  "Raxol Button": {
+    "prefix": "raxol-button",
+    "description": "Create a button component",
+    "body": [
+      "button(\"${1:label}\", on_click: ${2:action})"
+    ]
+  },
+  "Raxol TextInput": {
+    "prefix": "raxol-input",
+    "description": "Create a text input component",
+    "body": [
+      "text_input(",
+      "  placeholder: \"${1:Enter text...}\",",
+      "  value: ${2:value},",
+      "  on_change: ${3:action}",
+      ")"
+    ]
+  },
+  "Raxol Table": {
+    "prefix": "raxol-table",
+    "description": "Create a table component",
+    "body": [
+      "table(",
+      "  data: ${1:data},",
+      "  columns: [",
+      "    ${2:%{key: :name, title: \"Name\"}},",
+      "    ${3:%{key: :value, title: \"Value\"}}",
+      "  ]",
+      ")"
+    ]
+  },
+  "Raxol Modal": {
+    "prefix": "raxol-modal",
+    "description": "Create a modal component",
+    "body": [
+      "modal(",
+      "  visible: ${1:true},",
+      "  title: \"${2:Modal Title}\",",
+      "  on_close: ${3:action}",
+      ") do",
+      "  [",
+      "    ${4:# Modal content}",
+      "  ]",
+      "end"
+    ]
+  },
+  "Raxol Layout Column": {
+    "prefix": "raxol-column",
+    "description": "Create a column layout",
+    "body": [
+      "column [${1:padding: 1}] do",
+      "  [",
+      "    ${2:# Column content}",
+      "  ]",
+      "end"
+    ]
+  },
+  "Raxol Layout Row": {
+    "prefix": "raxol-row",
+    "description": "Create a row layout",
+    "body": [
+      "row [${1:gap: 1}] do",
+      "  [",
+      "    ${2:# Row content}",
+      "  ]",
+      "end"
+    ]
+  },
+  "Raxol Event Handler": {
+    "prefix": "raxol-event",
+    "description": "Handle component event",
+    "body": [
+      "def handle_event({${1::click}, ${2:action}}, state, context) do",
+      "  ${3:# Handle event}",
+      "  {state, []}",
+      "end"
+    ]
+  },
+  "Raxol Update Handler": {
+    "prefix": "raxol-update",
+    "description": "Handle component update",
+    "body": [
+      "def update(${1:message}, state) do",
+      "  ${2:# Update state}",
+      "  state",
+      "end"
+    ]
+  }
+}

@@ -754,4 +754,34 @@ defmodule Raxol.Terminal.Emulator do
         emulator
     end
   end
+
+  @doc """
+  Gets output from the emulator.
+  """
+  @spec get_output(t()) :: String.t()
+  def get_output(emulator) do
+    # Stub implementation - get output from buffer
+    case get_output_buffer(emulator) do
+      output when is_binary(output) -> output
+      _ -> ""
+    end
+  end
+
+  @doc """
+  Renders the emulator screen.
+  """
+  @spec render_screen(t()) :: String.t()
+  def render_screen(emulator) do
+    # Stub implementation - render current screen state
+    get_output(emulator)
+  end
+
+  @doc """
+  Cleans up emulator resources.
+  """
+  @spec cleanup(t()) :: :ok
+  def cleanup(_emulator) do
+    # Stub implementation
+    :ok
+  end
 end

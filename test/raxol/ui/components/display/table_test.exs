@@ -4,7 +4,7 @@ defmodule Raxol.UI.Components.Display.TableTest do
 
   alias Raxol.UI.Components.Display.Table
 
-  import Raxol.Test.TestHelper
+  import Raxol.Test.UnifiedTestHelper
 
   # Helper to extract text content from rendered elements at a specific line
   # defp get_line_text(elements, y) do

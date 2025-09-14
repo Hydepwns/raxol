@@ -40,10 +40,12 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
         }
   @type mouse_button :: :left | :right | :middle | :wheel_up | :wheel_down
   @type mouse_event :: %{
-          type: :click | :press | :release | :move | :hover | :drag,
+          type:
+            :click | :press | :release | :move | :hover | :drag | :context_menu,
           x: non_neg_integer(),
           y: non_neg_integer(),
           button: mouse_button() | nil,
+          modifiers: map(),
           timestamp: non_neg_integer()
         }
 
@@ -53,7 +55,12 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
           optional(:on_drag_start) => function(),
           optional(:on_drag) => function(),
           optional(:on_drag_end) => function(),
-          optional(:on_double_click) => function()
+          optional(:on_double_click) => function(),
+          optional(:on_triple_click) => function(),
+          optional(:on_context_menu) => function(),
+          optional(:on_selection_start) => function(),
+          optional(:on_selection_change) => function(),
+          optional(:on_selection_end) => function()
         }
 
   @type interactive_element :: %{
@@ -69,7 +76,9 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
     :interactive_elements,
     :hover_state,
     :drag_state,
+    :selection_state,
     :click_history,
+    :context_menu_state,
     :config
   ]
 
@@ -77,10 +86,21 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
     # milliseconds
     double_click_timeout: 300,
     # milliseconds
+    triple_click_timeout: 500,
+    # milliseconds
     hover_delay: 100,
     # pixels
     drag_threshold: 3,
-    max_click_history: 50
+    # pixels
+    selection_threshold: 1,
+    max_click_history: 50,
+    # Context menu configuration
+    context_menu_button: :right,
+    context_menu_delay: 0,
+    # Selection configuration
+    enable_text_selection: true,
+    # :character, :word, :line
+    selection_granularity: :character
   }
 
   # Public API
@@ -170,6 +190,47 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
     GenServer.call(__MODULE__, :get_elements)
   end
 
+  @doc """
+  Gets the current selection state.
+  """
+  @spec get_selection_state() :: map() | nil
+  def get_selection_state do
+    GenServer.call(__MODULE__, :get_selection_state)
+  end
+
+  @doc """
+  Clears the current selection.
+  """
+  @spec clear_selection() :: :ok
+  def clear_selection do
+    GenServer.call(__MODULE__, :clear_selection)
+  end
+
+  @doc """
+  Gets the current drag state.
+  """
+  @spec get_drag_state() :: map() | nil
+  def get_drag_state do
+    GenServer.call(__MODULE__, :get_drag_state)
+  end
+
+  @doc """
+  Sets text selection mode for an element.
+  """
+  @spec set_text_selection_mode(non_neg_integer(), boolean()) ::
+          :ok | {:error, term()}
+  def set_text_selection_mode(graphics_id, enabled) do
+    GenServer.call(__MODULE__, {:set_text_selection, graphics_id, enabled})
+  end
+
+  @doc """
+  Updates configuration options for the mouse interaction manager.
+  """
+  @spec update_config(map()) :: :ok
+  def update_config(config_updates) do
+    GenServer.call(__MODULE__, {:update_config, config_updates})
+  end
+
   # GenServer Implementation
 
   @impl true
@@ -180,7 +241,9 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
       interactive_elements: %{},
       hover_state: nil,
       drag_state: nil,
+      selection_state: nil,
       click_history: [],
+      context_menu_state: nil,
       config: config
     }
 
@@ -264,6 +327,44 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
     {:reply, elements, state}
   end
 
+  @impl true
+  def handle_call(:get_selection_state, _from, state) do
+    {:reply, state.selection_state, state}
+  end
+
+  @impl true
+  def handle_call(:clear_selection, _from, state) do
+    {:reply, :ok, %{state | selection_state: nil}}
+  end
+
+  @impl true
+  def handle_call(:get_drag_state, _from, state) do
+    {:reply, state.drag_state, state}
+  end
+
+  @impl true
+  def handle_call({:set_text_selection, graphics_id, enabled}, _from, state) do
+    case Map.get(state.interactive_elements, graphics_id) do
+      nil ->
+        {:reply, {:error, :element_not_found}, state}
+
+      element ->
+        metadata = Map.put(element.metadata, :text_selection_enabled, enabled)
+        updated_element = %{element | metadata: metadata}
+
+        elements =
+          Map.put(state.interactive_elements, graphics_id, updated_element)
+
+        {:reply, :ok, %{state | interactive_elements: elements}}
+    end
+  end
+
+  @impl true
+  def handle_call({:update_config, config_updates}, _from, state) do
+    new_config = Map.merge(state.config, config_updates)
+    {:reply, :ok, %{state | config: new_config}}
+  end
+
   # Private Functions
 
   defp validate_element_config(config) do
@@ -305,6 +406,18 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
         new_state = handle_click_event(event, element, state)
         {{:handled, element.graphics_id}, new_state}
 
+      {:press, [element | _]} when event.button == :left ->
+        new_state = handle_press_event(event, element, state)
+        {{:handled, element.graphics_id}, new_state}
+
+      {:press, [element | _]} when event.button == :right ->
+        new_state = handle_context_menu_event(event, element, state)
+        {{:handled, element.graphics_id}, new_state}
+
+      {:release, _} ->
+        new_state = handle_release_event(event, state)
+        {:not_handled, new_state}
+
       {:hover, [element | _]} ->
         new_state = handle_hover_event(event, element, state)
         {{:handled, element.graphics_id}, new_state}
@@ -320,9 +433,16 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
 
         {result, new_state}
 
-      {:drag, _} ->
-        new_state = handle_drag_event(event, state)
-        {:not_handled, new_state}
+      {:drag, hit_elements} ->
+        new_state = handle_drag_event(event, hit_elements, state)
+
+        result =
+          case hit_elements do
+            [element | _] -> {:handled, element.graphics_id}
+            [] -> :not_handled
+          end
+
+        {result, new_state}
 
       _ ->
         {:not_handled, state}
@@ -330,9 +450,9 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
   end
 
   defp handle_click_event(event, element, state) do
-    # Check for double-click
-    {is_double_click, updated_history} =
-      check_double_click(event, state.click_history, state.config)
+    # Check for multi-click
+    {click_type, updated_history} =
+      check_multi_click(event, state.click_history, state.config)
 
     # Execute callback
     case Map.get(element.callbacks, :on_click) do
@@ -347,14 +467,26 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
         :ok
     end
 
-    # Handle double-click callback
-    case {is_double_click, Map.get(element.callbacks, :on_double_click)} do
-      {true, callback} when is_function(callback, 1) ->
+    # Handle multi-click callbacks
+    case {click_type, element.callbacks} do
+      {:double, callbacks} when is_map_key(callbacks, :on_double_click) ->
+        callback = callbacks.on_double_click
+
         try do
           callback.(Map.put(event, :element, element))
         rescue
           error ->
             Logger.warning("Double-click callback error: #{inspect(error)}")
+        end
+
+      {:triple, callbacks} when is_map_key(callbacks, :on_triple_click) ->
+        callback = callbacks.on_triple_click
+
+        try do
+          callback.(Map.put(event, :element, element))
+        rescue
+          error ->
+            Logger.warning("Triple-click callback error: #{inspect(error)}")
         end
 
       _ ->
@@ -388,59 +520,302 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
     end
   end
 
-  defp handle_move_event(_event, hit_elements, state) do
+  defp handle_drag_event(event, hit_elements, state) do
+    case state.drag_state do
+      nil ->
+        # Start drag operation
+        element = List.first(hit_elements)
+
+        new_drag_state = %{
+          start_x: event.x,
+          start_y: event.y,
+          current_x: event.x,
+          current_y: event.y,
+          started_at: event.timestamp,
+          element: element
+        }
+
+        # Trigger drag start callback
+        if element && Map.has_key?(element.callbacks, :on_drag_start) do
+          try do
+            element.callbacks.on_drag_start.(Map.put(event, :element, element))
+          rescue
+            error ->
+              Logger.warning("Drag start callback error: #{inspect(error)}")
+          end
+        end
+
+        %{state | drag_state: new_drag_state}
+
+      drag_state ->
+        # Continue drag operation
+        updated_drag = %{drag_state | current_x: event.x, current_y: event.y}
+
+        # Trigger drag callback
+        if drag_state.element &&
+             Map.has_key?(drag_state.element.callbacks, :on_drag) do
+          try do
+            drag_info = %{
+              start: {drag_state.start_x, drag_state.start_y},
+              current: {event.x, event.y},
+              distance:
+                calculate_distance(
+                  drag_state.start_x,
+                  drag_state.start_y,
+                  event.x,
+                  event.y
+                )
+            }
+
+            drag_state.element.callbacks.on_drag.(
+              Map.merge(event, %{element: drag_state.element, drag: drag_info})
+            )
+          rescue
+            error -> Logger.warning("Drag callback error: #{inspect(error)}")
+          end
+        end
+
+        %{state | drag_state: updated_drag}
+    end
+  end
+
+  defp handle_press_event(event, element, state) do
+    # Start potential drag or selection
+    if element.metadata[:text_selection_enabled] &&
+         state.config.enable_text_selection do
+      new_selection_state = %{
+        start_x: event.x,
+        start_y: event.y,
+        current_x: event.x,
+        current_y: event.y,
+        element: element,
+        type: determine_selection_type(event, state.config)
+      }
+
+      # Trigger selection start callback
+      if Map.has_key?(element.callbacks, :on_selection_start) do
+        try do
+          element.callbacks.on_selection_start.(
+            Map.put(event, :element, element)
+          )
+        rescue
+          error ->
+            Logger.warning("Selection start callback error: #{inspect(error)}")
+        end
+      end
+
+      %{state | selection_state: new_selection_state}
+    else
+      state
+    end
+  end
+
+  defp handle_release_event(event, state) do
+    new_state = state
+
+    # Handle drag end
+    new_state =
+      case new_state.drag_state do
+        nil ->
+          new_state
+
+        drag_state ->
+          if drag_state.element &&
+               Map.has_key?(drag_state.element.callbacks, :on_drag_end) do
+            try do
+              drag_info = %{
+                start: {drag_state.start_x, drag_state.start_y},
+                end: {event.x, event.y},
+                distance:
+                  calculate_distance(
+                    drag_state.start_x,
+                    drag_state.start_y,
+                    event.x,
+                    event.y
+                  )
+              }
+
+              drag_state.element.callbacks.on_drag_end.(
+                Map.merge(event, %{element: drag_state.element, drag: drag_info})
+              )
+            rescue
+              error ->
+                Logger.warning("Drag end callback error: #{inspect(error)}")
+            end
+          end
+
+          %{new_state | drag_state: nil}
+      end
+
+    # Handle selection end
+    new_state =
+      case new_state.selection_state do
+        nil ->
+          new_state
+
+        selection_state ->
+          if Map.has_key?(selection_state.element.callbacks, :on_selection_end) do
+            try do
+              selection_info = %{
+                start: {selection_state.start_x, selection_state.start_y},
+                end: {event.x, event.y},
+                type: selection_state.type
+              }
+
+              selection_state.element.callbacks.on_selection_end.(
+                Map.merge(event, %{
+                  element: selection_state.element,
+                  selection: selection_info
+                })
+              )
+            rescue
+              error ->
+                Logger.warning(
+                  "Selection end callback error: #{inspect(error)}"
+                )
+            end
+          end
+
+          %{new_state | selection_state: nil}
+      end
+
+    new_state
+  end
+
+  defp handle_context_menu_event(event, element, state) do
+    # Show context menu
+    context_menu_state = %{
+      x: event.x,
+      y: event.y,
+      element: element,
+      timestamp: event.timestamp
+    }
+
+    # Trigger context menu callback
+    if Map.has_key?(element.callbacks, :on_context_menu) do
+      try do
+        element.callbacks.on_context_menu.(Map.put(event, :element, element))
+      rescue
+        error ->
+          Logger.warning("Context menu callback error: #{inspect(error)}")
+      end
+    end
+
+    %{state | context_menu_state: context_menu_state}
+  end
+
+  # Updated handle_move_event to handle selection changes
+  defp handle_move_event(event, hit_elements, state) do
     current_element = List.first(hit_elements)
 
-    # Clear hover state if no longer hovering any element
+    # Handle hover state
     new_hover_state =
       case current_element do
         nil -> nil
         element -> element
       end
 
-    %{state | hover_state: new_hover_state}
+    # Handle selection changes
+    new_state =
+      case state.selection_state do
+        nil ->
+          state
+
+        selection_state ->
+          updated_selection = %{
+            selection_state
+            | current_x: event.x,
+              current_y: event.y
+          }
+
+          # Trigger selection change callback
+          if Map.has_key?(
+               selection_state.element.callbacks,
+               :on_selection_change
+             ) do
+            try do
+              selection_info = %{
+                start: {selection_state.start_x, selection_state.start_y},
+                current: {event.x, event.y},
+                type: selection_state.type
+              }
+
+              selection_state.element.callbacks.on_selection_change.(
+                Map.merge(event, %{
+                  element: selection_state.element,
+                  selection: selection_info
+                })
+              )
+            rescue
+              error ->
+                Logger.warning(
+                  "Selection change callback error: #{inspect(error)}"
+                )
+            end
+          end
+
+          %{state | selection_state: updated_selection}
+      end
+
+    %{new_state | hover_state: new_hover_state}
   end
 
-  defp handle_drag_event(event, state) do
-    case state.drag_state do
-      nil ->
-        # Start drag operation
-        %{
-          state
-          | drag_state: %{
-              start_x: event.x,
-              start_y: event.y,
-              current_x: event.x,
-              current_y: event.y,
-              started_at: event.timestamp
-            }
-        }
-
-      drag_state ->
-        # Continue drag operation
-        updated_drag = %{drag_state | current_x: event.x, current_y: event.y}
-        %{state | drag_state: updated_drag}
+  defp determine_selection_type(_event, config) do
+    case config.selection_granularity do
+      :character -> :character
+      :word -> :word
+      :line -> :line
+      _ -> :character
     end
   end
 
-  defp check_double_click(event, history, config) do
+  defp calculate_distance(x1, y1, x2, y2) do
+    :math.sqrt(:math.pow(x2 - x1, 2) + :math.pow(y2 - y1, 2))
+  end
+
+  defp check_multi_click(event, history, config) do
     # Add current click to history
     new_history = [event | Enum.take(history, config.max_click_history - 1)]
 
-    # Check if this is a double-click
-    is_double =
+    # Check for multi-click patterns
+    click_type =
       case new_history do
-        [current, previous | _] ->
-          time_diff = current.timestamp - previous.timestamp
-          pos_diff = abs(current.x - previous.x) + abs(current.y - previous.y)
+        [current, second, third | _] ->
+          # Check for triple click
+          triple_time_diff = current.timestamp - third.timestamp
 
-          time_diff <= config.double_click_timeout and
-            pos_diff <= config.drag_threshold
+          second_pos_diff =
+            abs(current.x - second.x) + abs(current.y - second.y)
+
+          third_pos_diff = abs(current.x - third.x) + abs(current.y - third.y)
+
+          if triple_time_diff <= config.triple_click_timeout and
+               second_pos_diff <= config.drag_threshold and
+               third_pos_diff <= config.drag_threshold do
+            :triple
+          else
+            check_double_click_in_history(current, second, config)
+          end
+
+        [current, second | _] ->
+          check_double_click_in_history(current, second, config)
 
         _ ->
-          false
+          :single
       end
 
-    {is_double, new_history}
+    {click_type, new_history}
+  end
+
+  defp check_double_click_in_history(current, previous, config) do
+    time_diff = current.timestamp - previous.timestamp
+    pos_diff = abs(current.x - previous.x) + abs(current.y - previous.y)
+
+    if time_diff <= config.double_click_timeout and
+         pos_diff <= config.drag_threshold do
+      :double
+    else
+      :single
+    end
   end
 end

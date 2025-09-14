@@ -1,7 +1,6 @@
 defmodule Raxol.Terminal.Tab.ManagerTest do
   use ExUnit.Case, async: true
   alias Raxol.Terminal.Tab.Manager
-  import File, only: [cwd!: 0]
 
   describe "new/0" do
     test "creates a new tab manager instance" do

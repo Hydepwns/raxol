@@ -135,28 +135,13 @@ defmodule Raxol.UI.Layout.Flexbox do
 
   defp parse_gap(_), do: %{row: 0, column: 0}
 
-  defp parse_padding(padding) when is_integer(padding) do
-    %{top: padding, right: padding, bottom: padding, left: padding}
-  end
+  # Import shared layout utilities
+  alias Raxol.UI.Layout.LayoutUtils
 
-  defp parse_padding(%{top: t, right: r, bottom: b, left: l}) do
-    %{top: t, right: r, bottom: b, left: l}
-  end
+  defp parse_padding(padding), do: LayoutUtils.parse_padding(padding)
 
-  defp parse_padding(%{vertical: v, horizontal: h}) do
-    %{top: v, right: h, bottom: v, left: h}
-  end
-
-  defp parse_padding(_), do: %{top: 0, right: 0, bottom: 0, left: 0}
-
-  defp apply_padding(space, padding) do
-    %{
-      x: space.x + padding.left,
-      y: space.y + padding.top,
-      width: max(0, space.width - padding.left - padding.right),
-      height: max(0, space.height - padding.top - padding.bottom)
-    }
-  end
+  defp apply_padding(space, padding),
+    do: LayoutUtils.apply_padding(space, padding)
 
   defp sort_children_by_order(children) do
     Enum.sort_by(children, fn child ->

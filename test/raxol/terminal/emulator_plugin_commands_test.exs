@@ -4,6 +4,6 @@ defmodule Raxol.Terminal.EmulatorPluginCommandsTest do
   alias Raxol.EmulatorPluginTestHelper
 
   setup context do
-    Raxol.EmulatorPluginTestHelper.setup_emulator_plugin_test(context)
+    Raxol.EmulatorPluginUnifiedTestHelper.setup_emulator_plugin_test(context)
   end
 end

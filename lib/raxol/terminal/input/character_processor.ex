@@ -99,6 +99,10 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
           emulator,
           buffer_height
         )
+
+      %Raxol.Terminal.Emulator{} = processed_emulator ->
+        # Autowrap scroll already handled, return the processed emulator
+        processed_emulator
     end
   end
 

@@ -343,7 +343,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
   defp init_key_store(config) do
     # Initialize persistent key storage
-    storage_path = Map.get(config, :key_store_path, "data/keys")
+    storage_path = Map.get(config, :key_store_path, "priv/data/keys")
     File.mkdir_p!(storage_path)
 
     %{
@@ -667,8 +667,8 @@ defmodule Raxol.Security.Encryption.KeyManager do
   end
 
   defp get_current_user do
-    # Get from process dictionary or context
-    Raxol.Security.UserContext.ContextServer.get_current_user() || "system"
+    # Get from user context (ensures server is started)
+    Raxol.Security.UserContext.get_current_user() || "system"
   end
 
   defp sanitize_key(key) do

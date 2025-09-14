@@ -91,7 +91,7 @@ end
 ## Validation
 ```bash
 # Benchmark results
-mix run bench/parser_benchmark.exs
+mix run bench/suites/parser/parser_benchmark.exs
 
 # Performance test
 mix test test/performance/parser_test.exs

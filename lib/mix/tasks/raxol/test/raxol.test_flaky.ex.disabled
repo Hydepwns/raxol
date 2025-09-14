@@ -1,0 +1,1460 @@
+defmodule Mix.Tasks.Raxol.TestFlaky do
+  @moduledoc """
+  Detect and manage flaky tests with intelligent retry logic.
+
+  This task identifies tests that fail intermittently, analyzes failure patterns,
+  and provides retry mechanisms with exponential backoff and failure isolation.
+
+  ## Usage
+
+      mix raxol.test_flaky [command] [options]
+      
+  ## Commands
+
+    * `detect` - Run tests multiple times to detect flaky behavior
+    * `analyze` - Analyze historical test failure data
+    * `run` - Run tests with intelligent retry logic
+    * `report` - Generate flaky test reports
+    * `quarantine` - Manage quarantined flaky tests
+
+  ## Options
+
+    * `--iterations` - Number of test iterations for detection (default: 10)
+    * `--max-retries` - Maximum retry attempts per test (default: 3)  
+    * `--retry-delay` - Base retry delay in milliseconds (default: 1000)
+    * `--failure-threshold` - Flakiness threshold percentage (default: 20)
+    * `--pattern` - Test pattern to focus on (glob)
+    * `--quarantine-mode` - Quarantine strategy: skip, isolate, retry (default: retry)
+    * `--verbose` - Show detailed flaky test information
+
+  ## Examples
+
+      # Detect flaky tests by running 20 iterations
+      mix raxol.test_flaky detect --iterations 20
+      
+      # Run tests with retry logic for flaky tests
+      mix raxol.test_flaky run --max-retries 3
+      
+      # Analyze failure patterns from historical data
+      mix raxol.test_flaky analyze --verbose
+      
+      # Quarantine tests with >30% failure rate
+      mix raxol.test_flaky quarantine --failure-threshold 30
+  """
+
+  use Mix.Task
+
+  @shortdoc "Detect and manage flaky tests"
+
+  @flaky_data_dir "flaky_tests"
+  @quarantine_file "test/support/quarantined_tests.exs"
+  @default_iterations 10
+  @default_max_retries 3
+  @default_failure_threshold 20.0
+
+  @impl Mix.Task
+  def run([]), do: run(["detect"])
+
+  def run([command | args]) do
+    {opts, _} =
+      OptionParser.parse!(args,
+        strict: [
+          iterations: :integer,
+          max_retries: :integer,
+          retry_delay: :integer,
+          failure_threshold: :float,
+          pattern: :string,
+          quarantine_mode: :string,
+          verbose: :boolean
+        ]
+      )
+
+    case command do
+      "detect" ->
+        run_detection(opts)
+
+      "analyze" ->
+        run_analysis(opts)
+
+      "run" ->
+        run_with_retries(opts)
+
+      "report" ->
+        run_report(opts)
+
+      "quarantine" ->
+        run_quarantine_management(opts)
+
+      _ ->
+        Mix.Shell.IO.error("Unknown command: #{command}")
+
+        Mix.Shell.IO.info(
+          "Available commands: detect, analyze, run, report, quarantine"
+        )
+
+        System.halt(1)
+    end
+  end
+
+  defp run_detection(opts) do
+    Mix.Shell.IO.info("🔍 Detecting flaky tests...")
+
+    ensure_flaky_directories()
+
+    iterations = opts[:iterations] || @default_iterations
+    failure_threshold = opts[:failure_threshold] || @default_failure_threshold
+
+    Mix.Shell.IO.info("Running #{iterations} iterations to detect flakiness")
+    Mix.Shell.IO.info("Failure threshold: #{failure_threshold}%")
+
+    # Run tests multiple times and collect results
+    test_results = run_test_iterations(iterations, opts)
+
+    # Analyze results for flakiness
+    flaky_analysis = analyze_flakiness(test_results, failure_threshold)
+
+    # Save detection results
+    save_flaky_detection_results(flaky_analysis)
+
+    # Display results
+    display_flaky_detection_results(flaky_analysis, opts)
+
+    # Auto-quarantine if requested
+    if flaky_analysis.flaky_test_count > 0 do
+      quarantine_mode = opts[:quarantine_mode] || "retry"
+
+      if quarantine_mode != "skip" do
+        update_quarantine_list(flaky_analysis.flaky_tests, quarantine_mode)
+      end
+    end
+  end
+
+  defp run_analysis(opts) do
+    Mix.Shell.IO.info("📊 Analyzing historical flaky test data...")
+
+    # Load historical data
+    historical_data = load_historical_flaky_data()
+
+    if Enum.empty?(historical_data) do
+      IO.warn(
+        "No historical flaky test data found. Run detection first."
+      )
+
+      System.halt(1)
+    end
+
+    # Perform comprehensive analysis
+    analysis = perform_comprehensive_analysis(historical_data, opts)
+
+    # Display analysis results
+    display_flaky_analysis_results(analysis, opts)
+
+    # Save analysis
+    save_flaky_analysis_results(analysis)
+  end
+
+  defp run_with_retries(opts) do
+    Mix.Shell.IO.info("🔄 Running tests with intelligent retry logic...")
+
+    # Load known flaky tests
+    flaky_tests = load_known_flaky_tests()
+    quarantined_tests = load_quarantined_tests()
+
+    max_retries = opts[:max_retries] || @default_max_retries
+    retry_delay = opts[:retry_delay] || 1000
+
+    Mix.Shell.IO.info("Max retries: #{max_retries}")
+    Mix.Shell.IO.info("Known flaky tests: #{length(flaky_tests)}")
+    Mix.Shell.IO.info("Quarantined tests: #{length(quarantined_tests)}")
+
+    # Build test execution strategy
+    execution_strategy =
+      build_execution_strategy(flaky_tests, quarantined_tests, opts)
+
+    # Execute tests with retry logic
+    results =
+      execute_tests_with_retries(
+        execution_strategy,
+        max_retries,
+        retry_delay,
+        opts
+      )
+
+    # Report results
+    display_retry_execution_results(results, opts)
+
+    # Update flaky test database
+    update_flaky_test_database(results)
+  end
+
+  defp run_report(opts) do
+    Mix.Shell.IO.info("📈 Generating flaky test reports...")
+
+    # Load all flaky test data
+    detection_data = load_flaky_detection_data()
+    historical_data = load_historical_flaky_data()
+    quarantine_data = load_quarantined_tests()
+
+    # Generate comprehensive report
+    report =
+      generate_flaky_test_report(
+        detection_data,
+        historical_data,
+        quarantine_data,
+        opts
+      )
+
+    # Save and display report
+    save_flaky_test_report(report)
+    display_flaky_test_report(report, opts)
+  end
+
+  defp run_quarantine_management(opts) do
+    Mix.Shell.IO.info("🚧 Managing quarantined tests...")
+
+    failure_threshold = opts[:failure_threshold] || @default_failure_threshold
+    quarantine_mode = opts[:quarantine_mode] || "isolate"
+
+    # Load current data
+    flaky_data = load_flaky_detection_data()
+    current_quarantine = load_quarantined_tests()
+
+    # Identify tests for quarantine/release
+    quarantine_candidates =
+      identify_quarantine_candidates(flaky_data, failure_threshold)
+
+    release_candidates =
+      identify_release_candidates(current_quarantine, flaky_data)
+
+    # Update quarantine list
+    new_quarantine =
+      update_quarantine_status(
+        current_quarantine,
+        quarantine_candidates,
+        release_candidates,
+        quarantine_mode
+      )
+
+    # Save updated quarantine list
+    save_quarantine_list(new_quarantine)
+
+    # Display changes
+    display_quarantine_changes(current_quarantine, new_quarantine, opts)
+  end
+
+  # Test execution functions
+
+  defp run_test_iterations(iterations, opts) do
+    Mix.Shell.IO.info("Running test iterations...")
+
+    all_results = 
+      for iteration <- 1..iterations do
+        Mix.Shell.IO.info("Iteration #{iteration}/#{iterations}")
+
+        # Run tests and capture results
+        test_command = build_test_command(opts)
+
+        start_time = System.monotonic_time(:millisecond)
+
+        {output, exit_code} =
+          System.cmd("mix", test_command, stderr_to_stdout: true)
+
+        end_time = System.monotonic_time(:millisecond)
+
+        # Parse test results
+        parsed_results =
+          parse_test_results(output, iteration, start_time, end_time, exit_code)
+
+        if opts[:verbose] do
+          passed = length(parsed_results.passed_tests)
+          failed = length(parsed_results.failed_tests)
+          Mix.Shell.IO.info("  Passed: #{passed}, Failed: #{failed}")
+        end
+
+        # Small delay between iterations to avoid resource conflicts
+        Process.sleep(100)
+        
+        parsed_results
+      end
+
+    Enum.reverse(all_results)
+  end
+
+  defp build_test_command(opts) do
+    base_command = [
+      "test",
+      "--exclude",
+      "slow",
+      "--exclude",
+      "integration",
+      "--exclude",
+      "docker"
+    ]
+
+    # Add pattern filter if specified
+    command =
+      case opts[:pattern] do
+        nil -> base_command
+        pattern -> base_command ++ [pattern]
+      end
+
+    # Add other flags
+    command =
+      if opts[:verbose] do
+        command ++ ["--trace"]
+      else
+        command
+      end
+
+    command
+  end
+
+  defp parse_test_results(output, iteration, start_time, end_time, exit_code) do
+    lines = String.split(output, "\n")
+
+    # Extract test results using ExUnit output patterns
+    passed_tests = extract_passed_tests(lines)
+    failed_tests = extract_failed_tests(lines)
+
+    %{
+      iteration: iteration,
+      start_time: start_time,
+      end_time: end_time,
+      duration_ms: end_time - start_time,
+      exit_code: exit_code,
+      passed_tests: passed_tests,
+      failed_tests: failed_tests,
+      total_tests: length(passed_tests) + length(failed_tests)
+    }
+  end
+
+  defp extract_passed_tests(output_lines) do
+    # Parse ExUnit output for passed tests
+    # This is a simplified parser - production version would be more robust
+
+    Enum.flat_map(output_lines, fn line ->
+      case Regex.run(~r/test (.+) \((.+)\).*\[L#\d+\].*\(\d+\.\d+ms\)/, line) do
+        [_, test_name, module] ->
+          [
+            %{
+              name: test_name,
+              module: module,
+              full_name: "#{module}.#{test_name}",
+              status: :passed
+            }
+          ]
+
+        _ ->
+          []
+      end
+    end)
+  end
+
+  defp extract_failed_tests(output_lines) do
+    # Parse ExUnit output for failed tests
+    failed_tests = []
+    _current_failure = nil
+
+    for line <- output_lines, reduce: failed_tests do
+      acc ->
+        cond do
+          # Detect failure start
+          String.contains?(line, ") test ") and String.contains?(line, "FAILED") ->
+            case Regex.run(~r/\d+\) test (.+) \((.+)\)/, line) do
+              [_, test_name, module] ->
+                failure = %{
+                  name: test_name,
+                  module: module,
+                  full_name: "#{module}.#{test_name}",
+                  status: :failed,
+                  error_message: "",
+                  stacktrace: []
+                }
+
+                [failure | acc]
+
+              _ ->
+                acc
+            end
+
+          # Add error details to most recent failure
+          String.trim(line) != "" and not Enum.empty?(acc) ->
+            [current | rest] = acc
+
+            updated = %{
+              current
+              | error_message: current.error_message <> line <> "\n"
+            }
+
+            [updated | rest]
+
+          true ->
+            acc
+        end
+    end
+    |> Enum.reverse()
+  end
+
+  # Analysis functions
+
+  defp analyze_flakiness(test_results, failure_threshold) do
+    Mix.Shell.IO.info("Analyzing test flakiness...")
+
+    # Aggregate results by test name
+    test_aggregates = aggregate_test_results(test_results)
+
+    # Calculate flakiness metrics for each test
+    test_flakiness =
+      for {test_name, results} <- test_aggregates do
+        total_runs = length(results)
+        failures = Enum.count(results, &(&1.status == :failed))
+        failure_rate = failures / total_runs * 100
+
+        flaky =
+          failure_rate > 0 and failure_rate < 100 and
+            failure_rate >= failure_threshold
+
+        %{
+          test_name: test_name,
+          total_runs: total_runs,
+          failures: failures,
+          passes: total_runs - failures,
+          failure_rate: failure_rate,
+          flaky: flaky,
+          error_patterns: analyze_error_patterns(results),
+          timing_variance: calculate_timing_variance(results)
+        }
+      end
+
+    flaky_tests = Enum.filter(test_flakiness, & &1.flaky)
+
+    %{
+      total_tests: length(test_flakiness),
+      flaky_test_count: length(flaky_tests),
+      flaky_tests: flaky_tests,
+      all_tests: test_flakiness,
+      analysis_timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
+      iterations: length(test_results)
+    }
+  end
+
+  defp aggregate_test_results(test_results) do
+    all_individual_results =
+      Enum.flat_map(test_results, fn iteration ->
+        passed =
+          Enum.map(
+            iteration.passed_tests,
+            &Map.put(&1, :iteration, iteration.iteration)
+          )
+
+        failed =
+          Enum.map(
+            iteration.failed_tests,
+            &Map.put(&1, :iteration, iteration.iteration)
+          )
+
+        passed ++ failed
+      end)
+
+    Enum.group_by(all_individual_results, & &1.full_name)
+  end
+
+  defp analyze_error_patterns(test_results) do
+    failed_results = Enum.filter(test_results, &(&1.status == :failed))
+
+    if Enum.empty?(failed_results) do
+      []
+    else
+      # Group by error message pattern
+      error_groups =
+        Enum.group_by(failed_results, fn result ->
+          # Extract error type from error message
+          case Regex.run(~r/\*\* \((\w+)\)/, result[:error_message] || "") do
+            [_, error_type] -> error_type
+            _ -> "Unknown"
+          end
+        end)
+
+      Enum.map(error_groups, fn {error_type, occurrences} ->
+        %{
+          error_type: error_type,
+          count: length(occurrences),
+          percentage: length(occurrences) / length(failed_results) * 100
+        }
+      end)
+    end
+  end
+
+  defp calculate_timing_variance(_test_results) do
+    # Calculate timing variance if timing data is available
+    # This is a placeholder - actual implementation would extract timing from test output
+    %{
+      min_ms: 10,
+      max_ms: 500,
+      avg_ms: 100,
+      variance: 50
+    }
+  end
+
+  defp perform_comprehensive_analysis(historical_data, _opts) do
+    Mix.Shell.IO.info("Performing comprehensive flaky test analysis...")
+
+    # Analyze trends over time
+    trend_analysis = analyze_flakiness_trends(historical_data)
+
+    # Identify most problematic tests
+    problem_tests = identify_most_problematic_tests(historical_data)
+
+    # Analyze correlation patterns
+    correlation_analysis = analyze_flakiness_correlations(historical_data)
+
+    # Generate recommendations
+    recommendations =
+      generate_flakiness_recommendations(trend_analysis, problem_tests)
+
+    %{
+      trend_analysis: trend_analysis,
+      problem_tests: problem_tests,
+      correlation_analysis: correlation_analysis,
+      recommendations: recommendations,
+      data_points: length(historical_data),
+      analysis_timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+  end
+
+  defp analyze_flakiness_trends(historical_data) do
+    # Analyze how flakiness changes over time
+    if length(historical_data) < 2 do
+      %{trend: :insufficient_data, change_rate: 0}
+    else
+      # Simple trend analysis
+      sorted_data = Enum.sort_by(historical_data, & &1.analysis_timestamp)
+      recent_flaky_count = List.last(sorted_data).flaky_test_count
+      old_flaky_count = List.first(sorted_data).flaky_test_count
+
+      change = recent_flaky_count - old_flaky_count
+
+      trend =
+        cond do
+          change > 2 -> :worsening
+          change < -2 -> :improving
+          true -> :stable
+        end
+
+      %{
+        trend: trend,
+        change_rate: change,
+        recent_count: recent_flaky_count,
+        historical_count: old_flaky_count
+      }
+    end
+  end
+
+  defp identify_most_problematic_tests(historical_data) do
+    # Find tests that appear flaky across multiple detection runs
+    all_flaky_tests = Enum.flat_map(historical_data, & &1.flaky_tests)
+
+    test_frequencies =
+      Enum.reduce(all_flaky_tests, %{}, fn test, acc ->
+        Map.update(acc, test.test_name, 1, &(&1 + 1))
+      end)
+
+    # Get tests that appear flaky in multiple runs
+    persistent_flaky =
+      test_frequencies
+      |> Enum.filter(fn {_test, frequency} -> frequency > 1 end)
+      |> Enum.sort_by(fn {_test, frequency} -> -frequency end)
+      |> Enum.take(10)
+
+    Enum.map(persistent_flaky, fn {test_name, frequency} ->
+      # Get average failure rate across runs
+      test_instances =
+        Enum.filter(all_flaky_tests, &(&1.test_name == test_name))
+
+      avg_failure_rate =
+        Enum.sum(Enum.map(test_instances, & &1.failure_rate)) /
+          length(test_instances)
+
+      %{
+        test_name: test_name,
+        appearances: frequency,
+        average_failure_rate: avg_failure_rate,
+        severity: calculate_flakiness_severity(frequency, avg_failure_rate)
+      }
+    end)
+  end
+
+  defp calculate_flakiness_severity(frequency, failure_rate) do
+    # Calculate severity score based on frequency and failure rate
+    frequency_score = frequency * 2
+    failure_score = failure_rate / 10
+
+    total_score = frequency_score + failure_score
+
+    cond do
+      total_score >= 8 -> :critical
+      total_score >= 5 -> :high
+      total_score >= 3 -> :medium
+      true -> :low
+    end
+  end
+
+  defp analyze_flakiness_correlations(_historical_data) do
+    # Analyze correlations between flaky tests and various factors
+    # This is a placeholder for more sophisticated analysis
+    %{
+      time_correlation: 0.2,
+      resource_correlation: 0.7,
+      dependency_correlation: 0.4
+    }
+  end
+
+  defp generate_flakiness_recommendations(trend_analysis, problem_tests) do
+    recommendations = []
+
+    # Trend-based recommendations
+    recommendations =
+      case trend_analysis.trend do
+        :worsening ->
+          [
+            "Flaky test count is increasing - investigate recent changes"
+            | recommendations
+          ]
+
+        :improving ->
+          [
+            "Flaky test count is decreasing - current stability efforts are working"
+            | recommendations
+          ]
+
+        _ ->
+          recommendations
+      end
+
+    # Problem test recommendations
+    critical_tests = Enum.filter(problem_tests, &(&1.severity == :critical))
+
+    recommendations =
+      if not Enum.empty?(critical_tests) do
+        [
+          "#{length(critical_tests)} critical flaky tests need immediate attention"
+          | recommendations
+        ]
+      else
+        recommendations
+      end
+
+    # Default recommendations
+    recommendations =
+      if Enum.empty?(recommendations) do
+        [
+          "Flaky test situation is under control",
+          "Continue regular flakiness monitoring",
+          "Consider implementing retry mechanisms for borderline tests"
+        ]
+      else
+        recommendations
+      end
+
+    recommendations
+  end
+
+  # Retry execution functions
+
+  defp build_execution_strategy(flaky_tests, quarantined_tests, opts) do
+    # Build strategy for running tests with retries and quarantine handling
+
+    flaky_test_names = Enum.map(flaky_tests, & &1.test_name) |> MapSet.new()
+
+    quarantined_test_names =
+      Enum.map(quarantined_tests, & &1.test_name) |> MapSet.new()
+
+    quarantine_mode = opts[:quarantine_mode] || "retry"
+
+    %{
+      flaky_tests: flaky_test_names,
+      quarantined_tests: quarantined_test_names,
+      quarantine_mode: quarantine_mode,
+      test_patterns: opts[:pattern]
+    }
+  end
+
+  defp execute_tests_with_retries(strategy, max_retries, retry_delay, opts) do
+    Mix.Shell.IO.info("Executing tests with retry logic...")
+
+    # First, run all tests normally
+    initial_results = run_single_test_execution(strategy, opts)
+
+    # Identify failed tests that need retries
+    failed_tests = extract_failed_test_names(initial_results)
+    retry_candidates = identify_retry_candidates(failed_tests, strategy)
+
+    Mix.Shell.IO.info(
+      "Initial run: #{initial_results.passed} passed, #{initial_results.failed} failed"
+    )
+
+    Mix.Shell.IO.info("Retry candidates: #{length(retry_candidates)}")
+
+    # Retry failed tests with exponential backoff
+    retry_results =
+      execute_retries(retry_candidates, max_retries, retry_delay, opts)
+
+    # Combine results
+    combine_execution_results(initial_results, retry_results)
+  end
+
+  defp run_single_test_execution(strategy, opts) do
+    # Handle quarantined tests based on strategy
+    test_args =
+      case strategy.quarantine_mode do
+        "skip" -> build_test_command_with_skip(strategy.quarantined_tests, opts)
+        "isolate" -> build_test_command_isolated(opts)
+        _ -> build_test_command(opts)
+      end
+
+    {output, exit_code} = System.cmd("mix", test_args, stderr_to_stdout: true)
+
+    %{
+      output: output,
+      exit_code: exit_code,
+      passed: count_passed_tests(output),
+      failed: count_failed_tests(output)
+    }
+  end
+
+  defp build_test_command_with_skip(quarantined_tests, opts) do
+    base_command = build_test_command(opts)
+
+    # Add exclusions for quarantined tests
+    exclusions =
+      Enum.flat_map(quarantined_tests, fn test_name ->
+        ["--exclude", "quarantined:#{test_name}"]
+      end)
+
+    base_command ++ exclusions
+  end
+
+  defp build_test_command_isolated(_opts) do
+    # Run only non-quarantined tests in isolated mode
+    # This would require test tagging infrastructure
+    [
+      "test",
+      "--exclude",
+      "quarantined",
+      "--exclude",
+      "slow",
+      "--exclude",
+      "integration"
+    ]
+  end
+
+  defp extract_failed_test_names(test_results) do
+    # Extract failed test names from test output
+    failed_pattern = ~r/\d+\) test (.+) \((.+)\)/
+
+    test_results.output
+    |> String.split("\n")
+    |> Enum.flat_map(fn line ->
+      case Regex.run(failed_pattern, line) do
+        [_, test_name, module] -> ["#{module}.#{test_name}"]
+        _ -> []
+      end
+    end)
+  end
+
+  defp identify_retry_candidates(failed_tests, strategy) do
+    # Determine which failed tests should be retried
+    Enum.filter(failed_tests, fn test_name ->
+      # Retry if test is known to be flaky or if we're in retry mode for quarantined tests
+      MapSet.member?(strategy.flaky_tests, test_name) or
+        (strategy.quarantine_mode == "retry" and
+           MapSet.member?(strategy.quarantined_tests, test_name))
+    end)
+  end
+
+  defp execute_retries(retry_candidates, max_retries, base_delay, opts) do
+    retry_results = 
+      for test_name <- retry_candidates do
+        Mix.Shell.IO.info("Retrying #{test_name}...")
+        retry_single_test(test_name, max_retries, base_delay, opts)
+      end
+
+    retry_results
+  end
+
+  defp retry_single_test(test_name, max_retries, base_delay, opts) do
+    result = %{
+      test_name: test_name,
+      attempts: [],
+      final_status: :failed,
+      total_attempts: 0
+    }
+
+    for attempt <- 1..max_retries, reduce: result do
+      acc ->
+        if acc.final_status == :passed do
+          # Already passed, no need to continue
+          acc
+        else
+          # Calculate delay with exponential backoff
+          delay = (base_delay * :math.pow(2, attempt - 1)) |> round()
+
+          if attempt > 1 do
+            Mix.Shell.IO.info(
+              "  Attempt #{attempt}/#{max_retries} (delay: #{delay}ms)"
+            )
+
+            Process.sleep(delay)
+          end
+
+          # Run the specific test
+          {output, exit_code} = run_specific_test(test_name, opts)
+
+          status = if exit_code == 0, do: :passed, else: :failed
+
+          attempt_result = %{
+            attempt: attempt,
+            status: status,
+            delay_ms: delay,
+            output_length: byte_size(output)
+          }
+
+          %{
+            acc
+            | attempts: [attempt_result | acc.attempts],
+              final_status: status,
+              total_attempts: attempt
+          }
+        end
+    end
+  end
+
+  defp run_specific_test(test_name, opts) do
+    # Extract module and test name
+    [module, test_function] = String.split(test_name, ".", parts: 2)
+
+    # Run specific test
+    test_file = find_test_file_for_module(module)
+
+    if test_file do
+      test_args =
+        ["test", test_file, "--only", "test:#{test_function}"] ++
+          if(opts[:verbose], do: ["--trace"], else: [])
+
+      System.cmd("mix", test_args, stderr_to_stdout: true)
+    else
+      {"Test file not found for #{module}", 1}
+    end
+  end
+
+  defp find_test_file_for_module(module) do
+    # Simple heuristic to find test file for a module
+    # Convert Module.Name to module_name_test.exs
+    file_name =
+      module
+      |> String.split(".")
+      |> List.last()
+      |> Macro.underscore()
+      |> Kernel.<>("_test.exs")
+
+    # Search for the file
+    candidates = Path.wildcard("test/**/" <> file_name)
+    List.first(candidates)
+  end
+
+  defp count_passed_tests(output) do
+    # Count passed tests from ExUnit output
+    case Regex.run(~r/(\d+) tests?, (\d+) failures?/, output) do
+      [_, total, failures] ->
+        String.to_integer(total) - String.to_integer(failures)
+
+      _ ->
+        0
+    end
+  end
+
+  defp count_failed_tests(output) do
+    case Regex.run(~r/(\d+) tests?, (\d+) failures?/, output) do
+      [_, _total, failures] -> String.to_integer(failures)
+      _ -> 0
+    end
+  end
+
+  defp combine_execution_results(initial_results, retry_results) do
+    successful_retries =
+      Enum.count(retry_results, &(&1.final_status == :passed))
+
+    failed_retries = Enum.count(retry_results, &(&1.final_status == :failed))
+
+    %{
+      initial_results: initial_results,
+      retry_results: retry_results,
+      final_passed: initial_results.passed + successful_retries,
+      final_failed: failed_retries,
+      retry_success_rate:
+        if(length(retry_results) > 0,
+          do: successful_retries / length(retry_results) * 100,
+          else: 0
+        )
+    }
+  end
+
+  # Quarantine management functions
+
+  defp identify_quarantine_candidates(flaky_data, failure_threshold) do
+    if is_nil(flaky_data) or is_nil(flaky_data.flaky_tests) do
+      []
+    else
+      Enum.filter(flaky_data.flaky_tests, fn test ->
+        test.failure_rate >= failure_threshold
+      end)
+    end
+  end
+
+  defp identify_release_candidates(current_quarantine, flaky_data) do
+    # Tests that have been stable and can be released from quarantine
+    if is_nil(flaky_data) or is_nil(flaky_data.all_tests) do
+      []
+    else
+      quarantine_names =
+        Enum.map(current_quarantine, & &1.test_name) |> MapSet.new()
+
+      stable_tests =
+        Enum.filter(flaky_data.all_tests, fn test ->
+          MapSet.member?(quarantine_names, test.test_name) and
+            test.failure_rate < 5.0
+        end)
+
+      Enum.map(stable_tests, & &1.test_name)
+    end
+  end
+
+  defp update_quarantine_status(current, candidates, releases, mode) do
+    # Remove released tests
+    without_releases = Enum.reject(current, fn q -> q.test_name in releases end)
+
+    # Add new candidates
+    new_quarantined =
+      Enum.map(candidates, fn test ->
+        %{
+          test_name: test.test_name,
+          quarantine_date: DateTime.utc_now() |> DateTime.to_iso8601(),
+          reason:
+            "Flaky test - #{Float.round(test.failure_rate, 1)}% failure rate",
+          mode: mode,
+          failure_rate: test.failure_rate
+        }
+      end)
+
+    without_releases ++ new_quarantined
+  end
+
+  # Data persistence functions
+
+  defp ensure_flaky_directories do
+    dirs = [
+      @flaky_data_dir,
+      "#{@flaky_data_dir}/reports",
+      "#{@flaky_data_dir}/historical"
+    ]
+
+    for dir <- dirs, do: File.mkdir_p!(dir)
+  end
+
+  defp save_flaky_detection_results(analysis) do
+    timestamp = DateTime.utc_now() |> DateTime.to_iso8601(:basic)
+    filename = "flaky_detection_#{timestamp}.json"
+    file_path = Path.join(@flaky_data_dir, filename)
+
+    File.write!(file_path, Jason.encode!(analysis, pretty: true))
+    Mix.Shell.IO.info("📝 Flaky detection results saved to #{file_path}")
+
+    # Also save as latest
+    latest_path = Path.join(@flaky_data_dir, "latest_detection.json")
+    File.write!(latest_path, Jason.encode!(analysis, pretty: true))
+  end
+
+  defp load_flaky_detection_data do
+    latest_path = Path.join(@flaky_data_dir, "latest_detection.json")
+
+    if File.exists?(latest_path) do
+      File.read!(latest_path) |> Jason.decode!(keys: :atoms)
+    else
+      nil
+    end
+  end
+
+  defp load_historical_flaky_data do
+    pattern = Path.join(@flaky_data_dir, "flaky_detection_*.json")
+
+    Path.wildcard(pattern)
+    |> Enum.sort()
+    |> Enum.map(fn file ->
+      File.read!(file) |> Jason.decode!(keys: :atoms)
+    end)
+  end
+
+  defp load_known_flaky_tests do
+    case load_flaky_detection_data() do
+      nil -> []
+      data -> data.flaky_tests
+    end
+  end
+
+  defp load_quarantined_tests do
+    if File.exists?(@quarantine_file) do
+      try do
+        {quarantine_list, _} = Code.eval_file(@quarantine_file)
+        quarantine_list
+      rescue
+        _ -> []
+      end
+    else
+      []
+    end
+  end
+
+  defp save_quarantine_list(quarantine_list) do
+    File.mkdir_p!(Path.dirname(@quarantine_file))
+
+    content = """
+    # Quarantined Tests
+    # This file is automatically managed by mix raxol.test_flaky
+    # Do not edit manually
+
+    #{inspect(quarantine_list, pretty: true, limit: :infinity)}
+    """
+
+    File.write!(@quarantine_file, content)
+    Mix.Shell.IO.info("📝 Quarantine list updated: #{@quarantine_file}")
+  end
+
+  defp update_quarantine_list(flaky_tests, quarantine_mode) do
+    current_quarantine = load_quarantined_tests()
+
+    new_entries =
+      Enum.map(flaky_tests, fn test ->
+        %{
+          test_name: test.test_name,
+          quarantine_date: DateTime.utc_now() |> DateTime.to_iso8601(),
+          reason:
+            "Auto-quarantined - #{Float.round(test.failure_rate, 1)}% failure rate",
+          mode: quarantine_mode,
+          failure_rate: test.failure_rate
+        }
+      end)
+
+    updated_quarantine = current_quarantine ++ new_entries
+    save_quarantine_list(updated_quarantine)
+
+    Mix.Shell.IO.info("🚧 Quarantined #{length(new_entries)} flaky tests")
+  end
+
+  defp update_flaky_test_database(results) do
+    # Update database with retry execution results
+    database_entry = %{
+      timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
+      execution_type: "retry",
+      initial_passed: results.initial_results.passed,
+      initial_failed: results.initial_results.failed,
+      retry_success_rate: results.retry_success_rate,
+      retry_details: results.retry_results
+    }
+
+    database_path = Path.join(@flaky_data_dir, "retry_executions.jsonl")
+
+    # Append to JSONL file
+    json_line = Jason.encode!(database_entry) <> "\n"
+    File.write!(database_path, json_line, [:append])
+  end
+
+  # Display and reporting functions
+
+  defp display_flaky_detection_results(analysis, opts) do
+    Mix.Shell.IO.info("\n🔍 Flaky Test Detection Results")
+    Mix.Shell.IO.info("=" <> String.duplicate("=", 31))
+
+    Mix.Shell.IO.info("Total tests analyzed: #{analysis.total_tests}")
+    Mix.Shell.IO.info("Flaky tests found: #{analysis.flaky_test_count}")
+    Mix.Shell.IO.info("Test iterations: #{analysis.iterations}")
+
+    if analysis.flaky_test_count > 0 do
+      IO.warn("\n⚠️  Flaky Tests Detected:")
+
+      for test <- Enum.take(analysis.flaky_tests, 10) do
+        Mix.Shell.IO.info(
+          "  #{Float.round(test.failure_rate, 1)}% - #{test.test_name}"
+        )
+
+        if opts[:verbose] and not Enum.empty?(test.error_patterns) do
+          Mix.Shell.IO.info("    Error patterns:")
+
+          for pattern <- test.error_patterns do
+            Mix.Shell.IO.info("      #{pattern.error_type} (#{pattern.count}x)")
+          end
+        end
+      end
+
+      if analysis.flaky_test_count > 10 do
+        Mix.Shell.IO.info("  ... and #{analysis.flaky_test_count - 10} more")
+      end
+    else
+      Mix.Shell.IO.info("✅ No flaky tests detected!")
+    end
+  end
+
+  defp display_flaky_analysis_results(analysis, opts) do
+    Mix.Shell.IO.info("\n📊 Flaky Test Analysis Results")
+    Mix.Shell.IO.info("=" <> String.duplicate("=", 30))
+
+    # Trend analysis
+    trend_icon =
+      case analysis.trend_analysis.trend do
+        :worsening -> "📈❌"
+        :improving -> "📉✅"
+        :stable -> "📊"
+        _ -> "❓"
+      end
+
+    Mix.Shell.IO.info("#{trend_icon} Trend: #{analysis.trend_analysis.trend}")
+    Mix.Shell.IO.info("Data points: #{analysis.data_points}")
+
+    # Problem tests
+    if not Enum.empty?(analysis.problem_tests) do
+      IO.warn("\n🚨 Most Problematic Tests:")
+
+      for test <- Enum.take(analysis.problem_tests, 5) do
+        severity_icon =
+          case test.severity do
+            :critical -> "🔴"
+            :high -> "🟠"
+            :medium -> "🟡"
+            _ -> "🟢"
+          end
+
+        Mix.Shell.IO.info("  #{severity_icon} #{test.test_name}")
+
+        Mix.Shell.IO.info(
+          "      Appearances: #{test.appearances}, Avg failure: #{Float.round(test.average_failure_rate, 1)}%"
+        )
+      end
+    end
+
+    # Recommendations
+    if opts[:verbose] do
+      Mix.Shell.IO.info("\n💡 Recommendations:")
+
+      for rec <- analysis.recommendations do
+        Mix.Shell.IO.info("  • #{rec}")
+      end
+    end
+  end
+
+  defp display_retry_execution_results(results, _opts) do
+    Mix.Shell.IO.info("\n🔄 Retry Execution Results")
+    Mix.Shell.IO.info("=" <> String.duplicate("=", 24))
+
+    Mix.Shell.IO.info("Initial run:")
+    Mix.Shell.IO.info("  Passed: #{results.initial_results.passed}")
+    Mix.Shell.IO.info("  Failed: #{results.initial_results.failed}")
+
+    Mix.Shell.IO.info("After retries:")
+    Mix.Shell.IO.info("  Final passed: #{results.final_passed}")
+    Mix.Shell.IO.info("  Final failed: #{results.final_failed}")
+
+    Mix.Shell.IO.info(
+      "  Retry success rate: #{Float.round(results.retry_success_rate, 1)}%"
+    )
+
+    if not Enum.empty?(results.retry_results) do
+      Mix.Shell.IO.info("\nRetry details:")
+
+      for retry <- results.retry_results do
+        status_icon = if retry.final_status == :passed, do: "✅", else: "❌"
+
+        Mix.Shell.IO.info(
+          "  #{status_icon} #{retry.test_name} (#{retry.total_attempts} attempts)"
+        )
+      end
+    end
+  end
+
+  defp display_quarantine_changes(old_quarantine, new_quarantine, _opts) do
+    Mix.Shell.IO.info("\n🚧 Quarantine Status Changes")
+    Mix.Shell.IO.info("=" <> String.duplicate("=", 28))
+
+    old_names = Enum.map(old_quarantine, & &1.test_name) |> MapSet.new()
+    new_names = Enum.map(new_quarantine, & &1.test_name) |> MapSet.new()
+
+    added = MapSet.difference(new_names, old_names)
+    removed = MapSet.difference(old_names, new_names)
+
+    Mix.Shell.IO.info("Previously quarantined: #{length(old_quarantine)}")
+    Mix.Shell.IO.info("Currently quarantined: #{length(new_quarantine)}")
+
+    if not Enum.empty?(added) do
+      Mix.Shell.IO.info("🔒 Added to quarantine:")
+
+      for test_name <- added do
+        Mix.Shell.IO.info("  + #{test_name}")
+      end
+    end
+
+    if not Enum.empty?(removed) do
+      Mix.Shell.IO.info("🔓 Released from quarantine:")
+
+      for test_name <- removed do
+        Mix.Shell.IO.info("  - #{test_name}")
+      end
+    end
+
+    if Enum.empty?(added) and Enum.empty?(removed) do
+      Mix.Shell.IO.info("No changes to quarantine status")
+    end
+  end
+
+  # Report generation functions
+
+  defp generate_flaky_test_report(
+         detection_data,
+         historical_data,
+         quarantine_data,
+         _opts
+       ) do
+    %{
+      summary: %{
+        current_flaky_count:
+          if(detection_data, do: detection_data.flaky_test_count, else: 0),
+        historical_runs: length(historical_data),
+        quarantined_count: length(quarantine_data),
+        report_timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
+      },
+      current_detection: detection_data,
+      historical_data: historical_data,
+      quarantine_status: quarantine_data,
+      trends:
+        if(length(historical_data) > 1,
+          do: analyze_flakiness_trends(historical_data),
+          else: %{}
+        ),
+      recommendations:
+        generate_report_recommendations(
+          detection_data,
+          historical_data,
+          quarantine_data
+        )
+    }
+  end
+
+  defp generate_report_recommendations(
+         detection_data,
+         historical_data,
+         quarantine_data
+       ) do
+    recommendations = []
+
+    current_flaky =
+      if detection_data, do: detection_data.flaky_test_count, else: 0
+
+    quarantined = length(quarantine_data)
+
+    recommendations =
+      cond do
+        current_flaky == 0 and quarantined == 0 ->
+          [
+            "Excellent test stability - no flaky tests detected!"
+            | recommendations
+          ]
+
+        current_flaky > 0 and quarantined == 0 ->
+          [
+            "#{current_flaky} flaky tests detected - consider quarantining them"
+            | recommendations
+          ]
+
+        quarantined > 5 ->
+          [
+            "Many tests quarantined (#{quarantined}) - review and fix underlying issues"
+            | recommendations
+          ]
+
+        true ->
+          recommendations
+      end
+
+    # Historical recommendations
+    recommendations = if length(historical_data) > 3 do
+      trend = analyze_flakiness_trends(historical_data)
+
+      case trend.trend do
+        :worsening ->
+          [
+            "Flakiness trend is worsening - investigate recent changes"
+            | recommendations
+          ]
+
+        :improving ->
+          [
+            "Flakiness is improving - continue current practices"
+            | recommendations
+          ]
+
+        _ ->
+          recommendations
+      end
+    else
+      recommendations
+    end
+
+    # Default recommendations
+    if Enum.empty?(recommendations) do
+      [
+        "Monitor flaky tests regularly",
+        "Consider implementing retry logic for borderline cases",
+        "Review test isolation and resource sharing"
+      ]
+    else
+      recommendations
+    end
+  end
+
+  defp save_flaky_test_report(report) do
+    report_path =
+      Path.join("#{@flaky_data_dir}/reports", "flaky_test_report.json")
+
+    File.write!(report_path, Jason.encode!(report, pretty: true))
+
+    # Also generate HTML report
+    html_path =
+      Path.join("#{@flaky_data_dir}/reports", "flaky_test_report.html")
+
+    html_content = generate_html_report(report)
+    File.write!(html_path, html_content)
+
+    Mix.Shell.IO.info("📊 Flaky test report saved:")
+    Mix.Shell.IO.info("  JSON: #{report_path}")
+    Mix.Shell.IO.info("  HTML: #{html_path}")
+  end
+
+  defp generate_html_report(report) do
+    """
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Flaky Test Report</title>
+      <style>
+        body { font-family: sans-serif; margin: 20px; max-width: 1000px; }
+        .summary { background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .metric { display: inline-block; margin: 0 20px 10px 0; }
+        .metric .value { font-size: 24px; font-weight: bold; color: #007acc; }
+        .flaky-list { margin: 15px 0; }
+        .flaky-test { padding: 8px; margin: 4px 0; background: #fff3cd; border-radius: 4px; }
+        .quarantined { background: #f8d7da; }
+        .recommendations { background: #e8f4f8; padding: 15px; border-radius: 8px; }
+      </style>
+    </head>
+    <body>
+      <h1>Flaky Test Report</h1>
+      <p><small>Generated: #{report.summary.report_timestamp}</small></p>
+      
+      <div class="summary">
+        <div class="metric">
+          <div class="value">#{report.summary.current_flaky_count}</div>
+          <div>Current Flaky Tests</div>
+        </div>
+        <div class="metric">
+          <div class="value">#{report.summary.quarantined_count}</div>
+          <div>Quarantined Tests</div>
+        </div>
+        <div class="metric">
+          <div class="value">#{report.summary.historical_runs}</div>
+          <div>Historical Runs</div>
+        </div>
+      </div>
+      
+      #{format_current_flaky_tests_html(report.current_detection)}
+      #{format_quarantined_tests_html(report.quarantine_status)}
+      
+      <div class="recommendations">
+        <h3>Recommendations</h3>
+        <ul>
+          #{Enum.map(report.recommendations, fn rec -> "<li>#{rec}</li>" end) |> Enum.join("\n")}
+        </ul>
+      </div>
+    </body>
+    </html>
+    """
+  end
+
+  defp format_current_flaky_tests_html(detection_data) do
+    if is_nil(detection_data) or detection_data.flaky_test_count == 0 do
+      "<h3>✅ No Flaky Tests Detected</h3>"
+    else
+      test_items = Enum.map_join(detection_data.flaky_tests, "\n", fn test ->
+          """
+          <div class="flaky-test">
+            <strong>#{test.test_name}</strong><br>
+            Failure rate: #{Float.round(test.failure_rate, 1)}% 
+            (#{test.failures}/#{test.total_runs} runs)
+          </div>
+          """
+        end)
+
+      """
+      <h3>🔍 Currently Detected Flaky Tests</h3>
+      <div class="flaky-list">
+        #{test_items}
+      </div>
+      """
+    end
+  end
+
+  defp format_quarantined_tests_html(quarantine_data) do
+    if Enum.empty?(quarantine_data) do
+      ""
+    else
+      test_items = Enum.map_join(quarantine_data, "\n", fn test ->
+          """
+          <div class="flaky-test quarantined">
+            <strong>#{test.test_name}</strong><br>
+            Quarantined: #{test.quarantine_date}<br>
+            Reason: #{test.reason}
+          </div>
+          """
+        end)
+
+      """
+      <h3>🚧 Quarantined Tests</h3>
+      <div class="flaky-list">
+        #{test_items}
+      </div>
+      """
+    end
+  end
+
+  defp display_flaky_test_report(report, _opts) do
+    Mix.Shell.IO.info("\n📈 Flaky Test Report Summary")
+    Mix.Shell.IO.info("=" <> String.duplicate("=", 27))
+
+    Mix.Shell.IO.info(
+      "Current flaky tests: #{report.summary.current_flaky_count}"
+    )
+
+    Mix.Shell.IO.info("Quarantined tests: #{report.summary.quarantined_count}")
+    Mix.Shell.IO.info("Historical runs: #{report.summary.historical_runs}")
+
+    unless Enum.empty?(report.recommendations) do
+      Mix.Shell.IO.info("\n💡 Key Recommendations:")
+
+      for rec <- Enum.take(report.recommendations, 3) do
+        Mix.Shell.IO.info("  • #{rec}")
+      end
+    end
+  end
+
+  defp save_flaky_analysis_results(analysis) do
+    analysis_path = Path.join(@flaky_data_dir, "comprehensive_analysis.json")
+    File.write!(analysis_path, Jason.encode!(analysis, pretty: true))
+    Mix.Shell.IO.info("📊 Comprehensive analysis saved to #{analysis_path}")
+  end
+end

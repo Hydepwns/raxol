@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Graphics.ChartRenderers do
   """
 
   alias Raxol.Terminal.Graphics.UnifiedGraphics
+  alias Raxol.Terminal.Graphics.ChartDataUtils
 
   @doc """
   Renders a heatmap visualization.
@@ -73,39 +74,14 @@ defmodule Raxol.Terminal.Graphics.ChartRenderers do
   Flattens 2D heatmap data into a list of data points.
   """
   def flatten_heatmap_data(data) do
-    data
-    |> Enum.with_index()
-    |> Enum.flat_map(fn {row, y} ->
-      row
-      |> Enum.with_index()
-      |> Enum.map(fn {value, x} ->
-        %{x: x, y: y, value: value, timestamp: System.system_time(:millisecond)}
-      end)
-    end)
+    ChartDataUtils.flatten_heatmap_data(data)
   end
 
   @doc """
   Converts histogram values into data points with binning.
   """
   def histogram_data_points(values, config) do
-    bins = Map.get(config, :bins, 10)
-    {min_val, max_val} = Enum.min_max(values)
-    bin_width = (max_val - min_val) / bins
-
-    # Create histogram bins
-    Enum.map(0..(bins - 1), fn i ->
-      bin_start = min_val + i * bin_width
-      bin_end = bin_start + bin_width
-      bin_values = Enum.filter(values, &(&1 >= bin_start and &1 < bin_end))
-
-      %{
-        bin: i,
-        start: bin_start,
-        end: bin_end,
-        count: length(bin_values),
-        timestamp: System.system_time(:millisecond)
-      }
-    end)
+    ChartDataUtils.histogram_data_points(values, config)
   end
 
   defp generate_chart_id do

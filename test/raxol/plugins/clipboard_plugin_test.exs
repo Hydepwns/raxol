@@ -134,9 +134,6 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
   # Basic check for optional callbacks existence
   describe "optional callbacks" do
     # Use helper for state in these tests too
-    defp initial_state_with_mock do
-      %{clipboard_impl: @clipboard_mock}
-    end
 
     test "enable/1 exists" do
       initial_state = initial_state_with_mock()

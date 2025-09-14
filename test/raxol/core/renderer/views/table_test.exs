@@ -6,7 +6,6 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
   """
   use ExUnit.Case, async: true
   alias Raxol.Core.Renderer.Views.Table
-  alias Raxol.UI.Components.ComponentManager
 
   @sample_data [
     %{id: 1, name: "Alice", age: 30},

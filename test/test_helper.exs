@@ -163,9 +163,10 @@ if Code.ensure_loaded?(Mox) do
     for: Raxol.Core.Runtime.Plugins.PluginCommandHandler.Behaviour
   )
 
-  Mox.defmock(Raxol.Core.Runtime.Plugins.TimerManagerMock,
-    for: Raxol.Core.Runtime.Plugins.TimerManager.Behaviour
-  )
+  # TimerManager mock removed - no behavior exists for TimerManager
+  # Mox.defmock(Raxol.Core.Runtime.Plugins.TimerManagerMock,
+  #   for: Raxol.Core.Runtime.Plugins.TimerManager.Behaviour
+  # )
 
   Mox.defmock(Raxol.Core.Runtime.Rendering.EngineMock,
     for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
@@ -215,16 +216,30 @@ IO.puts("[TestHelper] Starting event registry...")
 {:ok, _registry_pid} =
   Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions)
 
-# Initialize the EventManager for tests
-IO.puts("[TestHelper] Initializing EventManager...")
-Raxol.Core.Events.EventManager.init()
+# Start the EventManager for tests
+IO.puts("[TestHelper] Starting EventManager...")
 
-# Only start the endpoint if it's not already running
-if Process.whereis(RaxolWeb.Endpoint) do
-  IO.puts("[TestHelper] Endpoint already running")
-else
-  {:ok, _pid} = RaxolWeb.Endpoint.start_link()
-  IO.puts("[TestHelper] Endpoint started successfully")
+case Raxol.Core.Events.EventManager.start_link() do
+  {:ok, _pid} ->
+    IO.puts("[TestHelper] EventManager started successfully")
+
+  {:error, {:already_started, _pid}} ->
+    IO.puts("[TestHelper] EventManager already running")
+
+  {:error, reason} ->
+    IO.puts(
+      :stderr,
+      "[TestHelper] Failed to start EventManager: #{inspect(reason)}"
+    )
 end
+
+# Skip endpoint startup - Phoenix web interface removed
+# if Process.whereis(RaxolWeb.Endpoint) do
+#   IO.puts("[TestHelper] Endpoint already running")
+# else
+#   {:ok, _pid} = RaxolWeb.Endpoint.start_link()
+#   IO.puts("[TestHelper] Endpoint started successfully")
+# end
+IO.puts("[TestHelper] Skipping endpoint - Phoenix web interface disabled")
 
 IO.puts("[TestHelper] Test helper setup complete!")

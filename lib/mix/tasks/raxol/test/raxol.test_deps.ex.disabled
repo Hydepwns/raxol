@@ -1,0 +1,1435 @@
+defmodule Mix.Tasks.Raxol.TestDeps do
+  @moduledoc """
+  Visualize and analyze test dependencies and relationships.
+
+  This task creates visual representations of test dependencies, shared resources,
+  and execution order constraints to help optimize test organization and identify
+  potential bottlenecks or conflicts.
+
+  ## Usage
+
+      mix raxol.test_deps [command] [options]
+      
+  ## Commands
+
+    * `analyze` - Analyze test dependencies and relationships
+    * `visualize` - Create visual dependency graphs  
+    * `report` - Generate dependency analysis reports
+    * `validate` - Validate dependency assumptions
+    * `optimize` - Suggest dependency optimizations
+
+  ## Options
+
+    * `--format` - Output format: dot, svg, html, json (default: html)
+    * `--include` - Include specific test patterns (glob)
+    * `--exclude` - Exclude specific test patterns (glob)
+    * `--depth` - Maximum dependency depth to analyze (default: 3)
+    * `--output` - Output file path
+    * `--interactive` - Generate interactive visualization
+    * `--verbose` - Show detailed dependency information
+
+  ## Examples
+
+      # Analyze all test dependencies
+      mix raxol.test_deps analyze
+      
+      # Create SVG dependency graph
+      mix raxol.test_deps visualize --format svg
+      
+      # Generate interactive HTML report
+      mix raxol.test_deps report --interactive
+      
+      # Validate assumptions about test independence
+      mix raxol.test_deps validate
+  """
+
+  use Mix.Task
+
+  @shortdoc "Visualize and analyze test dependencies"
+
+  @deps_data_dir "test_dependencies"
+  @output_dir "test_dependencies/output"
+
+  @impl Mix.Task
+  def run([]), do: run(["analyze"])
+
+  def run([command | args]) do
+    {opts, _} =
+      OptionParser.parse!(args,
+        strict: [
+          format: :string,
+          include: :string,
+          exclude: :string,
+          depth: :integer,
+          output: :string,
+          interactive: :boolean,
+          verbose: :boolean
+        ]
+      )
+
+    case command do
+      "analyze" ->
+        run_analysis(opts)
+
+      "visualize" ->
+        run_visualization(opts)
+
+      "report" ->
+        run_report(opts)
+
+      "validate" ->
+        run_validation(opts)
+
+      "optimize" ->
+        run_optimization(opts)
+
+      _ ->
+        Mix.Shell.IO.error("Unknown command: #{command}")
+
+        Mix.Shell.IO.info(
+          "Available commands: analyze, visualize, report, validate, optimize"
+        )
+
+        System.halt(1)
+    end
+  end
+
+  defp run_analysis(opts) do
+    Mix.Shell.IO.info("🔍 Analyzing test dependencies...")
+
+    ensure_deps_directories()
+
+    # Discover test files
+    test_files = discover_test_files(opts)
+    Mix.Shell.IO.info("Analyzing #{length(test_files)} test files")
+
+    # Analyze dependencies
+    dependency_graph = build_dependency_graph(test_files, opts)
+
+    # Analyze shared resources
+    resource_analysis = analyze_shared_resources(test_files, opts)
+
+    # Analyze execution constraints
+    execution_analysis = analyze_execution_constraints(test_files, opts)
+
+    # Generate comprehensive analysis
+    analysis = %{
+      timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
+      test_files: length(test_files),
+      dependency_graph: dependency_graph,
+      resource_analysis: resource_analysis,
+      execution_analysis: execution_analysis,
+      complexity_metrics: calculate_complexity_metrics(dependency_graph),
+      recommendations:
+        generate_dependency_recommendations(dependency_graph, resource_analysis)
+    }
+
+    # Save analysis
+    save_dependency_analysis(analysis)
+
+    # Display results
+    display_analysis_results(analysis, opts)
+  end
+
+  defp run_visualization(opts) do
+    Mix.Shell.IO.info("📊 Creating dependency visualizations...")
+
+    # Load or generate analysis
+    analysis = load_or_generate_analysis(opts)
+
+    format = opts[:format] || "html"
+
+    case format do
+      "dot" ->
+        generate_dot_graph(analysis, opts)
+
+      "svg" ->
+        generate_svg_graph(analysis, opts)
+
+      "html" ->
+        generate_html_visualization(analysis, opts)
+
+      "json" ->
+        generate_json_graph(analysis, opts)
+
+      _ ->
+        Mix.Shell.IO.error("Unsupported format: #{format}")
+        System.halt(1)
+    end
+  end
+
+  defp run_report(opts) do
+    Mix.Shell.IO.info("📈 Generating dependency reports...")
+
+    analysis = load_or_generate_analysis(opts)
+
+    if opts[:interactive] do
+      generate_interactive_report(analysis, opts)
+    else
+      generate_static_report(analysis, opts)
+    end
+  end
+
+  defp run_validation(opts) do
+    Mix.Shell.IO.info("✅ Validating test dependency assumptions...")
+
+    analysis = load_or_generate_analysis(opts)
+
+    validation_results = validate_test_assumptions(analysis, opts)
+
+    display_validation_results(validation_results, opts)
+    save_validation_results(validation_results)
+  end
+
+  defp run_optimization(opts) do
+    Mix.Shell.IO.info("⚡ Generating dependency optimization suggestions...")
+
+    analysis = load_or_generate_analysis(opts)
+
+    optimizations = generate_optimization_suggestions(analysis, opts)
+
+    display_optimization_suggestions(optimizations, opts)
+    save_optimization_suggestions(optimizations)
+  end
+
+  # Analysis functions
+
+  defp discover_test_files(opts) do
+    include_patterns =
+      case opts[:include] do
+        nil -> ["test/**/*_test.exs"]
+        patterns -> String.split(patterns, ",")
+      end
+
+    exclude_patterns =
+      case opts[:exclude] do
+        nil -> []
+        patterns -> String.split(patterns, ",")
+      end
+
+    # Gather all matching files
+    all_files = Enum.flat_map(include_patterns, &Path.wildcard/1)
+
+    # Filter out excluded files
+    filtered_files =
+      Enum.reject(all_files, fn file ->
+        Enum.any?(exclude_patterns, fn pattern ->
+          Path.wildcard(pattern) |> Enum.member?(file)
+        end)
+      end)
+
+    Enum.uniq(filtered_files) |> Enum.sort()
+  end
+
+  defp build_dependency_graph(test_files, opts) do
+    Mix.Shell.IO.info("Building dependency graph...")
+
+    # Analyze each test file
+    {nodes, edges} = 
+      Enum.reduce(test_files, {[], []}, fn test_file, {acc_nodes, acc_edges} ->
+        file_info = analyze_test_file_dependencies(test_file, opts)
+        {[file_info.node | acc_nodes], acc_edges ++ file_info.edges}
+      end)
+
+    %{
+      nodes: Enum.reverse(nodes),
+      edges: edges,
+      node_count: length(nodes),
+      edge_count: length(edges),
+      strongly_connected_components:
+        find_strongly_connected_components(nodes, edges),
+      dependency_levels: calculate_dependency_levels(nodes, edges)
+    }
+  end
+
+  defp analyze_test_file_dependencies(test_file, opts) do
+    content = File.read!(test_file)
+
+    # Extract imports and aliases
+    imports = extract_imports(content)
+    aliases = extract_aliases(content)
+
+    # Detect shared resource usage
+    shared_resources = detect_shared_resources(content)
+
+    # Detect test ordering constraints
+    ordering_constraints = detect_ordering_constraints(content)
+
+    # Calculate dependency score
+    dependency_score =
+      calculate_dependency_score(content, imports, shared_resources)
+
+    # Create node information
+    node = %{
+      id: test_file,
+      name: Path.basename(test_file, ".exs"),
+      path: Path.relative_to_cwd(test_file),
+      imports: imports,
+      aliases: aliases,
+      shared_resources: shared_resources,
+      ordering_constraints: ordering_constraints,
+      dependency_score: dependency_score,
+      async: String.contains?(content, "async: true"),
+      tags: extract_test_tags(content),
+      complexity: estimate_file_complexity(content)
+    }
+
+    # Create edges to dependencies
+    edges = create_dependency_edges(test_file, imports, shared_resources, opts)
+
+    %{node: node, edges: edges}
+  end
+
+  defp extract_imports(content) do
+    import_regex = ~r/(?:import|use|require)\s+([A-Z][A-Za-z0-9_.]*)/
+
+    Regex.scan(import_regex, content, capture: :all_but_first)
+    |> List.flatten()
+    |> Enum.uniq()
+    |> Enum.map(&String.trim/1)
+  end
+
+  defp extract_aliases(content) do
+    alias_regex = ~r/alias\s+([A-Z][A-Za-z0-9_.]*)/
+
+    Regex.scan(alias_regex, content, capture: :all_but_first)
+    |> List.flatten()
+    |> Enum.uniq()
+  end
+
+  defp detect_shared_resources(content) do
+    resources = []
+
+    # Database resources
+    resources =
+      if Regex.match?(~r/(Repo\.|Ecto\.Adapters\.SQL\.Sandbox)/i, content) do
+        [:database | resources]
+      else
+        resources
+      end
+
+    # File system resources
+    resources =
+      if Regex.match?(~r/(File\.(read|write|mkdir)|Path\.)/i, content) do
+        [:filesystem | resources]
+      else
+        resources
+      end
+
+    # Application state
+    resources =
+      if Regex.match?(~r/(Application\.(put_env|get_env|start|stop))/i, content) do
+        [:application_env | resources]
+      else
+        resources
+      end
+
+    # GenServer/Agent state
+    resources =
+      if Regex.match?(
+           ~r/(GenServer\.(start_link|call)|Agent\.(start_link|get|update))/i,
+           content
+         ) do
+        [:process_state | resources]
+      else
+        resources
+      end
+
+    # ETS tables
+    resources =
+      if Regex.match?(~r/:ets\.(new|insert|lookup|delete)/i, content) do
+        [:ets_tables | resources]
+      else
+        resources
+      end
+
+    # Registry
+    resources =
+      if Regex.match?(~r/Registry\.(register|lookup|dispatch)/i, content) do
+        [:registry | resources]
+      else
+        resources
+      end
+
+    Enum.uniq(resources)
+  end
+
+  defp detect_ordering_constraints(content) do
+    constraints = []
+
+    # Tests that must run in specific order
+    constraints =
+      if String.contains?(content, "async: false") do
+        [:synchronous | constraints]
+      else
+        constraints
+      end
+
+    # Tests with setup/teardown dependencies
+    constraints =
+      if Regex.match?(~r/(setup_all|on_exit)/i, content) do
+        [:setup_teardown | constraints]
+      else
+        constraints
+      end
+
+    # Tests that modify global state
+    constraints =
+      if Regex.match?(
+           ~r/(Application\.(put_env|start)|System\.(put_env|cmd))/i,
+           content
+         ) do
+        [:global_state | constraints]
+      else
+        constraints
+      end
+
+    constraints
+  end
+
+  defp calculate_dependency_score(content, imports, shared_resources) do
+    base_score = 0
+
+    # Score based on imports
+    import_score = length(imports) * 2
+
+    # Score based on shared resources
+    resource_score = length(shared_resources) * 5
+
+    # Score based on complexity indicators
+    complexity_score =
+      cond do
+        String.contains?(content, "async: false") -> 10
+        Regex.match?(~r/(GenServer|Agent|Task\.async)/i, content) -> 8
+        Regex.match?(~r/(setup_all|on_exit)/i, content) -> 6
+        true -> 0
+      end
+
+    base_score + import_score + resource_score + complexity_score
+  end
+
+  defp create_dependency_edges(test_file, imports, shared_resources, _opts) do
+    edges = []
+
+    # Create edges for module dependencies
+    module_edges =
+      Enum.flat_map(imports, fn import_module ->
+        # Find test files that define this module
+        case find_files_defining_module(import_module) do
+          [] ->
+            []
+
+          defining_files ->
+            Enum.map(defining_files, fn defining_file ->
+              %{
+                from: test_file,
+                to: defining_file,
+                type: :module_dependency,
+                weight: 1,
+                label: import_module
+              }
+            end)
+        end
+      end)
+
+    # Create edges for shared resource conflicts
+    resource_edges =
+      if Enum.empty?(shared_resources) do
+        []
+      else
+        # Find other files that use the same resources
+        other_files_with_resources =
+          find_files_with_shared_resources(shared_resources, test_file)
+
+        Enum.map(other_files_with_resources, fn {other_file, common_resources} ->
+          %{
+            from: test_file,
+            to: other_file,
+            type: :resource_conflict,
+            weight: length(common_resources),
+            label: Enum.join(common_resources, ", ")
+          }
+        end)
+      end
+
+    edges ++ module_edges ++ resource_edges
+  end
+
+  defp find_files_defining_module(_module_name) do
+    # This is a simplified implementation
+    # In practice, would parse all files to find module definitions
+    []
+  end
+
+  defp find_files_with_shared_resources(_resources, _exclude_file) do
+    # This is a simplified implementation
+    # In practice, would analyze all files for shared resource usage
+    []
+  end
+
+  defp extract_test_tags(content) do
+    tag_regex = ~r/@(?:module)?tag\s+([:\w\s,]+)/
+
+    Regex.scan(tag_regex, content, capture: :all_but_first)
+    |> List.flatten()
+    |> Enum.flat_map(fn tag_line ->
+      tag_line
+      |> String.split([",", " "], trim: true)
+      |> Enum.map(&String.trim/1)
+      |> Enum.map(&String.replace(&1, ":", ""))
+    end)
+    |> Enum.uniq()
+  end
+
+  defp estimate_file_complexity(content) do
+    # Simple complexity estimation
+    lines = String.split(content, "\n") |> length()
+    test_count = Regex.scan(~r/test\s+"/, content) |> length()
+    describe_count = Regex.scan(~r/describe\s+"/, content) |> length()
+
+    base_complexity = div(lines, 10)
+    test_complexity = test_count * 2
+    organization_complexity = describe_count
+
+    base_complexity + test_complexity + organization_complexity
+  end
+
+  defp analyze_shared_resources(test_files, _opts) do
+    Mix.Shell.IO.info("Analyzing shared resource usage...")
+
+    resource_usage = 
+      Enum.reduce(test_files, %{}, fn test_file, acc_usage ->
+        content = File.read!(test_file)
+        resources = detect_shared_resources(content)
+
+        Enum.reduce(resources, acc_usage, fn resource, usage_acc ->
+          current_files = Map.get(usage_acc, resource, [])
+          Map.put(usage_acc, resource, [test_file | current_files])
+        end)
+      end)
+
+    # Calculate resource conflicts
+    conflicts =
+      for {resource, files} <- resource_usage,
+          length(files) > 1 do
+        %{
+          resource: resource,
+          file_count: length(files),
+          files: files,
+          conflict_severity: calculate_conflict_severity(resource, files)
+        }
+      end
+
+    %{
+      resource_usage: resource_usage,
+      total_resources: map_size(resource_usage),
+      conflicts: conflicts,
+      high_conflict_resources:
+        Enum.filter(conflicts, &(&1.conflict_severity >= 7))
+    }
+  end
+
+  defp calculate_conflict_severity(resource, files) do
+    base_severity = length(files)
+
+    # Certain resources are more critical
+    multiplier =
+      case resource do
+        :database -> 3
+        :application_env -> 2
+        :ets_tables -> 2
+        :process_state -> 2
+        _ -> 1
+      end
+
+    min(base_severity * multiplier, 10)
+  end
+
+  defp analyze_execution_constraints(test_files, _opts) do
+    Mix.Shell.IO.info("Analyzing execution constraints...")
+
+    initial_constraints = %{
+      synchronous_tests: [],
+      async_tests: [],
+      setup_dependencies: [],
+      global_state_modifiers: []
+    }
+
+    constraints = 
+      Enum.reduce(test_files, initial_constraints, fn test_file, acc_constraints ->
+        content = File.read!(test_file)
+
+        updated_constraints =
+          cond do
+            String.contains?(content, "async: false") ->
+              update_in(acc_constraints.synchronous_tests, &[test_file | &1])
+
+            String.contains?(content, "async: true") ->
+              update_in(acc_constraints.async_tests, &[test_file | &1])
+
+            true ->
+              acc_constraints
+          end
+
+        updated_constraints2 =
+          if Regex.match?(~r/(setup_all|on_exit)/i, content) do
+            update_in(updated_constraints.setup_dependencies, &[test_file | &1])
+          else
+            updated_constraints
+          end
+
+        if Regex.match?(
+             ~r/(Application\.(put_env|start)|System\.put_env)/i,
+             content
+           ) do
+          update_in(updated_constraints2.global_state_modifiers, &[test_file | &1])
+        else
+          updated_constraints2
+        end
+      end)
+
+    # Calculate execution order recommendations
+    execution_order = calculate_optimal_execution_order(constraints)
+
+    Map.put(constraints, :recommended_execution_order, execution_order)
+  end
+
+  defp calculate_optimal_execution_order(constraints) do
+    # Simplified execution order calculation
+    order = []
+
+    # Global state modifiers should run first (if synchronous)
+    order = order ++ constraints.global_state_modifiers
+
+    # Setup-dependent tests next
+    order = order ++ constraints.setup_dependencies
+
+    # Other synchronous tests
+    remaining_sync = constraints.synchronous_tests -- order
+    order = order ++ remaining_sync
+
+    # Async tests can run in parallel
+    %{
+      sequential_order: Enum.uniq(order),
+      parallel_group: constraints.async_tests
+    }
+  end
+
+  defp find_strongly_connected_components(_nodes, _edges) do
+    # Simplified SCC algorithm would go here
+    # For now, return empty list
+    []
+  end
+
+  defp calculate_dependency_levels(nodes, edges) do
+    # Calculate depth levels in dependency graph
+    # This is a simplified implementation
+
+    # Find nodes with no dependencies (level 0)
+    nodes_with_deps = Enum.map(edges, & &1.from) |> Enum.uniq()
+    root_nodes = Enum.reject(nodes, fn node -> node.id in nodes_with_deps end)
+
+    %{
+      level_0: length(root_nodes),
+      # Simplified
+      max_depth: 3,
+      average_depth: 1.5
+    }
+  end
+
+  defp calculate_complexity_metrics(dependency_graph) do
+    node_count = dependency_graph.node_count
+    edge_count = dependency_graph.edge_count
+
+    # Calculate various complexity metrics
+    %{
+      cyclomatic_complexity: edge_count - node_count + 2,
+      density:
+        if(node_count > 1,
+          do: edge_count / (node_count * (node_count - 1)),
+          else: 0
+        ),
+      average_degree:
+        if(node_count > 0, do: edge_count * 2 / node_count, else: 0),
+      complexity_score: calculate_overall_complexity_score(dependency_graph)
+    }
+  end
+
+  defp calculate_overall_complexity_score(dependency_graph) do
+    base_score = dependency_graph.node_count
+    edge_penalty = dependency_graph.edge_count * 2
+    scc_penalty = length(dependency_graph.strongly_connected_components) * 5
+
+    base_score + edge_penalty + scc_penalty
+  end
+
+  defp generate_dependency_recommendations(dependency_graph, resource_analysis) do
+    recommendations = []
+
+    # Check for high complexity
+    complexity = dependency_graph.complexity_metrics.complexity_score
+
+    recommendations =
+      if complexity > 100 do
+        [
+          "Dependency graph is highly complex (score: #{complexity}) - consider refactoring"
+          | recommendations
+        ]
+      else
+        recommendations
+      end
+
+    # Check for resource conflicts
+    high_conflicts = length(resource_analysis.high_conflict_resources)
+
+    recommendations =
+      if high_conflicts > 0 do
+        [
+          "#{high_conflicts} high-severity resource conflicts detected - review shared resource usage"
+          | recommendations
+        ]
+      else
+        recommendations
+      end
+
+    # Check for circular dependencies
+    scc_count = length(dependency_graph.strongly_connected_components)
+
+    recommendations =
+      if scc_count > 0 do
+        [
+          "#{scc_count} circular dependencies detected - refactor to eliminate cycles"
+          | recommendations
+        ]
+      else
+        recommendations
+      end
+
+    # Default recommendations
+    if Enum.empty?(recommendations) do
+      [
+        "Dependency structure looks healthy",
+        "Consider periodic dependency analysis"
+      ]
+    else
+      recommendations
+    end
+  end
+
+  # Visualization functions
+
+  defp generate_dot_graph(analysis, opts) do
+    output_path = opts[:output] || Path.join(@output_dir, "dependencies.dot")
+
+    dot_content = build_dot_content(analysis)
+
+    File.write!(output_path, dot_content)
+    Mix.Shell.IO.info("📊 DOT graph saved to #{output_path}")
+
+    Mix.Shell.IO.info(
+      "Generate SVG with: dot -Tsvg #{output_path} -o dependencies.svg"
+    )
+  end
+
+  defp build_dot_content(analysis) do
+    graph = analysis.dependency_graph
+
+    header = """
+    digraph TestDependencies {
+      rankdir=TB;
+      node [shape=box, style=filled];
+      edge [arrowhead=open];
+      
+    """
+
+    # Add nodes
+    node_definitions =
+      for node <- graph.nodes do
+        color =
+          case node.dependency_score do
+            score when score > 20 -> "lightcoral"
+            score when score > 10 -> "lightyellow"
+            _ -> "lightgreen"
+          end
+
+        label = "#{node.name}\\n(#{node.dependency_score})"
+        "  \"#{node.id}\" [label=\"#{label}\", fillcolor=#{color}];"
+      end
+
+    # Add edges
+    edge_definitions =
+      for edge <- graph.edges do
+        style =
+          case edge.type do
+            :module_dependency -> "solid"
+            :resource_conflict -> "dashed, color=red"
+            _ -> "solid"
+          end
+
+        "  \"#{edge.from}\" -> \"#{edge.to}\" [style=\"#{style}\", label=\"#{edge.label}\"];"
+      end
+
+    footer = "}\n"
+
+    Enum.join(
+      [header] ++ node_definitions ++ edge_definitions ++ [footer],
+      "\n"
+    )
+  end
+
+  defp generate_svg_graph(analysis, opts) do
+    # Generate DOT first
+    dot_path = Path.join(@output_dir, "temp_dependencies.dot")
+    svg_path = opts[:output] || Path.join(@output_dir, "dependencies.svg")
+
+    dot_content = build_dot_content(analysis)
+    File.write!(dot_path, dot_content)
+
+    # Convert to SVG using dot (if available)
+    case System.cmd("dot", ["-Tsvg", dot_path, "-o", svg_path],
+           stderr_to_stdout: true
+         ) do
+      {_, 0} ->
+        File.rm(dot_path)
+        Mix.Shell.IO.info("📊 SVG graph saved to #{svg_path}")
+
+      {error, _} ->
+        IO.warn("Could not generate SVG: #{error}")
+        Mix.Shell.IO.info("DOT file saved to #{dot_path}")
+
+        Mix.Shell.IO.info(
+          "Install graphviz to generate SVG: brew install graphviz"
+        )
+    end
+  end
+
+  defp generate_html_visualization(analysis, opts) do
+    output_path = opts[:output] || Path.join(@output_dir, "dependencies.html")
+
+    html_content = build_html_visualization(analysis, opts)
+
+    File.write!(output_path, html_content)
+    Mix.Shell.IO.info("📊 HTML visualization saved to #{output_path}")
+  end
+
+  defp build_html_visualization(analysis, _opts) do
+    graph = analysis.dependency_graph
+
+    # Convert to JSON for D3.js
+    nodes_json =
+      Jason.encode!(
+        Enum.map(graph.nodes, fn node ->
+          %{
+            id: node.id,
+            name: node.name,
+            group: classify_node_group(node),
+            value: node.dependency_score
+          }
+        end)
+      )
+
+    links_json =
+      Jason.encode!(
+        Enum.map(graph.edges, fn edge ->
+          %{
+            source: edge.from,
+            target: edge.to,
+            type: edge.type,
+            value: edge.weight
+          }
+        end)
+      )
+
+    """
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Test Dependency Visualization</title>
+      <script src="https://d3js.org/d3.v7.min.js"></script>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .node { stroke: #fff; stroke-width: 1.5px; }
+        .link { stroke: #999; stroke-opacity: 0.6; }
+        .tooltip { position: absolute; padding: 10px; background: rgba(0,0,0,0.8); color: white; border-radius: 5px; pointer-events: none; }
+        .info { margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px; }
+      </style>
+    </head>
+    <body>
+      <h1>Test Dependency Graph</h1>
+      
+      <div class="info">
+        <strong>Nodes:</strong> #{graph.node_count} test files |
+        <strong>Edges:</strong> #{graph.edge_count} dependencies |
+        <strong>Complexity:</strong> #{Float.round(graph.complexity_metrics.complexity_score, 1)}
+      </div>
+      
+      <svg id="dependency-graph" width="800" height="600"></svg>
+      
+      <script>
+        const nodes = #{nodes_json};
+        const links = #{links_json};
+        
+        const svg = d3.select("#dependency-graph");
+        const width = +svg.attr("width");
+        const height = +svg.attr("height");
+        
+        const color = d3.scaleOrdinal(d3.schemeCategory10);
+        
+        const simulation = d3.forceSimulation(nodes)
+          .force("link", d3.forceLink(links).id(d => d.id))
+          .force("charge", d3.forceManyBody().strength(-300))
+          .force("center", d3.forceCenter(width / 2, height / 2));
+        
+        const link = svg.append("g")
+          .attr("class", "links")
+          .selectAll("line")
+          .data(links)
+          .enter().append("line")
+          .attr("class", "link")
+          .attr("stroke-width", d => Math.sqrt(d.value));
+        
+        const node = svg.append("g")
+          .attr("class", "nodes")
+          .selectAll("circle")
+          .data(nodes)
+          .enter().append("circle")
+          .attr("class", "node")
+          .attr("r", d => 5 + Math.sqrt(d.value))
+          .attr("fill", d => color(d.group))
+          .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+        
+        node.append("title")
+          .text(d => d.name + " (Score: " + d.value + ")");
+        
+        simulation.on("tick", () => {
+          link
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+          
+          node
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y);
+        });
+        
+        function dragstarted(event, d) {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y;
+        }
+        
+        function dragged(event, d) {
+          d.fx = event.x;
+          d.fy = event.y;
+        }
+        
+        function dragended(event, d) {
+          if (!event.active) simulation.alphaTarget(0);
+          d.fx = null;
+          d.fy = null;
+        }
+      </script>
+    </body>
+    </html>
+    """
+  end
+
+  defp classify_node_group(node) do
+    cond do
+      :database in node.shared_resources -> "database"
+      not node.async -> "synchronous"
+      node.dependency_score > 15 -> "high_dependency"
+      true -> "normal"
+    end
+  end
+
+  defp generate_json_graph(analysis, opts) do
+    output_path = opts[:output] || Path.join(@output_dir, "dependencies.json")
+
+    json_content = Jason.encode!(analysis.dependency_graph, pretty: true)
+
+    File.write!(output_path, json_content)
+    Mix.Shell.IO.info("📊 JSON graph saved to #{output_path}")
+  end
+
+  # Report and validation functions
+
+  defp generate_interactive_report(analysis, opts) do
+    report_path =
+      opts[:output] || Path.join(@output_dir, "dependency_report.html")
+
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Test Dependency Analysis Report</title>
+      <style>
+        body { font-family: sans-serif; margin: 20px; max-width: 1200px; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .metric { background: #f5f5f5; padding: 15px; border-radius: 8px; text-align: center; }
+        .metric h3 { margin: 0 0 10px 0; color: #333; }
+        .metric .value { font-size: 24px; font-weight: bold; color: #007acc; }
+        .section { margin-bottom: 30px; }
+        .conflict-high { color: #d73027; }
+        .conflict-medium { color: #fc8d59; }
+        .conflict-low { color: #91bfdb; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .recommendations { background: #e8f4f8; padding: 15px; border-radius: 8px; }
+      </style>
+    </head>
+    <body>
+      <h1>Test Dependency Analysis Report</h1>
+      <p><small>Generated: #{analysis.timestamp}</small></p>
+      
+      <div class="summary">
+        <div class="metric">
+          <h3>Test Files</h3>
+          <div class="value">#{analysis.test_files}</div>
+        </div>
+        <div class="metric">
+          <h3>Dependencies</h3>
+          <div class="value">#{analysis.dependency_graph.edge_count}</div>
+        </div>
+        <div class="metric">
+          <h3>Shared Resources</h3>
+          <div class="value">#{analysis.resource_analysis.total_resources}</div>
+        </div>
+        <div class="metric">
+          <h3>Complexity Score</h3>
+          <div class="value">#{Float.round(analysis.complexity_metrics.complexity_score, 0)}</div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h2>Resource Conflicts</h2>
+        #{format_resource_conflicts_html(analysis.resource_analysis.conflicts)}
+      </div>
+      
+      <div class="section">
+        <h2>Execution Constraints</h2>
+        <p><strong>Synchronous Tests:</strong> #{length(analysis.execution_analysis.synchronous_tests)}</p>
+        <p><strong>Async Tests:</strong> #{length(analysis.execution_analysis.async_tests)}</p>
+        <p><strong>Global State Modifiers:</strong> #{length(analysis.execution_analysis.global_state_modifiers)}</p>
+      </div>
+      
+      <div class="recommendations">
+        <h2>Recommendations</h2>
+        <ul>
+          #{Enum.map(analysis.recommendations, fn rec -> "<li>#{rec}</li>" end) |> Enum.join("\n")}
+        </ul>
+      </div>
+      
+      <p><small>Report generated by Raxol Test Dependency Analyzer</small></p>
+    </body>
+    </html>
+    """
+
+    File.write!(report_path, html_content)
+    Mix.Shell.IO.info("📊 Interactive report saved to #{report_path}")
+  end
+
+  defp format_resource_conflicts_html(conflicts) do
+    if Enum.empty?(conflicts) do
+      "<p>No resource conflicts detected.</p>"
+    else
+      table_rows =
+        Enum.map(conflicts, fn conflict ->
+          severity_class =
+            case conflict.conflict_severity do
+              s when s >= 7 -> "conflict-high"
+              s when s >= 4 -> "conflict-medium"
+              _ -> "conflict-low"
+            end
+
+          """
+          <tr>
+            <td>#{conflict.resource}</td>
+            <td>#{conflict.file_count}</td>
+            <td class="#{severity_class}">#{conflict.conflict_severity}</td>
+          </tr>
+          """
+        end)
+        |> Enum.join("\n")
+
+      """
+      <table>
+        <thead>
+          <tr><th>Resource</th><th>Files</th><th>Severity</th></tr>
+        </thead>
+        <tbody>
+          #{table_rows}
+        </tbody>
+      </table>
+      """
+    end
+  end
+
+  defp generate_static_report(analysis, opts) do
+    report_path =
+      opts[:output] || Path.join(@output_dir, "dependency_report.txt")
+
+    content = """
+    TEST DEPENDENCY ANALYSIS REPORT
+    ================================
+
+    Generated: #{analysis.timestamp}
+    Test Files Analyzed: #{analysis.test_files}
+
+    DEPENDENCY GRAPH SUMMARY
+    ------------------------
+    Nodes: #{analysis.dependency_graph.node_count}
+    Edges: #{analysis.dependency_graph.edge_count}
+    Complexity Score: #{Float.round(analysis.complexity_metrics.complexity_score, 1)}
+    Average Degree: #{Float.round(analysis.complexity_metrics.average_degree, 2)}
+
+    RESOURCE ANALYSIS
+    -----------------
+    Total Shared Resources: #{analysis.resource_analysis.total_resources}
+    Resource Conflicts: #{length(analysis.resource_analysis.conflicts)}
+    High Severity Conflicts: #{length(analysis.resource_analysis.high_conflict_resources)}
+
+    #{format_conflicts_text(analysis.resource_analysis.conflicts)}
+
+    EXECUTION ANALYSIS
+    ------------------
+    Synchronous Tests: #{length(analysis.execution_analysis.synchronous_tests)}
+    Asynchronous Tests: #{length(analysis.execution_analysis.async_tests)}
+    Setup Dependencies: #{length(analysis.execution_analysis.setup_dependencies)}
+    Global State Modifiers: #{length(analysis.execution_analysis.global_state_modifiers)}
+
+    RECOMMENDATIONS
+    ---------------
+    #{Enum.map(analysis.recommendations, fn rec -> "• #{rec}" end) |> Enum.join("\n")}
+    """
+
+    File.write!(report_path, content)
+    Mix.Shell.IO.info("📊 Static report saved to #{report_path}")
+  end
+
+  defp format_conflicts_text(conflicts) do
+    if Enum.empty?(conflicts) do
+      "No resource conflicts detected."
+    else
+      ("Resource Conflicts:\n" <>
+         Enum.map(conflicts, fn conflict ->
+           "  #{conflict.resource}: #{conflict.file_count} files (severity: #{conflict.conflict_severity})"
+         end))
+      |> Enum.join("\n")
+    end
+  end
+
+  defp validate_test_assumptions(analysis, _opts) do
+    validations = []
+
+    # Validate assumption: async tests have no shared resources
+    async_with_resources =
+      analysis.dependency_graph.nodes
+      |> Enum.filter(fn node ->
+        node.async and not Enum.empty?(node.shared_resources)
+      end)
+
+    validations = [
+      %{
+        assumption: "Async tests should not use shared resources",
+        valid: Enum.empty?(async_with_resources),
+        violations: length(async_with_resources),
+        details: Enum.map(async_with_resources, & &1.path)
+      }
+      | validations
+    ]
+
+    # Validate assumption: synchronous tests justify their synchronicity
+    sync_without_justification =
+      analysis.dependency_graph.nodes
+      |> Enum.filter(fn node ->
+        not node.async and
+          Enum.empty?(node.shared_resources) and
+          :synchronous not in node.ordering_constraints
+      end)
+
+    validations = [
+      %{
+        assumption: "Synchronous tests should have clear justification",
+        valid: Enum.empty?(sync_without_justification),
+        violations: length(sync_without_justification),
+        details: Enum.map(sync_without_justification, & &1.path)
+      }
+      | validations
+    ]
+
+    # Overall validation summary
+    total_violations = Enum.sum(Enum.map(validations, & &1.violations))
+
+    %{
+      validations: validations,
+      total_violations: total_violations,
+      overall_valid: total_violations == 0,
+      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+  end
+
+  defp display_validation_results(results, opts) do
+    Mix.Shell.IO.info("\n✅ Test Assumption Validation Results")
+    Mix.Shell.IO.info("=" <> String.duplicate("=", 36))
+
+    if results.overall_valid do
+      Mix.Shell.IO.info("🎉 All assumptions validated successfully!")
+    else
+      IO.warn(
+        "⚠️  #{results.total_violations} assumption violations found"
+      )
+    end
+
+    for validation <- results.validations do
+      status = if validation.valid, do: "✅", else: "❌"
+      Mix.Shell.IO.info("#{status} #{validation.assumption}")
+
+      if not validation.valid and opts[:verbose] do
+        Mix.Shell.IO.info("   Violations: #{validation.violations}")
+
+        for detail <- Enum.take(validation.details, 3) do
+          Mix.Shell.IO.info("   - #{detail}")
+        end
+
+        if length(validation.details) > 3 do
+          Mix.Shell.IO.info("   ... and #{length(validation.details) - 3} more")
+        end
+      end
+    end
+  end
+
+  defp generate_optimization_suggestions(analysis, _opts) do
+    suggestions = []
+
+    # Suggest converting tests to async where possible
+    sync_candidates =
+      analysis.dependency_graph.nodes
+      |> Enum.filter(fn node ->
+        not node.async and
+          Enum.empty?(node.shared_resources) and
+          :synchronous not in node.ordering_constraints
+      end)
+
+    suggestions =
+      if not Enum.empty?(sync_candidates) do
+        [
+          %{
+            type: "async_conversion",
+            priority: "high",
+            description: "Convert #{length(sync_candidates)} tests to async",
+            files: Enum.map(sync_candidates, & &1.path),
+            expected_speedup: "15-30%"
+          }
+          | suggestions
+        ]
+      else
+        suggestions
+      end
+
+    # Suggest resource conflict resolution
+    high_conflicts = analysis.resource_analysis.high_conflict_resources
+
+    suggestions =
+      if not Enum.empty?(high_conflicts) do
+        [
+          %{
+            type: "resource_isolation",
+            priority: "high",
+            description:
+              "Isolate #{length(high_conflicts)} high-conflict shared resources",
+            resources: Enum.map(high_conflicts, & &1.resource),
+            expected_benefit: "Reduced test flakiness and improved parallelism"
+          }
+          | suggestions
+        ]
+      else
+        suggestions
+      end
+
+    # Suggest dependency reduction
+    high_dep_nodes =
+      analysis.dependency_graph.nodes
+      |> Enum.filter(&(&1.dependency_score > 20))
+
+    suggestions =
+      if not Enum.empty?(high_dep_nodes) do
+        [
+          %{
+            type: "dependency_reduction",
+            priority: "medium",
+            description:
+              "Reduce dependencies in #{length(high_dep_nodes)} complex tests",
+            files: Enum.map(high_dep_nodes, & &1.path),
+            expected_benefit: "Improved test isolation and maintainability"
+          }
+          | suggestions
+        ]
+      else
+        suggestions
+      end
+
+    %{
+      suggestions: suggestions,
+      total_suggestions: length(suggestions),
+      estimated_improvement: calculate_total_improvement(suggestions),
+      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+  end
+
+  defp calculate_total_improvement(suggestions) do
+    # Simple heuristic for total improvement
+    high_priority = Enum.count(suggestions, &(&1.priority == "high"))
+    medium_priority = Enum.count(suggestions, &(&1.priority == "medium"))
+
+    high_priority * 25 + medium_priority * 10
+  end
+
+  defp display_optimization_suggestions(optimizations, opts) do
+    Mix.Shell.IO.info("\n⚡ Dependency Optimization Suggestions")
+    Mix.Shell.IO.info("=" <> String.duplicate("=", 36))
+
+    if Enum.empty?(optimizations.suggestions) do
+      Mix.Shell.IO.info(
+        "🎉 No optimizations needed - dependencies are well organized!"
+      )
+    else
+      Mix.Shell.IO.info(
+        "Found #{optimizations.total_suggestions} optimization opportunities"
+      )
+
+      Mix.Shell.IO.info(
+        "Estimated improvement: #{optimizations.estimated_improvement}%"
+      )
+
+      for suggestion <- optimizations.suggestions do
+        priority_icon =
+          case suggestion.priority do
+            "high" -> "🔴"
+            "medium" -> "🟡"
+            _ -> "🟢"
+          end
+
+        Mix.Shell.IO.info(
+          "\n#{priority_icon} #{String.upcase(suggestion.priority)} PRIORITY"
+        )
+
+        Mix.Shell.IO.info("#{suggestion.description}")
+
+        Mix.Shell.IO.info(
+          "Expected benefit: #{suggestion[:expected_speedup] || suggestion[:expected_benefit]}"
+        )
+
+        if opts[:verbose] do
+          files = suggestion[:files] || []
+          resources = suggestion[:resources] || []
+
+          if not Enum.empty?(files) do
+            Mix.Shell.IO.info("Affected files:")
+
+            for file <- Enum.take(files, 3) do
+              Mix.Shell.IO.info("  - #{file}")
+            end
+
+            if length(files) > 3 do
+              Mix.Shell.IO.info("  ... and #{length(files) - 3} more")
+            end
+          end
+
+          if not Enum.empty?(resources) do
+            Mix.Shell.IO.info("Resources: #{Enum.join(resources, ", ")}")
+          end
+        end
+      end
+    end
+  end
+
+  # Storage and utility functions
+
+  defp ensure_deps_directories do
+    dirs = [@deps_data_dir, @output_dir]
+    for dir <- dirs, do: File.mkdir_p!(dir)
+  end
+
+  defp save_dependency_analysis(analysis) do
+    analysis_path = Path.join(@deps_data_dir, "analysis.json")
+    File.write!(analysis_path, Jason.encode!(analysis, pretty: true))
+    Mix.Shell.IO.info("📝 Dependency analysis saved to #{analysis_path}")
+  end
+
+  defp load_or_generate_analysis(opts) do
+    analysis_path = Path.join(@deps_data_dir, "analysis.json")
+
+    if File.exists?(analysis_path) do
+      File.read!(analysis_path) |> Jason.decode!(keys: :atoms)
+    else
+      Mix.Shell.IO.info(
+        "No existing analysis found, generating new analysis..."
+      )
+
+      run_analysis(opts)
+      File.read!(analysis_path) |> Jason.decode!(keys: :atoms)
+    end
+  end
+
+  defp save_validation_results(results) do
+    results_path = Path.join(@deps_data_dir, "validation_results.json")
+    File.write!(results_path, Jason.encode!(results, pretty: true))
+    Mix.Shell.IO.info("📝 Validation results saved to #{results_path}")
+  end
+
+  defp save_optimization_suggestions(optimizations) do
+    suggestions_path =
+      Path.join(@deps_data_dir, "optimization_suggestions.json")
+
+    File.write!(suggestions_path, Jason.encode!(optimizations, pretty: true))
+    Mix.Shell.IO.info("📝 Optimization suggestions saved to #{suggestions_path}")
+  end
+
+  defp display_analysis_results(analysis, opts) do
+    Mix.Shell.IO.info("\n🔍 Test Dependency Analysis Results")
+    Mix.Shell.IO.info("=" <> String.duplicate("=", 35))
+
+    Mix.Shell.IO.info("Test Files: #{analysis.test_files}")
+    Mix.Shell.IO.info("Dependencies: #{analysis.dependency_graph.edge_count}")
+
+    Mix.Shell.IO.info(
+      "Shared Resources: #{analysis.resource_analysis.total_resources}"
+    )
+
+    Mix.Shell.IO.info(
+      "Resource Conflicts: #{length(analysis.resource_analysis.conflicts)}"
+    )
+
+    Mix.Shell.IO.info(
+      "Complexity Score: #{Float.round(analysis.complexity_metrics.complexity_score, 1)}"
+    )
+
+    if opts[:verbose] do
+      Mix.Shell.IO.info("\nExecution Analysis:")
+
+      Mix.Shell.IO.info(
+        "  Synchronous: #{length(analysis.execution_analysis.synchronous_tests)}"
+      )
+
+      Mix.Shell.IO.info(
+        "  Asynchronous: #{length(analysis.execution_analysis.async_tests)}"
+      )
+
+      Mix.Shell.IO.info(
+        "  Setup Dependencies: #{length(analysis.execution_analysis.setup_dependencies)}"
+      )
+    end
+
+    Mix.Shell.IO.info("\n💡 Recommendations:")
+
+    for rec <- analysis.recommendations do
+      Mix.Shell.IO.info("  • #{rec}")
+    end
+  end
+end

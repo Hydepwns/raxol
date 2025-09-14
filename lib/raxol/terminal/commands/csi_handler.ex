@@ -5,24 +5,30 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   """
 
   alias Raxol.Terminal.Commands.WindowHandler
-  alias Raxol.Terminal.Commands.CSIHandler.{CursorMovement, Cursor}
+  alias Raxol.Terminal.Commands.CSIHandler.{CursorMovementHandler, Cursor}
   alias Raxol.Terminal.ModeManager
 
   require Raxol.Core.Runtime.Log
   require Logger
 
   # Cursor movement delegations
-  defdelegate handle_cursor_up(emulator, amount), to: CursorMovement
-  defdelegate handle_cursor_down(emulator, amount), to: CursorMovement
-  defdelegate handle_cursor_forward(emulator, amount), to: CursorMovement
-  defdelegate handle_cursor_backward(emulator, amount), to: CursorMovement
+  defdelegate handle_cursor_up(emulator, amount), to: CursorMovementHandler
+  defdelegate handle_cursor_down(emulator, amount), to: CursorMovementHandler
+  defdelegate handle_cursor_forward(emulator, amount), to: CursorMovementHandler
+
+  defdelegate handle_cursor_backward(emulator, amount),
+    to: CursorMovementHandler
 
   defdelegate handle_cursor_position_direct(emulator, row, col),
-    to: CursorMovement
+    to: CursorMovementHandler
 
-  defdelegate handle_cursor_position(emulator, row, col), to: CursorMovement
-  defdelegate handle_cursor_position(emulator, params), to: CursorMovement
-  defdelegate handle_cursor_column(emulator, column), to: CursorMovement
+  defdelegate handle_cursor_position(emulator, row, col),
+    to: CursorMovementHandler
+
+  defdelegate handle_cursor_position(emulator, params),
+    to: CursorMovementHandler
+
+  defdelegate handle_cursor_column(emulator, column), to: CursorMovementHandler
 
   @doc """
   Handles cursor movement based on the command byte.
@@ -39,11 +45,22 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
   # Main CSI handler
   def handle_csi_sequence(emulator, command, params) do
+    # Convert command to string if it's an integer (character code)
+    command_str =
+      case command do
+        cmd when is_integer(cmd) -> <<cmd::utf8>>
+        cmd when is_binary(cmd) -> cmd
+        _ -> ""
+      end
+
     # Delegate to cursor handler for cursor commands
-    case Cursor.handle_command(emulator, params, command) do
-      {:error, :unknown_cursor_command, _} ->
+    case Cursor.handle_command(emulator, params, command_str) do
+      {:error, :unknown_cursor_command} ->
         # Try other handlers
         handle_other_csi(emulator, command, params)
+
+      {:ok, updated_emulator} ->
+        updated_emulator
 
       result ->
         result
@@ -78,13 +95,21 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
         # SGR - Select Graphic Rendition (text formatting/colors)
         handle_sgr(emulator, params)
 
+      ?s ->
+        # Save cursor position
+        save_cursor_position(emulator)
+
+      ?u ->
+        # Restore cursor position
+        restore_cursor_position(emulator)
+
       _ ->
         # For other unknown sequences, return emulator unchanged
         emulator
     end
   end
 
-  defp handle_erase_line(emulator, mode) do
+  def handle_erase_line(emulator, mode) do
     alias Raxol.Terminal.Commands.CSIHandler.ScreenHandlers
     ScreenHandlers.handle_erase_line(emulator, mode)
   end
@@ -121,7 +146,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
   def handle_cursor_command(emulator, params, final_byte) do
     case Cursor.handle_command(emulator, params, final_byte) do
-      {:error, :unknown_cursor_command, _} -> emulator
+      {:error, :unknown_cursor_command} -> emulator
       {:ok, updated_emulator} -> updated_emulator
       updated_emulator -> updated_emulator
     end
@@ -138,24 +163,64 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     end
   end
 
-  def handle_device_command(emulator, params, intermediates, final_byte) do
-    # Delegate to DeviceHandler for device commands
-    alias Raxol.Terminal.Commands.DeviceHandler
+  defp save_cursor_position(emulator) do
+    cursor = emulator.cursor
+
+    updated_cursor = %{
+      cursor
+      | saved_row: cursor.row,
+        saved_col: cursor.col,
+        saved_position: {cursor.row, cursor.col}
+    }
+
+    %{emulator | cursor: updated_cursor}
+  end
+
+  defp restore_cursor_position(emulator) do
+    cursor = emulator.cursor
+
+    {new_row, new_col} =
+      case {cursor.saved_row, cursor.saved_col} do
+        {nil, nil} -> {0, 0}
+        {row, col} -> {row, col}
+      end
+
+    updated_cursor = %{
+      cursor
+      | row: new_row,
+        col: new_col,
+        position: {new_row, new_col}
+    }
+
+    %{emulator | cursor: updated_cursor}
+  end
+
+  def handle_device_command(emulator, params, _intermediates, final_byte) do
+    # Delegate to UnifiedCommandHandler for device commands
+    alias Raxol.Terminal.Commands.UnifiedCommandHandler
 
     case final_byte do
       ?c ->
         # Device Attributes (DA)
         {:ok, updated_emulator} =
-          DeviceHandler.handle_c(emulator, params, intermediates)
+          UnifiedCommandHandler.handle_csi(emulator, params, "c")
 
         updated_emulator
 
       ?n ->
         # Device Status Report (DSR)
-        case DeviceHandler.handle_n(emulator, params) do
+        case UnifiedCommandHandler.handle_csi(emulator, params, "n") do
           {:ok, updated_emulator} -> updated_emulator
           {:error, _, updated_emulator} -> updated_emulator
         end
+
+      ?s ->
+        # Save Cursor Position (SCP)
+        save_cursor_position(emulator)
+
+      ?u ->
+        # Restore Cursor Position (RCP)
+        restore_cursor_position(emulator)
 
       _ ->
         # Other device commands not yet implemented
@@ -311,30 +376,6 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     end
   end
 
-  defp save_cursor_position(emulator) do
-    # Save cursor position for later restoration
-    cursor = emulator.cursor
-    updated_cursor = %{cursor | saved_row: cursor.row, saved_col: cursor.col}
-    %{emulator | cursor: updated_cursor}
-  end
-
-  defp restore_cursor_position(emulator) do
-    # Restore previously saved cursor position
-    cursor = emulator.cursor
-
-    if cursor.saved_row != nil && cursor.saved_col != nil do
-      updated_cursor = %{
-        cursor
-        | row: cursor.saved_row,
-          col: cursor.saved_col
-      }
-
-      %{emulator | cursor: updated_cursor}
-    else
-      emulator
-    end
-  end
-
   def handle_scs(emulator, _params_buffer, _final_byte) do
     # SCS commands not yet implemented
     emulator
@@ -409,5 +450,151 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   def handle_erase_display(emulator, mode) do
     alias Raxol.Terminal.Commands.CSIHandler.ScreenHandlers
     ScreenHandlers.handle_erase_display(emulator, mode)
+  end
+
+  # Missing functions that tests expect
+
+  def handle_s(emulator, _params) do
+    # Save cursor position
+    saved_cursor = %{
+      position: emulator.cursor.position,
+      shape: emulator.cursor.shape,
+      visible: emulator.cursor.visible
+    }
+
+    {:ok, %{emulator | saved_cursor: saved_cursor}}
+  end
+
+  def handle_u(emulator, _params) do
+    # Restore cursor position
+    case emulator.saved_cursor do
+      nil ->
+        {:ok, emulator}
+
+      saved_cursor ->
+        updated_cursor = %{
+          emulator.cursor
+          | position: saved_cursor.position,
+            shape: Map.get(saved_cursor, :shape, emulator.cursor.shape),
+            visible: Map.get(saved_cursor, :visible, emulator.cursor.visible)
+        }
+
+        {:ok, %{emulator | cursor: updated_cursor}}
+    end
+  end
+
+  def handle_r(emulator, params) do
+    # Set scrolling region (DECSTBM)
+    {top, bottom, scroll_region} =
+      case params do
+        [] ->
+          # Reset scroll region
+          {1, emulator.height, nil}
+
+        [nil, bottom] ->
+          # Bottom only (top defaults to 1)
+          clamped_bottom = max(1, min(bottom, emulator.height))
+          {1, clamped_bottom, {0, clamped_bottom - 1}}
+
+        [top] ->
+          # Top only
+          clamped_top = max(1, min(top, emulator.height))
+          {clamped_top, emulator.height, {clamped_top - 1, emulator.height - 1}}
+
+        [top, bottom] ->
+          # Both parameters
+          clamped_top = max(1, min(top, emulator.height))
+          clamped_bottom = max(clamped_top, min(bottom, emulator.height))
+
+          # Invalid region if top >= bottom
+          if clamped_top >= clamped_bottom do
+            {1, emulator.height, nil}
+          else
+            {clamped_top, clamped_bottom, {clamped_top - 1, clamped_bottom - 1}}
+          end
+
+        [top, bottom | _] ->
+          # Same as [top, bottom]
+          clamped_top = max(1, min(top, emulator.height))
+          clamped_bottom = max(clamped_top, min(bottom, emulator.height))
+
+          if clamped_top >= clamped_bottom do
+            {1, emulator.height, nil}
+          else
+            {clamped_top, clamped_bottom, {clamped_top - 1, clamped_bottom - 1}}
+          end
+      end
+
+    # Update cursor margins
+    updated_cursor = %{
+      emulator.cursor
+      | top_margin: top - 1,
+        bottom_margin: bottom - 1
+    }
+
+    # Move cursor to home position
+    home_cursor =
+      Raxol.Terminal.Cursor.Manager.set_position(updated_cursor, {0, 0})
+
+    {:ok, %{emulator | cursor: home_cursor, scroll_region: scroll_region}}
+  end
+
+  def handle_sequence(emulator, params) do
+    # Generic sequence handler - delegate to handle_csi_sequence
+    case params do
+      [?s] -> handle_s(emulator, [])
+      [?u] -> handle_u(emulator, [])
+      _ -> {:ok, emulator}
+    end
+  end
+
+  def handle_save_restore_cursor(emulator, [command]) do
+    case command do
+      ?s -> handle_s(emulator, [])
+      ?u -> handle_u(emulator, [])
+      _ -> {:ok, emulator}
+    end
+  end
+
+  def handle_screen_clear(emulator, params) do
+    # Delegate to erase display
+    mode =
+      case params do
+        [] -> 0
+        [mode] -> mode
+        [mode | _] -> mode
+      end
+
+    handle_erase_display(emulator, mode)
+  end
+
+  def handle_line_clear(emulator, params) do
+    # Handle line clearing
+    mode =
+      case params do
+        [] -> 0
+        [mode] -> mode
+        [mode | _] -> mode
+      end
+
+    handle_erase_line(emulator, mode)
+  end
+
+  def handle_device_status(emulator, params) do
+    # Handle device status reports
+    case params do
+      [5] ->
+        # Device status OK
+        output = "\e[0n"
+        {:ok, %{emulator | output_buffer: emulator.output_buffer <> output}}
+
+      [6] ->
+        # Cursor position report
+        output = "\e[#{emulator.cursor.y + 1};#{emulator.cursor.x + 1}R"
+        {:ok, %{emulator | output_buffer: emulator.output_buffer <> output}}
+
+      _ ->
+        {:ok, emulator}
+    end
   end
 end

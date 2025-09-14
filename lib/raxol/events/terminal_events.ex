@@ -3,7 +3,7 @@ defmodule Raxol.Events.TerminalCreatedEvent do
   Event emitted when a new terminal is created.
   """
 
-  use Raxol.Architecture.EventSourcing.Event
+  # use Raxol.Architecture.EventSourcing.Event
 
   defstruct [
     :terminal_id,
@@ -78,7 +78,7 @@ defmodule Raxol.Events.TerminalConfiguredEvent do
   Event emitted when terminal configuration is updated.
   """
 
-  use Raxol.Architecture.EventSourcing.Event
+  # use Raxol.Architecture.EventSourcing.Event
 
   defstruct [
     :terminal_id,
@@ -138,7 +138,7 @@ defmodule Raxol.Events.TerminalInputReceivedEvent do
   Event emitted when input is received by a terminal.
   """
 
-  use Raxol.Architecture.EventSourcing.Event
+  # use Raxol.Architecture.EventSourcing.Event
 
   defstruct [
     :terminal_id,
@@ -213,7 +213,7 @@ defmodule Raxol.Events.TerminalOutputGeneratedEvent do
   Event emitted when terminal generates output.
   """
 
-  use Raxol.Architecture.EventSourcing.Event
+  # use Raxol.Architecture.EventSourcing.Event
 
   defstruct [
     :terminal_id,
@@ -277,7 +277,7 @@ defmodule Raxol.Events.TerminalThemeAppliedEvent do
   Event emitted when a theme is applied to a terminal.
   """
 
-  use Raxol.Architecture.EventSourcing.Event
+  # use Raxol.Architecture.EventSourcing.Event
 
   defstruct [
     :terminal_id,
@@ -388,7 +388,7 @@ defmodule Raxol.Events.TerminalClosedEvent do
   Event emitted when a terminal is closed.
   """
 
-  use Raxol.Architecture.EventSourcing.Event
+  # use Raxol.Architecture.EventSourcing.Event
 
   defstruct [
     :terminal_id,
@@ -469,7 +469,7 @@ defmodule Raxol.Events.TerminalErrorOccurredEvent do
   Event emitted when an error occurs in a terminal.
   """
 
-  use Raxol.Architecture.EventSourcing.Event
+  # use Raxol.Architecture.EventSourcing.Event
 
   defstruct [
     :terminal_id,

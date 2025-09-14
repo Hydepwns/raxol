@@ -175,11 +175,52 @@ defmodule Raxol.UI.Universal do
     from + (to - from) * progress
   end
 
-  defp interpolate(from, to, _progress)
+  defp interpolate(from, to, progress)
        when is_binary(from) and is_binary(to) do
-    # Color interpolation or other string interpolation
-    # TODO: Implement proper string/color interpolation using progress
-    to
+    # String and color interpolation based on progress
+    cond do
+      is_hex_color?(from) and is_hex_color?(to) ->
+        interpolate_hex_colors(from, to, progress)
+
+      true ->
+        # For non-color strings, use simple threshold-based switching
+        if progress < 0.5, do: from, else: to
+    end
+  end
+
+  # Check if a string is a hex color (e.g., "#FF0000")
+  defp is_hex_color?(string) do
+    String.match?(string, ~r/^#[0-9A-Fa-f]{6}$/)
+  end
+
+  # Interpolate between two hex colors
+  defp interpolate_hex_colors(from_hex, to_hex, progress) do
+    from_rgb = hex_to_rgb(from_hex)
+    to_rgb = hex_to_rgb(to_hex)
+
+    interpolated_rgb = {
+      interpolate(elem(from_rgb, 0), elem(to_rgb, 0), progress),
+      interpolate(elem(from_rgb, 1), elem(to_rgb, 1), progress),
+      interpolate(elem(from_rgb, 2), elem(to_rgb, 2), progress)
+    }
+
+    rgb_to_hex(interpolated_rgb)
+  end
+
+  # Convert hex color to RGB tuple
+  defp hex_to_rgb("#" <> hex) do
+    {r, ""} = Integer.parse(String.slice(hex, 0, 2), 16)
+    {g, ""} = Integer.parse(String.slice(hex, 2, 2), 16)
+    {b, ""} = Integer.parse(String.slice(hex, 4, 2), 16)
+    {r, g, b}
+  end
+
+  # Convert RGB tuple to hex color
+  defp rgb_to_hex({r, g, b}) do
+    "#" <>
+      String.pad_leading(Integer.to_string(round(r), 16), 2, "0") <>
+      String.pad_leading(Integer.to_string(round(g), 16), 2, "0") <>
+      String.pad_leading(Integer.to_string(round(b), 16), 2, "0")
   end
 
   defp apply_property(element, property, value) do

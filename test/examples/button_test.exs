@@ -5,16 +5,15 @@ defmodule Raxol.Examples.ButtonTest do
   use Raxol.Test.Visual
   
   alias Raxol.UI.Components.Input.Button
-  alias Raxol.Test.TestHelper
   alias Form
   import Raxol.Test.Visual.Assertions
 
   setup do
-    {:ok, context} = TestHelper.setup_test_env()
+    {:ok, context} = UnifiedTestHelper.setup_test_env()
     context = Map.put(context, :snapshots_dir, "test/snapshots")
 
     on_exit(fn ->
-      TestHelper.cleanup_test_env()
+      UnifiedTestHelper.cleanup_test_env()
     end)
 
     context
@@ -144,7 +143,7 @@ defmodule Raxol.Examples.ButtonTest do
       state =
         Button.new(%{
           label: "Test",
-          theme: Raxol.Test.TestHelper.test_theme(),
+          theme: Raxol.Test.UnifiedTestHelper.test_theme(),
           style: %{}
         })
 
@@ -156,7 +155,7 @@ defmodule Raxol.Examples.ButtonTest do
   end
 
   describe "integration tests" do
-    test "button in form interaction", context do
+    test "button in form interaction", _context do
       {:ok, form, button} =
         Raxol.Test.Integration.setup_component_hierarchy(
           Raxol.Examples.Form,
@@ -182,7 +181,7 @@ defmodule Raxol.Examples.ButtonTest do
       assert updated_button.state.pressed == true, "Button should be pressed"
     end
 
-    test "contains errors properly", context do
+    test "contains errors properly", _context do
       # Attempt to cause an error by passing an invalid role attribute to the button.
       {:ok, _form, button} =
         Raxol.Test.Integration.setup_component_hierarchy(

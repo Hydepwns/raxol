@@ -214,7 +214,7 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
         threshold: 100.0,  # 100ms
         comparison: :greater_than,
         consecutive_violations: 3,
-        callback: fn metrics -> Logger.warn("High latency detected") end
+        callback: fn metrics -> Logger.warning("High latency detected") end
       })
   """
   @spec configure_alert(atom(), alert_config()) :: :ok | {:error, term()}

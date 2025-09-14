@@ -1,27 +1,175 @@
 defmodule Raxol.Terminal.Commands.CSIHandler.Cursor do
   @moduledoc """
-  Cursor command delegation module for CSI handler.
+  Handles cursor-related CSI sequences.
   """
-
-  alias Raxol.Terminal.Commands.CursorHandler
 
   @doc """
-  Delegates cursor commands to the appropriate handler based on the command byte.
+  Handles cursor movement commands.
   """
-  def handle_command(emulator, params, byte) do
-    case byte do
-      ?A -> CursorHandler.handle_A(emulator, params)
-      ?B -> CursorHandler.handle_B(emulator, params)
-      ?C -> CursorHandler.handle_C(emulator, params)
-      ?D -> CursorHandler.handle_D(emulator, params)
-      ?E -> CursorHandler.handle_E(emulator, params)
-      ?F -> CursorHandler.handle_f_alias(emulator, params)
-      ?G -> CursorHandler.handle_G(emulator, params)
-      ?H -> CursorHandler.handle_cup(emulator, params)
-      ?d -> CursorHandler.handle_d(emulator, params)
-      ?f -> CursorHandler.handle_f(emulator, params)
-      ?g -> CursorHandler.handle_g(emulator, params)
-      _ -> {:error, :unknown_cursor_command, emulator}
+  @spec handle_command(term(), list(), String.t()) ::
+          {:ok, term()} | {:error, term()}
+  def handle_command(emulator, params, command) do
+    # Delegate to the appropriate cursor movement handler
+    case command do
+      "A" -> handle_cursor_up(emulator, get_param(params, 0, 1))
+      "B" -> handle_cursor_down(emulator, get_param(params, 0, 1))
+      "C" -> handle_cursor_forward(emulator, get_param(params, 0, 1))
+      "D" -> handle_cursor_backward(emulator, get_param(params, 0, 1))
+      "H" -> handle_cursor_position(emulator, params)
+      "G" -> handle_cursor_column(emulator, get_param(params, 0, 1))
+      # Alternative position command
+      "f" -> handle_cursor_position(emulator, params)
+      "s" -> handle_save_cursor(emulator)
+      "u" -> handle_restore_cursor(emulator)
+      _ -> {:error, :unknown_cursor_command}
+    end
+  end
+
+  defp handle_cursor_up(emulator, amount) do
+    cursor = emulator.cursor
+    {current_row, current_col} = get_cursor_position(cursor)
+    new_row = max(0, current_row - amount)
+    updated_cursor = update_cursor_position(cursor, new_row, current_col)
+    {:ok, %{emulator | cursor: updated_cursor}}
+  end
+
+  defp handle_cursor_down(emulator, amount) do
+    cursor = emulator.cursor
+    {current_row, current_col} = get_cursor_position(cursor)
+    new_row = min(emulator.height - 1, current_row + amount)
+    updated_cursor = update_cursor_position(cursor, new_row, current_col)
+    {:ok, %{emulator | cursor: updated_cursor}}
+  end
+
+  defp handle_cursor_forward(emulator, amount) do
+    cursor = emulator.cursor
+    {current_row, current_col} = get_cursor_position(cursor)
+    new_col = min(emulator.width - 1, current_col + amount)
+    updated_cursor = update_cursor_position(cursor, current_row, new_col)
+    {:ok, %{emulator | cursor: updated_cursor}}
+  end
+
+  defp handle_cursor_backward(emulator, amount) do
+    cursor = emulator.cursor
+    {current_row, current_col} = get_cursor_position(cursor)
+    new_col = max(0, current_col - amount)
+    updated_cursor = update_cursor_position(cursor, current_row, new_col)
+    {:ok, %{emulator | cursor: updated_cursor}}
+  end
+
+  defp handle_cursor_position(emulator, params) do
+    # Convert from 1-based to 0-based
+    row = get_param(params, 0, 1) - 1
+    # Convert from 1-based to 0-based
+    col = get_param(params, 1, 1) - 1
+
+    # Clamp to valid ranges
+    bounded_row = max(0, min(emulator.height - 1, row))
+    bounded_col = max(0, min(emulator.width - 1, col))
+
+    cursor = emulator.cursor
+
+    # Handle both full cursor struct and minimal cursor (map with position tuple)
+    updated_cursor =
+      case cursor do
+        %{row: _, col: _} = c ->
+          # Full cursor struct
+          %{
+            c
+            | row: bounded_row,
+              col: bounded_col,
+              position: {bounded_row, bounded_col}
+          }
+
+        _ ->
+          # Minimal cursor - just update position
+          %{position: {bounded_row, bounded_col}}
+      end
+
+    {:ok, %{emulator | cursor: updated_cursor}}
+  end
+
+  defp handle_cursor_column(emulator, column) do
+    cursor = emulator.cursor
+    {current_row, _current_col} = get_cursor_position(cursor)
+    # Convert to 0-based
+    new_col = max(0, min(emulator.width - 1, column - 1))
+    updated_cursor = update_cursor_position(cursor, current_row, new_col)
+    {:ok, %{emulator | cursor: updated_cursor}}
+  end
+
+  defp handle_save_cursor(emulator) do
+    cursor = emulator.cursor
+    {current_row, current_col} = get_cursor_position(cursor)
+
+    updated_cursor =
+      case cursor do
+        %{row: _, col: _} = c ->
+          # Full cursor struct
+          %{
+            c
+            | saved_row: current_row,
+              saved_col: current_col,
+              saved_position: {current_row, current_col}
+          }
+
+        _ ->
+          # Minimal cursor
+          %{
+            position: {current_row, current_col},
+            saved_position: {current_row, current_col}
+          }
+      end
+
+    {:ok, %{emulator | cursor: updated_cursor}}
+  end
+
+  defp handle_restore_cursor(emulator) do
+    cursor = emulator.cursor
+
+    {new_row, new_col} =
+      case cursor do
+        %{saved_row: row, saved_col: col} when row != nil and col != nil ->
+          {row, col}
+
+        %{saved_position: {row, col}} ->
+          {row, col}
+
+        _ ->
+          # Default to origin if no saved position
+          {0, 0}
+      end
+
+    updated_cursor = update_cursor_position(cursor, new_row, new_col)
+    {:ok, %{emulator | cursor: updated_cursor}}
+  end
+
+  defp get_param(params, index, default) do
+    case Enum.at(params, index) do
+      nil -> default
+      val when is_integer(val) -> val
+      _ -> default
+    end
+  end
+
+  # Helper functions to handle both full and minimal cursor structs
+  defp get_cursor_position(cursor) do
+    case cursor do
+      %{row: row, col: col} -> {row, col}
+      %{position: {row, col}} -> {row, col}
+      _ -> {0, 0}
+    end
+  end
+
+  defp update_cursor_position(cursor, new_row, new_col) do
+    case cursor do
+      %{row: _, col: _} = c ->
+        # Full cursor struct
+        %{c | row: new_row, col: new_col, position: {new_row, new_col}}
+
+      _ ->
+        # Minimal cursor - just update position
+        %{position: {new_row, new_col}}
     end
   end
 end

@@ -72,8 +72,8 @@ defmodule Raxol.Terminal.ANSI.AnsiParser do
 
   defp log_parse_error(reason, input) do
     Raxol.Core.Runtime.Log.warning_with_context(
-      "ANSI Parse Error: #{inspect(reason)}",
-      %{input: input}
+      "ANSI Parse Error: #{inspect(reason, limit: 10, printable_limit: 100)}",
+      %{input: inspect(input, limit: 10, printable_limit: 100)}
     )
   end
 end

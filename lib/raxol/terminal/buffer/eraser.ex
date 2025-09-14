@@ -282,6 +282,12 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   def clear_screen_to(buffer, row, col, style \\ nil) do
     style = style || TextFormatting.new()
 
+    require Raxol.Core.Runtime.Log
+
+    Raxol.Core.Runtime.Log.debug(
+      "clear_screen_to called with row=#{row}, col=#{col}"
+    )
+
     # Clear all lines before the cursor's line
     buffer = clear_lines_above_if_needed(buffer, row, style)
 
@@ -658,6 +664,12 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   defp clear_lines_above_if_needed(buffer, 0, _style), do: buffer
 
   defp clear_lines_above_if_needed(buffer, row, style) do
+    require Raxol.Core.Runtime.Log
+
+    Raxol.Core.Runtime.Log.debug(
+      "clear_lines_above_if_needed: clearing rows 0-#{row - 1}, width=#{buffer.width}"
+    )
+
     clear_region(buffer, 0, 0, buffer.width, row, style)
   end
 

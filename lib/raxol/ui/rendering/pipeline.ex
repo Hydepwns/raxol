@@ -689,10 +689,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
   # Helper functions using pattern matching instead of if statements
 
   defp get_process_name(opts) do
-    case Mix.env() do
-      :test -> Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
-      _ -> Keyword.get(opts, :name, __MODULE__)
-    end
+    Keyword.get(opts, :name, __MODULE__)
   end
 
   defp maybe_update_initial_tree(state, %{}), do: state

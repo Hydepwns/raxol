@@ -44,12 +44,7 @@ defmodule Raxol.Terminal.Sync.UnifiedSync do
     * `:retry_count` - Default number of retry attempts
   """
   def start_link(opts \\ []) do
-    name =
-      case Mix.env() do
-        :test -> Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
-        _ -> opts[:name] || __MODULE__
-      end
-
+    name = opts[:name] || __MODULE__
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 

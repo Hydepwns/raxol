@@ -299,8 +299,8 @@ defmodule Raxol.Terminal.Buffer.CharEditorTest do
       # Test with a simple single line
       buffer = put_content(buffer, "ABC")
 
-      # Debug: print the buffer cells
-      IO.puts("Buffer cells: #{inspect(buffer.cells)}")
+      # Debug: print the buffer cells (limited to prevent timeout)
+      IO.puts("Buffer cells: #{inspect(buffer.cells, limit: 5, printable_limit: 50)}")
 
       # Debug: print line 0
       line_0 = get_line_text_with_spaces(buffer, 0)

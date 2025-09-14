@@ -3,15 +3,26 @@ defmodule Raxol.Terminal.Sync.UnifiedSyncTest do
   alias Raxol.Terminal.Sync.UnifiedSync
 
   setup do
+    # Use unique name for each test to avoid conflicts with async tests
+    unique_name = :"unified_sync_#{System.unique_integer([:positive])}"
+    
     {:ok, pid} =
       UnifiedSync.start_link(
         consistency: :strong,
         conflict_resolution: :last_write_wins,
         timeout: 1000,
-        retry_count: 3
+        retry_count: 3,
+        name: unique_name
       )
 
-    %{pid: pid}
+    on_exit(fn ->
+      case Process.alive?(pid) do
+        true -> GenServer.stop(pid)
+        false -> :ok
+      end
+    end)
+
+    %{pid: pid, name: unique_name}
   end
 
   describe "basic operations" do

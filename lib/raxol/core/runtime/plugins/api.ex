@@ -129,7 +129,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
       Raxol.Core.Runtime.Application.get_env(
         :raxol,
         :plugin_data_path,
-        "data/plugins"
+        "priv/data/plugins"
       )
 
     Path.join(base_path, plugin_id)

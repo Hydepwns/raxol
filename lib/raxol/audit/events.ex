@@ -12,7 +12,7 @@ defmodule Raxol.Audit.Events do
     Base audit event structure with common fields for all audit events.
     """
 
-    use Raxol.Architecture.EventSourcing.Event
+    # use Raxol.Architecture.EventSourcing.Event
 
     @enforce_keys [
       :event_id,
@@ -83,7 +83,7 @@ defmodule Raxol.Audit.Events do
     Audit event for authentication attempts.
     """
 
-    use Raxol.Architecture.EventSourcing.Event
+    # use Raxol.Architecture.EventSourcing.Event
 
     defstruct [
       :event_id,

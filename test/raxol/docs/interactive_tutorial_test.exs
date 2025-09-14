@@ -3,13 +3,7 @@ defmodule Raxol.Docs.InteractiveTutorialTest do
 
   alias Raxol.Docs.InteractiveTutorial
 
-  alias Raxol.Docs.InteractiveTutorial.{
-    State,
-    Models,
-    Navigation,
-    Validation,
-    Loader
-  }
+  alias Raxol.Docs.InteractiveTutorial.Models
 
   setup do
     # Initialize the tutorial system

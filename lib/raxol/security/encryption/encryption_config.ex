@@ -466,7 +466,8 @@ defmodule Raxol.Security.Encryption.Config do
   end
 
   defp get_current_user do
-    Raxol.Security.UserContext.ContextServer.get_current_user()
+    # Use UserContext wrapper to ensure server is started
+    Raxol.Security.UserContext.get_current_user()
   end
 
   # Helper functions for refactored if statements

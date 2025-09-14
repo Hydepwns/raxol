@@ -100,7 +100,7 @@ defmodule Raxol.Audit.Storage do
 
   @impl GenServer
   def init(config) do
-    storage_path = config[:storage_path] || "data/audit"
+    storage_path = config[:storage_path] || "priv/data/audit"
 
     # Ensure storage directory exists
     File.mkdir_p!(storage_path)

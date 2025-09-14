@@ -2,7 +2,12 @@ defmodule Raxol.Terminal.StateManager do
   @moduledoc """
   Manages terminal state transitions and state stack operations.
   This module is responsible for maintaining and manipulating the terminal's state.
+
+  This module implements the StateManager behavior for consistent state management
+  patterns across the codebase while maintaining its specific terminal functionality.
   """
+
+  use Raxol.Core.StateManager.Default
 
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log

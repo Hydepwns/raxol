@@ -169,9 +169,10 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
     {:continue, emulator, %{parser_state | single_shift: :ss3}, rest}
   end
 
-  defp handle_printable_char(emulator, parser_state, char_codepoint, rest) do
+  defp handle_printable_char(emulator, parser_state, char_codepoint, rest)
+       when is_map(emulator) do
     # Check if we're in bracketed paste mode
-    case emulator.bracketed_paste_active do
+    case Map.get(emulator, :bracketed_paste_active, false) do
       true ->
         # Accumulate the character in the bracketed paste buffer
         char_string = List.to_string([char_codepoint])
@@ -197,6 +198,12 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
         # Continue with remaining input
         {:continue, updated_emulator, next_parser_state, rest}
     end
+  end
+
+  # Fallback clause for when emulator is an error tuple or not a map
+  defp handle_printable_char(emulator, parser_state, _char_codepoint, rest) do
+    # Return the emulator as-is if it's an error
+    {:continue, emulator, parser_state, rest}
   end
 
   defp handle_unknown_input(emulator, parser_state, other) do

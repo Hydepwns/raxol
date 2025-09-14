@@ -39,16 +39,8 @@ defmodule Raxol.Terminal.Sync.Manager do
   """
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
-    name = get_process_name(Mix.env() == :test, opts)
+    name = Keyword.get(opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, opts, name: name)
-  end
-
-  defp get_process_name(true, opts) do
-    Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
-  end
-
-  defp get_process_name(false, opts) do
-    Keyword.get(opts, :name, __MODULE__)
   end
 
   def register_component(component_id, component_type, initial_state \\ %{}) do

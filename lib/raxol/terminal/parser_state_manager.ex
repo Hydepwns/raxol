@@ -1,12 +1,34 @@
 defmodule Raxol.Terminal.ParserStateManager do
   @moduledoc """
-  Manages terminal parser state operations including state transitions, parameter handling,
-  and escape sequence processing. This module is responsible for maintaining the parser's
-  internal state and processing terminal control sequences.
+  Consolidated terminal parser state manager combining simple emulator operations with
+  comprehensive parser state management.
+
+  This module consolidates functionality from:
+  - Simple parser state operations on Emulator structs
+  - Comprehensive parser state management from Parser.State.Manager
+
+  ## Usage
+  For simple emulator operations:
+      emulator = ParserStateManager.reset_parser_state(emulator)
+      
+  For comprehensive parser operations:
+      manager = ParserStateManager.create_parser_manager()
+      manager = ParserStateManager.process_char(manager, ?A)
+      
+  ## Migration from Parser.State.Manager
+  Use `create_parser_manager/0` instead of `Parser.State.Manager.new/0`
   """
 
   alias Raxol.Terminal.{Emulator, ParserState}
+  alias Raxol.Terminal.Parser.State.Manager, as: DetailedManager
   require Raxol.Core.Runtime.Log
+
+  # Delegate comprehensive parser management to the detailed manager
+  defdelegate create_parser_manager(), to: DetailedManager, as: :new
+
+  defdelegate process_parser_char(manager, char),
+    to: DetailedManager,
+    as: :process_char
 
   @doc """
   Gets the current parser state.

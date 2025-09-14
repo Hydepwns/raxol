@@ -1,61 +1,65 @@
 defmodule Raxol.Core.StateManager do
   @moduledoc """
-  A functional state management module using Elixir's Agent for immutable state.
+  Consolidated state management module providing both functional and process-based state handling.
 
-  This module provides a clean, functional interface for managing process-local
-  state without directly manipulating the process dictionary. It uses Agents
-  to maintain state in a supervised, fault-tolerant manner.
+  This module serves as the primary entry point for state management in Raxol,
+  delegating to the appropriate implementation based on usage patterns:
+  - For simple functional transformations: uses Default implementation
+  - For supervised process state: uses Unified managed state
+  - For domain-specific operations: delegates to appropriate domain managers
+
+  ## Migration Guide
+  - `start_link/2` -> Use `Unified.start_managed_state/3` for new supervised state
+  - `get/2`, `update/2` -> Continue using for functional operations
+  - `with_state/2` -> Deprecated, migrate to `Unified.update_managed/2`
+
+  ## Examples
+
+      # Functional state (no processes)
+      state = %{count: 0}
+      {:ok, new_state} = StateManager.put(state, :count, 1)
+
+      # Managed state (supervised processes)  
+      {:ok, state_id} = StateManager.start_managed(:app_state, %{count: 0})
+      StateManager.update_managed(:app_state, fn s -> %{s | count: s.count + 1} end)
   """
+
+  alias Raxol.Core.StateManager.{Default, Unified}
+
+  # Delegate common behaviour operations to Default implementation
+  defdelegate get(state, key), to: Default
+  defdelegate get(state, key, default), to: Default
+  defdelegate put(state, key, value), to: Default
+  defdelegate update(state, key, func), to: Default
+  defdelegate delete(state, key), to: Default
+  defdelegate clear(state), to: Default
+  defdelegate merge(state1, state2), to: Default
+  defdelegate validate(state), to: Default
+
+  # Managed state operations (process-based with supervision)
+  defdelegate start_managed(state_id, initial_state, opts \\ []),
+    to: Unified,
+    as: :start_managed_state
+
+  defdelegate update_managed(state_id, update_fun), to: Unified
+  defdelegate get_managed(state_id), to: Unified
+
+  # Domain delegation
+  defdelegate delegate_to_domain(domain, function, args), to: Unified
+  defdelegate list_domains(), to: Unified
 
   @doc """
   Starts a new state agent with the given initial state.
 
-  // ## Examples
-
-      iex> {:ok, agent} = StateManager.start_link(%{count: 0})
-      iex> StateManager.get(agent, & &1.count)
-      0
+  @deprecated "Use start_managed/3 for supervised state or functional operations for simple transformations"
   """
   @spec start_link(any(), keyword()) :: Agent.on_start()
   def start_link(initial_state \\ %{}, opts \\ []) do
     Agent.start_link(fn -> initial_state end, opts)
   end
 
-  @doc """
-  Gets the current state or a value derived from it.
-
-  // ## Examples
-
-      iex> StateManager.get(agent, & &1)
-      %{count: 0}
-
-      iex> StateManager.get(agent, & &1.count)
-      0
-  """
-  @spec get(Agent.agent(), (any() -> any())) :: any()
-  def get(agent, fun) do
-    Agent.get(agent, fun)
-  end
-
-  @doc """
-  Updates the state and optionally returns a value.
-
-  // ## Examples
-
-      iex> StateManager.update(agent, fn state ->
-      ...>   %{state | count: state.count + 1}
-      ...> end)
-      :ok
-
-      iex> StateManager.get_and_update(agent, fn state ->
-      ...>   {state.count, %{state | count: state.count + 1}}
-      ...> end)
-      0
-  """
-  @spec update(Agent.agent(), (any() -> any())) :: :ok
-  def update(agent, fun) do
-    Agent.update(agent, fun)
-  end
+  # Removed deprecated get/2 that conflicted with delegated get/2
+  # Removed deprecated update/2 that conflicted with delegated update/3
 
   @spec get_and_update(Agent.agent(), (any() -> {any(), any()})) :: any()
   def get_and_update(agent, fun) do

@@ -1,80 +1,64 @@
 defmodule Raxol.Terminal.Buffer.UnifiedManager.Memory do
   @moduledoc """
-  Handles memory management for the unified buffer manager.
+  Memory management utilities for the UnifiedManager.
 
-  This module provides functions for calculating memory usage,
-  updating memory metrics, and managing memory limits.
+  Provides functions for tracking and updating memory usage in the unified buffer manager.
   """
 
-  alias Raxol.Terminal.Buffer.Scroll
+  @doc """
+  Gets the current memory usage from the state.
+
+  ## Parameters
+  - state: The unified manager state
+
+  ## Returns
+  Memory usage information
+  """
+  @spec get_memory_usage(map()) :: non_neg_integer()
+  def get_memory_usage(state) do
+    Map.get(state, :memory_usage, 0)
+  end
 
   @doc """
-  Updates the memory usage in the state.
+  Updates memory usage tracking in the state.
+
+  ## Parameters
+  - state: The unified manager state
+
+  ## Returns
+  Updated state with current memory usage
   """
   @spec update_memory_usage(map()) :: map()
   def update_memory_usage(state) do
-    # Calculate memory usage based on buffer dimensions and content
-    active_memory = calculate_buffer_memory(state.active_buffer)
-    back_memory = calculate_buffer_memory(state.back_buffer)
-    scrollback_memory = calculate_scrollback_memory(state.scrollback_buffer)
-
-    memory = active_memory + back_memory + scrollback_memory
-
-    # Record memory usage metric
-    # Raxol.Core.Metrics.UnifiedCollector.record_resource(
-    #   :buffer_memory_usage,
-    #   memory,
-    #   tags: [:buffer, :memory]
-    # )
-
-    # Update state with memory usage
-    %{state | memory_usage: memory}
+    # Calculate approximate memory usage based on state size
+    memory_usage = calculate_memory_usage(state)
+    Map.put(state, :memory_usage, memory_usage)
   end
 
-  @doc """
-  Calculates memory usage for a ScreenBuffer.
-  """
-  @spec calculate_buffer_memory(map()) :: non_neg_integer()
-  def calculate_buffer_memory(buffer) do
-    # Estimate memory usage based on dimensions and content
-    # Each cell is roughly 64 bytes (including overhead)
-    # Plus some overhead for the struct itself
-    cell_count = buffer.width * buffer.height
-    cell_memory = cell_count * 64
+  # Private helper to calculate memory usage
+  defp calculate_memory_usage(state) do
+    # Simple approximation - in a real implementation this could be more sophisticated
+    # Base overhead
+    base_size = 1000
+    buffer_size = calculate_buffer_memory(state)
+    session_size = calculate_session_memory(state)
 
-    # Add overhead for the struct and other fields
-    struct_overhead = 1024
-
-    cell_memory + struct_overhead
+    base_size + buffer_size + session_size
   end
 
-  @doc """
-  Calculates memory usage for a Scroll buffer.
-  """
-  @spec calculate_scrollback_memory(Scroll.t()) :: non_neg_integer()
-  def calculate_scrollback_memory(scrollback) do
-    # Estimate memory usage based on scrollback content
-    # Each line is roughly 80 * 64 bytes (assuming 80 columns)
-    # Plus some overhead for the struct itself
-    line_count = length(scrollback.buffer)
-    line_memory = line_count * 80 * 64
+  defp calculate_buffer_memory(state) do
+    # Estimate memory usage from buffers
+    sessions = Map.get(state, :sessions, %{})
 
-    # Add overhead for the struct and other fields
-    struct_overhead = 512
-
-    line_memory + struct_overhead
+    Enum.reduce(sessions, 0, fn {_id, session}, acc ->
+      acc + Map.get(session, :buffer_memory, 100)
+    end)
   end
 
-  @doc """
-  Gets the memory usage of the buffer.
-  """
-  @spec get_memory_usage(map()) :: {:ok, non_neg_integer()}
-  def get_memory_usage(state) do
-    memory =
-      calculate_buffer_memory(state.active_buffer) +
-        calculate_buffer_memory(state.back_buffer) +
-        calculate_scrollback_memory(state.scrollback_buffer)
-
-    {:ok, memory}
+  defp calculate_session_memory(state) do
+    # Estimate memory usage from session data
+    sessions = Map.get(state, :sessions, %{})
+    # Rough estimate per session
+    map_size(sessions) * 500
   end
 end

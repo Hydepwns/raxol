@@ -9,8 +9,8 @@ defmodule Raxol.Terminal.SessionTest do
     Application.start(:raxol)
 
     # Clean up any existing session files
-    File.rm_rf!("tmp/sessions")
-    File.mkdir_p!("tmp/sessions")
+    File.rm_rf!(".tmp/sessions")
+    File.mkdir_p!(".tmp/sessions")
 
     {:ok, pid} = Session.start_link(id: "test_session")
     %{pid: pid}

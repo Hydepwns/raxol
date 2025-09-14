@@ -59,7 +59,10 @@ defmodule Raxol.Terminal.Buffer.Writer do
 
   def create_cell_style(style) when is_map(style) do
     style =
-      style
+      case is_struct(style) do
+        true -> Map.from_struct(style)
+        false -> style
+      end
       |> Map.new(fn {k, v} ->
         case k do
           :fg -> {:foreground, v}

@@ -4,7 +4,7 @@ defmodule Raxol.Core.Config.ConfigManagerTest do
   persistence, and error handling of configuration values.
   """
   use ExUnit.Case, async: false
-    alias Raxol.Core.Config.ConfigManager
+    alias Raxol.Core.Config.ConfigManager, as: Manager
 
   # Helper functions to call Manager using PID instead of registered name
   defp manager_get(pid, key, default \\ nil) do
@@ -338,7 +338,7 @@ defmodule Raxol.Core.Config.ConfigManagerTest do
     end
 
     test "validates configuration values when validation is enabled", %{
-      pid: pid
+      pid: _pid
     } do
       # Create a new manager with validation enabled
       {:ok, pid_with_validation} =

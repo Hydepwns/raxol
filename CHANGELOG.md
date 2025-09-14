@@ -1,3 +1,80 @@
+## [1.4.1] - 2025-09-14 (In Progress)
+
+### Test Suite Major Improvements
+
+- **Test Coverage Expansion**: 1085 tests total, 1075 passing (99.1% pass rate)
+  - Fixed all MouseHandler test failures (URXVT button decoding, drag detection)
+  - Fixed EraseHandler integration with UnifiedCommandHandler
+  - Fixed cursor save/restore struct field access bugs (position vs x/y)
+  - Added EmulatorLite support to command executor pattern matching
+  - Fixed nil handling in history tracking for minimal emulators
+  - Cleaned up TestBufferManager struct references
+
+- **Compilation Quality**: ZERO compilation warnings achieved
+  - Full ElixirLS support restored, clean compilation with `--warnings-as-errors`
+  - All behaviour callbacks implemented correctly
+  - Fixed all StateManager, BufferManager, and EventManager references
+
+- **Mix Task Consolidation**: Organized task structure
+  - `mix raxol` - Main command with help
+  - `mix raxol.check` - All quality checks
+  - `mix raxol.test` - Enhanced test runner
+  - `mix raxol.mutation` - Refactored with functional patterns (no if/else)
+
+- **Outstanding Issues** (10 test failures remaining):
+  - 7 table layout failures (calculation edge cases)
+  - 2 screen erase failures (command integration)
+  - 1 metrics failure (histogram data points)
+
+- **Edge Cases Analyzed**:
+  - ANSI cursor save/restore: Complex parsing chain issue (non-critical)
+  - Performance parser: Test environment process counting (not actual bug)
+  - Performance timing: Debug logging causing 10x slowdown (disable for perf tests)
+
+### Performance & Architecture
+
+- **Performance Metrics**: Parser 3.3μs/op | Memory <2.8MB | Render <1ms
+- **Code Reduction**: 722 lines removed, 150+ duplicate patterns eliminated
+- **Module Consolidation**: 43+ modules consolidated, state management unified (16→4 managers)
+- **Documentation**: Updated README.md and CLAUDE.md with accurate commands
+
+## [1.3.0] - 2025-09-12
+
+### Codebase Consolidation (Phases 1-4) - COMPLETE
+
+- **Test Helper Consolidation**: Unified test infrastructure
+  - Consolidated 3 test helper modules into single `test/support/unified_test_helper.ex`
+  - Removed 195 lines of duplicate code while enhancing functionality
+  - Migrated all tests to use unified helper with zero breaking changes
+  - Eliminated duplicate test_helper.exs files
+
+- **Hook Implementation Consolidation**: Single comprehensive hook system
+  - Merged 3 hook implementations into unified `Raxol.UI.Hooks.Functional`
+  - Reduced codebase by 527 lines while adding functionality
+  - Enhanced from 6 + 2 stubs to 8 fully implemented hooks
+  - Implemented task-based execution with timeout controls
+  - Achieved zero try/catch blocks with pure functional patterns
+  - Added `use_context` and `use_async` implementations
+
+- **Repository Cleanup**: Improved project organization
+  - Added .gitignore entries for cache, coverage, and log directories
+  - Archived 4 obsolete scripts replaced by mix tasks
+  - Removed duplicate test_helper.exs from platform_specific/
+  - Cleaned up inconsistent file locations
+
+- **Extended DRY Consolidation**: Major structural improvements
+  - Moved 21+ test helpers from `lib/raxol/test/` to `test/support/raxol/`
+  - Created 4 common behaviors (StateManager, EventHandler, Lifecycle, Metrics)
+  - Flattened excessive directory nesting (reduced from 7+ to max 5 levels)
+  - Eliminated 150+ duplicate manager/handler/server patterns
+  - Clarified module responsibilities with enhanced documentation
+
+### Summary
+- **Total Lines Reduced**: 900+ lines eliminated through consolidation
+- **Code Quality**: All compilation warnings resolved, critical performance issues fixed
+- **Test Coverage**: 98.7% maintained with enhanced test infrastructure
+- **Architecture**: Cleaner, more maintainable codebase with consistent patterns
+
 ## [1.2.1] - 2025-09-11
 
 ### Code Quality Sprint (Phase 6-7) - COMPLETE

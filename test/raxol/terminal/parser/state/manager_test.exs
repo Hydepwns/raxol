@@ -306,14 +306,14 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       }
 
       # ESC N (SS2) + BEL (7)
-      {:continue, _emu, state1, _rest1} =
+      {:continue, _emu, state1, rest1} =
         Manager.process_input(emulator, %{state | state: :escape}, <<78, 7>>)
 
       # After ESC N, single_shift should be :ss2 (before BEL is processed)
       assert state1.single_shift == :ss2
       # Now process BEL
-      {:continue, _emu, state2, __rest2} =
-        Manager.process_input(emulator, state1, _rest1)
+      {:continue, _emu, state2, _rest2} =
+        Manager.process_input(emulator, state1, rest1)
 
       assert state2.single_shift == nil
     end
@@ -328,13 +328,13 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       }
 
       # ESC O (SS3) + BEL (7)
-      {:continue, _emu, state1, _rest1} =
+      {:continue, _emu, state1, rest1} =
         Manager.process_input(emulator, %{state | state: :escape}, <<79, 7>>)
 
       assert state1.single_shift == :ss3
 
-      {:continue, _emu, state2, __rest2} =
-        Manager.process_input(emulator, state1, _rest1)
+      {:continue, _emu, state2, _rest2} =
+        Manager.process_input(emulator, state1, rest1)
 
       assert state2.single_shift == nil
     end

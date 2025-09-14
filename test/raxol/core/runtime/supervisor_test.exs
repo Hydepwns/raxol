@@ -6,7 +6,7 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   use ExUnit.Case, async: false
   require Mox
   import Mox
-  import Raxol.Test.Support.TestHelper
+  import Raxol.Test.UnifiedTestHelper
 
   alias Raxol.Core.Runtime.Supervisor
 
@@ -56,9 +56,10 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
     for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
   )
 
-  Mox.defmock(Raxol.Core.Runtime.Plugins.PluginManagerMock,
-    for: Raxol.Core.Runtime.Plugins.PluginManager.Behaviour
-  )
+  # PluginManager.Behaviour mock removed - behavior doesn't exist
+  # Mox.defmock(Raxol.Core.Runtime.Plugins.PluginManagerMock,
+  #   for: Raxol.Core.Runtime.Plugins.PluginManager.Behaviour
+  # )
 
   # DriverMock already defined in test/support/terminal_driver_mock.ex
 

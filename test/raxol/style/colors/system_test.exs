@@ -3,7 +3,7 @@ defmodule Raxol.Style.Colors.SystemTest do
   # Changed to false to prevent concurrent access to shared state
   use ExUnit.Case, async: false
   import Mox
-  import Raxol.Test.Support.TestHelper
+  import Raxol.Test.UnifiedTestHelper
 
   alias Raxol.Style.Colors.{Color, System, Theme}
   alias Raxol.Core.Events.EventManager, as: Manager, as: EventManager
@@ -39,7 +39,7 @@ defmodule Raxol.Style.Colors.SystemTest do
     Theme.init()
 
     # Register test themes before initializing the system
-    Theme.register(test_theme())
+    Theme.register(create_test_theme())
     Theme.register(Theme.new(standard_theme_attrs()))
     Theme.register(Theme.new(dark_theme_attrs()))
     Theme.register(Theme.new(high_contrast_theme_attrs()))
@@ -61,9 +61,9 @@ defmodule Raxol.Style.Colors.SystemTest do
 
   describe "theme management" do
     test "applies a theme", _context do
-      Theme.register(test_theme())
-      :ok = Raxol.Style.Colors.Persistence.save_theme(test_theme())
-      result = Raxol.Style.Colors.Persistence.load_theme(test_theme().id)
+      Theme.register(create_test_theme())
+      :ok = Raxol.Style.Colors.Persistence.save_theme(create_test_theme())
+      result = Raxol.Style.Colors.Persistence.load_theme(create_test_theme().id)
       assert result != nil
     end
 
@@ -142,10 +142,10 @@ defmodule Raxol.Style.Colors.SystemTest do
     end
 
     test "gets color from theme", _context do
-      Theme.register(test_theme())
+      Theme.register(create_test_theme())
 
       # Explicitly apply the theme to ensure process dictionary is set
-      assert :ok == System.apply_theme(test_theme().id)
+      assert :ok == System.apply_theme(create_test_theme().id)
 
       color = System.get_color(:primary)
       assert color != nil
@@ -160,10 +160,10 @@ defmodule Raxol.Style.Colors.SystemTest do
     end
 
     test "gets color with variant", _context do
-      Theme.register(test_theme())
+      Theme.register(create_test_theme())
 
       # Explicitly apply the theme to ensure process dictionary is set
-      assert :ok == System.apply_theme(test_theme().id)
+      assert :ok == System.apply_theme(create_test_theme().id)
 
       color = System.get_color(:primary, :high_contrast)
       assert color != nil
@@ -171,8 +171,8 @@ defmodule Raxol.Style.Colors.SystemTest do
     end
 
     test ~c"handles missing color gracefully", _context do
-      Theme.register(test_theme())
-      assert :ok == System.apply_theme(test_theme())
+      Theme.register(create_test_theme())
+      assert :ok == System.apply_theme(create_test_theme())
       assert nil == System.get_color(:nonexistent)
     end
   end
@@ -353,7 +353,7 @@ defmodule Raxol.Style.Colors.SystemTest do
     )
   end
 
-  def test_theme do
+  def create_test_theme do
     Theme.new(
       theme_attrs(:test_theme, "Test Theme", %{
         primary: Color.from_hex("#0077CC"),

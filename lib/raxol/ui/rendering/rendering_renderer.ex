@@ -14,17 +14,9 @@ defmodule Raxol.UI.Rendering.Renderer do
   Starts the rendering process.
   """
   def start_link(opts \\ []) do
-    name = get_process_name(Mix.env() == :test, opts)
+    name = Keyword.get(opts, :name)
     gen_server_opts = Keyword.delete(opts, :name)
     start_genserver_with_name(name != nil, name, gen_server_opts)
-  end
-
-  defp get_process_name(true, opts) do
-    Raxol.Test.ProcessNaming.unique_name(__MODULE__, opts)
-  end
-
-  defp get_process_name(false, opts) do
-    Keyword.get(opts, :name)
   end
 
   defp start_genserver_with_name(true, name, gen_server_opts) do

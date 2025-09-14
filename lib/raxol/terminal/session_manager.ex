@@ -2,15 +2,20 @@ defmodule Raxol.Terminal.SessionManager do
   @moduledoc """
   Session management module for handling terminal sessions.
 
-  This module provides functionality for:
-  - Session creation and management
-  - Session authentication
-  - Session state tracking
-  - Session cleanup
+  @deprecated "Use Raxol.Terminal.UnifiedSessionManager instead"
+
+  This module has been consolidated into the unified session management system.
+  For new code, use:
+
+      # Instead of SessionManager.create_session(user_id)
+      UnifiedSessionManager.create_simple_session(user_id, config)
+      
+      # Instead of SessionManager.authenticate_session(id, token)
+      UnifiedSessionManager.authenticate_session(id, token)
   """
 
   use GenServer
-  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.{Emulator, UnifiedSessionManager}
 
   # Client API
 
@@ -20,8 +25,9 @@ defmodule Raxol.Terminal.SessionManager do
 
   # Session Management Functions
 
+  @deprecated "Use UnifiedSessionManager.create_simple_session/2 instead"
   def create_session(user_id) do
-    GenServer.call(__MODULE__, {:create_session, user_id})
+    UnifiedSessionManager.create_simple_session(user_id)
   end
 
   def create_session(opts, runtime_pid) do

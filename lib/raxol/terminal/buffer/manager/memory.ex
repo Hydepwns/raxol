@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Memory do
   """
 
   alias Raxol.Terminal.Buffer.Manager.State
-  alias Raxol.Terminal.Buffer.MemoryManager
+  # MemoryManager module doesn't exist, implementing functions locally
 
   @doc """
   Updates memory usage tracking.
@@ -18,11 +18,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Memory do
       true
   """
   def update_usage(%State{} = state) do
-    total_usage =
-      Raxol.Terminal.Buffer.MemoryManager.get_total_usage(
-        state.active_buffer,
-        state.back_buffer
-      )
+    total_usage = get_total_usage(state.active_buffer, state.back_buffer)
 
     updated = %{state | memory_usage: total_usage}
     updated
@@ -38,7 +34,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Memory do
       true
   """
   def within_limits?(%State{} = state) do
-    MemoryManager.within_limit?(state.memory_usage, state.memory_limit)
+    within_limit?(state.memory_usage, state.memory_limit)
   end
 
   @doc """
@@ -93,7 +89,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Memory do
       true
   """
   def calculate_buffer_usage(buffer) do
-    usage = MemoryManager.calculate_buffer_usage(buffer)
+    usage = calculate_buffer_usage_impl(buffer)
     usage
   end
 
@@ -106,7 +102,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Memory do
       true
   """
   def estimate_usage(width, height, scrollback_height) do
-    MemoryManager.estimate_usage(width, height, scrollback_height)
+    estimate_usage_impl(width, height, scrollback_height)
   end
 
   @doc """
@@ -121,5 +117,37 @@ defmodule Raxol.Terminal.Buffer.Manager.Memory do
   def would_exceed_limit?(%State{} = state, width, height, scrollback_height) do
     estimated_usage = estimate_usage(width, height, scrollback_height)
     estimated_usage > state.memory_limit
+  end
+
+  # Private helper functions
+
+  defp get_total_usage(active_buffer, back_buffer) do
+    active_size = calculate_buffer_size(active_buffer)
+    back_size = calculate_buffer_size(back_buffer)
+    active_size + back_size
+  end
+
+  defp within_limit?(usage, limit) do
+    usage <= limit
+  end
+
+  defp calculate_buffer_usage_impl(buffer) do
+    calculate_buffer_size(buffer)
+  end
+
+  defp estimate_usage_impl(width, height, scrollback_height) do
+    # Estimate: each cell takes ~64 bytes (char + attributes)
+    cells = width * (height + scrollback_height)
+    cells * 64
+  end
+
+  defp calculate_buffer_size(nil), do: 0
+
+  defp calculate_buffer_size(buffer) when is_map(buffer) do
+    # Simple estimation based on buffer dimensions
+    width = Map.get(buffer, :width, 0)
+    height = Map.get(buffer, :height, 0)
+    # 64 bytes per cell estimate
+    width * height * 64
   end
 end

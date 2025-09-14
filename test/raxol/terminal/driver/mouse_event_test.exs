@@ -1,4 +1,4 @@
-Code.require_file("test/raxol/terminal/driver_test_helper.exs")
+# Driver test helper is loaded via test_helper.exs
 
 defmodule Raxol.Terminal.Driver.MouseEventTest do
   use ExUnit.Case

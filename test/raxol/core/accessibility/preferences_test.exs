@@ -189,6 +189,3 @@ defmodule Raxol.Core.Accessibility.PreferencesTest do
     end
   end
 end
-
-ExUnit.start()
-Code.require_file("../accessibility_test_helper.exs", __DIR__)

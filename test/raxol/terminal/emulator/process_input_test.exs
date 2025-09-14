@@ -2,12 +2,8 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
   use ExUnit.Case
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Cursor.Manager
   alias Raxol.Terminal.ScreenBuffer
 
-  defp unwrap_ok({:ok, value}), do: value
-  defp unwrap_ok({:error, _reason, value}), do: value
-  defp unwrap_ok(value) when is_map(value), do: value
 
   describe "process_input state machine" do
     # Tests focus on how Emulator.process_input handles various sequences
@@ -145,7 +141,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       emulator = Emulator.new(80, 24)
       partial_input = "\e["
 
-      {emulator_after_partial, _output1} =
+      {_emulator_after_partial, _output1} =
         Emulator.process_input(emulator, partial_input)
 
       # Process subsequent normal text
