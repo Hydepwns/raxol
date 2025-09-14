@@ -3,6 +3,11 @@ defmodule Raxol.Security.Encryption.KeyManagerTest do
   alias Raxol.Security.Encryption.KeyManager
 
   setup do
+    # Start Audit.Logger if not already running
+    unless Process.whereis(Raxol.Audit.Logger) do
+      {:ok, _audit_pid} = Raxol.Audit.Logger.start_link([])
+    end
+
     # Start key manager for tests
     {:ok, _pid} =
       KeyManager.start_link(
@@ -16,6 +21,9 @@ defmodule Raxol.Security.Encryption.KeyManagerTest do
     on_exit(fn ->
       if Process.whereis(KeyManager) do
         GenServer.stop(KeyManager)
+      end
+      if Process.whereis(Raxol.Audit.Logger) do
+        GenServer.stop(Raxol.Audit.Logger)
       end
     end)
 

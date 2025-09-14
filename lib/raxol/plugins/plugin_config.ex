@@ -4,7 +4,7 @@ defmodule Raxol.Plugins.PluginConfig do
   Stores and loads plugin configurations from disk.
   """
 
-  # @derive Jason.Encoder
+  @derive Jason.Encoder
   @config_dir ".config/raxol/plugins"
   @config_file "plugin_config.json"
 

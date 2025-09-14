@@ -381,9 +381,21 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     emulator
   end
 
-  def handle_q_deccusr(emulator, _params) do
-    # DECCUSR command not yet implemented
-    emulator
+  def handle_q_deccusr(emulator, params) do
+    # DECCUSR - Set cursor style
+    style = case params do
+      [0] -> :blink_block   # Default
+      [1] -> :blink_block
+      [2] -> :steady_block
+      [3] -> :blink_underline
+      [4] -> :steady_underline
+      [5] -> :blink_bar
+      [6] -> :steady_bar
+      _ -> emulator.cursor.style  # Keep current style for invalid params
+    end
+    
+    updated_cursor = %{emulator.cursor | style: style}
+    %{emulator | cursor: updated_cursor}
   end
 
   # Bracketed paste handling

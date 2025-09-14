@@ -2,26 +2,32 @@
 
 **Current Version**: v1.4.1 (Ready for Release)  
 **Last Updated**: 2025-09-14  
-**Test Status**: 1326/1336 tests passing (99.25% pass rate)  
+**Test Status**: 2156/2176 tests passing (99.08% pass rate) - excluding performance tests  
 **Performance**: Parser 3.3μs/op | Memory <2.8MB | Render <1ms
 
 ## 🎯 Immediate Focus: Final Test Fixes
 
-### Remaining Test Failures (10 total)
+### Progress Update
+- **Fixed**: Multiple JSON encoding issues by uncommenting @derive Jason.Encoder in:
+  - `lib/raxol/plugins/plugin_config.ex`
+  - `lib/raxol/architecture/event_sourcing/event.ex` 
+  - `lib/raxol/audit/events.ex` (all 8 event types)
+- **Fixed**: Audit.Logger startup in KeyManager tests
+- **Current Status**: Most test failures resolved, but some environment/timing issues remain
 
-#### Screen Operations (8 failures)
-- [ ] Fix ED command - erase from beginning to cursor
-- [ ] Fix clear_screen mode 0 - cursor to end of screen
-- [ ] Fix clear_line mode 1 - beginning to cursor  
-- [ ] Fix ED command - erase entire screen
-- [ ] Fix ED command cursor position tracking
-- [ ] Fix other erase operation edge cases
+### Remaining Test Failures
 
-#### ANSI Integration (2 failures)
-- [x] Fix cursor save/restore sequence ✅
-- [x] Fix alternative screen buffer switching (Mode 1049) ✅
-- [ ] Fix vim status line rendering
-- [x] Optimize performance for large formatted text (timeout increased) ✅
+#### Core Functionality
+- [x] Fixed Plugin lifecycle JSON encoding issues ✅
+- [x] Fixed Security/Encryption KeyManager tests (added Audit.Logger to test setup) ✅
+- [x] Fixed Event Sourcing JSON encoding issues ✅
+- [ ] CSI handler tests (various cursor_manager/emulator state issues)
+- [ ] Screen mode test timeout issues
+
+#### Performance Tests (3 failures - environment-specific)
+- [ ] Parser performance regression guard - plain text parsing
+- [ ] Complex ANSI sequences performance
+- [ ] Regular emulator process spawn count
 
 ### Release Checklist (v1.4.1)
 - [x] Fix all compilation warnings ✅

@@ -22,7 +22,7 @@ defmodule Raxol.Audit.Events do
       :actor,
       :resource
     ]
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -144,7 +144,7 @@ defmodule Raxol.Audit.Events do
     Audit event for authorization decisions.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -185,7 +185,7 @@ defmodule Raxol.Audit.Events do
     Audit event for data access operations.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -233,7 +233,7 @@ defmodule Raxol.Audit.Events do
     Audit event for system configuration changes.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -276,7 +276,7 @@ defmodule Raxol.Audit.Events do
     Audit event for security-related incidents.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -327,7 +327,7 @@ defmodule Raxol.Audit.Events do
     Audit event for compliance-related activities.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -367,7 +367,7 @@ defmodule Raxol.Audit.Events do
     Audit event specific to terminal operations.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -434,7 +434,7 @@ defmodule Raxol.Audit.Events do
     Audit event for GDPR and privacy-related operations.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
