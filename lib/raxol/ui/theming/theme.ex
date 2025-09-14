@@ -29,7 +29,7 @@ defmodule Raxol.UI.Theming.Theme do
           dark_mode: boolean() | nil
         }
 
-  @derive Jason.Encoder
+  # @derive Jason.Encoder
   defstruct [
     :id,
     :name,
