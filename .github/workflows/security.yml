@@ -190,7 +190,7 @@ jobs:
       
       - name: Create issue for critical findings
         if: github.event_name == 'schedule' && (needs.dependency-audit.result == 'failure' || needs.secrets-scan.result == 'failure')
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const date = new Date().toISOString().split('T')[0];
