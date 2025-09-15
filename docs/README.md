@@ -12,7 +12,6 @@ Central navigation for all Raxol documentation.
 
 ### Core Documentation
 - [Development](development.md)
-- [Terminal System](../lib/raxol/terminal/README.md)
 - [UI Components](components.md)
 - [Performance](performance.md)
 - [Testing](testing.md)
@@ -27,17 +26,14 @@ Central navigation for all Raxol documentation.
 ### Advanced
 - [Architecture Decisions](adr/)
 - [Benchmarks](bench/)
-- [Cloud Integration](../lib/raxol/cloud/README.md)
-- [Svelte Framework](../lib/raxol/svelte/README.md)
 
 ### Tools & Automation
-- [**Scripts**](../scripts/README.md) - Development scripts and tools
-- [**CI/CD Workflows**](../.github/workflows/README.md) - GitHub Actions setup
+- **Scripts** - Development scripts in `scripts/` directory
+- **CI/CD Workflows** - GitHub Actions in `.github/workflows/`
 
 ### Standards & Guidelines
 - [**Naming Conventions**](development/NAMING_CONVENTIONS.md) - Code organization
 - [**Duplicate Prevention**](development/duplicate_filename_prevention.md) - File naming
-- [**Contributing**](../CONTRIBUTING.md) - Contribution guidelines
 
 ## Quick Links
 
