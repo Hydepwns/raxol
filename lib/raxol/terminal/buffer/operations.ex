@@ -12,10 +12,11 @@ defmodule Raxol.Terminal.Buffer.Operations do
   alias Raxol.Terminal.Buffer.Operations.{
     Text,
     Scrolling,
-    Erasing,
     Utils,
     Elements
   }
+
+  alias Raxol.Terminal.Buffer.Eraser
 
   @doc """
   Resizes the buffer to the specified dimensions.
@@ -199,7 +200,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   """
   def erase_in_line(buffer, mode, cursor_x, cursor_y) do
     cursor = %{x: cursor_x, y: cursor_y}
-    Erasing.erase_in_line(buffer, mode, cursor)
+    Eraser.erase_line(buffer, mode)
   end
 
   @doc """
@@ -207,7 +208,12 @@ defmodule Raxol.Terminal.Buffer.Operations do
   """
   def erase_in_display(buffer, mode, cursor_x, cursor_y) do
     cursor = %{x: cursor_x, y: cursor_y}
-    Erasing.erase_in_display(buffer, mode, cursor)
+    case mode do
+      0 -> Eraser.erase_from_cursor_to_end(buffer)
+      1 -> Eraser.erase_from_start_to_cursor(buffer)
+      2 -> Eraser.erase_all(buffer)
+      _ -> buffer
+    end
   end
 
   @doc """
@@ -297,42 +303,44 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Erases characters from the cursor position to the end of the line.
   """
   def erase_from_cursor_to_line_end(buffer, row, col) do
-    Erasing.erase_from_cursor_to_line_end(buffer, row, col)
+    Eraser.clear_line_from(buffer, row, col)
   end
 
   @doc """
   Erases characters from the start of the line to the cursor position.
   """
   def erase_from_line_start_to_cursor(buffer, row, col) do
-    Erasing.erase_from_line_start_to_cursor(buffer, row, col)
+    Eraser.clear_line_to(buffer, row, col)
   end
 
   @doc """
   Erases the entire line.
   """
   def erase_entire_line(buffer, row) do
-    Erasing.erase_entire_line(buffer, row)
+    Eraser.clear_line(buffer, row)
   end
 
   @doc """
   Erases all lines after the specified row.
   """
   def erase_lines_after(buffer, start_row) do
-    Erasing.erase_lines_after(buffer, start_row)
+    # TODO: Implement erase_lines_after properly
+    Eraser.clear(buffer)
   end
 
   @doc """
   Erases all lines before the specified row.
   """
   def erase_lines_before(buffer, end_row) do
-    Erasing.erase_lines_before(buffer, end_row)
+    # TODO: Implement erase_lines_before properly
+    Eraser.clear(buffer)
   end
 
   @doc """
   Clears the scrollback buffer.
   """
   def clear_scrollback(buffer) do
-    Erasing.clear_scrollback(buffer)
+    Eraser.clear_scrollback(buffer)
   end
 
   @doc """

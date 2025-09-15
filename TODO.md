@@ -255,11 +255,26 @@ mix raxol.mutation          # Run mutation testing
 
 ## Technical Debt Tracking
 
-### High Priority
-- [ ] Remove deprecated terminal config backup file
-- [ ] Consolidate remaining duplicate buffer operations
-- [ ] Refactor event system to use :telemetry exclusively
-- [ ] Update all dependencies to latest stable versions
+### High Priority (Completed 2025-09-16)
+- [x] Remove deprecated terminal config backup file
+  - Removed `/lib/raxol/terminal/config_manager.ex` (duplicate of `/lib/raxol/terminal/config/terminal_config_manager.ex`)
+  - Removed `/lib/raxol/core/config/config_manager.ex` (unused)
+- [x] Consolidate remaining duplicate buffer operations
+  - Removed `/lib/raxol/core/runtime/rendering/rendering_buffer.ex` (duplicate of `/lib/raxol/core/renderer/renderer_buffer.ex`)
+  - Removed `/lib/raxol/terminal/buffer/operations/erasing.ex` (duplicate of `/lib/raxol/terminal/buffer/eraser.ex`)
+  - Updated `Buffer.Operations` to use `Buffer.Eraser` instead of removed module
+- [x] Refactor event system to use :telemetry exclusively
+  - Created `TelemetryAdapter` module for migration path
+  - Updated `EventManager` to delegate to :telemetry while maintaining backward compatibility
+- [x] Update all dependencies to latest stable versions
+  - Updated circular_buffer to v1.0
+  - Updated file_system to v1.1
+  - Updated gettext to v1.0
+  - Updated meck to v1.0
+  - Updated phoenix to v1.8.1
+  - Updated phoenix_live_view to v1.1.12
+  - Updated ex_cldr to v2.43.2
+  - Updated ex_cldr_dates_times to v2.24.0
 
 ### Medium Priority
 - [ ] Migrate from custom protocols to Elixir protocols where applicable

@@ -1,20 +1,18 @@
 defmodule Raxol.Core.Events.EventManager do
   @moduledoc """
-  High-performance event management system using GenServer with ETS for fast lookups.
+  Event management system that wraps :telemetry for backward compatibility.
 
-  Provides pub/sub functionality, event handler registration, and efficient event dispatching
-  across the application. Supports both synchronous and asynchronous event handling.
+  This module provides a compatibility layer while migrating from a custom event
+  system to the standard :telemetry library. New code should use :telemetry directly.
 
-  ## Features
-  - Fast handler lookup using ETS
-  - Subscription-based event streaming
-  - Handler registration with pattern matching
-  - Event filtering and routing
-  - Automatic cleanup of dead processes
+  ## Migration Status
+  This module now delegates to :telemetry internally. The GenServer functionality
+  is maintained for backward compatibility but will be deprecated in a future version.
   """
 
   use GenServer
   require Logger
+  alias Raxol.Core.Events.TelemetryAdapter
 
   @type event_type :: atom()
   @type event_data :: map()
@@ -122,7 +120,10 @@ defmodule Raxol.Core.Events.EventManager do
   end
 
   @doc """
-  Dispatches an event to all handlers and subscribers.
+  Dispatches an event using :telemetry.
+
+  This method now delegates to telemetry for event dispatching while maintaining
+  backward compatibility with the old API.
   """
   @spec dispatch(
           {event_type(), event_data()}
@@ -130,14 +131,20 @@ defmodule Raxol.Core.Events.EventManager do
           | event_type()
         ) :: :ok
   def dispatch({event_type, key, value}) do
+    TelemetryAdapter.dispatch(event_type, %{key => value})
+    # Also notify GenServer for backward compatibility
     notify(__MODULE__, event_type, %{key => value})
   end
 
   def dispatch({event_type, event_data}) do
+    TelemetryAdapter.dispatch(event_type, event_data)
+    # Also notify GenServer for backward compatibility
     notify(__MODULE__, event_type, event_data)
   end
 
   def dispatch(event_type) when is_atom(event_type) do
+    TelemetryAdapter.dispatch(event_type, %{})
+    # Also notify GenServer for backward compatibility
     notify(__MODULE__, event_type, %{})
   end
 

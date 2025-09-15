@@ -163,16 +163,16 @@ defmodule Raxol.MixProject do
       # System clipboard access
       {:clipboard, "~> 0.2.1"},
       # Efficient circular buffer implementation
-      {:circular_buffer, "~> 0.4"}
+      {:circular_buffer, "~> 1.0"}
     ]
   end
 
   defp phoenix_deps do
     [
-      {:phoenix, "~> 1.7.21"},
+      {:phoenix, "~> 1.8.1"},
       {:phoenix_pubsub, "~> 2.1"},
       {:phoenix_ecto, "~> 4.4"},
-      {:phoenix_live_view, "~> 1.0.17"},
+      {:phoenix_live_view, "~> 1.1.12"},
       {:phoenix_html, "~> 4.0"},
       {:plug_cowboy, "~> 2.7"},
       {:phoenix_live_dashboard, "~> 0.8.7", only: :dev},
@@ -218,7 +218,7 @@ defmodule Raxol.MixProject do
       # Testing
       {:mox, "~> 1.2", only: :test},
       {:muzak, "~> 1.1", only: :test, runtime: false},
-      {:meck, "~> 0.9", only: :test},
+      {:meck, "~> 1.0", only: :test},
       {:excoveralls, "~> 0.18", only: :test},
       {:floki, ">= 0.30.0", only: :test},
       {:stream_data, "~> 1.1", only: [:dev, :test]},
@@ -243,9 +243,9 @@ defmodule Raxol.MixProject do
       # HTTP client
       {:httpoison, "~> 2.2"},
       # Localization
-      {:gettext, "~> 0.26"},
+      {:gettext, "~> 1.0"},
       # File system watching
-      {:file_system, "~> 0.2"},
+      {:file_system, "~> 1.1"},
       # DNS clustering (removed - unused)
       # {:dns_cluster, "~> 0.1"},
 
@@ -259,10 +259,10 @@ defmodule Raxol.MixProject do
 
   defp i18n_deps do
     [
-      {:ex_cldr, "~> 2.15"},
+      {:ex_cldr, "~> 2.43.2"},
       {:ex_cldr_numbers, "~> 2.35.2"},
       {:ex_cldr_currencies, "~> 2.5"},
-      {:ex_cldr_dates_times, "~> 2.23.0"}
+      {:ex_cldr_dates_times, "~> 2.24.0"}
     ]
   end
 
