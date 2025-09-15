@@ -161,7 +161,7 @@ defmodule Raxol.MixProject do
       # System clipboard access
       {:clipboard, "~> 0.2.1"},
       # Efficient circular buffer implementation
-      {:circular_buffer, "~> 0.4"}
+      {:circular_buffer, "~> 1.0"}
     ]
   end
 
