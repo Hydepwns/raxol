@@ -7,7 +7,6 @@ defmodule Raxol.Plugins.PluginConfig do
   @config_dir ".config/raxol/plugins"
   @config_file "plugin_config.json"
 
-  @derive Jason.Encoder
   @type t :: %__MODULE__{
           plugin_configs: %{String.t() => map()},
           enabled_plugins: [String.t()]
@@ -152,5 +151,14 @@ defmodule Raxol.Plugins.PluginConfig do
 
   defp config_file_path do
     Path.join([System.get_env("HOME"), @config_dir, @config_file])
+  end
+end
+
+# Protocol implementation for JSON encoding
+if Code.ensure_loaded?(Jason.Encoder) do
+  defimpl Jason.Encoder, for: Raxol.Plugins.PluginConfig do
+    def encode(%Raxol.Plugins.PluginConfig{} = config, opts) do
+      Jason.Encode.map(Map.from_struct(config), opts)
+    end
   end
 end
