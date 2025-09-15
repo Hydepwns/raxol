@@ -4,10 +4,10 @@ defmodule Raxol.Plugins.PluginConfig do
   Stores and loads plugin configurations from disk.
   """
 
-  @derive Jason.Encoder
   @config_dir ".config/raxol/plugins"
   @config_file "plugin_config.json"
 
+  @derive Jason.Encoder
   @type t :: %__MODULE__{
           plugin_configs: %{String.t() => map()},
           enabled_plugins: [String.t()]
@@ -73,18 +73,28 @@ defmodule Raxol.Plugins.PluginConfig do
     # Ensure config directory exists
     File.mkdir_p!(config_dir)
 
-    case Jason.encode(config) do
+    # Convert struct to map for encoding
+    config_map = %{
+      plugin_configs: config.plugin_configs,
+      enabled_plugins: config.enabled_plugins
+    }
+
+    case Jason.encode(config_map) do
       {:ok, encoded} ->
         case File.write(config_path, encoded) do
           :ok ->
             {:ok, config}
 
           {:error, reason} ->
-            {:error, "Failed to write plugin configuration: #{reason}"}
+            {:error, "Failed to write plugin configuration: #{inspect(reason)}"}
         end
 
+      {:error, %Protocol.UndefinedError{} = reason} ->
+        struct_name = if is_struct(reason.value), do: reason.value.__struct__, else: "unknown"
+        {:error, "Failed to encode plugin configuration: Protocol.UndefinedError for #{inspect(struct_name)}"}
+        
       {:error, reason} ->
-        {:error, "Failed to encode plugin configuration: #{reason}"}
+        {:error, "Failed to encode plugin configuration: #{inspect(reason)}"}
     end
   end
 
