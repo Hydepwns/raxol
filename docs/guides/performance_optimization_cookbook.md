@@ -15,6 +15,7 @@ This cookbook provides practical strategies for optimizing Raxol applications ac
 ```elixir
 defmodule MyApp.Dashboard do
   use Raxol.UI, framework: :react
+  import Raxol.LiveView, only: [assign: 2, assign: 3]
 
   def mount(_params, _session, socket) do
     socket = 
@@ -378,6 +379,7 @@ end
 ```elixir
 defmodule MyApp.LazyComponent do
   use Raxol.UI, framework: :react
+  import Raxol.LiveView, only: [assign: 2, assign: 3, assign_new: 2, update: 3]
   
   # Lazy load heavy components
   def mount(_params, _session, socket) do

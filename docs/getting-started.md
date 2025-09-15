@@ -115,7 +115,8 @@ Create `lib/my_terminal_app/app.ex`:
 
 ```elixir
 defmodule MyTerminalApp.App do
-  use Raxol.Application
+  use Raxol.Core.Runtime.Application
+  import Raxol.LiveView, only: [assign: 2, assign: 3]
   
   @impl true
   def mount(_params, socket) do
@@ -182,6 +183,7 @@ end
 # LiveView-Style Components
 defmodule MyApp do
   use Raxol.LiveView
+  import Raxol.LiveView, only: [assign: 2, assign: 3]
   
   def mount(_params, _session, socket) do
     {:ok, assign(socket, count: 0)}
@@ -215,6 +217,7 @@ Make your applications interactive with event handling:
 ```elixir
 defmodule Counter do
   use Raxol.Component
+  import Raxol.LiveView, only: [assign: 2, assign: 3, update: 3]
   
   @impl true
   def mount(socket) do
@@ -273,6 +276,7 @@ end
 ```elixir
 defmodule TodoList do
   use Raxol.Component
+  import Raxol.LiveView, only: [assign: 2, assign: 3, update: 3]
   
   @impl true
   def mount(socket) do
@@ -322,6 +326,7 @@ end
 ```elixir
 defmodule GlobalStateExample do
   use Raxol.Component
+  import Raxol.LiveView, only: [assign: 2, assign: 3]
   
   @impl true
   def mount(socket) do
@@ -357,7 +362,7 @@ Raxol supports rich styling options:
 
 ```elixir
 defmodule ThemedApp do
-  use Raxol.Application
+  use Raxol.Core.Runtime.Application
   
   def init(_args) do
     {:ok, %{theme: :dark}}

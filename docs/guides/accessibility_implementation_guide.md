@@ -24,6 +24,7 @@ defmodule MyApp.AccessibleComponents do
   """
   
   use Raxol.UI, framework: :liveview
+  import Raxol.LiveView, only: [assign: 2, assign: 3, assign_new: 2, update: 3]
   
   def accessible_button(assigns) do
     assigns = 

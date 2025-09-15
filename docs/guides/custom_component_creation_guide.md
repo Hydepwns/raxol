@@ -27,6 +27,7 @@ defmodule Raxol.UI.Components.MyButton do
   """
   
   use Raxol.UI, framework: :react
+  import Raxol.LiveView, only: [assign: 2, assign: 3, assign_new: 2, update: 3]
   
   @doc """
   Button component with extensive customization options.
@@ -112,6 +113,7 @@ end
 ```elixir
 defmodule Raxol.UI.Components.SearchInput do
   use Raxol.UI, framework: :react
+  import Raxol.LiveView, only: [assign: 2, assign: 3, assign_new: 2, update: 3]
   
   def mount(_params, _session, socket) do
     socket = 
@@ -222,6 +224,7 @@ end
 ```elixir
 defmodule Raxol.UI.Components.Card do
   use Raxol.UI, framework: :react
+  import Raxol.LiveView, only: [assign: 2, assign: 3, assign_new: 2, update: 3]
   
   @doc """
   Flexible card component with multiple slots for complex layouts.
@@ -603,6 +606,7 @@ defmodule Raxol.UI.Components.MyButton.Docs do
   """
   
   use Raxol.UI, framework: :liveview
+  import Raxol.LiveView, only: [assign: 2, assign: 3, assign_new: 2, update: 3]
   
   def mount(_params, _session, socket) do
     socket = 

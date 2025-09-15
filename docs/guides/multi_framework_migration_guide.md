@@ -82,6 +82,7 @@ end
 # React (Before)
 defmodule MyApp.ReactCounter do
   use Raxol.UI, framework: :react
+  import Raxol.LiveView, only: [assign: 2, assign: 3, assign_new: 2, update: 3]
   
   def mount(_params, _session, socket) do
     {:ok, assign(socket, :count, 0)}
@@ -101,6 +102,7 @@ end
 # Svelte (After)  
 defmodule MyApp.SvelteCounter do
   use Raxol.UI, framework: :svelte
+  import Raxol.LiveView, only: [assign: 2, assign: 3, assign_new: 2, update: 3]
   
   def mount(_params, _session, socket) do
     {:ok, assign(socket, :count, 0)}
@@ -260,6 +262,7 @@ defmodule MyApp.UniversalModal do
   
   # Import all framework support
   use Raxol.UI, framework: [:react, :svelte, :liveview, :heex, :raw]
+  import Raxol.LiveView, only: [assign: 2, assign: 3, assign_new: 2, update: 3]
   
   def universal_modal(assigns) do
     assigns = 
