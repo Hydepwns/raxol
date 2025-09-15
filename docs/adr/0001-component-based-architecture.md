@@ -24,6 +24,7 @@ Key architectural decisions:
 ```elixir
 defmodule MyComponent do
   use Raxol.Component
+  import Raxol.LiveView, only: [assign: 2, assign: 3]
   
   prop :title, :string, required: true
   prop :items, {:list, :map}, default: []
