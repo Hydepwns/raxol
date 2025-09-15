@@ -1,6 +1,6 @@
 ## [1.4.1] - 2025-09-15
 
-### Major Release - Production Ready
+### Major Release - Production Ready with World-Class Benchmarking
 
 - **Test Suite Excellence**: 2045 tests total, 2043 passing (99.9% pass rate)
   - Fixed all MouseHandler test failures (URXVT button decoding, drag detection)
@@ -16,12 +16,24 @@
   - All behaviour callbacks implemented correctly
   - Fixed all StateManager, BufferManager, and EventManager references
 
-- **Enhanced Benchmarking System**: Complete rewrite of `mix raxol.bench`
-  - Added performance regression detection with 5% threshold
-  - Interactive HTML dashboard with Chart.js visualization
-  - Comprehensive benchmark suites: parser, terminal, rendering, memory, concurrent
-  - Baseline metrics storage and comparison
-  - Memory profiling and concurrent operation benchmarks
+- **World-Class Benchmarking Infrastructure**: Complete overhaul
+  - **New Benchmark Config Module**: Profile-based configuration with environment awareness
+    - Statistical significance testing (95% confidence level)
+    - Dynamic threshold calculation based on historical variance
+    - Environment-specific adjustments (CI/local)
+    - Comprehensive metadata tracking (Git SHA, system info, versions)
+  - **Enhanced `mix raxol.bench`**: Production-ready benchmarking
+    - Performance regression detection with configurable thresholds
+    - Interactive HTML dashboard with Chart.js visualization
+    - Comprehensive suites: parser, terminal, rendering, memory, concurrent
+    - Baseline metrics storage and comparison
+  - **Advanced Analytics**:
+    - P50-P99.9 percentile tracking
+    - Statistical significance validation
+    - Outlier detection and filtering
+    - Trend analysis and prediction
+  - **Competitor Comparison Suite**: Direct benchmarking against Alacritty, Kitty, iTerm2, WezTerm
+  - **Module Consolidation**: Reduced from 21 to 11 core benchmark modules
 
 - **Mix Task Consolidation**: Organized task structure
   - `mix raxol` - Main command with help

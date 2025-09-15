@@ -1,10 +1,10 @@
-defmodule Raxol.Benchmarking.EnhancedFormatter do
+defmodule Raxol.Benchmark.EnhancedFormatter do
   @moduledoc """
   Enhanced custom formatter for Benchee that provides better insights,
   performance analysis, and visual reporting for Raxol benchmarks.
   """
 
-  alias Raxol.Benchmarking.Config
+  alias Raxol.Benchmark.Config
 
   @behaviour Benchee.Formatter
 

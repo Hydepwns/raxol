@@ -1,6 +1,6 @@
 defmodule Raxol.DynamicSupervisor do
   @moduledoc """
-  A dynamic supervisor for dynamically starting Raxol application processes.
+  A dynamic supervisor for starting Raxol application processes.
   """
   use DynamicSupervisor
 

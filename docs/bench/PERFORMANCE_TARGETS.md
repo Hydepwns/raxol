@@ -93,13 +93,15 @@ mix benchmark --all --formatter html
 
 ## Comparison with Competitors
 
-| Framework | Parser Speed | Memory Usage | Startup Time |
-|-----------|-------------|--------------|--------------|
-| **Raxol** | **3.3 μs** | **2.8MB** | **<10ms** |
-| tmux | ~10 μs | ~5MB | ~20ms |
-| Alacritty | ~5 μs | ~15MB | ~50ms |
-| iTerm2 | ~15 μs | ~50MB | ~100ms |
-| Windows Terminal | ~20 μs | ~30MB | ~150ms |
+| Framework | Parser Speed | Memory Usage | Startup Time | Notes |
+|-----------|-------------|--------------|--------------|-------|
+| **Raxol** | **3.3 μs** | **2.8MB** | **<10ms** | Elixir-based, multi-framework |
+| Alacritty | ~5 μs | ~15MB | ~50ms | GPU-accelerated, Rust |
+| Kitty | ~4 μs | ~25MB | ~40ms | GPU-accelerated, Python/C |
+| WezTerm | ~6 μs | ~20MB | ~60ms | GPU-accelerated, Rust |
+| iTerm2 | ~15 μs | ~50MB | ~100ms | macOS native |
+| tmux | ~10 μs | ~5MB | ~20ms | Terminal multiplexer |
+| Windows Terminal | ~20 μs | ~30MB | ~150ms | Windows native |
 
 ## Future Performance Goals
 

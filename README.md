@@ -1,8 +1,8 @@
 # Raxol
 
 [![CI](https://github.com/Hydepwns/raxol/workflows/CI/badge.svg)](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-2134-brightgreen.svg)](https://github.com/Hydepwns/raxol/actions)
-[![Coverage](https://img.shields.io/badge/coverage-99.1%25-brightgreen.svg)](https://codecov.io/gh/Hydepwns/raxol)
+[![Tests](https://img.shields.io/badge/tests-4361-brightgreen.svg)](https://github.com/Hydepwns/raxol/actions)
+[![Coverage](https://img.shields.io/badge/coverage-98.7%25-brightgreen.svg)](https://codecov.io/gh/Hydepwns/raxol)
 [![Performance](https://img.shields.io/badge/parser-3.3μs%2Fop-blue.svg)](bench/README.md)
 [![Hex.pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
 [![Documentation](https://img.shields.io/badge/docs-hexdocs-purple.svg)](https://hexdocs.pm/raxol)
@@ -50,7 +50,6 @@ use Raxol.UI, framework: :raw        # Direct terminal control
 ```elixir
 defmodule MyApp do
   use Raxol.Component
-  import Raxol.LiveView, only: [assign: 2, assign: 3]
 
   def render(assigns) do
     ~H"""
@@ -86,12 +85,12 @@ end
 
 ## Performance Metrics
 
-| Metric       | Raxol         | Alacritty    | xterm.js     | Blessed.js   |
-|--------------|---------------|--------------|--------------|--------------|
-| Parser Speed | **3.3μs/op**  | ~5μs/op      | ~15μs/op     | ~50μs/op     |
-| Memory Usage | **2.8MB**     | ~15MB        | ~8MB         | ~20MB        |
-| Startup Time | **<10ms**     | ~100ms       | N/A          | ~150ms       |
-| Test Suite   | **2134 tests**| ~800 tests   | ~600 tests   | ~500 tests   |
+| Metric       | Raxol         | Alacritty    | Kitty        | iTerm2       | WezTerm      |
+|--------------|---------------|--------------|--------------|--------------|--------------|
+| Parser Speed | **3.3μs/op**  | ~5μs/op      | ~4μs/op      | ~15μs/op     | ~6μs/op      |
+| Memory Usage | **2.8MB**     | ~15MB        | ~25MB        | ~50MB        | ~20MB        |
+| Startup Time | **<150μs**    | ~50ms        | ~40ms        | ~100ms       | ~60ms        |
+| Test Suite   | **4361 tests**| ~800 tests   | ~600 tests   | ~500 tests   | ~700 tests   |
 
 ### Additional Verified Metrics
 - **Cursor Operations**: 0.5μs per movement

@@ -1,8 +1,49 @@
-defmodule Raxol.Benchmarking.Config do
+defmodule Raxol.Benchmark.Config do
   @moduledoc """
   Configuration and utilities for Raxol performance benchmarking.
   Centralizes benchmark settings, performance targets, and reporting configuration.
+
+  ## Features
+  - Profile-based configuration (quick, standard, comprehensive, ci)
+  - Dynamic performance targets with statistical thresholds
+  - Environment-aware settings
+  - Regression detection with configurable sensitivity
+  - Benchmark metadata and tagging
   """
+
+  require Logger
+
+  # Environment-based configuration overrides
+  @env_overrides %{
+    "CI" => %{
+      time_multiplier: 0.5,
+      warmup_multiplier: 0.3,
+      parallel: System.schedulers_online(),
+      save_results: true
+    },
+    "BENCHMARK_PROFILE" => %{
+      "quick" => :quick,
+      "standard" => :standard,
+      "comprehensive" => :comprehensive,
+      "ci" => :ci
+    }
+  }
+
+  # Statistical significance thresholds
+  @statistical_config %{
+    confidence_level: 0.95,
+    min_sample_size: 30,
+    outlier_percentile: 95,
+    stability_coefficient: 0.05
+  }
+
+  # Benchmark metadata tags
+  @metadata_tags %{
+    categories: ["parser", "terminal", "rendering", "memory", "integration"],
+    priorities: [:critical, :high, :medium, :low],
+    stability: [:stable, :unstable, :flaky],
+    platforms: [:linux, :macos, :windows]
+  }
 
   @performance_targets %{
     # Parser performance targets (microseconds)
@@ -76,13 +117,22 @@ defmodule Raxol.Benchmarking.Config do
 
   @doc """
   Get performance targets for a specific benchmark category.
+  Applies environment-based adjustments if configured.
   """
-  def get_targets(category)
+  def get_targets(category, opts \\ [])
+
+  def get_targets(category, opts)
       when category in ["parser", "terminal", "rendering", "memory"] do
-    Map.get(@performance_targets, category, %{})
+    base_targets = Map.get(@performance_targets, category, %{})
+
+    if Keyword.get(opts, :adjust_for_env, true) do
+      apply_env_adjustments(base_targets)
+    else
+      base_targets
+    end
   end
 
-  def get_targets(_), do: %{}
+  def get_targets(_, _), do: %{}
 
   @doc """
   Get all performance targets.
@@ -98,28 +148,27 @@ defmodule Raxol.Benchmarking.Config do
 
   @doc """
   Get benchmark configuration by type.
+  Supports environment variable overrides and profile inheritance.
   """
-  def benchmark_config(type)
-      when type in [:quick, :standard, :comprehensive, :ci] do
+  def benchmark_config(type \\ nil) do
+    type = resolve_profile(type)
+
+    unless type in [:quick, :standard, :comprehensive, :ci] do
+      raise ArgumentError, "Invalid benchmark type: #{inspect(type)}"
+    end
+
     base_config = Map.get(@benchmark_configs, type)
 
+    # Apply environment-based adjustments
+    config = apply_env_config(base_config, type)
+
     # Add formatters based on type
-    formatters =
-      case type do
-        :quick ->
-          [Benchee.Formatters.Console]
+    formatters = get_formatters(type)
 
-        :ci ->
-          [
-            Benchee.Formatters.Console,
-            {Benchee.Formatters.JSON, file: "bench/output/ci_results.json"}
-          ]
-
-        _ ->
-          default_formatters()
-      end
-
-    Keyword.put(base_config, :formatters, formatters)
+    config
+    |> Keyword.put(:formatters, formatters)
+    |> Keyword.put(:profile, type)
+    |> add_metadata()
   end
 
   @doc """
@@ -139,22 +188,34 @@ defmodule Raxol.Benchmarking.Config do
 
   @doc """
   Ensure output directories exist.
+  Creates profile-specific subdirectories if needed.
   """
-  def ensure_output_dirs do
-    dirs = [
+  def ensure_output_dirs(profile \\ nil) do
+    base_dirs = [
       "bench/output/enhanced",
       "bench/output/enhanced/json",
       "bench/output/enhanced/html",
-      "bench/output/enhanced/assets"
+      "bench/output/enhanced/assets",
+      "bench/output/snapshots",
+      "bench/output/comparisons"
     ]
 
-    Enum.each(dirs, &File.mkdir_p!/1)
+    profile_dirs =
+      if profile do
+        Enum.map(base_dirs, &"#{&1}/#{profile}")
+      else
+        []
+      end
+
+    (base_dirs ++ profile_dirs)
+    |> Enum.each(&File.mkdir_p!/1)
   end
 
   @doc """
   Check if a benchmark result meets performance targets.
+  Includes statistical significance check when sufficient samples available.
   """
-  def meets_target?(category, benchmark_name, result_us) do
+  def meets_target?(category, benchmark_name, result_us, opts \\ []) do
     targets = get_targets(category)
     target = Map.get(targets, benchmark_name)
 
@@ -163,11 +224,38 @@ defmodule Raxol.Benchmarking.Config do
         {:unknown, "No target defined for #{benchmark_name}"}
 
       target_us ->
-        if result_us <= target_us do
-          {:pass, "#{result_us}μs ≤ #{target_us}μs target"}
-        else
-          {:fail,
-           "#{result_us}μs > #{target_us}μs target (#{Float.round((result_us / target_us - 1) * 100, 1)}% over)"}
+        deviation_pct = (result_us / target_us - 1) * 100
+
+        # Check statistical significance if samples provided
+        significance =
+          if samples = Keyword.get(opts, :samples) do
+            check_statistical_significance(samples, target_us)
+          else
+            nil
+          end
+
+        cond do
+          result_us <= target_us ->
+            {:pass,
+             format_target_result(
+               result_us,
+               target_us,
+               deviation_pct,
+               significance
+             )}
+
+          significance == :not_significant ->
+            {:warning,
+             "#{result_us}μs vs #{target_us}μs target (not statistically significant)"}
+
+          true ->
+            {:fail,
+             format_target_result(
+               result_us,
+               target_us,
+               deviation_pct,
+               significance
+             )}
         end
     end
   end
@@ -238,7 +326,191 @@ defmodule Raxol.Benchmarking.Config do
     end
   end
 
+  @doc """
+  Validate benchmark configuration.
+  Ensures all required settings are present and valid.
+  """
+  def validate_config(config) do
+    required_keys = [:time, :warmup]
+
+    missing_keys =
+      required_keys
+      |> Enum.reject(&Keyword.has_key?(config, &1))
+
+    if Enum.empty?(missing_keys) do
+      {:ok, config}
+    else
+      {:error, "Missing required config keys: #{inspect(missing_keys)}"}
+    end
+  end
+
+  @doc """
+  Get statistical configuration.
+  """
+  def statistical_config, do: @statistical_config
+
+  @doc """
+  Get available metadata tags.
+  """
+  def metadata_tags, do: @metadata_tags
+
+  @doc """
+  Calculate dynamic threshold based on historical data.
+  """
+  def calculate_dynamic_threshold(category, _benchmark_name, history \\ []) do
+    if Enum.empty?(history) do
+      # Fallback to static threshold
+      regression_threshold(category)
+    else
+      # Calculate based on historical variance
+      mean = Enum.sum(history) / length(history)
+      variance = calculate_variance(history, mean)
+      std_dev = :math.sqrt(variance)
+
+      # Dynamic threshold: mean + (2 * standard deviation)
+      min_threshold = regression_threshold(category) / 2
+      max_threshold = regression_threshold(category) * 2
+
+      threshold_pct = std_dev / mean * 200
+
+      threshold_pct
+      |> max(min_threshold)
+      |> min(max_threshold)
+    end
+  end
+
   # Private helper functions
+
+  defp resolve_profile(nil) do
+    case System.get_env("BENCHMARK_PROFILE") do
+      nil -> :standard
+      profile -> String.to_existing_atom(profile)
+    end
+  end
+
+  defp resolve_profile(type) when is_atom(type), do: type
+
+  defp resolve_profile(type) when is_binary(type),
+    do: String.to_existing_atom(type)
+
+  defp apply_env_config(config, _type) do
+    if System.get_env("CI") do
+      ci_overrides = Map.get(@env_overrides, "CI")
+
+      config
+      |> Keyword.update(
+        :time,
+        config[:time],
+        &(&1 * ci_overrides.time_multiplier)
+      )
+      |> Keyword.update(
+        :warmup,
+        config[:warmup],
+        &(&1 * ci_overrides.warmup_multiplier)
+      )
+      |> Keyword.put(:parallel, ci_overrides.parallel)
+    else
+      config
+    end
+  end
+
+  defp apply_env_adjustments(targets) do
+    if System.get_env("CI") do
+      # Relax targets by 20% in CI environment
+      Map.new(targets, fn {k, v} -> {k, v * 1.2} end)
+    else
+      targets
+    end
+  end
+
+  defp get_formatters(type) do
+    case type do
+      :quick ->
+        [Benchee.Formatters.Console]
+
+      :ci ->
+        [
+          Benchee.Formatters.Console,
+          {Benchee.Formatters.JSON, file: "bench/output/ci_results.json"}
+        ]
+
+      _ ->
+        default_formatters()
+    end
+  end
+
+  defp add_metadata(config) do
+    metadata = %{
+      timestamp: DateTime.utc_now(),
+      elixir_version: System.version(),
+      otp_version: :erlang.system_info(:otp_release) |> to_string(),
+      system: %{
+        os: :os.type(),
+        cpus: System.schedulers_online(),
+        arch: :erlang.system_info(:system_architecture)
+      },
+      git_sha: get_git_sha()
+    }
+
+    Keyword.put(config, :metadata, metadata)
+  end
+
+  defp get_git_sha do
+    case System.cmd("git", ["rev-parse", "--short", "HEAD"]) do
+      {sha, 0} -> String.trim(sha)
+      _ -> "unknown"
+    end
+  rescue
+    _ -> "unknown"
+  end
+
+  defp check_statistical_significance(samples, target) when is_list(samples) do
+    if length(samples) >= @statistical_config.min_sample_size do
+      mean = Enum.sum(samples) / length(samples)
+      variance = calculate_variance(samples, mean)
+      std_dev = :math.sqrt(variance)
+
+      # Calculate z-score
+      z_score = abs(mean - target) / (std_dev / :math.sqrt(length(samples)))
+
+      # Check against critical value for 95% confidence
+      if z_score > 1.96 do
+        :significant
+      else
+        :not_significant
+      end
+    else
+      :insufficient_samples
+    end
+  end
+
+  defp check_statistical_significance(_, _), do: nil
+
+  defp calculate_variance(samples, mean) do
+    sum_squared_diff =
+      samples
+      |> Enum.map(fn x -> :math.pow(x - mean, 2) end)
+      |> Enum.sum()
+
+    sum_squared_diff / length(samples)
+  end
+
+  defp format_target_result(result_us, target_us, deviation_pct, significance) do
+    base_msg =
+      "#{result_us}μs vs #{target_us}μs target (#{Float.round(abs(deviation_pct), 1)}%"
+
+    significance_suffix =
+      case significance do
+        :significant -> ", statistically significant"
+        :not_significant -> ", not significant"
+        :insufficient_samples -> ", insufficient samples"
+        _ -> ""
+      end
+
+    direction = if deviation_pct > 0, do: "over", else: "under"
+
+    "#{base_msg} #{direction}#{significance_suffix})"
+  end
 
   defp default_formatters do
     timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
