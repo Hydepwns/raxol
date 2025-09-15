@@ -170,7 +170,7 @@ defmodule Raxol.MixProject do
       {:phoenix, "~> 1.7.21"},
       {:phoenix_pubsub, "~> 2.1"},
       {:phoenix_ecto, "~> 4.4"},
-      {:phoenix_live_view, "~> 1.0.17"},
+      {:phoenix_live_view, "~> 1.1.12"},
       {:phoenix_html, "~> 4.0"},
       {:plug_cowboy, "~> 2.7"},
       {:phoenix_live_dashboard, "~> 0.8.7", only: :dev},
