@@ -259,7 +259,7 @@ defmodule Raxol.MixProject do
       {:ex_cldr, "~> 2.15"},
       {:ex_cldr_numbers, "~> 2.35.2"},
       {:ex_cldr_currencies, "~> 2.5"},
-      {:ex_cldr_dates_times, "~> 2.23.0"}
+      {:ex_cldr_dates_times, "~> 2.24.0"}
     ]
   end
 
