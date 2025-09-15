@@ -1,0 +1,343 @@
+defmodule Raxol.Benchmarking.Config do
+  @moduledoc """
+  Configuration and utilities for Raxol performance benchmarking.
+  Centralizes benchmark settings, performance targets, and reporting configuration.
+  """
+
+  @performance_targets %{
+    # Parser performance targets (microseconds)
+    "parser" => %{
+      "plain_text_parse" => 50,
+      "ansi_basic_parse" => 10,
+      "ansi_complex_parse" => 15,
+      "mixed_content_parse" => 25
+    },
+    
+    # Terminal component targets (microseconds)
+    "terminal" => %{
+      "emulator_creation" => 1000,
+      "buffer_write_char" => 5,
+      "buffer_write_string" => 20,
+      "cursor_movement" => 3,
+      "sgr_processing" => 1
+    },
+    
+    # Rendering targets (milliseconds)
+    "rendering" => %{
+      "small_buffer_render" => 0.5,
+      "medium_buffer_render" => 1.0,
+      "large_buffer_render" => 2.0,
+      "colored_render" => 1.5,
+      "unicode_render" => 2.0
+    },
+    
+    # Memory targets (MB)
+    "memory" => %{
+      "emulator_80x24" => 3.0,
+      "emulator_200x50" => 8.0,
+      "buffer_operations" => 5.0
+    }
+  }
+
+  @regression_thresholds %{
+    # Percentage increase that triggers a regression warning
+    "parser" => 10,
+    "terminal" => 15,
+    "rendering" => 5,
+    "memory" => 20
+  }
+
+  @benchmark_configs %{
+    quick: [
+      time: 1,
+      memory_time: 0.5,
+      warmup: 0.2,
+      parallel: 1
+    ],
+    
+    standard: [
+      time: 5,
+      memory_time: 2,
+      warmup: 1,
+      parallel: 1
+    ],
+    
+    comprehensive: [
+      time: 10,
+      memory_time: 5,
+      warmup: 2,
+      parallel: 1
+    ],
+    
+    ci: [
+      time: 3,
+      memory_time: 1,
+      warmup: 0.5,
+      parallel: 1
+    ]
+  }
+
+  @doc """
+  Get performance targets for a specific benchmark category.
+  """
+  def get_targets(category) when category in ["parser", "terminal", "rendering", "memory"] do
+    Map.get(@performance_targets, category, %{})
+  end
+
+  def get_targets(_), do: %{}
+
+  @doc """
+  Get all performance targets.
+  """
+  def all_targets, do: @performance_targets
+
+  @doc """
+  Get regression threshold for a category (percentage).
+  """
+  def regression_threshold(category) do
+    Map.get(@regression_thresholds, category, 10)
+  end
+
+  @doc """
+  Get benchmark configuration by type.
+  """
+  def benchmark_config(type) when type in [:quick, :standard, :comprehensive, :ci] do
+    base_config = Map.get(@benchmark_configs, type)
+    
+    # Add formatters based on type
+    formatters = case type do
+      :quick -> [Benchee.Formatters.Console]
+      :ci -> [
+        Benchee.Formatters.Console,
+        {Benchee.Formatters.JSON, file: "bench/output/ci_results.json"}
+      ]
+      _ -> default_formatters()
+    end
+    
+    Keyword.put(base_config, :formatters, formatters)
+  end
+
+  @doc """
+  Generate timestamped output paths for benchmark results.
+  """
+  def output_paths(timestamp \\ nil) do
+    ts = timestamp || DateTime.utc_now() |> DateTime.to_iso8601()
+    
+    %{
+      json: "bench/output/enhanced/json/benchmark_#{ts}.json",
+      html: "bench/output/enhanced/html/benchmark_#{ts}.html",
+      dashboard: "bench/output/enhanced/dashboard_#{ts}.html",
+      regression: "bench/output/enhanced/regression_#{ts}.md",
+      insights: "bench/output/enhanced/insights_#{ts}.md"
+    }
+  end
+
+  @doc """
+  Ensure output directories exist.
+  """
+  def ensure_output_dirs do
+    dirs = [
+      "bench/output/enhanced",
+      "bench/output/enhanced/json", 
+      "bench/output/enhanced/html",
+      "bench/output/enhanced/assets"
+    ]
+    
+    Enum.each(dirs, &File.mkdir_p!/1)
+  end
+
+  @doc """
+  Check if a benchmark result meets performance targets.
+  """
+  def meets_target?(category, benchmark_name, result_us) do
+    targets = get_targets(category)
+    target = Map.get(targets, benchmark_name)
+    
+    case target do
+      nil -> {:unknown, "No target defined for #{benchmark_name}"}
+      target_us -> 
+        if result_us <= target_us do
+          {:pass, "#{result_us}μs ≤ #{target_us}μs target"}
+        else
+          {:fail, "#{result_us}μs > #{target_us}μs target (#{Float.round((result_us/target_us - 1) * 100, 1)}% over)"}
+        end
+    end
+  end
+
+  @doc """
+  Detect performance regressions by comparing results.
+  """
+  def detect_regression(category, old_result_us, new_result_us) do
+    threshold = regression_threshold(category)
+    increase_percent = (new_result_us / old_result_us - 1) * 100
+    
+    cond do
+      increase_percent > threshold ->
+        {:regression, "#{Float.round(increase_percent, 1)}% increase (threshold: #{threshold}%)"}
+      increase_percent > threshold / 2 ->
+        {:warning, "#{Float.round(increase_percent, 1)}% increase (watch for regression)"}
+      increase_percent < -10 ->
+        {:improvement, "#{Float.round(-increase_percent, 1)}% improvement"}
+      true ->
+        {:stable, "#{Float.round(increase_percent, 1)}% change (within threshold)"}
+    end
+  end
+
+  @doc """
+  Generate test scenarios for different benchmark categories.
+  """
+  def test_scenarios(category) do
+    case category do
+      :parser -> parser_scenarios()
+      :terminal -> terminal_scenarios()
+      :rendering -> rendering_scenarios()
+      :memory -> memory_scenarios()
+      _ -> %{}
+    end
+  end
+
+  @doc """
+  Load previous benchmark results for comparison.
+  """
+  def load_previous_results(category) do
+    pattern = "bench/output/enhanced/json/*_#{category}_*.json"
+    
+    Path.wildcard(pattern)
+    |> Enum.sort()
+    |> Enum.reverse()
+    |> List.first()
+    |> case do
+      nil -> nil
+      file -> 
+        case File.read(file) do
+          {:ok, content} ->
+            case Jason.decode(content) do
+              {:ok, data} -> data
+              _ -> nil
+            end
+          _ -> nil
+        end
+    end
+  end
+
+  # Private helper functions
+
+  defp default_formatters do
+    timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
+    paths = output_paths(timestamp)
+    
+    [
+      Benchee.Formatters.Console,
+      {Benchee.Formatters.JSON, file: paths.json},
+      {Benchee.Formatters.HTML, file: paths.html, title: "Raxol Performance Report"}
+    ]
+  end
+
+  defp parser_scenarios do
+    %{
+      "plain_text_short" => "Hello, World!",
+      "plain_text_medium" => String.duplicate("Lorem ipsum dolor sit amet. ", 20),
+      "plain_text_long" => String.duplicate("Performance testing content. ", 100),
+      "ansi_basic_color" => "\e[31mRed Text\e[0m",
+      "ansi_complex_sgr" => "\e[1;4;31;48;5;196mBold Underlined Red on Bright Red\e[0m",
+      "ansi_cursor_commands" => "\e[2J\e[H\e[10;20H\e[K\e[2K\e[J",
+      "ansi_scroll_region" => "\e[5;20r\e[?25l\e[33mScrolling text\e[?25h\e[0;0r",
+      "ansi_device_control" => "\e]0;Window Title\e\\\e[?1049h\e[?2004h",
+      "mixed_realistic" => realistic_terminal_content(),
+      "rapid_color_changes" => rapid_color_sequence(),
+      "large_ansi_dump" => large_ansi_content(),
+      "terminal_app_simulation" => terminal_app_content()
+    }
+  end
+
+  defp terminal_scenarios do
+    %{
+      "emulator_80x24" => {80, 24},
+      "emulator_132x43" => {132, 43},
+      "emulator_200x50" => {200, 50},
+      "buffer_small" => {20, 10},
+      "buffer_medium" => {80, 24},
+      "buffer_large" => {200, 50}
+    }
+  end
+
+  defp rendering_scenarios do
+    %{
+      "empty_buffer" => :empty,
+      "text_only" => :text_only,
+      "colors_basic" => :colors_basic,
+      "colors_complex" => :colors_complex,
+      "unicode_mixed" => :unicode_mixed,
+      "large_content" => :large_content
+    }
+  end
+
+  defp memory_scenarios do
+    %{
+      "baseline_emulator" => :baseline,
+      "filled_buffer" => :filled,
+      "long_session" => :long_session,
+      "rapid_updates" => :rapid_updates
+    }
+  end
+
+  defp realistic_terminal_content do
+    """
+    \e[2J\e[H\e[1;37;44m Raxol Terminal Session \e[0m
+    \e[2;1H\e[32mStatus:\e[0m Connected to server
+    \e[3;1H\e[33mProgress:\e[0m \e[32m████████████\e[37m░░░░░░░░\e[0m 60%
+    \e[5;1H\e[1mAvailable Commands:\e[0m
+    \e[6;3H\e[36m1.\e[0m Process data files
+    \e[7;3H\e[36m2.\e[0m Generate reports
+    \e[8;3H\e[36m3.\e[0m View system status
+    \e[9;3H\e[36m4.\e[0m Exit application
+    \e[11;1H\e[33mLast operation:\e[0m File processing completed
+    \e[12;1H\e[32mMemory usage:\e[0m 45% of available
+    \e[13;1H\e[31mWarnings:\e[0m 0 issues detected
+    \e[15;1H\e[7m Press [ENTER] to continue \e[0m
+    """
+  end
+
+  defp rapid_color_sequence do
+    1..50
+    |> Enum.map(fn i ->
+      color = rem(i, 8) + 30
+      "\e[#{color}m#{i}\e[0m"
+    end)
+    |> Enum.join(" ")
+  end
+
+  defp large_ansi_content do
+    Enum.map(1..200, fn i ->
+      row = rem(i, 24) + 1
+      col = rem(i * 3, 70) + 1
+      color = rem(i, 8) + 30
+      bg_color = rem(i, 8) + 40
+      
+      "\e[#{row};#{col}H\e[#{color};#{bg_color}mItem #{i}\e[0m"
+    end)
+    |> Enum.join("")
+  end
+
+  defp terminal_app_content do
+    """
+    \e[?1049h\e[2J\e[H\e[?25l
+    \e[1;1H\e[37;44m Terminal Application v2.1.0 \e[0m\e[1;25H\e[37;44m [Help: F1] \e[0m
+    \e[3;1H\e[1mSystem Monitoring Dashboard\e[0m
+    \e[5;1H\e[33mCPU Usage:\e[0m
+    \e[6;3H\e[32m██████████████\e[37m░░░░░░░░░░░░░░░░\e[0m 47%
+    \e[8;1H\e[33mMemory Usage:\e[0m  
+    \e[9;3H\e[31m████████████████████\e[37m░░░░░░░░░░\e[0m 67%
+    \e[11;1H\e[33mDisk I/O:\e[0m
+    \e[12;3H\e[36mRead:  ████\e[37m░░░░░░░░░░░░░░░░░░░░░░░░░░\e[0m 15%
+    \e[13;3H\e[36mWrite: ██████████\e[37m░░░░░░░░░░░░░░░░░░░░\e[0m 33%
+    \e[15;1H\e[33mNetwork:\e[0m
+    \e[16;3H\e[35mUp:   \e[32m15.2 MB/s\e[0m
+    \e[17;3H\e[35mDown: \e[32m43.7 MB/s\e[0m
+    \e[19;1H\e[1mActive Processes:\e[0m \e[32m127\e[0m
+    \e[20;1H\e[1mSystem Load:\e[0m \e[33m2.34\e[0m
+    \e[22;1H\e[7m F1:Help F2:Config F5:Refresh F10:Exit \e[0m
+    \e[?25h
+    """
+  end
+end
