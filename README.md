@@ -36,8 +36,6 @@ mix raxol.check
 mix raxol.test
 ```
 
-> **Note**: If you cloned before September 2025, reset with: `git fetch origin && git reset --hard origin/master`
-
 ## Choose Your Framework
 
 ```elixir
@@ -52,6 +50,7 @@ use Raxol.UI, framework: :raw        # Direct terminal control
 ```elixir
 defmodule MyApp do
   use Raxol.Component
+  import Raxol.LiveView, only: [assign: 2, assign: 3]
 
   def render(assigns) do
     ~H"""
@@ -108,8 +107,13 @@ end
 
 ## VS Code Extension
 
+Development version available in `editors/vscode/`. To install:
+
 ```bash
-code --install-extension raxol-1.0.1.vsix
+cd editors/vscode
+npm install
+npm run compile
+code --install-extension .
 ```
 
 Features: Syntax highlighting, IntelliSense, component snippets, live preview
