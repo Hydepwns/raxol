@@ -476,7 +476,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Download coverage artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v5
         with:
           path: cover
       
