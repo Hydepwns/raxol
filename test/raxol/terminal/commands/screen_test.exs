@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Commands.ScreenTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Raxol.Terminal.Commands.Screen
   alias Raxol.Terminal.Emulator

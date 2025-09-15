@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Metrics.UnifiedMetricsTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   import ExUnit.CaptureLog
   alias Raxol.Terminal.Metrics.UnifiedMetrics
 

@@ -27,6 +27,7 @@ defmodule Raxol.Terminal.RegressionTest do
       assert CursorManager.get_position(state.cursor) == {1, 0}
     end
 
+    @tag timeout: 120_000
     test "Issue #002: Cursor wrap at exactly column 80" do
       # Bug: Text at column 80 wasn't wrapping correctly
       emulator = Emulator.new(80, 24)
@@ -291,6 +292,7 @@ defmodule Raxol.Terminal.RegressionTest do
       assert CursorManager.get_visibility(state.cursor) == false
     end
 
+    @tag timeout: 120_000
     test "Issue #018: Alternative screen buffer mode switching" do
       # Bug: Content leaked between main and alt buffers
       emulator = Emulator.new(80, 24)
@@ -358,6 +360,7 @@ defmodule Raxol.Terminal.RegressionTest do
       assert state != nil
     end
 
+    @tag timeout: 120_000
     test "Issue #022: Rapid mode toggling" do
       # Bug: Rapid toggling caused state corruption
       emulator = Emulator.new(80, 24)

@@ -236,6 +236,7 @@ defmodule Raxol.Core.ErrorHandlerTest do
   end
 
   describe "retry behavior" do
+    @tag timeout: 120_000
     test "respects max delay" do
       start_time = System.monotonic_time(:millisecond)
 

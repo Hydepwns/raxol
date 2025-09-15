@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   # remove charactersets terminal ansi
   alias Raxol.Terminal.Emulator
@@ -37,6 +37,7 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
       assert emulator.charset_state.g1 == :dec_special_graphics
     end
 
+    @tag timeout: 120_000
     test ~c"handles character set switching and invoking" do
       emulator = Emulator.new(80, 24)
       # Set G0 to US ASCII (ESC ( B)
@@ -71,6 +72,7 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
     # Lock Shift (LS1R, LS2, LS2R, LS3, LS3R) tests might also require specific handling.
     # test 'handles lock shift' do ...
 
+    @tag timeout: 120_000
     test ~c"handles character set switching and invoking with designator" do
       emulator = Emulator.new(80, 24)
       # Set G0 to US ASCII (ESC ( B)

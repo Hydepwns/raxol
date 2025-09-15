@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ConcurrencyIntegrationTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Raxol.Core.Runtime.Plugins.DependencyManager
 
   describe "concurrent plugin operations" do

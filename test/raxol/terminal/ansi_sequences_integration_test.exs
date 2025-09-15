@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ANSISequencesIntegrationTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer

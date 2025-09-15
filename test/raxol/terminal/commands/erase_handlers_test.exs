@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Commands.EraseHandlerTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.EraseHandler, as: EraseHandlers

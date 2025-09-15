@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Layout.TableTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Raxol.UI.Layout.Table
 

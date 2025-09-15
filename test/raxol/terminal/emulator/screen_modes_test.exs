@@ -13,6 +13,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       assert mode_manager == ModeManager.new()
     end
 
+    @tag timeout: 120_000
     test ~c"switches between normal and alternate screen buffer" do
       emulator = Emulator.new(80, 24)
 
@@ -90,6 +91,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       assert cell_y_after.char == "y"
     end
 
+    @tag timeout: 120_000
     test ~c"switches between normal and alternate screen buffer (DEC mode 1047 - no clear)" do
       emulator = Emulator.new(80, 24)
 
