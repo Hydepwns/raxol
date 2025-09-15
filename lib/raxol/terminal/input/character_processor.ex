@@ -359,9 +359,21 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
          buffer_width,
          _char_width,
          _last_col_exceeded,
-         _auto_wrap_mode
+         auto_wrap_mode
        ) do
-    {current_x, current_y, buffer_width - 1, current_y, true}
+    case auto_wrap_mode do
+      true ->
+        # Auto-wrap: write at buffer edge and move cursor to next line
+        write_x = buffer_width - 1
+        write_y = current_y
+        next_cursor_x = 0
+        next_cursor_y = current_y + 1
+        {write_x, write_y, next_cursor_x, next_cursor_y, false}
+      
+      false ->
+        # No auto-wrap: stay at buffer edge
+        {current_x, current_y, buffer_width - 1, current_y, true}
+    end
   end
 
   # Helper functions for if statement elimination

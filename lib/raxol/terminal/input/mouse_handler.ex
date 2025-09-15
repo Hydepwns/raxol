@@ -560,6 +560,10 @@ defmodule Raxol.Terminal.Input.MouseHandler do
     term_program = System.get_env("TERM_PROGRAM", "")
 
     cond do
+      # URXVT and derivatives (check first before 256color)
+      String.contains?(term, "rxvt") ->
+        :urxvt
+
       # Modern terminals with good SGR support
       String.contains?(term, ["xterm-256color", "screen-256color", "tmux"]) ->
         :sgr
@@ -567,10 +571,6 @@ defmodule Raxol.Terminal.Input.MouseHandler do
       # Known terminals with SGR support
       term_program in ["iTerm.app", "Terminal.app", "WezTerm", "Alacritty"] ->
         :sgr
-
-      # URXVT and derivatives
-      String.contains?(term, "rxvt") ->
-        :urxvt
 
       # Basic xterm
       String.starts_with?(term, "xterm") ->
