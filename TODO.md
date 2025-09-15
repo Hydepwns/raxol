@@ -276,11 +276,20 @@ mix raxol.mutation          # Run mutation testing
   - Updated ex_cldr to v2.43.2
   - Updated ex_cldr_dates_times to v2.24.0
 
-### Medium Priority
-- [ ] Migrate from custom protocols to Elixir protocols where applicable
-- [ ] Implement connection pooling for all external services
-- [ ] Add circuit breakers for external API calls
-- [ ] Standardize error handling patterns across modules
+### Medium Priority (Completed 2025-09-16)
+- [x] Migrate from custom protocols to Elixir protocols where applicable
+  - Protocols already properly implemented in `/lib/raxol/protocols/`
+  - Created `BehaviourAdapter` for backward compatibility with behaviour-based code
+- [x] Implement connection pooling for all external services
+  - Created generic `ConnectionPool` module with configurable pool sizes
+  - Features: health checking, automatic reconnection, metrics, overflow handling
+- [x] Add circuit breakers for external API calls
+  - Created `CircuitBreaker` module with three states (closed, open, half-open)
+  - Features: automatic state transitions, configurable thresholds, fallback strategies
+- [x] Standardize error handling patterns across modules
+  - Created `ErrorHandlingStandard` module with consistent error patterns
+  - Defined standard error types and result tuples
+  - Added utility functions for error handling pipelines
 
 ### Low Priority
 - [ ] Add type specs to all private functions
