@@ -59,7 +59,8 @@ end
 # Implementation for maps (most common case)
 defimpl Raxol.Protocols.Serializable, for: Map do
   def serialize(map, :json) do
-    case Jason.encode(map) do
+    serializable_map = filter_serializable_for_json(map)
+    case Jason.encode(serializable_map) do
       {:ok, json} -> json
       {:error, reason} -> {:error, reason}
     end
@@ -89,6 +90,21 @@ defimpl Raxol.Protocols.Serializable, for: Map do
   def serializable?(_map, format) do
     format in [:json, :toml, :binary, :erlang_term]
   end
+
+  @spec filter_serializable_for_json(map()) :: map()
+  defp filter_serializable_for_json(map) when is_map(map) do
+    Enum.into(map, %{}, fn
+      {key, value} when is_function(value) ->
+        {key, "#Function<#{inspect(value)}>"}
+      {key, value} when is_map(value) ->
+        {key, filter_serializable_for_json(value)}
+      {key, value} ->
+        {key, value}
+    end)
+  end
+
+  @spec filter_serializable_for_json(any()) :: any()
+  defp filter_serializable_for_json(value), do: value
 end
 
 # Implementation for lists

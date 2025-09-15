@@ -242,7 +242,7 @@ defmodule Raxol.Protocols.ThemeImplementations do
         id: theme.id,
         name: theme.name,
         description: theme.description,
-        colors: theme.colors,
+        colors: serialize_colors_for_json(theme.colors),
         component_styles: theme.component_styles,
         variants: theme.variants,
         metadata: theme.metadata,
@@ -292,6 +292,22 @@ defmodule Raxol.Protocols.ThemeImplementations do
     def serializable?(_theme, format) do
       format in [:json, :toml, :binary]
     end
+
+    @spec serialize_colors_for_json(nil) :: nil
+    defp serialize_colors_for_json(nil), do: nil
+
+    @spec serialize_colors_for_json(map()) :: map()
+    defp serialize_colors_for_json(colors) when is_map(colors) do
+      Enum.into(colors, %{}, fn
+        {key, %Raxol.Style.Colors.Color{} = color} ->
+          {key, to_string(color)}
+        {key, value} ->
+          {key, value}
+      end)
+    end
+
+    @spec serialize_colors_for_json(any()) :: any()
+    defp serialize_colors_for_json(colors), do: colors
   end
 
   # Color Protocol Enhancement

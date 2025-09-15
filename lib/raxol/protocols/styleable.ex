@@ -135,7 +135,7 @@ end
 # Implementation for Maps (generic style containers)
 defimpl Raxol.Protocols.Styleable, for: Map do
   def apply_style(map, style) do
-    Map.put(map, :style, style)
+    merge_styles(map, style)
   end
 
   def get_style(map) do
@@ -156,6 +156,7 @@ defimpl Raxol.Protocols.Styleable, for: Map do
     build_ansi_codes(style)
   end
 
+  @spec build_ansi_codes(map()) :: binary()
   defp build_ansi_codes(style) do
     codes = []
 

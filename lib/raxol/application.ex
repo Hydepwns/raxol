@@ -182,7 +182,9 @@ defmodule Raxol.Application do
       # Terminal sync
       maybe_add_terminal_sync(),
       # Rate limiting
-      maybe_add_rate_limiting()
+      maybe_add_rate_limiting(),
+      # Development performance tools
+      maybe_add_dev_performance_tools()
     ]
   end
 
@@ -246,6 +248,16 @@ defmodule Raxol.Application do
     end
   end
 
+  defp maybe_add_dev_performance_tools do
+    if Mix.env() == :dev and feature_enabled?(:performance_monitoring) do
+      [
+        {Raxol.Performance.DevHints, []}
+      ]
+    else
+      []
+    end
+  end
+
   defp get_terminal_driver_children do
     case {IO.ANSI.enabled?(), System.get_env("RAXOL_FORCE_TERMINAL")} do
       {true, _} ->
@@ -286,7 +298,8 @@ defmodule Raxol.Application do
       rate_limiting: true,
       telemetry: true,
       plugins: false,
-      audit: false
+      audit: false,
+      dev_performance_hints: Mix.env() == :dev
     }
   end
 

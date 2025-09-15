@@ -1,0 +1,86 @@
+# Benchmark Configuration for Raxol
+# This file contains all configuration for the world-class benchmarking system
+
+[defaults]
+# seconds to run each benchmark
+time = 10
+# seconds of warmup
+warmup = 2
+# seconds to measure memory
+memory_time = 2
+# number of parallel processes
+parallel = 1
+# auto-determine iterations
+iterations = 0  # 0 means auto-determine
+
+[profiles.quick]
+time = 1
+warmup = 0.5
+memory_time = 0.5
+parallel = 1
+save_results = false
+
+[profiles.standard]
+time = 5
+warmup = 2
+memory_time = 2
+parallel = 1
+save_results = true
+
+[profiles.comprehensive]
+time = 30
+warmup = 5
+memory_time = 10
+parallel = 4
+save_results = true
+
+[profiles.ci]
+time = 3
+warmup = 1
+memory_time = 1
+parallel = 2
+save_results = true
+
+[performance_targets.parser]
+normal = 5000  # nanoseconds
+degraded = 10000
+warning = 15000
+
+[performance_targets.terminal]
+normal = 1000000  # nanoseconds
+degraded = 2000000
+warning = 3000000
+
+[performance_targets.rendering]
+normal = 500000  # nanoseconds
+degraded = 1000000
+warning = 2000000
+
+[performance_targets.memory]
+normal = 3000000  # bytes
+degraded = 5000000
+warning = 10000000
+
+[statistical]
+confidence_level = 0.95
+min_sample_size = 30
+outlier_percentile = 95
+stability_coefficient = 0.05
+
+[regression]
+baseline_path = "bench/baseline.json"
+threshold_multiplier = 1.1
+alert_threshold = 0.2
+
+[metadata.tags]
+categories = ["parser", "terminal", "rendering", "memory", "integration"]
+priorities = ["critical", "high", "medium", "low"]
+stability = ["stable", "unstable", "flaky"]
+platforms = ["linux", "macos", "windows"]
+
+[output]
+json_path = "bench/output/enhanced/json"
+html_path = "bench/output/enhanced/html"
+assets_path = "bench/output/enhanced/assets"
+snapshots_path = "bench/output/snapshots"
+comparisons_path = "bench/output/comparisons"

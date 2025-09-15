@@ -182,7 +182,7 @@ defmodule Raxol.Protocols.UIComponentImplementations do
       apply_style_to_text(text, %{background: :blue, foreground: :white})
     end
 
-    defp apply_table_styling(content, theme, style_override) do
+    defp apply_table_styling(content, _theme, _style_override) do
       # Apply theme and style overrides
       # For now, return content as-is
       content

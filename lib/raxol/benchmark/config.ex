@@ -381,6 +381,7 @@ defmodule Raxol.Benchmark.Config do
 
   # Private helper functions
 
+  @spec resolve_profile(nil) :: atom()
   defp resolve_profile(nil) do
     case System.get_env("BENCHMARK_PROFILE") do
       nil -> :standard
@@ -388,11 +389,14 @@ defmodule Raxol.Benchmark.Config do
     end
   end
 
+  @spec resolve_profile(atom()) :: atom()
   defp resolve_profile(type) when is_atom(type), do: type
 
+  @spec resolve_profile(binary()) :: atom()
   defp resolve_profile(type) when is_binary(type),
     do: String.to_existing_atom(type)
 
+  @spec apply_env_config(Keyword.t(), atom()) :: Keyword.t()
   defp apply_env_config(config, _type) do
     if System.get_env("CI") do
       ci_overrides = Map.get(@env_overrides, "CI")
