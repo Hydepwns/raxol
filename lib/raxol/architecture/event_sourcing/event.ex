@@ -38,7 +38,7 @@ defmodule Raxol.Architecture.EventSourcing.Event do
       end
   """
 
-  @derive Jason.Encoder
+  # @derive Jason.Encoder
   defstruct [
     :id,
     :stream_name,
