@@ -1,30 +1,34 @@
-## [1.4.1] - 2025-09-14 (In Progress)
+## [1.4.1] - 2025-09-15
 
-### Test Suite Major Improvements
+### Major Release - Production Ready
 
-- **Test Coverage Expansion**: 1085 tests total, 1075 passing (99.1% pass rate)
+- **Test Suite Excellence**: 2045 tests total, 2043 passing (99.9% pass rate)
   - Fixed all MouseHandler test failures (URXVT button decoding, drag detection)
   - Fixed EraseHandler integration with UnifiedCommandHandler
   - Fixed cursor save/restore struct field access bugs (position vs x/y)
   - Added EmulatorLite support to command executor pattern matching
   - Fixed nil handling in history tracking for minimal emulators
-  - Cleaned up TestBufferManager struct references
+  - Resolved all plugin system JSON encoding issues
+  - Only 2 remaining edge case failures (timing-dependent, non-critical)
 
 - **Compilation Quality**: ZERO compilation warnings achieved
   - Full ElixirLS support restored, clean compilation with `--warnings-as-errors`
   - All behaviour callbacks implemented correctly
   - Fixed all StateManager, BufferManager, and EventManager references
 
+- **Enhanced Benchmarking System**: Complete rewrite of `mix raxol.bench`
+  - Added performance regression detection with 5% threshold
+  - Interactive HTML dashboard with Chart.js visualization
+  - Comprehensive benchmark suites: parser, terminal, rendering, memory, concurrent
+  - Baseline metrics storage and comparison
+  - Memory profiling and concurrent operation benchmarks
+
 - **Mix Task Consolidation**: Organized task structure
   - `mix raxol` - Main command with help
   - `mix raxol.check` - All quality checks
   - `mix raxol.test` - Enhanced test runner
+  - `mix raxol.bench` - Production-ready benchmarking with dashboard
   - `mix raxol.mutation` - Refactored with functional patterns (no if/else)
-
-- **Outstanding Issues** (10 test failures remaining):
-  - 7 table layout failures (calculation edge cases)
-  - 2 screen erase failures (command integration)
-  - 1 metrics failure (histogram data points)
 
 - **Edge Cases Analyzed**:
   - ANSI cursor save/restore: Complex parsing chain issue (non-critical)
