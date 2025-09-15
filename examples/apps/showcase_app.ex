@@ -5,7 +5,8 @@ defmodule Raxol.Examples.Showcase do
   Run with: mix raxol.examples showcase
   """
 
-  use Raxol.Application
+  use Raxol.Core.Runtime.Application
+  import Raxol.LiveView, only: [assign: 2, assign: 3, update_in: 3, put_in: 3]
 
   alias Raxol.UI.Components.{
     Box,

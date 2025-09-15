@@ -7,6 +7,7 @@ defmodule Examples.MultiFrameworkDemo do
   """
 
   use Raxol.UI, framework: :react
+  import Raxol.LiveView, only: [assign: 2, assign: 3]
 
   def run do
     IO.puts("\n=== Multi-Framework Raxol Demo ===")

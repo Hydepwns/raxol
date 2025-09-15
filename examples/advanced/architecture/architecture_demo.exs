@@ -13,6 +13,7 @@
 defmodule ArchitectureDemo do
   # use Raxol.App
   use Raxol.Component
+  import Raxol.LiveView, only: [assign: 2, assign: 3]
   # alias Raxol.UI.Components.Input.{Button, TextField, Checkbox}
   # alias Raxol.UI.Components.Display.Progress
   alias Raxol.View.Elements

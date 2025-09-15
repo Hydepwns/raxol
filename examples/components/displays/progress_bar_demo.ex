@@ -4,6 +4,7 @@ defmodule Raxol.Examples.ProgressBarDemo do
   """
 
   use Raxol.Component
+  import Raxol.LiveView, only: [assign: 2, assign: 3]
   alias Raxol.View.Elements
 
   @impl Raxol.Component

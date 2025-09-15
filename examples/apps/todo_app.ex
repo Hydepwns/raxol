@@ -11,7 +11,8 @@ defmodule Raxol.Examples.TodoApp do
   - Search functionality
   """
 
-  use Raxol.Application
+  use Raxol.Core.Runtime.Application
+  import Raxol.LiveView, only: [assign: 2, assign: 3, update: 3]
 
   @storage_file Path.expand("~/.raxol_todos.json")
 

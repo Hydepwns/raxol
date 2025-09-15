@@ -1,6 +1,7 @@
 defmodule FormValidationExample do
   # use Raxol.App, otp_app: :raxol
   use Raxol.Component
+  import Raxol.LiveView, only: [assign: 2, assign: 3]
 
   # alias Raxol.View.Components.TextInput
   # alias Raxol.View.Components.Button
