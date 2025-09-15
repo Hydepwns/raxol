@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Setup Elixir
         uses: ./.github/actions/setup-elixir
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Setup Elixir
         uses: ./.github/actions/setup-elixir
@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Run Semgrep
         uses: returntocorp/semgrep-action@v1
@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0  # Fetch all history for scanning
       
@@ -111,7 +111,7 @@ jobs:
     if: hashFiles('**/package-lock.json') != ''
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -135,7 +135,7 @@ jobs:
     if: github.event_name != 'schedule'  # Skip on scheduled runs to save API quota
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Setup Node.js for Snyk CLI
         uses: actions/setup-node@v4
