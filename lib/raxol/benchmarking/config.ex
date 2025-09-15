@@ -12,7 +12,7 @@ defmodule Raxol.Benchmarking.Config do
       "ansi_complex_parse" => 15,
       "mixed_content_parse" => 25
     },
-    
+
     # Terminal component targets (microseconds)
     "terminal" => %{
       "emulator_creation" => 1000,
@@ -21,7 +21,7 @@ defmodule Raxol.Benchmarking.Config do
       "cursor_movement" => 3,
       "sgr_processing" => 1
     },
-    
+
     # Rendering targets (milliseconds)
     "rendering" => %{
       "small_buffer_render" => 0.5,
@@ -30,7 +30,7 @@ defmodule Raxol.Benchmarking.Config do
       "colored_render" => 1.5,
       "unicode_render" => 2.0
     },
-    
+
     # Memory targets (MB)
     "memory" => %{
       "emulator_80x24" => 3.0,
@@ -54,21 +54,18 @@ defmodule Raxol.Benchmarking.Config do
       warmup: 0.2,
       parallel: 1
     ],
-    
     standard: [
       time: 5,
       memory_time: 2,
       warmup: 1,
       parallel: 1
     ],
-    
     comprehensive: [
       time: 10,
       memory_time: 5,
       warmup: 2,
       parallel: 1
     ],
-    
     ci: [
       time: 3,
       memory_time: 1,
@@ -80,7 +77,8 @@ defmodule Raxol.Benchmarking.Config do
   @doc """
   Get performance targets for a specific benchmark category.
   """
-  def get_targets(category) when category in ["parser", "terminal", "rendering", "memory"] do
+  def get_targets(category)
+      when category in ["parser", "terminal", "rendering", "memory"] do
     Map.get(@performance_targets, category, %{})
   end
 
@@ -101,19 +99,26 @@ defmodule Raxol.Benchmarking.Config do
   @doc """
   Get benchmark configuration by type.
   """
-  def benchmark_config(type) when type in [:quick, :standard, :comprehensive, :ci] do
+  def benchmark_config(type)
+      when type in [:quick, :standard, :comprehensive, :ci] do
     base_config = Map.get(@benchmark_configs, type)
-    
+
     # Add formatters based on type
-    formatters = case type do
-      :quick -> [Benchee.Formatters.Console]
-      :ci -> [
-        Benchee.Formatters.Console,
-        {Benchee.Formatters.JSON, file: "bench/output/ci_results.json"}
-      ]
-      _ -> default_formatters()
-    end
-    
+    formatters =
+      case type do
+        :quick ->
+          [Benchee.Formatters.Console]
+
+        :ci ->
+          [
+            Benchee.Formatters.Console,
+            {Benchee.Formatters.JSON, file: "bench/output/ci_results.json"}
+          ]
+
+        _ ->
+          default_formatters()
+      end
+
     Keyword.put(base_config, :formatters, formatters)
   end
 
@@ -122,7 +127,7 @@ defmodule Raxol.Benchmarking.Config do
   """
   def output_paths(timestamp \\ nil) do
     ts = timestamp || DateTime.utc_now() |> DateTime.to_iso8601()
-    
+
     %{
       json: "bench/output/enhanced/json/benchmark_#{ts}.json",
       html: "bench/output/enhanced/html/benchmark_#{ts}.html",
@@ -138,11 +143,11 @@ defmodule Raxol.Benchmarking.Config do
   def ensure_output_dirs do
     dirs = [
       "bench/output/enhanced",
-      "bench/output/enhanced/json", 
+      "bench/output/enhanced/json",
       "bench/output/enhanced/html",
       "bench/output/enhanced/assets"
     ]
-    
+
     Enum.each(dirs, &File.mkdir_p!/1)
   end
 
@@ -152,14 +157,17 @@ defmodule Raxol.Benchmarking.Config do
   def meets_target?(category, benchmark_name, result_us) do
     targets = get_targets(category)
     target = Map.get(targets, benchmark_name)
-    
+
     case target do
-      nil -> {:unknown, "No target defined for #{benchmark_name}"}
-      target_us -> 
+      nil ->
+        {:unknown, "No target defined for #{benchmark_name}"}
+
+      target_us ->
         if result_us <= target_us do
           {:pass, "#{result_us}μs ≤ #{target_us}μs target"}
         else
-          {:fail, "#{result_us}μs > #{target_us}μs target (#{Float.round((result_us/target_us - 1) * 100, 1)}% over)"}
+          {:fail,
+           "#{result_us}μs > #{target_us}μs target (#{Float.round((result_us / target_us - 1) * 100, 1)}% over)"}
         end
     end
   end
@@ -170,16 +178,22 @@ defmodule Raxol.Benchmarking.Config do
   def detect_regression(category, old_result_us, new_result_us) do
     threshold = regression_threshold(category)
     increase_percent = (new_result_us / old_result_us - 1) * 100
-    
+
     cond do
       increase_percent > threshold ->
-        {:regression, "#{Float.round(increase_percent, 1)}% increase (threshold: #{threshold}%)"}
+        {:regression,
+         "#{Float.round(increase_percent, 1)}% increase (threshold: #{threshold}%)"}
+
       increase_percent > threshold / 2 ->
-        {:warning, "#{Float.round(increase_percent, 1)}% increase (watch for regression)"}
+        {:warning,
+         "#{Float.round(increase_percent, 1)}% increase (watch for regression)"}
+
       increase_percent < -10 ->
         {:improvement, "#{Float.round(-increase_percent, 1)}% improvement"}
+
       true ->
-        {:stable, "#{Float.round(increase_percent, 1)}% change (within threshold)"}
+        {:stable,
+         "#{Float.round(increase_percent, 1)}% change (within threshold)"}
     end
   end
 
@@ -201,21 +215,25 @@ defmodule Raxol.Benchmarking.Config do
   """
   def load_previous_results(category) do
     pattern = "bench/output/enhanced/json/*_#{category}_*.json"
-    
+
     Path.wildcard(pattern)
     |> Enum.sort()
     |> Enum.reverse()
     |> List.first()
     |> case do
-      nil -> nil
-      file -> 
+      nil ->
+        nil
+
+      file ->
         case File.read(file) do
           {:ok, content} ->
             case Jason.decode(content) do
               {:ok, data} -> data
               _ -> nil
             end
-          _ -> nil
+
+          _ ->
+            nil
         end
     end
   end
@@ -225,23 +243,28 @@ defmodule Raxol.Benchmarking.Config do
   defp default_formatters do
     timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
     paths = output_paths(timestamp)
-    
+
     [
       Benchee.Formatters.Console,
       {Benchee.Formatters.JSON, file: paths.json},
-      {Benchee.Formatters.HTML, file: paths.html, title: "Raxol Performance Report"}
+      {Benchee.Formatters.HTML,
+       file: paths.html, title: "Raxol Performance Report"}
     ]
   end
 
   defp parser_scenarios do
     %{
       "plain_text_short" => "Hello, World!",
-      "plain_text_medium" => String.duplicate("Lorem ipsum dolor sit amet. ", 20),
-      "plain_text_long" => String.duplicate("Performance testing content. ", 100),
+      "plain_text_medium" =>
+        String.duplicate("Lorem ipsum dolor sit amet. ", 20),
+      "plain_text_long" =>
+        String.duplicate("Performance testing content. ", 100),
       "ansi_basic_color" => "\e[31mRed Text\e[0m",
-      "ansi_complex_sgr" => "\e[1;4;31;48;5;196mBold Underlined Red on Bright Red\e[0m",
+      "ansi_complex_sgr" =>
+        "\e[1;4;31;48;5;196mBold Underlined Red on Bright Red\e[0m",
       "ansi_cursor_commands" => "\e[2J\e[H\e[10;20H\e[K\e[2K\e[J",
-      "ansi_scroll_region" => "\e[5;20r\e[?25l\e[33mScrolling text\e[?25h\e[0;0r",
+      "ansi_scroll_region" =>
+        "\e[5;20r\e[?25l\e[33mScrolling text\e[?25h\e[0;0r",
       "ansi_device_control" => "\e]0;Window Title\e\\\e[?1049h\e[?2004h",
       "mixed_realistic" => realistic_terminal_content(),
       "rapid_color_changes" => rapid_color_sequence(),
@@ -313,7 +336,7 @@ defmodule Raxol.Benchmarking.Config do
       col = rem(i * 3, 70) + 1
       color = rem(i, 8) + 30
       bg_color = rem(i, 8) + 40
-      
+
       "\e[#{row};#{col}H\e[#{color};#{bg_color}mItem #{i}\e[0m"
     end)
     |> Enum.join("")

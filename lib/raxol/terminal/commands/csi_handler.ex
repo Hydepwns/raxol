@@ -192,9 +192,11 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
       nil ->
         # Fall back to cursor saved fields
         cursor = emulator.cursor
+
         {new_row, new_col} =
           case {cursor.saved_row, cursor.saved_col} do
-            {nil, nil} -> {cursor.row, cursor.col}  # Don't move if nothing saved
+            # Don't move if nothing saved
+            {nil, nil} -> {cursor.row, cursor.col}
             {row, col} -> {row, col}
           end
 
@@ -210,6 +212,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
       saved_cursor ->
         # Restore from saved_cursor structure
         {row, col} = saved_cursor.position
+
         updated_cursor = %{
           emulator.cursor
           | row: row,
@@ -411,17 +414,20 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
   def handle_q_deccusr(emulator, params) do
     # DECCUSR - Set cursor style
-    style = case params do
-      [0] -> :blink_block   # Default
-      [1] -> :blink_block
-      [2] -> :steady_block
-      [3] -> :blink_underline
-      [4] -> :steady_underline
-      [5] -> :blink_bar
-      [6] -> :steady_bar
-      _ -> emulator.cursor.style  # Keep current style for invalid params
-    end
-    
+    style =
+      case params do
+        # Default
+        [0] -> :blink_block
+        [1] -> :blink_block
+        [2] -> :steady_block
+        [3] -> :blink_underline
+        [4] -> :steady_underline
+        [5] -> :blink_bar
+        [6] -> :steady_bar
+        # Keep current style for invalid params
+        _ -> emulator.cursor.style
+      end
+
     updated_cursor = %{emulator.cursor | style: style}
     %{emulator | cursor: updated_cursor}
   end

@@ -89,9 +89,14 @@ defmodule Raxol.Plugins.PluginConfig do
         end
 
       {:error, %Protocol.UndefinedError{} = reason} ->
-        struct_name = if is_struct(reason.value), do: reason.value.__struct__, else: "unknown"
-        {:error, "Failed to encode plugin configuration: Protocol.UndefinedError for #{inspect(struct_name)}"}
-        
+        struct_name =
+          if is_struct(reason.value),
+            do: reason.value.__struct__,
+            else: "unknown"
+
+        {:error,
+         "Failed to encode plugin configuration: Protocol.UndefinedError for #{inspect(struct_name)}"}
+
       {:error, reason} ->
         {:error, "Failed to encode plugin configuration: #{inspect(reason)}"}
     end

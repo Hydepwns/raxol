@@ -369,7 +369,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
         next_cursor_x = 0
         next_cursor_y = current_y + 1
         {write_x, write_y, next_cursor_x, next_cursor_y, false}
-      
+
       false ->
         # No auto-wrap: stay at buffer edge
         {current_x, current_y, buffer_width - 1, current_y, true}

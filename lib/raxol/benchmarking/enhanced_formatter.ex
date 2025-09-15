@@ -18,23 +18,23 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
     } = suite
 
     timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
-    
+
     # Generate comprehensive analysis
     analysis = analyze_results(scenarios, config)
-    
+
     # Create enhanced HTML report
     html_content = generate_enhanced_html(analysis, timestamp, opts)
-    
+
     # Also generate insights report
     insights_content = generate_insights_report(analysis, timestamp)
-    
+
     # Write main HTML file
     File.write!(file, html_content)
-    
+
     # Write insights report
     insights_file = String.replace(file, ".html", "_insights.md")
     File.write!(insights_file, insights_content)
-    
+
     # Generate JSON data for further analysis
     json_file = String.replace(file, ".html", "_analysis.json")
     json_content = Jason.encode!(analysis, pretty: true)
@@ -60,24 +60,34 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
 
   defp generate_summary(scenarios) do
     scenario_count = map_size(scenarios)
-    
-    total_ops = Enum.reduce(scenarios, 0, fn {_name, scenario}, acc ->
-      ips = Map.get(scenario.run_time_data.statistics, :ips, 0)
-      acc + ips
-    end)
-    
-    avg_time = scenarios
-    |> Enum.map(fn {_name, scenario} -> scenario.run_time_data.statistics.average end)
-    |> Enum.sum()
-    |> Kernel./(scenario_count)
-    
-    fastest = scenarios
-    |> Enum.min_by(fn {_name, scenario} -> scenario.run_time_data.statistics.average end)
-    |> elem(0)
-    
-    slowest = scenarios
-    |> Enum.max_by(fn {_name, scenario} -> scenario.run_time_data.statistics.average end)
-    |> elem(0)
+
+    total_ops =
+      Enum.reduce(scenarios, 0, fn {_name, scenario}, acc ->
+        ips = Map.get(scenario.run_time_data.statistics, :ips, 0)
+        acc + ips
+      end)
+
+    avg_time =
+      scenarios
+      |> Enum.map(fn {_name, scenario} ->
+        scenario.run_time_data.statistics.average
+      end)
+      |> Enum.sum()
+      |> Kernel./(scenario_count)
+
+    fastest =
+      scenarios
+      |> Enum.min_by(fn {_name, scenario} ->
+        scenario.run_time_data.statistics.average
+      end)
+      |> elem(0)
+
+    slowest =
+      scenarios
+      |> Enum.max_by(fn {_name, scenario} ->
+        scenario.run_time_data.statistics.average
+      end)
+      |> elem(0)
 
     %{
       scenario_count: scenario_count,
@@ -92,13 +102,14 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
   defp analyze_performance(scenarios) do
     Enum.map(scenarios, fn {name, scenario} ->
       stats = scenario.run_time_data.statistics
-      memory_stats = 
+
+      memory_stats =
         try do
           scenario.memory_usage_data.statistics
         rescue
           _ -> nil
         end
-      
+
       %{
         name: name,
         average_time_us: Float.round(stats.average / 1000, 3),
@@ -117,12 +128,12 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
   defp check_targets(scenarios) do
     Enum.map(scenarios, fn {name, scenario} ->
       avg_time_us = scenario.run_time_data.statistics.average / 1000
-      
+
       # Try to determine category from scenario name
       category = determine_category(name)
-      
+
       {status, message} = Config.meets_target?(category, name, avg_time_us)
-      
+
       %{
         scenario: name,
         category: category,
@@ -136,19 +147,19 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
 
   defp generate_recommendations(scenarios) do
     recommendations = []
-    
+
     # Check for performance outliers
     recommendations = check_performance_outliers(scenarios, recommendations)
-    
+
     # Check for memory usage issues
     recommendations = check_memory_issues(scenarios, recommendations)
-    
+
     # Check for consistency issues
     recommendations = check_consistency_issues(scenarios, recommendations)
-    
+
     # Check for optimization opportunities
     recommendations = suggest_optimizations(scenarios, recommendations)
-    
+
     recommendations
   end
 
@@ -164,51 +175,57 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
   end
 
   defp analyze_memory_usage(scenarios) do
-    memory_scenarios = Enum.filter(scenarios, fn {_name, scenario} ->
-      Map.has_key?(scenario, :memory_usage_data)
-    end)
-    
+    memory_scenarios =
+      Enum.filter(scenarios, fn {_name, scenario} ->
+        Map.has_key?(scenario, :memory_usage_data)
+      end)
+
     if Enum.empty?(memory_scenarios) do
       %{available: false, message: "No memory usage data collected"}
     else
-      total_memory = Enum.reduce(memory_scenarios, 0, fn {_name, scenario}, acc ->
-        memory = 
-          try do
-            scenario.memory_usage_data.statistics.average
-          rescue
-            _ -> 0
-          end
-        acc + memory
-      end)
-      
+      total_memory =
+        Enum.reduce(memory_scenarios, 0, fn {_name, scenario}, acc ->
+          memory =
+            try do
+              scenario.memory_usage_data.statistics.average
+            rescue
+              _ -> 0
+            end
+
+          acc + memory
+        end)
+
       avg_memory = total_memory / length(memory_scenarios)
-      
+
       %{
         available: true,
         total_memory_mb: Float.round(total_memory / 1_048_576, 2),
         average_memory_mb: Float.round(avg_memory / 1_048_576, 2),
-        scenarios: Enum.map(memory_scenarios, fn {name, scenario} ->
-          memory = 
-          try do
-            scenario.memory_usage_data.statistics.average
-          rescue
-            _ -> 0
-          end
-          %{
-            name: name,
-            memory_mb: Float.round(memory / 1_048_576, 3),
-            memory_grade: grade_memory_usage(memory)
-          }
-        end)
+        scenarios:
+          Enum.map(memory_scenarios, fn {name, scenario} ->
+            memory =
+              try do
+                scenario.memory_usage_data.statistics.average
+              rescue
+                _ -> 0
+              end
+
+            %{
+              name: name,
+              memory_mb: Float.round(memory / 1_048_576, 3),
+              memory_grade: grade_memory_usage(memory)
+            }
+          end)
       }
     end
   end
 
   defp generate_statistical_insights(scenarios) do
-    times = Enum.map(scenarios, fn {_name, scenario} ->
-      scenario.run_time_data.statistics.average / 1000
-    end)
-    
+    times =
+      Enum.map(scenarios, fn {_name, scenario} ->
+        scenario.run_time_data.statistics.average / 1000
+      end)
+
     %{
       coefficient_of_variation: calculate_coefficient_of_variation(times),
       performance_distribution: analyze_distribution(times),
@@ -221,7 +238,8 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
     %{
       elixir_version: System.version(),
       otp_version: System.otp_release(),
-      system_architecture: :erlang.system_info(:system_architecture) |> to_string(),
+      system_architecture:
+        :erlang.system_info(:system_architecture) |> to_string(),
       benchmark_config: %{
         time: config.time,
         warmup: config.warmup,
@@ -234,7 +252,7 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
 
   defp generate_enhanced_html(analysis, timestamp, opts) do
     title = Map.get(opts, :title, "Raxol Performance Report")
-    
+
     """
     <!DOCTYPE html>
     <html lang="en">
@@ -269,36 +287,36 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
   defp generate_insights_report(analysis, timestamp) do
     """
     # Raxol Performance Insights Report
-    
+
     **Generated:** #{timestamp}
     **Scenarios Analyzed:** #{analysis.summary.scenario_count}
-    
+
     ## Executive Summary
-    
+
     #{generate_executive_summary(analysis)}
-    
+
     ## Performance Analysis
-    
+
     #{generate_performance_markdown(analysis)}
-    
+
     ## Target Compliance
-    
+
     #{generate_targets_markdown(analysis)}
-    
+
     ## Memory Analysis
-    
+
     #{generate_memory_markdown(analysis)}
-    
+
     ## Recommendations
-    
+
     #{generate_recommendations_markdown(analysis)}
-    
+
     ## Statistical Insights
-    
+
     #{generate_statistical_markdown(analysis)}
-    
+
     ## Metadata
-    
+
     - **Elixir Version:** #{analysis.benchmark_metadata.elixir_version}
     - **OTP Version:** #{analysis.benchmark_metadata.otp_version}  
     - **Architecture:** #{analysis.benchmark_metadata.system_architecture}
@@ -308,15 +326,16 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
   end
 
   # Helper functions for analysis
-  
+
   defp calculate_performance_range(scenarios) do
-    times = Enum.map(scenarios, fn {_name, scenario} ->
-      scenario.run_time_data.statistics.average / 1000
-    end)
-    
+    times =
+      Enum.map(scenarios, fn {_name, scenario} ->
+        scenario.run_time_data.statistics.average / 1000
+      end)
+
     min_time = Enum.min(times)
     max_time = Enum.max(times)
-    
+
     %{
       min_us: Float.round(min_time, 3),
       max_us: Float.round(max_time, 3),
@@ -325,14 +344,18 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
   end
 
   defp calculate_relative_performance(stats, scenarios) do
-    baseline_ips = scenarios
-    |> Enum.map(fn {_name, scenario} -> scenario.run_time_data.statistics.ips end)
-    |> Enum.max()
-    
+    baseline_ips =
+      scenarios
+      |> Enum.map(fn {_name, scenario} ->
+        scenario.run_time_data.statistics.ips
+      end)
+      |> Enum.max()
+
     Float.round(stats.ips / baseline_ips, 3)
   end
 
   defp calculate_memory_usage(nil), do: nil
+
   defp calculate_memory_usage(memory_stats) do
     Float.round(memory_stats.average / 1_048_576, 3)
   end
@@ -340,28 +363,32 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
   defp grade_performance(avg_time_ns, scenario_name) do
     avg_time_us = avg_time_ns / 1000
     category = determine_category(scenario_name)
-    
+
     case Config.meets_target?(category, scenario_name, avg_time_us) do
-      {:pass, _} -> "A"
-      {:fail, _} -> 
+      {:pass, _} ->
+        "A"
+
+      {:fail, _} ->
         # Check how far over target
         targets = Config.get_targets(category)
         target = Map.get(targets, scenario_name, avg_time_us)
         ratio = avg_time_us / target
-        
+
         cond do
           ratio <= 1.5 -> "B"
           ratio <= 2.0 -> "C"
           ratio <= 3.0 -> "D"
           true -> "F"
         end
-      {:unknown, _} -> "?"
+
+      {:unknown, _} ->
+        "?"
     end
   end
 
   defp calculate_consistency(stats) do
     coefficient_of_variation = stats.std_dev / stats.average
-    
+
     cond do
       coefficient_of_variation < 0.05 -> "Excellent"
       coefficient_of_variation < 0.10 -> "Good"
@@ -372,20 +399,29 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
 
   defp determine_category(scenario_name) do
     name_lower = String.downcase(scenario_name)
-    
+
     cond do
-      String.contains?(name_lower, ["parse", "ansi", "plain_text"]) -> "parser"
-      String.contains?(name_lower, ["emulator", "buffer", "cursor", "sgr"]) -> "terminal"
-      String.contains?(name_lower, ["render", "display"]) -> "rendering"
-      String.contains?(name_lower, ["memory"]) -> "memory"
-      true -> "unknown"
+      String.contains?(name_lower, ["parse", "ansi", "plain_text"]) ->
+        "parser"
+
+      String.contains?(name_lower, ["emulator", "buffer", "cursor", "sgr"]) ->
+        "terminal"
+
+      String.contains?(name_lower, ["render", "display"]) ->
+        "rendering"
+
+      String.contains?(name_lower, ["memory"]) ->
+        "memory"
+
+      true ->
+        "unknown"
     end
   end
 
   defp calculate_target_margin(actual_us, category, scenario_name) do
     targets = Config.get_targets(category)
     target = Map.get(targets, scenario_name)
-    
+
     if target do
       margin = (target - actual_us) / target * 100
       Float.round(margin, 1)
@@ -395,7 +431,7 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
   end
 
   # HTML generation helpers (simplified for brevity)
-  
+
   defp enhanced_css do
     """
     body { 
@@ -442,7 +478,7 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
 
   defp generate_summary_html(analysis) do
     summary = analysis.summary
-    
+
     """
     <div class="card">
         <h2>📊 Performance Summary</h2>
@@ -469,21 +505,23 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
   end
 
   defp generate_performance_html(analysis) do
-    performance_rows = Enum.map(analysis.performance_analysis, fn perf ->
-      grade_class = "grade-#{perf.performance_grade}"
-      
-      """
-      <tr>
-          <td>#{perf.name}</td>
-          <td>#{perf.average_time_us}μs</td>
-          <td>#{perf.median_time_us}μs</td>
-          <td>#{perf.ips}</td>
-          <td class="#{grade_class}">#{perf.performance_grade}</td>
-          <td>#{perf.consistency_score}</td>
-      </tr>
-      """
-    end) |> Enum.join()
-    
+    performance_rows =
+      Enum.map(analysis.performance_analysis, fn perf ->
+        grade_class = "grade-#{perf.performance_grade}"
+
+        """
+        <tr>
+            <td>#{perf.name}</td>
+            <td>#{perf.average_time_us}μs</td>
+            <td>#{perf.median_time_us}μs</td>
+            <td>#{perf.ips}</td>
+            <td class="#{grade_class}">#{perf.performance_grade}</td>
+            <td>#{perf.consistency_score}</td>
+        </tr>
+        """
+      end)
+      |> Enum.join()
+
     """
     <div class="card">
         <h2>⚡ Performance Analysis</h2>
@@ -507,30 +545,34 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
   end
 
   defp generate_targets_html(analysis) do
-    target_rows = Enum.map(analysis.target_compliance, fn target ->
-      status_class = case target.target_status do
-        :pass -> "good"
-        :fail -> "danger"
-        _ -> "warning"
-      end
-      
-      margin_text = if target.performance_margin do
-        "#{target.performance_margin}%"
-      else
-        "N/A"
-      end
-      
-      """
-      <tr>
-          <td>#{target.scenario}</td>
-          <td>#{target.category}</td>
-          <td>#{target.actual_time_us}μs</td>
-          <td class="#{status_class}">#{target.target_status}</td>
-          <td>#{margin_text}</td>
-      </tr>
-      """
-    end) |> Enum.join()
-    
+    target_rows =
+      Enum.map(analysis.target_compliance, fn target ->
+        status_class =
+          case target.target_status do
+            :pass -> "good"
+            :fail -> "danger"
+            _ -> "warning"
+          end
+
+        margin_text =
+          if target.performance_margin do
+            "#{target.performance_margin}%"
+          else
+            "N/A"
+          end
+
+        """
+        <tr>
+            <td>#{target.scenario}</td>
+            <td>#{target.category}</td>
+            <td>#{target.actual_time_us}μs</td>
+            <td class="#{status_class}">#{target.target_status}</td>
+            <td>#{margin_text}</td>
+        </tr>
+        """
+      end)
+      |> Enum.join()
+
     """
     <div class="card">
         <h2>🎯 Target Compliance</h2>
@@ -554,7 +596,7 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
 
   defp generate_memory_html(analysis) do
     memory = analysis.memory_analysis
-    
+
     if memory.available do
       """
       <div class="card">
@@ -576,7 +618,7 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
 
   defp generate_insights_html(analysis) do
     insights = analysis.statistical_insights
-    
+
     """
     <div class="card">
         <h2>🔍 Statistical Insights</h2>
@@ -589,7 +631,7 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
 
   defp generate_recommendations_html(analysis) do
     recommendations = analysis.recommendations
-    
+
     if Enum.empty?(recommendations) do
       """
       <div class="card">
@@ -598,10 +640,12 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
       </div>
       """
     else
-      rec_items = Enum.map(recommendations, fn rec ->
-        "<li>#{rec}</li>"
-      end) |> Enum.join()
-      
+      rec_items =
+        Enum.map(recommendations, fn rec ->
+          "<li>#{rec}</li>"
+        end)
+        |> Enum.join()
+
       """
       <div class="card">
           <h2>💡 Recommendations</h2>
@@ -626,7 +670,7 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
     performance_data = analysis.performance_analysis
     labels = Enum.map(performance_data, & &1.name) |> Jason.encode!()
     times = Enum.map(performance_data, & &1.average_time_us) |> Jason.encode!()
-    
+
     """
     const ctx = document.getElementById('performanceChart').getContext('2d');
     new Chart(ctx, {
@@ -659,24 +703,44 @@ defmodule Raxol.Benchmarking.EnhancedFormatter do
   end
 
   # Stub implementations for missing helper functions
-  defp check_performance_outliers(_scenarios, recommendations), do: recommendations
-  defp check_memory_issues(_scenarios, recommendations), do: recommendations  
-  defp check_consistency_issues(_scenarios, recommendations), do: recommendations
+  defp check_performance_outliers(_scenarios, recommendations),
+    do: recommendations
+
+  defp check_memory_issues(_scenarios, recommendations), do: recommendations
+
+  defp check_consistency_issues(_scenarios, recommendations),
+    do: recommendations
+
   defp suggest_optimizations(_scenarios, recommendations), do: recommendations
+
   defp calculate_coefficient_of_variation(times) do
     mean = Enum.sum(times) / length(times)
-    variance = Enum.reduce(times, 0, fn x, acc -> acc + :math.pow(x - mean, 2) end) / length(times)
+
+    variance =
+      Enum.reduce(times, 0, fn x, acc -> acc + :math.pow(x - mean, 2) end) /
+        length(times)
+
     std_dev = :math.sqrt(variance)
     std_dev / mean
   end
+
   defp analyze_distribution(_times), do: "Normal distribution assumed"
   defp detect_outliers(_times), do: []
   defp calculate_confidence_intervals(_scenarios), do: %{}
   defp grade_memory_usage(_memory), do: "A"
-  defp generate_executive_summary(_analysis), do: "Performance analysis complete."
-  defp generate_performance_markdown(_analysis), do: "Performance data analyzed."
+
+  defp generate_executive_summary(_analysis),
+    do: "Performance analysis complete."
+
+  defp generate_performance_markdown(_analysis),
+    do: "Performance data analyzed."
+
   defp generate_targets_markdown(_analysis), do: "Target compliance checked."
   defp generate_memory_markdown(_analysis), do: "Memory usage analyzed."
-  defp generate_recommendations_markdown(_analysis), do: "No specific recommendations."
-  defp generate_statistical_markdown(_analysis), do: "Statistical analysis complete."
+
+  defp generate_recommendations_markdown(_analysis),
+    do: "No specific recommendations."
+
+  defp generate_statistical_markdown(_analysis),
+    do: "Statistical analysis complete."
 end
