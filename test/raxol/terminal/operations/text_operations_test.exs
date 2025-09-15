@@ -1,6 +1,7 @@
 defmodule Raxol.Terminal.Operations.TextOperationsTest do
   use ExUnit.Case
   alias Raxol.Terminal.{Operations.TextOperations, TestHelper}
+  alias Raxol.Test.UnifiedTestHelper
 
   describe "write_string/5" do
     test "writes string at specified position" do

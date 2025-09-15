@@ -97,7 +97,10 @@ defmodule Raxol.MixProject do
           :runtime_tools,
           # NIF integration now working with elixir_make
           # :termbox2_nif,
-          :toml
+          :toml,
+          :jason,
+          :telemetry,
+          :file_system
         ] ++ test_applications()
     ]
   end
@@ -223,10 +226,7 @@ defmodule Raxol.MixProject do
       # Benchmarking suite
       {:benchee, "~> 1.3", only: [:dev, :test]},
       {:benchee_html, "~> 1.0", only: [:dev, :test]},
-      {:benchee_json, "~> 1.0", only: [:dev, :test]},
-
-      # Development utilities
-      {:file_system, "~> 0.2", only: [:dev, :test]}
+      {:benchee_json, "~> 1.0", only: [:dev, :test]}
     ]
   end
 
@@ -244,10 +244,13 @@ defmodule Raxol.MixProject do
       {:httpoison, "~> 2.2"},
       # Localization
       {:gettext, "~> 0.26"},
+      # File system watching
+      {:file_system, "~> 0.2"},
       # DNS clustering (removed - unused)
       # {:dns_cluster, "~> 0.1"},
 
       # Telemetry & monitoring
+      {:telemetry, "~> 1.3"},
       {:telemetry_metrics, "~> 1.1"},
       {:telemetry_poller, "~> 1.2"}
       # {:telemetry_metrics_prometheus, "~> 1.1"} # Removed - unused
