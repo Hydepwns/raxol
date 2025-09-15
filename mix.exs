@@ -226,7 +226,7 @@ defmodule Raxol.MixProject do
       {:benchee_json, "~> 1.0", only: [:dev, :test]},
 
       # Development utilities
-      {:file_system, "~> 0.2", only: [:dev, :test]}
+      {:file_system, "~> 1.1", only: [:dev, :test]}
     ]
   end
 
