@@ -29,10 +29,14 @@ mix raxol.test_flaky        # Detect and analyze flaky tests
 # Performance and profiling
 mix raxol.profile <module>  # Profile specific module
 mix raxol.mutation          # Run mutation testing (refactored with functional patterns)
+mix raxol.perf analyze      # Quick performance analysis
+mix raxol.perf profile <module> # Profile specific module with options
+mix raxol.perf monitor      # Start continuous monitoring
+mix raxol.perf memory       # Memory usage analysis
+mix raxol.perf report       # Generate performance report
 
 # Documentation and analysis
 mix raxol.docs              # Generate documentation
-mix raxol.analyze           # Analyze codebase
 ```
 
 ### Testing
@@ -247,3 +251,4 @@ Note: The Muzak library (`{:muzak, "~> 1.1"}`) is installed as a dependency but 
 - Full test coverage target is 100% (currently at 98.7%)
 - Never add coauthored by claude, emojis or other claude metadata to any commit messages
 - We have purchased raxol.io for this project, raxol is made by axol.io
+- only write code idiomatic to elixir. avoid emojis, use ascii instead

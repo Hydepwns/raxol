@@ -13,6 +13,7 @@ defmodule Raxol.Terminal.RegressionTest do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ANSI.AnsiParser, as: Parser
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.Buffer.Manager
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   
   describe "cursor position bugs" do
@@ -304,7 +305,8 @@ defmodule Raxol.Terminal.RegressionTest do
       {state, _} = Emulator.process_input(state, "\e[?1049h")
       
       # Alt should be clear
-      alt_text = extract_text(state.main_screen_buffer)
+      alt_buffer = Manager.get_screen_buffer(state)
+      alt_text = extract_text(alt_buffer)
       assert not String.contains?(alt_text, "Main buffer")
       
       # Write to alt
@@ -314,7 +316,8 @@ defmodule Raxol.Terminal.RegressionTest do
       {state, _} = Emulator.process_input(state, "\e[?1049l")
       
       # Main should have original content
-      main_text = extract_text(state.main_screen_buffer)
+      main_buffer = Manager.get_screen_buffer(state)
+      main_text = extract_text(main_buffer)
       assert String.contains?(main_text, "Main buffer")
       assert not String.contains?(main_text, "Alt buffer")
     end

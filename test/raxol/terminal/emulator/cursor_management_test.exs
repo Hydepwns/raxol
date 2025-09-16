@@ -14,21 +14,12 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
       # Default should be block
       assert Manager.get_style(emulator.cursor) == :block
 
-      # Set to line (Assuming set_cursor_style maps :line to a valid atom like :bar or :underline?)
-      # Let's assume Emulator.set_cursor_style is not implemented yet or maps :line differently.
-      # The DECSCUSR handler maps 5 -> :blinking_bar, 6 -> :steady_bar
-      # Let's test setting to :underline and :bar directly via DECSCUSR first, then revisit set_cursor_style if needed.
-      # {emulator, _} = Emulator.process_input(emulator, "\e[4 q") # Steady Underline
-      # assert emulator.cursor_style == :steady_underline
-      # {emulator, _} = Emulator.process_input(emulator, "\e[6 q") # Steady Bar
-      # assert emulator.cursor_style == :steady_bar
+      # Test setting Manager style directly - capture returned cursor
+      updated_cursor = Manager.set_style(emulator.cursor, :underline)
+      assert Manager.get_style(updated_cursor) == :underline
 
-      # Let's test setting Manager style directly if Emulator.set_cursor_style is not the target
-      Manager.set_style(emulator.cursor, :underline)
-      assert Manager.get_style(emulator.cursor) == :underline
-
-      Manager.set_style(emulator.cursor, :bar)
-      assert Manager.get_style(emulator.cursor) == :bar
+      updated_cursor = Manager.set_style(updated_cursor, :bar)
+      assert Manager.get_style(updated_cursor) == :bar
     end
 
     test "set_cursor_visible delegates to Cursor.Manager", %{emulator: emulator} do
@@ -36,22 +27,12 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
       # Check state directly
       assert Manager.get_state(emulator.cursor) == :visible
 
-      # Debug: Check what type the cursor is
-      IO.puts("DEBUG: cursor type: #{inspect(emulator.cursor)}")
-      IO.puts("DEBUG: is_pid(cursor): #{is_pid(emulator.cursor)}")
-      IO.puts("DEBUG: Manager module: #{inspect(Manager)}")
+      # Test setting Manager state directly - capture returned cursor
+      updated_cursor = Manager.set_state(emulator.cursor, :hidden)
+      assert Manager.get_state(updated_cursor) == :hidden
 
-      IO.puts(
-        "DEBUG: Manager.set_state function: #{inspect(&Manager.set_state/2)}"
-      )
-
-      # Use full module name to avoid alias issues
-      IO.puts("DEBUG: About to call Raxol.Terminal.Cursor.Manager.set_state")
-      Raxol.Terminal.Cursor.Manager.set_state(emulator.cursor, :hidden)
-      assert Manager.get_state(emulator.cursor) == :hidden
-
-      Raxol.Terminal.Cursor.Manager.set_state(emulator.cursor, :visible)
-      assert Manager.get_state(emulator.cursor) == :visible
+      updated_cursor = Manager.set_state(updated_cursor, :visible)
+      assert Manager.get_state(updated_cursor) == :visible
     end
 
     # DECSC/DECRC tests belong with state stack/ANSI processing, not direct cursor methods.

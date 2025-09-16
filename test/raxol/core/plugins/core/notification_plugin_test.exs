@@ -261,10 +261,10 @@ defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
       end)
 
       # Call handle_command/2
-      {:error, {:command_exception, error_message}, _state} =
+      {:error, {:command_error, error}, _state} =
         NotificationPlugin.handle_command(args, state)
 
-      assert String.contains?(error_message, "Command execution failed!")
+      assert %RuntimeError{message: "Command execution failed!"} = error
     end
   end
 

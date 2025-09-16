@@ -237,6 +237,13 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
 
         {:error, {:command_exception, Exception.format(:error, e, stacktrace)},
          state}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error(
+          "NotificationPlugin: Error executing notification command: #{inspect(reason)}"
+        )
+
+        {:error, {:command_error, reason}, state}
     end
   end
 

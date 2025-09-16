@@ -190,7 +190,7 @@ defmodule Raxol.Core.Runtime.Subscription do
     end
   end
 
-  defp stop_events(actual_id) when is_integer(actual_id) do
+  defp stop_events(actual_id) when is_integer(actual_id) or is_reference(actual_id) do
     case Raxol.Core.Events.EventManager.unsubscribe(actual_id) do
       :ok -> :ok
       {:error, :not_found} -> {:error, :subscription_not_found}

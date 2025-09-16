@@ -191,7 +191,7 @@ defmodule Mix.Tasks.Raxol.Bench do
   defp run_parser_benchmarks(config, opts \\ []) do
     # Proper aliases for Raxol modules
     alias Raxol.Terminal.Emulator
-    alias Raxol.Terminal.ANSI.Parser
+    alias Raxol.Terminal.ANSI.AnsiParser
     alias Raxol.Terminal.ANSI.StateMachine
 
     emulator = Emulator.new(80, 24)
@@ -212,7 +212,7 @@ defmodule Mix.Tasks.Raxol.Bench do
         {name,
          fn ->
            state_machine = StateMachine.new()
-           Parser.parse(state_machine, content)
+           AnsiParser.parse(state_machine, content)
          end}
       end)
 
@@ -329,7 +329,7 @@ defmodule Mix.Tasks.Raxol.Bench do
     alias Raxol.Terminal.ScreenBuffer
     alias Raxol.Terminal.Buffer.Writer
     alias Raxol.Terminal.Cursor
-    alias Raxol.Terminal.ANSI.Parser
+    alias Raxol.Terminal.ANSI.AnsiParser
     alias Raxol.Terminal.ANSI.StateMachine
 
     jobs = %{
@@ -343,7 +343,7 @@ defmodule Mix.Tasks.Raxol.Bench do
         emulator = Emulator.new(80, 24)
         state_machine = StateMachine.new()
         content = generate_test_content()
-        Parser.parse(state_machine, content)
+        AnsiParser.parse(state_machine, content)
         {emulator, state_machine}
       end,
       "memory_buffer_operations" => fn ->

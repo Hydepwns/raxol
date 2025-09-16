@@ -77,8 +77,8 @@ defmodule Raxol.Core.Runtime.Events.Handler do
              {updated_event, updated_state} ->
                {:ok, updated_event, updated_state}
 
-             {:error, reason, state} ->
-               {:error, reason, state}
+             {:error, reason, error_state} ->
+               {:error, reason, error_state}
            end
          end) do
       {:ok, result} ->

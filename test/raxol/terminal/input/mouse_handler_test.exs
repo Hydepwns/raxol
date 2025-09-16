@@ -399,8 +399,19 @@ defmodule Raxol.Terminal.Input.MouseHandlerTest do
     end
     
     test "detects SGR for known terminal programs" do
+      # Save original env vars
+      original_term = System.get_env("TERM")
+      original_term_program = System.get_env("TERM_PROGRAM")
+
+      # Set test environment
+      System.put_env("TERM", "xterm")  # Clear any rxvt values
       System.put_env("TERM_PROGRAM", "iTerm.app")
+
       assert MouseHandler.detect_best_mode() == :sgr
+
+      # Restore original env vars
+      if original_term, do: System.put_env("TERM", original_term), else: System.delete_env("TERM")
+      if original_term_program, do: System.put_env("TERM_PROGRAM", original_term_program), else: System.delete_env("TERM_PROGRAM")
     end
   end
 end

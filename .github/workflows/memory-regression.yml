@@ -1,0 +1,758 @@
+name: Memory Regression Testing
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  # Run nightly for comprehensive memory profiling
+  schedule:
+    - cron: '0 3 * * *'  # Daily 3 AM UTC
+  workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: 'Git reference to use as baseline (default: master)'
+        required: false
+        default: 'master'
+      scenario:
+        description: 'Memory scenario to test (all, terminal_operations, plugin_system, load_testing)'
+        required: false
+        default: 'all'
+
+env:
+  SKIP_TERMBOX2_TESTS: true
+  TMPDIR: /tmp
+  MIX_ENV: test
+
+jobs:
+  memory-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    strategy:
+      fail-fast: false
+      matrix:
+        elixir: ['1.17.1']
+        otp: ['25.3.2.7']
+        scenario: ['terminal_operations', 'plugin_system', 'load_testing']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Need full history for comparison
+
+    - name: Set up Elixir
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: ${{ matrix.elixir }}
+        otp-version: ${{ matrix.otp }}
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          _build
+          deps
+          ~/.cache/rebar3
+          ~/.hex
+        key: deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+        restore-keys: |
+          deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+
+    - name: Cache PLT files
+      uses: actions/cache@v4
+      with:
+        path: priv/plts
+        key: plt-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+        restore-keys: |
+          plt-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential gcc make valgrind
+        echo "TMPDIR=/tmp" >> $GITHUB_ENV
+
+    - name: Install dependencies
+      run: |
+        mix local.hex --force
+        mix local.rebar --force
+        mix deps.get
+
+    - name: Compile
+      run: |
+        mix compile --warnings-as-errors
+
+    - name: Setup memory analysis directory
+      run: |
+        mkdir -p memory/baselines
+        mkdir -p memory/current
+        mkdir -p memory/reports
+        mkdir -p memory/dashboards
+
+    - name: Run current memory benchmarks
+      run: |
+        echo "Running current memory benchmarks for scenario: ${{ matrix.scenario }}"
+
+        # Run memory analysis with JSON output
+        mix raxol.bench.memory_analysis \
+          --scenario ${{ matrix.scenario }} \
+          --time 3 \
+          --memory_time 2 \
+          --output memory/current/${{ matrix.scenario }}_analysis.json
+
+        # Run specific memory benchmarks
+        case "${{ matrix.scenario }}" in
+          "terminal_operations")
+            mix run bench/memory/terminal_memory_benchmark.exs --json > memory/current/terminal_memory.json
+            ;;
+          "plugin_system")
+            mix run bench/memory/plugin_memory_benchmark.exs --json > memory/current/plugin_memory.json
+            ;;
+          "load_testing")
+            mix run bench/memory/load_memory_benchmark.exs --json > memory/current/load_memory.json
+            ;;
+        esac
+
+        echo "Current memory benchmarks complete for ${{ matrix.scenario }}"
+
+    - name: Checkout baseline commit
+      if: github.event_name == 'pull_request'
+      run: |
+        BASELINE_REF="${{ github.event.inputs.baseline_ref || 'origin/master' }}"
+        echo "Checking out baseline: $BASELINE_REF"
+        git fetch origin
+        git checkout $BASELINE_REF
+
+        # Compile baseline version
+        mix deps.get
+        mix compile --warnings-as-errors
+
+    - name: Run baseline memory benchmarks
+      if: github.event_name == 'pull_request'
+      run: |
+        echo "Running baseline memory benchmarks for scenario: ${{ matrix.scenario }}"
+
+        # Run memory analysis with JSON output
+        mix raxol.bench.memory_analysis \
+          --scenario ${{ matrix.scenario }} \
+          --time 3 \
+          --memory_time 2 \
+          --output memory/baselines/${{ matrix.scenario }}_analysis.json
+
+        # Run specific memory benchmarks
+        case "${{ matrix.scenario }}" in
+          "terminal_operations")
+            mix run bench/memory/terminal_memory_benchmark.exs --json > memory/baselines/terminal_memory.json
+            ;;
+          "plugin_system")
+            mix run bench/memory/plugin_memory_benchmark.exs --json > memory/baselines/plugin_memory.json
+            ;;
+          "load_testing")
+            mix run bench/memory/load_memory_benchmark.exs --json > memory/baselines/load_memory.json
+            ;;
+        esac
+
+        echo "Baseline memory benchmarks complete for ${{ matrix.scenario }}"
+
+    - name: Return to current branch
+      if: github.event_name == 'pull_request'
+      run: |
+        git checkout ${{ github.sha }}
+        mix deps.get
+        mix compile --warnings-as-errors
+
+    - name: Download previous baseline (for push events)
+      if: github.event_name == 'push'
+      continue-on-error: true
+      uses: actions/cache@v4
+      with:
+        path: memory/baselines
+        key: memory-baseline-${{ github.ref_name }}-${{ matrix.scenario }}-${{ github.sha }}
+        restore-keys: |
+          memory-baseline-${{ github.ref_name }}-${{ matrix.scenario }}-
+          memory-baseline-master-${{ matrix.scenario }}-
+
+    - name: Generate memory regression report
+      run: |
+        echo "Generating memory regression report for ${{ matrix.scenario }}..."
+
+        # Create memory analysis script
+        cat > analyze_memory_regression.exs << 'EOF'
+        defmodule MemoryRegressionAnalyzer do
+          @memory_threshold_percent 10  # 10% memory increase is a regression
+          @memory_threshold_absolute 50_000_000  # 50MB absolute increase is always a regression
+
+          def analyze(scenario) do
+            current_analysis = load_analysis("memory/current/#{scenario}_analysis.json")
+            current_benchmark = load_benchmark("memory/current/#{scenario}_memory.json")
+
+            baseline_analysis = load_analysis("memory/baselines/#{scenario}_analysis.json")
+            baseline_benchmark = load_benchmark("memory/baselines/#{scenario}_memory.json")
+
+            results = %{
+              scenario: scenario,
+              analysis_comparison: compare_analysis(baseline_analysis, current_analysis),
+              benchmark_comparison: compare_benchmark(baseline_benchmark, current_benchmark),
+              memory_gates: check_memory_gates(current_analysis, current_benchmark),
+              timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
+            }
+
+            generate_report(results)
+
+            # Exit with error if regressions found
+            if has_memory_regressions?(results) do
+              IO.puts("Memory regressions detected! Failing CI.")
+              System.halt(1)
+            end
+          end
+
+          defp load_analysis(path) do
+            case File.read(path) do
+              {:ok, content} -> Jason.decode!(content)
+              {:error, _} -> %{}
+            end
+          end
+
+          defp load_benchmark(path) do
+            case File.read(path) do
+              {:ok, content} -> Jason.decode!(content)
+              {:error, _} -> %{}
+            end
+          end
+
+          defp compare_analysis(baseline, current) when baseline == %{} do
+            %{status: :no_baseline, regressions: [], improvements: []}
+          end
+
+          defp compare_analysis(baseline, current) do
+            regressions = []
+            improvements = []
+
+            # Compare peak memory usage
+            peak_regression = compare_memory_metric(
+              get_in(baseline, ["memory_patterns", "peak_usage"]),
+              get_in(current, ["memory_patterns", "peak_usage"]),
+              "peak_memory_usage"
+            )
+
+            # Compare sustained memory usage
+            sustained_regression = compare_memory_metric(
+              get_in(baseline, ["memory_patterns", "sustained_usage"]),
+              get_in(current, ["memory_patterns", "sustained_usage"]),
+              "sustained_memory_usage"
+            )
+
+            # Compare GC pressure
+            gc_regression = compare_memory_metric(
+              get_in(baseline, ["gc_analysis", "pressure_score"]),
+              get_in(current, ["gc_analysis", "pressure_score"]),
+              "gc_pressure"
+            )
+
+            regressions = collect_regressions([peak_regression, sustained_regression, gc_regression], regressions)
+            improvements = collect_improvements([peak_regression, sustained_regression, gc_regression], improvements)
+
+            %{
+              status: if(length(regressions) > 0, do: :regressions, else: :ok),
+              regressions: regressions,
+              improvements: improvements
+            }
+          end
+
+          defp compare_benchmark(baseline, current) when baseline == %{} do
+            %{status: :no_baseline, regressions: [], improvements: []}
+          end
+
+          defp compare_benchmark(baseline, current) do
+            regressions = []
+            improvements = []
+
+            # Compare memory usage from benchmarks
+            memory_regression = compare_memory_metric(
+              get_in(baseline, ["statistics", "memory"]),
+              get_in(current, ["statistics", "memory"]),
+              "benchmark_memory_usage"
+            )
+
+            regressions = collect_regressions([memory_regression], regressions)
+            improvements = collect_improvements([memory_regression], improvements)
+
+            %{
+              status: if(length(regressions) > 0, do: :regressions, else: :ok),
+              regressions: regressions,
+              improvements: improvements
+            }
+          end
+
+          defp compare_memory_metric(baseline, current, metric_name) do
+            if baseline && current do
+              change_absolute = current - baseline
+              change_ratio = change_absolute / baseline
+              change_percent = change_ratio * 100
+
+              cond do
+                change_absolute > @memory_threshold_absolute ->
+                  %{
+                    regression?: true,
+                    improvement?: false,
+                    severity: :critical,
+                    metric: metric_name,
+                    baseline: baseline,
+                    current: current,
+                    change_percent: change_percent,
+                    change_absolute: change_absolute
+                  }
+                change_ratio > (@memory_threshold_percent / 100) ->
+                  %{
+                    regression?: true,
+                    improvement?: false,
+                    severity: :warning,
+                    metric: metric_name,
+                    baseline: baseline,
+                    current: current,
+                    change_percent: change_percent,
+                    change_absolute: change_absolute
+                  }
+                change_ratio < -(@memory_threshold_percent / 100) ->
+                  %{
+                    regression?: false,
+                    improvement?: true,
+                    metric: metric_name,
+                    baseline: baseline,
+                    current: current,
+                    change_percent: change_percent,
+                    change_absolute: change_absolute
+                  }
+                true ->
+                  %{
+                    regression?: false,
+                    improvement?: false,
+                    metric: metric_name,
+                    baseline: baseline,
+                    current: current,
+                    change_percent: change_percent,
+                    change_absolute: change_absolute
+                  }
+              end
+            else
+              %{
+                regression?: false,
+                improvement?: false,
+                metric: metric_name,
+                baseline: baseline,
+                current: current,
+                change_percent: 0,
+                change_absolute: 0
+              }
+            end
+          end
+
+          defp check_memory_gates(analysis, benchmark) do
+            gates = []
+
+            # Gate 1: Peak memory should not exceed 3MB per session
+            peak_memory = get_in(analysis, ["memory_patterns", "peak_usage"]) || 0
+            gates = if peak_memory > 3_000_000 do
+              [%{gate: "peak_memory_limit", status: :failed, value: peak_memory, limit: 3_000_000} | gates]
+            else
+              [%{gate: "peak_memory_limit", status: :passed, value: peak_memory, limit: 3_000_000} | gates]
+            end
+
+            # Gate 2: Sustained memory should not exceed 2.5MB
+            sustained_memory = get_in(analysis, ["memory_patterns", "sustained_usage"]) || 0
+            gates = if sustained_memory > 2_500_000 do
+              [%{gate: "sustained_memory_limit", status: :failed, value: sustained_memory, limit: 2_500_000} | gates]
+            else
+              [%{gate: "sustained_memory_limit", status: :passed, value: sustained_memory, limit: 2_500_000} | gates]
+            end
+
+            # Gate 3: GC pressure should be reasonable
+            gc_pressure = get_in(analysis, ["gc_analysis", "pressure_score"]) || 0
+            gates = if gc_pressure > 0.8 do
+              [%{gate: "gc_pressure_limit", status: :failed, value: gc_pressure, limit: 0.8} | gates]
+            else
+              [%{gate: "gc_pressure_limit", status: :passed, value: gc_pressure, limit: 0.8} | gates]
+            end
+
+            gates
+          end
+
+          defp collect_regressions(comparisons, acc) do
+            comparisons
+            |> Enum.filter(fn comp -> comp && comp.regression? end)
+            |> Enum.concat(acc)
+          end
+
+          defp collect_improvements(comparisons, acc) do
+            comparisons
+            |> Enum.filter(fn comp -> comp && comp.improvement? end)
+            |> Enum.concat(acc)
+          end
+
+          defp generate_report(results) do
+            IO.puts("\n📊 Memory Regression Report - #{results.scenario}")
+            IO.puts("=================================================")
+
+            # Performance gates
+            IO.puts("\n🚪 Memory Performance Gates:")
+            for gate <- results.memory_gates do
+              status_icon = if gate.status == :passed, do: "✅", else: "❌"
+              IO.puts("  #{status_icon} #{gate.gate}: #{format_bytes(gate.value)} (limit: #{format_bytes(gate.limit)})")
+            end
+
+            # Analysis comparison
+            analysis_regressions = length(results.analysis_comparison.regressions)
+            analysis_improvements = length(results.analysis_comparison.improvements)
+
+            IO.puts("\n📈 Analysis Comparison:")
+            IO.puts("  🔴 Regressions: #{analysis_regressions}")
+            IO.puts("  🟢 Improvements: #{analysis_improvements}")
+
+            for reg <- results.analysis_comparison.regressions do
+              severity_icon = if reg.severity == :critical, do: "🚨", else: "⚠️"
+              IO.puts("    #{severity_icon} #{reg.metric}: +#{format_bytes(reg.change_absolute)} (+#{Float.round(reg.change_percent, 2)}%)")
+            end
+
+            for imp <- results.analysis_comparison.improvements do
+              IO.puts("    🟢 #{imp.metric}: -#{format_bytes(abs(imp.change_absolute))} (#{abs(Float.round(imp.change_percent, 2))}% improvement)")
+            end
+
+            # Benchmark comparison
+            benchmark_regressions = length(results.benchmark_comparison.regressions)
+            benchmark_improvements = length(results.benchmark_comparison.improvements)
+
+            IO.puts("\n⚡ Benchmark Comparison:")
+            IO.puts("  🔴 Regressions: #{benchmark_regressions}")
+            IO.puts("  🟢 Improvements: #{benchmark_improvements}")
+
+            for reg <- results.benchmark_comparison.regressions do
+              severity_icon = if reg.severity == :critical, do: "🚨", else: "⚠️"
+              IO.puts("    #{severity_icon} #{reg.metric}: +#{format_bytes(reg.change_absolute)} (+#{Float.round(reg.change_percent, 2)}%)")
+            end
+
+            for imp <- results.benchmark_comparison.improvements do
+              IO.puts("    🟢 #{imp.metric}: -#{format_bytes(abs(imp.change_absolute))} (#{abs(Float.round(imp.change_percent, 2))}% improvement)")
+            end
+
+            # Save detailed report
+            report_content = Jason.encode!(results, pretty: true)
+            File.write!("memory/reports/#{results.scenario}_regression_report.json", report_content)
+            IO.puts("\n📝 Detailed report saved to memory/reports/#{results.scenario}_regression_report.json")
+          end
+
+          defp format_bytes(bytes) when is_number(bytes) do
+            cond do
+              bytes >= 1_000_000_000 -> "#{Float.round(bytes / 1_000_000_000, 2)}GB"
+              bytes >= 1_000_000 -> "#{Float.round(bytes / 1_000_000, 2)}MB"
+              bytes >= 1_000 -> "#{Float.round(bytes / 1_000, 2)}KB"
+              true -> "#{bytes}B"
+            end
+          end
+
+          defp format_bytes(_), do: "N/A"
+
+          defp has_memory_regressions?(results) do
+            analysis_regressions = length(results.analysis_comparison.regressions)
+            benchmark_regressions = length(results.benchmark_comparison.regressions)
+            failed_gates = results.memory_gates |> Enum.count(fn gate -> gate.status == :failed end)
+
+            analysis_regressions > 0 || benchmark_regressions > 0 || failed_gates > 0
+          end
+        end
+
+        # Run analysis for the current scenario
+        MemoryRegressionAnalyzer.analyze("${{ matrix.scenario }}")
+        EOF
+
+        # Install Jason for JSON parsing
+        mix archive.install hex jason 1.4.4 --force
+
+        # Run analysis
+        elixir analyze_memory_regression.exs
+
+    - name: Generate memory dashboard
+      if: github.event_name == 'schedule' || github.event.inputs.scenario == 'all'
+      run: |
+        echo "Generating memory dashboard for ${{ matrix.scenario }}..."
+
+        # Generate dashboard using MemoryDashboard
+        mix raxol.bench.memory_analysis \
+          --scenario ${{ matrix.scenario }} \
+          --with-dashboard \
+          --output memory/dashboards/${{ matrix.scenario }}_dashboard.html
+
+    - name: Upload memory artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: memory-results-${{ matrix.scenario }}-${{ matrix.elixir }}-${{ matrix.otp }}
+        path: |
+          memory/current/
+          memory/baselines/
+          memory/reports/
+          memory/dashboards/
+        retention-days: 30
+
+    - name: Save baseline for future comparisons
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      uses: actions/cache@v4
+      with:
+        path: memory/baselines
+        key: memory-baseline-${{ github.ref_name }}-${{ matrix.scenario }}-${{ github.sha }}
+
+    - name: Comment memory results on PR
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+
+          let reportContent = "## 🧠 Memory Regression Test Results\n\n";
+          reportContent += `**Scenario:** ${{ matrix.scenario }}\n\n`;
+
+          try {
+            const reportPath = `memory/reports/${{ matrix.scenario }}_regression_report.json`;
+            if (fs.existsSync(reportPath)) {
+              const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+
+              // Memory Gates Summary
+              reportContent += `### 🚪 Memory Performance Gates\n`;
+              const gates = report.memory_gates || [];
+              const passedGates = gates.filter(g => g.status === 'passed').length;
+              const failedGates = gates.filter(g => g.status === 'failed').length;
+
+              reportContent += `- ✅ Passed: ${passedGates}\n`;
+              reportContent += `- ❌ Failed: ${failedGates}\n\n`;
+
+              if (failedGates > 0) {
+                reportContent += `**Failed Gates:**\n`;
+                for (const gate of gates.filter(g => g.status === 'failed')) {
+                  const valueFormatted = formatBytes(gate.value);
+                  const limitFormatted = formatBytes(gate.limit);
+                  reportContent += `- ❌ ${gate.gate}: ${valueFormatted} (limit: ${limitFormatted})\n`;
+                }
+                reportContent += `\n`;
+              }
+
+              // Analysis Results
+              const analysisRegressions = report.analysis_comparison?.regressions?.length || 0;
+              const analysisImprovements = report.analysis_comparison?.improvements?.length || 0;
+
+              reportContent += `### 📈 Memory Analysis\n`;
+              reportContent += `- 🔴 Regressions: ${analysisRegressions}\n`;
+              reportContent += `- 🟢 Improvements: ${analysisImprovements}\n\n`;
+
+              if (analysisRegressions > 0) {
+                for (const reg of report.analysis_comparison.regressions) {
+                  const changeFormatted = formatBytes(reg.change_absolute);
+                  const severityIcon = reg.severity === 'critical' ? '🚨' : '⚠️';
+                  reportContent += `- ${severityIcon} ${reg.metric}: +${changeFormatted} (+${reg.change_percent.toFixed(2)}%)\n`;
+                }
+                reportContent += `\n`;
+              }
+
+              // Benchmark Results
+              const benchmarkRegressions = report.benchmark_comparison?.regressions?.length || 0;
+              const benchmarkImprovements = report.benchmark_comparison?.improvements?.length || 0;
+
+              reportContent += `### ⚡ Benchmark Results\n`;
+              reportContent += `- 🔴 Regressions: ${benchmarkRegressions}\n`;
+              reportContent += `- 🟢 Improvements: ${benchmarkImprovements}\n\n`;
+
+              if (benchmarkRegressions > 0) {
+                for (const reg of report.benchmark_comparison.regressions) {
+                  const changeFormatted = formatBytes(reg.change_absolute);
+                  const severityIcon = reg.severity === 'critical' ? '🚨' : '⚠️';
+                  reportContent += `- ${severityIcon} ${reg.metric}: +${changeFormatted} (+${reg.change_percent.toFixed(2)}%)\n`;
+                }
+                reportContent += `\n`;
+              }
+
+              // Overall Status
+              const totalRegressions = analysisRegressions + benchmarkRegressions + failedGates;
+              if (totalRegressions > 0) {
+                reportContent += `\n⚠️ **Memory regressions detected for ${{ matrix.scenario }}!** Please review the changes.\n`;
+                reportContent += `\n**Memory targets (from TODO.md):**\n`;
+                reportContent += `- Peak memory: <3MB per session\n`;
+                reportContent += `- Sustained memory: <2.5MB per session\n`;
+                reportContent += `- GC pressure: <0.8 score\n`;
+              } else {
+                reportContent += `\n✅ **No memory regressions detected for ${{ matrix.scenario }}**\n`;
+              }
+
+            } else {
+              reportContent += `❌ Could not generate memory report for ${{ matrix.scenario }}. Check workflow logs.\n`;
+            }
+          } catch (error) {
+            reportContent += `❌ Error reading memory report: ${error.message}\n`;
+          }
+
+          function formatBytes(bytes) {
+            if (typeof bytes !== 'number') return 'N/A';
+            if (bytes >= 1000000000) return `${(bytes / 1000000000).toFixed(2)}GB`;
+            if (bytes >= 1000000) return `${(bytes / 1000000).toFixed(2)}MB`;
+            if (bytes >= 1000) return `${(bytes / 1000).toFixed(2)}KB`;
+            return `${bytes}B`;
+          }
+
+          // Find existing comment for this scenario
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number
+          });
+
+          const commentTitle = `Memory Regression Test Results`;
+          const existingComment = comments.find(comment =>
+            comment.body.includes(commentTitle) && comment.body.includes(`${{ matrix.scenario }}`)
+          );
+
+          if (existingComment) {
+            // Update existing comment
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existingComment.id,
+              body: reportContent
+            });
+          } else {
+            // Create new comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: reportContent
+            });
+          }
+
+  consolidate-results:
+    needs: memory-regression
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: all-memory-results
+
+    - name: Consolidate memory reports
+      run: |
+        echo "Consolidating memory regression results..."
+
+        # Create consolidated report
+        cat > consolidated_memory_report.md << 'EOF'
+        # Memory Regression Analysis Summary
+
+        Generated: $(date)
+
+        ## Scenarios Tested
+        EOF
+
+        # Process each scenario
+        for scenario_dir in all-memory-results/memory-results-*; do
+          if [ -d "$scenario_dir" ]; then
+            scenario=$(basename "$scenario_dir" | sed 's/memory-results-//' | cut -d'-' -f1)
+            echo "Processing scenario: $scenario"
+
+            echo "" >> consolidated_memory_report.md
+            echo "### $scenario" >> consolidated_memory_report.md
+
+            if [ -f "$scenario_dir/memory/reports/${scenario}_regression_report.json" ]; then
+              # Extract summary from JSON report
+              echo "- Report found" >> consolidated_memory_report.md
+            else
+              echo "- No report found" >> consolidated_memory_report.md
+            fi
+          fi
+        done
+
+        echo "" >> consolidated_memory_report.md
+        echo "## Archive" >> consolidated_memory_report.md
+        echo "All detailed reports and artifacts are available in the workflow artifacts." >> consolidated_memory_report.md
+
+    - name: Upload consolidated report
+      uses: actions/upload-artifact@v4
+      with:
+        name: consolidated-memory-report
+        path: consolidated_memory_report.md
+        retention-days: 90
+
+  nightly-analysis:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Elixir
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: '1.17.1'
+        otp-version: '25.3.2.7'
+
+    - name: Install dependencies
+      run: |
+        mix local.hex --force
+        mix local.rebar --force
+        mix deps.get
+        mix compile
+
+    - name: Run comprehensive nightly memory analysis
+      run: |
+        mkdir -p memory/nightly/$(date +%Y-%m-%d)
+
+        echo "Running comprehensive nightly memory analysis..."
+
+        # Run all scenarios with extended time for more accurate results
+        for scenario in terminal_operations plugin_system load_testing; do
+          echo "Running nightly analysis for $scenario..."
+
+          mix raxol.bench.memory_analysis \
+            --scenario $scenario \
+            --time 10 \
+            --memory_time 5 \
+            --with-dashboard \
+            --output memory/nightly/$(date +%Y-%m-%d)/${scenario}_comprehensive.json
+        done
+
+        echo "Nightly memory analysis completed"
+
+    - name: Generate trend analysis
+      run: |
+        echo "Generating memory trend analysis..."
+
+        # Create trend analysis script
+        cat > trend_analysis.exs << 'EOF'
+        defmodule MemoryTrendAnalyzer do
+          def analyze_trends do
+            IO.puts("Analyzing memory trends over time...")
+
+            # This would analyze historical data and generate trends
+            # For now, just create a placeholder report
+
+            trends = %{
+              timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
+              analysis: "Memory trend analysis placeholder",
+              note: "This will be implemented to track memory usage patterns over time"
+            }
+
+            File.write!("memory/nightly/$(date +%Y-%m-%d)/trends.json", Jason.encode!(trends, pretty: true))
+            IO.puts("Trend analysis saved")
+          end
+        end
+
+        MemoryTrendAnalyzer.analyze_trends()
+        EOF
+
+        elixir trend_analysis.exs
+
+    - name: Upload nightly analysis
+      uses: actions/upload-artifact@v4
+      with:
+        name: nightly-memory-analysis-$(date +%Y-%m-%d)
+        path: memory/nightly/
+        retention-days: 365  # Keep nightly analysis for a year
