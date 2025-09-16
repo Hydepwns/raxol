@@ -30,7 +30,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour do
 
   ## Returns
   - :ok if dependencies are satisfied
-  - {:error, reason, details, chain} if dependencies are not satisfied
+  - `{:error, reason, details, chain}` if dependencies are not satisfied
   """
   @callback check_dependencies(
               plugin_id :: String.t(),
@@ -47,8 +47,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour do
   - loaded_plugins: Currently loaded plugins
 
   ## Returns
-  - {:ok, load_order} where load_order is a list of plugin IDs in dependency order
-  - {:error, reason} if dependencies cannot be resolved
+  - `{:ok, load_order}` where load_order is a list of plugin IDs in dependency order
+  - `{:error, reason}` if dependencies cannot be resolved
   """
   @callback resolve_dependencies(
               plugin_metadata :: plugin_metadata(),
@@ -63,7 +63,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour do
 
   ## Returns
   - :ok if all dependencies are valid
-  - {:error, invalid_dependencies} if any dependencies are invalid
+  - `{:error, invalid_dependencies}` if any dependencies are invalid
   """
   @callback validate_dependencies(dependencies :: [dependency()]) ::
               :ok | {:error, [String.t()]}
@@ -78,7 +78,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour do
 
   ## Returns
   - :ok if no circular dependencies detected
-  - {:error, :circular_dependency, cycle, chain} if circular dependency found
+  - `{:error, :circular_dependency, cycle, chain}` if circular dependency found
   """
   @callback check_circular_dependencies(
               plugin_id :: String.t(),

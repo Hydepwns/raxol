@@ -17,8 +17,8 @@ defmodule Raxol.Core.Behaviours.StateManager do
   Initializes state management system.
 
   ## Returns
-  - {:ok, initial_state} on success
-  - {:error, reason} on failure
+  - `{:ok, initial_state}` on success
+  - `{:error, reason}` on failure
   """
   @callback init() :: {:ok, state()} | {:error, term()}
 
@@ -30,8 +30,8 @@ defmodule Raxol.Core.Behaviours.StateManager do
   - key: Key to retrieve
 
   ## Returns
-  - {:ok, value} if key exists
-  - {:error, :not_found} if key doesn't exist
+  - `{:ok, value}` if key exists
+  - `{:error, :not_found}` if key doesn't exist
   """
   @callback get_state(state(), state_key()) ::
               {:ok, state_value()} | {:error, :not_found}
@@ -45,8 +45,8 @@ defmodule Raxol.Core.Behaviours.StateManager do
   - value: Value to set
 
   ## Returns
-  - {:ok, new_state} on success
-  - {:error, reason} on failure
+  - `{:ok, new_state}` on success
+  - `{:error, reason}` on failure
   """
   @callback set_state(state(), state_key(), state_value()) ::
               {:ok, state()} | {:error, term()}
@@ -60,8 +60,8 @@ defmodule Raxol.Core.Behaviours.StateManager do
   - update_fn: Function to apply to the current value
 
   ## Returns
-  - {:ok, new_state} on success
-  - {:error, reason} on failure
+  - `{:ok, new_state}` on success
+  - `{:error, reason}` on failure
   """
   @callback update_state(state(), state_key(), (state_value() -> state_value())) ::
               {:ok, state()} | {:error, term()}
@@ -74,7 +74,7 @@ defmodule Raxol.Core.Behaviours.StateManager do
   - key: Key to remove
 
   ## Returns
-  - {:ok, new_state} on success
+  - `{:ok, new_state}` on success
   """
   @callback delete_state(state(), state_key()) :: {:ok, state()}
 
@@ -86,8 +86,8 @@ defmodule Raxol.Core.Behaviours.StateManager do
   - config: Plugin configuration
 
   ## Returns
-  - {:ok, initial_plugin_state} on success
-  - {:error, reason} on failure
+  - `{:ok, initial_plugin_state}` on success
+  - `{:error, reason}` on failure
   """
   @callback initialize_plugin_state(plugin_module(), plugin_config()) ::
               {:ok, state()} | {:error, term()}
@@ -101,8 +101,8 @@ defmodule Raxol.Core.Behaviours.StateManager do
   - config: Plugin configuration
 
   ## Returns
-  - {:ok, updated_state} on success
-  - {:error, reason} on failure
+  - `{:ok, updated_state}` on success
+  - `{:error, reason}` on failure
   """
   @callback update_plugin_state_legacy(plugin_id(), state(), plugin_config()) ::
               {:ok, state()} | {:error, term()}

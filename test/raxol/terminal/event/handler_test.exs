@@ -1,6 +1,7 @@
 defmodule Raxol.Terminal.Event.HandlerTest do
   use ExUnit.Case
   alias Raxol.Terminal.Event.Handler
+  alias Raxol.Test.UnifiedTestHelper
 
   describe "new/0" do
     test "creates a new event handler with default values" do
