@@ -7,7 +7,6 @@ defmodule Raxol.Protocols.ThemeImplementations do
   """
 
   alias Raxol.UI.Theming.Theme
-  alias Raxol.Style.Colors.Color
   alias Raxol.Protocols.{Styleable, Renderable, Serializable}
 
   # Theme Protocol Implementations

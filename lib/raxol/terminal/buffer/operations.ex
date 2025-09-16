@@ -198,16 +198,14 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Erases characters in the current line based on the mode.
   """
-  def erase_in_line(buffer, mode, cursor_x, cursor_y) do
-    cursor = %{x: cursor_x, y: cursor_y}
+  def erase_in_line(buffer, mode, _cursor_x, _cursor_y) do
     Eraser.erase_line(buffer, mode)
   end
 
   @doc """
   Erases characters in the display based on the mode.
   """
-  def erase_in_display(buffer, mode, cursor_x, cursor_y) do
-    cursor = %{x: cursor_x, y: cursor_y}
+  def erase_in_display(buffer, mode, _cursor_x, _cursor_y) do
     case mode do
       0 -> Eraser.erase_from_cursor_to_end(buffer)
       1 -> Eraser.erase_from_start_to_cursor(buffer)

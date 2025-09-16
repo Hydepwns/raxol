@@ -33,10 +33,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
     SuiteRegistry,
     StatisticalAnalyzer,
     RegressionDetector,
-    CompetitorSuite,
-    ScenarioGenerator,
-    Config,
-    EnhancedFormatter
+    CompetitorSuite
   }
 
   @shortdoc "Advanced benchmarking with statistical analysis"

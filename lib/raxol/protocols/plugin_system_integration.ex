@@ -8,7 +8,6 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
   """
 
   alias Raxol.Protocols.{Renderable, Styleable, EventHandler, Serializable}
-  alias Raxol.Plugins.Plugin
 
   @doc """
   Protocol-aware plugin wrapper that automatically implements protocols

@@ -10,8 +10,6 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
   - Cross-platform memory behavior
   """
 
-  alias Raxol.Terminal.MemoryManager
-  alias Raxol.Terminal.ScreenBuffer.MemoryUtils
 
   @type analysis_result :: %{
           peak_memory: non_neg_integer(),
