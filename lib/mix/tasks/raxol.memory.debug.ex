@@ -503,7 +503,7 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     }
   end
 
-  defp analyze_potential_leaks(initial_state, measurements, config) do
+  defp analyze_potential_leaks(_initial_state, measurements, config) do
     if length(measurements) < 2 do
       %{status: :insufficient_data, message: "Not enough data for leak analysis"}
     else

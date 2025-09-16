@@ -6,7 +6,6 @@ defmodule Raxol.Protocols.UIComponentImplementations do
   implementations for various UI components in the Raxol framework.
   """
 
-  alias Raxol.UI.Components.{Table, Button}
   alias Raxol.Protocols.{Renderable, Styleable, EventHandler}
 
   # Table Component Protocol Implementations

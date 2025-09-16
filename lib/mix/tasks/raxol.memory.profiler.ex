@@ -60,7 +60,6 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
   """
 
   use Mix.Task
-  alias Raxol.Benchmark.{MemoryAnalyzer, MemoryDashboard}
 
   @shortdoc "Interactive memory profiler for real-time analysis"
 
@@ -287,7 +286,7 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
     end)
   end
 
-  defp handle_dashboard_input(key, state, monitoring_pid) do
+  defp handle_dashboard_input(key, state, _monitoring_pid) do
     case key do
       "q" -> %{state | running: false}
       "r" -> reset_statistics(state)

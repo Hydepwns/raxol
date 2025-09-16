@@ -155,7 +155,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
 
   defp simulate_vim_session(duration) do
     Mix.shell().info("Simulating Vim session...")
-    {:ok, buffer} = Buffer.create(120, 40)
+    {:ok, buffer} = Buffer.new(120, 40)
 
     start_time = System.monotonic_time(:millisecond)
     operations_count = 0
@@ -199,7 +199,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
     {:ok, buffer} = Buffer.create(100, 50)
 
     start_time = System.monotonic_time(:millisecond)
-    lines_processed = 0
+    _lines_processed = 0
 
     log_levels = ["INFO", "WARN", "ERROR", "DEBUG"]
     color_codes = [32, 33, 31, 36]  # Green, Yellow, Red, Cyan
@@ -218,7 +218,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
 
         # Write to buffer (simulate scrolling)
         row = rem(line_num, 50)
-        case Buffer.write_at(buffer, 0, row, log_line) do
+        case Buffer.write(buffer, log_line) do
           {:ok, updated_buffer} -> {updated_buffer, line_num + 1}
           _ -> {buffer, line_num + 1}
         end
@@ -242,7 +242,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
     {:ok, buffer} = Buffer.create(80, 24)
 
     start_time = System.monotonic_time(:millisecond)
-    commands_executed = 0
+    _commands_executed = 0
 
     shell_commands = [
       "ls -la",
@@ -268,7 +268,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
         # Write to buffer
         updated_buffer = Enum.reduce([prompt | output_lines], buffer, fn line, acc_buffer ->
           row = rem(cmd_num * 3, 24)  # Each command takes ~3 lines
-          case Buffer.write_at(acc_buffer, 0, row, line) do
+          case Buffer.write(acc_buffer, line) do
             {:ok, new_buffer} -> new_buffer
             _ -> acc_buffer
           end
@@ -296,7 +296,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
   # Vim operation helpers
   defp vim_write_text(buffer) do
     text = "def function_#{:rand.uniform(1000)}(param) do\n  # Implementation here\nend"
-    case Buffer.write_at(buffer, 0, :rand.uniform(39), text) do
+    case Buffer.write(buffer, text) do
       {:ok, updated_buffer} -> updated_buffer
       _ -> buffer
     end
@@ -307,15 +307,15 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
     {:ok, cursor} = Manager.new()
     _moved_cursor = cursor
     |> Manager.move_to(:rand.uniform(120), :rand.uniform(40))
-    |> Manager.move_relative(:rand.uniform(10) - 5, :rand.uniform(5) - 2)
+    |> Manager.move_to(:rand.uniform(80), :rand.uniform(40))
 
     buffer
   end
 
   defp vim_search_replace(buffer) do
     # Simulate search and replace operation
-    search_term = "function_#{:rand.uniform(100)}"
-    replace_term = "method_#{:rand.uniform(100)}"
+    _search_term = "function_#{:rand.uniform(100)}"
+    _replace_term = "method_#{:rand.uniform(100)}"
 
     # This would normally search and replace in buffer
     # For simulation, just return the buffer

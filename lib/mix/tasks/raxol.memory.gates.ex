@@ -44,7 +44,6 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
   """
 
   use Mix.Task
-  alias Raxol.Benchmark.{MemoryAnalyzer, MemoryDashboard}
 
   @shortdoc "Run memory performance gates for CI/CD"
 

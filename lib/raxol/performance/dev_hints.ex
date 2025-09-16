@@ -171,6 +171,13 @@ defmodule Raxol.Performance.DevHints do
     {:noreply, state}
   end
 
+  def handle_cast({:telemetry_event, event, measurements, metadata}, state) do
+    state = record_operation(state, event, measurements, metadata)
+    state = check_for_hints(state, event, measurements, metadata)
+
+    {:noreply, state}
+  end
+
   @impl true
   def handle_call(:stats, _from, state) do
     now = System.monotonic_time(:millisecond)
@@ -207,14 +214,6 @@ defmodule Raxol.Performance.DevHints do
 
   def handle_telemetry_event(event, measurements, metadata, pid) do
     GenServer.cast(pid, {:telemetry_event, event, measurements, metadata})
-  end
-
-  @impl true
-  def handle_cast({:telemetry_event, event, measurements, metadata}, state) do
-    state = record_operation(state, event, measurements, metadata)
-    state = check_for_hints(state, event, measurements, metadata)
-
-    {:noreply, state}
   end
 
   # Private Functions
@@ -320,7 +319,7 @@ defmodule Raxol.Performance.DevHints do
     end
   end
 
-  defp generate_slow_operation_hint(operation, duration, threshold, metadata) do
+  defp generate_slow_operation_hint(operation, duration, threshold, _metadata) do
     duration_ms = duration / 1000
     threshold_ms = threshold / 1000
     slowdown = Float.round(duration / threshold, 1)
@@ -372,7 +371,7 @@ defmodule Raxol.Performance.DevHints do
     "#{base_message}. #{suggestion}"
   end
 
-  defp check_patterns(state, event, measurements, metadata) do
+  defp check_patterns(state, event, _measurements, _metadata) do
     # Pattern detection for common performance issues
     recent_ops = Enum.take(state.operation_history, 10)
 

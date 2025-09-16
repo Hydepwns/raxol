@@ -261,7 +261,7 @@ defmodule Raxol.Protocols.ThemeImplementations do
     def serialize(theme, :toml) do
       # Convert theme to TOML format
       # Note: This is a simplified implementation
-      data = %{
+      _data = %{
         theme: %{
           id: theme.id,
           name: theme.name,
