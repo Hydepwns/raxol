@@ -131,7 +131,9 @@ defimpl Raxol.Protocols.EventHandler, for: PID do
 
   def can_handle?(pid, event) when is_pid(pid) do
     case Process.info(pid) do
-      nil -> false
+      nil ->
+        false
+
       _ ->
         try do
           GenServer.call(pid, {:can_handle?, event}, 1000)
@@ -226,18 +228,22 @@ defimpl Raxol.Protocols.EventHandler, for: Function do
   end
 
   def can_handle?(fun, _event) when is_function(fun) do
-    true  # Functions can potentially handle any event
+    # Functions can potentially handle any event
+    true
   end
 
   def get_event_listeners(_fun) do
-    [:all]  # Functions listen to all events by default
+    # Functions listen to all events by default
+    [:all]
   end
 
   def subscribe(fun, _event_types) do
-    fun  # Functions don't maintain subscription state
+    # Functions don't maintain subscription state
+    fun
   end
 
   def unsubscribe(fun, _event_types) do
-    fun  # Functions don't maintain subscription state
+    # Functions don't maintain subscription state
+    fun
   end
 end

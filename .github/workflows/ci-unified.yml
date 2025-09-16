@@ -39,7 +39,7 @@ jobs:
       should-run-heavy: ${{ steps.check-changes.outputs.should-run-heavy }}
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0  # Need full history for change detection
       
@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -128,7 +128,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -157,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -209,7 +209,7 @@ jobs:
           --health-retries 5
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -250,7 +250,7 @@ jobs:
     if: needs.setup.outputs.should-run-heavy == 'true'
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -290,7 +290,7 @@ jobs:
     continue-on-error: true
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -318,7 +318,7 @@ jobs:
     continue-on-error: true
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -356,7 +356,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -401,7 +401,7 @@ jobs:
             platform: windows
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Install macOS dependencies
         if: matrix.os == 'macos-latest'
@@ -467,7 +467,7 @@ jobs:
     if: always() && needs.test-unit.result == 'success'
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -476,7 +476,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Download coverage artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v5
         with:
           path: cover
       
@@ -495,7 +495,7 @@ jobs:
       
       - name: Comment coverage on PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');

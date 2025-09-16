@@ -62,7 +62,9 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
 
     results = Map.put(results, :terminal, run_terminal_memory_benchmarks(opts))
     results = Map.put(results, :buffer, run_buffer_memory_benchmarks(opts))
-    results = Map.put(results, :simulation, run_simulation_memory_benchmarks(opts))
+
+    results =
+      Map.put(results, :simulation, run_simulation_memory_benchmarks(opts))
 
     if opts[:profile] do
       run_memory_profiling_integration(results)
@@ -84,28 +86,33 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
       # Large Terminal Sizes - Tests memory scaling
       "large_terminal_1000x1000" => fn ->
         # Allocate a very large terminal buffer
-        _cells = for _row <- 1..1000, _col <- 1..1000 do
-          %{char: " ", fg: :white, bg: :black, style: %{}}
-        end
+        _cells =
+          for _row <- 1..1000, _col <- 1..1000 do
+            %{char: " ", fg: :white, bg: :black, style: %{}}
+          end
+
         :ok
       end,
-
       "huge_terminal_2000x2000" => fn ->
         # Massive terminal allocation
-        _cells = for _row <- 1..2000, _col <- 1..2000 do
-          %{char: "█", fg: :red, bg: :blue, style: %{bold: true}}
-        end
+        _cells =
+          for _row <- 1..2000, _col <- 1..2000 do
+            %{char: "█", fg: :red, bg: :blue, style: %{bold: true}}
+          end
+
         :ok
       end,
 
       # Multiple Concurrent Buffers
       "multiple_terminal_buffers" => fn ->
         # Simulate multiple terminal sessions
-        _buffers = for _i <- 1..10 do
-          for _row <- 1..100, _col <- 1..100 do
-            %{char: "X", fg: :green, bg: :black, style: %{}}
+        _buffers =
+          for _i <- 1..10 do
+            for _row <- 1..100, _col <- 1..100 do
+              %{char: "X", fg: :green, bg: :black, style: %{}}
+            end
           end
-        end
+
         :ok
       end,
 
@@ -126,12 +133,16 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
       # Scrollback Buffer Memory
       "scrollback_buffer_large" => fn ->
         # Simulate large scrollback history
-        _scrollback = for line <- 1..10_000 do
-          line_content = Enum.map(1..120, fn col ->
-            %{char: "#{rem(col, 10)}", fg: :white, bg: :black}
-          end)
-          {line, line_content}
-        end
+        _scrollback =
+          for line <- 1..10_000 do
+            line_content =
+              Enum.map(1..120, fn col ->
+                %{char: "#{rem(col, 10)}", fg: :white, bg: :black}
+              end)
+
+            {line, line_content}
+          end
+
         :ok
       end
     }
@@ -152,25 +163,28 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
       # Intensive Write Operations
       "buffer_heavy_writes" => fn ->
         # Simulate heavy writing to buffer
-        buffer_content = for line <- 1..1000 do
-          for col <- 1..200 do
-            %{
-              char: "#{rem(line + col, 10)}",
-              fg: :cyan,
-              bg: :black,
-              style: %{italic: true}
-            }
+        buffer_content =
+          for line <- 1..1000 do
+            for col <- 1..200 do
+              %{
+                char: "#{rem(line + col, 10)}",
+                fg: :cyan,
+                bg: :black,
+                style: %{italic: true}
+              }
+            end
           end
-        end
 
         # Add metadata for each line
-        _buffer_with_metadata = Enum.map(buffer_content, fn line ->
-          %{
-            content: line,
-            timestamp: System.monotonic_time(),
-            metadata: %{dirty: true, rendered: false}
-          }
-        end)
+        _buffer_with_metadata =
+          Enum.map(buffer_content, fn line ->
+            %{
+              content: line,
+              timestamp: System.monotonic_time(),
+              metadata: %{dirty: true, rendered: false}
+            }
+          end)
+
         :ok
       end,
 
@@ -179,31 +193,37 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
         # Test with complex Unicode characters (higher memory per char)
         unicode_chars = ["🌟", "🚀", "💎", "🔥", "⚡", "🎯", "🌈", "🎨", "🎭", "🎪"]
 
-        _unicode_buffer = for _row <- 1..500, _col <- 1..100 do
-          char = Enum.random(unicode_chars)
-          %{
-            char: char,
-            fg: Enum.random([:red, :green, :blue, :yellow, :magenta]),
-            bg: :black,
-            style: %{bold: true, underline: true},
-            unicode_data: %{
-              codepoint: String.to_charlist(char) |> hd(),
-              width: 2,  # Wide characters
-              combining: false
+        _unicode_buffer =
+          for _row <- 1..500, _col <- 1..100 do
+            char = Enum.random(unicode_chars)
+
+            %{
+              char: char,
+              fg: Enum.random([:red, :green, :blue, :yellow, :magenta]),
+              bg: :black,
+              style: %{bold: true, underline: true},
+              unicode_data: %{
+                codepoint: String.to_charlist(char) |> hd(),
+                # Wide characters
+                width: 2,
+                combining: false
+              }
             }
-          }
-        end
+          end
+
         :ok
       end,
 
       # Memory Fragmentation Test
       "buffer_fragmentation" => fn ->
         # Create many small allocations to test fragmentation
-        _fragments = for _i <- 1..10_000 do
-          # Small random-sized allocations
-          size = Enum.random(10..100)
-          Enum.map(1..size, fn j -> "Fragment #{j}" end)
-        end
+        _fragments =
+          for _i <- 1..10_000 do
+            # Small random-sized allocations
+            size = Enum.random(10..100)
+            Enum.map(1..size, fn j -> "Fragment #{j}" end)
+          end
+
         :ok
       end,
 
@@ -213,17 +233,19 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
         width = 800
         height = 600
 
-        _image_data = for _y <- 1..height do
-          for _x <- 1..width do
-            %{
-              r: Enum.random(0..255),
-              g: Enum.random(0..255),
-              b: Enum.random(0..255),
-              a: 255,
-              palette_index: Enum.random(0..255)
-            }
+        _image_data =
+          for _y <- 1..height do
+            for _x <- 1..width do
+              %{
+                r: Enum.random(0..255),
+                g: Enum.random(0..255),
+                b: Enum.random(0..255),
+                a: 255,
+                palette_index: Enum.random(0..255)
+              }
+            end
           end
-        end
+
         :ok
       end
     }
@@ -248,21 +270,23 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
         line_length = 120
 
         # File content with syntax highlighting data
-        _file_buffer = for line_num <- 1..file_lines do
-          line_content = generate_code_line(line_num, line_length)
-          syntax_highlighting = generate_syntax_data(line_content)
+        _file_buffer =
+          for line_num <- 1..file_lines do
+            line_content = generate_code_line(line_num, line_length)
+            syntax_highlighting = generate_syntax_data(line_content)
 
-          %{
-            line_number: line_num,
-            content: line_content,
-            highlighting: syntax_highlighting,
-            metadata: %{
-              modified: Enum.random([true, false]),
-              dirty: false,
-              folded: line_num > 100 && rem(line_num, 50) == 0
+            %{
+              line_number: line_num,
+              content: line_content,
+              highlighting: syntax_highlighting,
+              metadata: %{
+                modified: Enum.random([true, false]),
+                dirty: false,
+                folded: line_num > 100 && rem(line_num, 50) == 0
+              }
             }
-          }
-        end
+          end
+
         :ok
       end,
 
@@ -271,23 +295,25 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
         # Simulate continuous log output
         log_entries = 20_000
 
-        _log_buffer = for i <- 1..log_entries do
-          timestamp = System.system_time(:millisecond)
-          level = Enum.random([:debug, :info, :warn, :error])
-          message = generate_log_message(i, level)
+        _log_buffer =
+          for i <- 1..log_entries do
+            timestamp = System.system_time(:millisecond)
+            level = Enum.random([:debug, :info, :warn, :error])
+            message = generate_log_message(i, level)
 
-          %{
-            timestamp: timestamp,
-            level: level,
-            message: message,
-            formatted: format_log_entry(timestamp, level, message),
-            metadata: %{
-              source: "application.#{rem(i, 10)}",
-              thread: "thread-#{rem(i, 4)}",
-              correlation_id: generate_uuid()
+            %{
+              timestamp: timestamp,
+              level: level,
+              message: message,
+              formatted: format_log_entry(timestamp, level, message),
+              metadata: %{
+                source: "application.#{rem(i, 10)}",
+                thread: "thread-#{rem(i, 4)}",
+                correlation_id: generate_uuid()
+              }
             }
-          }
-        end
+          end
+
         :ok
       end,
 
@@ -308,6 +334,7 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
             last_command_duration: 1234
           }
         }
+
         :ok
       end,
 
@@ -316,16 +343,19 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
         # Simulate tmux/screen with multiple panes
         pane_count = 8
 
-        _panes = for pane_id <- 1..pane_count do
-          %{
-            id: pane_id,
-            dimensions: {80, 24},
-            buffer: generate_pane_buffer(pane_id),
-            scrollback: generate_scrollback(pane_id),
-            application: Enum.random([:vim, :htop, :tail, :ssh, :git, :shell]),
-            active: pane_id == 1
-          }
-        end
+        _panes =
+          for pane_id <- 1..pane_count do
+            %{
+              id: pane_id,
+              dimensions: {80, 24},
+              buffer: generate_pane_buffer(pane_id),
+              scrollback: generate_scrollback(pane_id),
+              application:
+                Enum.random([:vim, :htop, :tail, :ssh, :git, :shell]),
+              active: pane_id == 1
+            }
+          end
+
         :ok
       end
     }
@@ -366,10 +396,11 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
     ]
 
     if opts[:profile] do
-      base_config ++ [
-        pre_check: true,
-        save: [path: "bench/snapshots/memory_#{timestamp()}.benchee"]
-      ]
+      base_config ++
+        [
+          pre_check: true,
+          save: [path: "bench/snapshots/memory_#{timestamp()}.benchee"]
+        ]
     else
       base_config
     end
@@ -377,31 +408,59 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
 
   defp generate_code_line(line_num, length) do
     case rem(line_num, 10) do
-      0 -> String.pad_trailing("def function_#{line_num}(param) do", length)
-      1 -> String.pad_trailing("  # Comment for line #{line_num}", length)
-      2 -> String.pad_trailing("  @spec some_function(integer()) :: {:ok, term()}", length)
-      3 -> String.pad_trailing("  result = expensive_operation(param)", length)
-      4 -> String.pad_trailing("  Logger.info(\"Processing #{line_num}\")", length)
-      5 -> String.pad_trailing("  {:ok, result}", length)
-      6 -> String.pad_trailing("end", length)
-      7 -> ""
-      8 -> String.pad_trailing("# Module documentation", length)
-      9 -> String.pad_trailing("defmodule MyModule.SubModule#{line_num} do", length)
+      0 ->
+        String.pad_trailing("def function_#{line_num}(param) do", length)
+
+      1 ->
+        String.pad_trailing("  # Comment for line #{line_num}", length)
+
+      2 ->
+        String.pad_trailing(
+          "  @spec some_function(integer()) :: {:ok, term()}",
+          length
+        )
+
+      3 ->
+        String.pad_trailing("  result = expensive_operation(param)", length)
+
+      4 ->
+        String.pad_trailing("  Logger.info(\"Processing #{line_num}\")", length)
+
+      5 ->
+        String.pad_trailing("  {:ok, result}", length)
+
+      6 ->
+        String.pad_trailing("end", length)
+
+      7 ->
+        ""
+
+      8 ->
+        String.pad_trailing("# Module documentation", length)
+
+      9 ->
+        String.pad_trailing(
+          "defmodule MyModule.SubModule#{line_num} do",
+          length
+        )
     end
   end
 
   defp generate_syntax_data(line_content) do
     # Simulate syntax highlighting tokens
     words = String.split(line_content)
+
     Enum.map(words, fn word ->
-      color = case word do
-        "def" -> :magenta
-        "end" -> :magenta
-        word when word in ["Logger", "String", "Enum"] -> :blue
-        "@" <> _ -> :cyan
-        "#" <> _ -> :green
-        _ -> :white
-      end
+      color =
+        case word do
+          "def" -> :magenta
+          "end" -> :magenta
+          word when word in ["Logger", "String", "Enum"] -> :blue
+          "@" <> _ -> :cyan
+          "#" <> _ -> :green
+          _ -> :white
+        end
+
       %{text: word, color: color, style: []}
     end)
   end
@@ -417,32 +476,47 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
     ]
 
     base_message = Enum.random(templates)
+
     if level == :error do
-      base_message <> " | Error: #{Enum.random(["timeout", "connection_refused", "invalid_input"])}"
+      base_message <>
+        " | Error: #{Enum.random(["timeout", "connection_refused", "invalid_input"])}"
     else
       base_message
     end
   end
 
   defp format_log_entry(timestamp, level, message) do
-    formatted_time = DateTime.from_unix!(timestamp, :millisecond) |> DateTime.to_iso8601()
+    formatted_time =
+      DateTime.from_unix!(timestamp, :millisecond) |> DateTime.to_iso8601()
+
     level_str = String.upcase(to_string(level))
     "[#{formatted_time}] #{level_str}: #{message}"
   end
 
   defp generate_command_history(count) do
     commands = [
-      "ls -la", "cd /usr/local/bin", "git status", "git add .", "git commit -m 'Update'",
-      "mix test", "mix compile", "docker ps", "docker logs -f container_name",
-      "tail -f /var/log/application.log", "htop", "ps aux | grep elixir",
-      "find . -name '*.ex' | xargs grep -l 'defmodule'", "cat config.exs"
+      "ls -la",
+      "cd /usr/local/bin",
+      "git status",
+      "git add .",
+      "git commit -m 'Update'",
+      "mix test",
+      "mix compile",
+      "docker ps",
+      "docker logs -f container_name",
+      "tail -f /var/log/application.log",
+      "htop",
+      "ps aux | grep elixir",
+      "find . -name '*.ex' | xargs grep -l 'defmodule'",
+      "cat config.exs"
     ]
 
     for i <- 1..count do
       %{
         command: Enum.random(commands),
         timestamp: System.system_time(:millisecond) - (count - i) * 1000,
-        exit_code: Enum.random([0, 0, 0, 1]), # Most commands succeed
+        # Most commands succeed
+        exit_code: Enum.random([0, 0, 0, 1]),
         duration: Enum.random(10..5000)
       }
     end
@@ -490,8 +564,11 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
     # Simulate vim interface
     for line <- 1..24 do
       case line do
-        24 -> "-- INSERT --                                    100%    Col 42"
-        _ -> String.pad_trailing("  #{line}  | Code line #{line} with syntax", 80)
+        24 ->
+          "-- INSERT --                                    100%    Col 42"
+
+        _ ->
+          String.pad_trailing("  #{line}  | Code line #{line} with syntax", 80)
       end
     end
   end
@@ -500,10 +577,17 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
     # Simulate htop output
     for line <- 1..24 do
       case line do
-        1 -> "  CPU[||||||||||                         45.2%]"
-        2 -> "  Mem[||||||||||||||||               2.1G/8.0G]"
-        3 -> "  Swp[                                  0K/2.0G]"
-        _ -> "#{String.pad_leading("#{line * 100}", 5)} user    20   0  #{Enum.random(100..999)}M  #{Enum.random(10..99)}M   #{Enum.random(1..10)}M S   0.7   1.2   0:#{Enum.random(10..59)}.#{Enum.random(10..99)} beam.smp"
+        1 ->
+          "  CPU[||||||||||                         45.2%]"
+
+        2 ->
+          "  Mem[||||||||||||||||               2.1G/8.0G]"
+
+        3 ->
+          "  Swp[                                  0K/2.0G]"
+
+        _ ->
+          "#{String.pad_leading("#{line * 100}", 5)} user    20   0  #{Enum.random(100..999)}M  #{Enum.random(10..99)}M   #{Enum.random(1..10)}M S   0.7   1.2   0:#{Enum.random(10..59)}.#{Enum.random(10..99)} beam.smp"
       end
     end
   end
@@ -530,6 +614,7 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
   defp generate_scrollback(pane_id) do
     # Generate scrollback history for pane
     history_size = Enum.random(100..1000)
+
     for i <- 1..history_size do
       "Pane #{pane_id} history line #{i} - #{DateTime.utc_now() |> DateTime.to_iso8601()}"
     end
@@ -547,9 +632,19 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
 
   defp print_memory_analysis(results) do
     Mix.shell().info("\n=== Memory Benchmark Analysis ===")
-    Mix.shell().info("Terminal component benchmarks: #{map_size(results[:terminal] || %{})} scenarios")
-    Mix.shell().info("Buffer operation benchmarks: #{map_size(results[:buffer] || %{})} scenarios")
-    Mix.shell().info("Simulation benchmarks: #{map_size(results[:simulation] || %{})} scenarios")
+
+    Mix.shell().info(
+      "Terminal component benchmarks: #{map_size(results[:terminal] || %{})} scenarios"
+    )
+
+    Mix.shell().info(
+      "Buffer operation benchmarks: #{map_size(results[:buffer] || %{})} scenarios"
+    )
+
+    Mix.shell().info(
+      "Simulation benchmarks: #{map_size(results[:simulation] || %{})} scenarios"
+    )
+
     Mix.shell().info("Results saved to: bench/output/memory_benchmarks.html")
   end
 
@@ -561,7 +656,10 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
     # Simple UUID-like string generator
     :crypto.strong_rand_bytes(16)
     |> Base.encode16(case: :lower)
-    |> String.replace(~r/(.{8})(.{4})(.{4})(.{4})(.{12})/, "\\1-\\2-\\3-\\4-\\5")
+    |> String.replace(
+      ~r/(.{8})(.{4})(.{4})(.{4})(.{12})/,
+      "\\1-\\2-\\3-\\4-\\5"
+    )
   end
 
   defp print_help do

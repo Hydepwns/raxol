@@ -1,0 +1,500 @@
+defmodule Mix.Tasks.Raxol.Gen.Specs do
+  @moduledoc """
+  Automatically generates type specs for private functions in Raxol modules.
+
+  This task analyzes private functions and generates appropriate @spec annotations
+  based on function signatures, pattern matching, and usage patterns.
+
+  ## Usage
+
+      # Generate specs for a specific file
+      mix raxol.gen.specs lib/raxol/terminal/color/true_color.ex
+
+      # Generate specs for all files in a directory
+      mix raxol.gen.specs lib/raxol/terminal --recursive
+
+      # Dry run to see what would be generated
+      mix raxol.gen.specs lib/raxol/terminal/color/true_color.ex --dry-run
+
+      # Generate only for functions with certain patterns
+      mix raxol.gen.specs lib/raxol --filter validate_
+
+  ## Options
+
+    * `--dry-run` - Show what would be generated without modifying files
+    * `--recursive` - Process all .ex files in directory recursively
+    * `--filter` - Only generate specs for functions matching pattern
+    * `--interactive` - Prompt for confirmation on each spec
+    * `--backup` - Create backup files before modifying
+  """
+
+  use Mix.Task
+  require Logger
+
+  @shortdoc "Generate type specs for private functions"
+
+  @type spec_info :: %{
+          function: atom(),
+          arity: non_neg_integer(),
+          args: [String.t()],
+          return_type: String.t(),
+          line: non_neg_integer()
+        }
+
+  @impl Mix.Task
+  def run(args) do
+    {opts, paths, _} =
+      OptionParser.parse(args,
+        switches: [
+          dry_run: :boolean,
+          recursive: :boolean,
+          filter: :string,
+          interactive: :boolean,
+          backup: :boolean
+        ]
+      )
+
+    Mix.Task.run("compile")
+
+    case paths do
+      [] ->
+        Mix.shell().error("Please provide a file or directory path")
+        Mix.shell().info("\nUsage: mix raxol.gen.specs <path> [options]")
+
+      paths ->
+        Enum.each(paths, &process_path(&1, opts))
+    end
+  end
+
+  defp process_path(path, opts) do
+    cond do
+      File.regular?(path) and Path.extname(path) == ".ex" ->
+        process_file(path, opts)
+
+      File.dir?(path) and opts[:recursive] ->
+        path
+        |> find_ex_files()
+        |> Enum.each(&process_file(&1, opts))
+
+      File.dir?(path) ->
+        Mix.shell().info(
+          "Directory provided but --recursive not set. Use --recursive to process all files."
+        )
+
+      true ->
+        Mix.shell().error("Path not found or not an Elixir file: #{path}")
+    end
+  end
+
+  defp find_ex_files(dir) do
+    Path.wildcard(Path.join(dir, "**/*.ex"))
+  end
+
+  defp process_file(file_path, opts) do
+    Mix.shell().info("Processing: #{file_path}")
+
+    with {:ok, content} <- File.read(file_path),
+         {:ok, ast} <- Code.string_to_quoted(content),
+         specs <- analyze_ast(ast, opts),
+         :ok <- maybe_backup_file(file_path, opts),
+         updated_content <- insert_specs(content, specs, opts) do
+      if opts[:dry_run] do
+        show_dry_run_results(file_path, specs)
+      else
+        write_updated_file(file_path, updated_content, specs)
+      end
+    else
+      {:error, reason} ->
+        Mix.shell().error("Failed to process #{file_path}: #{inspect(reason)}")
+    end
+  end
+
+  defp analyze_ast(ast, opts) do
+    filter = opts[:filter]
+
+    ast
+    |> find_private_functions()
+    |> filter_functions(filter)
+    |> Enum.map(&generate_spec/1)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp find_private_functions(ast) do
+    {_, acc} =
+      Macro.prewalk(ast, [], fn
+        # Handle defp with guard clauses
+        {:defp, meta, [{:when, _, [{name, _, args} | _guards]} | _]} = node, acc
+        when is_atom(name) and is_list(args) ->
+          func_info = %{
+            name: name,
+            arity: length(args),
+            args: extract_arg_patterns(args),
+            line: meta[:line] || 0,
+            full_ast: node,
+            has_guard: true
+          }
+
+          {node, [func_info | acc]}
+
+        # Handle regular defp without guards
+        {:defp, meta, [{name, _, args} = fun | _]} = node, acc
+        when is_atom(name) and is_list(args) ->
+          func_info = %{
+            name: name,
+            arity: length(args),
+            args: extract_arg_patterns(args),
+            line: meta[:line] || 0,
+            full_ast: fun,
+            has_guard: false
+          }
+
+          {node, [func_info | acc]}
+
+        node, acc ->
+          {node, acc}
+      end)
+
+    Enum.reverse(acc)
+  end
+
+  defp extract_arg_patterns(args) do
+    Enum.map(args, &extract_arg_pattern/1)
+  end
+
+  defp extract_arg_pattern({:\\, _, [pattern, _default]}),
+    do: extract_arg_pattern(pattern)
+
+  defp extract_arg_pattern({name, _, nil}) when is_atom(name),
+    do: to_string(name)
+
+  defp extract_arg_pattern({:%, _, [struct_alias, _]}),
+    do: struct_to_type(struct_alias)
+
+  defp extract_arg_pattern({:%{}, _, _}), do: "map()"
+  defp extract_arg_pattern({name, _, _}) when is_atom(name), do: to_string(name)
+  defp extract_arg_pattern([_ | _]), do: "list()"
+  defp extract_arg_pattern(literal) when is_binary(literal), do: "String.t()"
+  defp extract_arg_pattern(literal) when is_integer(literal), do: "integer()"
+  defp extract_arg_pattern(literal) when is_float(literal), do: "float()"
+  defp extract_arg_pattern(literal) when is_boolean(literal), do: "boolean()"
+  defp extract_arg_pattern(literal) when is_atom(literal), do: "atom()"
+  defp extract_arg_pattern(_), do: "any()"
+
+  defp struct_to_type({:__MODULE__, _, _}), do: "t()"
+
+  defp struct_to_type({:__aliases__, _, parts}),
+    do: "#{Module.concat(parts)}.t()"
+
+  defp struct_to_type(_), do: "struct()"
+
+  defp filter_functions(functions, nil), do: functions
+
+  defp filter_functions(functions, filter) do
+    Enum.filter(functions, fn %{name: name} ->
+      String.contains?(to_string(name), filter)
+    end)
+  end
+
+  defp generate_spec(%{name: name} = func_info) do
+    arg_types = infer_arg_types(func_info)
+    return_type = infer_return_type(func_info)
+
+    %{
+      function: name,
+      arity: func_info.arity,
+      line: func_info.line,
+      spec: build_spec_string(name, arg_types, return_type)
+    }
+  end
+
+  defp infer_arg_types(%{args: args, name: name}) do
+    args
+    |> Enum.with_index()
+    |> Enum.map(fn {arg, index} ->
+      infer_single_arg_type(arg, name, index)
+    end)
+  end
+
+  defp infer_single_arg_type(arg, function_name, _index) do
+    cond do
+      # Common naming patterns
+      String.contains?(arg, "state") ->
+        "map()"
+
+      String.contains?(arg, "buffer") ->
+        "Raxol.Terminal.ScreenBuffer.t()"
+
+      String.contains?(arg, "color") ->
+        "Raxol.Terminal.Color.TrueColor.t()"
+
+      String.contains?(arg, "cursor") ->
+        "Raxol.Terminal.Cursor.t()"
+
+      String.contains?(arg, "opts") ->
+        "keyword()"
+
+      String.contains?(arg, "config") ->
+        "map()"
+
+      String.contains?(arg, "metadata") ->
+        "map()"
+
+      String.contains?(arg, "errors") ->
+        "[String.t()]"
+
+      String.contains?(arg, "path") ->
+        "String.t()"
+
+      String.contains?(arg, "content") ->
+        "String.t()"
+
+      String.contains?(arg, "data") ->
+        "any()"
+
+      String.contains?(arg, "id") ->
+        "String.t() | integer()"
+
+      String.contains?(arg, "name") ->
+        "String.t() | atom()"
+
+      String.contains?(arg, "value") ->
+        "any()"
+
+      String.contains?(arg, "result") ->
+        "any()"
+
+      String.contains?(arg, "reason") ->
+        "any()"
+
+      String.contains?(arg, "message") ->
+        "String.t()"
+
+      String.contains?(arg, "timeout") ->
+        "timeout()"
+
+      String.contains?(arg, "pid") ->
+        "pid()"
+
+      String.contains?(arg, "ref") ->
+        "reference()"
+
+      String.contains?(arg, "module") ->
+        "module()"
+
+      String.contains?(arg, "function") ->
+        "atom()"
+
+      String.contains?(arg, "args") ->
+        "list()"
+
+      # Position-based patterns
+      String.starts_with?(arg, "x") or String.starts_with?(arg, "y") ->
+        "non_neg_integer()"
+
+      String.starts_with?(arg, "width") or String.starts_with?(arg, "height") ->
+        "pos_integer()"
+
+      String.starts_with?(arg, "count") or String.starts_with?(arg, "size") ->
+        "non_neg_integer()"
+
+      String.starts_with?(arg, "index") ->
+        "non_neg_integer()"
+
+      String.starts_with?(arg, "is_") or String.starts_with?(arg, "has_") ->
+        "boolean()"
+
+      String.starts_with?(arg, "enable") or String.starts_with?(arg, "disable") ->
+        "boolean()"
+
+      # Validation functions
+      String.starts_with?(to_string(function_name), "validate_") ->
+        "any()"
+
+      String.starts_with?(to_string(function_name), "parse_") ->
+        "String.t()"
+
+      String.starts_with?(to_string(function_name), "format_") ->
+        "any()"
+
+      String.starts_with?(to_string(function_name), "build_") ->
+        "any()"
+
+      String.starts_with?(to_string(function_name), "create_") ->
+        "any()"
+
+      true ->
+        "any()"
+    end
+  end
+
+  defp infer_return_type(%{name: name, full_ast: ast}) do
+    cond do
+      # Function name patterns
+      String.starts_with?(to_string(name), "validate_") ->
+        "{:ok, any()} | {:error, any()}"
+
+      String.starts_with?(to_string(name), "parse_") ->
+        "{:ok, any()} | {:error, any()}"
+
+      String.starts_with?(to_string(name), "is_") ->
+        "boolean()"
+
+      String.starts_with?(to_string(name), "has_") ->
+        "boolean()"
+
+      String.starts_with?(to_string(name), "get_") ->
+        "any() | nil"
+
+      String.starts_with?(to_string(name), "set_") ->
+        "any()"
+
+      String.starts_with?(to_string(name), "update_") ->
+        "any()"
+
+      String.starts_with?(to_string(name), "handle_") ->
+        analyze_handle_return(ast)
+
+      String.starts_with?(to_string(name), "format_") ->
+        "String.t()"
+
+      String.starts_with?(to_string(name), "build_") ->
+        "any()"
+
+      String.starts_with?(to_string(name), "create_") ->
+        "any()"
+
+      String.starts_with?(to_string(name), "init_") ->
+        "any()"
+
+      String.ends_with?(to_string(name), "?") ->
+        "boolean()"
+
+      String.ends_with?(to_string(name), "!") ->
+        "any() | no_return()"
+
+      true ->
+        analyze_function_body(ast)
+    end
+  end
+
+  defp analyze_handle_return(_ast) do
+    # Common handle_* return patterns
+    "{:ok, any()} | {:error, any()} | {:reply, any(), any()} | {:noreply, any()}"
+  end
+
+  defp analyze_function_body(ast) do
+    # Simple heuristic - look for common return patterns
+    case ast do
+      {:ok, _} -> "{:ok, any()}"
+      {:error, _} -> "{:error, any()}"
+      :ok -> ":ok"
+      _ -> "any()"
+    end
+  end
+
+  defp build_spec_string(name, arg_types, return_type) do
+    args_string =
+      case arg_types do
+        [] -> "()"
+        types -> "(#{Enum.join(types, ", ")})"
+      end
+
+    "@spec #{name}#{args_string} :: #{return_type}"
+  end
+
+  defp insert_specs(content, specs, opts) do
+    lines = String.split(content, "\n")
+
+    specs
+    |> Enum.reverse()
+    |> Enum.reduce(lines, fn spec, acc ->
+      insert_spec_before_line(acc, spec, opts)
+    end)
+    |> Enum.join("\n")
+  end
+
+  defp insert_spec_before_line(
+         lines,
+         %{line: line, spec: spec} = spec_info,
+         opts
+       ) do
+    if opts[:interactive] do
+      show_spec_prompt(spec_info)
+
+      case Mix.shell().yes?("Add this spec?") do
+        true -> do_insert_spec(lines, line, spec)
+        false -> lines
+      end
+    else
+      do_insert_spec(lines, line, spec)
+    end
+  end
+
+  defp do_insert_spec(lines, line_number, spec) do
+    # Insert spec before the function definition
+    # Adjust for 0-based indexing
+    index = max(line_number - 1, 0)
+
+    {before_lines, [func_line | after_lines]} = Enum.split(lines, index)
+
+    # Check if there's already a spec
+    if has_spec?(before_lines) do
+      lines
+    else
+      # Get indentation from function line
+      indent = get_indentation(func_line)
+      before_lines ++ ["#{indent}#{spec}", func_line] ++ after_lines
+    end
+  end
+
+  defp has_spec?(lines) do
+    # Check if the last few lines contain a @spec
+    lines
+    |> Enum.take(-3)
+    |> Enum.any?(&String.contains?(&1, "@spec"))
+  end
+
+  defp get_indentation(line) do
+    case Regex.run(~r/^(\s*)/, line) do
+      [_, indent] -> indent
+      _ -> "  "
+    end
+  end
+
+  defp show_spec_prompt(%{function: name, arity: arity, spec: spec}) do
+    Mix.shell().info("\nFunction: #{name}/#{arity}")
+    Mix.shell().info("Generated spec: #{spec}")
+  end
+
+  defp maybe_backup_file(file_path, opts) do
+    if opts[:backup] do
+      backup_path = "#{file_path}.backup"
+      File.copy!(file_path, backup_path)
+      Mix.shell().info("Backup created: #{backup_path}")
+    end
+
+    :ok
+  end
+
+  defp show_dry_run_results(file_path, specs) do
+    Mix.shell().info(
+      "\n[DRY RUN] Would add #{length(specs)} specs to #{file_path}:"
+    )
+
+    Enum.each(specs, fn %{function: name, arity: arity, spec: spec} ->
+      Mix.shell().info("  #{name}/#{arity}: #{spec}")
+    end)
+  end
+
+  defp write_updated_file(file_path, content, specs) do
+    case File.write(file_path, content) do
+      :ok ->
+        Mix.shell().info(
+          "Successfully added #{length(specs)} specs to #{file_path}"
+        )
+
+      {:error, reason} ->
+        Mix.shell().error("Failed to write #{file_path}: #{inspect(reason)}")
+    end
+  end
+end

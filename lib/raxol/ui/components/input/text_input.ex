@@ -206,17 +206,20 @@ defmodule Raxol.UI.Components.Input.TextInput.KeyHandler do
 
   def handle_key(state, _key, _modifiers), do: {state, []}
 
+  @spec handle_enter(map()) :: {map(), list()}
   defp handle_enter(state) do
     handle_submit_callback(is_function(state.on_submit, 1), state)
     {state, []}
   end
 
+  @spec handle_submit_callback(boolean(), map()) :: :ok | any()
   defp handle_submit_callback(false, _state), do: :ok
 
   defp handle_submit_callback(true, state) do
     state.on_submit.(state.value)
   end
 
+  @spec handle_escape(map()) :: {map(), list()}
   defp handle_escape(state) do
     new_state = %{state | focused: false}
     {new_state, []}
@@ -231,6 +234,7 @@ defmodule Raxol.UI.Components.Input.TextInput.NavigationHandler do
     handle_left_movement(can_move, state)
   end
 
+  @spec handle_left_movement(boolean(), map()) :: {map(), list()}
   defp handle_left_movement(false, state), do: {state, []}
 
   defp handle_left_movement(true, state) do

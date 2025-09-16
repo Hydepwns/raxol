@@ -57,15 +57,15 @@ defmodule Raxol.Core.ConnectionPool do
   @type connection :: term()
   @type pool_name :: atom()
   @type pool_opts :: [
-    pool_size: pos_integer(),
-    max_overflow: non_neg_integer(),
-    timeout: pos_integer(),
-    idle_timeout: pos_integer(),
-    health_check_interval: pos_integer(),
-    connect_fn: (-> {:ok, connection()} | {:error, term()}),
-    disconnect_fn: (connection() -> :ok),
-    health_check_fn: (connection() -> boolean())
-  ]
+          pool_size: pos_integer(),
+          max_overflow: non_neg_integer(),
+          timeout: pos_integer(),
+          idle_timeout: pos_integer(),
+          health_check_interval: pos_integer(),
+          connect_fn: (-> {:ok, connection()} | {:error, term()}),
+          disconnect_fn: (connection() -> :ok),
+          health_check_fn: (connection() -> boolean())
+        ]
 
   # Client API
 
@@ -81,7 +81,8 @@ defmodule Raxol.Core.ConnectionPool do
   @doc """
   Executes a function with a connection from the pool.
   """
-  @spec transaction(pool_name(), (connection() -> result), timeout()) :: result when result: term()
+  @spec transaction(pool_name(), (connection() -> result), timeout()) :: result
+        when result: term()
   def transaction(pool_name, fun, timeout \\ 5000) do
     GenServer.call(pool_name, {:checkout, fun, timeout}, timeout + 100)
   end
@@ -89,7 +90,8 @@ defmodule Raxol.Core.ConnectionPool do
   @doc """
   Checks out a connection from the pool.
   """
-  @spec checkout(pool_name(), timeout()) :: {:ok, connection()} | {:error, term()}
+  @spec checkout(pool_name(), timeout()) ::
+          {:ok, connection()} | {:error, term()}
   def checkout(pool_name, timeout \\ 5000) do
     GenServer.call(pool_name, {:checkout, timeout}, timeout + 100)
   end
@@ -134,7 +136,8 @@ defmodule Raxol.Core.ConnectionPool do
       },
       connect_fn: Keyword.get(opts, :connect_fn, &default_connect/0),
       disconnect_fn: Keyword.get(opts, :disconnect_fn, &default_disconnect/1),
-      health_check_fn: Keyword.get(opts, :health_check_fn, &default_health_check/1)
+      health_check_fn:
+        Keyword.get(opts, :health_check_fn, &default_health_check/1)
     }
 
     # Initialize pool with connections
@@ -147,7 +150,8 @@ defmodule Raxol.Core.ConnectionPool do
   end
 
   @impl true
-  def handle_call({:checkout, fun, timeout}, _from, state) when is_function(fun) do
+  def handle_call({:checkout, fun, timeout}, _from, state)
+      when is_function(fun) do
     case do_checkout(state, timeout) do
       {:ok, conn, new_state} ->
         # Execute function with connection
@@ -222,7 +226,10 @@ defmodule Raxol.Core.ConnectionPool do
             [conn | acc]
 
           {:error, reason} ->
-            Logger.warning("Failed to create initial connection: #{inspect(reason)}")
+            Logger.warning(
+              "Failed to create initial connection: #{inspect(reason)}"
+            )
+
             acc
         end
       end)
@@ -236,9 +243,10 @@ defmodule Raxol.Core.ConnectionPool do
     case conns.available do
       [conn | rest] ->
         # Use available connection
-        new_conns = %{conns |
-          available: rest,
-          busy: Map.put(conns.busy, conn, :os.timestamp())
+        new_conns = %{
+          conns
+          | available: rest,
+            busy: Map.put(conns.busy, conn, :os.timestamp())
         }
 
         new_metrics = Map.update(metrics, :checkouts, 1, &(&1 + 1))
@@ -268,20 +276,27 @@ defmodule Raxol.Core.ConnectionPool do
         {{:value, waiting_from}, new_queue} ->
           # Give connection to waiting process
           GenServer.reply(waiting_from, {:ok, conn})
-          %{state |
-            connections: %{conns | busy: Map.put(new_busy, conn, :os.timestamp())},
-            waiting: new_queue,
-            metrics: new_metrics
+
+          %{
+            state
+            | connections: %{
+                conns
+                | busy: Map.put(new_busy, conn, :os.timestamp())
+              },
+              waiting: new_queue,
+              metrics: new_metrics
           }
 
         {:empty, _} ->
           # Return to available pool
-          %{state |
-            connections: %{conns |
-              available: [conn | conns.available],
-              busy: new_busy
-            },
-            metrics: new_metrics
+          %{
+            state
+            | connections: %{
+                conns
+                | available: [conn | conns.available],
+                  busy: new_busy
+              },
+              metrics: new_metrics
           }
       end
     else
@@ -292,9 +307,10 @@ defmodule Raxol.Core.ConnectionPool do
   defp create_overflow_connection(state) do
     case state.connect_fn.() do
       {:ok, conn} ->
-        new_conns = %{state.connections |
-          overflow: [conn | state.connections.overflow],
-          busy: Map.put(state.connections.busy, conn, :os.timestamp())
+        new_conns = %{
+          state.connections
+          | overflow: [conn | state.connections.overflow],
+            busy: Map.put(state.connections.busy, conn, :os.timestamp())
         }
 
         {:ok, conn, %{state | connections: new_conns}}
@@ -322,9 +338,10 @@ defmodule Raxol.Core.ConnectionPool do
 
     new_metrics = Map.update(state.metrics, :health_checks, 1, &(&1 + 1))
 
-    %{state |
-      connections: %{conns | available: healthy_available},
-      metrics: new_metrics
+    %{
+      state
+      | connections: %{conns | available: healthy_available},
+        metrics: new_metrics
     }
   end
 

@@ -62,7 +62,8 @@ defmodule Raxol.Performance.DevHints do
       plugin_load: 1000,
       plugin_execute: 500
     },
-    hint_cooldown: 30_000,  # 30 seconds between same hints
+    # 30 seconds between same hints
+    hint_cooldown: 30_000,
     max_hints_per_minute: 10,
     enable_pattern_detection: true
   }
@@ -198,11 +199,13 @@ defmodule Raxol.Performance.DevHints do
   @impl true
   def handle_info({:cleanup_history}, state) do
     # Clean up old operation history
-    cutoff = System.monotonic_time(:millisecond) - 60_000  # 1 minute ago
+    # 1 minute ago
+    cutoff = System.monotonic_time(:millisecond) - 60_000
 
-    new_history = Enum.filter(state.operation_history, fn {timestamp, _} ->
-      timestamp > cutoff
-    end)
+    new_history =
+      Enum.filter(state.operation_history, fn {timestamp, _} ->
+        timestamp > cutoff
+      end)
 
     # Schedule next cleanup
     Process.send_after(self(), {:cleanup_history}, 60_000)
@@ -228,10 +231,15 @@ defmodule Raxol.Performance.DevHints do
 
   defp record_operation(state, event, measurements, metadata) do
     timestamp = System.monotonic_time(:millisecond)
-    operation = {timestamp, %{event: event, measurements: measurements, metadata: metadata}}
 
-    new_history = [operation | state.operation_history]
-    |> Enum.take(1000)  # Keep last 1000 operations
+    operation =
+      {timestamp,
+       %{event: event, measurements: measurements, metadata: metadata}}
+
+    new_history =
+      [operation | state.operation_history]
+      # Keep last 1000 operations
+      |> Enum.take(1000)
 
     %{state | operation_history: new_history}
   end
@@ -244,7 +252,14 @@ defmodule Raxol.Performance.DevHints do
     cond do
       # Check for slow operations
       duration > threshold ->
-        hint_message = generate_slow_operation_hint(operation_key, duration, threshold, metadata)
+        hint_message =
+          generate_slow_operation_hint(
+            operation_key,
+            duration,
+            threshold,
+            metadata
+          )
+
         maybe_show_hint(state, :slow_operation, hint_message, %{
           operation: operation_key,
           duration: duration,
@@ -255,6 +270,7 @@ defmodule Raxol.Performance.DevHints do
       # Check for error patterns
       Map.get(measurements, :error, false) ->
         hint_message = generate_error_hint(operation_key, metadata)
+
         maybe_show_hint(state, :error_pattern, hint_message, %{
           operation: operation_key,
           metadata: metadata
@@ -275,7 +291,7 @@ defmodule Raxol.Performance.DevHints do
 
     # Check cooldown
     last_shown = Map.get(state.recent_hints, hint_key, 0)
-    cooldown_passed = (now - last_shown) > state.config.hint_cooldown
+    cooldown_passed = now - last_shown > state.config.hint_cooldown
 
     # Check rate limiting
     current_minute = div(now, 60_000)
@@ -296,14 +312,15 @@ defmodule Raxol.Performance.DevHints do
   end
 
   defp show_hint(category, message, metadata) do
-    category_emoji = case category do
-      :slow_operation -> "🐌"
-      :error_pattern -> "❌"
-      :memory_usage -> "🧠"
-      :pattern_detected -> "🔍"
-      :optimization -> "⚡"
-      _ -> "💡"
-    end
+    category_emoji =
+      case category do
+        :slow_operation -> "🐌"
+        :error_pattern -> "❌"
+        :memory_usage -> "🧠"
+        :pattern_detected -> "🔍"
+        :optimization -> "⚡"
+        _ -> "💡"
+      end
 
     Logger.warning([
       IO.ANSI.yellow(),
@@ -324,27 +341,29 @@ defmodule Raxol.Performance.DevHints do
     threshold_ms = threshold / 1000
     slowdown = Float.round(duration / threshold, 1)
 
-    base_message = "#{operation} took #{duration_ms}ms (#{slowdown}x slower than #{threshold_ms}ms threshold)"
+    base_message =
+      "#{operation} took #{duration_ms}ms (#{slowdown}x slower than #{threshold_ms}ms threshold)"
 
-    suggestion = case operation do
-      :terminal_parse ->
-        "Consider batching ANSI sequences or using a more efficient parser state machine."
+    suggestion =
+      case operation do
+        :terminal_parse ->
+          "Consider batching ANSI sequences or using a more efficient parser state machine."
 
-      :buffer_write ->
-        "Frequent buffer writes detected. Consider batching writes or using double buffering."
+        :buffer_write ->
+          "Frequent buffer writes detected. Consider batching writes or using double buffering."
 
-      :render_frame ->
-        "Frame rendering is slow. Check if unnecessary re-renders are happening or consider dirty region tracking."
+        :render_frame ->
+          "Frame rendering is slow. Check if unnecessary re-renders are happening or consider dirty region tracking."
 
-      :network_request ->
-        "Network request is slow. Consider connection pooling, caching, or async operations."
+        :network_request ->
+          "Network request is slow. Consider connection pooling, caching, or async operations."
 
-      :plugin_load ->
-        "Plugin loading is slow. Consider lazy loading or plugin precompilation."
+        :plugin_load ->
+          "Plugin loading is slow. Consider lazy loading or plugin precompilation."
 
-      _ ->
-        "Consider profiling this operation to identify bottlenecks."
-    end
+        _ ->
+          "Consider profiling this operation to identify bottlenecks."
+      end
 
     "#{base_message} #{suggestion}"
   end
@@ -354,19 +373,20 @@ defmodule Raxol.Performance.DevHints do
 
     base_message = "Errors detected in #{operation} (#{error_kind})"
 
-    suggestion = case operation do
-      :network_request ->
-        "Consider implementing retry logic, circuit breakers, or connection pooling."
+    suggestion =
+      case operation do
+        :network_request ->
+          "Consider implementing retry logic, circuit breakers, or connection pooling."
 
-      :terminal_parse ->
-        "Invalid ANSI sequences detected. Consider input validation or error recovery."
+        :terminal_parse ->
+          "Invalid ANSI sequences detected. Consider input validation or error recovery."
 
-      :plugin_execute ->
-        "Plugin execution errors. Check plugin compatibility and error handling."
+        :plugin_execute ->
+          "Plugin execution errors. Check plugin compatibility and error handling."
 
-      _ ->
-        "Frequent errors may indicate a need for better error handling or input validation."
-    end
+        _ ->
+          "Frequent errors may indicate a need for better error handling or input validation."
+      end
 
     "#{base_message}. #{suggestion}"
   end
@@ -378,15 +398,21 @@ defmodule Raxol.Performance.DevHints do
     cond do
       # Detect rapid repeated operations
       detect_rapid_repeats(recent_ops, event) ->
-        maybe_show_hint(state, :pattern_detected,
+        maybe_show_hint(
+          state,
+          :pattern_detected,
           "Rapid repeated #{event_to_operation_key(event)} operations detected. Consider batching or debouncing.",
-          %{pattern: :rapid_repeats, event: event})
+          %{pattern: :rapid_repeats, event: event}
+        )
 
       # Detect memory pressure patterns
       detect_memory_pressure(recent_ops) ->
-        maybe_show_hint(state, :memory_usage,
+        maybe_show_hint(
+          state,
+          :memory_usage,
           "Memory pressure detected. Consider implementing memory pooling or garbage collection optimization.",
-          %{pattern: :memory_pressure})
+          %{pattern: :memory_pressure}
+        )
 
       true ->
         state
@@ -394,32 +420,38 @@ defmodule Raxol.Performance.DevHints do
   end
 
   defp detect_rapid_repeats(recent_ops, target_event) do
-    matching_ops = Enum.count(recent_ops, fn {_timestamp, %{event: event}} ->
-      event == target_event
-    end)
+    matching_ops =
+      Enum.count(recent_ops, fn {_timestamp, %{event: event}} ->
+        event == target_event
+      end)
 
-    matching_ops >= 5  # 5 or more of the same operation in last 10
+    # 5 or more of the same operation in last 10
+    matching_ops >= 5
   end
 
   defp detect_memory_pressure(recent_ops) do
     # Simple heuristic: many buffer operations with large data
-    buffer_ops = Enum.count(recent_ops, fn {_timestamp, %{event: event, metadata: metadata}} ->
-      String.contains?(to_string(event), "buffer") and
-        Map.get(metadata, :data_size, 0) > 1000
-    end)
+    buffer_ops =
+      Enum.count(recent_ops, fn {_timestamp,
+                                 %{event: event, metadata: metadata}} ->
+        String.contains?(to_string(event), "buffer") and
+          Map.get(metadata, :data_size, 0) > 1000
+      end)
 
     buffer_ops >= 3
   end
 
   defp event_to_operation_key(event) when is_list(event) do
     event
-    |> Enum.drop(1)  # Remove :raxol prefix
+    # Remove :raxol prefix
+    |> Enum.drop(1)
     |> Enum.join("_")
     |> String.to_atom()
   end
 
   defp get_threshold(config, operation_key) do
-    Map.get(config.thresholds, operation_key, 1000)  # Default 1ms
+    # Default 1ms
+    Map.get(config.thresholds, operation_key, 1000)
   end
 
   defp hash_hint_content(message, metadata) do

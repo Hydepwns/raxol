@@ -88,8 +88,14 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
     Mix.shell().info("Memory Performance Gates")
     Mix.shell().info("========================")
     Mix.shell().info("Scenario: #{config.scenario}")
-    Mix.shell().info("Thresholds: #{if config.strict, do: "strict", else: "standard"}")
-    Mix.shell().info("Time: #{config.time}s, Memory Time: #{config.memory_time}s")
+
+    Mix.shell().info(
+      "Thresholds: #{if config.strict, do: "strict", else: "standard"}"
+    )
+
+    Mix.shell().info(
+      "Time: #{config.time}s, Memory Time: #{config.memory_time}s"
+    )
 
     try do
       results = run_memory_gates(config)
@@ -115,16 +121,21 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
       output: Keyword.get(opts, :output),
       time: Keyword.get(opts, :time, 3),
       memory_time: Keyword.get(opts, :memory_time, 2),
-      thresholds: if(Keyword.get(opts, :strict, false), do: @strict_thresholds, else: @standard_thresholds)
+      thresholds:
+        if(Keyword.get(opts, :strict, false),
+          do: @strict_thresholds,
+          else: @standard_thresholds
+        )
     }
   end
 
   defp run_memory_gates(config) do
-    scenarios = if config.scenario == "all" do
-      ["terminal_operations", "plugin_system", "load_testing"]
-    else
-      [config.scenario]
-    end
+    scenarios =
+      if config.scenario == "all" do
+        ["terminal_operations", "plugin_system", "load_testing"]
+      else
+        [config.scenario]
+      end
 
     results = %{
       timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
@@ -133,11 +144,13 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
       overall_status: :unknown
     }
 
-    scenario_results = Enum.map(scenarios, fn scenario ->
-      Mix.shell().info("\nRunning memory gates for scenario: #{scenario}")
-      scenario_result = run_scenario_gates(scenario, config)
-      {scenario, scenario_result}
-    end) |> Enum.into(%{})
+    scenario_results =
+      Enum.map(scenarios, fn scenario ->
+        Mix.shell().info("\nRunning memory gates for scenario: #{scenario}")
+        scenario_result = run_scenario_gates(scenario, config)
+        {scenario, scenario_result}
+      end)
+      |> Enum.into(%{})
 
     %{results | scenarios: scenario_results}
   end
@@ -153,14 +166,20 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
     baseline_results = load_baseline(config.baseline, scenario)
 
     # Evaluate gates
-    gates = evaluate_gates(analysis_results, benchmark_results, config.thresholds)
+    gates =
+      evaluate_gates(analysis_results, benchmark_results, config.thresholds)
 
     # Compare with baseline if available
-    baseline_comparison = if baseline_results do
-      compare_with_baseline(analysis_results, benchmark_results, baseline_results)
-    else
-      %{status: :no_baseline}
-    end
+    baseline_comparison =
+      if baseline_results do
+        compare_with_baseline(
+          analysis_results,
+          benchmark_results,
+          baseline_results
+        )
+      else
+        %{status: :no_baseline}
+      end
 
     %{
       scenario: scenario,
@@ -178,10 +197,14 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
 
     # Use the memory analysis task
     analysis_args = [
-      "--scenario", scenario,
-      "--time", to_string(config.time),
-      "--memory-time", to_string(config.memory_time),
-      "--output", "/tmp/memory_analysis_#{scenario}.json"
+      "--scenario",
+      scenario,
+      "--time",
+      to_string(config.time),
+      "--memory-time",
+      to_string(config.memory_time),
+      "--output",
+      "/tmp/memory_analysis_#{scenario}.json"
     ]
 
     try do
@@ -200,22 +223,31 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
   defp run_memory_benchmark(scenario, config) do
     Mix.shell().info("  Running memory benchmark...")
 
-    benchmark_file = case scenario do
-      "terminal_operations" -> "bench/memory/terminal_memory_benchmark.exs"
-      "plugin_system" -> "bench/memory/plugin_memory_benchmark.exs"
-      "load_testing" -> "bench/memory/load_memory_benchmark.exs"
-      _ -> nil
-    end
+    benchmark_file =
+      case scenario do
+        "terminal_operations" -> "bench/memory/terminal_memory_benchmark.exs"
+        "plugin_system" -> "bench/memory/plugin_memory_benchmark.exs"
+        "load_testing" -> "bench/memory/load_memory_benchmark.exs"
+        _ -> nil
+      end
 
     if benchmark_file && File.exists?(benchmark_file) do
       try do
         # Run the benchmark with JSON output
-        {output, _exit_code} = System.cmd("mix", [
-          "run", benchmark_file,
-          "--json",
-          "--time", to_string(config.time),
-          "--memory-time", to_string(config.memory_time)
-        ], stderr_to_stdout: true)
+        {output, _exit_code} =
+          System.cmd(
+            "mix",
+            [
+              "run",
+              benchmark_file,
+              "--json",
+              "--time",
+              to_string(config.time),
+              "--memory-time",
+              to_string(config.memory_time)
+            ],
+            stderr_to_stdout: true
+          )
 
         # Parse JSON output
         Jason.decode!(output)
@@ -229,12 +261,14 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
   end
 
   defp load_baseline(nil, _scenario), do: nil
+
   defp load_baseline(baseline_path, scenario) do
-    baseline_file = if File.dir?(baseline_path) do
-      Path.join(baseline_path, "#{scenario}_baseline.json")
-    else
-      baseline_path
-    end
+    baseline_file =
+      if File.dir?(baseline_path) do
+        Path.join(baseline_path, "#{scenario}_baseline.json")
+      else
+        baseline_path
+      end
 
     case File.read(baseline_file) do
       {:ok, content} -> Jason.decode!(content)
@@ -265,7 +299,7 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
         path: ["gc_analysis", "pressure_score"],
         threshold: thresholds.gc_pressure_score,
         unit: "score",
-        transform: &(&1),
+        transform: & &1,
         description: "GC pressure score threshold"
       }
     ]
@@ -288,9 +322,12 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
 
   defp create_gate({name, path, threshold, unit, transform, description}, data) do
     case get_memory_value(data, path, nil) do
-      nil -> nil
+      nil ->
+        nil
+
       raw_value ->
         value = transform.(raw_value)
+
         %{
           name: name,
           threshold: threshold,
@@ -304,6 +341,7 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
 
   defp create_benchmark_gate(memory, threshold) do
     value = memory / 1_000_000
+
     %{
       name: "benchmark_memory",
       threshold: threshold,
@@ -314,13 +352,18 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
     }
   end
 
-  defp gate_status(value, threshold), do: if(value <= threshold, do: :passed, else: :failed)
+  defp gate_status(value, threshold),
+    do: if(value <= threshold, do: :passed, else: :failed)
 
   defp get_memory_value(data, path, default) do
     get_in(data, path) || default
   end
 
-  defp compare_with_baseline(analysis_results, benchmark_results, baseline_results) do
+  defp compare_with_baseline(
+         analysis_results,
+         benchmark_results,
+         baseline_results
+       ) do
     comparison_specs = [
       %{
         name: "peak_memory",
@@ -330,7 +373,11 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
       %{
         name: "sustained_memory",
         current_path: ["memory_patterns", "sustained_usage"],
-        baseline_path: ["analysis_results", "memory_patterns", "sustained_usage"]
+        baseline_path: [
+          "analysis_results",
+          "memory_patterns",
+          "sustained_usage"
+        ]
       },
       %{
         name: "benchmark_memory",
@@ -360,9 +407,15 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
     }
   end
 
-  defp create_comparison({name, current_path, baseline_path}, current_data, baseline_data) do
-    with current when current > 0 <- get_memory_value(current_data, current_path, 0),
-         baseline when baseline > 0 <- get_memory_value(baseline_data, baseline_path, 0) do
+  defp create_comparison(
+         {name, current_path, baseline_path},
+         current_data,
+         baseline_data
+       ) do
+    with current when current > 0 <-
+           get_memory_value(current_data, current_path, 0),
+         baseline when baseline > 0 <-
+           get_memory_value(baseline_data, baseline_path, 0) do
       compare_memory_values(baseline, current, name)
     else
       _ -> nil
@@ -391,6 +444,7 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
           change_percent: change_percent,
           change_absolute: change_absolute
         }
+
       change_ratio < -0.10 ->
         %{
           regression?: false,
@@ -401,6 +455,7 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
           change_percent: change_percent,
           change_absolute: change_absolute
         }
+
       true ->
         %{
           regression?: false,
@@ -416,10 +471,12 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
 
   defp determine_scenario_status(gates, baseline_comparison) do
     failed_gates = Enum.count(gates, fn gate -> gate.status == :failed end)
-    regressions = case baseline_comparison.status do
-      :regressions -> length(baseline_comparison.regressions)
-      _ -> 0
-    end
+
+    regressions =
+      case baseline_comparison.status do
+        :regressions -> length(baseline_comparison.regressions)
+        _ -> 0
+      end
 
     cond do
       failed_gates > 0 -> :gate_failures
@@ -444,17 +501,20 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
 
   defp build_summary(scenarios) do
     scenarios
-    |> Enum.reduce(%{total_gates: 0, passed_gates: 0, failed_gates: 0, total_regressions: 0}, fn {_scenario, result}, acc ->
-      gate_summary = summarize_gates(result.gates)
-      regression_count = count_regressions(result.baseline_comparison)
+    |> Enum.reduce(
+      %{total_gates: 0, passed_gates: 0, failed_gates: 0, total_regressions: 0},
+      fn {_scenario, result}, acc ->
+        gate_summary = summarize_gates(result.gates)
+        regression_count = count_regressions(result.baseline_comparison)
 
-      %{
-        total_gates: acc.total_gates + gate_summary.total,
-        passed_gates: acc.passed_gates + gate_summary.passed,
-        failed_gates: acc.failed_gates + gate_summary.failed,
-        total_regressions: acc.total_regressions + regression_count
-      }
-    end)
+        %{
+          total_gates: acc.total_gates + gate_summary.total,
+          passed_gates: acc.passed_gates + gate_summary.passed,
+          failed_gates: acc.failed_gates + gate_summary.failed,
+          total_regressions: acc.total_regressions + regression_count
+        }
+      end
+    )
   end
 
   defp summarize_gates(gates) do
@@ -467,7 +527,9 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
     end)
   end
 
-  defp count_regressions(%{status: :regressions, regressions: regressions}), do: length(regressions)
+  defp count_regressions(%{status: :regressions, regressions: regressions}),
+    do: length(regressions)
+
   defp count_regressions(_), do: 0
 
   defp print_scenario_results({scenario, scenario_result}) do
@@ -481,34 +543,56 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
 
   defp print_gates(gates) do
     Mix.shell().info("Memory Gates:")
+
     Enum.each(gates, fn gate ->
       status_icon = if gate.status == :passed, do: "✅", else: "❌"
-      Mix.shell().info("  #{status_icon} #{gate.name}: #{format_value(gate.value, gate.unit)} (limit: #{format_value(gate.threshold, gate.unit)})")
+
+      Mix.shell().info(
+        "  #{status_icon} #{gate.name}: #{format_value(gate.value, gate.unit)} (limit: #{format_value(gate.threshold, gate.unit)})"
+      )
     end)
   end
 
   defp print_baseline_comparison(%{status: :no_baseline}) do
     Mix.shell().info("Baseline: No baseline provided")
   end
+
   defp print_baseline_comparison(%{status: :ok}) do
     Mix.shell().info("Baseline: ✅ No regressions detected")
   end
-  defp print_baseline_comparison(%{status: :regressions, regressions: regressions}) do
-    Mix.shell().info("Baseline: ❌ #{length(regressions)} regression(s) detected")
+
+  defp print_baseline_comparison(%{
+         status: :regressions,
+         regressions: regressions
+       }) do
+    Mix.shell().info(
+      "Baseline: ❌ #{length(regressions)} regression(s) detected"
+    )
+
     Enum.each(regressions, fn reg ->
-      Mix.shell().info("  - #{reg.metric}: +#{format_bytes(reg.change_absolute)} (+#{Float.round(reg.change_percent, 2)}%)")
+      Mix.shell().info(
+        "  - #{reg.metric}: +#{format_bytes(reg.change_absolute)} (+#{Float.round(reg.change_percent, 2)}%)"
+      )
     end)
   end
 
   defp print_scenario_status(:passed), do: Mix.shell().info("Status: ✅ PASSED")
-  defp print_scenario_status(:gate_failures), do: Mix.shell().info("Status: ❌ FAILED (gate failures)")
-  defp print_scenario_status(:regressions), do: Mix.shell().info("Status: ⚠️ FAILED (regressions)")
+
+  defp print_scenario_status(:gate_failures),
+    do: Mix.shell().info("Status: ❌ FAILED (gate failures)")
+
+  defp print_scenario_status(:regressions),
+    do: Mix.shell().info("Status: ⚠️ FAILED (regressions)")
 
   defp print_overall_summary(summary) do
     Mix.shell().info("\n" <> String.duplicate("=", 60))
     Mix.shell().info("OVERALL SUMMARY")
     Mix.shell().info(String.duplicate("=", 60))
-    Mix.shell().info("Gates: #{summary.passed_gates}/#{summary.total_gates} passed")
+
+    Mix.shell().info(
+      "Gates: #{summary.passed_gates}/#{summary.total_gates} passed"
+    )
+
     Mix.shell().info("Failed gates: #{summary.failed_gates}")
     Mix.shell().info("Regressions: #{summary.total_regressions}")
   end
@@ -518,9 +602,11 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
       summary.failed_gates > 0 ->
         Mix.shell().info("Result: ❌ FAILED - Memory gates failed")
         1
+
       summary.total_regressions > 0 ->
         Mix.shell().info("Result: ⚠️ FAILED - Memory regressions detected")
         1
+
       true ->
         Mix.shell().info("Result: ✅ PASSED - All memory gates passed")
         0

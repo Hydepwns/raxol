@@ -63,7 +63,8 @@ defmodule Raxol.Core.ErrorHandlingStandard do
           | :precondition_failed
 
   # Standard error result tuple.
-  @type error_result :: {:error, standard_error} | {:error, standard_error, map()}
+  @type error_result ::
+          {:error, standard_error} | {:error, standard_error, map()}
 
   # Standard success result tuple.
   @type ok_result(type) :: {:ok, type}
@@ -75,10 +76,16 @@ defmodule Raxol.Core.ErrorHandlingStandard do
   Converts various error formats to standard error tuples.
   """
   @spec normalize_error(term()) :: error_result()
-  def normalize_error({:error, reason}) when is_atom(reason), do: {:error, reason}
-  def normalize_error({:error, reason, context}) when is_atom(reason) and is_map(context),
-    do: {:error, reason, context}
-  def normalize_error({:error, reason}), do: {:error, :internal_error, %{original: reason}}
+  def normalize_error({:error, reason}) when is_atom(reason),
+    do: {:error, reason}
+
+  def normalize_error({:error, reason, context})
+      when is_atom(reason) and is_map(context),
+      do: {:error, reason, context}
+
+  def normalize_error({:error, reason}),
+    do: {:error, :internal_error, %{original: reason}}
+
   def normalize_error(:error), do: {:error, :internal_error}
   def normalize_error(other), do: {:error, :internal_error, %{original: other}}
 
@@ -93,7 +100,7 @@ defmodule Raxol.Core.ErrorHandlingStandard do
         fn processed -> save(processed) end
       ])
   """
-  @spec chain_operations([(() -> result(any()))]) :: result(any())
+  @spec chain_operations([(-> result(any()))]) :: result(any())
   def chain_operations(operations) do
     Enum.reduce_while(operations, {:ok, nil}, fn operation, {:ok, _prev} ->
       case operation.() do
@@ -106,7 +113,7 @@ defmodule Raxol.Core.ErrorHandlingStandard do
   @doc """
   Wraps a function that might raise an exception into a result tuple.
   """
-  @spec safe_call((() -> any()), standard_error()) :: result(any())
+  @spec safe_call((-> any()), standard_error()) :: result(any())
   def safe_call(fun, error_type \\ :internal_error) do
     try do
       {:ok, fun.()}
@@ -148,7 +155,7 @@ defmodule Raxol.Core.ErrorHandlingStandard do
   - `:max_delay` - Maximum delay in ms (default: 5000)
   - `:jitter` - Add random jitter to delay (default: true)
   """
-  @spec with_retry((() -> result(any())), keyword()) :: result(any())
+  @spec with_retry((-> result(any())), keyword()) :: result(any())
   def with_retry(fun, opts \\ []) do
     max_attempts = Keyword.get(opts, :max_attempts, 3)
     initial_delay = Keyword.get(opts, :initial_delay, 100)
@@ -169,7 +176,11 @@ defmodule Raxol.Core.ErrorHandlingStandard do
 
       _error ->
         actual_delay = calculate_delay(delay, max_delay, jitter)
-        Logger.debug("Retry attempt #{attempt}/#{max_attempts} after #{actual_delay}ms")
+
+        Logger.debug(
+          "Retry attempt #{attempt}/#{max_attempts} after #{actual_delay}ms"
+        )
+
         Process.sleep(actual_delay)
 
         next_delay = min(delay * 2, max_delay)
@@ -211,7 +222,9 @@ defmodule Raxol.Core.ErrorHandlingStandard do
 
       _ ->
         error_details = Enum.map(errors, &normalize_error/1)
-        {:error, :multiple_errors, %{errors: error_details, successful: length(oks)}}
+
+        {:error, :multiple_errors,
+         %{errors: error_details, successful: length(oks)}}
     end
   end
 
@@ -237,7 +250,8 @@ defmodule Raxol.Core.ErrorHandlingStandard do
       |> flat_map_ok(fn x -> {:ok, x * 2} end)
       # => {:ok, 10}
   """
-  @spec flat_map_ok(result(a), (a -> result(b))) :: result(b) when a: any(), b: any()
+  @spec flat_map_ok(result(a), (a -> result(b))) :: result(b)
+        when a: any(), b: any()
   def flat_map_ok({:ok, value}, fun), do: fun.(value)
   def flat_map_ok(error, _fun), do: error
 
@@ -288,7 +302,7 @@ defmodule Raxol.Core.ErrorHandlingStandard do
       end)
       # Returns {:ok, user} or {:error, :internal_error, %{...}}
   """
-  @spec ensure_result((() -> any())) :: result(any())
+  @spec ensure_result((-> any())) :: result(any())
   def ensure_result(fun) do
     case safe_call(fun) do
       {:ok, {:ok, _} = result} -> result

@@ -53,7 +53,8 @@ defmodule Mix.Tasks.Raxol.Perf do
   ]
 
   def run(args) do
-    {opts, args, _} = OptionParser.parse(args, switches: @switches, aliases: @aliases)
+    {opts, args, _} =
+      OptionParser.parse(args, switches: @switches, aliases: @aliases)
 
     if opts[:help] do
       show_help()
@@ -76,15 +77,21 @@ defmodule Mix.Tasks.Raxol.Perf do
 
     if length(analysis.memory.issues) > 0 do
       Mix.shell().info("\n⚠️  Issues detected:")
-      Enum.each(analysis.memory.issues ++ analysis.processes.issues ++ analysis.system.issues, fn issue ->
-        Mix.shell().info("  • #{issue}")
-      end)
+
+      Enum.each(
+        analysis.memory.issues ++
+          analysis.processes.issues ++ analysis.system.issues,
+        fn issue ->
+          Mix.shell().info("  • #{issue}")
+        end
+      )
     else
       Mix.shell().info("\n✅ No performance issues detected")
     end
   end
 
-  defp handle_command(["profile", module_name], opts) when is_binary(module_name) do
+  defp handle_command(["profile", module_name], opts)
+       when is_binary(module_name) do
     try do
       module = Module.concat([module_name])
 
@@ -94,10 +101,11 @@ defmodule Mix.Tasks.Raxol.Perf do
         profile_opts = build_profile_opts(opts)
 
         # Profile module functions
-        _result = Raxol.Performance.DevProfiler.profile(profile_opts, fn ->
-          # Call some representative functions if they exist
-          profile_module_functions(module)
-        end)
+        _result =
+          Raxol.Performance.DevProfiler.profile(profile_opts, fn ->
+            # Call some representative functions if they exist
+            profile_module_functions(module)
+          end)
 
         Mix.shell().info("✅ Profiling complete")
       else
@@ -118,18 +126,26 @@ defmodule Mix.Tasks.Raxol.Perf do
 
     if Raxol.Performance.DevHints.enabled?() do
       stats = Raxol.Performance.DevHints.stats()
-      Mix.shell().info("Hints system: Enabled (#{stats.total_hints} hints shown)")
+
+      Mix.shell().info(
+        "Hints system: Enabled (#{stats.total_hints} hints shown)"
+      )
+
       Mix.shell().info("Uptime: #{Float.round(stats.uptime_ms / 1000, 1)}s")
 
       if map_size(stats.hint_categories) > 0 do
         Mix.shell().info("\nHint categories:")
+
         Enum.each(stats.hint_categories, fn {category, count} ->
           Mix.shell().info("  #{category}: #{count}")
         end)
       end
     else
       Mix.shell().info("Performance hints are not enabled")
-      Mix.shell().info("Enable with: config :raxol, Raxol.Performance.DevHints, enabled: true")
+
+      Mix.shell().info(
+        "Enable with: config :raxol, Raxol.Performance.DevHints, enabled: true"
+      )
     end
   end
 
@@ -138,7 +154,11 @@ defmodule Mix.Tasks.Raxol.Perf do
     duration = Keyword.get(opts, :duration, 5) * 1000
 
     Mix.shell().info("📊 Starting continuous performance monitoring...")
-    Mix.shell().info("Interval: #{interval/1000}s, Duration: #{duration/1000}s per session")
+
+    Mix.shell().info(
+      "Interval: #{interval / 1000}s, Duration: #{duration / 1000}s per session"
+    )
+
     Mix.shell().info("Press Ctrl+C to stop")
 
     Raxol.Performance.DevProfiler.start_continuous(
@@ -156,7 +176,7 @@ defmodule Mix.Tasks.Raxol.Perf do
   defp handle_command(["memory"], opts) do
     duration = Keyword.get(opts, :duration, 10) * 1000
 
-    Mix.shell().info("🧠 Profiling memory usage for #{duration/1000}s...")
+    Mix.shell().info("🧠 Profiling memory usage for #{duration / 1000}s...")
 
     Raxol.Performance.DevProfiler.profile_memory(duration)
   end
@@ -167,7 +187,9 @@ defmodule Mix.Tasks.Raxol.Perf do
     Mix.shell().info("📋 Generating performance report...")
 
     profile_opts = build_profile_opts(opts)
-    profile_opts = Keyword.put(profile_opts, :output_format, String.to_atom(format))
+
+    profile_opts =
+      Keyword.put(profile_opts, :output_format, String.to_atom(format))
 
     # Generate comprehensive report
     Raxol.Performance.DevProfiler.profile(profile_opts, fn ->
@@ -189,29 +211,33 @@ defmodule Mix.Tasks.Raxol.Perf do
   defp build_profile_opts(opts) do
     profile_opts = []
 
-    profile_opts = if duration = opts[:duration] do
-      Keyword.put(profile_opts, :duration, duration * 1000)
-    else
-      profile_opts
-    end
+    profile_opts =
+      if duration = opts[:duration] do
+        Keyword.put(profile_opts, :duration, duration * 1000)
+      else
+        profile_opts
+      end
 
-    profile_opts = if opts[:memory] do
-      Keyword.put(profile_opts, :memory, true)
-    else
-      profile_opts
-    end
+    profile_opts =
+      if opts[:memory] do
+        Keyword.put(profile_opts, :memory, true)
+      else
+        profile_opts
+      end
 
-    profile_opts = if opts[:processes] do
-      Keyword.put(profile_opts, :processes, true)
-    else
-      profile_opts
-    end
+    profile_opts =
+      if opts[:processes] do
+        Keyword.put(profile_opts, :processes, true)
+      else
+        profile_opts
+      end
 
-    profile_opts = if opts[:call_graph] do
-      Keyword.put(profile_opts, :call_graph, true)
-    else
-      profile_opts
-    end
+    profile_opts =
+      if opts[:call_graph] do
+        Keyword.put(profile_opts, :call_graph, true)
+      else
+        profile_opts
+      end
 
     profile_opts
   end

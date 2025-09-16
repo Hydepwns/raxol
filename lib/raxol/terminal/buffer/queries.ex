@@ -85,6 +85,51 @@ defmodule Raxol.Terminal.Buffer.Queries do
   def get_cell(_, _, _), do: Cell.new()
 
   @doc """
+  Gets text at a specific position with a given length.
+  """
+  @spec get_text_at(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: String.t()
+  def get_text_at(buffer, x, y, length)
+      when x >= 0 and y >= 0 and length >= 0 do
+    case y < buffer.height do
+      true ->
+        case buffer.cells do
+          nil ->
+            ""
+
+          cells ->
+            line = Enum.at(cells, y, [])
+
+            line
+            |> Enum.slice(x, length)
+            |> Enum.map_join("", fn
+              nil -> " "
+              cell -> cell.char || " "
+            end)
+        end
+
+      false ->
+        ""
+    end
+  end
+
+  @doc """
+  Checks if the buffer has scrollback content.
+  """
+  @spec has_scrollback?(ScreenBuffer.t()) :: boolean()
+  def has_scrollback?(buffer) do
+    case Map.get(buffer, :scrollback_buffer) do
+      nil -> false
+      [] -> false
+      _ -> true
+    end
+  end
+
+  @doc """
   Gets the text content of the buffer.
   """
   @spec get_text(ScreenBuffer.t()) :: String.t()

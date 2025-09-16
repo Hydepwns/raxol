@@ -60,19 +60,17 @@ end
 defimpl Raxol.Protocols.Serializable, for: Map do
   def serialize(map, :json) do
     serializable_map = filter_serializable_for_json(map)
+
     case Jason.encode(serializable_map) do
       {:ok, json} -> json
       {:error, reason} -> {:error, reason}
     end
   end
 
-  def serialize(map, :toml) do
-    case Toml.encode(map) do
-      {:ok, toml} -> toml
-      {:error, reason} -> {:error, reason}
-    end
-  rescue
-    _ -> {:error, :toml_not_available}
+  def serialize(_map, :toml) do
+    # The toml library only supports decoding, not encoding
+    # For encoding, we would need a different library like tomlex
+    {:error, :toml_encoding_not_supported}
   end
 
   def serialize(map, :binary) do
@@ -96,8 +94,10 @@ defimpl Raxol.Protocols.Serializable, for: Map do
     Enum.into(map, %{}, fn
       {key, value} when is_function(value) ->
         {key, "#Function<#{inspect(value)}>"}
+
       {key, value} when is_map(value) ->
         {key, filter_serializable_for_json(value)}
+
       {key, value} ->
         {key, value}
     end)

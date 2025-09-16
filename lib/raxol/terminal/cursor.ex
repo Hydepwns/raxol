@@ -7,13 +7,27 @@ defmodule Raxol.Terminal.Cursor do
 
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
-  defstruct [:position, :shape, :visible]
+  defstruct [:position, :shape, :visible, :saved_position]
 
   @type t :: %__MODULE__{
           position: {non_neg_integer(), non_neg_integer()},
           shape: atom(),
-          visible: boolean()
+          visible: boolean(),
+          saved_position: {non_neg_integer(), non_neg_integer()} | nil
         }
+
+  @doc """
+  Creates a new cursor with default settings.
+  """
+  @spec new() :: t()
+  def new() do
+    %__MODULE__{
+      position: {0, 0},
+      shape: :block,
+      visible: true,
+      saved_position: nil
+    }
+  end
 
   @doc """
   Moves the cursor up by the specified number of lines.
@@ -231,5 +245,34 @@ defmodule Raxol.Terminal.Cursor do
   @spec get_style(EmulatorStruct.t()) :: map()
   def get_style(emulator) do
     emulator.cursor.style || %{}
+  end
+
+  @doc """
+  Moves the cursor relative to its current position.
+  """
+  @spec move_relative(t(), integer(), integer()) :: t()
+  def move_relative(%__MODULE__{position: {x, y}} = cursor, dx, dy) do
+    new_x = max(0, x + dx)
+    new_y = max(0, y + dy)
+    %{cursor | position: {new_x, new_y}}
+  end
+
+  @doc """
+  Saves the current cursor position.
+  """
+  @spec save(t()) :: t()
+  def save(%__MODULE__{position: position} = cursor) do
+    %{cursor | saved_position: position}
+  end
+
+  @doc """
+  Restores the cursor to a previously saved position.
+  """
+  @spec restore(t(), t()) :: t()
+  def restore(cursor, saved_cursor) do
+    case saved_cursor.saved_position do
+      nil -> cursor
+      position -> %{cursor | position: position}
+    end
   end
 end

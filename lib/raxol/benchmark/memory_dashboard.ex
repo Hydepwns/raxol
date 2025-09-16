@@ -27,7 +27,8 @@ defmodule Raxol.Benchmark.MemoryDashboard do
   @doc """
   Generates a comprehensive memory analysis dashboard.
   """
-  @spec generate_dashboard(map(), keyword()) :: {:ok, String.t()} | {:error, String.t()}
+  @spec generate_dashboard(map(), keyword()) ::
+          {:ok, String.t()} | {:error, String.t()}
   def generate_dashboard(benchmark_results, opts \\ []) do
     config = parse_dashboard_config(opts)
 
@@ -40,8 +41,16 @@ defmodule Raxol.Benchmark.MemoryDashboard do
       results: benchmark_results,
       analysis: analysis,
       recommendations: MemoryAnalyzer.generate_recommendations(analysis),
-      charts: if(config.include_charts, do: generate_chart_data(benchmark_results), else: %{}),
-      regression_data: if(config.include_regression_analysis, do: generate_regression_data(benchmark_results, opts), else: %{})
+      charts:
+        if(config.include_charts,
+          do: generate_chart_data(benchmark_results),
+          else: %{}
+        ),
+      regression_data:
+        if(config.include_regression_analysis,
+          do: generate_regression_data(benchmark_results, opts),
+          else: %{}
+        )
     }
 
     # Generate HTML dashboard
@@ -49,6 +58,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
 
     # Write dashboard file
     output_path = Path.join(config.output_dir, "memory_dashboard.html")
+
     case File.write(output_path, html_content) do
       :ok -> {:ok, output_path}
       {:error, reason} -> {:error, "Failed to write dashboard: #{reason}"}
@@ -65,7 +75,8 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     trend_data = %{
       memory_trends: analyze_memory_trends(historical_results),
       regression_points: detect_regression_points(historical_results),
-      optimization_opportunities: identify_optimization_opportunities(historical_results),
+      optimization_opportunities:
+        identify_optimization_opportunities(historical_results),
       forecast: forecast_memory_usage(historical_results, window_size)
     }
 
@@ -104,6 +115,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     scenarios
     |> Enum.map(fn {name, data} ->
       memory_values = extract_memory_values(data)
+
       %{
         scenario: name,
         min: Enum.min(memory_values, fn -> 0 end),
@@ -120,6 +132,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     scenarios
     |> Enum.map(fn {name, data} ->
       analysis = MemoryAnalyzer.analyze_memory_patterns(%{name => data})
+
       %{
         scenario: name,
         peak_memory: analysis.peak_memory,
@@ -134,11 +147,17 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     scenarios = extract_scenarios(benchmark_results)
 
     # Create a heatmap of memory efficiency across different dimensions
-    dimensions = [:allocation_speed, :deallocation_speed, :fragmentation, :gc_pressure]
+    dimensions = [
+      :allocation_speed,
+      :deallocation_speed,
+      :fragmentation,
+      :gc_pressure
+    ]
 
     scenarios
     |> Enum.map(fn {name, data} ->
       efficiency_scores = calculate_efficiency_scores(data, dimensions)
+
       %{
         scenario: name,
         scores: efficiency_scores
@@ -156,8 +175,10 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     if baseline do
       %{
         baseline_comparison: compare_with_baseline(benchmark_results, baseline),
-        regression_severity: calculate_regression_severity(benchmark_results, baseline),
-        affected_scenarios: identify_affected_scenarios(benchmark_results, baseline)
+        regression_severity:
+          calculate_regression_severity(benchmark_results, baseline),
+        affected_scenarios:
+          identify_affected_scenarios(benchmark_results, baseline)
       }
     else
       %{}
@@ -169,6 +190,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     |> Enum.with_index()
     |> Enum.map(fn {result, index} ->
       analysis = MemoryAnalyzer.analyze_memory_patterns(result)
+
       %{
         run_number: index + 1,
         peak_memory: analysis.peak_memory,
@@ -186,7 +208,8 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     |> Enum.with_index()
     |> Enum.filter(fn {[prev, curr], _index} ->
       # Detect significant increases in memory usage
-      curr.peak_memory > prev.peak_memory * 1.1  # 10% increase
+      # 10% increase
+      curr.peak_memory > prev.peak_memory * 1.1
     end)
     |> Enum.map(fn {[_prev, curr], index} ->
       %{
@@ -362,12 +385,15 @@ defmodule Raxol.Benchmark.MemoryDashboard do
   defp render_analysis_section(dashboard_data) do
     analysis = dashboard_data.analysis
 
-    regression_status = if analysis.regression_detected, do: "⚠️ Detected", else: "✅ None"
-    fragmentation_level = cond do
-      analysis.fragmentation_ratio > 0.5 -> "🔴 High"
-      analysis.fragmentation_ratio > 0.2 -> "🟡 Moderate"
-      true -> "🟢 Low"
-    end
+    regression_status =
+      if analysis.regression_detected, do: "⚠️ Detected", else: "✅ None"
+
+    fragmentation_level =
+      cond do
+        analysis.fragmentation_ratio > 0.5 -> "🔴 High"
+        analysis.fragmentation_ratio > 0.2 -> "🟡 Moderate"
+        true -> "🟢 Low"
+      end
 
     """
     <section class="analysis-section">
@@ -416,8 +442,10 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     %{
       output_dir: Keyword.get(opts, :output_dir, "bench/output"),
       include_charts: Keyword.get(opts, :include_charts, true),
-      include_regression_analysis: Keyword.get(opts, :include_regression_analysis, true),
-      include_recommendations: Keyword.get(opts, :include_recommendations, true),
+      include_regression_analysis:
+        Keyword.get(opts, :include_regression_analysis, true),
+      include_recommendations:
+        Keyword.get(opts, :include_recommendations, true),
       template: Keyword.get(opts, :template, :comprehensive)
     }
   end
@@ -441,6 +469,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
 
   defp extract_memory_samples(data) do
     memory_values = extract_memory_values(data)
+
     memory_values
     |> Enum.with_index()
     |> Enum.map(fn {value, index} -> %{x: index, y: value} end)
@@ -451,11 +480,13 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     length = length(sorted)
 
     if rem(length, 2) == 0 do
-      (Enum.at(sorted, div(length, 2) - 1) + Enum.at(sorted, div(length, 2))) / 2
+      (Enum.at(sorted, div(length, 2) - 1) + Enum.at(sorted, div(length, 2))) /
+        2
     else
       Enum.at(sorted, div(length, 2))
     end
   end
+
   defp calculate_median(_), do: 0
 
   defp calculate_percentiles(values) when length(values) > 0 do
@@ -471,13 +502,15 @@ defmodule Raxol.Benchmark.MemoryDashboard do
       p99: Enum.at(sorted, trunc(length * 0.99))
     }
   end
+
   defp calculate_percentiles(_), do: %{}
 
   defp calculate_efficiency_scores(_data, dimensions) do
     # Mock efficiency calculation for different dimensions
     dimensions
     |> Enum.map(fn dimension ->
-      {dimension, :rand.uniform()}  # Random for demonstration
+      # Random for demonstration
+      {dimension, :rand.uniform()}
     end)
     |> Enum.into(%{})
   end
@@ -504,6 +537,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
   defp calculate_severity(_index), do: :medium
 
   defp is_increasing_trend(values) when length(values) < 3, do: false
+
   defp is_increasing_trend(values) do
     differences =
       values
@@ -521,6 +555,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     trend = last - second_last
     last + trend
   end
+
   defp predict_next_value(_), do: nil
 
   defp determine_trend_direction(values) do
@@ -545,27 +580,34 @@ defmodule Raxol.Benchmark.MemoryDashboard do
       0.0
     end
   end
+
   defp calculate_prediction_confidence(_), do: 0.0
 
   defp calculate_variance(values) when length(values) > 1 do
     mean = Enum.sum(values) / length(values)
+
     sum_squared_diffs =
       values
       |> Enum.map(fn val -> (val - mean) * (val - mean) end)
       |> Enum.sum()
+
     sum_squared_diffs / length(values)
   end
+
   defp calculate_variance(_), do: 0.0
 
   defp format_bytes(bytes) when bytes >= 1_000_000_000 do
     "#{Float.round(bytes / 1_000_000_000, 2)} GB"
   end
+
   defp format_bytes(bytes) when bytes >= 1_000_000 do
     "#{Float.round(bytes / 1_000_000, 2)} MB"
   end
+
   defp format_bytes(bytes) when bytes >= 1_000 do
     "#{Float.round(bytes / 1_000, 2)} KB"
   end
+
   defp format_bytes(bytes) do
     "#{bytes} B"
   end

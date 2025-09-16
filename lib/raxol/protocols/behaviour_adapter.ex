@@ -39,7 +39,13 @@ defmodule Raxol.Protocols.BehaviourAdapter do
               if function_exported?(__MODULE__, :get_metadata, 1) do
                 apply(__MODULE__, :get_metadata, [data])
               else
-                %{width: 80, height: 24, colors: true, scrollable: false, interactive: false}
+                %{
+                  width: 80,
+                  height: 24,
+                  colors: true,
+                  scrollable: false,
+                  interactive: false
+                }
               end
             end
           end
@@ -132,18 +138,26 @@ defmodule Raxol.Protocols.BehaviourAdapter do
       if function_exported?(module.__struct__, :get_metadata, 1) do
         apply(module.__struct__, :get_metadata, [module])
       else
-        %{width: 80, height: 24, colors: true, scrollable: false, interactive: false}
+        %{
+          width: 80,
+          height: 24,
+          colors: true,
+          scrollable: false,
+          interactive: false
+        }
       end
     end
   end
 
   defimpl Raxol.Protocols.BufferOperations, for: BufferWrapper do
     def write(%{module: module}, {x, y}, data, style) do
-      updated = apply(module.__struct__, :write_char, [module, x, y, data, style])
+      updated =
+        apply(module.__struct__, :write_char, [module, x, y, data, style])
+
       %{module: updated}
     end
 
-    def read(%{module: module}, {x, y}, length) do
+    def read(%{module: module}, {x, y}, _length) do
       apply(module.__struct__, :get_char, [module, x, y])
     end
 
@@ -157,10 +171,12 @@ defmodule Raxol.Protocols.BehaviourAdapter do
     end
 
     def scroll(%{module: module}, direction, lines) do
-      updated = case direction do
-        :up -> apply(module.__struct__, :scroll_up, [module, lines])
-        :down -> apply(module.__struct__, :scroll_down, [module, lines])
-      end
+      updated =
+        case direction do
+          :up -> apply(module.__struct__, :scroll_up, [module, lines])
+          :down -> apply(module.__struct__, :scroll_down, [module, lines])
+        end
+
       %{module: updated}
     end
   end

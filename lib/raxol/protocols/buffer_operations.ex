@@ -24,7 +24,12 @@ defprotocol Raxol.Protocols.BufferOperations do
   """
 
   @type position :: {non_neg_integer(), non_neg_integer()}
-  @type region :: :all | :line | :screen | {:rect, position, position} | {:lines, non_neg_integer(), non_neg_integer()}
+  @type region ::
+          :all
+          | :line
+          | :screen
+          | {:rect, position, position}
+          | {:lines, non_neg_integer(), non_neg_integer()}
   @type style :: map() | nil
 
   @doc """

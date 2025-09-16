@@ -38,6 +38,21 @@ defmodule Raxol.Terminal.Buffer.Content do
   end
 
   @doc """
+  Writes data at the specified position with the given style.
+  Convenience function that delegates to write_string.
+  """
+  @spec write_at(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t(),
+          TextFormatting.text_style() | map()
+        ) :: ScreenBuffer.t()
+  def write_at(buffer, x, y, data, style) when x >= 0 and y >= 0 do
+    write_string(buffer, x, y, data, style)
+  end
+
+  @doc """
   Writes a string starting at the specified position.
   """
   @spec write_string(

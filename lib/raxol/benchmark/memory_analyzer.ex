@@ -10,7 +10,6 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
   - Cross-platform memory behavior
   """
 
-
   @type analysis_result :: %{
           peak_memory: non_neg_integer(),
           sustained_memory: non_neg_integer(),
@@ -21,7 +20,8 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
           platform_differences: map()
         }
 
-  @type memory_pattern :: :linear | :exponential | :logarithmic | :constant | :irregular
+  @type memory_pattern ::
+          :linear | :exponential | :logarithmic | :constant | :irregular
 
   # =============================================================================
   # Public API
@@ -39,7 +39,8 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
       fragmentation_ratio: analyze_memory_fragmentation(benchmark_results),
       efficiency_score: calculate_efficiency_score(benchmark_results),
       regression_detected: detect_memory_regression(benchmark_results, opts),
-      platform_differences: analyze_platform_differences(benchmark_results, opts)
+      platform_differences:
+        analyze_platform_differences(benchmark_results, opts)
     }
   end
 
@@ -66,28 +67,40 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
 
     recommendations =
       if analysis.fragmentation_ratio > 0.3 do
-        ["Consider implementing memory pooling to reduce fragmentation" | recommendations]
+        [
+          "Consider implementing memory pooling to reduce fragmentation"
+          | recommendations
+        ]
       else
         recommendations
       end
 
     recommendations =
       if analysis.efficiency_score < 0.6 do
-        ["Memory usage efficiency is low - review allocation patterns" | recommendations]
+        [
+          "Memory usage efficiency is low - review allocation patterns"
+          | recommendations
+        ]
       else
         recommendations
       end
 
     recommendations =
       if analysis.gc_collections > 50 do
-        ["High GC pressure detected - consider reducing allocation frequency" | recommendations]
+        [
+          "High GC pressure detected - consider reducing allocation frequency"
+          | recommendations
+        ]
       else
         recommendations
       end
 
     recommendations =
       if analysis.regression_detected do
-        ["Memory regression detected compared to baseline - investigate recent changes" | recommendations]
+        [
+          "Memory regression detected compared to baseline - investigate recent changes"
+          | recommendations
+        ]
       else
         recommendations
       end
@@ -100,14 +113,24 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
   """
   @spec profile_memory_over_time(function(), keyword()) :: map()
   def profile_memory_over_time(benchmark_function, opts \\ []) do
-    duration = Keyword.get(opts, :duration, 10_000)  # 10 seconds default
-    interval = Keyword.get(opts, :interval, 100)     # 100ms sampling
+    # 10 seconds default
+    duration = Keyword.get(opts, :duration, 10_000)
+    # 100ms sampling
+    interval = Keyword.get(opts, :interval, 100)
 
     start_time = System.monotonic_time(:millisecond)
     memory_samples = []
     gc_samples = []
 
-    memory_samples = collect_memory_samples(benchmark_function, start_time, duration, interval, memory_samples)
+    memory_samples =
+      collect_memory_samples(
+        benchmark_function,
+        start_time,
+        duration,
+        interval,
+        memory_samples
+      )
+
     gc_samples = collect_gc_samples(start_time, duration, interval, gc_samples)
 
     %{
@@ -152,7 +175,8 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
       memory_values
       |> Enum.chunk_every(2, 1, :discard)
       |> Enum.count(fn [prev, curr] ->
-        curr < prev * 0.8  # 20% drop suggests GC
+        # 20% drop suggests GC
+        curr < prev * 0.8
       end)
     else
       0
@@ -188,7 +212,7 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
 
       if variance > 0 and mean > 0 do
         # Lower variance relative to mean = higher efficiency
-        1.0 / (1.0 + (variance / (mean * mean)))
+        1.0 / (1.0 + variance / (mean * mean))
       else
         1.0
       end
@@ -199,7 +223,8 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
 
   defp detect_memory_regression(benchmark_results, opts) do
     baseline = Keyword.get(opts, :baseline)
-    threshold = Keyword.get(opts, :regression_threshold, 0.1)  # 10% increase
+    # 10% increase
+    threshold = Keyword.get(opts, :regression_threshold, 0.1)
 
     if baseline do
       current_memory = analyze_peak_memory(benchmark_results)
@@ -243,14 +268,23 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
       indexed_samples = Enum.with_index(memory_samples)
       n = length(indexed_samples)
 
-      sum_x = n * (n + 1) / 2  # Sum of indices
+      # Sum of indices
+      sum_x = n * (n + 1) / 2
       sum_y = Enum.sum(memory_samples)
-      sum_xy = indexed_samples |> Enum.map(fn {val, idx} -> val * idx end) |> Enum.sum()
-      sum_x2 = n * (n + 1) * (2 * n + 1) / 6  # Sum of squared indices
+
+      sum_xy =
+        indexed_samples
+        |> Enum.map(fn {val, idx} -> val * idx end)
+        |> Enum.sum()
+
+      # Sum of squared indices
+      sum_x2 = n * (n + 1) * (2 * n + 1) / 6
       sum_y2 = memory_samples |> Enum.map(&(&1 * &1)) |> Enum.sum()
 
       numerator = n * sum_xy - sum_x * sum_y
-      denominator = :math.sqrt((n * sum_x2 - sum_x * sum_x) * (n * sum_y2 - sum_y * sum_y))
+
+      denominator =
+        :math.sqrt((n * sum_x2 - sum_x * sum_x) * (n * sum_y2 - sum_y * sum_y))
 
       if denominator > 0 do
         numerator / denominator
@@ -264,7 +298,13 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
   # Memory Sampling and Collection
   # =============================================================================
 
-  defp collect_memory_samples(benchmark_function, start_time, duration, interval, samples) do
+  defp collect_memory_samples(
+         benchmark_function,
+         start_time,
+         duration,
+         interval,
+         samples
+       ) do
     current_time = System.monotonic_time(:millisecond)
 
     if current_time - start_time < duration do
@@ -285,7 +325,14 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
       }
 
       Process.sleep(interval)
-      collect_memory_samples(benchmark_function, start_time, duration, interval, [sample | samples])
+
+      collect_memory_samples(
+        benchmark_function,
+        start_time,
+        duration,
+        interval,
+        [sample | samples]
+      )
     else
       Enum.reverse(samples)
     end
@@ -316,10 +363,17 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
 
   defp extract_memory_values(benchmark_results) do
     case benchmark_results do
-      %{memory_usage_data: %{samples: samples}} -> samples
-      %{} -> Map.values(benchmark_results) |> Enum.flat_map(&extract_memory_values/1)
-      list when is_list(list) -> Enum.flat_map(list, &extract_memory_values/1)
-      _ -> []
+      %{memory_usage_data: %{samples: samples}} ->
+        samples
+
+      %{} ->
+        Map.values(benchmark_results) |> Enum.flat_map(&extract_memory_values/1)
+
+      list when is_list(list) ->
+        Enum.flat_map(list, &extract_memory_values/1)
+
+      _ ->
+        []
     end
   end
 
@@ -333,6 +387,7 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
 
     sum_squared_diffs / length(values)
   end
+
   defp calculate_variance(_), do: 0.0
 
   defp calculate_average_memory(memory_samples) do

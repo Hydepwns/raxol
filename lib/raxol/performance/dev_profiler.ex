@@ -32,15 +32,16 @@ defmodule Raxol.Performance.DevProfiler do
   require Logger
 
   @type profile_opts :: [
-    duration: pos_integer(),
-    memory: boolean(),
-    processes: boolean(),
-    call_graph: boolean(),
-    output_format: :text | :html | :json
-  ]
+          duration: pos_integer(),
+          memory: boolean(),
+          processes: boolean(),
+          call_graph: boolean(),
+          output_format: :text | :html | :json
+        ]
 
   @default_opts [
-    duration: 10_000,  # 10 seconds
+    # 10 seconds
+    duration: 10_000,
     memory: true,
     processes: true,
     call_graph: false,
@@ -70,7 +71,7 @@ defmodule Raxol.Performance.DevProfiler do
         process_large_buffer()
       end)
   """
-  @spec profile(profile_opts() | (() -> any()), (() -> any()) | nil) :: any()
+  @spec profile(profile_opts() | (-> any()), (-> any()) | nil) :: any()
   def profile(opts_or_fun, fun \\ nil)
 
   def profile(fun, nil) when is_function(fun) do
@@ -94,13 +95,14 @@ defmodule Raxol.Performance.DevProfiler do
     profiling_ref = start_profiling_tools(opts)
 
     # Execute the function
-    result = try do
-      fun.()
-    catch
-      kind, error ->
-        stop_profiling_tools(profiling_ref)
-        :erlang.raise(kind, error, __STACKTRACE__)
-    end
+    result =
+      try do
+        fun.()
+      catch
+        kind, error ->
+          stop_profiling_tools(profiling_ref)
+          :erlang.raise(kind, error, __STACKTRACE__)
+      end
 
     # Stop profiling and collect data
     profile_data = stop_profiling_tools(profiling_ref)
@@ -110,13 +112,14 @@ defmodule Raxol.Performance.DevProfiler do
     memory_after = if opts[:memory], do: get_memory_info(), else: nil
 
     # Generate report
-    report = generate_report(%{
-      duration: duration,
-      memory_before: memory_before,
-      memory_after: memory_after,
-      profile_data: profile_data,
-      opts: opts
-    })
+    report =
+      generate_report(%{
+        duration: duration,
+        memory_before: memory_before,
+        memory_after: memory_after,
+        profile_data: profile_data,
+        opts: opts
+      })
 
     output_report(report, opts[:output_format])
 
@@ -190,20 +193,22 @@ defmodule Raxol.Performance.DevProfiler do
     tools = %{}
 
     # Start :fprof if available
-    tools = if opts[:call_graph] do
-      :fprof.start()
-      :fprof.trace(:start)
-      Map.put(tools, :fprof, true)
-    else
-      tools
-    end
+    tools =
+      if opts[:call_graph] do
+        :fprof.start()
+        :fprof.trace(:start)
+        Map.put(tools, :fprof, true)
+      else
+        tools
+      end
 
     # Start process monitoring
-    tools = if opts[:processes] do
-      Map.put(tools, :process_monitor, spawn_process_monitor())
-    else
-      tools
-    end
+    tools =
+      if opts[:processes] do
+        Map.put(tools, :process_monitor, spawn_process_monitor())
+      else
+        tools
+      end
 
     tools
   end
@@ -212,36 +217,40 @@ defmodule Raxol.Performance.DevProfiler do
     profile_data = %{}
 
     # Stop :fprof
-    profile_data = if Map.get(tools, :fprof) do
-      :fprof.trace(:stop)
-      :fprof.profile()
-      fprof_data = capture_fprof_analysis()
-      :fprof.stop()
-      Map.put(profile_data, :fprof, fprof_data)
-    else
-      profile_data
-    end
+    profile_data =
+      if Map.get(tools, :fprof) do
+        :fprof.trace(:stop)
+        :fprof.profile()
+        fprof_data = capture_fprof_analysis()
+        :fprof.stop()
+        Map.put(profile_data, :fprof, fprof_data)
+      else
+        profile_data
+      end
 
     # Stop process monitor
-    profile_data = if monitor_pid = Map.get(tools, :process_monitor) do
-      send(monitor_pid, :stop)
-      receive do
-        {:process_data, data} -> Map.put(profile_data, :processes, data)
-      after
-        1000 -> profile_data
+    profile_data =
+      if monitor_pid = Map.get(tools, :process_monitor) do
+        send(monitor_pid, :stop)
+
+        receive do
+          {:process_data, data} -> Map.put(profile_data, :processes, data)
+        after
+          1000 -> profile_data
+        end
+      else
+        profile_data
       end
-    else
-      profile_data
-    end
 
     profile_data
   end
 
   defp capture_fprof_analysis do
-    temp_file = System.tmp_dir!() <> "/raxol_fprof_#{:os.system_time()}.analysis"
+    temp_file =
+      System.tmp_dir!() <> "/raxol_fprof_#{:os.system_time()}.analysis"
 
     try do
-      :fprof.analyse([dest: temp_file])
+      :fprof.analyse(dest: temp_file)
       File.read!(temp_file)
     catch
       _, _ -> "fprof analysis failed"
@@ -270,6 +279,7 @@ defmodule Raxol.Performance.DevProfiler do
           memory_usage: get_memory_info(),
           top_processes: get_top_processes(5)
         }
+
         collect_process_samples([sample | samples])
     end
   end
@@ -289,38 +299,48 @@ defmodule Raxol.Performance.DevProfiler do
   defp get_process_info do
     processes = Process.list()
 
-    process_details = processes
-    |> Enum.map(fn pid ->
-      info = Process.info(pid, [:memory, :message_queue_len, :current_function, :initial_call])
-      if info do
-        %{
-          pid: pid,
-          memory: info[:memory] || 0,
-          message_queue_len: info[:message_queue_len] || 0,
-          current_function: info[:current_function],
-          initial_call: info[:initial_call]
-        }
-      else
-        nil
-      end
-    end)
-    |> Enum.filter(&(&1 != nil))
+    process_details =
+      processes
+      |> Enum.map(fn pid ->
+        info =
+          Process.info(pid, [
+            :memory,
+            :message_queue_len,
+            :current_function,
+            :initial_call
+          ])
+
+        if info do
+          %{
+            pid: pid,
+            memory: info[:memory] || 0,
+            message_queue_len: info[:message_queue_len] || 0,
+            current_function: info[:current_function],
+            initial_call: info[:initial_call]
+          }
+        else
+          nil
+        end
+      end)
+      |> Enum.filter(&(&1 != nil))
 
     %{
       count: length(processes),
       details: process_details,
-      top_by_memory: Enum.sort_by(process_details, & &1.memory, :desc) |> Enum.take(10)
+      top_by_memory:
+        Enum.sort_by(process_details, & &1.memory, :desc) |> Enum.take(10)
     }
   end
 
   defp get_system_info do
     %{
       schedulers: :erlang.system_info(:schedulers),
-      scheduler_utilization: try do
-        :scheduler.utilization(1)
-      catch
-        _, _ -> :not_available
-      end,
+      scheduler_utilization:
+        try do
+          :scheduler.utilization(1)
+        catch
+          _, _ -> :not_available
+        end,
       port_count: length(Port.list()),
       atom_count: :erlang.system_info(:atom_count),
       atom_limit: :erlang.system_info(:atom_limit)
@@ -331,7 +351,9 @@ defmodule Raxol.Performance.DevProfiler do
     Process.list()
     |> Enum.map(fn pid ->
       case Process.info(pid, [:memory, :current_function]) do
-        nil -> nil
+        nil ->
+          nil
+
         info ->
           %{
             pid: pid,
@@ -351,19 +373,25 @@ defmodule Raxol.Performance.DevProfiler do
     issues = []
 
     # Check for high memory usage
-    issues = if total_mb > 100 do
-      ["High total memory usage: #{Float.round(total_mb, 1)}MB" | issues]
-    else
-      issues
-    end
+    issues =
+      if total_mb > 100 do
+        ["High total memory usage: #{Float.round(total_mb, 1)}MB" | issues]
+      else
+        issues
+      end
 
     # Check binary memory
     binary_percent = memory_info.binary / memory_info.total * 100
-    issues = if binary_percent > 30 do
-      ["High binary memory usage: #{Float.round(binary_percent, 1)}%" | issues]
-    else
-      issues
-    end
+
+    issues =
+      if binary_percent > 30 do
+        [
+          "High binary memory usage: #{Float.round(binary_percent, 1)}%"
+          | issues
+        ]
+      else
+        issues
+      end
 
     %{
       total_mb: Float.round(total_mb, 2),
@@ -376,19 +404,23 @@ defmodule Raxol.Performance.DevProfiler do
     issues = []
 
     # Check process count
-    issues = if process_info.count > 1000 do
-      ["High process count: #{process_info.count}" | issues]
-    else
-      issues
-    end
+    issues =
+      if process_info.count > 1000 do
+        ["High process count: #{process_info.count}" | issues]
+      else
+        issues
+      end
 
     # Check for memory-heavy processes
-    heavy_processes = Enum.filter(process_info.top_by_memory, & &1.memory > 10 * 1024 * 1024)
-    issues = if length(heavy_processes) > 0 do
-      ["#{length(heavy_processes)} processes using >10MB memory" | issues]
-    else
-      issues
-    end
+    heavy_processes =
+      Enum.filter(process_info.top_by_memory, &(&1.memory > 10 * 1024 * 1024))
+
+    issues =
+      if length(heavy_processes) > 0 do
+        ["#{length(heavy_processes)} processes using >10MB memory" | issues]
+      else
+        issues
+      end
 
     %{
       count: process_info.count,
@@ -402,11 +434,13 @@ defmodule Raxol.Performance.DevProfiler do
 
     # Check atom usage
     atom_usage_percent = system_info.atom_count / system_info.atom_limit * 100
-    issues = if atom_usage_percent > 80 do
-      ["High atom usage: #{Float.round(atom_usage_percent, 1)}%" | issues]
-    else
-      issues
-    end
+
+    issues =
+      if atom_usage_percent > 80 do
+        ["High atom usage: #{Float.round(atom_usage_percent, 1)}%" | issues]
+      else
+        issues
+      end
 
     %{
       issues: issues,
@@ -419,16 +453,17 @@ defmodule Raxol.Performance.DevProfiler do
     hints = []
 
     # Memory hints
-    hints = hints ++ analysis.memory.issues |> Enum.map(&"Memory: #{&1}")
+    hints = (hints ++ analysis.memory.issues) |> Enum.map(&"Memory: #{&1}")
 
     # Process hints
-    hints = hints ++ analysis.processes.issues |> Enum.map(&"Process: #{&1}")
+    hints = (hints ++ analysis.processes.issues) |> Enum.map(&"Process: #{&1}")
 
     # System hints
-    hints = hints ++ analysis.system.issues |> Enum.map(&"System: #{&1}")
+    hints = (hints ++ analysis.system.issues) |> Enum.map(&"System: #{&1}")
 
     if length(hints) > 0 do
       Logger.warning("🔍 Performance Analysis Hints:")
+
       Enum.each(hints, fn hint ->
         Logger.warning("  • #{hint}")
       end)
@@ -451,30 +486,33 @@ defmodule Raxol.Performance.DevProfiler do
     """
 
     # Add memory analysis
-    report = if data.memory_before && data.memory_after do
-      memory_diff = data.memory_after.total - data.memory_before.total
-      memory_diff_mb = memory_diff / (1024 * 1024)
+    report =
+      if data.memory_before && data.memory_after do
+        memory_diff = data.memory_after.total - data.memory_before.total
+        memory_diff_mb = memory_diff / (1024 * 1024)
 
-      report <> """
+        report <>
+          """
 
-      Memory Usage:
-      - Before: #{Float.round(data.memory_before.total / (1024 * 1024), 2)}MB
-      - After:  #{Float.round(data.memory_after.total / (1024 * 1024), 2)}MB
-      - Change: #{if memory_diff >= 0, do: "+", else: ""}#{Float.round(memory_diff_mb, 2)}MB
-      """
-    else
-      report
-    end
+          Memory Usage:
+          - Before: #{Float.round(data.memory_before.total / (1024 * 1024), 2)}MB
+          - After:  #{Float.round(data.memory_after.total / (1024 * 1024), 2)}MB
+          - Change: #{if memory_diff >= 0, do: "+", else: ""}#{Float.round(memory_diff_mb, 2)}MB
+          """
+      else
+        report
+      end
 
     # Add optimization suggestions
     suggestions = generate_optimization_suggestions(data)
 
     if length(suggestions) > 0 do
-      report <> """
+      report <>
+        """
 
-      💡 Optimization Suggestions:
-      #{Enum.map_join(suggestions, "\n", &"  • #{&1}")}
-      """
+        💡 Optimization Suggestions:
+        #{Enum.map_join(suggestions, "\n", &"  • #{&1}")}
+        """
     else
       report <> "\n\n✅ No obvious optimizations detected"
     end
@@ -485,24 +523,33 @@ defmodule Raxol.Performance.DevProfiler do
     duration_ms = data.duration / 1000
 
     # Suggest optimizations based on execution time
-    suggestions = if duration_ms > 1000 do
-      ["Consider async execution or breaking into smaller operations (#{Float.round(duration_ms, 1)}ms)" | suggestions]
-    else
-      suggestions
-    end
-
-    # Memory-based suggestions
-    suggestions = if data.memory_before && data.memory_after do
-      memory_growth = data.memory_after.total - data.memory_before.total
-
-      if memory_growth > 50 * 1024 * 1024 do  # 50MB growth
-        ["High memory allocation detected - consider memory pooling or streaming" | suggestions]
+    suggestions =
+      if duration_ms > 1000 do
+        [
+          "Consider async execution or breaking into smaller operations (#{Float.round(duration_ms, 1)}ms)"
+          | suggestions
+        ]
       else
         suggestions
       end
-    else
-      suggestions
-    end
+
+    # Memory-based suggestions
+    suggestions =
+      if data.memory_before && data.memory_after do
+        memory_growth = data.memory_after.total - data.memory_before.total
+
+        # 50MB growth
+        if memory_growth > 50 * 1024 * 1024 do
+          [
+            "High memory allocation detected - consider memory pooling or streaming"
+            | suggestions
+          ]
+        else
+          suggestions
+        end
+      else
+        suggestions
+      end
 
     suggestions
   end
@@ -572,10 +619,14 @@ defmodule Raxol.Performance.DevProfiler do
         memory: get_memory_info()
       }
 
-      Process.sleep(100)  # Sample every 100ms
+      # Sample every 100ms
+      Process.sleep(100)
       collect_memory_samples([sample | samples], end_time)
     else
-      Logger.info("📈 Memory profiling complete. #{length(samples)} samples collected.")
+      Logger.info(
+        "📈 Memory profiling complete. #{length(samples)} samples collected."
+      )
+
       analyze_memory_samples(samples)
     end
   end
@@ -589,7 +640,9 @@ defmodule Raxol.Performance.DevProfiler do
       growth_mb = growth / (1024 * 1024)
       duration = last.timestamp - first.timestamp
 
-      Logger.info("Memory growth: #{Float.round(growth_mb, 2)}MB over #{duration}ms")
+      Logger.info(
+        "Memory growth: #{Float.round(growth_mb, 2)}MB over #{duration}ms"
+      )
 
       if growth_mb > 10 do
         Logger.warning("⚠️  Significant memory growth detected during profiling")

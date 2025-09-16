@@ -556,6 +556,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
 
   ## Private Helper Functions
 
+  @spec parse_hex_6(String.t()) :: {:ok, t()} | {:error, :invalid_hex}
   defp parse_hex_6(hex) do
     with {r, ""} <- Integer.parse(String.slice(hex, 0, 2), 16),
          {g, ""} <- Integer.parse(String.slice(hex, 2, 2), 16),
@@ -566,6 +567,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     end
   end
 
+  @spec parse_hex_8(String.t()) :: {:ok, t()} | {:error, :invalid_hex}
   defp parse_hex_8(hex) do
     with {r, ""} <- Integer.parse(String.slice(hex, 0, 2), 16),
          {g, ""} <- Integer.parse(String.slice(hex, 2, 2), 16),
@@ -577,6 +579,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     end
   end
 
+  @spec parse_hex_3(String.t()) :: {:ok, t()} | {:error, :invalid_hex}
   defp parse_hex_3(hex) do
     with {r, ""} <- Integer.parse(String.slice(hex, 0, 1), 16),
          {g, ""} <- Integer.parse(String.slice(hex, 1, 1), 16),
@@ -598,6 +601,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     end
   end
 
+  @spec pad_hex(non_neg_integer()) :: String.t()
   defp pad_hex(value) do
     value
     |> Integer.to_string(16)
@@ -605,6 +609,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     |> String.upcase()
   end
 
+  @spec hsl_to_rgb(number(), number(), number()) :: {float(), float(), float()}
   defp hsl_to_rgb(h, s, l) do
     c = (1 - abs(2 * l - 1)) * s
     x = c * (1 - abs(rem(trunc(h / 60), 2) - 1))
@@ -624,6 +629,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     {r_prime + m, g_prime + m, b_prime + m}
   end
 
+  @spec rgb_to_hsl(number(), number(), number()) :: {float(), float(), float()}
   defp rgb_to_hsl(r, g, b) do
     max_val = max(max(r, g), b)
     min_val = min(min(r, g), b)
@@ -678,6 +684,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     {round(h * 60), round(s * 100), round(v * 100)}
   end
 
+  @spec relative_luminance(t()) :: float()
   defp relative_luminance(%__MODULE__{r: r, g: g, b: b}) do
     [r, g, b]
     |> Enum.map(fn c ->
@@ -689,6 +696,7 @@ defmodule Raxol.Terminal.Color.TrueColor do
     end)
   end
 
+  @spec to_xyz(t()) :: {float(), float(), float()}
   defp to_xyz(%__MODULE__{r: r, g: g, b: b}) do
     [r, g, b]
     |> Enum.map(fn c ->

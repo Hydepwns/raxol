@@ -11,11 +11,11 @@ defmodule Raxol.View do
 
   ## Examples
 
-  ~V\"""
-  <.panel title="Hello">
-    <.text>Hello, World!</.text>
-  </.panel>
-  """
+      ~V\"""
+      <.panel title="Hello">
+        <.text>Hello, World!</.text>
+      </.panel>
+      \"""
   """
   defmacro sigil_V(expr, opts) do
     case expr do
@@ -23,14 +23,16 @@ defmodule Raxol.View do
         quote do
           Raxol.View.parse_template(unquote(template), unquote(opts))
         end
+
       _ ->
         quote do
-          unquote(expr)
+          _ = unquote(expr)
+          nil
         end
     end
   end
 
-  @doc \"""
+  @doc """
   Parse a template string into a Raxol view structure.
   """
 

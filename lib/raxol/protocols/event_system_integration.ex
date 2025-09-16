@@ -43,7 +43,12 @@ defmodule Raxol.Protocols.EventSystemIntegration do
   """
   def register_handler(event_type, handler) do
     if EventHandler.can_handle?(handler, %{type: event_type}) do
-      EventManager.register(event_type, &protocol_handler_wrapper(handler, &1, &2))
+      # Use register_handler/3 with self() as the target process
+      EventManager.register_handler(
+        event_type,
+        self(),
+        &protocol_handler_wrapper(handler, &1, &2)
+      )
     else
       {:error, :handler_cannot_handle_event}
     end
@@ -53,9 +58,10 @@ defmodule Raxol.Protocols.EventSystemIntegration do
   Subscribe a protocol-implementing handler to multiple event types.
   """
   def subscribe_handler(handler, event_types) do
-    results = Enum.map(event_types, fn event_type ->
-      {event_type, register_handler(event_type, handler)}
-    end)
+    results =
+      Enum.map(event_types, fn event_type ->
+        {event_type, register_handler(event_type, handler)}
+      end)
 
     # Update handler's subscription state
     updated_handler = EventHandler.subscribe(handler, event_types)
@@ -88,30 +94,32 @@ defmodule Raxol.Protocols.EventSystemIntegration do
   def dispatch_through_bus(%EventBus{} = bus, event) do
     handlers = Map.get(bus.handlers, event.type, [])
 
-    results = Enum.map(handlers, fn handler ->
-      try do
-        case EventHandler.handle_event(handler, event, %{}) do
-          {:ok, updated_handler, state} ->
-            {:ok, updated_handler, state}
+    results =
+      Enum.map(handlers, fn handler ->
+        try do
+          case EventHandler.handle_event(handler, event, %{}) do
+            {:ok, updated_handler, state} ->
+              {:ok, updated_handler, state}
 
-          {:error, reason} ->
-            bus.error_handler.(event, reason)
-            {:error, reason}
+            {:error, reason} ->
+              bus.error_handler.(event, reason)
+              {:error, reason}
 
-          other ->
-            other
+            other ->
+              other
+          end
+        rescue
+          error ->
+            bus.error_handler.(event, error)
+            {:error, error}
         end
-      rescue
-        error ->
-          bus.error_handler.(event, error)
-          {:error, error}
-      end
-    end)
+      end)
 
     # Apply middleware
-    final_results = Enum.reduce(bus.middleware, results, fn middleware, acc ->
-      middleware.(event, acc)
-    end)
+    final_results =
+      Enum.reduce(bus.middleware, results, fn middleware, acc ->
+        middleware.(event, acc)
+      end)
 
     final_results
   end
@@ -119,7 +127,8 @@ defmodule Raxol.Protocols.EventSystemIntegration do
   # Protocol implementation for EventBus
   defimpl EventHandler, for: EventBus do
     def handle_event(bus, event, state) do
-      results = Raxol.Protocols.EventSystemIntegration.dispatch_through_bus(bus, event)
+      results =
+        Raxol.Protocols.EventSystemIntegration.dispatch_through_bus(bus, event)
 
       # Aggregate results
       case aggregate_results(results) do
@@ -138,16 +147,17 @@ defmodule Raxol.Protocols.EventSystemIntegration do
       Map.keys(bus.handlers)
     end
 
-    def subscribe(bus, event_types) do
+    def subscribe(bus, _event_types) do
       # EventBus doesn't maintain subscription state itself
       bus
     end
 
     def unsubscribe(bus, event_types) do
       # Remove handlers for specific event types
-      updated_handlers = Enum.reduce(event_types, bus.handlers, fn event_type, acc ->
-        Map.delete(acc, event_type)
-      end)
+      updated_handlers =
+        Enum.reduce(event_types, bus.handlers, fn event_type, acc ->
+          Map.delete(acc, event_type)
+        end)
 
       %{bus | handlers: updated_handlers}
     end
@@ -204,7 +214,8 @@ defmodule Raxol.Protocols.EventSystemIntegration do
     end
 
     def can_handle?(_event, _incoming_event) do
-      false  # Events don't handle other events by default
+      # Events don't handle other events by default
+      false
     end
 
     def get_event_listeners(_event) do
@@ -267,14 +278,18 @@ defmodule Raxol.Protocols.EventSystemIntegration do
   Create a middleware function for performance monitoring.
   """
   def performance_middleware(opts \\ []) do
-    threshold = Keyword.get(opts, :threshold, 100)  # milliseconds
+    # milliseconds
+    threshold = Keyword.get(opts, :threshold, 100)
 
     fn event, results ->
       duration = System.monotonic_time(:millisecond) - event.timestamp
 
       if duration > threshold do
         require Logger
-        Logger.warn("Slow event processing: #{event.type} took #{duration}ms")
+
+        Logger.warning(
+          "Slow event processing: #{event.type} took #{duration}ms"
+        )
       end
 
       results
@@ -289,7 +304,8 @@ defmodule Raxol.Protocols.EventSystemIntegration do
       if filter_fn.(event) do
         results
       else
-        []  # Filter out the event
+        # Filter out the event
+        []
       end
     end
   end

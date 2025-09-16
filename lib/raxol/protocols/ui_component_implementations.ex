@@ -41,12 +41,22 @@ defmodule Raxol.Protocols.UIComponentImplementations do
       rows = filtered_data(table)
 
       header = render_table_header(table.columns, width, show_borders)
-      body = render_table_body(rows, table.columns, table.selected_row, width, show_borders)
-      pagination = if table.options.paginate do
-        render_pagination(table)
-      else
-        ""
-      end
+
+      body =
+        render_table_body(
+          rows,
+          table.columns,
+          table.selected_row,
+          width,
+          show_borders
+        )
+
+      pagination =
+        if table.options.paginate do
+          render_pagination(table)
+        else
+          ""
+        end
 
       [header, body, pagination]
       |> Enum.reject(&(&1 == ""))
@@ -56,18 +66,20 @@ defmodule Raxol.Protocols.UIComponentImplementations do
     defp render_table_header(columns, width, show_borders) do
       column_widths = calculate_column_widths(columns, width)
 
-      header_row = columns
-      |> Enum.zip(column_widths)
-      |> Enum.map(fn {col, col_width} ->
-        label = String.pad_trailing(col.label, col_width)
-        apply_column_header_style(label, col)
-      end)
-      |> Enum.join(if show_borders, do: " │ ", else: "  ")
+      header_row =
+        columns
+        |> Enum.zip(column_widths)
+        |> Enum.map(fn {col, col_width} ->
+          label = String.pad_trailing(col.label, col_width)
+          apply_column_header_style(label, col)
+        end)
+        |> Enum.join(if show_borders, do: " │ ", else: "  ")
 
       if show_borders do
-        border_line = column_widths
-        |> Enum.map(&String.duplicate("─", &1))
-        |> Enum.join("─┼─")
+        border_line =
+          column_widths
+          |> Enum.map(&String.duplicate("─", &1))
+          |> Enum.join("─┼─")
 
         "#{header_row}\n#{border_line}"
       else
@@ -83,15 +95,19 @@ defmodule Raxol.Protocols.UIComponentImplementations do
       |> Enum.map(fn {row, index} ->
         is_selected = selected_row == index
 
-        row_content = columns
-        |> Enum.zip(column_widths)
-        |> Enum.map(fn {col, col_width} ->
-          value = Map.get(row, col.id, "")
-          formatted_value = format_cell_value(value, col)
-          padded_value = String.pad_trailing(to_string(formatted_value), col_width)
-          apply_column_cell_style(padded_value, col, is_selected)
-        end)
-        |> Enum.join(if show_borders, do: " │ ", else: "  ")
+        row_content =
+          columns
+          |> Enum.zip(column_widths)
+          |> Enum.map(fn {col, col_width} ->
+            value = Map.get(row, col.id, "")
+            formatted_value = format_cell_value(value, col)
+
+            padded_value =
+              String.pad_trailing(to_string(formatted_value), col_width)
+
+            apply_column_cell_style(padded_value, col, is_selected)
+          end)
+          |> Enum.join(if show_borders, do: " │ ", else: "  ")
 
         if is_selected do
           apply_selected_row_style(row_content)
@@ -113,18 +129,20 @@ defmodule Raxol.Protocols.UIComponentImplementations do
       data = table.data
 
       # Apply filtering if enabled
-      data = if table.options.searchable and table.filter_term != "" do
-        filter_table_data(data, table.filter_term, table.columns)
-      else
-        data
-      end
+      data =
+        if table.options.searchable and table.filter_term != "" do
+          filter_table_data(data, table.filter_term, table.columns)
+        else
+          data
+        end
 
       # Apply sorting if enabled
-      data = if table.options.sortable and table.sort_by do
-        sort_table_data(data, table.sort_by, table.sort_direction)
-      else
-        data
-      end
+      data =
+        if table.options.sortable and table.sort_by do
+          sort_table_data(data, table.sort_by, table.sort_direction)
+        else
+          data
+        end
 
       # Apply pagination if enabled
       if table.options.paginate do
@@ -138,18 +156,20 @@ defmodule Raxol.Protocols.UIComponentImplementations do
       columns
       |> Enum.map(fn col ->
         case col[:width] do
-          nil -> 15  # default width
+          # default width
+          nil -> 15
           :auto -> 15
           width when is_integer(width) -> width
         end
       end)
       |> Enum.sum()
-      |> Kernel.+(length(columns) * 3)  # borders and spacing
+      # borders and spacing
+      |> Kernel.+(length(columns) * 3)
     end
 
     defp calculate_column_widths(columns, total_width) do
       # Simple equal distribution for now
-      available_width = total_width - (length(columns) * 3)
+      available_width = total_width - length(columns) * 3
       col_width = div(available_width, length(columns))
       Enum.map(columns, fn _ -> col_width end)
     end
@@ -169,11 +189,14 @@ defmodule Raxol.Protocols.UIComponentImplementations do
 
     defp apply_column_cell_style(text, col, is_selected) do
       base_style = col[:style] || %{}
-      style = if is_selected do
-        Map.merge(base_style, %{background: :blue, foreground: :white})
-      else
-        base_style
-      end
+
+      style =
+        if is_selected do
+          Map.merge(base_style, %{background: :blue, foreground: :white})
+        else
+          base_style
+        end
+
       apply_style_to_text(text, style)
     end
 
@@ -192,6 +215,7 @@ defmodule Raxol.Protocols.UIComponentImplementations do
         text
       else
         ansi_codes = Styleable.to_ansi(%{style: style})
+
         if ansi_codes == "" do
           text
         else
@@ -205,7 +229,11 @@ defmodule Raxol.Protocols.UIComponentImplementations do
       Enum.filter(data, fn row ->
         Enum.any?(columns, fn col ->
           value = Map.get(row, col.id, "")
-          String.contains?(String.downcase(to_string(value)), String.downcase(term))
+
+          String.contains?(
+            String.downcase(to_string(value)),
+            String.downcase(term)
+          )
         end)
       end)
     end
@@ -299,11 +327,12 @@ defmodule Raxol.Protocols.UIComponentImplementations do
     end
 
     def handle_event(table, %{type: :sort, data: %{column: column}}, state) do
-      {sort_by, direction} = if table.sort_by == column do
-        {column, toggle_sort_direction(table.sort_direction)}
-      else
-        {column, :asc}
-      end
+      {sort_by, direction} =
+        if table.sort_by == column do
+          {column, toggle_sort_direction(table.sort_direction)}
+        else
+          {column, :asc}
+        end
 
       new_table = %{table | sort_by: sort_by, sort_direction: direction}
       {:ok, new_table, state}
@@ -317,11 +346,12 @@ defmodule Raxol.Protocols.UIComponentImplementations do
       allowed_events = [:key_press, :click, :filter, :sort]
 
       # Add pagination events if enabled
-      allowed_events = if table.options.paginate do
-        [:page_up, :page_down | allowed_events]
-      else
-        allowed_events
-      end
+      allowed_events =
+        if table.options.paginate do
+          [:page_up, :page_down | allowed_events]
+        else
+          allowed_events
+        end
 
       type in allowed_events
     end

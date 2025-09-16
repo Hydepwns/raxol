@@ -18,6 +18,29 @@ Raxol brings modern UI development patterns to the terminal. Think **React, Svel
 - **Enterprise Features**: Audit logging, encryption, SAML/OIDC, compliance support
 - **Advanced Capabilities**: Sixel graphics, session continuity, real-time collaboration
 
+## What's New in v1.4.1
+
+### Automated Type Spec Generator
+Generate type specifications for private functions automatically:
+```bash
+mix raxol.gen.specs lib/my_module.ex
+mix raxol.gen.specs lib --recursive --dry-run
+```
+
+### Unified TOML Configuration
+Centralized configuration with environment-specific overrides:
+```elixir
+Raxol.Config.get([:terminal, :width], default: 80)
+Raxol.Config.set([:rendering, :fps_target], 120)
+```
+
+### Enhanced Debug Mode
+Four-level debugging system with performance monitoring:
+```elixir
+Raxol.Debug.enable(:verbose)
+Raxol.Debug.time_debug(:render, "frame", fn -> render() end)
+```
+
 ## Quick Start
 
 ```bash
@@ -34,6 +57,9 @@ mix raxol.check
 
 # Run tests
 mix raxol.test
+
+# Generate type specs
+mix raxol.gen.specs lib --recursive
 ```
 
 ## Choose Your Framework
@@ -103,6 +129,11 @@ end
 ## Documentation
 
 **[Documentation Hub](docs/README.md)** - Complete documentation index
+
+### v1.4.1 Feature Documentation
+- [Type Spec Generator](docs/development/TYPE_SPEC_GENERATOR.md) - Automated type specification generation
+- [Unified Configuration](docs/configuration/UNIFIED_CONFIG.md) - TOML-based configuration system
+- [Enhanced Debug Mode](docs/development/DEBUG_MODE.md) - Advanced debugging and profiling tools
 
 ## VS Code Extension
 

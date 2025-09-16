@@ -76,7 +76,15 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
           threshold: :integer,
           help: :boolean
         ],
-        aliases: [m: :mode, t: :target, f: :format, i: :interval, d: :duration, o: :output, h: :help]
+        aliases: [
+          m: :mode,
+          t: :target,
+          f: :format,
+          i: :interval,
+          d: :duration,
+          o: :output,
+          h: :help
+        ]
       )
 
     if opts[:help] do
@@ -89,9 +97,15 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
     config = build_config(opts)
 
     case config.mode do
-      "live" -> run_live_profiler(config)
-      "snapshot" -> run_snapshot_profiler(config)
-      "trace" -> run_trace_profiler(config)
+      "live" ->
+        run_live_profiler(config)
+
+      "snapshot" ->
+        run_snapshot_profiler(config)
+
+      "trace" ->
+        run_trace_profiler(config)
+
       _ ->
         Mix.shell().error("Unknown mode: #{config.mode}")
         System.halt(1)
@@ -113,12 +127,21 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
   defp run_live_profiler(config) do
     Mix.shell().info("Starting live memory profiler...")
     Mix.shell().info("Mode: #{config.mode}, Format: #{config.format}")
-    Mix.shell().info("Interval: #{config.interval}s, Duration: #{config.duration}s")
+
+    Mix.shell().info(
+      "Interval: #{config.interval}s, Duration: #{config.duration}s"
+    )
 
     case config.format do
-      "dashboard" -> run_interactive_dashboard(config)
-      "text" -> run_text_profiler(config)
-      "json" -> run_json_profiler(config)
+      "dashboard" ->
+        run_interactive_dashboard(config)
+
+      "text" ->
+        run_text_profiler(config)
+
+      "json" ->
+        run_json_profiler(config)
+
       _ ->
         Mix.shell().error("Unknown format: #{config.format}")
         System.halt(1)
@@ -130,7 +153,8 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
     dashboard_state = %{
       running: true,
       paused: false,
-      view: :memory,  # :memory, :processes, :gc
+      # :memory, :processes, :gc
+      view: :memory,
       snapshots: [],
       start_time: System.monotonic_time(:millisecond),
       config: config
@@ -150,7 +174,8 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
   defp dashboard_loop(state, monitoring_pid) do
     if state.running do
       # Clear screen and draw dashboard
-      IO.write("\e[2J\e[H")  # Clear screen and move cursor to top
+      # Clear screen and move cursor to top
+      IO.write("\e[2J\e[H")
       draw_dashboard(state)
 
       # Handle input with timeout
@@ -158,6 +183,7 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
         {:input, key} ->
           new_state = handle_dashboard_input(key, state, monitoring_pid)
           dashboard_loop(new_state, monitoring_pid)
+
         :timeout ->
           # Update dashboard
           unless state.paused do
@@ -175,7 +201,11 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
     elapsed = (System.monotonic_time(:millisecond) - state.start_time) / 1000
     IO.puts("Raxol Memory Profiler - Live Dashboard")
     IO.puts("#{String.duplicate("=", 80)}")
-    IO.puts("Elapsed: #{Float.round(elapsed, 1)}s | View: #{state.view} | #{if state.paused, do: "PAUSED", else: "RUNNING"}")
+
+    IO.puts(
+      "Elapsed: #{Float.round(elapsed, 1)}s | View: #{state.view} | #{if state.paused, do: "PAUSED", else: "RUNNING"}"
+    )
+
     IO.puts("#{String.duplicate("-", 80)}")
 
     # Current memory info
@@ -191,16 +221,32 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
 
     # Footer with controls
     IO.puts("#{String.duplicate("-", 80)}")
-    IO.puts("Controls: [q]uit | [r]eset | [s]napshot | [g]c | [p]ause | Tab:switch view")
+
+    IO.puts(
+      "Controls: [q]uit | [r]eset | [s]napshot | [g]c | [p]ause | Tab:switch view"
+    )
   end
 
   defp draw_memory_overview(memory_info) do
     IO.puts("Memory Overview:")
     IO.puts("  Total:     #{format_memory(memory_info.total)}")
-    IO.puts("  Processes: #{format_memory(memory_info.processes)} (#{percentage(memory_info.processes, memory_info.total)}%)")
-    IO.puts("  System:    #{format_memory(memory_info.system)} (#{percentage(memory_info.system, memory_info.total)}%)")
-    IO.puts("  Binary:    #{format_memory(memory_info.binary)} (#{percentage(memory_info.binary, memory_info.total)}%)")
-    IO.puts("  ETS:       #{format_memory(memory_info.ets)} (#{percentage(memory_info.ets, memory_info.total)}%)")
+
+    IO.puts(
+      "  Processes: #{format_memory(memory_info.processes)} (#{percentage(memory_info.processes, memory_info.total)}%)"
+    )
+
+    IO.puts(
+      "  System:    #{format_memory(memory_info.system)} (#{percentage(memory_info.system, memory_info.total)}%)"
+    )
+
+    IO.puts(
+      "  Binary:    #{format_memory(memory_info.binary)} (#{percentage(memory_info.binary, memory_info.total)}%)"
+    )
+
+    IO.puts(
+      "  ETS:       #{format_memory(memory_info.ets)} (#{percentage(memory_info.ets, memory_info.total)}%)"
+    )
+
     IO.puts("")
   end
 
@@ -217,13 +263,17 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
 
     Enum.each(memory_types, fn {type, bytes} ->
       bar = create_progress_bar(bytes, memory_info.total, 40)
-      IO.puts("  #{String.pad_trailing(type, 12)} #{format_memory(bytes)} #{bar}")
+
+      IO.puts(
+        "  #{String.pad_trailing(type, 12)} #{format_memory(bytes)} #{bar}"
+      )
     end)
 
     IO.puts("")
 
     # Recent allocations (simulated)
     IO.puts("Recent Large Allocations:")
+
     recent_allocations = [
       {"Buffer.create/2", 2_048_576, "2.0MB"},
       {"AnsiParser.parse/1", 524_288, "512KB"},
@@ -237,20 +287,28 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
 
   defp draw_processes_view do
     IO.puts("Top Memory-Consuming Processes:")
-    IO.puts(String.pad_trailing("PID", 8) <> String.pad_trailing("Name", 25) <> String.pad_trailing("Memory", 12) <> "Heap")
+
+    IO.puts(
+      String.pad_trailing("PID", 8) <>
+        String.pad_trailing("Name", 25) <>
+        String.pad_trailing("Memory", 12) <> "Heap"
+    )
 
     # Get process information
-    processes = Process.list()
-    |> Enum.map(fn pid ->
-      case Process.info(pid, [:memory, :registered_name, :current_function]) do
-        [memory: mem, registered_name: name, current_function: func] ->
-          %{pid: pid, memory: mem, name: name || func, registered_name: name}
-        _ -> nil
-      end
-    end)
-    |> Enum.reject(&is_nil/1)
-    |> Enum.sort_by(& &1.memory, :desc)
-    |> Enum.take(10)
+    processes =
+      Process.list()
+      |> Enum.map(fn pid ->
+        case Process.info(pid, [:memory, :registered_name, :current_function]) do
+          [memory: mem, registered_name: name, current_function: func] ->
+            %{pid: pid, memory: mem, name: name || func, registered_name: name}
+
+          _ ->
+            nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.sort_by(& &1.memory, :desc)
+      |> Enum.take(10)
 
     Enum.each(processes, fn proc ->
       pid_str = inspect(proc.pid) |> String.pad_trailing(8)
@@ -269,11 +327,16 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
 
     IO.puts("  Collections: #{gc_count}")
     IO.puts("  Words reclaimed: #{words_reclaimed}")
-    IO.puts("  Average per collection: #{div(words_reclaimed, max(gc_count, 1))} words")
+
+    IO.puts(
+      "  Average per collection: #{div(words_reclaimed, max(gc_count, 1))} words"
+    )
+
     IO.puts("")
 
     # Recent GC activity (simulated timeline)
     IO.puts("Recent GC Activity:")
+
     timeline = [
       {"-5s", "Minor GC", "2ms", "128KB reclaimed"},
       {"-12s", "Major GC", "8ms", "2.4MB reclaimed"},
@@ -282,7 +345,9 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
     ]
 
     Enum.each(timeline, fn {time, type, duration, reclaimed} ->
-      IO.puts("  #{String.pad_trailing(time, 6)} #{String.pad_trailing(type, 12)} #{String.pad_trailing(duration, 8)} #{reclaimed}")
+      IO.puts(
+        "  #{String.pad_trailing(time, 6)} #{String.pad_trailing(type, 12)} #{String.pad_trailing(duration, 8)} #{reclaimed}"
+      )
     end)
   end
 
@@ -293,7 +358,8 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
       "s" -> take_snapshot(state)
       "g" -> force_garbage_collection(state)
       "p" -> %{state | paused: not state.paused}
-      "\t" -> cycle_view(state)  # Tab key
+      # Tab key
+      "\t" -> cycle_view(state)
       _ -> state
     end
   end
@@ -308,6 +374,7 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
       timestamp: System.monotonic_time(:millisecond),
       memory: get_current_memory_info()
     }
+
     Mix.shell().info("Snapshot taken")
     %{state | snapshots: [snapshot | state.snapshots]}
   end
@@ -319,11 +386,13 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
   end
 
   defp cycle_view(state) do
-    next_view = case state.view do
-      :memory -> :processes
-      :processes -> :gc
-      :gc -> :memory
-    end
+    next_view =
+      case state.view do
+        :memory -> :processes
+        :processes -> :gc
+        :gc -> :memory
+      end
+
     %{state | view: next_view}
   end
 
@@ -352,7 +421,10 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
       if elapsed < config.duration do
         memory_info = get_current_memory_info()
 
-        Mix.shell().info("\n--- Memory Report (#{Float.round(elapsed, 1)}s) ---")
+        Mix.shell().info(
+          "\n--- Memory Report (#{Float.round(elapsed, 1)}s) ---"
+        )
+
         print_text_memory_report(memory_info)
 
         Process.sleep(config.interval * 1000)
@@ -397,6 +469,7 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
             start_time: start_time,
             reports: Enum.reverse(acc_reports)
           }
+
           File.write!(config.output, Jason.encode!(final_report, pretty: true))
           Mix.shell().info("Results saved to: #{config.output}")
         end
@@ -414,7 +487,10 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
 
   defp run_trace_profiler(config) do
     Mix.shell().info("Starting trace memory profiler...")
-    Mix.shell().info("Note: Detailed allocation tracing would require additional BEAM tools")
+
+    Mix.shell().info(
+      "Note: Detailed allocation tracing would require additional BEAM tools"
+    )
 
     # This would use tools like :recon_trace or custom tracing
     # For now, provide a simplified version
@@ -422,7 +498,9 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
   end
 
   defp take_memory_snapshots(config) do
-    Mix.shell().info("Taking memory snapshots every #{config.interval}s for #{config.duration}s...")
+    Mix.shell().info(
+      "Taking memory snapshots every #{config.interval}s for #{config.duration}s..."
+    )
 
     start_time = System.monotonic_time(:millisecond)
     snapshot_count = div(config.duration, config.interval)
@@ -438,7 +516,9 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
         memory: get_current_memory_info()
       }
 
-      Mix.shell().info("Snapshot #{i}/#{snapshot_count} - Memory: #{format_memory(snapshot.memory.total)}")
+      Mix.shell().info(
+        "Snapshot #{i}/#{snapshot_count} - Memory: #{format_memory(snapshot.memory.total)}"
+      )
 
       if i < snapshot_count do
         Process.sleep(config.interval * 1000)
@@ -456,13 +536,17 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
       last = List.last(snapshots)
 
       growth = last.memory.total - first.memory.total
-      growth_rate = growth / (last.elapsed - first.elapsed) * 3600  # bytes per hour
+      # bytes per hour
+      growth_rate = growth / (last.elapsed - first.elapsed) * 3600
 
       Mix.shell().info("Memory Growth Analysis:")
       Mix.shell().info("  Initial: #{format_memory(first.memory.total)}")
       Mix.shell().info("  Final: #{format_memory(last.memory.total)}")
       Mix.shell().info("  Growth: #{format_memory(growth)}")
-      Mix.shell().info("  Growth rate: #{format_memory(trunc(growth_rate))}/hour")
+
+      Mix.shell().info(
+        "  Growth rate: #{format_memory(trunc(growth_rate))}/hour"
+      )
 
       # Save detailed analysis
       if config.output do
@@ -486,7 +570,9 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
   end
 
   defp trace_large_allocations(config) do
-    Mix.shell().info("Monitoring large allocations (threshold: #{format_memory(config.threshold)})...")
+    Mix.shell().info(
+      "Monitoring large allocations (threshold: #{format_memory(config.threshold)})..."
+    )
 
     # This is a simplified simulation of allocation tracing
     start_time = System.monotonic_time(:millisecond)
@@ -498,7 +584,8 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
       if elapsed < config.duration do
         # Simulate detecting large allocations
         simulate_allocation_detection(config)
-        Process.sleep(100)  # Check more frequently for allocations
+        # Check more frequently for allocations
+        Process.sleep(100)
         loop_fn.(loop_fn)
       end
     end
@@ -510,11 +597,21 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
     # This would normally hook into BEAM allocation events
     # For simulation, randomly report large allocations
 
-    if :rand.uniform(100) < 5 do  # 5% chance per check
+    # 5% chance per check
+    if :rand.uniform(100) < 5 do
       size = :rand.uniform(10) * config.threshold
-      operation = Enum.random(["Buffer.create", "String.duplicate", "List.duplicate", "Binary.copy"])
 
-      Mix.shell().info("Large allocation detected: #{operation} - #{format_memory(size)}")
+      operation =
+        Enum.random([
+          "Buffer.create",
+          "String.duplicate",
+          "List.duplicate",
+          "Binary.copy"
+        ])
+
+      Mix.shell().info(
+        "Large allocation detected: #{operation} - #{format_memory(size)}"
+      )
     end
   end
 
@@ -543,10 +640,22 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
 
   defp print_text_memory_report(memory_info) do
     Mix.shell().info("Total Memory: #{format_memory(memory_info.total)}")
-    Mix.shell().info("Processes: #{format_memory(memory_info.processes)} (#{percentage(memory_info.processes, memory_info.total)}%)")
-    Mix.shell().info("System: #{format_memory(memory_info.system)} (#{percentage(memory_info.system, memory_info.total)}%)")
-    Mix.shell().info("Binary: #{format_memory(memory_info.binary)} (#{percentage(memory_info.binary, memory_info.total)}%)")
-    Mix.shell().info("ETS: #{format_memory(memory_info.ets)} (#{percentage(memory_info.ets, memory_info.total)}%)")
+
+    Mix.shell().info(
+      "Processes: #{format_memory(memory_info.processes)} (#{percentage(memory_info.processes, memory_info.total)}%)"
+    )
+
+    Mix.shell().info(
+      "System: #{format_memory(memory_info.system)} (#{percentage(memory_info.system, memory_info.total)}%)"
+    )
+
+    Mix.shell().info(
+      "Binary: #{format_memory(memory_info.binary)} (#{percentage(memory_info.binary, memory_info.total)}%)"
+    )
+
+    Mix.shell().info(
+      "ETS: #{format_memory(memory_info.ets)} (#{percentage(memory_info.ets, memory_info.total)}%)"
+    )
   end
 
   defp format_memory(bytes) when is_number(bytes) do
@@ -564,7 +673,9 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
   defp format_process_name({mod, func, arity}), do: "#{mod}.#{func}/#{arity}"
   defp format_process_name(other), do: inspect(other)
 
-  defp percentage(part, whole) when whole > 0, do: Float.round(part / whole * 100, 1)
+  defp percentage(part, whole) when whole > 0,
+    do: Float.round(part / whole * 100, 1)
+
   defp percentage(_, _), do: 0.0
 
   defp create_progress_bar(value, max, width) do

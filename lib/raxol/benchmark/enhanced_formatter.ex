@@ -743,4 +743,13 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
 
   defp generate_statistical_markdown(_analysis),
     do: "Statistical analysis complete."
+
+  @doc """
+  Write formatted output to file.
+  Required by Benchee.Formatter behaviour.
+  """
+  def write(suite, opts) do
+    format(suite, opts)
+    suite
+  end
 end

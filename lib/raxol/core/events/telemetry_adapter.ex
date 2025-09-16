@@ -11,7 +11,8 @@ defmodule Raxol.Core.Events.TelemetryAdapter do
 
   Converts EventManager dispatch calls to telemetry execute calls.
   """
-  def dispatch(event_name, data \\ %{}) when is_atom(event_name) or is_tuple(event_name) do
+  def dispatch(event_name, data \\ %{})
+      when is_atom(event_name) or is_tuple(event_name) do
     telemetry_event = normalize_event_name(event_name)
     measurements = extract_measurements(data)
     metadata = extract_metadata(data)
@@ -48,7 +49,8 @@ defmodule Raxol.Core.Events.TelemetryAdapter do
     [:raxol, :events, event_name]
   end
 
-  defp normalize_event_name({category, event}) when is_atom(category) and is_atom(event) do
+  defp normalize_event_name({category, event})
+       when is_atom(category) and is_atom(event) do
     [:raxol, :events, category, event]
   end
 
@@ -63,6 +65,7 @@ defmodule Raxol.Core.Events.TelemetryAdapter do
   defp extract_measurements(_), do: %{}
 
   defp extract_metadata(%{metadata: metadata}), do: metadata
+
   defp extract_metadata(data) when is_map(data) do
     data
     |> Map.delete(:measurements)
@@ -70,16 +73,20 @@ defmodule Raxol.Core.Events.TelemetryAdapter do
     |> Map.delete(:count)
     |> Map.delete(:duration)
   end
+
   defp extract_metadata(_), do: %{}
 
   defp pattern_to_telemetry_events(:all), do: [[:raxol, :events, :_]]
+
   defp pattern_to_telemetry_events(pattern) when is_atom(pattern) do
     [[:raxol, :events, pattern]]
   end
+
   defp pattern_to_telemetry_events(patterns) when is_list(patterns) do
     Enum.map(patterns, fn pattern ->
       [:raxol, :events | List.wrap(pattern)]
     end)
   end
+
   defp pattern_to_telemetry_events(pattern), do: [[:raxol, :events, pattern]]
 end

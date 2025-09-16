@@ -84,6 +84,24 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.CellOperations do
     %{buffer | cells: updated_cells}
   end
 
+  @doc """
+  Sets a cell at the specified position in the buffer.
+  Returns {:ok, updated_state} or {:error, reason}.
+  """
+  @spec set_cell(map(), non_neg_integer(), non_neg_integer(), Cell.t()) ::
+          {:ok, map()} | {:error, :out_of_bounds}
+  def set_cell(state, x, y, cell) do
+    case coordinates_valid_for_set?(state, x, y) do
+      true ->
+        updated_buffer = update_buffer_cell(state.active_buffer, x, y, cell)
+        updated_state = %{state | active_buffer: updated_buffer}
+        {:ok, updated_state}
+
+      false ->
+        {:error, :out_of_bounds}
+    end
+  end
+
   # Private functions
 
   defp extract_and_clean_cell(state, x, y) do

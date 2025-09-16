@@ -337,10 +337,12 @@ defmodule Raxol.Core.Performance.Profiler do
 
   # Private functions
 
+  @spec should_profile?(any()) :: boolean()
   defp should_profile?(sample_rate) do
     :rand.uniform() <= sample_rate
   end
 
+  @spec determine_report_format(any(), keyword(), any()) :: any()
   defp determine_report_format(operations, opts, default_format)
        when is_list(operations) do
     case Keyword.has_key?(opts, :format) do
@@ -349,21 +351,29 @@ defmodule Raxol.Core.Performance.Profiler do
     end
   end
 
+  @spec determine_report_format(any(), any(), any()) :: any()
   defp determine_report_format(_, _, default_format), do: default_format
 
+  @spec log_new_suggestions(any(), any()) :: any()
   defp log_new_suggestions(new_suggestions, old_suggestions)
        when new_suggestions != old_suggestions do
     Logger.info("New performance optimization suggestions available")
   end
 
+  @spec log_new_suggestions(any(), any()) :: any()
   defp log_new_suggestions(_, _), do: :ok
 
+  @spec enable_tracing_if_requested(any()) :: any()
   defp enable_tracing_if_requested(true), do: start_tracing()
+  @spec enable_tracing_if_requested(any()) :: any()
   defp enable_tracing_if_requested(false), do: :ok
 
+  @spec disable_tracing_if_enabled(any()) :: any()
   defp disable_tracing_if_enabled(true), do: stop_tracing()
+  @spec disable_tracing_if_enabled(any()) :: any()
   defp disable_tracing_if_enabled(false), do: :ok
 
+  @spec log_slow_operation_if_needed(any(), any()) :: any()
   defp log_slow_operation_if_needed(operation, metrics) do
     case metrics.duration_us > 1_000_000 do
       true ->
@@ -376,6 +386,7 @@ defmodule Raxol.Core.Performance.Profiler do
     end
   end
 
+  @spec build_benchmark_results(any(), any(), any()) :: any()
   defp build_benchmark_results(operation, _sorted, 0) do
     %{
       operation: operation,
@@ -389,6 +400,7 @@ defmodule Raxol.Core.Performance.Profiler do
     }
   end
 
+  @spec build_benchmark_results(any(), any(), non_neg_integer()) :: any()
   defp build_benchmark_results(operation, sorted, count) do
     %{
       operation: operation,
@@ -402,40 +414,51 @@ defmodule Raxol.Core.Performance.Profiler do
     }
   end
 
+  @spec check_slow_operation_suggestion(any(), any()) :: any()
   defp check_slow_operation_suggestion(op, avg) when avg > 100_000 do
     [
       "Operation #{op} is slow (avg: #{format_time(avg)}). Consider optimization."
     ]
   end
 
+  @spec check_slow_operation_suggestion(any(), any()) :: any()
   defp check_slow_operation_suggestion(_, _), do: []
 
+  @spec check_high_memory_suggestion(any(), any()) :: any()
   defp check_high_memory_suggestion(op, avg_mem) when avg_mem > 1_000_000 do
     [
       "Operation #{op} uses high memory (avg: #{format_memory(avg_mem)}). Consider streaming."
     ]
   end
 
+  @spec check_high_memory_suggestion(any(), any()) :: any()
   defp check_high_memory_suggestion(_, _), do: []
 
+  @spec check_gc_pressure_suggestion(any(), any()) :: any()
   defp check_gc_pressure_suggestion(op, gc_pressure) when gc_pressure > 0.5 do
     ["Operation #{op} causes GC pressure. Consider reducing allocations."]
   end
 
+  @spec check_gc_pressure_suggestion(any(), any()) :: any()
   defp check_gc_pressure_suggestion(_, _), do: []
 
+  @spec calculate_average_memory_delta(any()) :: any()
   defp calculate_average_memory_delta([]), do: 0
 
+  @spec calculate_average_memory_delta(any()) :: any()
   defp calculate_average_memory_delta(deltas) do
     Enum.sum(deltas) / length(deltas)
   end
 
+  @spec calculate_gc_pressure_ratio(any(), any()) :: any()
   defp calculate_gc_pressure_ratio(_total_gcs, []), do: 0
 
+  @spec calculate_gc_pressure_ratio(any(), any()) :: any()
   defp calculate_gc_pressure_ratio(total_gcs, profiles) do
     total_gcs / length(profiles)
   end
 
+  @spec do_profile(any(), keyword(), any()) :: any()
   defp do_profile(operation, opts, fun) do
     metadata = Keyword.get(opts, :metadata, %{})
     trace = Keyword.get(opts, :trace, false)
@@ -500,6 +523,7 @@ defmodule Raxol.Core.Performance.Profiler do
     build_benchmark_results(operation, sorted, count)
   end
 
+  @spec calculate_improvement(any(), any()) :: any()
   defp calculate_improvement(old_results, new_results) do
     %{
       time_improvement:
@@ -511,6 +535,7 @@ defmodule Raxol.Core.Performance.Profiler do
     }
   end
 
+  @spec calculate_std_dev(any()) :: any()
   defp calculate_std_dev(times) do
     mean = Enum.sum(times) / length(times)
 
@@ -550,6 +575,7 @@ defmodule Raxol.Core.Performance.Profiler do
     }
   end
 
+  @spec build_report(map(), any()) :: any()
   defp build_report(state, :all) do
     profiles_by_op = Enum.group_by(state.profiles, & &1.operation)
 
@@ -567,6 +593,7 @@ defmodule Raxol.Core.Performance.Profiler do
     |> Enum.sort_by(& &1.total_duration, :desc)
   end
 
+  @spec build_report(map(), any()) :: any()
   defp build_report(state, operations) when is_list(operations) do
     filtered_profiles =
       state.profiles
@@ -575,6 +602,7 @@ defmodule Raxol.Core.Performance.Profiler do
     build_report(%{state | profiles: filtered_profiles}, :all)
   end
 
+  @spec format_report(any(), any()) :: String.t()
   defp format_report(report, :text) do
     header =
       "Operation | Calls | Avg Time | Max Time | Total Time | Avg Memory | GC Pressure\n"
@@ -591,10 +619,12 @@ defmodule Raxol.Core.Performance.Profiler do
     header <> separator <> Enum.join(rows)
   end
 
+  @spec format_report(any(), any()) :: String.t()
   defp format_report(report, :json) do
     Jason.encode!(report)
   end
 
+  @spec analyze_for_optimizations(map()) :: any()
   defp analyze_for_optimizations(state) do
     profiles_by_op = Enum.group_by(state.profiles, & &1.operation)
 
@@ -630,6 +660,7 @@ defmodule Raxol.Core.Performance.Profiler do
     suggestions
   end
 
+  @spec average_duration(any()) :: any()
   defp average_duration(profiles) do
     profiles
     |> Enum.map(& &1.duration_us)
@@ -640,6 +671,7 @@ defmodule Raxol.Core.Performance.Profiler do
     end
   end
 
+  @spec max_duration(any()) :: any()
   defp max_duration(profiles) do
     profiles
     |> Enum.map(& &1.duration_us)
@@ -647,6 +679,7 @@ defmodule Raxol.Core.Performance.Profiler do
     |> Enum.max(fn -> 0 end)
   end
 
+  @spec total_duration(any()) :: any()
   defp total_duration(profiles) do
     profiles
     |> Enum.map(& &1.duration_us)
@@ -654,6 +687,7 @@ defmodule Raxol.Core.Performance.Profiler do
     |> Enum.sum()
   end
 
+  @spec average_memory(any()) :: any()
   defp average_memory(profiles) do
     deltas =
       profiles
@@ -663,6 +697,7 @@ defmodule Raxol.Core.Performance.Profiler do
     calculate_average_memory_delta(deltas)
   end
 
+  @spec calculate_gc_pressure(any()) :: any()
   defp calculate_gc_pressure(profiles) do
     total_gcs =
       profiles
@@ -673,26 +708,32 @@ defmodule Raxol.Core.Performance.Profiler do
     calculate_gc_pressure_ratio(total_gcs, profiles)
   end
 
+  @spec format_time(any()) :: String.t()
   defp format_time(microseconds) when microseconds < 1000 do
     "#{microseconds}μs"
   end
 
+  @spec format_time(any()) :: String.t()
   defp format_time(microseconds) when microseconds < 1_000_000 do
     "#{Float.round(microseconds / 1000, 2)}ms"
   end
 
+  @spec format_time(any()) :: String.t()
   defp format_time(microseconds) do
     "#{Float.round(microseconds / 1_000_000, 2)}s"
   end
 
+  @spec format_memory(any()) :: String.t()
   defp format_memory(bytes) when bytes < 1024 do
     "#{bytes}B"
   end
 
+  @spec format_memory(any()) :: String.t()
   defp format_memory(bytes) when bytes < 1_048_576 do
     "#{Float.round(bytes / 1024, 2)}KB"
   end
 
+  @spec format_memory(any()) :: String.t()
   defp format_memory(bytes) do
     "#{Float.round(bytes / 1_048_576, 2)}MB"
   end

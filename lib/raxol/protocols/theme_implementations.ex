@@ -6,7 +6,6 @@ defmodule Raxol.Protocols.ThemeImplementations do
   implementations for theme and color system components.
   """
 
-  alias Raxol.UI.Theming.Theme
   alias Raxol.Protocols.{Styleable, Renderable, Serializable}
 
   # Theme Protocol Implementations
@@ -39,19 +38,25 @@ defmodule Raxol.Protocols.ThemeImplementations do
       codes = []
 
       # Extract primary colors
-      codes = case colors[:primary] do
-        color when is_binary(color) ->
-          rgb = hex_to_rgb(color)
-          ["38;2;#{elem(rgb, 0)};#{elem(rgb, 1)};#{elem(rgb, 2)}" | codes]
-        _ -> codes
-      end
+      codes =
+        case colors[:primary] do
+          color when is_binary(color) ->
+            rgb = hex_to_rgb(color)
+            ["38;2;#{elem(rgb, 0)};#{elem(rgb, 1)};#{elem(rgb, 2)}" | codes]
 
-      codes = case colors[:background] do
-        color when is_binary(color) ->
-          rgb = hex_to_rgb(color)
-          ["48;2;#{elem(rgb, 0)};#{elem(rgb, 1)};#{elem(rgb, 2)}" | codes]
-        _ -> codes
-      end
+          _ ->
+            codes
+        end
+
+      codes =
+        case colors[:background] do
+          color when is_binary(color) ->
+            rgb = hex_to_rgb(color)
+            ["48;2;#{elem(rgb, 0)};#{elem(rgb, 1)};#{elem(rgb, 2)}" | codes]
+
+          _ ->
+            codes
+        end
 
       if codes == [] do
         ""
@@ -134,13 +139,14 @@ defmodule Raxol.Protocols.ThemeImplementations do
       title = "Color Palette - #{theme.name || "Theme"}"
       separator = String.duplicate("─", width)
 
-      color_rows = colors
-      |> Enum.map(fn {name, value} ->
-        color_preview = render_color_swatch(value)
-        name_str = String.pad_trailing(to_string(name), 15)
-        value_str = to_string(value)
-        "#{color_preview} #{name_str} #{value_str}"
-      end)
+      color_rows =
+        colors
+        |> Enum.map(fn {name, value} ->
+          color_preview = render_color_swatch(value)
+          name_str = String.pad_trailing(to_string(name), 15)
+          value_str = to_string(value)
+          "#{color_preview} #{name_str} #{value_str}"
+        end)
 
       [title, separator | color_rows]
       |> Enum.join("\n")
@@ -173,7 +179,8 @@ defmodule Raxol.Protocols.ThemeImplementations do
         "No colors defined"
       else
         colors
-        |> Enum.take(div(width, 12))  # Limit based on width
+        # Limit based on width
+        |> Enum.take(div(width, 12))
         |> Enum.map(fn {name, value} ->
           swatch = render_color_swatch(value)
           "#{swatch} #{String.slice(to_string(name), 0, 8)}"
@@ -198,9 +205,11 @@ defmodule Raxol.Protocols.ThemeImplementations do
           # Create a colored block using ANSI
           rgb = hex_to_rgb(color_value)
           "\e[48;2;#{elem(rgb, 0)};#{elem(rgb, 1)};#{elem(rgb, 2)}m  \e[0m"
+
         color when is_atom(color) ->
           ansi_code = color_name_to_ansi(color)
           "\e[#{ansi_code}m██\e[0m"
+
         _ ->
           "██"
       end
@@ -300,6 +309,7 @@ defmodule Raxol.Protocols.ThemeImplementations do
       Enum.into(colors, %{}, fn
         {key, %Raxol.Style.Colors.Color{} = color} ->
           {key, to_string(color)}
+
         {key, value} ->
           {key, value}
       end)

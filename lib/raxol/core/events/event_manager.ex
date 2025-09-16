@@ -130,6 +130,13 @@ defmodule Raxol.Core.Events.EventManager do
           | {event_type(), term(), term()}
           | event_type()
         ) :: :ok
+  def dispatch(event_type, event_data)
+      when is_atom(event_type) and is_map(event_data) do
+    TelemetryAdapter.dispatch(event_type, event_data)
+    # Also notify GenServer for backward compatibility
+    notify(__MODULE__, event_type, event_data)
+  end
+
   def dispatch({event_type, key, value}) do
     TelemetryAdapter.dispatch(event_type, %{key => value})
     # Also notify GenServer for backward compatibility

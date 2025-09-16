@@ -69,16 +69,16 @@ defmodule Raxol.Core.CircuitBreaker do
   @type state :: :closed | :open | :half_open
   @type breaker_name :: atom()
   @type breaker_opts :: [
-    failure_threshold: pos_integer(),
-    success_threshold: pos_integer(),
-    timeout: pos_integer(),
-    half_open_timeout: pos_integer(),
-    reset_timeout: pos_integer(),
-    failure_rate_threshold: float(),
-    volume_threshold: pos_integer(),
-    fallback_fn: (-> term()),
-    on_state_change: (state(), state() -> :ok)
-  ]
+          failure_threshold: pos_integer(),
+          success_threshold: pos_integer(),
+          timeout: pos_integer(),
+          half_open_timeout: pos_integer(),
+          reset_timeout: pos_integer(),
+          failure_rate_threshold: float(),
+          volume_threshold: pos_integer(),
+          fallback_fn: (-> term()),
+          on_state_change: (state(), state() -> :ok)
+        ]
 
   # Client API
 
@@ -94,7 +94,9 @@ defmodule Raxol.Core.CircuitBreaker do
   @doc """
   Executes a function through the circuit breaker.
   """
-  @spec call(breaker_name(), (() -> result), timeout()) :: {:ok, result} | {:error, term()} when result: term()
+  @spec call(breaker_name(), (-> result), timeout()) ::
+          {:ok, result} | {:error, term()}
+        when result: term()
   def call(breaker_name, fun, timeout \\ 5000) do
     GenServer.call(breaker_name, {:call, fun}, timeout)
   end
@@ -102,7 +104,9 @@ defmodule Raxol.Core.CircuitBreaker do
   @doc """
   Executes a function with automatic fallback on circuit open.
   """
-  @spec call_with_fallback(breaker_name(), (() -> result), (() -> result), timeout()) :: result when result: term()
+  @spec call_with_fallback(breaker_name(), (-> result), (-> result), timeout()) ::
+          result
+        when result: term()
   def call_with_fallback(breaker_name, fun, fallback_fn, timeout \\ 5000) do
     case call(breaker_name, fun, timeout) do
       {:ok, result} -> result
@@ -227,19 +231,23 @@ defmodule Raxol.Core.CircuitBreaker do
 
     case result do
       {:ok, value} ->
-        new_state = %{state |
-          success_count: state.success_count + 1,
-          failure_count: 0,
-          metrics: update_metrics(new_metrics, :successful_calls)
+        new_state = %{
+          state
+          | success_count: state.success_count + 1,
+            failure_count: 0,
+            metrics: update_metrics(new_metrics, :successful_calls)
         }
+
         {:reply, {:ok, value}, new_state}
 
       {:error, reason} ->
         new_failure_count = state.failure_count + 1
-        new_state = %{state |
-          failure_count: new_failure_count,
-          last_failure_time: :os.timestamp(),
-          metrics: update_metrics(new_metrics, :failed_calls)
+
+        new_state = %{
+          state
+          | failure_count: new_failure_count,
+            last_failure_time: :os.timestamp(),
+            metrics: update_metrics(new_metrics, :failed_calls)
         }
 
         # Check if we should open the circuit
@@ -260,7 +268,8 @@ defmodule Raxol.Core.CircuitBreaker do
       new_state = transition_to_half_open(state)
       {:reply, {:error, :circuit_open}, new_state}
     else
-      new_metrics = state.metrics
+      new_metrics =
+        state.metrics
         |> update_metrics(:rejected_calls)
         |> update_metrics(:total_calls)
 
@@ -279,16 +288,18 @@ defmodule Raxol.Core.CircuitBreaker do
         new_state =
           if new_success_count >= state.success_threshold do
             # Circuit has recovered
-            %{state |
-              success_count: 0,
-              failure_count: 0,
-              metrics: update_metrics(new_metrics, :successful_calls)
+            %{
+              state
+              | success_count: 0,
+                failure_count: 0,
+                metrics: update_metrics(new_metrics, :successful_calls)
             }
             |> transition_to_closed()
           else
-            %{state |
-              success_count: new_success_count,
-              metrics: update_metrics(new_metrics, :successful_calls)
+            %{
+              state
+              | success_count: new_success_count,
+                metrics: update_metrics(new_metrics, :successful_calls)
             }
           end
 
@@ -296,13 +307,15 @@ defmodule Raxol.Core.CircuitBreaker do
 
       {:error, reason} ->
         # Single failure in half-open state reopens the circuit
-        new_state = %{state |
-          failure_count: state.failure_count + 1,
-          success_count: 0,
-          last_failure_time: :os.timestamp(),
-          metrics: update_metrics(new_metrics, :failed_calls)
-        }
-        |> transition_to_open()
+        new_state =
+          %{
+            state
+            | failure_count: state.failure_count + 1,
+              success_count: 0,
+              last_failure_time: :os.timestamp(),
+              metrics: update_metrics(new_metrics, :failed_calls)
+          }
+          |> transition_to_open()
 
         {:reply, {:error, reason}, new_state}
     end
@@ -361,21 +374,19 @@ defmodule Raxol.Core.CircuitBreaker do
     # Schedule transition to half-open
     Process.send_after(self(), {:timeout, :half_open}, state.timeout)
 
-    %{state |
-      state: :open,
-      metrics: add_state_change(state.metrics, :open)
-    }
+    %{state | state: :open, metrics: add_state_change(state.metrics, :open)}
   end
 
   defp transition_to_half_open(state) do
     Logger.info("Circuit breaker #{state.name} transitioning to HALF-OPEN")
     state.on_state_change.(state.state, :half_open)
 
-    %{state |
-      state: :half_open,
-      success_count: 0,
-      failure_count: 0,
-      metrics: add_state_change(state.metrics, :half_open)
+    %{
+      state
+      | state: :half_open,
+        success_count: 0,
+        failure_count: 0,
+        metrics: add_state_change(state.metrics, :half_open)
     }
   end
 
@@ -383,12 +394,13 @@ defmodule Raxol.Core.CircuitBreaker do
     Logger.info("Circuit breaker #{state.name} transitioning to CLOSED")
     state.on_state_change.(state.state, :closed)
 
-    %{state |
-      state: :closed,
-      success_count: 0,
-      failure_count: 0,
-      last_failure_time: nil,
-      metrics: add_state_change(state.metrics, :closed)
+    %{
+      state
+      | state: :closed,
+        success_count: 0,
+        failure_count: 0,
+        last_failure_time: nil,
+        metrics: add_state_change(state.metrics, :closed)
     }
   end
 
@@ -402,6 +414,6 @@ defmodule Raxol.Core.CircuitBreaker do
       timestamp: :os.timestamp()
     }
 
-    Map.update(metrics, :state_changes, [change], &([change | &1]))
+    Map.update(metrics, :state_changes, [change], &[change | &1])
   end
 end

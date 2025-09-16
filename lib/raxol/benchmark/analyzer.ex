@@ -33,6 +33,7 @@ defmodule Raxol.Benchmark.Analyzer do
           }
         else
           analysis = StatisticalAnalyzer.analyze(timing_data)
+
           %{
             summary: generate_summary(analysis),
             statistics: analysis,
@@ -59,6 +60,7 @@ defmodule Raxol.Benchmark.Analyzer do
           }
         else
           analysis = StatisticalAnalyzer.analyze(timing_data)
+
           %{
             summary: generate_summary(analysis),
             statistics: analysis,
@@ -70,6 +72,7 @@ defmodule Raxol.Benchmark.Analyzer do
         # Check if it's a list of numbers
         if Enum.all?(results, &is_number/1) do
           analysis = StatisticalAnalyzer.analyze(results)
+
           %{
             summary: generate_summary(analysis),
             statistics: analysis,
@@ -113,6 +116,7 @@ defmodule Raxol.Benchmark.Analyzer do
     case baseline do
       nil ->
         []
+
       baseline_results ->
         detector_result = RegressionDetector.detect(results, baseline_results)
         detector_result.regressions
@@ -182,18 +186,51 @@ defmodule Raxol.Benchmark.Analyzer do
 
     recommendations =
       if (analysis.coefficient_of_variation || 0) > 0.2 do
-        ["High variability detected. Consider running more iterations for stable results." | recommendations]
+        [
+          "High variability detected. Consider running more iterations for stable results."
+          | recommendations
+        ]
       else
         recommendations
       end
 
     recommendations =
       if (analysis.std_dev || 0) > (analysis.mean || 1) * 0.5 do
-        ["Large standard deviation indicates inconsistent performance." | recommendations]
+        [
+          "Large standard deviation indicates inconsistent performance."
+          | recommendations
+        ]
       else
         recommendations
       end
 
     Enum.reverse(recommendations)
+  end
+
+  @doc """
+  Analyze profile results.
+  """
+  def analyze_profile(name, results) do
+    # Simple profile analysis for now
+    IO.puts("Profile analysis for #{name}:")
+    IO.inspect(results, limit: :infinity, pretty: true)
+    :ok
+  end
+
+  @doc """
+  Report regressions found in benchmark results.
+  """
+  def report_regressions(regressions) when is_list(regressions) do
+    if Enum.empty?(regressions) do
+      IO.puts("No performance regressions detected.")
+    else
+      IO.puts("Performance regressions detected:")
+
+      Enum.each(regressions, fn regression ->
+        IO.puts("  - #{inspect(regression)}")
+      end)
+    end
+
+    :ok
   end
 end

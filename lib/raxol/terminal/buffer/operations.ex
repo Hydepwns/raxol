@@ -321,7 +321,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Erases all lines after the specified row.
   """
-  def erase_lines_after(buffer, start_row) do
+  def erase_lines_after(buffer, _start_row) do
     # TODO: Implement erase_lines_after properly
     Eraser.clear(buffer)
   end
@@ -329,7 +329,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Erases all lines before the specified row.
   """
-  def erase_lines_before(buffer, end_row) do
+  def erase_lines_before(buffer, _end_row) do
     # TODO: Implement erase_lines_before properly
     Eraser.clear(buffer)
   end

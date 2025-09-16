@@ -76,36 +76,52 @@ defmodule Raxol.Protocols.ComponentFramework do
     """
 
     defstruct [
-      :type,           # Component type (atom)
-      :module,         # Module that defines the component
-      :props,          # Component properties
-      :state,          # Component state
-      :style,          # Applied styles
-      :theme,          # Applied theme
-      :event_handlers, # Event handler mappings
-      :children,       # Child components
-      :metadata        # Additional metadata
+      # Component type (atom)
+      :type,
+      # Module that defines the component
+      :module,
+      # Component properties
+      :props,
+      # Component state
+      :state,
+      # Applied styles
+      :style,
+      # Applied theme
+      :theme,
+      # Event handler mappings
+      :event_handlers,
+      # Child components
+      :children,
+      # Additional metadata
+      :metadata
     ]
 
     @type t :: %__MODULE__{
-      type: atom(),
-      module: module(),
-      props: map(),
-      state: map(),
-      style: map(),
-      theme: map() | nil,
-      event_handlers: map(),
-      children: [t()],
-      metadata: map()
-    }
+            type: atom(),
+            module: module(),
+            props: map(),
+            state: map(),
+            style: map(),
+            theme: map() | nil,
+            event_handlers: map(),
+            children: [t()],
+            metadata: map()
+          }
   end
 
   # Protocol implementations for ComponentInstance
   defimpl Renderable, for: ComponentInstance do
     def render(component, opts \\ []) do
       case function_exported?(component.module, :render_component, 3) do
-        true -> apply(component.module, :render_component, [component.type, component, opts])
-        false -> render_default_component(component, opts)
+        true ->
+          apply(component.module, :render_component, [
+            component.type,
+            component,
+            opts
+          ])
+
+        false ->
+          render_default_component(component, opts)
       end
     end
 
@@ -122,7 +138,10 @@ defmodule Raxol.Protocols.ComponentFramework do
       Map.merge(base_metadata, component.metadata)
     end
 
-    defp has_event_handlers?(%{event_handlers: handlers}) when map_size(handlers) > 0, do: true
+    defp has_event_handlers?(%{event_handlers: handlers})
+         when map_size(handlers) > 0,
+         do: true
+
     defp has_event_handlers?(_), do: false
 
     defp has_theme?(%{theme: nil}), do: false
@@ -135,9 +154,10 @@ defmodule Raxol.Protocols.ComponentFramework do
       width = Keyword.get(opts, :width, 40)
       show_debug = Keyword.get(opts, :debug, false)
 
-      content = build_content_sections(component, opts, width, show_debug)
-      |> Enum.reject(&is_nil/1)
-      |> Enum.join("\n")
+      content =
+        build_content_sections(component, opts, width, show_debug)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.join("\n")
 
       apply_component_styling(content, component)
     end
@@ -174,9 +194,10 @@ defmodule Raxol.Protocols.ComponentFramework do
     end
 
     defp render_component_props(%{props: props}) do
-      props_str = props
-      |> Enum.map(fn {k, v} -> "  #{k}: #{inspect(v)}" end)
-      |> Enum.join("\n")
+      props_str =
+        props
+        |> Enum.map(fn {k, v} -> "  #{k}: #{inspect(v)}" end)
+        |> Enum.join("\n")
 
       "Props:\n#{props_str}"
     end
@@ -184,13 +205,14 @@ defmodule Raxol.Protocols.ComponentFramework do
     defp render_component_children(%{children: []}, _opts), do: ""
 
     defp render_component_children(%{children: children}, opts) do
-      children_rendered = children
-      |> Enum.with_index()
-      |> Enum.map(fn {child, index} ->
-        child_content = Renderable.render(child, opts)
-        "Child #{index + 1}:\n#{indent_content(child_content)}"
-      end)
-      |> Enum.join("\n\n")
+      children_rendered =
+        children
+        |> Enum.with_index()
+        |> Enum.map(fn {child, index} ->
+          child_content = Renderable.render(child, opts)
+          "Child #{index + 1}:\n#{indent_content(child_content)}"
+        end)
+        |> Enum.join("\n\n")
 
       "Children:\n#{children_rendered}"
     end
@@ -206,7 +228,8 @@ defmodule Raxol.Protocols.ComponentFramework do
       |> Enum.join("\n")
     end
 
-    defp apply_component_styling(content, %{style: style}) when map_size(style) == 0 do
+    defp apply_component_styling(content, %{style: style})
+         when map_size(style) == 0 do
       content
     end
 
@@ -256,10 +279,14 @@ defmodule Raxol.Protocols.ComponentFramework do
       try_module_handler(component, event, state)
     end
 
-    defp handle_event_with_handler(handler, component, event, state) when is_function(handler) do
+    defp handle_event_with_handler(handler, component, event, state)
+         when is_function(handler) do
       case handler.(component, event, state) do
-        {:ok, updated_component, new_state} -> {:ok, updated_component, new_state}
-        other -> other
+        {:ok, updated_component, new_state} ->
+          {:ok, updated_component, new_state}
+
+        other ->
+          other
       end
     end
 
@@ -269,8 +296,15 @@ defmodule Raxol.Protocols.ComponentFramework do
 
     defp try_module_handler(component, event, state) do
       case function_exported?(component.module, :handle_component_event, 3) do
-        true -> apply(component.module, :handle_component_event, [component, event, state])
-        false -> {:unhandled, component, state}
+        true ->
+          apply(component.module, :handle_component_event, [
+            component,
+            event,
+            state
+          ])
+
+        false ->
+          {:unhandled, component, state}
       end
     end
 
@@ -284,20 +318,22 @@ defmodule Raxol.Protocols.ComponentFramework do
     end
 
     def subscribe(component, event_types) do
-      new_handlers = Enum.reduce(event_types, component.event_handlers, fn event_type, acc ->
-        case Map.has_key?(acc, event_type) do
-          true -> acc
-          false -> Map.put(acc, event_type, &default_event_handler/3)
-        end
-      end)
+      new_handlers =
+        Enum.reduce(event_types, component.event_handlers, fn event_type, acc ->
+          case Map.has_key?(acc, event_type) do
+            true -> acc
+            false -> Map.put(acc, event_type, &default_event_handler/3)
+          end
+        end)
 
       %{component | event_handlers: new_handlers}
     end
 
     def unsubscribe(component, event_types) do
-      updated_handlers = Enum.reduce(event_types, component.event_handlers, fn event_type, acc ->
-        Map.delete(acc, event_type)
-      end)
+      updated_handlers =
+        Enum.reduce(event_types, component.event_handlers, fn event_type, acc ->
+          Map.delete(acc, event_type)
+        end)
 
       %{component | event_handlers: updated_handlers}
     end
@@ -329,9 +365,10 @@ defmodule Raxol.Protocols.ComponentFramework do
     def serialize(component, :binary) do
       # Remove function references before serialization
       serializable_component = %{
-        component |
-        event_handlers: %{},  # Remove function references
-        children: serialize_children_binary(component.children)
+        component
+        | # Remove function references
+          event_handlers: %{},
+          children: serialize_children_binary(component.children)
       }
 
       :erlang.term_to_binary(serializable_component)

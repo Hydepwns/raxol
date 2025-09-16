@@ -168,6 +168,10 @@ defmodule Raxol.Application do
       {Raxol.DynamicSupervisor, []},
       {Raxol.Terminal.Supervisor, []},
 
+      # Configuration and Debug services
+      {Raxol.Config, []},
+      {Raxol.Debug, []},
+
       # Conditional core services
       maybe_add_repo(),
       maybe_add_pubsub(),
@@ -205,8 +209,11 @@ defmodule Raxol.Application do
       Raxol.Repo
     else
       if feature_enabled?(:database) do
-        Logger.debug("[Raxol.Application] Database feature enabled but Raxol.Repo module not available - continuing without database")
+        Logger.debug(
+          "[Raxol.Application] Database feature enabled but Raxol.Repo module not available - continuing without database"
+        )
       end
+
       nil
     end
   end
@@ -220,12 +227,20 @@ defmodule Raxol.Application do
   defp maybe_add_endpoint do
     if feature_enabled?(:web_interface) && module_available?(RaxolWeb.Endpoint) do
       endpoints = [RaxolWeb.Endpoint]
-      endpoints = if module_available?(RaxolWeb.Telemetry), do: endpoints ++ [RaxolWeb.Telemetry], else: endpoints
+
+      endpoints =
+        if module_available?(RaxolWeb.Telemetry),
+          do: endpoints ++ [RaxolWeb.Telemetry],
+          else: endpoints
+
       endpoints
     else
       if feature_enabled?(:web_interface) do
-        Logger.debug("[Raxol.Application] Web interface feature enabled but RaxolWeb.Endpoint module not available - continuing without web interface")
+        Logger.debug(
+          "[Raxol.Application] Web interface feature enabled but RaxolWeb.Endpoint module not available - continuing without web interface"
+        )
       end
+
       []
     end
   end
@@ -251,13 +266,17 @@ defmodule Raxol.Application do
     end
   end
 
-  defp maybe_add_telemetry(mode \\ :full) do
-    if feature_enabled?(:telemetry) && module_available?(Raxol.Core.Telemetry.Supervisor) do
+  defp maybe_add_telemetry(mode) do
+    if feature_enabled?(:telemetry) &&
+         module_available?(Raxol.Core.Telemetry.Supervisor) do
       {Raxol.Core.Telemetry.Supervisor, [mode: mode]}
     else
       if feature_enabled?(:telemetry) do
-        Logger.debug("[Raxol.Application] Telemetry feature enabled but Raxol.Core.Telemetry.Supervisor module not available - continuing without telemetry")
+        Logger.debug(
+          "[Raxol.Application] Telemetry feature enabled but Raxol.Core.Telemetry.Supervisor module not available - continuing without telemetry"
+        )
       end
+
       nil
     end
   end
@@ -303,9 +322,11 @@ defmodule Raxol.Application do
 
   defp default_features do
     %{
-      database: false,  # Changed to false for graceful development
+      # Changed to false for graceful development
+      database: false,
       pubsub: true,
-      web_interface: false,  # Changed to false for graceful development
+      # Changed to false for graceful development
+      web_interface: false,
       terminal_driver: true,
       performance_monitoring: true,
       terminal_sync: true,
@@ -373,10 +394,14 @@ defmodule Raxol.Application do
 
   defp optional_child?(child) when is_atom(child) do
     optional_modules = [
-      Raxol.Repo,  # Added for graceful database degradation
-      Raxol.Core.Telemetry.Supervisor,  # Added for graceful telemetry degradation
-      RaxolWeb.Endpoint,  # Added for graceful web interface degradation
-      RaxolWeb.Telemetry,  # Added for graceful web telemetry degradation
+      # Added for graceful database degradation
+      Raxol.Repo,
+      # Added for graceful telemetry degradation
+      Raxol.Core.Telemetry.Supervisor,
+      # Added for graceful web interface degradation
+      RaxolWeb.Endpoint,
+      # Added for graceful web telemetry degradation
+      RaxolWeb.Telemetry,
       Raxol.Plugin.Supervisor,
       Raxol.Audit.Supervisor,
       RaxolWeb.RateLimitManager,

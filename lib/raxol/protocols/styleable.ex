@@ -40,8 +40,10 @@ defprotocol Raxol.Protocols.Styleable do
   """
 
   @type style :: %{
-          optional(:foreground) => {non_neg_integer(), non_neg_integer(), non_neg_integer()} | atom(),
-          optional(:background) => {non_neg_integer(), non_neg_integer(), non_neg_integer()} | atom(),
+          optional(:foreground) =>
+            {non_neg_integer(), non_neg_integer(), non_neg_integer()} | atom(),
+          optional(:background) =>
+            {non_neg_integer(), non_neg_integer(), non_neg_integer()} | atom(),
           optional(:bold) => boolean(),
           optional(:italic) => boolean(),
           optional(:underline) => boolean(),
@@ -168,31 +170,33 @@ defimpl Raxol.Protocols.Styleable, for: Map do
     codes = if style[:hidden], do: ["8" | codes], else: codes
     codes = if style[:strikethrough], do: ["9" | codes], else: codes
 
-    codes = case style[:foreground] do
-      {r, g, b} -> ["38;2;#{r};#{g};#{b}" | codes]
-      :black -> ["30" | codes]
-      :red -> ["31" | codes]
-      :green -> ["32" | codes]
-      :yellow -> ["33" | codes]
-      :blue -> ["34" | codes]
-      :magenta -> ["35" | codes]
-      :cyan -> ["36" | codes]
-      :white -> ["37" | codes]
-      _ -> codes
-    end
+    codes =
+      case style[:foreground] do
+        {r, g, b} -> ["38;2;#{r};#{g};#{b}" | codes]
+        :black -> ["30" | codes]
+        :red -> ["31" | codes]
+        :green -> ["32" | codes]
+        :yellow -> ["33" | codes]
+        :blue -> ["34" | codes]
+        :magenta -> ["35" | codes]
+        :cyan -> ["36" | codes]
+        :white -> ["37" | codes]
+        _ -> codes
+      end
 
-    codes = case style[:background] do
-      {r, g, b} -> ["48;2;#{r};#{g};#{b}" | codes]
-      :black -> ["40" | codes]
-      :red -> ["41" | codes]
-      :green -> ["42" | codes]
-      :yellow -> ["43" | codes]
-      :blue -> ["44" | codes]
-      :magenta -> ["45" | codes]
-      :cyan -> ["46" | codes]
-      :white -> ["47" | codes]
-      _ -> codes
-    end
+    codes =
+      case style[:background] do
+        {r, g, b} -> ["48;2;#{r};#{g};#{b}" | codes]
+        :black -> ["40" | codes]
+        :red -> ["41" | codes]
+        :green -> ["42" | codes]
+        :yellow -> ["43" | codes]
+        :blue -> ["44" | codes]
+        :magenta -> ["45" | codes]
+        :cyan -> ["46" | codes]
+        :white -> ["47" | codes]
+        _ -> codes
+      end
 
     if codes == [] do
       ""

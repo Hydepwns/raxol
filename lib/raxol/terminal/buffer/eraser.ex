@@ -18,6 +18,14 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     clear(buffer)
   end
 
+  @doc """
+  Clears all content from the buffer.
+  Alias for clear/1.
+  """
+  def clear_all(buffer) do
+    clear(buffer)
+  end
+
   def erase_from_cursor_to_end(buffer) do
     {row, col} = buffer.cursor_position
     erase_line_segment(buffer, row, col)

@@ -28,7 +28,13 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
           memory_time: :integer,
           output: :string
         ],
-        aliases: [s: :scenario, d: :with_dashboard, t: :time, m: :memory_time, o: :output]
+        aliases: [
+          s: :scenario,
+          d: :with_dashboard,
+          t: :time,
+          m: :memory_time,
+          o: :output
+        ]
       )
 
     Application.ensure_all_started(:raxol)
@@ -36,7 +42,10 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
     scenario = Keyword.get(opts, :scenario, "all")
     time = Keyword.get(opts, :time, 2)
     memory_time = Keyword.get(opts, :memory_time, 1)
-    output_path = Keyword.get(opts, :output, "bench/output/memory_analysis_report.html")
+
+    output_path =
+      Keyword.get(opts, :output, "bench/output/memory_analysis_report.html")
+
     with_dashboard = Keyword.get(opts, :with_dashboard, false)
 
     Mix.shell().info("Running Memory Analysis Benchmarks...")
@@ -53,17 +62,32 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
       ]
     ]
 
-    results = case scenario do
-      "terminal_operations" -> run_terminal_operations_analysis(benchmark_config)
-      "buffer_management" -> run_buffer_management_analysis(benchmark_config)
-      "realistic_usage" -> run_realistic_usage_analysis(benchmark_config)
-      "memory_patterns" -> run_memory_pattern_analysis(benchmark_config)
-      "all" -> run_comprehensive_analysis(benchmark_config)
-      _ ->
-        Mix.shell().error("Unknown scenario: #{scenario}")
-        Mix.shell().info("Available scenarios: terminal_operations, buffer_management, realistic_usage, memory_patterns, all")
-        System.halt(1)
-    end
+    results =
+      case scenario do
+        "terminal_operations" ->
+          run_terminal_operations_analysis(benchmark_config)
+
+        "buffer_management" ->
+          run_buffer_management_analysis(benchmark_config)
+
+        "realistic_usage" ->
+          run_realistic_usage_analysis(benchmark_config)
+
+        "memory_patterns" ->
+          run_memory_pattern_analysis(benchmark_config)
+
+        "all" ->
+          run_comprehensive_analysis(benchmark_config)
+
+        _ ->
+          Mix.shell().error("Unknown scenario: #{scenario}")
+
+          Mix.shell().info(
+            "Available scenarios: terminal_operations, buffer_management, realistic_usage, memory_patterns, all"
+          )
+
+          System.halt(1)
+      end
 
     # Analyze memory patterns
     Mix.shell().info("\nAnalyzing Memory Patterns...")
@@ -91,7 +115,11 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
       case MemoryDashboard.generate_dashboard(dashboard_config, dashboard_path) do
         {:ok, _} ->
           Mix.shell().info("Dashboard generated: #{dashboard_path}")
-          Mix.shell().info("Open in browser: file://#{Path.expand(dashboard_path)}")
+
+          Mix.shell().info(
+            "Open in browser: file://#{Path.expand(dashboard_path)}"
+          )
+
         {:error, error} ->
           Mix.shell().error("Dashboard generation failed: #{inspect(error)}")
       end
@@ -134,17 +162,23 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
       end,
       "buffer_modification_heavy" => fn ->
         buffer = create_terminal_buffer(50, 50)
+
         for row <- 1..50, col <- 1..50 do
           update_cell(buffer, row, col, "X")
         end
       end,
       "ansi_sequence_processing" => fn ->
         sequences = [
-          "\e[2J",           # Clear screen
-          "\e[1;1H",         # Move to home
-          "\e[31mRed\e[0m",  # Color text
-          "\e[?1049h",       # Alternative buffer
-          "\e[?1049l"        # Normal buffer
+          # Clear screen
+          "\e[2J",
+          # Move to home
+          "\e[1;1H",
+          # Color text
+          "\e[31mRed\e[0m",
+          # Alternative buffer
+          "\e[?1049h",
+          # Normal buffer
+          "\e[?1049l"
         ]
 
         for seq <- sequences do
@@ -153,6 +187,7 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
       end,
       "scroll_operations_heavy" => fn ->
         buffer = create_terminal_buffer(80, 24)
+
         for _i <- 1..100 do
           scroll_buffer_up(buffer)
         end
@@ -190,10 +225,12 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
       end,
       "exponential_growth_pattern" => fn ->
         # Simulate exponential memory growth
-        data = Enum.reduce(1..10, ["start"], fn _i, acc ->
-          expanded = Enum.map(acc, &String.duplicate(&1, 2))
-          acc ++ expanded
-        end)
+        data =
+          Enum.reduce(1..10, ["start"], fn _i, acc ->
+            expanded = Enum.map(acc, &String.duplicate(&1, 2))
+            acc ++ expanded
+          end)
+
         data
       end,
       "constant_memory_pattern" => fn ->
@@ -203,9 +240,11 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
       end,
       "gc_pressure_pattern" => fn ->
         # Create scenario that triggers GC
-        large_data = for _i <- 1..1000 do
-          :crypto.strong_rand_bytes(1024)
-        end
+        large_data =
+          for _i <- 1..1000 do
+            :crypto.strong_rand_bytes(1024)
+          end
+
         # Force some allocation/deallocation cycles
         Enum.chunk_every(large_data, 100)
         |> Enum.map(&length/1)
@@ -265,10 +304,13 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
   defp update_cell(buffer, row, col, char) when is_list(buffer) do
     if row <= length(buffer) do
       buffer_row = Enum.at(buffer, row - 1)
+
       if col <= length(buffer_row) do
-        updated_row = List.update_at(buffer_row, col - 1, fn cell ->
-          %{cell | char: char}
-        end)
+        updated_row =
+          List.update_at(buffer_row, col - 1, fn cell ->
+            %{cell | char: char}
+          end)
+
         List.update_at(buffer, row - 1, fn _ -> updated_row end)
       else
         buffer
@@ -293,49 +335,64 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
 
   defp scroll_buffer_up(buffer) when is_list(buffer) do
     case buffer do
-      [] -> []
+      [] ->
+        []
+
       [_first | rest] ->
-        empty_row = for _col <- 1..80, do: %{char: " ", fg: :white, bg: :black, style: %{}}
+        empty_row =
+          for _col <- 1..80,
+              do: %{char: " ", fg: :white, bg: :black, style: %{}}
+
         rest ++ [empty_row]
     end
   end
 
   defp simulate_vim_session do
     # Simulate vim operations: file loading, editing, syntax highlighting
-    file_content = for _i <- 1..1000, do: "def function_#{:rand.uniform(1000)}, do: :ok"
+    file_content =
+      for _i <- 1..1000, do: "def function_#{:rand.uniform(1000)}, do: :ok"
 
     # Simulate syntax highlighting (create colored tokens)
-    highlighted = Enum.map(file_content, fn line ->
-      tokens = String.split(line, " ")
-      Enum.map(tokens, fn token ->
-        color = case token do
-          "def" -> :blue
-          "do:" -> :green
-          _ -> :white
-        end
-        %{text: token, color: color}
+    highlighted =
+      Enum.map(file_content, fn line ->
+        tokens = String.split(line, " ")
+
+        Enum.map(tokens, fn token ->
+          color =
+            case token do
+              "def" -> :blue
+              "do:" -> :green
+              _ -> :white
+            end
+
+          %{text: token, color: color}
+        end)
       end)
-    end)
 
     # Simulate editing operations
-    modified = Enum.take(highlighted, 500) ++
-               [%{text: "# New comment", color: :gray}] ++
-               Enum.drop(highlighted, 500)
+    modified =
+      Enum.take(highlighted, 500) ++
+        [%{text: "# New comment", color: :gray}] ++
+        Enum.drop(highlighted, 500)
 
     modified
   end
 
   defp simulate_log_streaming(num_lines) do
     # Simulate continuous log output
-    timestamps = for i <- 1..num_lines do
-      {{2024, 1, 1}, {12, 0, i}} |> NaiveDateTime.from_erl!()
-    end
+    timestamps =
+      for i <- 1..num_lines do
+        {{2024, 1, 1}, {12, 0, i}} |> NaiveDateTime.from_erl!()
+      end
 
     log_levels = [:info, :warn, :error, :debug]
 
     for {timestamp, i} <- Enum.with_index(timestamps, 1) do
       level = Enum.random(log_levels)
-      message = "Log message #{i} with some detailed information about system state"
+
+      message =
+        "Log message #{i} with some detailed information about system state"
+
       %{
         timestamp: timestamp,
         level: level,
@@ -360,14 +417,15 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
 
   defp process_rapid_output(num_outputs) do
     # Simulate rapid terminal output processing
-    outputs = for i <- 1..num_outputs do
-      case rem(i, 4) do
-        0 -> "\e[31mError: Something went wrong #{i}\e[0m\n"
-        1 -> "\e[32mSuccess: Operation #{i} completed\e[0m\n"
-        2 -> "\e[33mWarning: Check configuration #{i}\e[0m\n"
-        3 -> "Info: Processing item #{i}\n"
+    outputs =
+      for i <- 1..num_outputs do
+        case rem(i, 4) do
+          0 -> "\e[31mError: Something went wrong #{i}\e[0m\n"
+          1 -> "\e[32mSuccess: Operation #{i} completed\e[0m\n"
+          2 -> "\e[33mWarning: Check configuration #{i}\e[0m\n"
+          3 -> "Info: Processing item #{i}\n"
+        end
       end
-    end
 
     # Process each output (simulate parsing and buffer updates)
     for output <- outputs do
@@ -382,10 +440,21 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
   defp print_analysis_summary(analysis) do
     Mix.shell().info("\n=== Memory Analysis Summary ===")
     Mix.shell().info("Peak Memory: #{format_bytes(analysis.peak_memory)}")
-    Mix.shell().info("Sustained Memory: #{format_bytes(analysis.sustained_memory)}")
+
+    Mix.shell().info(
+      "Sustained Memory: #{format_bytes(analysis.sustained_memory)}"
+    )
+
     Mix.shell().info("GC Collections: #{analysis.gc_collections}")
-    Mix.shell().info("Fragmentation Ratio: #{Float.round(analysis.fragmentation_ratio, 3)}")
-    Mix.shell().info("Efficiency Score: #{Float.round(analysis.efficiency_score, 3)}")
+
+    Mix.shell().info(
+      "Fragmentation Ratio: #{Float.round(analysis.fragmentation_ratio, 3)}"
+    )
+
+    Mix.shell().info(
+      "Efficiency Score: #{Float.round(analysis.efficiency_score, 3)}"
+    )
+
     Mix.shell().info("Regression Detected: #{analysis.regression_detected}")
 
     platform_info = analysis.platform_differences
@@ -397,6 +466,7 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
   defp print_recommendations(recommendations) do
     if length(recommendations) > 0 do
       Mix.shell().info("\n=== Optimization Recommendations ===")
+
       for {recommendation, index} <- Enum.with_index(recommendations, 1) do
         Mix.shell().info("#{index}. #{recommendation}")
       end
@@ -409,12 +479,15 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
   defp format_bytes(bytes) when bytes >= 1_000_000_000 do
     "#{Float.round(bytes / 1_000_000_000, 2)} GB"
   end
+
   defp format_bytes(bytes) when bytes >= 1_000_000 do
     "#{Float.round(bytes / 1_000_000, 2)} MB"
   end
+
   defp format_bytes(bytes) when bytes >= 1_000 do
     "#{Float.round(bytes / 1_000, 2)} KB"
   end
+
   defp format_bytes(bytes) do
     "#{bytes} B"
   end

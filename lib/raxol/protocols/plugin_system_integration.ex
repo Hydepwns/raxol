@@ -26,15 +26,15 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
     ]
 
     @type t :: %__MODULE__{
-      id: atom(),
-      name: String.t(),
-      version: String.t(),
-      module: module(),
-      config: map(),
-      capabilities: MapSet.t(),
-      state: map(),
-      metadata: map()
-    }
+            id: atom(),
+            name: String.t(),
+            version: String.t(),
+            module: module(),
+            config: map(),
+            capabilities: MapSet.t(),
+            state: map(),
+            metadata: map()
+          }
 
     def new(plugin_module, opts \\ []) do
       capabilities = detect_capabilities(plugin_module)
@@ -55,11 +55,26 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
       base_capabilities = MapSet.new()
 
       base_capabilities
-      |> maybe_add_capability(:renderable, function_exported?(module, :render, 2))
-      |> maybe_add_capability(:styleable, function_exported?(module, :apply_style, 2))
-      |> maybe_add_capability(:event_handler, function_exported?(module, :handle_event, 3))
-      |> maybe_add_capability(:serializable, function_exported?(module, :serialize, 2))
-      |> maybe_add_capability(:configurable, function_exported?(module, :configure, 2))
+      |> maybe_add_capability(
+        :renderable,
+        function_exported?(module, :render, 2)
+      )
+      |> maybe_add_capability(
+        :styleable,
+        function_exported?(module, :apply_style, 2)
+      )
+      |> maybe_add_capability(
+        :event_handler,
+        function_exported?(module, :handle_event, 3)
+      )
+      |> maybe_add_capability(
+        :serializable,
+        function_exported?(module, :serialize, 2)
+      )
+      |> maybe_add_capability(
+        :configurable,
+        function_exported?(module, :configure, 2)
+      )
       |> maybe_add_capability(:lifecycle, function_exported?(module, :start, 1))
     end
 
@@ -185,7 +200,8 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
         true ->
           case function_exported?(plugin.module, :can_handle?, 2) do
             true -> apply(plugin.module, :can_handle?, [plugin, event])
-            false -> true  # Assume it can handle if it has the capability
+            # Assume it can handle if it has the capability
+            false -> true
           end
 
         false ->
@@ -280,9 +296,9 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
     defp serialize_default(plugin, :binary) do
       # Remove function references and complex data before serialization
       serializable_plugin = %{
-        plugin |
-        module: to_string(plugin.module),
-        capabilities: MapSet.to_list(plugin.capabilities)
+        plugin
+        | module: to_string(plugin.module),
+          capabilities: MapSet.to_list(plugin.capabilities)
       }
 
       :erlang.term_to_binary(serializable_plugin)
@@ -293,9 +309,7 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
     end
   end
 
-  @doc """
-  Plugin registry that maintains protocol-aware plugins.
-  """
+  # Plugin registry that maintains protocol-aware plugins.
   defmodule PluginRegistry do
     use GenServer
 
@@ -340,12 +354,19 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
     def handle_call({:register, plugin}, _from, state) do
       updated_plugins = Map.put(state.plugins, plugin.id, plugin)
 
-      updated_capabilities = Enum.reduce(plugin.capabilities, state.capabilities_index, fn cap, acc ->
-        current_plugins = Map.get(acc, cap, MapSet.new())
-        Map.put(acc, cap, MapSet.put(current_plugins, plugin.id))
-      end)
+      updated_capabilities =
+        Enum.reduce(plugin.capabilities, state.capabilities_index, fn cap,
+                                                                      acc ->
+          current_plugins = Map.get(acc, cap, MapSet.new())
+          Map.put(acc, cap, MapSet.put(current_plugins, plugin.id))
+        end)
 
-      new_state = %{state | plugins: updated_plugins, capabilities_index: updated_capabilities}
+      new_state = %{
+        state
+        | plugins: updated_plugins,
+          capabilities_index: updated_capabilities
+      }
+
       {:reply, {:ok, plugin.id}, new_state}
     end
 
@@ -358,17 +379,24 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
         plugin ->
           updated_plugins = Map.delete(state.plugins, plugin_id)
 
-          updated_capabilities = Enum.reduce(plugin.capabilities, state.capabilities_index, fn cap, acc ->
-            current_plugins = Map.get(acc, cap, MapSet.new())
-            updated_set = MapSet.delete(current_plugins, plugin_id)
+          updated_capabilities =
+            Enum.reduce(plugin.capabilities, state.capabilities_index, fn cap,
+                                                                          acc ->
+              current_plugins = Map.get(acc, cap, MapSet.new())
+              updated_set = MapSet.delete(current_plugins, plugin_id)
 
-            case MapSet.size(updated_set) do
-              0 -> Map.delete(acc, cap)
-              _ -> Map.put(acc, cap, updated_set)
-            end
-          end)
+              case MapSet.size(updated_set) do
+                0 -> Map.delete(acc, cap)
+                _ -> Map.put(acc, cap, updated_set)
+              end
+            end)
 
-          new_state = %{state | plugins: updated_plugins, capabilities_index: updated_capabilities}
+          new_state = %{
+            state
+            | plugins: updated_plugins,
+              capabilities_index: updated_capabilities
+          }
+
           {:reply, :ok, new_state}
       end
     end
@@ -389,38 +417,40 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
     def handle_call({:find_by_capability, capability}, _from, state) do
       plugin_ids = Map.get(state.capabilities_index, capability, MapSet.new())
 
-      plugins = plugin_ids
-      |> Enum.map(&Map.get(state.plugins, &1))
-      |> Enum.filter(&(&1 != nil))
+      plugins =
+        plugin_ids
+        |> Enum.map(&Map.get(state.plugins, &1))
+        |> Enum.filter(&(&1 != nil))
 
       {:reply, plugins, state}
     end
 
     @impl true
     def handle_call({:dispatch_event, event}, _from, state) do
-      results = state.plugins
-      |> Map.values()
-      |> Enum.filter(&EventHandler.can_handle?(&1, event))
-      |> Enum.map(fn plugin ->
-        case EventHandler.handle_event(plugin, event, %{}) do
-          {:ok, updated_plugin, result} ->
-            # Update plugin in registry
-            updated_plugins = Map.put(state.plugins, plugin.id, updated_plugin)
-            state = %{state | plugins: updated_plugins}
-            {:ok, plugin.id, result}
+      results =
+        state.plugins
+        |> Map.values()
+        |> Enum.filter(&EventHandler.can_handle?(&1, event))
+        |> Enum.map(fn plugin ->
+          case EventHandler.handle_event(plugin, event, %{}) do
+            {:ok, updated_plugin, result} ->
+              # Update plugin in registry
+              updated_plugins =
+                Map.put(state.plugins, plugin.id, updated_plugin)
 
-          other ->
-            {plugin.id, other}
-        end
-      end)
+              _state = %{state | plugins: updated_plugins}
+              {:ok, plugin.id, result}
+
+            other ->
+              {plugin.id, other}
+          end
+        end)
 
       {:reply, results, state}
     end
   end
 
-  @doc """
-  Utility functions for working with protocol-aware plugins.
-  """
+  # Utility functions for working with protocol-aware plugins.
 
   def load_plugin_from_config(config) when is_map(config) do
     module_name = Map.fetch!(config, "module")

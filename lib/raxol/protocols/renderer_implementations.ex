@@ -60,20 +60,26 @@ defmodule Raxol.Protocols.RendererImplementations do
       codes = []
 
       # Extract foreground color
-      codes = case theme[:foreground] do
-        %{default: color} when is_binary(color) ->
-          rgb = hex_to_rgb(color)
-          ["38;2;#{elem(rgb, 0)};#{elem(rgb, 1)};#{elem(rgb, 2)}" | codes]
-        _ -> codes
-      end
+      codes =
+        case theme[:foreground] do
+          %{default: color} when is_binary(color) ->
+            rgb = hex_to_rgb(color)
+            ["38;2;#{elem(rgb, 0)};#{elem(rgb, 1)};#{elem(rgb, 2)}" | codes]
+
+          _ ->
+            codes
+        end
 
       # Extract background color
-      codes = case theme[:background] do
-        %{default: color} when is_binary(color) ->
-          rgb = hex_to_rgb(color)
-          ["48;2;#{elem(rgb, 0)};#{elem(rgb, 1)};#{elem(rgb, 2)}" | codes]
-        _ -> codes
-      end
+      codes =
+        case theme[:background] do
+          %{default: color} when is_binary(color) ->
+            rgb = hex_to_rgb(color)
+            ["48;2;#{elem(rgb, 0)};#{elem(rgb, 1)};#{elem(rgb, 2)}" | codes]
+
+          _ ->
+            codes
+        end
 
       if codes == [] do
         ""

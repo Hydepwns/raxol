@@ -101,13 +101,25 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     config = build_config(opts)
 
     case config.command do
-      "analyze" -> run_memory_analysis(config)
-      "hotspots" -> run_hotspot_analysis(config)
-      "leaks" -> run_leak_detection(config)
-      "optimize" -> run_optimization_analysis(config)
+      "analyze" ->
+        run_memory_analysis(config)
+
+      "hotspots" ->
+        run_hotspot_analysis(config)
+
+      "leaks" ->
+        run_leak_detection(config)
+
+      "optimize" ->
+        run_optimization_analysis(config)
+
       _ ->
         Mix.shell().error("Unknown command: #{config.command}")
-        Mix.shell().info("Available commands: analyze, hotspots, leaks, optimize")
+
+        Mix.shell().info(
+          "Available commands: analyze, hotspots, leaks, optimize"
+        )
+
         System.halt(1)
     end
   end
@@ -161,9 +173,11 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     initial_state = capture_memory_state()
 
     # Monitor memory growth over time
-    monitoring_results = monitor_memory_growth(config.monitoring_duration, initial_state)
+    monitoring_results =
+      monitor_memory_growth(config.monitoring_duration, initial_state)
 
-    leak_analysis = analyze_potential_leaks(initial_state, monitoring_results, config)
+    leak_analysis =
+      analyze_potential_leaks(initial_state, monitoring_results, config)
 
     format_and_output_leaks(leak_analysis, config)
   end
@@ -205,7 +219,9 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
 
     memory
     |> Enum.map(fn {type, bytes} ->
-      percentage = if total > 0, do: Float.round(bytes / total * 100, 2), else: 0.0
+      percentage =
+        if total > 0, do: Float.round(bytes / total * 100, 2), else: 0.0
+
       {type, %{bytes: bytes, percentage: percentage}}
     end)
     |> Enum.into(%{})
@@ -214,10 +230,11 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
   defp analyze_processes(config) do
     processes = Process.list()
 
-    process_info = processes
-    |> Enum.map(&get_process_memory_info/1)
-    |> Enum.reject(&is_nil/1)
-    |> Enum.sort_by(& &1.memory, :desc)
+    process_info =
+      processes
+      |> Enum.map(&get_process_memory_info/1)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.sort_by(& &1.memory, :desc)
 
     threshold_bytes = config.threshold * 1_000_000
 
@@ -225,14 +242,24 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
       total_count: length(processes),
       analyzed_count: length(process_info),
       top_consumers: Enum.take(process_info, 20),
-      above_threshold: Enum.filter(process_info, &(&1.memory > threshold_bytes)),
+      above_threshold:
+        Enum.filter(process_info, &(&1.memory > threshold_bytes)),
       memory_distribution: analyze_process_memory_distribution(process_info)
     }
   end
 
   defp get_process_memory_info(pid) do
-    case Process.info(pid, [:memory, :message_queue_len, :heap_size, :stack_size, :registered_name, :current_function]) do
-      nil -> nil
+    case Process.info(pid, [
+           :memory,
+           :message_queue_len,
+           :heap_size,
+           :stack_size,
+           :registered_name,
+           :current_function
+         ]) do
+      nil ->
+        nil
+
       info ->
         %{
           pid: pid,
@@ -240,12 +267,18 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
           message_queue_len: info[:message_queue_len] || 0,
           heap_size: info[:heap_size] || 0,
           stack_size: info[:stack_size] || 0,
-          name: format_process_identifier(info[:registered_name], info[:current_function])
+          name:
+            format_process_identifier(
+              info[:registered_name],
+              info[:current_function]
+            )
         }
     end
   end
 
-  defp format_process_identifier(nil, {mod, func, arity}), do: "#{mod}.#{func}/#{arity}"
+  defp format_process_identifier(nil, {mod, func, arity}),
+    do: "#{mod}.#{func}/#{arity}"
+
   defp format_process_identifier(name, _), do: Atom.to_string(name)
 
   defp analyze_process_memory_distribution(process_info) do
@@ -257,9 +290,10 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     ]
 
     Enum.map(memory_ranges, fn {min, max, label} ->
-      count = Enum.count(process_info, fn proc ->
-        proc.memory >= min and (max == :infinity or proc.memory < max)
-      end)
+      count =
+        Enum.count(process_info, fn proc ->
+          proc.memory >= min and (max == :infinity or proc.memory < max)
+        end)
 
       {label, count}
     end)
@@ -269,10 +303,11 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
   defp analyze_ets_tables(config) do
     tables = :ets.all()
 
-    table_info = tables
-    |> Enum.map(&get_ets_table_info/1)
-    |> Enum.reject(&is_nil/1)
-    |> Enum.sort_by(& &1.memory, :desc)
+    table_info =
+      tables
+      |> Enum.map(&get_ets_table_info/1)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.sort_by(& &1.memory, :desc)
 
     threshold_bytes = config.threshold * 1_000_000
 
@@ -290,7 +325,9 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
       info = :ets.info(table)
 
       case info do
-        :undefined -> nil
+        :undefined ->
+          nil
+
         _ ->
           %{
             table: table,
@@ -333,26 +370,43 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     # Simplified large binary detection
     # In a real implementation, this would traverse process heaps
     [
-      %{size: 2_048_576, location: "Buffer management", recommendation: "Consider streaming"},
-      %{size: 1_024_000, location: "ANSI processing", recommendation: "Use binary streaming"},
-      %{size: 512_000, location: "String operations", recommendation: "Use iodata"}
+      %{
+        size: 2_048_576,
+        location: "Buffer management",
+        recommendation: "Consider streaming"
+      },
+      %{
+        size: 1_024_000,
+        location: "ANSI processing",
+        recommendation: "Use binary streaming"
+      },
+      %{
+        size: 512_000,
+        location: "String operations",
+        recommendation: "Use iodata"
+      }
     ]
   end
 
   defp get_binary_recommendations(binary_memory) do
     recommendations = []
 
-    recommendations = if binary_memory > 50_000_000 do
-      ["Consider using binary streaming for large data" | recommendations]
-    else
-      recommendations
-    end
+    recommendations =
+      if binary_memory > 50_000_000 do
+        ["Consider using binary streaming for large data" | recommendations]
+      else
+        recommendations
+      end
 
-    recommendations = if binary_memory > 100_000_000 do
-      ["Binary memory usage is high - review large string operations" | recommendations]
-    else
-      recommendations
-    end
+    recommendations =
+      if binary_memory > 100_000_000 do
+        [
+          "Binary memory usage is high - review large string operations"
+          | recommendations
+        ]
+      else
+        recommendations
+      end
 
     if length(recommendations) == 0 do
       ["Binary memory usage appears normal"]
@@ -442,13 +496,18 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     %{
       total_ports: length(ports),
       port_memory: estimate_port_memory(ports),
-      recommendations: if(length(ports) > 100, do: ["High port count detected"], else: ["Port usage normal"])
+      recommendations:
+        if(length(ports) > 100,
+          do: ["High port count detected"],
+          else: ["Port usage normal"]
+        )
     }
   end
 
   defp estimate_port_memory(ports) do
     # Simplified port memory estimation
-    length(ports) * 1024  # Assume 1KB per port
+    # Assume 1KB per port
+    length(ports) * 1024
   end
 
   # Leak detection functions
@@ -459,13 +518,20 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
       process_count: length(Process.list()),
       ets_count: length(:ets.all()),
       port_count: length(Port.list()),
-      top_processes: Process.list() |> Enum.take(10) |> Enum.map(&get_process_memory_info/1)
+      top_processes:
+        Process.list() |> Enum.take(10) |> Enum.map(&get_process_memory_info/1)
     }
   end
 
   defp monitor_memory_growth(duration, initial_state) do
     measurements = []
-    monitor_loop(duration, initial_state, measurements, System.monotonic_time(:millisecond))
+
+    monitor_loop(
+      duration,
+      initial_state,
+      measurements,
+      System.monotonic_time(:millisecond)
+    )
   end
 
   defp monitor_loop(duration, initial_state, measurements, start_time) do
@@ -474,6 +540,7 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
 
     if elapsed < duration do
       state = capture_memory_state()
+
       measurement = %{
         elapsed: elapsed,
         state: state,
@@ -484,10 +551,13 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
 
       # Progress update every 30 seconds
       if rem(trunc(elapsed), 30) == 0 and elapsed > 0 do
-        Mix.shell().info("Monitoring... #{trunc(elapsed)}s elapsed, Memory: #{format_memory(state.memory[:total])}")
+        Mix.shell().info(
+          "Monitoring... #{trunc(elapsed)}s elapsed, Memory: #{format_memory(state.memory[:total])}"
+        )
       end
 
-      Process.sleep(5000)  # Check every 5 seconds
+      # Check every 5 seconds
+      Process.sleep(5000)
       monitor_loop(duration, initial_state, updated_measurements, start_time)
     else
       Enum.reverse(measurements)
@@ -505,7 +575,10 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
 
   defp analyze_potential_leaks(_initial_state, measurements, config) do
     if length(measurements) < 2 do
-      %{status: :insufficient_data, message: "Not enough data for leak analysis"}
+      %{
+        status: :insufficient_data,
+        message: "Not enough data for leak analysis"
+      }
     else
       final_measurement = List.last(measurements)
       total_growth = final_measurement.growth
@@ -514,30 +587,59 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
 
       # Check for memory growth
       memory_growth_mb = total_growth.memory_growth / 1_000_000
-      leak_indicators = if memory_growth_mb > config.threshold * 2 do
-        [%{type: :memory_leak, severity: :high, growth: memory_growth_mb, unit: "MB"} | leak_indicators]
-      else
-        leak_indicators
-      end
+
+      leak_indicators =
+        if memory_growth_mb > config.threshold * 2 do
+          [
+            %{
+              type: :memory_leak,
+              severity: :high,
+              growth: memory_growth_mb,
+              unit: "MB"
+            }
+            | leak_indicators
+          ]
+        else
+          leak_indicators
+        end
 
       # Check for process growth
-      leak_indicators = if total_growth.process_growth > 10 do
-        [%{type: :process_leak, severity: :medium, growth: total_growth.process_growth, unit: "processes"} | leak_indicators]
-      else
-        leak_indicators
-      end
+      leak_indicators =
+        if total_growth.process_growth > 10 do
+          [
+            %{
+              type: :process_leak,
+              severity: :medium,
+              growth: total_growth.process_growth,
+              unit: "processes"
+            }
+            | leak_indicators
+          ]
+        else
+          leak_indicators
+        end
 
       # Check for ETS table growth
-      leak_indicators = if total_growth.ets_growth > 5 do
-        [%{type: :ets_leak, severity: :medium, growth: total_growth.ets_growth, unit: "tables"} | leak_indicators]
-      else
-        leak_indicators
-      end
+      leak_indicators =
+        if total_growth.ets_growth > 5 do
+          [
+            %{
+              type: :ets_leak,
+              severity: :medium,
+              growth: total_growth.ets_growth,
+              unit: "tables"
+            }
+            | leak_indicators
+          ]
+        else
+          leak_indicators
+        end
 
       trend_analysis = analyze_growth_trend(measurements)
 
       %{
-        status: if(length(leak_indicators) > 0, do: :leaks_detected, else: :no_leaks),
+        status:
+          if(length(leak_indicators) > 0, do: :leaks_detected, else: :no_leaks),
         monitoring_duration: config.monitoring_duration,
         total_growth: total_growth,
         leak_indicators: leak_indicators,
@@ -549,17 +651,19 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
 
   defp analyze_growth_trend(measurements) do
     # Analyze if growth is linear, exponential, or stabilizing
-    growth_rates = measurements
-    |> Enum.chunk_every(2, 1, :discard)
-    |> Enum.map(fn [prev, curr] ->
-      curr.growth.memory_growth - prev.growth.memory_growth
-    end)
+    growth_rates =
+      measurements
+      |> Enum.chunk_every(2, 1, :discard)
+      |> Enum.map(fn [prev, curr] ->
+        curr.growth.memory_growth - prev.growth.memory_growth
+      end)
 
-    avg_growth_rate = if length(growth_rates) > 0 do
-      Enum.sum(growth_rates) / length(growth_rates)
-    else
-      0
-    end
+    avg_growth_rate =
+      if length(growth_rates) > 0 do
+        Enum.sum(growth_rates) / length(growth_rates)
+      else
+        0
+      end
 
     %{
       trend: determine_trend(growth_rates),
@@ -588,7 +692,7 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
 
   defp calculate_variance(values) do
     mean = Enum.sum(values) / length(values)
-    sum_squares = Enum.sum(Enum.map(values, &(:math.pow(&1 - mean, 2))))
+    sum_squares = Enum.sum(Enum.map(values, &:math.pow(&1 - mean, 2)))
     sum_squares / length(values)
   end
 
@@ -632,18 +736,23 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     recommendations = []
 
     # Check heap size configuration
-    recommendations = if should_recommend_heap_tuning(vm_args) do
-      ["Consider tuning heap sizes for better memory efficiency" | recommendations]
-    else
-      recommendations
-    end
+    recommendations =
+      if should_recommend_heap_tuning(vm_args) do
+        [
+          "Consider tuning heap sizes for better memory efficiency"
+          | recommendations
+        ]
+      else
+        recommendations
+      end
 
     # Check GC configuration
-    recommendations = if should_recommend_gc_tuning() do
-      ["Consider adjusting garbage collection parameters" | recommendations]
-    else
-      recommendations
-    end
+    recommendations =
+      if should_recommend_gc_tuning() do
+        ["Consider adjusting garbage collection parameters" | recommendations]
+      else
+        recommendations
+      end
 
     %{
       current_config: vm_args,
@@ -664,12 +773,15 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
   defp should_recommend_heap_tuning(_vm_args) do
     # Check if heap tuning might help
     memory = :erlang.memory()
-    memory[:processes] > memory[:total] * 0.6  # More than 60% in processes
+    # More than 60% in processes
+    memory[:processes] > memory[:total] * 0.6
   end
 
   defp should_recommend_gc_tuning do
     # Check GC statistics to see if tuning might help
-    {_gc_count, _words_reclaimed, _reductions} = :erlang.statistics(:garbage_collection)
+    {_gc_count, _words_reclaimed, _reductions} =
+      :erlang.statistics(:garbage_collection)
+
     # Simplified check
     false
   end
@@ -681,7 +793,8 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     %{
       long_message_queues: long_queues,
       large_heap_processes: large_heaps,
-      recommendations: generate_process_recommendations(long_queues, large_heaps)
+      recommendations:
+        generate_process_recommendations(long_queues, large_heaps)
     }
   end
 
@@ -689,10 +802,14 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     Process.list()
     |> Enum.map(fn pid ->
       case Process.info(pid, [:message_queue_len, :registered_name]) do
-        nil -> nil
+        nil ->
+          nil
+
         [message_queue_len: len, registered_name: name] when len > 1000 ->
           %{pid: pid, name: name, queue_length: len}
-        _ -> nil
+
+        _ ->
+          nil
       end
     end)
     |> Enum.reject(&is_nil/1)
@@ -702,10 +819,14 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     Process.list()
     |> Enum.map(fn pid ->
       case Process.info(pid, [:heap_size, :registered_name]) do
-        nil -> nil
+        nil ->
+          nil
+
         [heap_size: size, registered_name: name] when size > 100_000 ->
           %{pid: pid, name: name, heap_size: size}
-        _ -> nil
+
+        _ ->
+          nil
       end
     end)
     |> Enum.reject(&is_nil/1)
@@ -714,17 +835,25 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
   defp generate_process_recommendations(long_queues, large_heaps) do
     recommendations = []
 
-    recommendations = if length(long_queues) > 0 do
-      ["Consider implementing backpressure for processes with long queues" | recommendations]
-    else
-      recommendations
-    end
+    recommendations =
+      if length(long_queues) > 0 do
+        [
+          "Consider implementing backpressure for processes with long queues"
+          | recommendations
+        ]
+      else
+        recommendations
+      end
 
-    recommendations = if length(large_heaps) > 0 do
-      ["Review processes with large heaps for memory optimization" | recommendations]
-    else
-      recommendations
-    end
+    recommendations =
+      if length(large_heaps) > 0 do
+        [
+          "Review processes with large heaps for memory optimization"
+          | recommendations
+        ]
+      else
+        recommendations
+      end
 
     if length(recommendations) == 0 do
       ["Process memory usage appears optimal"]
@@ -829,12 +958,22 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     memory = analysis.memory_overview
     Mix.shell().info("\nMemory Overview:")
     Mix.shell().info("  Total: #{format_memory(memory.total)}")
-    Mix.shell().info("  Processes: #{format_memory(memory.processes)} (#{memory.breakdown.processes.percentage}%)")
-    Mix.shell().info("  System: #{format_memory(memory.system)} (#{memory.breakdown.system.percentage}%)")
-    Mix.shell().info("  Binary: #{format_memory(memory.binary)} (#{memory.breakdown.binary.percentage}%)")
+
+    Mix.shell().info(
+      "  Processes: #{format_memory(memory.processes)} (#{memory.breakdown.processes.percentage}%)"
+    )
+
+    Mix.shell().info(
+      "  System: #{format_memory(memory.system)} (#{memory.breakdown.system.percentage}%)"
+    )
+
+    Mix.shell().info(
+      "  Binary: #{format_memory(memory.binary)} (#{memory.breakdown.binary.percentage}%)"
+    )
 
     # Top processes
     Mix.shell().info("\nTop Memory Consuming Processes:")
+
     Enum.take(analysis.process_analysis.top_consumers, 5)
     |> Enum.each(fn proc ->
       Mix.shell().info("  #{proc.name}: #{format_memory(proc.memory)}")
@@ -843,9 +982,12 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     # ETS tables
     if length(analysis.ets_analysis.top_consumers) > 0 do
       Mix.shell().info("\nLargest ETS Tables:")
+
       Enum.take(analysis.ets_analysis.top_consumers, 3)
       |> Enum.each(fn table ->
-        Mix.shell().info("  #{table.name}: #{format_memory(table.memory)} (#{table.size} entries)")
+        Mix.shell().info(
+          "  #{table.name}: #{format_memory(table.memory)} (#{table.size} entries)"
+        )
       end)
     end
 
@@ -857,14 +999,18 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     Mix.shell().info(String.duplicate("=", 50))
 
     Mix.shell().info("\nTop Memory Consuming Processes:")
+
     Enum.take(hotspots.top_processes, 10)
     |> Enum.each(fn proc ->
       Mix.shell().info("  #{proc.name}: #{format_memory(proc.memory)}")
     end)
 
     Mix.shell().info("\nBinary Memory Hotspots:")
+
     Enum.each(hotspots.binary_hotspots, fn hotspot ->
-      Mix.shell().info("  #{hotspot.process}: #{format_memory(hotspot.binary_memory)} - #{hotspot.recommendation}")
+      Mix.shell().info(
+        "  #{hotspot.process}: #{format_memory(hotspot.binary_memory)} - #{hotspot.recommendation}"
+      )
     end)
 
     save_output_if_requested(hotspots, config)
@@ -877,18 +1023,29 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     case leak_analysis.status do
       :insufficient_data ->
         Mix.shell().info("Insufficient data for leak analysis")
+
       :no_leaks ->
         Mix.shell().info("No memory leaks detected")
-        Mix.shell().info("Memory growth: #{format_memory(leak_analysis.total_growth.memory_growth)}")
+
+        Mix.shell().info(
+          "Memory growth: #{format_memory(leak_analysis.total_growth.memory_growth)}"
+        )
+
       :leaks_detected ->
         Mix.shell().info("MEMORY LEAKS DETECTED!")
-        Mix.shell().info("Total memory growth: #{format_memory(leak_analysis.total_growth.memory_growth)}")
+
+        Mix.shell().info(
+          "Total memory growth: #{format_memory(leak_analysis.total_growth.memory_growth)}"
+        )
 
         Enum.each(leak_analysis.leak_indicators, fn indicator ->
-          Mix.shell().info("  #{indicator.type}: +#{indicator.growth} #{indicator.unit} (#{indicator.severity})")
+          Mix.shell().info(
+            "  #{indicator.type}: +#{indicator.growth} #{indicator.unit} (#{indicator.severity})"
+          )
         end)
 
         Mix.shell().info("\nRecommendations:")
+
         Enum.each(leak_analysis.recommendations, fn rec ->
           Mix.shell().info("  - #{rec}")
         end)
@@ -902,16 +1059,19 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     Mix.shell().info(String.duplicate("=", 50))
 
     Mix.shell().info("\nGeneral Recommendations:")
+
     Enum.each(optimizations.general_recommendations, fn rec ->
       Mix.shell().info("  - #{rec}")
     end)
 
     Mix.shell().info("\nBinary Optimizations:")
+
     Enum.each(optimizations.binary_optimizations.recommendations, fn rec ->
       Mix.shell().info("  - #{rec}")
     end)
 
     Mix.shell().info("\nProcess Optimizations:")
+
     Enum.each(optimizations.process_optimizations.recommendations, fn rec ->
       Mix.shell().info("  - #{rec}")
     end)
@@ -974,10 +1134,11 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
 
   defp save_output_if_requested(data, config) do
     if config.output do
-      content = case config.format do
-        "json" -> Jason.encode!(data, pretty: true)
-        _ -> inspect(data, pretty: true)
-      end
+      content =
+        case config.format do
+          "json" -> Jason.encode!(data, pretty: true)
+          _ -> inspect(data, pretty: true)
+        end
 
       File.write!(config.output, content)
       Mix.shell().info("Results saved to: #{config.output}")

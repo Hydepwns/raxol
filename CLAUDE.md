@@ -8,6 +8,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Test Coverage**: 98.7% (target: 100%)  
 **Performance**: Parser 3.3μs/op | Memory <2.8MB | Render <1ms
 
+## New in v1.4.1
+
+### Automated Type Spec Generation
+```bash
+# Generate type specs for private functions
+mix raxol.gen.specs lib/file.ex           # Single file
+mix raxol.gen.specs lib/dir --recursive   # Directory
+mix raxol.gen.specs lib --dry-run         # Preview only
+mix raxol.gen.specs lib --interactive     # Confirm each spec
+```
+
+### Unified TOML Configuration
+- Centralized config in `config/raxol.toml`
+- Environment-specific overrides in `config/environments/`
+- Runtime updates via `Raxol.Config` module
+- See `docs/configuration/UNIFIED_CONFIG.md`
+
+### Enhanced Debug Mode
+- Four levels: `:off`, `:basic`, `:detailed`, `:verbose`
+- Performance monitoring and profiling
+- Detailed logging with metadata
+- See `docs/development/DEBUG_MODE.md`
+
 ## Commands
 
 ### Consolidated Mix Tasks (v1.4.1+)
@@ -25,6 +48,10 @@ mix raxol.test --coverage   # With coverage report
 mix raxol.test --parallel   # Parallel execution
 mix raxol.test_parallel     # Optimized parallel test execution
 mix raxol.test_flaky        # Detect and analyze flaky tests
+
+# Type spec generation (NEW in v1.4.1)
+mix raxol.gen.specs <path>  # Generate type specs for private functions
+mix raxol.gen.specs lib --recursive --dry-run  # Preview for entire lib
 
 # Performance and profiling
 mix raxol.profile <module>  # Profile specific module

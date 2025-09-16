@@ -64,6 +64,7 @@ defimpl Raxol.Protocols.Renderable, for: BitString do
 
   def render_metadata(string) do
     lines = String.split(string, "\n")
+
     %{
       width: lines |> Enum.map(&String.length/1) |> Enum.max(fn -> 0 end),
       height: length(lines),
@@ -93,16 +94,24 @@ defimpl Raxol.Protocols.Renderable, for: List do
 end
 
 defimpl Raxol.Protocols.Renderable, for: Map do
-  def render(map, opts) do
-    max_key_length = map |> Map.keys() |> Enum.map(&to_string/1) |> Enum.map(&String.length/1) |> Enum.max(fn -> 0 end)
+  def render(map, _opts) do
+    max_key_length =
+      map
+      |> Map.keys()
+      |> Enum.map(&to_string/1)
+      |> Enum.map(&String.length/1)
+      |> Enum.max(fn -> 0 end)
 
     map
     |> Enum.map(fn {k, v} ->
       key = k |> to_string() |> String.pad_trailing(max_key_length)
-      value = case v do
-        v when is_binary(v) -> v
-        v -> inspect(v)
-      end
+
+      value =
+        case v do
+          v when is_binary(v) -> v
+          v -> inspect(v)
+        end
+
       "#{key}: #{value}"
     end)
     |> Enum.join("\n")

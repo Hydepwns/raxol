@@ -39,7 +39,11 @@ defmodule Raxol.Benchmark.MemoryDSL do
     quote do
       import Raxol.Benchmark.MemoryDSL
       Module.register_attribute(__MODULE__, :memory_scenarios, accumulate: true)
-      Module.register_attribute(__MODULE__, :memory_assertions, accumulate: true)
+
+      Module.register_attribute(__MODULE__, :memory_assertions,
+        accumulate: true
+      )
+
       Module.register_attribute(__MODULE__, :memory_configs, accumulate: true)
 
       @before_compile Raxol.Benchmark.MemoryDSL
@@ -182,61 +186,89 @@ defmodule Raxol.Benchmark.MemoryDSL do
     |> Enum.into(%{})
   end
 
-  defp validate_single_assertion({:peak, scenario, threshold}, results, analysis) do
+  defp validate_single_assertion(
+         {:peak, scenario, threshold},
+         results,
+         _analysis
+       ) do
     scenario_results = get_scenario_results(results, scenario)
     peak_memory = get_peak_memory(scenario_results)
 
     result =
       if peak_memory <= threshold do
-        {:ok, "Peak memory #{format_bytes(peak_memory)} is within threshold #{format_bytes(threshold)}"}
+        {:ok,
+         "Peak memory #{format_bytes(peak_memory)} is within threshold #{format_bytes(threshold)}"}
       else
-        {:error, "Peak memory #{format_bytes(peak_memory)} exceeds threshold #{format_bytes(threshold)}"}
+        {:error,
+         "Peak memory #{format_bytes(peak_memory)} exceeds threshold #{format_bytes(threshold)}"}
       end
 
     {{:peak, scenario}, result}
   end
 
-  defp validate_single_assertion({:sustained, scenario, threshold}, results, analysis) do
+  defp validate_single_assertion(
+         {:sustained, scenario, threshold},
+         results,
+         _analysis
+       ) do
     scenario_results = get_scenario_results(results, scenario)
     sustained_memory = get_sustained_memory(scenario_results)
 
     result =
       if sustained_memory <= threshold do
-        {:ok, "Sustained memory #{format_bytes(sustained_memory)} is within threshold #{format_bytes(threshold)}"}
+        {:ok,
+         "Sustained memory #{format_bytes(sustained_memory)} is within threshold #{format_bytes(threshold)}"}
       else
-        {:error, "Sustained memory #{format_bytes(sustained_memory)} exceeds threshold #{format_bytes(threshold)}"}
+        {:error,
+         "Sustained memory #{format_bytes(sustained_memory)} exceeds threshold #{format_bytes(threshold)}"}
       end
 
     {{:sustained, scenario}, result}
   end
 
-  defp validate_single_assertion({:gc_pressure, scenario, threshold}, results, analysis) do
+  defp validate_single_assertion(
+         {:gc_pressure, scenario, threshold},
+         _results,
+         analysis
+       ) do
     gc_collections = analysis.gc_collections
 
     result =
       if gc_collections <= threshold do
-        {:ok, "GC pressure #{gc_collections} collections is within threshold #{threshold}"}
+        {:ok,
+         "GC pressure #{gc_collections} collections is within threshold #{threshold}"}
       else
-        {:error, "GC pressure #{gc_collections} collections exceeds threshold #{threshold}"}
+        {:error,
+         "GC pressure #{gc_collections} collections exceeds threshold #{threshold}"}
       end
 
     {{:gc_pressure, scenario}, result}
   end
 
-  defp validate_single_assertion({:efficiency, scenario, threshold}, results, analysis) do
+  defp validate_single_assertion(
+         {:efficiency, scenario, threshold},
+         _results,
+         analysis
+       ) do
     efficiency = analysis.efficiency_score
 
     result =
       if efficiency >= threshold do
-        {:ok, "Memory efficiency #{Float.round(efficiency, 3)} meets threshold #{threshold}"}
+        {:ok,
+         "Memory efficiency #{Float.round(efficiency, 3)} meets threshold #{threshold}"}
       else
-        {:error, "Memory efficiency #{Float.round(efficiency, 3)} below threshold #{threshold}"}
+        {:error,
+         "Memory efficiency #{Float.round(efficiency, 3)} below threshold #{threshold}"}
       end
 
     {{:efficiency, scenario}, result}
   end
 
-  defp validate_single_assertion({:no_regression, :all, {baseline, threshold}}, results, analysis) do
+  defp validate_single_assertion(
+         {:no_regression, :all, {baseline, _threshold}},
+         _results,
+         analysis
+       ) do
     regression_detected = analysis.regression_detected
 
     result =
@@ -263,7 +295,8 @@ defmodule Raxol.Benchmark.MemoryDSL do
 
     scenarios_map =
       scenarios
-      |> Enum.reverse()  # Reverse to maintain order
+      # Reverse to maintain order
+      |> Enum.reverse()
       |> Enum.into(%{}, fn {name, fun} -> {to_string(name), fun} end)
 
     Benchee.run(scenarios_map, benchee_config)
@@ -288,6 +321,7 @@ defmodule Raxol.Benchmark.MemoryDSL do
 
   defp get_scenario_results(results, scenario) do
     scenario_key = to_string(scenario)
+
     case results do
       %{scenarios: scenarios} -> Map.get(scenarios, scenario_key, %{})
       %{} -> Map.get(results, scenario_key, %{})
@@ -297,33 +331,47 @@ defmodule Raxol.Benchmark.MemoryDSL do
 
   defp get_peak_memory(scenario_results) do
     case scenario_results do
-      %{memory_usage_data: %{statistics: %{maximum: max}}} -> max
-      %{memory_usage_data: %{samples: samples}} -> Enum.max(samples, fn -> 0 end)
-      _ -> 0
+      %{memory_usage_data: %{statistics: %{maximum: max}}} ->
+        max
+
+      %{memory_usage_data: %{samples: samples}} ->
+        Enum.max(samples, fn -> 0 end)
+
+      _ ->
+        0
     end
   end
 
   defp get_sustained_memory(scenario_results) do
     case scenario_results do
-      %{memory_usage_data: %{statistics: %{percentiles: %{"75": p75}}}} -> p75
-      %{memory_usage_data: %{statistics: %{median: median}}} -> median
+      %{memory_usage_data: %{statistics: %{percentiles: %{"75": p75}}}} ->
+        p75
+
+      %{memory_usage_data: %{statistics: %{median: median}}} ->
+        median
+
       %{memory_usage_data: %{samples: samples}} ->
         sorted = Enum.sort(samples)
         percentile_75_index = trunc(length(sorted) * 0.75)
         Enum.at(sorted, percentile_75_index, 0)
-      _ -> 0
+
+      _ ->
+        0
     end
   end
 
   defp format_bytes(bytes) when bytes >= 1_000_000_000 do
     "#{Float.round(bytes / 1_000_000_000, 2)} GB"
   end
+
   defp format_bytes(bytes) when bytes >= 1_000_000 do
     "#{Float.round(bytes / 1_000_000, 2)} MB"
   end
+
   defp format_bytes(bytes) when bytes >= 1_000 do
     "#{Float.round(bytes / 1_000, 2)} KB"
   end
+
   defp format_bytes(bytes) do
     "#{bytes} B"
   end
@@ -333,7 +381,11 @@ defmodule Raxol.Benchmark.MemoryDSL do
   # =============================================================================
 
   defp generate_dsl_report(results, analysis, assertion_results) do
-    passing_assertions = Enum.count(assertion_results, fn {_, result} -> match?({:ok, _}, result) end)
+    passing_assertions =
+      Enum.count(assertion_results, fn {_, result} ->
+        match?({:ok, _}, result)
+      end)
+
     total_assertions = map_size(assertion_results)
 
     %{
@@ -342,7 +394,11 @@ defmodule Raxol.Benchmark.MemoryDSL do
         total_assertions: total_assertions,
         passing_assertions: passing_assertions,
         failing_assertions: total_assertions - passing_assertions,
-        success_rate: if(total_assertions > 0, do: passing_assertions / total_assertions, else: 1.0)
+        success_rate:
+          if(total_assertions > 0,
+            do: passing_assertions / total_assertions,
+            else: 1.0
+          )
       },
       memory_analysis: analysis,
       assertion_results: assertion_results,

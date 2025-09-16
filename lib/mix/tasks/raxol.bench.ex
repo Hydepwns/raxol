@@ -194,7 +194,7 @@ defmodule Mix.Tasks.Raxol.Bench do
     alias Raxol.Terminal.ANSI.AnsiParser
     alias Raxol.Terminal.ANSI.StateMachine
 
-    emulator = Emulator.new(80, 24)
+    _emulator = Emulator.new(80, 24)
 
     scenarios =
       if opts[:quick] do
@@ -235,7 +235,7 @@ defmodule Mix.Tasks.Raxol.Bench do
         %{
           "emulator_creation" => fn -> Emulator.new(80, 24) end,
           "buffer_write_char" => fn ->
-            Writer.write_char(buffer, cursor, 10, 5, "A", style)
+            Writer.write_char(buffer, 10, 5, "A", style)
           end,
           "cursor_move" => fn -> Cursor.move_to(cursor, 10, 5) end
         }
@@ -244,10 +244,10 @@ defmodule Mix.Tasks.Raxol.Bench do
           "emulator_creation_small" => fn -> Emulator.new(80, 24) end,
           "emulator_creation_large" => fn -> Emulator.new(200, 50) end,
           "buffer_write_char" => fn ->
-            Writer.write_char(buffer, cursor, 10, 5, "A", style)
+            Writer.write_char(buffer, 10, 5, "A", style)
           end,
           "buffer_write_string" => fn ->
-            Writer.write_string(buffer, cursor, 0, 0, "Hello World", style)
+            Writer.write_string(buffer, 0, 0, "Hello World", style)
           end,
           "buffer_scroll_up" => fn -> ScreenBuffer.scroll_up(buffer, 1) end,
           "buffer_scroll_down" => fn -> ScreenBuffer.scroll_down(buffer, 1) end,
@@ -281,16 +281,15 @@ defmodule Mix.Tasks.Raxol.Bench do
     small_buffer = ScreenBuffer.new(80, 24)
     medium_buffer = ScreenBuffer.new(120, 40)
     large_buffer = ScreenBuffer.new(200, 50)
-    cursor = Cursor.new()
+    _cursor = Cursor.new()
     style = %Raxol.Terminal.ANSI.TextFormatting{}
 
     # Fill buffers with some content
     Enum.each(0..10, fn y ->
-      Writer.write_string(small_buffer, cursor, 0, y, "Sample line #{y}", style)
+      Writer.write_string(small_buffer, 0, y, "Sample line #{y}", style)
 
       Writer.write_string(
         medium_buffer,
-        cursor,
         0,
         y,
         "Sample line #{y} with more content",
@@ -299,7 +298,6 @@ defmodule Mix.Tasks.Raxol.Bench do
 
       Writer.write_string(
         large_buffer,
-        cursor,
         0,
         y,
         "Sample line #{y} with even more content for testing",
@@ -348,13 +346,12 @@ defmodule Mix.Tasks.Raxol.Bench do
       end,
       "memory_buffer_operations" => fn ->
         buffer = ScreenBuffer.new(100, 30)
-        cursor = Cursor.new()
+        _cursor = Cursor.new()
         style = %Raxol.Terminal.ANSI.TextFormatting{}
 
         Enum.each(1..50, fn i ->
           Writer.write_string(
             buffer,
-            cursor,
             0,
             rem(i, 30),
             "Test line #{i}",
@@ -572,7 +569,7 @@ defmodule Mix.Tasks.Raxol.Bench do
     end
   end
 
-  defp detect_regressions(current_results, baseline) do
+  defp detect_regressions(_current_results, _baseline) do
     # Compare current results with baseline and detect regressions
     # Returns list of {benchmark_name, {current_time, baseline_time, degradation_percent}}
     # Simplified for now
@@ -614,7 +611,7 @@ defmodule Mix.Tasks.Raxol.Bench do
     end
   end
 
-  defp generate_enhanced_dashboard(results, timestamp) do
+  defp generate_enhanced_dashboard(_results, timestamp) do
     dashboard_content = """
     <!DOCTYPE html>
     <html>

@@ -41,6 +41,27 @@ defmodule Raxol.Terminal.ANSI.AnsiParser do
   end
 
   @doc """
+  Parses a string containing ANSI escape sequences with a custom state machine.
+  Returns a list of parsed sequences.
+  """
+  @spec parse(StateMachine.t(), String.t()) :: list(sequence())
+  def parse(state, input) do
+    case Raxol.Core.ErrorHandling.safe_call(fn ->
+           {_state, sequences} = StateMachine.process(state, input)
+           Monitor.record_sequence(input)
+           sequences
+         end) do
+      {:ok, sequences} ->
+        sequences
+
+      {:error, reason} ->
+        Monitor.record_error(input, "Parse error: #{inspect(reason)}", %{})
+        log_parse_error(reason, input)
+        []
+    end
+  end
+
+  @doc """
   Parses a single ANSI escape sequence.
   Returns a map containing the sequence type and parameters.
   """

@@ -446,6 +446,13 @@ defmodule Raxol.Terminal.ScreenBuffer do
     )
   end
 
+  @doc """
+  Erases the entire screen.
+  """
+  def erase_screen(buffer) do
+    Eraser.clear(buffer)
+  end
+
   def erase_line(buffer, mode, cursor, min_col, max_col) do
     Raxol.Terminal.ScreenBuffer.Core.erase_line(
       buffer,
@@ -638,6 +645,12 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate write(buffer, data), to: BehaviourImpl
 
+  # Overloaded write for compatibility with legacy code
+  def write(buffer, string, opts) when is_map(buffer) and is_binary(string) do
+    # Merge opts into the buffer or use separately
+    write_string(buffer, 0, 0, string, opts[:style] || nil)
+  end
+
   # === Scroll Operations ===
 
   defdelegate fill_region(buffer, x, y, width, height, cell),
@@ -662,4 +675,47 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   defp validate_dimensions(false, _new_width, _new_height), do: :ok
+
+  # Functions for compatibility
+  @doc """
+  Creates a new buffer with default dimensions.
+  """
+  def new() do
+    new(80, 24)
+  end
+
+  @doc """
+  Creates a new buffer with a single dimension parameter.
+  Creates a square buffer.
+  """
+  def new(size) when is_integer(size) and size > 0 do
+    new(size, size)
+  end
+
+  # Additional compatibility functions for tests and legacy code
+  @doc """
+  Scrolls the buffer content.
+  Returns {buffer, scrolled_lines}.
+  """
+  def scroll(buffer, lines) when lines > 0 do
+    scroll_up(buffer, lines)
+  end
+
+  def scroll(buffer, lines) when lines < 0 do
+    scroll_down(buffer, -lines)
+  end
+
+  def scroll(buffer, 0), do: {buffer, 0}
+
+  @doc """
+  Writes content to the buffer at the specified position.
+  This is a convenience function for write_string.
+  """
+  def write(buffer, x, y, content) when is_binary(content) do
+    write_string(buffer, x, y, content)
+  end
+
+  def write(buffer, x, y, content) do
+    write_char(buffer, x, y, to_string(content))
+  end
 end

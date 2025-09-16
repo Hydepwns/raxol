@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
       :ok = ConcurrentBuffer.set_cell(pid, 0, 0, cell)
   """
 
-  alias Raxol.Terminal.Buffer
+  alias Raxol.Terminal.ScreenBuffer, as: Buffer
   alias Raxol.Terminal.Buffer.BufferServer
   alias Raxol.Terminal.Buffer.Cell
 
@@ -126,7 +126,14 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   def set_cell(buffer_or_pid, x, y, cell) do
     case buffer_or_pid do
       %Buffer{} = buffer ->
-        Buffer.set_cell(buffer, x, y, cell)
+        # ScreenBuffer doesn't have set_cell, use Content module
+        Raxol.Terminal.Buffer.Content.write_char(
+          buffer,
+          x,
+          y,
+          cell.char,
+          cell.style
+        )
 
       pid when is_pid(pid) ->
         BufferServer.set_cell(pid, x, y, cell)
@@ -160,7 +167,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   def get_cell(buffer_or_pid, x, y) do
     case buffer_or_pid do
       %Buffer{} = buffer ->
-        Buffer.get_cell(buffer, x, y)
+        Raxol.Terminal.Buffer.Content.get_cell(buffer, x, y)
 
       pid when is_pid(pid) ->
         BufferServer.get_cell(pid, x, y)

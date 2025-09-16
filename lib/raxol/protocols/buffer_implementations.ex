@@ -85,10 +85,12 @@ defmodule Raxol.Protocols.BufferImplementations do
     end
 
     defp render_cell(nil, _colors), do: " "
-    defp render_cell(%{char: char} = cell, false), do: char || " "
+    defp render_cell(%{char: char} = _cell, false), do: char || " "
 
-    defp render_cell(%{char: char, style: style} = _cell, true) when is_map(style) do
+    defp render_cell(%{char: char, style: style} = _cell, true)
+         when is_map(style) do
       ansi_codes = build_ansi_codes(style)
+
       if ansi_codes == "" do
         char || " "
       else
@@ -105,15 +107,17 @@ defmodule Raxol.Protocols.BufferImplementations do
       codes = if style[:italic], do: ["3" | codes], else: codes
       codes = if style[:underline], do: ["4" | codes], else: codes
 
-      codes = case style[:foreground] do
-        {r, g, b} -> ["38;2;#{r};#{g};#{b}" | codes]
-        nil -> codes
-      end
+      codes =
+        case style[:foreground] do
+          {r, g, b} -> ["38;2;#{r};#{g};#{b}" | codes]
+          nil -> codes
+        end
 
-      codes = case style[:background] do
-        {r, g, b} -> ["48;2;#{r};#{g};#{b}" | codes]
-        nil -> codes
-      end
+      codes =
+        case style[:background] do
+          {r, g, b} -> ["48;2;#{r};#{g};#{b}" | codes]
+          nil -> codes
+        end
 
       if codes == [] do
         ""
@@ -164,7 +168,10 @@ defmodule Raxol.Protocols.BufferImplementations do
     end
 
     defp serialize_cell(nil), do: %{char: " ", style: nil}
-    defp serialize_cell(%{char: char, style: style}), do: %{char: char || " ", style: style}
+
+    defp serialize_cell(%{char: char, style: style}),
+      do: %{char: char || " ", style: style}
+
     defp serialize_cell(%{char: char}), do: %{char: char || " ", style: nil}
   end
 end
