@@ -12,7 +12,8 @@ defmodule Raxol.Plugins.PluginSystemTest do
   alias Raxol.Plugins.ThemePlugin
   alias Raxol.Terminal.Emulator.Struct, as: Emulator
   alias Raxol.Plugins.Lifecycle
-  alias Raxol.Plugins.EventHandler
+  alias Raxol.Plugins.EventHandler.MouseEvents
+  alias Raxol.Plugins.EventHandler.OutputEvents
 
   describe "Plugin Manager" do
     test "creates a new plugin manager" do
@@ -246,7 +247,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
         Raxol.Plugins.Manager.Core.load_plugin(manager_struct, HyperlinkPlugin)
 
       {:ok, updated_manager, propagation} =
-        EventHandler.handle_mouse_event(
+        MouseEvents.handle_mouse_event(
           manager_with_plugin,
           %{type: :mouse, x: 1, y: 2, button: :click, modifiers: 1},
           # Empty rendered cells map
@@ -290,7 +291,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
 
       input_text = "Check this link: https://example.com and continue."
 
-      result = EventHandler.handle_output(manager_after_load, input_text)
+      result = OutputEvents.handle_output(manager_after_load, input_text)
 
       assert match?(
                {:ok, %Raxol.Plugins.Manager.Core{}, _transformed_output},
