@@ -131,9 +131,9 @@ end
 **[Documentation Hub](docs/README.md)** - Complete documentation index
 
 ### v1.4.1 Feature Documentation
-- [Type Spec Generator](docs/development/TYPE_SPEC_GENERATOR.md) - Automated type specification generation
-- [Unified Configuration](docs/configuration/UNIFIED_CONFIG.md) - TOML-based configuration system
-- [Enhanced Debug Mode](docs/development/DEBUG_MODE.md) - Advanced debugging and profiling tools
+- [Type Spec Generator](doc/development/TYPE_SPEC_GENERATOR.md) - Automated type specification generation
+- [Unified Configuration](doc/configuration/UNIFIED_CONFIG.md) - TOML-based configuration system
+- [Enhanced Debug Mode](doc/development/DEBUG_MODE.md) - Advanced debugging and profiling tools
 
 ## VS Code Extension
 

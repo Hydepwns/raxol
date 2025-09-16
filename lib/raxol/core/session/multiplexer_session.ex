@@ -25,6 +25,7 @@ defmodule Raxol.Core.Session.MultiplexerSession do
   ]
 
   defmodule Window do
+    @moduledoc false
     defstruct [
       :id,
       :session_id,
@@ -36,9 +37,22 @@ defmodule Raxol.Core.Session.MultiplexerSession do
       :active_pane,
       :metadata
     ]
+
+    @type t :: %__MODULE__{
+            id: String.t(),
+            session_id: String.t(),
+            name: String.t(),
+            created_at: integer(),
+            status: atom(),
+            layout: atom(),
+            panes: [Raxol.Core.Session.MultiplexerSession.Pane.t()],
+            active_pane: String.t() | nil,
+            metadata: map()
+          }
   end
 
   defmodule Pane do
+    @moduledoc false
     defstruct [
       :id,
       :window_id,
@@ -51,9 +65,23 @@ defmodule Raxol.Core.Session.MultiplexerSession do
       :status,
       :created_at
     ]
+
+    @type t :: %__MODULE__{
+            id: String.t(),
+            window_id: String.t(),
+            terminal: term(),
+            position: map(),
+            size: map(),
+            command: String.t(),
+            working_directory: String.t(),
+            environment: map(),
+            status: atom(),
+            created_at: integer()
+          }
   end
 
   defmodule Client do
+    @moduledoc false
     defstruct [
       :id,
       :session_id,
@@ -64,6 +92,17 @@ defmodule Raxol.Core.Session.MultiplexerSession do
       :capabilities,
       :metadata
     ]
+
+    @type t :: %__MODULE__{
+            id: String.t(),
+            session_id: String.t(),
+            connection_type: atom(),
+            connected_at: integer(),
+            last_activity: integer(),
+            terminal_size: map(),
+            capabilities: [atom()],
+            metadata: map()
+          }
   end
 
   @type t :: %__MODULE__{
@@ -73,9 +112,9 @@ defmodule Raxol.Core.Session.MultiplexerSession do
           last_activity: integer(),
           status: :active | :inactive | :detached,
           metadata: map(),
-          windows: [Window.t()],
+          windows: [__MODULE__.Window.t()],
           active_window: String.t() | nil,
-          clients: [Client.t()]
+          clients: [__MODULE__.Client.t()]
         }
 
   ## Public API
