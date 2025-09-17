@@ -812,11 +812,13 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   defp generate_shortcuts_announcement(shortcuts) do
     shortcut_list =
       shortcuts
-      |> Enum.map(fn {key, description} ->
-        key_name = format_key_name(key)
-        "#{key_name}: #{description}"
-      end)
-      |> Enum.join(", ")
+      |> Enum.map_join(
+        fn {key, description} ->
+          key_name = format_key_name(key)
+          "#{key_name}: #{description}"
+        end,
+        ", "
+      )
 
     "Available shortcuts: #{shortcut_list}"
   end

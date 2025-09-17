@@ -139,7 +139,7 @@ defmodule Raxol.Terminal.Buffer.Content do
 
       cells ->
         cells
-        |> Enum.map(fn row ->
+        |> Enum.map_join(fn row ->
           row
           |> Enum.map_join("", & &1.char)
           |> String.trim_trailing()

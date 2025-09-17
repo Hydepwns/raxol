@@ -69,7 +69,7 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
 
     avg_time =
       scenarios
-      |> Enum.map(fn {_name, scenario} ->
+      |> Enum.map_join(fn {_name, scenario} ->
         scenario.run_time_data.statistics.average
       end)
       |> Enum.sum()
@@ -520,7 +520,6 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
         </tr>
         """
       end)
-      |> Enum.join()
 
     """
     <div class="card">
@@ -546,7 +545,7 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
 
   defp generate_targets_html(analysis) do
     target_rows =
-      Enum.map(analysis.target_compliance, fn target ->
+      Enum.map_join(analysis.target_compliance, fn target ->
         status_class =
           case target.target_status do
             :pass -> "good"
@@ -571,7 +570,6 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
         </tr>
         """
       end)
-      |> Enum.join()
 
     """
     <div class="card">
@@ -641,10 +639,9 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
       """
     else
       rec_items =
-        Enum.map(recommendations, fn rec ->
+        Enum.map_join(recommendations, fn rec ->
           "<li>#{rec}</li>"
         end)
-        |> Enum.join()
 
       """
       <div class="card">

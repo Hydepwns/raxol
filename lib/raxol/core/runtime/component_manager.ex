@@ -58,7 +58,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   Retrieves the current render queue and clears it.
   """
   @spec get_render_queue() :: list(String.t())
-  def get_render_queue() do
+  def get_render_queue do
     GenServer.call(__MODULE__, :get_and_clear_render_queue)
   end
 
@@ -74,7 +74,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   Retrieves all components' data.
   """
   @spec get_all_components() :: map()
-  def get_all_components() do
+  def get_all_components do
     GenServer.call(__MODULE__, :get_all_components)
   end
 

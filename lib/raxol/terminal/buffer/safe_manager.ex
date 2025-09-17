@@ -350,20 +350,24 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   defp extract_all_content(buffer, :text) do
     # Extract text content from all rows
     0..(buffer.height - 1)
-    |> Enum.map(fn row ->
-      extract_row_text(buffer, row)
-    end)
-    |> Enum.join("\n")
+    |> Enum.map_join(
+      fn row ->
+        extract_row_text(buffer, row)
+      end,
+      "\n"
+    )
   end
 
   defp extract_limited_content(buffer, line_count, :text) do
     max_lines = min(line_count, buffer.height)
 
     0..(max_lines - 1)
-    |> Enum.map(fn row ->
-      extract_row_text(buffer, row)
-    end)
-    |> Enum.join("\n")
+    |> Enum.map_join(
+      fn row ->
+        extract_row_text(buffer, row)
+      end,
+      "\n"
+    )
   end
 
   defp extract_row_text(buffer, row) do
@@ -371,8 +375,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
     cells = Queries.get_line(buffer, row)
 
     cells
-    |> Enum.map(fn cell -> Cell.get_char(cell) end)
-    |> Enum.join("")
+    |> Enum.map_join("", fn cell -> Cell.get_char(cell) end)
     |> String.trim_trailing()
   end
 

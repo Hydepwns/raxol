@@ -34,7 +34,7 @@ defmodule Raxol.Core.Events.EventManager do
   Initializes the event manager state.
   """
   @spec init() :: :ok
-  def init() do
+  def init do
     case GenServer.whereis(__MODULE__) do
       nil ->
         Logger.warning("EventManager not started, call start_link/1 first")
@@ -159,7 +159,7 @@ defmodule Raxol.Core.Events.EventManager do
   Cleans up the event manager and all resources.
   """
   @spec cleanup() :: :ok
-  def cleanup() do
+  def cleanup do
     case GenServer.whereis(__MODULE__) do
       nil -> :ok
       pid -> GenServer.stop(pid)

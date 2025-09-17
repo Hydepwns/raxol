@@ -310,18 +310,22 @@ defmodule Raxol.Core.Standards.CodeGenerator do
 
   defp format_state_docs(fields) do
     fields
-    |> Enum.map(fn field ->
-      "  - `#{field}` - Description of #{field}"
-    end)
-    |> Enum.join("\n")
+    |> Enum.map_join(
+      fn field ->
+        "  - `#{field}` - Description of #{field}"
+      end,
+      "\n"
+    )
   end
 
   defp format_state_types(fields) do
     fields
-    |> Enum.map(fn field ->
-      "#{field}: term()"
-    end)
-    |> Enum.join(",\n        ")
+    |> Enum.map_join(
+      fn field ->
+        "#{field}: term()"
+      end,
+      ",\n        "
+    )
   end
 
   defp format_option_docs(_opts) do
@@ -331,45 +335,50 @@ defmodule Raxol.Core.Standards.CodeGenerator do
 
   defp format_initial_state(fields, _opts) do
     fields
-    |> Enum.map(fn field ->
-      "#{field}: nil"
-    end)
-    |> Enum.join(",\n          ")
+    |> Enum.map_join(
+      fn field ->
+        "#{field}: nil"
+      end,
+      ",\n          "
+    )
   end
 
   defp generate_public_api(_module_name, callbacks) do
-    Enum.map(callbacks, fn
-      :get_state ->
-        """
-        @doc \"\"\"
-        Gets the current state.
-        \"\"\"
-        @spec get_state(GenServer.server()) :: {:ok, state()}
-        def get_state(server) do
-          GenServer.call(server, :get_state)
-        end
-        """
+    Enum.map_join(
+      callbacks,
+      fn
+        :get_state ->
+          """
+          @doc \"\"\"
+          Gets the current state.
+          \"\"\"
+          @spec get_state(GenServer.server()) :: {:ok, state()}
+          def get_state(server) do
+            GenServer.call(server, :get_state)
+          end
+          """
 
-      :update ->
-        """
-        @doc \"\"\"
-        Updates the state with new data.
-        \"\"\"
-        @spec update(GenServer.server(), map()) :: :ok | {:error, term()}
-        def update(server, data) do
-          GenServer.call(server, {:update, data})
-        end
-        """
+        :update ->
+          """
+          @doc \"\"\"
+          Updates the state with new data.
+          \"\"\"
+          @spec update(GenServer.server(), map()) :: :ok | {:error, term()}
+          def update(server, data) do
+            GenServer.call(server, {:update, data})
+          end
+          """
 
-      _ ->
-        ""
-    end)
-    |> Enum.join("\n")
+        _ ->
+          ""
+      end,
+      "\n"
+    )
   end
 
   defp generate_callbacks(callbacks) do
     callback_impls =
-      Enum.map(callbacks, fn
+      Enum.map_join(callbacks, fn
         :get_state ->
           """
           @impl true
@@ -415,17 +424,13 @@ defmodule Raxol.Core.Standards.CodeGenerator do
   defp format_children_docs([]), do: "No children defined yet."
 
   defp format_children_docs(children) do
-    children
-    |> Enum.map(fn child -> "  - #{child}" end)
-    |> Enum.join("\n")
+    Enum.map_join(children, "\n", fn child -> "  - #{child}" end)
   end
 
   defp format_children_specs([]), do: "# Add child specifications here"
 
   defp format_children_specs(children) do
-    children
-    |> Enum.map(fn child -> "{#{child}, []}" end)
-    |> Enum.join(",\n          ")
+    Enum.map_join(children, ",\n          ", fn child -> "{#{child}, []}" end)
   end
 
   defp context_name(module_name) do
@@ -436,7 +441,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
   end
 
   defp generate_context_functions(functions) do
-    Enum.map(functions, fn {name, opts} ->
+    Enum.map_join(functions, "\n\n", fn {name, opts} ->
       """
       @doc \"\"\"
       #{Keyword.get(opts, :doc, "Performs #{name} operation")}
@@ -450,7 +455,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
       end
       """
     end)
-    |> Enum.join("\n")
   end
 
   defp generate_test_cases(_module_name, []) do
@@ -464,26 +468,32 @@ defmodule Raxol.Core.Standards.CodeGenerator do
   end
 
   defp generate_test_cases(_module_name, test_cases) do
-    Enum.map(test_cases, fn {function, tests} ->
-      """
-      describe "#{function}/#{length(tests)}" do
-        #{format_tests(function, tests)}
-      end
-      """
-    end)
-    |> Enum.join("\n")
+    Enum.map_join(
+      test_cases,
+      fn {function, tests} ->
+        """
+        describe "#{function}/#{length(tests)}" do
+          #{format_tests(function, tests)}
+        end
+        """
+      end,
+      "\n"
+    )
   end
 
   defp format_tests(_function, tests) do
-    Enum.map(tests, fn test_name ->
-      """
-      test "#{test_name}" do
-        # Test implementation
-        assert true
-      end
-      """
-    end)
-    |> Enum.join("\n")
+    Enum.map_join(
+      tests,
+      fn test_name ->
+        """
+        test "#{test_name}" do
+          # Test implementation
+          assert true
+        end
+        """
+      end,
+      "\n"
+    )
   end
 
   defp liveview_name(module_name) do
@@ -504,37 +514,40 @@ defmodule Raxol.Core.Standards.CodeGenerator do
   defp generate_liveview_handlers(opts) do
     handlers = Keyword.get(opts, :handlers, [:form_change, :form_submit])
 
-    Enum.map(handlers, fn
-      :form_change ->
-        """
-        @impl true
-        def handle_event("form_change", %{"form" => params}, socket) do
-          changeset = build_changeset(params)
-          {:noreply, assign(socket, changeset: changeset)}
-        end
-        """
-
-      :form_submit ->
-        """
-        @impl true
-        def handle_event("form_submit", %{"form" => params}, socket) do
-          case save_form(params) do
-            {:ok, _result} ->
-              {:noreply, 
-               socket
-               |> put_flash(:info, "Saved successfully")
-               |> push_navigate(to: ~p"/")}
-
-            {:error, changeset} ->
-              {:noreply, assign(socket, changeset: changeset)}
+    Enum.map_join(
+      handlers,
+      fn
+        :form_change ->
+          """
+          @impl true
+          def handle_event("form_change", %{"form" => params}, socket) do
+            changeset = build_changeset(params)
+            {:noreply, assign(socket, changeset: changeset)}
           end
-        end
-        """
+          """
 
-      _ ->
-        ""
-    end)
-    |> Enum.join("\n")
+        :form_submit ->
+          """
+          @impl true
+          def handle_event("form_submit", %{"form" => params}, socket) do
+            case save_form(params) do
+              {:ok, _result} ->
+                {:noreply, 
+                 socket
+                 |> put_flash(:info, "Saved successfully")
+                 |> push_navigate(to: ~p"/")}
+
+              {:error, changeset} ->
+                {:noreply, assign(socket, changeset: changeset)}
+            end
+          end
+          """
+
+        _ ->
+          ""
+      end,
+      "\n"
+    )
   end
 
   defp format_migration_operations([]) do
@@ -551,35 +564,40 @@ defmodule Raxol.Core.Standards.CodeGenerator do
   end
 
   defp format_migration_operations(operations) do
-    Enum.map(operations, fn
-      {:create_table, name, fields} ->
-        """
-        create table(:#{name}) do
-          #{format_table_fields(fields)}
+    Enum.map_join(
+      operations,
+      fn
+        {:create_table, name, fields} ->
+          """
+          create table(:#{name}) do
+            #{format_table_fields(fields)}
 
-          timestamps()
-        end
-        """
+            timestamps()
+          end
+          """
 
-      {:add_index, table, columns} ->
-        "create index(:#{table}, #{inspect(columns)})"
+        {:add_index, table, columns} ->
+          "create index(:#{table}, #{inspect(columns)})"
 
-      {:add_column, _table, column, type} ->
-        "add :#{column}, :#{type}"
+        {:add_column, _table, column, type} ->
+          "add :#{column}, :#{type}"
 
-      _ ->
-        "# Add migration operations"
-    end)
-    |> Enum.join("\n\n    ")
+        _ ->
+          "# Add migration operations"
+      end,
+      "\n\n    "
+    )
   end
 
   defp format_table_fields(fields) do
     fields
-    |> Enum.map(fn {name, type, opts} ->
-      opts_str = format_field_opts(opts)
-      "add :#{name}, :#{type}#{opts_str}"
-    end)
-    |> Enum.join("\n      ")
+    |> Enum.map_join(
+      fn {name, type, opts} ->
+        opts_str = format_field_opts(opts)
+        "add :#{name}, :#{type}#{opts_str}"
+      end,
+      "\n      "
+    )
   end
 
   defp format_field_opts([]), do: ""
@@ -603,23 +621,27 @@ defmodule Raxol.Core.Standards.CodeGenerator do
 
   defp format_schema_types(fields) do
     fields
-    |> Enum.map(fn {name, type, _opts} ->
-      "#{name}: #{elixir_type(type)}"
-    end)
-    |> Enum.join(",\n        ")
+    |> Enum.map_join(
+      fn {name, type, _opts} ->
+        "#{name}: #{elixir_type(type)}"
+      end,
+      ",\n        "
+    )
   end
 
   defp format_schema_fields(fields) do
     fields
-    |> Enum.map(fn {name, type, _opts} ->
-      "field :#{name}, :#{type}"
-    end)
-    |> Enum.join("\n    ")
+    |> Enum.map_join(
+      fn {name, type, _opts} ->
+        "field :#{name}, :#{type}"
+      end,
+      "\n    "
+    )
   end
 
   defp format_cast_fields(fields) do
     fields
-    |> Enum.map(fn {name, _type, _opts} -> ":#{name}" end)
+    |> Enum.map_join(fn {name, _type, _opts} -> ":#{name}" end)
     |> inspect()
   end
 

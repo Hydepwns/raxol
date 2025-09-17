@@ -67,14 +67,14 @@ defmodule Raxol.Cloud.Monitoring.Errors do
     |> Enum.take(limit)
   end
 
-  def count() do
+  def count do
     errors_state = get_errors_state()
     length(errors_state.errors)
   end
 
   # Private helpers
 
-  defp get_errors_state() do
+  defp get_errors_state do
     Raxol.Cloud.Monitoring.MonitoringServer.get_errors() ||
       %{errors: [], config: %{}}
   end

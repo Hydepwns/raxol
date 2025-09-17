@@ -1,4 +1,6 @@
 defmodule Mix.Tasks.Raxol.Memory.Stability do
+  alias Raxol.Utils.MemoryFormatter
+
   @moduledoc """
   Long-running memory stability tests for detecting memory leaks and performance degradation.
 
@@ -54,7 +56,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
   """
 
   use Mix.Task
-  alias Raxol.Terminal.{Buffer, ANSI.AnsiParser, Cursor.Manager}
+  alias Raxol.Terminal.{ANSI.AnsiParser, Cursor.Manager}
 
   @shortdoc "Run long-running memory stability tests"
 
@@ -167,7 +169,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
 
   defp simulate_vim_session(duration) do
     Mix.shell().info("Simulating Vim session...")
-    {:ok, buffer} = Buffer.new(120, 40)
+    buffer = Raxol.Terminal.ScreenBuffer.new(120, 40)
 
     start_time = System.monotonic_time(:millisecond)
     operations_count = 0
@@ -212,7 +214,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
 
   defp simulate_log_streaming(duration) do
     Mix.shell().info("Simulating log streaming...")
-    {:ok, buffer} = Buffer.create(100, 50)
+    buffer = Raxol.Terminal.ScreenBuffer.new(100, 50)
 
     start_time = System.monotonic_time(:millisecond)
     _lines_processed = 0
@@ -237,7 +239,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
         # Write to buffer (simulate scrolling)
         _row = rem(line_num, 50)
 
-        case Buffer.write(buffer, log_line) do
+        case Raxol.Terminal.ScreenBuffer.write(buffer, log_line) do
           {:ok, updated_buffer} -> {updated_buffer, line_num + 1}
           _ -> {buffer, line_num + 1}
         end
@@ -261,7 +263,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
 
   defp simulate_interactive_shell(duration) do
     Mix.shell().info("Simulating interactive shell...")
-    {:ok, buffer} = Buffer.create(80, 24)
+    buffer = Raxol.Terminal.ScreenBuffer.new(80, 24)
 
     start_time = System.monotonic_time(:millisecond)
     _commands_executed = 0
@@ -293,7 +295,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
             # Each command takes ~3 lines
             _row = rem(cmd_num * 3, 24)
 
-            case Buffer.write(acc_buffer, line) do
+            case Raxol.Terminal.ScreenBuffer.write(acc_buffer, line) do
               {:ok, new_buffer} -> new_buffer
               _ -> acc_buffer
             end
@@ -330,7 +332,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
     text =
       "def function_#{:rand.uniform(1000)}(param) do\n  # Implementation here\nend"
 
-    case Buffer.write(buffer, text) do
+    case Raxol.Terminal.ScreenBuffer.write(buffer, text) do
       {:ok, updated_buffer} -> updated_buffer
       _ -> buffer
     end
@@ -377,7 +379,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
     # Simulate buffer operations like clear/resize
     case :rand.uniform(3) do
       1 ->
-        case Buffer.clear(buffer) do
+        case Raxol.Terminal.ScreenBuffer.clear(buffer) do
           {:ok, cleared} -> cleared
           _ -> buffer
         end
@@ -567,16 +569,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
     Mix.shell().info("Results saved to: #{output_path}")
   end
 
-  defp format_memory(bytes) when is_number(bytes) do
-    cond do
-      bytes >= 1_000_000_000 -> "#{Float.round(bytes / 1_000_000_000, 2)}GB"
-      bytes >= 1_000_000 -> "#{Float.round(bytes / 1_000_000, 2)}MB"
-      bytes >= 1_000 -> "#{Float.round(bytes / 1_000, 2)}KB"
-      true -> "#{bytes}B"
-    end
-  end
-
-  defp format_memory(_), do: "N/A"
+  defp format_memory(bytes), do: MemoryFormatter.format_memory(bytes)
 
   defp print_help do
     Mix.shell().info(@moduledoc)

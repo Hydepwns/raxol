@@ -120,7 +120,7 @@ defmodule Raxol.UI.ThemeResolverCached do
   @doc """
   Cached version of get_default_theme.
   """
-  def get_default_theme() do
+  def get_default_theme do
     cache_key = :default_theme
 
     case get_cached_theme(cache_key) do

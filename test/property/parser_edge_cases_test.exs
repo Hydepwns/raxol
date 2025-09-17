@@ -80,7 +80,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
       check all depth <- integer(1..20),
                 max_runs: 100 do
         # Build nested SGR sequences
-        opening = Enum.map(1..depth, fn i -> "\e[#{rem(i, 7) + 30}m" end) |> Enum.join()
+        opening = Enum.map_join(1..depth, "", fn i -> "\e[#{rem(i, 7) + 30}m" end)
         closing = "\e[0m"
         sequence = opening <> "text" <> closing
         
@@ -94,7 +94,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
       check all param_count <- integer(50..200),
                 max_runs: 50 do
         # Generate many parameters
-        params = Enum.map(1..param_count, fn i -> rem(i, 108) end)
+        params = Enum.map_join(1..param_count, fn i -> rem(i, 108) end)
         sequence = "\e[" <> Enum.join(params, ";") <> "m"
         
         # Should handle long parameter lists
@@ -249,13 +249,13 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
       check all count <- integer(100..500),
                 max_runs: 20 do
         # Alternate between text and escapes
-        sequence = Enum.map(1..count, fn i ->
+        sequence = Enum.map_join(1..count, "", fn i ->
           if rem(i, 2) == 0 do
             "\e[#{rem(i, 7) + 31}m"
           else
             "x"
           end
-        end) |> Enum.join()
+        end)
         
         {time, result} = :timer.tc(fn -> Parser.parse(sequence) end)
         
@@ -311,9 +311,9 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
       check all count <- integer(100..1000),
                 max_runs: 20 do
         # Many small sequences
-        many_small = Enum.map(1..count, fn i ->
+        many_small = Enum.map_join(1..count, "", fn i ->
           "\e[#{rem(i, 7) + 31}m#{i}"
-        end) |> Enum.join()
+        end)
         
         # One large sequence with many parameters
         one_large = "\e[" <> Enum.join(1..count, ";") <> "m"

@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   Creates a new terminal emulator instance with default dimensions.
   """
   @spec new() :: Raxol.Terminal.Emulator.t()
-  def new() do
+  def new do
     new(80, 24)
   end
 

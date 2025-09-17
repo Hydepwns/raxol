@@ -680,7 +680,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Creates a new buffer with default dimensions.
   """
-  def new() do
+  def new do
     new(80, 24)
   end
 

@@ -99,7 +99,17 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     |> check_genserver_patterns(file_path, ast)
     |> check_formatting(file_path, lines)
     |> check_imports_and_aliases(file_path, ast)
-    |> Enum.map(&format_issue/1)
+  end
+
+  # Helper to create issue maps
+  defp create_issue(type, line, file, message, severity) do
+    %{
+      type: type,
+      line: line,
+      file: file,
+      message: message,
+      severity: severity
+    }
   end
 
   defp check_module_structure(issues, file_path, ast) do
@@ -157,16 +167,26 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
             {:error, :double_underscores} ->
               {node,
                [
-                 {:naming_convention, line, file_path,
-                  "Function name #{name} contains double underscores", :warning}
+                 create_issue(
+                   :naming_convention,
+                   line,
+                   file_path,
+                   "Function name #{name} contains double underscores",
+                   :warning
+                 )
                  | acc
                ]}
 
             {:error, :uppercase} ->
               {node,
                [
-                 {:naming_convention, line, file_path,
-                  "Function name #{name} contains uppercase letters", :error}
+                 create_issue(
+                   :naming_convention,
+                   line,
+                   file_path,
+                   "Function name #{name} contains uppercase letters",
+                   :error
+                 )
                  | acc
                ]}
 
@@ -244,22 +264,37 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
       case check_line_formatting(line) do
         {:error, :line_too_long} ->
           [
-            {:formatting, line_num, file_path, "Line exceeds 120 characters",
-             :info}
+            create_issue(
+              :formatting,
+              line_num,
+              file_path,
+              "Line exceeds 120 characters",
+              :info
+            )
             | acc
           ]
 
         {:error, :trailing_whitespace} ->
           [
-            {:formatting, line_num, file_path, "Line has trailing whitespace",
-             :warning}
+            create_issue(
+              :formatting,
+              line_num,
+              file_path,
+              "Line has trailing whitespace",
+              :warning
+            )
             | acc
           ]
 
         {:error, :contains_tabs} ->
           [
-            {:formatting, line_num, file_path,
-             "Line contains tabs (use spaces)", :error}
+            create_issue(
+              :formatting,
+              line_num,
+              file_path,
+              "Line contains tabs (use spaces)",
+              :error
+            )
             | acc
           ]
 
@@ -305,8 +340,13 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   defp check_module_name_match(expected, actual, file_path, issues)
        when expected != actual do
     [
-      {:module_name_mismatch, 1, file_path,
-       "Module name #{actual} doesn't match file path", :error}
+      create_issue(
+        :module_name_mismatch,
+        1,
+        file_path,
+        "Module name #{actual} doesn't match file path",
+        :error
+      )
       | issues
     ]
   end
@@ -320,8 +360,13 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
 
       false ->
         [
-          {:missing_moduledoc, 1, file_path, "Module is missing @moduledoc",
-           :warning}
+          create_issue(
+            :missing_moduledoc,
+            1,
+            file_path,
+            "Module is missing @moduledoc",
+            :warning
+          )
           | issues
         ]
     end
@@ -333,8 +378,13 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
 
     {node,
      [
-       {:missing_doc, line, file_path,
-        "Public function #{name}/#{length(args)} is missing @doc", :warning}
+       create_issue(
+         :missing_doc,
+         line,
+         file_path,
+         "Public function #{name}/#{length(args)} is missing @doc",
+         :warning
+       )
        | acc
      ]}
   end
@@ -344,8 +394,13 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
       true ->
         {node,
          [
-           {:naming_convention, line, file_path,
-            "Single letter variable #{name} should be avoided", :info}
+           create_issue(
+             :naming_convention,
+             line,
+             file_path,
+             "Single letter variable #{name} should be avoided",
+             :info
+           )
            | acc
          ]}
 
@@ -366,9 +421,13 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
 
     {node,
      [
-       {:error_handling, line, file_path,
-        "Use tagged tuples {:ok, value} or {:error, reason} instead of bare atoms",
-        :warning}
+       create_issue(
+         :error_handling,
+         line,
+         file_path,
+         "Use tagged tuples {:ok, value} or {:error, reason} instead of bare atoms",
+         :warning
+       )
        | acc
      ]}
   end
@@ -377,8 +436,13 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     # has_impl_attribute?/2 always returns false, so we only handle the false case
     {node,
      [
-       {:genserver_pattern, line, file_path,
-        "GenServer callback missing @impl true", :warning}
+       create_issue(
+         :genserver_pattern,
+         line,
+         file_path,
+         "GenServer callback missing @impl true",
+         :warning
+       )
        | acc
      ]}
   end
@@ -391,8 +455,13 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
       false ->
         {node,
          [
-           {:import_style, line, file_path,
-            "Import without :only option may import too many functions", :info}
+           create_issue(
+             :import_style,
+             line,
+             file_path,
+             "Import without :only option may import too many functions",
+             :info
+           )
            | acc
          ]}
     end
@@ -448,8 +517,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   defp format_final_recommendations(recommendations) do
     recommendations
     |> Enum.with_index(1)
-    |> Enum.map(fn {rec, idx} -> "#{idx}. #{rec}" end)
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", fn {rec, idx} -> "#{idx}. #{rec}" end)
   end
 
   defp find_elixir_files(dir_path) do
@@ -470,8 +538,7 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
     |> Path.split()
     |> Enum.drop_while(&(&1 != "lib"))
     |> Enum.drop(1)
-    |> Enum.map(&Macro.camelize/1)
-    |> Enum.join(".")
+    |> Enum.map_join(".", &Macro.camelize/1)
   end
 
   defp has_moduledoc?({:__block__, _, nodes}) do
@@ -496,32 +563,6 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
 
   defp has_only_option?(_), do: false
 
-  defp format_issue({type, line, file, message, severity}) do
-    %{
-      file: file,
-      line: line,
-      type: type,
-      message: message,
-      severity: severity
-    }
-  end
-
-  defp format_issue(%{
-         type: type,
-         line: line,
-         file: file,
-         message: message,
-         severity: severity
-       }) do
-    %{
-      file: file,
-      line: line,
-      type: type,
-      message: message,
-      severity: severity
-    }
-  end
-
   defp summarize_issues(issues) do
     issues
     |> Enum.group_by(& &1.type)
@@ -532,32 +573,31 @@ defmodule Raxol.Core.Standards.ConsistencyChecker do
   defp format_summary(summary) do
     summary
     |> Enum.sort_by(fn {_, count} -> -count end)
-    |> Enum.map(fn {type, count} ->
+    |> Enum.map_join("\n", fn {type, count} ->
       "- #{format_type(type)}: #{count}"
     end)
-    |> Enum.join("\n")
   end
 
   defp format_issues(issues) do
     issues
-    |> Enum.map(&format_issue/1)
     |> Enum.group_by(& &1.file)
-    |> Enum.map(fn {file, file_issues} ->
+    |> Enum.map_join("\n\n", fn {file, file_issues} ->
       """
       ### #{file}
       #{format_file_issues(file_issues)}
       """
     end)
-    |> Enum.join("\n")
   end
 
   defp format_file_issues(issues) do
     issues
     |> Enum.sort_by(& &1.line)
-    |> Enum.map(fn issue ->
-      "- Line #{issue.line} [#{issue.severity}]: #{issue.message}"
-    end)
-    |> Enum.join("\n")
+    |> Enum.map_join(
+      "\n",
+      fn issue ->
+        "- Line #{issue.line} [#{issue.severity}]: #{issue.message}"
+      end
+    )
   end
 
   defp format_type(type) do

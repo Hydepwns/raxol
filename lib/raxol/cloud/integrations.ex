@@ -73,7 +73,7 @@ defmodule Raxol.Cloud.Integrations do
         providers: %{aws: :connected, ...}
       }
   """
-  def status() do
+  def status do
     %{
       edge: EdgeComputing.status(),
       monitoring: Monitoring.status(),
@@ -474,27 +474,27 @@ defmodule Raxol.Cloud.Integrations do
     end)
   end
 
-  defp init_aws() do
+  defp init_aws do
     # This would initialize AWS SDK
     :ok
   end
 
-  defp init_azure() do
+  defp init_azure do
     # This would initialize Azure SDK
     :ok
   end
 
-  defp init_gcp() do
+  defp init_gcp do
     # This would initialize GCP SDK
     :ok
   end
 
-  defp init_custom_provider() do
+  defp init_custom_provider do
     # This would initialize a custom provider
     :ok
   end
 
-  defp get_providers_status() do
+  defp get_providers_status do
     # This would check the status of each provider
     # For now, it returns mock values
     %{
@@ -505,7 +505,7 @@ defmodule Raxol.Cloud.Integrations do
     }
   end
 
-  defp setup_edge_monitoring_integration() do
+  defp setup_edge_monitoring_integration do
     # This integrates EdgeComputing and Monitoring
     # Register metrics handler for edge computing events
 

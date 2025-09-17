@@ -538,14 +538,13 @@ defmodule Raxol.Terminal.Input.MouseHandler do
       end
 
     sequences
-    |> Enum.map(fn code ->
+    |> Enum.map_join(fn code ->
       if enable do
         "\e[?#{code}h"
       else
         "\e[?#{code}l"
       end
     end)
-    |> Enum.join()
   end
 
   @doc """

@@ -386,7 +386,7 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
 
     commands =
       Enum.with_index(chunks)
-      |> Enum.map(fn {chunk, index} ->
+      |> Enum.map_join(fn {chunk, index} ->
         is_last_chunk = index == length(chunks) - 1
 
         control_data =
@@ -403,7 +403,7 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
     data
     |> :binary.bin_to_list()
     |> Enum.chunk_every(chunk_size)
-    |> Enum.map(&:binary.list_to_bin/1)
+    |> Enum.map_join(",", &:binary.list_to_bin/1)
   end
 
   defp build_transmission_control_data(image_id, options, more_chunks) do
@@ -443,7 +443,6 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
 
     (base_params ++ position_params ++ size_params ++ style_params)
     |> Enum.filter(&(&1 != nil))
-    |> Enum.join(",")
   end
 
   defp format_param(%{format: :png}), do: "f=100"

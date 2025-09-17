@@ -59,8 +59,7 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
 
     rows =
       chart_state.data_buffer
-      |> Enum.map(&format_data_point_as_csv(&1, chart_state.type))
-      |> Enum.join("\n")
+      |> Enum.map_join(&format_data_point_as_csv(&1, chart_state.type), "\n")
 
     headers <> "\n" <> rows
   end
@@ -92,7 +91,7 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
 
         data_points
         |> Enum.with_index()
-        |> Enum.map(fn {point, idx} ->
+        |> Enum.map_join("\n", fn {point, idx} ->
           height =
             case range > 0 do
               true -> trunc(10 * (point.value - min_val) / range)
@@ -102,7 +101,6 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
           String.pad_leading("#{idx}", 3) <>
             ": " <> String.duplicate("*", height)
         end)
-        |> Enum.join("\n")
     end
   end
 
@@ -116,7 +114,7 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
 
         data_points
         |> Enum.with_index()
-        |> Enum.map(fn {point, idx} ->
+        |> Enum.map_join("\n", fn {point, idx} ->
           bar_length =
             case max_val > 0 do
               true -> trunc(20 * point.value / max_val)
@@ -128,7 +126,6 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
           String.pad_trailing(label, 10) <>
             " |" <> String.duplicate("=", bar_length) <> " #{point.value}"
         end)
-        |> Enum.join("\n")
     end
   end
 
@@ -141,12 +138,14 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
         "Scatter Plot Data:\n" <>
           (data_points
            |> Enum.with_index()
-           |> Enum.map(fn {point, idx} ->
-             x = Map.get(point, :x, idx)
-             y = Map.get(point, :y, point.value)
-             "(#{x}, #{y})"
-           end)
-           |> Enum.join(", "))
+           |> Enum.map_join(
+             fn {point, idx} ->
+               x = Map.get(point, :x, idx)
+               y = Map.get(point, :y, point.value)
+               "(#{x}, #{y})"
+             end,
+             ", "
+           ))
     end
   end
 

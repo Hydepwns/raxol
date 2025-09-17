@@ -24,7 +24,13 @@ config :raxol, RaxolWeb.Endpoint,
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id]
+  metadata: [
+    :request_id,
+    :category,
+    :performance_impact,
+    :suggestions_count,
+    :phase3_context
+  ]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason

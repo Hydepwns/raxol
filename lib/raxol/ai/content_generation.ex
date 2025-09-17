@@ -16,8 +16,8 @@ defmodule Raxol.AI.ContentGeneration do
   within the application.
   """
 
-  alias Raxol.Core.UXRefinement
   alias Raxol.AI.ServiceAdapter
+  alias Raxol.Core.UXRefinement
 
   @type generation_type :: :text | :command | :help | :docs | :tutorial | :hint
   @type generation_options :: %{

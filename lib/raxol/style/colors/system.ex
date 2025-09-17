@@ -182,7 +182,7 @@ defmodule Raxol.Style.Colors.System do
   Get all UI colors for the current theme as a map of role => color.
   """
   @spec get_all_ui_colors() :: map()
-  def get_all_ui_colors() do
+  def get_all_ui_colors do
     ensure_server_started()
     Server.get_all_ui_colors()
   end

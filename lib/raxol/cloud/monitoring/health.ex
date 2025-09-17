@@ -48,12 +48,12 @@ defmodule Raxol.Cloud.Monitoring.Health do
     }
   end
 
-  def last_check_time() do
+  def last_check_time do
     health_state = get_health_state()
     health_state.last_check
   end
 
-  defp get_health_state() do
+  defp get_health_state do
     Raxol.Cloud.Monitoring.MonitoringServer.get_health_status() ||
       %{status: :unknown, last_check: nil, components: %{}, config: %{}}
   end

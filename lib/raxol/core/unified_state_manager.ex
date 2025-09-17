@@ -127,7 +127,7 @@ defmodule Raxol.Core.UnifiedStateManager do
   Gets the current state version.
   """
   @spec get_version() :: version()
-  def get_version() do
+  def get_version do
     Agent.get(__MODULE__, fn state -> state.version end)
   end
 
@@ -153,7 +153,7 @@ defmodule Raxol.Core.UnifiedStateManager do
   Gets memory usage statistics.
   """
   @spec get_memory_usage() :: map()
-  def get_memory_usage() do
+  def get_memory_usage do
     Agent.get(__MODULE__, fn state ->
       table_info = :ets.info(state.table)
       memory_words = Keyword.get(table_info, :memory, 0)

@@ -395,12 +395,12 @@ defmodule Raxol.Terminal.Commands.WindowHandler do
   @doc """
   Gets cached font dimensions for performance.
   """
-  def get_cached_char_dimensions() do
+  def get_cached_char_dimensions do
     font_manager = get_default_font_manager()
     FontMetricsCache.get_font_dimensions(font_manager)
   end
 
-  defp get_default_font_manager() do
+  defp get_default_font_manager do
     %FontManager{
       family: "monospace",
       size: @default_font_size,
@@ -411,7 +411,7 @@ defmodule Raxol.Terminal.Commands.WindowHandler do
   @doc """
   Cached version of char width calculation.
   """
-  def cached_char_width_px() do
+  def cached_char_width_px do
     {char_width, _} = get_cached_char_dimensions()
     char_width
   end
@@ -419,7 +419,7 @@ defmodule Raxol.Terminal.Commands.WindowHandler do
   @doc """
   Cached version of char height calculation.
   """
-  def cached_char_height_px() do
+  def cached_char_height_px do
     {_, char_height} = get_cached_char_dimensions()
     char_height
   end

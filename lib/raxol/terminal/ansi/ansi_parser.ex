@@ -44,7 +44,7 @@ defmodule Raxol.Terminal.ANSI.AnsiParser do
   Parses a string containing ANSI escape sequences with a custom state machine.
   Returns a list of parsed sequences.
   """
-  @spec parse(StateMachine.t(), String.t()) :: list(sequence())
+  @spec parse(map(), String.t()) :: list(sequence())
   def parse(state, input) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            {_state, sequences} = StateMachine.process(state, input)

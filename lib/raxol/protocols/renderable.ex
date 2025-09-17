@@ -77,9 +77,7 @@ end
 
 defimpl Raxol.Protocols.Renderable, for: List do
   def render(list, opts) do
-    list
-    |> Enum.map(&Raxol.Protocols.Renderable.render(&1, opts))
-    |> Enum.join("\n")
+    Enum.map_join(list, "\n", &Raxol.Protocols.Renderable.render(&1, opts))
   end
 
   def render_metadata(list) do
@@ -103,7 +101,7 @@ defimpl Raxol.Protocols.Renderable, for: Map do
       |> Enum.max(fn -> 0 end)
 
     map
-    |> Enum.map(fn {k, v} ->
+    |> Enum.map_join("\n", fn {k, v} ->
       key = k |> to_string() |> String.pad_trailing(max_key_length)
 
       value =
@@ -114,7 +112,6 @@ defimpl Raxol.Protocols.Renderable, for: Map do
 
       "#{key}: #{value}"
     end)
-    |> Enum.join("\n")
   end
 
   def render_metadata(map) do

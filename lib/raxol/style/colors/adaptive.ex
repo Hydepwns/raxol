@@ -358,7 +358,7 @@ defmodule Raxol.Style.Colors.Adaptive do
     end
   end
 
-  defp check_if_other_true_color_indicators() do
+  defp check_if_other_true_color_indicators do
     # Check TERM_PROGRAM first, as it's often more specific
     term_program = System.get_env("TERM_PROGRAM")
     # Add other known truecolor programs
@@ -375,7 +375,7 @@ defmodule Raxol.Style.Colors.Adaptive do
     # || (System.get_env("VTE_VERSION") != nil && ...)
   end
 
-  defp check_if_256_colors_supported() do
+  defp check_if_256_colors_supported do
     term = System.get_env("TERM")
     # Check TERM against known 256-color terminals
     # Check tput colors (more reliable but requires tput)
@@ -386,7 +386,7 @@ defmodule Raxol.Style.Colors.Adaptive do
       (term != nil && String.contains?(term, "256"))
   end
 
-  defp check_if_16_colors_supported() do
+  defp check_if_16_colors_supported do
     term = System.get_env("TERM")
     # Check TERM against known 16-color terminals
     # or check_tput_colors(16) ...

@@ -196,8 +196,7 @@ defmodule Raxol.Protocols.ComponentFramework do
     defp render_component_props(%{props: props}) do
       props_str =
         props
-        |> Enum.map(fn {k, v} -> "  #{k}: #{inspect(v)}" end)
-        |> Enum.join("\n")
+        |> Enum.map_join("\n", fn {k, v} -> "  #{k}: #{inspect(v)}" end)
 
       "Props:\n#{props_str}"
     end
@@ -208,11 +207,10 @@ defmodule Raxol.Protocols.ComponentFramework do
       children_rendered =
         children
         |> Enum.with_index()
-        |> Enum.map(fn {child, index} ->
+        |> Enum.map_join("\n\n", fn {child, index} ->
           child_content = Renderable.render(child, opts)
           "Child #{index + 1}:\n#{indent_content(child_content)}"
         end)
-        |> Enum.join("\n\n")
 
       "Children:\n#{children_rendered}"
     end
@@ -224,8 +222,7 @@ defmodule Raxol.Protocols.ComponentFramework do
     defp indent_content(content) do
       content
       |> String.split("\n")
-      |> Enum.map(&("  " <> &1))
-      |> Enum.join("\n")
+      |> Enum.map_join("\n", &("  " <> &1))
     end
 
     defp apply_component_styling(content, %{style: style})

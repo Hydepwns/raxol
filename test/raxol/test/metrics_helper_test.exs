@@ -4,12 +4,12 @@ defmodule Raxol.Test.MetricsHelperTest do
 
   setup context do
     # Skip default setup for tests that handle their own setup
-    unless context[:skip_setup] do
+    if context[:skip_setup] do
+      :ok
+    else
       context = MetricsHelper.setup_metrics_test()
       on_exit(fn -> MetricsHelper.cleanup_metrics_test(context) end)
       {:ok, context}
-    else
-      :ok
     end
   end
 

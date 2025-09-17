@@ -450,7 +450,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
       max_x =
         image.pixel_buffer
         |> Map.keys()
-        |> Enum.map(&elem(&1, 0))
+        |> Enum.map_join(&elem(&1, 0))
         |> Enum.max(fn -> 0 end)
 
       max_y =
@@ -533,14 +533,13 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   defp encode_palette(palette) when is_map(palette) do
     palette
     |> Enum.sort_by(fn {index, _color} -> index end)
-    |> Enum.map(fn {index, {r, g, b}} ->
+    |> Enum.map_join(fn {index, {r, g, b}} ->
       # Convert to percentages (0-100)
       r_pct = round(r / 255 * 100)
       g_pct = round(g / 255 * 100)
       b_pct = round(b / 255 * 100)
       "##{index};2;#{r_pct};#{g_pct};#{b_pct}"
     end)
-    |> Enum.join()
   end
 
   defp extract_sixel_data(data) when is_binary(data) do

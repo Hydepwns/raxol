@@ -32,7 +32,7 @@ defmodule Raxol.Cloud.Monitoring.Alerts do
 
   # Private helpers
 
-  defp get_alerts_state() do
+  defp get_alerts_state do
     Raxol.Cloud.Monitoring.MonitoringServer.get_alerts() || %{config: %{}}
   end
 

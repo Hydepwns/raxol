@@ -273,10 +273,10 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
   def stress_sequences do
     %{
       # Rapid color changes
-      color_spam: Enum.map(1..1000, fn i -> "\e[#{rem(i, 7) + 31}m█" end) |> Enum.join(),
+      color_spam: Enum.map_join(1..1000, "", fn i -> "\e[#{rem(i, 7) + 31}m█" end),
       
       # Many cursor movements
-      cursor_dance: Enum.map(1..100, fn i -> "\e[#{i};#{i}H*" end) |> Enum.join(),
+      cursor_dance: Enum.map_join(1..100, "", fn i -> "\e[#{i};#{i}H*" end),
       
       # Nested attributes
       deep_nesting: Enum.reduce(1..20, "", fn i, acc -> 
@@ -284,13 +284,13 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
       end) <> "Text" <> "\e[0m",
       
       # Clear and redraw
-      flicker_test: Enum.map(1..50, fn _ -> "\e[2J\e[1;1HFlash\e[2J" end) |> Enum.join(),
+      flicker_test: Enum.map_join(1..50, "", fn _ -> "\e[2J\e[1;1HFlash\e[2J" end),
       
       # Large data with escapes
-      large_formatted: Enum.map(1..10000, fn i ->
+      large_formatted: Enum.map_join(1..10000, "", fn i ->
         color = rem(i, 7) + 31
         "\e[#{color}m#{i}\e[0m "
-      end) |> Enum.join()
+      end)
     }
   end
 

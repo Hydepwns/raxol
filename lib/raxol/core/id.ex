@@ -10,7 +10,7 @@ defmodule Raxol.Core.ID do
   While unique within the runtime, these are not guaranteed universally unique like UUIDs.
   """
   @spec generate() :: String.t()
-  def generate() do
+  def generate do
     System.unique_integer([:positive])
     |> Integer.to_string()
   end

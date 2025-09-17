@@ -212,7 +212,7 @@ defmodule Raxol.Svelte.Store do
       end
 
       # Get all current store values
-      def get_all() do
+      def get_all do
         GenServer.call(__MODULE__, :get_all)
       end
 

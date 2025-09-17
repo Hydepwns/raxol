@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Clipboard.Sync do
   Creates a new clipboard sync instance.
   """
   @spec new() :: t()
-  def new() do
+  def new do
     %__MODULE__{
       subscribers: []
     }

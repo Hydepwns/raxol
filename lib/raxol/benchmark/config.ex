@@ -598,16 +598,14 @@ defmodule Raxol.Benchmark.Config do
   end
 
   defp rapid_color_sequence do
-    1..50
-    |> Enum.map(fn i ->
+    Enum.map_join(1..50, " ", fn i ->
       color = rem(i, 8) + 30
       "\e[#{color}m#{i}\e[0m"
     end)
-    |> Enum.join(" ")
   end
 
   defp large_ansi_content do
-    Enum.map(1..200, fn i ->
+    Enum.map_join(1..200, "", fn i ->
       row = rem(i, 24) + 1
       col = rem(i * 3, 70) + 1
       color = rem(i, 8) + 30
@@ -615,7 +613,6 @@ defmodule Raxol.Benchmark.Config do
 
       "\e[#{row};#{col}H\e[#{color};#{bg_color}mItem #{i}\e[0m"
     end)
-    |> Enum.join("")
   end
 
   defp terminal_app_content do

@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Window.Manager do
   For backward compatibility, returns {:ok, pid()} of the GenServer.
   """
   @spec new() :: {:ok, pid()}
-  def new() do
+  def new do
     start_link()
   end
 
@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.Window.Manager do
   Returns a simple map structure instead of a process.
   """
   @spec new_for_test() :: map()
-  def new_for_test() do
+  def new_for_test do
     %{
       title: "",
       icon_name: "",

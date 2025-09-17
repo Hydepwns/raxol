@@ -150,7 +150,7 @@ defmodule Raxol.Protocols.Phase2IntegrationTest do
 
       :ok = PluginSystemIntegration.PluginRegistry.unregister_plugin(registry, plugin_id)
       empty_list = PluginSystemIntegration.PluginRegistry.list_plugins(registry)
-      assert length(empty_list) == 0
+      assert Enum.empty?(empty_list)
     end
 
     test "finds plugins by capability" do

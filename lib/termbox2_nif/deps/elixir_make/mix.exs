@@ -36,7 +36,7 @@ defmodule ElixirMake.Mixfile do
   defp docs do
     [
       main: "Mix.Tasks.Compile.ElixirMake",
-      extras: ["PRECOMPILATION_GUIDE.md", "CHANGELOG.md"],
+      extras: ["CHANGELOG.md"],
       source_ref: "v#{@version}",
       source_url: "https://github.com/elixir-lang/elixir_make"
     ]

@@ -255,7 +255,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Creates a new buffer manager instance.
   """
   @spec new() :: term()
-  def new() do
+  def new do
     %{width: 80, height: 24, main_buffer: nil, alternate_buffer: nil}
   end
 

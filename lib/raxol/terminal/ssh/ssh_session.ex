@@ -22,13 +22,13 @@ if Code.ensure_loaded?(:ssh) do
 
         # Start session with SSH client
         {:ok, session} = SSHSession.start(ssh_client, pty_options)
-        
+
         # Send input to remote shell
         SSHSession.send_input(session, "ls -la\\n")
-        
+
         # Resize terminal
         SSHSession.resize(session, 80, 24)
-        
+
         # Get session output
         output = SSHSession.get_output(session)
     """
@@ -576,24 +576,119 @@ if Code.ensure_loaded?(:ssh) do
     end
 
     defp send_session_signal(state, signal) do
-      signal_name =
-        case signal do
-          :INT -> "INT"
-          :TERM -> "TERM"
-          :KILL -> "KILL"
-          :HUP -> "HUP"
-          :USR1 -> "USR1"
-          :USR2 -> "USR2"
-          _ -> Atom.to_string(signal)
-        end
+      signal_name = map_signal_to_ssh(signal)
 
-      case :ssh_connection.send_signal(
+      # Use the Erlang SSH signal/3 function
+      case :ssh_connection.signal(
              state.connection_ref,
              state.channel_id,
              String.to_charlist(signal_name)
            ) do
-        :ok -> :ok
-        {:error, reason} -> {:error, reason}
+        :ok ->
+          Logger.debug("Sent signal #{signal_name} to SSH session")
+          :ok
+
+        {:error, reason} ->
+          Logger.warning(
+            "Failed to send signal #{signal_name}: #{inspect(reason)}"
+          )
+
+          # Some SSH servers don't support signals, try workaround
+          send_signal_workaround(state, signal_name)
+      end
+    end
+
+    defp map_signal_to_ssh(signal) do
+      # Map Elixir signal atoms to SSH signal string names
+      case signal do
+        # Interrupt (Ctrl+C)
+        :INT ->
+          "INT"
+
+        # Terminate
+        :TERM ->
+          "TERM"
+
+        # Kill (cannot be caught)
+        :KILL ->
+          "KILL"
+
+        # Hangup
+        :HUP ->
+          "HUP"
+
+        # Quit (Ctrl+\)
+        :QUIT ->
+          "QUIT"
+
+        # Alarm clock
+        :ALRM ->
+          "ALRM"
+
+        # User-defined signal 1
+        :USR1 ->
+          "USR1"
+
+        # User-defined signal 2
+        :USR2 ->
+          "USR2"
+
+        # Window size change
+        :WINCH ->
+          "WINCH"
+
+        # Stop process
+        :STOP ->
+          "STOP"
+
+        # Continue if stopped
+        :CONT ->
+          "CONT"
+
+        # Terminal stop (Ctrl+Z)
+        :TSTP ->
+          "TSTP"
+
+        _ ->
+          # Convert any other atom to uppercase string
+          signal
+          |> Atom.to_string()
+          |> String.upcase()
+      end
+    end
+
+    defp send_signal_workaround(state, signal_name) do
+      # Workaround for servers that don't support signals
+      # Send equivalent control characters where possible
+      ctrl_char =
+        case signal_name do
+          # Ctrl+C
+          "INT" -> <<3>>
+          # Ctrl+\
+          "QUIT" -> <<28>>
+          # Ctrl+Z
+          "TSTP" -> <<26>>
+          _ -> nil
+        end
+
+      if ctrl_char do
+        case :ssh_connection.send(
+               state.connection_ref,
+               state.channel_id,
+               ctrl_char,
+               0
+             ) do
+          :ok ->
+            Logger.debug("Sent control character for #{signal_name}")
+            :ok
+
+          {:error, reason} ->
+            Logger.debug("Workaround failed: #{inspect(reason)}")
+            {:error, :signal_not_supported}
+        end
+      else
+        # No workaround available, return original error
+        {:error, :signal_not_supported}
       end
     end
 

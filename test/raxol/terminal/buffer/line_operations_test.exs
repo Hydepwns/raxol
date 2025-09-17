@@ -95,7 +95,7 @@ defmodule Raxol.Terminal.Buffer.LineOperationsTest do
       buffer = put_content(buffer, "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
       line = LineOperations.get_line(buffer, 2)
 
-      assert line |> Enum.map(&Raxol.Terminal.Cell.get_char/1) |> Enum.join() ==
+      assert Enum.map_join(line, "", &Raxol.Terminal.Cell.get_char/1) ==
                "KLMNO     "
     end
 
@@ -147,11 +147,9 @@ defmodule Raxol.Terminal.Buffer.LineOperationsTest do
 
   defp get_content(buffer) do
     buffer.cells
-    |> Enum.map(fn line ->
+    |> Enum.map_join("\n", fn line ->
       line
-      |> Enum.map(&Raxol.Terminal.Cell.get_char/1)
-      |> Enum.join()
+      |> Enum.map_join("", &Raxol.Terminal.Cell.get_char/1)
     end)
-    |> Enum.join("\n")
   end
 end

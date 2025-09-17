@@ -37,6 +37,10 @@ defmodule Raxol.DevTools.ComponentPreview do
   require Logger
 
   defmodule Story do
+    @moduledoc """
+    Represents a story for component preview in development tools.
+    """
+
     @enforce_keys [:component, :name, :props]
     defstruct [
       :component,
@@ -68,6 +72,10 @@ defmodule Raxol.DevTools.ComponentPreview do
   end
 
   defmodule PreviewState do
+    @moduledoc """
+    State management for component preview in development tools.
+    """
+
     defstruct [
       :stories,
       :current_story,

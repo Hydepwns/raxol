@@ -160,7 +160,7 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
       emojis: "🚀💻🎨🔥⚡️🌈",
 
       # Control characters
-      all_controls: Enum.map(0..31, fn i -> <<i>> end),
+      all_controls: Enum.map_join(0..31, fn i -> <<i>> end),
 
       # Very long lines
       long_line: String.duplicate("x", 10000),
@@ -464,16 +464,12 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
   end
 
   defp generate_rapid_color_changes do
-    1..100
-    |> Enum.map(fn i -> "\e[#{30 + rem(i, 8)}m█" end)
-    |> Enum.join()
+    Enum.map_join(1..100, "", fn i -> "\e[#{30 + rem(i, 8)}m█" end)
     |> Kernel.<>("\e[0m")
   end
 
   defp generate_rapid_cursor_movement do
-    1..50
-    |> Enum.map(fn i -> "\e[#{i};#{i}H*" end)
-    |> Enum.join()
+    Enum.map_join(1..50, "", fn i -> "\e[#{i};#{i}H*" end)
   end
 
   defp generate_large_text(size) do
@@ -497,18 +493,15 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
     ]
 
     1..size
-    |> Enum.map(fn _ -> Enum.random(words) end)
+    |> Enum.map_join("\n", fn _ -> Enum.random(words) end)
     |> Enum.chunk_every(10)
-    |> Enum.map(&Enum.join(&1, " "))
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", &Enum.join(&1, " "))
   end
 
   defp generate_many_escapes(count) do
     sequences = ["\e[31m", "\e[0m", "\e[1m", "\e[K", "\e[2J", "\e[H"]
 
-    1..count
-    |> Enum.map(fn _ -> Enum.random(sequences) end)
-    |> Enum.join()
+    Enum.map_join(1..count, "", fn _ -> Enum.random(sequences) end)
   end
 
   defp generate_deep_nesting(depth) do
@@ -525,7 +518,6 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
       col = rem(i * 7, 80) + 1
       "\e[#{row};#{col}H#{i}"
     end)
-    |> Enum.join()
   end
 
   defp generate_memory_stress do
@@ -533,7 +525,7 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
     %{
       many_small_allocs: List.duplicate("x", 100_000),
       large_single_alloc: String.duplicate("x", 1_000_000),
-      fragmented: Enum.map(1..10_000, fn i -> String.duplicate("x", i) end)
+      fragmented: Enum.map_join(1..10_000, fn i -> String.duplicate("x", i) end)
     }
   end
 
@@ -567,22 +559,19 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
     |> Enum.map(fn _ ->
       Enum.random(sequences) <> Enum.random(["text", "data", "test"])
     end)
-    |> Enum.join()
   end
 
   defp generate_heavy_rendering_scenario do
     # Scenario that requires many screen updates
     frames =
       for frame <- 1..60 do
-        ("\e[2J\e[H" <>
-           Enum.map(1..24, fn row ->
-             Enum.map(1..80, fn col ->
-               color = rem(frame + row + col, 8) + 30
-               "\e[#{color}m█"
-             end)
-             |> Enum.join()
-           end))
-        |> Enum.join("\n")
+        "\e[2J\e[H" <>
+          Enum.map_join(1..24, fn row ->
+            Enum.map(1..80, fn col ->
+              color = rem(frame + row + col, 8) + 30
+              "\e[#{color}m█"
+            end)
+          end)
       end
 
     Enum.join(frames, "")
@@ -591,7 +580,7 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
   defp generate_state_thrashing_scenario do
     # Rapid state changes
     1..100
-    |> Enum.map(fn i ->
+    |> Enum.map_join(fn i ->
       [
         # Enable mode
         "\e[?#{1000 + rem(i, 50)}h",
@@ -606,6 +595,5 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
       ]
     end)
     |> List.flatten()
-    |> Enum.join()
   end
 end

@@ -1021,7 +1021,7 @@ defmodule Mix.Tasks.Raxol.TestDeps do
       <div class="recommendations">
         <h2>Recommendations</h2>
         <ul>
-          #{Enum.map(analysis.recommendations, fn rec -> "<li>#{rec}</li>" end) |> Enum.join("\n")}
+          #{Enum.map_join(analysis.recommendations, "\n", fn rec -> "<li>#{rec}</li>" end)}
         </ul>
       </div>
       
@@ -1105,7 +1105,7 @@ defmodule Mix.Tasks.Raxol.TestDeps do
 
     RECOMMENDATIONS
     ---------------
-    #{Enum.map(analysis.recommendations, fn rec -> "• #{rec}" end) |> Enum.join("\n")}
+    #{Enum.map_join(analysis.recommendations, "\n", fn rec -> "• #{rec}" end)}
     """
 
     File.write!(report_path, content)

@@ -392,7 +392,7 @@ defmodule Raxol.Core.ErrorTemplates do
 
   defp enhance_actions(actions, context) do
     actions
-    |> Enum.map(fn action ->
+    |> Enum.map_join(fn action ->
       action
       |> String.replace(
         "YourComponent",
@@ -468,26 +468,29 @@ defmodule Raxol.Core.ErrorTemplates do
   defp format_action_list(actions) do
     actions
     |> Enum.with_index(1)
-    |> Enum.map(fn {action, index} ->
+    |> Enum.map_join("\n", fn {action, index} ->
       "  #{index}. #{action}"
     end)
-    |> Enum.join("\n")
   end
 
   defp format_step_list(steps) do
     steps
-    |> Enum.map(fn step ->
-      "  #{step}"
-    end)
-    |> Enum.join("\n")
+    |> Enum.map_join(
+      fn step ->
+        "  #{step}"
+      end,
+      "\n"
+    )
   end
 
   defp format_tool_list(tools) do
     tools
-    |> Enum.map(fn tool ->
-      "  • mix #{tool |> to_string() |> String.replace("_", ".")}"
-    end)
-    |> Enum.join("\n")
+    |> Enum.map_join(
+      fn tool ->
+        "  • mix #{tool |> to_string() |> String.replace("_", ".")}"
+      end,
+      "\n"
+    )
   end
 
   defp format_confidence(confidence) do

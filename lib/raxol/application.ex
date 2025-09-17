@@ -230,7 +230,7 @@ defmodule Raxol.Application do
 
       endpoints =
         if module_available?(RaxolWeb.Telemetry),
-          do: endpoints ++ [RaxolWeb.Telemetry],
+          do: [RaxolWeb.Telemetry | endpoints] |> Enum.reverse(),
           else: endpoints
 
       endpoints

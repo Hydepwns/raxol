@@ -67,8 +67,7 @@ defmodule Raxol.Docs.Formatter do
     formatted_results =
       results
       |> Enum.with_index(1)
-      |> Enum.map(&format_search_result/1)
-      |> Enum.join("\n\n")
+      |> Enum.map_join("\n\n", &format_search_result/1)
 
     """
     #{header(header_text)}
@@ -110,7 +109,7 @@ defmodule Raxol.Docs.Formatter do
     formatted_examples =
       if examples != [] do
         "\n#{subheader("Examples:")}\n" <>
-          (examples |> Enum.map(&format_code_example/1) |> Enum.join("\n\n"))
+          Enum.map_join(examples, "\n\n", &format_code_example/1)
       else
         ""
       end
@@ -184,16 +183,18 @@ defmodule Raxol.Docs.Formatter do
             |> Enum.filter(fn {{type, _, _}, _, _, _, _} ->
               type == :function
             end)
-            |> Enum.map(fn {{_, name, arity}, _, _, doc, _} ->
-              doc_summary =
-                case doc do
-                  %{"en" => text} -> extract_summary(text) |> elem(0)
-                  _ -> ""
-                end
+            |> Enum.map_join(
+              fn {{_, name, arity}, _, _, doc, _} ->
+                doc_summary =
+                  case doc do
+                    %{"en" => text} -> extract_summary(text) |> elem(0)
+                    _ -> ""
+                  end
 
-              "  • #{bold("#{name}/#{arity}")} - #{doc_summary}"
-            end)
-            |> Enum.join("\n")
+                "  • #{bold("#{name}/#{arity}")} - #{doc_summary}"
+              end,
+              "\n"
+            )
 
           """
           #{header("Module: #{inspect(module)}")}
@@ -345,13 +346,15 @@ defmodule Raxol.Docs.Formatter do
       properties ->
         prop_list =
           properties
-          |> Enum.map(fn {prop_name, prop_config} ->
-            current_value =
-              Map.get(current_props, prop_name, prop_config[:default])
+          |> Enum.map_join(
+            "\n",
+            fn {prop_name, prop_config} ->
+              current_value =
+                Map.get(current_props, prop_name, prop_config[:default])
 
-            "  • #{bold(to_string(prop_name))} (#{prop_config[:type]}) = #{inspect(current_value)}"
-          end)
-          |> Enum.join("\n")
+              "  • #{bold(to_string(prop_name))} (#{prop_config[:type]}) = #{inspect(current_value)}"
+            end
+          )
 
         "#{subheader("Properties:")}\n#{prop_list}\n"
     end

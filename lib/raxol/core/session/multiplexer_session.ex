@@ -45,7 +45,7 @@ defmodule Raxol.Core.Session.MultiplexerSession do
             created_at: integer(),
             status: atom(),
             layout: atom(),
-            panes: [Raxol.Core.Session.MultiplexerSession.Pane.t()],
+            panes: [map()],
             active_pane: String.t() | nil,
             metadata: map()
           }
@@ -112,9 +112,9 @@ defmodule Raxol.Core.Session.MultiplexerSession do
           last_activity: integer(),
           status: :active | :inactive | :detached,
           metadata: map(),
-          windows: [__MODULE__.Window.t()],
+          windows: [map()],
           active_window: String.t() | nil,
-          clients: [__MODULE__.Client.t()]
+          clients: [map()]
         }
 
   ## Public API

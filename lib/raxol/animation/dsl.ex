@@ -55,6 +55,10 @@ defmodule Raxol.Animation.DSL do
 
   # Animation sequence structure
   defmodule Sequence do
+    @moduledoc """
+    Represents an animation sequence with type, animations, options, conditions and context.
+    """
+
     defstruct [:type, :animations, :options, :conditions, :context]
 
     def new(type \\ :sequence, options \\ %{}) do
@@ -76,8 +80,11 @@ defmodule Raxol.Animation.DSL do
     end
   end
 
-  # Animation definition structure
   defmodule Animation do
+    @moduledoc """
+    Defines an animation with name, type, parameters, conditions and metadata.
+    """
+
     defstruct [:name, :type, :params, :conditions, :meta]
 
     def new(name, type, params \\ %{}) do
@@ -91,8 +98,11 @@ defmodule Raxol.Animation.DSL do
     end
   end
 
-  # Choreography structure for complex multi-stage animations
   defmodule Choreography do
+    @moduledoc """
+    Manages complex multi-stage animations with stages, options and context.
+    """
+
     defstruct [:stages, :options, :context]
 
     def new(options \\ %{}) do

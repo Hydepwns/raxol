@@ -109,7 +109,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Core do
   @doc """
   Returns the default text style.
   """
-  def default_style() do
+  def default_style do
     new()
   end
 

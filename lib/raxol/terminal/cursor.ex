@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.Cursor do
   Creates a new cursor with default settings.
   """
   @spec new() :: t()
-  def new() do
+  def new do
     %__MODULE__{
       position: {0, 0},
       shape: :block,

@@ -20,7 +20,7 @@ defmodule Raxol.Docs.Searcher do
     normalized_query = normalize_query(query)
 
     collection
-    |> Enum.map(&score_item(&1, normalized_query))
+    |> Enum.map_join(&score_item(&1, normalized_query))
     # Filter out very low scores
     |> Enum.filter(&(&1.score > 0.1))
     |> Enum.sort_by(& &1.score, :desc)
@@ -217,8 +217,7 @@ defmodule Raxol.Docs.Searcher do
       acronym =
         words
         |> Enum.take(String.length(query))
-        |> Enum.map(&String.first/1)
-        |> Enum.join("")
+        |> Enum.map_join("", &String.first/1)
         |> String.downcase()
 
       String.downcase(query) == acronym

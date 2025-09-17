@@ -504,7 +504,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
         pattern.frequency > 2 &&
           context_similarity(pattern.contexts, context) > 0.3
       end)
-      |> Enum.map(fn {signature, pattern} ->
+      |> Enum.map_join(fn {signature, pattern} ->
         confidence = calculate_prediction_confidence(pattern, context)
 
         %{
@@ -744,10 +744,9 @@ defmodule Raxol.Core.ErrorPatternLearner do
 
     rows =
       data.patterns
-      |> Enum.map(fn {signature, pattern} ->
+      |> Enum.map_join("\n", fn {signature, pattern} ->
         "#{signature},#{pattern.frequency},#{length(pattern.successful_fixes)},#{length(pattern.failure_modes)},#{pattern.phase3_correlation}"
       end)
-      |> Enum.join("\n")
 
     headers <> rows
   end

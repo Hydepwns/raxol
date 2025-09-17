@@ -394,7 +394,7 @@ defmodule Raxol.Core.UnifiedStateManagerTest do
       assert new_version == initial_version + 1  # Not initial_version - 1
       
       # Test multiplication vs division
-      expected_version = initial_version * 1 + 1  # Not initial_version / 1 + 1
+      expected_version = initial_version + 1  # Simplified - multiplication by 1 is redundant
       assert new_version == expected_version
     end
     

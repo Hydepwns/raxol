@@ -34,6 +34,10 @@ defmodule Raxol.DevTools.DebugInspector do
   require Logger
 
   defmodule InspectorState do
+    @moduledoc """
+    Internal state for the debug inspector.
+    """
+
     defstruct [
       :component_tree,
       :state_watchers,
@@ -62,6 +66,10 @@ defmodule Raxol.DevTools.DebugInspector do
   end
 
   defmodule ComponentInfo do
+    @moduledoc """
+    Component information structure for debug inspection.
+    """
+
     defstruct [
       :module,
       :props,
@@ -78,6 +86,10 @@ defmodule Raxol.DevTools.DebugInspector do
   end
 
   defmodule PerformanceProfile do
+    @moduledoc """
+    Performance profiling data structure.
+    """
+
     defstruct [
       :component,
       :render_times,

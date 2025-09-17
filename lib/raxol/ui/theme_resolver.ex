@@ -75,7 +75,7 @@ defmodule Raxol.UI.ThemeResolver do
   @doc """
   Gets the default theme with fallback creation.
   """
-  def get_default_theme() do
+  def get_default_theme do
     case Raxol.UI.Theming.Theme.get(:default) do
       nil -> create_fallback_theme()
       theme -> theme
@@ -85,7 +85,7 @@ defmodule Raxol.UI.ThemeResolver do
   @doc """
   Creates a fallback theme when no default theme is available.
   """
-  def create_fallback_theme() do
+  def create_fallback_theme do
     %{
       colors: %{
         foreground: :white,

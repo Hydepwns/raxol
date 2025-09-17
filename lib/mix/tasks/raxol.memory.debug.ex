@@ -1,4 +1,6 @@
 defmodule Mix.Tasks.Raxol.Memory.Debug do
+  alias Raxol.Utils.MemoryFormatter
+
   @moduledoc """
   Memory debugging tools for detecting leaks, hotspots, and optimization opportunities.
 
@@ -408,7 +410,7 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
         recommendations
       end
 
-    if length(recommendations) == 0 do
+    if Enum.empty?(recommendations) do
       ["Binary memory usage appears normal"]
     else
       recommendations
@@ -855,7 +857,7 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
         recommendations
       end
 
-    if length(recommendations) == 0 do
+    if Enum.empty?(recommendations) do
       ["Process memory usage appears optimal"]
     else
       recommendations
@@ -1126,10 +1128,9 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
   defp format_processes_table(processes) do
     processes
     |> Enum.take(5)
-    |> Enum.map(fn proc ->
+    |> Enum.map_join("\n", fn proc ->
       "| #{proc.name} | #{format_memory(proc.memory)} |"
     end)
-    |> Enum.join("\n")
   end
 
   defp save_output_if_requested(data, config) do
@@ -1145,16 +1146,7 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     end
   end
 
-  defp format_memory(bytes) when is_number(bytes) do
-    cond do
-      bytes >= 1_000_000_000 -> "#{Float.round(bytes / 1_000_000_000, 2)}GB"
-      bytes >= 1_000_000 -> "#{Float.round(bytes / 1_000_000, 2)}MB"
-      bytes >= 1_000 -> "#{Float.round(bytes / 1_000, 2)}KB"
-      true -> "#{bytes}B"
-    end
-  end
-
-  defp format_memory(_), do: "N/A"
+  defp format_memory(bytes), do: MemoryFormatter.format_memory(bytes)
 
   defp print_help do
     Mix.shell().info(@moduledoc)

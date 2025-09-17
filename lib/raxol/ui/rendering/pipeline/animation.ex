@@ -123,7 +123,7 @@ defmodule Raxol.UI.Rendering.Pipeline.Animation do
   Schedules the next animation tick.
   """
   @spec schedule_next_tick() :: reference()
-  def schedule_next_tick() do
+  def schedule_next_tick do
     Process.send_after(
       self(),
       {:animation_tick, :timer_ref},

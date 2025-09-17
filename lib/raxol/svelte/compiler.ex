@@ -384,7 +384,7 @@ defmodule Raxol.Svelte.Compiler do
   defp is_text_operation?(_), do: false
 
   defp maybe_merge_text([{:static_text, _} | _] = texts) do
-    content = texts |> Enum.map(fn {:static_text, t} -> t end) |> Enum.join()
+    content = Enum.map_join(texts, fn {:static_text, t} -> t end)
     {:static_text, content}
   end
 

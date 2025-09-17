@@ -243,9 +243,9 @@ defmodule Raxol.Terminal.RegressionTest do
       emulator = Emulator.new(80, 24)
       
       # Many color changes in one line
-      sequence = Enum.map(1..80, fn i ->
+      sequence = Enum.map_join(1..80, "", fn i ->
         "\e[#{30 + rem(i, 8)}m█"
-      end) |> Enum.join()
+      end)
       
       {time, {state, _}} = :timer.tc(fn ->
         Emulator.process_input(emulator, sequence)
@@ -263,9 +263,9 @@ defmodule Raxol.Terminal.RegressionTest do
       
       # Process large amount of formatted text
       Enum.reduce(1..100, emulator, fn _batch, state ->
-        text = Enum.map(1..100, fn i ->
+        text = Enum.map_join(1..100, "", fn i ->
           "\e[#{30 + rem(i, 8)}m#{i}\e[0m "
-        end) |> Enum.join()
+        end)
         
         {new_state, _} = Emulator.process_input(state, text)
         
@@ -386,10 +386,9 @@ defmodule Raxol.Terminal.RegressionTest do
   
   defp extract_text(buffer) do
     buffer.cells
-    |> Enum.map(fn line ->
-      Enum.map_join(line, &(&1.char || " "))
+    |> Enum.map_join("\n", fn line ->
+      Enum.map_join(line, "", &(&1.char || " "))
     end)
-    |> Enum.join("\n")
     |> String.trim()
   end
 end

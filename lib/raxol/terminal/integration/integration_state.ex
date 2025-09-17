@@ -162,7 +162,7 @@ defmodule Raxol.Terminal.Integration.State do
     end
   end
 
-  defp get_window_buffer_id() do
+  defp get_window_buffer_id do
     case UnifiedWindow.get_active_window() do
       {:ok, window_id} ->
         case UnifiedWindow.get_window_state(window_id) do
@@ -219,7 +219,7 @@ defmodule Raxol.Terminal.Integration.State do
     end
   end
 
-  defp get_active_window_renderer_id() do
+  defp get_active_window_renderer_id do
     case UnifiedWindow.get_active_window() do
       {:ok, window_id} ->
         case UnifiedWindow.get_window_state(window_id) do

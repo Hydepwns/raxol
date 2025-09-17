@@ -56,7 +56,7 @@ defmodule Raxol.Animation.CSSTransitions do
   def parse_transition(transition_string) when is_binary(transition_string) do
     transition_string
     |> String.split(",")
-    |> Enum.map(&parse_single_transition/1)
+    |> Enum.map_join("", &parse_single_transition/1)
   end
 
   def parse_transition(transition_map) when is_map(transition_map),
@@ -515,13 +515,12 @@ defmodule Raxol.Animation.CSSTransitions do
 
   defp build_transform_string(transform_map) do
     transform_map
-    |> Enum.map(fn
+    |> Enum.map_join(" ", fn
       {:translateX, value} -> "translateX(#{value}px)"
       {:translateY, value} -> "translateY(#{value}px)"
       {:scale, value} -> "scale(#{value})"
       {:rotate, value} -> "rotate(#{value}deg)"
     end)
-    |> Enum.join(" ")
   end
 
   defp create_property_transition(

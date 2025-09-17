@@ -11,7 +11,7 @@ defmodule Raxol.UI.Components.Display.TableTest do
   #   elements
   #   |> Enum.filter(&(&1.y == y && &1.type == :text))
   #   |> Enum.sort_by(&(&1.x || 0))
-  #   |> Enum.map_join(& &1.text)
+  #   |> Enum.map_join("", & &1.text)
   # end
 
   # Helper to find a specific cell element

@@ -10,10 +10,10 @@ defmodule Raxol.Animation.Lifecycle do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Core.Accessibility, as: Accessibility
-  alias Raxol.Animation.StateManager, as: StateManager
   alias Raxol.Animation.Accessibility, as: AnimAccessibility
   alias Raxol.Animation.PathManager
+  alias Raxol.Animation.StateManager, as: StateManager
+  alias Raxol.Core.Accessibility, as: Accessibility
 
   @doc """
   Start an animation for a specific element.

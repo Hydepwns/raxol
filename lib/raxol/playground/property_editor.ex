@@ -118,7 +118,7 @@ defmodule Raxol.Playground.PropertyEditor do
     all_props = Map.merge(component.default_props || %{}, current_props)
     prop_types = Map.get(component, :prop_types, %{})
 
-    Enum.map(all_props, fn {key, value} ->
+    Enum.map_join(all_props, fn {key, value} ->
       %{
         name: key,
         current_value: value,
@@ -237,8 +237,7 @@ defmodule Raxol.Playground.PropertyEditor do
 
   defp render_property_list(properties) do
     properties
-    |> Enum.map(&format_property_line/1)
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", &format_property_line/1)
   end
 
   defp format_property_line(prop) do

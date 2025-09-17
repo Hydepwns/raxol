@@ -10,11 +10,11 @@ defmodule Raxol.Animation.AnimationProcessor do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Animation.StateManager, as: StateManager
   alias Raxol.Animation.Accessibility, as: AnimAccessibility
-  alias Raxol.Animation.Lifecycle
   alias Raxol.Animation.Adaptation
+  alias Raxol.Animation.Lifecycle
   alias Raxol.Animation.PathManager
+  alias Raxol.Animation.StateManager, as: StateManager
 
   @doc """
   Update animations and apply their current values to the state.

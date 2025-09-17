@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.Input.InputHandler do
   Creates a new input handler with default values.
   """
   @spec new() :: t()
-  def new() do
+  def new do
     %__MODULE__{}
   end
 

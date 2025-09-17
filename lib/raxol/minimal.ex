@@ -148,7 +148,7 @@ defmodule Raxol.Minimal do
   @doc """
   Get current terminal state for debugging.
   """
-  @spec get_state(pid()) :: State.t()
+  @spec get_state(pid()) :: map()
   def get_state(pid) do
     GenServer.call(pid, :get_state)
   end

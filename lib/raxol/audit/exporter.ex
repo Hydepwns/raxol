@@ -215,7 +215,7 @@ defmodule Raxol.Audit.Exporter do
   ## Format Converters
 
   defp format_xml(events) do
-    event_xml = Enum.map(events, &format_event_xml/1) |> Enum.join("\n")
+    event_xml = Enum.map_join(events, "\n", &format_event_xml/1)
 
     """
     <?xml version="1.0" encoding="UTF-8"?>

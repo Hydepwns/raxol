@@ -144,7 +144,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   end
 
   # Reads content from the system clipboard using the consolidated module.
-  defp get_clipboard_content() do
+  defp get_clipboard_content do
     # Delegate directly to the new module
     Clipboard.paste()
   end

@@ -40,7 +40,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   end
 
   @impl Raxol.Core.Runtime.Plugins.Plugin
-  def get_commands() do
+  def get_commands do
     [
       {:notify, :handle_command, 2}
     ]

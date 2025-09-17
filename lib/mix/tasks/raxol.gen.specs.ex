@@ -115,7 +115,7 @@ defmodule Mix.Tasks.Raxol.Gen.Specs do
     ast
     |> find_private_functions()
     |> filter_functions(filter)
-    |> Enum.map(&generate_spec/1)
+    |> Enum.map_join("", &generate_spec/1)
     |> Enum.reject(&is_nil/1)
   end
 
@@ -216,78 +216,46 @@ defmodule Mix.Tasks.Raxol.Gen.Specs do
   end
 
   defp infer_single_arg_type(arg, function_name, _index) do
+    infer_by_contains(arg) ||
+      infer_by_prefix(arg) ||
+      infer_by_function_name(function_name) ||
+      "any()"
+  end
+
+  @contains_type_map %{
+    "state" => "map()",
+    "buffer" => "Raxol.Terminal.ScreenBuffer.t()",
+    "color" => "Raxol.Terminal.Color.TrueColor.t()",
+    "cursor" => "Raxol.Terminal.Cursor.t()",
+    "opts" => "keyword()",
+    "config" => "map()",
+    "metadata" => "map()",
+    "errors" => "[String.t()]",
+    "path" => "String.t()",
+    "content" => "String.t()",
+    "data" => "any()",
+    "id" => "String.t() | integer()",
+    "name" => "String.t() | atom()",
+    "value" => "any()",
+    "result" => "any()",
+    "reason" => "any()",
+    "message" => "String.t()",
+    "timeout" => "timeout()",
+    "pid" => "pid()",
+    "ref" => "reference()",
+    "module" => "module()",
+    "function" => "atom()",
+    "args" => "list()"
+  }
+
+  defp infer_by_contains(arg) do
+    Enum.find_value(@contains_type_map, fn {pattern, type} ->
+      if String.contains?(arg, pattern), do: type
+    end)
+  end
+
+  defp infer_by_prefix(arg) do
     cond do
-      # Common naming patterns
-      String.contains?(arg, "state") ->
-        "map()"
-
-      String.contains?(arg, "buffer") ->
-        "Raxol.Terminal.ScreenBuffer.t()"
-
-      String.contains?(arg, "color") ->
-        "Raxol.Terminal.Color.TrueColor.t()"
-
-      String.contains?(arg, "cursor") ->
-        "Raxol.Terminal.Cursor.t()"
-
-      String.contains?(arg, "opts") ->
-        "keyword()"
-
-      String.contains?(arg, "config") ->
-        "map()"
-
-      String.contains?(arg, "metadata") ->
-        "map()"
-
-      String.contains?(arg, "errors") ->
-        "[String.t()]"
-
-      String.contains?(arg, "path") ->
-        "String.t()"
-
-      String.contains?(arg, "content") ->
-        "String.t()"
-
-      String.contains?(arg, "data") ->
-        "any()"
-
-      String.contains?(arg, "id") ->
-        "String.t() | integer()"
-
-      String.contains?(arg, "name") ->
-        "String.t() | atom()"
-
-      String.contains?(arg, "value") ->
-        "any()"
-
-      String.contains?(arg, "result") ->
-        "any()"
-
-      String.contains?(arg, "reason") ->
-        "any()"
-
-      String.contains?(arg, "message") ->
-        "String.t()"
-
-      String.contains?(arg, "timeout") ->
-        "timeout()"
-
-      String.contains?(arg, "pid") ->
-        "pid()"
-
-      String.contains?(arg, "ref") ->
-        "reference()"
-
-      String.contains?(arg, "module") ->
-        "module()"
-
-      String.contains?(arg, "function") ->
-        "atom()"
-
-      String.contains?(arg, "args") ->
-        "list()"
-
-      # Position-based patterns
       String.starts_with?(arg, "x") or String.starts_with?(arg, "y") ->
         "non_neg_integer()"
 
@@ -306,24 +274,21 @@ defmodule Mix.Tasks.Raxol.Gen.Specs do
       String.starts_with?(arg, "enable") or String.starts_with?(arg, "disable") ->
         "boolean()"
 
-      # Validation functions
-      String.starts_with?(to_string(function_name), "validate_") ->
-        "any()"
-
-      String.starts_with?(to_string(function_name), "parse_") ->
-        "String.t()"
-
-      String.starts_with?(to_string(function_name), "format_") ->
-        "any()"
-
-      String.starts_with?(to_string(function_name), "build_") ->
-        "any()"
-
-      String.starts_with?(to_string(function_name), "create_") ->
-        "any()"
-
       true ->
-        "any()"
+        nil
+    end
+  end
+
+  defp infer_by_function_name(function_name) do
+    fname = to_string(function_name)
+
+    cond do
+      String.starts_with?(fname, "validate_") -> "any()"
+      String.starts_with?(fname, "parse_") -> "String.t()"
+      String.starts_with?(fname, "format_") -> "any()"
+      String.starts_with?(fname, "build_") -> "any()"
+      String.starts_with?(fname, "create_") -> "any()"
+      true -> nil
     end
   end
 
@@ -405,12 +370,14 @@ defmodule Mix.Tasks.Raxol.Gen.Specs do
   defp insert_specs(content, specs, opts) do
     lines = String.split(content, "\n")
 
-    specs
-    |> Enum.reverse()
-    |> Enum.reduce(lines, fn spec, acc ->
-      insert_spec_before_line(acc, spec, opts)
-    end)
-    |> Enum.join("\n")
+    updated_lines =
+      specs
+      |> Enum.reverse()
+      |> Enum.reduce(lines, fn spec, acc ->
+        insert_spec_before_line(acc, spec, opts)
+      end)
+
+    Enum.join(updated_lines, "\n")
   end
 
   defp insert_spec_before_line(

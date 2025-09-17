@@ -775,7 +775,7 @@ mix credo
 - Old event system
 - Legacy rendering approach
 - Previous styling methods
-- `Raxol.Terminal.CommandHistory` (Use `Raxol.Terminal.Commands.History` instead)
+- `Raxol.Terminal.CommandHistory` (Replaced with new command system)
 
 ### Removed
 

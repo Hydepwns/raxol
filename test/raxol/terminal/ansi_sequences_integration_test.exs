@@ -285,11 +285,11 @@ defmodule Raxol.Terminal.ANSISequencesIntegrationTest do
       # Debug the buffer structure
       first_line = Enum.at(state.main_screen_buffer.cells, 0)
       first_8_cells = Enum.take(first_line, 8)
-      IO.inspect(first_8_cells, label: "First 8 cells")
-      
+      # Debug output removed - use Logger if debugging needed
+
       # Verify Japanese characters are present
       text = extract_text(state.main_screen_buffer)
-      IO.puts("Extracted text: '#{text}'")
+      # Debug output removed - use Logger if debugging needed
       assert String.contains?(text, "全角文字")
     end
   end
@@ -454,12 +454,11 @@ defmodule Raxol.Terminal.ANSISequencesIntegrationTest do
   
   defp extract_text(buffer) do
     buffer.cells
-    |> Enum.map(fn line ->
+    |> Enum.map_join(fn line ->
       line
       |> Enum.reject(&(&1.wide_placeholder))
-      |> Enum.map_join(&(&1.char || " "))
-    end)
-    |> Enum.join("\n")
+      |> Enum.map_join("", &(&1.char || " "))
+    end, "\n")
     |> String.trim()
   end
 end

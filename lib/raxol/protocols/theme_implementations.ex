@@ -1,4 +1,6 @@
 defmodule Raxol.Protocols.ThemeImplementations do
+  alias Raxol.Utils.ColorConversion
+
   @moduledoc """
   Protocol implementations for theme-related structures.
 
@@ -77,14 +79,7 @@ defmodule Raxol.Protocols.ThemeImplementations do
 
     defp deep_merge_styles(_current, new), do: new
 
-    defp hex_to_rgb("#" <> hex) do
-      {r, ""} = Integer.parse(String.slice(hex, 0, 2), 16)
-      {g, ""} = Integer.parse(String.slice(hex, 2, 2), 16)
-      {b, ""} = Integer.parse(String.slice(hex, 4, 2), 16)
-      {r, g, b}
-    end
-
-    defp hex_to_rgb(_), do: {0, 0, 0}
+    defp hex_to_rgb(color), do: ColorConversion.hex_to_rgb(color)
   end
 
   defimpl Renderable, for: Raxol.UI.Theming.Theme do
@@ -181,11 +176,10 @@ defmodule Raxol.Protocols.ThemeImplementations do
         colors
         # Limit based on width
         |> Enum.take(div(width, 12))
-        |> Enum.map(fn {name, value} ->
+        |> Enum.map_join("  ", fn {name, value} ->
           swatch = render_color_swatch(value)
           "#{swatch} #{String.slice(to_string(name), 0, 8)}"
         end)
-        |> Enum.join("  ")
       end
     end
 
@@ -220,14 +214,7 @@ defmodule Raxol.Protocols.ThemeImplementations do
       String.duplicate(" ", padding) <> text
     end
 
-    defp hex_to_rgb("#" <> hex) do
-      {r, ""} = Integer.parse(String.slice(hex, 0, 2), 16)
-      {g, ""} = Integer.parse(String.slice(hex, 2, 2), 16)
-      {b, ""} = Integer.parse(String.slice(hex, 4, 2), 16)
-      {r, g, b}
-    end
-
-    defp hex_to_rgb(_), do: {0, 0, 0}
+    defp hex_to_rgb(color), do: ColorConversion.hex_to_rgb(color)
 
     defp color_name_to_ansi(color) do
       case color do

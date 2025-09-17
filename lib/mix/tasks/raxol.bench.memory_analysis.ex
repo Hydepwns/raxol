@@ -19,6 +19,17 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
   @shortdoc "Run advanced memory analysis benchmarks with pattern detection"
 
   def run(args) do
+    opts = parse_options(args)
+    Application.ensure_all_started(:raxol)
+
+    config = build_config(opts)
+    print_config_info(config)
+
+    results = run_scenario(config.scenario, config.benchmark_config)
+    process_results(results, config)
+  end
+
+  defp parse_options(args) do
     {opts, _, _} =
       OptionParser.parse(args,
         switches: [
@@ -37,22 +48,29 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
         ]
       )
 
-    Application.ensure_all_started(:raxol)
+    opts
+  end
 
-    scenario = Keyword.get(opts, :scenario, "all")
+  defp build_config(opts) do
+    %{
+      scenario: Keyword.get(opts, :scenario, "all"),
+      time: Keyword.get(opts, :time, 2),
+      memory_time: Keyword.get(opts, :memory_time, 1),
+      output_path:
+        Keyword.get(opts, :output, "bench/output/memory_analysis_report.html"),
+      with_dashboard: Keyword.get(opts, :with_dashboard, false),
+      benchmark_config: build_benchmark_config(opts)
+    }
+  end
+
+  defp build_benchmark_config(opts) do
     time = Keyword.get(opts, :time, 2)
     memory_time = Keyword.get(opts, :memory_time, 1)
 
     output_path =
       Keyword.get(opts, :output, "bench/output/memory_analysis_report.html")
 
-    with_dashboard = Keyword.get(opts, :with_dashboard, false)
-
-    Mix.shell().info("Running Memory Analysis Benchmarks...")
-    Mix.shell().info("Scenario: #{scenario}")
-    Mix.shell().info("Time: #{time}s, Memory Time: #{memory_time}s")
-
-    benchmark_config = [
+    [
       time: time,
       memory_time: memory_time,
       warmup: 0.5,
@@ -61,72 +79,85 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
         {Benchee.Formatters.HTML, file: output_path}
       ]
     ]
+  end
 
-    results =
-      case scenario do
-        "terminal_operations" ->
-          run_terminal_operations_analysis(benchmark_config)
+  defp print_config_info(config) do
+    Mix.shell().info("Running Memory Analysis Benchmarks...")
+    Mix.shell().info("Scenario: #{config.scenario}")
 
-        "buffer_management" ->
-          run_buffer_management_analysis(benchmark_config)
+    Mix.shell().info(
+      "Time: #{config.time}s, Memory Time: #{config.memory_time}s"
+    )
+  end
 
-        "realistic_usage" ->
-          run_realistic_usage_analysis(benchmark_config)
+  defp run_scenario(scenario, benchmark_config) do
+    case scenario do
+      "terminal_operations" ->
+        run_terminal_operations_analysis(benchmark_config)
 
-        "memory_patterns" ->
-          run_memory_pattern_analysis(benchmark_config)
+      "buffer_management" ->
+        run_buffer_management_analysis(benchmark_config)
 
-        "all" ->
-          run_comprehensive_analysis(benchmark_config)
+      "realistic_usage" ->
+        run_realistic_usage_analysis(benchmark_config)
 
-        _ ->
-          Mix.shell().error("Unknown scenario: #{scenario}")
+      "memory_patterns" ->
+        run_memory_pattern_analysis(benchmark_config)
 
-          Mix.shell().info(
-            "Available scenarios: terminal_operations, buffer_management, realistic_usage, memory_patterns, all"
-          )
+      "all" ->
+        run_comprehensive_analysis(benchmark_config)
 
-          System.halt(1)
-      end
+      _ ->
+        handle_unknown_scenario(scenario)
+    end
+  end
 
-    # Analyze memory patterns
+  defp handle_unknown_scenario(scenario) do
+    Mix.shell().error("Unknown scenario: #{scenario}")
+
+    Mix.shell().info(
+      "Available scenarios: terminal_operations, buffer_management, realistic_usage, memory_patterns, all"
+    )
+
+    System.halt(1)
+  end
+
+  defp process_results(results, config) do
     Mix.shell().info("\nAnalyzing Memory Patterns...")
     analysis = MemoryAnalyzer.analyze_memory_patterns(results)
-
     print_analysis_summary(analysis)
 
-    # Generate recommendations
     recommendations = MemoryAnalyzer.generate_recommendations(analysis)
     print_recommendations(recommendations)
 
-    # Generate dashboard if requested
-    if with_dashboard do
-      Mix.shell().info("\nGenerating Interactive Dashboard...")
-      dashboard_path = "bench/output/memory_analysis_dashboard.html"
-
-      dashboard_config = %{
-        title: "Raxol Memory Analysis Dashboard",
-        subtitle: "Advanced Memory Pattern Analysis - Scenario: #{scenario}",
-        benchmark_results: results,
-        analysis: analysis,
-        recommendations: recommendations
-      }
-
-      case MemoryDashboard.generate_dashboard(dashboard_config, dashboard_path) do
-        {:ok, _} ->
-          Mix.shell().info("Dashboard generated: #{dashboard_path}")
-
-          Mix.shell().info(
-            "Open in browser: file://#{Path.expand(dashboard_path)}"
-          )
-
-        {:error, error} ->
-          Mix.shell().error("Dashboard generation failed: #{inspect(error)}")
-      end
+    if config.with_dashboard do
+      generate_dashboard(results, analysis, recommendations, config.scenario)
     end
+  end
 
-    Mix.shell().info("\nMemory analysis complete!")
-    Mix.shell().info("Report: #{output_path}")
+  defp generate_dashboard(results, analysis, recommendations, scenario) do
+    Mix.shell().info("\nGenerating Interactive Dashboard...")
+    dashboard_path = "bench/output/memory_analysis_dashboard.html"
+
+    dashboard_config = %{
+      title: "Raxol Memory Analysis Dashboard",
+      subtitle: "Advanced Memory Pattern Analysis - Scenario: #{scenario}",
+      benchmark_results: results,
+      analysis: analysis,
+      recommendations: recommendations
+    }
+
+    case MemoryDashboard.generate_dashboard(dashboard_config, dashboard_path) do
+      {:ok, _} ->
+        Mix.shell().info("Dashboard generated: #{dashboard_path}")
+
+        Mix.shell().info(
+          "Open in browser: file://#{Path.expand(dashboard_path)}"
+        )
+
+      {:error, error} ->
+        Mix.shell().error("Dashboard generation failed: #{inspect(error)}")
+    end
   end
 
   # =============================================================================

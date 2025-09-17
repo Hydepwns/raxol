@@ -107,7 +107,7 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
   defp tags_match?(metric, tags),
     do: Enum.all?(tags, &(&1 in Map.get(metric, :tags, [])))
 
-  def count() do
+  def count do
     metrics_state = get_metrics_state()
 
     metrics_state.metrics
@@ -116,7 +116,7 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
     |> Enum.sum()
   end
 
-  defp get_metrics_state() do
+  defp get_metrics_state do
     Raxol.Cloud.Monitoring.MonitoringServer.get_metrics() ||
       %{metrics: %{}, config: %{}, batch: [], last_flush: DateTime.utc_now()}
   end

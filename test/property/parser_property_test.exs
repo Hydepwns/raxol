@@ -175,12 +175,11 @@ defmodule Raxol.Property.ParserTest do
 
   defp extract_text(parsed) when is_list(parsed) do
     parsed
-    |> Enum.map(fn
+    |> Enum.map_join("", fn
       item when is_binary(item) -> item
       %{text: text} -> text
       _ -> ""
     end)
-    |> Enum.join()
   end
   defp extract_text(text) when is_binary(text), do: text
   defp extract_text(_), do: ""

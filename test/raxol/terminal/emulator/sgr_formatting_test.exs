@@ -306,8 +306,7 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
         buffer.cells
         |> List.first()
         |> Enum.take(8)
-        |> Enum.map(& &1.char)
-        |> Enum.join("")
+        |> Enum.map_join(& &1.char, "")
 
       assert text =~ "Bold Red"
     end

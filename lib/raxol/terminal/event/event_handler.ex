@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.Event.Handler do
   @doc """
   Creates a new event handler with default values.
   """
-  def new() do
+  def new do
     %Event{handlers: %{}, queue: :queue.new()}
   end
 

@@ -139,7 +139,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   Defaults to `:normal` if high contrast is off.
   """
   @spec get_accessibility_mode() :: atom()
-  def get_accessibility_mode() do
+  def get_accessibility_mode do
     # Only try to get preference if the process exists
     high_contrast =
       case Process.whereis(UserPreferences) do

@@ -313,7 +313,7 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
     reverse_map =
       config
       |> build_ligature_map()
-      |> Enum.map(fn {text, unicode} -> {unicode, text} end)
+      |> Enum.map_join(fn {text, unicode} -> {unicode, text} end)
       |> Map.new()
 
     rendered_text
@@ -324,7 +324,6 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
         text -> text
       end
     end)
-    |> Enum.join()
   end
 
   @doc """
@@ -388,7 +387,7 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
         |> Map.keys()
         |> Enum.any?(&String.contains?(all_text, &1))
       end)
-      |> Enum.map(&elem(&1, 0))
+      |> Enum.map_join(&elem(&1, 0))
 
     frequency_map = calculate_ligature_frequency(all_text, base_config)
 
@@ -532,7 +531,7 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
         visual_pos = length(acc_chars)
 
         # Check if we're starting a ligature
-        remaining_text = Enum.drop(char_list, original_pos) |> Enum.join()
+        remaining_text = Enum.drop(char_list, original_pos)
 
         case find_ligature_at_position(remaining_text, ligature_map) do
           {ligature_text, _unicode, ligature_length} ->
@@ -577,7 +576,7 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
     ligature_map = build_ligature_map(config)
 
     ligature_map
-    |> Enum.map(fn {pattern, _unicode} ->
+    |> Enum.map_join(fn {pattern, _unicode} ->
       count = text |> String.split(pattern) |> length() |> Kernel.-(1)
       {pattern, count}
     end)
@@ -599,7 +598,7 @@ defmodule Raxol.Terminal.Rendering.LigatureRenderer do
 
     {result, _pos} =
       Enum.reduce(char_list, {[], 0}, fn char, {acc, pos} ->
-        remaining_text = Enum.drop(char_list, pos) |> Enum.join()
+        remaining_text = Enum.drop(char_list, pos)
 
         case find_ligature_at_position(remaining_text, ligature_map) do
           {ligature_text, unicode, length} ->

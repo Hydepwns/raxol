@@ -20,12 +20,12 @@ defmodule Raxol.Metrics.Collector do
     GenServer.cast(__MODULE__, {:record_throughput, events_count})
   end
 
-  def record_memory_usage() do
+  def record_memory_usage do
     {:memory, memory} = :erlang.process_info(self(), :memory)
     GenServer.cast(__MODULE__, {:record_memory, memory})
   end
 
-  def get_metrics() do
+  def get_metrics do
     GenServer.call(__MODULE__, :get_metrics)
   end
 

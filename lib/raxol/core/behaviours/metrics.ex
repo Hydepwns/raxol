@@ -61,7 +61,7 @@ defmodule Raxol.Core.Behaviours.Metrics do
       @behaviour Raxol.Core.Behaviours.Metrics
 
       @impl true
-      def reset_metrics() do
+      def reset_metrics do
         # Default implementation - override if needed
         :ok
       end

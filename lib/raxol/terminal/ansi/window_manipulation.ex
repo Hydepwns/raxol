@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   @doc """
   Creates a new window manipulation state with default values.
   """
-  def new() do
+  def new do
     %{
       position: {0, 0},
       size: {80, 24},

@@ -1,4 +1,6 @@
 defmodule Raxol.Benchmark.MemoryAnalyzer do
+  alias Raxol.Benchmark.Statistics
+
   @moduledoc """
   Advanced memory pattern analysis for Raxol benchmarks.
 
@@ -377,18 +379,7 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
     end
   end
 
-  defp calculate_variance(values) when length(values) > 1 do
-    mean = Enum.sum(values) / length(values)
-
-    sum_squared_diffs =
-      values
-      |> Enum.map(fn val -> (val - mean) * (val - mean) end)
-      |> Enum.sum()
-
-    sum_squared_diffs / length(values)
-  end
-
-  defp calculate_variance(_), do: 0.0
+  defp calculate_variance(values), do: Statistics.calculate_variance(values)
 
   defp calculate_average_memory(memory_samples) do
     if length(memory_samples) > 0 do

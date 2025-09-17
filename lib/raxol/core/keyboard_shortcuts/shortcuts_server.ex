@@ -481,7 +481,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     {modifiers, [key]} = Enum.split(parts, -1)
 
     modifiers =
-      Enum.map(modifiers, fn mod ->
+      Enum.map_join(modifiers, fn mod ->
         case String.downcase(mod) do
           "ctrl" -> :ctrl
           "control" -> :ctrl
@@ -630,10 +630,12 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     shortcuts_text =
       shortcuts
       |> Enum.sort_by(fn {_key, def} -> def.priority end)
-      |> Enum.map(fn {_key, def} ->
-        "  #{def.raw}: #{def.description || def.name}"
-      end)
-      |> Enum.join("\n")
+      |> Enum.map_join(
+        fn {_key, def} ->
+          "  #{def.raw}: #{def.description || def.name}"
+        end,
+        "\n"
+      )
 
     header <> shortcuts_text
   end

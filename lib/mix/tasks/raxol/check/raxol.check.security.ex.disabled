@@ -434,11 +434,9 @@ defmodule Mix.Tasks.Raxol.Check.Security do
 
   defp format_security_errors(errors, _verbose) do
     details =
-      errors
-      |> Enum.map(fn {:error, data} ->
+      Enum.map_join(errors, "\n\n", fn {:error, data} ->
         format_check_result(data)
       end)
-      |> Enum.join("\n\n")
 
     {:error,
      %{
@@ -450,11 +448,9 @@ defmodule Mix.Tasks.Raxol.Check.Security do
 
   defp format_security_warnings(warnings, _verbose) do
     details =
-      warnings
-      |> Enum.map(fn {:warning, data} ->
+      Enum.map_join(warnings, "\n\n", fn {:warning, data} ->
         format_check_result(data)
       end)
-      |> Enum.join("\n\n")
 
     {:warning, "Security warnings:\n#{details}"}
   end
@@ -462,7 +458,7 @@ defmodule Mix.Tasks.Raxol.Check.Security do
   defp format_check_result(%{check: :secrets, found: secrets}) do
     """
     🔐 Hardcoded Secrets Found:
-    #{Enum.map(secrets, fn s -> "  • #{s.file}:#{s.line} - #{s.type}" end) |> Enum.join("\n")}
+    #{Enum.map_join(secrets, "\n", fn s -> "  • #{s.file}:#{s.line} - #{s.type}" end)}
 
     Remove these secrets and use environment variables instead.
     """
@@ -471,14 +467,14 @@ defmodule Mix.Tasks.Raxol.Check.Security do
   defp format_check_result(%{check: :patterns, found: patterns}) do
     """
     ⚠️  Insecure Patterns:
-    #{Enum.map(patterns, fn p -> "  • #{p.file}:#{p.line} - #{p.pattern}" end) |> Enum.join("\n")}
+    #{Enum.map_join(patterns, "\n", fn p -> "  • #{p.file}:#{p.line} - #{p.pattern}" end)}
     """
   end
 
   defp format_check_result(%{check: :permissions, issues: issues}) do
     """
     📁 File Permission Issues:
-    #{Enum.map(issues, fn {_, file, desc} -> "  • #{file} - #{desc}" end) |> Enum.join("\n")}
+    #{Enum.map_join(issues, "\n", fn {_, file, desc} -> "  • #{file} - #{desc}" end)}
 
     Run with --fix to automatically fix permissions.
     """

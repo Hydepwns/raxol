@@ -460,12 +460,11 @@ defmodule Mix.Tasks.Raxol.Mutation do
 
   defp generate_mutations_table(mutations) do
     mutations
-    |> Enum.map(fn mutation ->
+    |> Enum.map_join("\n", fn mutation ->
       status = mutation_table_status(mutation.killed)
 
       "| #{mutation.index} | #{mutation.mutation.type} | #{Path.basename(mutation.mutation.file)} | #{status} |"
     end)
-    |> Enum.join("\n")
     |> then(fn rows ->
       "| # | Type | File | Status |\n|---|------|------|--------|\n#{rows}"
     end)

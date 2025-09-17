@@ -11,7 +11,7 @@ defmodule Raxol.Core.StateManager.Default do
   @type t :: map()
 
   @impl true
-  def init() do
+  def init do
     {:ok, %{}}
   end
 

@@ -1,4 +1,6 @@
 defmodule Raxol.Protocols.RendererImplementations do
+  alias Raxol.Utils.ColorConversion
+
   @moduledoc """
   Protocol implementations for terminal renderer types.
   """
@@ -88,14 +90,7 @@ defmodule Raxol.Protocols.RendererImplementations do
       end
     end
 
-    defp hex_to_rgb("#" <> hex) do
-      {r, ""} = Integer.parse(String.slice(hex, 0, 2), 16)
-      {g, ""} = Integer.parse(String.slice(hex, 2, 2), 16)
-      {b, ""} = Integer.parse(String.slice(hex, 4, 2), 16)
-      {r, g, b}
-    end
-
-    defp hex_to_rgb(_), do: {0, 0, 0}
+    defp hex_to_rgb(color), do: ColorConversion.hex_to_rgb(color)
   end
 
   # Implementation for Serializable protocol for Renderer

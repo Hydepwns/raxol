@@ -30,10 +30,10 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
   use Mix.Task
 
   alias Raxol.Benchmark.{
-    SuiteRegistry,
-    StatisticalAnalyzer,
+    CompetitorSuite,
     RegressionDetector,
-    CompetitorSuite
+    StatisticalAnalyzer,
+    SuiteRegistry
   }
 
   @shortdoc "Advanced benchmarking with statistical analysis"
@@ -475,15 +475,19 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
         RegressionDetector.detect(results, baseline, threshold: threshold)
 
       if length(detection.regressions) > 0 do
-        Mix.shell().error("\n⚠️  Performance Regressions Detected:")
-
-        Enum.each(detection.regressions, fn reg ->
-          Mix.shell().error(
-            "  • #{reg.scenario}: +#{Float.round(reg.percent_change, 1)}% (#{reg.severity})"
-          )
-        end)
+        print_regressions(detection.regressions)
       end
     end
+  end
+
+  defp print_regressions(regressions) do
+    Mix.shell().error("\n⚠️  Performance Regressions Detected:")
+
+    Enum.each(regressions, fn reg ->
+      Mix.shell().error(
+        "  • #{reg.scenario}: +#{Float.round(reg.percent_change, 1)}% (#{reg.severity})"
+      )
+    end)
   end
 
   defp loop_continuous_monitoring(interval, opts) do
@@ -529,7 +533,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
   end
 
   defp generate_text_output(results) do
-    Enum.map(results, fn {suite, data} ->
+    Enum.map_join(results, "\n", fn {suite, data} ->
       """
       Suite: #{suite}
       ================
@@ -539,7 +543,6 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
       P99: #{Float.round(get_in(data, [:statistics, :percentiles, :p99]) || 0, 2)}μs
       """
     end)
-    |> Enum.join("\n")
   end
 
   defp generate_html_output(_results) do
@@ -549,10 +552,9 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
 
   defp generate_markdown_output(results) do
     # Generate Markdown report
-    Enum.map(results, fn {suite, _data} ->
+    Enum.map_join(results, "\n", fn {suite, _data} ->
       "## #{suite}\n\nResults pending...\n"
     end)
-    |> Enum.join("\n")
   end
 
   defp timestamp do

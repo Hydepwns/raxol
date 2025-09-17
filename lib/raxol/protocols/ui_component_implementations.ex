@@ -69,17 +69,16 @@ defmodule Raxol.Protocols.UIComponentImplementations do
       header_row =
         columns
         |> Enum.zip(column_widths)
-        |> Enum.map(fn {col, col_width} ->
+        |> Enum.map_join(if(show_borders, do: " │ ", else: "  "), fn {col,
+                                                                      col_width} ->
           label = String.pad_trailing(col.label, col_width)
           apply_column_header_style(label, col)
         end)
-        |> Enum.join(if show_borders, do: " │ ", else: "  ")
 
       if show_borders do
         border_line =
           column_widths
-          |> Enum.map(&String.duplicate("─", &1))
-          |> Enum.join("─┼─")
+          |> Enum.map_join("─┼─", &String.duplicate("─", &1))
 
         "#{header_row}\n#{border_line}"
       else
@@ -92,13 +91,14 @@ defmodule Raxol.Protocols.UIComponentImplementations do
 
       rows
       |> Enum.with_index()
-      |> Enum.map(fn {row, index} ->
+      |> Enum.map_join("\n", fn {row, index} ->
         is_selected = selected_row == index
 
         row_content =
           columns
           |> Enum.zip(column_widths)
-          |> Enum.map(fn {col, col_width} ->
+          |> Enum.map_join(if(show_borders, do: " │ ", else: "  "), fn {col,
+                                                                        col_width} ->
             value = Map.get(row, col.id, "")
             formatted_value = format_cell_value(value, col)
 
@@ -107,7 +107,6 @@ defmodule Raxol.Protocols.UIComponentImplementations do
 
             apply_column_cell_style(padded_value, col, is_selected)
           end)
-          |> Enum.join(if show_borders, do: " │ ", else: "  ")
 
         if is_selected do
           apply_selected_row_style(row_content)
@@ -115,7 +114,6 @@ defmodule Raxol.Protocols.UIComponentImplementations do
           row_content
         end
       end)
-      |> Enum.join("\n")
     end
 
     defp render_pagination(table) do

@@ -14,12 +14,12 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
   end
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour
-  def os_type() do
+  def os_type do
     :os.type()
   end
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour
-  def system_tmp_dir() do
+  def system_tmp_dir do
     System.tmp_dir()
   end
 
@@ -29,7 +29,7 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
   end
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour
-  def system_argv() do
+  def system_argv do
     System.argv()
   end
 
@@ -63,7 +63,7 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
   end
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour
-  def current_version() do
+  def current_version do
     # Try to get the version from Mix.Project if available, otherwise fallback
     case Application.spec(:raxol, :vsn) do
       nil ->

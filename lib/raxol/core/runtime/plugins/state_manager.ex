@@ -197,7 +197,7 @@ defmodule StateManager do
   Lists all plugin states.
   """
   @spec list_plugin_states() :: [{plugin_id(), plugin_state()}]
-  def list_plugin_states() do
+  def list_plugin_states do
     case UnifiedStateManager.get_state([:plugins, :states]) do
       nil -> []
       states when is_map(states) -> Map.to_list(states)
@@ -249,7 +249,7 @@ defmodule StateManager do
   Cleans up all plugin states.
   """
   @spec cleanup() :: :ok
-  def cleanup() do
+  def cleanup do
     UnifiedStateManager.delete_state([:plugins])
     Logger.info("Plugin state manager cleaned up")
     :ok

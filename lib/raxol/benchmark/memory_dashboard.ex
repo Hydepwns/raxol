@@ -1,4 +1,6 @@
 defmodule Raxol.Benchmark.MemoryDashboard do
+  alias Raxol.Benchmark.Statistics
+
   @moduledoc """
   Advanced memory benchmarking dashboard and reporting system.
 
@@ -420,9 +422,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     recommendations = dashboard_data.recommendations
 
     recommendation_items =
-      recommendations
-      |> Enum.map(fn rec -> "<li>#{rec}</li>" end)
-      |> Enum.join("\n")
+      Enum.map_join(recommendations, "\n", fn rec -> "<li>#{rec}</li>" end)
 
     """
     <section class="recommendations-section">
@@ -583,18 +583,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
 
   defp calculate_prediction_confidence(_), do: 0.0
 
-  defp calculate_variance(values) when length(values) > 1 do
-    mean = Enum.sum(values) / length(values)
-
-    sum_squared_diffs =
-      values
-      |> Enum.map(fn val -> (val - mean) * (val - mean) end)
-      |> Enum.sum()
-
-    sum_squared_diffs / length(values)
-  end
-
-  defp calculate_variance(_), do: 0.0
+  defp calculate_variance(values), do: Statistics.calculate_variance(values)
 
   defp format_bytes(bytes) when bytes >= 1_000_000_000 do
     "#{Float.round(bytes / 1_000_000_000, 2)} GB"

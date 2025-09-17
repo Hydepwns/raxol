@@ -93,7 +93,7 @@ defmodule ExampleDSLBenchmark do
       scenario "scroll_buffer", _context do
         emulator = Emulator.new(80, 24)
         # Fill buffer to trigger scrolling
-        text = Enum.map(1..30, fn i -> "Line #{i}\n" end) |> Enum.join()
+        text = Enum.map_join(1..30, "", fn i -> "Line #{i}\n" end)
         {emulator, _output} = Emulator.process_input(emulator, text)
         emulator
       end

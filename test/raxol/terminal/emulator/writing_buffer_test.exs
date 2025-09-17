@@ -228,7 +228,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       line0_text_after =
         buffer_after_wrap
         |> ScreenBuffer.get_line(0)
-        |> Enum.map_join(& &1.char)
+        |> Enum.map_join("", & &1.char)
 
       # Debug: Print the actual line content
       IO.puts("DEBUG: Actual line0_text_after: '#{line0_text_after}'")
@@ -240,7 +240,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
 
       for i <- 0..0 do
         line = buffer_after_wrap |> ScreenBuffer.get_line(i)
-        line_text = line |> Enum.map_join(& &1.char)
+        line_text = line |> Enum.map_join("", & &1.char)
         IO.puts("DEBUG: Line #{i}: '#{line_text}'")
       end
 
@@ -308,7 +308,7 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       line0_text_after =
         buffer_after_char11
         |> ScreenBuffer.get_line(0)
-        |> Enum.map_join(& &1.char)
+        |> Enum.map_join("", & &1.char)
 
       assert String.trim_trailing(line0_text_after) == "123456789X",
              "Line 0 should contain '123456789X' after overwrite"

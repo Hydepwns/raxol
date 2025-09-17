@@ -9,10 +9,9 @@ defmodule Raxol.Terminal.IntegrationTest do
   # Helper to extract text from a ScreenBuffer
   defp buffer_text(buffer) do
     buffer.cells
-    |> Enum.map(fn line ->
+    |> Enum.map_join(fn line ->
       Enum.map_join(line, &(&1.char || " "))
-    end)
-    |> Enum.join("\n")
+    end, "\n")
     |> String.trim_trailing()
   end
 

@@ -128,12 +128,12 @@ end
 
 ## Documentation
 
-**[Documentation Hub](docs/README.md)** - Complete documentation index
+**[Full Documentation →](https://hexdocs.pm/raxol)** - Complete API reference and guides
 
 ### v1.4.1 Feature Documentation
-- [Type Spec Generator](doc/development/TYPE_SPEC_GENERATOR.md) - Automated type specification generation
-- [Unified Configuration](doc/configuration/UNIFIED_CONFIG.md) - TOML-based configuration system
-- [Enhanced Debug Mode](doc/development/DEBUG_MODE.md) - Advanced debugging and profiling tools
+- **Type Spec Generator** - Automated type specification generation with `mix raxol.gen.specs`
+- **Unified Configuration** - TOML-based configuration system via `Raxol.Config`
+- **Enhanced Debug Mode** - Advanced debugging with 4 levels via `Raxol.Debug`
 
 ## VS Code Extension
 

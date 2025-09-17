@@ -217,12 +217,11 @@ defmodule Raxol.Test.Visual.Assertions do
 
   defp format_diff(diff) do
     diff
-    |> Enum.map(fn
+    |> Enum.map_join("", fn
       {:eq, str} -> str
       {:del, str} -> IO.ANSI.red() <> str <> IO.ANSI.reset()
       {:ins, str} -> IO.ANSI.green() <> str <> IO.ANSI.reset()
     end)
-    |> Enum.join("")
   end
 
   defp has_style?(_output, _property, _value) do

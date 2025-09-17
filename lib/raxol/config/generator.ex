@@ -386,32 +386,34 @@ defmodule Raxol.Config.Generator do
     indent = String.duplicate("  ", indent_level)
 
     config
-    |> Enum.map(fn {key, value} ->
-      case value do
-        v when is_map(v) ->
-          "#{indent}[#{key}]\n" <> generate_toml_content(v, indent_level + 1)
+    |> Enum.map_join(
+      fn {key, value} ->
+        case value do
+          v when is_map(v) ->
+            "#{indent}[#{key}]\n" <> generate_toml_content(v, indent_level + 1)
 
-        v when is_binary(v) ->
-          "#{indent}#{key} = \"#{v}\""
+          v when is_binary(v) ->
+            "#{indent}#{key} = \"#{v}\""
 
-        v when is_atom(v) ->
-          "#{indent}#{key} = \"#{v}\""
+          v when is_atom(v) ->
+            "#{indent}#{key} = \"#{v}\""
 
-        v when is_boolean(v) ->
-          "#{indent}#{key} = #{v}"
+          v when is_boolean(v) ->
+            "#{indent}#{key} = #{v}"
 
-        v when is_number(v) ->
-          "#{indent}#{key} = #{v}"
+          v when is_number(v) ->
+            "#{indent}#{key} = #{v}"
 
-        v when is_list(v) ->
-          list_str = v |> Enum.map(&inspect/1) |> Enum.join(", ")
-          "#{indent}#{key} = [#{list_str}]"
+          v when is_list(v) ->
+            list_str = Enum.map_join(v, ", ", &inspect/1)
+            "#{indent}#{key} = [#{list_str}]"
 
-        v ->
-          "#{indent}#{key} = #{inspect(v)}"
-      end
-    end)
-    |> Enum.join("\n")
+          v ->
+            "#{indent}#{key} = #{inspect(v)}"
+        end
+      end,
+      "\n"
+    )
   end
 
   defp generate_example_toml do

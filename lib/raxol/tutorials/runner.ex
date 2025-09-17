@@ -274,7 +274,7 @@ defmodule Raxol.Tutorials.Runner do
     header = "\n#{IO.ANSI.bright()}Available Tutorials:#{IO.ANSI.reset()}\n"
 
     items =
-      Enum.map(tutorials, fn tutorial ->
+      Enum.map_join(tutorials, fn tutorial ->
         progress_bar = format_progress_bar(tutorial.progress)
 
         difficulty_color =
@@ -502,9 +502,8 @@ defmodule Raxol.Tutorials.Runner do
 
   defp format_step_list(false, steps) do
     steps
-    |> Enum.map(fn step ->
+    |> Enum.map_join("\n", fn step ->
       "  #{IO.ANSI.green()}✓#{IO.ANSI.reset()} Step #{step}"
     end)
-    |> Enum.join("\n")
   end
 end

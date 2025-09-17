@@ -1378,7 +1378,7 @@ defmodule Mix.Tasks.Raxol.TestFlaky do
       <div class="recommendations">
         <h3>Recommendations</h3>
         <ul>
-          #{Enum.map(report.recommendations, fn rec -> "<li>#{rec}</li>" end) |> Enum.join("\n")}
+          #{Enum.map_join(report.recommendations, "\n", fn rec -> "<li>#{rec}</li>" end)}
         </ul>
       </div>
     </body>

@@ -341,6 +341,7 @@ defmodule Raxol.Svelte.Context do
   defmacro context_consumer(context_key, do: render_block) do
     quote do
       defmodule Consumer do
+        @moduledoc false
         use Raxol.Svelte.Component
         use Raxol.Svelte.Context
 

@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Buffer do
+defmodule Raxol.Terminal.BufferWrapper do
   @moduledoc """
   Main entry point for buffer operations.
   Provides convenience functions for creating and managing terminal buffers.
@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.Buffer do
   Creates a new buffer with default dimensions.
   """
   @spec new() :: ScreenBuffer.t()
-  def new() do
+  def new do
     ScreenBuffer.new()
   end
 

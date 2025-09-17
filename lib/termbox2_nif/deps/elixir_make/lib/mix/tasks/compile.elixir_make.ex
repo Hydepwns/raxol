@@ -78,8 +78,6 @@ defmodule Mix.Tasks.Compile.ElixirMake do
     * `:make_force_build` - if build should be forced even if precompiled artefacts
       are available. Defaults to true if the app has a `-dev` version flag.
 
-  See [the Precompilation guide](PRECOMPILATION_GUIDE.md) for more information.
-
   ## Default environment variables
 
   There are also several default environment variables set:

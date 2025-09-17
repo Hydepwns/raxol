@@ -236,8 +236,10 @@ defmodule Raxol.Config do
   @spec generate_toml(config_map(), integer()) :: String.t()
   defp generate_toml(config, indent \\ 0) do
     config
-    |> Enum.map(fn {key, value} -> format_toml_entry(key, value, indent) end)
-    |> Enum.join("\n")
+    |> Enum.map_join(
+      fn {key, value} -> format_toml_entry(key, value, indent) end,
+      "\n"
+    )
   end
 
   @spec format_toml_entry(String.t(), any(), integer()) :: String.t()
@@ -260,7 +262,7 @@ defmodule Raxol.Config do
   defp format_toml_value(value) when is_float(value), do: to_string(value)
 
   defp format_toml_value(value) when is_list(value) do
-    formatted = Enum.map(value, &format_toml_value/1) |> Enum.join(", ")
+    formatted = Enum.map_join(value, ", ", &format_toml_value/1)
     "[#{formatted}]"
   end
 

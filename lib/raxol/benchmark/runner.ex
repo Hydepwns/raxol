@@ -44,7 +44,7 @@ defmodule Raxol.Benchmark.Runner do
     ]
 
     results =
-      Enum.map(suites, fn suite ->
+      Enum.map_join(suites, fn suite ->
         Logger.info("Running #{suite.name} benchmarks...")
         run_suite(suite, opts)
       end)
@@ -347,7 +347,6 @@ defmodule Raxol.Benchmark.Runner do
     Enum.map(1..100, fn i ->
       "\e[#{rem(i, 7) + 31}mColored text #{i}\e[0m\n"
     end)
-    |> Enum.join()
   end
 
   defp create_minimal_scene do

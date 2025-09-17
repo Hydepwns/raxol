@@ -1,4 +1,6 @@
 defmodule Mix.Tasks.Raxol.Memory.Profiler do
+  alias Raxol.Utils.MemoryFormatter
+
   @moduledoc """
   Interactive memory profiler for real-time memory analysis.
 
@@ -186,11 +188,11 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
 
         :timeout ->
           # Update dashboard
-          unless state.paused do
+          if state.paused do
+            dashboard_loop(state, monitoring_pid)
+          else
             updated_state = update_dashboard_data(state)
             dashboard_loop(updated_state, monitoring_pid)
-          else
-            dashboard_loop(state, monitoring_pid)
           end
       end
     end
@@ -658,16 +660,7 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
     )
   end
 
-  defp format_memory(bytes) when is_number(bytes) do
-    cond do
-      bytes >= 1_000_000_000 -> "#{Float.round(bytes / 1_000_000_000, 2)}GB"
-      bytes >= 1_000_000 -> "#{Float.round(bytes / 1_000_000, 2)}MB"
-      bytes >= 1_000 -> "#{Float.round(bytes / 1_000, 2)}KB"
-      true -> "#{bytes}B"
-    end
-  end
-
-  defp format_memory(_), do: "N/A"
+  defp format_memory(bytes), do: MemoryFormatter.format_memory(bytes)
 
   defp format_process_name(name) when is_atom(name), do: Atom.to_string(name)
   defp format_process_name({mod, func, arity}), do: "#{mod}.#{func}/#{arity}"

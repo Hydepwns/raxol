@@ -171,14 +171,13 @@ defmodule Raxol.Playground.Preview do
     bottom_border = "└" <> String.duplicate("─", cols + 2) <> "┘"
 
     content_lines =
-      Enum.map(padded_lines, fn line ->
+      Enum.map_join(padded_lines, fn line ->
         trimmed = String.slice(line, 0, cols)
         padding = String.duplicate(" ", cols - String.length(trimmed))
         "│ #{trimmed}#{padding} │"
       end)
 
-    ([top_border] ++ content_lines ++ [bottom_border])
-    |> Enum.join("\n")
+    Enum.join([top_border] ++ content_lines ++ [bottom_border], "\n")
   end
 
   defp render_select(props, state) do
@@ -244,12 +243,15 @@ defmodule Raxol.Playground.Preview do
     options = Map.get(props, :options, [])
     selected = Map.get(state, :selected, Map.get(props, :selected))
 
-    Enum.map(options, fn option ->
-      radio = format_radio_icon(option, selected)
+    Enum.map_join(
+      options,
+      fn option ->
+        radio = format_radio_icon(option, selected)
 
-      "#{radio} #{option}"
-    end)
-    |> Enum.join("\n")
+        "#{radio} #{option}"
+      end,
+      "\n"
+    )
   end
 
   defp render_toggle(props, state) do
@@ -320,8 +322,10 @@ defmodule Raxol.Playground.Preview do
 
     items
     |> Enum.chunk_every(columns)
-    |> Enum.map(&Enum.join(&1, String.duplicate(" ", gap * 2)))
-    |> Enum.join(String.duplicate("\n", gap))
+    |> Enum.map_join(
+      String.duplicate("\n", gap),
+      &Enum.join(&1, String.duplicate(" ", gap * 2))
+    )
   end
 
   defp render_tabs(props, state) do
@@ -329,10 +333,13 @@ defmodule Raxol.Playground.Preview do
     active_tab = Map.get(state, :active_tab, Map.get(props, :active_tab))
 
     tab_line =
-      Enum.map(tabs, fn tab ->
-        format_tab_label(tab, active_tab)
-      end)
-      |> Enum.join(" | ")
+      Enum.map_join(
+        tabs,
+        fn tab ->
+          format_tab_label(tab, active_tab)
+        end,
+        " | "
+      )
 
     separator = String.duplicate("─", String.length(tab_line))
 
@@ -353,8 +360,7 @@ defmodule Raxol.Playground.Preview do
         separator = String.duplicate("-", String.length(header_line))
         row_lines = Enum.map(rows, &Enum.join(&1, " | "))
 
-        ([header_line, separator] ++ row_lines)
-        |> Enum.join("\n")
+        Enum.join([header_line, separator] ++ row_lines, "\n")
 
       true ->
         # Table with borders
@@ -367,9 +373,11 @@ defmodule Raxol.Playground.Preview do
         header_line = create_table_row(headers, col_widths)
         row_lines = Enum.map(rows, &create_table_row(&1, col_widths))
 
-        ([top_border, header_line, header_separator] ++
-           row_lines ++ [bottom_border])
-        |> Enum.join("\n")
+        Enum.join(
+          [top_border, header_line, header_separator] ++
+            row_lines ++ [bottom_border],
+          "\n"
+        )
     end
   end
 
@@ -382,13 +390,11 @@ defmodule Raxol.Playground.Preview do
       true ->
         items
         |> Enum.with_index(1)
-        |> Enum.map(fn {item, index} -> "#{index}. #{item}" end)
-        |> Enum.join("\n")
+        |> Enum.map_join("\n", fn {item, index} -> "#{index}. #{item}" end)
 
       false ->
         items
-        |> Enum.map(&"#{marker} #{&1}")
-        |> Enum.join("\n")
+        |> Enum.map_join("\n", &"#{marker} #{&1}")
     end
   end
 
@@ -462,15 +468,14 @@ defmodule Raxol.Playground.Preview do
 
         # Add shadow effect
         modal_with_shadow =
-          Enum.map(modal_lines, fn line ->
+          Enum.map_join(modal_lines, fn line ->
             "#{line}#{IO.ANSI.light_black()}▓#{IO.ANSI.reset()}"
           end)
 
         shadow_line =
           "#{IO.ANSI.light_black()}#{String.duplicate("▓", width + 2)}#{IO.ANSI.reset()}"
 
-        (modal_with_shadow ++ [shadow_line])
-        |> Enum.join("\n")
+        Enum.join(modal_with_shadow ++ [shadow_line], "\n")
     end
   end
 

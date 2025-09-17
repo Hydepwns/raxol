@@ -106,7 +106,7 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
 
       line_cells ->
         line_cells
-        |> Enum.map_join(& &1.char)
+        |> Enum.map_join("", & &1.char)
     end
   end
 

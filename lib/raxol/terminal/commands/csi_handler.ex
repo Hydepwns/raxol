@@ -120,8 +120,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     # Convert params list to string format expected by SGRProcessor
     params_string =
       params
-      |> Enum.map(&Integer.to_string/1)
-      |> Enum.join(";")
+      |> Enum.map_join(";", &Integer.to_string/1)
 
     # Apply SGR formatting to the emulator's current style
     updated_style = SGRProcessor.handle_sgr(params_string, emulator.style)

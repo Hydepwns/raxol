@@ -460,10 +460,10 @@ defmodule Raxol.Core.ErrorReporter do
     ## Suggested Fixes (Confidence: #{round(suggestions.confidence * 100)}%)
 
     **Actions:**
-    #{suggestions.template_suggestions |> Enum.with_index(1) |> Enum.map(fn {action, i} -> "#{i}. #{action}" end) |> Enum.join("\n")}
+    #{Enum.map_join(Enum.with_index(suggestions.template_suggestions, 1), "\n", fn {action, i} -> "#{i}. #{action}" end)}
 
     **Recovery Steps:**
-    #{suggestions.recovery_steps |> Enum.map(fn step -> "- #{step}" end) |> Enum.join("\n")}
+    #{Enum.map_join(suggestions.recovery_steps, "\n", fn step -> "- #{step}" end)}
     """
   end
 

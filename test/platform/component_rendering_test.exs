@@ -310,7 +310,6 @@ defmodule Raxol.Test.Platform.ComponentRenderingTest do
   defp extract_text_from_elements(elements) do
     elements
     |> Enum.filter(fn element -> Map.get(element, :type) == :text end)
-    |> Enum.map(fn element -> Map.get(element, :text, "") end)
-    |> Enum.join("")
+    |> Enum.map_join("", fn element -> Map.get(element, :text, "") end)
   end
 end

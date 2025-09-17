@@ -375,60 +375,58 @@ defmodule Mix.Tasks.Raxol.Bench do
   end
 
   defp run_concurrent_benchmarks(config) do
-    alias Raxol.Terminal.Emulator
-    alias Raxol.Terminal.Buffer.UnifiedManager
-    alias Raxol.Core.Events.EventManager
-
     jobs = %{
-      "concurrent_emulator_creation" => fn ->
-        tasks =
-          for _ <- 1..10 do
-            Task.async(fn -> Emulator.new(80, 24) end)
-          end
-
-        Task.await_many(tasks)
-      end,
-      "concurrent_buffer_writes" => fn ->
-        {:ok, manager} = UnifiedManager.start_link()
-
-        tasks =
-          for i <- 1..10 do
-            Task.async(fn ->
-              UnifiedManager.write_at(manager, i, i, "X")
-            end)
-          end
-
-        Task.await_many(tasks)
-      end,
-      "concurrent_event_dispatch" => fn ->
-        {:ok, _pid} = EventManager.start_link()
-
-        tasks =
-          for i <- 1..20 do
-            Task.async(fn ->
-              EventManager.dispatch(:test_event, %{id: i})
-            end)
-          end
-
-        Task.await_many(tasks)
-      end,
-      "concurrent_plugin_operations" => fn ->
-        alias Raxol.Plugins.Manager
-        {:ok, _pid} = Manager.start_link()
-
-        tasks =
-          for _ <- 1..5 do
-            Task.async(fn ->
-              Manager.list_plugins()
-              Manager.get_plugin_state(:test_plugin)
-            end)
-          end
-
-        Task.await_many(tasks)
-      end
+      "concurrent_emulator_creation" => &bench_emulator_creation/0,
+      "concurrent_buffer_writes" => &bench_buffer_writes/0,
+      "concurrent_event_dispatch" => &bench_event_dispatch/0,
+      "concurrent_plugin_operations" => &bench_plugin_operations/0
     }
 
     Benchee.run(jobs, config)
+  end
+
+  defp bench_emulator_creation do
+    alias Raxol.Terminal.Emulator
+
+    1..10
+    |> Enum.map(fn _ -> Task.async(fn -> Emulator.new(80, 24) end) end)
+    |> Task.await_many()
+  end
+
+  defp bench_buffer_writes do
+    alias Raxol.Terminal.Buffer.UnifiedManager
+    {:ok, manager} = UnifiedManager.start_link()
+
+    1..10
+    |> Enum.map(fn i ->
+      Task.async(fn -> UnifiedManager.write_at(manager, i, i, "X") end)
+    end)
+    |> Task.await_many()
+  end
+
+  defp bench_event_dispatch do
+    alias Raxol.Core.Events.EventManager
+    {:ok, _pid} = EventManager.start_link()
+
+    1..20
+    |> Enum.map(fn i ->
+      Task.async(fn -> EventManager.dispatch(:test_event, %{id: i}) end)
+    end)
+    |> Task.await_many()
+  end
+
+  defp bench_plugin_operations do
+    alias Raxol.Plugins.Manager
+    {:ok, _pid} = Manager.start_link()
+
+    1..5
+    |> Enum.map(fn _ ->
+      Task.async(fn ->
+        Manager.list_plugins()
+        Manager.get_plugin_state(:test_plugin)
+      end)
+    end)
+    |> Task.await_many()
   end
 
   defp standard_config(timestamp \\ nil) do
@@ -490,9 +488,7 @@ defmodule Mix.Tasks.Raxol.Bench do
   end
 
   defp generate_rapid_color_sequence do
-    1..100
-    |> Enum.map(fn i -> "\e[#{rem(i, 8) + 30}mC#{i}\e[0m" end)
-    |> Enum.join(" ")
+    Enum.map_join(1..100, " ", fn i -> "\e[#{rem(i, 8) + 30}mC#{i}\e[0m" end)
   end
 
   defp generate_heavy_escape_content do
@@ -548,21 +544,7 @@ defmodule Mix.Tasks.Raxol.Bench do
     if baseline do
       regressions = detect_regressions(results, baseline)
 
-      if Enum.any?(regressions) do
-        Mix.shell().error("\nPerformance regressions detected!")
-
-        Enum.each(regressions, fn {benchmark, {current, baseline, degradation}} ->
-          Mix.shell().error(
-            "  #{benchmark}: #{current}ms (baseline: #{baseline}ms, -#{degradation}%)"
-          )
-        end)
-
-        Mix.raise(
-          "Performance regression threshold exceeded (>#{@regression_threshold * 100}%)"
-        )
-      else
-        Mix.shell().info("No performance regressions detected")
-      end
+      handle_regression_results(regressions)
     else
       save_baseline_metrics(results)
       Mix.shell().info("Baseline metrics saved for future comparisons")
@@ -922,6 +904,28 @@ defmodule Mix.Tasks.Raxol.Bench do
     else
       nil
     end
+  end
+
+  defp handle_regression_results(regressions) do
+    if Enum.any?(regressions) do
+      report_regressions(regressions)
+
+      Mix.raise(
+        "Performance regression threshold exceeded (>#{@regression_threshold * 100}%)"
+      )
+    else
+      Mix.shell().info("No performance regressions detected")
+    end
+  end
+
+  defp report_regressions(regressions) do
+    Mix.shell().error("\nPerformance regressions detected!")
+
+    Enum.each(regressions, fn {benchmark, {current, baseline, degradation}} ->
+      Mix.shell().error(
+        "  #{benchmark}: #{current}ms (baseline: #{baseline}ms, -#{degradation}%)"
+      )
+    end)
   end
 
   defp print_results_summary(_results, timestamp) do

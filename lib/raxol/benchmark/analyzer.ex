@@ -210,10 +210,10 @@ defmodule Raxol.Benchmark.Analyzer do
   @doc """
   Analyze profile results.
   """
-  def analyze_profile(name, results) do
+  def analyze_profile(name, _results) do
     # Simple profile analysis for now
     IO.puts("Profile analysis for #{name}:")
-    IO.inspect(results, limit: :infinity, pretty: true)
+    # Results are available for further processing if needed
     :ok
   end
 

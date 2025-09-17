@@ -39,7 +39,7 @@ defmodule Raxol.Benchmark.RegressionDetector do
     results_history
     |> Enum.chunk_every(2, 1, :discard)
     |> Enum.take(window_size)
-    |> Enum.map(fn [newer, older] ->
+    |> Enum.map_join(fn [newer, older] ->
       detect(newer, older, opts)
     end)
     |> analyze_trends()
@@ -624,7 +624,7 @@ defmodule Raxol.Benchmark.RegressionDetector do
 
     ## Recommendations
 
-    #{Enum.map(results.recommendations, &"- #{&1}") |> Enum.join("\n")}
+    #{Enum.map_join(results.recommendations, "\n", &"- #{&1}")}
     """
   end
 
@@ -632,20 +632,21 @@ defmodule Raxol.Benchmark.RegressionDetector do
 
   defp format_regression_list(regressions) do
     regressions
-    |> Enum.map(fn r ->
+    |> Enum.map_join("\n", fn r ->
       "  • #{r.scenario}: +#{Float.round(r.percent_change, 1)}% (#{r.severity})"
     end)
-    |> Enum.join("\n")
   end
 
   defp format_improvement_list([]), do: "No improvements detected"
 
   defp format_improvement_list(improvements) do
     improvements
-    |> Enum.map(fn i ->
-      "  • #{i.scenario}: -#{Float.round(i.percent_change, 1)}%"
-    end)
-    |> Enum.join("\n")
+    |> Enum.map_join(
+      fn i ->
+        "  • #{i.scenario}: -#{Float.round(i.percent_change, 1)}%"
+      end,
+      "\n"
+    )
   end
 
   defp generate_html_content(_results) do
@@ -661,9 +662,11 @@ defmodule Raxol.Benchmark.RegressionDetector do
     |----------|--------|----------|
     """ <>
       (items
-       |> Enum.map(fn item ->
-         "| #{item.scenario} | #{Float.round(item.percent_change, 1)}% | #{item.severity} |"
-       end)
-       |> Enum.join("\n"))
+       |> Enum.map_join(
+         fn item ->
+           "| #{item.scenario} | #{Float.round(item.percent_change, 1)}% | #{item.severity} |"
+         end,
+         "\n"
+       ))
   end
 end

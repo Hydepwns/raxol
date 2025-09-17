@@ -1,4 +1,6 @@
 defmodule Raxol.Terminal.TestHelper do
+  alias Raxol.Test.SharedUtilities
+
   @moduledoc """
   Test helper functions for Raxol.Terminal tests.
 
@@ -95,17 +97,9 @@ defmodule Raxol.Terminal.TestHelper do
   Sets up the test environment with common configuration.
   """
   def setup_test_env do
-    # Set up test-specific configuration
-    Application.put_env(:raxol, :test_mode, true)
-    Application.put_env(:raxol, :database_enabled, false)
+    SharedUtilities.setup_basic_test_env()
 
-    # Return a context map for tests
-    {:ok,
-     %{
-       test_mode: true,
-       database_enabled: false,
-       mock_modules: []
-     }}
+    {:ok, SharedUtilities.create_test_context()}
   end
 
   @doc """
@@ -121,9 +115,7 @@ defmodule Raxol.Terminal.TestHelper do
   Sets up common mocks used across tests.
   """
   def setup_common_mocks do
-    # Set up Mox expectations for common mocks
-    # This is a placeholder - actual mocks will be set up in individual tests
-    :ok
+    SharedUtilities.setup_common_mocks()
   end
 
   @doc """
@@ -165,27 +157,7 @@ defmodule Raxol.Terminal.TestHelper do
   Creates a test plugin module for testing.
   """
   def create_test_plugin_module(name, callbacks \\ %{}) do
-    module_name = String.to_atom("TestPlugin.#{name}")
-
-    # Create a module with the given callbacks
-    Module.create(
-      module_name,
-      """
-      defmodule #{module_name} do
-        @behaviour Raxol.Plugins.Plugin
-
-        #{Enum.map_join(callbacks, "\n\n", fn {callback, arity} -> """
-        @impl Raxol.Plugins.Plugin
-        def #{callback}(#{List.duplicate("_", arity) |> Enum.join(", ")}) do
-          :ok
-        end
-        """ end)}
-      end
-      """,
-      Macro.Env.location(__ENV__)
-    )
-
-    module_name
+    SharedUtilities.create_test_plugin_module(name, callbacks)
   end
 
   @doc """

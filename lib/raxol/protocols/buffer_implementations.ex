@@ -63,15 +63,13 @@ defmodule Raxol.Protocols.BufferImplementations do
 
       # Render the buffer content to a string
       0..(height - 1)
-      |> Enum.map(fn y ->
+      |> Enum.map_join("\n", fn y ->
         0..(width - 1)
-        |> Enum.map(fn x ->
+        |> Enum.map_join("", fn x ->
           cell = Buffer.Queries.get_cell(buffer, x, y)
           render_cell(cell, colors)
         end)
-        |> Enum.join()
       end)
-      |> Enum.join("\n")
     end
 
     def render_metadata(buffer) do

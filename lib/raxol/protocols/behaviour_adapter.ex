@@ -105,14 +105,26 @@ defmodule Raxol.Protocols.BehaviourAdapter do
 
   # Wrapper structs for protocol dispatch
   defmodule RendererWrapper do
+    @moduledoc """
+    Wrapper for renderer modules to enable protocol dispatch.
+    """
+
     defstruct [:module]
   end
 
   defmodule BufferWrapper do
+    @moduledoc """
+    Wrapper for buffer modules to enable protocol dispatch.
+    """
+
     defstruct [:module]
   end
 
   defmodule EventHandlerWrapper do
+    @moduledoc """
+    Wrapper for event handler modules to enable protocol dispatch.
+    """
+
     defstruct [:module]
   end
 

@@ -44,7 +44,7 @@ defmodule Raxol.Terminal.Input.Manager do
   Creates a new input manager with default configuration.
   """
   @spec new() :: t()
-  def new() do
+  def new do
     new([])
   end
 

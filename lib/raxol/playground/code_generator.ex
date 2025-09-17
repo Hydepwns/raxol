@@ -154,16 +154,14 @@ defmodule Raxol.Playground.CodeGenerator do
   defp format_string_value(false, value), do: ~s("#{value}")
 
   defp format_list_value(true, value) do
-    formatted_items = Enum.map(value, &format_value/1)
-    "[#{Enum.join(formatted_items, ", ")}]"
+    "[#{Enum.map_join(value, ", ", &format_value/1)}]"
   end
 
   defp format_list_value(false, value) do
     formatted_items =
       value
       |> Enum.map(&format_value/1)
-      |> Enum.map(&("  " <> &1))
-      |> Enum.join(",\n")
+      |> Enum.map_join(",\n", &("  " <> &1))
 
     "[\n#{formatted_items}\n]"
   end
@@ -171,8 +169,7 @@ defmodule Raxol.Playground.CodeGenerator do
   defp format_event_handlers(true, _handlers), do: ""
 
   defp format_event_handlers(false, handlers) do
-    handler_functions = Enum.map(handlers, &generate_handler/1)
-    "\n" <> Enum.join(handler_functions, "\n")
+    "\n" <> Enum.map_join(handlers, "\n", &generate_handler/1)
   end
 
   defp generate_handler_with_state_key(true, handler) do
@@ -281,16 +278,18 @@ defmodule Raxol.Playground.CodeGenerator do
   defp format_props(props) when map_size(props) <= 3 do
     props
     |> Map.to_list()
-    |> Enum.map(fn {key, value} -> "#{key}: #{format_value(value)}" end)
-    |> Enum.join(", ")
+    |> Enum.map_join(", ", fn {key, value} ->
+      "#{key}: #{format_value(value)}"
+    end)
   end
 
   defp format_props(props) do
     formatted_pairs =
       props
       |> Map.to_list()
-      |> Enum.map(fn {key, value} -> "  #{key}: #{format_value(value)}" end)
-      |> Enum.join(",\n")
+      |> Enum.map_join(",\n", fn {key, value} ->
+        "  #{key}: #{format_value(value)}"
+      end)
 
     "\n#{formatted_pairs}\n"
   end
@@ -303,8 +302,9 @@ defmodule Raxol.Playground.CodeGenerator do
     pairs =
       map
       |> Map.to_list()
-      |> Enum.map(fn {key, value} -> "#{key}: #{format_value(value)}" end)
-      |> Enum.join(", ")
+      |> Enum.map_join(", ", fn {key, value} ->
+        "#{key}: #{format_value(value)}"
+      end)
 
     "%{#{pairs}}"
   end
@@ -316,10 +316,9 @@ defmodule Raxol.Playground.CodeGenerator do
     formatted_pairs =
       map
       |> Map.to_list()
-      |> Enum.map(fn {key, value} ->
+      |> Enum.map_join(",\n", fn {key, value} ->
         "#{inner_indent}#{key}: #{format_value(value)}"
       end)
-      |> Enum.join(",\n")
 
     "%{\n#{formatted_pairs}\n#{indent_str}}"
   end

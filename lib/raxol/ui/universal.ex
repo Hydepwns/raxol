@@ -1,4 +1,6 @@
 defmodule Raxol.UI.Universal do
+  alias Raxol.Utils.ColorConversion
+
   @moduledoc """
   Universal features available across all UI frameworks in Raxol.
 
@@ -195,32 +197,7 @@ defmodule Raxol.UI.Universal do
 
   # Interpolate between two hex colors
   defp interpolate_hex_colors(from_hex, to_hex, progress) do
-    from_rgb = hex_to_rgb(from_hex)
-    to_rgb = hex_to_rgb(to_hex)
-
-    interpolated_rgb = {
-      interpolate(elem(from_rgb, 0), elem(to_rgb, 0), progress),
-      interpolate(elem(from_rgb, 1), elem(to_rgb, 1), progress),
-      interpolate(elem(from_rgb, 2), elem(to_rgb, 2), progress)
-    }
-
-    rgb_to_hex(interpolated_rgb)
-  end
-
-  # Convert hex color to RGB tuple
-  defp hex_to_rgb("#" <> hex) do
-    {r, ""} = Integer.parse(String.slice(hex, 0, 2), 16)
-    {g, ""} = Integer.parse(String.slice(hex, 2, 2), 16)
-    {b, ""} = Integer.parse(String.slice(hex, 4, 2), 16)
-    {r, g, b}
-  end
-
-  # Convert RGB tuple to hex color
-  defp rgb_to_hex({r, g, b}) do
-    "#" <>
-      String.pad_leading(Integer.to_string(round(r), 16), 2, "0") <>
-      String.pad_leading(Integer.to_string(round(g), 16), 2, "0") <>
-      String.pad_leading(Integer.to_string(round(b), 16), 2, "0")
+    ColorConversion.interpolate_color(from_hex, to_hex, progress)
   end
 
   defp apply_property(element, property, value) do
