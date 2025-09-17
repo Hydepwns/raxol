@@ -663,7 +663,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
   defp calculate_expiry(days) do
     DateTime.utc_now()
-    |> DateTime.add(days * 86400, :second)
+    |> DateTime.add(days * 86_400, :second)
   end
 
   defp get_current_user do

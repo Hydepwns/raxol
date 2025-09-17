@@ -284,7 +284,7 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
         type: :timer,
         attrs: %{
           interval: 1000,
-          duration: 60000,  # 1 minute
+          duration: 60_000,  # 1 minute
           render: fn %{elapsed: elapsed, remaining: remaining, percentage: pct} ->
             column([
               text("Elapsed: \#{elapsed}ms"),

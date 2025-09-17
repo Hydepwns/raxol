@@ -505,7 +505,7 @@ defmodule Raxol.Audit.Integration do
 
   defp suspicious_port?(port) do
     # Common malware/backdoor ports
-    suspicious_ports = [31337, 12345, 4444, 5555, 6666, 7777]
+    suspicious_ports = [31_337, 12_345, 4444, 5555, 6666, 7777]
     port in suspicious_ports
   end
 

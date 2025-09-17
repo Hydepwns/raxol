@@ -372,7 +372,7 @@ defmodule Raxol.Config do
       "terminal" => %{
         "width" => 80,
         "height" => 24,
-        "scrollback_size" => 10000,
+        "scrollback_size" => 10_000,
         "encoding" => "UTF-8"
       },
       "rendering" => %{

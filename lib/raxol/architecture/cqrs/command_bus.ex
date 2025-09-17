@@ -209,8 +209,8 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
 
     # Schedule periodic tasks
     :timer.send_interval(5000, :process_retry_queue)
-    :timer.send_interval(60000, :cleanup_dead_letters)
-    :timer.send_interval(30000, :reset_circuit_breakers)
+    :timer.send_interval(60_000, :cleanup_dead_letters)
+    :timer.send_interval(30_000, :reset_circuit_breakers)
 
     Logger.info("Command bus initialized")
     {:ok, state}

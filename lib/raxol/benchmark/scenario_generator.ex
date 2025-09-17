@@ -163,7 +163,7 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
       all_controls: Enum.map_join(0..31, fn i -> <<i>> end),
 
       # Very long lines
-      long_line: String.duplicate("x", 10000),
+      long_line: String.duplicate("x", 10_000),
       long_escape: "\e[" <> String.duplicate("1;", 1000) <> "m"
     }
   end

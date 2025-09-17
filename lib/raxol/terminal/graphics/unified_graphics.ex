@@ -222,8 +222,8 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
         preferred_protocol: :kitty,
         terminal_info: %{type: :kitty, version: "0.26.5"},
         capabilities: %{
-          kitty: %{max_image_size: 100000000, supports_animation: true},
-          sixel: %{max_image_size: 1000000, supports_animation: false}
+          kitty: %{max_image_size: 100_000_000, supports_animation: true},
+          sixel: %{max_image_size: 1_000_000, supports_animation: false}
         }
       }
   """
@@ -1021,8 +1021,8 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   end
 
   defp constrain_dimensions(options, capabilities) do
-    max_width = Map.get(capabilities, :max_image_width, 10000)
-    max_height = Map.get(capabilities, :max_image_height, 10000)
+    max_width = Map.get(capabilities, :max_image_width, 10_000)
+    max_height = Map.get(capabilities, :max_image_height, 10_000)
 
     options
     |> Map.update(:width, 800, &min(&1, max_width))

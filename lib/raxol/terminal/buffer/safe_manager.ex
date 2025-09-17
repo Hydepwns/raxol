@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
       width <= 0 or height <= 0 ->
         {:error, :invalid_dimensions}
 
-      width > 10000 or height > 10000 ->
+      width > 10_000 or height > 10_000 ->
         {:error, :dimensions_too_large}
 
       true ->

@@ -30,7 +30,7 @@ defmodule Raxol.Cloud.Integrations do
   ## Examples
 
       iex> init(
-      ...>   edge: [mode: :auto, sync_interval: 30000],
+      ...>   edge: [mode: :auto, sync_interval: 30_000],
       ...>   monitoring: [backends: [:prometheus], active: true],
       ...>   providers: [:aws]
       ...> )

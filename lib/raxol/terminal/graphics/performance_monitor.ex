@@ -110,7 +110,7 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
     # 30 minutes
     retention_period: 1800,
     # maximum operations to keep
-    max_history_size: 10000,
+    max_history_size: 10_000,
     enable_system_monitoring: true,
     enable_gpu_monitoring: true,
     enable_cache_monitoring: true,

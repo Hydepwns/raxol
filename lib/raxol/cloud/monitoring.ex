@@ -43,7 +43,7 @@ defmodule Raxol.Cloud.Monitoring do
 
   * `:active` - Whether monitoring should be active on start (default: true)
   * `:metrics_interval` - Interval in ms between metrics collection (default: 10000)
-  * `:health_check_interval` - Interval in ms between health checks (default: 60000)
+  * `:health_check_interval` - Interval in ms between health checks (default: 60_000)
   * `:error_sample_rate` - Fraction of errors to track (0.0-1.0) (default: 1.0)
   * `:metrics_batch_size` - Number of metrics to batch before sending (default: 100)
   * `:backends` - List of monitoring service backends to use (default: [])
