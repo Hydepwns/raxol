@@ -43,10 +43,25 @@ Raxol.Debug.time_debug(:render, "frame", fn -> render() end)
 
 ## Quick Start
 
-```bash
-# Add to mix.exs
+### Installation
+
+```elixir
+# Full installation with runtime (for terminal applications)
 {:raxol, "~> 1.4.1"}
 
+# Components-only (no terminal runtime, just UI components)
+{:raxol, "~> 1.4.1", runtime: false}
+```
+
+When using `runtime: false`, you get access to all UI components without the terminal emulator runtime. This is perfect for:
+- Using Raxol components in web applications
+- Building component libraries
+- Testing UI logic without terminal dependencies
+- Reducing application size when terminal features aren't needed
+
+### Development Setup
+
+```bash
 # Clone and explore
 git clone https://github.com/Hydepwns/raxol.git
 cd raxol
@@ -89,6 +104,26 @@ end
 ```
 
 [View more examples →](examples/README.md)
+
+## Components-Only Mode
+
+When importing Raxol with `runtime: false`, you get access to:
+
+### UI Components
+- All framework adapters (React, Svelte, LiveView, HEEx)
+- Complete component library (Button, Input, Table, Modal, etc.)
+- State management and context systems
+- Animation and transition engines
+- Theme system and styling utilities
+
+### Not Included in Components-Only
+- Terminal emulator runtime
+- ANSI/VT100 sequence processing
+- PTY/TTY management
+- SSH session handling
+- Sixel graphics rendering
+
+This makes Raxol perfect as a lightweight UI component library for web applications or other non-terminal use cases.
 
 ## Key Features
 
