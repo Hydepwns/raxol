@@ -76,7 +76,7 @@ defmodule Raxol.Style.Layout do
   @doc """
   Sets the border for a layout style.
   """
-  def set_border(style, border, style \\ nil) do
+  def set_border(style, border, _border_style \\ nil) do
     %{style | border: border}
   end
 

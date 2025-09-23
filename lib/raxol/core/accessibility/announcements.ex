@@ -96,10 +96,13 @@ defmodule Raxol.Core.Accessibility.Announcements do
       interrupt: Keyword.get(opts, :interrupt, false)
     }
 
-    Server.add_announcement(announcement, user_preferences_pid_or_name)
+    # add_announcement/2 returns :ok from GenServer.cast
+    :ok = Server.add_announcement(announcement, user_preferences_pid_or_name)
 
     send_announcement_to_subscribers(message)
-    EventManager.dispatch({:accessibility_announce, message})
+    :ok = EventManager.dispatch(:accessibility_announce, %{message: message})
+
+    :ok
   end
 
   @doc """

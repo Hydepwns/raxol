@@ -27,12 +27,12 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Events do
 
       plugin_id ->
         # Cancel existing timer if any
-        case state.file_event_timer do
+        _ = case state.file_event_timer do
           nil ->
             :ok
 
           timer ->
-            Process.cancel_timer(timer)
+            _ = Process.cancel_timer(timer)
 
             Raxol.Core.Runtime.Log.debug(
               "[#{__MODULE__}] Cancelled existing timer for plugin #{plugin_id}"

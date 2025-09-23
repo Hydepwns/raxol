@@ -15,9 +15,11 @@ defmodule Raxol.Terminal.Buffer.Initializer do
   Creates a new screen buffer with the specified dimensions.
   Validates and normalizes the input dimensions to ensure they are valid.
   """
-  @spec new(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
-          ScreenBuffer.t()
-  def new(width, height, scrollback_limit \\ 1000) do
+  @spec new(non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec new(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  def new(width, height, scrollback_limit \\ 1000)
+
+  def new(width, height, scrollback_limit) do
     width = validate_dimension(width, 80)
     height = validate_dimension(height, 24)
     scrollback_limit = validate_dimension(scrollback_limit, 1000)
@@ -31,6 +33,7 @@ defmodule Raxol.Terminal.Buffer.Initializer do
       scroll_position: 0,
       width: width,
       height: height,
+      damage_regions: [],
       default_style: TextFormatting.new()
     }
 

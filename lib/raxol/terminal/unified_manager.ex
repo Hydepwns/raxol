@@ -225,7 +225,7 @@ defmodule Raxol.Terminal.UnifiedManager do
     }
 
     # Schedule cleanup
-    schedule_cleanup(config.cleanup_interval)
+    _ = schedule_cleanup(config.cleanup_interval)
 
     Logger.info("Unified terminal manager initialized")
     {:ok, state}
@@ -334,7 +334,7 @@ defmodule Raxol.Terminal.UnifiedManager do
   @impl GenServer
   def handle_info(:cleanup_timer, state) do
     updated_state = cleanup_impl(state)
-    schedule_cleanup(state.config.cleanup_interval)
+    _ = schedule_cleanup(state.config.cleanup_interval)
     {:noreply, updated_state}
   end
 
@@ -355,14 +355,10 @@ defmodule Raxol.Terminal.UnifiedManager do
         session_id = generate_session_id()
 
         # Create emulator with configuration
-        emulator_config = %{
-          width: Map.get(config, :width, state.config.default_width),
-          height: Map.get(config, :height, state.config.default_height),
-          scrollback_lines:
-            Map.get(config, :scrollback_lines, state.config.default_scrollback)
-        }
+        width = Map.get(config, :width, state.config.default_width)
+        height = Map.get(config, :height, state.config.default_height)
 
-        emulator = Emulator.new(emulator_config)
+        emulator = Emulator.new(width, height)
 
         session = %{
           id: session_id,
@@ -370,7 +366,11 @@ defmodule Raxol.Terminal.UnifiedManager do
           emulator: emulator,
           created_at: DateTime.utc_now(),
           last_activity: DateTime.utc_now(),
-          config: emulator_config
+          config: %{
+            width: width,
+            height: height,
+            scrollback_lines: Map.get(config, :scrollback_lines, state.config.default_scrollback)
+          }
         }
 
         updated_sessions = Map.put(state.sessions, session_id, session)
@@ -619,12 +619,8 @@ defmodule Raxol.Terminal.UnifiedManager do
   defp process_emulator_input(emulator, input) do
     # Process input through the emulator
     case Emulator.process_input(emulator, input) do
-      {:ok, updated_emulator} ->
-        output = Emulator.get_output(updated_emulator)
+      {updated_emulator, output} ->
         {:ok, updated_emulator, output}
-
-      {:error, reason} ->
-        {:error, reason}
     end
   end
 

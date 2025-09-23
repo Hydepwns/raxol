@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.Operations.ScreenOperationsTest do
   use ExUnit.Case
-  alias Raxol.Terminal.{Operations.ScreenOperations, TestHelper}
+  alias Raxol.Terminal.Operations.ScreenOperations
 
   describe "clear_screen/1" do
     test "clears entire screen" do

@@ -242,7 +242,7 @@ defmodule Raxol.Core.Supervisor do
         {:error, :not_found}
 
       _pid ->
-        Supervisor.terminate_child(__MODULE__, server_name)
+        _ = Supervisor.terminate_child(__MODULE__, server_name)
         Supervisor.restart_child(__MODULE__, server_name)
     end
   end

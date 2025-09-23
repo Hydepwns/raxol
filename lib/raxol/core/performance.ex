@@ -114,7 +114,7 @@ defmodule Raxol.Core.Performance do
   # Returns: {:ok, %{cpu_usage: 15.2, memory_usage: 45.8, render_time: 120}}
   ```
   """
-  @spec get_stats() :: {:ok, map()} | {:error, term()}
+  @spec get_stats() :: {:ok, map()}
   def get_stats do
     with {:ok, monitor_metrics} <- safe_get_monitor_metrics(),
          {:ok, collector_metrics} <- safe_get_collector_metrics(),
@@ -238,8 +238,7 @@ defmodule Raxol.Core.Performance do
   * `:ok` - Measurement recorded successfully
   * `{:error, reason}` - Failed to record measurement
   """
-  @spec record_measurement(String.t(), number(), keyword()) ::
-          :ok | {:error, term()}
+  @spec record_measurement(String.t(), number(), keyword()) :: :ok
   def record_measurement(name, value, _tags \\ []) do
     with :ok <- record_to_collector(name, value),
          :ok <- record_to_monitor(name, value) do

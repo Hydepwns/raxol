@@ -140,7 +140,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
   @impl GenServer
   def init(_opts) do
     # Create ETS table for fast pattern lookups
-    :ets.new(@table_name, [
+    _ = :ets.new(@table_name, [
       :named_table,
       :public,
       :set,
@@ -188,7 +188,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     }
 
     # Persist if significant change
-    if should_persist?(state, new_state) do
+    _ = if should_persist?(state, new_state) do
       persist_patterns_async(new_state)
     end
 
@@ -798,7 +798,8 @@ defmodule Raxol.Core.ErrorPatternLearner do
   end
 
   defp persist_patterns_async(state) do
-    Task.start(fn -> persist_patterns(state) end)
+    {:ok, _pid} = Task.start(fn -> persist_patterns(state) end)
+    :ok
   end
 
   defp persist_patterns(state) do

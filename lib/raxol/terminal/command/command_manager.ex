@@ -36,7 +36,11 @@ defmodule Raxol.Terminal.Command.Manager do
     %Command{
       history: [],
       current: nil,
-      max_history: 100
+      max_history: 100,
+      command_buffer: "",
+      history_index: -1,
+      last_key_event: nil,
+      command_state: nil
     }
   end
 

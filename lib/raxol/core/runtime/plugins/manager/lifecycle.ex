@@ -105,7 +105,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.Lifecycle do
     # Create a simple wrapper that provides default parameters for the complex function
     case load_plugin_by_module_wrapper(state, module, config) do
       {:ok, plugin} ->
-        plugin_id = plugin.id || inspect(module)
+        plugin_id = plugin.id
         updated_plugins = Map.put(state.plugins, plugin_id, plugin)
         updated_state = %{state | plugins: updated_plugins}
         {:ok, updated_state}

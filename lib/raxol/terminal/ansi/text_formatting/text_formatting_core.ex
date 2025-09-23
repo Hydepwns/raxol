@@ -116,7 +116,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Core do
   @doc """
   Creates a new text formatting struct with the given attributes.
   """
-  @spec new(keyword() | map()) :: text_style()
+  @spec new(keyword() | map()) :: t()
   def new(attrs) when is_list(attrs) do
     attrs
     |> Enum.into(%{})
@@ -507,7 +507,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Core do
   @doc """
   Applies the given color to the text style with explicit foreground/background parameters.
   """
-  @spec apply_color(text_style(), :foreground | :background, atom()) ::
+  @spec apply_color(text_style(), :foreground | :background, atom() | tuple()) ::
           text_style()
   def apply_color(style, :foreground, color) do
     %{style | foreground: color}
@@ -575,7 +575,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting.Core do
   @doc """
   Sets a single attribute on the emulator.
   """
-  @spec set_attribute(t(), atom()) :: t()
+  @spec set_attribute(%{attributes: MapSet.t()}, atom()) :: %{attributes: MapSet.t()}
   def set_attribute(emulator, attribute) do
     attributes = MapSet.put(emulator.attributes, attribute)
     %{emulator | attributes: attributes}

@@ -270,10 +270,8 @@ defmodule Raxol.Cloud.Core do
   # ===== Private functions =====
 
   defp get_providers_status do
-    case Integrations.status() do
-      %{providers: providers} -> providers
-      _ -> %{}
-    end
+    %{providers: providers} = Integrations.status()
+    providers
   end
 
   defp start_state_manager do

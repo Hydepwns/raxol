@@ -167,13 +167,17 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   end
 
   defp create_sixel_cells(sixel_data, %{width: width, height: height}) do
-    # Create a grid of cells with the sixel escape sequence
-    List.duplicate(List.duplicate(Cell.new(sixel_data), width), height)
+    # For now, create placeholder cells until sixel is properly implemented
+    # TODO: Implement proper sixel cell creation
+    _ = sixel_data
+    List.duplicate(List.duplicate(Cell.new(" "), width), height)
   end
 
   defp create_kitty_cells(kitty_data, %{width: width, height: height}) do
-    # Create a grid of cells with the kitty escape sequence
-    List.duplicate(List.duplicate(Cell.new(kitty_data), width), height)
+    # For now, create placeholder cells until kitty graphics is properly implemented
+    # TODO: Implement proper kitty graphics cell creation
+    _ = kitty_data
+    List.duplicate(List.duplicate(Cell.new(" "), width), height)
   end
 
   # --- Private Image Drawing Logic ---

@@ -372,7 +372,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
 
   @impl true
   def terminate(_reason, state) do
-    case state.cleanup_timer do
+    _ = case state.cleanup_timer do
       nil -> :ok
       timer -> Process.cancel_timer(timer)
     end

@@ -328,7 +328,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       {:ok, new_state} ->
         # Invalidate cache for this cell
         cache_key = "cell_#{x}_#{y}"
-        Cache.invalidate(cache_key, :buffer)
+        _ = Cache.invalidate(cache_key, :buffer)
         {:reply, {:ok, new_state}, new_state}
 
       {:error, reason} ->
@@ -356,7 +356,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     new_state = Memory.update_memory_usage(new_state)
 
     # Invalidate cache for the affected region
-    Cache.invalidate_region(x, y, width, height, :buffer)
+    _ = Cache.invalidate_region(x, y, width, height, :buffer)
 
     {:reply, {:ok, new_state}, new_state}
   end
@@ -368,7 +368,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     new_state = Memory.update_memory_usage(new_state)
 
     # Clear the entire buffer cache
-    Cache.clear(:buffer)
+    _ = Cache.clear(:buffer)
 
     {:reply, {:ok, new_state}, new_state}
   end
@@ -408,7 +408,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     new_state = Memory.update_memory_usage(new_state)
 
     # Invalidate cache for the entire buffer since scroll affects all content
-    Cache.clear(:buffer)
+    _ = Cache.clear(:buffer)
 
     {:reply, {:ok, new_state}, new_state}
   end
@@ -505,10 +505,10 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   Cleans up the buffer manager.
   """
   def cleanup(%__MODULE__{} = state) do
-    ScreenBuffer.cleanup(state.active_buffer)
-    ScreenBuffer.cleanup(state.back_buffer)
-    ScrollOperations.cleanup(state.scrollback_buffer)
-    Raxol.Terminal.Buffer.DamageTracker.cleanup(state.damage_tracker)
+    _ = ScreenBuffer.cleanup(state.active_buffer)
+    _ = ScreenBuffer.cleanup(state.back_buffer)
+    _ = ScrollOperations.cleanup(state.scrollback_buffer)
+    _ = Raxol.Terminal.Buffer.DamageTracker.cleanup(state.damage_tracker)
     :ok
   end
 
@@ -532,7 +532,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   # Server Callbacks
 
   def init(opts) do
-    Logger.debug("[UnifiedManager] init/1 called with opts: #{inspect(opts)}")
+    _ = Logger.debug("[UnifiedManager] init/1 called with opts: #{inspect(opts)}")
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)
     scrollback_limit = Keyword.get(opts, :scrollback_limit, 1000)
@@ -556,7 +556,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
       }
     }
 
-    Logger.debug("[UnifiedManager] init/1 completed, state initialized")
+    _ = Logger.debug("[UnifiedManager] init/1 completed, state initialized")
     {:ok, state}
   end
 
@@ -639,7 +639,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
     new_back_buffer = ScreenBuffer.resize(state.back_buffer, height, width)
 
     # Clear cache since buffer dimensions changed
-    Cache.clear(:buffer)
+    _ = Cache.clear(:buffer)
 
     {:ok,
      %{
@@ -693,7 +693,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
   end
 
   def handle_info(msg, state) do
-    Logger.debug("[UnifiedManager] Ignored unexpected message: #{inspect(msg)}")
+    _ = Logger.debug("[UnifiedManager] Ignored unexpected message: #{inspect(msg)}")
     {:noreply, state}
   end
 
@@ -709,7 +709,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
         # Cache miss, get from buffer and cache the result
         # get_cell_direct always returns {:ok, cell}
         {:ok, cell} = get_cell_direct(state, x, y)
-        Cache.put(cache_key, cell, :buffer)
+        _ = Cache.put(cache_key, cell, :buffer)
         {:ok, cell}
 
       {:error, _reason} ->
@@ -751,7 +751,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager do
 
     new_state = %{state | active_buffer: new_active_buffer}
     new_state = Memory.update_memory_usage(new_state)
-    Cache.invalidate_region(x, y, width, height, :buffer)
+    _ = Cache.invalidate_region(x, y, width, height, :buffer)
     {:ok, new_state}
   end
 

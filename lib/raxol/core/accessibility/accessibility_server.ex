@@ -773,7 +773,7 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     new_queue = state.announcements.queue ++ [announcement]
 
     # Dispatch event for other systems
-    EventManager.dispatch({:screen_reader_announcement, announcement_text})
+    _ = EventManager.dispatch(:screen_reader_announcement, %{text: announcement_text})
 
     new_announcements = %{
       state.announcements

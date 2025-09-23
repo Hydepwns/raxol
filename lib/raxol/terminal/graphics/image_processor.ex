@@ -566,7 +566,7 @@ defmodule Raxol.Terminal.Graphics.ImageProcessor do
       data = File.read!(saved_image.path)
 
       # Clean up temporary file
-      File.rm(saved_image.path)
+      _ = File.rm(saved_image.path)
 
       data
     end)

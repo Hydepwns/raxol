@@ -54,27 +54,26 @@ defmodule Raxol.UI.Components.Input.TextField do
   @doc """
   Initializes the TextField component state from the given props.
   """
-  @spec init(map()) :: {:ok, map()}
+  @spec init(map()) :: map()
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
     id = props[:id] || Raxol.Core.ID.generate()
     width = props[:width] || 20
     state = struct!(__MODULE__, Map.merge(%{id: id}, props))
-    state = Map.put(state, :width, width)
-    {:ok, state}
+    Map.put(state, :width, width)
   end
 
   @doc """
   Mounts the TextField component. Performs any setup needed after initialization.
   """
-  @spec mount(map()) :: map()
+  @spec mount(map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component
-  def mount(state), do: state
+  def mount(state), do: {state, []}
 
   @doc """
   Updates the TextField component state in response to messages or prop changes.
   """
-  @spec update(term(), map()) :: {:noreply, map()} | {:noreply, map(), any()}
+  @spec update(term(), map()) :: map()
   @impl Raxol.UI.Components.Base.Component
   def update({:update_props, new_props}, state) do
     updated_state = Map.merge(state, Map.new(new_props))
@@ -92,13 +91,12 @@ defmodule Raxol.UI.Components.Input.TextField do
         max(0, String.length(updated_state.value) - width)
       )
 
-    {:noreply,
-     %{
+    %{
        updated_state
        | cursor_pos: cursor_pos,
          scroll_offset: scroll_offset,
          width: width
-     }}
+     }
   end
 
   def update({:move_cursor_to, {_row, col}}, state) do
@@ -137,36 +135,36 @@ defmodule Raxol.UI.Components.Input.TextField do
   @doc """
   Handles events for the TextField component, such as keypresses, focus, and blur.
   """
-  @spec handle_event(map(), term(), map()) ::
-          {:noreply, map()} | {:noreply, map(), any()}
+  @spec handle_event(term(), map(), map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component
   def handle_event(
-        %{disabled: true} = state,
         {:keypress, _key, _modifiers},
+        %{disabled: true} = state,
         _context
       ) do
-    {:noreply, state}
+    {state, []}
   end
 
-  def handle_event(state, {:keypress, key, modifiers}, context) do
+  def handle_event({:keypress, key, modifiers}, state, context) do
     handle_keypress(state, key, modifiers, context)
   end
 
-  def handle_event(state, {:focus}, _context) do
-    {:noreply, %{state | focused: true}}
+  def handle_event({:focus}, state, _context) do
+    {%{state | focused: true}, []}
   end
 
-  def handle_event(state, {:blur}, _context) do
-    {:noreply, %{state | focused: false}}
+  def handle_event({:blur}, state, _context) do
+    {%{state | focused: false}, []}
   end
 
-  def handle_event(state, {:mouse, {:click, {_x, y}}}, _context) do
+  def handle_event({:mouse, {:click, {_x, y}}}, state, _context) do
     # Handle mouse clicks to position cursor
-    {:update, {:move_cursor_to, {0, y}}, state}
+    updated_state = update({:move_cursor_to, {0, y}}, state)
+    {updated_state, []}
   end
 
-  def handle_event(state, _event, _context) do
-    {:noreply, state}
+  def handle_event(_event, state, _context) do
+    {state, []}
   end
 
   defp handle_keypress(state, key, _modifiers, context) when is_binary(key) do
@@ -445,7 +443,7 @@ defmodule Raxol.UI.Components.Input.TextField do
   defp build_normal_children(visible_value) do
     [
       Element.new(:text, %{}, do: [])
-      |> Map.put(:content, visible_value || "")
+      |> Map.put(:content, visible_value)
     ]
   end
 

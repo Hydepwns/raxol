@@ -96,7 +96,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
   @doc """
   Calculates an aggregation of values using the specified method.
   """
-  @spec calculate_aggregation(list(number()), atom()) :: number()
+  @spec calculate_aggregation(list(number()), atom() | {:percentile, float()}) :: number()
   def calculate_aggregation(values, :mean) do
     Enum.sum(values) / length(values)
   end

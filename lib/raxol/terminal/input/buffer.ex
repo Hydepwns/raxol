@@ -365,7 +365,7 @@ defmodule Raxol.Terminal.Input.Buffer do
   defp cancel_existing_timer(%{timer_ref: nil} = state), do: state
 
   defp cancel_existing_timer(%{timer_ref: timer_ref} = state) do
-    Process.cancel_timer(timer_ref)
+    _ = Process.cancel_timer(timer_ref)
     %{state | timer_ref: nil}
   end
 end

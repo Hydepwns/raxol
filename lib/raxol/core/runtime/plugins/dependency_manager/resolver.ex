@@ -248,10 +248,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
     validate_atoms_in_component(Enum.all?(component, &is_atom/1))
   end
 
-  defp validate_component_list(_component) do
-    raise("Component must be a list of atoms")
-  end
-
   defp validate_atoms_in_component(true), do: :ok
 
   defp validate_atoms_in_component(false),

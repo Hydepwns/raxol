@@ -74,8 +74,9 @@ defmodule Raxol.Terminal.CharsetManager do
   Applies a single shift to the state.
   """
   @spec apply_single_shift(t(), atom()) :: t()
-  def apply_single_shift(_state, _shift) do
-    :ok
+  def apply_single_shift(state, _shift) do
+    # TODO: Implement single shift application
+    state
   end
 
   @doc """

@@ -107,6 +107,12 @@ defmodule Raxol.Terminal.Cursor do
   """
   @spec move_to(EmulatorStruct.t(), {non_neg_integer(), non_neg_integer()}) ::
           EmulatorStruct.t()
+  def move_to(%{cursor: nil} = emulator, {row, col}) do
+    new_x = max(0, min(emulator.width - 1, col))
+    new_y = max(0, min(emulator.height - 1, row))
+    %{emulator | cursor: %{position: {new_x, new_y}, row: new_y, col: new_x}}
+  end
+
   def move_to(emulator, {row, col}) do
     new_x = max(0, min(emulator.width - 1, col))
     new_y = max(0, min(emulator.height - 1, row))
@@ -144,6 +150,10 @@ defmodule Raxol.Terminal.Cursor do
   """
   @spec move_to(EmulatorStruct.t(), non_neg_integer(), non_neg_integer()) ::
           EmulatorStruct.t()
+  def move_to(%{cursor: nil} = emulator, row, col) do
+    move_to(emulator, {row, col})
+  end
+
   def move_to(emulator, row, col) do
     move_to(emulator, {row, col})
   end
@@ -211,6 +221,13 @@ defmodule Raxol.Terminal.Cursor do
   """
   @spec set_position(EmulatorStruct.t(), {non_neg_integer(), non_neg_integer()}) ::
           EmulatorStruct.t()
+  def set_position(%{cursor: nil} = emulator, {col, row}) do
+    # Create a cursor if it doesn't exist
+    new_x = max(0, min(emulator.width - 1, col))
+    new_y = max(0, min(emulator.height - 1, row))
+    %{emulator | cursor: %{position: {new_x, new_y}, row: new_y, col: new_x}}
+  end
+
   def set_position(emulator, position) do
     move_to(emulator, position)
   end

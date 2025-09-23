@@ -58,40 +58,41 @@ defmodule Raxol.Terminal.TerminalUtils do
     end
   end
 
-  defp validate_dimensions(0, _, default_width, default_height) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Detected invalid terminal dimensions (0x?). Using defaults.",
-      %{}
-    )
+  defp validate_dimensions(width, height, default_width, default_height) do
+    cond do
+      width <= 0 ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Detected invalid terminal width (#{width}). Using defaults.",
+          %{}
+        )
+        {default_width, default_height}
 
-    {default_width, default_height}
-  end
+      height <= 0 ->
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Detected invalid terminal height (#{height}). Using defaults.",
+          %{}
+        )
+        {default_width, default_height}
 
-  defp validate_dimensions(_, 0, default_width, default_height) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Detected invalid terminal dimensions (?x0). Using defaults.",
-      %{}
-    )
-
-    {default_width, default_height}
-  end
-
-  defp validate_dimensions(width, height, _default_width, _default_height) do
-    Raxol.Core.Runtime.Log.debug("Terminal dimensions: #{width}x#{height}")
-    {width, height}
+      true ->
+        Raxol.Core.Runtime.Log.debug("Terminal dimensions: #{width}x#{height}")
+        {width, height}
+    end
   end
 
   defp get_termbox_width do
-    case @termbox2_available do
-      true -> :termbox2_nif.tb_width()
-      false -> 0
+    if @termbox2_available do
+      :termbox2_nif.tb_width()
+    else
+      0
     end
   end
 
   defp get_termbox_height do
-    case @termbox2_available do
-      true -> :termbox2_nif.tb_height()
-      false -> 0
+    if @termbox2_available do
+      :termbox2_nif.tb_height()
+    else
+      0
     end
   end
 
@@ -182,14 +183,12 @@ defmodule Raxol.Terminal.TerminalUtils do
     width = get_termbox_width()
     height = get_termbox_height()
 
-    case {is_integer(width) and width > 0, is_integer(height) and height > 0} do
-      {true, true} ->
-        {:ok, width, height}
-
-      _ ->
-        error = {:error, :invalid_termbox_dimensions}
-        Raxol.Core.Runtime.Log.debug("termbox2_nif error: #{inspect(error)}")
-        error
+    if is_integer(width) and width > 0 and is_integer(height) and height > 0 do
+      {:ok, width, height}
+    else
+      error = {:error, :invalid_termbox_dimensions}
+      Raxol.Core.Runtime.Log.debug("termbox2_nif error: #{inspect(error)}")
+      error
     end
   end
 

@@ -102,7 +102,6 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   Clears the current line.
   """
   def clear_line(emulator) do
-    updated_emulator = ScreenBuffer.clear_line(emulator, 2)
-    %{updated_emulator | active_buffer: updated_emulator.active_buffer}
+    ScreenBuffer.clear_line(emulator, 2)
   end
 end

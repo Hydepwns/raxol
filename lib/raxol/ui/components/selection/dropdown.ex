@@ -232,14 +232,14 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
     # Use View Elements macros
     Raxol.View.Elements.column id: state.id do
       # Box for the selected item display
-      Raxol.View.Elements.box style: %{border: :single, width: state.width} do
+      _ = Raxol.View.Elements.box style: %{border: :single, width: state.width} do
         Raxol.View.Elements.row style: %{width: :fill} do
           Raxol.View.Elements.label(content: display_text)
         end
       end
 
       # Render the list component (render/2 returns an Element)
-      List.render(state.list_state, %{})
+      _ = List.render(state.list_state, %{})
     end
   end
 

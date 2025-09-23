@@ -201,10 +201,11 @@ defmodule Raxol.PreCommit.Progress do
   @impl GenServer
   def handle_info(:tick, state) do
     # Cancel old timer
-    case state.timer_ref do
-      nil -> :ok
-      ref -> Process.cancel_timer(ref)
-    end
+    _ =
+      case state.timer_ref do
+        nil -> :ok
+        ref -> Process.cancel_timer(ref)
+      end
 
     # Update spinner
     new_index = rem(state.spinner_index + 1, length(@spinner_frames))
@@ -222,9 +223,9 @@ defmodule Raxol.PreCommit.Progress do
   @impl GenServer
   def terminate(_reason, state) do
     # Cancel timer
-    case state.timer_ref do
+    _ = case state.timer_ref do
       nil -> :ok
-      ref -> Process.cancel_timer(ref)
+      ref -> _ = Process.cancel_timer(ref)
     end
 
     # Final render with all statuses

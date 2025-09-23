@@ -22,9 +22,6 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
 
       {:error, {:circular_dependency, name}} ->
         {:error, {:circular_dependency, name}}
-
-      {:error, reason} ->
-        {:error, reason}
     end
   end
 
@@ -53,9 +50,6 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
 
       {:error, cycle} ->
         {:error, :circular_dependency, cycle, nil}
-
-      other ->
-        {:error, :resolve_failed, other}
     end
   end
 

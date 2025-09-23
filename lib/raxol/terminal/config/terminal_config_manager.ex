@@ -149,10 +149,6 @@ defmodule Raxol.Terminal.Config.Manager do
     %{config | mode: mode}
   end
 
-  defp update_config_setting(config, _setting, _value) do
-    config
-  end
-
   defp update_emulator_config(true, emulator, updated_config) do
     GenServer.call(emulator.config, {:update_config, updated_config})
     emulator

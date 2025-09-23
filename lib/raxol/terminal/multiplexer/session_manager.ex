@@ -344,7 +344,7 @@ defmodule Raxol.Terminal.Multiplexer.SessionManager do
     {:ok, storage} = init_storage(config)
 
     # Schedule periodic saves
-    schedule_auto_save(
+    _ = schedule_auto_save(
       config.auto_save_interval_ms > 0,
       config.auto_save_interval_ms
     )

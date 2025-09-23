@@ -12,9 +12,9 @@ defmodule Raxol.Terminal.HistoryManager do
   Gets the history buffer instance.
   Returns the history buffer.
   """
-  @spec get_buffer(Emulator.t()) :: HistoryBuffer.t()
+  @spec get_buffer(Emulator.t()) :: HistoryBuffer.t() | nil
   def get_buffer(emulator) do
-    emulator.history_buffer
+    Map.get(emulator, :history_buffer)
   end
 
   @doc """
@@ -23,7 +23,7 @@ defmodule Raxol.Terminal.HistoryManager do
   """
   @spec update_buffer(Emulator.t(), HistoryBuffer.t()) :: Emulator.t()
   def update_buffer(emulator, buffer) do
-    %{emulator | history_buffer: buffer}
+    Map.put(emulator, :history_buffer, buffer)
   end
 
   @doc """
@@ -32,7 +32,8 @@ defmodule Raxol.Terminal.HistoryManager do
   """
   @spec add_command(Emulator.t(), String.t()) :: Emulator.t()
   def add_command(emulator, command) do
-    buffer = HistoryBuffer.add_command(emulator.history_buffer, command)
+    current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+    buffer = HistoryBuffer.add_command(current_buffer, command)
     update_buffer(emulator, buffer)
   end
 
@@ -43,7 +44,8 @@ defmodule Raxol.Terminal.HistoryManager do
   @spec get_command_at(Emulator.t(), integer()) ::
           {:ok, String.t()} | {:error, String.t()}
   def get_command_at(emulator, index) do
-    case HistoryBuffer.get_command_at(emulator.history_buffer, index) do
+    current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+    case HistoryBuffer.get_command_at(current_buffer, index) do
       {:ok, command} ->
         {:ok, command}
 
@@ -58,7 +60,8 @@ defmodule Raxol.Terminal.HistoryManager do
   """
   @spec get_position(Emulator.t()) :: integer()
   def get_position(emulator) do
-    HistoryBuffer.get_position(emulator.history_buffer)
+    current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+    HistoryBuffer.get_position(current_buffer)
   end
 
   @doc """
@@ -67,7 +70,8 @@ defmodule Raxol.Terminal.HistoryManager do
   """
   @spec set_position(Emulator.t(), integer()) :: Emulator.t()
   def set_position(emulator, position) do
-    buffer = HistoryBuffer.set_position(emulator.history_buffer, position)
+    current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+    buffer = HistoryBuffer.set_position(current_buffer, position)
     update_buffer(emulator, buffer)
   end
 
@@ -78,7 +82,8 @@ defmodule Raxol.Terminal.HistoryManager do
   @spec next_command(Emulator.t()) ::
           {:ok, Emulator.t(), String.t()} | {:error, String.t()}
   def next_command(emulator) do
-    case HistoryBuffer.next_command(emulator.history_buffer) do
+    current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+    case HistoryBuffer.next_command(current_buffer) do
       {:ok, new_buffer, command} ->
         {:ok, update_buffer(emulator, new_buffer), command}
 
@@ -94,7 +99,8 @@ defmodule Raxol.Terminal.HistoryManager do
   @spec previous_command(Emulator.t()) ::
           {:ok, Emulator.t(), String.t()} | {:error, String.t()}
   def previous_command(emulator) do
-    case HistoryBuffer.previous_command(emulator.history_buffer) do
+    current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+    case HistoryBuffer.previous_command(current_buffer) do
       {:ok, new_buffer, command} ->
         {:ok, update_buffer(emulator, new_buffer), command}
 
@@ -109,7 +115,8 @@ defmodule Raxol.Terminal.HistoryManager do
   """
   @spec clear_history(Emulator.t()) :: Emulator.t()
   def clear_history(emulator) do
-    buffer = HistoryBuffer.clear(emulator.history_buffer)
+    current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+    buffer = HistoryBuffer.clear(current_buffer)
     update_buffer(emulator, buffer)
   end
 
@@ -119,7 +126,8 @@ defmodule Raxol.Terminal.HistoryManager do
   """
   @spec get_size(Emulator.t()) :: non_neg_integer()
   def get_size(emulator) do
-    HistoryBuffer.get_size(emulator.history_buffer)
+    current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+    HistoryBuffer.get_size(current_buffer)
   end
 
   @doc """
@@ -128,7 +136,8 @@ defmodule Raxol.Terminal.HistoryManager do
   """
   @spec get_max_size(Emulator.t()) :: non_neg_integer()
   def get_max_size(emulator) do
-    HistoryBuffer.get_max_size(emulator.history_buffer)
+    current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+    HistoryBuffer.get_max_size(current_buffer)
   end
 
   @doc """
@@ -137,7 +146,8 @@ defmodule Raxol.Terminal.HistoryManager do
   """
   @spec set_max_size(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def set_max_size(emulator, size) do
-    buffer = HistoryBuffer.set_max_size(emulator.history_buffer, size)
+    current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+    buffer = HistoryBuffer.set_max_size(current_buffer, size)
     update_buffer(emulator, buffer)
   end
 
@@ -147,7 +157,8 @@ defmodule Raxol.Terminal.HistoryManager do
   """
   @spec get_all_commands(Emulator.t()) :: list(String.t())
   def get_all_commands(emulator) do
-    HistoryBuffer.get_all_commands(emulator.history_buffer)
+    current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+    HistoryBuffer.get_all_commands(current_buffer)
   end
 
   @doc """
@@ -156,7 +167,8 @@ defmodule Raxol.Terminal.HistoryManager do
   """
   @spec save_to_file(Emulator.t(), String.t()) :: :ok | {:error, String.t()}
   def save_to_file(emulator, file_path) do
-    case HistoryBuffer.save_to_file(emulator.history_buffer, file_path) do
+    current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+    case HistoryBuffer.save_to_file(current_buffer, file_path) do
       :ok ->
         :ok
 
@@ -172,7 +184,8 @@ defmodule Raxol.Terminal.HistoryManager do
   @spec load_from_file(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, String.t()}
   def load_from_file(emulator, file_path) do
-    case HistoryBuffer.load_from_file(emulator.history_buffer, file_path) do
+    current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+    case HistoryBuffer.load_from_file(current_buffer, file_path) do
       {:ok, new_buffer} ->
         {:ok, update_buffer(emulator, new_buffer)}
 

@@ -226,6 +226,7 @@ defmodule Raxol.Core.Renderer.Buffer do
     end
   end
 
+  @spec copy_cells(map(), {non_neg_integer(), non_neg_integer()}, {non_neg_integer(), non_neg_integer()}) :: [[Raxol.Terminal.Cell.t()]]
   defp copy_cells(cells, {old_w, old_h}, {new_w, new_h}) do
     for y <- 0..(new_h - 1) do
       for x <- 0..(new_w - 1) do

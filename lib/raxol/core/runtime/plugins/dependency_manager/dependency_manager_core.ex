@@ -43,11 +43,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   """
   def check_dependencies(
         plugin_id,
-        plugin_metadata,
+        dependencies,
         loaded_plugins,
         dependency_chain \\ []
       ) do
-    dependencies = Map.get(plugin_metadata, :dependencies, [])
     current_chain = [plugin_id | dependency_chain]
 
     case check_conflicting_requirements(dependencies, current_chain) do
@@ -485,9 +484,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
            version_req
          ) do
       :ok -> acc
-      {:error, :invalid_version_format} -> update_acc(acc, 2, dep_id)
-      {:error, :invalid_requirement_format} -> update_acc(acc, 3, dep_id)
-      {:error, :invalid_version_requirement} -> update_acc(acc, 3, dep_id)
+      {:error, :version_mismatch} -> update_acc(acc, 4, {dep_id, version, version_req})
       {:error, _reason} -> update_acc(acc, 4, {dep_id, version, version_req})
     end
   end
@@ -579,9 +576,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
         cycle = hd(cycles)
         chain = [plugin_id | cycle]
         {:error, :circular_dependency, cycle, chain}
-
-      error ->
-        error
     end
   end
 end

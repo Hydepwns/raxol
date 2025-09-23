@@ -390,15 +390,10 @@ defmodule Raxol.Core.Session.UnifiedSessionManager do
 
   @impl GenServer
   def handle_call({:create_web_session, user_id, metadata}, _from, state) do
-    case WebSession.create(user_id, metadata, state.config) do
-      {:ok, session} ->
-        updated_sessions = Map.put(state.web_sessions, session.id, session)
-        new_state = %{state | web_sessions: updated_sessions}
-        {:reply, {:ok, session}, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, session} = WebSession.create(user_id, metadata, state.config)
+    updated_sessions = Map.put(state.web_sessions, session.id, session)
+    new_state = %{state | web_sessions: updated_sessions}
+    {:reply, {:ok, session}, new_state}
   end
 
   @impl GenServer
@@ -453,15 +448,10 @@ defmodule Raxol.Core.Session.UnifiedSessionManager do
 
   @impl GenServer
   def handle_call({:create_terminal_session, user_id}, _from, state) do
-    case TerminalSession.create(user_id, state.config) do
-      {:ok, session} ->
-        updated_sessions = Map.put(state.terminal_sessions, session.id, session)
-        new_state = %{state | terminal_sessions: updated_sessions}
-        {:reply, {:ok, session}, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:ok, session} = TerminalSession.create(user_id, state.config)
+    updated_sessions = Map.put(state.terminal_sessions, session.id, session)
+    new_state = %{state | terminal_sessions: updated_sessions}
+    {:reply, {:ok, session}, new_state}
   end
 
   @impl GenServer
@@ -508,17 +498,12 @@ defmodule Raxol.Core.Session.UnifiedSessionManager do
 
   @impl GenServer
   def handle_call({:create_multiplexer_session, name, config}, _from, state) do
-    case MultiplexerSession.create(name, config, state.config) do
-      {:ok, session} ->
-        updated_sessions =
-          Map.put(state.multiplexer_sessions, session.id, session)
+    {:ok, session} = MultiplexerSession.create(name, config, state.config)
+    updated_sessions =
+      Map.put(state.multiplexer_sessions, session.id, session)
 
-        new_state = %{state | multiplexer_sessions: updated_sessions}
-        {:reply, {:ok, session}, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    new_state = %{state | multiplexer_sessions: updated_sessions}
+    {:reply, {:ok, session}, new_state}
   end
 
   @impl GenServer
@@ -641,13 +626,13 @@ defmodule Raxol.Core.Session.UnifiedSessionManager do
 
   defp init_security_storage(config) do
     # Initialize ETS tables for security sessions (safe creation)
-    Raxol.Core.CompilerState.ensure_table(:unified_security_sessions, [
+    _ = Raxol.Core.CompilerState.ensure_table(:unified_security_sessions, [
       :set,
       :private,
       :named_table
     ])
 
-    Raxol.Core.CompilerState.ensure_table(:unified_user_security_sessions, [
+    _ = Raxol.Core.CompilerState.ensure_table(:unified_user_security_sessions, [
       :bag,
       :private,
       :named_table

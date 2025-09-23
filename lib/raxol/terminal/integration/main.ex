@@ -90,15 +90,15 @@ defmodule Raxol.Terminal.Integration do
   def write(%State{} = state, text) do
     case UnifiedIO.process_output(text) do
       {:ok, output} when is_binary(output) ->
-        State.render(state)
+        _ = State.render(state)
         output
 
       {:ok, _} ->
-        State.render(state)
+        _ = State.render(state)
         ""
 
       _ ->
-        State.render(state)
+        _ = State.render(state)
         ""
     end
   end

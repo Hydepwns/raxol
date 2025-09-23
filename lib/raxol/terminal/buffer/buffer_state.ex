@@ -46,7 +46,7 @@ defmodule Raxol.Terminal.Buffer.BufferState do
   end
 
   defp create_empty_grid(width, height) do
-    default_cell = Cell.new(" ", TextFormatting.new())
+    default_cell = Cell.new(" ", nil)
     List.duplicate(List.duplicate(default_cell, width), height)
   end
 

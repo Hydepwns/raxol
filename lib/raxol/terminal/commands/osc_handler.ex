@@ -127,21 +127,23 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
 
   def handle_window_maximize(emulator) do
     # Update window state to maximized
-    Raxol.Terminal.Window.Manager.set_window_state(
-      emulator.window_manager,
-      :maximized
-    )
+    _ =
+      Raxol.Terminal.Window.Manager.set_window_state(
+        emulator.window_manager,
+        :maximized
+      )
 
     {:ok, emulator}
   end
 
   def handle_window_size(emulator, width, height) do
     # Update window size
-    Raxol.Terminal.Window.Manager.set_window_size(
-      emulator.window_manager,
-      width,
-      height
-    )
+    _ =
+      Raxol.Terminal.Window.Manager.set_window_size(
+        emulator.window_manager,
+        width,
+        height
+      )
 
     {:ok, emulator}
   end

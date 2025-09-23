@@ -86,7 +86,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
         {:ok, state}
 
       {:error, reason, cleanup_fun} ->
-        cleanup_fun.()
+        _ = cleanup_fun.()
         {:stop, reason}
     end
   end
@@ -153,10 +153,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       :ok ->
         {:ok, registry_table_name}
 
-      table_id when is_reference(table_id) ->
-        {:ok, registry_table_name}
-
-      _ ->
+      {:error, _reason} ->
         {:error, :registry_table_creation_failed,
          fn -> CompilerState.safe_delete_table(registry_table_name) end}
     end

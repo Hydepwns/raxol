@@ -268,9 +268,6 @@ defmodule Raxol.DevTools.HotReload do
       {:error, reason} ->
         Logger.warning("Directory check failed for #{dir}: #{inspect(reason)}")
         :ok
-
-      _ ->
-        :ok
     end
   end
 
@@ -323,7 +320,7 @@ defmodule Raxol.DevTools.HotReload do
     new_queue = MapSet.put(state.reload_queue, path)
 
     # Cancel existing timer
-    case state.debounce_timer do
+    _ = case state.debounce_timer do
       nil -> :ok
       timer -> Process.cancel_timer(timer)
     end
@@ -398,16 +395,11 @@ defmodule Raxol.DevTools.HotReload do
       module_name
     else
       {:error, _reason} -> nil
-      _ -> nil
     end
   end
 
   defp safe_get_cwd do
-    with {:ok, cwd} <- safe_file_cwd() do
-      {:ok, cwd}
-    else
-      {:error, reason} -> {:error, reason}
-    end
+    safe_file_cwd()
   end
 
   defp safe_relative_to(file_path, cwd) do
@@ -445,7 +437,6 @@ defmodule Raxol.DevTools.HotReload do
 
       :ok
     else
-      {:error, reason} -> {:error, reason}
       error -> {:error, {:unexpected_reload_error, error}}
     end
   end
@@ -455,8 +446,6 @@ defmodule Raxol.DevTools.HotReload do
          {:ok, filename} <-
            extract_filename_from_code_result(code_result, module) do
       {:ok, filename}
-    else
-      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -593,7 +582,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:pattern_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -609,7 +598,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:wildcard_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -633,7 +622,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:file_processing_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -649,7 +638,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:cwd_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -665,7 +654,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:relative_path_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -681,7 +670,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:string_split_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -712,7 +701,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:module_extraction_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -728,7 +717,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:code_info_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -755,7 +744,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:purge_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -774,7 +763,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:delete_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -792,7 +781,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:compilation_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -817,7 +806,7 @@ defmodule Raxol.DevTools.HotReload do
 
   defp safe_code_load_binary(module, filename, binary) do
     Task.async(fn ->
-      :code.load_binary(module, filename, binary)
+      _ = :code.load_binary(module, filename, binary)
       :loaded
     end)
     |> Task.yield(1000)
@@ -829,7 +818,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:load_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -852,7 +841,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:component_refresh_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -871,7 +860,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:hook_exception, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -887,7 +876,7 @@ defmodule Raxol.DevTools.HotReload do
         {:error, {:module_info_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end

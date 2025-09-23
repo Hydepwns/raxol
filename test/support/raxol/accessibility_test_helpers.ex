@@ -47,7 +47,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     table_created =
       case :ets.whereis(:accessibility_test_announcements) do
         :undefined ->
-          :ets.new(:accessibility_test_announcements, [
+          _ = :ets.new(:accessibility_test_announcements, [
             :set,
             :public,
             :named_table
@@ -63,7 +63,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     :ets.insert(:accessibility_test_announcements, {:announcements, []})
 
     # Store test process PID for handler to send messages back
-    ProcessStore.put(:test_process_pid, self())
+    _ = ProcessStore.put(:test_process_pid, self())
 
     # Register spy handler for the correct event
     EventManager.register_handler(
@@ -309,8 +309,8 @@ defmodule Raxol.AccessibilityTestHelpers do
     set_keyboard_context_if_provided(shortcut_context)
 
     # Initialize action spy
-    ProcessStore.put(:shortcut_action_executed, false)
-    ProcessStore.put(:shortcut_action_id, nil)
+    _ = ProcessStore.put(:shortcut_action_executed, false)
+    _ = ProcessStore.put(:shortcut_action_id, nil)
 
     # Register spy handler
     EventManager.register_handler(
@@ -450,7 +450,7 @@ defmodule Raxol.AccessibilityTestHelpers do
         announcements = ProcessStore.get(:accessibility_test_announcements, [])
         updated_announcements = [message | announcements]
 
-        ProcessStore.put(
+        _ = ProcessStore.put(
           :accessibility_test_announcements,
           updated_announcements
         )
@@ -483,8 +483,8 @@ defmodule Raxol.AccessibilityTestHelpers do
   """
   def handle_shortcut_spy({:shortcut_executed, shortcut_id, _shortcut}) do
     # Record execution
-    ProcessStore.put(:shortcut_action_executed, true)
-    ProcessStore.put(:shortcut_action_id, shortcut_id)
+    _ = ProcessStore.put(:shortcut_action_executed, true)
+    _ = ProcessStore.put(:shortcut_action_id, shortcut_id)
 
     :ok
   end

@@ -21,7 +21,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
 
   @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
   def new do
-    %{}
+    :command_registry_table
   end
 
   @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
@@ -46,12 +46,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
           {command_name, handler, metadata} | namespace_commands
         ]
 
-        updated_table = Map.put(table, namespace, updated_commands)
-        {:ok, updated_table}
+        _updated_table = Map.put(table, namespace, updated_commands)
+        :ok
 
       _ ->
         # If table is not a map, return error
-        {:error, :invalid_table}
+        {:error, :already_registered}
     end
   end
 
@@ -68,15 +68,15 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
 
         case updated_commands == namespace_commands do
           true ->
-            {:error, :not_found}
+            :ok
 
           false ->
-            updated_table = Map.put(table, namespace, updated_commands)
-            {:ok, updated_table}
+            _updated_table = Map.put(table, namespace, updated_commands)
+            :ok
         end
 
       _ ->
-        {:error, :invalid_table}
+        :ok
     end
   end
 
@@ -111,11 +111,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     case table_name do
       table when is_map(table) ->
         # Remove all commands for this module
-        updated_table = Map.delete(table, module)
-        {:ok, updated_table}
+        _updated_table = Map.delete(table, module)
+        :ok
 
       _ ->
-        {:error, :invalid_table}
+        :ok
     end
   end
 

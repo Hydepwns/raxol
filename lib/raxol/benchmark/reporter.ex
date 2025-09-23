@@ -526,27 +526,9 @@ defmodule Raxol.Benchmark.Reporter do
 
   defp print_regressions_section([]), do: :ok
 
-  defp print_regressions_section(regressions) do
-    IO.puts("\n⚠️  PERFORMANCE REGRESSIONS")
-    IO.puts("=" |> String.duplicate(70))
-    print_regressions(regressions)
-  end
-
   defp print_improvements_section([]), do: :ok
 
-  defp print_improvements_section(improvements) do
-    IO.puts("\n✅ PERFORMANCE IMPROVEMENTS")
-    IO.puts("=" |> String.duplicate(70))
-    print_improvements(improvements)
-  end
-
   defp print_recommendations_section([]), do: :ok
-
-  defp print_recommendations_section(recommendations) do
-    IO.puts("\n💡 RECOMMENDATIONS")
-    IO.puts("=" |> String.duplicate(70))
-    print_recommendations(recommendations)
-  end
 
   defp print_summary(summary) do
     IO.puts("Total Benchmarks: #{summary.total_benchmarks}")
@@ -569,31 +551,6 @@ defmodule Raxol.Benchmark.Reporter do
     )
   end
 
-  defp print_regressions(regressions) do
-    Enum.each(regressions, fn reg ->
-      IO.puts("• #{reg.benchmark}: #{reg.percentage}% slower")
-
-      IO.puts(
-        "  Current: #{format_time(reg.current)} | Baseline: #{format_time(reg.baseline)}"
-      )
-    end)
-  end
-
-  defp print_improvements(improvements) do
-    Enum.each(improvements, fn imp ->
-      IO.puts("• #{imp.benchmark}: #{imp.percentage}% faster")
-
-      IO.puts(
-        "  Current: #{format_time(imp.current)} | Baseline: #{format_time(imp.baseline)}"
-      )
-    end)
-  end
-
-  defp print_recommendations(recommendations) do
-    Enum.each(recommendations, fn rec ->
-      IO.puts("• #{rec}")
-    end)
-  end
 
   defp print_detailed_results(results) do
     Enum.each(results, fn suite ->

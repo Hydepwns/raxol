@@ -82,7 +82,10 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
   """
   def parse_step(step_content) do
     [title | content_parts] = String.split(step_content, "\n", parts: 2)
-    content = hd(content_parts) || ""
+    content = case content_parts do
+      [] -> ""
+      [content] -> content
+    end
 
     # Extract step ID from title
     id =

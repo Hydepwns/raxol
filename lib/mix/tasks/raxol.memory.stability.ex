@@ -60,6 +60,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
 
   @shortdoc "Run long-running memory stability tests"
 
+  @spec run(list()) :: no_return()
   def run(args) do
     {opts, _, _} =
       OptionParser.parse(args,
@@ -80,7 +81,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
       System.halt(0)
     end
 
-    Application.ensure_all_started(:raxol)
+    _ = Application.ensure_all_started(:raxol)
 
     config = build_config(opts)
     Mix.shell().info("Memory Stability Test")
@@ -118,7 +119,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
   end
 
   defp run_stability_test(config) do
-    File.mkdir_p(config.output)
+    _ = File.mkdir_p(config.output)
 
     initial_memory = get_memory_info()
     start_time = System.monotonic_time(:millisecond)
@@ -340,7 +341,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
 
   defp vim_navigate(buffer) do
     # Simulate cursor movements (doesn't modify buffer)
-    {:ok, cursor} = Manager.new()
+    cursor = Manager.new()
 
     _moved_cursor =
       cursor
@@ -379,10 +380,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
     # Simulate buffer operations like clear/resize
     case :rand.uniform(3) do
       1 ->
-        case Raxol.Terminal.ScreenBuffer.clear(buffer) do
-          {:ok, cleared} -> cleared
-          _ -> buffer
-        end
+        Raxol.Terminal.ScreenBuffer.clear(buffer)
 
       _ ->
         buffer

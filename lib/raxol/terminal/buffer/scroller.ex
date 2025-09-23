@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.Buffer.Scroller do
   @spec scroll_entire_buffer_up(ScreenBuffer.t(), non_neg_integer()) ::
           {:ok, ScreenBuffer.t()}
   def scroll_entire_buffer_up(buffer, count) do
-    {_to_scrollback, new_buffer} = ScreenBuffer.pop_bottom_lines(buffer, count)
+    {new_buffer, _removed_lines} = ScreenBuffer.pop_bottom_lines(buffer, count)
     empty_lines = List.duplicate(List.duplicate(%{}, buffer.width), count)
     new_cells = empty_lines ++ new_buffer.cells
     {:ok, %{new_buffer | cells: new_cells}}
@@ -85,7 +85,7 @@ defmodule Raxol.Terminal.Buffer.Scroller do
   @spec scroll_entire_buffer_down(ScreenBuffer.t(), non_neg_integer()) ::
           {:ok, ScreenBuffer.t()}
   def scroll_entire_buffer_down(buffer, count) do
-    {_to_scrollback, new_buffer} = ScreenBuffer.pop_bottom_lines(buffer, count)
+    {new_buffer, _removed_lines} = ScreenBuffer.pop_bottom_lines(buffer, count)
     empty_lines = List.duplicate(List.duplicate(%{}, buffer.width), count)
     new_cells = new_buffer.cells ++ empty_lines
     {:ok, %{new_buffer | cells: new_cells}}

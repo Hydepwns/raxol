@@ -215,7 +215,7 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
         {:error, {:exit, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _shutdown_result = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -258,7 +258,7 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
         {:error, {:exit, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _shutdown_result = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -288,7 +288,7 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
           {:error, {:exit, reason}}
 
         nil ->
-          Task.shutdown(task, :brutal_kill)
+          _ = Task.shutdown(task, :brutal_kill)
           {:error, :timeout}
       end
     rescue
@@ -313,7 +313,7 @@ defmodule Raxol.Terminal.Buffer.Callbacks do
             {:error, {:exit, reason}}
 
           nil ->
-            Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+            _shutdown_result = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
             {:error, :timeout}
         end
     end

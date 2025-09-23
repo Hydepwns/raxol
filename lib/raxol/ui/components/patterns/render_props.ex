@@ -703,7 +703,7 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
        when map_size(all_errors) == 0 do
     set_is_submitting.(true)
 
-    Task.start(fn ->
+    _ = Task.start(fn ->
       case Raxol.Core.ErrorHandling.safe_call(fn -> on_submit.(values) end) do
         {:ok, _} ->
           set_is_submitting.(false)

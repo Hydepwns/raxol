@@ -260,6 +260,7 @@ defmodule Raxol.Test.MockPlugins do
   defmodule MockOnInitCrashPlugin do
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
 
+    @spec init(term()) :: no_return()
     def init(_config) do
       raise "Simulated plugin crash during init!"
     end
@@ -298,6 +299,7 @@ defmodule Raxol.Test.MockPlugins do
       {:ok, initial_state}
     end
 
+    @spec terminate(term(), term()) :: no_return()
     def terminate(_reason, _state) do
       raise "Simulated plugin crash during terminate!"
     end

@@ -10,8 +10,9 @@ defmodule Raxol.Core.Events.Manager do
   defdelegate start_link(opts \\ []), to: Raxol.Core.Events.EventManager
   defdelegate init(), to: Raxol.Core.Events.EventManager
 
-  defdelegate notify(event_type, data, opts \\ []),
-    to: Raxol.Core.Events.EventManager
+  def notify(event_type, data) do
+    Raxol.Core.Events.EventManager.notify(Raxol.Core.Events.EventManager, event_type, data)
+  end
 
   defdelegate register_handler(event_types, target, handler),
     to: Raxol.Core.Events.EventManager

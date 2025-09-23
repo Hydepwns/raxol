@@ -70,7 +70,7 @@ defmodule Raxol.Terminal.Buffer.Formatting do
       iex> Formatting.get_style(buffer)
       %{bold: false, dim: false, italic: false, underline: false, blink: false, reverse: false, hidden: false, strikethrough: false, foreground: nil, background: nil}
   """
-  @spec get_style(ScreenBuffer.t()) :: t()
+  @spec get_style(map()) :: map()
   def get_style(buffer) do
     buffer.formatting_state
   end
@@ -94,7 +94,7 @@ defmodule Raxol.Terminal.Buffer.Formatting do
       iex> Formatting.get_style(buffer)
       %{bold: true, ...}
   """
-  @spec update_style(ScreenBuffer.t(), map()) :: ScreenBuffer.t()
+  @spec update_style(map(), map()) :: map()
   def update_style(buffer, style) do
     new_formatting_state = Map.merge(buffer.formatting_state, style)
     %{buffer | formatting_state: new_formatting_state}
@@ -119,7 +119,7 @@ defmodule Raxol.Terminal.Buffer.Formatting do
       iex> Formatting.attribute_set?(buffer, :bold)
       true
   """
-  @spec set_attribute(ScreenBuffer.t(), atom()) :: ScreenBuffer.t()
+  @spec set_attribute(map(), atom()) :: map()
   def set_attribute(buffer, attribute) do
     new_formatting_state = %{buffer.formatting_state | attribute => true}
     %{buffer | formatting_state: new_formatting_state}
@@ -144,7 +144,7 @@ defmodule Raxol.Terminal.Buffer.Formatting do
       iex> Formatting.attribute_set?(buffer, :bold)
       false
   """
-  @spec reset_attribute(ScreenBuffer.t(), atom()) :: ScreenBuffer.t()
+  @spec reset_attribute(map(), atom()) :: map()
   def reset_attribute(buffer, attribute) do
     new_formatting_state = %{buffer.formatting_state | attribute => false}
     %{buffer | formatting_state: new_formatting_state}
@@ -170,9 +170,9 @@ defmodule Raxol.Terminal.Buffer.Formatting do
       {255, 0, 0}
   """
   @spec set_foreground(
-          ScreenBuffer.t(),
+          map(),
           {non_neg_integer(), non_neg_integer(), non_neg_integer()}
-        ) :: ScreenBuffer.t()
+        ) :: map()
   def set_foreground(buffer, color) do
     new_formatting_state = %{buffer.formatting_state | foreground: color}
     %{buffer | formatting_state: new_formatting_state}
@@ -198,9 +198,9 @@ defmodule Raxol.Terminal.Buffer.Formatting do
       {0, 0, 255}
   """
   @spec set_background(
-          ScreenBuffer.t(),
+          map(),
           {non_neg_integer(), non_neg_integer(), non_neg_integer()}
-        ) :: ScreenBuffer.t()
+        ) :: map()
   def set_background(buffer, color) do
     new_formatting_state = %{buffer.formatting_state | background: color}
     %{buffer | formatting_state: new_formatting_state}
@@ -224,7 +224,7 @@ defmodule Raxol.Terminal.Buffer.Formatting do
       iex> Formatting.get_style(buffer)
       %{bold: false, dim: false, italic: false, underline: false, blink: false, reverse: false, hidden: false, strikethrough: false, foreground: nil, background: nil}
   """
-  @spec reset_all(ScreenBuffer.t()) :: ScreenBuffer.t()
+  @spec reset_all(map()) :: map()
   def reset_all(buffer) do
     %{buffer | formatting_state: init()}
   end

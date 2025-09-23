@@ -75,7 +75,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
              function,
              arity
            ) do
-        {:ok, _updated_table} -> {:cont, :ok}
+        :ok -> {:cont, :ok}
         {:error, _reason} = error -> {:halt, error}
       end
     end)

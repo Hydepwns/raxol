@@ -63,16 +63,16 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
 
   defp handle_invalid_spacing_type(invalid)
        when is_integer(invalid) and invalid < 0 do
-    raise ArgumentError, "Padding must be a positive integer or tuple"
+    {:error, "Padding must be a positive integer or tuple"}
   end
 
   defp handle_invalid_spacing_type(invalid)
        when is_tuple(invalid) and tuple_size(invalid) == 3 do
-    raise ArgumentError, "Invalid padding tuple length"
+    {:error, "Invalid padding tuple length"}
   end
 
   defp handle_invalid_spacing_type(_invalid) do
-    raise ArgumentError, "Padding must be a positive integer or tuple"
+    {:error, "Padding must be a positive integer or tuple"}
   end
 
   @doc """
@@ -131,16 +131,16 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
 
   defp handle_invalid_margin_type(invalid)
        when is_integer(invalid) and invalid < 0 do
-    raise ArgumentError, "Margin must be a positive integer or tuple"
+    {:error, "Margin must be a positive integer or tuple"}
   end
 
   defp handle_invalid_margin_type(invalid)
        when is_tuple(invalid) and tuple_size(invalid) == 3 do
-    raise ArgumentError, "Invalid margin tuple length"
+    {:error, "Invalid margin tuple length"}
   end
 
   defp handle_invalid_margin_type(_invalid) do
-    raise ArgumentError, "Margin must be a positive integer or tuple"
+    {:error, "Margin must be a positive integer or tuple"}
   end
 
   @doc """

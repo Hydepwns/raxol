@@ -177,7 +177,20 @@ defmodule Raxol.System.Updater.State do
   Returns the default update settings.
   This is provided for backward compatibility.
   """
-  @spec default_update_settings() :: map()
+  @spec default_update_settings() :: %{
+          :auto_update => boolean(),
+          :check_interval => pos_integer(),
+          :update_channel => atom(),
+          :notify_on_update => boolean(),
+          :download_path => String.t(),
+          :backup_path => String.t(),
+          :max_backups => pos_integer(),
+          :retry_count => non_neg_integer(),
+          :retry_delay => pos_integer(),
+          :timeout => pos_integer(),
+          :verify_checksums => boolean(),
+          :require_confirmation => boolean()
+        }
   def default_update_settings do
     %{
       auto_update: true,

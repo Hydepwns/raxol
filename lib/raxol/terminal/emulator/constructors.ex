@@ -49,7 +49,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
       buffer: buffer_pid,
       config: config_pid,
       command: command_pid,
-      cursor: Manager.new(),
+      cursor: nil,
       cursor_manager: cursor_manager_pid,
       window_manager: window_manager_pid,
       mode_manager: mode_manager,
@@ -155,7 +155,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
       buffer: buffer_pid,
       config: config_pid,
       command: command_pid,
-      cursor: Manager.new(),
+      cursor: nil,
       cursor_manager: cursor_manager_pid,
       window_manager: window_manager_pid,
       mode_manager: mode_manager,
@@ -222,7 +222,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   @doc """
   Creates a new terminal emulator instance with options map.
   """
-  @spec new(map()) :: Raxol.Terminal.Emulator.t()
+  @spec new(%{required(:width) => non_neg_integer(), required(:height) => non_neg_integer(), optional(atom()) => term()}) :: Raxol.Terminal.Emulator.t()
   def new(%{width: width, height: height} = opts) do
     plugin_manager = Map.get(opts, :plugin_manager)
     emulator = new(width, height, [])
@@ -256,6 +256,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
 
   # Private functions
 
+  @spec get_pid({:ok, pid()} | {:error, {:already_started, pid()} | term()}) :: pid() | no_return()
   defp get_pid({:ok, pid}), do: pid
   defp get_pid({:error, {:already_started, pid}}), do: pid
 

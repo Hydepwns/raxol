@@ -87,7 +87,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
        }) do
     with {:ok, initial_state} <-
            StateManager.initialize_plugin_state(plugin_module, config),
-         :ok <-
+         {:ok, _} <-
            register_plugin_components(%{
              plugin_id: plugin_id,
              plugin_module: plugin_module,
@@ -100,7 +100,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
              load_order: load_order,
              plugin_config: plugin_config
            }) do
-      build_updated_maps(%{
+      _build_updated_maps(%{
         plugin_id: plugin_id,
         plugin_module: plugin_module,
         plugin_metadata: plugin_metadata,
@@ -127,23 +127,26 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
          load_order: _load_order,
          plugin_config: plugin_config
        }) do
-    with :ok <-
+    with {:ok, _} <-
            StateManager.update_plugin_state_legacy(
              plugin_id,
              initial_state,
              plugin_config
            ),
-         :ok <-
+         {:ok, _} <-
            PluginCommandManager.register_commands(
              plugin_module,
              initial_state,
              command_table
            ) do
-      register_plugin(plugin_id, plugin_metadata)
+      case _register_plugin(plugin_id, plugin_metadata) do
+        :ok -> {:ok, nil}
+        {:error, reason} -> {:error, reason}
+      end
     end
   end
 
-  defp build_updated_maps(%{
+  defp _build_updated_maps(%{
          plugin_id: plugin_id,
          plugin_module: plugin_module,
          plugin_metadata: plugin_metadata,
@@ -164,7 +167,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     }
   end
 
-  defp register_plugin(plugin_id, plugin_metadata) do
+  defp _register_plugin(plugin_id, plugin_metadata) do
     Raxol.Core.UnifiedRegistry.register(:plugins, plugin_id, plugin_metadata)
   end
 
@@ -191,7 +194,9 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
 
   @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
   def cleanup_plugin(plugin_id, metadata) do
-    PluginLifecycleCallbacks.cleanup_plugin(plugin_id, metadata)
+    case PluginLifecycleCallbacks.cleanup_plugin(plugin_id, metadata) do
+      {:ok, _metadata} -> :ok
+    end
   end
 
   @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
@@ -254,7 +259,9 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
 
   @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
   def terminate_plugin(plugin_id, metadata, reason) do
-    PluginLifecycleCallbacks.terminate_plugin(plugin_id, metadata, reason)
+    case PluginLifecycleCallbacks.terminate_plugin(plugin_id, metadata, reason) do
+      {:ok, _metadata} -> :ok
+    end
   end
 
   @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
@@ -363,6 +370,6 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   Catch-all for load_plugin/3. Raises a clear error if called with the wrong arity.
   """
   def load_plugin(_a, _b, _c) do
-    raise "Raxol.Core.Runtime.Plugins.LifecycleHelper.load_plugin/3 is not implemented. Use load_plugin/8."
+    {:error, {:not_implemented, "Use load_plugin/8 instead of load_plugin/3"}}
   end
 end

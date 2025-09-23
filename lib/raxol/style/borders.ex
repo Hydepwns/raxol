@@ -6,7 +6,7 @@ defmodule Raxol.Style.Borders do
   @type t :: %__MODULE__{
           style: :none | :solid | :double | :dashed | :dotted,
           width: integer(),
-          color: Color.t(),
+          color: term(),
           radius: integer()
         }
 

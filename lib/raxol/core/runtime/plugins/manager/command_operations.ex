@@ -58,9 +58,6 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.CommandOperations do
 
           {:error, reason} ->
             {:reply, {:error, reason}, state}
-
-          result ->
-            {:reply, result, state}
         end
     end
   end

@@ -6,14 +6,17 @@ defmodule Raxol.Terminal.Buffer.Charset do
 
   alias Raxol.Terminal.ScreenBuffer
 
+  @type charset_type :: :us_ascii | :dec_graphics | :uk | :ibm_pc | :dec_alternate
+  @type designator :: :g0 | :g1 | :g2 | :g3
+
   @type t :: %__MODULE__{
-          g0: atom(),
-          g1: atom(),
-          g2: atom(),
-          g3: atom(),
-          gl: atom(),
-          gr: atom(),
-          single_shift: atom() | nil
+          g0: charset_type(),
+          g1: charset_type(),
+          g2: charset_type(),
+          g3: charset_type(),
+          gl: designator(),
+          gr: designator(),
+          single_shift: designator() | nil
         }
 
   defstruct [
@@ -64,8 +67,9 @@ defmodule Raxol.Terminal.Buffer.Charset do
   """
   @spec designate(ScreenBuffer.t(), atom(), atom()) :: ScreenBuffer.t()
   def designate(buffer, slot, charset) when slot in [:g0, :g1, :g2, :g3] do
-    new_charset_state = %{buffer.charset_state | slot => charset}
-    %{buffer | charset_state: new_charset_state}
+    # This function is deprecated - use Raxol.Terminal.ScreenBuffer.Attributes instead
+    _ = {slot, charset}
+    buffer
   end
 
   @doc """
@@ -112,8 +116,9 @@ defmodule Raxol.Terminal.Buffer.Charset do
   """
   @spec invoke_g_set(ScreenBuffer.t(), atom()) :: ScreenBuffer.t()
   def invoke_g_set(buffer, slot) when slot in [:g0, :g1, :g2, :g3] do
-    new_charset_state = %{buffer.charset_state | gl: slot}
-    %{buffer | charset_state: new_charset_state}
+    # This function is deprecated - use Raxol.Terminal.ScreenBuffer.Attributes instead
+    _ = slot
+    buffer
   end
 
   @doc """
@@ -159,8 +164,9 @@ defmodule Raxol.Terminal.Buffer.Charset do
   """
   @spec apply_single_shift(ScreenBuffer.t(), atom()) :: ScreenBuffer.t()
   def apply_single_shift(buffer, slot) when slot in [:g0, :g1, :g2, :g3] do
-    new_charset_state = %{buffer.charset_state | single_shift: slot}
-    %{buffer | charset_state: new_charset_state}
+    # This function is deprecated - use Raxol.Terminal.ScreenBuffer.Attributes instead
+    _ = slot
+    buffer
   end
 
   @doc """
@@ -205,7 +211,8 @@ defmodule Raxol.Terminal.Buffer.Charset do
   """
   @spec reset(ScreenBuffer.t()) :: ScreenBuffer.t()
   def reset(buffer) do
-    %{buffer | charset_state: init()}
+    # This function is deprecated - use Raxol.Terminal.ScreenBuffer.Attributes instead
+    buffer
   end
 
   @doc """

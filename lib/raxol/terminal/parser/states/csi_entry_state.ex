@@ -43,13 +43,11 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
   """
   @spec handle(
           Raxol.Terminal.Emulator.t(),
-          Raxol.Terminal.Parser.State.t(),
+          map(),
           binary()
         ) ::
-          {:continue, Raxol.Terminal.Emulator.t(),
-           Raxol.Terminal.Parser.State.t(), binary()}
-          | {:incomplete, Raxol.Terminal.Emulator.t(),
-             Raxol.Terminal.Parser.State.t()}
+          {:continue, Raxol.Terminal.Emulator.t(), map(), binary()}
+          | {:incomplete, Raxol.Terminal.Emulator.t(), map()}
   def handle(emulator, parser_state, input) do
     case input do
       <<byte, rest::binary>> -> process_byte(emulator, parser_state, byte, rest)

@@ -28,12 +28,15 @@ defmodule Raxol.Test.RendererHelper do
         )
       )
 
-    # Setup metrics if enabled
+      # Setup metrics if enabled
     metrics_state =
-      if Keyword.get(opts, :enable_metrics, true) do
-        Raxol.Test.MetricsHelper.setup_metrics_test(
-          Keyword.get(opts, :metrics_opts, [])
-        )
+      case Keyword.get(opts, :enable_metrics, true) do
+        true ->
+          Raxol.Test.MetricsHelper.setup_metrics_test(
+            Keyword.get(opts, :metrics_opts, [])
+          )
+        false ->
+          nil
       end
 
     %{
@@ -51,8 +54,9 @@ defmodule Raxol.Test.RendererHelper do
   def cleanup_renderer_test(state) do
     Raxol.Terminal.Renderer.stop(state.renderer)
 
-    if state.metrics do
-      Raxol.Test.MetricsHelper.cleanup_metrics_test(state.metrics)
+    case state.metrics do
+      nil -> :ok
+      metrics -> Raxol.Test.MetricsHelper.cleanup_metrics_test(metrics)
     end
   end
 
@@ -102,10 +106,9 @@ defmodule Raxol.Test.RendererHelper do
       :ok
   """
   def render_test_content(renderer, buffer, opts \\ []) do
-    if is_nil(buffer) do
-      {:error, :invalid_buffer}
-    else
-      Raxol.Terminal.Renderer.render(renderer, buffer, opts)
+    case buffer do
+      nil -> {:error, :invalid_buffer}
+      _ -> Raxol.Terminal.Renderer.render(renderer, buffer, opts)
     end
   end
 
@@ -240,7 +243,7 @@ defmodule Raxol.Test.RendererHelper do
         case render_test_content(renderer, buffer, opts) do
           :ok -> :ok
           html when is_binary(html) -> :ok
-          {:error, reason} -> {:error, reason}
+          {:error, reason} -> throw({:error, reason})
         end
 
         System.monotonic_time(:millisecond) - start_time

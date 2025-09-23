@@ -183,18 +183,15 @@ defmodule Raxol.Docs.Formatter do
             |> Enum.filter(fn {{type, _, _}, _, _, _, _} ->
               type == :function
             end)
-            |> Enum.map_join(
-              fn {{_, name, arity}, _, _, doc, _} ->
-                doc_summary =
-                  case doc do
-                    %{"en" => text} -> extract_summary(text) |> elem(0)
-                    _ -> ""
-                  end
+            |> Enum.map_join("\n", fn {{_, name, arity}, _, _, doc, _} ->
+              doc_summary =
+                case doc do
+                  %{"en" => text} -> extract_summary(text) |> elem(0)
+                  _ -> ""
+                end
 
-                "  • #{bold("#{name}/#{arity}")} - #{doc_summary}"
-              end,
-              "\n"
-            )
+              "  • #{bold("#{name}/#{arity}")} - #{doc_summary}"
+            end)
 
           """
           #{header("Module: #{inspect(module)}")}

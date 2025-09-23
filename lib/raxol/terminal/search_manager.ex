@@ -4,8 +4,8 @@ defmodule Raxol.Terminal.SearchManager do
   This module is responsible for handling all search-related operations in the terminal.
   """
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.SearchBuffer
+  alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
   @doc """
@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.SearchManager do
   Returns {:ok, updated_emulator, match} or {:error, reason}.
   """
   @spec find_next(Emulator.t()) ::
-          {:ok, Emulator.t(), map()} | {:error, String.t()}
+          {:ok, Emulator.t(), SearchBuffer.match()} | {:error, String.t()}
   def find_next(emulator) do
     case SearchBuffer.find_next(emulator.search_buffer) do
       {:ok, new_buffer, match} ->
@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.SearchManager do
   Returns {:ok, updated_emulator, match} or {:error, reason}.
   """
   @spec find_previous(Emulator.t()) ::
-          {:ok, Emulator.t(), map()} | {:error, String.t()}
+          {:ok, Emulator.t(), SearchBuffer.match()} | {:error, String.t()}
   def find_previous(emulator) do
     case SearchBuffer.find_previous(emulator.search_buffer) do
       {:ok, new_buffer, match} ->
@@ -78,7 +78,7 @@ defmodule Raxol.Terminal.SearchManager do
   Gets the current search pattern.
   Returns the current pattern.
   """
-  @spec get_pattern(Emulator.t()) :: String.t()
+  @spec get_pattern(Emulator.t()) :: String.t() | nil
   def get_pattern(emulator) do
     SearchBuffer.get_pattern(emulator.search_buffer)
   end
@@ -87,7 +87,7 @@ defmodule Raxol.Terminal.SearchManager do
   Sets the search options.
   Returns the updated emulator.
   """
-  @spec set_options(Emulator.t(), map()) :: Emulator.t()
+  @spec set_options(Emulator.t(), SearchBuffer.options()) :: Emulator.t()
   def set_options(emulator, options) do
     buffer = SearchBuffer.set_options(emulator.search_buffer, options)
     update_buffer(emulator, buffer)
@@ -97,7 +97,7 @@ defmodule Raxol.Terminal.SearchManager do
   Gets the current search options.
   Returns the current options.
   """
-  @spec get_options(Emulator.t()) :: map()
+  @spec get_options(Emulator.t()) :: SearchBuffer.options()
   def get_options(emulator) do
     SearchBuffer.get_options(emulator.search_buffer)
   end
@@ -106,7 +106,7 @@ defmodule Raxol.Terminal.SearchManager do
   Gets all matches in the current search.
   Returns the list of matches.
   """
-  @spec get_all_matches(Emulator.t()) :: list(map())
+  @spec get_all_matches(Emulator.t()) :: [SearchBuffer.match()]
   def get_all_matches(emulator) do
     SearchBuffer.get_all_matches(emulator.search_buffer)
   end
@@ -153,7 +153,7 @@ defmodule Raxol.Terminal.SearchManager do
   Gets the search history.
   Returns the list of recent search patterns.
   """
-  @spec get_search_history(Emulator.t()) :: list(String.t())
+  @spec get_search_history(Emulator.t()) :: [String.t()]
   def get_search_history(emulator) do
     SearchBuffer.get_search_history(emulator.search_buffer)
   end

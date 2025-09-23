@@ -13,16 +13,16 @@ defmodule Raxol.Metrics.Collector do
   end
 
   def record_event_timing(event_type, processing_time) do
-    GenServer.cast(__MODULE__, {:record_timing, event_type, processing_time})
+    _ = GenServer.cast(__MODULE__, {:record_timing, event_type, processing_time})
   end
 
   def record_throughput(events_count) do
-    GenServer.cast(__MODULE__, {:record_throughput, events_count})
+    _ = GenServer.cast(__MODULE__, {:record_throughput, events_count})
   end
 
   def record_memory_usage do
     {:memory, memory} = :erlang.process_info(self(), :memory)
-    GenServer.cast(__MODULE__, {:record_memory, memory})
+    _ = GenServer.cast(__MODULE__, {:record_memory, memory})
   end
 
   def get_metrics do

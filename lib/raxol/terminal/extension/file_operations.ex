@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.Extension.FileOperations do
            File.write!(manifest_path, Jason.encode!(manifest, pretty: true))
 
            # Only copy source files if export path is a directory
-           unless String.ends_with?(path, ".json") do
+           _ = unless String.ends_with?(path, ".json") do
              copy_source_files_if_exists(extension, path)
            end
 

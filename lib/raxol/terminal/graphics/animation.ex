@@ -239,7 +239,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
         {:reply, {:error, :animation_not_found}, state}
 
       animation_info ->
-        Framework.stop_animation(animation_info.name, animation_id)
+        _ = Framework.stop_animation(animation_info.name, animation_id)
         active_animations = Map.delete(state.active_animations, animation_id)
         {:reply, :ok, %{state | active_animations: active_animations}}
     end

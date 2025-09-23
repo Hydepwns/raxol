@@ -61,6 +61,7 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
     memory_growth_rate_percent: 5.0
   }
 
+  @spec run(list()) :: no_return()
   def run(args) do
     {opts, _, _} =
       OptionParser.parse(args,
@@ -81,7 +82,7 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
       System.halt(0)
     end
 
-    Application.ensure_all_started(:raxol)
+    _ = Application.ensure_all_started(:raxol)
 
     config = build_config(opts)
 

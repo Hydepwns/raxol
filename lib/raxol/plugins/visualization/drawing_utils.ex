@@ -75,7 +75,10 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
         get_edge_char(current_y, current_x, y, x)
 
       {false, false} ->
-        elem(get_cell(grid, current_y, current_x), 0) || " "
+        case get_cell(grid, current_y, current_x) do
+          {:ok, value} -> value
+          {:error, _} -> " "
+        end
     end
   end
 

@@ -182,14 +182,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
         )
 
         {:ok, state, :notification_skipped_unsupported_os}
-
-      # Generic fallback
-      _ ->
-        Raxol.Core.Runtime.Log.error(
-          "NotificationPlugin: Unknown notification error: #{inspect(reason_tuple)}"
-        )
-
-        {:error, {:unknown_notification_error, reason_tuple}, state}
     end
   end
 
@@ -214,7 +206,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
                    :linux -> :notification_sent_linux
                    :macos -> :notification_sent_macos
                    :windows -> :notification_sent_windows
-                   _ -> :notification_sent
                  end
 
                {:ok, state, success_atom}

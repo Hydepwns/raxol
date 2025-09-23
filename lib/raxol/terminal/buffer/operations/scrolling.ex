@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   @doc """
   Checks if scrolling is needed and performs it if necessary.
   """
-  def maybe_scroll(buffer) when is_list(buffer) do
+  def maybe_scroll(buffer) when is_map(buffer) or is_list(buffer) do
     # Check if we need to scroll - currently always returns false
     case needs_scroll?(buffer) do
       false ->
@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   @doc """
   Moves the cursor to the next line, scrolling if necessary.
   """
-  def next_line(buffer) when is_list(buffer) do
+  def next_line(buffer) when is_map(buffer) or is_list(buffer) do
     buffer
     |> maybe_scroll()
     |> index()
@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   @doc """
   Moves the cursor to the previous line.
   """
-  def reverse_index(buffer) when is_list(buffer) do
+  def reverse_index(buffer) when is_map(buffer) or is_list(buffer) do
     # Move cursor up one line
     buffer
   end
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   @doc """
   Moves the cursor to the beginning of the next line.
   """
-  def index(buffer) when is_list(buffer) do
+  def index(buffer) when is_map(buffer) or is_list(buffer) do
     # Move cursor to beginning of next line
     buffer
   end
@@ -46,7 +46,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   Scrolls the buffer up by the specified number of lines.
   """
   def scroll_up(buffer, lines)
-      when is_list(buffer) and is_integer(lines) and lines > 0 do
+      when is_map(buffer) or is_list(buffer) and is_integer(lines) and lines > 0 do
     # Default cursor position to 0, 0 for backward compatibility
     {new_buffer, _cursor_y, _cursor_x} = scroll_up(buffer, lines, 0, 0)
     new_buffer
@@ -61,7 +61,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   end
 
   def scroll_up(buffer, lines, cursor_y, cursor_x)
-      when is_list(buffer) and is_integer(lines) and lines > 0 and
+      when is_map(buffer) or is_list(buffer) and is_integer(lines) and lines > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
     # Remove lines from top and add empty lines at bottom
     new_buffer =
@@ -101,7 +101,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   Scrolls the buffer down by the specified number of lines.
   """
   def scroll_down(buffer, lines)
-      when is_list(buffer) and is_integer(lines) and lines > 0 do
+      when is_map(buffer) or is_list(buffer) and is_integer(lines) and lines > 0 do
     {new_buffer, _cursor_y, _cursor_x} = scroll_down(buffer, lines, 0, 0)
     new_buffer
   end
@@ -115,7 +115,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   end
 
   def scroll_down(buffer, lines, cursor_y, cursor_x)
-      when is_list(buffer) and is_integer(lines) and lines > 0 and
+      when is_map(buffer) or is_list(buffer) and is_integer(lines) and lines > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
     # Remove lines from bottom and add empty lines at top
     new_buffer =
@@ -153,7 +153,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   Inserts the specified number of blank lines at the cursor position.
   """
   def insert_lines(buffer, count, cursor_y, cursor_x)
-      when is_list(buffer) and is_integer(count) and count > 0 and
+      when is_map(buffer) or is_list(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
     # Insert blank lines at cursor position
     new_buffer =
@@ -193,7 +193,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   Inserts the specified number of blank lines at the cursor position with scroll region.
   """
   def insert_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom)
-      when is_list(buffer) and is_integer(count) and count > 0 and
+      when is_map(buffer) or is_list(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) and
              is_integer(scroll_top) and is_integer(scroll_bottom) do
     case cursor_y >= scroll_top and cursor_y <= scroll_bottom do
@@ -218,7 +218,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   Deletes the specified number of lines at the cursor position.
   """
   def delete_lines(buffer, count, cursor_y, cursor_x)
-      when is_list(buffer) and is_integer(count) and count > 0 and
+      when is_map(buffer) or is_list(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) do
     # Delete lines at cursor position
     new_buffer =
@@ -230,7 +230,7 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
   end
 
   def delete_lines(buffer, count, cursor_y, cursor_x, scroll_top, scroll_bottom)
-      when is_list(buffer) and is_integer(count) and count > 0 and
+      when is_map(buffer) or is_list(buffer) and is_integer(count) and count > 0 and
              is_integer(cursor_y) and is_integer(cursor_x) and
              is_integer(scroll_top) and is_integer(scroll_bottom) do
     case cursor_y >= scroll_top and cursor_y <= scroll_bottom do
@@ -304,13 +304,13 @@ defmodule Raxol.Terminal.Buffer.Operations.Scrolling do
       iex> Operations.Scrolling.needs_scroll?(buffer)
       false
   """
-  @spec needs_scroll?(Raxol.Terminal.ScreenBuffer.t()) :: boolean()
+  @spec needs_scroll?(Raxol.Terminal.ScreenBuffer.t() | map() | list()) :: boolean()
   def needs_scroll?(%Raxol.Terminal.ScreenBuffer{} = _buffer) do
     false
   end
 
   # Handle list buffer format
-  def needs_scroll?(buffer) when is_list(buffer) do
+  def needs_scroll?(buffer) when is_map(buffer) or is_list(buffer) do
     false
   end
 

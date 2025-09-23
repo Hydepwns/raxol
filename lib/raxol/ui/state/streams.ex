@@ -109,7 +109,7 @@ defmodule Raxol.UI.State.Streams do
         state.observers
         |> Map.values()
         |> Enum.each(fn observer ->
-          safe_call_observer(observer.next, value)
+          _ = safe_call_observer(observer.next, value)
         end)
 
         {:reply, :ok, state}
@@ -126,7 +126,7 @@ defmodule Raxol.UI.State.Streams do
         state.observers
         |> Map.values()
         |> Enum.each(fn observer ->
-          safe_call_observer(observer.error, error)
+          _ = safe_call_observer(observer.error, error)
         end)
 
         {:reply, :ok, %{state | error: error, completed: true}}
@@ -143,7 +143,7 @@ defmodule Raxol.UI.State.Streams do
         state.observers
         |> Map.values()
         |> Enum.each(fn observer ->
-          safe_call_observer(observer.complete)
+          _ = safe_call_observer(observer.complete)
         end)
 
         {:reply, :ok, %{state | completed: true}}
@@ -167,12 +167,12 @@ defmodule Raxol.UI.State.Streams do
       else
         true when state.error != nil ->
           # If already errored, notify immediately
-          safe_call_observer(observer.error, state.error)
+          _ = safe_call_observer(observer.error, state.error)
           {:reply, {:ok, fn -> :ok end}, state}
 
         true ->
           # If already completed, notify immediately
-          safe_call_observer(observer.complete)
+          _ = safe_call_observer(observer.complete)
           {:reply, {:ok, fn -> :ok end}, state}
       end
     end
@@ -207,7 +207,7 @@ defmodule Raxol.UI.State.Streams do
   """
   def from_list(list) when is_list(list) do
     Observable.new(fn observer ->
-      Task.start(fn ->
+      {:ok, _pid} = Task.start(fn ->
         emit_list_safely(list, observer)
       end)
 
@@ -249,7 +249,7 @@ defmodule Raxol.UI.State.Streams do
   def interval(milliseconds, value_fn \\ fn i -> i end) do
     Observable.new(fn observer ->
       {:ok, pid} =
-        Task.start(fn ->
+        {:ok, _pid} = Task.start(fn ->
           interval_loop_safe(observer, milliseconds, value_fn, 0)
         end)
 
@@ -277,7 +277,7 @@ defmodule Raxol.UI.State.Streams do
   def timer(milliseconds, value) do
     Observable.new(fn observer ->
       {:ok, pid} =
-        Task.start(fn ->
+        {:ok, _pid} = Task.start(fn ->
           :timer.sleep(milliseconds)
 
           with {:ok, _} <- safe_apply(observer.next, value) do
@@ -501,7 +501,8 @@ defmodule Raxol.UI.State.Streams do
     end
 
     def emit(server, value) do
-      GenServer.cast(server, {:emit, value})
+      _ = GenServer.cast(server, {:emit, value})
+      :ok
     end
 
     def stop(server) do
@@ -516,7 +517,7 @@ defmodule Raxol.UI.State.Streams do
     @impl GenServer
     def handle_cast({:emit, value}, state) do
       # Cancel existing timer if present
-      Raxol.UI.State.Streams.cancel_existing_timer(state.timer)
+      _ = Raxol.UI.State.Streams.cancel_existing_timer(state.timer)
 
       # Start new timer
       timer = Process.send_after(self(), :flush, state.delay)
@@ -544,7 +545,7 @@ defmodule Raxol.UI.State.Streams do
       # Use as a reference holder
       :atomics.put(accumulator, 1, 0)
       acc_ref = make_ref()
-      ProcessStore.put({:stream_accumulator, acc_ref}, initial)
+      _ = ProcessStore.put({:stream_accumulator, acc_ref}, initial)
 
       new_observer =
         Observer.new(
@@ -552,7 +553,7 @@ defmodule Raxol.UI.State.Streams do
             current_acc = ProcessStore.get({:stream_accumulator, acc_ref})
 
             with {:ok, new_acc} <- safe_apply_2(reducer_fn, current_acc, value) do
-              ProcessStore.put({:stream_accumulator, acc_ref}, new_acc)
+              _ = ProcessStore.put({:stream_accumulator, acc_ref}, new_acc)
               :ok
             else
               {:error, reason} ->
@@ -562,7 +563,7 @@ defmodule Raxol.UI.State.Streams do
           observer.error,
           fn ->
             final_value = ProcessStore.get({:stream_accumulator, acc_ref})
-            ProcessStore.delete({:stream_accumulator, acc_ref})
+            _ = ProcessStore.delete({:stream_accumulator, acc_ref})
             safe_apply(observer.next, final_value)
             safe_apply(observer.complete)
           end
@@ -621,15 +622,18 @@ defmodule Raxol.UI.State.Streams do
     end
 
     def update(server, index, value) do
-      GenServer.cast(server, {:update, index, value})
+      _ = GenServer.cast(server, {:update, index, value})
+      :ok
     end
 
     def error(server, error) do
-      GenServer.cast(server, {:error, error})
+      _ = GenServer.cast(server, {:error, error})
+      :ok
     end
 
     def complete(server, index) do
-      GenServer.cast(server, {:complete, index})
+      _ = GenServer.cast(server, {:complete, index})
+      :ok
     end
 
     @impl GenServer

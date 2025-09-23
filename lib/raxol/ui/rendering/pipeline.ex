@@ -552,7 +552,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
       "Pipeline: Executing partial update immediately."
     )
 
-    cancel_timer_if_exists(state.render_timer_ref)
+    _ = cancel_timer_if_exists(state.render_timer_ref)
 
     {painted_data, composed_data} =
       execute_render_stages(
@@ -599,7 +599,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
   defp execute_immediate_render(state, diff_result, new_tree_for_reference, now) do
     Raxol.Core.Runtime.Log.debug("Pipeline: Executing render immediately.")
 
-    cancel_timer_if_exists(state.render_timer_ref)
+    _ = cancel_timer_if_exists(state.render_timer_ref)
 
     {painted_data, composed_data} =
       execute_render_stages(
@@ -640,7 +640,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
       "Pipeline: Debouncing render. Will render in #{delay}ms."
     )
 
-    cancel_timer_if_exists(state.render_timer_ref)
+    _ = cancel_timer_if_exists(state.render_timer_ref)
 
     timer_ref =
       Process.send_after(
@@ -758,7 +758,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
   defp calculate_time_diff(last_render_time, now), do: now - last_render_time
 
   defp cancel_timer(nil), do: :ok
-  defp cancel_timer(timer_ref), do: Process.cancel_timer(timer_ref)
+  defp cancel_timer(timer_ref), do: _ = Process.cancel_timer(timer_ref)
 
   defp prepare_render_state(nil, tree_to_render, state) do
     # No data provided - use current tree without changing state

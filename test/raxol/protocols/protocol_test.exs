@@ -1,7 +1,7 @@
 defmodule Raxol.Protocols.ProtocolTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Protocols.{Renderable, Serializable, BufferOperations}
+  alias Raxol.Protocols.{Renderable, Serializable}
 
   describe "Renderable protocol" do
     test "renders strings" do

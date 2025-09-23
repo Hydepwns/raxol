@@ -21,11 +21,13 @@ defmodule Raxol.Runtime.Supervisor do
     # Validate required parameters
     case validate_required_params(init_args) do
       {:ok, validated_params} ->
-        build_children_specs(validated_params)
-        |> Supervisor.init(
+        children = build_children_specs(validated_params)
+        sup_flags = %{
           strategy: :one_for_one,
-          name: Raxol.Runtime.Supervisor
-        )
+          max_restarts: 3,
+          max_seconds: 5
+        }
+        {:ok, {sup_flags, children}}
 
       {:error, reason} ->
         {:stop, reason}
@@ -81,13 +83,13 @@ defmodule Raxol.Runtime.Supervisor do
     # Only start UserPreferences if not already running (in test mode it may be started by test_helper)
     user_prefs_children =
       get_user_prefs_children(
-        Mix.env() == :test and Process.whereis(Raxol.Core.UserPreferences)
+        Mix.env() == :test and Process.whereis(Raxol.Core.UserPreferences) != nil
       )
 
     # Only start Registry if not already running (in test mode it may be started by test_helper)
     registry_children =
       get_registry_children(
-        Mix.env() == :test and Process.whereis(:raxol_event_subscriptions)
+        Mix.env() == :test and Process.whereis(:raxol_event_subscriptions) != nil
       )
 
     user_prefs_children ++

@@ -381,7 +381,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         {:error, :invalid_init_return}
 
       nil ->
-        Task.shutdown(task, :brutal_kill)
+        _ = Task.shutdown(task, :brutal_kill)
         {:error, :init_timeout}
 
       {:exit, reason} ->
@@ -401,7 +401,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         {:ok, result}
 
       nil ->
-        Task.shutdown(task, :brutal_kill)
+        _ = Task.shutdown(task, :brutal_kill)
         {:error, :update_timeout}
 
       {:exit, reason} ->
@@ -557,10 +557,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
             "Failed to stop subscription #{inspect(sub_id)}: #{inspect(reason)}",
             %{}
           )
-
-        _ ->
-          # Handle any other return values
-          :ok
       end
     end)
 

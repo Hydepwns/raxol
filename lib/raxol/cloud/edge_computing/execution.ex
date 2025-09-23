@@ -175,10 +175,6 @@ defmodule Raxol.Cloud.EdgeComputing.Execution do
 
           :edge_failure ->
             Map.update!(state.metrics, :edge_failures, &(&1 + 1))
-
-          _other ->
-            # Handle any other metric types
-            state.metrics
         end
 
       %{state | metrics: updated_metrics}

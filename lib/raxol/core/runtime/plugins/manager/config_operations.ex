@@ -66,7 +66,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.ConfigOperations do
   @doc """
   Initializes the plugin system with given configuration.
   """
-  @spec handle_init_with_config(map(), state()) :: {:reply, any(), state()}
+  @spec handle_init_with_config(map(), state()) :: {:reply, {:ok, state()}, state()}
   def handle_init_with_config(config, state) do
     # Apply global plugin configuration
     updated_state = %{
@@ -80,7 +80,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.ConfigOperations do
   @doc """
   Initializes the plugin system (basic initialization).
   """
-  @spec handle_initialize(state()) :: {:reply, any(), state()}
+  @spec handle_initialize(state()) :: {:reply, {:ok, atom()}, state()}
   def handle_initialize(state) do
     {:reply, {:ok, :initialized}, state}
   end

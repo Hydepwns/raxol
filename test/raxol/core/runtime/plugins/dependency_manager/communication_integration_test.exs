@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CommunicationIntegrationTest do
   use ExUnit.Case, async: false
-  alias Raxol.Core.Runtime.Plugins.DependencyManager
   alias Raxol.Core.Runtime.ProcessStore
 
   describe "plugin communication during lifecycle" do

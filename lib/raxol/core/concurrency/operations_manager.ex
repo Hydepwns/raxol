@@ -118,7 +118,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
   @doc """
   Adjusts worker pool size dynamically.
   """
-  @spec scale_workers(pos_integer()) :: :ok | {:error, term()}
+  @spec scale_workers(pos_integer()) :: :ok
   def scale_workers(target_size) do
     GenServer.cast(__MODULE__, {:scale_workers, target_size})
   end
@@ -137,7 +137,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     metrics = initialize_metrics(config)
 
     # Start load monitoring
-    case config.adaptive_scaling do
+    _ = case config.adaptive_scaling do
       true -> schedule_load_monitoring()
       false -> :ok
     end
@@ -172,7 +172,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
 
         # Try to dispatch immediately if workers available
         new_state = %{state | operation_queue: updated_queue}
-        dispatch_queued_operations(new_state)
+        _ = dispatch_queued_operations(new_state)
 
         {:reply, {:ok, ref}, new_state}
 
@@ -202,7 +202,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
         updated_queue = enqueue_with_priority(state.operation_queue, queue_item)
 
         new_state = %{state | operation_queue: updated_queue}
-        dispatch_queued_operations(new_state)
+        _ = dispatch_queued_operations(new_state)
 
         {:reply, {:ok, ref}, new_state}
 
@@ -261,7 +261,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
 
     # Try to dispatch more operations
     new_state = %{state | metrics: updated_metrics}
-    dispatch_queued_operations(new_state)
+    _ = dispatch_queued_operations(new_state)
 
     {:noreply, new_state}
   end
@@ -337,7 +337,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
             {_priority, ref, operation, _from, timestamp} = queue_item
 
             # Dispatch to worker
-            WorkerPool.execute_async(worker_pool, operation, ref, self())
+            _ = WorkerPool.execute_async(worker_pool, operation, ref, self())
 
             # Update metrics
             queue_wait_time = System.monotonic_time(:microsecond) - timestamp
@@ -445,14 +445,14 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
   defp decide_scaling_action(cpu_util, queue_size, current_workers, state)
        when cpu_util > 80.0 and queue_size > 100 and
               current_workers < state.config.max_workers do
-    scale_worker_pools(state.worker_pools, current_workers + 1)
+    _ = scale_worker_pools(state.worker_pools, current_workers + 1)
     state
   end
 
   defp decide_scaling_action(cpu_util, queue_size, current_workers, state)
        when cpu_util < 20.0 and queue_size < 10 and
               current_workers > state.config.min_workers do
-    scale_worker_pools(state.worker_pools, current_workers - 1)
+    _ = scale_worker_pools(state.worker_pools, current_workers - 1)
     state
   end
 
@@ -556,9 +556,10 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
   defp send_operation_result(ref, result) do
     # Find the process that requested this operation and send result
     # This is simplified - in production would maintain a registry
-    spawn(fn ->
+    _ = spawn(fn ->
       send(self(), {:operation_result, ref, result})
     end)
+    :ok
   end
 
   defp schedule_load_monitoring do

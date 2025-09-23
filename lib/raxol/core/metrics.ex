@@ -107,7 +107,7 @@ defmodule Raxol.Core.Metrics do
   Raxol.Core.Metrics.record("user_action", "button_click", [screen: "main"])
   ```
   """
-  @spec record(String.t(), any(), keyword()) :: :ok | {:error, term()}
+  @spec record(String.t(), any(), keyword()) :: :ok
   def record(name, value, tags \\ []) do
     with :ok <- safe_record_to_collector(name, value, tags),
          :ok <- safe_record_to_aggregator(name, value, tags) do
@@ -203,7 +203,7 @@ defmodule Raxol.Core.Metrics do
   * `:ok` - Metrics cleared successfully
   * `{:error, reason}` - Failed to clear metrics
   """
-  @spec clear_metrics() :: :ok | {:error, term()}
+  @spec clear_metrics() :: :ok | {:error, {:metrics_clear_failed, :clear_collector_timeout | :clear_aggregator_timeout | {:clear_collector_exit, term()} | {:clear_aggregator_exit, term()}}}
   def clear_metrics do
     with :ok <- safe_clear_collector_metrics(),
          :ok <- safe_clear_aggregator() do

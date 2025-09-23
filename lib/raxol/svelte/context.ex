@@ -236,7 +236,7 @@ defmodule Raxol.Svelte.Context do
         subscribers = Map.get(subscriptions, key, [])
 
         Enum.each(subscribers, fn {_id, callback} ->
-          Task.start(fn -> callback.(value) end)
+          _ = Task.start(fn -> callback.(value) end)
         end)
       end
 
@@ -247,7 +247,7 @@ defmodule Raxol.Svelte.Context do
       end
 
       defp maybe_call_callback_with_value(true, callback, current_value) do
-        Task.start(fn -> callback.(current_value) end)
+        _ = Task.start(fn -> callback.(current_value) end)
       end
 
       defp maybe_call_callback_with_value(false, _callback, _current_value),
@@ -503,7 +503,7 @@ defmodule Raxol.Svelte.Context.AuthProvider do
     new_state = %{state | loading: true, error: nil}
 
     # Simulate async authentication
-    Task.start(fn ->
+    _ = Task.start(fn ->
       user = authenticate(credentials)
       GenServer.cast(self(), {:login_complete, user})
     end)

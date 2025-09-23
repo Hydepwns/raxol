@@ -304,7 +304,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     }
 
     # Announce screen reader initialization
-    announce_initialization(state)
+    _announcement = announce_initialization(state)
 
     Logger.info("Screen reader support initialized: #{screen_reader_type}")
     {:ok, state}
@@ -345,7 +345,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     }
 
     # Announce component registration in verbose mode
-    announce_component_registration(new_state, validated_config)
+    _announcement = announce_component_registration(new_state, validated_config)
 
     Logger.debug("Component registered: #{component_id}")
     {:reply, :ok, new_state}
@@ -368,10 +368,10 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         }
 
         # Announce focus change
-        announce_focus_change(state, component_id, component)
+        _announcement = announce_focus_change(state, component_id, component)
 
         # Play audio cue if enabled
-        maybe_play_audio_cue(state, :focus_changed)
+        _audio_cue = maybe_play_audio_cue(state, :focus_changed)
 
         new_state = %{state | focus_manager: new_focus_manager}
         {:reply, :ok, new_state}
@@ -411,7 +411,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         :paragraph -> "paragraph by paragraph"
       end
 
-    announce_to_screen_reader(
+    _announcement = announce_to_screen_reader(
       new_state,
       "Reading mode: #{mode_description}",
       :polite
@@ -431,7 +431,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         state.reading_state.mode
       )
 
-    announce_to_screen_reader(state, reading_text, :assertive)
+    _announcement = announce_to_screen_reader(state, reading_text, :assertive)
 
     {:reply, :ok, state}
   end
@@ -449,14 +449,14 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         false -> "disabled"
       end
 
-    announce_to_screen_reader(new_state, "#{feature_name} #{status}", :polite)
+    _announcement = announce_to_screen_reader(new_state, "#{feature_name} #{status}", :polite)
 
     {:reply, :ok, new_state}
   end
 
   @impl GenServer
   def handle_cast({:announce, text, priority}, state) do
-    announce_to_screen_reader(state, text, priority)
+    _announcement = announce_to_screen_reader(state, text, priority)
 
     # Update live regions if applicable
     updated_state = update_live_regions(state, text, priority)
@@ -502,7 +502,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   def handle_cast({:describe_formatting, element_id, formatting}, state) do
     description = generate_formatting_description(formatting)
 
-    announce_formatting_if_present(state, element_id, description)
+    _announcement = announce_formatting_if_present(state, element_id, description)
 
     {:noreply, state}
   end
@@ -812,13 +812,10 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   defp generate_shortcuts_announcement(shortcuts) do
     shortcut_list =
       shortcuts
-      |> Enum.map_join(
-        fn {key, description} ->
-          key_name = format_key_name(key)
-          "#{key_name}: #{description}"
-        end,
-        ", "
-      )
+      |> Enum.map_join(", ", fn {key, description} ->
+        key_name = format_key_name(key)
+        "#{key_name}: #{description}"
+      end)
 
     "Available shortcuts: #{shortcut_list}"
   end
@@ -1198,7 +1195,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
        do: new_state
 
   defp handle_live_region_update(_live, true, new_state, properties, component) do
-    announce_to_screen_reader(new_state, properties.text, component.config.live)
+    _announcement = announce_to_screen_reader(new_state, properties.text, component.config.live)
     update_live_regions(new_state, properties.text, component.config.live)
   end
 
@@ -1300,7 +1297,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   defp announce_shortcuts_result(state, shortcuts)
        when map_size(shortcuts) > 0 do
     shortcut_text = generate_shortcuts_announcement(shortcuts)
-    announce_to_screen_reader(state, shortcut_text, :polite)
+    _ = announce_to_screen_reader(state, shortcut_text, :polite)
     {:reply, :ok, state}
   end
 

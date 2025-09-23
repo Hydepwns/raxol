@@ -98,7 +98,13 @@ defmodule Raxol.Docs.Renderer do
   @doc """
   Renders documentation with full metadata and navigation.
   """
-  @spec render_documentation(String.t(), map()) :: map()
+  @spec render_documentation(binary(), map()) :: %{
+    content: binary(),
+    metadata: map(),
+    rendered_at: DateTime.t(),
+    search_index: map(),
+    table_of_contents: [map()]
+  }
   def render_documentation(content, metadata \\ %{}) do
     html_content = render_markdown(content)
     toc = generate_toc(content)

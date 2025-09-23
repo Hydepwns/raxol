@@ -318,7 +318,7 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
   Returns the mapping of SGR codes to their corresponding style update functions.
   Kept for backward compatibility but not used in optimized path.
   """
-  @spec sgr_code_mappings() :: map()
+  @spec sgr_code_mappings() :: %{}
   def sgr_code_mappings do
     # This function is kept for backward compatibility
     # but the optimized version uses pattern matching instead

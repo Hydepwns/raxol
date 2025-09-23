@@ -12,7 +12,7 @@ defmodule Raxol.Protocols do
   defp ensure_started do
     case Process.whereis(@agent_name) do
       nil ->
-        Agent.start_link(fn -> %{} end, name: @agent_name)
+        _ = Agent.start_link(fn -> %{} end, name: @agent_name)
 
       _pid ->
         :ok
@@ -20,17 +20,17 @@ defmodule Raxol.Protocols do
   end
 
   def list_protocols do
-    ensure_started()
+    _ = ensure_started()
     Agent.get(@agent_name, &Map.values(&1))
   end
 
   def get_protocol(id) do
-    ensure_started()
+    _ = ensure_started()
     Agent.get(@agent_name, &Map.get(&1, id))
   end
 
   def create_protocol(attrs) do
-    ensure_started()
+    _ = ensure_started()
 
     protocol =
       attrs
@@ -39,12 +39,12 @@ defmodule Raxol.Protocols do
       |> Map.put_new(:updated_at, DateTime.utc_now())
       |> Protocol.new()
 
-    Agent.update(@agent_name, &Map.put(&1, protocol.id, protocol))
+    _ = Agent.update(@agent_name, &Map.put(&1, protocol.id, protocol))
     protocol
   end
 
   def update_protocol(id, attrs) do
-    ensure_started()
+    _ = ensure_started()
 
     Agent.get_and_update(@agent_name, fn protocols ->
       case Map.get(protocols, id) do
@@ -63,9 +63,9 @@ defmodule Raxol.Protocols do
   end
 
   def delete_protocol(id) do
-    ensure_started()
+    _ = ensure_started()
 
-    Agent.get_and_update(@agent_name, fn protocols ->
+    _ = Agent.get_and_update(@agent_name, fn protocols ->
       {Map.get(protocols, id), Map.delete(protocols, id)}
     end)
 

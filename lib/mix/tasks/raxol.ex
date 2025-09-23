@@ -194,10 +194,10 @@ defmodule Mix.Tasks.Raxol do
     Mix.Task.run("clean", [])
 
     # Clean additional artifacts
-    File.rm_rf("_build")
-    File.rm_rf("deps")
-    File.rm_rf("doc")
-    File.rm_rf("cover")
+    _ = File.rm_rf("_build")
+    _ = File.rm_rf("deps")
+    _ = File.rm_rf("doc")
+    _ = File.rm_rf("cover")
 
     Mix.shell().info("Clean complete!")
   end

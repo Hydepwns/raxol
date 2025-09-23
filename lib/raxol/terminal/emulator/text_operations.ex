@@ -38,7 +38,7 @@ defmodule Raxol.Terminal.Emulator.TextOperations do
     # Update cursor position after writing
     cursor = Helpers.get_cursor_struct(emulator)
     new_x = x + String.length(translated)
-    new_cursor = %{cursor | col: new_x, row: y, position: {new_x, y}}
+    new_cursor = %{cursor | position: {new_x, y}}
 
     # Update the appropriate buffer
     emulator =

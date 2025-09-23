@@ -20,8 +20,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.EventHandler do
   @doc """
   Handles synchronous GenServer calls.
   """
-  @spec handle_call(term(), from(), state()) ::
-          {:reply, reply(), state()} | {:noreply, state()}
+  @spec handle_call(term(), from(), state()) :: {:reply, reply(), state()}
   def handle_call(message, from, state) do
     handle_call_message(message, from, state)
   end
@@ -307,7 +306,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.EventHandler do
 
   defp cancel_tick_timer_if_exists(%{tick_timer: timer} = state)
        when is_reference(timer) do
-    Process.cancel_timer(timer)
+    _ = Process.cancel_timer(timer)
     state
   end
 
@@ -341,14 +340,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.EventHandler do
   end
 
   defp setup_file_watching_if_enabled(%{file_watching_enabled?: true} = state) do
-    case FileWatcher.start_link(self()) do
-      {:ok, watcher_pid} ->
-        FileWatcher.subscribe(watcher_pid)
-        %{state | file_watcher_pid: watcher_pid}
-
-      _ ->
-        state
-    end
+    {:ok, watcher_pid} = FileWatcher.start_link(self())
+    FileWatcher.subscribe(watcher_pid)
+    %{state | file_watcher_pid: watcher_pid}
   end
 
   defp setup_file_watching_if_enabled(state), do: state

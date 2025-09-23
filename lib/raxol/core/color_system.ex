@@ -160,7 +160,7 @@ defmodule Raxol.Core.ColorSystem do
 
   Returns the color value (e.g., :red, {:rgb, r, g, b}) or nil if not found.
   """
-  @spec get(atom(), atom()) :: Raxol.Style.Colors.color_value() | nil
+  @spec get(atom(), atom()) :: Raxol.UI.Theming.Theme.color_value() | nil
   def get(theme_id, color_name)
       when is_atom(theme_id) and is_atom(color_name) do
     # Get the theme struct using the correct alias

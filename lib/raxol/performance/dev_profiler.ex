@@ -100,7 +100,7 @@ defmodule Raxol.Performance.DevProfiler do
         fun.()
       catch
         kind, error ->
-          stop_profiling_tools(profiling_ref)
+          _ = stop_profiling_tools(profiling_ref)
           :erlang.raise(kind, error, __STACKTRACE__)
       end
 
@@ -170,7 +170,7 @@ defmodule Raxol.Performance.DevProfiler do
       timestamp: System.system_time(:millisecond)
     }
 
-    generate_performance_hints(analysis)
+    _ = generate_performance_hints(analysis)
     analysis
   end
 
@@ -195,8 +195,8 @@ defmodule Raxol.Performance.DevProfiler do
     # Start :fprof if available
     tools =
       if opts[:call_graph] do
-        :fprof.start()
-        :fprof.trace(:start)
+        _ = :fprof.start()
+        _ = :fprof.trace(:start)
         Map.put(tools, :fprof, true)
       else
         tools
@@ -219,10 +219,10 @@ defmodule Raxol.Performance.DevProfiler do
     # Stop :fprof
     profile_data =
       if Map.get(tools, :fprof) do
-        :fprof.trace(:stop)
-        :fprof.profile()
+        _ = :fprof.trace(:stop)
+        _ = :fprof.profile()
         fprof_data = capture_fprof_analysis()
-        :fprof.stop()
+        _ = :fprof.stop()
         Map.put(profile_data, :fprof, fprof_data)
       else
         profile_data
@@ -250,12 +250,12 @@ defmodule Raxol.Performance.DevProfiler do
       System.tmp_dir!() <> "/raxol_fprof_#{:os.system_time()}.analysis"
 
     try do
-      :fprof.analyse(dest: temp_file)
+      _ = :fprof.analyse(dest: temp_file)
       File.read!(temp_file)
     catch
       _, _ -> "fprof analysis failed"
     after
-      File.rm(temp_file)
+      _ = File.rm(temp_file)
     end
   end
 
@@ -562,7 +562,7 @@ defmodule Raxol.Performance.DevProfiler do
       :html ->
         html_report = generate_html_report(report)
         filename = "/tmp/raxol_profile_#{:os.system_time()}.html"
-        File.write!(filename, html_report)
+        _ = File.write!(filename, html_report)
         Logger.info("📄 HTML report written to: #{filename}")
 
       :json ->
@@ -602,7 +602,7 @@ defmodule Raxol.Performance.DevProfiler do
   end
 
   defp continuous_profiling_loop(interval, duration, auto_hints) do
-    if auto_hints do
+    _ = if auto_hints do
       analyze_current_performance()
     end
 

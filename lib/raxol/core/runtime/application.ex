@@ -188,7 +188,7 @@ defmodule Raxol.Core.Runtime.Application do
     - `{:error, reason}` tuple when initialization fails
   """
   @spec delegate_init(module(), context()) ::
-          {model(), list(Command.t())} | {:error, term()}
+          {model(), list(Raxol.Core.Runtime.Command.t())} | {:error, term()}
   def delegate_init(app_module, context) when is_atom(app_module) do
     alias Raxol.Core.Runtime.Log
     require Logger
@@ -267,7 +267,7 @@ defmodule Raxol.Core.Runtime.Application do
   end
 
   @spec delegate_update(module(), message(), model()) ::
-          {model(), list(Command.t())} | {:error, term()}
+          {model(), list(Raxol.Core.Runtime.Command.t())} | {:error, term()}
   def delegate_update(app_module, message, current_model)
       when is_atom(app_module) do
     with true <- function_exported?(app_module, :update, 2),
@@ -387,7 +387,7 @@ defmodule Raxol.Core.Runtime.Application do
   @callback update(message :: message(), model :: model()) ::
               {model(), [command()]} | {model(), command()} | model()
 
-  @callback view(model :: model()) :: Raxol.UI.Layout.element() | nil
+  @callback view(model :: model()) :: term() | nil
 
   @callback subscriptions(model :: model()) ::
               [Raxol.Core.Runtime.Subscription.t()]

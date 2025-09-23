@@ -65,6 +65,7 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
 
   @shortdoc "Interactive memory profiler for real-time analysis"
 
+  @spec run(list()) :: no_return()
   def run(args) do
     {opts, _, _} =
       OptionParser.parse(args,
@@ -94,7 +95,7 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
       System.halt(0)
     end
 
-    Application.ensure_all_started(:raxol)
+    _ = Application.ensure_all_started(:raxol)
 
     config = build_config(opts)
 

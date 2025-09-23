@@ -121,7 +121,7 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
   def handle_set_blink(state, blink) do
     new_state = %{state | blinking: blink}
 
-    case blink do
+    _ = case blink do
       true -> schedule_blink()
       false -> cancel_blink(state.blink_timer)
     end
@@ -340,5 +340,5 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
   end
 
   defp cancel_blink(nil), do: :ok
-  defp cancel_blink(timer_id), do: Process.cancel_timer(timer_id)
+  defp cancel_blink(timer_id), do: _ = Process.cancel_timer(timer_id)
 end

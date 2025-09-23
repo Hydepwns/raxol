@@ -213,8 +213,6 @@ defmodule Raxol.Core.Metrics.AlertManager do
       case metrics_result do
         {:ok, data} -> data
         {:error, _} -> []
-        data when is_list(data) -> data
-        _ -> []
       end
 
     case rule.group_by do

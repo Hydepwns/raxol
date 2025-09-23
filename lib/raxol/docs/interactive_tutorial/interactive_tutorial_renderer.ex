@@ -46,8 +46,8 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
   def render_interactive_elements(%Step{} = step) do
     elements =
       step.interactive_elements
-      |> Enum.map_join("", &render_interactive_element/1)
       |> Enum.reject(&is_nil/1)
+      |> Enum.map_join("", &render_interactive_element/1)
 
     {:ok, elements}
   end

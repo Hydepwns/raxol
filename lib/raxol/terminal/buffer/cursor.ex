@@ -6,10 +6,12 @@ defmodule Raxol.Terminal.Buffer.Cursor do
 
   alias Raxol.Terminal.ScreenBuffer
 
+  @type cursor_style :: :block | :underline | :bar
+
   @type t :: %__MODULE__{
           position: {non_neg_integer(), non_neg_integer()},
           visible: boolean(),
-          style: atom(),
+          style: cursor_style(),
           blink_state: boolean()
         }
 
@@ -53,11 +55,19 @@ defmodule Raxol.Terminal.Buffer.Cursor do
       iex> Cursor.get_position(buffer)
       {10, 5}
   """
-  @spec set_position(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
-          ScreenBuffer.t()
+  @spec set_position(map(), non_neg_integer(), non_neg_integer()) :: map()
   def set_position(buffer, x, y) do
-    new_cursor = %{buffer.cursor | position: {x, y}}
-    %{buffer | cursor: new_cursor}
+    case buffer do
+      %{cursor: cursor} ->
+        new_cursor = %{cursor | position: {x, y}}
+        %{buffer | cursor: new_cursor}
+
+      %{cursor_position: _} ->
+        %{buffer | cursor_position: {x, y}}
+
+      _ ->
+        buffer
+    end
   end
 
   @doc """
@@ -103,8 +113,7 @@ defmodule Raxol.Terminal.Buffer.Cursor do
   """
   @spec set_visibility(ScreenBuffer.t(), boolean()) :: ScreenBuffer.t()
   def set_visibility(buffer, visible) do
-    new_cursor = %{buffer.cursor | visible: visible}
-    %{buffer | cursor: new_cursor}
+    %{buffer | cursor_visible: visible}
   end
 
   @doc """
@@ -154,8 +163,7 @@ defmodule Raxol.Terminal.Buffer.Cursor do
   """
   @spec set_style(ScreenBuffer.t(), atom()) :: ScreenBuffer.t()
   def set_style(buffer, style) do
-    new_cursor = %{buffer.cursor | style: style}
-    %{buffer | cursor: new_cursor}
+    Map.put(buffer, :cursor_style, style)
   end
 
   @doc """
@@ -201,8 +209,7 @@ defmodule Raxol.Terminal.Buffer.Cursor do
   """
   @spec set_blink(ScreenBuffer.t(), boolean()) :: ScreenBuffer.t()
   def set_blink(buffer, blink) do
-    new_cursor = %{buffer.cursor | blink_state: blink}
-    %{buffer | cursor: new_cursor}
+    Map.put(buffer, :cursor_blink, blink)
   end
 
   @doc """

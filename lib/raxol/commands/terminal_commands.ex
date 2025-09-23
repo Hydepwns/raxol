@@ -4,7 +4,15 @@ defmodule Raxol.Commands.CreateTerminalCommand do
   """
 
   use Raxol.Architecture.CQRS.Command
-  import Raxol.Architecture.CQRS.Command
+
+  import Raxol.Architecture.CQRS.Command, only: [
+    generate_command_id: 0,
+    generate_correlation_id: 0,
+    build_metadata: 1,
+    validate_required: 2,
+    validate_range: 3,
+    validate_inclusion: 2
+  ]
 
   defstruct [
     :command_id,
@@ -51,8 +59,16 @@ defmodule Raxol.Commands.CreateTerminalCommand do
       |> Map.put_new(:working_directory, System.user_home!())
       |> Map.put_new(:metadata, build_metadata(attrs))
 
-    # Call the parent implementation with enhanced attributes
-    super(enhanced_attrs)
+    command =
+      struct(__MODULE__, enhanced_attrs)
+      |> Map.put(:command_id, generate_command_id())
+      |> Map.put(:timestamp, System.system_time(:millisecond))
+      |> Map.put(
+        :correlation_id,
+        Map.get(enhanced_attrs, :correlation_id, generate_correlation_id())
+      )
+
+    validate(command)
   end
 
   def validate(command) do
@@ -80,7 +96,7 @@ defmodule Raxol.Commands.CreateTerminalCommand do
     check_user_authentication(command.user_id)
   end
 
-  defp check_user_authentication(user_id) when user_id != nil, do: :ok
+  defp check_user_authentication(user_id) when is_binary(user_id) and user_id != "", do: :ok
 
   defp check_user_authentication(_user_id),
     do: {:error, :user_not_authenticated}
@@ -89,6 +105,7 @@ defmodule Raxol.Commands.CreateTerminalCommand do
     "term_" <>
       (:crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false))
   end
+
 end
 
 defmodule Raxol.Commands.UpdateTerminalCommand do
@@ -97,6 +114,15 @@ defmodule Raxol.Commands.UpdateTerminalCommand do
   """
 
   use Raxol.Architecture.CQRS.Command
+
+  import Raxol.Architecture.CQRS.Command, only: [
+    generate_command_id: 0,
+    generate_correlation_id: 0,
+    build_metadata: 1,
+    validate_required: 2,
+    validate_range: 3,
+    validate_inclusion: 2
+  ]
 
   defstruct [
     :command_id,
@@ -135,7 +161,16 @@ defmodule Raxol.Commands.UpdateTerminalCommand do
       attrs
       |> Map.put_new(:metadata, build_metadata(attrs))
 
-    super(enhanced_attrs)
+    command =
+      struct(__MODULE__, enhanced_attrs)
+      |> Map.put(:command_id, generate_command_id())
+      |> Map.put(:timestamp, System.system_time(:millisecond))
+      |> Map.put(
+        :correlation_id,
+        Map.get(enhanced_attrs, :correlation_id, generate_correlation_id())
+      )
+
+    validate(command)
   end
 
   def validate(command) do
@@ -171,6 +206,15 @@ defmodule Raxol.Commands.SendInputCommand do
 
   use Raxol.Architecture.CQRS.Command
 
+  import Raxol.Architecture.CQRS.Command, only: [
+    generate_command_id: 0,
+    generate_correlation_id: 0,
+    build_metadata: 1,
+    validate_required: 2,
+    validate_range: 3,
+    validate_inclusion: 2
+  ]
+
   defstruct [
     :command_id,
     :timestamp,
@@ -203,7 +247,16 @@ defmodule Raxol.Commands.SendInputCommand do
       |> Map.put_new(:input_type, :text)
       |> Map.put_new(:metadata, build_metadata(attrs))
 
-    super(enhanced_attrs)
+    command =
+      struct(__MODULE__, enhanced_attrs)
+      |> Map.put(:command_id, generate_command_id())
+      |> Map.put(:timestamp, System.system_time(:millisecond))
+      |> Map.put(
+        :correlation_id,
+        Map.get(enhanced_attrs, :correlation_id, generate_correlation_id())
+      )
+
+    validate(command)
   end
 
   def validate(command) do
@@ -238,6 +291,15 @@ defmodule Raxol.Commands.CloseTerminalCommand do
 
   use Raxol.Architecture.CQRS.Command
 
+  import Raxol.Architecture.CQRS.Command, only: [
+    generate_command_id: 0,
+    generate_correlation_id: 0,
+    build_metadata: 1,
+    validate_required: 2,
+    validate_range: 3,
+    validate_inclusion: 2
+  ]
+
   defstruct [
     :command_id,
     :timestamp,
@@ -271,7 +333,16 @@ defmodule Raxol.Commands.CloseTerminalCommand do
       |> Map.put_new(:save_session, true)
       |> Map.put_new(:metadata, build_metadata(attrs))
 
-    super(enhanced_attrs)
+    command =
+      struct(__MODULE__, enhanced_attrs)
+      |> Map.put(:command_id, generate_command_id())
+      |> Map.put(:timestamp, System.system_time(:millisecond))
+      |> Map.put(
+        :correlation_id,
+        Map.get(enhanced_attrs, :correlation_id, generate_correlation_id())
+      )
+
+    validate(command)
   end
 
   def validate(command) do
@@ -300,6 +371,13 @@ defmodule Raxol.Commands.ApplyThemeCommand do
   """
 
   use Raxol.Architecture.CQRS.Command
+
+  import Raxol.Architecture.CQRS.Command, only: [
+    generate_command_id: 0,
+    generate_correlation_id: 0,
+    build_metadata: 1,
+    validate_required: 2
+  ]
 
   defstruct [
     :command_id,
@@ -335,7 +413,16 @@ defmodule Raxol.Commands.ApplyThemeCommand do
       |> Map.put_new(:high_contrast_mode, false)
       |> Map.put_new(:metadata, build_metadata(attrs))
 
-    super(enhanced_attrs)
+    command =
+      struct(__MODULE__, enhanced_attrs)
+      |> Map.put(:command_id, generate_command_id())
+      |> Map.put(:timestamp, System.system_time(:millisecond))
+      |> Map.put(
+        :correlation_id,
+        Map.get(enhanced_attrs, :correlation_id, generate_correlation_id())
+      )
+
+    validate(command)
   end
 
   def validate(command) do
@@ -378,11 +465,12 @@ defmodule Raxol.Commands.ApplyThemeCommand do
             false
 
           {r, g, b}
-          when r >= 0 and r <= 255 and g >= 0 and g <= 255 and b >= 0 and
-                 b <= 255 ->
+          when is_integer(r) and r >= 0 and r <= 255 and
+               is_integer(g) and g >= 0 and g <= 255 and
+               is_integer(b) and b >= 0 and b <= 255 ->
             false
 
-          "#" <> hex when byte_size(hex) == 6 ->
+          "#" <> hex when is_binary(hex) and byte_size(hex) == 6 ->
             false
 
           _ ->

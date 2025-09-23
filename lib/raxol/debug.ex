@@ -206,8 +206,8 @@ defmodule Raxol.Debug do
   """
   @spec debug_breakpoint(atom(), binary()) :: :ok
   def debug_breakpoint(component, reason \\ "Debug breakpoint") do
-    if debug_enabled?(component) and interactive_mode?() do
-      IO.puts("🔍 Debug breakpoint hit: #{reason}")
+    _ = if debug_enabled?(component) and interactive_mode?() do
+      IO.puts("Debug breakpoint hit: #{reason}")
       IO.puts("Component: #{component}")
       IO.puts("Process: #{inspect(self())}")
       IO.puts("Press Enter to continue...")
@@ -307,7 +307,15 @@ defmodule Raxol.Debug do
   @doc """
   Get current debug configuration.
   """
-  @spec debug_config() :: map()
+  @spec debug_config() :: %{
+          terminal: boolean(),
+          web: boolean(),
+          benchmark: boolean(),
+          parser: boolean(),
+          rendering: boolean(),
+          general: boolean(),
+          log_level: Logger.level()
+        }
   def debug_config do
     %{
       terminal: debug_enabled?(:terminal),
@@ -322,7 +330,7 @@ defmodule Raxol.Debug do
 
   # Private helper functions
 
-  @spec format_debug_message(atom(), any(), map()) :: binary()
+  @spec format_debug_message(atom(), any(), map()) :: String.t()
   defp format_debug_message(component, message, context) do
     timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
 
@@ -357,7 +365,7 @@ defmodule Raxol.Debug do
   @spec interactive_mode?() :: boolean()
   defp interactive_mode? do
     # Check if we're running in an interactive environment
-    Code.ensure_loaded?(IEx) and IEx.started?()
+    Code.ensure_loaded?(IEx) and Process.get(:iex_history) != nil
   end
 
   ## Server Callbacks
@@ -382,7 +390,7 @@ defmodule Raxol.Debug do
     }
 
     # Start performance monitoring if in debug mode
-    if level != :off do
+    _ = if level != :off do
       schedule_performance_monitoring()
     end
 
@@ -392,12 +400,12 @@ defmodule Raxol.Debug do
   @impl true
   def handle_call({:set_level, level}, _from, state) do
     # Cancel existing monitoring if going to :off
-    if level == :off and state.level != :off and state[:monitor_ref] do
+    _ = if level == :off and state.level != :off and state[:monitor_ref] do
       Process.cancel_timer(state[:monitor_ref])
     end
 
     # Start monitoring if enabling debug
-    if level != :off and state.level == :off do
+    _ = if level != :off and state.level == :off do
       schedule_performance_monitoring()
     end
 

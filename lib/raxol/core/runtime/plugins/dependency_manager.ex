@@ -64,9 +64,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
         loaded_plugins,
         dependency_chain \\ []
       ) do
+    dependencies = Map.get(plugin_metadata, :dependencies, [])
     Core.check_dependencies(
       plugin_id,
-      plugin_metadata,
+      dependencies,
       loaded_plugins,
       dependency_chain
     )

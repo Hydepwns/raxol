@@ -25,7 +25,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.State do
   @doc """
   Sets the state of a plugin.
   """
-  @spec set_plugin_state(state(), plugin_id(), plugin_state()) :: result()
+  @spec set_plugin_state(state(), plugin_id(), plugin_state()) :: {:ok, state()}
   def set_plugin_state(state, plugin_id, new_state) do
     updated_plugin_states = Map.put(state.plugin_states, plugin_id, new_state)
     updated_state = %{state | plugin_states: updated_plugin_states}
@@ -77,7 +77,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.State do
   @doc """
   Updates plugin configuration.
   """
-  @spec update_plugin_config(state(), plugin_id(), map()) :: result()
+  @spec update_plugin_config(state(), plugin_id(), map()) :: {:ok, state()}
   def update_plugin_config(state, plugin_name, config) do
     updated_plugin_config = Map.put(state.plugin_config, plugin_name, config)
     updated_state = %{state | plugin_config: updated_plugin_config}

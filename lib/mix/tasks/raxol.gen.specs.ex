@@ -115,7 +115,7 @@ defmodule Mix.Tasks.Raxol.Gen.Specs do
     ast
     |> find_private_functions()
     |> filter_functions(filter)
-    |> Enum.map_join("", &generate_spec/1)
+    |> Enum.map(&generate_spec/1)
     |> Enum.reject(&is_nil/1)
   end
 

@@ -89,10 +89,11 @@ defmodule Raxol.Docs.Searcher do
           0.0
 
         tags ->
-          tags
-          |> Enum.map(&score_string(normalize_string(&1), normalized_query))
-          |> Enum.max([0.0])
-          |> Kernel.*(0.5)
+          scores = Enum.map(tags, &score_string(normalize_string(&1), normalized_query))
+          case scores do
+            [] -> 0.0
+            scores -> Enum.max(scores) * 0.5
+          end
       end
 
     # Type-specific bonuses

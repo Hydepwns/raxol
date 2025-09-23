@@ -171,7 +171,7 @@ defmodule Raxol.Playground.Preview do
     bottom_border = "└" <> String.duplicate("─", cols + 2) <> "┘"
 
     content_lines =
-      Enum.map_join(padded_lines, fn line ->
+      Enum.map(padded_lines, fn line ->
         trimmed = String.slice(line, 0, cols)
         padding = String.duplicate(" ", cols - String.length(trimmed))
         "│ #{trimmed}#{padding} │"
@@ -245,12 +245,12 @@ defmodule Raxol.Playground.Preview do
 
     Enum.map_join(
       options,
+      "\n",
       fn option ->
         radio = format_radio_icon(option, selected)
 
         "#{radio} #{option}"
-      end,
-      "\n"
+      end
     )
   end
 
@@ -335,10 +335,10 @@ defmodule Raxol.Playground.Preview do
     tab_line =
       Enum.map_join(
         tabs,
+        " | ",
         fn tab ->
           format_tab_label(tab, active_tab)
-        end,
-        " | "
+        end
       )
 
     separator = String.duplicate("─", String.length(tab_line))
@@ -468,7 +468,7 @@ defmodule Raxol.Playground.Preview do
 
         # Add shadow effect
         modal_with_shadow =
-          Enum.map_join(modal_lines, fn line ->
+          Enum.map(modal_lines, fn line ->
             "#{line}#{IO.ANSI.light_black()}▓#{IO.ANSI.reset()}"
           end)
 

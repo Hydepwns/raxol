@@ -110,7 +110,7 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
         :above ->
           Raxol.View.Elements.column id: state.id do
             Raxol.View.Elements.row style: %{justify: :space_between} do
-              build_label_row(
+              _ = build_label_row(
                 label_content,
                 label_style,
                 percentage_text,
@@ -130,7 +130,7 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
             end
 
             Raxol.View.Elements.row style: %{justify: :space_between} do
-              build_label_row(
+              _ = build_label_row(
                 label_content,
                 label_style,
                 percentage_text,

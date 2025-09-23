@@ -1158,7 +1158,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
             case ImageProcessor.process_image(image_data, options) do
               {:ok, processed_image} ->
                 # Cache the processed result
-                ImageCache.put(
+                _ = ImageCache.put(
                   cache_key,
                   processed_image.data,
                   processed_image.metadata

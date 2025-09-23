@@ -223,9 +223,6 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
     else
       {:error, {:invalid_field, field, type}} ->
         {:error, {:invalid_field, field, type}}
-
-      error ->
-        error
     end
   end
 
@@ -274,7 +271,7 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
   defp extract_default_config(false, _module), do: %{}
 
   def get_plugin_id_from_metadata(module) do
-    Code.ensure_loaded(module)
+    _ = Code.ensure_loaded(module)
     extract_plugin_id(function_exported?(module, :get_metadata, 0), module)
   end
 

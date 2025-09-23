@@ -106,7 +106,7 @@ defmodule Raxol.Core.ErrorExperience do
     log_enhanced_error(enhanced)
 
     # Trigger appropriate Phase 4.2 tools if available
-    maybe_trigger_analysis_tools(enhanced)
+    _ = maybe_trigger_analysis_tools(enhanced)
 
     # Return enhanced error for interactive handling
     enhanced

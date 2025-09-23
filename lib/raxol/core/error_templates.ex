@@ -475,22 +475,16 @@ defmodule Raxol.Core.ErrorTemplates do
 
   defp format_step_list(steps) do
     steps
-    |> Enum.map_join(
-      fn step ->
-        "  #{step}"
-      end,
-      "\n"
-    )
+    |> Enum.map_join("\n", fn step ->
+      "  #{step}"
+    end)
   end
 
   defp format_tool_list(tools) do
     tools
-    |> Enum.map_join(
-      fn tool ->
-        "  • mix #{tool |> to_string() |> String.replace("_", ".")}"
-      end,
-      "\n"
-    )
+    |> Enum.map_join("\n", fn tool ->
+      "  • mix #{tool |> to_string() |> String.replace("_", ".")}"
+    end)
   end
 
   defp format_confidence(confidence) do

@@ -206,9 +206,6 @@ defmodule Raxol.Core.ErrorRecovery do
       {:error, :timeout} ->
         {:error, :bulkhead_timeout, "Could not acquire resource from pool",
          %{pool: pool_name}}
-
-      error ->
-        error
     end
   end
 
@@ -277,15 +274,9 @@ defmodule Raxol.Core.ErrorRecovery do
       error ->
         GenServer.call(__MODULE__, {:record_failure, circuit_name})
 
-        case error do
-          {:error, _type, msg, context} ->
-            {:error, :circuit_failure, msg,
-             Map.put(context, :circuit, circuit_name)}
-
-          _ ->
-            {:error, :circuit_failure, "Circuit execution failed",
-             %{circuit: circuit_name, original_error: error}}
-        end
+        {:error, _type, msg, context} = error
+        {:error, :circuit_failure, msg,
+         Map.put(context, :circuit, circuit_name)}
     end
   end
 

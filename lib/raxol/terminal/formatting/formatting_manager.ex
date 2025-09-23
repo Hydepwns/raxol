@@ -27,8 +27,8 @@ defmodule Raxol.Terminal.Formatting.Manager do
           reverse: boolean(),
           conceal: boolean(),
           strikethrough: boolean(),
-          foreground: Raxol.Terminal.Color.color() | nil,
-          background: Raxol.Terminal.Color.color() | nil,
+          foreground: term() | nil,
+          background: term() | nil,
           font: non_neg_integer()
         }
 

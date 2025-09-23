@@ -437,6 +437,6 @@ defmodule Raxol.Benchmark.SuiteRegistry do
 
   defp schedule_discovery do
     # Auto-discover suites after a short delay
-    Process.send_after(self(), :auto_discover, 1000)
+    _ = Process.send_after(self(), :auto_discover, 1000)
   end
 end

@@ -31,14 +31,14 @@ defmodule Raxol.UI.Rendering.Renderer do
   Sets animation settings for the renderer.
   """
   def set_animation_settings(settings) when is_map(settings) do
-    GenServer.cast(__MODULE__, {:set_animation_settings, settings})
+    _ = GenServer.cast(__MODULE__, {:set_animation_settings, settings})
   end
 
   @doc """
   Triggers a render with the current state.
   """
   def render(data \\ nil) do
-    GenServer.cast(__MODULE__, {:render, data})
+    _ = GenServer.cast(__MODULE__, {:render, data})
   end
 
   @doc """
@@ -46,7 +46,7 @@ defmodule Raxol.UI.Rendering.Renderer do
   No-op in production.
   """
   def set_test_pid(pid) when is_pid(pid) do
-    GenServer.cast(__MODULE__, {:set_test_pid, pid})
+    _ = GenServer.cast(__MODULE__, {:set_test_pid, pid})
   end
 
   @doc """
@@ -56,7 +56,8 @@ defmodule Raxol.UI.Rendering.Renderer do
   def apply_diff({:replace, new_tree}, _new_tree), do: render(new_tree)
 
   def apply_diff({:update, _path, _changes} = diff, new_tree) do
-    GenServer.cast(__MODULE__, {:apply_diff, diff, new_tree})
+    _ = GenServer.cast(__MODULE__, {:apply_diff, diff, new_tree})
+    :ok
   end
 
   # Recursively applies a diff to a tree, returning the updated tree

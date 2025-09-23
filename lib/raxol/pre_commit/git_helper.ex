@@ -47,7 +47,7 @@ defmodule Raxol.PreCommit.GitHelper do
   Clear the git cache.
   """
   def clear_cache do
-    ensure_started()
+    _ = ensure_started()
     Agent.update(__MODULE__, fn _ -> %{} end)
   end
 
@@ -91,7 +91,7 @@ defmodule Raxol.PreCommit.GitHelper do
   end
 
   defp get_cached(key) do
-    ensure_started()
+    _ = ensure_started()
 
     case Agent.get(__MODULE__, &Map.get(&1, key)) do
       nil ->
@@ -108,7 +108,7 @@ defmodule Raxol.PreCommit.GitHelper do
   end
 
   defp cache_result(key, value) do
-    ensure_started()
+    _ = ensure_started()
 
     Agent.update(__MODULE__, fn cache ->
       Map.put(cache, key, {value, System.monotonic_time(:millisecond)})

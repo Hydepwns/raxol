@@ -97,9 +97,6 @@ defmodule Raxol.Security.Auditor do
       {:error, :unauthorized} ->
         audit_unauthorized_attempt(user, resource, action)
         {:error, :high, "Unauthorized access attempt"}
-
-      error ->
-        error
     end
   end
 

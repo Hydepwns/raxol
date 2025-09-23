@@ -182,7 +182,7 @@ defmodule Raxol.PreCommit.ErrorFormatter do
     failed_checks =
       results
       |> Enum.filter(fn {_, result} -> result.status == :error end)
-      |> Enum.map_join(fn {name, result} -> {name, result} end)
+      |> Enum.map(fn {name, result} -> {name, result} end)
 
     case failed_checks do
       [] ->
@@ -239,41 +239,35 @@ defmodule Raxol.PreCommit.ErrorFormatter do
   defp format_warnings(warnings) do
     warnings
     |> Enum.take(5)
-    |> Enum.map_join(
-      fn warning ->
-        case warning do
-          %{file: file, line: line, message: msg} ->
-            "    #{file}:#{line} - #{msg}"
+    |> Enum.map_join("\n", fn warning ->
+      case warning do
+        %{file: file, line: line, message: msg} ->
+          "    #{file}:#{line} - #{msg}"
 
-          text when is_binary(text) ->
-            "    #{text}"
+        text when is_binary(text) ->
+          "    #{text}"
 
-          _ ->
-            "    #{inspect(warning)}"
-        end
-      end,
-      "\n"
-    )
+        _ ->
+          "    #{inspect(warning)}"
+      end
+    end)
   end
 
   defp format_compile_errors(errors) do
     errors
     |> Enum.take(5)
-    |> Enum.map_join(
-      fn error ->
-        case error do
-          %{file: file, line: line, description: desc} ->
-            "    #{file}:#{line}\n      #{desc}"
+    |> Enum.map_join("\n\n", fn error ->
+      case error do
+        %{file: file, line: line, description: desc} ->
+          "    #{file}:#{line}\n      #{desc}"
 
-          text when is_binary(text) ->
-            "    #{text}"
+        text when is_binary(text) ->
+          "    #{text}"
 
-          _ ->
-            "    #{inspect(error)}"
-        end
-      end,
-      "\n\n"
-    )
+        _ ->
+          "    #{inspect(error)}"
+      end
+    end)
   end
 
   defp group_credo_issues(issues) do
@@ -318,47 +312,41 @@ defmodule Raxol.PreCommit.ErrorFormatter do
   defp format_test_failures(failures) do
     failures
     |> Enum.take(5)
-    |> Enum.map_join(
-      fn failure ->
-        case failure do
-          %{test: test, module: module, error: error} ->
-            """
-              Test: #{module}.#{test}
-              Error: #{inspect(error, pretty: true)}
-            """
+    |> Enum.map_join("\n", fn failure ->
+      case failure do
+        %{test: test, module: module, error: error} ->
+          """
+            Test: #{module}.#{test}
+            Error: #{inspect(error, pretty: true)}
+          """
 
-          %{file: file, line: line} ->
-            "    Failed at #{file}:#{line}"
+        %{file: file, line: line} ->
+          "    Failed at #{file}:#{line}"
 
-          text when is_binary(text) ->
-            "    #{text}"
+        text when is_binary(text) ->
+          "    #{text}"
 
-          _ ->
-            "    #{inspect(failure)}"
-        end
-      end,
-      "\n"
-    )
+        _ ->
+          "    #{inspect(failure)}"
+      end
+    end)
   end
 
   defp format_broken_links(links) do
     links
     |> Enum.take(10)
-    |> Enum.map_join(
-      fn link ->
-        case link do
-          %{file: file, link: url} ->
-            "    • #{file}: #{url}"
+    |> Enum.map_join("\n", fn link ->
+      case link do
+        %{file: file, link: url} ->
+          "    • #{file}: #{url}"
 
-          text when is_binary(text) ->
-            "    • #{text}"
+        text when is_binary(text) ->
+          "    • #{text}"
 
-          _ ->
-            "    • #{inspect(link)}"
-        end
-      end,
-      "\n"
-    )
+        _ ->
+          "    • #{inspect(link)}"
+      end
+    end)
   end
 
   defp color_text(text, _color, false), do: text
@@ -373,7 +361,6 @@ defmodule Raxol.PreCommit.ErrorFormatter do
         :magenta -> "\e[35m"
         :cyan -> "\e[36m"
         :white -> "\e[37m"
-        _ -> ""
       end
 
     "#{color_code}#{text}\e[0m"

@@ -83,7 +83,7 @@ defmodule Raxol.Terminal.ControlCodes do
   Handles bell control code.
   """
   def handle_bel(emulator) do
-    System.cmd("tput", ["bel"])
+    _ = System.cmd("tput", ["bel"])
     emulator
   end
 
@@ -265,7 +265,7 @@ defmodule Raxol.Terminal.ControlCodes do
   """
   def handle_sub(emulator) do
     # Print a substitute character (typically displayed as ^Z)
-    System.cmd("echo", ["-n", "^Z"])
+    _ = System.cmd("echo", ["-n", "^Z"])
     emulator
   end
 

@@ -141,7 +141,7 @@ defmodule Raxol.UI.Universal do
   def animate(element, properties, duration \\ 300) do
     start_time = System.monotonic_time(:millisecond)
 
-    Task.start(fn ->
+    _ = Task.start(fn ->
       animate_loop(element, properties, duration, start_time)
     end)
   end

@@ -126,10 +126,10 @@ defmodule Raxol.Terminal.Buffer.Manager.State do
   Cleans up the state and its components.
   """
   def cleanup(%__MODULE__{} = state) do
-    ScreenBuffer.cleanup(state.active_buffer)
-    ScreenBuffer.cleanup(state.back_buffer)
-    Scrollback.cleanup(state.scrollback)
-    DamageTracker.cleanup(state.damage_tracker)
+    _cleanup1 = ScreenBuffer.cleanup(state.active_buffer)
+    _cleanup2 = ScreenBuffer.cleanup(state.back_buffer)
+    _cleanup3 = Scrollback.cleanup(state.scrollback)
+    _cleanup4 = DamageTracker.cleanup(state.damage_tracker)
 
     state
   end

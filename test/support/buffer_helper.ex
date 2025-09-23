@@ -190,7 +190,7 @@ defmodule Raxol.Test.BufferHelper do
         data =
           case opts do
             data when is_binary(data) -> data
-            opts when is_list(opts) -> Keyword.get(opts, :data, "")
+            list_opts when is_list(list_opts) -> Keyword.get(list_opts, :data, "")
             _ -> ""
           end
 

@@ -42,15 +42,21 @@ defmodule Raxol.Protocols.EventSystemIntegration do
   Enhanced event manager that can work with protocol-implementing handlers.
   """
   def register_handler(event_type, handler) do
-    if EventHandler.can_handle?(handler, %{type: event_type}) do
-      # Use register_handler/3 with self() as the target process
-      EventManager.register_handler(
-        event_type,
-        self(),
-        &protocol_handler_wrapper(handler, &1, &2)
-      )
-    else
-      {:error, :handler_cannot_handle_event}
+    # Check if the handler implements the protocol
+    try do
+      if EventHandler.can_handle?(handler, %{type: event_type}) do
+        # Use register_handler/3 with self() as the target process
+        EventManager.register_handler(
+          event_type,
+          self(),
+          &protocol_handler_wrapper(handler, &1, &2)
+        )
+      else
+        {:error, :handler_cannot_handle_event}
+      end
+    rescue
+      Protocol.UndefinedError ->
+        {:error, :handler_does_not_implement_protocol}
     end
   end
 

@@ -66,7 +66,7 @@ defmodule Raxol.Style.Colors.Adaptive do
   """
   def init do
     # Create the ETS table if it doesn't already exist
-    ensure_ets_table_exists()
+    _ = ensure_ets_table_exists()
     :ok
   end
 
@@ -262,7 +262,6 @@ defmodule Raxol.Style.Colors.Adaptive do
         hex_value =
           case adapted_color do
             %Color{} -> adapted_color.hex
-            _ -> v
           end
 
         {k, hex_value}

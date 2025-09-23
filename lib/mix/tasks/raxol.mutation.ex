@@ -57,6 +57,7 @@ defmodule Mix.Tasks.Raxol.Mutation do
     h: :help
   ]
 
+  @spec run(list()) :: no_return()
   def run(args) do
     {options, _remaining_args, _} =
       OptionParser.parse(args, switches: @switches, aliases: @aliases)
@@ -389,7 +390,7 @@ defmodule Mix.Tasks.Raxol.Mutation do
         result
 
       nil ->
-        Task.shutdown(task, :brutal_kill)
+        _ = Task.shutdown(task, :brutal_kill)
         %{tests: 0, failures: 0, errors: 1, exit_code: 1, timeout: true}
     end
   end

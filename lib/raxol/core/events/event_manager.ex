@@ -48,7 +48,7 @@ defmodule Raxol.Core.Events.EventManager do
   @doc """
   Notifies all registered handlers of an event.
   """
-  @spec notify(pid(), event_type(), event_data()) :: :ok
+  @spec notify(GenServer.server(), event_type(), event_data()) :: :ok
   def notify(manager_pid \\ __MODULE__, event_type, event_data) do
     GenServer.cast(manager_pid, {:notify, event_type, event_data})
   end
@@ -132,27 +132,31 @@ defmodule Raxol.Core.Events.EventManager do
         ) :: :ok
   def dispatch(event_type, event_data)
       when is_atom(event_type) and is_map(event_data) do
-    TelemetryAdapter.dispatch(event_type, event_data)
+    :ok = TelemetryAdapter.dispatch(event_type, event_data)
     # Also notify GenServer for backward compatibility
-    notify(__MODULE__, event_type, event_data)
+    :ok = notify(__MODULE__, event_type, event_data)
+    :ok
   end
 
   def dispatch({event_type, key, value}) do
-    TelemetryAdapter.dispatch(event_type, %{key => value})
+    :ok = TelemetryAdapter.dispatch(event_type, %{key => value})
     # Also notify GenServer for backward compatibility
-    notify(__MODULE__, event_type, %{key => value})
+    :ok = notify(__MODULE__, event_type, %{key => value})
+    :ok
   end
 
   def dispatch({event_type, event_data}) do
-    TelemetryAdapter.dispatch(event_type, event_data)
+    :ok = TelemetryAdapter.dispatch(event_type, event_data)
     # Also notify GenServer for backward compatibility
-    notify(__MODULE__, event_type, event_data)
+    :ok = notify(__MODULE__, event_type, event_data)
+    :ok
   end
 
   def dispatch(event_type) when is_atom(event_type) do
-    TelemetryAdapter.dispatch(event_type, %{})
+    :ok = TelemetryAdapter.dispatch(event_type, %{})
     # Also notify GenServer for backward compatibility
-    notify(__MODULE__, event_type, %{})
+    :ok = notify(__MODULE__, event_type, %{})
+    :ok
   end
 
   @doc """

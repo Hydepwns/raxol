@@ -431,10 +431,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     )
   end
 
-  defp normalize_hint_info(hint) when is_binary(hint) do
-    %{basic: hint, detailed: nil, examples: nil, shortcuts: []}
-  end
-
   defp maybe_register_shortcuts(component_id, %{shortcuts: shortcuts}, state)
        when is_list(shortcuts) do
     keyboard_shortcuts_enabled =

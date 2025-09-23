@@ -78,7 +78,7 @@ defmodule Raxol.Test.Visual do
 
   Returns the terminal output as a string for comparison.
   """
-  @spec capture_render(Raxol.Core.Types.Component.t() | map(), map() | list()) ::
+  @spec capture_render(map() | term(), map() | list()) ::
           String.t()
   def capture_render(component_or_map_or_view, opts \\ %{}) do
     opts =

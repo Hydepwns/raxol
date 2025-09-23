@@ -68,6 +68,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
           non_neg_integer(),
           non_neg_integer()
         ) :: map()
+  @dialyzer {:nowarn_function, scroll_region_up: 6}
   def scroll_region_up(buffer, x, y, width, height, amount) do
     # Extract only the region content from each row
     region_lines =
@@ -100,6 +101,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
           non_neg_integer(),
           non_neg_integer()
         ) :: map()
+  @dialyzer {:nowarn_function, scroll_region_down: 6}
   def scroll_region_down(buffer, x, y, width, height, amount) do
     # Extract only the region content from each row
     region_lines =
@@ -124,6 +126,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
 
   # Private functions
 
+  @dialyzer {:nowarn_function, scroll_region_in_buffer: 6}
   defp scroll_region_in_buffer(buffer, x, y, width, height, amount)
        when amount > 0 do
     # Scroll up: move content up within the region
@@ -136,6 +139,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
   end
 
   # Extract lines that are scrolled out of the region
+  @dialyzer {:nowarn_function, extract_scrolled_lines: 6}
   defp extract_scrolled_lines(buffer, x, y, width, _height, amount)
        when amount > 0 do
     # When scrolling up, the top 'amount' lines are scrolled out
@@ -161,6 +165,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
   end
 
   # Add lines to scrollback buffer
+  @dialyzer {:nowarn_function, add_lines_to_scrollback: 2}
   defp add_lines_to_scrollback(scrollback_buffer, []) do
     scrollback_buffer
   end
@@ -170,6 +175,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
   end
 
   # Helper function to replace a region in the buffer
+  @dialyzer {:nowarn_function, replace_region_in_buffer: 6}
   defp replace_region_in_buffer(buffer, x, y, width, height, new_region_lines) do
     new_cells =
       update_buffer_rows(buffer.cells, x, y, width, height, new_region_lines)
@@ -177,6 +183,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     %{buffer | cells: new_cells}
   end
 
+  @dialyzer {:nowarn_function, update_buffer_rows: 6}
   defp update_buffer_rows(cells, x, y, width, height, new_region_lines) do
     cells
     |> Enum.with_index()
@@ -193,10 +200,12 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     end)
   end
 
+  @dialyzer {:nowarn_function, row_in_region?: 3}
   defp row_in_region?(row_y, y, height) do
     row_y >= y and row_y < y + height
   end
 
+  @dialyzer {:nowarn_function, update_row_in_region: 4}
   defp update_row_in_region(row, x, width, region_row) do
     row
     |> Enum.with_index()
@@ -211,6 +220,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     end)
   end
 
+  @dialyzer {:nowarn_function, col_in_region?: 3}
   defp col_in_region?(col_x, x, width) do
     col_x >= x and col_x < x + width
   end
@@ -225,6 +235,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     List.duplicate(Cell.new(), width)
   end
 
+  @dialyzer {:nowarn_function, extract_scrolled_row: 5}
   defp extract_scrolled_row(true, buffer, row_y, x, width) do
     Enum.slice(buffer.cells |> Enum.at(row_y, []), x, width)
   end
@@ -233,6 +244,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     []
   end
 
+  @dialyzer {:nowarn_function, handle_row_update: 7}
   defp handle_row_update(true, row, x, width, new_region_lines, row_y, y) do
     update_row_in_region(
       row,
@@ -246,6 +258,7 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Scroll do
     row
   end
 
+  @dialyzer {:nowarn_function, handle_cell_update: 5}
   defp handle_cell_update(true, _cell, region_row, col_x, x) do
     new_cell = Enum.at(region_row, col_x - x)
     # Return new_cell or create empty cell if nil

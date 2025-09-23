@@ -403,7 +403,7 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
     data
     |> :binary.bin_to_list()
     |> Enum.chunk_every(chunk_size)
-    |> Enum.map_join(",", &:binary.list_to_bin/1)
+    |> Enum.map(&:binary.list_to_bin/1)
   end
 
   defp build_transmission_control_data(image_id, options, more_chunks) do

@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics.Behaviour do
         }
 
   @callback new() :: t()
-  @callback new(non_neg_integer(), non_neg_integer()) :: t()
+  @callback new(pos_integer(), pos_integer()) :: t()
   @callback set_data(t(), binary()) :: t()
   @callback get_data(t()) :: binary()
   @callback set_palette(t(), map()) :: t()

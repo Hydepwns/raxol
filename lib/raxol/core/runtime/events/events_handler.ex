@@ -26,7 +26,7 @@ defmodule Raxol.Core.Runtime.Events.Handler do
       filter: filter
     }
 
-    put_handler(handler_id, handler)
+    _ = put_handler(handler_id, handler)
 
     {:ok, handler_id}
   end
@@ -43,7 +43,7 @@ defmodule Raxol.Core.Runtime.Events.Handler do
         {:error, :not_found}
 
       _handler ->
-        remove_handler(handler_id)
+        _ = remove_handler(handler_id)
         :ok
     end
   end
@@ -146,7 +146,7 @@ defmodule Raxol.Core.Runtime.Events.Handler do
     end)
 
     # Store the handler config for retrieval
-    ProcessStore.put({:handler_config, id}, handler)
+    _ = ProcessStore.put({:handler_config, id}, handler)
     {:ok, id}
   end
 
@@ -215,7 +215,7 @@ defmodule Raxol.Core.Runtime.Events.Handler do
 
       handler ->
         # Remove from store
-        ProcessStore.delete({:handler_config, id})
+        _ = ProcessStore.delete({:handler_config, id})
 
         # Try to unregister from EventManager (though this is complex with the current design)
         Enum.each(handler.event_types, fn event_type ->

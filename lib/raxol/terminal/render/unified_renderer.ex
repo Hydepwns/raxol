@@ -5,10 +5,7 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
 
   use GenServer
 
-  alias Raxol.Terminal.{
-    Buffer,
-    Style
-  }
+  alias Raxol.Terminal.Buffer
 
   defstruct [
     :buffer,
@@ -25,8 +22,8 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
 
   @type t :: %__MODULE__{
           buffer: Buffer.t(),
-          screen: Screen.t(),
-          style: Style.t(),
+          screen: term(),
+          style: term(),
           cursor_visible: boolean(),
           title: String.t(),
           termbox_initialized: boolean(),

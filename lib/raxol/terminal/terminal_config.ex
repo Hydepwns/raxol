@@ -318,12 +318,13 @@ defmodule Raxol.Terminal.Config do
   `:ok` if the configuration is valid, `{:error, reason}` otherwise.
   """
   def validate_config(config) when is_map(config) do
-    validate_dimensions(config)
-    validate_colors(config)
-    validate_styles(config)
-    validate_input(config)
-    validate_performance(config)
-    validate_mode(config)
+    _ = validate_dimensions(config)
+    _ = validate_colors(config)
+    _ = validate_styles(config)
+    _ = validate_input(config)
+    _ = validate_performance(config)
+    _ = validate_mode(config)
+    :ok
   end
 
   @doc """

@@ -98,17 +98,19 @@ defmodule Raxol.Security.SessionManager do
   @impl true
   def init(opts) do
     # Create ETS tables for fast lookups (safe creation)
-    Raxol.Core.CompilerState.ensure_table(:sessions, [
-      :set,
-      :private,
-      :named_table
-    ])
+    _ =
+      Raxol.Core.CompilerState.ensure_table(:sessions, [
+        :set,
+        :private,
+        :named_table
+      ])
 
-    Raxol.Core.CompilerState.ensure_table(:user_sessions, [
-      :bag,
-      :private,
-      :named_table
-    ])
+    _ =
+      Raxol.Core.CompilerState.ensure_table(:user_sessions, [
+        :bag,
+        :private,
+        :named_table
+      ])
 
     # Schedule cleanup
     schedule_cleanup()

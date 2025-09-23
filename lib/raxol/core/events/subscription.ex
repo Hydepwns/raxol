@@ -119,7 +119,7 @@ defmodule Raxol.Core.Events.Subscription do
   @doc """
   Unsubscribes from events using the subscription reference.
   """
-  def unsubscribe(ref) when is_integer(ref) do
+  def unsubscribe(ref) when is_reference(ref) do
     Manager.unsubscribe(ref)
   end
 
@@ -183,12 +183,6 @@ defmodule Raxol.Core.Events.Subscription do
   defp add_filter(opts, _key, nil), do: opts
 
   defp add_filter(opts, key, value) do
-    opts =
-      case is_list(opts) do
-        true -> opts
-        false -> []
-      end
-
     Keyword.put(opts, key, value)
   end
 end

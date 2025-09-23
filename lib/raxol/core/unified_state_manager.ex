@@ -36,13 +36,20 @@ defmodule Raxol.Core.UnifiedStateManager do
   @doc """
   Initializes the state manager.
   """
-  @spec init(keyword()) :: state_tree()
+  @spec init(keyword()) :: %{
+          table: atom(),
+          version: non_neg_integer(),
+          metadata: %{
+            started_at: integer(),
+            memory_usage: non_neg_integer()
+          }
+        }
   def init(opts) do
     # Create ETS table for high-performance state storage
     table_name = Keyword.get(opts, :table_name, :unified_state)
     ets_opts = [:set, :public, :named_table, {:read_concurrency, true}]
 
-    case :ets.info(table_name) do
+    _ = case :ets.info(table_name) do
       :undefined -> :ets.new(table_name, ets_opts)
       # Table already exists
       _ -> :ok

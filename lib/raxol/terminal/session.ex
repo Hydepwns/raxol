@@ -25,10 +25,10 @@ defmodule Raxol.Terminal.Session do
           id: String.t(),
           emulator: EmulatorStruct.t(),
           renderer: Raxol.Terminal.Renderer.t(),
-          width: non_neg_integer(),
-          height: non_neg_integer(),
-          title: String.t(),
-          theme: map(),
+          width: non_neg_integer() | nil,
+          height: non_neg_integer() | nil,
+          title: String.t() | nil,
+          theme: map() | nil,
           auto_save: boolean()
         }
 
@@ -236,7 +236,7 @@ defmodule Raxol.Terminal.Session do
   end
 
   def handle_cast(:save_session, state) do
-    Task.start(fn ->
+    _ = Task.start(fn ->
       safe_save_session_async(state)
     end)
 
@@ -267,7 +267,7 @@ defmodule Raxol.Terminal.Session do
   end
 
   def handle_info(:auto_save, state) do
-    execute_auto_save(state.auto_save, state)
+    _ = execute_auto_save(state.auto_save, state)
 
     # Schedule next auto-save
     timer_id = System.unique_integer([:positive])
@@ -297,7 +297,7 @@ defmodule Raxol.Terminal.Session do
   defp execute_auto_save(false, _state), do: :ok
 
   defp execute_auto_save(true, state) do
-    Task.start(fn -> Storage.save_session(state) end)
+    {:ok, _pid} = Task.start(fn -> Storage.save_session(state) end)
   end
 
   defp update_state_from_config(state, config) do

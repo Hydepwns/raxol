@@ -1,6 +1,5 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.BasicIntegrationTest do
   use ExUnit.Case, async: true
-  alias Raxol.Core.Runtime.Plugins.DependencyManager
 
   defmodule TestPluginA do
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider

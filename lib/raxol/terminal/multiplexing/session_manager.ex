@@ -84,9 +84,9 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
             last_activity: integer(),
             status: :active | :inactive | :detached,
             metadata: map(),
-            windows: [Window.t()],
+            windows: [term()],
             active_window: String.t() | nil,
-            clients: [Client.t()],
+            clients: [term()],
             persistence_config: map(),
             resource_limits: map(),
             hooks: map()
@@ -120,7 +120,7 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
             created_at: integer(),
             status: :active | :inactive,
             layout: layout_type(),
-            panes: [Pane.t()],
+            panes: [term()],
             active_pane: String.t() | nil,
             metadata: map()
           }
@@ -381,7 +381,7 @@ defmodule Raxol.Terminal.Multiplexing.SessionManager do
     File.mkdir_p!(persistence_dir)
 
     # Start cleanup timer
-    Raxol.Terminal.Multiplexing.SessionManager.Helpers.start_cleanup_timer(
+    _ = Raxol.Terminal.Multiplexing.SessionManager.Helpers.start_cleanup_timer(
       config.cleanup_interval_minutes
     )
 

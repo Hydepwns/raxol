@@ -454,7 +454,6 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     case benchmark_results do
       %{scenarios: scenarios} -> scenarios
       %{} -> benchmark_results
-      _ -> %{}
     end
     |> Enum.to_list()
   end

@@ -273,7 +273,7 @@ defmodule Raxol.Terminal.Graphics.Manager do
     pixel = Enum.at(pixels, index) || %{r: 0, g: 0, b: 0, a: 1.0}
     quantized = quantize_color(pixel)
     error = calculate_error(pixel, quantized)
-    distribute_error(pixels, x, y, width, height, error)
+    _ = distribute_error(pixels, x, y, width, height, error)
     quantized
   end
 
@@ -297,10 +297,10 @@ defmodule Raxol.Terminal.Graphics.Manager do
 
   defp distribute_error(pixels, x, y, width, height, error) do
     # Floyd-Steinberg error distribution to neighboring pixels
-    distribute_to_pixel(pixels, x + 1, y, width, height, error, 7 / 16)
-    distribute_to_pixel(pixels, x - 1, y + 1, width, height, error, 3 / 16)
-    distribute_to_pixel(pixels, x, y + 1, width, height, error, 5 / 16)
-    distribute_to_pixel(pixels, x + 1, y + 1, width, height, error, 1 / 16)
+    _ = distribute_to_pixel(pixels, x + 1, y, width, height, error, 7 / 16)
+    _ = distribute_to_pixel(pixels, x - 1, y + 1, width, height, error, 3 / 16)
+    _ = distribute_to_pixel(pixels, x, y + 1, width, height, error, 5 / 16)
+    _ = distribute_to_pixel(pixels, x + 1, y + 1, width, height, error, 1 / 16)
     pixels
   end
 

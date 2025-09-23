@@ -420,8 +420,7 @@ defmodule Raxol.Benchmark.MemoryAnalyzer do
 
   defp get_memory_allocator_info do
     case :erlang.system_info(:allocator) do
-      {allocator, _, _} -> allocator
-      _ -> :unknown
+      {allocator, _, _, _} -> allocator
     end
   end
 

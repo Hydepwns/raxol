@@ -139,7 +139,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
         {:error, {:exit, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _shutdown_result = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -158,7 +158,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
         {:error, {:exit, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _shutdown_result = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -196,7 +196,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
         {:error, {:exit, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _shutdown_result = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -220,7 +220,7 @@ defmodule Raxol.Terminal.ANSI.ExtendedSequences do
         {:error, {:exit, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _shutdown_result = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end

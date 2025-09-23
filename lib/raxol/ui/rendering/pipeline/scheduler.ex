@@ -7,7 +7,10 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   require Logger
   alias Raxol.UI.Rendering.Pipeline.Stages
 
-  @type state :: map()
+  @type state :: %{
+          render_timer_ref: reference() | nil,
+          current_tree: tree()
+        }
   @type diff_result :: term()
   @type tree :: map() | nil
 
@@ -18,7 +21,7 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   Schedules or immediately executes a render based on current state.
   Implements debouncing to batch rapid updates.
   """
-  @spec schedule_or_execute_render(diff_result(), tree(), state()) :: state()
+  @spec schedule_or_execute_render(term(), map() | nil, map()) :: map()
   def schedule_or_execute_render(
         _diff_result,
         _tree,
@@ -38,7 +41,7 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
       )
       when not is_nil(timer_ref) do
     Logger.debug("Pipeline: Cancelling existing render timer and rescheduling.")
-    Process.cancel_timer(timer_ref)
+    _ = Process.cancel_timer(timer_ref)
     schedule_render(state)
   end
 
@@ -49,7 +52,7 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   @doc """
   Schedules a render after the debounce delay.
   """
-  @spec schedule_render(state()) :: state()
+  @spec schedule_render(map()) :: map()
   def schedule_render(state) do
     timer_ref = Process.send_after(self(), :execute_render, @render_debounce_ms)
     %{state | render_timer_ref: timer_ref}
@@ -58,7 +61,7 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   @doc """
   Executes the actual render pipeline.
   """
-  @spec execute_render(state()) :: state()
+  @spec execute_render(map()) :: map()
   def execute_render(state) do
     execute_render_with_tree(state.current_tree, state)
   end
@@ -66,7 +69,7 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   @doc """
   Marks that a render should occur on the next animation frame.
   """
-  @spec mark_render_for_next_frame(state()) :: state()
+  @spec mark_render_for_next_frame(map()) :: map()
   def mark_render_for_next_frame(state) do
     %{state | render_scheduled_for_next_frame: true}
   end
@@ -147,6 +150,6 @@ defmodule Raxol.UI.Rendering.Pipeline.Scheduler do
   @doc """
   Gets the render debounce delay in milliseconds.
   """
-  @spec debounce_delay() :: non_neg_integer()
+  @spec debounce_delay() :: integer()
   def debounce_delay(), do: @render_debounce_ms
 end

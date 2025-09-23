@@ -19,7 +19,7 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
           %{timer_ref: timer_ref}
         )
 
-        Process.cancel_timer(timer_ref)
+        _ = Process.cancel_timer(timer_ref)
         %{state | file_event_timer: nil}
 
       _ ->
@@ -41,7 +41,7 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
           %{timer_ref: timer_ref}
         )
 
-        Process.cancel_timer(timer_ref)
+        _ = Process.cancel_timer(timer_ref)
         {:ok, %{state | tick_timer: nil}}
 
       _ ->

@@ -318,6 +318,7 @@ defmodule Raxol.Test.PluginTestFixtures do
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
+    @spec init(term()) :: no_return()
     def init(_opts) do
       _state_id = System.unique_integer([:positive])
 
@@ -337,10 +338,12 @@ defmodule Raxol.Test.PluginTestFixtures do
         {:trigger_output_crash, :handle_output_crash, 1}
       ]
 
+    @spec handle_input_crash(term(), term()) :: no_return()
     def handle_input_crash(_arg, _state) do
       raise "Intentional crash in input handler"
     end
 
+    @spec handle_output_crash(term(), term()) :: no_return()
     def handle_output_crash(_arg, _state) do
       raise "Intentional crash in output handler"
     end

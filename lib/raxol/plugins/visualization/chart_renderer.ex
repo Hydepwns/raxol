@@ -73,7 +73,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     {chart_height, chart_width} = calculate_chart_dimensions(width, height)
     grid = initialize_grid(width, height, title, max_value, min_value)
 
-    draw_chart_content(
+    _draw_chart_content(
       grid,
       data,
       max_value,
@@ -101,7 +101,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
   defp get_chart_error_message(_), do: "!"
 
   # Pattern matching for max value check instead of if statement
-  defp handle_max_value_check(
+  defp _handle_max_value_check(
          true,
          _value,
          _max_value,
@@ -110,7 +110,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
        ),
        do: 0
 
-  defp handle_max_value_check(false, value, max_value, min_value, chart_height) do
+  defp _handle_max_value_check(false, value, max_value, min_value, chart_height) do
     round(chart_height * (value - min_value) / max(1, max_value - min_value))
   end
 
@@ -182,10 +182,10 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     grid =
       DrawingUtils.draw_text(grid, height - 2, 0, Integer.to_string(min_value))
 
-    draw_y_axis(grid, height)
+    _draw_y_axis(grid, height)
   end
 
-  defp draw_y_axis(grid, height) do
+  defp _draw_y_axis(grid, height) do
     Enum.reduce(1..(height - 2), grid, fn y, acc_grid ->
       axis_style = Style.new(fg: :dark_gray)
 
@@ -193,7 +193,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     end)
   end
 
-  defp draw_chart_content(
+  defp _draw_chart_content(
          grid,
          data,
          max_value,
@@ -216,12 +216,12 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     Enum.reduce(Enum.with_index(data), {grid, 4}, fn {{label, value}, _index},
                                                      {acc_grid, current_x} ->
       bar_height =
-        calculate_bar_height(value, max_value, min_value, chart_height)
+        _calculate_bar_height(value, max_value, min_value, chart_height)
 
       bar_start_y = height - 2 - bar_height
-      new_grid = draw_bar(acc_grid, bar_width, bar_start_y, height, current_x)
+      new_grid = _draw_bar(acc_grid, bar_width, bar_start_y, height, current_x)
 
-      draw_label_and_advance(
+      _draw_label_and_advance(
         new_grid,
         label,
         bar_width,
@@ -233,8 +233,8 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     |> elem(0)
   end
 
-  defp calculate_bar_height(value, max_value, min_value, chart_height) do
-    handle_max_value_check(
+  defp _calculate_bar_height(value, max_value, min_value, chart_height) do
+    _handle_max_value_check(
       max_value == 0,
       value,
       max_value,
@@ -243,13 +243,13 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     )
   end
 
-  defp draw_bar(grid, bar_width, bar_start_y, height, current_x) do
+  defp _draw_bar(grid, bar_width, bar_start_y, height, current_x) do
     Enum.reduce(0..(bar_width - 1), grid, fn w_offset, inner_grid ->
-      draw_bar_column(inner_grid, bar_start_y, height, current_x + w_offset)
+      _draw_bar_column(inner_grid, bar_start_y, height, current_x + w_offset)
     end)
   end
 
-  defp draw_bar_column(grid, bar_start_y, height, x) do
+  defp _draw_bar_column(grid, bar_start_y, height, x) do
     Enum.reduce(bar_start_y..(height - 2), grid, fn y, acc_grid ->
       style = Style.new(bg: :blue, fg: :blue)
       cell = %{Cell.new("█") | style: style}
@@ -257,7 +257,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     end)
   end
 
-  defp draw_label_and_advance(
+  defp _draw_label_and_advance(
          grid,
          label,
          bar_width,
@@ -265,13 +265,13 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
          current_x,
          spacing
        ) do
-    label_str = format_label(label, bar_width)
+    label_str = _format_label(label, bar_width)
     final_grid = DrawingUtils.draw_text(grid, height - 1, current_x, label_str)
     next_x = current_x + bar_width + spacing
     {final_grid, next_x}
   end
 
-  defp format_label(label, bar_width) do
+  defp _format_label(label, bar_width) do
     case label do
       l when is_binary(l) -> l
       l -> inspect(l)

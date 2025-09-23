@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.Input.BufferTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.Input.{Buffer, Event.MouseEvent, Event.KeyEvent}
+  alias Raxol.Terminal.Input.Buffer
 
   setup do
     {:ok, pid} = Buffer.start_link()

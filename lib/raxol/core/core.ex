@@ -66,7 +66,7 @@ defmodule Raxol.Core do
   @doc """
   Creates a new Core instance with default configuration.
   """
-  @spec new() :: map()
+  @spec new() :: %{plugins: %{}, config: %{}, state: %{}}
   def new do
     %{
       plugins: %{},
@@ -161,7 +161,7 @@ defmodule Raxol.Core do
   Raxol.Core.stop_application(app_pid)
   ```
   """
-  @spec stop_application(pid() | atom()) :: :ok | {:error, term()}
+  @spec stop_application(pid() | atom()) :: :ok
   def stop_application(pid_or_name) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Stopping application: #{inspect(pid_or_name)}"
@@ -225,10 +225,9 @@ defmodule Raxol.Core do
   ```
   """
   @spec load_plugin(plugin_id(), keyword()) :: {:ok, map()} | {:error, term()}
-  def load_plugin(plugin_id, options \\ []) do
+  def load_plugin(plugin_id, _options \\ []) do
     case Raxol.Core.Runtime.Plugins.PluginManager.load_plugin(
-           plugin_id,
-           options
+           plugin_id
          ) do
       {:ok, plugin_info} ->
         Raxol.Core.Runtime.Log.info(
@@ -264,7 +263,7 @@ defmodule Raxol.Core do
   :ok = Raxol.Core.unload_plugin(:accessibility)
   ```
   """
-  @spec unload_plugin(plugin_id()) :: :ok | {:error, term()}
+  @spec unload_plugin(plugin_id()) :: :ok
   def unload_plugin(plugin_id) do
     :ok = Raxol.Core.Runtime.Plugins.PluginManager.unload_plugin(plugin_id)
 
@@ -336,7 +335,7 @@ defmodule Raxol.Core do
   {:ok, stats} = Raxol.Core.get_performance_stats()
   ```
   """
-  @spec get_performance_stats() :: {:ok, map()} | {:error, term()}
+  @spec get_performance_stats() :: {:ok, map()}
   def get_performance_stats do
     Performance.get_stats()
   end
@@ -429,7 +428,7 @@ defmodule Raxol.Core do
   :ok = Raxol.Core.set_theme(:dark)
   ```
   """
-  @spec set_theme(atom()) :: :ok | {:error, term()}
+  @spec set_theme(atom()) :: :ok | {:error, :theme_not_found}
   def set_theme(theme_id) do
     ColorSystem.set_theme(theme_id)
   end
@@ -502,7 +501,13 @@ defmodule Raxol.Core do
   # Returns: {:ok, %{version: "1.0.0", terminal: "xterm", colors: 256}}
   ```
   """
-  @spec get_system_info() :: {:ok, map()} | {:error, term()}
+  @spec get_system_info() :: {:ok, %{
+    accessibility: boolean(),
+    colors: 0 | 256,
+    performance: map(),
+    terminal: binary(),
+    version: binary()
+  }}
   def get_system_info do
     info = %{
       version: get_version(),
@@ -554,10 +559,10 @@ defmodule Raxol.Core do
   end
 
   defp initialize_core_systems(options) do
-    Performance.init(Keyword.get(options, :performance, []))
-    Metrics.init(Keyword.get(options, :metrics, []))
-    Raxol.Core.Accessibility.init(Keyword.get(options, :accessibility, []))
-    ColorSystem.init(Keyword.get(options, :theme, :default))
+    _ = Performance.init(Keyword.get(options, :performance, []))
+    _ = Metrics.init(Keyword.get(options, :metrics, []))
+    _ = Raxol.Core.Accessibility.init(Keyword.get(options, :accessibility, []))
+    _ = ColorSystem.init(Keyword.get(options, :theme, :default))
 
     :ok
   end
@@ -596,7 +601,6 @@ defmodule Raxol.Core do
   defp get_performance_info do
     case Performance.get_stats() do
       {:ok, stats} -> stats
-      {:error, _} -> %{status: :unknown}
     end
   end
 end

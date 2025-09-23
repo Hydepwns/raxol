@@ -43,24 +43,25 @@ defmodule RaxolWeb.ChannelCase do
   """
   def start_endpoint(_) do
     # Start applications necessary for the endpoint
-    Application.ensure_all_started(:phoenix)
-    Application.ensure_all_started(:plug_cowboy)
+    _ = Application.ensure_all_started(:phoenix)
+    _ = Application.ensure_all_started(:plug_cowboy)
 
     # Ensure Raxol.PubSub is started before the endpoint
     # This is required because the endpoint is configured to use Raxol.PubSub
-    case Process.whereis(Raxol.PubSub) do
-      nil ->
-        {:ok, _pid} =
-          Supervisor.start_link([{Phoenix.PubSub, name: Raxol.PubSub}],
-            strategy: :one_for_one
-          )
+    _ =
+      case Process.whereis(Raxol.PubSub) do
+        nil ->
+          {:ok, _pid} =
+            Supervisor.start_link([{Phoenix.PubSub, name: Raxol.PubSub}],
+              strategy: :one_for_one
+            )
 
-      _pid ->
-        :ok
-    end
+        _pid ->
+          :ok
+      end
 
     # Start the endpoint itself
-    RaxolWeb.Endpoint.start_link()
+    _ = RaxolWeb.Endpoint.start_link()
     :ok
   end
 end

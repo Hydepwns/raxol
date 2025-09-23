@@ -179,17 +179,13 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     )
 
     Raxol.Core.ErrorHandling.safe_call(fn ->
-      case LayoutEngine.apply_layout(view, dimensions) do
-        positioned_elements when is_list(positioned_elements) ->
-          Raxol.Core.Runtime.Log.debug(
-            "Rendering Engine: Got positioned elements: #{inspect(positioned_elements)}"
-          )
+      positioned_elements = LayoutEngine.apply_layout(view, dimensions)
 
-          {:ok, positioned_elements}
+      Raxol.Core.Runtime.Log.debug(
+        "Rendering Engine: Got positioned elements: #{inspect(positioned_elements)}"
+      )
 
-        _ ->
-          {:error, :layout_failed}
-      end
+      {:ok, positioned_elements}
     end)
     |> case do
       {:ok, result} -> result
@@ -204,17 +200,13 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     )
 
     Raxol.Core.ErrorHandling.safe_call(fn ->
-      case UIRenderer.render_to_cells(positioned_elements, theme) do
-        cells when is_list(cells) ->
-          Raxol.Core.Runtime.Log.debug(
-            "Rendering Engine: Got cells: #{inspect(cells)}"
-          )
+      cells = UIRenderer.render_to_cells(positioned_elements, theme)
 
-          {:ok, cells}
+      Raxol.Core.Runtime.Log.debug(
+        "Rendering Engine: Got cells: #{inspect(cells)}"
+      )
 
-        _ ->
-          {:error, :cell_rendering_failed}
-      end
+      {:ok, cells}
     end)
     |> case do
       {:ok, result} -> result
@@ -225,13 +217,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # Safe plugin transforms using functional error handling
   defp safe_apply_plugin_transforms(cells, state) do
     Raxol.Core.ErrorHandling.safe_call(fn ->
-      case apply_plugin_transforms(cells, state) do
-        processed_cells when is_list(processed_cells) ->
-          {:ok, processed_cells}
-
-        _ ->
-          {:error, :plugin_transform_failed}
-      end
+      processed_cells = apply_plugin_transforms(cells, state)
+      {:ok, processed_cells}
     end)
     |> case do
       {:ok, result} -> result
@@ -278,8 +265,16 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     # Transform cells into format {x, y, %Cell{...}}
     transformed_cells = transform_cells_for_update(cells)
 
-    # Update the screen buffer state
-    updated_buffer = ScreenBuffer.update(screen_buffer, transformed_cells)
+    # Apply cells to the buffer
+    updated_buffer = Enum.reduce(transformed_cells, screen_buffer, fn {x, y, cell}, buffer ->
+      ScreenBuffer.write_char(buffer, x, y, cell.char || " ", %{
+        foreground: cell.foreground,
+        background: cell.background,
+        bold: cell.bold,
+        underline: cell.underline,
+        italic: cell.italic
+      })
+    end)
 
     # Render the buffer using the Terminal Renderer
     output_string = Raxol.Terminal.Renderer.render(updated_buffer)
@@ -302,7 +297,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     )
 
     # Return updated state with the new buffer
-    updated_state_with_buffer = %{state | buffer: updated_buffer}
+    updated_state_with_buffer = Map.put(state, :buffer, updated_buffer)
 
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: render_to_terminal complete. New state: #{inspect(updated_state_with_buffer)}"
@@ -426,7 +421,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         execute_plugin_commands(collected_commands)
 
         # Update plugin manager state in dispatcher if needed
-        update_plugin_manager_in_dispatcher(
+        _ = update_plugin_manager_in_dispatcher(
           state.dispatcher_pid,
           updated_manager
         )

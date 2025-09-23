@@ -259,7 +259,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   def handle_copy(state) do
-    handle_copy_if_selection_exists(state)
+    _result = handle_copy_if_selection_exists(state)
     {:noreply, state, nil}
   end
 
@@ -320,7 +320,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   def handle_copy_selection(state) do
-    handle_copy_if_selection_exists(state)
+    _ = handle_copy_if_selection_exists(state)
     {:noreply, state}
   end
 

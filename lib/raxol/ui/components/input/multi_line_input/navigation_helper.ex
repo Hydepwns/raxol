@@ -147,19 +147,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
 
         # Find the start of the previous word (regex for non-whitespace preceded by whitespace or start)
         # This is a simplified regex; a more robust one would handle punctuation.
-        case :binary.match(text_before_cursor, ~r/\S+$/, [
-               :global,
-               :capture_original
-             ]) do
+        case Regex.run(~r/\S+$/, text_before_cursor, return: :index) do
           # No non-whitespace found before cursor (e.g., only spaces)
-          [] ->
+          nil ->
             # Move to beginning of the current line if possible
             move_cursor(state, {current_row, 0})
 
-          matches ->
-            # Find the last match (closest non-whitespace sequence)
-            last_match = List.last(matches)
-            start_of_word_index = elem(last_match, 1)
+          [{start_of_word_index, _length}] ->
+            # Found the start of the last word
 
             # Convert flat index back to {row, col}
             # This is inefficient, a dedicated index_to_pos helper would be better

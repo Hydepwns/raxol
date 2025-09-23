@@ -176,10 +176,6 @@ defmodule Raxol.Terminal.Input.Manager do
 
   defp handle_input_result(emulator, nil), do: {emulator, nil}
 
-  defp handle_input_result(emulator, output) when is_binary(output) do
-    {emulator, output}
-  end
-
   defp handle_input_result(emulator, {:command, command}) do
     handle_command(emulator, command)
   end

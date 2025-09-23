@@ -36,7 +36,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   API.subscribe(:key_press, MyPluginHandlers)
   ```
   """
-  @spec subscribe(atom(), module(), atom()) :: :ok | {:error, term()}
+  @spec subscribe(atom(), module(), atom()) :: :ok
   def subscribe(event_type, handler, function \\ :handle_event) do
     EventManager.register_handler(event_type, handler, function)
   end
@@ -54,7 +54,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   - `:ok` if successful
   - `{:error, reason}` if unsubscription failed
   """
-  @spec unsubscribe(atom(), module()) :: :ok | {:error, term()}
+  @spec unsubscribe(atom(), module()) :: :ok
   def unsubscribe(event_type, handler) do
     EventManager.unregister_handler(event_type, handler, :handle_event)
   end

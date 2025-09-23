@@ -387,6 +387,7 @@ defmodule Raxol.Config.Generator do
 
     config
     |> Enum.map_join(
+      "\n",
       fn {key, value} ->
         case value do
           v when is_map(v) ->
@@ -411,8 +412,7 @@ defmodule Raxol.Config.Generator do
           v ->
             "#{indent}#{key} = #{inspect(v)}"
         end
-      end,
-      "\n"
+      end
     )
   end
 

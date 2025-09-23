@@ -88,7 +88,7 @@ defmodule Raxol.Audit.Exporter do
     }
 
     # Process export queue periodically
-    :timer.send_interval(10_000, :process_queue)
+    {:ok, _} = :timer.send_interval(10_000, :process_queue)
 
     Logger.info("Audit exporter initialized")
     {:ok, state}
@@ -643,7 +643,7 @@ defmodule Raxol.Audit.Exporter do
     case :queue.out(state.export_queue) do
       {{:value, schedule}, new_queue} ->
         # Process scheduled export
-        Task.start(fn ->
+        {:ok, _} = Task.start(fn ->
           perform_scheduled_export(schedule)
         end)
 

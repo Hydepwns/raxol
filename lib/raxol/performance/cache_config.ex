@@ -119,7 +119,7 @@ defmodule Raxol.Performance.CacheConfig do
   @doc """
   Get memory budget for caches in bytes.
   """
-  @spec memory_budget(atom()) :: integer()
+  @spec memory_budget(atom()) :: pos_integer()
   def memory_budget(profile) do
     case profile do
       # 1 MB

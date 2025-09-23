@@ -2,7 +2,6 @@ defmodule Raxol.Terminal.ScreenBufferTest do
   use ExUnit.Case
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Buffer.Eraser
   alias Raxol.Terminal.ANSI.TextFormatting
 
   # Helper to convert a list of cells to a string for easier assertions

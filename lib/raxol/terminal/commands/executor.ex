@@ -220,7 +220,6 @@ defmodule Raxol.Terminal.Commands.Executor do
       {:ok, updated_emulator} -> updated_emulator
       {:error, _reason, updated_emulator} -> updated_emulator
       %Raxol.Terminal.Emulator{} = updated_emulator -> updated_emulator
-      _ -> emulator
     end
   end
 

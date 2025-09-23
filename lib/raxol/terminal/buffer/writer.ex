@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
       %{fg: :red, bg: :default, bold: false, ...}
   """
   @spec create_cell_style(TextFormatting.text_style() | nil) ::
-          TextFormatting.text_style()
+          TextFormatting.t()
   def create_cell_style(nil), do: TextFormatting.new()
 
   def create_cell_style(style) when is_map(style) do

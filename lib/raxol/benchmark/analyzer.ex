@@ -171,21 +171,25 @@ defmodule Raxol.Benchmark.Analyzer do
 
   defp extract_timing_data(_), do: []
 
-  defp generate_summary(analysis) do
+  defp generate_summary(analysis) when is_map(analysis) do
     %{
-      total_operations: analysis.count || 0,
-      average_time: analysis.mean || 0,
-      fastest_time: analysis.min || 0,
-      slowest_time: analysis.max || 0,
-      std_deviation: analysis.std_dev || 0
+      total_operations: Map.get(analysis, :count, 0),
+      average_time: Map.get(analysis, :mean, 0),
+      fastest_time: Map.get(analysis, :min, 0),
+      slowest_time: Map.get(analysis, :max, 0),
+      std_deviation: Map.get(analysis, :std_dev, 0)
     }
   end
 
-  defp generate_recommendations(analysis) do
+  defp generate_recommendations(analysis) when is_map(analysis) do
     recommendations = []
 
+    cv = Map.get(analysis, :coefficient_of_variation, 0)
+    std_dev = Map.get(analysis, :std_dev, 0)
+    mean = Map.get(analysis, :mean, 1)
+
     recommendations =
-      if (analysis.coefficient_of_variation || 0) > 0.2 do
+      if cv > 0.2 do
         [
           "High variability detected. Consider running more iterations for stable results."
           | recommendations
@@ -195,7 +199,7 @@ defmodule Raxol.Benchmark.Analyzer do
       end
 
     recommendations =
-      if (analysis.std_dev || 0) > (analysis.mean || 1) * 0.5 do
+      if std_dev > mean * 0.5 do
         [
           "Large standard deviation indicates inconsistent performance."
           | recommendations

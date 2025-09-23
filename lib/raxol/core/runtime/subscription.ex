@@ -186,17 +186,12 @@ defmodule Raxol.Core.Runtime.Subscription do
       {:ok, :cancel} -> :ok
       {:error, :badarg} -> {:error, :subscription_not_found}
       {:error, reason} -> {:error, {:timer_cancel_error, reason}}
-      _ -> {:error, :subscription_not_found}
     end
   end
 
   defp stop_events(actual_id)
        when is_integer(actual_id) or is_reference(actual_id) do
-    case Raxol.Core.Events.EventManager.unsubscribe(actual_id) do
-      :ok -> :ok
-      {:error, :not_found} -> {:error, :subscription_not_found}
-      {:error, reason} -> {:error, reason}
-    end
+    Raxol.Core.Events.EventManager.unsubscribe(actual_id)
   end
 
   defp stop_events(_actual_id) do
@@ -302,35 +297,28 @@ defmodule Raxol.Core.Runtime.Subscription do
   defp watch_file(path, events, target_pid) do
     case FileSystem.start_link(dirs: [path]) do
       {:ok, watcher_pid} ->
-        case FileSystem.subscribe(watcher_pid) do
-          :ok ->
-            receive do
-              {_watcher_pid, {:file_event, path, file_events}} ->
-                case Enum.any?(file_events, &(&1 in events)) do
-                  true ->
-                    send(
-                      target_pid,
-                      {:subscription, {:file_change, path, file_events}}
-                    )
+        :ok = FileSystem.subscribe(watcher_pid)
 
-                  false ->
-                    :ok
-                end
-            after
-              5000 ->
-                # Timeout after 5 seconds if no file events are received
-                send(target_pid, {:subscription, {:file_watch_timeout, path}})
+        receive do
+          {_watcher_pid, {:file_event, path, file_events}} ->
+            case Enum.any?(file_events, &(&1 in events)) do
+              true ->
+                send(
+                  target_pid,
+                  {:subscription, {:file_change, path, file_events}}
+                )
+
+              false ->
+                :ok
             end
-
-            # Continue watching
-            watch_file(path, events, target_pid)
-
-          error ->
-            send(
-              target_pid,
-              {:subscription, {:file_watch_error, {:subscribe_error, error}}}
-            )
+        after
+          5000 ->
+            # Timeout after 5 seconds if no file events are received
+            send(target_pid, {:subscription, {:file_watch_timeout, path}})
         end
+
+        # Continue watching
+        watch_file(path, events, target_pid)
 
       {:error, reason} ->
         send(

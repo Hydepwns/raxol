@@ -276,7 +276,7 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
     end)
 
     # Cancel existing timer if any
-    cancel_batch_timer(state.batch_timer_ref)
+    _ = cancel_batch_timer(state.batch_timer_ref)
 
     # Update statistics
     new_stats = %{
@@ -331,7 +331,7 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
   end
 
   defp cancel_batch_timer(nil), do: :ok
-  defp cancel_batch_timer(timer_ref), do: Process.cancel_timer(timer_ref)
+  defp cancel_batch_timer(timer_ref), do: _ = Process.cancel_timer(timer_ref)
 
   defp count_tree_nodes(%{children: children}) when is_list(children) do
     1 + Enum.sum(Enum.map(children, &count_tree_nodes/1))

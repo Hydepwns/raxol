@@ -366,7 +366,7 @@ defmodule Raxol.Terminal.Emulator.Core do
   end
 
   defp update_scrollback_buffer(scrolled_buffer, scrolled_lines) do
-    has_lines = scrolled_lines && length(scrolled_lines) > 0
+    has_lines = scrolled_lines != nil and length(scrolled_lines) > 0
     handle_scrollback_update(has_lines, scrolled_buffer, scrolled_lines)
   end
 

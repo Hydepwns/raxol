@@ -205,7 +205,7 @@ defmodule Raxol.Svelte.Store do
 
         # Run callbacks asynchronously to avoid blocking
         Enum.each(subscribers, fn {_id, callback} ->
-          Task.start(fn -> callback.(value) end)
+          _ = Task.start(fn -> callback.(value) end)
         end)
 
         state

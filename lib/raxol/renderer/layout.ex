@@ -75,8 +75,6 @@ defmodule Raxol.Renderer.Layout do
       [single_view] -> single_view
       [first_view | _rest] -> first_view
       [] -> Raxol.Renderer.Layout.Utils.create_default_view(dimensions)
-      single_map when is_map(single_map) -> single_map
-      _other -> Raxol.Renderer.Layout.Utils.create_default_view(dimensions)
     end
   end
 

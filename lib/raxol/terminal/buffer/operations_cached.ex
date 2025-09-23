@@ -209,7 +209,7 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
     cache_viewport(get_viewport(buffer), buffer, buffer_id)
 
     # Cache lines around cursor
-    cache_cursor_lines(get_cursor_position(buffer), buffer, buffer_id)
+    _ = cache_cursor_lines(get_cursor_position(buffer), buffer, buffer_id)
 
     Logger.debug("Buffer cache warmed for buffer #{buffer_id}")
   end
@@ -264,8 +264,6 @@ defmodule Raxol.Terminal.Buffer.OperationsCached do
       end
     end)
   end
-
-  defp has_special_formatting?(_), do: false
 
   defp get_cursor_position(buffer) do
     # Extract cursor position from buffer metadata

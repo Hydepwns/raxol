@@ -166,13 +166,11 @@ defmodule Raxol.Terminal.Config.Application do
 
   defp extract_width(display) when is_map(display), do: Map.get(display, :width)
   defp extract_width(display) when is_tuple(display), do: elem(display, 0)
-  defp extract_width(_), do: nil
 
   defp extract_height(display) when is_map(display),
     do: Map.get(display, :height)
 
   defp extract_height(display) when is_tuple(display), do: elem(display, 1)
-  defp extract_height(_), do: nil
 
   # Apply input configuration
   defp apply_input_config(%{input: input}, terminal_pid) when is_map(input) do
@@ -294,7 +292,7 @@ defmodule Raxol.Terminal.Config.Application do
     # This is a placeholder implementation
     # In a real implementation, this would use the appropriate
     # message passing mechanism and handle responses
-    Process.send(pid, message, [:noconnect])
+    _ = Process.send(pid, message, [:noconnect])
     :ok
   end
 

@@ -440,10 +440,7 @@ defmodule Raxol.Handlers.CloseTerminalHandler do
   end
 
   defp terminate_terminal_process(terminal_process) do
-    case GenServer.stop(terminal_process, :normal, 5000) do
-      :ok -> :ok
-      {:error, reason} -> {:error, reason}
-    end
+    GenServer.stop(terminal_process, :normal, 5000)
   end
 
   defp unregister_terminal(terminal_id) do

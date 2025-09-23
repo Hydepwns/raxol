@@ -217,7 +217,6 @@ defmodule Raxol.Metrics do
   defp get_db_connections do
     case Repo.checkout(fn -> :ok end) do
       {:ok, _} -> 1
-      _ -> 0
     end
   end
 

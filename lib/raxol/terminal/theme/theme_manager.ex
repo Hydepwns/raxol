@@ -215,7 +215,7 @@ defmodule Raxol.Terminal.Theme.Manager do
   @doc """
   Gets a style from the current theme or custom styles.
   """
-  @spec get_style(t(), String.t()) :: {:ok, style(), t()} | {:error, term()}
+  @spec get_style(t(), String.t() | atom()) :: {:ok, style(), t()} | {:error, term()}
   def get_style(manager, style_name) do
     # Try atom and string keys for theme styles
     style =
@@ -286,6 +286,7 @@ defmodule Raxol.Terminal.Theme.Manager do
 
   # Private helper functions
 
+  @spec validate_style(style()) :: :ok | {:error, atom()}
   defp validate_style(style) do
     required_fields = [:foreground, :background, :bold, :italic, :underline]
 
@@ -295,6 +296,7 @@ defmodule Raxol.Terminal.Theme.Manager do
     end
   end
 
+  @spec update_metrics(map(), atom()) :: map()
   defp update_metrics(metrics, :theme_switches) do
     %{metrics | theme_switches: metrics.theme_switches + 1}
   end

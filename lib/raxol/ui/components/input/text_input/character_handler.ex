@@ -37,7 +37,7 @@ defmodule Raxol.UI.Components.Input.TextInput.CharacterHandler do
     current_value = state.value || ""
     cursor_pos = state.cursor_pos
     before = String.slice(current_value, 0, cursor_pos)
-    after_text = String.slice(current_value, cursor_pos..-1//1) || ""
+    after_text = String.slice(current_value, cursor_pos..-1//1)
     new_value = before <> char_str <> after_text
     new_cursor_pos = cursor_pos + 1
 

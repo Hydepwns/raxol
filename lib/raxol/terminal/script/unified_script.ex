@@ -426,12 +426,12 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
              ) do
           {output, 0} ->
             # Clean up
-            File.rm(temp_file)
+            _ = File.rm(temp_file)
             {:ok, String.trim(output)}
 
           {error_output, _exit_code} ->
             # Clean up
-            File.rm(temp_file)
+            _ = File.rm(temp_file)
             {:error, String.trim(error_output)}
         end
       end)
@@ -442,12 +442,12 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
 
       nil ->
         # Try to clean up temp file
-        Task.start(fn -> File.rm(temp_file) end)
+        _ = Task.start(fn -> File.rm(temp_file) end)
         {:error, "Script execution timeout"}
 
       {:exit, reason} ->
         # Try to clean up temp file
-        Task.start(fn -> File.rm(temp_file) end)
+        _ = Task.start(fn -> File.rm(temp_file) end)
         {:error, "Failed to execute script: #{inspect(reason)}"}
     end
   end

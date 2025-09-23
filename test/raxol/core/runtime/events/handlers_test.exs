@@ -16,7 +16,7 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
 
   describe "register_handler/4" do
     test ~c"registers a handler with default options" do
-      handler_fun = fn _event, state -> {:ok, _event, state} end
+      handler_fun = fn event, state -> {:ok, event, state} end
 
       assert {:ok, :test_handler} =
                Handlers.register_handler(
@@ -27,7 +27,7 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
     end
 
     test ~c"registers a handler with custom priority and filter" do
-      handler_fun = fn _event, state -> {:ok, _event, state} end
+      handler_fun = fn event, state -> {:ok, event, state} end
       filter_fun = fn event -> event.data == "test data" end
 
       assert {:ok, :custom_handler} =
@@ -44,7 +44,7 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
   describe "unregister_handler/1" do
     test ~c"unregisters an existing handler" do
       # First register a handler
-      handler_fun = fn _event, state -> {:ok, _event, state} end
+      handler_fun = fn event, state -> {:ok, event, state} end
 
       {:ok, :temp_handler} =
         Handlers.register_handler(:temp_handler, [:test_event], handler_fun)
@@ -196,9 +196,9 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
       Handlers.register_handler(
         :never_run,
         [:test_event],
-        fn _e, s ->
+        fn e, s ->
           # This would make count 999 if executed
-          {:ok, _e, %{s | count: 999}}
+          {:ok, e, %{s | count: 999}}
         end,
         priority: 20
       )

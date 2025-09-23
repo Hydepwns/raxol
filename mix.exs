@@ -60,7 +60,6 @@ defmodule Raxol.MixProject do
           :error_handling,
           :underspecs,
           :unmatched_returns,
-          :race_conditions,
           :unknown
         ],
 

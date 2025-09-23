@@ -5,7 +5,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
   alias Raxol.Core.Renderer.Element
 
   defp create_state(props) do
-    {:ok, state} = TextField.init(props)
+    state = TextField.init(props)
     state = Map.put_new(state, :style, %{})
     Map.put_new(state, :type, :text_field)
   end
@@ -42,7 +42,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
 
     test "mount/1 and unmount/1 return state unchanged" do
       state = create_state(%{value: "foo"})
-      assert TextField.mount(state) == state
+      assert TextField.mount(state) == {state, []}
       assert TextField.unmount(state) == state
     end
   end

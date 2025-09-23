@@ -4,8 +4,8 @@ defmodule Raxol.Terminal.StyleManager do
   This module is responsible for handling all style-related operations in the terminal.
   """
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.StyleBuffer
+  alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
   @doc """
@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.StyleManager do
   Sets the foreground color.
   Returns the updated emulator.
   """
-  @spec set_foreground(Emulator.t(), String.t()) :: Emulator.t()
+  @spec set_foreground(Emulator.t(), binary()) :: Emulator.t()
   def set_foreground(emulator, color) do
     buffer = StyleBuffer.set_foreground(emulator.style_buffer, color)
     update_buffer(emulator, buffer)
@@ -40,7 +40,7 @@ defmodule Raxol.Terminal.StyleManager do
   Sets the background color.
   Returns the updated emulator.
   """
-  @spec set_background(Emulator.t(), String.t()) :: Emulator.t()
+  @spec set_background(Emulator.t(), binary()) :: Emulator.t()
   def set_background(emulator, color) do
     buffer = StyleBuffer.set_background(emulator.style_buffer, color)
     update_buffer(emulator, buffer)
@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.StyleManager do
   Sets text attributes.
   Returns the updated emulator.
   """
-  @spec set_attributes(Emulator.t(), list(atom())) :: Emulator.t()
+  @spec set_attributes(Emulator.t(), [atom()]) :: Emulator.t()
   def set_attributes(emulator, attributes) do
     buffer = StyleBuffer.set_attributes(emulator.style_buffer, attributes)
     update_buffer(emulator, buffer)
@@ -60,7 +60,7 @@ defmodule Raxol.Terminal.StyleManager do
   Gets the current style.
   Returns the current style map.
   """
-  @spec get_style(Emulator.t()) :: map()
+  @spec get_style(Emulator.t()) :: StyleBuffer.style()
   def get_style(emulator) do
     StyleBuffer.get_style(emulator.style_buffer)
   end
@@ -81,17 +81,17 @@ defmodule Raxol.Terminal.StyleManager do
   """
   @spec apply_style_to_region(
           Emulator.t(),
-          {integer(), integer()},
-          {integer(), integer()},
-          map()
+          {non_neg_integer(), non_neg_integer()},
+          {non_neg_integer(), non_neg_integer()},
+          StyleBuffer.style()
         ) :: Emulator.t()
   def apply_style_to_region(emulator, start, end_, style) do
     buffer =
       StyleBuffer.apply_style_to_region(
         emulator.style_buffer,
+        style,
         start,
-        end_,
-        style
+        end_
       )
 
     update_buffer(emulator, buffer)
@@ -101,7 +101,7 @@ defmodule Raxol.Terminal.StyleManager do
   Gets the style at a specific position.
   Returns the style map at that position.
   """
-  @spec get_style_at(Emulator.t(), integer(), integer()) :: map()
+  @spec get_style_at(Emulator.t(), integer(), integer()) :: StyleBuffer.style()
   def get_style_at(emulator, x, y) do
     StyleBuffer.get_style_at(emulator.style_buffer, x, y)
   end
@@ -110,7 +110,7 @@ defmodule Raxol.Terminal.StyleManager do
   Sets the default style.
   Returns the updated emulator.
   """
-  @spec set_default_style(Emulator.t(), map()) :: Emulator.t()
+  @spec set_default_style(Emulator.t(), StyleBuffer.style()) :: Emulator.t()
   def set_default_style(emulator, style) do
     buffer = StyleBuffer.set_default_style(emulator.style_buffer, style)
     update_buffer(emulator, buffer)
@@ -120,7 +120,7 @@ defmodule Raxol.Terminal.StyleManager do
   Gets the default style.
   Returns the default style map.
   """
-  @spec get_default_style(Emulator.t()) :: map()
+  @spec get_default_style(Emulator.t()) :: StyleBuffer.style()
   def get_default_style(emulator) do
     StyleBuffer.get_default_style(emulator.style_buffer)
   end
@@ -129,7 +129,7 @@ defmodule Raxol.Terminal.StyleManager do
   Merges two styles.
   Returns the merged style map.
   """
-  @spec merge_styles(map(), map()) :: map()
+  @spec merge_styles(StyleBuffer.style(), StyleBuffer.style()) :: StyleBuffer.style()
   def merge_styles(style1, style2) do
     StyleBuffer.merge_styles(style1, style2)
   end
@@ -138,7 +138,7 @@ defmodule Raxol.Terminal.StyleManager do
   Validates a style map.
   Returns :ok or {:error, reason}.
   """
-  @spec validate_style(map()) :: :ok | {:error, String.t()}
+  @spec validate_style(StyleBuffer.style()) :: :ok | {:error, String.t()}
   def validate_style(style) do
     StyleBuffer.validate_style(style)
   end

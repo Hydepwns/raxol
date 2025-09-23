@@ -497,7 +497,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   defp update_io_config(state, config) do
     # Ensure we have a valid config
-    config = config || get_default_config()
+    config = if config == nil, do: get_default_config(), else: config
 
     # Initialize or update components
     {buffer_manager, scroll_buffer, renderer, command_history} =

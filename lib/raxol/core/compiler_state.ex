@@ -102,7 +102,7 @@ defmodule Raxol.Core.CompilerState do
     # Use Task to isolate potential crashes and handle race conditions
     task =
       Task.async(fn ->
-        :ets.new(name, opts)
+        _ = :ets.new(name, opts)
         :ok
       end)
 

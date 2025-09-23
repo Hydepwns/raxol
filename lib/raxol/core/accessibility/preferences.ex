@@ -48,7 +48,8 @@ defmodule Raxol.Core.Accessibility.Preferences do
   # Helper to set preference using pid_or_name or default
   defp set_pref(key, value, pid_or_name) do
     target_pid_or_name = pid_or_name || @default_prefs_name
-    UserPreferences.set(pref_key(key), value, target_pid_or_name)
+    :ok = UserPreferences.set(pref_key(key), value, target_pid_or_name)
+    :ok
   end
 
   @doc """
@@ -146,10 +147,10 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
     # Dispatch the preference_changed event
     key_path = pref_key(:high_contrast)
-    EventManager.dispatch({:preference_changed, key_path, enabled})
+    :ok = EventManager.dispatch(:preference_changed, %{key: key_path, value: enabled})
 
     # Dispatch the event that ColorSystem is listening for
-    EventManager.dispatch({:accessibility_high_contrast, enabled})
+    :ok = EventManager.dispatch(:accessibility_high_contrast, %{enabled: enabled})
 
     :ok
   end
@@ -170,14 +171,14 @@ defmodule Raxol.Core.Accessibility.Preferences do
   def set_reduced_motion(enabled, user_preferences_pid_or_name \\ nil)
       when is_boolean(enabled) do
     target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
-    set_pref(:reduced_motion, enabled, target_pid_or_name)
+    :ok = set_pref(:reduced_motion, enabled, target_pid_or_name)
 
     # Dispatch the preference_changed event
     key_path = pref_key(:reduced_motion)
-    EventManager.dispatch({:preference_changed, key_path, enabled})
+    :ok = EventManager.dispatch(:preference_changed, %{key: key_path, value: enabled})
 
     # Trigger potential side effects using the correct format for handle_preference_changed
-    handle_preference_changed({key_path, enabled}, user_preferences_pid_or_name)
+    :ok = handle_preference_changed({key_path, enabled}, user_preferences_pid_or_name)
 
     :ok
   end
@@ -198,14 +199,14 @@ defmodule Raxol.Core.Accessibility.Preferences do
   def set_large_text(enabled, user_preferences_pid_or_name \\ nil)
       when is_boolean(enabled) do
     target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
-    set_pref(:large_text, enabled, target_pid_or_name)
+    :ok = set_pref(:large_text, enabled, target_pid_or_name)
 
     # Dispatch the preference_changed event
     key_path = pref_key(:large_text)
-    EventManager.dispatch({:preference_changed, key_path, enabled})
+    :ok = EventManager.dispatch(:preference_changed, %{key: key_path, value: enabled})
 
     # Trigger potential side effects using the correct format for handle_preference_changed
-    handle_preference_changed({key_path, enabled}, user_preferences_pid_or_name)
+    :ok = handle_preference_changed({key_path, enabled}, user_preferences_pid_or_name)
 
     # Send text scale updated event
     scale =
@@ -270,11 +271,13 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
     case key_path do
       [:accessibility, :high_contrast] ->
-        EventManager.dispatch({:accessibility_high_contrast, value})
+        :ok = EventManager.dispatch({:accessibility_high_contrast, value})
+        :ok
 
       [:accessibility, :reduced_motion] ->
         # Example of dispatching an event for reduced motion
-        EventManager.dispatch({:accessibility_reduced_motion, value})
+        :ok = EventManager.dispatch({:accessibility_reduced_motion, value})
+        :ok
 
       [:accessibility, :large_text] ->
         # Example of dispatching an event for large text
@@ -284,12 +287,14 @@ defmodule Raxol.Core.Accessibility.Preferences do
             false -> 1.0
           end
 
-        EventManager.dispatch(
+        :ok = EventManager.dispatch(
           {:text_scale_updated, user_preferences_pid_or_name, scale}
         )
+        :ok
 
       _ ->
         :ok
     end
   end
+
 end

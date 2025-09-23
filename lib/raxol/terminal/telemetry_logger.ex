@@ -21,9 +21,9 @@ defmodule Raxol.Terminal.TelemetryLogger do
   Attaches the logger to all Raxol.Terminal telemetry events.
   """
   def attach_all do
-    for event <- @events do
+    _ = for event <- @events do
       handler_id = "raxol-terminal-logger-" <> Enum.join(event, "-")
-      :telemetry.attach(handler_id, event, &__MODULE__.handle_event/4, nil)
+      _ = :telemetry.attach(handler_id, event, &__MODULE__.handle_event/4, nil)
     end
 
     :ok

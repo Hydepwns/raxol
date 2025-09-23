@@ -182,6 +182,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.scroll_up(buffer, 1)
       iex> # Content is scrolled up within region 5-15
   """
+  @spec scroll_up(ScreenBuffer.t(), integer(), {integer(), integer()} | nil) :: ScreenBuffer.t()
   def scroll_up(buffer, lines, scroll_region_arg \\ nil)
 
   def scroll_up(buffer, lines, scroll_region_arg) when lines > 0 do
@@ -190,10 +191,10 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
 
     case lines >= visible_lines do
       true ->
-        scrolled_lines =
+        _scrolled_lines =
           extract_lines_from_region(buffer, scroll_start, scroll_end)
 
-        {clear_region(buffer, scroll_start, scroll_end), scrolled_lines}
+        clear_region(buffer, scroll_start, scroll_end)
 
       false ->
         scroll_region_up_with_lines(buffer, scroll_start, scroll_end, lines)
@@ -217,29 +218,11 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   end
 
   defp scroll_region_up_with_lines(buffer, scroll_start, scroll_end, lines) do
-    # Extract the lines that will be scrolled out
-    scrolled_lines =
-      extract_lines_from_region(buffer, scroll_start, scroll_start + lines - 1)
-
     # Pre-create a single empty line to reuse
     empty_line = List.duplicate(Cell.new(), buffer.width)
 
-    # Simple direct approach: move content up by lines
-    new_cells =
-      do_simple_scroll_up(
-        buffer.cells,
-        scroll_start,
-        scroll_end,
-        lines,
-        empty_line
-      )
-
-    {%{buffer | cells: new_cells}, scrolled_lines}
-  end
-
-  defp do_simple_scroll_up(cells, scroll_start, scroll_end, lines, empty_line) do
     # Split cells into before, region, and after_part
-    {before, region_and_after} = Enum.split(cells, scroll_start)
+    {before, region_and_after} = Enum.split(buffer.cells, scroll_start)
 
     {region, after_part} =
       Enum.split(region_and_after, scroll_end - scroll_start + 1)
@@ -251,8 +234,11 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     empty_lines = List.duplicate(empty_line, lines)
 
     # Combine: before + (remaining + empty_lines) + after_part
-    before ++ (remaining ++ empty_lines) ++ after_part
+    new_cells = before ++ (remaining ++ empty_lines) ++ after_part
+
+    %{buffer | cells: new_cells}
   end
+
 
   @doc """
   Scrolls the content down within the scroll region.
@@ -274,6 +260,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.scroll_down(buffer, 1)
       iex> # Content is scrolled down within region 5-15
   """
+  @spec scroll_down(ScreenBuffer.t(), integer(), {integer(), integer()} | nil) :: ScreenBuffer.t()
   def scroll_down(buffer, lines, scroll_region_arg \\ nil)
 
   def scroll_down(buffer, lines, scroll_region_arg) when lines > 0 do
@@ -291,7 +278,23 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   end
 
   defp scroll_region_down(buffer, scroll_start, scroll_end, lines) do
-    scroll_region_direction(buffer, scroll_start, scroll_end, lines, :down)
+    # Pre-create a single empty line to reuse
+    empty_line = List.duplicate(Cell.new(), buffer.width)
+
+    # Split cells into before, region, and after
+    {before, region_and_after} = Enum.split(buffer.cells, scroll_start)
+    {region, after_part} = Enum.split(region_and_after, scroll_end - scroll_start + 1)
+
+    # Create empty lines for the top
+    empty_lines = List.duplicate(empty_line, lines)
+
+    # For down scroll: add empty lines at top, remove from bottom
+    {remaining, _scrolled_out} = Enum.split(region, length(region) - lines)
+
+    # Combine: before + (empty_lines + remaining) + after
+    new_cells = before ++ (empty_lines ++ remaining) ++ after_part
+
+    %{buffer | cells: new_cells}
   end
 
   @doc """
@@ -337,184 +340,6 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     |> Enum.filter(fn line -> line != [] end)
   end
 
-  # Unified helper for scrolling in both directions
-  defp scroll_region_direction(
-         buffer,
-         scroll_start,
-         scroll_end,
-         lines,
-         direction
-       ) do
-    # Pre-create a single empty line to reuse
-    empty_line = List.duplicate(Cell.new(), buffer.width)
-
-    # Transform cells using helper function
-    new_cells =
-      transform_cells_for_direction(
-        buffer.cells,
-        scroll_start,
-        scroll_end,
-        lines,
-        direction,
-        empty_line
-      )
-
-    %{buffer | cells: new_cells}
-  end
-
-  defp transform_cells_for_direction(
-         cells,
-         scroll_start,
-         scroll_end,
-         lines,
-         direction,
-         empty_line
-       ) do
-    cells
-    |> Enum.with_index()
-    |> Enum.map(fn {line, idx} ->
-      transform_line_for_direction(
-        line,
-        idx,
-        cells,
-        scroll_start,
-        scroll_end,
-        lines,
-        direction,
-        empty_line
-      )
-    end)
-  end
-
-  defp transform_line_for_direction(
-         line,
-         idx,
-         cells,
-         scroll_start,
-         scroll_end,
-         lines,
-         direction,
-         empty_line
-       ) do
-    case idx < scroll_start do
-      true ->
-        line
-
-      false ->
-        transform_line_in_region(
-          idx,
-          cells,
-          scroll_start,
-          scroll_end,
-          lines,
-          direction,
-          empty_line
-        )
-    end
-  end
-
-  defp transform_line_in_region(
-         idx,
-         cells,
-         scroll_start,
-         scroll_end,
-         lines,
-         direction,
-         empty_line
-       ) do
-    case direction do
-      :up ->
-        transform_line_for_up_scroll(
-          idx,
-          cells,
-          scroll_start,
-          scroll_end,
-          lines,
-          empty_line
-        )
-
-      :down ->
-        transform_line_for_down_scroll(
-          idx,
-          cells,
-          scroll_start,
-          scroll_end,
-          lines,
-          empty_line
-        )
-    end
-  end
-
-  defp transform_line_for_up_scroll(
-         idx,
-         cells,
-         _scroll_start,
-         scroll_end,
-         lines,
-         empty_line
-       )
-       when idx <= scroll_end - lines,
-       do: get_moved_line(cells, idx, lines, :up, empty_line)
-
-  defp transform_line_for_up_scroll(
-         idx,
-         _cells,
-         _scroll_start,
-         scroll_end,
-         _lines,
-         empty_line
-       )
-       when idx <= scroll_end,
-       do: empty_line
-
-  defp transform_line_for_up_scroll(
-         idx,
-         cells,
-         _scroll_start,
-         _scroll_end,
-         _lines,
-         empty_line
-       ),
-       do: Enum.at(cells, idx, empty_line)
-
-  defp transform_line_for_down_scroll(
-         idx,
-         _cells,
-         scroll_start,
-         _scroll_end,
-         lines,
-         empty_line
-       )
-       when idx < scroll_start + lines,
-       do: empty_line
-
-  defp transform_line_for_down_scroll(
-         idx,
-         cells,
-         _scroll_start,
-         scroll_end,
-         lines,
-         empty_line
-       )
-       when idx <= scroll_end,
-       do: get_moved_line(cells, idx, lines, :down, empty_line)
-
-  defp transform_line_for_down_scroll(
-         idx,
-         cells,
-         _scroll_start,
-         _scroll_end,
-         _lines,
-         empty_line
-       ),
-       do: Enum.at(cells, idx, empty_line)
-
-  defp get_moved_line(cells, idx, lines, direction, empty_line) do
-    case direction do
-      :up -> Enum.at(cells, idx + lines, empty_line)
-      :down -> Enum.at(cells, idx - lines, empty_line)
-    end
-  end
 
   defp get_effective_region(buffer, scroll_region_arg) do
     case scroll_region_arg do
@@ -543,6 +368,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     end
   end
 
+  @spec scroll_to(ScreenBuffer.t(), integer(), integer(), integer()) :: ScreenBuffer.t()
   def scroll_to(buffer, top, bottom, line) do
     {top, bottom} = clamp_region({top, bottom}, buffer.height)
     line = max(top, min(line, bottom))
@@ -625,14 +451,25 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   end
 
   defp shift_region_content(cells, top, bottom, shift) do
-    region_height = bottom - top + 1
-    {before, region} = Enum.split(cells, top)
-    {region, after_part} = Enum.split(region, region_height)
+    case cells do
+      [] ->
+        []
+      [first | _] ->
+        region_height = bottom - top + 1
+        {before, region_and_after} = Enum.split(cells, top)
+        {region, after_part} = Enum.split(region_and_after, region_height)
 
-    {to_shift, remaining} = Enum.split(region, shift)
-    empty_line = List.duplicate(Cell.new(), length(hd(cells)))
-    new_region = remaining ++ List.duplicate(empty_line, length(to_shift))
+        case region do
+          [] ->
+            cells
+          _ ->
+            {_to_shift, remaining} = Enum.split(region, shift)
+            empty_line = List.duplicate(Cell.new(), length(first))
+            empty_lines = List.duplicate(empty_line, shift)
+            new_region = remaining ++ empty_lines
 
-    before ++ new_region ++ after_part
+            before ++ new_region ++ after_part
+        end
+    end
   end
 end

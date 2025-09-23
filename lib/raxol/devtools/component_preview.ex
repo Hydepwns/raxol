@@ -123,7 +123,7 @@ defmodule Raxol.DevTools.ComponentPreview do
       %{state | stories: new_stories}
     end)
 
-    Logger.info("Registered story: #{component}.#{story_name}")
+    _ = Logger.info("Registered story: #{component}.#{story_name}")
     :ok
   end
 
@@ -161,7 +161,7 @@ defmodule Raxol.DevTools.ComponentPreview do
     Agent.update(@preview_agent, fn state ->
       case Map.get(state.stories, story_key) do
         nil ->
-          Logger.warning("Story not found: #{component}.#{story_name}")
+          _ = Logger.warning("Story not found: #{component}.#{story_name}")
           state
 
         story ->
@@ -302,7 +302,7 @@ defmodule Raxol.DevTools.ComponentPreview do
       %{state | server_pid: server_pid}
     end)
 
-    Logger.info("Component preview server started on port #{port}")
+    _ = Logger.info("Component preview server started on port #{port}")
     {:ok, server_pid}
   end
 
@@ -402,9 +402,6 @@ defmodule Raxol.DevTools.ComponentPreview do
          {:ok, rendered} <-
            execute_render_method(render_method, component, props, context) do
       {:ok, rendered}
-    else
-      {:error, reason} -> {:error, reason}
-      error -> {:error, {:unexpected_render_error, error}}
     end
   end
 
@@ -1048,7 +1045,7 @@ defmodule Raxol.DevTools.ComponentPreview do
         {:error, {:render_exception, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -1064,7 +1061,7 @@ defmodule Raxol.DevTools.ComponentPreview do
         {:error, {:component_exception, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -1080,7 +1077,7 @@ defmodule Raxol.DevTools.ComponentPreview do
         {:error, {:file_read_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -1096,7 +1093,7 @@ defmodule Raxol.DevTools.ComponentPreview do
         {:error, {:regex_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -1119,7 +1116,7 @@ defmodule Raxol.DevTools.ComponentPreview do
         {:error, {:module_concat_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -1155,7 +1152,7 @@ defmodule Raxol.DevTools.ComponentPreview do
         {:error, {:module_info_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -1171,7 +1168,7 @@ defmodule Raxol.DevTools.ComponentPreview do
         {:error, {:export_check_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -1187,7 +1184,7 @@ defmodule Raxol.DevTools.ComponentPreview do
         {:error, {:props_schema_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end
@@ -1203,7 +1200,7 @@ defmodule Raxol.DevTools.ComponentPreview do
         {:error, {:eval_error, reason}}
 
       nil ->
-        Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
+        _ = Task.shutdown(Task.async(fn -> :timeout end), :brutal_kill)
         {:error, :timeout}
     end
   end

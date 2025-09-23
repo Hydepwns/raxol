@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
     {vertex_buffer, index_buffer} = prepare_buffers(gpu_renderer)
 
     # Update GPU resources
-    update_gpu_resources(gpu_renderer, vertex_buffer, index_buffer)
+    _ = update_gpu_resources(gpu_renderer, vertex_buffer, index_buffer)
 
     # Execute render pipeline
     output = execute_render_pipeline(gpu_renderer, opts)
@@ -204,8 +204,9 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
 
   defp update_gpu_resources(gpu_renderer, vertex_buffer, index_buffer) do
     # Update GPU resources with new buffer data
-    update_vertex_buffer(gpu_renderer, vertex_buffer)
-    update_index_buffer(gpu_renderer, index_buffer)
+    _ = update_vertex_buffer(gpu_renderer, vertex_buffer)
+    _ = update_index_buffer(gpu_renderer, index_buffer)
+    :ok
   end
 
   defp execute_render_pipeline(gpu_renderer, opts) do
@@ -510,7 +511,7 @@ defmodule Raxol.Terminal.Renderer.GPURenderer do
             gpu_renderer
           )
 
-        Map.put(gpu_renderer, :output_data, output_data || [])
+        Map.put(gpu_renderer, :output_data, if(output_data == nil, do: [], else: output_data))
 
       _ ->
         # No output stage available, pass through unchanged, but ensure :output_data exists

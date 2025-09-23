@@ -319,14 +319,9 @@ defmodule Raxol.Benchmark.MemoryDSL do
     |> Keyword.merge(opts)
   end
 
-  defp get_scenario_results(results, scenario) do
+  defp get_scenario_results(%{scenarios: scenarios}, scenario) when is_list(scenarios) do
     scenario_key = to_string(scenario)
-
-    case results do
-      %{scenarios: scenarios} -> Map.get(scenarios, scenario_key, %{})
-      %{} -> Map.get(results, scenario_key, %{})
-      _ -> %{}
-    end
+    Enum.find(scenarios, %{}, fn s -> Map.get(s, :name) == scenario_key end)
   end
 
   defp get_peak_memory(scenario_results) do
@@ -334,8 +329,11 @@ defmodule Raxol.Benchmark.MemoryDSL do
       %{memory_usage_data: %{statistics: %{maximum: max}}} ->
         max
 
-      %{memory_usage_data: %{samples: samples}} ->
-        Enum.max(samples, fn -> 0 end)
+      %{memory_usage_data: %{samples: samples}} when is_list(samples) and samples != [] ->
+        Enum.max(samples)
+
+      %{memory_usage_data: %{samples: []}} ->
+        0
 
       _ ->
         0
@@ -350,10 +348,13 @@ defmodule Raxol.Benchmark.MemoryDSL do
       %{memory_usage_data: %{statistics: %{median: median}}} ->
         median
 
-      %{memory_usage_data: %{samples: samples}} ->
+      %{memory_usage_data: %{samples: samples}} when is_list(samples) and samples != [] ->
         sorted = Enum.sort(samples)
         percentile_75_index = trunc(length(sorted) * 0.75)
         Enum.at(sorted, percentile_75_index, 0)
+
+      %{memory_usage_data: %{samples: []}} ->
+        0
 
       _ ->
         0
@@ -406,11 +407,7 @@ defmodule Raxol.Benchmark.MemoryDSL do
     }
   end
 
-  defp count_scenarios(results) do
-    case results do
-      %{scenarios: scenarios} -> map_size(scenarios)
-      %{} -> map_size(results)
-      _ -> 0
-    end
+  defp count_scenarios(%{scenarios: scenarios}) when is_list(scenarios) do
+    length(scenarios)
   end
 end

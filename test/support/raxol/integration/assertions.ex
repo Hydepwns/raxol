@@ -151,7 +151,7 @@ defmodule Raxol.Test.Integration.Assertions do
       when is_list(components) do
     # Track event propagation
     ref = System.unique_integer([:positive])
-    ProcessStore.put(ref, [])
+    _ = ProcessStore.put(ref, [])
 
     # Use Task to ensure cleanup happens
     task =
@@ -167,7 +167,7 @@ defmodule Raxol.Test.Integration.Assertions do
         result = verification_fn.(history)
 
         # Cleanup
-        ProcessStore.delete(ref)
+        _ = ProcessStore.delete(ref)
 
         {:ok, result}
       end)
@@ -177,15 +177,15 @@ defmodule Raxol.Test.Integration.Assertions do
         result
 
       {:ok, {:error, error}} ->
-        ProcessStore.delete(ref)
+        _ = ProcessStore.delete(ref)
         flunk("Event propagation failed: #{inspect(error)}")
 
       nil ->
-        ProcessStore.delete(ref)
+        _ = ProcessStore.delete(ref)
         flunk("Event propagation timed out")
 
       {:exit, reason} ->
-        ProcessStore.delete(ref)
+        _ = ProcessStore.delete(ref)
         flunk("Event propagation failed: #{inspect(reason)}")
     end
   end

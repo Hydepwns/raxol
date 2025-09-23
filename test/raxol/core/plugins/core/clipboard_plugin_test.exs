@@ -49,7 +49,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
       content = "test content"
       expect_clipboard_paste(ClipboardMock, {:ok, content})
 
-      assert {:ok, content} =
+      assert {:ok, ^content} =
                ClipboardPlugin.handle_command(:clipboard_read, [], state)
     end
 

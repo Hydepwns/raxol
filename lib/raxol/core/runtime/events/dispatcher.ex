@@ -210,19 +210,19 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   # --- Public API for PubSub ---
 
   @doc "Subscribes the calling process to a specific event topic."
-  @spec subscribe(atom()) :: :ok | {:error, term()}
+  @spec subscribe(atom()) :: {:ok, pid()}
   def subscribe(topic) when is_atom(topic) do
     Registry.register(@registry_name, topic, {})
   end
 
   @doc "Unsubscribes the calling process from a specific event topic."
-  @spec unsubscribe(atom()) :: :ok | {:error, term()}
+  @spec unsubscribe(atom()) :: :ok
   def unsubscribe(topic) when is_atom(topic) do
     Registry.unregister(@registry_name, topic)
   end
 
   @doc "Broadcasts an event payload to all subscribers of a topic."
-  @spec broadcast(atom(), map()) :: :ok | {:error, term()}
+  @spec broadcast(atom(), map()) :: :ok
   def broadcast(topic, payload) when is_atom(topic) and is_map(payload) do
     Raxol.Core.Runtime.Log.debug(
       # {topic}": #{inspect(payload)}"

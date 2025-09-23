@@ -168,7 +168,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Gets the scrollback buffer.
   Returns the scrollback buffer.
   """
-  @spec get_scrollback_buffer(Emulator.t()) :: list()
+  @spec get_scrollback_buffer(Emulator.t()) :: :ok
   def get_scrollback_buffer(emulator) do
     ScrollbackManager.get_scrollback_buffer(emulator)
   end
@@ -177,7 +177,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Adds a line to the scrollback buffer.
   Returns the updated emulator.
   """
-  @spec add_to_scrollback(Emulator.t(), String.t()) :: Emulator.t()
+  @spec add_to_scrollback(Emulator.t(), String.t()) :: :ok
   def add_to_scrollback(emulator, line) do
     ScrollbackManager.add_to_scrollback(emulator, line)
   end
@@ -186,7 +186,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Clears the scrollback buffer.
   Returns the updated emulator.
   """
-  @spec clear_scrollback(Emulator.t()) :: Emulator.t()
+  @spec clear_scrollback(Emulator.t()) :: :ok
   def clear_scrollback(emulator) do
     ScrollbackManager.clear_scrollback(emulator)
   end
@@ -243,7 +243,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   @doc """
   Starts a buffer manager process.
   """
-  @spec start_link(keyword()) :: {:ok, pid()} | {:error, term()}
+  @spec start_link(keyword()) :: {:ok, {non_neg_integer(), non_neg_integer()}} | {:error, term()}
   def start_link(opts) do
     # For now, return a simple state - this could be enhanced later
     width = Keyword.get(opts, :width, 80)

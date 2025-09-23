@@ -111,7 +111,6 @@ defmodule Raxol.Terminal.Commands.OSCHandler.ColorPalette do
   defp parse_rgb_decimal("rgb(" <> rest) do
     case String.trim_trailing(rest, ")") do
       rest when is_binary(rest) -> parse_rgb_components(rest)
-      _ -> {:error, :invalid_format}
     end
   end
 

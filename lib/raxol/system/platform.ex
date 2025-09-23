@@ -347,7 +347,14 @@ defmodule Raxol.System.Platform do
           :sixel_graphics => boolean(),
           :iterm2_graphics => boolean(),
           :terminal_type => atom(),
-          :capabilities => map()
+          :capabilities => %{
+            :max_image_size => non_neg_integer(),
+            :supports_animation => boolean(),
+            :supports_transparency => boolean(),
+            :supports_chunked_transmission => boolean(),
+            :max_image_width => non_neg_integer(),
+            :max_image_height => non_neg_integer()
+          }
         }
   def detect_graphics_support do
     terminal_type = detect_terminal_type()

@@ -20,27 +20,30 @@ defmodule Raxol.Terminal.Style.Manager do
           | nil
 
   @type text_style :: %{
-          double_width: boolean(),
-          double_height: :none | :top | :bottom,
-          bold: boolean(),
-          faint: boolean(),
-          italic: boolean(),
-          underline: boolean(),
-          blink: boolean(),
-          reverse: boolean(),
-          conceal: boolean(),
-          strikethrough: boolean(),
-          fraktur: boolean(),
-          double_underline: boolean(),
-          foreground: color(),
           background: color(),
-          hyperlink: String.t() | nil
+          blink: boolean(),
+          bold: boolean(),
+          conceal: boolean(),
+          double_height: :bottom | :none | :top,
+          double_underline: boolean(),
+          double_width: boolean(),
+          encircled: boolean(),
+          faint: boolean(),
+          foreground: color(),
+          fraktur: boolean(),
+          framed: boolean(),
+          hyperlink: nil | binary(),
+          italic: boolean(),
+          overlined: boolean(),
+          reverse: boolean(),
+          strikethrough: boolean(),
+          underline: boolean()
         }
 
   @doc """
   Creates a new text style with default values.
   """
-  @spec new() :: text_style()
+  @spec new() :: TextFormatting.t()
   def new do
     TextFormatting.new()
   end
@@ -72,7 +75,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Resets all text formatting attributes to their default values.
   """
-  @spec reset_style(text_style()) :: text_style()
+  @spec reset_style(text_style()) :: TextFormatting.t()
   def reset_style(_style) do
     new()
   end
@@ -112,7 +115,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Sets double-width mode for the current line.
   """
-  @spec set_double_width(text_style()) :: text_style()
+  @spec set_double_width(text_style()) :: TextFormatting.t()
   def set_double_width(style) do
     TextFormatting.set_double_width(style)
   end
@@ -120,7 +123,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Sets double-height top half mode for the current line.
   """
-  @spec set_double_height_top(text_style()) :: text_style()
+  @spec set_double_height_top(text_style()) :: TextFormatting.t()
   def set_double_height_top(style) do
     TextFormatting.set_double_height_top(style)
   end
@@ -128,7 +131,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Sets double-height bottom half mode for the current line.
   """
-  @spec set_double_height_bottom(text_style()) :: text_style()
+  @spec set_double_height_bottom(text_style()) :: TextFormatting.t()
   def set_double_height_bottom(style) do
     TextFormatting.set_double_height_bottom(style)
   end
@@ -136,7 +139,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Resets to single-width, single-height mode.
   """
-  @spec reset_size(text_style()) :: text_style()
+  @spec reset_size(text_style()) :: TextFormatting.t()
   def reset_size(style) do
     TextFormatting.reset_size(style)
   end
@@ -144,7 +147,7 @@ defmodule Raxol.Terminal.Style.Manager do
   @doc """
   Calculates the effective width of a character based on the current style.
   """
-  @spec effective_width(text_style(), String.t()) :: integer()
+  @spec effective_width(text_style(), String.t()) :: non_neg_integer()
   def effective_width(style, char) do
     TextFormatting.effective_width(style, char)
   end

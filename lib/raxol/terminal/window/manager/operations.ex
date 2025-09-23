@@ -139,7 +139,7 @@ defmodule Raxol.Terminal.Window.Manager.Operations do
   def get_child_windows(parent_id) do
     case get_window_by_id(parent_id) do
       {:ok, parent_window} ->
-        children = fetch_child_windows(parent_window.children || [])
+        children = fetch_child_windows(if parent_window.children == nil, do: [], else: parent_window.children)
         {:ok, children}
 
       {:error, :not_found} ->

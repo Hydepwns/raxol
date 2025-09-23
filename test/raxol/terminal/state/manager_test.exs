@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.State.ManagerTest do
   use ExUnit.Case
-  alias Raxol.Terminal.{State.Manager, TestHelper}
+  alias Raxol.Terminal.State.Manager
   alias Raxol.Test.UnifiedTestHelper
 
   describe "new/0" do

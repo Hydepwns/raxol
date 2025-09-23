@@ -220,8 +220,8 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
   @impl GenServer
   def init(config) do
     # Schedule periodic updates
-    :timer.send_interval(@stats_update_interval_ms, :update_stats)
-    :timer.send_interval(@thermal_check_interval_ms, :check_thermal_state)
+    _ = :timer.send_interval(@stats_update_interval_ms, :update_stats)
+    _ = :timer.send_interval(@thermal_check_interval_ms, :check_thermal_state)
 
     state = %__MODULE__{
       config: config,

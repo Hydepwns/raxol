@@ -32,13 +32,16 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
       case Loader.discover_plugins(plugin_dirs) do
         {:ok, _plugins} ->
           {:ok,
-           %{
-             state
-             | initialized: true,
-               file_watching_enabled?: state.file_watching_enabled? || false,
-               command_registry_table:
-                 state.command_registry_table || :undefined
-           }}
+           state
+           |> Map.put(:initialized, true)
+           |> Map.put(
+             :file_watching_enabled?,
+             state.file_watching_enabled? || false
+           )
+           |> Map.put(
+             :command_registry_table,
+             state.command_registry_table || :undefined
+           )}
 
         {:error, reason} ->
           {:error, reason}
@@ -321,22 +324,18 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
         {:error, :not_found}
 
       _plugin ->
-        case Raxol.Core.Runtime.Plugins.LifecycleHelper.init_plugin(
-               plugin_id,
-               state.metadata
-             ) do
-          {:ok, initial_state} ->
-            updated_state = %{
-              state
-              | plugin_states:
-                  Map.put(state.plugin_states, plugin_id, initial_state)
-            }
+        {:ok, initial_state} = Raxol.Core.Runtime.Plugins.LifecycleHelper.init_plugin(
+          plugin_id,
+          state.metadata
+        )
 
-            {:ok, updated_state}
+        updated_state = %{
+          state
+          | plugin_states:
+              Map.put(state.plugin_states, plugin_id, initial_state)
+        }
 
-          {:error, reason} ->
-            {:error, reason}
-        end
+        {:ok, updated_state}
     end
   end
 
@@ -376,18 +375,18 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
         {:error, :not_found}
 
       plugin ->
-        case Raxol.Core.Runtime.Plugins.LifecycleHelper.enable_plugin(
-               plugin,
-               state.plugin_states
-             ) do
-          {:ok, updated_plugin_state} ->
-            # Update the specific plugin state
-            updated_plugin_states =
-              Map.put(state.plugin_states, plugin_id, updated_plugin_state)
+        {:ok, updated_plugin_state} =
+          Raxol.Core.Runtime.Plugins.LifecycleHelper.enable_plugin(
+            plugin,
+            state.plugin_states
+          )
 
-            updated_state = %{state | plugin_states: updated_plugin_states}
-            {:ok, updated_state}
-        end
+        # Update the specific plugin state
+        updated_plugin_states =
+          Map.put(state.plugin_states, plugin_id, updated_plugin_state)
+
+        updated_state = %{state | plugin_states: updated_plugin_states}
+        {:ok, updated_state}
     end
   end
 
@@ -400,18 +399,18 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
         {:error, :not_found}
 
       plugin ->
-        case Raxol.Core.Runtime.Plugins.LifecycleHelper.disable_plugin(
-               plugin,
-               state.plugin_states
-             ) do
-          {:ok, updated_plugin_state} ->
-            # Update the specific plugin state
-            updated_plugin_states =
-              Map.put(state.plugin_states, plugin_id, updated_plugin_state)
+        {:ok, updated_plugin_state} =
+          Raxol.Core.Runtime.Plugins.LifecycleHelper.disable_plugin(
+            plugin,
+            state.plugin_states
+          )
 
-            updated_state = %{state | plugin_states: updated_plugin_states}
-            {:ok, updated_state}
-        end
+        # Update the specific plugin state
+        updated_plugin_states =
+          Map.put(state.plugin_states, plugin_id, updated_plugin_state)
+
+        updated_state = %{state | plugin_states: updated_plugin_states}
+        {:ok, updated_state}
     end
   end
 
@@ -424,18 +423,15 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
         {:error, :not_found}
 
       _plugin ->
-        case Raxol.Core.Runtime.Plugins.LifecycleHelper.reload_plugin(
-               plugin_id,
-               state.metadata,
-               state.plugin_config,
-               state.plugin_states,
-               state.command_registry_table,
-               state.runtime_pid,
-               %{}
-             ) do
-          {:ok, result} -> {:ok, result}
-          {:error, reason} -> {:error, reason}
-        end
+        Raxol.Core.Runtime.Plugins.LifecycleHelper.reload_plugin(
+          plugin_id,
+          state.metadata,
+          state.plugin_config,
+          state.plugin_states,
+          state.command_registry_table,
+          state.runtime_pid,
+          %{}
+        )
     end
   end
 
@@ -452,32 +448,27 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
         command_registry_table,
         plugin_config
       ) do
-    case Raxol.Core.Runtime.Plugins.LifecycleHelper.reload_plugin_from_disk(
-           plugin_id,
-           path,
-           plugins,
-           metadata,
-           plugin_states,
-           load_order,
-           command_registry_table,
-           plugin_config
-         ) do
-      {:ok, result} -> {:ok, result}
-      {:error, reason} -> {:error, reason}
-    end
+    Raxol.Core.Runtime.Plugins.LifecycleHelper.reload_plugin_from_disk(
+      plugin_id,
+      path,
+      plugins,
+      metadata,
+      plugin_states,
+      load_order,
+      command_registry_table,
+      plugin_config
+    )
   end
 
   @doc """
   Cleans up a plugin.
   """
   def cleanup_plugin(plugin_id, metadata) do
-    case Raxol.Core.Runtime.Plugins.LifecycleHelper.cleanup_plugin(
-           plugin_id,
-           metadata
-         ) do
-      {:ok, updated_metadata} -> {:ok, updated_metadata}
-      {:error, reason} -> {:error, reason}
-    end
+    :ok = Raxol.Core.Runtime.Plugins.LifecycleHelper.cleanup_plugin(
+      plugin_id,
+      metadata
+    )
+    {:ok, metadata}
   end
 
   @doc """

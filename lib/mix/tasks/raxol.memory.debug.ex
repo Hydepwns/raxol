@@ -78,6 +78,7 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
 
   @shortdoc "Memory debugging tools for leak detection and optimization"
 
+  @spec run(list()) :: no_return()
   def run(args) do
     {opts, _, _} =
       OptionParser.parse(args,
@@ -98,7 +99,7 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
       System.halt(0)
     end
 
-    Application.ensure_all_started(:raxol)
+    _ = Application.ensure_all_started(:raxol)
 
     config = build_config(opts)
 

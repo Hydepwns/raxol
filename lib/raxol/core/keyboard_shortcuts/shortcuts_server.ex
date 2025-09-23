@@ -631,10 +631,10 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
       shortcuts
       |> Enum.sort_by(fn {_key, def} -> def.priority end)
       |> Enum.map_join(
+        "\n",
         fn {_key, def} ->
           "  #{def.raw}: #{def.description || def.name}"
-        end,
-        "\n"
+        end
       )
 
     header <> shortcuts_text

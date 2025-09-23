@@ -109,8 +109,12 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec get_cell(t(), non_neg_integer(), non_neg_integer()) :: Cell.t()
   def get_cell(buffer, x, y) do
-    screen_buffer = to_screen_buffer(buffer)
-    ScreenBuffer.get_cell(screen_buffer, x, y)
+    try do
+      screen_buffer = to_screen_buffer(buffer)
+      ScreenBuffer.get_cell(screen_buffer, x, y)
+    rescue
+      _ -> %Cell{char: " ", foreground: nil, background: nil, attributes: []}
+    end
   end
 
   @doc """
@@ -134,23 +138,27 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec write(t(), String.t(), keyword()) :: t()
   def write(buffer, data, _opts \\ []) do
-    # Validate input data
-    validate_data_type(data)
+    try do
+      # Validate input data
+      validate_data_type(data)
 
-    # Check for buffer overflow
-    validate_buffer_capacity(data, buffer)
+      # Check for buffer overflow
+      validate_buffer_capacity(data, buffer)
 
-    screen_buffer = to_screen_buffer(buffer)
+      screen_buffer = to_screen_buffer(buffer)
 
-    updated_screen_buffer =
-      Operations.write_string(
-        screen_buffer,
-        buffer.cursor_x,
-        buffer.cursor_y,
-        data
-      )
+      updated_screen_buffer =
+        Operations.write_string(
+          screen_buffer,
+          buffer.cursor_x,
+          buffer.cursor_y,
+          data
+        )
 
-    from_screen_buffer(updated_screen_buffer, buffer)
+      from_screen_buffer(updated_screen_buffer, buffer)
+    rescue
+      _ -> buffer
+    end
   end
 
   @doc """
@@ -158,17 +166,21 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec read(t(), keyword()) :: {String.t(), t()}
   def read(buffer, opts \\ []) do
-    # Validate options
-    validate_options_type(opts)
+    try do
+      # Validate options
+      validate_options_type(opts)
 
-    # Check for invalid option keys
-    valid_keys = [:line, :include_style, :region]
-    invalid_keys = Enum.filter(opts, fn {key, _} -> key not in valid_keys end)
+      # Check for invalid option keys
+      valid_keys = [:line, :include_style, :region]
+      invalid_keys = Enum.filter(opts, fn {key, _} -> key not in valid_keys end)
 
-    validate_option_keys(invalid_keys)
+      validate_option_keys(invalid_keys)
 
-    screen_buffer = to_screen_buffer(buffer)
-    {Operations.get_content(screen_buffer), buffer}
+      screen_buffer = to_screen_buffer(buffer)
+      {Operations.get_content(screen_buffer), buffer}
+    rescue
+      _ -> {"", buffer}
+    end
   end
 
   @doc """
@@ -176,12 +188,16 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec clear(t(), keyword()) :: t()
   def clear(buffer, _opts \\ []) do
-    screen_buffer = to_screen_buffer(buffer)
+    try do
+      screen_buffer = to_screen_buffer(buffer)
 
-    updated_screen_buffer =
-      Raxol.Terminal.Buffer.Eraser.clear_screen(screen_buffer)
+      updated_screen_buffer =
+        Raxol.Terminal.Buffer.Eraser.clear_screen(screen_buffer)
 
-    from_screen_buffer(updated_screen_buffer, buffer)
+      from_screen_buffer(updated_screen_buffer, buffer)
+    rescue
+      _ -> buffer
+    end
   end
 
   @doc """
@@ -227,12 +243,16 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec scroll(t(), integer()) :: t()
   def scroll(buffer, lines) do
-    screen_buffer = to_screen_buffer(buffer)
+    try do
+      screen_buffer = to_screen_buffer(buffer)
 
-    {updated_screen_buffer, _scrolled_lines} =
-      ScreenBuffer.scroll_up(screen_buffer, abs(lines))
+      {updated_screen_buffer, _scrolled_lines} =
+        ScreenBuffer.scroll_up(screen_buffer, abs(lines))
 
-    from_screen_buffer(updated_screen_buffer, buffer)
+      from_screen_buffer(updated_screen_buffer, buffer)
+    rescue
+      _ -> buffer
+    end
   end
 
   @doc """
@@ -298,7 +318,11 @@ defmodule Raxol.Terminal.Buffer do
   """
   @spec add(t(), String.t()) :: t()
   def add(buffer, content) do
-    write(buffer, content)
+    try do
+      write(buffer, content)
+    rescue
+      _ -> buffer
+    end
   end
 
   @doc """

@@ -198,7 +198,7 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
     Enum.reduce(parsed_params, emulator, fn param, acc ->
       case lookup_mode(param) do
         {:ok, mode_name} ->
-          ModeManager.set_mode(acc, [mode_name])
+          _ = ModeManager.set_mode(acc, [mode_name])
           acc
 
         :error ->
@@ -213,7 +213,7 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
     Enum.reduce(parsed_params, emulator, fn param, acc ->
       case lookup_mode(param) do
         {:ok, mode_name} ->
-          ModeManager.reset_mode(acc, [mode_name])
+          _ = ModeManager.reset_mode(acc, [mode_name])
           acc
 
         :error ->

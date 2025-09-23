@@ -50,7 +50,7 @@ defmodule Raxol.Core.ErrorHandling do
       iex> safe_call(fn -> raise "oops" end)
       {:error, %RuntimeError{message: "oops"}}
   """
-  @spec safe_call((-> any())) :: result(any())
+  @spec safe_call((-> any())) :: {:ok, any()} | {:error, Exception.t() | {:exit, term()} | {:throw, term()} | {atom(), term()}}
   def safe_call(fun) when is_function(fun, 0) do
     {:ok, fun.()}
   rescue
@@ -133,7 +133,7 @@ defmodule Raxol.Core.ErrorHandling do
       iex> safe_deserialize("invalid")
       {:error, :invalid_binary}
   """
-  @spec safe_deserialize(binary()) :: result(term())
+  @spec safe_deserialize(binary()) :: {:ok, term()} | {:error, :invalid_binary}
   def safe_deserialize(binary) when is_binary(binary) do
     safe_call(fn -> :erlang.binary_to_term(binary, [:safe]) end)
     |> normalize_deserialize_error()
@@ -164,7 +164,7 @@ defmodule Raxol.Core.ErrorHandling do
 
       safe_read_term("/path/to/file")
   """
-  @spec safe_read_term(Path.t()) :: result(term())
+  @spec safe_read_term(Path.t()) :: {:ok, term()} | {:error, atom()}
   def safe_read_term(path) do
     with {:ok, binary} <- File.read(path),
          {:ok, term} <- safe_deserialize(binary) do
@@ -194,7 +194,7 @@ defmodule Raxol.Core.ErrorHandling do
 
       safe_apply(MyModule, :init, [])
   """
-  @spec safe_apply(module(), atom(), list()) :: result(any())
+  @spec safe_apply(module(), atom(), list()) :: {:ok, any()} | {:error, atom()}
   def safe_apply(module, function, args) do
     case function_exported?(module, function, length(args)) do
       true -> safe_call(fn -> apply(module, function, args) end)
@@ -226,7 +226,7 @@ defmodule Raxol.Core.ErrorHandling do
   Safely calls an optional callback on a module.
   Returns {:ok, nil} if the callback doesn't exist.
   """
-  @spec safe_callback(module(), atom(), list()) :: result(any())
+  @spec safe_callback(module(), atom(), list()) :: {:ok, any()} | {:error, Exception.t() | {:exit, term()} | {:throw, term()} | {atom(), term()}}
   def safe_callback(module, function, args) do
     case function_exported?(module, function, length(args)) do
       true -> safe_call(fn -> apply(module, function, args) end)
@@ -341,7 +341,7 @@ defmodule Raxol.Core.ErrorHandling do
   def with_cleanup(main_fun, cleanup_fun) when is_function(cleanup_fun, 1) do
     case safe_call(main_fun) do
       {:ok, value} = success ->
-        safe_call(fn -> cleanup_fun.(value) end)
+        _ = safe_call(fn -> cleanup_fun.(value) end)
         success
 
       error ->
@@ -352,10 +352,10 @@ defmodule Raxol.Core.ErrorHandling do
   @doc """
   Ensures cleanup is called regardless of success or failure.
   """
-  @spec ensure_cleanup((-> any()), (-> any())) :: result(any())
+  @spec ensure_cleanup((-> any()), (-> any())) :: {:ok, any()} | {:error, Exception.t() | {:exit, term()} | {:throw, term()} | {atom(), term()}}
   def ensure_cleanup(main_fun, cleanup_fun) do
     result = safe_call(main_fun)
-    safe_call(cleanup_fun)
+    _ = safe_call(cleanup_fun)
     result
   end
 

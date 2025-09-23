@@ -171,14 +171,14 @@ defmodule Raxol.Terminal.CellCached do
     ]
 
     # Pre-cache common combinations
-    for char <- common_chars,
-        style <- Enum.take(common_styles, 5) do
-      Cell.new(char, style)
-      |> cache_cell(char, style)
+    _ = for char <- common_chars,
+            style <- Enum.take(common_styles, 5) do
+      cell = Cell.new(char, style)
+      _ = cache_cell(cell, char, style)
     end
 
     # Pre-cache empty and space cells with common backgrounds
-    for bg <- [:black, :white, :blue, :green, :red] do
+    _ = for bg <- [:black, :white, :blue, :green, :red] do
       space_style = %{bg: bg}
 
       Cell.new(" ", space_style)
@@ -202,11 +202,11 @@ defmodule Raxol.Terminal.CellCached do
   end
 
   defp do_merge_styles(nil, nil), do: %{}
-  defp do_merge_styles(parent, nil), do: parent || %{}
-  defp do_merge_styles(nil, child), do: child || %{}
+  defp do_merge_styles(parent, nil), do: parent
+  defp do_merge_styles(nil, child), do: child
 
   defp do_merge_styles(parent, child) do
-    Map.merge(parent || %{}, child || %{})
+    Map.merge(parent, child)
   end
 
   defp cache_cell(cell, char, style) do

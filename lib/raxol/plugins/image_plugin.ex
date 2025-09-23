@@ -226,9 +226,6 @@ defmodule Raxol.Plugins.ImagePlugin do
     case {params, dimension} do
       {params, :width} when is_map(params) -> Map.get(params, :width, 0)
       {params, :height} when is_map(params) -> Map.get(params, :height, 0)
-      {params, :width} when is_tuple(params) -> elem(params, 0)
-      {params, :height} when is_tuple(params) -> elem(params, 1)
-      _ -> 0
     end
   end
 

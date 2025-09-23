@@ -170,7 +170,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     }
 
     # Start async encryption worker
-    start_async_encryption_worker(config[:async_encryption])
+    _ = start_async_encryption_worker(config[:async_encryption])
 
     Logger.info("Encrypted storage initialized with backend: #{config.backend}")
     {:ok, state}
@@ -310,7 +310,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
         }
 
         # Store to backend
-        store_to_backend(envelope, state)
+        _ = store_to_backend(envelope, state)
 
         # Update stats
         duration = System.system_time(:millisecond) - start_time
@@ -339,9 +339,6 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     # Retrieve from backend
     case retrieve_from_backend(key, state) do
       {:ok, envelope} ->
-        # Verify integrity
-        verify_envelope_integrity(state.config.verify_integrity, envelope, key)
-
         # Check integrity result
         integrity_result =
           verify_envelope_integrity(
@@ -352,36 +349,35 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
 
         case integrity_result do
           {:error, reason} -> {:error, reason}
-          :ok -> :ok
-        end
+          :ok ->
+            # Decrypt data
+            case KeyManager.decrypt(
+                   state.key_manager,
+                   envelope.encrypted_data.key_id,
+                   envelope.encrypted_data,
+                   envelope.encrypted_data.key_version
+                 ) do
+              {:ok, decrypted} ->
+                # Decompress if needed
+                final_data = apply_decompression(envelope.compressed, decrypted)
 
-        # Decrypt data
-        case KeyManager.decrypt(
-               state.key_manager,
-               envelope.encrypted_data.key_id,
-               envelope.encrypted_data,
-               envelope.encrypted_data.key_version
-             ) do
-          {:ok, decrypted} ->
-            # Decompress if needed
-            final_data = apply_decompression(envelope.compressed, decrypted)
+                # Deserialize
+                data = deserialize_data(final_data)
 
-            # Deserialize
-            data = deserialize_data(final_data)
+                # Update stats
+                duration = System.system_time(:millisecond) - start_time
 
-            # Update stats
-            duration = System.system_time(:millisecond) - start_time
+                new_stats =
+                  update_stats(state.stats, :retrieve, envelope.size, duration)
 
-            new_stats =
-              update_stats(state.stats, :retrieve, envelope.size, duration)
+                # Audit
+                audit_storage_operation(:retrieve, key, envelope.size)
 
-            # Audit
-            audit_storage_operation(:retrieve, key, envelope.size)
+                {:ok, data, %{state | stats: new_stats}}
 
-            {:ok, data, %{state | stats: new_stats}}
-
-          {:error, reason} ->
-            {:error, reason}
+              {:error, reason} ->
+                {:error, reason}
+            end
         end
 
       {:error, reason} ->
@@ -471,8 +467,8 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
       encrypt_chunks(input, output, cipher_state, state.config.chunk_size, 0)
 
     # Close files
-    File.close(input)
-    File.close(output)
+    _ = File.close(input)
+    _ = File.close(output)
 
     # Update stats
     new_stats = update_stats(state.stats, :store_file, file_size, 0)
@@ -534,11 +530,11 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
         {:ok, output} = File.open(output_path, [:write, :binary])
 
         # Decrypt in chunks
-        decrypt_chunks(input, output, cipher_state, header.chunk_size)
+        _ = decrypt_chunks(input, output, cipher_state, header.chunk_size)
 
         # Close files
-        File.close(input)
-        File.close(output)
+        _ = File.close(input)
+        _ = File.close(output)
 
         # Update stats
         new_stats =
@@ -624,7 +620,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
 
   defp delete_encrypted(key, _opts, %{storage_backend: %{type: :file}} = state) do
     file_path = get_storage_path(key, state)
-    File.rm(file_path)
+    _ = File.rm(file_path)
 
     new_stats = Map.update!(state.stats, :deletes, &(&1 + 1))
     {:ok, %{state | stats: new_stats}}

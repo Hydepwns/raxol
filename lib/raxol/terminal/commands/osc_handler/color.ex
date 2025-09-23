@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler.Color do
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_11(emulator, data) do
     case data do
-      ~c"?" -> handle_color_query(emulator, 11, &Colors.get_background/1)
+      "?" -> handle_color_query(emulator, 11, &Colors.get_background/1)
       color_spec -> set_color(emulator, color_spec, &Colors.set_background/2)
     end
   end
@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler.Color do
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_12(emulator, data) do
     case data do
-      ~c"?" -> handle_color_query(emulator, 12, &Colors.get_cursor_color/1)
+      "?" -> handle_color_query(emulator, 12, &Colors.get_cursor_color/1)
       color_spec -> set_color(emulator, color_spec, &Colors.set_cursor_color/2)
     end
   end
@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler.Color do
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_17(emulator, data) do
     case data do
-      ~c"?" ->
+      "?" ->
         handle_color_query(emulator, 17, &Colors.get_selection_background/1)
 
       color_spec ->
@@ -78,7 +78,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler.Color do
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   def handle_19(emulator, data) do
     case data do
-      ~c"?" ->
+      "?" ->
         handle_color_query(emulator, 19, &Colors.get_selection_foreground/1)
 
       color_spec ->
@@ -89,8 +89,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler.Color do
   @doc """
   Handles OSC 110 command to reset foreground color.
   """
-  @spec handle_110(Emulator.t(), String.t()) ::
-          {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+  @spec handle_110(Emulator.t(), String.t()) :: {:ok, Emulator.t()}
   def handle_110(emulator, _data) do
     {:ok, new_colors} = Colors.reset_foreground(emulator.colors)
     {:ok, %{emulator | colors: new_colors}}
@@ -99,8 +98,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler.Color do
   @doc """
   Handles OSC 111 command to reset background color.
   """
-  @spec handle_111(Emulator.t(), String.t()) ::
-          {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+  @spec handle_111(Emulator.t(), String.t()) :: {:ok, Emulator.t()}
   def handle_111(emulator, _data) do
     {:ok, new_colors} = Colors.reset_background(emulator.colors)
     {:ok, %{emulator | colors: new_colors}}
@@ -109,8 +107,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler.Color do
   @doc """
   Handles OSC 112 command to reset cursor color.
   """
-  @spec handle_112(Emulator.t(), String.t()) ::
-          {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+  @spec handle_112(Emulator.t(), String.t()) :: {:ok, Emulator.t()}
   def handle_112(emulator, _data) do
     {:ok, new_colors} = Colors.reset_cursor_color(emulator.colors)
     {:ok, %{emulator | colors: new_colors}}
@@ -119,8 +116,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler.Color do
   @doc """
   Handles OSC 117 command to reset selection background color.
   """
-  @spec handle_117(Emulator.t(), String.t()) ::
-          {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+  @spec handle_117(Emulator.t(), String.t()) :: {:ok, Emulator.t()}
   def handle_117(emulator, _data) do
     {:ok, new_colors} = Colors.reset_selection_background(emulator.colors)
     {:ok, %{emulator | colors: new_colors}}
@@ -129,8 +125,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler.Color do
   @doc """
   Handles OSC 119 command to reset selection foreground color.
   """
-  @spec handle_119(Emulator.t(), String.t()) ::
-          {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+  @spec handle_119(Emulator.t(), String.t()) :: {:ok, Emulator.t()}
   def handle_119(emulator, _data) do
     {:ok, new_colors} = Colors.reset_selection_foreground(emulator.colors)
     {:ok, %{emulator | colors: new_colors}}
@@ -138,12 +133,14 @@ defmodule Raxol.Terminal.Commands.OSCHandler.Color do
 
   # Private Helpers
 
+  @spec handle_color_query(Emulator.t(), integer(), function()) :: {:ok, Emulator.t()}
   defp handle_color_query(emulator, command, getter_fn) do
     color = getter_fn.(emulator.colors)
     response = format_color_response(command, color)
     {:ok, %{emulator | output_buffer: response}}
   end
 
+  @spec set_color(Emulator.t(), String.t(), function()) :: {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
   defp set_color(emulator, color_spec, setter_fn) do
     case ColorParser.parse(color_spec) do
       {:ok, color} ->
@@ -159,12 +156,14 @@ defmodule Raxol.Terminal.Commands.OSCHandler.Color do
     end
   end
 
+  @spec format_color_response(integer(), String.t()) :: String.t()
   defp format_color_response(command, color) do
     {r, g, b} = parse_hex_color(color)
     {r_scaled, g_scaled, b_scaled} = scale_color_components(r, g, b)
     "\x1b]#{command};rgb:#{r_scaled}/#{g_scaled}/#{b_scaled}\x07"
   end
 
+  @spec scale_color_components(integer(), integer(), integer()) :: {String.t(), String.t(), String.t()}
   defp scale_color_components(r, g, b) do
     r_scaled = scale_component(r)
     g_scaled = scale_component(g)
@@ -172,11 +171,13 @@ defmodule Raxol.Terminal.Commands.OSCHandler.Color do
     {r_scaled, g_scaled, b_scaled}
   end
 
+  @spec scale_component(integer()) :: String.t()
   defp scale_component(value) do
     Integer.to_string(div(value * 65_535, 255), 16)
     |> String.pad_leading(4, "0")
   end
 
+  @spec parse_hex_color(String.t()) :: {integer(), integer(), integer()}
   defp parse_hex_color("#" <> hex) do
     {r, hex} = String.split_at(hex, 2)
     {g, b} = String.split_at(hex, 2)

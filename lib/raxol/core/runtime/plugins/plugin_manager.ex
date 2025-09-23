@@ -170,9 +170,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
       pid when is_pid(pid) -> Process.exit(pid, :shutdown)
     end
 
-    case Map.get(state, :tick_timer) do
+    _ = case Map.get(state, :tick_timer) do
       nil -> :ok
-      timer_ref -> Process.cancel_timer(timer_ref)
+      timer_ref -> _ = Process.cancel_timer(timer_ref)
     end
 
     :ok

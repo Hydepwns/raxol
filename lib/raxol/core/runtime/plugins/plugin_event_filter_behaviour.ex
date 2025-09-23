@@ -9,16 +9,14 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventFilter.Behaviour do
   - Coordinating event propagation
   """
 
-  alias Raxol.Core.Runtime.Events.Event
-
   @doc """
   Filters an event through registered plugin filters.
   Returns the filtered event or :halt if the event should be stopped.
   """
   @callback filter_event(
               plugin_manager_state :: map(),
-              event :: Event.t()
-            ) :: {:ok, Event.t()} | :halt | {:error, any()}
+              event :: term()
+            ) :: {:ok, term()} | :halt | {:error, any()}
 
   @doc """
   Gets a list of enabled plugins in load order.
@@ -30,9 +28,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventFilter.Behaviour do
   """
   @callback apply_plugin_filter(
               plugin_id :: String.t(),
-              event :: Event.t(),
+              event :: term(),
               state :: map()
-            ) :: {:ok, Event.t()} | :halt | {:error, any()}
+            ) :: {:ok, term()} | :halt | {:error, any()}
 
   @doc """
   Handles event filtering errors.
@@ -40,8 +38,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventFilter.Behaviour do
   @callback handle_filter_error(
               plugin_id :: String.t(),
               error :: any(),
-              event :: Event.t()
-            ) :: {:ok, Event.t()} | :halt | {:error, any()}
+              event :: term()
+            ) :: {:ok, term()} | :halt | {:error, any()}
 
   @doc """
   Updates the event filter state.

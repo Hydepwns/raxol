@@ -20,6 +20,11 @@ defmodule Raxol.Terminal.ScreenBuffer.FileWatcher do
             pending_events: [],
             last_event_time: 0
 
+  @spec init() :: t()
+  def init do
+    %__MODULE__{}
+  end
+
   @spec handle_event(t(), event()) :: t()
   def handle_event(%__MODULE__{} = state, event) do
     %{
@@ -55,9 +60,5 @@ defmodule Raxol.Terminal.ScreenBuffer.FileWatcher do
         pending_events: [],
         last_event_time: 0
     }
-  end
-
-  def init do
-    %__MODULE__{}
   end
 end

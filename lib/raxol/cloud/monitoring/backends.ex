@@ -56,7 +56,7 @@ defmodule Raxol.Cloud.Monitoring.Backends do
   @doc """
   Sends logs to the specified backend.
   """
-  @spec send_logs(backend_type(), [log_data()]) :: :ok | {:error, term()}
+  @spec send_logs(backend_type(), [log_data()]) :: {:ok, term()} | {:error, term()}
   def send_logs(backend_type, logs) do
     case backend_type do
       :prometheus -> {:ok, :logs_not_supported}

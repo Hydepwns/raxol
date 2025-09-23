@@ -89,6 +89,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
       """
       def publish_events(events, context) when is_list(events) do
         case EventStore.append_events(
+               EventStore,
                events,
                get_batch_stream_name(events),
                context

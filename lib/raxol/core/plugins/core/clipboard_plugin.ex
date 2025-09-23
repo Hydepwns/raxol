@@ -17,10 +17,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
 
   @impl Raxol.Core.Plugins.Core.ClipboardPluginBehaviour
   def get_commands do
-    [
-      {:clipboard_write, :handle_clipboard_command, 2},
-      {:clipboard_read, :handle_clipboard_command, 1}
-    ]
+    [:clipboard_write, :clipboard_read]
   end
 
   @impl Raxol.Core.Plugins.Core.ClipboardPluginBehaviour
@@ -65,7 +62,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   Handles clipboard commands with a simplified interface.
   """
   @spec handle_clipboard_command(list(), map()) ::
-          {:ok, map(), any()} | {:error, any(), map()}
+          {:ok, any()} | {:error, any()}
   def handle_clipboard_command([content], state) when is_binary(content) do
     handle_command(:clipboard_write, [content], state)
   end
@@ -78,7 +75,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   Handles clipboard read command (arity 1 - just state).
   """
   @spec handle_clipboard_command(map()) ::
-          {:ok, map(), any()} | {:error, any(), map()}
+          {:ok, any()} | {:error, any()}
   def handle_clipboard_command(state) do
     handle_command(:clipboard_read, [], state)
   end

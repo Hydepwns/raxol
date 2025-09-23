@@ -72,9 +72,6 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
         Raxol.Core.Runtime.Log.warning("Unknown #{type} command: #{command}")
         # Graceful fallback
         {:ok, emulator}
-
-      {:error, reason} ->
-        {:error, reason, emulator}
     end
   end
 

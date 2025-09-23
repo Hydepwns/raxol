@@ -286,9 +286,7 @@ defmodule Raxol.UI.Components.Input.TextInput.EditingHandler do
   defp handle_backspace_operation(true, state, current_pos, current_value) do
     before_part = String.slice(current_value, 0..(current_pos - 2))
     remaining_part = String.slice(current_value, current_pos..-1//1)
-    before = before_part || ""
-    remaining = remaining_part || ""
-    new_value = before <> remaining
+    new_value = before_part <> remaining_part
     new_state = %{state | cursor_pos: current_pos - 1, value: new_value}
     emit_change_side_effect(state, new_value)
     {new_state, []}
@@ -307,7 +305,7 @@ defmodule Raxol.UI.Components.Input.TextInput.EditingHandler do
 
   defp handle_delete_operation(true, state, current_pos, current_value) do
     before = String.slice(current_value, 0, current_pos)
-    after_text = String.slice(current_value, (current_pos + 1)..-1//1) || ""
+    after_text = String.slice(current_value, (current_pos + 1)..-1//1)
     new_value = before <> after_text
     new_state = %{state | value: new_value}
     emit_change_side_effect(state, new_value)

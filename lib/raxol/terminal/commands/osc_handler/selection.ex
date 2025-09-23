@@ -79,14 +79,19 @@ defmodule Raxol.Terminal.Commands.OSCHandler.Selection do
   end
 
   defp find_text_in_buffer(buffer, content) do
-    with {:ok, text} <- Selection.get_buffer_text(buffer),
-         {start_idx, _} <- :binary.matches(text, content) do
-      # Convert byte index to screen coordinates
-      start_pos = index_to_coordinates(buffer, start_idx)
-      end_pos = index_to_coordinates(buffer, start_idx + byte_size(content))
-      {:ok, start_pos, end_pos}
-    else
-      _ -> {:error, :text_not_found}
+    case Selection.get_buffer_text(buffer) do
+      {:ok, text} ->
+        case :binary.matches(text, content) do
+          [] ->
+            {:error, :text_not_found}
+          [{start_idx, _} | _] ->
+            # Convert byte index to screen coordinates
+            start_pos = index_to_coordinates(buffer, start_idx)
+            end_pos = index_to_coordinates(buffer, start_idx + byte_size(content))
+            {:ok, start_pos, end_pos}
+        end
+      {:error, _reason} ->
+        {:error, :text_not_found}
     end
   end
 

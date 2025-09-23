@@ -18,9 +18,10 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
 
   @shortdoc "Run advanced memory analysis benchmarks with pattern detection"
 
+  @spec run(list()) :: no_return()
   def run(args) do
     opts = parse_options(args)
-    Application.ensure_all_started(:raxol)
+    _ = Application.ensure_all_started(:raxol)
 
     config = build_config(opts)
     print_config_info(config)
@@ -147,7 +148,7 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
       recommendations: recommendations
     }
 
-    case MemoryDashboard.generate_dashboard(dashboard_config, dashboard_path) do
+    case MemoryDashboard.generate_dashboard(results, [output_path: dashboard_path, config: dashboard_config]) do
       {:ok, _} ->
         Mix.shell().info("Dashboard generated: #{dashboard_path}")
 

@@ -35,7 +35,7 @@ defmodule Raxol.UI.Components.Progress.Component do
             # ms
             interval: 100
 
-  @spec init(map()) :: map()
+  @spec init(map()) :: %__MODULE__{}
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
     # Initialize state based on type and props
@@ -67,7 +67,7 @@ defmodule Raxol.UI.Components.Progress.Component do
     %{state | type: type}
   end
 
-  @spec update(term(), map()) :: {map(), list()}
+  @spec update(term(), %__MODULE__{}) :: {%__MODULE__{}, list()}
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle messages to update value, change type, etc.
@@ -89,7 +89,7 @@ defmodule Raxol.UI.Components.Progress.Component do
     end
   end
 
-  @spec handle_event(term(), map(), map()) :: {map(), list()}
+  @spec handle_event(term(), map(), %__MODULE__{}) :: {%__MODULE__{}, list()}
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
     # Handle events if needed
@@ -126,7 +126,7 @@ defmodule Raxol.UI.Components.Progress.Component do
     value |> Kernel.max(min) |> Kernel.min(max)
   end
 
-  @spec spinner_types() :: map()
+  @spec spinner_types() :: %{atom() => list(String.t())}
   @doc """
   Returns the available spinner types.
 

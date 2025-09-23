@@ -35,7 +35,7 @@ defmodule Raxol.UI.Components.Display.TableTest do
   describe "Table Rendering" do
     @describetag :component
     setup do
-      {:ok, state} = Table.init(%{})
+      state = Table.init(%{})
 
       basic_attrs = %{
         id: :basic_table,
@@ -73,7 +73,7 @@ defmodule Raxol.UI.Components.Display.TableTest do
 
     test "renders without borders", %{context: context} do
       # Initialize a state specifically for testing no borders
-      {:ok, state_no_border} = Table.init(%{border_style: :none})
+      state_no_border = Table.init(%{border_style: :none})
 
       # The context from setup has context.attrs.style = %{border: :single}
       # This is fine, as state.border_style = :none in state_no_border should take precedence
@@ -90,7 +90,7 @@ defmodule Raxol.UI.Components.Display.TableTest do
   describe "Table Event Handling - Standard Scrolling" do
     @describetag :component
     setup do
-      {:ok, initial_component_state} = Table.init(%{id: :event_table_std})
+      initial_component_state = Table.init(%{id: :event_table_std})
 
       initial_component_state =
         Map.put_new(initial_component_state, :filter_term, "")
@@ -117,8 +117,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
       state: state,
       context: context
     } do
-      {:noreply, new_state} =
-        Table.handle_event(state, {:keypress, :arrow_down}, context)
+      {new_state, _commands} =
+        Table.handle_event({:keypress, :arrow_down}, state, context)
 
       assert new_state.scroll_top == 1
     end
@@ -130,8 +130,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
       # Max scroll_top = 10 data - 4 visible_data = 6
       state_at_bottom = %{state | scroll_top: 6}
 
-      {:noreply, new_state} =
-        Table.handle_event(state_at_bottom, {:keypress, :arrow_down}, context)
+      {new_state, _commands} =
+        Table.handle_event({:keypress, :arrow_down}, state_at_bottom, context)
 
       assert new_state.scroll_top == 6
     end
@@ -142,8 +142,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
     } do
       state_scrolled_down = %{state | scroll_top: 3}
 
-      {:noreply, new_state} =
-        Table.handle_event(state_scrolled_down, {:keypress, :arrow_up}, context)
+      {new_state, _commands} =
+        Table.handle_event({:keypress, :arrow_up}, state_scrolled_down, context)
 
       assert new_state.scroll_top == 2
     end
@@ -152,8 +152,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
       state: state,
       context: context
     } do
-      {:noreply, new_state} =
-        Table.handle_event(state, {:keypress, :arrow_up}, context)
+      {new_state, _commands} =
+        Table.handle_event({:keypress, :arrow_up}, state, context)
 
       assert new_state.scroll_top == 0
     end
@@ -162,8 +162,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
       state: state,
       context: context
     } do
-      {:noreply, new_state} =
-        Table.handle_event(state, {:keypress, :page_down}, context)
+      {new_state, _commands} =
+        Table.handle_event({:keypress, :page_down}, state, context)
 
       # Visible data rows = 4
       assert new_state.scroll_top == 4
@@ -176,8 +176,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
       # scroll_top 3 + page_size 4 = 7, clamped to 6
       state_near_bottom = %{state | scroll_top: 3}
 
-      {:noreply, new_state} =
-        Table.handle_event(state_near_bottom, {:keypress, :page_down}, context)
+      {new_state, _commands} =
+        Table.handle_event({:keypress, :page_down}, state_near_bottom, context)
 
       assert new_state.scroll_top == 6
     end
@@ -188,8 +188,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
     } do
       state_scrolled_down = %{state | scroll_top: 5}
 
-      {:noreply, new_state} =
-        Table.handle_event(state_scrolled_down, {:keypress, :page_up}, context)
+      {new_state, _commands} =
+        Table.handle_event({:keypress, :page_up}, state_scrolled_down, context)
 
       # 5 - 4 = 1
       assert new_state.scroll_top == 1
@@ -202,8 +202,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
       # scroll_top 2 - page_size 4 = -2, clamped to 0
       state_near_top = %{state | scroll_top: 2}
 
-      {:noreply, new_state} =
-        Table.handle_event(state_near_top, {:keypress, :page_up}, context)
+      {new_state, _commands} =
+        Table.handle_event({:keypress, :page_up}, state_near_top, context)
 
       assert new_state.scroll_top == 0
     end
@@ -212,7 +212,7 @@ defmodule Raxol.UI.Components.Display.TableTest do
   describe "Table Event Handling - Empty or Minimal Data" do
     @describetag :component
     setup do
-      {:ok, initial_component_state} = Table.init(%{id: :event_table_minimal})
+      initial_component_state = Table.init(%{id: :event_table_minimal})
 
       initial_component_state =
         Map.put_new(initial_component_state, :filter_term, "")
@@ -242,8 +242,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
         Map.put(base_context, :attrs, Map.put(base_context.attrs, :data, []))
 
       for event_key <- [:arrow_down, :arrow_up, :page_down, :page_up] do
-        {:noreply, new_state} =
-          Table.handle_event(state, {:keypress, event_key}, context)
+        {new_state, _commands} =
+          Table.handle_event({:keypress, event_key}, state, context)
 
         assert new_state.scroll_top == 0,
                "Scroll top failed for #{event_key} with empty data"
@@ -261,8 +261,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
         )
 
       for event_key <- [:arrow_down, :arrow_up, :page_down, :page_up] do
-        {:noreply, new_state} =
-          Table.handle_event(state, {:keypress, event_key}, context)
+        {new_state, _commands} =
+          Table.handle_event({:keypress, event_key}, state, context)
 
         assert new_state.scroll_top == 0,
                "Scroll top failed for #{event_key} with less data"
@@ -273,7 +273,7 @@ defmodule Raxol.UI.Components.Display.TableTest do
   describe "Table Event Handling - Visible Height of 1 (for data)" do
     @describetag :component
     setup do
-      {:ok, initial_component_state} = Table.init(%{id: :event_table_h1})
+      initial_component_state = Table.init(%{id: :event_table_h1})
 
       initial_component_state =
         Map.put_new(initial_component_state, :filter_term, "")
@@ -303,20 +303,20 @@ defmodule Raxol.UI.Components.Display.TableTest do
     } do
       # Max scroll is 3 items - 1 visible_data_row = 2
       # scroll_top: 0 -> 1
-      {:noreply, state_s1} =
-        Table.handle_event(state, {:keypress, :page_down}, context)
+      {state_s1, _commands} =
+        Table.handle_event({:keypress, :page_down}, state, context)
 
       assert state_s1.scroll_top == 1
 
       # scroll_top: 1 -> 2 (end)
-      {:noreply, state_s2} =
-        Table.handle_event(state_s1, {:keypress, :page_down}, context)
+      {state_s2, _commands} =
+        Table.handle_event({:keypress, :page_down}, state_s1, context)
 
       assert state_s2.scroll_top == 2
 
       # scroll_top: 2 -> 2 (still at end)
-      {:noreply, state_s3} =
-        Table.handle_event(state_s2, {:keypress, :page_down}, context)
+      {state_s3, _commands} =
+        Table.handle_event({:keypress, :page_down}, state_s2, context)
 
       assert state_s3.scroll_top == 2
     end
@@ -329,20 +329,20 @@ defmodule Raxol.UI.Components.Display.TableTest do
       state_at_end = %{state | scroll_top: 2}
 
       # scroll_top: 2 -> 1
-      {:noreply, state_s1} =
-        Table.handle_event(state_at_end, {:keypress, :page_up}, context)
+      {state_s1, _commands} =
+        Table.handle_event({:keypress, :page_up}, state_at_end, context)
 
       assert state_s1.scroll_top == 1
 
       # scroll_top: 1 -> 0 (top)
-      {:noreply, state_s0} =
-        Table.handle_event(state_s1, {:keypress, :page_up}, context)
+      {state_s0, _commands} =
+        Table.handle_event({:keypress, :page_up}, state_s1, context)
 
       assert state_s0.scroll_top == 0
 
       # scroll_top: 0 -> 0 (still at top)
-      {:noreply, state_still_top} =
-        Table.handle_event(state_s0, {:keypress, :page_up}, context)
+      {state_still_top, _commands} =
+        Table.handle_event({:keypress, :page_up}, state_s0, context)
 
       assert state_still_top.scroll_top == 0
     end
@@ -354,20 +354,20 @@ defmodule Raxol.UI.Components.Display.TableTest do
     } do
       # Max scroll is 3 items - 1 visible_data_row = 2
       # scroll_top: 0 -> 1
-      {:noreply, state_s1} =
-        Table.handle_event(state, {:keypress, :arrow_down}, context)
+      {state_s1, _commands} =
+        Table.handle_event({:keypress, :arrow_down}, state, context)
 
       assert state_s1.scroll_top == 1
 
       # scroll_top: 1 -> 2 (end)
-      {:noreply, state_s2} =
-        Table.handle_event(state_s1, {:keypress, :arrow_down}, context)
+      {state_s2, _commands} =
+        Table.handle_event({:keypress, :arrow_down}, state_s1, context)
 
       assert state_s2.scroll_top == 2
 
       # scroll_top: 2 -> 2 (still at end)
-      {:noreply, state_s3} =
-        Table.handle_event(state_s2, {:keypress, :arrow_down}, context)
+      {state_s3, _commands} =
+        Table.handle_event({:keypress, :arrow_down}, state_s2, context)
 
       assert state_s3.scroll_top == 2
     end
@@ -380,20 +380,20 @@ defmodule Raxol.UI.Components.Display.TableTest do
       state_at_end = %{state | scroll_top: 2}
 
       # scroll_top: 2 -> 1
-      {:noreply, state_s1} =
-        Table.handle_event(state_at_end, {:keypress, :arrow_up}, context)
+      {state_s1, _commands} =
+        Table.handle_event({:keypress, :arrow_up}, state_at_end, context)
 
       assert state_s1.scroll_top == 1
 
       # scroll_top: 1 -> 0 (top)
-      {:noreply, state_s0} =
-        Table.handle_event(state_s1, {:keypress, :arrow_up}, context)
+      {state_s0, _commands} =
+        Table.handle_event({:keypress, :arrow_up}, state_s1, context)
 
       assert state_s0.scroll_top == 0
 
       # scroll_top: 0 -> 0 (still at top)
-      {:noreply, state_still_top} =
-        Table.handle_event(state_s0, {:keypress, :arrow_up}, context)
+      {state_still_top, _commands} =
+        Table.handle_event({:keypress, :arrow_up}, state_s0, context)
 
       assert state_still_top.scroll_top == 0
     end
@@ -402,7 +402,7 @@ defmodule Raxol.UI.Components.Display.TableTest do
   describe "Table Lifecycle" do
     @describetag :component
     setup do
-      {:ok, initial_component_state} = Table.init(%{id: :lifecycle_table})
+      initial_component_state = Table.init(%{id: :lifecycle_table})
 
       initial_component_state =
         Map.put_new(initial_component_state, :filter_term, "")
@@ -411,13 +411,13 @@ defmodule Raxol.UI.Components.Display.TableTest do
     end
 
     test "mount/1 returns state and commands (currently empty)", %{state: state} do
-      {:ok, mounted_state, commands} = Table.mount(state)
+      {mounted_state, commands} = Table.mount(state)
       assert mounted_state == state
       assert commands == []
     end
 
     test "unmount/1 returns state (currently no-op)", %{state: state} do
-      {:ok, unmounted_state} = Table.unmount(state)
+      unmounted_state = Table.unmount(state)
       assert unmounted_state == state
     end
   end

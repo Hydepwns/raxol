@@ -84,28 +84,18 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.Utility do
   @doc """
   Handles application cleanup operations.
   """
-  @spec handle_cleanup(map()) :: {:ok, atom()} | {:error, atom()}
+  @spec handle_cleanup(map()) :: {:ok, :cleanup_complete}
   def handle_cleanup(context) do
     Raxol.Core.Runtime.Log.info(
       "Performing application cleanup",
       %{module: __MODULE__, context: context}
     )
 
-    with :ok <- cleanup_resources(context),
-         :ok <- cleanup_plugins(context),
-         :ok <- cleanup_state(context) do
-      {:ok, :cleanup_complete}
-    else
-      error ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Failed during cleanup",
-          error,
-          nil,
-          %{module: __MODULE__, context: context}
-        )
+    :ok = cleanup_resources(context)
+    :ok = cleanup_plugins(context)
+    :ok = cleanup_state(context)
 
-        {:error, :cleanup_failed}
-    end
+    {:ok, :cleanup_complete}
   end
 
   @doc """

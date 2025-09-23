@@ -381,7 +381,7 @@ defmodule Raxol.Benchmark.Config do
 
   # Private helper functions
 
-  @spec resolve_profile(nil) :: atom()
+  @spec resolve_profile(nil | atom() | binary()) :: atom()
   defp resolve_profile(nil) do
     case System.get_env("BENCHMARK_PROFILE") do
       nil -> :standard
@@ -389,10 +389,8 @@ defmodule Raxol.Benchmark.Config do
     end
   end
 
-  @spec resolve_profile(atom()) :: atom()
   defp resolve_profile(type) when is_atom(type), do: type
 
-  @spec resolve_profile(binary()) :: atom()
   defp resolve_profile(type) when is_binary(type),
     do: String.to_existing_atom(type)
 

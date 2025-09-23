@@ -115,15 +115,16 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
 
       _ ->
         # Use lazy evaluation for expensive operations
-        lazy_stream :cursor_check do
-          Stream.unfold(emulator, &unfold_cursor_check/1)
-          |> Enum.reduce(emulator, fn _, acc -> acc end)
-        end
+        Stream.unfold(emulator, &unfold_cursor_check/1)
+        |> Enum.reduce(emulator, fn _, acc -> acc end)
     end
   end
 
   defp unfold_cursor_check(emu) do
-    handle_cursor_scroll(cursor_needs_scroll?(emu), emu)
+    case cursor_needs_scroll?(emu) do
+      true -> handle_cursor_scroll(true, emu)
+      false -> handle_cursor_scroll(false, emu)
+    end
   end
 
   defp needs_cursor_check?(%{last_operation: :scroll}), do: false
@@ -195,14 +196,22 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
   Batch process multiple input chunks for better performance.
   """
   def batch_process_inputs(emulator, inputs) when is_list(inputs) do
-    batch_process(inputs, [batch_size: 10], fn batch ->
-      Enum.reduce(batch, {emulator, []}, fn input, {emu, outputs} ->
-        {new_emu, output} = process_input(emu, input)
-        {new_emu, [output | outputs]}
-      end)
+    # Process inputs in chunks for better performance
+    batch_size = 10
+
+    inputs
+    |> Enum.chunk_every(batch_size)
+    |> Enum.reduce({emulator, []}, fn batch, {emu, all_outputs} ->
+      {new_emu, batch_outputs} =
+        Enum.reduce(batch, {emu, []}, fn input, {current_emu, outputs} ->
+          {updated_emu, output} = process_input(current_emu, input)
+          {updated_emu, [output | outputs]}
+        end)
+
+      {new_emu, [Enum.reverse(batch_outputs) | all_outputs]}
     end)
     |> then(fn {final_emu, outputs} ->
-      {final_emu, outputs |> Enum.reverse() |> iolist_to_binary()}
+      {final_emu, outputs |> Enum.reverse() |> List.flatten() |> iolist_to_binary()}
     end)
   end
 
@@ -255,11 +264,15 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
     {final_emulator, iolist_to_binary([output | remaining_output])}
   end
 
-  defp apply_cursor_check(true, emulator),
-    do: ensure_cursor_visible_optimized(emulator)
+  defp apply_cursor_check(true, emulator) do
+    ensure_cursor_visible_optimized(emulator)
+  end
 
   defp apply_cursor_check(false, emulator), do: emulator
 
-  defp handle_cursor_scroll(true, emu), do: {emu, scroll_once(emu)}
-  defp handle_cursor_scroll(false, _emu), do: nil
+  defp handle_cursor_scroll(true, emu) do
+    scrolled_emu = scroll_once(emu)
+    {scrolled_emu, emu}
+  end
+  defp handle_cursor_scroll(false, emu), do: {nil, emu}
 end

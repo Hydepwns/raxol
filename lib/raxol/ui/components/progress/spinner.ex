@@ -124,7 +124,7 @@ defmodule Raxol.UI.Components.Progress.Spinner do
 
     Raxol.View.Elements.row id: Map.get(state, :id, nil), style: state.style do
       Raxol.View.Elements.label(content: frame)
-      render_label_if_present(state.label)
+      _ = render_label_if_present(state.label)
     end
   end
 

@@ -23,7 +23,6 @@ defmodule Raxol.System.Clipboard do
       {:unix, :darwin} -> copy_macos(text)
       {:unix, _} -> copy_linux(text)
       {:win32, _} -> copy_windows(text)
-      _other_os -> copy_unsupported_os()
     end
   end
 
@@ -86,14 +85,6 @@ defmodule Raxol.System.Clipboard do
     end
   end
 
-  defp copy_unsupported_os do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Clipboard copy not supported on this OS.",
-      %{}
-    )
-
-    {:error, :unsupported_os}
-  end
 
   @doc """
   Retrieves text from the system clipboard.
@@ -108,7 +99,6 @@ defmodule Raxol.System.Clipboard do
       {:unix, :darwin} -> paste_macos()
       {:unix, _} -> paste_linux()
       {:win32, _} -> paste_windows()
-      _other_os -> paste_unsupported_os()
     end
   end
 
@@ -191,12 +181,4 @@ defmodule Raxol.System.Clipboard do
     end
   end
 
-  defp paste_unsupported_os do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Clipboard paste not supported on this OS.",
-      %{}
-    )
-
-    {:error, :unsupported_os}
-  end
 end

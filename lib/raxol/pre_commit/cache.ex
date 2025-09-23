@@ -63,7 +63,7 @@ defmodule Raxol.PreCommit.Cache do
   Clear the entire cache.
   """
   def clear_cache do
-    File.rm_rf(@cache_dir)
+    _ = File.rm_rf(@cache_dir)
     :ok
   end
 

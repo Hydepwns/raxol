@@ -283,13 +283,13 @@ defmodule Raxol.Audit.Logger do
     }
 
     # Schedule periodic tasks
-    case config.enabled do
+    _ = case config.enabled do
       true ->
-        :timer.send_interval(config.flush_interval_ms, :flush_buffer)
+        {:ok, _} = :timer.send_interval(config.flush_interval_ms, :flush_buffer)
         # Every hour
-        :timer.send_interval(3_600_000, :cleanup_old_logs)
+        {:ok, _} = :timer.send_interval(3_600_000, :cleanup_old_logs)
         # Daily
-        :timer.send_interval(86_400_000, :verify_integrity)
+        {:ok, _} = :timer.send_interval(86_400_000, :verify_integrity)
 
       false ->
         :ok
@@ -357,7 +357,7 @@ defmodule Raxol.Audit.Logger do
 
   @impl GenServer
   def handle_info(:cleanup_old_logs, state) do
-    Task.start(fn ->
+    {:ok, _} = Task.start(fn ->
       cleanup_expired_logs(state)
     end)
 
@@ -366,7 +366,7 @@ defmodule Raxol.Audit.Logger do
 
   @impl GenServer
   def handle_info(:verify_integrity, state) do
-    Task.start(fn ->
+    {:ok, _} = Task.start(fn ->
       verify_daily_integrity(state)
     end)
 
@@ -376,7 +376,7 @@ defmodule Raxol.Audit.Logger do
   @impl GenServer
   def terminate(_reason, state) do
     # Flush any remaining buffered events
-    flush_buffer_to_storage(state)
+    _ = flush_buffer_to_storage(state)
     :ok
   end
 
@@ -417,7 +417,7 @@ defmodule Raxol.Audit.Logger do
     new_state = update_metrics(new_state, category, severity)
 
     # Send alerts if needed
-    case severity in [:critical, :high] and state.config.alert_on_critical do
+    _ = case severity in [:critical, :high] and state.config.alert_on_critical do
       true -> send_alerts(final_event, severity, state)
       false -> :ok
     end

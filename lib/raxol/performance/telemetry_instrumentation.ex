@@ -200,15 +200,15 @@ defmodule Raxol.Performance.TelemetryInstrumentation do
   """
   def setup_default_handlers do
     # Performance reporter
-    :telemetry.attach(
+    _ = :telemetry.attach(
       "raxol-performance-reporter",
       [:raxol, :terminal, :parse],
       &handle_performance_event/4,
       nil
     )
 
-    # Cache reporter  
-    :telemetry.attach_many(
+    # Cache reporter
+    _ = :telemetry.attach_many(
       "raxol-cache-reporter",
       [
         [:raxol, :cache, :hit],

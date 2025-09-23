@@ -361,7 +361,7 @@ defmodule Raxol.Cloud.Monitoring.MonitoringServer do
 
   @impl true
   def handle_call({:run_health_check, opts}, _from, state) do
-    handle_health_check_request(state.active, opts, state)
+    _result = handle_health_check_request(state.active, opts, state)
     components = Keyword.get(opts, :components, [:database, :api, :edge])
     timeout = Keyword.get(opts, :timeout, 5000)
 
@@ -483,7 +483,7 @@ defmodule Raxol.Cloud.Monitoring.MonitoringServer do
 
   @impl true
   def handle_cast({:trigger_alert, type, data, opts}, state) do
-    handle_alert_trigger(state.active, type, data, opts, state)
+    _result = handle_alert_trigger(state.active, type, data, opts, state)
 
     alert = %{
       id: generate_alert_id(),
@@ -789,10 +789,8 @@ defmodule Raxol.Cloud.Monitoring.MonitoringServer do
   defp check_edge_computing_status(false), do: :healthy
 
   defp check_edge_computing_status(true) do
-    case EdgeComputing.status() do
-      %{mode: _} -> :healthy
-      _ -> :unhealthy
-    end
+    %{mode: _} = EdgeComputing.status()
+    :healthy
   end
 
   # Private helper functions

@@ -187,11 +187,11 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
     # Schedule key rotation checks
     # Daily
-    :timer.send_interval(86_400_000, :check_key_rotation)
+    _ = :timer.send_interval(86_400_000, :check_key_rotation)
 
     # Schedule cache cleanup
     # Every minute
-    :timer.send_interval(60_000, :cleanup_cache)
+    _ = :timer.send_interval(60_000, :cleanup_cache)
 
     Logger.info("Key manager initialized")
     {:ok, state}

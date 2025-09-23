@@ -302,7 +302,7 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
     timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
     log_entry = "[#{timestamp}] #{message}\n"
 
-    File.write(log_file, log_entry, [:append])
+    _ = File.write(log_file, log_entry, [:append])
 
     {:noreply, state}
   end

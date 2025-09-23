@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.BufferWrapper do
   """
   @spec new(pos_integer(), pos_integer()) :: {:ok, ScreenBuffer.t()}
   def new(width, height) when width > 0 and height > 0 do
-    create(width, height)
+    {:ok, ScreenBuffer.new(width, height)}
   end
 
   @doc """
@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.BufferWrapper do
   """
   @spec new() :: ScreenBuffer.t()
   def new do
-    ScreenBuffer.new()
+    ScreenBuffer.new(80, 24)
   end
 
   @doc """
@@ -39,6 +39,6 @@ defmodule Raxol.Terminal.BufferWrapper do
   """
   @spec new(pos_integer()) :: ScreenBuffer.t()
   def new(size) when is_integer(size) and size > 0 do
-    ScreenBuffer.new(size, size)
+    ScreenBuffer.new(size)
   end
 end

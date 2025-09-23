@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.Driver.MouseEventTest do
   use ExUnit.Case
   import Mox
 
-  alias Raxol.Terminal.Driver
   alias Raxol.Terminal.DriverTestHelper, as: Helper
 
   setup :verify_on_exit!

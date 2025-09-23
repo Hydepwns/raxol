@@ -397,7 +397,7 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
           state
 
         timer_ref ->
-          Process.cancel_timer(timer_ref)
+          _ = Process.cancel_timer(timer_ref)
           state
       end
 
@@ -426,7 +426,7 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
           state
 
         timer_ref ->
-          Process.cancel_timer(timer_ref)
+          _ = Process.cancel_timer(timer_ref)
           debounce_timers = Map.delete(state.debounce_timers, timer_key)
           %{state | debounce_timers: debounce_timers}
       end

@@ -53,11 +53,9 @@ defmodule Raxol.Core.Accessibility.EventHandler do
     :ok
   end
 
-  def handle_focus_change(_event),
-    do:
-      raise(
-        "handle_focus_change/2 must be called with a user_preferences_pid_or_name."
-      )
+  def handle_focus_change(_event) do
+    {:error, :missing_user_preferences_pid}
+  end
 
   @doc """
   Handle preference changes triggered internally or via EventManager.

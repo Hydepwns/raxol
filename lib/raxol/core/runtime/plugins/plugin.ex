@@ -7,8 +7,8 @@ defmodule Raxol.Core.Runtime.Plugins.Plugin do
 
   @type config :: map()
   @type state :: map()
-  # Adjust based on actual Event struct
-  @type event :: Raxol.Core.Runtime.Events.Event.t() | term()
+  # Events are generic terms
+  @type event :: term()
   @type command :: atom() | tuple()
 
   @doc """

@@ -152,7 +152,7 @@ defmodule Raxol.Terminal.AdvancedFeatures do
         # These will appear atomically
       end)
   """
-  @spec with_synchronized_output(function()) :: any()
+  @spec with_synchronized_output((() -> any())) :: any()
   def with_synchronized_output(fun) when is_function(fun, 0) do
     begin_synchronized_output()
 
@@ -249,13 +249,11 @@ defmodule Raxol.Terminal.AdvancedFeatures do
   - `{:paste_start}` - Beginning of pasted content
   - `{:paste_end}` - End of pasted content
   - `{:paste_content, data}` - Pasted content
-  - `{:unknown, data}` - Unrecognized sequence
   """
   @spec parse_paste_event(binary()) ::
           {:paste_start}
           | {:paste_end}
           | {:paste_content, binary()}
-          | {:unknown, binary()}
   def parse_paste_event("\e[200~"), do: {:paste_start}
   def parse_paste_event("\e[201~"), do: {:paste_end}
   def parse_paste_event(data), do: {:paste_content, data}
@@ -303,7 +301,15 @@ defmodule Raxol.Terminal.AdvancedFeatures do
   @doc """
   Gets current terminal capabilities and features.
   """
-  @spec get_terminal_capabilities() :: map()
+  @spec get_terminal_capabilities() :: %{
+          hyperlinks: boolean(),
+          synchronized_output: boolean(),
+          focus_events: boolean(),
+          bracketed_paste: boolean(),
+          window_manipulation: boolean(),
+          terminal_type: String.t(),
+          term_variable: String.t()
+        }
   def get_terminal_capabilities do
     %{
       hyperlinks: supports_hyperlinks?(),

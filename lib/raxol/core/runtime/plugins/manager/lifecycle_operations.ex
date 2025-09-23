@@ -14,7 +14,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.LifecycleOperations do
   Handles loading a plugin with configuration.
   """
   @spec handle_load_plugin(plugin_id(), plugin_config(), state()) ::
-          {:reply, any(), state()}
+          {:ok, state()} | {:error, term(), state()}
   def handle_load_plugin(plugin_id, config, state) do
     operation =
       LifecycleManager.load_plugin(
@@ -34,7 +34,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.LifecycleOperations do
   @doc """
   Handles loading a plugin without custom configuration.
   """
-  @spec handle_load_plugin(plugin_id(), state()) :: {:reply, any(), state()}
+  @spec handle_load_plugin(plugin_id(), state()) :: {:ok, state()} | {:error, term(), state()}
   def handle_load_plugin(plugin_id, state) do
     operation =
       LifecycleManager.load_plugin(
@@ -59,7 +59,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.LifecycleOperations do
     )
 
     case operation do
-      {:ok, new_plugins, new_metadata, new_plugin_states, new_load_order} ->
+      {:ok, %{plugins: new_plugins, metadata: new_metadata, plugin_states: new_plugin_states, load_order: new_load_order}} ->
         new_state = %{
           state
           | plugins: new_plugins,
@@ -88,7 +88,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.LifecycleOperations do
   @doc """
   Handles unloading a plugin.
   """
-  @spec handle_unload_plugin(plugin_id(), state()) :: {:reply, any(), state()}
+  @spec handle_unload_plugin(plugin_id(), state()) :: {:ok, state()} | {:error, term(), state()}
   def handle_unload_plugin(plugin_id, state) do
     operation =
       LifecycleManager.unload_plugin(
@@ -106,7 +106,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.LifecycleOperations do
   @doc """
   Handles enabling a disabled plugin.
   """
-  @spec handle_enable_plugin(plugin_id(), state()) :: {:reply, any(), state()}
+  @spec handle_enable_plugin(plugin_id(), state()) :: {:ok, state()} | {:error, term(), state()}
   def handle_enable_plugin(plugin_id, state) do
     operation =
       LifecycleManager.enable_plugin(plugin_id, state)
@@ -117,7 +117,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.LifecycleOperations do
   @doc """
   Handles disabling an enabled plugin.
   """
-  @spec handle_disable_plugin(plugin_id(), state()) :: {:reply, any(), state()}
+  @spec handle_disable_plugin(plugin_id(), state()) :: {:ok, state()} | {:error, term(), state()}
   def handle_disable_plugin(plugin_id, state) do
     operation =
       LifecycleManager.disable_plugin(plugin_id, state)
@@ -128,7 +128,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.LifecycleOperations do
   @doc """
   Handles reloading a plugin by unloading and loading it again.
   """
-  @spec handle_reload_plugin(plugin_id(), state()) :: {:reply, any(), state()}
+  @spec handle_reload_plugin(plugin_id(), state()) :: {:ok, state()} | {:error, term(), state()}
   def handle_reload_plugin(plugin_id, state) do
     operation =
       LifecycleManager.reload_plugin(plugin_id, state)
@@ -140,7 +140,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager.LifecycleOperations do
   Handles loading a plugin by module with configuration.
   """
   @spec handle_load_plugin_by_module(module(), plugin_config(), state()) ::
-          {:reply, any(), state()}
+          {:ok, state()}
   def handle_load_plugin_by_module(module, config, state) do
     plugin_id = to_string(module)
 

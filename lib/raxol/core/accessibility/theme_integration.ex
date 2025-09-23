@@ -138,7 +138,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   Returns the current accessibility mode based on settings.
   Defaults to `:normal` if high contrast is off.
   """
-  @spec get_accessibility_mode() :: atom()
+  @spec get_accessibility_mode() :: :high_contrast | :standard
   def get_accessibility_mode do
     # Only try to get preference if the process exists
     high_contrast =
@@ -220,7 +220,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       iex> ThemeIntegration.get_active_variant()
       :standard | :high_contrast | :reduced_motion
   """
-  @spec get_active_variant() :: atom()
+  @spec get_active_variant() :: :high_contrast | :reduced_motion | :standard
   def get_active_variant do
     # Only try to get preferences if the process exists
     {high_contrast, reduced_motion} =
@@ -250,7 +250,14 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       iex> ThemeIntegration.get_color_scheme()
       %{bg: :black, fg: :white}  # Returns high contrast colors when enabled
   """
-  @spec get_color_scheme() :: map()
+  @spec get_color_scheme() :: %{
+    bg: :black | {:rgb, 30, 30, 30},
+    fg: :white | {:rgb, 220, 220, 220},
+    accent: :yellow | :blue,
+    error: :red,
+    success: :green,
+    warning: :yellow
+  }
   def get_color_scheme do
     mode = get_accessibility_mode()
 

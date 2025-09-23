@@ -61,9 +61,6 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
       {:ok, updated_emulator} ->
         updated_emulator
-
-      result ->
-        result
     end
   end
 
@@ -147,7 +144,6 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     case Cursor.handle_command(emulator, params, final_byte) do
       {:error, :unknown_cursor_command} -> emulator
       {:ok, updated_emulator} -> updated_emulator
-      updated_emulator -> updated_emulator
     end
   end
 

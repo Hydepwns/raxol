@@ -60,7 +60,7 @@ defmodule Raxol.UI.Rendering.Pipeline.Animation do
     Logger.debug("Pipeline: No more animation requests, stopping ticker.")
 
     # Cancel the timer
-    Process.cancel_timer(state.animation_ticker_ref)
+    _ = Process.cancel_timer(state.animation_ticker_ref)
 
     %{state | animation_ticker_ref: nil}
   end

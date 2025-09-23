@@ -133,6 +133,10 @@ defmodule Raxol.Terminal.Cursor.Manager do
     cursor.position
   end
 
+  def get_position(%{position: position}) when is_tuple(position) do
+    position
+  end
+
   def get_position(_), do: {0, 0}
 
   @doc """
@@ -188,6 +192,10 @@ defmodule Raxol.Terminal.Cursor.Manager do
   @doc """
   Moves the cursor to a specific position.
   """
+  def move_to(nil, row, col) do
+    %{row: row, col: col, position: {row, col}}
+  end
+
   def move_to(%__MODULE__{} = cursor, row, col) do
     %{cursor | row: row, col: col, position: {row, col}}
   end

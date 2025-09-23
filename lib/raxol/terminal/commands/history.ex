@@ -135,7 +135,8 @@ defmodule Raxol.Terminal.Commands.History do
   or appends to the current command buffer if it's a printable character.
   Returns the updated emulator struct.
   """
-  @spec maybe_add_to_history(Emulator.t(), integer()) :: Emulator.t()
+  @spec maybe_add_to_history(Raxol.Terminal.Emulator.t(), integer()) ::
+          Raxol.Terminal.Emulator.t()
   def maybe_add_to_history(emulator, 10) do
     # On newline, add the current buffer to history if not empty, then clear buffer
     cmd = String.trim(emulator.current_command_buffer)
@@ -157,7 +158,8 @@ defmodule Raxol.Terminal.Commands.History do
     end
   end
 
-  @spec maybe_add_to_history(Emulator.t(), integer()) :: Emulator.t()
+  @spec maybe_add_to_history(Raxol.Terminal.Emulator.t(), integer()) ::
+          Raxol.Terminal.Emulator.t()
   def maybe_add_to_history(emulator, char)
       when is_integer(char) and char >= 32 and char <= 0x10FFFF do
     # Skip history if disabled (current_command_buffer is nil)
@@ -171,7 +173,8 @@ defmodule Raxol.Terminal.Commands.History do
     end
   end
 
-  @spec maybe_add_to_history(Emulator.t(), any()) :: Emulator.t()
+  @spec maybe_add_to_history(Raxol.Terminal.Emulator.t(), any()) ::
+          Raxol.Terminal.Emulator.t()
   def maybe_add_to_history(emulator, _), do: emulator
 
   @doc """

@@ -18,6 +18,7 @@ defmodule Raxol.Core.Events.TelemetryAdapter do
     metadata = extract_metadata(data)
 
     :telemetry.execute(telemetry_event, measurements, metadata)
+    :ok
   end
 
   @doc """

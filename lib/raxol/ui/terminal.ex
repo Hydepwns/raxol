@@ -202,14 +202,14 @@ defmodule Raxol.UI.Terminal do
 
   defp handle_char_request(from, reply_as) do
     chars = :io.get_chars("", 1)
-    send(from, {:io_reply, reply_as, chars})
+    _ = send(from, {:io_reply, reply_as, chars})
     parse_char_result(chars)
   end
 
   defp handle_other_io_request(from, reply_as, req) do
     reply = :io.request(req)
-    send(from, {:io_reply, reply_as, reply})
-    read_key([])
+    _ = send(from, {:io_reply, reply_as, reply})
+    {:error, :unsupported_io_request}
   end
 
   defp parse_char_result(chars) do

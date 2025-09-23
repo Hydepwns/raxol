@@ -29,14 +29,14 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Checks if scrolling is needed and performs it if necessary.
   """
-  def maybe_scroll(buffer) when is_list(buffer) do
+  def maybe_scroll(buffer) do
     Scrolling.maybe_scroll(buffer)
   end
 
   @doc """
   Moves the cursor to the next line, scrolling if necessary.
   """
-  def next_line(buffer) when is_list(buffer) do
+  def next_line(buffer) do
     Scrolling.next_line(buffer)
   end
 

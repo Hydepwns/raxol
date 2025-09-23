@@ -211,7 +211,7 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
           non_neg_integer(),
           non_neg_integer(),
           Cell.t()
-        ) :: :ok | {:error, :invalid_coordinates}
+        ) :: :ok
   def fill_region(pid, x, y, width, height, cell) when is_pid(pid) do
     GenServer.cast(pid, {:fill_region, x, y, width, height, cell})
   end
@@ -363,14 +363,6 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
   @spec get_metrics(pid()) :: {:ok, map()} | {:error, term()}
   def get_metrics(pid) when is_pid(pid) do
     GenServer.call(pid, :get_metrics)
-  end
-
-  @spec get_metrics(pid()) :: map()
-  def get_metrics(pid) when is_pid(pid) do
-    case GenServer.call(pid, :get_metrics) do
-      {:ok, metrics} -> metrics
-      {:error, _} -> %{}
-    end
   end
 
   @doc """

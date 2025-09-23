@@ -713,7 +713,8 @@ defmodule Raxol.UI.State.Hooks do
   end
 
   defp send_message_to_living_process(pid, component_id, true) do
-    send(pid, {:component_update, component_id})
+    _ = send(pid, {:component_update, component_id})
+    :ok
   end
 
   defp send_message_to_living_process(_pid, _component_id, false), do: :ok

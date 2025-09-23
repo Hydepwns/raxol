@@ -65,11 +65,13 @@ defmodule Raxol.Benchmark.StatisticalAnalyzer do
         f = :erlang.floor(k)
         c = :erlang.ceil(k)
 
-        if f == c do
-          Enum.at(sorted_data, trunc(k))
+        f_int = trunc(f)
+        c_int = trunc(c)
+        if f_int == c_int do
+          Enum.at(sorted_data, f_int)
         else
-          d0 = Enum.at(sorted_data, trunc(f)) * (c - k)
-          d1 = Enum.at(sorted_data, trunc(c)) * (k - f)
+          d0 = Enum.at(sorted_data, f_int) * (c - k)
+          d1 = Enum.at(sorted_data, c_int) * (k - f)
           d0 + d1
         end
     end
@@ -356,7 +358,7 @@ defmodule Raxol.Benchmark.StatisticalAnalyzer do
     mean = calculate_mean(data)
     std_dev = calculate_std_dev(data)
 
-    if mean != 0 and std_dev do
+    if abs(mean) > 1.0e-10 and std_dev do
       std_dev / abs(mean) * 100
     else
       nil
@@ -368,7 +370,7 @@ defmodule Raxol.Benchmark.StatisticalAnalyzer do
     mean = calculate_mean(data)
     std_dev = calculate_std_dev(data)
 
-    if std_dev == 0 or n < 3 do
+    if abs(std_dev) < 1.0e-10 or n < 3 do
       0
     else
       sum_cubed =
@@ -385,7 +387,7 @@ defmodule Raxol.Benchmark.StatisticalAnalyzer do
     mean = calculate_mean(data)
     std_dev = calculate_std_dev(data)
 
-    if std_dev == 0 or n < 4 do
+    if abs(std_dev) < 1.0e-10 or n < 4 do
       # Normal distribution kurtosis
       3
     else

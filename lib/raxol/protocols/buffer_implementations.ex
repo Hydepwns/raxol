@@ -169,7 +169,5 @@ defmodule Raxol.Protocols.BufferImplementations do
 
     defp serialize_cell(%{char: char, style: style}),
       do: %{char: char || " ", style: style}
-
-    defp serialize_cell(%{char: char}), do: %{char: char || " ", style: nil}
   end
 end

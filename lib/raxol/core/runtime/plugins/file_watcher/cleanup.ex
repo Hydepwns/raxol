@@ -23,7 +23,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
   end
 
   defp stop_file_watcher(state) do
-    execute_file_watcher_stop(should_stop_file_watcher?(state), state)
+    _ = execute_file_watcher_stop(should_stop_file_watcher?(state), state)
     state
   end
 
@@ -60,7 +60,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
   end
 
   defp cancel_file_event_timer(state) do
-    cancel_timer_if_present(state.file_event_timer)
+    _ = cancel_timer_if_present(state.file_event_timer)
     state
   end
 
@@ -72,7 +72,8 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
       "[#{__MODULE__}] Stopping file watcher (PID: #{inspect(state.file_watcher_pid)})."
     )
 
-    stop_watcher_process(state.file_watcher_pid)
+    _ = stop_watcher_process(state.file_watcher_pid)
+    :ok
   end
 
   defp handle_watcher_process_stop(true, pid),

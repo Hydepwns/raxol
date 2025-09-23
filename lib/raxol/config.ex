@@ -106,23 +106,30 @@ defmodule Raxol.Config do
     config_file = opts[:config_file] || @default_config_file
     env = opts[:env] || Mix.env()
 
-    state = %{
+    initial_state = %{
       config: %{},
       config_file: config_file,
       env: env,
       runtime_overrides: %{}
     }
 
-    case load_initial_config(state) do
+    load_params = %{
+      config_file: config_file,
+      env: env
+    }
+
+    case load_initial_config(load_params) do
       {:ok, config} ->
-        {:ok, %{state | config: config}}
+        final_state = %{initial_state | config: config}
+        {:ok, final_state}
 
       {:error, reason} ->
         Logger.warning(
           "Failed to load config: #{inspect(reason)}, using defaults"
         )
 
-        {:ok, %{state | config: default_config()}}
+        default_state = %{initial_state | config: default_config()}
+        {:ok, default_state}
     end
   end
 
@@ -156,11 +163,17 @@ defmodule Raxol.Config do
 
   @impl true
   def handle_call(:reload, _from, state) do
-    case load_initial_config(state) do
-      {:ok, config} ->
-        {:reply, :ok, %{state | config: config, runtime_overrides: %{}}}
+    reload_params = %{
+      config_file: state.config_file,
+      env: state.env
+    }
 
-      error ->
+    case load_initial_config(reload_params) do
+      {:ok, config} ->
+        new_state = %{state | config: config, runtime_overrides: %{}}
+        {:reply, :ok, new_state}
+
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -186,16 +199,20 @@ defmodule Raxol.Config do
 
   ## Private Functions
 
-  @spec load_initial_config(map()) :: {:ok, config_map()} | {:error, any()}
+  @spec load_initial_config(%{config_file: binary(), env: any()}) ::
+    {:ok, config_map()} | {:error, atom() | {:toml_parse_error, any()}}
   defp load_initial_config(%{config_file: config_file, env: env}) do
     with {:ok, base_config} <- load_toml_file(config_file),
-         {:ok, env_config} <- load_env_config(env),
-         {:ok, merged} <- {:ok, deep_merge(base_config, env_config)} do
+         {:ok, env_config} <- load_env_config(env) do
+      merged = deep_merge(base_config, env_config)
       {:ok, merged}
     else
       {:error, :enoent} ->
         # Try to load from example if main config doesn't exist
-        load_toml_file("config/raxol.example.toml")
+        case load_toml_file("config/raxol.example.toml") do
+          {:ok, example_config} -> {:ok, example_config}
+          {:error, _} -> {:ok, default_config()}
+        end
 
       error ->
         error
@@ -226,7 +243,7 @@ defmodule Raxol.Config do
     end
   end
 
-  @spec export_to_toml(config_map(), String.t()) :: :ok | {:error, any()}
+  @spec export_to_toml(config_map(), String.t()) :: :ok | {:error, File.posix()}
   defp export_to_toml(config, file_path) do
     # Since Toml library doesn't support encoding, we'll create a simple TOML writer
     content = generate_toml(config)
@@ -237,8 +254,8 @@ defmodule Raxol.Config do
   defp generate_toml(config, indent \\ 0) do
     config
     |> Enum.map_join(
-      fn {key, value} -> format_toml_entry(key, value, indent) end,
-      "\n"
+      "\n",
+      fn {key, value} -> format_toml_entry(key, value, indent) end
     )
   end
 
@@ -271,6 +288,7 @@ defmodule Raxol.Config do
   @spec get_nested(config_map(), config_path()) :: config_value() | nil
   defp get_nested(map, []), do: map
   defp get_nested(nil, _), do: nil
+  defp get_nested(map, _) when not is_map(map), do: nil
 
   defp get_nested(map, [key | rest]) do
     key_str = to_string(key)
@@ -282,15 +300,17 @@ defmodule Raxol.Config do
   end
 
   @spec set_nested(config_map(), config_path(), config_value()) :: config_map()
-  defp set_nested(map, [key], value) do
+  defp set_nested(map, [key], value) when is_map(map) do
     Map.put(map, to_string(key), value)
   end
 
-  defp set_nested(map, [key | rest], value) do
+  defp set_nested(map, [key | rest], value) when is_map(map) do
     key_str = to_string(key)
     nested = Map.get(map, key_str, %{})
     Map.put(map, key_str, set_nested(nested, rest, value))
   end
+
+  defp set_nested(_map, _path, _value), do: %{}
 
   @spec deep_merge(config_map(), config_map()) :: config_map()
   defp deep_merge(left, right) do

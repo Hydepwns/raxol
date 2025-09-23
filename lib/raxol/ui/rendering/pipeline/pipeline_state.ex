@@ -63,13 +63,13 @@ defmodule Raxol.UI.Rendering.Pipeline.State do
   @spec clear_timers(t()) :: t()
   def clear_timers(state) do
     # Cancel render timer if exists
-    case state.render_timer_ref do
+    _ = case state.render_timer_ref do
       nil -> :ok
       ref -> Process.cancel_timer(ref)
     end
 
     # Cancel animation ticker if exists
-    case state.animation_ticker_ref do
+    _ = case state.animation_ticker_ref do
       nil -> :ok
       ref -> Process.cancel_timer(ref)
     end

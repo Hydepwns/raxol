@@ -12,7 +12,8 @@ defmodule Raxol.Benchmark do
   def run_benchmark(config) do
     sequences = read_sequences()
     results = Enum.map(sequences, &benchmark_sequence(&1, config))
-    print_results(results)
+    :ok = print_results(results)
+    {:ok, results}
   end
 
   defp read_sequences do
@@ -45,5 +46,7 @@ defmodule Raxol.Benchmark do
       IO.puts("Duration: #{duration}ms")
       IO.puts("---")
     end)
+
+    :ok
   end
 end

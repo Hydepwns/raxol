@@ -116,9 +116,10 @@ defmodule Raxol.Terminal.Driver do
         )
 
         _ =
-          case @termbox2_available do
-            true -> apply(:termbox2_nif, :tb_init, [])
-            false -> :ok
+          if @termbox2_available do
+            apply(:termbox2_nif, :tb_init, [])
+          else
+            0
           end
 
         {:ok, state}
@@ -294,7 +295,7 @@ defmodule Raxol.Terminal.Driver do
   def terminate(_reason, %{termbox_state: :initialized} = _state) do
     Raxol.Core.Runtime.Log.info("Terminal Driver terminating.")
     # Only attempt shutdown if not in test environment
-    case {Mix.env(), real_tty?()} do
+    _ = case {Mix.env(), real_tty?()} do
       {:test, _} ->
         :ok
 
@@ -303,9 +304,10 @@ defmodule Raxol.Terminal.Driver do
 
       {_, true} ->
         _ =
-          case @termbox2_available do
-            true -> apply(:termbox2_nif, :tb_shutdown, [])
-            false -> :ok
+          if @termbox2_available do
+            apply(:termbox2_nif, :tb_shutdown, [])
+          else
+            0
           end
     end
 
@@ -324,7 +326,7 @@ defmodule Raxol.Terminal.Driver do
   Processes a terminal title change event.
   """
   def process_title_change(title, state) when is_binary(title) do
-    case {Mix.env(), real_tty?()} do
+    _ = case {Mix.env(), real_tty?()} do
       {:test, _} ->
         :ok
 
@@ -333,9 +335,10 @@ defmodule Raxol.Terminal.Driver do
 
       {_, true} ->
         _ =
-          case @termbox2_available do
-            true -> apply(:termbox2_nif, :tb_set_title, [title])
-            false -> :ok
+          if @termbox2_available do
+            apply(:termbox2_nif, :tb_set_title, [title])
+          else
+            0
           end
     end
 
@@ -347,7 +350,7 @@ defmodule Raxol.Terminal.Driver do
   """
   def process_position_change(x, y, state)
       when is_integer(x) and is_integer(y) do
-    case {Mix.env(), real_tty?()} do
+    _ = case {Mix.env(), real_tty?()} do
       {:test, _} ->
         :ok
 
@@ -356,9 +359,10 @@ defmodule Raxol.Terminal.Driver do
 
       {_, true} ->
         _ =
-          case @termbox2_available do
-            true -> apply(:termbox2_nif, :tb_set_position, [x, y])
-            false -> :ok
+          if @termbox2_available do
+            apply(:termbox2_nif, :tb_set_position, [x, y])
+          else
+            0
           end
     end
 
@@ -428,16 +432,18 @@ defmodule Raxol.Terminal.Driver do
   end
 
   defp call_termbox_init do
-    case @termbox2_available do
-      true -> :termbox2_nif.tb_init()
-      false -> 0
+    if @termbox2_available do
+      :termbox2_nif.tb_init()
+    else
+      0
     end
   end
 
   defp terminate_termbox do
-    case @termbox2_available do
-      true -> :termbox2_nif.tb_shutdown()
-      false -> :ok
+    if @termbox2_available do
+      :termbox2_nif.tb_shutdown()
+    else
+      0
     end
   end
 
@@ -449,16 +455,18 @@ defmodule Raxol.Terminal.Driver do
   # end
 
   defp get_termbox_width do
-    case @termbox2_available do
-      true -> :termbox2_nif.tb_width()
-      false -> 80
+    if @termbox2_available do
+      :termbox2_nif.tb_width()
+    else
+      80
     end
   end
 
   defp get_termbox_height do
-    case @termbox2_available do
-      true -> :termbox2_nif.tb_height()
-      false -> 24
+    if @termbox2_available do
+      :termbox2_nif.tb_height()
+    else
+      24
     end
   end
 
@@ -466,7 +474,7 @@ defmodule Raxol.Terminal.Driver do
     case call_termbox_init() do
       0 -> :ok
       -1 -> {:error, :init_failed}
-      other -> {:error, {:unexpected_result, other}}
+      # NIF only returns 0 or -1
     end
   end
 
@@ -487,9 +495,9 @@ defmodule Raxol.Terminal.Driver do
       width = get_termbox_width()
       height = get_termbox_height()
 
-      case {width > 0, height > 0} do
-        {true, true} -> {:ok, width, height}
-        _ -> stty_size_fallback()
+      case width > 0 and height > 0 do
+        true -> {:ok, width, height}
+        false -> stty_size_fallback()
       end
     end)
     |> case do

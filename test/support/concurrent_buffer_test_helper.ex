@@ -41,8 +41,9 @@ defmodule ConcurrentBufferTestHelper do
   Stops the buffer server if it's still alive.
   """
   def teardown_buffer(pid) do
-    if Process.alive?(pid) do
-      ConcurrentBuffer.stop(pid)
+    case Process.alive?(pid) do
+      true -> ConcurrentBuffer.stop(pid)
+      false -> :ok
     end
   end
 
@@ -72,9 +73,12 @@ defmodule ConcurrentBufferTestHelper do
 
         Enum.each(0..(height - 1), fn y ->
           Enum.each(0..(width - 1), fn x ->
-            if iterations > 0 do
-              cell = Cell.new("W", TextFormatting.new(foreground: color))
-              ConcurrentBuffer.set_cell(pid, start_x + x, start_y + y, cell)
+            case iterations > 0 do
+              true ->
+                cell = Cell.new("W", TextFormatting.new(foreground: color))
+                ConcurrentBuffer.set_cell(pid, start_x + x, start_y + y, cell)
+              false ->
+                :ok
             end
           end)
         end)
@@ -231,10 +235,9 @@ defmodule ConcurrentBufferTestHelper do
         end
       end)
 
-    if all_ok do
-      :ok
-    else
-      {:error, :some_tasks_failed}
+    case all_ok do
+      true -> :ok
+      false -> {:error, :some_tasks_failed}
     end
   end
 
@@ -255,10 +258,9 @@ defmodule ConcurrentBufferTestHelper do
   def verify_cell_content(pid, x, y, expected_char) do
     case ConcurrentBuffer.get_cell(pid, x, y) do
       {:ok, cell} ->
-        if cell.char == expected_char do
-          :ok
-        else
-          {:error, "Expected char '#{expected_char}', got '#{cell.char}'"}
+        case cell.char == expected_char do
+          true -> :ok
+          false -> {:error, "Expected char '#{expected_char}', got '#{cell.char}'"}
         end
 
       error ->

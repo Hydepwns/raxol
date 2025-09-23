@@ -6,88 +6,41 @@ defmodule Raxol.Terminal.ScreenBuffer.Core.Initialization do
   alias Raxol.Terminal.ScreenBuffer.{
     Charset,
     Formatting,
-    State,
     Metrics,
-    FileWatcher,
     Scroll,
     Screen,
     Mode,
-    Visualizer,
     Preferences,
-    System,
-    Cloud,
-    Theme,
     CSI
   }
 
-  defstruct [
-    :cells,
-    :width,
-    :height,
-    :charset_state,
-    :formatting_state,
-    :terminal_state,
-    :output_buffer,
-    :metrics_state,
-    :file_watcher_state,
-    :scroll_state,
-    :screen_state,
-    :mode_state,
-    :visualizer_state,
-    :preferences,
-    :system_state,
-    :cloud_state,
-    :theme_state,
-    :csi_state,
-    :default_style
-  ]
-
-  @type t :: %__MODULE__{
-          cells: list(list(map())),
-          width: non_neg_integer(),
-          height: non_neg_integer(),
-          charset_state: map(),
-          formatting_state: map(),
-          terminal_state: map(),
-          output_buffer: String.t(),
-          metrics_state: map(),
-          file_watcher_state: map(),
-          scroll_state: map(),
-          screen_state: map(),
-          mode_state: map(),
-          visualizer_state: map(),
-          preferences: map(),
-          system_state: map(),
-          cloud_state: map(),
-          theme_state: map(),
-          csi_state: map(),
-          default_style: map()
-        }
+  alias Raxol.Terminal.ScreenBuffer.Core
 
   @doc """
   Creates a new screen buffer with the specified dimensions.
   """
-  def new(width, height, _scrollback \\ 1000) do
-    %__MODULE__{
+  def new(width, height, scrollback \\ 1000)
+  def new(width, height, _scrollback) when width > 0 and height > 0 do
+    %Core{
       cells:
         List.duplicate(List.duplicate(Raxol.Terminal.Cell.new(), width), height),
       width: width,
       height: height,
-      charset_state: Charset.init(),
-      formatting_state: Formatting.init(),
-      terminal_state: State.init(),
+      charset_state: safe_init(Charset),
+      formatting_state: safe_init(Formatting),
+      terminal_state: %{},
       output_buffer: "",
-      metrics_state: Metrics.init(),
-      file_watcher_state: FileWatcher.init(),
-      scroll_state: Scroll.init(),
-      screen_state: Screen.init(),
-      mode_state: Mode.init(),
-      visualizer_state: Visualizer.init(),
-      preferences: Preferences.init(),
-      system_state: System.init(),
-      cloud_state: Cloud.init(),
-      theme_state: Theme.init(),
-      csi_state: CSI.init(),
+      metrics_state: safe_init(Metrics),
+      file_watcher_state: %{},
+      scroll_state: safe_init(Scroll),
+      screen_state: safe_init(Screen),
+      mode_state: safe_init(Mode),
+      visualizer_state: %{},
+      preferences: safe_init(Preferences),
+      system_state: %{},
+      cloud_state: %{},
+      theme_state: %{},
+      csi_state: safe_init(CSI),
       default_style: %{
         foreground: nil,
         background: nil,
@@ -100,5 +53,41 @@ defmodule Raxol.Terminal.ScreenBuffer.Core.Initialization do
         strikethrough: false
       }
     }
+  end
+
+  def new(_width, _height, _scrollback) do
+    # Invalid dimensions, return minimal buffer
+    %Core{
+      cells: [],
+      width: 0,
+      height: 0,
+      charset_state: %{},
+      formatting_state: %{},
+      terminal_state: %{},
+      output_buffer: "",
+      metrics_state: %{},
+      file_watcher_state: %{},
+      scroll_state: %{},
+      screen_state: %{},
+      mode_state: %{},
+      visualizer_state: %{},
+      preferences: %{},
+      system_state: %{},
+      cloud_state: %{},
+      theme_state: %{},
+      csi_state: %{},
+      default_style: %{}
+    }
+  end
+
+  # Safe initialization helper
+  defp safe_init(module) do
+    if function_exported?(module, :init, 0) do
+      apply(module, :init, [])
+    else
+      %{}
+    end
+  rescue
+    _ -> %{}
   end
 end

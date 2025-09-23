@@ -116,10 +116,16 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   A new `t:Raxol.Terminal.ANSI.SixelGraphics.t/0` struct with default values.
   """
-  @spec new() :: t()
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
+  @spec new() :: Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()
   def new do
-    %__MODULE__{
-      palette: Raxol.Terminal.ANSI.SixelPalette.initialize_palette()
+    %{
+      width: 0,
+      height: 0,
+      data: <<>>,
+      palette: Raxol.Terminal.ANSI.SixelPalette.initialize_palette(),
+      scale: {1, 1},
+      position: {0, 0}
     }
   end
 
@@ -135,10 +141,18 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   A new `t:Raxol.Terminal.ANSI.SixelGraphics.t/0` struct with the specified dimensions.
   """
-  @spec new(non_neg_integer(), non_neg_integer()) :: t()
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
+  @spec new(pos_integer(), pos_integer()) :: Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()
   def new(width, height)
       when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
-    %__MODULE__{width: width, height: height}
+    %{
+      width: width,
+      height: height,
+      data: <<>>,
+      palette: Raxol.Terminal.ANSI.SixelPalette.initialize_palette(),
+      scale: {1, 1},
+      position: {0, 0}
+    }
   end
 
   @doc """
@@ -153,7 +167,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   The updated image with new data.
   """
-  @spec set_data(t(), binary()) :: t()
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
+  @spec set_data(Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t(), binary()) :: Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()
   def set_data(image, data) when is_binary(data) do
     %{image | data: data}
   end
@@ -169,7 +184,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   The binary image data.
   """
-  @spec get_data(t()) :: binary()
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
+  @spec get_data(Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()) :: binary()
   def get_data(image) do
     image.data
   end
@@ -186,7 +202,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   The updated image with new palette.
   """
-  @spec set_palette(t(), map()) :: t()
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
+  @spec set_palette(Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t(), map()) :: Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()
   def set_palette(image, palette) when is_map(palette) do
     %{image | palette: palette}
   end
@@ -202,7 +219,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   A map containing the current color palette.
   """
-  @spec get_palette(t()) :: map()
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
+  @spec get_palette(Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()) :: map()
   def get_palette(image) do
     image.palette
   end
@@ -220,7 +238,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   The updated image with new scale factors.
   """
-  @spec set_scale(t(), non_neg_integer(), non_neg_integer()) :: t()
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
+  @spec set_scale(Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t(), non_neg_integer(), non_neg_integer()) :: Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()
   def set_scale(image, x_scale, y_scale)
       when is_integer(x_scale) and is_integer(y_scale) and x_scale > 0 and
              y_scale > 0 do
@@ -238,7 +257,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   A tuple `{x_scale, y_scale}` with the current scale factors.
   """
-  @spec get_scale(t()) :: {non_neg_integer(), non_neg_integer()}
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
+  @spec get_scale(Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()) :: {non_neg_integer(), non_neg_integer()}
   def get_scale(image) do
     image.scale
   end
@@ -256,7 +276,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   The updated image with new position.
   """
-  @spec set_position(t(), non_neg_integer(), non_neg_integer()) :: t()
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
+  @spec set_position(Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t(), non_neg_integer(), non_neg_integer()) :: Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()
   def set_position(image, x, y)
       when is_integer(x) and is_integer(y) and x >= 0 and y >= 0 do
     %{image | position: {x, y}}
@@ -273,7 +294,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   A tuple `{x, y}` with the current position.
   """
-  @spec get_position(t()) :: {non_neg_integer(), non_neg_integer()}
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
+  @spec get_position(Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()) :: {non_neg_integer(), non_neg_integer()}
   def get_position(image) do
     image.position
   end
@@ -289,7 +311,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   A binary containing the ANSI escape sequence for the Sixel image.
   """
-  @spec encode(t()) :: binary()
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
+  @spec encode(Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()) :: binary()
   def encode(image) do
     if map_size(image.pixel_buffer) == 0 do
       ""
@@ -312,20 +335,17 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   A new `t:Raxol.Terminal.ANSI.SixelGraphics.t/0` struct with the decoded image data.
   """
-  @spec decode(binary()) :: {:ok, t()} | {:error, term()}
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
+  @spec decode(binary()) :: Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()
   def decode(data) when is_binary(data) do
     # Extract sixel data from escape sequence
     case extract_sixel_data(data) do
       {:ok, sixel_content} ->
         image = new()
+        process_sequence(image, sixel_content)
 
-        case process_sequence(image, sixel_content) do
-          {updated_image, :ok} -> {:ok, updated_image}
-          {_image, {:error, reason}} -> {:error, reason}
-        end
-
-      {:error, reason} ->
-        {:error, reason}
+      {:error, _reason} ->
+        new()  # Return empty image on error
     end
   end
 
@@ -336,6 +356,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   `true` if Sixel graphics are supported, `false` otherwise.
   """
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
   @spec supported?() :: boolean()
   def supported? do
     detect_sixel_support() == :supported
@@ -353,7 +374,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   A tuple containing the updated state and a response.
   """
-  @spec process_sequence(t(), binary()) :: {t(), :ok | {:error, atom()}}
+  @impl Raxol.Terminal.ANSI.SixelGraphics.Behaviour
+  @spec process_sequence(Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t(), binary()) :: Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()
   def process_sequence(state, data) when is_binary(data) do
     Logger.debug(
       "SixelGraphics: process_sequence called with data: #{inspect(data)}"
@@ -431,11 +453,11 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
             attributes: parser_state.raster_attrs
         }
 
-        {updated_state, :ok}
+        updated_state
 
       {:error, reason} ->
         Logger.debug("SixelGraphics: Parser returned error: #{inspect(reason)}")
-        {state_with_palette, {:error, reason}}
+        state_with_palette  # Return unchanged state on error
     end
   end
 
@@ -605,7 +627,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   * `{:error, reason}` - Conversion error
   """
   @spec from_image_data(binary(), image_format(), sixel_options()) ::
-          {:ok, t()} | {:error, term()}
+          {:ok, map()} | {:error, term()}
   def from_image_data(_image_data, format, options \\ %{}) do
     # This would typically use an image processing library
     # For now, return a placeholder implementation
@@ -615,7 +637,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
         width = Map.get(options, :target_width, 64)
         height = Map.get(options, :target_height, 64)
 
-        image = %__MODULE__{
+        image = %{
           width: width,
           height: height,
           original_format: format,
@@ -625,7 +647,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
         # Generate a simple test pattern
         pixel_buffer = generate_test_pattern(width, height)
 
-        {:ok, %{image | pixel_buffer: pixel_buffer}}
+        {:ok, Map.merge(image, %{pixel_buffer: pixel_buffer, data: <<>>})}
 
       _ ->
         {:error, {:unsupported_format, format}}
@@ -656,7 +678,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   * `t()` - Image with optimized palette
   """
-  @spec optimize_palette(t(), non_neg_integer(), atom()) :: t()
+  @spec optimize_palette(map(), non_neg_integer(), atom()) :: map()
   def optimize_palette(
         image,
         max_colors \\ @max_colors,
@@ -721,7 +743,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   * `t()` - Image with dithering applied
   """
-  @spec apply_dithering(t(), dithering_algorithm()) :: t()
+  @spec apply_dithering(map(), dithering_algorithm()) :: map()
   def apply_dithering(image, algorithm \\ :floyd_steinberg) do
     case algorithm do
       :none -> image

@@ -580,7 +580,7 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
   defp generate_state_thrashing_scenario do
     # Rapid state changes
     1..100
-    |> Enum.map_join(fn i ->
+    |> Enum.map(fn i ->
       [
         # Enable mode
         "\e[?#{1000 + rem(i, 50)}h",
@@ -595,5 +595,6 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
       ]
     end)
     |> List.flatten()
+    |> Enum.join("")
   end
 end

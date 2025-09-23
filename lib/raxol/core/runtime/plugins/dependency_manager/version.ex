@@ -41,17 +41,11 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
           end
       end
     else
-      {:error, :invalid_version_format} ->
+      :error ->
         {:error, :invalid_version_format}
 
-      {:error, :invalid_requirement_format} ->
+      {:error, _} ->
         {:error, :invalid_requirement_format}
-
-      {:error, :invalid_requirement} ->
-        {:error, :invalid_requirement_format}
-
-      _ ->
-        {:error, :invalid_version_format}
     end
   end
 

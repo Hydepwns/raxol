@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.OutputManager do
   @spec write(Emulator.t(), String.t()) :: Emulator.t()
   def write(emulator, string) do
     buffer = OutputBuffer.write(emulator.output_buffer, string)
-    update_buffer(emulator, buffer)
+    %{emulator | output_buffer: buffer}
   end
 
   @doc """
@@ -79,7 +79,7 @@ defmodule Raxol.Terminal.OutputManager do
   @spec writeln(Emulator.t(), String.t()) :: Emulator.t()
   def writeln(emulator, string) do
     buffer = OutputBuffer.writeln(emulator.output_buffer, string)
-    update_buffer(emulator, buffer)
+    %{emulator | output_buffer: buffer}
   end
 
   @doc """
@@ -89,7 +89,7 @@ defmodule Raxol.Terminal.OutputManager do
   @spec flush(Emulator.t()) :: {:ok, Emulator.t()} | {:error, String.t()}
   def flush(emulator) do
     {:ok, new_buffer} = OutputBuffer.flush(emulator.output_buffer)
-    {:ok, update_buffer(emulator, new_buffer)}
+    {:ok, %{emulator | output_buffer: new_buffer}}
   end
 
   @doc """
@@ -99,7 +99,7 @@ defmodule Raxol.Terminal.OutputManager do
   @spec clear(Emulator.t()) :: Emulator.t()
   def clear(emulator) do
     buffer = OutputBuffer.clear(emulator.output_buffer)
-    update_buffer(emulator, buffer)
+    %{emulator | output_buffer: buffer}
   end
 
   @doc """
@@ -118,7 +118,7 @@ defmodule Raxol.Terminal.OutputManager do
   @spec set_content(Emulator.t(), String.t()) :: Emulator.t()
   def set_content(emulator, content) do
     buffer = OutputBuffer.set_content(emulator.output_buffer, content)
-    update_buffer(emulator, buffer)
+    %{emulator | output_buffer: buffer}
   end
 
   @doc """
@@ -145,8 +145,8 @@ defmodule Raxol.Terminal.OutputManager do
   """
   @spec set_mode(Emulator.t(), atom()) :: Emulator.t()
   def set_mode(emulator, mode) do
-    buffer = OutputBuffer.set_mode(emulator.output_buffer, mode)
-    update_buffer(emulator, buffer)
+    # OutputBuffer doesn't have set_mode, so store mode in emulator metadata
+    %{emulator | mode: mode}
   end
 
   @doc """
@@ -164,8 +164,8 @@ defmodule Raxol.Terminal.OutputManager do
   """
   @spec set_encoding(Emulator.t(), String.t()) :: Emulator.t()
   def set_encoding(emulator, encoding) do
-    buffer = OutputBuffer.set_encoding(emulator.output_buffer, encoding)
-    update_buffer(emulator, buffer)
+    # OutputBuffer doesn't have set_encoding, so store encoding in emulator metadata
+    %{emulator | encoding: encoding}
   end
 
   @doc """

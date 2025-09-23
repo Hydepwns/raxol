@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.Config.Profiles do
   """
   def list_profiles do
     # Create profiles directory if it doesn't exist
-    File.mkdir_p(@profiles_dir)
+    _ = File.mkdir_p(@profiles_dir)
 
     # Find all JSON files in the profiles directory
     @profiles_dir
@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.Config.Profiles do
   """
   def save_profile(name, config) do
     # Create profiles directory if it doesn't exist
-    File.mkdir_p(@profiles_dir)
+    _ = File.mkdir_p(@profiles_dir)
 
     # Validate profile name
     case validate_profile_name(name) do

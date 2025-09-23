@@ -14,7 +14,6 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ScreenHandlers do
     case UnifiedCommandHandler.handle_csi(emulator, "J", [mode]) do
       {:ok, updated_emulator} -> {:ok, updated_emulator}
       {:error, _, updated_emulator} -> {:ok, updated_emulator}
-      updated_emulator -> {:ok, updated_emulator}
     end
   end
 
@@ -27,7 +26,6 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ScreenHandlers do
     case UnifiedCommandHandler.handle_csi(emulator, "K", [mode]) do
       {:ok, updated_emulator} -> {:ok, updated_emulator}
       {:error, _, updated_emulator} -> {:ok, updated_emulator}
-      updated_emulator -> {:ok, updated_emulator}
     end
   end
 end

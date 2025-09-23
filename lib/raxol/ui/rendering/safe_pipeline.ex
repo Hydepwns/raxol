@@ -476,7 +476,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   end
 
   defp schedule_queue_processing do
-    Process.send_after(self(), {:process_queue, :now}, 100)
+    _ = Process.send_after(self(), {:process_queue, :now}, 100)
   end
 
   defp trim_queue(queue, max_size) do

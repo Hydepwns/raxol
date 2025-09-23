@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.Operations.SelectionOperationsTest do
   use ExUnit.Case
-  alias Raxol.Terminal.{Operations.SelectionOperations, TestHelper}
+  alias Raxol.Terminal.Operations.SelectionOperations
 
   describe "get_selection/1" do
     test "returns empty string when no selection" do

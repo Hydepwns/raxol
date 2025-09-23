@@ -68,7 +68,7 @@ defmodule Raxol.Application do
     record_startup_metrics(start_time, mode, result)
 
     # Schedule health checks if enabled
-    schedule_health_checks(mode)
+    _health_check_ref = schedule_health_checks(mode)
 
     result
   end
@@ -426,7 +426,7 @@ defmodule Raxol.Application do
 
   def handle_info(:perform_health_check, state) do
     perform_health_check()
-    schedule_health_checks(:full)
+    _health_check_ref = schedule_health_checks(:full)
     {:noreply, state}
   end
 
@@ -550,7 +550,7 @@ defmodule Raxol.Application do
   @doc """
   Dynamically remove a child from the supervision tree.
   """
-  @spec remove_child(pid() | atom()) :: :ok | {:error, term()}
+  @spec remove_child(pid() | atom()) :: :ok | {:error, :dynamic_supervisor_not_started | :not_found}
   def remove_child(child_id) when is_atom(child_id) do
     case Process.whereis(child_id) do
       nil -> {:error, :not_found}
@@ -571,7 +571,15 @@ defmodule Raxol.Application do
   @doc """
   Get current application health status.
   """
-  @spec health_status() :: map()
+  @spec health_status() :: %{
+          mode: atom(),
+          supervisor_alive: boolean(),
+          children: non_neg_integer(),
+          memory_mb: non_neg_integer(),
+          process_count: non_neg_integer(),
+          features: map(),
+          uptime_seconds: integer()
+        }
   def health_status do
     %{
       mode: determine_startup_mode([]),

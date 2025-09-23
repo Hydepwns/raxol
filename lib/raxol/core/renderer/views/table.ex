@@ -79,7 +79,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
   @impl Raxol.UI.Components.Base.Component
   def mount(state) do
     # No commands on mount for now
-    {:ok, state, []}
+    {state, []}
   end
 
   @doc """
@@ -140,7 +140,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, _props_or_context, %__MODULE__{} = state) do
     log_component(:event, event)
-    default_update_response(state)
+    {state, []}
   end
 
   defp log_component(type, payload) do
@@ -149,7 +149,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
     )
   end
 
-  defp default_update_response(state), do: {:ok, state, []}
+  defp default_update_response(state), do: state
 
   @doc """
   Called when the component is about to be unmounted.
@@ -157,7 +157,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
   @impl Raxol.UI.Components.Base.Component
   def unmount(%__MODULE__{} = state) do
     # No specific cleanup for now
-    {:ok, state}
+    state
   end
 
   # Private Helpers
@@ -318,9 +318,6 @@ defmodule Raxol.Core.Renderer.Views.Table do
       {current, updated} ->
         filtered = Map.take(updated, struct_keys)
         {current, struct(table, filtered)}
-
-      :error ->
-        :error
     end
   end
 

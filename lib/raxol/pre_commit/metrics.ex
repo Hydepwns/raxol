@@ -61,7 +61,7 @@ defmodule Raxol.PreCommit.Metrics do
   Clear metrics history.
   """
   def clear_history do
-    File.rm(@metrics_file)
+    _ = File.rm(@metrics_file)
     :ok
   end
 
@@ -147,9 +147,6 @@ defmodule Raxol.PreCommit.Metrics do
           0 -> 0.0
           total -> Float.round(stats.hits / total * 100, 1)
         end
-
-      _ ->
-        0.0
     end
   catch
     _ -> 0.0

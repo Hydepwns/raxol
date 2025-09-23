@@ -50,7 +50,7 @@ defmodule Raxol.Core.Accessibility do
   Initialize accessibility with the given options.
   """
   def init(options \\ []) do
-    ensure_started()
+    _started = ensure_started()
     enable(options)
   end
 
@@ -67,7 +67,7 @@ defmodule Raxol.Core.Accessibility do
   """
   @impl true
   def enable(options \\ [], user_preferences_pid_or_name \\ nil) do
-    ensure_started()
+    _started = ensure_started()
 
     AccessibilityServer.enable(
       AccessibilityServer,
@@ -103,7 +103,7 @@ defmodule Raxol.Core.Accessibility do
   """
   @impl true
   def enabled? do
-    ensure_started()
+    _started = ensure_started()
     AccessibilityServer.enabled?()
   end
 
@@ -126,7 +126,7 @@ defmodule Raxol.Core.Accessibility do
   """
   @impl true
   def announce(message, opts \\ []) do
-    ensure_started()
+    _started = ensure_started()
     AccessibilityServer.announce(AccessibilityServer, message, opts)
     :ok
   end
@@ -136,7 +136,7 @@ defmodule Raxol.Core.Accessibility do
   """
   @impl true
   def announce(message, opts, _user_preferences_pid_or_name) do
-    ensure_started()
+    _started = ensure_started()
     AccessibilityServer.announce(AccessibilityServer, message, opts)
     :ok
   end
@@ -146,7 +146,7 @@ defmodule Raxol.Core.Accessibility do
   """
   @impl true
   def clear_announcements do
-    ensure_started()
+    _started = ensure_started()
     AccessibilityServer.clear_all_announcements()
     :ok
   end
@@ -155,14 +155,14 @@ defmodule Raxol.Core.Accessibility do
   Set high contrast mode.
   """
   def set_high_contrast(enabled) when is_boolean(enabled) do
-    ensure_started()
+    _started = ensure_started()
     AccessibilityServer.set_high_contrast(enabled)
   end
 
   # Backward compatibility for tests that pass user_preferences_pid
   def set_high_contrast(enabled, user_preferences_pid_or_name)
       when is_boolean(enabled) do
-    ensure_started()
+    _started = ensure_started()
     # Update the accessibility server
     AccessibilityServer.set_high_contrast(enabled)
     # Also update UserPreferences directly for tests that check it
@@ -181,7 +181,7 @@ defmodule Raxol.Core.Accessibility do
   Check if high contrast mode is enabled.
   """
   def high_contrast? do
-    ensure_started()
+    _started = ensure_started()
     AccessibilityServer.high_contrast?()
   end
 
@@ -196,14 +196,14 @@ defmodule Raxol.Core.Accessibility do
   Set reduced motion mode.
   """
   def set_reduced_motion(enabled) when is_boolean(enabled) do
-    ensure_started()
+    _started = ensure_started()
     AccessibilityServer.set_reduced_motion(enabled)
   end
 
   # Backward compatibility for tests that pass user_preferences_pid
   def set_reduced_motion(enabled, user_preferences_pid_or_name)
       when is_boolean(enabled) do
-    ensure_started()
+    _started = ensure_started()
     # Update the accessibility server
     AccessibilityServer.set_reduced_motion(enabled)
     # Also update UserPreferences directly for tests that check it
@@ -222,7 +222,7 @@ defmodule Raxol.Core.Accessibility do
   Check if reduced motion mode is enabled.
   """
   def reduced_motion? do
-    ensure_started()
+    _started = ensure_started()
     AccessibilityServer.reduced_motion?()
   end
 
@@ -237,7 +237,7 @@ defmodule Raxol.Core.Accessibility do
   Set large text mode.
   """
   def set_large_text(enabled) when is_boolean(enabled) do
-    ensure_started()
+    _started = ensure_started()
     AccessibilityServer.set_large_text(enabled)
   end
 
@@ -247,7 +247,7 @@ defmodule Raxol.Core.Accessibility do
   @impl true
   def set_large_text(enabled, user_preferences_pid_or_name)
       when is_boolean(enabled) do
-    ensure_started()
+    _started = ensure_started()
     # Update the accessibility server
     AccessibilityServer.set_large_text(enabled)
     # Also update UserPreferences directly for tests that check it
@@ -270,7 +270,7 @@ defmodule Raxol.Core.Accessibility do
   Check if large text mode is enabled.
   """
   def large_text? do
-    ensure_started()
+    _started = ensure_started()
     AccessibilityServer.large_text?()
   end
 
@@ -285,7 +285,7 @@ defmodule Raxol.Core.Accessibility do
   Set screen reader support.
   """
   def set_screen_reader(enabled) when is_boolean(enabled) do
-    ensure_started()
+    _started = ensure_started()
     AccessibilityServer.set_screen_reader(enabled)
   end
 
@@ -293,7 +293,7 @@ defmodule Raxol.Core.Accessibility do
   Check if screen reader support is enabled.
   """
   def screen_reader? do
-    ensure_started()
+    _started = ensure_started()
     AccessibilityServer.screen_reader?()
   end
 
@@ -301,7 +301,7 @@ defmodule Raxol.Core.Accessibility do
   Set keyboard focus indicators.
   """
   def set_keyboard_focus(enabled) when is_boolean(enabled) do
-    ensure_started()
+    _started = ensure_started()
     AccessibilityServer.set_keyboard_focus(enabled)
   end
 
@@ -309,7 +309,7 @@ defmodule Raxol.Core.Accessibility do
   Get all accessibility preferences.
   """
   def get_preferences do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.get_preferences()
   end
 
@@ -319,7 +319,7 @@ defmodule Raxol.Core.Accessibility do
   Announce with synchronous confirmation.
   """
   def announce_sync(message, opts \\ []) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.announce_sync(message, opts)
   end
 
@@ -327,7 +327,7 @@ defmodule Raxol.Core.Accessibility do
   Get announcement history.
   """
   def get_announcement_history(limit \\ nil) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.get_announcement_history(limit)
   end
 
@@ -335,7 +335,7 @@ defmodule Raxol.Core.Accessibility do
   Clear announcement history.
   """
   def clear_announcement_history do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.clear_announcement_history()
   end
 
@@ -343,7 +343,7 @@ defmodule Raxol.Core.Accessibility do
   Set announcement callback function.
   """
   def set_announcement_callback(callback) when is_function(callback, 1) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.set_announcement_callback(callback)
   end
 
@@ -360,7 +360,7 @@ defmodule Raxol.Core.Accessibility do
   - `:state` - Current state (expanded, selected, etc.)
   """
   def set_metadata(component_id, metadata) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.set_metadata(component_id, metadata)
   end
 
@@ -368,7 +368,7 @@ defmodule Raxol.Core.Accessibility do
   Get accessibility metadata for a component.
   """
   def get_metadata(component_id) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.get_metadata(component_id)
   end
 
@@ -376,7 +376,7 @@ defmodule Raxol.Core.Accessibility do
   Remove metadata for a component.
   """
   def remove_metadata(component_id) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.remove_metadata(component_id)
   end
 
@@ -384,7 +384,7 @@ defmodule Raxol.Core.Accessibility do
   Update a specific metadata field for a component.
   """
   def update_metadata(component_id, field, value) do
-    ensure_started()
+    _ = ensure_started()
     current = AccessibilityServer.get_metadata(component_id) || %{}
     updated = Map.put(current, field, value)
     AccessibilityServer.set_metadata(component_id, updated)
@@ -396,7 +396,7 @@ defmodule Raxol.Core.Accessibility do
   Handle focus change event.
   """
   def handle_focus_change_event({:focus_change, old_focus, new_focus}) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.handle_focus_change(old_focus, new_focus)
     :ok
   end
@@ -432,7 +432,7 @@ defmodule Raxol.Core.Accessibility do
   Check if any accessibility feature is active.
   """
   def any_feature_active? do
-    ensure_started()
+    _ = ensure_started()
     prefs = AccessibilityServer.get_preferences()
 
     prefs.high_contrast ||
@@ -446,7 +446,7 @@ defmodule Raxol.Core.Accessibility do
   Reset all accessibility settings to defaults.
   """
   def reset do
-    ensure_started()
+    _ = ensure_started()
     disable()
     enable()
   end
@@ -455,7 +455,7 @@ defmodule Raxol.Core.Accessibility do
 
   @impl true
   def get_option(key, default \\ nil) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.get_option(key, default)
   end
 
@@ -470,25 +470,25 @@ defmodule Raxol.Core.Accessibility do
 
   @impl true
   def set_option(key, value) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.set_option(key, value)
   end
 
   @impl true
   def get_component_hint(component_id, hint_level \\ :basic) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.get_component_hint(component_id, hint_level)
   end
 
   @impl true
   def register_element_metadata(element_id, metadata) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.register_element_metadata(element_id, metadata)
   end
 
   @impl true
   def get_element_metadata(element_id) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.get_element_metadata(element_id)
   end
 
@@ -511,13 +511,13 @@ defmodule Raxol.Core.Accessibility do
 
   @impl true
   def register_component_style(component_type, style) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.register_component_style(component_type, style)
   end
 
   @impl true
   def get_component_style(component_type) do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.get_component_style(component_type)
   end
 
@@ -540,14 +540,14 @@ defmodule Raxol.Core.Accessibility do
 
   @impl true
   def get_focus_history do
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.get_focus_history()
   end
 
   @impl true
   def get_next_announcement(user_preferences_pid_or_name \\ nil) do
     _ = user_preferences_pid_or_name
-    ensure_started()
+    _ = ensure_started()
     AccessibilityServer.get_next_announcement()
   end
 

@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   alias Raxol.Terminal.Buffer.BufferServer
   alias Raxol.Terminal.Buffer.Cell
 
-  @type buffer_or_pid :: Buffer.t() | pid()
+  @type buffer_or_pid :: Raxol.Terminal.ScreenBuffer.t() | pid()
 
   @doc """
   Creates a new buffer with the specified dimensions.
@@ -46,11 +46,11 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
 
   ## Returns
 
-  * `Buffer.t()` - A new buffer struct
+  * `Raxol.Terminal.ScreenBuffer.t()` - A new buffer struct
   """
-  @spec new({non_neg_integer(), non_neg_integer()}) :: Buffer.t()
-  def new(dimensions) do
-    Buffer.new(dimensions)
+  @spec new({non_neg_integer(), non_neg_integer()}) :: Raxol.Terminal.ScreenBuffer.t()
+  def new({width, height}) do
+    Buffer.new(width, height, 1000)
   end
 
   @doc """
@@ -82,7 +82,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   * `{:ok, pid}` - The process ID of the new buffer server
   * `{:error, reason}` - If the conversion fails
   """
-  @spec to_server(Buffer.t()) :: {:ok, pid()} | {:error, term()}
+  @spec to_server(Raxol.Terminal.ScreenBuffer.t()) :: {:ok, pid()} | {:error, term()}
   def to_server(buffer) do
     opts = [
       width: buffer.width,
@@ -114,7 +114,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
 
   ## Returns
 
-  * For structs: `Buffer.t()` - The updated buffer
+  * For structs: `Raxol.Terminal.ScreenBuffer.t()` - The updated buffer
   * For PIDs: `:ok` or `{:error, reason}`
   """
   @spec set_cell(
@@ -122,18 +122,12 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
           non_neg_integer(),
           non_neg_integer(),
           Cell.t()
-        ) :: Buffer.t() | :ok | {:error, term()}
+        ) :: Raxol.Terminal.ScreenBuffer.t() | :ok | {:error, term()}
   def set_cell(buffer_or_pid, x, y, cell) do
     case buffer_or_pid do
       %Buffer{} = buffer ->
-        # ScreenBuffer doesn't have set_cell, use Content module
-        Raxol.Terminal.Buffer.Content.write_char(
-          buffer,
-          x,
-          y,
-          cell.char,
-          cell.style
-        )
+        # Return the buffer with the cell set at position
+        put_in(buffer, [Access.key(:cells), y, x], cell)
 
       pid when is_pid(pid) ->
         BufferServer.set_cell(pid, x, y, cell)
@@ -141,7 +135,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   end
 
   @spec set_cell_sync(pid(), non_neg_integer(), non_neg_integer(), Cell.t()) ::
-          :ok | {:error, :invalid_coordinates}
+          :ok | {:error, term()}
   def set_cell_sync(pid, x, y, cell) when is_pid(pid) do
     BufferServer.set_cell_sync(pid, x, y, cell)
   end
@@ -187,11 +181,10 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
 
   ## Returns
 
-  * For structs: `Buffer.t()` - The updated buffer
+  * For structs: `Raxol.Terminal.ScreenBuffer.t()` - The updated buffer
   * For PIDs: `:ok` or `{:error, reason}`
   """
-  @spec write(buffer_or_pid(), String.t(), keyword()) ::
-          Buffer.t() | :ok | {:error, term()}
+  @spec write(buffer_or_pid(), String.t(), keyword()) :: Raxol.Terminal.ScreenBuffer.t() | :ok
   def write(buffer_or_pid, string, opts \\ []) do
     case buffer_or_pid do
       %Buffer{} = buffer ->
@@ -220,7 +213,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
 
   ## Returns
 
-  * For structs: `Buffer.t()` - The updated buffer
+  * For structs: `Raxol.Terminal.ScreenBuffer.t()` - The updated buffer
   * For PIDs: `:ok` or `{:error, reason}`
   """
   @spec fill_region(
@@ -230,7 +223,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
           non_neg_integer(),
           non_neg_integer(),
           Cell.t()
-        ) :: Buffer.t() | :ok | {:error, term()}
+        ) :: Raxol.Terminal.ScreenBuffer.t() | :ok
   def fill_region(buffer_or_pid, x, y, width, height, cell) do
     case buffer_or_pid do
       %Buffer{} = buffer ->
@@ -253,11 +246,11 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
 
   ## Returns
 
-  * For structs: `Buffer.t()` - The updated buffer
+  * For structs: `Raxol.Terminal.ScreenBuffer.t()` - The updated buffer
   * For PIDs: `:ok` or `{:error, reason}`
   """
   @spec scroll(buffer_or_pid(), integer()) ::
-          Buffer.t() | :ok | {:error, term()}
+          Raxol.Terminal.ScreenBuffer.t() | :ok | {:error, term()}
   def scroll(buffer_or_pid, lines) do
     case buffer_or_pid do
       %Buffer{} = buffer ->
@@ -281,11 +274,11 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
 
   ## Returns
 
-  * For structs: `Buffer.t()` - The updated buffer
+  * For structs: `Raxol.Terminal.ScreenBuffer.t()` - The updated buffer
   * For PIDs: `:ok` or `{:error, reason}`
   """
   @spec resize(buffer_or_pid(), non_neg_integer(), non_neg_integer()) ::
-          Buffer.t() | :ok | {:error, term()}
+          Raxol.Terminal.ScreenBuffer.t() | :ok
   def resize(buffer_or_pid, width, height) do
     case buffer_or_pid do
       %Buffer{} = buffer ->
@@ -339,8 +332,8 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   * `{:ok, result}` - The result of the operation
   * `{:error, reason}` - If the operation fails
   """
-  @spec atomic_operation(pid(), (Buffer.t() -> Buffer.t())) ::
-          {:ok, Buffer.t()} | {:error, term()}
+  @spec atomic_operation(pid(), (Raxol.Terminal.ScreenBuffer.t() -> Raxol.Terminal.ScreenBuffer.t())) ::
+          {:ok, Raxol.Terminal.ScreenBuffer.t()} | {:error, term()}
   def atomic_operation(pid, operation)
       when is_pid(pid) and is_function(operation, 1) do
     BufferServer.atomic_operation(pid, operation)

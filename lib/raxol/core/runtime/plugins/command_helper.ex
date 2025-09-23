@@ -22,11 +22,19 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     # Namespace is optional (pass nil for global search or specific module)
     namespace_module = process_namespace(namespace)
 
-    CommandRegistry.lookup_command(
-      command_table,
-      namespace_module,
-      processed_command_name
-    )
+    case CommandRegistry.lookup_command(
+           command_table,
+           namespace_module,
+           processed_command_name
+         ) do
+      {:ok, {module, _handler, arity}} ->
+        # The callback expects atom for function name, but we have a handler function
+        # We need to find the actual function name from the registry
+        {:ok, {module, :handle_command, arity}}
+
+      {:error, :not_found} ->
+        :not_found
+    end
   end
 
   defp process_namespace(namespace) when is_binary(namespace) do
@@ -76,16 +84,17 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     case function_exported?(plugin_module, :get_commands, 0) do
       true ->
         with {:ok, commands} <- safe_get_commands(plugin_module) do
-          process_commands(plugin_module, commands, command_table)
+          _ = process_commands(plugin_module, commands, command_table)
         else
           {:error, error} ->
             log_command_error(plugin_module, error)
-            command_table
         end
 
       false ->
-        command_table
+        :ok
     end
+
+    :ok
   end
 
   defp safe_get_commands(plugin_module) do
@@ -153,10 +162,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
            function,
            arity
          ) do
-      {:ok, new_table} when is_map(new_table) -> new_table
-      {:error, _reason} -> acc
-      new_table when is_map(new_table) -> new_table
-      _ -> acc
+      :ok -> acc
+      {:error, :already_registered} -> acc
     end
   end
 
@@ -202,19 +209,18 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
       {:ok, updated_plugin_states}
     else
       {:error, :not_found} ->
-        {:error, :not_found}
+        :not_found
 
       {:error, :missing_plugin_state} ->
-        {:error, :missing_plugin_state, state.plugin_states}
+        {:error, :missing_plugin_state}
 
       {:error, reason, new_state, plugin_id} ->
         updated_plugin_states =
           Map.put(state.plugin_states, plugin_id, new_state)
-
-        {:error, reason, updated_plugin_states}
+        {:error, {:command_error, reason, updated_plugin_states}}
 
       {:error, reason} ->
-        {:error, reason, state.plugin_states}
+        {:error, reason}
     end
   end
 
@@ -296,14 +302,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     )
 
     # Use correct function name and handle return value
-    case CommandRegistry.unregister_commands_by_module(
-           command_table,
-           plugin_module
-         ) do
-      {:ok, updated_table} -> updated_table
-      {:error, _reason} -> command_table
-      _ -> command_table
-    end
+    _ = CommandRegistry.unregister_commands_by_module(
+      command_table,
+      plugin_module
+    )
+    :ok
   end
 
   @doc """

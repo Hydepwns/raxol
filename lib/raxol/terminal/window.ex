@@ -31,10 +31,11 @@ defmodule Raxol.Terminal.Window do
   """
 
   alias Raxol.Terminal.{Emulator, Config}
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @type window_state :: :active | :inactive | :minimized | :maximized
   @type window_position :: {integer(), integer()}
-  @type window_size :: {non_neg_integer(), non_neg_integer()}
+  @type window_size :: {integer(), integer()}
 
   @type t :: %__MODULE__{
           id: String.t() | nil,
@@ -43,13 +44,13 @@ defmodule Raxol.Terminal.Window do
           font: String.t(),
           cursor_shape: String.t(),
           clipboard: String.t(),
-          emulator: Emulator.t(),
+          emulator: EmulatorStruct.t(),
           config: Config.t(),
           state: window_state(),
           position: window_position(),
           size: window_size(),
-          width: non_neg_integer(),
-          height: non_neg_integer(),
+          width: integer(),
+          height: integer(),
           previous_size: window_size() | nil,
           parent: String.t() | nil,
           children: [String.t()]
@@ -93,9 +94,9 @@ defmodule Raxol.Terminal.Window do
       {80, 24}
   """
   @spec new(Config.t()) :: t()
-  def new(%Config{} = config) do
+  def new(config) do
     {width, height} = Config.get_dimensions(config)
-    emulator = Emulator.new(width, height)
+    emulator = EmulatorStruct.new(width, height)
 
     %__MODULE__{
       config: config,
@@ -124,7 +125,7 @@ defmodule Raxol.Terminal.Window do
       iex> window.size
       {100, 50}
   """
-  @spec new(non_neg_integer(), non_neg_integer()) :: t()
+  @spec new(integer(), integer()) :: t()
   def new(width, height)
       when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
     config = Config.new(width, height)
@@ -151,7 +152,7 @@ defmodule Raxol.Terminal.Window do
       iex> window.title
       "My Terminal"
   """
-  @spec set_title(t(), String.t()) :: {:ok, t()} | {:error, term()}
+  @spec set_title(t(), String.t()) :: {:ok, t()}
   def set_title(%__MODULE__{} = window, title) when is_binary(title) do
     {:ok, %{window | title: title}}
   end
@@ -159,7 +160,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Updates the window position.
   """
-  @spec set_position(t(), integer(), integer()) :: {:ok, t()} | {:error, term()}
+  @spec set_position(t(), integer(), integer()) :: {:ok, t()}
   def set_position(%__MODULE__{} = window, x, y)
       when is_integer(x) and is_integer(y) do
     {:ok, %{window | position: {x, y}}}
@@ -168,8 +169,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Updates the window size.
   """
-  @spec set_size(t(), non_neg_integer(), non_neg_integer()) ::
-          {:ok, t()} | {:error, term()}
+  @spec set_size(t(), non_neg_integer(), non_neg_integer()) :: {:ok, t()}
   def set_size(%__MODULE__{} = window, width, height)
       when is_integer(width) and is_integer(height) and width > 0 and height > 0 do
     previous_size = window.size
@@ -189,7 +189,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Updates the window state.
   """
-  @spec set_state(t(), window_state()) :: {:ok, t()} | {:error, term()}
+  @spec set_state(t(), window_state()) :: {:ok, t()}
   def set_state(%__MODULE__{} = window, state)
       when state in [:active, :inactive, :minimized, :maximized] do
     {:ok, %{window | state: state}}
@@ -198,7 +198,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Sets the parent window.
   """
-  @spec set_parent(t(), String.t()) :: {:ok, t()} | {:error, term()}
+  @spec set_parent(t(), String.t()) :: {:ok, t()}
   def set_parent(%__MODULE__{} = window, parent_id) when is_binary(parent_id) do
     {:ok, %{window | parent: parent_id}}
   end
@@ -206,7 +206,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Adds a child window.
   """
-  @spec add_child(t(), String.t()) :: {:ok, t()} | {:error, term()}
+  @spec add_child(t(), String.t()) :: {:ok, t()}
   def add_child(%__MODULE__{} = window, child_id) when is_binary(child_id) do
     {:ok, %{window | children: [child_id | window.children]}}
   end
@@ -214,7 +214,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Removes a child window.
   """
-  @spec remove_child(t(), String.t()) :: {:ok, t()} | {:error, term()}
+  @spec remove_child(t(), String.t()) :: {:ok, t()}
   def remove_child(%__MODULE__{} = window, child_id) when is_binary(child_id) do
     {:ok, %{window | children: List.delete(window.children, child_id)}}
   end
@@ -222,7 +222,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Restores the previous window size.
   """
-  @spec restore_size(t()) :: {:ok, t()} | {:error, term()}
+  @spec restore_size(t()) :: {:ok, t()}
   def restore_size(%__MODULE__{} = window) do
     case window.previous_size do
       nil -> {:ok, window}
@@ -233,7 +233,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Gets the window's current dimensions.
   """
-  @spec get_dimensions(t()) :: {:ok, window_size()} | {:error, term()}
+  @spec get_dimensions(t()) :: {:ok, window_size()}
   def get_dimensions(%__MODULE__{} = window) do
     {:ok, window.size}
   end
@@ -241,7 +241,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Gets the window's current position.
   """
-  @spec get_position(t()) :: {:ok, window_position()} | {:error, term()}
+  @spec get_position(t()) :: {:ok, window_position()}
   def get_position(%__MODULE__{} = window) do
     {:ok, window.position}
   end
@@ -249,7 +249,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Gets the window's current state.
   """
-  @spec get_state(t()) :: {:ok, window_state()} | {:error, term()}
+  @spec get_state(t()) :: {:ok, window_state()}
   def get_state(%__MODULE__{} = window) do
     {:ok, window.state}
   end
@@ -257,7 +257,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Gets the window's child windows.
   """
-  @spec get_children(t()) :: {:ok, [String.t()]} | {:error, term()}
+  @spec get_children(t()) :: {:ok, [String.t()]}
   def get_children(%__MODULE__{} = window) do
     {:ok, window.children}
   end
@@ -265,7 +265,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Gets the window's parent window.
   """
-  @spec get_parent(t()) :: {:ok, String.t() | nil} | {:error, term()}
+  @spec get_parent(t()) :: {:ok, String.t() | nil}
   def get_parent(%__MODULE__{} = window) do
     {:ok, window.parent}
   end
@@ -273,7 +273,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Updates the window's icon name.
   """
-  @spec set_icon_name(t(), String.t()) :: {:ok, t()} | {:error, term()}
+  @spec set_icon_name(t(), String.t()) :: {:ok, t()}
   def set_icon_name(%__MODULE__{} = window, name) when is_binary(name) do
     {:ok, %{window | icon_name: name}}
   end
@@ -281,7 +281,7 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Updates the window's font.
   """
-  @spec set_font(t(), String.t()) :: {:ok, t()} | {:error, term()}
+  @spec set_font(t(), String.t()) :: {:ok, t()}
   def set_font(%__MODULE__{} = window, font) when is_binary(font) do
     {:ok, %{window | font: font}}
   end
@@ -338,46 +338,40 @@ defmodule Raxol.Terminal.Window do
   Gets the window's working directory.
   """
   @spec get_working_directory(t()) :: String.t()
-  def get_working_directory(%__MODULE__{} = window) do
-    window.config.working_directory || File.cwd!()
+  def get_working_directory(%__MODULE__{} = _window) do
+    File.cwd!()
   end
 
   @doc """
   Sets the window's working directory.
   """
-  @spec set_working_directory(t(), String.t()) :: t()
-  def set_working_directory(%__MODULE__{} = window, dir) when is_binary(dir) do
-    config = %{window.config | working_directory: dir}
-    %{window | config: config}
+  @spec set_working_directory(t(), String.t()) :: {:ok, t()} | {:error, term()}
+  def set_working_directory(%__MODULE__{}, _dir) do
+    {:error, :working_directory_not_supported}
   end
 
   @doc """
   Gets a hyperlink by ID.
   """
   @spec get_hyperlink(t(), String.t()) :: String.t() | nil
-  def get_hyperlink(%__MODULE__{} = window, id) when is_binary(id) do
-    window.config.hyperlinks[id]
+  def get_hyperlink(%__MODULE__{}, _id) do
+    nil
   end
 
   @doc """
   Sets a hyperlink with the given ID and URL.
   """
-  @spec set_hyperlink(t(), String.t(), String.t()) :: t()
-  def set_hyperlink(%__MODULE__{} = window, id, url)
-      when is_binary(id) and is_binary(url) do
-    hyperlinks = Map.put(window.config.hyperlinks || %{}, id, url)
-    config = %{window.config | hyperlinks: hyperlinks}
-    %{window | config: config}
+  @spec set_hyperlink(t(), String.t(), String.t()) :: {:ok, t()} | {:error, term()}
+  def set_hyperlink(%__MODULE__{}, _id, _url) do
+    {:error, :hyperlinks_not_supported}
   end
 
   @doc """
   Clears a hyperlink by ID.
   """
-  @spec clear_hyperlink(t(), String.t()) :: t()
-  def clear_hyperlink(%__MODULE__{} = window, id) when is_binary(id) do
-    hyperlinks = Map.delete(window.config.hyperlinks || %{}, id)
-    config = %{window.config | hyperlinks: hyperlinks}
-    %{window | config: config}
+  @spec clear_hyperlink(t(), String.t()) :: {:ok, t()} | {:error, term()}
+  def clear_hyperlink(%__MODULE__{}, _id) do
+    {:error, :hyperlinks_not_supported}
   end
 
   @doc """

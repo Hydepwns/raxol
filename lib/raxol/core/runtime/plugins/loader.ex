@@ -156,21 +156,34 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   # Private Functions
 
   defp do_load_plugin(plugin_path, state) do
-    with {:ok, plugin_module} <- Code.compile_file(plugin_path),
-         {:ok, plugin_metadata} <- extract_metadata(plugin_module),
-         {:ok, _initial_state} <- initialize_plugin(plugin_module, %{}) do
-      new_state = %{
-        state
-        | loaded_plugins:
-            Map.put(state.loaded_plugins, plugin_path, plugin_module),
-          plugin_configs: Map.put(state.plugin_configs, plugin_path, %{}),
-          plugin_metadata:
-            Map.put(state.plugin_metadata, plugin_path, plugin_metadata)
-      }
+    try do
+      compiled_modules = Code.compile_file(plugin_path)
 
-      {:ok, new_state}
-    else
-      {:error, reason} -> {:error, reason}
+      case compiled_modules do
+        [{plugin_module, _binary} | _] ->
+          {:ok, plugin_metadata} = extract_metadata(plugin_module)
+
+          case initialize_plugin(plugin_module, %{}) do
+            {:ok, _initial_state} ->
+              new_state = %{
+                state
+                | loaded_plugins:
+                    Map.put(state.loaded_plugins, plugin_path, plugin_module),
+                  plugin_configs: Map.put(state.plugin_configs, plugin_path, %{}),
+                  plugin_metadata:
+                    Map.put(state.plugin_metadata, plugin_path, plugin_metadata)
+              }
+              {:ok, new_state}
+
+            {:error, reason} ->
+              {:error, reason}
+          end
+
+        [] ->
+          {:error, :no_modules_compiled}
+      end
+    rescue
+      e -> {:error, e}
     end
   end
 

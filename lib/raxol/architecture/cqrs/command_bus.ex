@@ -208,9 +208,9 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     }
 
     # Schedule periodic tasks
-    :timer.send_interval(5000, :process_retry_queue)
-    :timer.send_interval(60_000, :cleanup_dead_letters)
-    :timer.send_interval(30_000, :reset_circuit_breakers)
+    _ = :timer.send_interval(5000, :process_retry_queue)
+    _ = :timer.send_interval(60_000, :cleanup_dead_letters)
+    _ = :timer.send_interval(30_000, :reset_circuit_breakers)
 
     Logger.info("Command bus initialized")
     {:ok, state}
@@ -546,7 +546,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
       update_metrics_if_enabled(state, command, :success, execution_time)
 
     # Update audit log
-    audit_if_enabled(state, command, :success, execution_time)
+    _ = audit_if_enabled(state, command, :success, execution_time)
 
     new_state
   end
@@ -567,33 +567,23 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     final_state = queue_failed_command(new_state, command, reason)
 
     # Update audit log
-    audit_if_enabled(final_state, command, {:failure, reason}, execution_time)
+    _ = audit_if_enabled(final_state, command, {:failure, reason}, execution_time)
 
     final_state
   end
 
-  defp update_circuit_breaker(circuit_breakers, handler_module, result) do
+  defp update_circuit_breaker(circuit_breakers, handler_module, :failure) do
     current =
       Map.get(circuit_breakers, handler_module, %{failures: 0, status: :closed})
 
-    case result do
-      :success ->
-        # Reset failure count on success
-        Map.put(circuit_breakers, handler_module, %{
-          failures: 0,
-          status: :closed
-        })
+    new_failures = current.failures + 1
 
-      :failure ->
-        new_failures = current.failures + 1
-
-        update_circuit_breaker_on_failure(
-          circuit_breakers,
-          handler_module,
-          current,
-          new_failures
-        )
-    end
+    update_circuit_breaker_on_failure(
+      circuit_breakers,
+      handler_module,
+      current,
+      new_failures
+    )
   end
 
   defp is_retriable_error?(reason) do

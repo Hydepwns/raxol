@@ -647,7 +647,7 @@ if Code.ensure_loaded?(:ssh) do
       end
 
       if state.keepalive_timer do
-        Process.cancel_timer(state.keepalive_timer)
+        _ = Process.cancel_timer(state.keepalive_timer)
       end
 
       %{

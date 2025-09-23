@@ -124,7 +124,7 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
          depth,
          acc_rects
        ) do
-    handle_squarify_bounds(
+    _ = handle_squarify_bounds(
       bw < 1 or bh < 1,
       bw,
       bh,
@@ -359,7 +359,7 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
        ) do
     child_value = Map.get(child, :value, 0)
 
-    handle_child_value(
+    _ = handle_child_value(
       child_value <= 0,
       child,
       rest,

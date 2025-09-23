@@ -370,6 +370,10 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
   end
 
   # Helper functions to handle both cursor structs and PIDs
+  defp set_cursor_position(nil, {row, col}) do
+    %{position: {row, col}, row: row, col: col}
+  end
+
   defp set_cursor_position(%CursorManager{} = cursor, {row, col}) do
     %CursorManager{cursor | row: row, col: col, position: {row, col}}
   end
@@ -406,6 +410,10 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
         # If we can't handle it, return the cursor unchanged
         cursor
     end
+  end
+
+  defp get_cursor_position(nil) do
+    {0, 0}
   end
 
   defp get_cursor_position(cursor) when is_pid(cursor) do

@@ -84,8 +84,8 @@ defmodule Mix.Tasks.Raxol.Bench do
       formatters: [Benchee.Formatters.Console]
     ]
 
-    run_parser_benchmarks(benchmark_config, quick: true)
-    run_terminal_benchmarks(benchmark_config, quick: true)
+    _ = run_parser_benchmarks(benchmark_config, quick: true)
+    _ = run_terminal_benchmarks(benchmark_config, quick: true)
   end
 
   defp run_comprehensive_benchmarks(opts) do
@@ -222,47 +222,70 @@ defmodule Mix.Tasks.Raxol.Bench do
   defp run_terminal_benchmarks(config, opts \\ []) do
     alias Raxol.Terminal.ScreenBuffer
     alias Raxol.Terminal.Cursor
-    alias Raxol.Terminal.Buffer.Writer
     alias Raxol.Terminal.ANSI.SGRProcessor
     alias Raxol.Terminal.Emulator
-
-    buffer = ScreenBuffer.new(80, 24)
-    cursor = Cursor.new()
-    style = %Raxol.Terminal.ANSI.TextFormatting{}
 
     jobs =
       if opts[:quick] do
         %{
           "emulator_creation" => fn -> Emulator.new(80, 24) end,
           "buffer_write_char" => fn ->
-            Writer.write_char(buffer, 10, 5, "A", style)
+            buffer = ScreenBuffer.new(80, 24)
+            _ = ScreenBuffer.write_char(buffer, 10, 5, "A")
           end,
-          "cursor_move" => fn -> Cursor.move_to(cursor, 10, 5) end
+          "cursor_move" => fn ->
+            cursor = Cursor.new()
+            Cursor.move_to(cursor, {10, 5}, 80, 24)
+          end
         }
       else
         %{
           "emulator_creation_small" => fn -> Emulator.new(80, 24) end,
           "emulator_creation_large" => fn -> Emulator.new(200, 50) end,
           "buffer_write_char" => fn ->
-            Writer.write_char(buffer, 10, 5, "A", style)
+            buffer = ScreenBuffer.new(80, 24)
+            _ = ScreenBuffer.write_char(buffer, 10, 5, "A")
           end,
           "buffer_write_string" => fn ->
-            Writer.write_string(buffer, 0, 0, "Hello World", style)
+            buffer = ScreenBuffer.new(80, 24)
+            _ = ScreenBuffer.write_string(buffer, 0, 0, "Hello World")
           end,
-          "buffer_scroll_up" => fn -> ScreenBuffer.scroll_up(buffer, 1) end,
-          "buffer_scroll_down" => fn -> ScreenBuffer.scroll_down(buffer, 1) end,
-          "buffer_erase_line" => fn -> ScreenBuffer.erase_line(buffer, 5) end,
-          "buffer_erase_screen" => fn -> ScreenBuffer.erase_screen(buffer) end,
-          "cursor_move_relative" => fn -> Cursor.move_relative(cursor, 1, 1) end,
-          "cursor_move_absolute" => fn -> Cursor.move_to(cursor, 10, 5) end,
+          "buffer_scroll_up" => fn ->
+            buffer = ScreenBuffer.new(80, 24)
+            {_, _} = ScreenBuffer.scroll_up(buffer, 1)
+          end,
+          "buffer_scroll_down" => fn ->
+            buffer = ScreenBuffer.new(80, 24)
+            _ = ScreenBuffer.scroll_down(buffer, 1)
+          end,
+          "buffer_erase_line" => fn ->
+            buffer = ScreenBuffer.new(80, 24)
+            cursor = {0, 5}
+            ScreenBuffer.erase_line(buffer, :to_end, cursor, 0, 79)
+          end,
+          "buffer_erase_screen" => fn ->
+            buffer = ScreenBuffer.new(80, 24)
+            ScreenBuffer.erase_screen(buffer)
+          end,
+          "cursor_move_relative" => fn ->
+            cursor = Cursor.new()
+            Cursor.move_relative(cursor, 1, 1)
+          end,
+          "cursor_move_absolute" => fn ->
+            cursor = Cursor.new()
+            Cursor.move_to(cursor, {10, 5}, 80, 24)
+          end,
           "cursor_save_restore" => fn ->
+            cursor = Cursor.new()
             saved = Cursor.save(cursor)
             Cursor.restore(cursor, saved)
           end,
           "sgr_process_simple" => fn ->
+            style = nil
             SGRProcessor.process_sgr_codes([31], style)
           end,
           "sgr_process_complex" => fn ->
+            style = nil
             SGRProcessor.process_sgr_codes([1, 4, 31, 48, 5, 196], style)
           end
         }
@@ -273,35 +296,35 @@ defmodule Mix.Tasks.Raxol.Bench do
 
   defp run_rendering_benchmarks(config) do
     alias Raxol.Terminal.ScreenBuffer
-    alias Raxol.Terminal.Buffer.Writer
     alias Raxol.UI.Rendering.Pipeline
     alias Raxol.UI.Rendering.RenderBatcher
     alias Raxol.Terminal.Cursor
 
-    small_buffer = ScreenBuffer.new(80, 24)
-    medium_buffer = ScreenBuffer.new(120, 40)
-    large_buffer = ScreenBuffer.new(200, 50)
+    %ScreenBuffer{} = small_buffer = ScreenBuffer.new(80, 24)
+    %ScreenBuffer{} = medium_buffer = ScreenBuffer.new(120, 40)
+    %ScreenBuffer{} = large_buffer = ScreenBuffer.new(200, 50)
     _cursor = Cursor.new()
-    style = %Raxol.Terminal.ANSI.TextFormatting{}
 
     # Fill buffers with some content
-    Enum.each(0..10, fn y ->
-      Writer.write_string(small_buffer, 0, y, "Sample line #{y}", style)
+    small_buffer = Enum.reduce(0..10, small_buffer, fn y, acc ->
+      ScreenBuffer.write_string(acc, 0, y, "Sample line #{y}")
+    end)
 
-      Writer.write_string(
-        medium_buffer,
+    medium_buffer = Enum.reduce(0..10, medium_buffer, fn y, acc ->
+      ScreenBuffer.write_string(
+        acc,
         0,
         y,
-        "Sample line #{y} with more content",
-        style
+        "Sample line #{y} with more content"
       )
+    end)
 
-      Writer.write_string(
-        large_buffer,
+    large_buffer = Enum.reduce(0..10, large_buffer, fn y, acc ->
+      ScreenBuffer.write_string(
+        acc,
         0,
         y,
-        "Sample line #{y} with even more content for testing",
-        style
+        "Sample line #{y} with even more content for testing"
       )
     end)
 
@@ -325,7 +348,6 @@ defmodule Mix.Tasks.Raxol.Bench do
   defp run_memory_benchmarks(config) do
     alias Raxol.Terminal.Emulator
     alias Raxol.Terminal.ScreenBuffer
-    alias Raxol.Terminal.Buffer.Writer
     alias Raxol.Terminal.Cursor
     alias Raxol.Terminal.ANSI.AnsiParser
     alias Raxol.Terminal.ANSI.StateMachine
@@ -341,21 +363,18 @@ defmodule Mix.Tasks.Raxol.Bench do
         emulator = Emulator.new(80, 24)
         state_machine = StateMachine.new()
         content = generate_test_content()
-        AnsiParser.parse(state_machine, content)
+        _ = AnsiParser.parse(state_machine, content)
         {emulator, state_machine}
       end,
       "memory_buffer_operations" => fn ->
-        buffer = ScreenBuffer.new(100, 30)
+        %ScreenBuffer{} = buffer = ScreenBuffer.new(100, 30)
         _cursor = Cursor.new()
-        style = %Raxol.Terminal.ANSI.TextFormatting{}
-
-        Enum.each(1..50, fn i ->
-          Writer.write_string(
-            buffer,
+        buffer = Enum.reduce(1..50, buffer, fn i, acc ->
+          ScreenBuffer.write_string(
+            acc,
             0,
             rem(i, 30),
-            "Test line #{i}",
-            style
+            "Test line #{i}"
           )
         end)
 
@@ -366,7 +385,7 @@ defmodule Mix.Tasks.Raxol.Bench do
       end,
       "memory_plugin_system" => fn ->
         alias Raxol.Plugins.Manager
-        Manager.start_link()
+        {:ok, _pid} = Manager.start_link()
         Manager.list_plugins()
       end
     }

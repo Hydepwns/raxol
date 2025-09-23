@@ -161,11 +161,11 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   def update({:search, search_text}, state) do
     # Cancel any existing timer
-    cancel_timer_if_present(state.search_timer)
+    _ = cancel_timer_if_present(state.search_timer)
 
     # Schedule new search
     timer_id = System.unique_integer([:positive])
-    Process.send_after(self(), {:apply_search, search_text}, 300)
+    _ = Process.send_after(self(), {:apply_search, search_text}, 300)
 
     # Update buffer immediately
     {%{state | search_buffer: search_text, search_timer: timer_id}, nil}
@@ -497,7 +497,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
           new_props[:options] != state[:options]} do
       {true, true} ->
         # Cancel any pending search timer
-        cancel_timer_if_present(state.search_timer)
+        _ = cancel_timer_if_present(state.search_timer)
 
         Map.merge(reset_state, %{
           filtered_options: nil,

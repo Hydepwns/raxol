@@ -181,12 +181,12 @@ defmodule Raxol.AI.ContentGeneration do
 
   defp do_generate_help(context, _options) do
     # Placeholder: Help generation logic not yet implemented. Integrate with AI service here in the future.
-    {:ok, "Help content for: #{context}"}
+    {:ok, %{title: "Help", content: "Help content for: #{inspect(context)}"}}
   end
 
   defp do_generate_tutorial(feature, _options) do
     # Placeholder: Tutorial generation logic not yet implemented. Integrate with AI service here in the future.
-    {:ok, "Tutorial for: #{feature}"}
+    {:ok, %{steps: [], interactive: false, feature: feature}}
   end
 
   defp normalize_options(options) do

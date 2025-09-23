@@ -101,7 +101,7 @@ defmodule Raxol.Svelte.Actions.Builtin do
   """
   def click_outside(element, callback) do
     # Register global click handler
-    Raxol.Terminal.Events.register_global_click(fn click_pos ->
+    _ = Raxol.Terminal.Events.register_global_click(fn click_pos ->
       unless point_in_element?(click_pos, element) do
         callback.()
       end

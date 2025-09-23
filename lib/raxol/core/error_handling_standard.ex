@@ -113,7 +113,7 @@ defmodule Raxol.Core.ErrorHandlingStandard do
   @doc """
   Wraps a function that might raise an exception into a result tuple.
   """
-  @spec safe_call((-> any()), standard_error()) :: result(any())
+  @spec safe_call((-> any()), standard_error()) :: {:ok, any()} | {:error, standard_error(), map()}
   def safe_call(fun, error_type \\ :internal_error) do
     try do
       {:ok, fun.()}
@@ -136,7 +136,7 @@ defmodule Raxol.Core.ErrorHandlingStandard do
       validate_required(%{name: "John"}, [:name, :email])
       # => {:error, :invalid_argument, %{missing_fields: [:email]}}
   """
-  @spec validate_required(map(), [atom()]) :: result(map())
+  @spec validate_required(map(), [atom()]) :: {:ok, map()} | {:error, :invalid_argument, map()}
   def validate_required(data, required_fields) do
     missing = Enum.filter(required_fields, &(not Map.has_key?(data, &1)))
 
@@ -211,7 +211,7 @@ defmodule Raxol.Core.ErrorHandlingStandard do
       aggregate_errors(results)
       # => {:error, :multiple_errors, %{errors: [...]}}
   """
-  @spec aggregate_errors([result(any())]) :: result([any()])
+  @spec aggregate_errors([result(any())]) :: {:ok, [any()]} | {:error, :multiple_errors, map()}
   def aggregate_errors(results) do
     {oks, errors} = Enum.split_with(results, &match?({:ok, _}, &1))
 

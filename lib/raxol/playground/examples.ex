@@ -510,7 +510,7 @@ defmodule Raxol.Playground.Examples do
     Press Enter to start...
     """)
 
-    IO.gets("")
+    _ = IO.gets("")
 
     case example do
       %{steps: steps} ->

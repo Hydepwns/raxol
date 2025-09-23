@@ -20,10 +20,7 @@ defmodule Raxol.Style.Colors.Formats do
       iex> Formats.to_hex({255, 0, 0, 128})
       "#FF000080"
   """
-  @spec to_hex(
-          {integer(), integer(), integer()}
-          | {integer(), integer(), integer(), integer()}
-        ) :: String.t()
+  @spec to_hex({byte(), byte(), byte()} | {byte(), byte(), byte(), byte()}) :: String.t()
   def to_hex({r, g, b})
       when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     r_hex = Integer.to_string(r, 16) |> String.pad_leading(2, "0")
@@ -95,7 +92,7 @@ defmodule Raxol.Style.Colors.Formats do
       iex> Formats.ansi_to_rgb(1)
       {205, 0, 0}
   """
-  @spec ansi_to_rgb(integer()) :: {integer(), integer(), integer()}
+  @spec ansi_to_rgb(byte()) :: {integer(), integer(), integer()}
   def ansi_to_rgb(code) when code in 0..255//1 do
     case code do
       # Basic 16 colors
@@ -186,7 +183,7 @@ defmodule Raxol.Style.Colors.Formats do
       iex> Formats.rgb_to_ansi({255, 0, 0})
       196
   """
-  @spec rgb_to_ansi({integer(), integer(), integer()}) :: integer()
+  @spec rgb_to_ansi({byte(), byte(), byte()}) :: pos_integer()
   def rgb_to_ansi({r, g, b})
       when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     # For now, we'll use a simple approximation

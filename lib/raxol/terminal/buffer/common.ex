@@ -119,7 +119,7 @@ defmodule Raxol.Terminal.Buffer.Common do
   @spec get_scroll_top(
           ScreenBuffer.t(),
           {non_neg_integer(), non_neg_integer()} | nil
-        ) :: {:ok, non_neg_integer()} | {:error, atom()}
+        ) :: {:ok, non_neg_integer()} | non_neg_integer()
   def get_scroll_top(buffer, scroll_region) do
     case scroll_region do
       {top, _} -> {:ok, top}
@@ -141,7 +141,7 @@ defmodule Raxol.Terminal.Buffer.Common do
   @spec get_scroll_bottom(
           ScreenBuffer.t(),
           {non_neg_integer(), non_neg_integer()} | nil
-        ) :: {:ok, non_neg_integer()} | {:error, atom()}
+        ) :: {:ok, non_neg_integer()} | non_neg_integer()
   def get_scroll_bottom(buffer, scroll_region) do
     case scroll_region do
       {_, bottom} -> {:ok, bottom}

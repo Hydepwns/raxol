@@ -50,8 +50,8 @@ defmodule Raxol.Extensions.VSCodeBackend do
   defp initialize_mode("vscode_ext", capabilities) do
     Logger.info("[VSCodeBackend] Starting in VS Code extension mode")
     # Start listening for stdin messages from the extension
-    Task.start_link(&listen_for_messages/0)
-    send_capabilities(capabilities)
+    _ = Task.start_link(&listen_for_messages/0)
+    _ = send_capabilities(capabilities)
   end
 
   defp initialize_mode(_mode, _capabilities), do: :ok
@@ -192,7 +192,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
     new_state = %{state | active_requests: active_requests}
 
     # Process the request asynchronously
-    Task.start(fn ->
+    _ = Task.start(fn ->
       response = process_request(message)
       GenServer.cast(__MODULE__, {:send_response, request_id, response})
     end)

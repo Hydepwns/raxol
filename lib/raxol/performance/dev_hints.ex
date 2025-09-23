@@ -145,7 +145,7 @@ defmodule Raxol.Performance.DevHints do
       [:raxol, :plugin, :execute]
     ]
 
-    :telemetry.attach_many(
+    _ = :telemetry.attach_many(
       "raxol-dev-hints",
       events,
       &handle_telemetry_event/4,

@@ -257,9 +257,9 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
     }
 
     # Schedule background tasks
-    :timer.send_interval(60_000, :create_snapshots)
-    :timer.send_interval(300_000, :cleanup_old_events)
-    :timer.send_interval(30_000, :replicate_events)
+    {:ok, _} = :timer.send_interval(60_000, :create_snapshots)
+    {:ok, _} = :timer.send_interval(300_000, :cleanup_old_events)
+    {:ok, _} = :timer.send_interval(30_000, :replicate_events)
 
     Logger.info("Event store initialized with #{map_size(streams)} streams")
     {:ok, state}
@@ -410,7 +410,7 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
     new_state = %{state | projections: new_projections}
 
     # Start projection processing
-    Task.start(fn -> process_projection(projection_name, new_state) end)
+    {:ok, _} = Task.start(fn -> process_projection(projection_name, new_state) end)
 
     Logger.info("Created projection: #{projection_name}")
     {:reply, :ok, new_state}

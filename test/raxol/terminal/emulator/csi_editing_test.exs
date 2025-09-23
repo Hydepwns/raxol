@@ -126,7 +126,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       # Assertions before DL
       line1_before = get_line_text(emulator, 1)
       line2_before = get_line_text(emulator, 2)
-      line3_before = get_line_text(emulator, 3)
+      _line3_before = get_line_text(emulator, 3)
       assert String.starts_with?(line1_before, "Line 1")
       assert String.starts_with?(line2_before, "Line 2")
 
@@ -155,7 +155,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       {emulator, _} = Emulator.process_input(emulator, "\e[2;1H")
 
       line3_before = get_line_text(emulator, 3)
-      line4_before = get_line_text(emulator, 4)
+      _line4_before = get_line_text(emulator, 4)
       assert String.starts_with?(get_line_text(emulator, 1), "Line 1")
       assert String.starts_with?(get_line_text(emulator, 2), "Line 2")
       assert String.starts_with?(line3_before, "Line 3")

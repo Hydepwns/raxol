@@ -59,7 +59,7 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
 
     rows =
       chart_state.data_buffer
-      |> Enum.map_join(&format_data_point_as_csv(&1, chart_state.type), "\n")
+      |> Enum.map_join("\n", &format_data_point_as_csv(&1, chart_state.type))
 
     headers <> "\n" <> rows
   end
@@ -138,14 +138,11 @@ defmodule Raxol.Terminal.Graphics.ChartExport do
         "Scatter Plot Data:\n" <>
           (data_points
            |> Enum.with_index()
-           |> Enum.map_join(
-             fn {point, idx} ->
-               x = Map.get(point, :x, idx)
-               y = Map.get(point, :y, point.value)
-               "(#{x}, #{y})"
-             end,
-             ", "
-           ))
+           |> Enum.map_join(", ", fn {point, idx} ->
+             x = Map.get(point, :x, idx)
+             y = Map.get(point, :y, point.value)
+             "(#{x}, #{y})"
+           end))
     end
   end
 

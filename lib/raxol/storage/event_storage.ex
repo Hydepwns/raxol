@@ -45,11 +45,11 @@ defmodule Raxol.Storage.EventStorage do
   @callback list_streams(storage :: term()) ::
               {:ok, [EventStream.t()]} | {:error, term()}
 
-  @callback save_snapshot(storage :: term(), snapshot :: Snapshot.t()) ::
+  @callback save_snapshot(storage :: term(), snapshot :: term()) ::
               :ok | {:error, term()}
 
   @callback load_snapshot(storage :: term(), stream_name :: stream_name()) ::
-              {:ok, Snapshot.t()} | {:error, term()}
+              {:ok, term()} | {:error, term()}
 
   # Default implementation delegation functions
 
@@ -803,7 +803,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
   defp snapshot_file_path(stream_name, data_dir) do
     safe_name = String.replace(stream_name, ~r/[^a-zA-Z0-9_-]/, "_")
     snapshots_dir = Path.join(data_dir, "snapshots")
-    File.mkdir_p(snapshots_dir)
+    _ = File.mkdir_p(snapshots_dir)
     Path.join(snapshots_dir, "#{safe_name}.snapshot")
   end
 

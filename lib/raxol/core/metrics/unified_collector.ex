@@ -30,6 +30,7 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   @doc """
   Records a metric value.
   """
+  @spec record_metric(atom(), atom(), number(), keyword()) :: :ok
   def record_metric(name, type, value, opts \\ []) do
     GenServer.cast(__MODULE__, {:record_metric, name, type, value, opts})
   end
@@ -128,8 +129,12 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   @doc """
   Records a custom metric.
   """
-  @spec record_custom(String.t(), number()) :: :ok
-  def record_custom(name, value) do
+  @spec record_custom(String.t() | atom(), number()) :: :ok
+  def record_custom(name, value) when is_binary(name) do
+    record_metric(String.to_atom(name), :custom, value)
+  end
+
+  def record_custom(name, value) when is_atom(name) do
     record_metric(name, :custom, value)
   end
 
@@ -152,7 +157,7 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
     }
 
     # Start periodic system metrics collection
-    case Keyword.get(opts, :auto_collect_system_metrics, true) do
+    _ = case Keyword.get(opts, :auto_collect_system_metrics, true) do
       true -> schedule_system_metrics_collection()
       false -> :ok
     end
@@ -237,10 +242,10 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   @impl GenServer
   def handle_info(:collect_system_metrics, state) do
     # Collect system metrics
-    collect_system_metrics()
+    :ok = collect_system_metrics()
 
     # Schedule next collection
-    schedule_system_metrics_collection()
+    _ref = schedule_system_metrics_collection()
 
     {:noreply, state}
   end
@@ -271,15 +276,18 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   defp collect_system_metrics do
     # Process count
     process_count = Process.list() |> length()
-    record_resource(:process_count, process_count)
+    :ok = record_resource(:process_count, process_count)
 
     # Runtime ratio (simplified)
     {_, runtime} = :erlang.statistics(:runtime)
     runtime_ratio = runtime / 1000.0
-    record_resource(:runtime_ratio, runtime_ratio)
+    :ok = record_resource(:runtime_ratio, runtime_ratio)
 
     # GC stats (simplified)
-    gc_stats = :erlang.statistics(:garbage_collection)
-    record_resource(:gc_stats, gc_stats)
+    {gc_count, words_reclaimed, _} = :erlang.statistics(:garbage_collection)
+    :ok = record_resource(:gc_count, gc_count)
+    :ok = record_resource(:gc_words_reclaimed, words_reclaimed)
+
+    :ok
   end
 end

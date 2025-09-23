@@ -186,6 +186,5 @@ defmodule Raxol.Plugins.Manager.Core do
   end
 
   # Helper to normalize plugin keys to strings
-  defp normalize_plugin_key(key) when is_atom(key), do: Atom.to_string(key)
   defp normalize_plugin_key(key) when is_binary(key), do: key
 end

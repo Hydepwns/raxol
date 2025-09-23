@@ -213,7 +213,7 @@ defmodule Raxol.Terminal.Events.Handler do
   @doc """
   Handles selection events.
   """
-  @spec handle_selection_event(any(), any()) :: {:ok, any()} | {:error, any()}
+  @spec handle_selection_event(any(), any()) :: {:ok, any()} | {:error, String.t()}
   def handle_selection_event(emulator_state, event) do
     case event do
       %{start_pos: start_pos, end_pos: end_pos, text: text} ->
@@ -250,7 +250,7 @@ defmodule Raxol.Terminal.Events.Handler do
   @doc """
   Handles scroll events.
   """
-  @spec handle_scroll_event(any(), any()) :: {:ok, any()} | {:error, any()}
+  @spec handle_scroll_event(any(), any()) :: {:ok, any()} | {:error, String.t()}
   def handle_scroll_event(emulator_state, event) do
     case event do
       %{direction: direction, delta: delta, position: position} ->
@@ -291,7 +291,7 @@ defmodule Raxol.Terminal.Events.Handler do
   @doc """
   Handles paste events.
   """
-  @spec handle_paste_event(any(), any()) :: {:ok, any()} | {:error, any()}
+  @spec handle_paste_event(any(), any()) :: {:ok, any()} | {:error, String.t()}
   def handle_paste_event(emulator_state, event) do
     case event do
       %{text: text} ->
@@ -309,7 +309,7 @@ defmodule Raxol.Terminal.Events.Handler do
   @doc """
   Handles cursor events.
   """
-  @spec handle_cursor_event(any(), any()) :: {:ok, any()} | {:error, any()}
+  @spec handle_cursor_event(any(), any()) :: {:ok, any()} | {:error, String.t()}
   def handle_cursor_event(emulator_state, event) do
     case event do
       %{visible: visible, style: style, blink: blink, position: position} ->
@@ -343,7 +343,7 @@ defmodule Raxol.Terminal.Events.Handler do
   @doc """
   Handles clipboard events.
   """
-  @spec handle_clipboard_event(any(), any()) :: {:ok, any()} | {:error, any()}
+  @spec handle_clipboard_event(any(), any()) :: {:ok, any()} | {:error, String.t()}
   def handle_clipboard_event(emulator_state, event) do
     case event do
       %{op: op, content: content} ->

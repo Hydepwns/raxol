@@ -8,5 +8,5 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher.Behaviour do
   @callback start_link(runtime_pid :: pid(), initial_state :: map()) ::
               GenServer.on_start()
 
-  @callback dispatch(event :: Raxol.Core.Runtime.Events.Event.t()) :: :ok
+  @callback dispatch(event :: term()) :: :ok
 end

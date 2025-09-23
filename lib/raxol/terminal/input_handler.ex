@@ -46,8 +46,8 @@ defmodule Raxol.Terminal.InputHandler do
   @doc """
   Processes a raw input string for the terminal.
   """
-  @spec process_terminal_input(Emulator.t(), String.t()) ::
-          {Emulator.t(), String.t()}
+  @spec process_terminal_input(Raxol.Terminal.Emulator.t(), String.t()) ::
+          {Raxol.Terminal.Emulator.t(), String.t()}
   def process_terminal_input(emulator, input) do
     CoreHandler.process_terminal_input(emulator, input)
   end
@@ -55,7 +55,8 @@ defmodule Raxol.Terminal.InputHandler do
   @doc """
   Processes a single character codepoint.
   """
-  @spec process_character(Emulator.t(), integer()) :: Emulator.t()
+  @spec process_character(Raxol.Terminal.Emulator.t(), integer()) ::
+          Raxol.Terminal.Emulator.t()
   def process_character(emulator, char_codepoint) do
     CharacterProcessor.process_character(emulator, char_codepoint)
   end
@@ -63,8 +64,12 @@ defmodule Raxol.Terminal.InputHandler do
   @doc """
   Handles a CSI sequence.
   """
-  @spec handle_csi_sequence(Emulator.t(), String.t(), list(String.t())) ::
-          Emulator.t()
+  @spec handle_csi_sequence(
+          Raxol.Terminal.Emulator.t(),
+          String.t(),
+          list(String.t())
+        ) ::
+          Raxol.Terminal.Emulator.t()
   def handle_csi_sequence(emulator, command, params) do
     ControlSequenceHandler.handle_csi_sequence(emulator, command, params)
   end
@@ -72,8 +77,8 @@ defmodule Raxol.Terminal.InputHandler do
   @doc """
   Handles an OSC sequence.
   """
-  @spec handle_osc_sequence(Emulator.t(), String.t(), String.t()) ::
-          Emulator.t()
+  @spec handle_osc_sequence(Raxol.Terminal.Emulator.t(), String.t(), String.t()) ::
+          Raxol.Terminal.Emulator.t()
   def handle_osc_sequence(emulator, command, data) do
     ControlSequenceHandler.handle_osc_sequence(emulator, command, data)
   end
@@ -81,8 +86,8 @@ defmodule Raxol.Terminal.InputHandler do
   @doc """
   Handles a DCS sequence.
   """
-  @spec handle_dcs_sequence(Emulator.t(), String.t(), String.t()) ::
-          Emulator.t()
+  @spec handle_dcs_sequence(Raxol.Terminal.Emulator.t(), String.t(), String.t()) ::
+          Raxol.Terminal.Emulator.t()
   def handle_dcs_sequence(emulator, command, data) do
     ControlSequenceHandler.handle_dcs_sequence(emulator, command, data)
   end
@@ -90,7 +95,8 @@ defmodule Raxol.Terminal.InputHandler do
   @doc """
   Handles a PM sequence.
   """
-  @spec handle_pm_sequence(Emulator.t(), String.t(), String.t()) :: Emulator.t()
+  @spec handle_pm_sequence(Raxol.Terminal.Emulator.t(), String.t(), String.t()) ::
+          Raxol.Terminal.Emulator.t()
   def handle_pm_sequence(emulator, command, data) do
     ControlSequenceHandler.handle_pm_sequence(emulator, command, data)
   end
@@ -98,8 +104,8 @@ defmodule Raxol.Terminal.InputHandler do
   @doc """
   Handles an APC sequence.
   """
-  @spec handle_apc_sequence(Emulator.t(), String.t(), String.t()) ::
-          Emulator.t()
+  @spec handle_apc_sequence(Raxol.Terminal.Emulator.t(), String.t(), String.t()) ::
+          Raxol.Terminal.Emulator.t()
   def handle_apc_sequence(emulator, command, data) do
     ControlSequenceHandler.handle_apc_sequence(emulator, command, data)
   end

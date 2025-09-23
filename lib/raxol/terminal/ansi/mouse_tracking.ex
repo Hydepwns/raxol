@@ -197,8 +197,6 @@ defmodule Raxol.Terminal.ANSI.MouseTracking do
     :erlang.binary_to_list(rest) |> to_string()
   end
 
-  defp convert_to_string(rest), do: rest
-
   defp parse_sgr_mouse_event(rest) do
     rest_str = convert_to_string(rest)
 

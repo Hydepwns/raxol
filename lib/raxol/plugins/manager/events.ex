@@ -46,7 +46,6 @@ defmodule Raxol.Plugins.Manager.Events do
       when is_map(event) do
     case EventHandler.handle_mouse_event(manager, event, rendered_cells) do
       {:ok, updated_manager} -> {:ok, updated_manager, :propagate}
-      error -> error
     end
   end
 
@@ -185,6 +184,5 @@ defmodule Raxol.Plugins.Manager.Events do
   end
 
   # Helper to normalize plugin keys to strings
-  defp normalize_plugin_key(key) when is_atom(key), do: Atom.to_string(key)
   defp normalize_plugin_key(key) when is_binary(key), do: key
 end

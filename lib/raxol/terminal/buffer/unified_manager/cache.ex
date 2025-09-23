@@ -87,9 +87,9 @@ defmodule Raxol.Terminal.Buffer.UnifiedManager.Cache do
           atom()
         ) :: :ok
   def invalidate_region(x, y, width, height, namespace) do
-    for cell_x <- x..(x + width - 1), cell_y <- y..(y + height - 1) do
+    _ = for cell_x <- x..(x + width - 1), cell_y <- y..(y + height - 1) do
       cache_key = "cell_#{cell_x}_#{cell_y}"
-      invalidate(cache_key, namespace)
+      _ = invalidate(cache_key, namespace)
     end
 
     :ok

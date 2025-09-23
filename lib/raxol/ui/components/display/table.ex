@@ -14,6 +14,7 @@ defmodule Raxol.UI.Components.Display.Table do
   @type header :: String.t()
   # Allow various cell types
   @type cell :: String.t() | number() | atom()
+  @type message :: term()
   @type row :: [cell()]
   @type headers :: [header()]
   @type rows :: [row()]
@@ -105,7 +106,7 @@ defmodule Raxol.UI.Components.Display.Table do
   # --- Component Implementation ---
 
   @doc "Initializes the Table component state from props."
-  @spec init(map()) :: {:ok, state()}
+  @spec init(props()) :: state()
   @impl Raxol.UI.Components.Base.Component
   def init(attrs) do
     id = Map.get(attrs, :id) || Raxol.Core.ID.generate()
@@ -137,19 +138,19 @@ defmodule Raxol.UI.Components.Display.Table do
       disabled: Map.get(attrs, :disabled, false)
     }
 
-    {:ok, internal_state}
+    internal_state
   end
 
   @doc "Mounts the Table component, performing any setup needed."
-  @spec mount(state()) :: {:ok, state(), list()}
+  @spec mount(state()) :: {state(), [term()]}
   @impl Raxol.UI.Components.Base.Component
   def mount(state) do
     # Initialize any subscriptions or setup needed
-    {:ok, state, []}
+    {state, []}
   end
 
   @doc "Updates the Table component state in response to messages. Handles prop updates, sorting, filtering, and selection."
-  @spec update(term(), state()) :: {:noreply, state()}
+  @spec update(message(), state()) :: state()
   @impl Raxol.UI.Components.Base.Component
   def update(message, state) do
     case message do
@@ -157,47 +158,40 @@ defmodule Raxol.UI.Components.Display.Table do
         # Update state with new props while preserving internal state
         updated_state = Map.merge(state, Map.new(new_props))
         # Recalculate column widths if data or headers change
-        updated_state = update_column_widths(updated_state)
-        {:noreply, updated_state}
+        update_column_widths(updated_state)
 
       {:sort, column} ->
         new_direction =
           determine_sort_direction(state.sort_by, state.sort_direction, column)
 
-        updated_state = %{
+        %{
           state
           | sort_by: column,
             sort_direction: new_direction
         }
 
-        {:noreply, updated_state}
-
       {:filter, term} ->
-        updated_state = %{state | filter_term: term}
-        {:noreply, updated_state}
+        %{state | filter_term: term}
 
       {:select_row, row_index} ->
-        updated_state = %{state | selected_row: row_index}
-        {:noreply, updated_state}
+        %{state | selected_row: row_index}
 
       _ ->
-        Raxol.Core.Runtime.Log.warning(
+        _ = Raxol.Core.Runtime.Log.warning(
           "Unhandled Table update: #{inspect(message)}"
         )
 
-        {:noreply, state}
+        state
     end
   end
 
   @doc "Handles events for the Table component."
-  @spec handle_event(state(), term(), map()) ::
-          {:noreply, state()} | {:noreply, state(), list()}
   @impl Raxol.UI.Components.Base.Component
-  def handle_event(state, event, context) do
+  def handle_event(event, state, context) do
     attrs = context.attrs
     current_visible_height = get_visible_height(context)
 
-    case event do
+    result = case event do
       {:keypress, key} ->
         handle_keypress(state, key, attrs, current_visible_height)
 
@@ -212,6 +206,16 @@ defmodule Raxol.UI.Components.Display.Table do
 
       _ ->
         {:noreply, state}
+    end
+
+    # Convert {:noreply, state} or {:noreply, state, commands} to expected format
+    case result do
+      {:noreply, new_state} ->
+        {new_state, []}
+      {:noreply, new_state, commands} ->
+        {new_state, commands}
+      other ->
+        other
     end
   end
 
@@ -259,11 +263,11 @@ defmodule Raxol.UI.Components.Display.Table do
     ensure_disabled_focused(table_element, state)
   end
 
-  @spec unmount(state()) :: {:ok, state()}
+  @spec unmount(state()) :: state()
   @impl Raxol.UI.Components.Base.Component
   def unmount(state) do
     # Clean up any resources
-    {:ok, state}
+    state
   end
 
   # --- Private Helpers ---
@@ -440,64 +444,64 @@ defmodule Raxol.UI.Components.Display.Table do
     case key do
       :arrow_up ->
         new_scroll_top = max(0, state.scroll_top - 1)
-        {:noreply, %{state | scroll_top: new_scroll_top}}
+        {%{state | scroll_top: new_scroll_top}, []}
 
       :arrow_down ->
         max_scroll = max(0, length(data) - current_visible_height)
         new_scroll_top = min(max_scroll, state.scroll_top + 1)
-        {:noreply, %{state | scroll_top: new_scroll_top}}
+        {%{state | scroll_top: new_scroll_top}, []}
 
       :page_up ->
         page_size = current_visible_height
         new_scroll_top = max(0, state.scroll_top - page_size)
-        {:noreply, %{state | scroll_top: new_scroll_top}}
+        {%{state | scroll_top: new_scroll_top}, []}
 
       :page_down ->
         max_scroll = max(0, length(data) - current_visible_height)
         page_size = current_visible_height
         new_scroll_top = min(max_scroll, state.scroll_top + page_size)
-        {:noreply, %{state | scroll_top: new_scroll_top}}
+        {%{state | scroll_top: new_scroll_top}, []}
 
       _ ->
-        {:noreply, state}
+        {state, []}
     end
   end
 
   defp handle_click(state, {:row, row_index}, attrs) do
     case Map.get(attrs, :selectable, false) do
       true ->
-        {:noreply, %{state | selected_row: row_index}}
+        {%{state | selected_row: row_index}, []}
 
       false ->
-        {:noreply, state}
+        {state, []}
     end
   end
 
   defp handle_click(state, {:header, column}, attrs) do
     case Map.get(attrs, :sortable, false) do
       true ->
-        {:noreply, state, [{:update, {:sort, column}}]}
+        {state, [{:update, {:sort, column}}]}
 
       false ->
-        {:noreply, state}
+        {state, []}
     end
   end
 
   defp handle_input(state, {:filter, term}, attrs) do
     case Map.get(attrs, :filterable, false) do
       true ->
-        {:noreply, state, [{:update, {:filter, term}}]}
+        {state, [{:update, {:filter, term}}]}
 
       false ->
-        {:noreply, state}
+        {state, []}
     end
   end
 
   defp handle_focus(state, {:row, row_index}) do
-    {:noreply, %{state | focused_row: row_index}}
+    {%{state | focused_row: row_index}, []}
   end
 
   defp handle_focus(state, {:cell, {row_index, col_index}}) do
-    {:noreply, %{state | focused_row: row_index, focused_col: col_index}}
+    {%{state | focused_row: row_index, focused_col: col_index}, []}
   end
 end

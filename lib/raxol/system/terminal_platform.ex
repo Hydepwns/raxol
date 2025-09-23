@@ -59,7 +59,15 @@ defmodule Raxol.System.TerminalPlatform do
         }
       }
   """
-  @spec get_terminal_capabilities() :: map()
+  @spec get_terminal_capabilities() :: %{
+          :name => String.t(),
+          :version => String.t(),
+          :features => list(),
+          :colors => map(),
+          :unicode => map(),
+          :input => map(),
+          :output => map()
+        }
   def get_terminal_capabilities do
     %{
       name: get_terminal_name(),

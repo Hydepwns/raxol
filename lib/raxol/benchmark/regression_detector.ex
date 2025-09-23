@@ -642,10 +642,10 @@ defmodule Raxol.Benchmark.RegressionDetector do
   defp format_improvement_list(improvements) do
     improvements
     |> Enum.map_join(
+      "\n",
       fn i ->
         "  • #{i.scenario}: -#{Float.round(i.percent_change, 1)}%"
-      end,
-      "\n"
+      end
     )
   end
 
@@ -663,10 +663,10 @@ defmodule Raxol.Benchmark.RegressionDetector do
     """ <>
       (items
        |> Enum.map_join(
+         "\n",
          fn item ->
            "| #{item.scenario} | #{Float.round(item.percent_change, 1)}% | #{item.severity} |"
-         end,
-         "\n"
+         end
        ))
   end
 end

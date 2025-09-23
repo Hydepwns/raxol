@@ -83,7 +83,7 @@ defmodule Raxol.Terminal.Window.Manager do
 
   @spec start_link(list()) :: {:ok, pid()}
   def start_link(_opts) do
-    ensure_started()
+    _ = ensure_started()
     # Return self() for backward compatibility with Process dictionary version
     {:ok, self()}
   end
@@ -93,7 +93,7 @@ defmodule Raxol.Terminal.Window.Manager do
   """
   @spec get_state(pid()) :: map()
   def get_state(_pid) do
-    ensure_started()
+    _ = ensure_started()
     Server.get_state()
   end
 
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Window.Manager do
   """
   @spec get_window_state(pid()) :: atom()
   def get_window_state(_pid) do
-    ensure_started()
+    _ = ensure_started()
     Server.get_window_state()
   end
 
@@ -111,7 +111,7 @@ defmodule Raxol.Terminal.Window.Manager do
   """
   @spec get_window_size(pid()) :: {integer(), integer()}
   def get_window_size(_pid) do
-    ensure_started()
+    _ = ensure_started()
     Server.get_window_size()
   end
 
@@ -120,14 +120,14 @@ defmodule Raxol.Terminal.Window.Manager do
   """
   @spec set_window_state(pid(), atom()) :: :ok
   def set_window_state(pid, state) when is_pid(pid) do
-    ensure_started()
+    _ = ensure_started()
     Server.set_window_state(state)
   end
 
   @spec set_window_state(window_id(), window_state()) ::
           {:ok, Window.t()} | {:error, :not_found}
   def set_window_state(id, state) do
-    ensure_started()
+    _ = ensure_started()
     Server.set_window_state(Server, id, state)
   end
 
@@ -137,7 +137,7 @@ defmodule Raxol.Terminal.Window.Manager do
   @spec set_window_size(pid(), integer(), integer()) :: :ok
   def set_window_size(pid, width, height)
       when is_pid(pid) and width > 0 and height > 0 do
-    ensure_started()
+    _ = ensure_started()
     Server.set_window_size(width, height)
   end
 
@@ -149,7 +149,7 @@ defmodule Raxol.Terminal.Window.Manager do
   @spec set_window_size(window_id(), integer(), integer()) ::
           {:ok, Window.t()} | {:error, :not_found}
   def set_window_size(id, width, height) do
-    ensure_started()
+    _ = ensure_started()
     Server.set_window_size(Server, id, width, height)
   end
 
@@ -158,14 +158,14 @@ defmodule Raxol.Terminal.Window.Manager do
   """
   @spec set_window_title(pid(), String.t()) :: :ok
   def set_window_title(pid, title) when is_pid(pid) do
-    ensure_started()
+    _ = ensure_started()
     Server.set_window_title(title)
   end
 
   @spec set_window_title(window_id(), String.t()) ::
           {:ok, Window.t()} | {:error, :not_found}
   def set_window_title(id, title) do
-    ensure_started()
+    _ = ensure_started()
     Server.set_window_title(Server, id, title)
   end
 
@@ -174,7 +174,7 @@ defmodule Raxol.Terminal.Window.Manager do
   """
   @spec set_icon_name(pid(), String.t()) :: :ok
   def set_icon_name(pid, icon_name) when is_pid(pid) do
-    ensure_started()
+    _ = ensure_started()
     Server.set_icon_name(icon_name)
   end
 
@@ -189,7 +189,7 @@ defmodule Raxol.Terminal.Window.Manager do
   """
   @spec create_window(Config.t()) :: {:ok, Window.t()} | {:error, term()}
   def create_window(%Config{} = config) do
-    ensure_started()
+    _ = ensure_started()
     Server.create_window(config)
   end
 
@@ -200,7 +200,7 @@ defmodule Raxol.Terminal.Window.Manager do
           {:ok, Window.t()} | {:error, term()}
   def create_window(width, height)
       when is_integer(width) and is_integer(height) do
-    ensure_started()
+    _ = ensure_started()
     Server.create_window(width, height)
   end
 
@@ -209,7 +209,7 @@ defmodule Raxol.Terminal.Window.Manager do
   """
   @spec get_window(window_id()) :: {:ok, Window.t()} | {:error, :not_found}
   def get_window(id) do
-    ensure_started()
+    _ = ensure_started()
     Server.get_window(id)
   end
 
@@ -218,7 +218,7 @@ defmodule Raxol.Terminal.Window.Manager do
   """
   @spec destroy_window(window_id()) :: :ok | {:error, :not_found}
   def destroy_window(id) do
-    ensure_started()
+    _ = ensure_started()
     Server.destroy_window(id)
   end
 
@@ -227,7 +227,7 @@ defmodule Raxol.Terminal.Window.Manager do
   """
   @spec list_windows() :: {:ok, [Window.t()]}
   def list_windows do
-    ensure_started()
+    _ = ensure_started()
     Server.list_windows()
   end
 
@@ -237,7 +237,7 @@ defmodule Raxol.Terminal.Window.Manager do
   Sets the active window.
   """
   def set_active_window(window_id) do
-    ensure_started()
+    _ = ensure_started()
     Server.set_active_window(window_id)
   end
 
@@ -245,7 +245,7 @@ defmodule Raxol.Terminal.Window.Manager do
   Gets the active window.
   """
   def get_active_window do
-    ensure_started()
+    _ = ensure_started()
     Server.get_active_window()
   end
 
@@ -253,7 +253,7 @@ defmodule Raxol.Terminal.Window.Manager do
   Moves a window to the front (top of Z-order).
   """
   def move_window_to_front(window_id) do
-    ensure_started()
+    _ = ensure_started()
     Server.move_window_to_front(window_id)
   end
 
@@ -261,7 +261,7 @@ defmodule Raxol.Terminal.Window.Manager do
   Moves a window to the back (bottom of Z-order).
   """
   def move_window_to_back(window_id) do
-    ensure_started()
+    _ = ensure_started()
     Server.move_window_to_back(window_id)
   end
 
@@ -269,7 +269,7 @@ defmodule Raxol.Terminal.Window.Manager do
   Registers a window's spatial position for navigation.
   """
   def register_window_position(window_id, x, y, width, height) do
-    ensure_started()
+    _ = ensure_started()
     Server.register_window_position(window_id, x, y, width, height)
   end
 
@@ -277,7 +277,7 @@ defmodule Raxol.Terminal.Window.Manager do
   Defines a navigation path between windows.
   """
   def define_navigation_path(from_id, direction, to_id) do
-    ensure_started()
+    _ = ensure_started()
     Server.define_navigation_path(from_id, direction, to_id)
   end
 
@@ -285,7 +285,7 @@ defmodule Raxol.Terminal.Window.Manager do
   Counts the number of windows.
   """
   def count_windows do
-    ensure_started()
+    _ = ensure_started()
     {:ok, windows} = Server.list_windows()
     length(windows)
   end
@@ -294,7 +294,7 @@ defmodule Raxol.Terminal.Window.Manager do
   Checks if a window exists.
   """
   def window_exists?(window_id) do
-    ensure_started()
+    _ = ensure_started()
 
     case Server.get_window(window_id) do
       {:ok, _} -> true
@@ -308,7 +308,7 @@ defmodule Raxol.Terminal.Window.Manager do
   @spec set_window_position(window_id(), integer(), integer()) ::
           {:ok, Window.t()} | {:error, :not_found}
   def set_window_position(id, x, y) do
-    ensure_started()
+    _ = ensure_started()
     Server.set_window_position(id, x, y)
   end
 
@@ -318,7 +318,7 @@ defmodule Raxol.Terminal.Window.Manager do
   @spec create_child_window(window_id(), Config.t()) ::
           {:ok, Window.t()} | {:error, term()}
   def create_child_window(parent_id, config) do
-    ensure_started()
+    _ = ensure_started()
     Server.create_child_window(parent_id, config)
   end
 
@@ -328,7 +328,7 @@ defmodule Raxol.Terminal.Window.Manager do
   @spec get_child_windows(window_id()) ::
           {:ok, [Window.t()]} | {:error, :not_found}
   def get_child_windows(parent_id) do
-    ensure_started()
+    _ = ensure_started()
     Server.get_child_windows(parent_id)
   end
 
@@ -338,7 +338,7 @@ defmodule Raxol.Terminal.Window.Manager do
   @spec get_parent_window(window_id()) ::
           {:ok, Window.t()} | {:error, :not_found | :no_parent}
   def get_parent_window(child_id) do
-    ensure_started()
+    _ = ensure_started()
     Server.get_parent_window(child_id)
   end
 
@@ -346,7 +346,7 @@ defmodule Raxol.Terminal.Window.Manager do
   Resets the window manager to initial state.
   """
   def reset do
-    ensure_started()
+    _ = ensure_started()
     Server.reset()
   end
 end

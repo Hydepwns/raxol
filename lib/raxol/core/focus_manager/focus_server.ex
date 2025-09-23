@@ -637,7 +637,7 @@ defmodule Raxol.Core.FocusManager.FocusServer do
   defp calculate_next_start_index(nil, _component_count), do: 0
 
   defp calculate_next_start_index(current_index, component_count) do
-    rem((current_index || -1) + 1, component_count)
+    rem(current_index + 1, component_count)
   end
 
   defp get_component_index(_components, nil), do: -1

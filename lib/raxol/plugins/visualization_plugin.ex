@@ -23,7 +23,8 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   @impl Raxol.Plugins.Plugin
   def init(config \\ %{}) do
     plugin_meta = struct(__MODULE__, config)
-    {:ok, plugin_meta, %{cache: %{}}}
+    state = %{meta: plugin_meta, cache: %{}}
+    {:ok, state}
   end
 
   @impl Raxol.Plugins.Plugin

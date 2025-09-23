@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.Operations.ScrollOperationsTest do
   use ExUnit.Case
-  alias Raxol.Terminal.{Operations.ScrollOperations, TestHelper}
+  alias Raxol.Terminal.Operations.ScrollOperations
   alias Raxol.Test.UnifiedTestHelper
 
   # Add a simple test to verify the test infrastructure

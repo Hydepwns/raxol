@@ -114,7 +114,7 @@ defmodule Raxol.Performance.PredictiveOptimizer do
     }
 
     # Check if immediate optimization is needed
-    case should_optimize_immediately?(new_state) do
+    _ = case should_optimize_immediately?(new_state) do
       true -> perform_optimization(new_state)
       false -> :ok
     end
@@ -165,7 +165,7 @@ defmodule Raxol.Performance.PredictiveOptimizer do
     Enum.map(events, fn event ->
       ref = make_ref()
 
-      :telemetry.attach(
+      _ = :telemetry.attach(
         {__MODULE__, ref},
         event,
         &handle_telemetry_event/4,
@@ -392,12 +392,12 @@ defmodule Raxol.Performance.PredictiveOptimizer do
     case operation do
       {:csi_parse, sequence} ->
         # Warm CSI parser cache
-        ETSCacheManager.get_csi(sequence)
+        _ = ETSCacheManager.get_csi(sequence)
         [{:cache_warmed, :csi_parser, sequence}]
 
       {:cell_create, {char, style}} ->
         # Warm cell cache
-        ETSCacheManager.get_cell(char, :erlang.phash2(style))
+        _ = ETSCacheManager.get_cell(char, :erlang.phash2(style))
         [{:cache_warmed, :cell, {char, style}}]
 
       _ ->

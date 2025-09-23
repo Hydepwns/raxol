@@ -86,9 +86,9 @@ defmodule Raxol.Audit.Analyzer do
 
     # Schedule periodic analysis tasks
     # Every minute
-    :timer.send_interval(60_000, :analyze_patterns)
+    {:ok, _} = :timer.send_interval(60_000, :analyze_patterns)
     # Every 5 minutes
-    :timer.send_interval(300_000, :update_profiles)
+    {:ok, _} = :timer.send_interval(300_000, :update_profiles)
 
     Logger.info("Audit analyzer initialized")
     {:ok, state}
@@ -172,7 +172,7 @@ defmodule Raxol.Audit.Analyzer do
     }
 
     # Trigger alerts if needed
-    maybe_send_alert(analysis_result, state)
+    _ = maybe_send_alert(analysis_result, state)
 
     {analysis_result, new_state}
   end

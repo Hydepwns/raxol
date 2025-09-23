@@ -20,7 +20,10 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour
   def system_tmp_dir do
-    System.tmp_dir()
+    case System.tmp_dir() do
+      nil -> {:error, :no_tmp_dir}
+      dir -> {:ok, dir}
+    end
   end
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour
@@ -45,7 +48,11 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour
   def file_rm_rf(path) do
-    File.rm_rf(path)
+    case File.rm_rf(path) do
+      {:ok, _} -> :ok
+      {:error, reason, _} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour

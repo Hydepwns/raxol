@@ -59,7 +59,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
         }
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def new(width, height, scrollback \\ 1000) do
+  def new(width, height) do
+    Initialization.new(width, height, 1000)
+  end
+
+  def new(width, height, scrollback) do
     Initialization.new(width, height, scrollback)
   end
 
@@ -103,7 +107,16 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
   end
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
-  def clear_line(buffer, line, style \\ nil) do
+  def clear_screen(buffer) do
+    Operations.clear(buffer, nil)
+  end
+
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  def clear_line(buffer, line) do
+    Operations.clear_line(buffer, line, nil)
+  end
+
+  def clear_line(buffer, line, style) do
     Operations.clear_line(buffer, line, style)
   end
 
@@ -499,10 +512,6 @@ defmodule Raxol.Terminal.ScreenBuffer.Core do
     State.cleanup_file_watching(buffer)
   end
 
-  @impl Raxol.Terminal.ScreenBufferBehaviour
-  def clear_screen(buffer) do
-    State.clear_screen(buffer)
-  end
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def handle_mode(buffer, mode, value) do

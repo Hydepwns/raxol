@@ -4,10 +4,10 @@ defmodule Raxol.Terminal.Emulator.ScreenOperations do
   Handles screen clearing and line clearing operations.
   """
 
-  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
   alias Raxol.Terminal.Operations.ScreenOperations, as: ScreenOps
 
-  @type emulator :: Emulator.t()
+  @type emulator :: EmulatorStruct.t()
 
   @doc """
   Clears from cursor to end of screen.

@@ -116,11 +116,11 @@ defmodule Raxol.Audit.Storage do
     }
 
     # Load existing indexes
-    load_existing_indexes(state)
+    _ = load_existing_indexes(state)
 
     # Schedule file rotation
     # Hourly
-    :timer.send_interval(3_600_000, :rotate_file)
+    {:ok, _} = :timer.send_interval(3_600_000, :rotate_file)
 
     Logger.info("Audit storage initialized at #{storage_path}")
     {:ok, state}
@@ -163,7 +163,7 @@ defmodule Raxol.Audit.Storage do
     new_state = %{state | indexes: new_indexes}
 
     # Rebuild index for existing data
-    rebuild_index(field, new_state)
+    _ = rebuild_index(field, new_state)
 
     {:reply, :ok, new_state}
   end
@@ -226,7 +226,7 @@ defmodule Raxol.Audit.Storage do
     File.rename!(current_file, archive_name)
 
     # Compress if enabled
-    compress_if_enabled(state.compression_enabled, archive_name)
+    _ = compress_if_enabled(state.compression_enabled, archive_name)
 
     # Update state with new file
     {:ok, %{state | current_file: init_current_file(state.storage_path)}}
@@ -511,15 +511,10 @@ defmodule Raxol.Audit.Storage do
   defp compress_file(file_path) do
     compressed_path = "#{file_path}.gz"
 
-    case :zlib.gzip(File.read!(file_path)) do
-      compressed when is_binary(compressed) ->
-        File.write!(compressed_path, compressed)
-        File.rm!(file_path)
-        Logger.info("Compressed audit log: #{compressed_path}")
-
-      _ ->
-        Logger.error("Failed to compress audit log: #{file_path}")
-    end
+    compressed = :zlib.gzip(File.read!(file_path))
+    File.write!(compressed_path, compressed)
+    File.rm!(file_path)
+    Logger.info("Compressed audit log: #{compressed_path}")
   end
 
   defp load_all_events(state) do

@@ -401,28 +401,17 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
       %{plugin_id: plugin_id}
     )
 
-    case Raxol.Core.Runtime.Plugins.Discovery.cleanup_plugin(
-           plugin_id,
-           metadata
-         ) do
-      {:ok, updated_metadata} ->
-        Raxol.Core.Runtime.Log.info(
-          "[#{__MODULE__}] Successfully cleaned up plugin: #{plugin_id}",
-          %{plugin_id: plugin_id}
-        )
+    {:ok, updated_metadata} = Raxol.Core.Runtime.Plugins.Discovery.cleanup_plugin(
+      plugin_id,
+      metadata
+    )
 
-        {:ok, updated_metadata}
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Successfully cleaned up plugin: #{plugin_id}",
+      %{plugin_id: plugin_id}
+    )
 
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "[#{__MODULE__}] Failed to cleanup plugin: #{plugin_id}",
-          reason,
-          nil,
-          %{plugin_id: plugin_id, reason: reason}
-        )
-
-        {:error, reason}
-    end
+    {:ok, updated_metadata}
   end
 
   @doc """

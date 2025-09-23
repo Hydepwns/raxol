@@ -21,7 +21,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
       end_time = System.monotonic_time(:microsecond)
       duration = end_time - start_time
 
-      Logger.debug(
+      _ = Logger.debug(
         "Profile: #{unquote(name)} took #{duration}μs",
         [duration: duration] ++ unquote(metadata)
       )
@@ -276,7 +276,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   end
 
   defp execute_render_if_needed(true, state, render_type) do
-    profile :optimized_render, metadata: %{type: render_type} do
+    _ = profile :optimized_render, metadata: %{type: render_type} do
       # Use dirty regions to minimize work
       case state.dirty_regions do
         [:full_screen] ->

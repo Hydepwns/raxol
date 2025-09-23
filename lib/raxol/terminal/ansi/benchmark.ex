@@ -10,7 +10,26 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
   Runs a benchmark suite on the ANSI handling system.
   Returns a map of benchmark results.
   """
-  @spec run_benchmark() :: map()
+  @spec run_benchmark() :: %{
+          parse_benchmark: %{
+            total_time_ms: float(),
+            iterations: 1000,
+            sequences_per_second: float(),
+            average_time_per_sequence_ms: float()
+          },
+          process_benchmark: %{
+            total_time_ms: float(),
+            iterations: 1000,
+            sequences_per_second: float(),
+            average_time_per_sequence_ms: float()
+          },
+          state_machine_benchmark: %{
+            total_time_ms: float(),
+            iterations: 1000,
+            inputs_per_second: float(),
+            average_time_per_input_ms: float()
+          }
+        }
   def run_benchmark do
     %{
       parse_benchmark: benchmark_parsing(),
@@ -22,7 +41,12 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
   @doc """
   Benchmarks the parsing performance with various ANSI sequences.
   """
-  @spec benchmark_parsing() :: map()
+  @spec benchmark_parsing() :: %{
+          total_time_ms: float(),
+          iterations: 1000,
+          sequences_per_second: float(),
+          average_time_per_sequence_ms: float()
+        }
   def benchmark_parsing do
     sequences = generate_test_sequences()
     iterations = 1000
@@ -51,7 +75,12 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
   @doc """
   Benchmarks the processing performance with various ANSI sequences.
   """
-  @spec benchmark_processing() :: map()
+  @spec benchmark_processing() :: %{
+          total_time_ms: float(),
+          iterations: 1000,
+          sequences_per_second: float(),
+          average_time_per_sequence_ms: float()
+        }
   def benchmark_processing do
     sequences = generate_test_sequences()
     iterations = 1000
@@ -81,7 +110,12 @@ defmodule Raxol.Terminal.ANSI.Benchmark do
   @doc """
   Benchmarks the state machine performance with various inputs.
   """
-  @spec benchmark_state_machine() :: map()
+  @spec benchmark_state_machine() :: %{
+          total_time_ms: float(),
+          iterations: 1000,
+          inputs_per_second: float(),
+          average_time_per_input_ms: float()
+        }
   def benchmark_state_machine do
     inputs = generate_test_inputs()
     iterations = 1000

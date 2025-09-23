@@ -8,7 +8,6 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.CharacterSets.StateManager
   alias Raxol.Terminal.{Window}
-  alias Raxol.Terminal.TestHelper
 
   setup do
     emulator = new_emulator()

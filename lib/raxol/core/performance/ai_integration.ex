@@ -328,24 +328,22 @@ defmodule Raxol.Core.Performance.AIIntegration do
     HTTPoison.post(url, body, headers, timeout: 30_000, recv_timeout: 30_000)
   end
 
-  defp parse_openai_response({:ok, %{status_code: 200, body: body}}) do
-    case Jason.decode(body) do
-      {:ok, %{"choices" => [%{"message" => %{"content" => _content}} | _]}} ->
-        # Parse the AI response and convert to our expected format
-        # For now, return mock data as the response format needs to be standardized
-        generate_mock_analysis(%{})
+  defp parse_openai_response(response) do
+    case response do
+      %{status_code: 200, body: body} ->
+        case Jason.decode(body) do
+          {:ok, %{"choices" => [%{"message" => %{"content" => _content}} | _]}} ->
+            # Parse the AI response and convert to our expected format
+            # For now, return mock data as the response format needs to be standardized
+            generate_mock_analysis(%{})
 
-      _ ->
-        {:error, "Invalid OpenAI response format"}
+          _ ->
+            {:error, "Invalid OpenAI response format"}
+        end
+
+      error ->
+        {:error, error}
     end
-  end
-
-  defp parse_openai_response({:ok, %{status_code: status_code}}) do
-    {:error, "OpenAI API returned status #{status_code}"}
-  end
-
-  defp parse_openai_response({:error, reason}) do
-    {:error, reason}
   end
 
   defp build_performance_analysis_prompt(ai_data) do
