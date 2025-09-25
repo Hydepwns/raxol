@@ -3,12 +3,7 @@ defmodule Raxol.Security.Encryption.KeyManagerTest do
   alias Raxol.Security.Encryption.KeyManager
 
   setup do
-    # Start Audit.Logger if not already running
-    unless Process.whereis(Raxol.Audit.Logger) do
-      {:ok, _audit_pid} = Raxol.Audit.Logger.start_link([])
-    end
-
-    # Start key manager for tests
+    # Start key manager for tests (without explicit audit logger)
     {:ok, _pid} =
       KeyManager.start_link(
         config: %{
@@ -19,12 +14,15 @@ defmodule Raxol.Security.Encryption.KeyManagerTest do
       )
 
     on_exit(fn ->
-      if Process.whereis(KeyManager) do
-        GenServer.stop(KeyManager)
+      case Process.whereis(KeyManager) do
+        nil ->
+          :ok
+        pid when is_pid(pid) ->
+          if Process.alive?(pid) do
+            GenServer.stop(KeyManager, :normal, 500)
+          end
       end
-      if Process.whereis(Raxol.Audit.Logger) do
-        GenServer.stop(Raxol.Audit.Logger)
-      end
+      # Let the audit logger handle its own cleanup
     end)
 
     :ok
@@ -46,7 +44,7 @@ defmodule Raxol.Security.Encryption.KeyManagerTest do
 
     test "generates key with custom algorithm" do
       {:ok, key} =
-        KeyManager.generate_dek("test", algorithm: :chacha20_poly1305)
+        KeyManager.generate_dek(KeyManager, "test", [algorithm: :chacha20_poly1305])
 
       assert key.algorithm == :chacha20_poly1305
     end

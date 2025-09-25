@@ -1,136 +1,232 @@
 defmodule Raxol.UI.Components.HintDisplay do
   @moduledoc """
-  Displays contextual hints and keyboard shortcuts.
+  Hint display component for contextual help and tooltips.
+
+  Provides inline hints, tooltips, and contextual help for UI components.
   """
-  # Use standard component behaviour
-  use Raxol.UI.Components.Base.Component
-  require Raxol.Core.Runtime.Log
 
-  # Require view macros
-  require Raxol.View.Elements
+  @type config :: %{
+          enabled: boolean(),
+          position: atom(),
+          delay: integer(),
+          style: atom(),
+          max_width: integer(),
+          hints: map()
+        }
 
-  # Define state struct
-  defstruct id: nil,
-            # List of hint strings or {key, description} tuples
-            hints: [],
-            visible: true,
-            # :top, :bottom, :left, :right
-            position: :bottom,
-            style: %{}
+  @type hint :: %{
+          text: binary(),
+          type: atom(),
+          priority: integer()
+        }
 
-  # --- Component Behaviour Callbacks ---
+  @doc """
+  Initializes hint display configuration.
+  """
+  @spec init(keyword() | map()) :: config()
+  def init(opts \\ []) do
+    # Handle both keyword lists and maps
+    get_option = fn key, default ->
+      cond do
+        is_list(opts) -> Keyword.get(opts, key, default)
+        is_map(opts) -> Map.get(opts, key, default)
+        true -> default
+      end
+    end
 
-  @doc "Initializes the HintDisplay component state from props."
-  @spec init(map()) :: %__MODULE__{}
-  @impl Raxol.UI.Components.Base.Component
-  def init(props) do
-    # Initialize state
-    %__MODULE__{
-      id: Map.get(props, :id, nil),
-      hints: props[:hints] || [],
-      visible: Map.get(props, :visible, true),
-      position: props[:position] || :bottom,
-      style: props[:style] || %{}
+    %{
+      enabled: get_option.(:enabled, true),
+      position: get_option.(:position, :below),
+      delay: get_option.(:delay, 500),
+      style: get_option.(:style, :tooltip),
+      max_width: get_option.(:max_width, 40),
+      hints: get_option.(:hints, %{})
     }
   end
 
-  @doc "Updates the HintDisplay component state in response to messages."
-  @spec update(term(), %__MODULE__{}) :: {%__MODULE__{}, list()}
-  @impl Raxol.UI.Components.Base.Component
-  def update(msg, state) do
-    # Handle messages to update hints or visibility
-    Raxol.Core.Runtime.Log.debug(
-      "HintDisplay #{Map.get(state, :id, nil)} received message: #{inspect(msg)}"
-    )
+  @doc """
+  Registers a hint for a component.
+  """
+  @spec register_hint(config(), binary(), binary(), keyword()) :: config()
+  def register_hint(config, component_id, text, opts \\ []) do
+    hint = %{
+      text: text,
+      type: Keyword.get(opts, :type, :info),
+      priority: Keyword.get(opts, :priority, 0)
+    }
 
-    case msg do
-      {:set_hints, hints} when is_list(hints) ->
-        {%{state | hints: hints}, []}
+    %{config | hints: Map.put(config.hints, component_id, hint)}
+  end
 
-      :show ->
-        {%{state | visible: true}, []}
+  @doc """
+  Gets hint for a component.
+  """
+  @spec get_hint(config(), binary()) :: hint() | nil
+  def get_hint(%{hints: hints}, component_id) do
+    Map.get(hints, component_id)
+  end
 
-      :hide ->
-        {%{state | visible: false}, []}
+  def get_hint(_, _), do: nil
 
-      _ ->
-        {state, []}
+  @doc """
+  Renders a hint display.
+  """
+  @spec render(hint(), config()) :: binary()
+  def render(nil, _), do: ""
+
+  def render(%{text: text, type: type}, config) do
+    style = config.style
+    max_width = config.max_width
+
+    formatted_text = format_text(text, max_width)
+    styled_hint = apply_style(formatted_text, style, type)
+
+    position_hint(styled_hint, config.position)
+  end
+
+  @doc """
+  Renders inline hint next to content.
+  """
+  @spec render_inline(binary(), binary(), config()) :: binary()
+  def render_inline(content, component_id, config) do
+    case get_hint(config, component_id) do
+      nil ->
+        content
+
+      hint ->
+        hint_text = render(hint, config)
+        combine_content_and_hint(content, hint_text, config.position)
     end
   end
 
-  @doc "Handles events for the HintDisplay component. Typically does not handle direct events."
-  @spec handle_event(term(), map(), %__MODULE__{}) :: {%__MODULE__{}, list()}
-  @impl Raxol.UI.Components.Base.Component
-  def handle_event(event, %{} = _props, state) do
-    # Typically doesn't handle direct events
-    Raxol.Core.Runtime.Log.debug(
-      "HintDisplay #{Map.get(state, :id, nil)} received event: #{inspect(event)}"
-    )
-
-    {state, []}
+  @doc """
+  Clears all hints.
+  """
+  @spec clear_hints(config()) :: config()
+  def clear_hints(config) do
+    %{config | hints: %{}}
   end
-
-  # --- Render Logic ---
-
-  @doc "Renders the HintDisplay component if visible and hints are present."
-  @spec render(%__MODULE__{}, map()) :: any()
-  @impl Raxol.UI.Components.Base.Component
-  # Correct arity
-  def render(state, %{} = _props) do
-    render_hints(should_render_hints?(state), state)
-  end
-
-  # Private helper functions
-
-  defp should_render_hints?(state) do
-    state.visible and state.hints != []
-  end
-
-  defp render_hints(false, _state), do: nil
-
-  defp render_hints(true, state) do
-    # Format hints (example: key: desc)
-    hint_texts =
-      Enum.map(state.hints, fn
-        {key, desc} -> "#{key}: #{desc}"
-        hint when is_binary(hint) -> hint
-        _ -> ""
-      end)
-
-    # Join hints with a separator
-    display_text = Enum.join(hint_texts, " | ")
-
-    # Use View Elements macros
-    dsl_result =
-      Raxol.View.Elements.box id: Map.get(state, :id, nil),
-                              style:
-                                Map.merge(
-                                  %{width: :fill, height: 1},
-                                  state.style
-                                ) do
-        Raxol.View.Elements.label(content: display_text)
-      end
-
-    # Return element map directly
-    dsl_result
-  end
-
-  # Remove old render/2, render_title, render_hints, render_shortcuts, render_footer
-  # Remove old @impl Component annotations
 
   @doc """
-  Mount hook - called when component is mounted.
-  No special setup needed for HintDisplay.
+  Removes a specific hint.
   """
-  @impl true
-  @spec mount(map()) :: {map(), list()}
-  def mount(state), do: {state, []}
+  @spec remove_hint(config(), binary()) :: config()
+  def remove_hint(config, component_id) do
+    %{config | hints: Map.delete(config.hints, component_id)}
+  end
 
-  @doc """
-  Unmount hook - called when component is unmounted.
-  No cleanup needed for HintDisplay.
-  """
-  @impl true
-  @spec unmount(map()) :: map()
-  def unmount(state), do: state
+  # Private helpers
+
+  defp format_text(text, max_width) when byte_size(text) > max_width do
+    text
+    |> String.slice(0, max_width - 3)
+    |> Kernel.<>("...")
+  end
+
+  defp format_text(text, _), do: text
+
+  defp apply_style(text, :tooltip, type) do
+    prefix = get_type_prefix(type)
+    border = get_type_border(type)
+
+    """
+    #{border.top}
+    #{border.left} #{prefix}#{text} #{border.right}
+    #{border.bottom}
+    """
+    |> String.trim()
+  end
+
+  defp apply_style(text, :inline, type) do
+    prefix = get_type_prefix(type)
+    color = get_type_color(type)
+
+    "#{color}(#{prefix}#{text})\e[0m"
+  end
+
+  defp apply_style(text, :minimal, type) do
+    color = get_type_color(type)
+    "#{color}#{text}\e[0m"
+  end
+
+  defp apply_style(text, _, type) do
+    apply_style(text, :inline, type)
+  end
+
+  defp get_type_prefix(:info), do: "i: "
+  defp get_type_prefix(:warning), do: "!: "
+  defp get_type_prefix(:error), do: "X: "
+  defp get_type_prefix(:success), do: "ok: "
+  defp get_type_prefix(:help), do: "?: "
+  defp get_type_prefix(_), do: ""
+
+  defp get_type_color(:info), do: "\e[34m"
+  defp get_type_color(:warning), do: "\e[33m"
+  defp get_type_color(:error), do: "\e[31m"
+  defp get_type_color(:success), do: "\e[32m"
+  defp get_type_color(:help), do: "\e[36m"
+  defp get_type_color(_), do: "\e[37m"
+
+  defp get_type_border(:info) do
+    %{top: "---- Info ----", left: "|", right: "|", bottom: "--------------"}
+  end
+
+  defp get_type_border(:warning) do
+    %{
+      top: "!!!! Warning !!!!",
+      left: "!",
+      right: "!",
+      bottom: "!!!!!!!!!!!!!!!"
+    }
+  end
+
+  defp get_type_border(:error) do
+    %{top: "XXXX Error XXXX", left: "X", right: "X", bottom: "XXXXXXXXXXXXXX"}
+  end
+
+  defp get_type_border(_) do
+    %{top: "---------", left: "|", right: "|", bottom: "---------"}
+  end
+
+  defp position_hint(hint, :below) do
+    "\n#{hint}"
+  end
+
+  defp position_hint(hint, :above) do
+    "#{hint}\n"
+  end
+
+  defp position_hint(hint, :right) do
+    " #{hint}"
+  end
+
+  defp position_hint(hint, :left) do
+    "#{hint} "
+  end
+
+  defp position_hint(hint, _), do: hint
+
+  defp combine_content_and_hint(content, hint, :below) do
+    "#{content}#{hint}"
+  end
+
+  defp combine_content_and_hint(content, hint, :above) do
+    "#{hint}#{content}"
+  end
+
+  defp combine_content_and_hint(content, hint, :right) do
+    lines = String.split(content, "\n")
+    first_line = List.first(lines, "")
+    rest_lines = Enum.drop(lines, 1)
+
+    if rest_lines == [] do
+      "#{first_line}#{hint}"
+    else
+      ["#{first_line}#{hint}" | rest_lines] |> Enum.join("\n")
+    end
+  end
+
+  defp combine_content_and_hint(content, hint, _) do
+    combine_content_and_hint(content, hint, :below)
+  end
 end

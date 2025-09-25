@@ -140,12 +140,13 @@ defmodule Raxol.Core.ErrorPatternLearner do
   @impl GenServer
   def init(_opts) do
     # Create ETS table for fast pattern lookups
-    _ = :ets.new(@table_name, [
-      :named_table,
-      :public,
-      :set,
-      {:read_concurrency, true}
-    ])
+    _ =
+      :ets.new(@table_name, [
+        :named_table,
+        :public,
+        :set,
+        {:read_concurrency, true}
+      ])
 
     # Ensure storage directory exists
     File.mkdir_p!(@learning_storage)
@@ -188,9 +189,10 @@ defmodule Raxol.Core.ErrorPatternLearner do
     }
 
     # Persist if significant change
-    _ = if should_persist?(state, new_state) do
-      persist_patterns_async(new_state)
-    end
+    _ =
+      if should_persist?(state, new_state) do
+        persist_patterns_async(new_state)
+      end
 
     {:noreply, new_state}
   end
@@ -348,6 +350,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     }
   end
 
+  @spec generate_error_signature(any()) :: any()
   defp generate_error_signature(error) do
     error_text = inspect(error) |> String.downcase()
 
@@ -367,6 +370,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     |> String.slice(0..15)
   end
 
+  @spec extract_error_type(any()) :: any()
   defp extract_error_type(error_text) do
     cond do
       String.contains?(error_text, "timeout") -> "timeout"
@@ -378,6 +382,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     end
   end
 
+  @spec extract_module_path(any()) :: any()
   defp extract_module_path(error_text) do
     case Regex.run(~r/Raxol\.\w+(?:\.\w+)*/, error_text) do
       [module_path] -> module_path
@@ -385,6 +390,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     end
   end
 
+  @spec extract_key_terms(any()) :: any()
   defp extract_key_terms(error_text) do
     # Extract significant terms for pattern matching
     error_text
@@ -395,6 +401,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     |> Enum.join("_")
   end
 
+  @spec update_pattern_ets(any(), any(), any(), any()) :: any()
   defp update_pattern_ets(signature, _error, context, timestamp) do
     pattern =
       case :ets.lookup(@table_name, signature) do
@@ -423,6 +430,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     :ets.insert(@table_name, {signature, pattern})
   end
 
+  @spec update_pattern_frequency(any(), any(), any(), any(), any()) :: any()
   defp update_pattern_frequency(patterns, signature, _error, context, timestamp) do
     pattern =
       Map.get(patterns, signature, %{
@@ -447,6 +455,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     Map.put(patterns, signature, updated_pattern)
   end
 
+  @spec update_phase3_correlations(any(), any(), any()) :: any()
   defp update_phase3_correlations(correlations, error, _context) do
     error_text = inspect(error) |> String.downcase()
 
@@ -471,6 +480,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     end)
   end
 
+  @spec update_pattern_fixes(any(), any(), any(), any()) :: any()
   defp update_pattern_fixes(patterns, signature, fix_description, outcome) do
     case Map.get(patterns, signature) do
       nil ->
@@ -496,6 +506,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     end
   end
 
+  @spec generate_predictions(map(), any()) :: any()
   defp generate_predictions(state, context) do
     # Simple prediction based on context similarity and pattern frequency
     predictions =
@@ -520,6 +531,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     predictions
   end
 
+  @spec context_similarity(any(), any()) :: any()
   defp context_similarity(pattern_contexts, current_context) do
     if pattern_contexts == [] do
       0.0
@@ -534,6 +546,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     end
   end
 
+  @spec calculate_context_overlap(any(), any()) :: any()
   defp calculate_context_overlap(context1, context2) do
     common_keys =
       MapSet.intersection(
@@ -553,6 +566,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     end
   end
 
+  @spec calculate_prediction_confidence(any(), any()) :: any()
   defp calculate_prediction_confidence(pattern, context) do
     base_confidence = min(0.9, pattern.frequency / 10.0)
     context_boost = context_similarity(pattern.contexts, context) * 0.2
@@ -560,6 +574,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     min(0.95, base_confidence + context_boost)
   end
 
+  @spec generate_prevention_suggestions(any()) :: any()
   defp generate_prevention_suggestions(pattern) do
     case pattern.successful_fixes do
       [] ->
@@ -570,6 +585,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     end
   end
 
+  @spec enhance_suggestions_with_learning(map(), any(), any(), any()) :: any()
   defp enhance_suggestions_with_learning(
          state,
          error,
@@ -605,6 +621,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     |> Enum.sort_by(& &1.confidence, :desc)
   end
 
+  @spec get_learned_suggestions(map(), any(), any()) :: any() | nil
   defp get_learned_suggestions(state, error_signature, context) do
     # Find patterns with similar signatures or contexts
     similar_patterns =
@@ -645,6 +662,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     }
   end
 
+  @spec analyze_phase3_correlations(map()) :: any()
   defp analyze_phase3_correlations(state) do
     %{
       correlations: state.phase3_correlations,
@@ -654,6 +672,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     }
   end
 
+  @spec generate_correlation_insights(any()) :: any()
   defp generate_correlation_insights(correlations) do
     Enum.map(correlations, fn {category, strength} ->
       cond do
@@ -672,6 +691,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     end)
   end
 
+  @spec generate_correlation_recommendations(any()) :: any()
   defp generate_correlation_recommendations(correlations) do
     correlations
     |> Enum.filter(fn {_category, strength} -> strength > 0.5 end)
@@ -692,6 +712,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     end)
   end
 
+  @spec get_top_patterns(any(), any()) :: any() | nil
   defp get_top_patterns(patterns, limit) do
     patterns
     |> Enum.sort_by(fn {_signature, pattern} -> pattern.frequency end, :desc)
@@ -707,12 +728,14 @@ defmodule Raxol.Core.ErrorPatternLearner do
     end)
   end
 
+  @spec calculate_total_occurrences(any()) :: any()
   defp calculate_total_occurrences(patterns) do
     patterns
     |> Enum.map(fn {_signature, pattern} -> pattern.frequency end)
     |> Enum.sum()
   end
 
+  @spec cleanup_old_patterns(any()) :: any()
   defp cleanup_old_patterns(patterns) do
     cutoff_date = DateTime.add(DateTime.utc_now(), -30, :day)
 
@@ -722,6 +745,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     |> Map.new()
   end
 
+  @spec export_learning_data(map(), any()) :: any()
   defp export_learning_data(state, format) do
     data = %{
       patterns: state.patterns,
@@ -737,6 +761,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     end
   end
 
+  @spec export_to_csv(any()) :: any()
   defp export_to_csv(data) do
     # Simple CSV export for patterns
     headers =
@@ -751,6 +776,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     headers <> rows
   end
 
+  @spec parse_stored_patterns(any()) :: {:ok, any()} | {:error, any()}
   defp parse_stored_patterns(data) do
     # Convert stored data back to pattern structures
     Map.get(data, "patterns", %{})
@@ -760,6 +786,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     |> Map.new()
   end
 
+  @spec parse_pattern_data(any()) :: {:ok, any()} | {:error, any()}
   defp parse_pattern_data(data) do
     %{
       signature: data["signature"],
@@ -774,6 +801,7 @@ defmodule Raxol.Core.ErrorPatternLearner do
     }
   end
 
+  @spec parse_imported_patterns(any()) :: {:ok, any()} | {:error, any()}
   defp parse_imported_patterns(patterns_data) do
     case Jason.decode(patterns_data) do
       {:ok, data} -> parse_stored_patterns(data)
@@ -781,8 +809,10 @@ defmodule Raxol.Core.ErrorPatternLearner do
     end
   end
 
+  @spec parse_datetime(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_datetime(nil), do: DateTime.utc_now()
 
+  @spec parse_datetime(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_datetime(datetime_string) when is_binary(datetime_string) do
     case DateTime.from_iso8601(datetime_string) do
       {:ok, dt, _} -> dt
@@ -790,18 +820,22 @@ defmodule Raxol.Core.ErrorPatternLearner do
     end
   end
 
+  @spec parse_datetime(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_datetime(datetime), do: datetime
 
+  @spec should_persist?(map(), map()) :: boolean()
   defp should_persist?(_old_state, _new_state) do
     # Simple heuristic - persist every 10th update
     :rand.uniform(10) == 1
   end
 
+  @spec persist_patterns_async(map()) :: any()
   defp persist_patterns_async(state) do
     {:ok, _pid} = Task.start(fn -> persist_patterns(state) end)
     :ok
   end
 
+  @spec persist_patterns(map()) :: any()
   defp persist_patterns(state) do
     patterns_file = Path.join(@learning_storage, "patterns.json")
 

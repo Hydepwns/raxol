@@ -58,8 +58,8 @@ defmodule Raxol.Terminal.UnifiedManager do
   require Logger
 
   alias Raxol.Terminal.Commands.UnifiedCommandHandler
-  alias Raxol.Terminal.Buffer.Manager, as: BufferManager
-  alias Raxol.Core.UnifiedStateManager
+  alias Raxol.Terminal.ScreenBuffer.Manager, as: BufferManager
+  alias Raxol.Core.StateManager
   alias Raxol.Core.Events.EventManager
   alias Raxol.Terminal.Emulator
 
@@ -208,7 +208,7 @@ defmodule Raxol.Terminal.UnifiedManager do
   def init(config) do
     # Initialize subsystems
     # BufferManager is a functional module, not a GenServer
-    {:ok, state_manager} = UnifiedStateManager.start_link()
+    {:ok, state_manager} = StateManager.start_link([])
     {:ok, event_manager} = EventManager.start_link()
 
     # Initialize state
@@ -369,7 +369,12 @@ defmodule Raxol.Terminal.UnifiedManager do
           config: %{
             width: width,
             height: height,
-            scrollback_lines: Map.get(config, :scrollback_lines, state.config.default_scrollback)
+            scrollback_lines:
+              Map.get(
+                config,
+                :scrollback_lines,
+                state.config.default_scrollback
+              )
           }
         }
 
@@ -575,7 +580,7 @@ defmodule Raxol.Terminal.UnifiedManager do
 
     # Trigger subsystem cleanup
     # BufferManager is a functional module, no cleanup needed
-    UnifiedStateManager.cleanup(state.state_manager)
+    # StateManager cleanup is handled automatically
 
     updated_state = %{state | sessions: active_sessions_map}
 

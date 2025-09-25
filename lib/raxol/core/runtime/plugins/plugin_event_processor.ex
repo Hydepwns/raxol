@@ -26,6 +26,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
     )
   end
 
+  @spec process_single_plugin(
+          String.t() | integer(),
+          any(),
+          any(),
+          any(),
+          map()
+        ) :: any()
   defp process_single_plugin(plugin_id, acc, event, plugins, plugin_config) do
     case acc do
       {:ok, {current_metadata, current_states, current_table}} ->
@@ -44,6 +51,19 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
     end
   end
 
+  @spec handle_plugin_processing(
+          String.t() | integer(),
+          any(),
+          any(),
+          any(),
+          map(),
+          any(),
+          map()
+        ) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_plugin_processing(
          plugin_id,
          event,
@@ -100,6 +120,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
     end
   end
 
+  @spec get_plugin_module(any(), String.t() | integer()) :: any() | nil
   defp get_plugin_module(plugins, plugin_id) do
     case Map.get(plugins, plugin_id) do
       nil -> {:error, :plugin_not_found}
@@ -107,6 +128,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
     end
   end
 
+  @spec validate_plugin_enabled(any(), String.t() | integer()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_plugin_enabled(metadata, plugin_id) do
     case Map.get(metadata, plugin_id) do
       %{enabled: true} -> {:ok, :enabled}
@@ -114,6 +137,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
     end
   end
 
+  @spec get_plugin_state(map(), String.t() | integer()) :: any() | nil
   defp get_plugin_state(plugin_states, plugin_id) do
     case Map.get(plugin_states, plugin_id) do
       nil -> {:error, :plugin_state_not_found}
@@ -121,6 +145,15 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
     end
   end
 
+  @spec execute_plugin_event_handler(
+          module(),
+          String.t() | integer(),
+          any(),
+          map(),
+          any(),
+          map(),
+          any()
+        ) :: any()
   defp execute_plugin_event_handler(
          plugin_module,
          plugin_id,
@@ -147,6 +180,19 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
     end
   end
 
+  @spec handle_plugin_event_call(
+          module(),
+          String.t() | integer(),
+          any(),
+          map(),
+          any(),
+          map(),
+          any()
+        ) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_plugin_event_call(
          plugin_module,
          plugin_id,
@@ -179,6 +225,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
     end
   end
 
+  @spec log_plugin_error(String.t() | integer(), any(), any()) :: any()
   defp log_plugin_error(plugin_id, event, reason) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Plugin #{plugin_id} failed to handle event",
@@ -191,6 +238,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
     )
   end
 
+  @spec log_plugin_unexpected_return(String.t() | integer(), any(), any()) ::
+          any()
   defp log_plugin_unexpected_return(plugin_id, event, value) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Plugin #{plugin_id} returned unexpected value from handle_event",
@@ -203,6 +252,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginEventProcessor do
     )
   end
 
+  @spec log_plugin_crash(String.t() | integer(), any(), any()) :: any()
   defp log_plugin_crash(plugin_id, event, exception) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "Plugin #{plugin_id} crashed during event handling",

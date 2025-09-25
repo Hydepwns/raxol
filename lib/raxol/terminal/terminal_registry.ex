@@ -112,9 +112,10 @@ defmodule Raxol.Terminal.TerminalRegistry do
 
     # Subscribe to terminal events after initialization completes
     # This avoids circular dependencies during startup
-    _ = unless Mix.env() == :test do
-      Process.send_after(self(), :subscribe_to_events, 100)
-    end
+    _ =
+      unless Mix.env() == :test do
+        Process.send_after(self(), :subscribe_to_events, 100)
+      end
 
     Logger.info("Terminal registry initialized")
     {:ok, state}

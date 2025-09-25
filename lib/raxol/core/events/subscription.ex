@@ -33,7 +33,9 @@ defmodule Raxol.Core.Events.Subscription do
     Manager.subscribe([:key], filter_opts)
   end
 
+  @spec build_key_filter(any()) :: any()
   defp build_key_filter(nil), do: []
+  @spec build_key_filter(any()) :: any()
   defp build_key_filter(keys), do: [key: keys]
 
   @doc """
@@ -80,7 +82,9 @@ defmodule Raxol.Core.Events.Subscription do
     Manager.subscribe([:window], filter_opts)
   end
 
+  @spec build_window_filter(any()) :: any()
   defp build_window_filter(nil), do: []
+  @spec build_window_filter(any()) :: any()
   defp build_window_filter(actions), do: [window_action: actions]
 
   @doc """
@@ -98,7 +102,9 @@ defmodule Raxol.Core.Events.Subscription do
     Manager.subscribe([:timer], filter_opts)
   end
 
+  @spec build_match_filter(any()) :: any()
   defp build_match_filter(nil), do: []
+  @spec build_match_filter(any()) :: any()
   defp build_match_filter(match), do: [data: match]
 
   @doc """
@@ -149,10 +155,12 @@ defmodule Raxol.Core.Events.Subscription do
   end
 
   # Helper function to recursively subscribe and handle cleanup on error
+  @spec do_subscribe_events(any(), reference()) :: any()
   defp do_subscribe_events([], successful_refs) do
     {:ok, Enum.reverse(successful_refs)}
   end
 
+  @spec do_subscribe_events(any(), reference()) :: any()
   defp do_subscribe_events([event_spec | rest], successful_refs) do
     case subscribe_single_event(event_spec) do
       {:ok, ref} ->
@@ -166,22 +174,35 @@ defmodule Raxol.Core.Events.Subscription do
   end
 
   # Helper to call the correct specific subscribe function
+  @spec subscribe_single_event(any()) :: any()
   defp subscribe_single_event(:key), do: subscribe_keyboard()
+  @spec subscribe_single_event(any()) :: any()
   defp subscribe_single_event({:key, opts}), do: subscribe_keyboard(opts)
+  @spec subscribe_single_event(any()) :: any()
   defp subscribe_single_event(:mouse), do: subscribe_mouse()
+  @spec subscribe_single_event(any()) :: any()
   defp subscribe_single_event({:mouse, opts}), do: subscribe_mouse(opts)
+  @spec subscribe_single_event(any()) :: any()
   defp subscribe_single_event(:window), do: subscribe_window()
+  @spec subscribe_single_event(any()) :: any()
   defp subscribe_single_event({:window, opts}), do: subscribe_window(opts)
+  @spec subscribe_single_event(any()) :: any()
   defp subscribe_single_event(:timer), do: subscribe_timer()
+  @spec subscribe_single_event(any()) :: any()
   defp subscribe_single_event({:timer, opts}), do: subscribe_timer(opts)
+  @spec subscribe_single_event(any()) :: any()
   defp subscribe_single_event(:custom), do: subscribe_custom()
+  @spec subscribe_single_event(any()) :: any()
   defp subscribe_single_event({:custom, opts}), do: subscribe_custom(opts)
+  @spec subscribe_single_event(any()) :: any()
   defp subscribe_single_event(other), do: {:error, {:invalid_event_type, other}}
 
   # Private Helpers
 
+  @spec add_filter(keyword(), any(), any()) :: any()
   defp add_filter(opts, _key, nil), do: opts
 
+  @spec add_filter(keyword(), any(), any()) :: any()
   defp add_filter(opts, key, value) do
     Keyword.put(opts, key, value)
   end

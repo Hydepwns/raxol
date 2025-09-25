@@ -224,11 +224,13 @@ defmodule Raxol.Core.Performance.Monitor do
 
   # Private Helpers
 
+  @spec detect_jank?(any(), any()) :: boolean()
   defp detect_jank?(frame_time, threshold) do
     adjusted_threshold = get_jank_threshold(threshold)
     frame_time > adjusted_threshold
   end
 
+  @spec get_jank_threshold(any()) :: any() | nil
   defp get_jank_threshold(base_threshold) do
     case Raxol.Core.Preferences.get_preference(:reduced_motion, false) do
       true ->
@@ -240,6 +242,7 @@ defmodule Raxol.Core.Performance.Monitor do
     end
   end
 
+  @spec calculate_fps(any()) :: any()
   defp calculate_fps(frame_times) do
     case frame_times do
       [] -> 0.0
@@ -247,6 +250,7 @@ defmodule Raxol.Core.Performance.Monitor do
     end
   end
 
+  @spec calculate_avg_frame_time(any()) :: any()
   defp calculate_avg_frame_time(frame_times) do
     case frame_times do
       [] -> 0.0
@@ -258,6 +262,7 @@ defmodule Raxol.Core.Performance.Monitor do
     :erlang.memory(:total)
   end
 
+  @spec schedule_memory_check(any()) :: any()
   defp schedule_memory_check(interval) do
     Process.send_after(self(), :check_memory, interval)
   end

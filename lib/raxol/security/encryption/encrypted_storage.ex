@@ -348,7 +348,9 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
           )
 
         case integrity_result do
-          {:error, reason} -> {:error, reason}
+          {:error, reason} ->
+            {:error, reason}
+
           :ok ->
             # Decrypt data
             case KeyManager.decrypt(

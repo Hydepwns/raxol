@@ -45,6 +45,7 @@ defmodule Raxol.Terminal.HistoryManager do
           {:ok, String.t()} | {:error, String.t()}
   def get_command_at(emulator, index) do
     current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+
     case HistoryBuffer.get_command_at(current_buffer, index) do
       {:ok, command} ->
         {:ok, command}
@@ -83,6 +84,7 @@ defmodule Raxol.Terminal.HistoryManager do
           {:ok, Emulator.t(), String.t()} | {:error, String.t()}
   def next_command(emulator) do
     current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+
     case HistoryBuffer.next_command(current_buffer) do
       {:ok, new_buffer, command} ->
         {:ok, update_buffer(emulator, new_buffer), command}
@@ -100,6 +102,7 @@ defmodule Raxol.Terminal.HistoryManager do
           {:ok, Emulator.t(), String.t()} | {:error, String.t()}
   def previous_command(emulator) do
     current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+
     case HistoryBuffer.previous_command(current_buffer) do
       {:ok, new_buffer, command} ->
         {:ok, update_buffer(emulator, new_buffer), command}
@@ -168,6 +171,7 @@ defmodule Raxol.Terminal.HistoryManager do
   @spec save_to_file(Emulator.t(), String.t()) :: :ok | {:error, String.t()}
   def save_to_file(emulator, file_path) do
     current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+
     case HistoryBuffer.save_to_file(current_buffer, file_path) do
       :ok ->
         :ok
@@ -185,6 +189,7 @@ defmodule Raxol.Terminal.HistoryManager do
           {:ok, Emulator.t()} | {:error, String.t()}
   def load_from_file(emulator, file_path) do
     current_buffer = Map.get(emulator, :history_buffer, HistoryBuffer.new())
+
     case HistoryBuffer.load_from_file(current_buffer, file_path) do
       {:ok, new_buffer} ->
         {:ok, update_buffer(emulator, new_buffer)}

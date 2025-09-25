@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   # Import/alias as needed for dependencies
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Commands.UnifiedCommandHandler
 
   # handle_cursor_position/2
   def handle_cursor_position(params, emulator) do
@@ -386,10 +387,79 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
     :ok
   end
 
+  # Additional CSI command handlers that delegate to UnifiedCommandHandler
+  defp handle_erase_character(params, emulator, _intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "X", params) |> extract_emulator()
+  end
+
+  defp handle_cursor_next_line(params, emulator, _intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "E", params) |> extract_emulator()
+  end
+
+  defp handle_cursor_previous_line(params, emulator, _intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "F", params) |> extract_emulator()
+  end
+
+  defp handle_cursor_horizontal_absolute(params, emulator, _intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "G", params) |> extract_emulator()
+  end
+
+  defp handle_cursor_vertical_absolute(params, emulator, _intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "d", params) |> extract_emulator()
+  end
+
+  defp handle_insert_lines(params, emulator, _intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "L", params) |> extract_emulator()
+  end
+
+  defp handle_delete_lines(params, emulator, _intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "M", params) |> extract_emulator()
+  end
+
+  defp handle_insert_characters(params, emulator, _intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "@", params) |> extract_emulator()
+  end
+
+  defp handle_delete_characters(params, emulator, _intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "P", params) |> extract_emulator()
+  end
+
+  defp handle_scroll_up(params, emulator, _intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "S", params) |> extract_emulator()
+  end
+
+  defp handle_scroll_down(params, emulator, _intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "T", params) |> extract_emulator()
+  end
+
+  defp handle_set_mode(params, emulator, intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "h", params, intermediates) |> extract_emulator()
+  end
+
+  defp handle_reset_mode(params, emulator, intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "l", params, intermediates) |> extract_emulator()
+  end
+
+
+  defp handle_tab_clear(params, emulator, _intermediates) do
+    UnifiedCommandHandler.handle_csi(emulator, "g", params) |> extract_emulator()
+  end
+
+  defp extract_emulator({:ok, emulator}), do: emulator
+  defp extract_emulator({:error, _, emulator}), do: emulator
+  defp extract_emulator(emulator), do: emulator
+
   defp handle_csi_command(final_byte, params, emulator, intermediates) do
+    require Raxol.Core.Runtime.Log
+    Raxol.Core.Runtime.Log.debug("handle_csi_command: final_byte=#{inspect(final_byte)}, params=#{inspect(params)}")
+
     case csi_handlers()[final_byte] do
-      {handler, _arity} -> apply(handler, [params, emulator, intermediates])
-      nil -> emulator
+      {handler, _arity} ->
+        Raxol.Core.Runtime.Log.debug("Found handler for #{inspect(final_byte)}: #{inspect(handler)}")
+        apply(handler, [params, emulator, intermediates])
+      nil ->
+        Raxol.Core.Runtime.Log.debug("No handler found for #{inspect(final_byte)}")
+        emulator
     end
   end
 
@@ -409,15 +479,48 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   defp csi_handlers do
     %{
+      # Erase commands
       "J" => {&handle_ed_command/2, 2},
       "K" => {&handle_el_command/2, 2},
+      "X" => {&handle_erase_character/3, 3},
+
+      # Cursor movement
       "H" => {&handle_cursor_position/2, 2},
+      "f" => {&handle_cursor_position/2, 2},  # HVP same as CUP
       "A" => {&handle_cursor_up/2, 2},
       "B" => {&handle_cursor_down/2, 2},
       "C" => {&handle_cursor_forward/2, 2},
       "D" => {&handle_cursor_back/2, 2},
+      "E" => {&handle_cursor_next_line/3, 3},
+      "F" => {&handle_cursor_previous_line/3, 3},
+      "G" => {&handle_cursor_horizontal_absolute/3, 3},
+      "d" => {&handle_cursor_vertical_absolute/3, 3},
+
+      # Line operations
+      "L" => {&handle_insert_lines/3, 3},
+      "M" => {&handle_delete_lines/3, 3},
+
+      # Character operations
+      "@" => {&handle_insert_characters/3, 3},
+      "P" => {&handle_delete_characters/3, 3},
+
+      # Scroll operations
+      "S" => {&handle_scroll_up/3, 3},
+      "T" => {&handle_scroll_down/3, 3},
+
+      # Device commands
       "c" => {&handle_device_attributes/3, 3},
-      "n" => {&handle_device_status_report/2, 2}
+      "n" => {&handle_device_status_report/2, 2},
+
+      # Mode commands
+      "h" => {&handle_set_mode/3, 3},
+      "l" => {&handle_reset_mode/3, 3},
+
+      # Text formatting (already defined as public function)
+      "m" => {&handle_sgr/2, 2},
+
+      # Tab commands
+      "g" => {&handle_tab_clear/3, 3}
     }
   end
 end

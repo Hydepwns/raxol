@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Supervisor do
   def init(_init_arg) do
     children = [
       {Registry, keys: :unique, name: Raxol.Terminal.SessionRegistry},
-      {Raxol.Terminal.Registry, []},
+      {Raxol.Terminal.TerminalRegistry, []},
       {DynamicSupervisor,
        name: Raxol.Terminal.DynamicSupervisor, strategy: :one_for_one},
       {Raxol.Terminal.Manager, []},
@@ -32,7 +32,6 @@ defmodule Raxol.Terminal.Supervisor do
        ]},
       # Event Sourcing & CQRS Components
       {Raxol.Architecture.EventSourcing.EventStore, []},
-      {Raxol.Terminal.TerminalRegistry, []},
       {Raxol.Architecture.CQRS.CommandDispatcher, []}
     ]
 

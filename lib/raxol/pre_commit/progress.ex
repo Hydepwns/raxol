@@ -223,10 +223,11 @@ defmodule Raxol.PreCommit.Progress do
   @impl GenServer
   def terminate(_reason, state) do
     # Cancel timer
-    _ = case state.timer_ref do
-      nil -> :ok
-      ref -> _ = Process.cancel_timer(ref)
-    end
+    _ =
+      case state.timer_ref do
+        nil -> :ok
+        ref -> _ = Process.cancel_timer(ref)
+      end
 
     # Final render with all statuses
     render_final(state)

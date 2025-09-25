@@ -29,6 +29,7 @@ defmodule Raxol.Core.Performance do
     end
   end
 
+  @spec safe_start_monitor(any()) :: any()
   defp safe_start_monitor(options) do
     # Use Task to safely start the monitor with timeout
     task =
@@ -52,6 +53,7 @@ defmodule Raxol.Core.Performance do
     end
   end
 
+  @spec safe_set_collector(any()) :: any()
   defp safe_set_collector(collector) do
     # Safely set the collector with error handling
     case Process.whereis(Raxol.Core.Performance.Memoization.Server) do
@@ -69,6 +71,7 @@ defmodule Raxol.Core.Performance do
     end
   end
 
+  @spec initialize_jank_detector(any()) :: any()
   defp initialize_jank_detector(options) do
     jank_threshold = Keyword.get(options, :jank_threshold, 16)
     window_size = Keyword.get(options, :window_size, 60)
@@ -82,6 +85,7 @@ defmodule Raxol.Core.Performance do
     end
   end
 
+  @spec safe_set_jank_detector(any()) :: any()
   defp safe_set_jank_detector(detector) do
     # Safely set the jank detector with error handling
     case Process.whereis(Raxol.Core.Performance.Memoization.Server) do
@@ -155,8 +159,10 @@ defmodule Raxol.Core.Performance do
     end
   end
 
+  @spec extract_collector_metrics(any()) :: any()
   defp extract_collector_metrics(nil), do: {:ok, %{}}
 
+  @spec extract_collector_metrics(any()) :: any()
   defp extract_collector_metrics(collector) do
     metrics = %{
       fps: safe_get_fps(collector),
@@ -181,6 +187,7 @@ defmodule Raxol.Core.Performance do
     end
   end
 
+  @spec safe_get_fps(any()) :: any()
   defp safe_get_fps(collector) do
     task =
       Task.async(fn ->
@@ -193,6 +200,7 @@ defmodule Raxol.Core.Performance do
     end
   end
 
+  @spec safe_get_avg_frame_time(any()) :: any()
   defp safe_get_avg_frame_time(collector) do
     task =
       Task.async(fn ->
@@ -205,6 +213,7 @@ defmodule Raxol.Core.Performance do
     end
   end
 
+  @spec combine_stats(any(), any()) :: any()
   defp combine_stats(monitor_metrics, collector_metrics) do
     stats = Map.merge(monitor_metrics, collector_metrics)
 
@@ -248,6 +257,7 @@ defmodule Raxol.Core.Performance do
     end
   end
 
+  @spec record_to_collector(String.t() | atom(), any()) :: any()
   defp record_to_collector(name, value)
        when name in ["render_time", "frame_time"] do
     task =
@@ -273,8 +283,10 @@ defmodule Raxol.Core.Performance do
     end
   end
 
+  @spec record_to_collector(any(), any()) :: any()
   defp record_to_collector(_, _), do: :ok
 
+  @spec record_to_monitor(String.t() | atom(), any()) :: any()
   defp record_to_monitor(name, value)
        when name in ["render_time", "frame_time"] do
     case Process.whereis(Raxol.Core.Performance.Monitor) do
@@ -295,6 +307,7 @@ defmodule Raxol.Core.Performance do
     end
   end
 
+  @spec record_to_monitor(any(), any()) :: any()
   defp record_to_monitor(_, _), do: :ok
 
   @doc """
@@ -315,6 +328,7 @@ defmodule Raxol.Core.Performance do
     end
   end
 
+  @spec safe_analyze(any()) :: any()
   defp safe_analyze(metrics) do
     task =
       Task.async(fn ->

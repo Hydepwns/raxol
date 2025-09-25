@@ -181,14 +181,15 @@ defmodule Raxol.UI.Interactions.DragDrop do
     end
 
     # Start drag visual feedback animation
-    _ = Framework.create_animation(:drag_start_feedback, %{
-      type: :scale,
-      duration: 150,
-      from: 1.0,
-      to: 1.05,
-      easing: :ease_out_back,
-      target_path: [:visual, :scale]
-    })
+    _ =
+      Framework.create_animation(:drag_start_feedback, %{
+        type: :scale,
+        duration: 150,
+        from: 1.0,
+        to: 1.05,
+        easing: :ease_out_back,
+        target_path: [:visual, :scale]
+      })
 
     _ = Framework.start_animation(:drag_start_feedback, element_id)
 
@@ -285,14 +286,15 @@ defmodule Raxol.UI.Interactions.DragDrop do
     # Animation feedback for drop/cancel
     animation_name = get_animation_name(cancelled)
 
-    _ = Framework.create_animation(animation_name, %{
-      type: :scale,
-      duration: 200,
-      from: 1.05,
-      to: 1.0,
-      easing: :ease_in_back,
-      target_path: [:visual, :scale]
-    })
+    _ =
+      Framework.create_animation(animation_name, %{
+        type: :scale,
+        duration: 200,
+        from: 1.05,
+        to: 1.0,
+        easing: :ease_in_back,
+        target_path: [:visual, :scale]
+      })
 
     _ = animate_drag_element(state.dragging_element, animation_name)
 
@@ -420,13 +422,14 @@ defmodule Raxol.UI.Interactions.DragDrop do
   defp handle_drag_leave(old_target, drag_data) do
     _ = old_target.on_drag_leave.(drag_data)
     # Stop highlighting old target
-    _ = Framework.create_animation(:drop_zone_unhighlight, %{
-      type: :fade,
-      duration: 200,
-      from: 1.0,
-      to: 0.8,
-      target_path: [:visual, :highlight_opacity]
-    })
+    _ =
+      Framework.create_animation(:drop_zone_unhighlight, %{
+        type: :fade,
+        duration: 200,
+        from: 1.0,
+        to: 0.8,
+        target_path: [:visual, :highlight_opacity]
+      })
 
     _ = Framework.start_animation(:drop_zone_unhighlight, old_target.id)
   end
@@ -436,13 +439,14 @@ defmodule Raxol.UI.Interactions.DragDrop do
   defp handle_drag_enter(new_target, drag_data) do
     _ = new_target.on_drag_enter.(drag_data)
     # Start highlighting new target
-    _ = Framework.create_animation(:drop_zone_highlight, %{
-      type: :fade,
-      duration: 200,
-      from: 0.8,
-      to: 1.0,
-      target_path: [:visual, :highlight_opacity]
-    })
+    _ =
+      Framework.create_animation(:drop_zone_highlight, %{
+        type: :fade,
+        duration: 200,
+        from: 0.8,
+        to: 1.0,
+        target_path: [:visual, :highlight_opacity]
+      })
 
     _ = Framework.start_animation(:drop_zone_highlight, new_target.id)
   end
@@ -458,14 +462,15 @@ defmodule Raxol.UI.Interactions.DragDrop do
     _ = Accessibility.announce("Drag cancelled")
 
     # Animate return to original position
-    _ = Framework.create_animation(:drag_return, %{
-      type: :slide,
-      duration: 300,
-      from: drag_offset,
-      to: %{x: 0, y: 0},
-      easing: :ease_out_back,
-      target_path: [:visual, :position]
-    })
+    _ =
+      Framework.create_animation(:drag_return, %{
+        type: :slide,
+        duration: 300,
+        from: drag_offset,
+        to: %{x: 0, y: 0},
+        easing: :ease_out_back,
+        target_path: [:visual, :position]
+      })
 
     _ = Framework.start_animation(:drag_return, element)
   end
@@ -494,14 +499,15 @@ defmodule Raxol.UI.Interactions.DragDrop do
 
   defp animate_drop_success(element) do
     # Success animation
-    _ = Framework.create_animation(:drop_success, %{
-      type: :bounce,
-      duration: 400,
-      from: 1.0,
-      to: 1.0,
-      easing: :ease_out_bounce,
-      target_path: [:visual, :scale]
-    })
+    _ =
+      Framework.create_animation(:drop_success, %{
+        type: :bounce,
+        duration: 400,
+        from: 1.0,
+        to: 1.0,
+        easing: :ease_out_bounce,
+        target_path: [:visual, :scale]
+      })
 
     _ = Framework.start_animation(:drop_success, element)
   end

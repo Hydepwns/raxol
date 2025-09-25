@@ -42,10 +42,14 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
     |> apply_styles(text.style)
   end
 
+  @spec wrap_text(any(), String.t() | integer(), any()) :: any()
   defp wrap_text(text, _width, :none), do: [text]
+  @spec wrap_text(any(), String.t() | integer(), any()) :: any()
   defp wrap_text(text, width, :char), do: wrap_by_char(text, width)
+  @spec wrap_text(any(), String.t() | integer(), any()) :: any()
   defp wrap_text(text, width, :word), do: wrap_by_word(text, width)
 
+  @spec wrap_by_char(any(), String.t() | integer()) :: any()
   defp wrap_by_char(text, width) do
     text
     |> String.graphemes()
@@ -53,6 +57,7 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
     |> Enum.map(&Enum.join/1)
   end
 
+  @spec wrap_by_word(any(), String.t() | integer()) :: any()
   defp wrap_by_word(text, width) do
     text
     |> String.split(" ")
@@ -65,6 +70,7 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
         end).()
   end
 
+  @spec process_word(any(), any(), String.t() | integer()) :: any()
   defp process_word(word, {lines, current_line}, width) do
     case String.length(current_line) + String.length(word) + 1 <= width do
       true ->
@@ -76,14 +82,19 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
     end
   end
 
+  @spec build_line(any(), any()) :: any()
   defp build_line("", word), do: word
+  @spec build_line(any(), any()) :: any()
   defp build_line(current_line, word), do: current_line <> " " <> word
 
+  @spec align_text(any(), String.t() | integer(), any()) :: any()
   defp align_text(lines, _width, :left), do: lines
 
+  @spec align_text(any(), String.t() | integer(), any()) :: any()
   defp align_text(lines, width, :right),
     do: Enum.map(lines, &String.pad_leading(&1, width))
 
+  @spec align_text(any(), String.t() | integer(), any()) :: any()
   defp align_text(lines, width, :center),
     do:
       Enum.map(
@@ -91,6 +102,7 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
         &String.pad_leading(&1, div(width + String.length(&1), 2))
       )
 
+  @spec apply_styles(any(), any()) :: any()
   defp apply_styles(lines, styles) do
     Enum.map(lines, fn line ->
       Enum.reduce(styles, line, fn style, acc ->
@@ -99,9 +111,14 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
     end)
   end
 
+  @spec apply_style(any(), any()) :: any()
   defp apply_style(text, :bold), do: "\e[1m#{text}\e[0m"
+  @spec apply_style(any(), any()) :: any()
   defp apply_style(text, :underline), do: "\e[4m#{text}\e[0m"
+  @spec apply_style(any(), any()) :: any()
   defp apply_style(text, :italic), do: "\e[3m#{text}\e[0m"
+  @spec apply_style(any(), any()) :: any()
   defp apply_style(text, :strikethrough), do: "\e[9m#{text}\e[0m"
+  @spec apply_style(any(), any()) :: any()
   defp apply_style(text, _), do: text
 end

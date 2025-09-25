@@ -36,43 +36,70 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     handle_invalid_spacing_type(invalid)
   end
 
+  @spec validate_positive_integer(any(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_positive_integer(true, _message), do: :ok
 
+  @spec validate_positive_integer(any(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_positive_integer(false, message) do
     raise ArgumentError, message
   end
 
+  @spec validate_four_tuple_spacing(any(), any(), any(), any()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_four_tuple_spacing(top, right, bottom, left)
        when is_integer(top) and is_integer(right) and is_integer(bottom) and
               is_integer(left) and
               top >= 0 and right >= 0 and bottom >= 0 and left >= 0,
        do: :ok
 
+  @spec validate_four_tuple_spacing(any(), any(), any(), any()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_four_tuple_spacing(_top, _right, _bottom, _left) do
     raise ArgumentError, "Padding must be a positive integer or tuple"
   end
 
+  @spec validate_two_tuple_spacing(any(), any()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_two_tuple_spacing(vertical, horizontal)
        when is_integer(vertical) and is_integer(horizontal) and vertical >= 0 and
               horizontal >= 0,
        do: :ok
 
+  @spec validate_two_tuple_spacing(any(), any()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_two_tuple_spacing(_vertical, _horizontal) do
     raise ArgumentError, "Padding must be a positive integer or tuple"
   end
 
+  @spec handle_invalid_spacing_type(String.t() | integer()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_invalid_spacing_type(invalid)
        when is_integer(invalid) and invalid < 0 do
-    {:error, "Padding must be a positive integer or tuple"}
+    raise ArgumentError, "Padding must be a positive integer or tuple"
   end
 
+  @spec handle_invalid_spacing_type(String.t() | integer()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_invalid_spacing_type(invalid)
        when is_tuple(invalid) and tuple_size(invalid) == 3 do
-    {:error, "Invalid padding tuple length"}
+    raise ArgumentError, "Invalid padding tuple length"
   end
 
+  @spec handle_invalid_spacing_type(String.t() | integer()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_invalid_spacing_type(_invalid) do
-    {:error, "Padding must be a positive integer or tuple"}
+    raise ArgumentError, "Padding must be a positive integer or tuple"
   end
 
   @doc """
@@ -104,43 +131,70 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     handle_invalid_margin_type(invalid)
   end
 
+  @spec validate_positive_margin_integer(any()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_positive_margin_integer(true), do: :ok
 
+  @spec validate_positive_margin_integer(any()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_positive_margin_integer(false) do
     raise ArgumentError, "Margin must be a positive integer or tuple"
   end
 
+  @spec validate_four_tuple_margin(any(), any(), any(), any()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_four_tuple_margin(top, right, bottom, left)
        when is_integer(top) and is_integer(right) and is_integer(bottom) and
               is_integer(left) and
               top >= 0 and right >= 0 and bottom >= 0 and left >= 0,
        do: :ok
 
+  @spec validate_four_tuple_margin(any(), any(), any(), any()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_four_tuple_margin(_top, _right, _bottom, _left) do
     raise ArgumentError, "Margin must be a positive integer or tuple"
   end
 
+  @spec validate_two_tuple_margin(any(), any()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_two_tuple_margin(vertical, horizontal)
        when is_integer(vertical) and is_integer(horizontal) and vertical >= 0 and
               horizontal >= 0,
        do: :ok
 
+  @spec validate_two_tuple_margin(any(), any()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_two_tuple_margin(_vertical, _horizontal) do
     raise ArgumentError, "Margin must be a positive integer or tuple"
   end
 
+  @spec handle_invalid_margin_type(String.t() | integer()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_invalid_margin_type(invalid)
        when is_integer(invalid) and invalid < 0 do
-    {:error, "Margin must be a positive integer or tuple"}
+    raise ArgumentError, "Margin must be a positive integer or tuple"
   end
 
+  @spec handle_invalid_margin_type(String.t() | integer()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_invalid_margin_type(invalid)
        when is_tuple(invalid) and tuple_size(invalid) == 3 do
-    {:error, "Invalid margin tuple length"}
+    raise ArgumentError, "Invalid margin tuple length"
   end
 
+  @spec handle_invalid_margin_type(String.t() | integer()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_invalid_margin_type(_invalid) do
-    {:error, "Margin must be a positive integer or tuple"}
+    raise ArgumentError, "Margin must be a positive integer or tuple"
   end
 
   @doc """
@@ -176,24 +230,30 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     |> apply_background(bg)
   end
 
+  @spec apply_foreground(any(), any()) :: any()
   defp apply_foreground(text, nil), do: text
 
+  @spec apply_foreground(any(), Raxol.Terminal.Color.TrueColor.t()) :: any()
   defp apply_foreground(text, color) when is_atom(color) do
     code = color_to_code(color)
     "\e[38;5;#{code}m#{text}\e[39m"
   end
 
+  @spec apply_foreground(any(), any()) :: any()
   defp apply_foreground(text, {r, g, b}) do
     "\e[38;2;#{r};#{g};#{b}m#{text}\e[39m"
   end
 
+  @spec apply_background(any(), any()) :: any()
   defp apply_background(text, nil), do: text
 
+  @spec apply_background(any(), Raxol.Terminal.Color.TrueColor.t()) :: any()
   defp apply_background(text, color) when is_atom(color) do
     code = color_to_code(color)
     "\e[48;5;#{code}m#{text}\e[49m"
   end
 
+  @spec apply_background(any(), any()) :: any()
   defp apply_background(text, {r, g, b}) do
     "\e[48;2;#{r};#{g};#{b}m#{text}\e[49m"
   end
@@ -239,16 +299,19 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     {width, height}
   end
 
+  @spec get_minimum_size(any()) :: any() | nil
   defp get_minimum_size(_view) do
     # Calculate minimum size based on content and constraints
     {0, 0}
   end
 
+  @spec get_maximum_size(any()) :: any() | nil
   defp get_maximum_size(_view) do
     # Calculate maximum size based on content and constraints
     {nil, nil}
   end
 
+  @spec calculate_dimension(any(), any(), any()) :: any()
   defp calculate_dimension(min, max, available) do
     case {min, max, available} do
       {min, _max, available} when not is_nil(min) and available < min -> min

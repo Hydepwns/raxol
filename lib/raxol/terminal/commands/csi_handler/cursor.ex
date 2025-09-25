@@ -155,7 +155,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.Cursor do
   # Helper functions to handle both full and minimal cursor structs
   defp get_cursor_position(cursor) do
     case cursor do
-      %{row: row, col: col} -> {row, col}
+      %{row: row, col: col} when is_integer(row) and is_integer(col) -> {row, col}
       %{position: {row, col}} -> {row, col}
       _ -> {0, 0}
     end
@@ -164,8 +164,17 @@ defmodule Raxol.Terminal.Commands.CSIHandler.Cursor do
   defp update_cursor_position(cursor, new_row, new_col) do
     case cursor do
       %{row: _, col: _} = c ->
-        # Full cursor struct
-        %{c | row: new_row, col: new_col, position: {new_row, new_col}}
+        # Full cursor struct - update both row/col and position if it exists
+        c
+        |> Map.put(:row, new_row)
+        |> Map.put(:col, new_col)
+        |> then(fn cursor ->
+          if Map.has_key?(cursor, :position) do
+            Map.put(cursor, :position, {new_row, new_col})
+          else
+            cursor
+          end
+        end)
 
       _ ->
         # Minimal cursor - just update position

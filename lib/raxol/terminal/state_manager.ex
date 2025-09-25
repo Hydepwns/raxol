@@ -7,7 +7,20 @@ defmodule Raxol.Terminal.StateManager do
   patterns across the codebase while maintaining its specific terminal functionality.
   """
 
-  use Raxol.Core.StateManager.Default
+  # Using consolidated StateManager for functional state operations
+  alias Raxol.Core.StateManager
+
+  # Delegate common state operations to consolidated StateManager
+  def init(), do: {:ok, %{}}
+  def init(opts), do: {:ok, Keyword.get(opts, :initial_state, %{})}
+  defdelegate get(state, key), to: StateManager
+  defdelegate get(state, key, default), to: StateManager
+  defdelegate put(state, key, value), to: StateManager
+  defdelegate update(state, key, func), to: StateManager
+  defdelegate delete(state, key), to: StateManager
+  defdelegate clear(state), to: StateManager
+  defdelegate validate(state), to: StateManager
+  defdelegate merge(state1, state2), to: StateManager
 
   alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log

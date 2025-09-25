@@ -82,6 +82,7 @@ defmodule Raxol.Core.Renderer.View.LayoutHelpers do
 
   # Private helper functions
 
+  @spec calculate_flex_width(any()) :: any()
   defp calculate_flex_width(constraints) do
     case constraints do
       %{width: :auto, flex: flex} when flex > 0 ->
@@ -98,6 +99,7 @@ defmodule Raxol.Core.Renderer.View.LayoutHelpers do
     end
   end
 
+  @spec calculate_flex_height(any()) :: any()
   defp calculate_flex_height(constraints) do
     case constraints do
       %{height: :auto, flex: flex} when flex > 0 ->

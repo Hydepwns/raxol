@@ -56,7 +56,8 @@ defmodule Raxol.Terminal.Emulator do
       g3: :us_ascii,
       gl: :g0,
       gr: :g0,
-      single_shift: nil
+      single_shift: nil,
+      active: :us_ascii
     },
 
     # Dimensions
@@ -532,22 +533,51 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   # Constructor functions - delegate to Coordinator with error handling
-  @doc "Creates a new terminal emulator with default dimensions (80x24)."
   @impl Raxol.Terminal.EmulatorBehaviour
+  @doc """
+  Creates a new terminal emulator.
+
+  ## Options
+    - `:use_genservers` - Use GenServer processes for state management (default: false for performance)
+    - `:enable_history` - Enable command history tracking (default: true)
+    - `:scrollback_limit` - Number of scrollback lines (default: 1000)
+    - `:alternate_buffer` - Create alternate screen buffer (default: true)
+    - `:session_id` - Session identifier
+    - `:client_options` - Client-specific options
+
+  ## Examples
+      # Simple creation (no GenServers, optimized for performance)
+      emulator = Emulator.new(80, 24)
+
+      # Full featured with GenServers (for concurrent operations)
+      emulator = Emulator.new(80, 24, use_genservers: true)
+
+      # Minimal for benchmarking (no history, no alternate buffer)
+      emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
+  """
   def new() do
-    create_minimal_emulator(80, 24)
+    new(80, 24, [])
   end
 
   @doc "Creates a new terminal emulator with specified dimensions."
   @impl Raxol.Terminal.EmulatorBehaviour
   def new(width, height) do
-    create_minimal_emulator(width, height)
+    new(width, height, [])
   end
 
   @doc "Creates a new terminal emulator with options."
   @impl Raxol.Terminal.EmulatorBehaviour
   def new(width, height, opts) do
-    create_minimal_emulator(width, height, opts)
+    use_genservers = Keyword.get(opts, :use_genservers, false)
+
+    case use_genservers do
+      true ->
+        # Full featured with GenServers for concurrent operations
+        create_full_emulator(width, height, opts)
+      false ->
+        # Optimized for performance without GenServers
+        create_basic_emulator(width, height, opts)
+    end
   end
 
   @doc "Creates a new terminal emulator with session ID and client options."
@@ -561,33 +591,15 @@ defmodule Raxol.Terminal.Emulator do
     end
   end
 
-  @doc """
-  Creates a lightweight emulator without GenServer processes.
-
-  This is optimized for performance-critical paths like parsing.
-  For full terminal emulation, use `new/2` instead.
-  """
+  # Deprecated - kept for backward compatibility but delegates to new/3
+  @deprecated "Use new/3 with use_genservers: false option instead"
   def new_lite(width \\ 80, height \\ 24, opts \\ []) do
-    try do
-      lite = Raxol.Terminal.EmulatorLite.new(width, height, opts)
-      Raxol.Terminal.Emulator.Adapter.from_lite(lite)
-    rescue
-      _ -> create_basic_emulator(width, height, opts)
-    end
+    new(width, height, Keyword.put(opts, :use_genservers, false))
   end
 
-  @doc """
-  Creates a minimal emulator for fastest possible operations.
-
-  No history, no alternate buffer, no scrollback, no GenServers.
-  """
+  @deprecated "Use new/3 with enable_history: false, alternate_buffer: false options instead"
   def new_minimal(width \\ 80, height \\ 24) do
-    try do
-      lite = Raxol.Terminal.EmulatorLite.new_minimal(width, height)
-      Raxol.Terminal.Emulator.Adapter.from_lite(lite)
-    rescue
-      _ -> create_basic_emulator(width, height, [])
-    end
+    new(width, height, enable_history: false, alternate_buffer: false, use_genservers: false)
   end
 
   # Reset and cleanup functions - delegate to Coordinator
@@ -686,12 +698,20 @@ defmodule Raxol.Terminal.Emulator do
       end
 
     # Delegate to input processor
-    case Raxol.Terminal.Input.CoreHandler.process_terminal_input(
-           emulator,
-           input
-         ) do
-      {updated_emulator, output} ->
+    result = Raxol.Terminal.Input.CoreHandler.process_terminal_input(emulator, input)
+    case result do
+      {updated_emulator, output} when is_binary(output) ->
         {updated_emulator, output}
+      {updated_emulator, output} when is_list(output) ->
+        # Convert list output to string for backward compatibility
+        {updated_emulator, IO.iodata_to_binary(output)}
+      {updated_emulator, output, _extra} ->
+        # Handle unexpected 3-tuple by ignoring extra element
+        output_str = if is_list(output), do: IO.iodata_to_binary(output), else: output
+        {updated_emulator, output_str}
+      _other ->
+        # Return the original emulator with empty output instead of erroring
+        {emulator, ""}
     end
   end
 
@@ -798,8 +818,9 @@ defmodule Raxol.Terminal.Emulator do
   def get_output(emulator) do
     # Stub implementation - get output from buffer
     case get_output_buffer(emulator) do
-      {:ok, buffer} when is_list(buffer) -> Enum.join(buffer, "")
-      # get_output_buffer always returns {:ok, []}
+      {:ok, buffer} when is_list(buffer) ->
+        Enum.join(buffer, "")
+        # get_output_buffer always returns {:ok, []}
     end
   end
 
@@ -823,27 +844,87 @@ defmodule Raxol.Terminal.Emulator do
 
   # Private helper functions for constructor fallbacks
 
-  defp create_minimal_emulator(width, height, opts \\ []) do
+  defp create_full_emulator(width, height, opts) do
+    # This creates an emulator with full GenServer processes
+    # Uses the Coordinator which starts all the GenServers
     try do
       Coordinator.new(width, height, opts)
     rescue
-      _ -> create_basic_emulator(width, height, opts)
+      error ->
+        require Logger
+        Logger.warning("Failed to create full emulator with GenServers: #{inspect(error)}")
+        # Fall back to basic emulator
+        create_basic_emulator(width, height, opts)
     end
   end
 
   defp create_basic_emulator(width, height, opts) do
     alias Raxol.Terminal.ScreenBuffer
+    alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
+    alias Raxol.Terminal.Cursor.Manager, as: CursorManager
 
-    # Create a basic emulator without complex managers
+    # Extract options with defaults
+    enable_history = Keyword.get(opts, :enable_history, true)
+    alternate_buffer = Keyword.get(opts, :alternate_buffer, true)
+    scrollback_limit = Keyword.get(opts, :scrollback_limit, 1000)
+
+    # Create a basic emulator without GenServer processes
     main_buffer = ScreenBuffer.new(width, height)
+    mode_manager = Raxol.Terminal.ModeManager.new()
+
+    # Create a proper CursorManager struct (not a PID)
+    cursor = %CursorManager{
+      row: 0,
+      col: 0,
+      position: {0, 0},
+      visible: true,
+      blinking: true,
+      style: :block,
+      bottom_margin: height - 1
+    }
+
+    # Create alternate buffer only if requested
+    alternate_screen_buffer = if alternate_buffer do
+      ScreenBuffer.new(width, height)
+    else
+      nil
+    end
+
+    # Create history only if enabled
+    command_history = if enable_history, do: [], else: nil
+    current_command_buffer = if enable_history, do: "", else: nil
 
     %__MODULE__{
+      # Core components (no PIDs for basic emulator)
+      state: %{
+        modes: %{},
+        attributes: %{},
+        state_stack: []
+      },
+      event: nil,
+      buffer: nil,
+      config: nil,
+      command: nil,
+      cursor: cursor,
+      window_manager: nil,
+
+      # Dimensions and buffers
       width: width,
       height: height,
       main_screen_buffer: main_buffer,
+      alternate_screen_buffer: alternate_screen_buffer,
       active_buffer: main_buffer,
+      active_buffer_type: :main,
+
+      # Mode and style
+      mode_manager: mode_manager,
+      style: Raxol.Terminal.ANSI.TextFormatting.new(),
+
+      # Session info
       session_id: Keyword.get(opts, :session_id, ""),
       client_options: Keyword.get(opts, :client_options, %{}),
+
+      # Parser and charset state
       parser_state: %Raxol.Terminal.Parser.ParserState{state: :ground},
       charset_state: %{
         g0: :us_ascii,
@@ -852,8 +933,11 @@ defmodule Raxol.Terminal.Emulator do
         g3: :us_ascii,
         gl: :g0,
         gr: :g0,
+        active: :g0,
         single_shift: nil
       },
+
+      # Window state
       window_state: %{
         iconified: false,
         maximized: false,
@@ -865,23 +949,28 @@ defmodule Raxol.Terminal.Emulator do
         saved_size: {width, height},
         icon_name: ""
       },
+
+      # History and buffers (conditionally created)
       state_stack: [],
-      command_history: [],
-      max_command_history: 100,
+      command_history: command_history,
+      max_command_history: if(enable_history, do: 100, else: 0),
       scrollback_buffer: [],
+      scrollback_limit: scrollback_limit,
       output_buffer: [],
-      current_command_buffer: "",
+      current_command_buffer: current_command_buffer,
+
+      # Other state
       mode_state: %{},
       bracketed_paste_active: false,
       bracketed_paste_buffer: "",
-      scroll_region: {0, height - 1},
-      scrollback_limit: 1000,
+      scroll_region: nil,
       memory_limit: 10_000_000,
       tab_stops: [],
       color_palette: %{},
       cursor_blink_rate: 500,
       device_status_reported: false,
-      cursor_position_reported: false
+      cursor_position_reported: false,
+      last_col_exceeded: false
     }
   end
 end

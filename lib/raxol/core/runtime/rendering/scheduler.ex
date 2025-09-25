@@ -101,6 +101,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
 
   # --- Private Helpers ---
 
+  @spec schedule_render_tick(any()) :: any()
   defp schedule_render_tick(%State{interval_ms: ms} = state) do
     # We can't cancel the timer, but we can ignore its message
     timer_id = System.unique_integer([:positive])

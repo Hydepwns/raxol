@@ -131,7 +131,8 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   """
   @spec record_custom(String.t() | atom(), number()) :: :ok
   def record_custom(name, value) when is_binary(name) do
-    record_metric(String.to_atom(name), :custom, value)
+    # Store custom metrics with string keys to preserve original key format
+    GenServer.cast(__MODULE__, {:record_custom_string, name, value})
   end
 
   def record_custom(name, value) when is_atom(name) do
@@ -157,10 +158,11 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
     }
 
     # Start periodic system metrics collection
-    _ = case Keyword.get(opts, :auto_collect_system_metrics, true) do
-      true -> schedule_system_metrics_collection()
-      false -> :ok
-    end
+    _ =
+      case Keyword.get(opts, :auto_collect_system_metrics, true) do
+        true -> schedule_system_metrics_collection()
+        false -> :ok
+      end
 
     {:ok, state}
   end
@@ -197,6 +199,34 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   @impl GenServer
   def handle_cast(:clear_metrics, state) do
     {:noreply, %{state | metrics: %{}, last_update: System.monotonic_time()}}
+  end
+
+  @impl GenServer
+  def handle_cast({:record_custom_string, name, value}, state) when is_binary(name) do
+    timestamp = DateTime.utc_now()
+
+    metric_entry = %{
+      value: value,
+      timestamp: timestamp,
+      tags: []
+    }
+
+    # Update custom metrics with string keys preserved
+    updated_metrics =
+      Map.update(
+        state.metrics,
+        :custom,
+        %{name => [metric_entry]},
+        fn type_metrics ->
+          Map.update(type_metrics, name, [metric_entry], fn existing_entries ->
+            # Add new entry and limit history
+            [metric_entry | existing_entries] |> Enum.take(@history_limit)
+          end)
+        end
+      )
+
+    {:noreply,
+     %{state | metrics: updated_metrics, last_update: System.monotonic_time()}}
   end
 
   @impl GenServer
@@ -252,6 +282,8 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
 
   # Private helper functions
 
+  @spec get_metrics_for_name_and_type(any(), String.t() | atom(), any(), any()) ::
+          any() | nil
   defp get_metrics_for_name_and_type(type_metrics, metric_name, type, tags) do
     case Map.get(type_metrics, metric_name) do
       nil -> []
@@ -259,6 +291,7 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
     end
   end
 
+  @spec filter_and_map_entries(any(), any(), any()) :: any()
   defp filter_and_map_entries(entries, type, tags) do
     filtered =
       case tags do
@@ -287,6 +320,7 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
     {gc_count, words_reclaimed, _} = :erlang.statistics(:garbage_collection)
     :ok = record_resource(:gc_count, gc_count)
     :ok = record_resource(:gc_words_reclaimed, words_reclaimed)
+    :ok = record_resource(:gc_stats, %{count: gc_count, words_reclaimed: words_reclaimed})
 
     :ok
   end

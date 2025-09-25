@@ -77,6 +77,7 @@ defmodule ConcurrentBufferTestHelper do
               true ->
                 cell = Cell.new("W", TextFormatting.new(foreground: color))
                 ConcurrentBuffer.set_cell(pid, start_x + x, start_y + y, cell)
+
               false ->
                 :ok
             end
@@ -259,8 +260,11 @@ defmodule ConcurrentBufferTestHelper do
     case ConcurrentBuffer.get_cell(pid, x, y) do
       {:ok, cell} ->
         case cell.char == expected_char do
-          true -> :ok
-          false -> {:error, "Expected char '#{expected_char}', got '#{cell.char}'"}
+          true ->
+            :ok
+
+          false ->
+            {:error, "Expected char '#{expected_char}', got '#{cell.char}'"}
         end
 
       error ->

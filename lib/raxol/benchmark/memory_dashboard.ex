@@ -237,7 +237,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
 
     # Identify increasing memory trends
     opportunities =
-      if is_increasing_trend(Enum.map(trends, & &1.peak_memory)) do
+      if increasing_trend?(Enum.map(trends, & &1.peak_memory)) do
         ["Memory usage shows increasing trend over time" | opportunities]
       else
         opportunities
@@ -535,9 +535,9 @@ defmodule Raxol.Benchmark.MemoryDashboard do
 
   defp calculate_severity(_index), do: :medium
 
-  defp is_increasing_trend(values) when length(values) < 3, do: false
+  defp increasing_trend?(values) when length(values) < 3, do: false
 
-  defp is_increasing_trend(values) do
+  defp increasing_trend?(values) do
     differences =
       values
       |> Enum.chunk_every(2, 1, :discard)
@@ -558,7 +558,7 @@ defmodule Raxol.Benchmark.MemoryDashboard do
   defp predict_next_value(_), do: nil
 
   defp determine_trend_direction(values) do
-    if is_increasing_trend(values) do
+    if increasing_trend?(values) do
       :increasing
     else
       first = List.first(values)

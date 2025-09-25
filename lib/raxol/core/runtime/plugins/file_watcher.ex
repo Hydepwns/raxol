@@ -101,6 +101,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   end
 
   # Helper function to extract plugin ID from file path
+  @spec extract_plugin_id_from_path(String.t()) :: any()
   defp extract_plugin_id_from_path(path) do
     case Path.basename(path, ".ex") do
       filename when is_binary(filename) and byte_size(filename) > 0 ->

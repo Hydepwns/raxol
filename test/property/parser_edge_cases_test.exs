@@ -2,7 +2,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
   
-  alias Raxol.Terminal.ANSI.AnsiParser, as: Parser
+  alias Raxol.Terminal.ANSI.Utils.AnsiParser, as: Parser
   
   describe "malformed sequences" do
     property "incomplete CSI sequences don't crash" do
@@ -94,8 +94,8 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
       check all param_count <- integer(50..200),
                 max_runs: 50 do
         # Generate many parameters
-        params = Enum.map_join(1..param_count, fn i -> rem(i, 108) end)
-        sequence = "\e[" <> Enum.join(params, ";") <> "m"
+        params = Enum.map_join(1..param_count, ";", fn i -> Integer.to_string(rem(i, 108)) end)
+        sequence = "\e[" <> params <> "m"
         
         # Should handle long parameter lists
         result = Parser.parse(sequence)

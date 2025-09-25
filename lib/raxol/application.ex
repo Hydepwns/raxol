@@ -550,7 +550,8 @@ defmodule Raxol.Application do
   @doc """
   Dynamically remove a child from the supervision tree.
   """
-  @spec remove_child(pid() | atom()) :: :ok | {:error, :dynamic_supervisor_not_started | :not_found}
+  @spec remove_child(pid() | atom()) ::
+          :ok | {:error, :dynamic_supervisor_not_started | :not_found}
   def remove_child(child_id) when is_atom(child_id) do
     case Process.whereis(child_id) do
       nil -> {:error, :not_found}

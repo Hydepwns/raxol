@@ -6,7 +6,8 @@ defmodule Raxol.Terminal.Buffer.Charset do
 
   alias Raxol.Terminal.ScreenBuffer
 
-  @type charset_type :: :us_ascii | :dec_graphics | :uk | :ibm_pc | :dec_alternate
+  @type charset_type ::
+          :us_ascii | :dec_graphics | :uk | :ibm_pc | :dec_alternate
   @type designator :: :g0 | :g1 | :g2 | :g3
 
   @type t :: %__MODULE__{

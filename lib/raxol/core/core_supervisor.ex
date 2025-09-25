@@ -118,10 +118,6 @@ defmodule Raxol.Core.Supervisor do
       {Raxol.UI.State.Management.StateManagementServer,
        name: Raxol.UI.State.Management.StateManagementServer},
 
-      # Svelte Component State Server - manages component slots
-      {Raxol.Svelte.ComponentState.SvelteStateServer,
-       name: Raxol.Svelte.ComponentState.SvelteStateServer},
-
       # Animation Gestures Server - manages gesture state and animations
       {Raxol.Animation.Gestures.GestureServer,
        name: Raxol.Animation.Gestures.GestureServer}
@@ -150,15 +146,12 @@ defmodule Raxol.Core.Supervisor do
       Raxol.Core.KeyboardNavigator.NavigatorServer,
       Raxol.Core.Accessibility.AccessibilityServer,
       Raxol.Core.KeyboardShortcuts.ShortcutsServer,
-      Raxol.Cloud.EdgeComputing.EdgeServer,
+      # Removed experimental servers: EdgeComputing, CloudMonitoring, AI, Svelte
       Raxol.Style.Colors.System.ColorSystemServer,
       Raxol.System.Updater.State.UpdaterServer,
-      Raxol.Cloud.Monitoring.MonitoringServer,
-      Raxol.AI.PerformanceOptimization.OptimizationServer,
       Raxol.Security.UserContext.ContextServer,
       Raxol.Core.Performance.Memoization.MemoizationServer,
       Raxol.UI.State.Management.StateManagementServer,
-      Raxol.Svelte.ComponentState.SvelteStateServer,
       Raxol.Animation.Gestures.GestureServer
     ]
 
@@ -202,17 +195,13 @@ defmodule Raxol.Core.Supervisor do
       {Raxol.Core.KeyboardNavigator.NavigatorServer, "Keyboard Navigator"},
       {Raxol.Core.Accessibility.AccessibilityServer, "Accessibility"},
       {Raxol.Core.KeyboardShortcuts.ShortcutsServer, "Keyboard Shortcuts"},
-      {Raxol.Cloud.EdgeComputing.EdgeServer, "Edge Computing"},
+      # Removed experimental servers: EdgeComputing, CloudMonitoring, AI, Svelte
       {Raxol.Style.Colors.System.ColorSystemServer, "Color System"},
       {Raxol.System.Updater.State.UpdaterServer, "Updater State"},
-      {Raxol.Cloud.Monitoring.MonitoringServer, "Cloud Monitoring"},
-      {Raxol.AI.PerformanceOptimization.OptimizationServer,
-       "AI Performance Optimization"},
       {Raxol.Security.UserContext.ContextServer, "Security User Context"},
       {Raxol.Core.Performance.Memoization.MemoizationServer,
        "Performance Memoization"},
       {Raxol.UI.State.Management.StateManagementServer, "UI State Management"},
-      {Raxol.Svelte.ComponentState.SvelteStateServer, "Svelte Component State"},
       {Raxol.Animation.Gestures.GestureServer, "Animation Gestures"}
     ]
 

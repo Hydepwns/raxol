@@ -526,7 +526,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     "#{command_type}-#{timestamp}"
   end
 
-  defp is_circuit_breaker_open?(circuit_breakers, handler_module) do
+  defp circuit_breaker_open?(circuit_breakers, handler_module) do
     case Map.get(circuit_breakers, handler_module) do
       nil ->
         false
@@ -567,7 +567,8 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     final_state = queue_failed_command(new_state, command, reason)
 
     # Update audit log
-    _ = audit_if_enabled(final_state, command, {:failure, reason}, execution_time)
+    _ =
+      audit_if_enabled(final_state, command, {:failure, reason}, execution_time)
 
     final_state
   end
@@ -586,7 +587,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
     )
   end
 
-  defp is_retriable_error?(reason) do
+  defp retriable_error?(reason) do
     case reason do
       :timeout -> true
       :network_error -> true
@@ -867,7 +868,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
   defp check_handler_availability(nil, _circuit_breakers), do: :available
 
   defp check_handler_availability(handler_module, circuit_breakers) do
-    case is_circuit_breaker_open?(circuit_breakers, handler_module) do
+    case circuit_breaker_open?(circuit_breakers, handler_module) do
       true -> :open
       false -> :available
     end
@@ -910,7 +911,7 @@ defmodule Raxol.Architecture.CQRS.CommandBus do
   defp audit_if_enabled(_state, _command, _result, _execution_time), do: :ok
 
   defp queue_failed_command(state, command, reason) do
-    case is_retriable_error?(reason) do
+    case retriable_error?(reason) do
       true -> add_to_retry_queue(state, command, reason)
       false -> add_to_dead_letter_queue(state, command, reason)
     end

@@ -1,12 +1,60 @@
 defmodule Raxol.UI.StyleProcessor do
   @moduledoc """
   Handles style processing, merging, inheritance, and flattening.
+
+  Supports optional caching for performance-critical applications.
+
+  ## Configuration
+
+  Set caching mode in application config:
+
+      config :raxol, :style_processor,
+        cache_enabled: true
+
+  Or control per-call with options:
+
+      StyleProcessor.flatten_merged_style(parent, child, theme, cache: true)
+
+  ## Migration from StyleProcessorCached
+
+  Replace:
+      Raxol.UI.StyleProcessorCached.flatten_merged_style(parent, child, theme)
+
+  With:
+      Raxol.UI.StyleProcessor.flatten_merged_style(parent, child, theme, cache: true)
   """
 
   @doc """
   Flattens and merges styles from parent style and child element with proper theme resolution.
+
+  ## Options
+  - `cache: boolean()` - Enable caching for this operation (default: false)
   """
-  def flatten_merged_style(parent_style, child_element, theme) do
+  def flatten_merged_style(parent_style, child_element, theme, opts \\ []) do
+    if should_use_cache?(opts) do
+      flatten_merged_style_cached(parent_style, child_element, theme)
+    else
+      flatten_merged_style_direct(parent_style, child_element, theme)
+    end
+  end
+
+  # Cached implementation
+  defp flatten_merged_style_cached(parent_style, child_element, theme) do
+    cache_key = build_flatten_cache_key(parent_style, child_element, theme)
+
+    case get_cached_flattened_style(cache_key) do
+      {:ok, cached_style} ->
+        cached_style
+
+      :miss ->
+        flattened = flatten_merged_style_direct(parent_style, child_element, theme)
+        cache_flattened_style(cache_key, flattened)
+        flattened
+    end
+  end
+
+  # Direct implementation (original logic)
+  defp flatten_merged_style_direct(parent_style, child_element, theme) do
     # Handle case where parent_style might be an element map or a style map
     parent_style_map =
       case parent_style do
@@ -69,8 +117,35 @@ defmodule Raxol.UI.StyleProcessor do
 
   @doc """
   Merges parent and child styles for inheritance.
+
+  ## Options
+  - `cache: boolean()` - Enable caching for this operation (default: false)
   """
-  def merge_styles_for_inheritance(parent_style, child_style) do
+  def merge_styles_for_inheritance(parent_style, child_style, opts \\ []) do
+    if should_use_cache?(opts) do
+      merge_styles_for_inheritance_cached(parent_style, child_style)
+    else
+      merge_styles_for_inheritance_direct(parent_style, child_style)
+    end
+  end
+
+  # Cached implementation
+  defp merge_styles_for_inheritance_cached(parent_style, child_style) do
+    cache_key = {:style_merge, hash_style(parent_style), hash_style(child_style)}
+
+    case get_cached_merged_style(cache_key) do
+      {:ok, merged} ->
+        merged
+
+      :miss ->
+        merged = merge_styles_for_inheritance_direct(parent_style, child_style)
+        cache_merged_style(cache_key, merged)
+        merged
+    end
+  end
+
+  # Direct implementation (original logic)
+  defp merge_styles_for_inheritance_direct(parent_style, child_style) do
     # Extract style maps from both parent and child
     parent_style_map = Map.get(parent_style, :style, %{})
     child_style_map = Map.get(child_style, :style, %{})
@@ -96,8 +171,35 @@ defmodule Raxol.UI.StyleProcessor do
 
   @doc """
   Inherits colors from parent to child style.
+
+  ## Options
+  - `cache: boolean()` - Enable caching for this operation (default: false)
   """
-  def inherit_colors(child_style_map, parent_element, parent_style_map) do
+  def inherit_colors(child_style_map, parent_element, parent_style_map, opts \\ []) do
+    if should_use_cache?(opts) do
+      inherit_colors_cached(child_style_map, parent_element, parent_style_map)
+    else
+      inherit_colors_direct(child_style_map, parent_element, parent_style_map)
+    end
+  end
+
+  # Cached implementation
+  defp inherit_colors_cached(child_style_map, parent_element, parent_style_map) do
+    cache_key = {:color_inherit, hash_style(child_style_map), hash_style(parent_element), hash_style(parent_style_map)}
+
+    case get_cached_colors(cache_key) do
+      {:ok, colors} ->
+        colors
+
+      :miss ->
+        colors = inherit_colors_direct(child_style_map, parent_element, parent_style_map)
+        cache_colors(cache_key, colors)
+        colors
+    end
+  end
+
+  # Direct implementation (original logic)
+  defp inherit_colors_direct(child_style_map, parent_element, parent_style_map) do
     %{
       fg:
         Map.get(child_style_map, :foreground) ||
@@ -121,6 +223,126 @@ defmodule Raxol.UI.StyleProcessor do
   """
   def ensure_list(value) when is_list(value), do: value
   def ensure_list(value), do: [value]
+
+  @doc """
+  Clear all style processing caches.
+  """
+  def clear_cache do
+    if cache_available?() do
+      require Raxol.Performance.ETSCacheManager
+      Raxol.Performance.ETSCacheManager.clear_cache(:style)
+    end
+  end
+
+  # Caching configuration and helpers
+
+  defp should_use_cache?(opts) do
+    cache_from_opts = Keyword.get(opts, :cache)
+    cache_from_config = Application.get_env(:raxol, :style_processor, [])[:cache_enabled]
+
+    # opts override config, default to false
+    case {cache_from_opts, cache_from_config} do
+      {nil, nil} -> false
+      {nil, config} -> !!config
+      {opt, _} -> !!opt
+    end and cache_available?()
+  end
+
+  defp cache_available? do
+    Code.ensure_loaded?(Raxol.Performance.ETSCacheManager)
+  end
+
+  # Cache operations (require ETSCacheManager to be available)
+
+  defp get_cached_flattened_style(key) do
+    if cache_available?() do
+      Raxol.Performance.ETSCacheManager.get_style(:flatten_cache, nil, :erlang.phash2(key))
+    else
+      :miss
+    end
+  end
+
+  defp cache_flattened_style(key, style) do
+    if cache_available?() do
+      Raxol.Performance.ETSCacheManager.cache_style(:flatten_cache, nil, :erlang.phash2(key), style)
+    end
+  end
+
+  defp get_cached_merged_style(key) do
+    if cache_available?() do
+      Raxol.Performance.ETSCacheManager.get_style(:merge_cache, nil, :erlang.phash2(key))
+    else
+      :miss
+    end
+  end
+
+  defp cache_merged_style(key, style) do
+    if cache_available?() do
+      Raxol.Performance.ETSCacheManager.cache_style(:merge_cache, nil, :erlang.phash2(key), style)
+    end
+  end
+
+  defp get_cached_colors(key) do
+    if cache_available?() do
+      Raxol.Performance.ETSCacheManager.get_style(:colors_cache, nil, :erlang.phash2(key))
+    else
+      :miss
+    end
+  end
+
+  defp cache_colors(key, colors) do
+    if cache_available?() do
+      Raxol.Performance.ETSCacheManager.cache_style(:colors_cache, nil, :erlang.phash2(key), colors)
+    end
+  end
+
+  # Cache key builders
+
+  defp build_flatten_cache_key(parent_style, child_element, theme) do
+    {:flatten, hash_style(parent_style), hash_element(child_element), get_theme_id(theme)}
+  end
+
+  defp hash_style(nil), do: 0
+
+  defp hash_style(style) when is_map(style) do
+    relevant_keys = [
+      :style, :foreground, :background, :fg, :bg,
+      :bold, :italic, :underline, :variant
+    ]
+
+    style
+    |> Map.take(relevant_keys)
+    |> :erlang.phash2()
+  end
+
+  defp hash_style(_), do: 0
+
+  defp hash_element(nil), do: 0
+
+  defp hash_element(element) when is_map(element) do
+    %{
+      style: Map.get(element, :style, %{}),
+      theme: Map.get(element, :theme),
+      variant: Map.get(element, :variant),
+      foreground: Map.get(element, :foreground),
+      background: Map.get(element, :background),
+      fg: Map.get(element, :fg),
+      bg: Map.get(element, :bg)
+    }
+    |> :erlang.phash2()
+  end
+
+  defp hash_element(_), do: 0
+
+  defp get_theme_id(nil), do: :no_theme
+  defp get_theme_id(theme) when is_atom(theme), do: theme
+  defp get_theme_id(theme) when is_binary(theme), do: theme
+
+  defp get_theme_id(theme) when is_map(theme) do
+    Map.get(theme, :name, :erlang.phash2(theme))
+  end
+
+  defp get_theme_id(_), do: :unknown_theme
 
   # Helper function to put a key-value pair only if the value is not nil
   defp maybe_put_if_not_nil(map, _key, nil), do: map

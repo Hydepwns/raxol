@@ -1,6 +1,4 @@
 defmodule Raxol.Core.Runtime.Command do
-  @behaviour Raxol.Core.Runtime.CommandBehaviour
-
   @moduledoc """
   Provides a way to handle side effects in a pure functional way.
 
@@ -207,8 +205,10 @@ defmodule Raxol.Core.Runtime.Command do
     execute_command_type(command.type, command.data, context)
   end
 
+  @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:none, _data, _context), do: :ok
 
+  @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:task, fun, context) do
     Task.start(fn ->
       result = fun.()
@@ -216,22 +216,27 @@ defmodule Raxol.Core.Runtime.Command do
     end)
   end
 
+  @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:batch, commands, context) do
     Enum.each(commands, &execute(&1, context))
   end
 
+  @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:delay, {msg, delay}, context) do
     Process.send_after(context.pid, {:command_result, msg}, delay)
   end
 
+  @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:broadcast, msg, _context) do
     Raxol.Core.Runtime.Events.Dispatcher.broadcast(:broadcast_event, msg)
   end
 
+  @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:system, {operation, opts}, context) do
     execute_system_operation(operation, opts, context)
   end
 
+  @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:quit, _data, context) do
     Raxol.Core.Runtime.Log.debug(
       "[Command.execute] Matched :quit. Sending :quit_runtime to #{inspect(context.runtime_pid)}"
@@ -240,6 +245,7 @@ defmodule Raxol.Core.Runtime.Command do
     send(context.runtime_pid, :quit_runtime)
   end
 
+  @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:clipboard_write, text, context) do
     GenServer.cast(
       Raxol.Core.Plugins.Core.ClipboardPlugin,
@@ -248,6 +254,7 @@ defmodule Raxol.Core.Runtime.Command do
     )
   end
 
+  @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:clipboard_read, _data, context) do
     GenServer.cast(
       Raxol.Core.Plugins.Core.ClipboardPlugin,
@@ -256,6 +263,7 @@ defmodule Raxol.Core.Runtime.Command do
     )
   end
 
+  @spec execute_command_type(any(), any(), any()) :: any()
   defp execute_command_type(:notify, {title, body}, context) do
     GenServer.cast(
       Raxol.Core.Plugins.Core.NotificationPlugin,
@@ -265,6 +273,7 @@ defmodule Raxol.Core.Runtime.Command do
   end
 
   # Private helper for system operations
+  @spec execute_system_operation(any(), keyword(), any()) :: any()
   defp execute_system_operation(operation, opts, context) do
     case operation do
       :file_write ->

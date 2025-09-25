@@ -6,7 +6,7 @@ defmodule Raxol.Core.Runtime.TestCommandModule do
   without actually performing the side effects.
   """
 
-  @behaviour Raxol.Core.Runtime.CommandBehaviour
+  # Removed undefined @behaviour Raxol.Core.Runtime.CommandBehaviour
 
   @doc """
   Starts the test command module with an Agent for state management.
@@ -16,7 +16,7 @@ defmodule Raxol.Core.Runtime.TestCommandModule do
     Agent.start_link(fn -> [] end, name: name)
   end
 
-  @impl Raxol.Core.Runtime.CommandBehaviour
+  # Removed @impl for undefined behaviour
   def execute(command, context) do
     Agent.update(__MODULE__, fn commands -> [{command, context} | commands] end)
     :ok

@@ -9,7 +9,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
 
   use GenServer
 
-  alias Raxol.AI.{ContentGeneration, PerformanceOptimization}
+  # AI modules removed - AI features disabled
   require Logger
 
   @json_start_marker "RAXOL-JSON-BEGIN"
@@ -26,11 +26,12 @@ defmodule Raxol.Extensions.VSCodeBackend do
         active_requests: %{},
         capabilities:
           MapSet.new([
-            :ai_content_generation,
+            # AI features disabled - removed:
+            # :ai_content_generation,
+            # :code_completion,
+            # :optimization_suggestions
             :performance_analysis,
-            :component_analysis,
-            :code_completion,
-            :optimization_suggestions
+            :component_analysis
           ])
       }
     end
@@ -81,36 +82,23 @@ defmodule Raxol.Extensions.VSCodeBackend do
   @doc """
   Handles a code completion request from the VS Code extension.
   """
-  def handle_completion_request(input, context) do
-    case ContentGeneration.suggest_text(input, context: context) do
-      {:ok, suggestions} ->
-        {:ok, %{suggestions: suggestions, context: context}}
-
-      error ->
-        error
-    end
+  def handle_completion_request(_input, context) do
+    # AI features disabled - ContentGeneration module removed
+    {:ok,
+     %{suggestions: [], context: context, message: "AI completion disabled"}}
   end
 
   @doc """
   Handles a performance analysis request from the VS Code extension.
   """
-  def handle_performance_analysis(code, component_name, metrics \\ %{}) do
-    case PerformanceOptimization.get_ai_optimization_analysis(
-           component_name,
-           code,
-           metrics
-         ) do
-      {:ok, analysis} ->
-        {:ok,
-         %{
-           component: component_name,
-           analysis: analysis,
-           suggestions: extract_suggestions(analysis)
-         }}
-
-      error ->
-        error
-    end
+  def handle_performance_analysis(_code, component_name, _metrics \\ %{}) do
+    # AI features disabled - PerformanceOptimization module removed
+    {:ok,
+     %{
+       component: component_name,
+       analysis: %{message: "AI performance analysis disabled"},
+       suggestions: []
+     }}
   end
 
   @doc """
@@ -192,10 +180,11 @@ defmodule Raxol.Extensions.VSCodeBackend do
     new_state = %{state | active_requests: active_requests}
 
     # Process the request asynchronously
-    _ = Task.start(fn ->
-      response = process_request(message)
-      GenServer.cast(__MODULE__, {:send_response, request_id, response})
-    end)
+    _ =
+      Task.start(fn ->
+        response = process_request(message)
+        GenServer.cast(__MODULE__, {:send_response, request_id, response})
+      end)
 
     {:ok, new_state}
   end
@@ -269,17 +258,6 @@ defmodule Raxol.Extensions.VSCodeBackend do
   defp send_json_message(message) do
     json = Jason.encode!(message)
     IO.puts("#{@json_start_marker}#{json}#{@json_end_marker}")
-  end
-
-  defp extract_suggestions(analysis) do
-    Enum.map(analysis, fn item ->
-      %{
-        type: Map.get(item, :type, :general),
-        description: Map.get(item, :description, ""),
-        suggestion: Map.get(item, :suggestion, ""),
-        severity: Map.get(item, :severity, :medium)
-      }
-    end)
   end
 
   defp component_file?(file_path) do

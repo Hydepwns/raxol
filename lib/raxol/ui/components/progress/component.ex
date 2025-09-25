@@ -1,168 +1,148 @@
 defmodule Raxol.UI.Components.Progress.Component do
   @moduledoc """
-  Handles component behaviour for progress components.
+  Core progress component implementation.
+
+  Provides the base functionality for progress indicators including
+  initialization, rendering, and event handling.
   """
 
-  use Raxol.UI.Components.Base.Component
-  require Raxol.Core.Runtime.Log
-  require Raxol.View.Elements
+  @type state :: %{
+          value: number(),
+          max: number(),
+          type: atom(),
+          indeterminate: boolean(),
+          frame: integer()
+        }
 
-  # NOTE: This file must be saved as UTF-8 for Unicode characters to work correctly.
-  @spinner_frames [
-    "⠋",
-    "⠙",
-    "⠹",
-    "⠸",
-    "⠼",
-    "⠴",
-    "⠦",
-    "⠧",
-    "⠇",
-    "⠏"
-  ]
+  @type props :: map()
 
-  # Define state struct
-  defstruct id: nil,
-            # :bar, :spinner, :indeterminate, :circular
-            type: :bar,
-            value: 0,
-            max: 100,
-            label: nil,
-            style: %{},
-            # State for spinner
-            frames: [],
-            frame_index: 0,
-            # ms
-            interval: 100
-
-  @spec init(map()) :: %__MODULE__{}
-  @impl Raxol.UI.Components.Base.Component
-  def init(props) do
-    # Initialize state based on type and props
-    type = Map.get(props, :type, :bar)
-    base_state = struct!(__MODULE__, props)
-
-    # Set up frames and interval based on type
-    state =
-      case type do
-        :spinner ->
-          %{
-            base_state
-            | frames:
-                Map.get(
-                  spinner_types(),
-                  Map.get(props, :spinner_type, :dots),
-                  @spinner_frames
-                ),
-              interval: Map.get(props, :interval, 100)
-          }
-
-        :indeterminate ->
-          %{base_state | interval: Map.get(props, :interval, 100)}
-
-        _ ->
-          base_state
-      end
-
-    %{state | type: type}
-  end
-
-  @spec update(term(), %__MODULE__{}) :: {%__MODULE__{}, list()}
-  @impl Raxol.UI.Components.Base.Component
-  def update(msg, state) do
-    # Handle messages to update value, change type, etc.
-    Raxol.Core.Runtime.Log.debug(
-      "Progress #{Map.get(state, :id, nil)} received message: #{inspect(msg)}"
-    )
-
-    # Placeholder
-    case msg do
-      {:set_value, value} when is_number(value) ->
-        {%{state | value: clamp(value, 0, state.max)}, []}
-
-      :tick when state.type == :spinner ->
-        next_frame = rem(state.frame_index + 1, length(state.frames))
-        {%{state | frame_index: next_frame}, []}
-
-      _ ->
-        {state, []}
-    end
-  end
-
-  @spec handle_event(term(), map(), %__MODULE__{}) :: {%__MODULE__{}, list()}
-  @impl Raxol.UI.Components.Base.Component
-  def handle_event(event, %{} = _props, state) do
-    # Handle events if needed
-    Raxol.Core.Runtime.Log.debug(
-      "Progress #{Map.get(state, :id, nil)} received event: #{inspect(event)}"
-    )
-
-    {state, []}
-  end
-
-  @spec render(map(), map()) :: any()
-  @impl Raxol.UI.Components.Base.Component
-  def render(state, %{} = _props) do
-    case state.type do
-      :bar ->
-        Raxol.UI.Components.Progress.Bar.render_bar(state)
-
-      :spinner ->
-        Raxol.UI.Components.Progress.Spinner.render_spinner(state)
-
-      :indeterminate ->
-        Raxol.UI.Components.Progress.Indeterminate.render_indeterminate(state)
-
-      :circular ->
-        Raxol.UI.Components.Progress.Circular.render_circular(state)
-
-      _ ->
-        Raxol.View.Elements.label(content: "Unknown progress type")
-    end
-  end
-
-  # Helper functions
-  defp clamp(value, min, max) do
-    value |> Kernel.max(min) |> Kernel.min(max)
-  end
-
-  @spec spinner_types() :: %{atom() => list(String.t())}
   @doc """
-  Returns the available spinner types.
-
-  ## Returns
-
-  A map of spinner types to their frame sequences.
-
-  ## Example
-
-  ```elixir
-  spinner_types = Progress.Component.spinner_types()
-  ```
+  Initializes the progress component state.
   """
-  def spinner_types do
+  @spec init(props()) :: state()
+  def init(props) do
     %{
-      dots: @spinner_frames,
-      line: ["|", "/", "-", "\\"],
-      braille: ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"],
-      pulse: ["█", "▓", "▒", "░"],
-      circle: ["◐", "◓", "◑", "◒"]
+      value: Map.get(props, :value, 0),
+      max: Map.get(props, :max, 100),
+      type: Map.get(props, :type, :bar),
+      indeterminate: Map.get(props, :indeterminate, false),
+      frame: 0
     }
   end
 
   @doc """
-  Mount hook - called when component is mounted.
-  No special setup needed for Progress Component.
+  Updates the component state.
   """
-  @impl true
-  @spec mount(map()) :: {map(), list()}
-  def mount(state), do: {state, []}
+  @spec update(term(), state()) :: state()
+  def update({:set_value, value}, state) do
+    %{state | value: min(value, state.max)}
+  end
+
+  def update({:set_max, max}, state) do
+    %{state | max: max, value: min(state.value, max)}
+  end
+
+  def update(:tick, %{indeterminate: true} = state) do
+    %{state | frame: state.frame + 1}
+  end
+
+  def update(_, state), do: state
 
   @doc """
-  Unmount hook - called when component is unmounted.
-  No cleanup needed for Progress Component.
+  Handles component events.
   """
-  @impl true
-  @spec unmount(map()) :: map()
-  def unmount(state), do: state
+  @spec handle_event(term(), props(), state()) ::
+          {:ok, state()} | {:update, state()}
+  def handle_event({:click, _}, _props, state) do
+    {:ok, state}
+  end
+
+  def handle_event({:key, _key}, _props, state) do
+    {:ok, state}
+  end
+
+  def handle_event(_, _, state), do: {:ok, state}
+
+  @doc """
+  Renders the progress component.
+  """
+  @spec render(state(), props()) :: binary()
+  def render(%{type: :bar} = state, props) do
+    render_bar(state, props)
+  end
+
+  def render(%{type: :circular} = state, props) do
+    render_circular(state, props)
+  end
+
+  def render(%{type: :spinner} = state, props) do
+    render_spinner(state, props)
+  end
+
+  def render(state, props) do
+    render_bar(state, props)
+  end
+
+  @doc """
+  Returns available spinner types.
+  """
+  @spec spinner_types() :: list(atom())
+  def spinner_types do
+    [:dots, :line, :circle, :square, :arrow, :bounce, :pulse]
+  end
+
+  # Private rendering functions
+
+  defp render_bar(%{value: value, max: max, indeterminate: false}, props) do
+    width = Map.get(props, :width, 20)
+    percentage = value / max * 100
+    filled = round(width * value / max)
+    empty = width - filled
+
+    bar_char = Map.get(props, :bar_char, "=")
+    empty_char = Map.get(props, :empty_char, " ")
+
+    "[#{String.duplicate(bar_char, filled)}#{String.duplicate(empty_char, empty)}] #{round(percentage)}%"
+  end
+
+  defp render_bar(%{frame: frame, indeterminate: true}, props) do
+    width = Map.get(props, :width, 20)
+    position = rem(frame, width * 2)
+    position = if position > width, do: width * 2 - position, else: position
+
+    bar =
+      for i <- 0..(width - 1) do
+        if abs(i - position) <= 2, do: "=", else: " "
+      end
+
+    "[#{Enum.join(bar)}]"
+  end
+
+  defp render_circular(%{value: value, max: max}, _props) do
+    percentage = round(value / max * 100)
+    segments = 8
+    filled = round(segments * value / max)
+
+    circle_chars = [" ", ".", "o", "O"]
+    char_index = min(3, div(filled * 4, segments))
+
+    "(#{Enum.at(circle_chars, char_index)}) #{percentage}%"
+  end
+
+  defp render_spinner(%{frame: frame}, props) do
+    type = Map.get(props, :spinner_type, :dots)
+    frames = get_spinner_frames(type)
+    frame_index = rem(frame, length(frames))
+
+    Enum.at(frames, frame_index)
+  end
+
+  defp get_spinner_frames(:dots), do: [".", "..", "..."]
+  defp get_spinner_frames(:line), do: ["-", "\\", "|", "/"]
+  defp get_spinner_frames(:circle), do: ["o", "O", "0", "O"]
+  defp get_spinner_frames(:square), do: ["[", "=", "]", "="]
+  defp get_spinner_frames(:arrow), do: ["<", "^", ">", "v"]
+  defp get_spinner_frames(:bounce), do: ["( )", "(.)", "( )"]
+  defp get_spinner_frames(:pulse), do: ["_", "-", "=", "-"]
+  defp get_spinner_frames(_), do: [".", "o", "O", "o"]
 end

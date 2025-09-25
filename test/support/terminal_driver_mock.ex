@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.DriverMock do
   """
 
   use GenServer
-  @behaviour Raxol.Terminal.Driver.Behaviour
+  # Removed undefined @behaviour Raxol.Terminal.Driver.Behaviour
 
   require Raxol.Core.Runtime.Log
   alias Raxol.Core.Events.Event
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.DriverMock do
   @doc """
   Starts the mock driver GenServer.
   """
-  @impl Raxol.Terminal.Driver.Behaviour
+  # Removed @impl for undefined behaviour
   def start_link(dispatcher_pid) do
     GenServer.start_link(__MODULE__, dispatcher_pid, name: __MODULE__)
   end

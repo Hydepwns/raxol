@@ -1,92 +1,105 @@
 defmodule Raxol.Terminal.Escape.Parsers.SCSParser do
   @moduledoc """
-  Parser for Select Character Set (SCS) escape sequences.
+  Parser for SCS (Select Character Set) escape sequences.
 
-  Handles sequences like:
-  - ESC ( C -> Designate G0 as Charset C
-  - ESC ) C -> Designate G1 as Charset C
-  - ESC * C -> Designate G2 as Charset C
-  - ESC + C -> Designate G3 as Charset C
+  SCS sequences are used to designate character sets to G0-G3 graphic sets.
+  They follow the pattern ESC ( x, ESC ) x, ESC * x, or ESC + x
+  where the intermediate character determines which G-set to modify.
   """
 
-  require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Escape.Parsers.BaseParser
 
   @doc """
-  Parses a Select Character Set sequence.
-  Returns {:ok, command, remaining} or {:incomplete, remaining} or {:error, reason, remaining}
+  Parses an SCS sequence after the ESC and intermediate character.
+
+  ## Parameters
+    - intermediate: The intermediate character ('(', ')', '*', '+')
+    - input: The remaining input after the intermediate
+
+  ## Returns
+    - {:ok, command, remaining} - Successfully parsed command
+    - {:incomplete, input} - Input is incomplete
+    - {:error, reason, input} - Parse error
   """
   @spec parse(char(), String.t()) ::
-          {:ok, {:designate_charset, :g0 | :g1 | :g2 | :g3, atom()}, String.t()}
+          {:ok, term(), String.t()}
           | {:incomplete, String.t()}
           | {:error, atom(), String.t()}
-  def parse(designator_char, <<charset_code, rest::binary>>) do
-    with {:ok, target_g_set} <- designate_char_to_gset(designator_char),
-         {:ok, charset_atom} <- charset_code_to_atom(charset_code) do
-      {:ok, {:designate_charset, target_g_set, charset_atom}, rest}
-    else
+  def parse(intermediate, <<final, rest::binary>>) do
+    case decode_scs(intermediate, final) do
+      {:ok, command} ->
+        {:ok, command, rest}
+
       {:error, reason} ->
-        BaseParser.log_unknown_sequence("SCS", <<charset_code, rest::binary>>)
-        {:error, reason, <<charset_code, rest::binary>>}
+        {:error, reason, <<final, rest::binary>>}
     end
   end
 
-  def parse(_designator_char, "") do
+  def parse(_intermediate, "") do
     {:incomplete, ""}
   end
 
-  @doc """
-  Maps a designator character to its corresponding G-set.
-  """
-  @spec designate_char_to_gset(char()) ::
-          {:ok, :g0 | :g1 | :g2 | :g3} | {:error, :invalid_designator}
-  def designate_char_to_gset(?() do
-    {:ok, :g0}
+  # Private decoding functions
+
+  defp decode_scs(intermediate, final) do
+    g_set = get_g_set(intermediate)
+    charset = get_charset(final)
+
+    case {g_set, charset} do
+      {nil, _} ->
+        {:error, :invalid_intermediate}
+
+      {_, nil} ->
+        BaseParser.log_unknown_sequence("SCS", <<intermediate, final>>)
+        {:error, :unknown_charset}
+
+      {set, char} ->
+        {:ok, {:designate_charset, set, char}}
+    end
   end
 
-  def designate_char_to_gset(?)) do
-    {:ok, :g1}
-  end
+  defp get_g_set(?(), do: :g0
+  defp get_g_set(?)), do: :g1
+  defp get_g_set(?*), do: :g2
+  defp get_g_set(?+), do: :g3
+  defp get_g_set(_), do: nil
 
-  def designate_char_to_gset(?*) do
-    {:ok, :g2}
-  end
+  # DEC Special Character and Line Drawing Set
+  defp get_charset(?0), do: :dec_special_graphics
+  # UK ASCII
+  defp get_charset(?A), do: :uk_ascii
+  # US ASCII
+  defp get_charset(?B), do: :us_ascii
+  # Dutch
+  defp get_charset(?4), do: :dutch
+  # Finnish
+  defp get_charset(?C), do: :finnish
+  # Finnish (alternate)
+  defp get_charset(?5), do: :finnish
+  # French
+  defp get_charset(?R), do: :french
+  # French Canadian
+  defp get_charset(?Q), do: :french_canadian
+  # German
+  defp get_charset(?K), do: :german
+  # Italian
+  defp get_charset(?Y), do: :italian
+  # Norwegian/Danish
+  defp get_charset(?E), do: :norwegian_danish
+  # Norwegian/Danish (alternate)
+  defp get_charset(?6), do: :norwegian_danish
 
-  def designate_char_to_gset(?+) do
-    {:ok, :g3}
-  end
+  # defp get_charset(?%5), do: :portuguese      # Portuguese - special case, needs different handling
+  # Spanish
+  defp get_charset(?Z), do: :spanish
+  # Swedish
+  defp get_charset(?H), do: :swedish
+  # Swedish (alternate)
+  defp get_charset(?7), do: :swedish
+  # Swiss
+  defp get_charset(?=), do: :swiss
 
-  def designate_char_to_gset(_) do
-    {:error, :invalid_designator}
-  end
-
-  @doc """
-  Maps a character code byte to its corresponding charset atom.
-  Reference: https://vt100.net/docs/vt510-rm/SCS.html
-  """
-  @spec charset_code_to_atom(char()) ::
-          {:ok, atom()} | {:error, :invalid_charset}
-  def charset_code_to_atom(?B) do
-    {:ok, :us_ascii}
-  end
-
-  def charset_code_to_atom(?0) do
-    {:ok, :dec_special_graphics}
-  end
-
-  def charset_code_to_atom(?A) do
-    {:ok, :uk}
-  end
-
-  def charset_code_to_atom(?<) do
-    {:ok, :dec_supplemental}
-  end
-
-  def charset_code_to_atom(?>) do
-    {:ok, :dec_technical}
-  end
-
-  def charset_code_to_atom(_) do
-    {:error, :invalid_charset}
-  end
+  # defp get_charset(?<), do: :dec_supplemental    # DEC Supplemental - special char
+  # defp get_charset(?>), do: :dec_technical       # DEC Technical - special char
+  defp get_charset(_), do: nil
 end

@@ -955,7 +955,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   defp select_protocol(options, state) do
     requested_protocol = Map.get(options, :protocol, state.preferred_protocol)
 
-    case {requested_protocol, is_protocol_supported?(requested_protocol, state)} do
+    case {requested_protocol, protocol_supported?(requested_protocol, state)} do
       {:auto, _} ->
         {:ok, state.preferred_protocol}
 
@@ -970,7 +970,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  defp is_protocol_supported?(protocol, state) do
+  defp protocol_supported?(protocol, state) do
     case protocol do
       :kitty -> state.graphics_support.kitty_graphics
       :iterm2 -> state.graphics_support.iterm2_graphics
@@ -1123,7 +1123,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   defp validate_protocol_choice(:auto, _graphics_support), do: :ok
 
   defp validate_protocol_choice(protocol, graphics_support) do
-    case is_protocol_supported?(protocol, %{graphics_support: graphics_support}) do
+    case protocol_supported?(protocol, %{graphics_support: graphics_support}) do
       true -> :ok
       false -> {:error, {:protocol_not_supported, protocol}}
     end
@@ -1158,11 +1158,12 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
             case ImageProcessor.process_image(image_data, options) do
               {:ok, processed_image} ->
                 # Cache the processed result
-                _ = ImageCache.put(
-                  cache_key,
-                  processed_image.data,
-                  processed_image.metadata
-                )
+                _ =
+                  ImageCache.put(
+                    cache_key,
+                    processed_image.data,
+                    processed_image.metadata
+                  )
 
                 {:ok, processed_image}
 

@@ -17,56 +17,12 @@ defmodule Raxol.Benchmark.Analyzer do
       [%{results: %{scenarios: scenarios}} | _] ->
         # Extract timing data from scenarios in the nested results structure
         timing_data = extract_timing_data(scenarios)
-
-        if Enum.empty?(timing_data) do
-          # Fallback to default analysis if no timing data found
-          %{
-            summary: %{
-              total_operations: 0,
-              average_time: 0,
-              fastest_time: 0,
-              slowest_time: 0,
-              std_deviation: 0
-            },
-            statistics: %{count: 0, mean: 0, std_dev: 0},
-            recommendations: []
-          }
-        else
-          analysis = StatisticalAnalyzer.analyze(timing_data)
-
-          %{
-            summary: generate_summary(analysis),
-            statistics: analysis,
-            recommendations: generate_recommendations(analysis)
-          }
-        end
+        analyze_timing_data(timing_data)
 
       [%{scenarios: scenarios} | _] ->
         # Direct scenarios structure
         timing_data = extract_timing_data(scenarios)
-
-        if Enum.empty?(timing_data) do
-          # Fallback to default analysis if no timing data found
-          %{
-            summary: %{
-              total_operations: 0,
-              average_time: 0,
-              fastest_time: 0,
-              slowest_time: 0,
-              std_deviation: 0
-            },
-            statistics: %{count: 0, mean: 0, std_dev: 0},
-            recommendations: []
-          }
-        else
-          analysis = StatisticalAnalyzer.analyze(timing_data)
-
-          %{
-            summary: generate_summary(analysis),
-            statistics: analysis,
-            recommendations: generate_recommendations(analysis)
-          }
-        end
+        analyze_timing_data(timing_data)
 
       _ when is_list(results) and length(results) > 0 ->
         # Check if it's a list of numbers
@@ -145,6 +101,31 @@ defmodule Raxol.Benchmark.Analyzer do
   def format_time(_), do: "N/A"
 
   # Private helper functions
+
+  defp analyze_timing_data(timing_data) do
+    if Enum.empty?(timing_data) do
+      # Fallback to default analysis if no timing data found
+      %{
+        summary: %{
+          total_operations: 0,
+          average_time: 0,
+          fastest_time: 0,
+          slowest_time: 0,
+          std_deviation: 0
+        },
+        statistics: %{count: 0, mean: 0, std_dev: 0},
+        recommendations: []
+      }
+    else
+      analysis = StatisticalAnalyzer.analyze(timing_data)
+
+      %{
+        summary: generate_summary(analysis),
+        statistics: analysis,
+        recommendations: generate_recommendations(analysis)
+      }
+    end
+  end
 
   defp extract_timing_data(scenarios) when is_list(scenarios) do
     scenarios

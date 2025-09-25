@@ -33,12 +33,12 @@ defmodule Raxol.UI.Components.MarkdownRenderer do
 
     case Code.ensure_loaded?(Earmark) do
       true ->
+        # Use apply to avoid compile-time dependency warning
         html_content =
-          Earmark.as_html!(markdown_text,
-            gfm: true,
-            breaks: true,
-            smartypants: true
-          )
+          apply(Earmark, :as_html!, [
+            markdown_text,
+            %{gfm: true, breaks: true, smartypants: true}
+          ])
 
         Raxol.View.Components.text(content: html_content)
 

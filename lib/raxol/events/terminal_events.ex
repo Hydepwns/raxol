@@ -362,7 +362,7 @@ defmodule Raxol.Events.TerminalThemeAppliedEvent do
     invalid_colors =
       color_scheme
       |> Enum.filter(fn {_key, value} ->
-        not is_valid_color?(value)
+        not valid_color?(value)
       end)
 
     case Enum.empty?(invalid_colors) do
@@ -371,16 +371,16 @@ defmodule Raxol.Events.TerminalThemeAppliedEvent do
     end
   end
 
-  defp is_valid_color?({r, g, b})
+  defp valid_color?({r, g, b})
        when is_integer(r) and is_integer(g) and is_integer(b) do
     r >= 0 and r <= 255 and g >= 0 and g <= 255 and b >= 0 and b <= 255
   end
 
-  defp is_valid_color?("#" <> hex) when byte_size(hex) == 6 do
+  defp valid_color?("#" <> hex) when byte_size(hex) == 6 do
     String.match?(hex, ~r/^[0-9a-fA-F]{6}$/)
   end
 
-  defp is_valid_color?(_), do: false
+  defp valid_color?(_), do: false
 end
 
 defmodule Raxol.Events.TerminalClosedEvent do

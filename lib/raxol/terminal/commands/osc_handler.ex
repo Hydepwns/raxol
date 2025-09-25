@@ -1,8 +1,16 @@
 defmodule Raxol.Terminal.Commands.OSCHandler do
-  @moduledoc false
+  @moduledoc """
+  Consolidated OSC (Operating System Command) handler for terminal control sequences.
+  Combines all OSC handler functionality including window, clipboard, color, and selection operations.
+  """
 
-  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.{Emulator, Clipboard, Colors}
   require Raxol.Core.Runtime.Log
+
+  # Alias for backward compatibility
+  def handle_osc_sequence(emulator, command, data) do
+    handle(emulator, command, data)
+  end
 
   @spec handle(Emulator.t(), non_neg_integer(), String.t()) ::
           {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
@@ -87,7 +95,7 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
     case command do
       # Set cursor color
       12 -> {:ok, emulator}
-      # Set cursor shape  
+      # Set cursor shape
       50 -> {:ok, emulator}
       # Reset cursor color
       112 -> {:ok, emulator}
@@ -98,104 +106,623 @@ defmodule Raxol.Terminal.Commands.OSCHandler do
   def handle_window_title(emulator, data),
     do: {:ok, %{emulator | window_title: data}}
 
-  def handle_icon_name(emulator, _data), do: {:ok, emulator}
-  def handle_icon_title(emulator, _data), do: {:ok, emulator}
-  def handle_foreground_color(emulator, _data), do: {:ok, emulator}
-  def handle_background_color(emulator, _data), do: {:ok, emulator}
-  def handle_highlight_background_color(emulator, _data), do: {:ok, emulator}
-  def handle_mouse_foreground_color(emulator, _data), do: {:ok, emulator}
-  def handle_font(emulator, _data), do: {:ok, emulator}
-  def handle_clipboard_set(emulator, _data), do: {:ok, emulator}
-  def handle_osc4_color(emulator, _idx, _color), do: {:ok, emulator}
+  def handle_icon_name(emulator, data),
+    do: {:ok, %{emulator | icon_name: data}}
 
-  def handle_4(emulator, _data), do: {:ok, emulator}
-  def handle_clipboard_get(emulator), do: {:ok, emulator}
-  def handle_cursor_color(emulator, _data), do: {:ok, emulator}
-  def handle_cursor_shape(emulator, _data), do: {:ok, emulator}
-  def handle_highlight_foreground_color(emulator, _data), do: {:ok, emulator}
-  def handle_mouse_background_color(emulator, _data), do: {:ok, emulator}
+  # Clipboard sub-module
+  defmodule Clipboard do
+    @moduledoc """
+    Handles clipboard-related OSC commands.
+    """
 
-  def handle_window_fullscreen(emulator) do
-    # Update window state to fullscreen
-    Raxol.Terminal.Window.Manager.set_window_state(
-      emulator.window_manager,
-      :fullscreen
-    )
+    alias Raxol.Terminal.{Emulator, Clipboard}
+    require Raxol.Core.Runtime.Log
 
-    {:ok, emulator}
+    @spec handle_9(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_9(emulator, data) do
+      case data do
+        "?" ->
+          content = Clipboard.get_content(emulator.clipboard)
+          response = format_clipboard_response(9, content)
+          {:ok, %{emulator | output_buffer: response}}
+
+        content ->
+          {:ok, new_clipboard} =
+            Clipboard.set_content(emulator.clipboard, content)
+
+          {:ok, %{emulator | clipboard: new_clipboard}}
+      end
+    end
+
+    @spec handle_52(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_52(emulator, data) do
+      case parse_52_command(data) do
+        {:query, :clipboard} ->
+          content = Clipboard.get_content(emulator.clipboard)
+          response = format_clipboard_response(52, content)
+          {:ok, %{emulator | output_buffer: response}}
+
+        {:query, :selection} ->
+          content = Clipboard.get_selection(emulator.clipboard)
+          response = format_clipboard_response(52, content)
+          {:ok, %{emulator | output_buffer: response}}
+
+        {:set, :clipboard, content} ->
+          {:ok, new_clipboard} =
+            Clipboard.set_content(emulator.clipboard, content)
+
+          {:ok, %{emulator | clipboard: new_clipboard}}
+
+        {:set, :selection, content} ->
+          {:ok, new_clipboard} =
+            Clipboard.set_selection(emulator.clipboard, content)
+
+          {:ok, %{emulator | clipboard: new_clipboard}}
+
+        {:error, _reason} ->
+          {:error, :invalid_clipboard_command, emulator}
+      end
+    end
+
+    defp parse_52_command(data) do
+      case String.split(data, ";", parts: 2) do
+        ["c", "?"] -> {:query, :clipboard}
+        ["s", "?"] -> {:query, :selection}
+        ["c", content] -> {:set, :clipboard, decode_base64(content)}
+        ["s", content] -> {:set, :selection, decode_base64(content)}
+        _ -> {:error, :invalid_format}
+      end
+    end
+
+    defp decode_base64(content) do
+      case Base.decode64(content) do
+        {:ok, decoded} -> decoded
+        _ -> content
+      end
+    end
+
+    defp format_clipboard_response(command, content) do
+      encoded = Base.encode64(content)
+      "\e]#{command};c;#{encoded}\e\\"
+    end
   end
 
-  def handle_window_maximize(emulator) do
-    # Update window state to maximized
-    _ =
-      Raxol.Terminal.Window.Manager.set_window_state(
-        emulator.window_manager,
-        :maximized
-      )
+  # Color sub-module
+  defmodule Color do
+    @moduledoc """
+    Handles color-related OSC commands.
+    """
 
-    {:ok, emulator}
+    alias Raxol.Terminal.{Emulator, Colors}
+    require Raxol.Core.Runtime.Log
+
+    @spec handle_10(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_10(emulator, data) do
+      case data do
+        "?" -> handle_color_query(emulator, 10, &Colors.get_foreground/1)
+        color_spec -> set_color(emulator, color_spec, &Colors.set_foreground/2)
+      end
+    end
+
+    @spec handle_11(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_11(emulator, data) do
+      case data do
+        "?" -> handle_color_query(emulator, 11, &Colors.get_background/1)
+        color_spec -> set_color(emulator, color_spec, &Colors.set_background/2)
+      end
+    end
+
+    @spec handle_17(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_17(emulator, data) do
+      case data do
+        "?" ->
+          handle_color_query(emulator, 17, &Colors.get_selection_background/1)
+
+        color_spec ->
+          set_color(emulator, color_spec, &Colors.set_selection_background/2)
+      end
+    end
+
+    @spec handle_19(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_19(emulator, data) do
+      case data do
+        "?" ->
+          handle_color_query(emulator, 19, &Colors.get_selection_foreground/1)
+
+        color_spec ->
+          set_color(emulator, color_spec, &Colors.set_selection_foreground/2)
+      end
+    end
+
+    defp handle_color_query(emulator, command, getter) do
+      color = getter.(emulator.colors)
+      response = format_color_response(command, color)
+      {:ok, %{emulator | output_buffer: response}}
+    end
+
+    defp set_color(emulator, color_spec, setter) do
+      case Raxol.Terminal.Commands.OSCHandler.ColorParser.parse(color_spec) do
+        {:ok, color} ->
+          {:ok, new_colors} = setter.(emulator.colors, color)
+          {:ok, %{emulator | colors: new_colors}}
+
+        {:error, _reason} ->
+          {:error, :invalid_color_spec, emulator}
+      end
+    end
+
+    defp format_color_response(command, {r, g, b}) do
+      "\e]#{command};rgb:#{format_hex(r)}/#{format_hex(g)}/#{format_hex(b)}\e\\"
+    end
+
+    defp format_hex(value) do
+      Integer.to_string(value, 16) |> String.pad_leading(2, "0")
+    end
   end
 
-  def handle_window_size(emulator, width, height) do
-    # Update window size
-    _ =
-      Raxol.Terminal.Window.Manager.set_window_size(
-        emulator.window_manager,
-        width,
-        height
-      )
+  # ColorParser sub-module
+  defmodule ColorParser do
+    @moduledoc """
+    Parses color specifications from OSC commands.
+    """
 
-    {:ok, emulator}
+    @spec parse(String.t()) ::
+            {:ok, {integer(), integer(), integer()}} | {:error, atom()}
+    def parse(color_spec) do
+      cond do
+        String.starts_with?(color_spec, "rgb:") ->
+          parse_rgb(String.trim_leading(color_spec, "rgb:"))
+
+        String.starts_with?(color_spec, "#") ->
+          parse_hex(String.trim_leading(color_spec, "#"))
+
+        true ->
+          parse_name(color_spec)
+      end
+    end
+
+    defp parse_rgb(rgb_string) do
+      case String.split(rgb_string, "/") do
+        [r, g, b] ->
+          with {:ok, red} <- parse_component(r),
+               {:ok, green} <- parse_component(g),
+               {:ok, blue} <- parse_component(b) do
+            {:ok, {red, green, blue}}
+          else
+            _ -> {:error, :invalid_rgb_format}
+          end
+
+        _ ->
+          {:error, :invalid_rgb_format}
+      end
+    end
+
+    defp parse_component(hex) do
+      case Integer.parse(hex, 16) do
+        {value, ""} when value >= 0 and value <= 255 -> {:ok, value}
+        _ -> {:error, :invalid_component}
+      end
+    end
+
+    defp parse_hex(hex_string) do
+      case String.length(hex_string) do
+        6 ->
+          with {:ok, r} <- parse_hex_pair(String.slice(hex_string, 0, 2)),
+               {:ok, g} <- parse_hex_pair(String.slice(hex_string, 2, 2)),
+               {:ok, b} <- parse_hex_pair(String.slice(hex_string, 4, 2)) do
+            {:ok, {r, g, b}}
+          else
+            _ -> {:error, :invalid_hex_format}
+          end
+
+        3 ->
+          with {:ok, r} <- parse_hex_char(String.at(hex_string, 0)),
+               {:ok, g} <- parse_hex_char(String.at(hex_string, 1)),
+               {:ok, b} <- parse_hex_char(String.at(hex_string, 2)) do
+            {:ok, {r * 17, g * 17, b * 17}}
+          else
+            _ -> {:error, :invalid_hex_format}
+          end
+
+        _ ->
+          {:error, :invalid_hex_length}
+      end
+    end
+
+    defp parse_hex_pair(pair) do
+      case Integer.parse(pair, 16) do
+        {value, ""} -> {:ok, value}
+        _ -> {:error, :invalid_hex}
+      end
+    end
+
+    defp parse_hex_char(char) do
+      case Integer.parse(char, 16) do
+        {value, ""} -> {:ok, value}
+        _ -> {:error, :invalid_hex}
+      end
+    end
+
+    defp parse_name(name) do
+      color_names = %{
+        "black" => {0, 0, 0},
+        "red" => {255, 0, 0},
+        "green" => {0, 255, 0},
+        "yellow" => {255, 255, 0},
+        "blue" => {0, 0, 255},
+        "magenta" => {255, 0, 255},
+        "cyan" => {0, 255, 255},
+        "white" => {255, 255, 255}
+      }
+
+      case Map.get(color_names, String.downcase(name)) do
+        nil -> {:error, :unknown_color_name}
+        color -> {:ok, color}
+      end
+    end
   end
 
-  @doc """
-  Handles an OSC sequence with command and data.
-  """
-  @spec handle_osc_sequence(Emulator.t(), atom(), String.t()) ::
-          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_osc_sequence(emulator, command, data) do
-    case command do
-      :window_title ->
-        handle_window_title(emulator, data)
+  # ColorPalette sub-module
+  defmodule ColorPalette do
+    @moduledoc """
+    Handles color palette OSC commands.
+    """
 
-      :icon_name ->
-        handle_icon_name(emulator, data)
+    alias Raxol.Terminal.Emulator
+    require Raxol.Core.Runtime.Log
 
-      :icon_title ->
-        handle_icon_title(emulator, data)
+    @spec handle_4(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_4(emulator, data) do
+      case parse_palette_command(data) do
+        {:set, index, color} ->
+          set_palette_color(emulator, index, color)
 
-      :foreground_color ->
-        handle_foreground_color(emulator, data)
+        {:query, index} ->
+          query_palette_color(emulator, index)
 
-      :background_color ->
-        handle_background_color(emulator, data)
+        {:reset, index} ->
+          reset_palette_color(emulator, index)
 
-      :highlight_background_color ->
-        handle_highlight_background_color(emulator, data)
+        {:error, _reason} ->
+          {:error, :invalid_palette_command, emulator}
+      end
+    end
 
-      :mouse_foreground_color ->
-        handle_mouse_foreground_color(emulator, data)
+    defp parse_palette_command(data) do
+      case String.split(data, ";", parts: 2) do
+        [index_str, "?"] ->
+          with {index, ""} <- Integer.parse(index_str) do
+            {:query, index}
+          else
+            _ -> {:error, :invalid_index}
+          end
 
-      :font ->
-        handle_font(emulator, data)
+        [index_str, color_spec] ->
+          with {index, ""} <- Integer.parse(index_str) do
+            if color_spec == "" do
+              {:reset, index}
+            else
+              case Raxol.Terminal.Commands.OSCHandler.ColorParser.parse(
+                     color_spec
+                   ) do
+                {:ok, color} -> {:set, index, color}
+                error -> error
+              end
+            end
+          else
+            _ -> {:error, :invalid_index}
+          end
 
-      :clipboard_set ->
-        handle_clipboard_set(emulator, data)
+        _ ->
+          {:error, :invalid_format}
+      end
+    end
 
-      :cursor_color ->
-        handle_cursor_color(emulator, data)
+    defp set_palette_color(emulator, index, color)
+         when index >= 0 and index < 256 do
+      palette = Map.put(emulator.palette, index, color)
+      {:ok, %{emulator | palette: palette}}
+    end
 
-      :cursor_shape ->
-        handle_cursor_shape(emulator, data)
+    defp set_palette_color(emulator, _index, _color) do
+      {:error, :index_out_of_range, emulator}
+    end
 
-      :highlight_foreground_color ->
-        handle_highlight_foreground_color(emulator, data)
+    defp query_palette_color(emulator, index) when index >= 0 and index < 256 do
+      color = Map.get(emulator.palette, index, {0, 0, 0})
+      response = format_palette_response(index, color)
+      {:ok, %{emulator | output_buffer: response}}
+    end
 
-      :mouse_background_color ->
-        handle_mouse_background_color(emulator, data)
+    defp query_palette_color(emulator, _index) do
+      {:error, :index_out_of_range, emulator}
+    end
 
-      _ ->
-        {:ok, emulator}
+    defp reset_palette_color(emulator, index) when index >= 0 and index < 256 do
+      default_color = get_default_palette_color(index)
+      palette = Map.put(emulator.palette, index, default_color)
+      {:ok, %{emulator | palette: palette}}
+    end
+
+    defp reset_palette_color(emulator, _index) do
+      {:error, :index_out_of_range, emulator}
+    end
+
+    defp get_default_palette_color(index) do
+      # Return default ANSI color for the given index
+      # This is a simplified version - actual defaults depend on terminal
+      case index do
+        # Black
+        0 -> {0, 0, 0}
+        # Red
+        1 -> {205, 0, 0}
+        # Green
+        2 -> {0, 205, 0}
+        # Yellow
+        3 -> {205, 205, 0}
+        # Blue
+        4 -> {0, 0, 238}
+        # Magenta
+        5 -> {205, 0, 205}
+        # Cyan
+        6 -> {0, 205, 205}
+        # White
+        7 -> {229, 229, 229}
+        # Default to black
+        _ -> {0, 0, 0}
+      end
+    end
+
+    defp format_palette_response(index, {r, g, b}) do
+      "\e]4;#{index};rgb:#{format_hex(r)}/#{format_hex(g)}/#{format_hex(b)}\e\\"
+    end
+
+    defp format_hex(value) do
+      Integer.to_string(value, 16) |> String.pad_leading(4, "0")
+    end
+  end
+
+  # Window sub-module
+  defmodule Window do
+    @moduledoc """
+    Handles window-related OSC commands.
+    """
+
+    alias Raxol.Terminal.Emulator
+    require Raxol.Core.Runtime.Log
+
+    @spec handle_0(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_0(emulator, data) do
+      # Set icon name and window title
+      emulator = %{emulator | icon_name: data, window_title: data}
+      {:ok, emulator}
+    end
+
+    @spec handle_1(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_1(emulator, data) do
+      # Set icon name
+      {:ok, %{emulator | icon_name: data}}
+    end
+
+    @spec handle_2(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_2(emulator, data) do
+      # Set window title
+      {:ok, %{emulator | window_title: data}}
+    end
+
+    @spec handle_7(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_7(emulator, data) do
+      # Set current directory (for terminal tabs)
+      {:ok, %{emulator | current_directory: data}}
+    end
+
+    @spec handle_8(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_8(emulator, data) do
+      # Set hyperlink
+      case parse_hyperlink(data) do
+        {:ok, url, text} ->
+          hyperlink = %{url: url, text: text}
+          {:ok, %{emulator | current_hyperlink: hyperlink}}
+
+        _ ->
+          {:error, :invalid_hyperlink, emulator}
+      end
+    end
+
+    @spec handle_1337(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_1337(emulator, data) do
+      # iTerm2 proprietary escape sequences
+      handle_iterm2_command(emulator, data)
+    end
+
+    defp parse_hyperlink(data) do
+      case String.split(data, ";", parts: 2) do
+        [_params, url] -> {:ok, url, ""}
+        _ -> {:error, :invalid_format}
+      end
+    end
+
+    defp handle_iterm2_command(emulator, data) do
+      case data do
+        "RemoteHost=" <> host ->
+          {:ok, %{emulator | remote_host: host}}
+
+        "CurrentDir=" <> dir ->
+          {:ok, %{emulator | current_directory: dir}}
+
+        _ ->
+          # Unsupported iTerm2 command
+          {:ok, emulator}
+      end
+    end
+  end
+
+  # Selection sub-module
+  defmodule Selection do
+    @moduledoc """
+    Handles selection-related OSC commands.
+    """
+
+    alias Raxol.Terminal.Emulator
+    require Raxol.Core.Runtime.Log
+
+    @spec handle_51(Emulator.t(), String.t()) ::
+            {:ok, Emulator.t()} | {:error, term(), Emulator.t()}
+    def handle_51(emulator, data) do
+      case data do
+        "?" ->
+          # Query selection content
+          content = Map.get(emulator, :selection_content, "")
+          response = format_selection_response(content)
+          {:ok, %{emulator | output_buffer: response}}
+
+        content ->
+          # Set selection content
+          {:ok, %{emulator | selection_content: content}}
+      end
+    end
+
+    defp format_selection_response(content) do
+      encoded = Base.encode64(content)
+      "\e]51;s;#{encoded}\e\\"
+    end
+  end
+
+  # FontParser sub-module
+  defmodule FontParser do
+    @moduledoc """
+    Parses font specifications from OSC commands.
+    """
+
+    @spec parse(String.t()) :: {:ok, map()} | {:error, atom()}
+    def parse(font_spec) do
+      case parse_font_components(font_spec) do
+        {:ok, components} -> build_font_map(components)
+        error -> error
+      end
+    end
+
+    defp parse_font_components(spec) do
+      parts = String.split(spec, ":")
+
+      case parts do
+        [family] ->
+          {:ok, %{family: family}}
+
+        [family, size] ->
+          case Integer.parse(size) do
+            {size_val, ""} -> {:ok, %{family: family, size: size_val}}
+            _ -> {:error, :invalid_size}
+          end
+
+        [family, size, style] ->
+          case Integer.parse(size) do
+            {size_val, ""} ->
+              {:ok,
+               %{family: family, size: size_val, style: parse_style(style)}}
+
+            _ ->
+              {:error, :invalid_size}
+          end
+
+        _ ->
+          {:error, :invalid_format}
+      end
+    end
+
+    defp parse_style(style) do
+      style
+      |> String.downcase()
+      |> case do
+        "bold" -> :bold
+        "italic" -> :italic
+        "bolditalic" -> :bold_italic
+        _ -> :regular
+      end
+    end
+
+    defp build_font_map(components) do
+      font =
+        %{
+          family: "monospace",
+          size: 12,
+          style: :regular
+        }
+        |> Map.merge(components)
+
+      {:ok, font}
+    end
+  end
+
+  # HyperlinkParser sub-module
+  defmodule HyperlinkParser do
+    @moduledoc """
+    Parses hyperlink specifications from OSC 8 commands.
+    """
+
+    @spec parse(String.t()) :: {:ok, String.t(), map()} | {:error, atom()}
+    def parse(data) do
+      case String.split(data, ";", parts: 2) do
+        [params, url] ->
+          parsed_params = parse_params(params)
+          {:ok, url, parsed_params}
+
+        _ ->
+          {:error, :invalid_format}
+      end
+    end
+
+    defp parse_params(params_string) do
+      params_string
+      |> String.split(":")
+      |> Enum.map(&parse_param/1)
+      |> Enum.filter(fn {k, _} -> k != nil end)
+      |> Map.new()
+    end
+
+    defp parse_param(param) do
+      case String.split(param, "=", parts: 2) do
+        [key, value] -> {String.to_atom(key), value}
+        _ -> {nil, nil}
+      end
+    end
+  end
+
+  # SelectionParser sub-module
+  defmodule SelectionParser do
+    @moduledoc """
+    Parses selection specifications from OSC commands.
+    """
+
+    @spec parse(String.t()) :: {:ok, map()} | {:error, atom()}
+    def parse(data) do
+      case String.split(data, ";") do
+        ["start", x1, y1, "end", x2, y2] ->
+          with {x1_val, ""} <- Integer.parse(x1),
+               {y1_val, ""} <- Integer.parse(y1),
+               {x2_val, ""} <- Integer.parse(x2),
+               {y2_val, ""} <- Integer.parse(y2) do
+            {:ok, %{start: {x1_val, y1_val}, end: {x2_val, y2_val}}}
+          else
+            _ -> {:error, :invalid_coordinates}
+          end
+
+        _ ->
+          {:error, :invalid_format}
+      end
     end
   end
 end

@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Integration do
   alias Raxol.Terminal.Integration.Buffer
   alias Raxol.Terminal.Integration.Renderer, as: IntegrationRenderer
   alias Raxol.Terminal.Integration.Config
-  alias Raxol.Terminal.Buffer.Manager, as: BufferManager
+  alias Raxol.Terminal.ScreenBuffer.Manager, as: BufferManager
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.Command.Manager, as: CommandHistoryManager
   alias Raxol.Terminal.Buffer.Scroll
@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.Integration do
   """
   def init(opts \\ []) do
     # Initialize components
-    buffer_manager = BufferManager.new()
+    buffer_manager = BufferManager.new(80, 24)
     cursor_manager = CursorManager.new(opts)
     renderer = IntegrationRenderer.new(opts)
     scroll_buffer = Scroll.new(1000)
@@ -112,7 +112,7 @@ defmodule Raxol.Terminal.Integration do
     updated_buffer_manager =
       case state.buffer_manager do
         buffer_manager when is_pid(buffer_manager) ->
-          Raxol.Terminal.Buffer.UnifiedManager.clear(buffer_manager)
+          Raxol.Terminal.ScreenBuffer.Manager.clear(buffer_manager)
 
         buffer_manager when is_map(buffer_manager) ->
           # For test mode, return a cleared buffer manager with get_visible_content/0

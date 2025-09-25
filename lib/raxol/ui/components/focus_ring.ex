@@ -1,391 +1,189 @@
 defmodule Raxol.UI.Components.FocusRing do
   @moduledoc """
-  Handles drawing the focus ring around focused components.
+  Focus ring component for accessibility and keyboard navigation.
 
-  This component dynamically styles the focus ring based on:
-  - Component state (focused, active, disabled)
-  - User preferences (high contrast, reduced motion)
-  - Theming settings
-  - Animation effects
+  Provides visual focus indicators and manages focus state for UI components.
   """
-  # Use standard component behaviour
-  use Raxol.UI.Components.Base.Component
-  require Raxol.Core.Runtime.Log
 
-  # Require View Elements macros
-  require Raxol.View.Elements
+  @type config :: %{
+          enabled: boolean(),
+          style: atom(),
+          color: atom() | binary(),
+          width: integer(),
+          offset: integer(),
+          components: list(binary())
+        }
 
-  # Import guards
-
-  # Define state struct with enhanced styling options
-  defstruct visible: true,
-            # {x, y, width, height} of focused element
-            position: nil,
-            prev_position: nil,
-            focused_element: nil,
-            color: :yellow,
-            thickness: 1,
-            high_contrast: false,
-            # :pulse, :blink, :fade, :glow, :bounce, :none
-            animation: :pulse,
-            # ms
-            animation_duration: 500,
-            animation_phase: 0,
-            # total animation frames
-            animation_frames: 100,
-            # :fade, :slide, :grow, :none
-            transition_effect: :fade,
-            # {offset_x, offset_y}
-            offset: {0, 0},
-            style: %{},
-            # button, text_input, checkbox, etc. - affects styling
-            component_type: nil,
-            # :normal, :active, :disabled
-            state: :normal,
-            # timestamp for animation timing
-            last_tick: nil
-
-  # --- Component Behaviour Callbacks ---
-
-  @spec init(map()) :: %__MODULE__{}
-  @impl Raxol.UI.Components.Base.Component
-  def init(opts) when is_map(opts) do
-    # Initialize state from props, merging with defaults
-    defaults = %{
-      visible: true,
-      color: :yellow,
-      thickness: 1,
-      high_contrast: false,
-      animation: :pulse,
-      animation_duration: 500,
-      animation_frames: 100,
-      transition_effect: :fade,
-      offset: {0, 0},
-      state: :normal,
-      animation_phase: 0,
-      last_tick: System.monotonic_time(:millisecond)
+  @doc """
+  Initializes focus ring configuration.
+  """
+  @spec init(keyword()) :: config()
+  def init(opts \\ []) do
+    %{
+      enabled: Keyword.get(opts, :enabled, true),
+      style: Keyword.get(opts, :style, :solid),
+      color: Keyword.get(opts, :color, :blue),
+      width: Keyword.get(opts, :width, 1),
+      offset: Keyword.get(opts, :offset, 0),
+      components: Keyword.get(opts, :components, [])
     }
-
-    struct!(__MODULE__, Map.merge(defaults, opts))
   end
 
-  @spec update(term(), %__MODULE__{}) :: {%__MODULE__{}, list()}
-  @impl Raxol.UI.Components.Base.Component
-  def update(msg, state) do
-    # Handle internal messages (animation ticks, focus changes)
-    Raxol.Core.Runtime.Log.debug("FocusRing received message: #{inspect(msg)}")
+  @doc """
+  Renders a focus ring around content.
+  """
+  @spec render(binary(), config()) :: binary()
+  def render(content, %{enabled: false}), do: content
 
-    case msg do
-      # Focus change with component type and state information
-      {:focus_changed, _old_elem_id, new_elem_id, new_position, component_info} ->
-        component_type = Map.get(component_info, :type, nil)
-        component_state = Map.get(component_info, :state, :normal)
+  def render(content, config) do
+    style = config.style
+    color = config.color
 
-        {%{
-           state
-           | focused_element: new_elem_id,
-             prev_position: state.position,
-             position: new_position,
-             animation_phase: 0,
-             component_type: component_type,
-             state: component_state,
-             last_tick: System.monotonic_time(:millisecond)
-         }, []}
+    border_chars = get_border_chars(style)
+    colored_borders = apply_color(border_chars, color)
 
-      # Basic focus change without component info
-      {:focus_changed, _old_elem_id, new_elem_id, new_position} ->
-        {%{
-           state
-           | focused_element: new_elem_id,
-             prev_position: state.position,
-             position: new_position,
-             animation_phase: 0,
-             last_tick: System.monotonic_time(:millisecond)
-         }, []}
-
-      # Animation tick handling with timing
-      {:animation_tick} ->
-        current_time = System.monotonic_time(:millisecond)
-        time_passed = current_time - (state.last_tick || current_time)
-
-        # Calculate how many phases to advance based on time and duration
-        phase_delta =
-          trunc(
-            time_passed / (state.animation_duration / state.animation_frames)
-          )
-
-        new_phase =
-          rem(
-            state.animation_phase + max(1, phase_delta),
-            state.animation_frames
-          )
-
-        # Schedule next animation tick
-        commands =
-          case {state.animation, state.visible} do
-            {:none, _} ->
-              []
-
-            {_, false} ->
-              []
-
-            {_, true} ->
-              # ~60fps
-              [schedule({:animation_tick}, 16)]
-          end
-
-        {%{state | animation_phase: new_phase, last_tick: current_time},
-         commands}
-
-      # Allow external configuration updates
-      {:configure, opts} when is_map(opts) ->
-        new_state = Map.merge(state, opts)
-
-        # Start animation if needed
-        commands =
-          case {
-            new_state.animation,
-            new_state.visible,
-            new_state.animation != state.animation or not state.visible
-          } do
-            {:none, _, _} ->
-              []
-
-            {_, false, _} ->
-              []
-
-            {_, true, false} ->
-              []
-
-            {_, true, true} ->
-              [schedule({:animation_tick}, 16)]
-          end
-
-        {new_state, commands}
-
-      _ ->
-        {state, []}
-    end
+    wrap_with_border(content, colored_borders, config)
   end
 
-  @spec handle_event(term(), map(), %__MODULE__{}) :: {%__MODULE__{}, list()}
-  @impl Raxol.UI.Components.Base.Component
-  def handle_event(event, %{} = _props, state) do
-    # FocusRing might listen to focus changes or accessibility events
-    Raxol.Core.Runtime.Log.debug("FocusRing received event: #{inspect(event)}")
-
-    case event do
-      {:accessibility_high_contrast, enabled} ->
-        {%{state | high_contrast: enabled}, []}
-
-      {:accessibility_reduced_motion, enabled} ->
-        animation =
-          case enabled do
-            true -> :none
-            false -> :pulse
-          end
-
-        {%{state | animation: animation}, []}
-
-      _ ->
-        {state, []}
-    end
+  @doc """
+  Checks if a component should have focus ring.
+  """
+  @spec should_focus?(binary(), config()) :: boolean()
+  def should_focus?(component_id, %{components: components}) do
+    component_id in components
   end
 
-  # --- Render Logic ---
+  def should_focus?(_, _), do: false
 
-  @spec render(%__MODULE__{}, map()) :: any()
-  @impl Raxol.UI.Components.Base.Component
-  def render(state, %{} = props) do
-    dsl_result = render_focus_ring(state, props)
-    # Result can be nil or a box element map
-    case dsl_result do
-      nil ->
-        # Render nothing if not visible or no position
-        nil
-
-      result ->
-        # Return element map directly
-        result
-    end
-  end
-
-  # --- Internal Render Helper ---
-
-  defp render_focus_ring(state, props) do
-    case {state.visible, is_tuple(state.position)} do
-      {true, true} ->
-        # Extract position and apply offset
-        {x, y, width, height} = state.position
-        {offset_x, offset_y} = state.offset
-
-        # Apply styling based on state, component type, and animation
-        style_attrs = calculate_style_attributes(state, props)
-
-        # Use View Elements box macro
-        Raxol.View.Elements.box x: x + offset_x,
-                                y: y + offset_y,
-                                width: width,
-                                height: height,
-                                style: style_attrs do
-          # Empty block needed as the macro expects it
-        end
-
-      _ ->
-        # Return nil if not visible or no position
-        nil
-    end
-  end
-
-  # Helper to calculate style attributes based on state
-  defp calculate_style_attributes(state, props) do
-    # Get theme configuration if available
-    theme = Map.get(props, :theme, %{})
-
-    # Base styling from component type
-    base_style = get_component_specific_style(state.component_type, state.state)
-
-    # Determine color based on high contrast, component type, and state
-    color = determine_color(state, theme)
-
-    # Apply animation effects
-    animation_style = apply_animation_effects(state, color)
-
-    # Merge all style attributes
-    style_attrs = Map.merge(base_style, animation_style)
-
-    # Apply theme overrides if present
-    theme_overrides = Map.get(theme, :focus_ring, %{})
-    Map.merge(style_attrs, theme_overrides)
-  end
-
-  # Determine appropriate color based on context
-  defp determine_color(%{high_contrast: true}, _theme), do: :white
-
-  defp determine_color(%{state: :disabled} = _state, theme) do
-    Map.get(theme, :disabled_color, :dark_gray)
-  end
-
-  defp determine_color(%{state: :active} = _state, theme) do
-    Map.get(theme, :active_color, :cyan)
-  end
-
-  defp determine_color(%{component_type: :button} = _state, theme) do
-    Map.get(theme, :button_focus_color, :blue)
-  end
-
-  defp determine_color(%{component_type: :text_input} = _state, theme) do
-    Map.get(theme, :input_focus_color, :green)
-  end
-
-  defp determine_color(%{component_type: :checkbox} = _state, theme) do
-    Map.get(theme, :checkbox_focus_color, :magenta)
-  end
-
-  defp determine_color(state, _theme), do: state.color
-
-  # Get component-specific styling
-  defp get_component_specific_style(component_type, component_state) do
-    base_style = %{border: :single}
-
-    case {component_type, component_state} do
-      {:button, :normal} ->
-        %{border: :double, bold: true}
-
-      {:text_input, :normal} ->
-        %{border: :single, italic: false}
-
-      {:checkbox, :normal} ->
-        %{border: :single, bold: false}
-
-      {_, :disabled} ->
-        %{border: :dotted, bold: false}
-
-      {_, :active} ->
-        %{border: :double, bold: true}
-
-      _ ->
-        base_style
-    end
-  end
-
-  # Apply animation effects based on animation type and phase
-  defp apply_animation_effects(state, color) do
-    case state.animation do
-      :none ->
-        %{border_color: color}
-
-      :pulse ->
-        # Pulse effect: varying opacity/intensity
-        phase_percent = state.animation_phase / state.animation_frames
-        # Simple sine wave for pulsing (0.7-1.0 intensity range)
-        intensity = 0.7 + 0.3 * :math.sin(phase_percent * 2 * :math.pi())
-
-        # Apply intensity through color - actual implementation would
-        # handle this differently - this is a placeholder
-        %{border_color: color, intensity: intensity}
-
-      :blink ->
-        # Blink effect: visible/invisible
-        phase_percent = state.animation_phase / state.animation_frames
-        visible = phase_percent < 0.5
-
-        case visible do
-          true ->
-            %{border_color: color}
-
-          false ->
-            # "Invisible" - would use transparency in real impl
-            %{border_color: :black}
-        end
-
-      :glow ->
-        # Glow effect: expanded border with gradient
-        phase_percent = state.animation_phase / state.animation_frames
-        glow_size = 1 + :math.sin(phase_percent * 2 * :math.pi()) * 0.5
-
-        %{
-          border_color: color,
-          glow: true,
-          glow_size: glow_size,
-          glow_color: color
-        }
-
-      :bounce ->
-        # Bounce effect: slight size changes
-        phase_percent = state.animation_phase / state.animation_frames
-        bounce_offset = :math.sin(phase_percent * 2 * :math.pi()) * 0.5
-
-        %{
-          border_color: color,
-          offset_x: bounce_offset,
-          offset_y: bounce_offset
-        }
-
-      :fade ->
-        # Fade effect: color interpolation
-        phase_percent = state.animation_phase / state.animation_frames
-        # In a real implementation, would interpolate between colors
-        %{border_color: color, opacity: 0.5 + phase_percent * 0.5}
-
-      _ ->
-        %{border_color: color}
+  @doc """
+  Adds a component to focus ring tracking.
+  """
+  @spec add_component(config(), binary()) :: config()
+  def add_component(config, component_id) do
+    if component_id in config.components do
+      config
+    else
+      %{config | components: [component_id | config.components]}
     end
   end
 
   @doc """
-  Mount hook - called when component is mounted.
-  No special setup needed for FocusRing.
+  Removes a component from focus ring tracking.
   """
-  @impl true
-  @spec mount(map()) :: {map(), list()}
-  def mount(state), do: {state, []}
+  @spec remove_component(config(), binary()) :: config()
+  def remove_component(config, component_id) do
+    %{
+      config
+      | components: Enum.reject(config.components, &(&1 == component_id))
+    }
+  end
 
   @doc """
-  Unmount hook - called when component is unmounted.
-  No cleanup needed for FocusRing.
+  Updates focus ring style.
   """
-  @impl true
-  @spec unmount(map()) :: map()
-  def unmount(state), do: state
+  @spec set_style(config(), atom()) :: config()
+  def set_style(config, style) when is_atom(style) do
+    %{config | style: style}
+  end
+
+  # Private helpers
+
+  defp get_border_chars(:solid) do
+    %{
+      top_left: "+",
+      top: "-",
+      top_right: "+",
+      left: "|",
+      right: "|",
+      bottom_left: "+",
+      bottom: "-",
+      bottom_right: "+"
+    }
+  end
+
+  defp get_border_chars(:double) do
+    %{
+      top_left: "#",
+      top: "=",
+      top_right: "#",
+      left: "|",
+      right: "|",
+      bottom_left: "#",
+      bottom: "=",
+      bottom_right: "#"
+    }
+  end
+
+  defp get_border_chars(:rounded) do
+    %{
+      top_left: "(",
+      top: "-",
+      top_right: ")",
+      left: "|",
+      right: "|",
+      bottom_left: "(",
+      bottom: "-",
+      bottom_right: ")"
+    }
+  end
+
+  defp get_border_chars(:dots) do
+    %{
+      top_left: ".",
+      top: ".",
+      top_right: ".",
+      left: ":",
+      right: ":",
+      bottom_left: ".",
+      bottom: ".",
+      bottom_right: "."
+    }
+  end
+
+  defp get_border_chars(_) do
+    get_border_chars(:solid)
+  end
+
+  defp apply_color(border_chars, color) when is_atom(color) do
+    ansi_code = color_to_ansi(color)
+    reset = "\e[0m"
+
+    Map.new(border_chars, fn {k, v} ->
+      {k, "#{ansi_code}#{v}#{reset}"}
+    end)
+  end
+
+  defp apply_color(border_chars, _), do: border_chars
+
+  defp color_to_ansi(:black), do: "\e[30m"
+  defp color_to_ansi(:red), do: "\e[31m"
+  defp color_to_ansi(:green), do: "\e[32m"
+  defp color_to_ansi(:yellow), do: "\e[33m"
+  defp color_to_ansi(:blue), do: "\e[34m"
+  defp color_to_ansi(:magenta), do: "\e[35m"
+  defp color_to_ansi(:cyan), do: "\e[36m"
+  defp color_to_ansi(:white), do: "\e[37m"
+  defp color_to_ansi(_), do: "\e[34m"
+
+  defp wrap_with_border(content, borders, config) do
+    lines = String.split(content, "\n")
+    width = Enum.map(lines, &String.length/1) |> Enum.max()
+
+    offset_spaces = String.duplicate(" ", config.offset)
+
+    top_line =
+      "#{offset_spaces}#{borders.top_left}#{String.duplicate(borders.top, width)}#{borders.top_right}"
+
+    bottom_line =
+      "#{offset_spaces}#{borders.bottom_left}#{String.duplicate(borders.bottom, width)}#{borders.bottom_right}"
+
+    middle_lines =
+      Enum.map(lines, fn line ->
+        padded_line = String.pad_trailing(line, width)
+        "#{offset_spaces}#{borders.left}#{padded_line}#{borders.right}"
+      end)
+
+    ([top_line | middle_lines] ++ [bottom_line])
+    |> Enum.join("\n")
+  end
 end

@@ -39,6 +39,7 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
   alias Raxol.Terminal.{OutputManager, ScreenBuffer, Cell}
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  alias Raxol.Terminal.Commands.CursorUtils
   alias Raxol.Terminal.Buffer.Eraser
 
   require Raxol.Core.Runtime.Log
@@ -111,43 +112,16 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
   ## Command Routing
 
   defp route_command(:csi, command, _params) do
-    case command do
-      # Cursor movement commands
-      "A" -> {:ok, &handle_cursor_up/3}
-      "B" -> {:ok, &handle_cursor_down/3}
-      "C" -> {:ok, &handle_cursor_forward/3}
-      "D" -> {:ok, &handle_cursor_backward/3}
-      "E" -> {:ok, &handle_cursor_next_line/3}
-      "F" -> {:ok, &handle_cursor_previous_line/3}
-      "G" -> {:ok, &handle_cursor_horizontal_absolute/3}
-      "H" -> {:ok, &handle_cursor_position/3}
-      # HVP - same as CUP
-      "f" -> {:ok, &handle_cursor_position/3}
-      # VPA
-      "d" -> {:ok, &handle_cursor_vertical_absolute/3}
-      # Erase commands
-      "J" -> {:ok, &handle_erase_display/3}
-      "K" -> {:ok, &handle_erase_line/3}
-      "X" -> {:ok, &handle_erase_character/3}
-      # Device commands
-      "c" -> {:ok, &handle_device_attributes/3}
-      "n" -> {:ok, &handle_device_status_report/3}
-      # Mode commands
-      "h" -> {:ok, &handle_set_mode/3}
-      "l" -> {:ok, &handle_reset_mode/3}
-      # Text formatting commands
-      "m" -> {:ok, &handle_sgr/3}
-      # Scrolling commands
-      "S" -> {:ok, &handle_scroll_up/3}
-      "T" -> {:ok, &handle_scroll_down/3}
-      # Buffer operations
-      "L" -> {:ok, &handle_insert_lines/3}
-      "M" -> {:ok, &handle_delete_lines/3}
-      "P" -> {:ok, &handle_delete_characters/3}
-      "@" -> {:ok, &handle_insert_characters/3}
-      # Tab commands
-      "g" -> {:ok, &handle_tab_clear/3}
-      _ -> {:error, :unknown_command}
+    case categorize_csi_command(command) do
+      {:cursor, handler} -> {:ok, handler}
+      {:erase, handler} -> {:ok, handler}
+      {:device, handler} -> {:ok, handler}
+      {:mode, handler} -> {:ok, handler}
+      {:text, handler} -> {:ok, handler}
+      {:scroll, handler} -> {:ok, handler}
+      {:buffer, handler} -> {:ok, handler}
+      {:tab, handler} -> {:ok, handler}
+      :unknown -> {:error, :unknown_command}
     end
   end
 
@@ -172,6 +146,100 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
 
   defp route_command(_type, _command, _params) do
     {:error, :unknown_command}
+  end
+
+  ## CSI Command Categorization
+
+  defp categorize_csi_command(command) do
+    cond do
+      command in ~w[A B C D E F G H f d] -> {:cursor, get_cursor_handler(command)}
+      command in ~w[J K X] -> {:erase, get_erase_handler(command)}
+      command in ~w[c n] -> {:device, get_device_handler(command)}
+      command in ~w[h l] -> {:mode, get_mode_handler(command)}
+      command == "m" -> {:text, &handle_sgr/3}
+      command in ~w[S T] -> {:scroll, get_scroll_handler(command)}
+      command in ~w[L M P @] -> {:buffer, get_buffer_handler(command)}
+      command == "g" -> {:tab, &handle_tab_clear/3}
+      true -> :unknown
+    end
+  end
+
+  defp get_cursor_handler(command) do
+    cursor_handlers()[command]
+  end
+
+  defp get_erase_handler(command) do
+    erase_handlers()[command]
+  end
+
+  defp get_device_handler(command) do
+    device_handlers()[command]
+  end
+
+  defp get_mode_handler(command) do
+    mode_handlers()[command]
+  end
+
+  defp get_scroll_handler(command) do
+    scroll_handlers()[command]
+  end
+
+  defp get_buffer_handler(command) do
+    buffer_handlers()[command]
+  end
+
+  # Handler maps
+  defp cursor_handlers do
+    %{
+      "A" => &handle_cursor_up/3,
+      "B" => &handle_cursor_down/3,
+      "C" => &handle_cursor_forward/3,
+      "D" => &handle_cursor_backward/3,
+      "E" => &handle_cursor_next_line/3,
+      "F" => &handle_cursor_previous_line/3,
+      "G" => &handle_cursor_horizontal_absolute/3,
+      "H" => &handle_cursor_position/3,
+      "f" => &handle_cursor_position/3,  # HVP - same as CUP
+      "d" => &handle_cursor_vertical_absolute/3  # VPA
+    }
+  end
+
+  defp erase_handlers do
+    %{
+      "J" => &handle_erase_display/3,
+      "K" => &handle_erase_line/3,
+      "X" => &handle_erase_character/3
+    }
+  end
+
+  defp device_handlers do
+    %{
+      "c" => &handle_device_attributes/3,
+      "n" => &handle_device_status_report/3
+    }
+  end
+
+  defp mode_handlers do
+    %{
+      "h" => &handle_set_mode/3,
+      "l" => &handle_reset_mode/3
+    }
+  end
+
+  defp scroll_handlers do
+    %{
+      "S" => &handle_scroll_up/3,
+      "T" => &handle_scroll_down/3
+    }
+  end
+
+  defp buffer_handlers do
+    %{
+      "L" => &handle_insert_lines/3,
+      "M" => &handle_delete_lines/3,
+      "P" => &handle_delete_characters/3,
+      "@" => &handle_insert_characters/3
+    }
   end
 
   ## Command Execution
@@ -277,15 +345,23 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
          _context
        ) do
     case {params, intermediates} do
-      {[], _} ->
+      {[], ""} ->
+        # Primary DA with no params and no intermediates
         response = generate_primary_da_response()
         {:ok, OutputManager.write(emulator, response)}
 
-      {[0], _} ->
+      {[0], ""} ->
+        # Primary DA with explicit 0 param
         response = generate_primary_da_response()
         {:ok, OutputManager.write(emulator, response)}
 
       {[], ">"} ->
+        # Secondary DA with no params
+        response = generate_secondary_da_response()
+        {:ok, OutputManager.write(emulator, response)}
+
+      {[0], ">"} ->
+        # Secondary DA with explicit 0 param
         response = generate_secondary_da_response()
         {:ok, OutputManager.write(emulator, response)}
 
@@ -297,6 +373,7 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
 
   defp handle_device_status_report(emulator, %{params: params}, _context) do
     code = get_param(params, 0, 5)
+    Raxol.Core.Runtime.Log.debug("DSR request: code=#{code}")
 
     response =
       case code do
@@ -307,6 +384,7 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
         _ -> nil
       end
 
+    Raxol.Core.Runtime.Log.debug("DSR response: #{inspect(response)}")
     case response do
       nil -> {:ok, emulator}
       _ -> {:ok, OutputManager.write(emulator, response)}
@@ -433,12 +511,13 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
     {row, col} = cursor_pos
 
     {new_row, new_col} =
-      case direction do
-        :up -> {max(0, row - amount), col}
-        :down -> {min(emulator.height - 1, row + amount), col}
-        :left -> {row, max(0, col - amount)}
-        :right -> {row, min(emulator.width - 1, col + amount)}
-      end
+      CursorUtils.calculate_new_cursor_position(
+        {row, col},
+        direction,
+        amount,
+        emulator.width,
+        emulator.height
+      )
 
     set_cursor_position(emulator, {new_row, new_col})
   end
@@ -450,22 +529,25 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
   end
 
   defp get_cursor_position(emulator) do
-    case emulator.cursor do
-      pid when is_pid(pid) ->
-        case CursorManager.get_position(pid) do
-          {:ok, pos} -> pos
-          pos when is_tuple(pos) -> pos
-          _ -> {0, 0}
-        end
+    extract_position_from_cursor(emulator.cursor)
+  end
 
-      %{position: pos} when is_tuple(pos) ->
-        pos
+  defp extract_position_from_cursor(cursor) do
+    case cursor do
+      pid when is_pid(pid) -> get_position_from_pid(pid)
+      %{position: pos} when is_tuple(pos) -> pos
+      %{row: row, col: col} -> {row, col}
+      _ -> {0, 0}
+    end
+  end
 
-      %{row: row, col: col} ->
-        {row, col}
-
-      _ ->
-        {0, 0}
+  defp get_position_from_pid(pid) do
+    case CursorManager.get_position(pid) do
+      {:ok, pos} when is_tuple(pos) -> pos
+      {:ok, {row, col}} -> {row, col}
+      pos when is_tuple(pos) -> pos
+      {row, col} when is_integer(row) and is_integer(col) -> {row, col}
+      _ -> {0, 0}
     end
   end
 
@@ -586,12 +668,16 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
   end
 
   defp generate_secondary_da_response do
-    # Secondary DA response with version info
-    "\e[>0;279;0c"
+    # Secondary DA response with version info (basic xterm-like response)
+    "\e[>0;0;0c"
   end
 
   defp generate_cursor_position_report(emulator) do
-    {row, col} = get_cursor_position(emulator)
+    pos = get_cursor_position(emulator)
+    {row, col} = case pos do
+      {r, c} when is_integer(r) and is_integer(c) -> {r, c}
+      _ -> {0, 0}
+    end
     # Convert to 1-based
     "\e[#{row + 1};#{col + 1}R"
   end
@@ -676,75 +762,87 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
 
   defp apply_sgr_parameter(emulator, param) do
     current_style = get_current_text_style(emulator)
-
-    new_style =
-      case param do
-        0 ->
-          TextFormatting.reset_attributes(current_style)
-
-        1 ->
-          TextFormatting.set_bold(current_style)
-
-        2 ->
-          TextFormatting.set_faint(current_style)
-
-        3 ->
-          TextFormatting.set_italic(current_style)
-
-        4 ->
-          TextFormatting.set_underline(current_style)
-
-        5 ->
-          TextFormatting.set_blink(current_style)
-
-        7 ->
-          TextFormatting.set_reverse(current_style)
-
-        8 ->
-          TextFormatting.set_conceal(current_style)
-
-        9 ->
-          TextFormatting.set_strikethrough(current_style)
-
-        22 ->
-          TextFormatting.reset_bold(current_style)
-          |> TextFormatting.reset_faint()
-
-        23 ->
-          TextFormatting.reset_italic(current_style)
-
-        24 ->
-          TextFormatting.reset_underline(current_style)
-
-        25 ->
-          TextFormatting.reset_blink(current_style)
-
-        27 ->
-          TextFormatting.reset_reverse(current_style)
-
-        28 ->
-          TextFormatting.reset_conceal(current_style)
-
-        29 ->
-          TextFormatting.reset_strikethrough(current_style)
-
-        n when n >= 30 and n <= 37 ->
-          TextFormatting.set_foreground(current_style, n - 30)
-
-        n when n >= 40 and n <= 47 ->
-          TextFormatting.set_background(current_style, n - 40)
-
-        39 ->
-          TextFormatting.reset_foreground(current_style)
-
-        49 ->
-          TextFormatting.reset_background(current_style)
-
-        _ ->
-          current_style
-      end
-
+    new_style = apply_sgr_formatting(current_style, param)
     set_current_text_style(emulator, new_style)
+  end
+
+  defp apply_sgr_formatting(style, param) do
+    case categorize_sgr_parameter(param) do
+      {:reset, _} -> TextFormatting.reset_attributes(style)
+      {:set_attribute, attribute} -> apply_text_attribute(style, attribute)
+      {:reset_attribute, attribute} -> reset_text_attribute(style, attribute)
+      {:color, type, value} -> apply_color(style, type, value)
+      :unknown -> style
+    end
+  end
+
+  defp categorize_sgr_parameter(param) do
+    sgr_mappings()[param] || categorize_sgr_range(param)
+  end
+
+  defp categorize_sgr_range(param) do
+    cond do
+      param >= 30 and param <= 37 -> {:color, :foreground, param - 30}
+      param >= 40 and param <= 47 -> {:color, :background, param - 40}
+      true -> :unknown
+    end
+  end
+
+  defp sgr_mappings do
+    %{
+      0 => {:reset, :all},
+      1 => {:set_attribute, :bold},
+      2 => {:set_attribute, :faint},
+      3 => {:set_attribute, :italic},
+      4 => {:set_attribute, :underline},
+      5 => {:set_attribute, :blink},
+      7 => {:set_attribute, :reverse},
+      8 => {:set_attribute, :conceal},
+      9 => {:set_attribute, :strikethrough},
+      22 => {:reset_attribute, :bold_faint},
+      23 => {:reset_attribute, :italic},
+      24 => {:reset_attribute, :underline},
+      25 => {:reset_attribute, :blink},
+      27 => {:reset_attribute, :reverse},
+      28 => {:reset_attribute, :conceal},
+      29 => {:reset_attribute, :strikethrough},
+      39 => {:color, :foreground, :reset},
+      49 => {:color, :background, :reset}
+    }
+  end
+
+  defp apply_text_attribute(style, attribute) do
+    case attribute do
+      :bold -> TextFormatting.set_bold(style)
+      :faint -> TextFormatting.set_faint(style)
+      :italic -> TextFormatting.set_italic(style)
+      :underline -> TextFormatting.set_underline(style)
+      :blink -> TextFormatting.set_blink(style)
+      :reverse -> TextFormatting.set_reverse(style)
+      :conceal -> TextFormatting.set_conceal(style)
+      :strikethrough -> TextFormatting.set_strikethrough(style)
+    end
+  end
+
+  defp reset_text_attribute(style, attribute) do
+    case attribute do
+      :bold_faint -> TextFormatting.reset_bold(style) |> TextFormatting.reset_faint()
+      :italic -> TextFormatting.reset_italic(style)
+      :underline -> TextFormatting.reset_underline(style)
+      :blink -> TextFormatting.reset_blink(style)
+      :reverse -> TextFormatting.reset_reverse(style)
+      :conceal -> TextFormatting.reset_conceal(style)
+      :strikethrough -> TextFormatting.reset_strikethrough(style)
+    end
+  end
+
+  defp apply_color(style, type, value) do
+    case {type, value} do
+      {:foreground, :reset} -> TextFormatting.reset_foreground(style)
+      {:background, :reset} -> TextFormatting.reset_background(style)
+      {:foreground, color_value} -> TextFormatting.set_foreground(style, color_value)
+      {:background, color_value} -> TextFormatting.set_background(style, color_value)
+    end
   end
 
   defp perform_scroll(emulator, direction, lines) do
@@ -771,14 +869,14 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
   # Buffer operation implementations
   defp perform_insert_lines(emulator, count) do
     active_buffer = Emulator.get_screen_buffer(emulator)
-    {_, y} = get_cursor_position(emulator)
+    {y, _} = get_cursor_position(emulator)
 
     style = get_default_style(active_buffer)
 
     # Check for scroll region
     case Map.get(emulator, :scroll_region) do
       {scroll_top, scroll_bottom} when y >= scroll_top and y <= scroll_bottom ->
-        _updated_buffer =
+        updated_buffer =
           insert_lines_within_scroll_region(
             active_buffer,
             y,
@@ -788,48 +886,88 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
             scroll_bottom
           )
 
-        # Note: Buffer operations are performed in-place
-        updated_emulator = emulator
+        # CRITICAL FIX: Actually update the emulator with new buffer
+        updated_emulator = update_emulator_buffer(emulator, updated_buffer)
         {:ok, updated_emulator}
 
       _ ->
-        _updated_buffer = insert_lines_normal(active_buffer, y, count, style)
-        # Note: Buffer operations are performed in-place
-        updated_emulator = emulator
+        updated_buffer = insert_lines_normal(active_buffer, y, count, style)
+        # CRITICAL FIX: Actually update the emulator with new buffer
+        updated_emulator = update_emulator_buffer(emulator, updated_buffer)
         {:ok, updated_emulator}
     end
   end
 
   defp perform_delete_lines(emulator, count) do
     active_buffer = Emulator.get_screen_buffer(emulator)
-    {_, y} = get_cursor_position(emulator)
+    {y, _} = get_cursor_position(emulator)
 
     style = get_default_style(active_buffer)
-    _updated_buffer = delete_lines(active_buffer, y, count, style)
-    # Note: Buffer operations are performed in-place
-    updated_emulator = emulator
-    {:ok, updated_emulator}
+
+    # Check for scroll region
+    case Map.get(emulator, :scroll_region) do
+      {scroll_top, scroll_bottom} when y >= scroll_top and y <= scroll_bottom ->
+        Raxol.Core.Runtime.Log.debug("DL using scroll region: y=#{y}, region=#{scroll_top}..#{scroll_bottom}")
+        updated_buffer =
+          delete_lines_within_scroll_region(
+            active_buffer,
+            y,
+            count,
+            style,
+            scroll_top,
+            scroll_bottom
+          )
+
+        # CRITICAL FIX: Actually update the emulator with new buffer
+        updated_emulator = update_emulator_buffer(emulator, updated_buffer)
+        {:ok, updated_emulator}
+
+      _ ->
+        Raxol.Core.Runtime.Log.debug("DL NOT using scroll region: y=#{y}, scroll_region=#{inspect(Map.get(emulator, :scroll_region))}")
+        updated_buffer = delete_lines(active_buffer, y, count, style)
+        # CRITICAL FIX: Actually update the emulator with new buffer
+        updated_emulator = update_emulator_buffer(emulator, updated_buffer)
+        {:ok, updated_emulator}
+    end
   end
 
   defp perform_delete_characters(emulator, count) do
     active_buffer = Emulator.get_screen_buffer(emulator)
-    {x, y} = get_cursor_position(emulator)
+    {y, x} = get_cursor_position(emulator)
 
     style = get_default_style(active_buffer)
-    _updated_buffer = delete_characters(active_buffer, y, x, count, style)
-    # Note: Buffer operations are performed in-place
-    updated_emulator = emulator
+    updated_buffer = delete_characters(active_buffer, y, x, count, style)
+    # CRITICAL FIX: Actually update the emulator with new buffer
+    updated_emulator = update_emulator_buffer(emulator, updated_buffer)
     {:ok, updated_emulator}
   end
 
   defp perform_insert_characters(emulator, count) do
     active_buffer = Emulator.get_screen_buffer(emulator)
-    {x, y} = get_cursor_position(emulator)
+    {y, x} = get_cursor_position(emulator)
+
+    Raxol.Core.Runtime.Log.debug("perform_insert_characters: count=#{count}, pos=({#{x}, #{y}})")
+    Raxol.Core.Runtime.Log.debug("Buffer type: #{inspect(active_buffer.__struct__)}")
+    Raxol.Core.Runtime.Log.debug("Buffer cells nil?: #{inspect(is_nil(active_buffer.cells))}")
+    Raxol.Core.Runtime.Log.debug("Buffer cells length: #{inspect(length(active_buffer.cells || []))}")
+    Raxol.Core.Runtime.Log.debug("Buffer dimensions: #{active_buffer.width}x#{active_buffer.height}")
+    Raxol.Core.Runtime.Log.debug("First cell value: #{inspect(Enum.at(active_buffer.cells, 0))}")
 
     style = get_default_style(active_buffer)
-    _updated_buffer = insert_characters(active_buffer, y, x, count, style)
-    # Note: Buffer operations are performed in-place
-    updated_emulator = emulator
+    Raxol.Core.Runtime.Log.debug("Style: #{inspect(style)}")
+
+    updated_buffer = insert_characters(active_buffer, y, x, count, style)
+    Raxol.Core.Runtime.Log.debug("Updated buffer cells nil?: #{inspect(is_nil(updated_buffer.cells))}")
+
+    if not is_nil(active_buffer.cells) and not is_nil(updated_buffer.cells) do
+      line_before = Enum.at(active_buffer.cells, y)
+      line_after = Enum.at(updated_buffer.cells, y)
+      Raxol.Core.Runtime.Log.debug("y=#{y}, line_before: #{inspect(line_before |> Enum.take(3))}")
+      Raxol.Core.Runtime.Log.debug("y=#{y}, line_after: #{inspect(line_after |> Enum.take(3))}")
+    end
+
+    # Update the emulator with the new buffer
+    updated_emulator = update_emulator_buffer(emulator, updated_buffer)
     {:ok, updated_emulator}
   end
 
@@ -903,6 +1041,57 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
     new_scroll_region = scroll_before ++ blank_lines_to_insert ++ kept_lines
 
     # Pad to correct size
+    padded_scroll_region =
+      if length(new_scroll_region) < max_lines_in_region do
+        new_scroll_region ++
+          List.duplicate(
+            blank_line,
+            max_lines_in_region - length(new_scroll_region)
+          )
+      else
+        Enum.take(new_scroll_region, max_lines_in_region)
+      end
+
+    # Combine all parts
+    final_cells =
+      lines_before_scroll ++ padded_scroll_region ++ lines_after_scroll
+
+    %{buffer | cells: final_cells}
+  end
+
+  defp delete_lines_within_scroll_region(
+         buffer,
+         y,
+         count,
+         style,
+         scroll_top,
+         scroll_bottom
+       ) do
+    # Create blank lines for replacement
+    blank_cell = %Cell{style: style, char: " "}
+    blank_line = List.duplicate(blank_cell, buffer.width)
+    blank_lines_to_add = List.duplicate(blank_line, count)
+
+    # Split buffer into regions
+    {lines_before_scroll, rest} = Enum.split(buffer.cells, scroll_top)
+
+    {scroll_region_lines, lines_after_scroll} =
+      Enum.split(rest, scroll_bottom - scroll_top + 1)
+
+    # Split scroll region at deletion point
+    deletion_point = y - scroll_top
+
+    {scroll_before, scroll_after} =
+      Enum.split(scroll_region_lines, deletion_point)
+
+    # Remove deleted lines and keep remaining lines
+    remaining_lines = Enum.drop(scroll_after, count)
+
+    # Reconstruct scroll region with blank lines at bottom
+    max_lines_in_region = scroll_bottom - scroll_top + 1
+    new_scroll_region = scroll_before ++ remaining_lines ++ blank_lines_to_add
+
+    # Ensure correct size
     padded_scroll_region =
       if length(new_scroll_region) < max_lines_in_region do
         new_scroll_region ++

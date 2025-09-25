@@ -161,21 +161,7 @@ defmodule Raxol.Benchmark.SuiteRegistry do
 
   @impl true
   def handle_call(:discover_suites, _from, state) do
-    discovered = discover_benchmark_modules()
-
-    updated_state =
-      Enum.reduce(discovered, state, fn module, acc_state ->
-        case validate_suite_module(module) do
-          {:ok, suite_info} ->
-            name = suite_info.name
-            updated_suites = Map.put(acc_state.suites, name, suite_info)
-            %{acc_state | suites: updated_suites}
-
-          _ ->
-            acc_state
-        end
-      end)
-
+    updated_state = apply_discovered_suites(state)
     count = map_size(updated_state.suites) - map_size(state.suites)
     {:reply, {:ok, count}, updated_state}
   end
@@ -198,25 +184,27 @@ defmodule Raxol.Benchmark.SuiteRegistry do
 
   @impl true
   def handle_info(:auto_discover, state) do
-    discovered = discover_benchmark_modules()
-
-    updated_state =
-      Enum.reduce(discovered, state, fn module, acc_state ->
-        case validate_suite_module(module) do
-          {:ok, suite_info} ->
-            name = suite_info.name
-            updated_suites = Map.put(acc_state.suites, name, suite_info)
-            %{acc_state | suites: updated_suites}
-
-          _ ->
-            acc_state
-        end
-      end)
-
+    updated_state = apply_discovered_suites(state)
     {:noreply, updated_state}
   end
 
   # Private Functions
+
+  defp apply_discovered_suites(state) do
+    discovered = discover_benchmark_modules()
+
+    Enum.reduce(discovered, state, fn module, acc_state ->
+      case validate_suite_module(module) do
+        {:ok, suite_info} ->
+          name = suite_info.name
+          updated_suites = Map.put(acc_state.suites, name, suite_info)
+          %{acc_state | suites: updated_suites}
+
+        _ ->
+          acc_state
+      end
+    end)
+  end
 
   defp validate_suite_module(module) do
     cond do

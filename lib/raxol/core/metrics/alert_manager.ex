@@ -39,8 +39,11 @@ defmodule Raxol.Core.Metrics.AlertManager do
   }
 
   # Helper function to get the process name
+  @spec process_name(String.t() | integer()) :: any()
   defp process_name(pid) when is_pid(pid), do: pid
+  @spec process_name(String.t() | atom()) :: any()
   defp process_name(name) when is_atom(name), do: name
+  @spec process_name(any()) :: any()
   defp process_name(_), do: __MODULE__
 
   @doc """
@@ -175,6 +178,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
     {:noreply, new_state}
   end
 
+  @spec validate_rule(any()) :: {:ok, any()} | {:error, any()}
   defp validate_rule(rule) do
     %{
       name: Map.get(rule, :name, "Unnamed Alert"),
@@ -190,12 +194,14 @@ defmodule Raxol.Core.Metrics.AlertManager do
     }
   end
 
+  @spec check_all_alerts(map()) :: any()
   defp check_all_alerts(state) do
     Enum.reduce(state.rules, state, fn {rule_id, rule}, acc_state ->
       check_alert(rule_id, rule, acc_state)
     end)
   end
 
+  @spec check_alert(String.t() | integer(), any(), map()) :: any()
   defp check_alert(rule_id, rule, state) do
     # For grouped metrics, we need to get all metrics regardless of tags
     metrics_result =
@@ -274,6 +280,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
     end
   end
 
+  @spec get_single_value(any()) :: any() | nil
   defp get_single_value(metrics) do
     case List.first(metrics) do
       nil -> nil
@@ -281,6 +288,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
     end
   end
 
+  @spec get_grouped_values(any(), any()) :: any() | nil
   defp get_grouped_values(metrics, group_by) do
     metrics
     |> Enum.group_by(fn metric ->
@@ -296,6 +304,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
     end)
   end
 
+  @spec evaluate_alert(any(), any(), map()) :: any()
   defp evaluate_alert(current_value, rule, alert_state) do
     now = DateTime.utc_now()
 
@@ -314,6 +323,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
     {new_alert_state, should_trigger and not in_cooldown}
   end
 
+  @spec in_cooldown?(any(), any(), any()) :: boolean()
   defp in_cooldown?(last_triggered, cooldown, now) do
     case last_triggered do
       nil -> false
@@ -321,6 +331,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
     end
   end
 
+  @spec evaluate_condition(any(), any(), any()) :: any()
   defp evaluate_condition(condition, value, threshold) do
     case {condition, value, threshold} do
       {_, nil, _} -> false
@@ -332,6 +343,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
     end
   end
 
+  @spec trigger_alert(String.t() | integer(), any(), any(), map()) :: any()
   defp trigger_alert(rule_id, rule, current_value, state) do
     now = DateTime.utc_now()
 
@@ -368,6 +380,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
     }
   end
 
+  @spec send_notifications(any(), any()) :: any()
   defp send_notifications(alert, channels) do
     Enum.each(channels, fn channel ->
       case channel do
@@ -379,6 +392,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
     end)
   end
 
+  @spec send_email_notification(any()) :: any()
   defp send_email_notification(alert) do
     Raxol.Core.Runtime.Log.info(
       "Alert: #{alert.rule_name} - #{alert.severity} threshold exceeded",
@@ -392,6 +406,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
     )
   end
 
+  @spec send_slack_notification(any()) :: any()
   defp send_slack_notification(alert) do
     Raxol.Core.Runtime.Log.info(
       "Alert: #{alert.rule_name} - #{alert.severity} threshold exceeded",
@@ -405,6 +420,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
     )
   end
 
+  @spec send_webhook_notification(any()) :: any()
   defp send_webhook_notification(alert) do
     Raxol.Core.Runtime.Log.info(
       "Alert: #{alert.rule_name} - #{alert.severity} threshold exceeded",

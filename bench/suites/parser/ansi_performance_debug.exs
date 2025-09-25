@@ -8,7 +8,7 @@ IO.puts("ANSI Performance Debug")
 IO.puts("=" <> String.duplicate("=", 40))
 
 # Test with minimal emulator
-emulator = Emulator.new_minimal(80, 24)
+emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
 
 # Test different ANSI patterns
 patterns = [
@@ -51,7 +51,7 @@ text = "\e[31mRed\e[0m"
 {time_fresh, _} =
   :timer.tc(fn ->
     Enum.each(1..10, fn _ ->
-      fresh_emulator = Emulator.new_minimal(80, 24)
+      fresh_emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
       Parser.parse(fresh_emulator, text)
     end)
   end)

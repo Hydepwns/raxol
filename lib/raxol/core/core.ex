@@ -226,9 +226,7 @@ defmodule Raxol.Core do
   """
   @spec load_plugin(plugin_id(), keyword()) :: {:ok, map()} | {:error, term()}
   def load_plugin(plugin_id, _options \\ []) do
-    case Raxol.Core.Runtime.Plugins.PluginManager.load_plugin(
-           plugin_id
-         ) do
+    case Raxol.Core.Runtime.Plugins.PluginManager.load_plugin(plugin_id) do
       {:ok, plugin_info} ->
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Plugin loaded: #{inspect(plugin_id)}"
@@ -501,13 +499,15 @@ defmodule Raxol.Core do
   # Returns: {:ok, %{version: "1.0.0", terminal: "xterm", colors: 256}}
   ```
   """
-  @spec get_system_info() :: {:ok, %{
-    accessibility: boolean(),
-    colors: 0 | 256,
-    performance: map(),
-    terminal: binary(),
-    version: binary()
-  }}
+  @spec get_system_info() ::
+          {:ok,
+           %{
+             accessibility: boolean(),
+             colors: 0 | 256,
+             performance: map(),
+             terminal: binary(),
+             version: binary()
+           }}
   def get_system_info do
     info = %{
       version: get_version(),
@@ -546,6 +546,7 @@ defmodule Raxol.Core do
   # Private Functions
   # ============================================================================
 
+  @spec validate_application_module(module()) :: {:ok, any()} | {:error, any()}
   defp validate_application_module(app_module) do
     case {function_exported?(app_module, :init, 1),
           function_exported?(app_module, :update, 2),
@@ -558,6 +559,7 @@ defmodule Raxol.Core do
     end
   end
 
+  @spec initialize_core_systems(any()) :: any()
   defp initialize_core_systems(options) do
     _ = Performance.init(Keyword.get(options, :performance, []))
     _ = Metrics.init(Keyword.get(options, :metrics, []))
@@ -567,6 +569,7 @@ defmodule Raxol.Core do
     :ok
   end
 
+  @spec start_runtime(module(), any()) :: any()
   defp start_runtime(app_module, options) do
     case Supervisor.start_link(%{
            app_module: app_module,

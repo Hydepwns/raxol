@@ -1,6 +1,21 @@
 defmodule Raxol.Core.Runtime.Rendering.Engine.Behaviour do
-  @moduledoc "Behaviour for Rendering.Engine, used for mocking."
+  @moduledoc """
+  Behavior for rendering engines.
+  """
 
-  @callback start_link(initial_state_map :: map()) :: GenServer.on_start()
-  @callback handle_cast(:render_frame, map()) :: {:noreply, map()}
+  @doc """
+  Renders a view to output.
+  """
+  @callback render(view :: term(), context :: term()) ::
+              {:ok, term()} | {:error, term()}
+
+  @doc """
+  Initializes the rendering engine.
+  """
+  @callback init(opts :: keyword()) :: {:ok, term()} | {:error, term()}
+
+  @doc """
+  Terminates the rendering engine.
+  """
+  @callback terminate(state :: term()) :: :ok
 end

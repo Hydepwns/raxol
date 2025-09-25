@@ -291,6 +291,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
   # Private helper functions
 
+  @spec parse_shortcut_string(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_shortcut_string(shortcut) when is_binary(shortcut) do
     parts = String.split(shortcut, "+")
     {modifiers, [key]} = Enum.split(parts, -1)
@@ -314,6 +315,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     }
   end
 
+  @spec shortcut_key(any()) :: any()
   defp shortcut_key(parsed) do
     modifiers_str = Enum.join(parsed.modifiers, "_")
     "#{modifiers_str}_#{parsed.key}"

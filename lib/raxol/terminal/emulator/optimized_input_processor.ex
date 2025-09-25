@@ -211,7 +211,8 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
       {new_emu, [Enum.reverse(batch_outputs) | all_outputs]}
     end)
     |> then(fn {final_emu, outputs} ->
-      {final_emu, outputs |> Enum.reverse() |> List.flatten() |> iolist_to_binary()}
+      {final_emu,
+       outputs |> Enum.reverse() |> List.flatten() |> iolist_to_binary()}
     end)
   end
 
@@ -274,5 +275,6 @@ defmodule Raxol.Terminal.Emulator.OptimizedInputProcessor do
     scrolled_emu = scroll_once(emu)
     {scrolled_emu, emu}
   end
+
   defp handle_cursor_scroll(false, emu), do: {nil, emu}
 end

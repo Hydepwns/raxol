@@ -49,10 +49,10 @@ defmodule Raxol.Minimal do
   use GenServer
   require Logger
 
-  alias Raxol.Terminal.ANSI.AnsiParser
+  alias Raxol.Terminal.ANSI.Utils.AnsiParser
   alias Raxol.Terminal.Buffer
   alias Raxol.Terminal.Buffer.Cell
-  alias Raxol.Terminal.Buffer.Operations
+  alias Raxol.Terminal.ScreenBuffer.Operations
 
   @type terminal_mode :: :raw | :cooked | :cbreak
   @type color_mode :: :none | :ansi16 | :ansi256 | :rgb

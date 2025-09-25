@@ -217,6 +217,7 @@ defmodule Raxol.Core.KeyboardNavigator do
 
   # Private helper functions
 
+  @spec ensure_keyword_list(keyword()) :: any()
   defp ensure_keyword_list(opts) when is_list(opts) do
     case Keyword.keyword?(opts) do
       true ->
@@ -227,9 +228,11 @@ defmodule Raxol.Core.KeyboardNavigator do
     end
   end
 
+  @spec ensure_keyword_list(keyword()) :: any()
   defp ensure_keyword_list(opts) when is_map(opts) do
     Map.to_list(opts)
   end
 
+  @spec ensure_keyword_list(any()) :: any()
   defp ensure_keyword_list(_), do: []
 end

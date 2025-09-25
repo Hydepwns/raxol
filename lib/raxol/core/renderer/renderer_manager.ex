@@ -137,6 +137,7 @@ defmodule Raxol.Core.Renderer.RendererManager do
     end
   end
 
+  @spec render_component(any(), Raxol.Terminal.ScreenBuffer.t()) :: any()
   defp render_component(component, buffer) do
     # Get component's view
     view = component.module.view(component.state)
@@ -152,8 +153,10 @@ defmodule Raxol.Core.Renderer.RendererManager do
     end
   end
 
+  @spec render_view(any(), Raxol.Terminal.ScreenBuffer.t()) :: any()
   defp render_view(nil, buffer), do: buffer
 
+  @spec render_view(any(), Raxol.Terminal.ScreenBuffer.t()) :: any()
   defp render_view(view, buffer) do
     case view do
       %{type: :text, content: content, position: {x, y}} ->
@@ -167,6 +170,7 @@ defmodule Raxol.Core.Renderer.RendererManager do
     end
   end
 
+  @spec render_text(any(), any(), Raxol.Terminal.ScreenBuffer.t()) :: any()
   defp render_text(text, {x, y}, buffer) do
     text
     |> String.graphemes()
@@ -176,10 +180,12 @@ defmodule Raxol.Core.Renderer.RendererManager do
     end)
   end
 
+  @spec render_damage(any()) :: any()
   defp render_damage(damage) do
     Enum.each(damage, &render_cell/1)
   end
 
+  @spec render_cell(any()) :: any()
   defp render_cell({{x, y}, cell}) do
     case cell do
       nil ->
@@ -199,6 +205,7 @@ defmodule Raxol.Core.Renderer.RendererManager do
     end
   end
 
+  @spec build_styles(any(), any(), any()) :: any()
   defp build_styles(fg, bg, style) do
     [
       case fg do
@@ -213,37 +220,60 @@ defmodule Raxol.Core.Renderer.RendererManager do
     ]
   end
 
+  @spec style_to_ansi(any()) :: any()
   defp style_to_ansi(:bold), do: IO.ANSI.bright()
+  @spec style_to_ansi(any()) :: any()
   defp style_to_ansi(:underline), do: IO.ANSI.underline()
+  @spec style_to_ansi(any()) :: any()
   defp style_to_ansi(:italic), do: IO.ANSI.italic()
+  @spec style_to_ansi(any()) :: any()
   defp style_to_ansi(_), do: []
 
   # Helper to convert background color atom/code to ANSI sequence
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:black), do: IO.ANSI.color(40)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:red), do: IO.ANSI.color(41)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:green), do: IO.ANSI.color(42)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:yellow), do: IO.ANSI.color(43)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:blue), do: IO.ANSI.color(44)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:magenta), do: IO.ANSI.color(45)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:cyan), do: IO.ANSI.color(46)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:white), do: IO.ANSI.color(47)
 
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(code) when is_integer(code) and code >= 0 and code <= 7,
     do: IO.ANSI.color(code + 40)
 
   # Bright backgrounds
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:bright_black), do: IO.ANSI.color(100)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:bright_red), do: IO.ANSI.color(101)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:bright_green), do: IO.ANSI.color(102)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:bright_yellow), do: IO.ANSI.color(103)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:bright_blue), do: IO.ANSI.color(104)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:bright_magenta), do: IO.ANSI.color(105)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:bright_cyan), do: IO.ANSI.color(106)
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(:bright_white), do: IO.ANSI.color(107)
 
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(code) when is_integer(code) and code >= 100 and code <= 107,
     do: IO.ANSI.color(code)
 
   # Default to no background color
+  @spec bg_to_ansi(any()) :: any()
   defp bg_to_ansi(_), do: []
 end

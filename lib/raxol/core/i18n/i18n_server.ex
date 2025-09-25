@@ -256,10 +256,20 @@ defmodule Raxol.Core.I18n.I18nServer do
   end
 
   # Helper functions
+  @spec handle_locale_change(any(), any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_locale_change(false, _locale, state) do
     {:reply, {:error, :locale_not_available}, state}
   end
 
+  @spec handle_locale_change(any(), any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_locale_change(true, locale, state) do
     previous_locale = state.current_locale
     new_state = %{state | current_locale: locale}
@@ -276,8 +286,10 @@ defmodule Raxol.Core.I18n.I18nServer do
     {:reply, :ok, new_state}
   end
 
+  @spec broadcast_locale_event(any(), any(), any(), map()) :: any()
   defp broadcast_locale_event(nil, _previous_locale, _locale, _state), do: :ok
 
+  @spec broadcast_locale_event(any(), any(), any(), map()) :: any()
   defp broadcast_locale_event(event_manager, previous_locale, locale, new_state) do
     event = {:locale_changed, previous_locale, locale}
     event_manager.broadcast(event)
@@ -286,6 +298,7 @@ defmodule Raxol.Core.I18n.I18nServer do
 
   # Private Functions
 
+  @spec load_translations(map(), any()) :: any()
   defp load_translations(state, locale) do
     # Default translations - in production, load from files
     default_translations =
@@ -337,6 +350,11 @@ defmodule Raxol.Core.I18n.I18nServer do
     %{state | translations: updated_translations}
   end
 
+  @spec handle_locale_changed(any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_locale_changed({:locale_changed, old_locale, new_locale}, state) do
     old_rtl = Enum.member?(state.rtl_locales, old_locale)
     new_rtl = Enum.member?(state.rtl_locales, new_locale)
@@ -346,20 +364,40 @@ defmodule Raxol.Core.I18n.I18nServer do
     :ok
   end
 
+  @spec handle_rtl_change(any(), any(), any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_rtl_change(false, _event_manager, _new_rtl), do: :ok
+
+  @spec handle_rtl_change(any(), any(), any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_rtl_change(true, nil, _new_rtl), do: :ok
 
+  @spec handle_rtl_change(any(), any(), any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_rtl_change(true, event_manager, new_rtl) do
     event_manager.broadcast({:rtl_changed, new_rtl})
   end
 
+  @spec update_accessibility_direction(any(), any()) :: any()
   defp update_accessibility_direction(nil, _new_rtl), do: :ok
 
+  @spec update_accessibility_direction(module(), any()) :: any()
   defp update_accessibility_direction(accessibility_module, new_rtl) do
     direction = get_direction(new_rtl)
     accessibility_module.set_option(:direction, direction)
   end
 
+  @spec get_direction(any()) :: any() | nil
   defp get_direction(true), do: :rtl
+  @spec get_direction(any()) :: any() | nil
   defp get_direction(false), do: :ltr
 end

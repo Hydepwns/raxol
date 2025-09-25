@@ -92,11 +92,11 @@ defmodule Raxol.UI.Components.Input.TextField do
       )
 
     %{
-       updated_state
-       | cursor_pos: cursor_pos,
-         scroll_offset: scroll_offset,
-         width: width
-     }
+      updated_state
+      | cursor_pos: cursor_pos,
+        scroll_offset: scroll_offset,
+        width: width
+    }
   end
 
   def update({:move_cursor_to, {_row, col}}, state) do

@@ -315,7 +315,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
       Mox.expect(
         Raxol.Mocks.KeyboardShortcutsMock,
         :handle_keyboard_event,
-        fn {event_name, dispatched_payload} ->
+        fn event_name, dispatched_payload ->
           assert event_name == :keyboard_event
           assert dispatched_payload.type == :key
           assert dispatched_payload.data == %{key: "t", modifiers: [:ctrl]}

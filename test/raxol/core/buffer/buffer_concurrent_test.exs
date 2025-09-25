@@ -120,17 +120,17 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
       assert {:ok, cell_a} = ConcurrentBuffer.get_cell(pid, 0, 0)
       assert cell_a.char == "A"
       # Should be :red as set in TextFormatting
-      assert cell_a.style.foreground == :red
+      assert cell_a.foreground == :red
 
       assert {:ok, cell_b} = ConcurrentBuffer.get_cell(pid, 1, 0)
       assert cell_b.char == "B"
       # Should be :green as set in TextFormatting
-      assert cell_b.style.foreground == :green
+      assert cell_b.foreground == :green
 
       assert {:ok, cell_c} = ConcurrentBuffer.get_cell(pid, 2, 0)
       assert cell_c.char == "C"
       # Should be :blue as set in TextFormatting
-      assert cell_c.style.foreground == :blue
+      assert cell_c.foreground == :blue
 
       # Verify string was written
       assert {:ok, cell_h} = ConcurrentBuffer.get_cell(pid, 0, 1)
@@ -140,7 +140,7 @@ defmodule Raxol.Core.Buffer.BufferConcurrentTest do
       assert {:ok, cell_x} = ConcurrentBuffer.get_cell(pid, 0, 2)
       assert cell_x.char == "X"
       # Should be :yellow as set in TextFormatting
-      assert cell_x.style.foreground == :yellow
+      assert cell_x.foreground == :yellow
     end
   end
 end

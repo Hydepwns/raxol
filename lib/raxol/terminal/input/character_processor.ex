@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
 
   alias Raxol.Terminal.{Emulator, ScreenBuffer, CharacterHandling}
   alias Raxol.Terminal.ANSI.CharacterSets
-  alias Raxol.Terminal.Buffer.Operations
+  alias Raxol.Terminal.ScreenBuffer.Operations
   alias Raxol.Terminal.ModeManager
 
   require Raxol.Core.Runtime.Log
@@ -52,6 +52,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
         # row
         get_cursor_position_safe(emulator.cursor) |> elem(0),
         buffer_width,
+        buffer_height,
         CharacterHandling.get_char_width(char_codepoint),
         emulator.last_col_exceeded,
         auto_wrap_mode
@@ -130,6 +131,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
         current_cursor_col,
         current_cursor_row,
         buffer_width,
+        buffer_height,
         char_width,
         emulator.last_col_exceeded,
         auto_wrap_mode
@@ -298,6 +300,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
         current_x,
         current_y,
         buffer_width,
+        buffer_height,
         char_width,
         last_col_exceeded,
         auto_wrap_mode
@@ -305,6 +308,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     do_calculate_position(
       {current_x, current_y},
       buffer_width,
+      buffer_height,
       char_width,
       last_col_exceeded,
       auto_wrap_mode
@@ -315,13 +319,15 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   defp do_calculate_position(
          {current_x, current_y},
          buffer_width,
+         buffer_height,
          char_width,
          true,
          true
        ) do
     # For autowrap, stay at current position for writing
     # and advance cursor to next line, column 0
-    write_y = current_y + 1
+    # But clamp to buffer height
+    write_y = min(current_y + 1, buffer_height - 1)
     {current_x, current_y, 0, write_y, char_width >= buffer_width}
   end
 
@@ -329,6 +335,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   defp do_calculate_position(
          {_current_x, current_y},
          buffer_width,
+         _buffer_height,
          _char_width,
          true,
          false
@@ -345,6 +352,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   defp do_calculate_position(
          {current_x, current_y},
          buffer_width,
+         _buffer_height,
          char_width,
          _last_col_exceeded,
          _auto_wrap_mode
@@ -357,6 +365,7 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
   defp do_calculate_position(
          {current_x, current_y},
          buffer_width,
+         buffer_height,
          _char_width,
          _last_col_exceeded,
          auto_wrap_mode
@@ -364,10 +373,11 @@ defmodule Raxol.Terminal.Input.CharacterProcessor do
     case auto_wrap_mode do
       true ->
         # Auto-wrap: write at buffer edge and move cursor to next line
+        # But clamp to buffer height
         write_x = buffer_width - 1
         write_y = current_y
         next_cursor_x = 0
-        next_cursor_y = current_y + 1
+        next_cursor_y = min(current_y + 1, buffer_height - 1)
         {write_x, write_y, next_cursor_x, next_cursor_y, false}
 
       false ->

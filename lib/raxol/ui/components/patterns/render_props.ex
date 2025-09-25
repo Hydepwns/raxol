@@ -703,26 +703,27 @@ defmodule Raxol.UI.Components.Patterns.RenderProps do
        when map_size(all_errors) == 0 do
     set_is_submitting.(true)
 
-    _ = Task.start(fn ->
-      case Raxol.Core.ErrorHandling.safe_call(fn -> on_submit.(values) end) do
-        {:ok, _} ->
-          set_is_submitting.(false)
+    _ =
+      Task.start(fn ->
+        case Raxol.Core.ErrorHandling.safe_call(fn -> on_submit.(values) end) do
+          {:ok, _} ->
+            set_is_submitting.(false)
 
-        {:error, {kind, reason}} ->
-          set_errors.(%{
-            _form: "Submit failed: #{inspect({kind, reason})}"
-          })
+          {:error, {kind, reason}} ->
+            set_errors.(%{
+              _form: "Submit failed: #{inspect({kind, reason})}"
+            })
 
-          set_is_submitting.(false)
+            set_is_submitting.(false)
 
-        {:error, reason} ->
-          set_errors.(%{
-            _form: "Submit failed: #{inspect(reason)}"
-          })
+          {:error, reason} ->
+            set_errors.(%{
+              _form: "Submit failed: #{inspect(reason)}"
+            })
 
-          set_is_submitting.(false)
-      end
-    end)
+            set_is_submitting.(false)
+        end
+      end)
   end
 
   defp submit_if_valid(

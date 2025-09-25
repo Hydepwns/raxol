@@ -1,6 +1,4 @@
 defmodule Raxol.Terminal.Renderer do
-  @behaviour Raxol.Terminal.RendererBehaviour
-
   @moduledoc """
   Terminal renderer module.
 
@@ -60,7 +58,8 @@ defmodule Raxol.Terminal.Renderer do
           screen_buffer: ScreenBuffer.t(),
           cursor: {non_neg_integer(), non_neg_integer()} | nil,
           theme: map(),
-          font_settings: map()
+          font_settings: map(),
+          style_cache: map()
         }
 
   defstruct [
@@ -68,10 +67,40 @@ defmodule Raxol.Terminal.Renderer do
     :cursor,
     :theme,
     :font_settings,
-    :style_batching
+    :style_batching,
+    style_cache: %{}
   ]
 
   require Logger
+
+  # Pre-compiled style templates for common combinations - Phase 3 optimization
+  @style_templates %{
+    # Empty/default style - most common
+    default: "",
+
+    # Basic colors - very common
+    red: "color: #FF0000",
+    green: "color: #00FF00",
+    blue: "color: #0000FF",
+    yellow: "color: #FFFF00",
+    cyan: "color: #00FFFF",
+    magenta: "color: #FF00FF",
+    white: "color: #FFFFFF",
+    black: "color: #000000",
+
+    # Text attributes - common
+    bold: "font-weight: bold",
+    italic: "font-style: italic",
+    underline: "text-decoration: underline",
+
+    # Common combinations
+    bold_red: "font-weight: bold; color: #FF0000",
+    bold_green: "font-weight: bold; color: #00FF00",
+    bold_blue: "font-weight: bold; color: #0000FF"
+  }
+
+  # Maximum cache size to prevent memory growth
+  @max_cache_size 100
 
   @doc """
   Creates a new renderer with the given screen buffer.
@@ -87,14 +116,15 @@ defmodule Raxol.Terminal.Renderer do
         screen_buffer,
         theme \\ %{},
         font_settings \\ %{},
-        style_batching \\ false
+        style_batching \\ true
       ) do
     %__MODULE__{
       screen_buffer: screen_buffer,
       cursor: nil,
       theme: theme,
       font_settings: font_settings,
-      style_batching: style_batching
+      style_batching: style_batching,
+      style_cache: %{}
     }
   end
 
@@ -114,65 +144,227 @@ defmodule Raxol.Terminal.Renderer do
 
   @doc """
   Renders the terminal content with additional options.
+  Returns {content, updated_renderer} to preserve cache state.
   """
-  def render(%__MODULE__{} = renderer, _opts, _additional_opts) do
-    content =
-      renderer.screen_buffer
-      |> get_styled_content(renderer.theme, renderer.style_batching)
-      |> apply_font_settings(renderer.font_settings)
-      |> maybe_apply_cursor(renderer.cursor)
-
+  def render(%__MODULE__{} = renderer, _opts \\ %{}, _additional_opts \\ %{}) do
+    {content, _updated_renderer} = render_with_cache(renderer)
     content
   end
 
-  defp get_styled_content(buffer, theme, style_batching) do
-    buffer.cells
-    |> Enum.map_join("\n", fn row ->
-      render_row_with_style_batching(row, theme, style_batching)
+  @doc """
+  Renders the terminal content and returns both content and updated renderer.
+  Use this for stateful rendering to preserve the style cache.
+  """
+  def render_with_cache(%__MODULE__{} = renderer) do
+    {content, updated_cache} =
+      renderer.screen_buffer
+      |> get_styled_content_cached(renderer.theme, renderer.style_batching, renderer.style_cache)
+      |> apply_font_settings(renderer.font_settings)
+      |> maybe_apply_cursor(renderer.cursor)
+      |> extract_content_and_cache()
+
+    updated_renderer = %{renderer | style_cache: updated_cache}
+    {content, updated_renderer}
+  end
+
+  defp get_styled_content_cached(buffer, theme, style_batching, style_cache) do
+    {content, final_cache} = buffer.cells
+    |> Enum.map_reduce(style_cache, fn row, acc_cache ->
+      {row_content, updated_cache} = render_row_with_caching(row, theme, style_batching, acc_cache)
+      {row_content, updated_cache}
     end)
+
+    {Enum.join(content, "\n"), final_cache}
   end
 
-  defp render_row_with_style_batching(row, theme, style_batching) do
-    apply_style_batching(style_batching, row, theme)
+  defp render_row_with_caching(row, theme, style_batching, cache) do
+    {result, final_cache} = if style_batching do
+      render_batched_with_cache(row, theme, cache)
+    else
+      render_individual_with_cache(row, theme, cache)
+    end
+    {result, final_cache}
   end
 
-  defp apply_style_batching(true, row, theme) do
-    row
-    |> group_cells_by_style(theme)
-    |> Enum.map_join("", fn {style_attrs, chars} ->
-      "<span style=\"#{style_attrs}\">#{chars}</span>"
+  # Optimized batched rendering with caching
+  defp render_batched_with_cache(row, theme, cache) do
+    {grouped_cells, updated_cache} = group_cells_by_style_cached(row, theme, cache)
+
+    content = grouped_cells
+    |> Enum.map_join("", fn {style_string, chars} ->
+      if style_string == "" do
+        chars
+      else
+        "<span style=\"#{style_string}\">#{chars}</span>"
+      end
     end)
+
+    {content, updated_cache}
   end
 
-  defp apply_style_batching(false, row, theme) do
-    row
-    |> Enum.map_join("", fn cell -> render_cell(cell, theme) end)
+  # Individual cell rendering with caching
+  defp render_individual_with_cache(row, theme, cache) do
+    {cells_content, final_cache} = row
+    |> Enum.map_reduce(cache, fn cell, acc_cache ->
+      {style_string, updated_cache} = get_cached_style_string(cell.style, theme, acc_cache)
+      content = if style_string == "" do
+        cell.char
+      else
+        "<span style=\"#{style_string}\">#{cell.char}</span>"
+      end
+      {content, updated_cache}
+    end)
+
+    {Enum.join(cells_content, ""), final_cache}
   end
 
-  defp group_cells_by_style(row, theme) do
-    row
-    |> Enum.chunk_by(fn cell -> build_style_string(cell.style, theme) end)
-    |> Enum.map(fn cells_with_same_style ->
-      style_attrs = build_style_string(hd(cells_with_same_style).style, theme)
+  defp group_cells_by_style_cached(row, theme, cache) do
+    {grouped_data, final_cache} = row
+    |> Enum.chunk_by(&(&1.style))
+    |> Enum.map_reduce(cache, fn cells_with_same_style, acc_cache ->
+      style = hd(cells_with_same_style).style
       chars = Enum.map_join(cells_with_same_style, "", & &1.char)
-      {style_attrs, chars}
+      {style_string, updated_cache} = get_cached_style_string(style, theme, acc_cache)
+      {{style_string, chars}, updated_cache}
     end)
+
+    {grouped_data, final_cache}
   end
 
-  defp render_cell(cell, theme) do
-    style_attrs = build_style_string(cell.style, theme)
-    "<span style=\"#{style_attrs}\">#{cell.char}</span>"
+  # Fast cached style string lookup with templates
+  defp get_cached_style_string(style, theme, cache) do
+    cache_key = create_cache_key(style, theme)
+
+    case Map.get(cache, cache_key) do
+      nil ->
+        # Cache miss - check templates first, then build
+        style_string = get_template_or_build(style, theme)
+        updated_cache = put_in_cache(cache, cache_key, style_string)
+        {style_string, updated_cache}
+
+      cached_string ->
+        # Cache hit
+        {cached_string, cache}
+    end
   end
 
-  defp build_style_string(style, theme) do
+  defp get_template_or_build(style, theme) do
+    template_key = get_template_key(style)
+
+    case Map.get(@style_templates, template_key) do
+      nil -> build_style_string_optimized(style, theme)
+      template -> template
+    end
+  end
+
+  defp get_template_key(style) do
     style_map = normalize_style(style)
 
-    []
-    |> add_background_color(style_map, theme)
-    |> add_foreground_color(style_map, theme)
-    |> add_text_attributes(style_map)
-    |> build_style_string()
+    cond do
+      is_default_style?(style_map) -> :default
+      is_simple_color?(style_map) -> get_simple_color_key(style_map)
+      is_simple_attribute?(style_map) -> get_simple_attribute_key(style_map)
+      is_common_combo?(style_map) -> get_combo_key(style_map)
+      true -> nil
+    end
   end
+
+  # Helper functions for cache management and style analysis
+  defp create_cache_key(style, theme) do
+    style_hash = :erlang.phash2(normalize_style(style))
+    theme_hash = :erlang.phash2(Map.take(theme, [:foreground, :background]))
+    {style_hash, theme_hash}
+  end
+
+  defp put_in_cache(cache, key, value) do
+    if map_size(cache) >= @max_cache_size do
+      # Simple LRU - remove first 10 entries to avoid thrashing
+      cache
+      |> Enum.drop(10)
+      |> Map.new()
+      |> Map.put(key, value)
+    else
+      Map.put(cache, key, value)
+    end
+  end
+
+  # Template matching functions
+  defp is_default_style?(style_map) do
+    Enum.all?([:foreground, :background, :bold, :italic, :underline], fn key ->
+      case Map.get(style_map, key) do
+        nil -> true
+        false -> true
+        _ -> false
+      end
+    end)
+  end
+
+  defp is_simple_color?(style_map) do
+    Map.get(style_map, :foreground) in [:red, :green, :blue, :yellow, :cyan, :magenta, :white, :black] and
+    is_nil(Map.get(style_map, :background)) and
+    not Map.get(style_map, :bold, false) and
+    not Map.get(style_map, :italic, false) and
+    not Map.get(style_map, :underline, false)
+  end
+
+  defp get_simple_color_key(style_map) do
+    Map.get(style_map, :foreground)
+  end
+
+  defp is_simple_attribute?(style_map) do
+    attribute_count = Enum.count([:bold, :italic, :underline], fn attr ->
+      Map.get(style_map, attr, false)
+    end)
+
+    attribute_count == 1 and
+    is_nil(Map.get(style_map, :foreground)) and
+    is_nil(Map.get(style_map, :background))
+  end
+
+  defp get_simple_attribute_key(style_map) do
+    cond do
+      Map.get(style_map, :bold, false) -> :bold
+      Map.get(style_map, :italic, false) -> :italic
+      Map.get(style_map, :underline, false) -> :underline
+      true -> nil
+    end
+  end
+
+  defp is_common_combo?(style_map) do
+    Map.get(style_map, :bold, false) and
+    Map.get(style_map, :foreground) in [:red, :green, :blue] and
+    is_nil(Map.get(style_map, :background)) and
+    not Map.get(style_map, :italic, false) and
+    not Map.get(style_map, :underline, false)
+  end
+
+  defp get_combo_key(style_map) do
+    case Map.get(style_map, :foreground) do
+      :red -> :bold_red
+      :green -> :bold_green
+      :blue -> :bold_blue
+      _ -> nil
+    end
+  end
+
+  defp build_style_string_optimized(style, theme) do
+    style_map = normalize_style(style)
+
+    style_parts = []
+    |> add_color_style(style_map, :foreground, "color", theme)
+    |> add_color_style(style_map, :background, "background-color", theme)
+    |> add_boolean_style(style_map, :bold, "font-weight", "bold")
+    |> add_boolean_style(style_map, :italic, "font-style", "italic")
+    |> add_boolean_style(style_map, :underline, "text-decoration", "underline")
+
+    case style_parts do
+      [] -> ""
+      parts -> parts |> Enum.reverse() |> Enum.join("; ")
+    end
+  end
+
+  defp extract_content_and_cache({content, cache}), do: {content, cache}
+  defp extract_content_and_cache(content), do: {content, %{}}
 
   defp normalize_style(%{__struct__: _} = style) do
     Map.from_struct(style)
@@ -186,99 +378,61 @@ defmodule Raxol.Terminal.Renderer do
     %{}
   end
 
-  defp add_background_color(attrs, style_map, theme) do
-    color = get_style_color(style_map, :background, theme, :background)
-    add_color_attr(attrs, color, "background-color")
-  end
-
-  defp add_color_attr(attrs, "", _attr_name), do: attrs
-  defp add_color_attr(attrs, color, attr_name), do: [{attr_name, color} | attrs]
-
-  defp add_foreground_color(attrs, style_map, theme) do
-    color = get_style_color(style_map, :foreground, theme, :foreground)
-    add_color_attr(attrs, color, "color")
-  end
-
-  defp get_style_color(style_map, key, theme, theme_key) do
-    color_value = Map.get(style_map, key)
-    resolve_style_color(color_value, Map.get(theme, theme_key, %{}))
-  end
-
-  defp resolve_style_color(nil, theme_colors),
-    do: get_color(:default, theme_colors)
-
-  defp resolve_style_color(color_value, theme_colors),
-    do: get_color(color_value, theme_colors)
-
-  defp add_text_attributes(attrs, style_map) do
-    attrs
-    |> add_if_present(style_map, :bold, "font-weight", "bold")
-    |> add_if_present(style_map, :underline, "text-decoration", "underline")
-    |> add_if_present(style_map, :italic, "font-style", "italic")
-  end
-
-  defp add_if_present(attrs, style_map, key, css_prop, css_value) do
-    style_enabled = Map.get(style_map, key, false)
-    add_style_if_enabled(attrs, style_enabled, css_prop, css_value)
-  end
-
-  defp add_style_if_enabled(attrs, false, _css_prop, _css_value), do: attrs
-
-  defp add_style_if_enabled(attrs, true, css_prop, css_value),
-    do: [{css_prop, css_value} | attrs]
-
-  defp build_style_string(attrs) do
-    attrs
-    |> Enum.reverse()
-    |> Enum.map_join("; ", fn {k, v} -> "#{k}: #{v}" end)
-  end
-
-  defp get_color(color_name, color_map) do
-    case Map.get(color_map, color_name) do
-      nil -> ""
-      color when is_binary(color) -> color
-      color when is_map(color) -> convert_rgb_to_hex(color)
-      color when is_atom(color) -> convert_color_atom(color)
-      _ -> ""
+  # Optimized style building functions
+  defp add_color_style(parts, style_map, key, css_prop, theme) do
+    case Map.get(style_map, key) do
+      nil -> parts
+      color ->
+        css_value = resolve_color_value(color, theme)
+        if css_value == "", do: parts, else: ["#{css_prop}: #{css_value}" | parts]
     end
   end
 
-  defp convert_rgb_to_hex(color) do
-    convert_color_map(Map.has_key?(color, :r), color)
+  defp add_boolean_style(parts, style_map, key, css_prop, css_value) do
+    if Map.get(style_map, key, false) do
+      ["#{css_prop}: #{css_value}" | parts]
+    else
+      parts
+    end
   end
 
-  defp convert_color_map(false, _color), do: ""
+  defp resolve_color_value(color, theme) when is_atom(color) do
+    # Basic color resolution with fallback to default color map
+    color_map = Map.get(theme, :foreground, %{})
+    case Map.get(color_map, color) do
+      nil -> get_default_color(color)
+      value -> value
+    end
+  end
 
-  defp convert_color_map(true, color) do
-    r = Map.get(color, :r, 0)
-    g = Map.get(color, :g, 0)
-    b = Map.get(color, :b, 0)
-
+  defp resolve_color_value(%{r: r, g: g, b: b}, _theme) do
     "##{Integer.to_string(r, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(g, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(b, 16) |> String.pad_leading(2, "0")}"
   end
 
-  defp convert_color_atom(color) do
-    color_map = %{
+  defp resolve_color_value(color, _theme), do: to_string(color)
+
+  defp get_default_color(color) do
+    default_colors = %{
       red: "#FF0000",
       green: "#00FF00",
       blue: "#0000FF",
       yellow: "#FFFF00",
-      magenta: "#FF00FF",
       cyan: "#00FFFF",
+      magenta: "#FF00FF",
       white: "#FFFFFF",
       black: "#000000",
       bright_red: "#FF8080",
       bright_green: "#80FF80",
       bright_blue: "#8080FF",
       bright_yellow: "#FFFF80",
-      bright_magenta: "#FF80FF",
       bright_cyan: "#80FFFF",
+      bright_magenta: "#FF80FF",
       bright_white: "#FFFFFF",
       bright_black: "#808080"
     }
-
-    Map.get(color_map, color, "")
+    Map.get(default_colors, color, "")
   end
+
 
   defp apply_font_settings(content, _font_settings), do: content
   defp maybe_apply_cursor(content, nil), do: content
@@ -397,34 +551,25 @@ defmodule Raxol.Terminal.Renderer do
     apply_cursor_option(content, renderer.cursor, include_cursor)
   end
 
-  # Handle ScreenBuffer structs
+  # Handle ScreenBuffer structs (updated after buffer consolidation)
   def get_content(%Raxol.Terminal.ScreenBuffer{} = buffer, opts) do
-    _include_style = Keyword.get(opts, :include_style, true)
-    content = ScreenBuffer.get_content(buffer)
-    {:ok, content}
-  end
-
-  # Handle BufferImpl structs (used by tests)
-  def get_content(%Raxol.Terminal.Buffer.Manager.BufferImpl{} = buffer, opts) do
     _include_style = Keyword.get(opts, :include_style, false)
     include_cursor = Keyword.get(opts, :include_cursor, false)
 
     content =
       buffer
-      |> Raxol.Terminal.Buffer.Manager.BufferImpl.get_content()
+      |> Raxol.Terminal.ScreenBuffer.get_lines()
+      |> Enum.map(&Enum.join/1)
+      |> Enum.join("\n")
       |> maybe_add_cursor(buffer.cursor_position, include_cursor)
 
     {:ok, content}
   end
 
-  # Handle buffer manager PIDs (used by tests)
-  def get_content(manager_pid, opts) when is_pid(manager_pid) do
-    case Raxol.Terminal.Buffer.Manager.read(manager_pid, opts) do
-      {content, _new_buffer} -> {:ok, content}
-      content when is_binary(content) or is_list(content) -> {:ok, content}
-      {:error, reason} -> {:error, reason}
-      other -> {:ok, other}
-    end
+  # Handle buffer manager PIDs (legacy support - deprecated after buffer consolidation)
+  def get_content(manager_pid, _opts) when is_pid(manager_pid) do
+    # Buffer.Manager has been removed - return error for deprecated usage
+    {:error, :deprecated_buffer_manager}
   end
 
   defp apply_cursor_option(content, cursor, true) do

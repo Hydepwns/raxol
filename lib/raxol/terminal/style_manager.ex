@@ -129,7 +129,8 @@ defmodule Raxol.Terminal.StyleManager do
   Merges two styles.
   Returns the merged style map.
   """
-  @spec merge_styles(StyleBuffer.style(), StyleBuffer.style()) :: StyleBuffer.style()
+  @spec merge_styles(StyleBuffer.style(), StyleBuffer.style()) ::
+          StyleBuffer.style()
   def merge_styles(style1, style2) do
     StyleBuffer.merge_styles(style1, style2)
   end

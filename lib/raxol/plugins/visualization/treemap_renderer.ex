@@ -124,16 +124,17 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
          depth,
          acc_rects
        ) do
-    _ = handle_squarify_bounds(
-      bw < 1 or bh < 1,
-      bw,
-      bh,
-      children,
-      total_value,
-      bounds,
-      depth,
-      acc_rects
-    )
+    _ =
+      handle_squarify_bounds(
+        bw < 1 or bh < 1,
+        bw,
+        bh,
+        children,
+        total_value,
+        bounds,
+        depth,
+        acc_rects
+      )
 
     horizontal = bw >= bh
     fixed_dimension = get_fixed_dimension(horizontal, bh, bw)
@@ -359,15 +360,16 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
        ) do
     child_value = Map.get(child, :value, 0)
 
-    _ = handle_child_value(
-      child_value <= 0,
-      child,
-      rest,
-      row_value,
-      current_bounds,
-      depth,
-      split_vertically
-    )
+    _ =
+      handle_child_value(
+        child_value <= 0,
+        child,
+        rest,
+        row_value,
+        current_bounds,
+        depth,
+        split_vertically
+      )
 
     {child_bounds, next_bounds} =
       calculate_child_bounds(

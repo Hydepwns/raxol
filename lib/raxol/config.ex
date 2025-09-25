@@ -200,7 +200,7 @@ defmodule Raxol.Config do
   ## Private Functions
 
   @spec load_initial_config(%{config_file: binary(), env: any()}) ::
-    {:ok, config_map()} | {:error, atom() | {:toml_parse_error, any()}}
+          {:ok, config_map()} | {:error, atom() | {:toml_parse_error, any()}}
   defp load_initial_config(%{config_file: config_file, env: env}) do
     with {:ok, base_config} <- load_toml_file(config_file),
          {:ok, env_config} <- load_env_config(env) do

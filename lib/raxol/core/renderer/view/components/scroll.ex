@@ -77,6 +77,7 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     end
   end
 
+  @spec calculate_content_size(any(), any()) :: any()
   defp calculate_content_size(_children, available_size) do
     # Calculate the total size of all children
     # This would handle:
@@ -87,6 +88,7 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     {width, height}
   end
 
+  @spec calculate_scrollbars(any(), any()) :: any()
   defp calculate_scrollbars(
          {content_width, content_height},
          {viewport_width, viewport_height}
@@ -118,6 +120,7 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     }
   end
 
+  @spec calculate_scrollbar_position(String.t(), any()) :: any()
   defp calculate_scrollbar_position(_content_size, _viewport_size) do
     # Calculate scrollbar position based on content and viewport size
     # This would handle:
@@ -127,6 +130,7 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     0
   end
 
+  @spec apply_viewport(any(), String.t(), any(), any()) :: any()
   defp apply_viewport(
          children,
          _content_size,
@@ -141,6 +145,7 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     children
   end
 
+  @spec add_scrollbars(String.t(), any(), any()) :: any()
   defp add_scrollbars(
          content,
          _scrollbar_info,

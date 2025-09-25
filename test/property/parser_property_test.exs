@@ -2,7 +2,7 @@ defmodule Raxol.Property.ParserTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
 
-  alias Raxol.Terminal.ANSI.AnsiParser, as: Parser
+  alias Raxol.Terminal.ANSI.Utils.AnsiParser, as: Parser
 
   describe "parser property tests" do
     property "parse handles all valid CSI sequences" do

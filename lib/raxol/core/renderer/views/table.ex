@@ -118,6 +118,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
     [header, separator | rows]
   end
 
+  @spec wrap_table_content(String.t(), any()) :: any()
   defp wrap_table_content(content, border) do
     case border do
       :none -> View.box(children: content)
@@ -143,12 +144,14 @@ defmodule Raxol.Core.Renderer.Views.Table do
     {state, []}
   end
 
+  @spec log_component(any(), any()) :: any()
   defp log_component(type, payload) do
     Raxol.Core.Runtime.Log.info(
       "Table component [#{inspect(self())}] received #{type}: #{inspect(payload)}"
     )
   end
 
+  @spec default_update_response(map()) :: any()
   defp default_update_response(state), do: state
 
   @doc """
@@ -162,6 +165,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
 
   # Private Helpers
 
+  @spec extract_table_fields(any()) :: any()
   defp extract_table_fields(props) do
     %{
       columns: Map.get(props, :columns, []),
@@ -176,6 +180,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
     }
   end
 
+  @spec build_initial_state(any()) :: any()
   defp build_initial_state(fields) do
     calculated_widths = calculate_column_widths(fields.columns, fields.data)
 
@@ -193,22 +198,26 @@ defmodule Raxol.Core.Renderer.Views.Table do
     }
   end
 
+  @spec calculate_column_widths(any(), any()) :: any()
   defp calculate_column_widths(columns, data) do
     Enum.map(columns, fn column ->
       calculate_single_column_width(column, data)
     end)
   end
 
+  @spec calculate_single_column_width(any(), any()) :: any()
   defp calculate_single_column_width(%{width: :auto} = column, data) do
     header_width = String.length(column.header)
     content_width = max_content_width(column, data)
     max(header_width, content_width)
   end
 
+  @spec calculate_single_column_width(any(), any()) :: any()
   defp calculate_single_column_width(%{width: width}, _data)
        when is_integer(width),
        do: width
 
+  @spec max_content_width(any(), any()) :: any()
   defp max_content_width(column, data) do
     data
     |> Enum.map(fn row ->
@@ -218,6 +227,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
     |> Enum.max(fn -> 0 end)
   end
 
+  @spec create_header_row(any()) :: any()
   defp create_header_row(context) do
     %{
       type: :row,
@@ -239,6 +249,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
     }
   end
 
+  @spec create_separator_row(any()) :: any()
   defp create_separator_row(context) do
     # Calculate total width for the separator
     total_width =
@@ -263,6 +274,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
     }
   end
 
+  @spec create_data_row(any(), any(), any(), any()) :: any()
   defp create_data_row(row, context, _index, style) do
     %{
       type: :row,
@@ -284,9 +296,11 @@ defmodule Raxol.Core.Renderer.Views.Table do
     }
   end
 
+  @spec get_column_value(any(), any()) :: any() | nil
   defp get_column_value(row, %{key: key}) when is_function(key, 1),
     do: key.(row)
 
+  @spec get_column_value(any(), any()) :: any() | nil
   defp get_column_value(row, %{key: key}) when is_atom(key),
     do: Map.get(row, key)
 
@@ -311,6 +325,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
     update_struct_map(table, fn map -> Map.pop(map, key) end)
   end
 
+  @spec update_struct_map(any(), any()) :: any()
   defp update_struct_map(table, fun) do
     struct_keys = Map.keys(table.__struct__)
 
@@ -331,6 +346,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
   end
 
   # Helper to pad cell content to the column width
+  @spec pad_cell_content(any(), any()) :: any()
   defp pad_cell_content(value, col) do
     case component?(value) do
       true ->
@@ -342,15 +358,20 @@ defmodule Raxol.Core.Renderer.Views.Table do
     end
   end
 
+  @spec component?(any()) :: boolean()
   defp component?(value) do
     is_map(value) and Map.has_key?(value, :type) and
       value.type in [:box, :chart, :sparkline]
   end
 
+  @spec to_string_value(any()) :: any()
   defp to_string_value(value) when is_binary(value), do: value
+  @spec to_string_value(any()) :: any()
   defp to_string_value(nil), do: ""
+  @spec to_string_value(any()) :: any()
   defp to_string_value(value), do: to_string(value)
 
+  @spec align_text(any(), any()) :: any()
   defp align_text(value_str, col) do
     case Map.get(col, :align, :left) do
       :right -> String.pad_leading(value_str, col.width)
@@ -359,6 +380,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
     end
   end
 
+  @spec center_align_text(any(), String.t() | integer()) :: any()
   defp center_align_text(value_str, width) do
     padding = width - String.length(value_str)
     left_pad = div(padding, 2)

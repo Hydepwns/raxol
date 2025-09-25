@@ -185,24 +185,29 @@ defmodule Raxol.Core.Performance.Caches.ComponentRenderCache do
 
   def estimate_render_cost(_), do: :low
 
+  @spec determine_table_cost(any()) :: any()
   defp determine_table_cost(true), do: :high
+  @spec determine_table_cost(any()) :: any()
   defp determine_table_cost(false), do: :medium
 
   # Private functions
 
   # Key builders
+  @spec build_render_key(module(), map(), any()) :: any()
   defp build_render_key(component_module, state, props) do
     # Create a unique key based on component module and state/props hash
     state_hash = :erlang.phash2({state, props})
     @render_output_prefix <> "#{component_module}:#{state_hash}"
   end
 
+  @spec build_composed_tree_key(any(), any()) :: any()
   defp build_composed_tree_key(layout_data, new_tree) do
     # Hash the layout data and new tree for the key
     data_hash = :erlang.phash2({layout_data, new_tree})
     @composed_tree_prefix <> "#{data_hash}"
   end
 
+  @spec build_cells_key(any(), any()) :: any()
   defp build_cells_key(element, theme) do
     # Hash element and theme for cache key
     element_hash = hash_element(element)
@@ -216,6 +221,7 @@ defmodule Raxol.Core.Performance.Caches.ComponentRenderCache do
     @cells_output_prefix <> "#{element_hash}:#{theme_hash}"
   end
 
+  @spec build_element_render_key(any(), any(), any()) :: any()
   defp build_element_render_key(element, theme, parent_style) do
     # Hash all rendering inputs
     element_hash = hash_element(element)
@@ -230,11 +236,13 @@ defmodule Raxol.Core.Performance.Caches.ComponentRenderCache do
     @element_render_prefix <> "#{element_hash}:#{theme_hash}:#{style_hash}"
   end
 
+  @spec build_invalidation_pattern(module(), any()) :: any()
   defp build_invalidation_pattern(component_module, :all) do
     # Pattern to match all cache entries for a component
     @render_output_prefix <> "#{component_module}:*"
   end
 
+  @spec build_invalidation_pattern(module(), map()) :: any()
   defp build_invalidation_pattern(component_module, state) do
     # Pattern to match specific state cache entries
     state_hash = :erlang.phash2(state)
@@ -242,6 +250,7 @@ defmodule Raxol.Core.Performance.Caches.ComponentRenderCache do
   end
 
   # Element hashing
+  @spec hash_element(any()) :: any()
   defp hash_element(element) when is_map(element) do
     # Create a stable hash for an element
     # Exclude volatile fields like timestamps or random IDs
@@ -249,11 +258,13 @@ defmodule Raxol.Core.Performance.Caches.ComponentRenderCache do
     :erlang.phash2(stable_element)
   end
 
+  @spec hash_element(any()) :: any()
   defp hash_element(element) do
     :erlang.phash2(element)
   end
 
   # Telemetry
+  @spec emit_telemetry(any(), any()) :: any()
   defp emit_telemetry(event, metadata) do
     :telemetry.execute(
       @telemetry_prefix ++ [event],

@@ -3,7 +3,7 @@ defmodule ParserBenchmark do
   Benchmarks for the ANSI parser to identify performance bottlenecks.
   """
 
-  alias Raxol.Terminal.Parser
+  alias Raxol.Terminal.TerminalParser, as: Parser
   alias Raxol.Terminal.Emulator
 
   def run do

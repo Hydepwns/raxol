@@ -57,45 +57,54 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
   def run(args) do
     {opts, commands, _} = OptionParser.parse(args, switches: @switches)
 
+    handle_help_option(opts)
+    setup_benchmark_environment()
+    execute_command(commands, opts)
+  end
+
+  defp handle_help_option(opts) do
     if opts[:help] do
       print_help()
       System.halt(0)
     end
+  end
 
+  defp setup_benchmark_environment do
     Mix.Task.run("app.start")
-
     # Start the suite registry
     {:ok, _pid} = SuiteRegistry.start_link()
+  end
 
-    case commands do
-      ["suite"] ->
-        run_suite_benchmarks(opts)
+  defp execute_command(commands, opts) do
+    command_handler = get_command_handler(commands)
 
-      ["compare"] ->
-        run_competitor_comparison(opts)
+    case command_handler do
+      nil ->
+        handle_unknown_command(commands)
 
-      ["regression"] ->
-        run_regression_analysis(opts)
-
-      ["profile"] ->
-        run_profiling_session(opts)
-
-      ["continuous"] ->
-        run_continuous_monitoring(opts)
-
-      ["report"] ->
-        generate_comprehensive_report(opts)
-
-      ["analyze"] ->
-        run_statistical_analysis(opts)
-
-      ["discover"] ->
-        discover_and_run_suites(opts)
-
-      _ ->
-        Mix.shell().error("Unknown command: #{Enum.join(commands, " ")}")
-        print_help()
+      handler ->
+        handler.(opts)
     end
+  end
+
+  defp get_command_handler(commands) do
+    command_map = %{
+      ["suite"] => &run_suite_benchmarks/1,
+      ["compare"] => &run_competitor_comparison/1,
+      ["regression"] => &run_regression_analysis/1,
+      ["profile"] => &run_profiling_session/1,
+      ["continuous"] => &run_continuous_monitoring/1,
+      ["report"] => &generate_comprehensive_report/1,
+      ["analyze"] => &run_statistical_analysis/1,
+      ["discover"] => &discover_and_run_suites/1
+    }
+
+    Map.get(command_map, commands)
+  end
+
+  defp handle_unknown_command(commands) do
+    Mix.shell().error("Unknown command: #{Enum.join(commands, " ")}")
+    print_help()
   end
 
   # Command implementations
@@ -402,38 +411,47 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
   defp output_competitor_comparison(comparison, scores, _opts) do
     Mix.shell().info("\n=== Competitor Comparison Results ===\n")
 
-    # Performance ranking
+    print_performance_ranking(comparison.performance_ranking)
+    print_raxol_score(scores.raxol_score)
+    print_relative_performance(scores.comparison)
+  end
+
+  defp print_performance_ranking(performance_ranking) do
     Mix.shell().info("Performance Ranking:")
 
-    Enum.each(comparison.performance_ranking, fn %{
-                                                   rank: rank,
-                                                   test: test,
-                                                   time: time
-                                                 } ->
-      Mix.shell().info("  #{rank}. #{test}: #{Float.round(time, 2)}μs")
-    end)
+    Enum.each(performance_ranking, &print_ranking_entry/1)
+  end
 
-    # Raxol score
+  defp print_ranking_entry(%{rank: rank, test: test, time: time}) do
+    Mix.shell().info("  #{rank}. #{test}: #{Float.round(time, 2)}μs")
+  end
+
+  defp print_raxol_score(raxol_score) do
     Mix.shell().info(
-      "\nRaxol Performance Score: #{Float.round(scores.raxol_score, 1)}/100"
+      "\nRaxol Performance Score: #{Float.round(raxol_score, 1)}/100"
     )
+  end
 
-    # Relative performance
+  defp print_relative_performance(comparison_data) do
     Mix.shell().info("\nRelative Performance vs Competitors:")
 
-    Enum.each(scores.comparison, fn {terminal, data} ->
-      percentage = Float.round(data.relative_performance, 1)
+    Enum.each(comparison_data, &print_comparison_entry/1)
+  end
 
-      symbol =
-        cond do
-          percentage > 110 -> "🚀"
-          percentage > 100 -> "✅"
-          percentage > 90 -> "⚠️"
-          true -> "❌"
-        end
+  defp print_comparison_entry({terminal, data}) do
+    percentage = Float.round(data.relative_performance, 1)
+    symbol = get_performance_symbol(percentage)
 
-      Mix.shell().info("  #{symbol} vs #{terminal}: #{percentage}%")
-    end)
+    Mix.shell().info("  #{symbol} vs #{terminal}: #{percentage}%")
+  end
+
+  defp get_performance_symbol(percentage) do
+    cond do
+      percentage > 110 -> "🚀"
+      percentage > 100 -> "✅"
+      percentage > 90 -> "⚠️"
+      true -> "❌"
+    end
   end
 
   defp load_latest_results do

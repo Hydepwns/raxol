@@ -35,6 +35,7 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   def move_cursor_down(emulator, count, _width, _height) do
     move_cursor_down(emulator, count)
   end
+
   def move_cursor_down(emulator, count) do
     cursor = emulator.cursor
     call_cursor_if_pid(is_pid(cursor), cursor, {:move_down, count})
@@ -44,7 +45,8 @@ defmodule Raxol.Terminal.Emulator.CursorOperations do
   @doc """
   Moves the cursor up by the specified count.
   """
-  @spec move_cursor_up(emulator(), non_neg_integer(), term(), term()) :: emulator()
+  @spec move_cursor_up(emulator(), non_neg_integer(), term(), term()) ::
+          emulator()
   def move_cursor_up(emulator, count, _width, _height) do
     move_cursor_up(emulator, count)
   end

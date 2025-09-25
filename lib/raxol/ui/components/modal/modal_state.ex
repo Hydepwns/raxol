@@ -6,7 +6,8 @@ defmodule Raxol.UI.Components.Modal.State do
   require Raxol.Core.Runtime.Log
 
   @doc "Handles form submission with validation."
-  @spec handle_form_submission(%Raxol.UI.Components.Modal{}, any()) :: {%Raxol.UI.Components.Modal{}, list()}
+  @spec handle_form_submission(Raxol.UI.Components.Modal.t(), any()) ::
+          {Raxol.UI.Components.Modal.t(), list()}
   def handle_form_submission(state, original_msg) do
     Raxol.Core.Runtime.Log.debug(
       "[DEBUG] handle_form_submission called with state.visible=#{inspect(state.visible)} and fields=#{inspect(state.form_state.fields)}"
@@ -47,10 +48,11 @@ defmodule Raxol.UI.Components.Modal.State do
             form_state: new_form_state
         }
 
-        _ = send(
-          self(),
-          {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
-        )
+        _ =
+          send(
+            self(),
+            {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+          )
 
         result = {new_state, [{original_msg, form_values}]}
 
@@ -63,7 +65,8 @@ defmodule Raxol.UI.Components.Modal.State do
   end
 
   @doc "Handles prompt submission."
-  @spec handle_prompt_submission(%Raxol.UI.Components.Modal{}, any()) :: {%Raxol.UI.Components.Modal{}, list()}
+  @spec handle_prompt_submission(Raxol.UI.Components.Modal.t(), any()) ::
+          {Raxol.UI.Components.Modal.t(), list()}
   def handle_prompt_submission(state, original_msg) do
     # If there are fields, validate as form
     case length(state.form_state.fields) do
@@ -74,17 +77,19 @@ defmodule Raxol.UI.Components.Modal.State do
         # No fields: just hide and send command
         new_state = %Raxol.UI.Components.Modal{state | visible: false}
 
-        _ = send(
-          self(),
-          {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
-        )
+        _ =
+          send(
+            self(),
+            {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+          )
 
         {new_state, [{original_msg, %{}}]}
     end
   end
 
   @doc "Handles prompt input changes."
-  @spec handle_prompt_input(%Raxol.UI.Components.Modal{}, any()) :: {%Raxol.UI.Components.Modal{}, list()}
+  @spec handle_prompt_input(Raxol.UI.Components.Modal.t(), any()) ::
+          {Raxol.UI.Components.Modal.t(), list()}
   def handle_prompt_input(state, value) do
     update_field_value(
       state,
@@ -94,7 +99,8 @@ defmodule Raxol.UI.Components.Modal.State do
   end
 
   @doc "Updates field value and clears errors."
-  @spec update_field_value(%Raxol.UI.Components.Modal{}, any(), any()) :: {%Raxol.UI.Components.Modal{}, list()}
+  @spec update_field_value(Raxol.UI.Components.Modal.t(), any(), any()) ::
+          {Raxol.UI.Components.Modal.t(), list()}
   def update_field_value(state, field_id, new_value) do
     updated_fields =
       Enum.map(state.form_state.fields, fn field ->
@@ -113,7 +119,8 @@ defmodule Raxol.UI.Components.Modal.State do
   end
 
   @doc "Changes focus between form fields."
-  @spec change_focus(%Raxol.UI.Components.Modal{}, integer()) :: {%Raxol.UI.Components.Modal{}, list()}
+  @spec change_focus(Raxol.UI.Components.Modal.t(), integer()) ::
+          {Raxol.UI.Components.Modal.t(), list()}
   def change_focus(state, direction) do
     field_count = length(state.form_state.fields)
 
@@ -148,7 +155,7 @@ defmodule Raxol.UI.Components.Modal.State do
   end
 
   @doc "Generates set_focus command for current field."
-  @spec set_focus_command(%Raxol.UI.Components.Modal{}) :: {atom(), any()}
+  @spec set_focus_command(Raxol.UI.Components.Modal.t()) :: {atom(), any()}
   def set_focus_command(state) do
     field_count = length(state.form_state.fields)
 
@@ -166,7 +173,8 @@ defmodule Raxol.UI.Components.Modal.State do
   end
 
   @doc "Gets field full ID with modal prefix if modal has ID."
-  @spec get_field_full_id(map(), %Raxol.UI.Components.Modal{}) :: String.t() | any()
+  @spec get_field_full_id(map(), Raxol.UI.Components.Modal.t()) ::
+          String.t() | any()
   def get_field_full_id(field, state) do
     case Map.get(state, :id, nil) do
       nil -> field.id

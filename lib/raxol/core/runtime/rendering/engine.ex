@@ -121,6 +121,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # --- Private Helpers ---
 
   # Functional rendering pipeline replacing try/catch
+  @spec do_render_frame(any(), any(), map()) :: any()
   defp do_render_frame(model, theme, state) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine executing do_render_frame. Model=#{inspect(model)}, Theme=#{inspect(theme)}, State=#{inspect(state)}"
@@ -146,6 +147,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   # Safe view retrieval using functional error handling
+  @spec safe_get_view(module(), any()) :: any()
   defp safe_get_view(app_module, model) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Calling app_module.view(model)"
@@ -171,6 +173,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   # Safe layout application using functional error handling
+  @spec safe_apply_layout(any(), map()) :: any()
   defp safe_apply_layout(view, state) do
     dimensions = %{width: state.width, height: state.height}
 
@@ -194,6 +197,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   # Safe cell rendering using functional error handling
+  @spec safe_render_to_cells(any(), any()) :: any()
   defp safe_render_to_cells(positioned_elements, theme) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Rendering to cells with theme: #{inspect(theme)}"
@@ -215,6 +219,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   # Safe plugin transforms using functional error handling
+  @spec safe_apply_plugin_transforms(any(), map()) :: any()
   defp safe_apply_plugin_transforms(cells, state) do
     Raxol.Core.ErrorHandling.safe_call(fn ->
       processed_cells = apply_plugin_transforms(cells, state)
@@ -227,6 +232,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   # Safe backend rendering
+  @spec safe_render_to_backend(any(), map()) :: any()
   defp safe_render_to_backend(final_cells, state) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Sending final cells to backend: #{state.environment}"
@@ -253,6 +259,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   # --- Private Rendering Backends ---
 
+  @spec render_to_terminal(any(), map()) :: any()
   defp render_to_terminal(cells, state) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Executing render_to_terminal. State: #{inspect(state)}"
@@ -266,15 +273,16 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     transformed_cells = transform_cells_for_update(cells)
 
     # Apply cells to the buffer
-    updated_buffer = Enum.reduce(transformed_cells, screen_buffer, fn {x, y, cell}, buffer ->
-      ScreenBuffer.write_char(buffer, x, y, cell.char || " ", %{
-        foreground: cell.foreground,
-        background: cell.background,
-        bold: cell.bold,
-        underline: cell.underline,
-        italic: cell.italic
-      })
-    end)
+    updated_buffer =
+      Enum.reduce(transformed_cells, screen_buffer, fn {x, y, cell}, buffer ->
+        ScreenBuffer.write_char(buffer, x, y, cell.char || " ", %{
+          foreground: cell.foreground,
+          background: cell.background,
+          bold: cell.bold,
+          underline: cell.underline,
+          italic: cell.italic
+        })
+      end)
 
     # Render the buffer using the Terminal Renderer
     output_string = Raxol.Terminal.Renderer.render(updated_buffer)
@@ -306,6 +314,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     {:ok, updated_state_with_buffer}
   end
 
+  @spec render_to_vscode(any(), map()) :: any()
   defp render_to_vscode(cells, state) do
     case state.stdio_interface_pid do
       nil -> {:error, :stdio_not_available}
@@ -313,6 +322,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end
   end
 
+  @spec send_buffer_to_vscode(any(), map()) :: any()
   defp send_buffer_to_vscode(cells, _state) do
     # Convert cells to VS Code format
     _vscode_cells =
@@ -362,19 +372,24 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     15 => "brightWhite"
   }
 
+  @spec convert_color_to_vscode(Raxol.Terminal.Color.TrueColor.t()) :: any()
   defp convert_color_to_vscode(color) when is_integer(color) do
     @terminal_color_map[color] || "default"
   end
 
+  @spec convert_color_to_vscode(any()) :: any()
   defp convert_color_to_vscode({r, g, b})
        when is_integer(r) and is_integer(g) and is_integer(b) do
     "rgb(#{r},#{g},#{b})"
   end
 
+  @spec convert_color_to_vscode(Raxol.Terminal.Color.TrueColor.t()) :: any()
   defp convert_color_to_vscode(color) when is_binary(color), do: color
+  @spec convert_color_to_vscode(any()) :: any()
   defp convert_color_to_vscode(_), do: "default"
 
   # Helper to transform cell format
+  @spec transform_cells_for_update(any()) :: any()
   defp transform_cells_for_update(cells) when is_list(cells) do
     Enum.map(cells, fn {x, y, char, fg, bg, attrs_list} ->
       # Simpler version: Assume format is correct, remove case
@@ -393,6 +408,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end)
   end
 
+  @spec apply_plugin_transforms(any(), map()) :: any()
   defp apply_plugin_transforms(cells, state) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Applying plugin transforms to #{length(cells)} cells"
@@ -421,10 +437,11 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         execute_plugin_commands(collected_commands)
 
         # Update plugin manager state in dispatcher if needed
-        _ = update_plugin_manager_in_dispatcher(
-          state.dispatcher_pid,
-          updated_manager
-        )
+        _ =
+          update_plugin_manager_in_dispatcher(
+            state.dispatcher_pid,
+            updated_manager
+          )
 
         Raxol.Core.Runtime.Log.debug(
           "Rendering Engine: Plugin transforms applied. Processed cells: #{length(processed_cells)}, Commands: #{length(collected_commands)}"
@@ -444,6 +461,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   # Functional wrapper for dispatcher plugin manager retrieval
+  @spec get_plugin_manager_from_dispatcher(String.t() | integer()) ::
+          any() | nil
   defp get_plugin_manager_from_dispatcher(dispatcher_pid)
        when is_pid(dispatcher_pid) do
     with {:ok, response} <-
@@ -455,9 +474,12 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end
   end
 
+  @spec get_plugin_manager_from_dispatcher(any()) :: any() | nil
   defp get_plugin_manager_from_dispatcher(_), do: {:error, :invalid_dispatcher}
 
   # Safe GenServer call wrapper using functional error handling
+  @spec safe_genserver_call(String.t() | integer(), String.t(), timeout()) ::
+          any()
   defp safe_genserver_call(pid, message, timeout) do
     Raxol.Core.ErrorHandling.safe_call(fn ->
       GenServer.call(pid, message, timeout)
@@ -479,19 +501,26 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   end
 
   # Validate plugin manager response
+  @spec validate_plugin_manager_response(any()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_plugin_manager_response({:ok, plugin_manager}) do
     {:ok, plugin_manager}
   end
 
+  @spec validate_plugin_manager_response(any()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_plugin_manager_response({:error, reason}) do
     {:error, reason}
   end
 
+  @spec validate_plugin_manager_response(any()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_plugin_manager_response(_) do
     {:error, :unexpected_response}
   end
 
   # Helper function to execute plugin commands (like escape sequences)
+  @spec execute_plugin_commands(any()) :: any()
   defp execute_plugin_commands(commands)
        when is_list(commands) and length(commands) > 0 do
     Raxol.Core.Runtime.Log.debug(
@@ -513,9 +542,12 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end)
   end
 
+  @spec execute_plugin_commands(any()) :: any()
   defp execute_plugin_commands(_), do: :ok
 
   # Functional wrapper for dispatcher plugin manager updates
+  @spec update_plugin_manager_in_dispatcher(String.t() | integer(), any()) ::
+          any()
   defp update_plugin_manager_in_dispatcher(dispatcher_pid, updated_manager)
        when is_pid(dispatcher_pid) do
     with :ok <-
@@ -537,10 +569,12 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end
   end
 
+  @spec update_plugin_manager_in_dispatcher(any(), any()) :: any()
   defp update_plugin_manager_in_dispatcher(_, _),
     do: {:error, :invalid_dispatcher}
 
   # Safe GenServer cast wrapper using functional error handling
+  @spec safe_genserver_cast(String.t() | integer(), String.t()) :: any()
   defp safe_genserver_cast(pid, message) do
     Raxol.Core.ErrorHandling.safe_call(fn ->
       GenServer.cast(pid, message)

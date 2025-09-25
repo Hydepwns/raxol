@@ -45,74 +45,71 @@ defmodule Raxol.UI.Layout.Containers do
     do: acc
 
   defp process_row_with_children(children, gap, justify, align, space, acc) do
-    # Calculate the space each child needs
-    child_dimensions =
-      Enum.map(children, fn child ->
-        Engine.measure_element(child, space)
-      end)
+    child_dimensions = measure_all_children(children, space)
 
-    # Total width used by children
-    total_width =
-      Enum.reduce(child_dimensions, 0, fn dim, acc ->
-        acc + dim.width
-      end)
+    layout_info =
+      calculate_row_layout(child_dimensions, gap, justify, children, space)
 
-    # Space needed for gaps
+    children
+    |> position_row_children(child_dimensions, layout_info, align, space)
+    |> List.flatten()
+    |> Kernel.++(acc)
+  end
+
+  defp calculate_row_layout(child_dimensions, gap, justify, children, space) do
+    total_width = calculate_total_width(child_dimensions)
     gaps_width = gap * (length(children) - 1)
-
-    # Total width including gaps
     total_content_width = total_width + gaps_width
+    start_x = calculate_row_start_x(justify, space, total_content_width)
 
-    # Calculate starting x position based on justification
-    start_x =
-      case justify do
-        :start ->
-          space.x
-
-        :center ->
-          space.x + div(space.width - total_content_width, 2)
-
-        :end ->
-          space.x + space.width - total_content_width
-
-        :space_between ->
-          # With space_between, we'll recalculate the gap
-          space.x
-      end
-
-    # If we're using space_between, recalculate the gap
     effective_gap =
       calculate_row_gap(justify, children, gap, space.width, total_width)
 
-    # Position each child
-    {_, elements} =
-      Enum.zip(children, child_dimensions)
-      |> Enum.reduce({start_x, []}, fn {child, dims}, {current_x, elements} ->
-        # Calculate y position based on alignment
-        child_y =
-          case align do
-            :start -> space.y
-            :center -> space.y + div(space.height - dims.height, 2)
-            :end -> space.y + space.height - dims.height
-          end
+    %{
+      start_x: start_x,
+      effective_gap: effective_gap
+    }
+  end
 
-        # Create child space
-        child_space = %{
-          x: current_x,
-          y: child_y,
-          width: dims.width,
-          height: dims.height
-        }
+  defp calculate_total_width(child_dimensions) do
+    Enum.reduce(child_dimensions, 0, fn dim, acc -> acc + dim.width end)
+  end
 
-        # Process child element
-        child_elements = Engine.process_element(child, child_space, [])
+  defp calculate_row_start_x(justify, space, total_content_width) do
+    case justify do
+      :start -> space.x
+      :center -> space.x + div(space.width - total_content_width, 2)
+      :end -> space.x + space.width - total_content_width
+      :space_between -> space.x
+    end
+  end
 
-        # Return new x position and accumulated elements
-        {current_x + dims.width + effective_gap, child_elements ++ elements}
-      end)
+  defp position_row_children(
+         children,
+         child_dimensions,
+         layout_info,
+         align,
+         space
+       ) do
+    Enum.zip(children, child_dimensions)
+    |> Enum.reduce({layout_info.start_x, []}, fn {child, dims},
+                                                 {current_x, elements} ->
+      child_y = calculate_child_y_position(align, space, dims)
+      child_space = create_child_space(current_x, child_y, dims)
+      child_elements = Engine.process_element(child, child_space, [])
 
-    # Flatten and add to accumulator
-    List.flatten(elements) ++ acc
+      next_x = current_x + dims.width + layout_info.effective_gap
+      {next_x, child_elements ++ elements}
+    end)
+    |> elem(1)
+  end
+
+  defp calculate_child_y_position(align, space, dims) do
+    case align do
+      :start -> space.y
+      :center -> space.y + div(space.height - dims.height, 2)
+      :end -> space.y + space.height - dims.height
+    end
   end
 
   @doc """
@@ -152,74 +149,79 @@ defmodule Raxol.UI.Layout.Containers do
     do: acc
 
   defp process_column_with_children(children, gap, justify, align, space, acc) do
-    # Calculate the space each child needs
-    child_dimensions =
-      Enum.map(children, fn child ->
-        Engine.measure_element(child, space)
-      end)
+    child_dimensions = measure_all_children(children, space)
 
-    # Total height used by children
-    total_height =
-      Enum.reduce(child_dimensions, 0, fn dim, acc ->
-        acc + dim.height
-      end)
+    layout_info =
+      calculate_column_layout(child_dimensions, gap, justify, children, space)
 
-    # Space needed for gaps
+    children
+    |> position_column_children(child_dimensions, layout_info, align, space)
+    |> List.flatten()
+    |> Kernel.++(acc)
+  end
+
+  defp measure_all_children(children, space) do
+    Enum.map(children, fn child -> Engine.measure_element(child, space) end)
+  end
+
+  defp calculate_column_layout(child_dimensions, gap, justify, children, space) do
+    total_height = calculate_total_height(child_dimensions)
     gaps_height = gap * (length(children) - 1)
-
-    # Total height including gaps
     total_content_height = total_height + gaps_height
+    start_y = calculate_column_start_y(justify, space, total_content_height)
 
-    # Calculate starting y position based on justification
-    start_y =
-      case justify do
-        :start ->
-          space.y
-
-        :center ->
-          space.y + div(space.height - total_content_height, 2)
-
-        :end ->
-          space.y + space.height - total_content_height
-
-        :space_between ->
-          # With space_between, we'll recalculate the gap
-          space.y
-      end
-
-    # If we're using space_between, recalculate the gap
     effective_gap =
       calculate_column_gap(justify, children, gap, space.height, total_height)
 
-    # Position each child
-    {_, elements} =
-      Enum.zip(children, child_dimensions)
-      |> Enum.reduce({start_y, []}, fn {child, dims}, {current_y, elements} ->
-        # Calculate x position based on alignment
-        child_x =
-          case align do
-            :start -> space.x
-            :center -> space.x + div(space.width - dims.width, 2)
-            :end -> space.x + space.width - dims.width
-          end
+    %{
+      start_y: start_y,
+      effective_gap: effective_gap
+    }
+  end
 
-        # Create child space
-        child_space = %{
-          x: child_x,
-          y: current_y,
-          width: dims.width,
-          height: dims.height
-        }
+  defp calculate_total_height(child_dimensions) do
+    Enum.reduce(child_dimensions, 0, fn dim, acc -> acc + dim.height end)
+  end
 
-        # Process child element
-        child_elements = Engine.process_element(child, child_space, [])
+  defp calculate_column_start_y(justify, space, total_content_height) do
+    case justify do
+      :start -> space.y
+      :center -> space.y + div(space.height - total_content_height, 2)
+      :end -> space.y + space.height - total_content_height
+      :space_between -> space.y
+    end
+  end
 
-        # Return new y position and accumulated elements
-        {current_y + dims.height + effective_gap, child_elements ++ elements}
-      end)
+  defp position_column_children(
+         children,
+         child_dimensions,
+         layout_info,
+         align,
+         space
+       ) do
+    Enum.zip(children, child_dimensions)
+    |> Enum.reduce({layout_info.start_y, []}, fn {child, dims},
+                                                 {current_y, elements} ->
+      child_x = calculate_child_x_position(align, space, dims)
+      child_space = create_child_space(child_x, current_y, dims)
+      child_elements = Engine.process_element(child, child_space, [])
 
-    # Flatten and add to accumulator
-    List.flatten(elements) ++ acc
+      next_y = current_y + dims.height + layout_info.effective_gap
+      {next_y, child_elements ++ elements}
+    end)
+    |> elem(1)
+  end
+
+  defp calculate_child_x_position(align, space, dims) do
+    case align do
+      :start -> space.x
+      :center -> space.x + div(space.width - dims.width, 2)
+      :end -> space.x + space.width - dims.width
+    end
+  end
+
+  defp create_child_space(x, y, dims) do
+    %{x: x, y: y, width: dims.width, height: dims.height}
   end
 
   @doc """

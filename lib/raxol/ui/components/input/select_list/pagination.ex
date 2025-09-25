@@ -1,70 +1,128 @@
 defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   @moduledoc """
-  Handles pagination functionality for the SelectList component.
+  Pagination helper for SelectList component.
+  Handles page-based navigation and state management.
   """
 
-  @type option :: {String.t(), any()}
-  @type options :: [option()]
+  alias Raxol.UI.Components.Input.SelectList
 
   @doc """
-  Calculates the total number of pages based on the number of options and page size.
+  Gets the effective options based on current filter/search state.
   """
-  def calculate_total_pages(num_options, page_size) do
-    case num_options == 0 do
-      true ->
-        1
-
-      false ->
-        ceil(num_options / page_size)
+  @spec get_effective_options(SelectList.t()) :: list()
+  def get_effective_options(state) do
+    case state.filtered_options do
+      nil -> state.options
+      filtered -> filtered
     end
   end
 
   @doc """
-  Gets the options for a specific page.
+  Updates the page state based on page number.
   """
-  def get_page_options(options, page_num, page_size) do
-    start_idx = page_num * page_size
-    end_idx = min(start_idx + page_size, length(options))
-    Enum.slice(options, start_idx, end_idx - start_idx)
-  end
-
-  @doc """
-  Updates pagination state based on a new page number.
-  """
+  @spec update_page_state(SelectList.t(), non_neg_integer()) :: SelectList.t()
   def update_page_state(state, page_num) do
+    visible_items = state.visible_items || 10
     effective_options = get_effective_options(state)
+    max_pages = calculate_max_pages(effective_options, visible_items)
 
-    total_pages =
-      calculate_total_pages(length(effective_options), state.page_size)
+    # Clamp page number to valid range
+    page = min(max(page_num, 0), max_pages - 1)
 
-    # Ensure page number is valid
-    valid_page = max(0, min(page_num, total_pages - 1))
-
-    # Calculate new focused index based on page change
-    new_focused_index = valid_page * state.page_size
-
-    # Clamp to valid option range
-    clamped_focus =
-      min(new_focused_index, max(0, length(effective_options) - 1))
+    # Update selected index to first item on the page
+    new_index = page * visible_items
 
     %{
       state
-      | current_page: valid_page,
-        focused_index: clamped_focus,
-        scroll_offset: valid_page * state.page_size
+      | current_page: page,
+        selected_index: new_index,
+        scroll_offset: new_index
     }
   end
 
   @doc """
-  Gets the effective options list (filtered or original) based on current state.
+  Calculates the total number of pages.
   """
-  def get_effective_options(state) do
-    case state.is_filtering do
-      true ->
-        state.filtered_options || []
+  @spec calculate_total_pages(SelectList.t()) :: non_neg_integer()
+  def calculate_total_pages(state) do
+    effective_options = get_effective_options(state)
+    visible_items = state.visible_items || 10
+    calculate_max_pages(effective_options, visible_items)
+  end
 
-      false ->
-        state.options
+  @doc """
+  Gets the current page number.
+  """
+  @spec get_current_page(SelectList.t()) :: non_neg_integer()
+  def get_current_page(state) do
+    visible_items = state.visible_items || 10
+    div(state.selected_index, visible_items)
+  end
+
+  @doc """
+  Checks if there's a next page.
+  """
+  @spec has_next_page?(SelectList.t()) :: boolean()
+  def has_next_page?(state) do
+    current_page = get_current_page(state)
+    total_pages = calculate_total_pages(state)
+    current_page < total_pages - 1
+  end
+
+  @doc """
+  Checks if there's a previous page.
+  """
+  @spec has_prev_page?(SelectList.t()) :: boolean()
+  def has_prev_page?(state) do
+    get_current_page(state) > 0
+  end
+
+  @doc """
+  Moves to the next page.
+  """
+  @spec next_page(SelectList.t()) :: SelectList.t()
+  def next_page(state) do
+    if has_next_page?(state) do
+      current_page = get_current_page(state)
+      update_page_state(state, current_page + 1)
+    else
+      state
     end
   end
+
+  @doc """
+  Moves to the previous page.
+  """
+  @spec prev_page(SelectList.t()) :: SelectList.t()
+  def prev_page(state) do
+    if has_prev_page?(state) do
+      current_page = get_current_page(state)
+      update_page_state(state, current_page - 1)
+    else
+      state
+    end
+  end
+
+  @doc """
+  Gets the options for the current page.
+  """
+  @spec get_page_options(SelectList.t()) :: list()
+  def get_page_options(state) do
+    effective_options = get_effective_options(state)
+    visible_items = state.visible_items || 10
+    page = get_current_page(state)
+
+    start_index = page * visible_items
+
+    Enum.slice(effective_options, start_index, visible_items)
+  end
+
+  # Private functions
+
+  defp calculate_max_pages(options, visible_items) when visible_items > 0 do
+    total = length(options)
+    div(total + visible_items - 1, visible_items)
+  end
+
+  defp calculate_max_pages(_, _), do: 1
 end

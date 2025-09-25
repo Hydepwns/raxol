@@ -219,6 +219,7 @@ defmodule Raxol.Core.Runtime.Application do
 
   # Private helper functions for delegate_init
 
+  @spec safely_call_init(module(), any()) :: any()
   defp safely_call_init(app_module, context) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            result = app_module.init(context)
@@ -244,6 +245,7 @@ defmodule Raxol.Core.Runtime.Application do
     end
   end
 
+  @spec normalize_init_result(module(), any()) :: any()
   defp normalize_init_result(app_module, result) do
     case result do
       {model, commands} when is_map(model) and is_list(commands) ->
@@ -286,6 +288,7 @@ defmodule Raxol.Core.Runtime.Application do
     end
   end
 
+  @spec safely_call_update(module(), String.t(), any()) :: any()
   defp safely_call_update(app_module, message, current_model) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            app_module.update(message, current_model)
@@ -299,6 +302,7 @@ defmodule Raxol.Core.Runtime.Application do
     end
   end
 
+  @spec normalize_update_result(module(), any(), String.t(), any()) :: any()
   defp normalize_update_result(app_module, result, message, current_model) do
     case result do
       {new_model, commands} when is_map(new_model) and is_list(commands) ->
@@ -316,6 +320,7 @@ defmodule Raxol.Core.Runtime.Application do
     end
   end
 
+  @spec log_missing_update_callback(module(), String.t(), any()) :: any()
   defp log_missing_update_callback(app_module, message, current_model) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "[#{__MODULE__}] Application module #{inspect(app_module)} does not implement update/2 callback.",
@@ -331,6 +336,7 @@ defmodule Raxol.Core.Runtime.Application do
     )
   end
 
+  @spec log_update_error(module(), any(), String.t(), any()) :: any()
   defp log_update_error(app_module, error, message, current_model) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "[#{__MODULE__}] Error executing #{inspect(app_module)}.update/2",
@@ -346,6 +352,12 @@ defmodule Raxol.Core.Runtime.Application do
     )
   end
 
+  @spec log_invalid_update_result(
+          module(),
+          String.t() | integer(),
+          String.t(),
+          any()
+        ) :: any()
   defp log_invalid_update_result(
          app_module,
          invalid_return,

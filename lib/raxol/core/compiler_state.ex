@@ -94,10 +94,12 @@ defmodule Raxol.Core.CompilerState do
 
   # Private helper functions
 
+  @spec table_exists?(any()) :: boolean()
   defp table_exists?(table) do
     :ets.info(table) != :undefined
   end
 
+  @spec safe_create_table(String.t() | atom(), keyword()) :: any()
   defp safe_create_table(name, opts) do
     # Use Task to isolate potential crashes and handle race conditions
     task =
@@ -133,6 +135,7 @@ defmodule Raxol.Core.CompilerState do
     end
   end
 
+  @spec perform_safe_lookup(any(), any()) :: any()
   defp perform_safe_lookup(table, key) do
     # Use Task to isolate potential ETS crashes
     task =
@@ -156,6 +159,7 @@ defmodule Raxol.Core.CompilerState do
     end
   end
 
+  @spec perform_safe_insert(any(), any()) :: any()
   defp perform_safe_insert(table, data) do
     # Use Task to isolate potential ETS crashes
     task =
@@ -179,6 +183,7 @@ defmodule Raxol.Core.CompilerState do
     end
   end
 
+  @spec perform_safe_delete(any(), any()) :: any()
   defp perform_safe_delete(table, key) do
     # Use Task to isolate potential ETS crashes
     task =
@@ -202,6 +207,7 @@ defmodule Raxol.Core.CompilerState do
     end
   end
 
+  @spec perform_safe_delete_table(any()) :: any()
   defp perform_safe_delete_table(table) do
     # Use Task to isolate potential ETS crashes
     task =

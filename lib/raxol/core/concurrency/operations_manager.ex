@@ -137,10 +137,11 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     metrics = initialize_metrics(config)
 
     # Start load monitoring
-    _ = case config.adaptive_scaling do
-      true -> schedule_load_monitoring()
-      false -> :ok
-    end
+    _ =
+      case config.adaptive_scaling do
+        true -> schedule_load_monitoring()
+        false -> :ok
+      end
 
     state = %State{
       config: config,
@@ -268,6 +269,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
 
   ## Private Functions
 
+  @spec initialize_worker_pools(map()) :: any()
   defp initialize_worker_pools(config) do
     # Create worker pools optimized for CPU topology
     logical_processors = :erlang.system_info(:logical_processors)
@@ -287,6 +289,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     end
   end
 
+  @spec initialize_metrics(map()) :: any()
   defp initialize_metrics(config) do
     case config.enable_metrics do
       true ->
@@ -305,6 +308,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     end
   end
 
+  @spec check_back_pressure(map()) :: any()
   defp check_back_pressure(state) do
     queue_size = :queue.len(state.operation_queue)
 
@@ -314,6 +318,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     end
   end
 
+  @spec enqueue_with_priority(any(), any()) :: any()
   defp enqueue_with_priority(
          queue,
          {priority, _ref, _op, _from, _timestamp} = item
@@ -324,11 +329,16 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     :queue.in({priority_value, item}, queue)
   end
 
+  @spec priority_to_number(any()) :: any()
   defp priority_to_number(:critical), do: 1
+  @spec priority_to_number(any()) :: any()
   defp priority_to_number(:high), do: 2
+  @spec priority_to_number(any()) :: any()
   defp priority_to_number(:normal), do: 3
+  @spec priority_to_number(any()) :: any()
   defp priority_to_number(:low), do: 4
 
+  @spec dispatch_queued_operations(map()) :: any()
   defp dispatch_queued_operations(state) do
     case :queue.out(state.operation_queue) do
       {{:value, {_priority, queue_item}}, remaining_queue} ->
@@ -360,6 +370,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     end
   end
 
+  @spec find_available_worker(any()) :: any()
   defp find_available_worker(worker_pools) do
     # Find the worker pool with the least load
     worker_pools
@@ -372,6 +383,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     end
   end
 
+  @spec execute_operations_concurrently(any(), any()) :: any()
   defp execute_operations_concurrently(operations, worker_pools) do
     # Execute operations in parallel using Task.async_stream
     operations
@@ -386,10 +398,12 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     end)
   end
 
+  @spec execute_single_operation(any()) :: any()
   defp execute_single_operation({module, function, args}) when is_list(args) do
     apply(module, function, args)
   end
 
+  @spec execute_single_operation(any()) :: any()
   defp execute_single_operation(operation) when is_function(operation) do
     operation.()
   end
@@ -429,6 +443,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     }
   end
 
+  @spec maybe_scale_workers(map()) :: any()
   defp maybe_scale_workers(state) do
     cpu_utilization = state.load_stats[:cpu_utilization] || 0.0
     queue_size = :queue.len(state.operation_queue)
@@ -442,6 +457,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     )
   end
 
+  @spec decide_scaling_action(any(), any(), any(), map()) :: any()
   defp decide_scaling_action(cpu_util, queue_size, current_workers, state)
        when cpu_util > 80.0 and queue_size > 100 and
               current_workers < state.config.max_workers do
@@ -449,6 +465,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     state
   end
 
+  @spec decide_scaling_action(any(), any(), any(), map()) :: any()
   defp decide_scaling_action(cpu_util, queue_size, current_workers, state)
        when cpu_util < 20.0 and queue_size < 10 and
               current_workers > state.config.min_workers do
@@ -456,15 +473,18 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     state
   end
 
+  @spec decide_scaling_action(any(), any(), any(), map()) :: any()
   defp decide_scaling_action(_cpu_util, _queue_size, _current_workers, state) do
     state
   end
 
+  @spec scale_worker_pools(any(), any()) :: any()
   defp scale_worker_pools(pools, target_size) do
     current_size = map_size(pools)
     perform_pool_scaling(pools, current_size, target_size)
   end
 
+  @spec perform_pool_scaling(any(), any(), any()) :: any()
   defp perform_pool_scaling(pools, current_size, target_size)
        when target_size > current_size do
     # Add new worker pools
@@ -478,6 +498,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     Map.merge(pools, new_pools)
   end
 
+  @spec perform_pool_scaling(any(), any(), any()) :: any()
   defp perform_pool_scaling(pools, current_size, target_size)
        when target_size < current_size do
     # Remove excess worker pools
@@ -493,10 +514,12 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     pools_to_keep
   end
 
+  @spec perform_pool_scaling(any(), any(), any()) :: any()
   defp perform_pool_scaling(pools, _current_size, _target_size) do
     pools
   end
 
+  @spec update_back_pressure_status(map()) :: any()
   defp update_back_pressure_status(state) do
     queue_size = :queue.len(state.operation_queue)
 
@@ -511,17 +534,21 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     %{state | back_pressure_active: back_pressure_active}
   end
 
+  @spec determine_back_pressure(any(), any(), any(), any()) :: any()
   defp determine_back_pressure(queue_size, high_mark, _low_mark, _current)
        when queue_size > high_mark,
        do: true
 
+  @spec determine_back_pressure(any(), any(), any(), any()) :: any()
   defp determine_back_pressure(queue_size, _high_mark, low_mark, _current)
        when queue_size < low_mark,
        do: false
 
+  @spec determine_back_pressure(any(), any(), any(), any()) :: any()
   defp determine_back_pressure(_queue_size, _high_mark, _low_mark, current),
     do: current
 
+  @spec collect_current_metrics(map()) :: any()
   defp collect_current_metrics(state) do
     queue_size = :queue.len(state.operation_queue)
     worker_count = map_size(state.worker_pools)
@@ -534,6 +561,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     })
   end
 
+  @spec update_operation_metrics(any(), any()) :: any()
   defp update_operation_metrics(metrics, result) do
     case result do
       {:ok, _} ->
@@ -544,6 +572,7 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     end
   end
 
+  @spec record_queue_wait_time(any(), any()) :: any()
   defp record_queue_wait_time(metrics, wait_time) do
     # Update average latency with exponential moving average
     alpha = 0.1
@@ -553,12 +582,15 @@ defmodule Raxol.Core.Concurrency.OperationsManager do
     %{metrics | average_latency: new_avg}
   end
 
+  @spec send_operation_result(reference(), any()) :: any()
   defp send_operation_result(ref, result) do
     # Find the process that requested this operation and send result
     # This is simplified - in production would maintain a registry
-    _ = spawn(fn ->
-      send(self(), {:operation_result, ref, result})
-    end)
+    _ =
+      spawn(fn ->
+        send(self(), {:operation_result, ref, result})
+      end)
+
     :ok
   end
 

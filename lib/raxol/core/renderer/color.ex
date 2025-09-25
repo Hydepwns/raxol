@@ -97,19 +97,25 @@ defmodule Raxol.Core.Renderer.Color do
     raise ArgumentError, "Invalid color format"
   end
 
+  @spec process_ansi_atom_color(any(), Raxol.Terminal.Color.TrueColor.t()) ::
+          any()
   defp process_ansi_atom_color(false, _color) do
     raise ArgumentError, "Invalid color format"
   end
 
+  @spec process_ansi_atom_color(any(), Raxol.Terminal.Color.TrueColor.t()) ::
+          any()
   defp process_ansi_atom_color(_is_member, color) do
     code = @ansi_16_map[color]
     format_ansi_code(code >= 8, code)
   end
 
+  @spec format_ansi_code(any(), any()) :: String.t()
   defp format_ansi_code(true, code) do
     "\e[#{90 + (code - 8)}m"
   end
 
+  @spec format_ansi_code(any(), any()) :: String.t()
   defp format_ansi_code(_is_bright, code) do
     "\e[#{30 + code}m"
   end
@@ -148,10 +154,12 @@ defmodule Raxol.Core.Renderer.Color do
     raise ArgumentError, "Invalid color format"
   end
 
+  @spec format_bg_ansi_code(any(), any()) :: String.t()
   defp format_bg_ansi_code(true, code) do
     "\e[#{100 + (code - 8)}m"
   end
 
+  @spec format_bg_ansi_code(any(), any()) :: String.t()
   defp format_bg_ansi_code(_is_bright, code) do
     "\e[#{40 + code}m"
   end
@@ -184,35 +192,42 @@ defmodule Raxol.Core.Renderer.Color do
     %{colors: Map.merge(default.colors, processed_colors)}
   end
 
+  @spec process_theme_colors(Raxol.Terminal.Color.TrueColor.t()) :: any()
   defp process_theme_colors(colors) do
     colors
     |> Enum.map(&process_color_entry/1)
     |> Map.new()
   end
 
+  @spec process_color_entry(any()) :: any()
   defp process_color_entry({key, "#" <> _ = hex}) do
     {key, hex_to_rgb(hex)}
   end
 
+  @spec process_color_entry(any()) :: any()
   defp process_color_entry({key, value})
        when is_atom(value) and value in @ansi_16_atoms do
     {key, value}
   end
 
+  @spec process_color_entry(any()) :: any()
   defp process_color_entry({key, {r, g, b}})
        when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     {key, {r, g, b}}
   end
 
+  @spec process_color_entry(any()) :: any()
   defp process_color_entry({_key, value}) do
     msg = format_error_message(is_binary(value), value)
     raise(ArgumentError, msg)
   end
 
+  @spec format_error_message(any(), any()) :: String.t()
   defp format_error_message(true, value) do
     "Invalid color in theme: #{value}"
   end
 
+  @spec format_error_message(any(), any()) :: String.t()
   defp format_error_message(_is_binary, value) do
     "Invalid color in theme: #{inspect(value)}"
   end
@@ -229,6 +244,7 @@ defmodule Raxol.Core.Renderer.Color do
     %{colors: merged_colors}
   end
 
+  @spec convert_theme_colors(Raxol.Terminal.Color.TrueColor.t()) :: any()
   defp convert_theme_colors(colors) do
     colors
     |> Enum.map(fn {key, color} ->
@@ -241,6 +257,7 @@ defmodule Raxol.Core.Renderer.Color do
     |> Map.new()
   end
 
+  @spec merge_with_defaults(Raxol.Terminal.Color.TrueColor.t()) :: any()
   defp merge_with_defaults(colors) do
     default_values = %{
       foreground: {0, 0, 0},
@@ -278,6 +295,7 @@ defmodule Raxol.Core.Renderer.Color do
     raise ArgumentError, "Invalid hex color format"
   end
 
+  @spec parse_6_digit_hex(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_6_digit_hex(hex) when is_binary(hex) do
     case parse_hex_components(hex, 2) do
       {:ok, {r, g, b}} -> {r, g, b}
@@ -285,6 +303,7 @@ defmodule Raxol.Core.Renderer.Color do
     end
   end
 
+  @spec parse_3_digit_hex(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_3_digit_hex(hex) when is_binary(hex) do
     case parse_hex_components(hex, 1) do
       {:ok, {r, g, b}} -> {r, g, b}
@@ -292,6 +311,8 @@ defmodule Raxol.Core.Renderer.Color do
     end
   end
 
+  @spec parse_hex_components(String.t(), non_neg_integer()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_hex_components(hex, size) when is_binary(hex) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            case size do
@@ -335,18 +356,24 @@ defmodule Raxol.Core.Renderer.Color do
     raise ArgumentError, "Invalid RGB tuple"
   end
 
+  @spec convert_rgb_to_ansi256(any(), any(), any(), any()) :: any()
   defp convert_rgb_to_ansi256(true, r, _g, _b) do
     grayscale_to_ansi256(r)
   end
 
+  @spec convert_rgb_to_ansi256(any(), any(), any(), any()) :: any()
   defp convert_rgb_to_ansi256(_is_grayscale, r, g, b) do
     color_cube_to_ansi256(r, g, b)
   end
 
+  @spec grayscale_to_ansi256(any()) :: any()
   defp grayscale_to_ansi256(r) when r < 4, do: 16
+  @spec grayscale_to_ansi256(any()) :: any()
   defp grayscale_to_ansi256(r) when r > 251, do: 231
+  @spec grayscale_to_ansi256(any()) :: any()
   defp grayscale_to_ansi256(r), do: 232 + div(r - 4, 10)
 
+  @spec color_cube_to_ansi256(any(), any(), any()) :: any()
   defp color_cube_to_ansi256(r, g, b) do
     ir = div(r * 6, 256)
     ig = div(g * 6, 256)
@@ -362,6 +389,7 @@ defmodule Raxol.Core.Renderer.Color do
     end
   end
 
+  @spec parse_colorfgbg(any()) :: {:ok, any()} | {:error, any()}
   defp parse_colorfgbg(value) do
     case String.split(value, ";") do
       [_, "0"] -> :black

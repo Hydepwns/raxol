@@ -135,15 +135,6 @@ defmodule Raxol.Core.Accessibility.EventHandler do
   end
 
   # Add String.Chars protocol implementation for Theme
-  case Code.ensure_loaded?(Raxol.UI.Theming.Theme) do
-    true ->
-      defimpl String.Chars, for: Raxol.UI.Theming.Theme do
-        def to_string(theme) do
-          "Theme: #{theme.name}"
-        end
-      end
-
-    false ->
-      :ok
-  end
+  # String.Chars implementation moved to lib/raxol/ui/theming/theme.ex
+  # to avoid duplicate module definition
 end

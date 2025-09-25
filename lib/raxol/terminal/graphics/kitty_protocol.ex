@@ -396,7 +396,7 @@ defmodule Raxol.Terminal.Graphics.KittyProtocol do
         build_escape_sequence("T", control_data, encoded_chunk)
       end)
 
-    {:ok, Enum.join(commands, "")}
+    {:ok, commands}
   end
 
   defp chunk_binary_data(data, chunk_size) do

@@ -44,6 +44,7 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
   # --- Private Helpers ---
 
   # Get list of enabled plugins in load order
+  @spec get_enabled_plugins(map()) :: any() | nil
   defp get_enabled_plugins(state) do
     state.load_order
     |> Enum.filter(fn plugin_id ->
@@ -55,6 +56,7 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
   end
 
   # Apply a single plugin's filter to the event
+  @spec apply_plugin_filter(String.t() | integer(), any(), map()) :: any()
   defp apply_plugin_filter(plugin_id, event, state) do
     case Map.get(state.plugins, plugin_id) do
       nil ->

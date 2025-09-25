@@ -207,9 +207,10 @@ defmodule Raxol.UI.State.Streams do
   """
   def from_list(list) when is_list(list) do
     Observable.new(fn observer ->
-      {:ok, _pid} = Task.start(fn ->
-        emit_list_safely(list, observer)
-      end)
+      {:ok, _pid} =
+        Task.start(fn ->
+          emit_list_safely(list, observer)
+        end)
 
       # Return unsubscribe function (task will complete anyway)
       fn -> :ok end
@@ -249,7 +250,8 @@ defmodule Raxol.UI.State.Streams do
   def interval(milliseconds, value_fn \\ fn i -> i end) do
     Observable.new(fn observer ->
       {:ok, pid} =
-        {:ok, _pid} = Task.start(fn ->
+        {:ok, _pid} =
+        Task.start(fn ->
           interval_loop_safe(observer, milliseconds, value_fn, 0)
         end)
 
@@ -277,7 +279,8 @@ defmodule Raxol.UI.State.Streams do
   def timer(milliseconds, value) do
     Observable.new(fn observer ->
       {:ok, pid} =
-        {:ok, _pid} = Task.start(fn ->
+        {:ok, _pid} =
+        Task.start(fn ->
           :timer.sleep(milliseconds)
 
           with {:ok, _} <- safe_apply(observer.next, value) do

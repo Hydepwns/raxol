@@ -10,7 +10,7 @@ alias Raxol.Terminal.Emulator.ANSIHandler
 IO.puts("Parser Chain Profiling")
 IO.puts("=" <> String.duplicate("=", 40))
 
-emulator = Emulator.new_minimal(80, 24)
+emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
 parser_state = %Raxol.Terminal.Parser.ParserState{state: :ground}
 
 # Warm up

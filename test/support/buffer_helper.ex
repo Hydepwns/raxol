@@ -19,7 +19,7 @@ defmodule Raxol.Test.BufferHelper do
   def setup_buffer_test(opts \\ []) do
     # Start buffer manager
     {:ok, manager} =
-      Raxol.Terminal.Buffer.Manager.start_link(
+      Raxol.Terminal.ScreenBuffer.Manager.start_link(
         Keyword.get(opts, :manager_opts,
           max_buffers: 10,
           default_size: {80, 24},
@@ -29,7 +29,7 @@ defmodule Raxol.Test.BufferHelper do
 
     # Create test buffer
     _buffer =
-      Raxol.Terminal.Buffer.Manager.initialize_buffers(
+      Raxol.Terminal.ScreenBuffer.Manager.initialize_buffers(
         80,
         24,
         Keyword.get(opts, :buffer_opts, 1000)
@@ -90,7 +90,7 @@ defmodule Raxol.Test.BufferHelper do
       {:ok, buffer}
   """
   def create_test_buffer(_manager, opts \\ []) do
-    Raxol.Terminal.Buffer.Manager.initialize_buffers(
+    Raxol.Terminal.ScreenBuffer.Manager.initialize_buffers(
       80,
       24,
       Keyword.get(opts, :scrollback, 1000)
@@ -114,7 +114,7 @@ defmodule Raxol.Test.BufferHelper do
       :ok
   """
   def write_test_data(manager, data, opts \\ []) do
-    case Raxol.Terminal.Buffer.Manager.write(manager, data, opts) do
+    case Raxol.Terminal.ScreenBuffer.Manager.write(manager, data, opts) do
       {:ok, result} -> {:ok, result}
       result -> {:ok, result}
     end
@@ -136,7 +136,7 @@ defmodule Raxol.Test.BufferHelper do
       {:ok, "Hello, World!"}
   """
   def read_test_data(manager, opts \\ []) do
-    case Raxol.Terminal.Buffer.Manager.read(manager, opts) do
+    case Raxol.Terminal.ScreenBuffer.Manager.read(manager, opts) do
       data when is_binary(data) -> {:ok, data}
       data when is_list(data) -> {:ok, data}
       {:error, reason} -> {:error, reason}
@@ -189,25 +189,30 @@ defmodule Raxol.Test.BufferHelper do
       :write ->
         data =
           case opts do
-            data when is_binary(data) -> data
-            list_opts when is_list(list_opts) -> Keyword.get(list_opts, :data, "")
-            _ -> ""
+            data when is_binary(data) ->
+              data
+
+            list_opts when is_list(list_opts) ->
+              Keyword.get(list_opts, :data, "")
+
+            _ ->
+              ""
           end
 
-        case Raxol.Terminal.Buffer.Manager.write(manager, data, []) do
+        case Raxol.Terminal.ScreenBuffer.Manager.write(manager, data, []) do
           :ok -> {:ok, %{write_time: 5, memory_usage: 1024}}
           {:ok, _} -> {:ok, %{write_time: 5, memory_usage: 1024}}
           result -> {:ok, result}
         end
 
       :clear ->
-        case Raxol.Terminal.Buffer.Manager.clear_damage(manager) do
+        case Raxol.Terminal.ScreenBuffer.Manager.clear_damage(manager) do
           {:ok, _} -> {:ok, %{clear_time: 2}}
           result -> {:ok, result}
         end
 
       :resize ->
-        case Raxol.Terminal.Buffer.Manager.resize(
+        case Raxol.Terminal.ScreenBuffer.Manager.resize(
                manager,
                Keyword.get(opts, :size, {80, 24}),
                opts

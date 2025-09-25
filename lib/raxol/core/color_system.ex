@@ -138,10 +138,21 @@ defmodule Raxol.Core.ColorSystem do
     )
   end
 
+  @spec do_adjust_for_contrast(any(), any(), any(), any(), any(), any(), any()) ::
+          any()
   defp do_adjust_for_contrast(true, theme, _foreground, _fg, _bg, _level, _size) do
     theme
   end
 
+  @spec do_adjust_for_contrast(
+          any(),
+          any(),
+          any(),
+          any(),
+          any(),
+          any(),
+          non_neg_integer()
+        ) :: any()
   defp do_adjust_for_contrast(false, theme, foreground, fg, bg, level, size) do
     # Adjust the foreground color to meet contrast requirements
     adjusted_fg = adjust_color_for_contrast(fg, bg, level, size)
@@ -168,6 +179,11 @@ defmodule Raxol.Core.ColorSystem do
     do_get_color(theme, theme_id, color_name)
   end
 
+  @spec do_get_color(
+          any(),
+          String.t() | integer(),
+          Raxol.Terminal.Color.TrueColor.t()
+        ) :: any()
   defp do_get_color(nil, theme_id, _color_name) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "ColorSystem: Theme with ID #{theme_id} not found. Falling back.",
@@ -177,6 +193,11 @@ defmodule Raxol.Core.ColorSystem do
     nil
   end
 
+  @spec do_get_color(
+          any(),
+          String.t() | integer(),
+          Raxol.Terminal.Color.TrueColor.t()
+        ) :: any()
   defp do_get_color(theme, _theme_id, color_name) do
     # Get the active accessibility variant (e.g., :high_contrast)
     active_variant_id =
@@ -192,8 +213,10 @@ defmodule Raxol.Core.ColorSystem do
     lookup_color_in_palettes(color_name, variant_palette, base_palette)
   end
 
+  @spec get_variant_palette(any()) :: any() | nil
   defp get_variant_palette(nil), do: nil
 
+  @spec get_variant_palette(any()) :: any() | nil
   defp get_variant_palette(variant_definition) do
     safe_map_get(variant_definition, :palette)
   end
@@ -269,6 +292,7 @@ defmodule Raxol.Core.ColorSystem do
     do_init(theme, theme_id)
   end
 
+  @spec do_init(any(), String.t() | integer()) :: any()
   defp do_init(nil, theme_id) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "ColorSystem: Theme #{theme_id} not found, using default",
@@ -279,6 +303,7 @@ defmodule Raxol.Core.ColorSystem do
     :ok
   end
 
+  @spec do_init(any(), String.t() | integer()) :: any()
   defp do_init(_theme, theme_id) do
     # Store current theme in process dictionary for compatibility
     Raxol.Style.Colors.System.ColorSystemServer.set_current_theme(theme_id)
@@ -307,7 +332,9 @@ defmodule Raxol.Core.ColorSystem do
     format_theme_result(theme)
   end
 
+  @spec format_theme_result(any()) :: String.t()
   defp format_theme_result(nil), do: {:error, :theme_not_found}
+  @spec format_theme_result(any()) :: String.t()
   defp format_theme_result(theme), do: {:ok, theme}
 
   @doc """
@@ -336,8 +363,10 @@ defmodule Raxol.Core.ColorSystem do
     do_set_theme(theme, theme_id)
   end
 
+  @spec do_set_theme(any(), String.t() | integer()) :: any()
   defp do_set_theme(nil, _theme_id), do: {:error, :theme_not_found}
 
+  @spec do_set_theme(any(), String.t() | integer()) :: any()
   defp do_set_theme(_theme, theme_id) do
     Raxol.Style.Colors.System.ColorSystemServer.set_current_theme(theme_id)
     :ok
@@ -345,6 +374,8 @@ defmodule Raxol.Core.ColorSystem do
 
   # Private functions
 
+  @spec adjust_color_for_contrast(any(), any(), any(), non_neg_integer()) ::
+          any()
   defp adjust_color_for_contrast(fg, bg, level, size) do
     # Start with the original color
     current = fg
@@ -364,6 +395,8 @@ defmodule Raxol.Core.ColorSystem do
     )
   end
 
+  @spec try_contrast_adjustment(any(), any(), any(), any(), any(), any(), any()) ::
+          any()
   defp try_contrast_adjustment(
          true,
          lightened,
@@ -376,6 +409,15 @@ defmodule Raxol.Core.ColorSystem do
     lightened
   end
 
+  @spec try_contrast_adjustment(
+          any(),
+          any(),
+          any(),
+          any(),
+          any(),
+          non_neg_integer(),
+          any()
+        ) :: any()
   defp try_contrast_adjustment(
          false,
          _lightened,
@@ -395,23 +437,33 @@ defmodule Raxol.Core.ColorSystem do
     )
   end
 
+  @spec try_darkening(any(), any(), any()) :: any()
   defp try_darkening(true, darkened, _bg), do: darkened
 
+  @spec try_darkening(any(), any(), any()) :: any()
   defp try_darkening(false, _darkened, bg) do
     # If neither works, try the opposite of the background
     Color.complement(bg)
   end
 
+  @spec safe_map_get(any(), any(), any()) :: any()
   defp safe_map_get(data, key, default \\ nil) do
     do_safe_map_get(is_map(data), data, key, default)
   end
 
+  @spec do_safe_map_get(any(), any(), any(), any()) :: any()
   defp do_safe_map_get(true, data, key, default) do
     Map.get(data, key, default)
   end
 
+  @spec do_safe_map_get(any(), any(), any(), any()) :: any()
   defp do_safe_map_get(false, _data, _key, default), do: default
 
+  @spec lookup_color_in_palettes(
+          Raxol.Terminal.Color.TrueColor.t(),
+          any(),
+          any()
+        ) :: any()
   defp lookup_color_in_palettes(color_name, variant_palette, base_palette) do
     case {variant_palette && Map.has_key?(variant_palette, color_name),
           Map.has_key?(base_palette, color_name)} do

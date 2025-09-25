@@ -346,6 +346,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   # Safe Helper Functions - Functional Error Handling
 
+  @spec validate_component_module(module()) :: {:ok, any()} | {:error, any()}
   defp validate_component_module(component_module) do
     with true <- is_atom(component_module),
          true <- Code.ensure_loaded?(component_module) do
@@ -355,11 +356,13 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
+  @spec generate_component_id(module()) :: any()
   defp generate_component_id(component_module) do
     component_id = inspect(component_module) <> "-" <> UUID.uuid4()
     {:ok, component_id}
   end
 
+  @spec safe_component_init(module(), any()) :: any()
   defp safe_component_init(component_module, props) do
     # Use Task for safe execution with timeout
     task =
@@ -389,6 +392,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
+  @spec safe_component_update(any(), String.t()) :: any()
   defp safe_component_update(component, message) do
     # Use Task for safe execution with timeout
     task =
@@ -409,6 +413,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
+  @spec queue_render_if_changed(map(), String.t() | integer(), map(), map()) ::
+          any()
   defp queue_render_if_changed(state, component_id, new_state, old_state) do
     queue_component_render_if_state_changed(
       state,
@@ -420,6 +426,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   # Private Helpers
 
+  @spec process_commands(any(), String.t() | integer(), map()) :: any()
   defp process_commands(commands, component_id, state) do
     Enum.reduce(commands, state, fn command, acc ->
       case command do
@@ -455,12 +462,15 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end)
   end
 
+  @spec broadcast_update(any(), String.t() | integer(), map()) :: any()
   defp broadcast_update(msg, source_component_id, state) do
     Enum.reduce(Map.keys(state.components), state, fn id, acc_state ->
       update_component_if_not_source(id, source_component_id, msg, acc_state)
     end)
   end
 
+  @spec update_component_in_broadcast(String.t() | integer(), any(), map()) ::
+          any()
   defp update_component_in_broadcast(id, msg, state) do
     case Map.get(state.components, id) do
       nil ->
@@ -483,6 +493,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
+  @spec handle_component_command(any(), String.t() | integer(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_component_command(command, component_id, state) do
     case command do
       {:subscribe, events} when is_list(events) ->
@@ -497,6 +512,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   end
 
   # Helper function to update component state and queue re-render
+  @spec update_component_state_and_queue_render(
+          map(),
+          String.t() | integer(),
+          map()
+        ) :: any()
   defp update_component_state_and_queue_render(state, component_id, new_state) do
     # Update component state
     state = put_in(state.components[component_id].state, new_state)
@@ -513,6 +533,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     state
   end
 
+  @spec handle_subscription_command(any(), String.t() | integer(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_subscription_command(events, component_id, state) do
     {:ok, sub_id} =
       Subscription.start(%Subscription{type: :events, data: events}, %{
@@ -522,6 +547,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     put_in(state.subscriptions[sub_id], component_id)
   end
 
+  @spec handle_unsubscribe_command(String.t() | integer(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_unsubscribe_command(sub_id, state) do
     case Subscription.stop(sub_id) do
       :ok ->
@@ -537,6 +567,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
+  @spec cleanup_subscriptions(String.t() | integer(), map()) :: any()
   defp cleanup_subscriptions(component_id, state) do
     # Find and remove all subscriptions for this component
     {to_remove, remaining} =
@@ -564,6 +595,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     %{state | subscriptions: Map.new(remaining)}
   end
 
+  @spec mount_component(module(), map(), any(), String.t() | integer(), map()) ::
+          any()
   defp mount_component(
          component_module,
          initial_state,
@@ -599,17 +632,35 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   ## Helper functions for refactored if statements
 
+  @spec send_component_updated_if_runtime_pid(any(), String.t() | integer()) ::
+          any()
   defp send_component_updated_if_runtime_pid(nil, _component_id), do: :ok
 
+  @spec send_component_updated_if_runtime_pid(
+          String.t() | integer(),
+          String.t() | integer()
+        ) :: any()
   defp send_component_updated_if_runtime_pid(runtime_pid, component_id) do
     send(runtime_pid, {:component_updated, component_id})
   end
 
+  @spec queue_render_if_state_changed(
+          any(),
+          String.t() | integer(),
+          map(),
+          map()
+        ) :: any()
   defp queue_render_if_state_changed(acc, component_id, new_state, old_state)
        when new_state != old_state do
     update_component_state_and_queue_render(acc, component_id, new_state)
   end
 
+  @spec queue_render_if_state_changed(
+          any(),
+          String.t() | integer(),
+          map(),
+          map()
+        ) :: any()
   defp queue_render_if_state_changed(
          acc,
          _component_id,
@@ -618,6 +669,12 @@ defmodule Raxol.Core.Runtime.ComponentManager do
        ),
        do: acc
 
+  @spec queue_component_render_if_state_changed(
+          map(),
+          String.t() | integer(),
+          map(),
+          map()
+        ) :: any()
   defp queue_component_render_if_state_changed(
          state,
          component_id,
@@ -630,6 +687,12 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end)
   end
 
+  @spec queue_component_render_if_state_changed(
+          map(),
+          String.t() | integer(),
+          map(),
+          map()
+        ) :: any()
   defp queue_component_render_if_state_changed(
          state,
          _component_id,
@@ -638,15 +701,28 @@ defmodule Raxol.Core.Runtime.ComponentManager do
        ),
        do: state
 
+  @spec update_component_if_not_source(
+          String.t() | integer(),
+          String.t() | integer(),
+          any(),
+          map()
+        ) :: any()
   defp update_component_if_not_source(id, source_component_id, _msg, acc_state)
        when id == source_component_id do
     acc_state
   end
 
+  @spec update_component_if_not_source(
+          String.t() | integer(),
+          String.t() | integer(),
+          any(),
+          map()
+        ) :: any()
   defp update_component_if_not_source(id, _source_component_id, msg, acc_state) do
     update_component_in_broadcast(id, msg, acc_state)
   end
 
+  @spec add_to_queue_if_not_present(any(), String.t() | integer()) :: any()
   defp add_to_queue_if_not_present(queue, component_id) do
     case component_id in queue do
       true -> queue
@@ -654,8 +730,14 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
+  @spec send_component_queued_if_runtime_pid(any(), String.t() | integer()) ::
+          any()
   defp send_component_queued_if_runtime_pid(nil, _component_id), do: :ok
 
+  @spec send_component_queued_if_runtime_pid(
+          String.t() | integer(),
+          String.t() | integer()
+        ) :: any()
   defp send_component_queued_if_runtime_pid(runtime_pid, component_id) do
     send(runtime_pid, {:component_queued_for_render, component_id})
   end

@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.ANSI.EmitterTest do
   use ExUnit.Case
-  alias Raxol.Terminal.ANSI.Emitter
+  alias Raxol.Terminal.ANSI.Utils.Emitter
 
   test ~c"generates cursor movement sequences" do
     assert Emitter.cursor_up() == "\e[1A"

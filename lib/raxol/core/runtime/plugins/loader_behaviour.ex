@@ -1,12 +1,26 @@
 defmodule Raxol.Core.Runtime.Plugins.LoaderBehaviour do
   @moduledoc """
-  Behaviour defining the interface for plugin loading operations.
+  Behavior for plugin loading functionality.
   """
 
-  @callback load_plugin(plugin_path :: String.t()) ::
+  @doc """
+  Loads a plugin from a given path or configuration.
+  """
+  @callback load_plugin(plugin_spec :: term(), opts :: keyword()) ::
               {:ok, term()} | {:error, term()}
-  @callback unload_plugin(plugin :: term()) :: :ok | {:error, term()}
-  @callback reload_plugin(plugin :: term()) :: {:ok, term()} | {:error, term()}
-  @callback get_loaded_plugins() :: [term()]
-  @callback plugin_loaded?(plugin :: term()) :: boolean()
+
+  @doc """
+  Unloads a plugin.
+  """
+  @callback unload_plugin(plugin_id :: String.t()) :: :ok | {:error, term()}
+
+  @doc """
+  Lists available plugins.
+  """
+  @callback list_available_plugins(opts :: keyword()) :: list(String.t())
+
+  @doc """
+  Validates a plugin before loading.
+  """
+  @callback validate_plugin(plugin_spec :: term()) :: :ok | {:error, term()}
 end

@@ -1,68 +1,60 @@
 defmodule Raxol.Terminal.Commands.EraseHandler do
   @moduledoc """
-  @deprecated "Use Raxol.Terminal.Commands.UnifiedCommandHandler instead"
-
-  This module has been consolidated into the unified command handling system.
-  For new code, use:
-
-      # Instead of EraseHandler.handle_erase(emulator, type, param, pos)
-      UnifiedCommandHandler.handle_csi(emulator, command, [param])
-      # where command is "J" for screen, "K" for line, "X" for character
+  Handles terminal erase commands like Erase in Display (ED) and Erase in Line (EL).
+  This module delegates to UnifiedCommandHandler for actual implementation.
   """
 
   alias Raxol.Terminal.Commands.UnifiedCommandHandler
-  require Raxol.Core.Runtime.Log
 
-  @deprecated "Use UnifiedCommandHandler.handle_csi/3 instead"
-  def handle_erase(emulator, type, erase_param, _pos) do
-    IO.puts(
-      :stderr,
-      "Warning: EraseHandler.handle_erase/4 is deprecated. Use UnifiedCommandHandler instead."
-    )
+  @doc """
+  Handles erase operations for display, line, or character.
 
-    command =
-      case type do
-        :screen -> "J"
-        :line -> "K"
-        :character -> "X"
-        # Default fallback
-        _ -> "J"
-      end
+  Modes:
+  - :screen (ED): Erase in Display
+  - :line (EL): Erase in Line
+  - :character (ECH): Erase Characters
 
-    UnifiedCommandHandler.handle_csi(emulator, command, [erase_param])
+  Parameters:
+  - mode: 0 = from cursor to end, 1 = from start to cursor, 2 = entire area
+  - position: {row, col} cursor position
+  """
+  def handle_erase(emulator, scope, mode, position) do
+    case scope do
+      :screen ->
+        # ED - Erase in Display
+        handle_erase_display(emulator, mode, position)
+      :line ->
+        # EL - Erase in Line
+        handle_erase_line(emulator, mode, position)
+      :character ->
+        # ECH - Erase Characters
+        handle_erase_characters(emulator, mode, position)
+      _ ->
+        {:error, :invalid_erase_scope, emulator}
+    end
   end
 
-  # Keep the old helper function for backward compatibility
-  def get_buffer_state(emulator) do
-    IO.puts(:stderr, "Warning: EraseHandler.get_buffer_state/1 is deprecated.")
+  defp handle_erase_display(emulator, mode, _position) do
+    case UnifiedCommandHandler.handle_csi(emulator, "J", [mode], "") do
+      {:ok, updated_emulator} -> {:ok, updated_emulator}
+      {:error, _reason, updated_emulator} -> {:ok, updated_emulator}
+      result -> result
+    end
+  end
 
-    active_buffer =
-      case emulator do
-        %{main_screen_buffer: buffer} -> buffer
-        # Fallback
-        _ -> %{cells: [], width: 80, height: 24}
-      end
+  defp handle_erase_line(emulator, mode, _position) do
+    case UnifiedCommandHandler.handle_csi(emulator, "K", [mode], "") do
+      {:ok, updated_emulator} -> {:ok, updated_emulator}
+      {:error, _reason, updated_emulator} -> {:ok, updated_emulator}
+      result -> result
+    end
+  end
 
-    cursor_pos =
-      case emulator.cursor do
-        pid when is_pid(pid) ->
-          case Raxol.Terminal.Cursor.Manager.get_position(pid) do
-            {:ok, pos} -> pos
-            pos when is_tuple(pos) -> pos
-            _ -> {0, 0}
-          end
-
-        %{position: pos} when is_tuple(pos) ->
-          pos
-
-        %{row: row, col: col} ->
-          {row, col}
-
-        _ ->
-          {0, 0}
-      end
-
-    blank_style = Raxol.Terminal.ANSI.TextFormatting.new()
-    {active_buffer, cursor_pos, blank_style}
+  defp handle_erase_characters(emulator, count, _position) do
+    case UnifiedCommandHandler.handle_csi(emulator, "X", [count], "") do
+      {:ok, updated_emulator} -> {:ok, updated_emulator}
+      {:error, _reason, updated_emulator} -> {:ok, updated_emulator}
+      result -> result
+    end
   end
 end

@@ -945,7 +945,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     end
   end
 
-  defp is_color_blind_friendly(_theme) do
+  defp color_blind_friendly?(_theme) do
     # Check if theme uses patterns/shapes in addition to color
     # This would analyze the theme for color-blind accessibility
     # Simplified for now
@@ -1156,7 +1156,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
       theme_name: theme.name,
       compliance_level: theme.compliance_level,
       large_text_optimized: theme.large_text_optimized,
-      color_blind_friendly: is_color_blind_friendly(theme),
+      color_blind_friendly: color_blind_friendly?(theme),
       contrast_analysis: contrast_analysis,
       overall_compliance: determine_overall_compliance(contrast_analysis),
       accessibility_features: get_enabled_accessibility_features(state)

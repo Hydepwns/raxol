@@ -5,15 +5,15 @@ defmodule Raxol.Examples.ButtonTest do
   use Raxol.Test.Visual
   
   alias Raxol.UI.Components.Input.Button
-  alias Form
+  alias Raxol.Examples.Form
   import Raxol.Test.Visual.Assertions
 
   setup do
-    {:ok, context} = UnifiedTestHelper.setup_test_env()
+    {:ok, context} = Raxol.Test.UnifiedTestHelper.setup_test_env()
     context = Map.put(context, :snapshots_dir, "test/snapshots")
 
     on_exit(fn ->
-      UnifiedTestHelper.cleanup_test_env()
+      Raxol.Test.UnifiedTestHelper.cleanup_test_env()
     end)
 
     context
@@ -175,7 +175,9 @@ defmodule Raxol.Examples.ButtonTest do
       assert updated_button.state.pressed == true
 
       # Check that both components have the expected state
-      assert form.state.submitted == false,
+      # The form.state is actually the entire form struct
+      # The submitted field is in form.state.state
+      assert form.state.state.submitted == false,
              "Form should not be submitted yet (no parent-child routing)"
 
       assert updated_button.state.pressed == true, "Button should be pressed"

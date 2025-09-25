@@ -18,8 +18,12 @@ defmodule Raxol.Terminal.Operations.ScreenOperations do
 
   def clear_line(emulator) do
     buffer = ScreenManager.get_screen_buffer(emulator)
-    {_, y} = ScreenBuffer.get_cursor_position(buffer)
-    new_buffer = ScreenBuffer.clear_line(buffer, y)
+    # Get cursor position from the emulator's buffer cursor_position
+    cursor_pos = case Map.get(buffer, :cursor_position) do
+      {_, y} -> y
+      _ -> 0
+    end
+    new_buffer = ScreenBuffer.clear_line(buffer, cursor_pos)
     ScreenManager.update_active_buffer(emulator, new_buffer)
   end
 

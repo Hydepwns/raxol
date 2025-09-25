@@ -22,6 +22,10 @@ defmodule Raxol.Core.Runtime.Log do
     Logger.warning("#{msg} | Context: #{inspect(context)}")
   end
 
+  def info_with_context(msg) do
+    info_with_context(msg, %{})
+  end
+
   def info_with_context(msg, context) do
     Logger.info("#{msg} | Context: #{inspect(context)}")
   end
@@ -44,10 +48,7 @@ defmodule Raxol.Core.Runtime.Log do
   def warning(msg, context), do: log(:warn, msg, context)
   def error(msg, context), do: log(:error, msg, context)
 
-  def info_with_context(msg) do
-    info_with_context(msg, %{})
-  end
-
+  @spec log(any(), any(), any()) :: any()
   defp log(level, msg, context \\ nil) do
     message =
       case context do

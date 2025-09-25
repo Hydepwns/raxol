@@ -6,7 +6,8 @@ defmodule Raxol.Terminal.Session.Serializer do
   All try/catch blocks have been replaced with with statements and proper error tuples.
   """
 
-  alias Raxol.Terminal.{Session, Renderer, ScreenBuffer, Emulator}
+  alias Raxol.Terminal.{Session, ScreenBuffer, Emulator}
+  alias Raxol.Terminal.ScreenBuffer.Core, as: ConsolidatedBuffer
   require Raxol.Core.Runtime.Log
 
   @doc """
@@ -163,12 +164,13 @@ defmodule Raxol.Terminal.Session.Serializer do
     {:error, :invalid_emulator_structure}
   end
 
-  defp safe_serialize_renderer(%Renderer{} = renderer) do
-    with {:ok, buffer} <- safe_serialize_screen_buffer(renderer.screen_buffer) do
+  defp safe_serialize_renderer(renderer) when is_map(renderer) do
+    with {:ok, buffer} <-
+           safe_serialize_screen_buffer(Map.get(renderer, :screen_buffer)) do
       {:ok,
        %{
          screen_buffer: buffer,
-         theme: renderer.theme
+         theme: Map.get(renderer, :theme)
        }}
     else
       {:error, reason} ->
@@ -205,6 +207,25 @@ defmodule Raxol.Terminal.Session.Serializer do
       {:error, reason} ->
         Raxol.Core.Runtime.Log.error(
           "ScreenBuffer serialization failed: #{inspect(reason)}"
+        )
+
+        {:error, {:buffer_serialization_failed, reason}}
+    end
+  end
+
+  defp safe_serialize_screen_buffer(%ConsolidatedBuffer{} = buffer) do
+    with {:ok, cells} <- safe_serialize_cells(buffer.cells) do
+      {:ok,
+       %{
+         width: buffer.width,
+         height: buffer.height,
+         cells: cells,
+         cursor_position: buffer.cursor_position
+       }}
+    else
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error(
+          "ConsolidatedBuffer serialization failed: #{inspect(reason)}"
         )
 
         {:error, {:buffer_serialization_failed, reason}}
@@ -326,10 +347,6 @@ defmodule Raxol.Terminal.Session.Serializer do
 
     # Return default cell instead of failing
     safe_serialize_cell(nil)
-  end
-
-  defp safe_serialize_style(%Raxol.Terminal.ANSI.TextFormatting.Core{} = style) do
-    serialize_style_struct(style)
   end
 
   defp safe_serialize_style(%Raxol.Terminal.ANSI.TextFormatting{} = style) do
@@ -467,7 +484,7 @@ defmodule Raxol.Terminal.Session.Serializer do
 
   defp deserialize_renderer(%{screen_buffer: buffer_data, theme: theme}) do
     with {:ok, screen_buffer} <- deserialize_screen_buffer(buffer_data) do
-      renderer = %Renderer{
+      renderer = %{
         screen_buffer: screen_buffer,
         theme: theme
       }
@@ -631,7 +648,7 @@ defmodule Raxol.Terminal.Session.Serializer do
 
   defp safe_deserialize_style(style_data) when is_map(style_data) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
-           style = %Raxol.Terminal.ANSI.TextFormatting.Core{
+           style = %Raxol.Terminal.ANSI.TextFormatting{
              bold: Map.get(style_data, :bold, false),
              italic: Map.get(style_data, :italic, false),
              underline: Map.get(style_data, :underline, false),

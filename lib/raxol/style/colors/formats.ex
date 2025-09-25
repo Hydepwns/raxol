@@ -20,7 +20,8 @@ defmodule Raxol.Style.Colors.Formats do
       iex> Formats.to_hex({255, 0, 0, 128})
       "#FF000080"
   """
-  @spec to_hex({byte(), byte(), byte()} | {byte(), byte(), byte(), byte()}) :: String.t()
+  @spec to_hex({byte(), byte(), byte()} | {byte(), byte(), byte(), byte()}) ::
+          String.t()
   def to_hex({r, g, b})
       when r in 0..255//1 and g in 0..255//1 and b in 0..255//1 do
     r_hex = Integer.to_string(r, 16) |> String.pad_leading(2, "0")

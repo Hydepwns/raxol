@@ -12,7 +12,13 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   @doc """
   Erases from cursor to end of display.
   """
-  @spec erase_from_cursor_to_end(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec erase_from_cursor_to_end(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: ScreenBuffer.t()
   def erase_from_cursor_to_end(buffer, x, y, _top, bottom) do
     # IO.puts("[DEBUG] erase_from_cursor_to_end called with x=#{x}, y=#{y}, bottom=#{bottom}")
 
@@ -49,7 +55,13 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   @doc """
   Erases from start to cursor position.
   """
-  @spec erase_from_start_to_cursor(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec erase_from_start_to_cursor(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: ScreenBuffer.t()
   def erase_from_start_to_cursor(buffer, x, y, top, _bottom) do
     empty_cell = Cell.new()
 
@@ -102,7 +114,13 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   @doc """
   Clears a specific region of the buffer.
   """
-  @spec clear_region(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec clear_region(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: ScreenBuffer.t()
   def clear_region(buffer, x, y, width, height) do
     # Clear the specified region by filling it with empty cells
     empty_cell = Cell.new()
@@ -114,6 +132,7 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
         cond do
           row_idx < y or row_idx >= y + height ->
             row
+
           true ->
             # Clear columns x to x+width-1 in this row
             row
@@ -135,7 +154,11 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   Erases part or all of the current line based on the cursor position and type.
   Type can be :to_end, :to_beginning, or :all.
   """
-  @spec erase_in_line(ScreenBuffer.t(), {non_neg_integer(), non_neg_integer()}, atom()) :: ScreenBuffer.t()
+  @spec erase_in_line(
+          ScreenBuffer.t(),
+          {non_neg_integer(), non_neg_integer()},
+          atom()
+        ) :: ScreenBuffer.t()
   def erase_in_line(buffer, {x, y}, type) do
     case type do
       :to_end -> erase_line_to_end(buffer, x, y)
@@ -149,7 +172,11 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
   Erases part or all of the display based on the cursor position and type.
   Type can be :to_end, :to_beginning, or :all.
   """
-  @spec erase_in_display(ScreenBuffer.t(), {non_neg_integer(), non_neg_integer()}, atom()) :: ScreenBuffer.t()
+  @spec erase_in_display(
+          ScreenBuffer.t(),
+          {non_neg_integer(), non_neg_integer()},
+          atom()
+        ) :: ScreenBuffer.t()
   def erase_in_display(buffer, {x, y}, type) do
     case type do
       :to_end ->
@@ -182,7 +209,11 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
 
   # Private helper functions
 
-  @spec erase_line_to_end(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec erase_line_to_end(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: ScreenBuffer.t()
   defp erase_line_to_end(buffer, x, y) do
     line = Enum.at(buffer.cells, y, [])
     empty_cell = Cell.new()
@@ -196,7 +227,11 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
     %{buffer | cells: new_cells}
   end
 
-  @spec erase_line_to_beginning(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec erase_line_to_beginning(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: ScreenBuffer.t()
   defp erase_line_to_beginning(buffer, x, y) do
     line = Enum.at(buffer.cells, y, [])
     empty_cell = Cell.new()
@@ -205,7 +240,8 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
     %{buffer | cells: new_cells}
   end
 
-  @spec erase_entire_line(ScreenBuffer.t(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec erase_entire_line(ScreenBuffer.t(), non_neg_integer()) ::
+          ScreenBuffer.t()
   defp erase_entire_line(buffer, y) do
     empty_cell = Cell.new()
 

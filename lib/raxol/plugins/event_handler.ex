@@ -3,6 +3,8 @@ defmodule Raxol.Plugins.EventHandler do
   Handles events for plugin system.
   """
 
+  alias Raxol.Plugins.EventHandler.OutputEvents
+
   @doc """
   Handles input events.
   """
@@ -16,9 +18,9 @@ defmodule Raxol.Plugins.EventHandler do
   Handles output events.
   """
   @spec handle_output(term(), term()) :: {:ok, term()}
-  def handle_output(manager, _output) do
-    # Stub implementation
-    {:ok, manager}
+  def handle_output(manager, output) do
+    # Delegate to output events handler for proper implementation
+    OutputEvents.handle_output(manager, output)
   end
 
   @doc """

@@ -454,11 +454,11 @@ defmodule Raxol.Terminal.ANSISequencesIntegrationTest do
   
   defp extract_text(buffer) do
     buffer.cells
-    |> Enum.map_join(fn line ->
+    |> Enum.map_join("\n", fn line ->
       line
       |> Enum.reject(&(&1.wide_placeholder))
       |> Enum.map_join("", &(&1.char || " "))
-    end, "\n")
+    end)
     |> String.trim()
   end
 end

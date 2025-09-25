@@ -16,21 +16,21 @@ IO.puts("=" <> String.duplicate("=", 40))
 end)
 IO.puts("Heavy Emulator.new (100x): #{Float.round(time_heavy/100, 2)} μs/op")
 
-# Test 2: Creation time - Lite
+# Test 2: Creation time - Lite (no GenServers)
 {time_lite, _} = :timer.tc(fn ->
   Enum.each(1..100, fn _ ->
-    Emulator.new_lite(80, 24)
+    Emulator.new(80, 24, use_genservers: false)
   end)
 end)
-IO.puts("Lite Emulator.new_lite (100x): #{Float.round(time_lite/100, 2)} μs/op")
+IO.puts("Lite Emulator (no GenServers) (100x): #{Float.round(time_lite/100, 2)} μs/op")
 
-# Test 3: Creation time - Minimal
+# Test 3: Creation time - Minimal (no history/alt buffer)
 {time_minimal, _} = :timer.tc(fn ->
   Enum.each(1..100, fn _ ->
-    Emulator.new_minimal(80, 24)
+    Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
   end)
 end)
-IO.puts("Minimal Emulator.new_minimal (100x): #{Float.round(time_minimal/100, 2)} μs/op")
+IO.puts("Minimal Emulator (no history/alt) (100x): #{Float.round(time_minimal/100, 2)} μs/op")
 
 # Test 4: Direct EmulatorLite creation
 {time_direct, _} = :timer.tc(fn ->
@@ -47,9 +47,9 @@ IO.puts("\nParser Performance with Lite Emulator")
 IO.puts("-" <> String.duplicate("-", 40))
 
 # Create emulators once
-heavy_emulator = Emulator.new(80, 24)
-lite_emulator = Emulator.new_lite(80, 24)
-minimal_emulator = Emulator.new_minimal(80, 24)
+heavy_emulator = Emulator.new(80, 24, use_genservers: true)
+lite_emulator = Emulator.new(80, 24, use_genservers: false)
+minimal_emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
 
 # Test parsing simple text
 text = "Hello World"

@@ -1,155 +1,56 @@
 defmodule Raxol.Terminal.Buffer.Paste do
   @moduledoc """
-  Handles pasting text into the terminal buffer.
-  This module is responsible for inserting text at the cursor position,
-  handling multi-line text, and managing buffer overflow.
+  Handles text pasting operations for terminal buffers.
   """
 
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Buffer.Writer
-  alias Raxol.Terminal.Buffer.LineOperations
 
   @doc """
   Pastes text into the buffer at the current cursor position.
-
-  ## Parameters
-
-  * `buffer` - The screen buffer to modify
-  * `text` - The text to paste
-
-  ## Returns
-
-  The updated screen buffer with the pasted text.
-
-  ## Examples
-
-      iex> buffer = ScreenBuffer.new(80, 24)
-      iex> buffer = %{buffer | cursor_position: {5, 10}}
-      iex> Paste.paste(buffer, "Hello World")
-      %ScreenBuffer{cells: [...], cursor_position: {16, 10}}
   """
   @spec paste(ScreenBuffer.t(), String.t()) :: ScreenBuffer.t()
-  def paste(%ScreenBuffer{} = buffer, text) when is_binary(text) do
-    {cursor_x, cursor_y} = buffer.cursor_position
-
-    # Split text into lines
-    lines = String.split(text, "\n")
+  def paste(buffer, text) when is_binary(text) do
+    # Split text into lines for multi-line pasting
+    lines = String.split(text, ~r/\r?\n/)
 
     case lines do
-      [single_line] ->
-        # Single line paste
-        paste_single_line(buffer, single_line, cursor_x, cursor_y)
-
-      [first_line | remaining_lines] ->
-        # Multi-line paste
-        paste_multiline(buffer, first_line, remaining_lines, cursor_x, cursor_y)
+      [] -> buffer
+      [single_line] -> paste_single_line(buffer, single_line)
+      multiple_lines -> paste_multiple_lines(buffer, multiple_lines)
     end
   end
 
-  @doc """
-  Pastes a single line of text at the specified position.
-  """
-  @spec paste_single_line(
-          ScreenBuffer.t(),
-          String.t(),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: ScreenBuffer.t()
-  def paste_single_line(buffer, text, x, y) do
-    # Check if we need to insert characters to make room
-    buffer = ensure_space_for_text(buffer, x, y, String.length(text))
+  def paste(buffer, _), do: buffer
 
-    # Write the text at the cursor position
-    Writer.write_string(buffer, x, y, text)
-  end
+  # Private helper functions
 
-  @doc """
-  Pastes multi-line text starting at the specified position.
-  """
-  @spec paste_multiline(
-          ScreenBuffer.t(),
-          String.t(),
-          [String.t()],
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: ScreenBuffer.t()
-  def paste_multiline(buffer, first_line, remaining_lines, x, y) do
-    # Check if we need to insert lines to make room
-    lines_needed = length(remaining_lines)
-    buffer = ensure_space_for_lines(buffer, y, lines_needed)
-
-    # Write the first line at the cursor position
-    buffer = paste_single_line(buffer, first_line, x, y)
-
-    # Write remaining lines
-    Enum.reduce_while(remaining_lines, {buffer, y + 1}, fn line,
-                                                           {acc_buffer,
-                                                            current_y} ->
-      case current_y < acc_buffer.height do
-        true ->
-          # Write the line starting from column 0
-          updated_buffer = Writer.write_string(acc_buffer, 0, current_y, line)
-          {:cont, {updated_buffer, current_y + 1}}
-
-        false ->
-          # Buffer is full, stop
-          {:halt, {acc_buffer, current_y}}
-      end
+  defp paste_single_line(buffer, line) do
+    # Insert text at cursor position character by character
+    String.graphemes(line)
+    |> Enum.reduce(buffer, fn char, acc ->
+      {x, y} = acc.cursor_position
+      ScreenBuffer.write_char(acc, x, y, char)
     end)
-    |> elem(0)
   end
 
-  @doc """
-  Ensures there's enough space in the current line for the text to be pasted.
-  If not, inserts the necessary number of characters.
-  """
-  @spec ensure_space_for_text(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: ScreenBuffer.t()
-  def ensure_space_for_text(buffer, x, y, text_length) do
-    available_space = buffer.width - x
+  defp paste_multiple_lines(buffer, lines) do
+    # Paste first line at cursor, then create new lines for remaining text
+    case lines do
+      [first_line | rest] ->
+        # Paste first line at current position
+        buffer_after_first = paste_single_line(buffer, first_line)
 
-    case text_length > available_space do
-      true ->
-        # Need to insert characters to make room
-        chars_to_insert = text_length - available_space
-        LineOperations.insert_chars_at(buffer, y, x, chars_to_insert)
+        # Add remaining lines as new lines
+        Enum.reduce(rest, buffer_after_first, fn line, acc ->
+          {x, y} = acc.cursor_position
 
-      false ->
-        buffer
-    end
-  end
+          acc
+          # Move to new line
+          |> ScreenBuffer.write_char(x, y, "\n")
+          |> paste_single_line(line)
+        end)
 
-  @doc """
-  Ensures there are enough lines available for multi-line paste.
-  If not, inserts the necessary number of lines.
-  """
-  @spec ensure_space_for_lines(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: ScreenBuffer.t()
-  def ensure_space_for_lines(buffer, y, lines_needed) do
-    available_lines = buffer.height - y - 1
-
-    case lines_needed > available_lines do
-      true ->
-        # Need to insert lines to make room
-        lines_to_insert = lines_needed - available_lines
-
-        LineOperations.insert_lines(
-          buffer,
-          lines_to_insert,
-          y,
-          0,
-          buffer.height - 1,
-          buffer.height - 1
-        )
-
-      false ->
+      [] ->
         buffer
     end
   end

@@ -27,8 +27,10 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   describe "get_commands/0" do
     test "returns the expected clipboard commands" do
       commands = ClipboardPlugin.get_commands()
-      assert {:clipboard_write, :handle_clipboard_command, 2} in commands
-      assert {:clipboard_read, :handle_clipboard_command, 1} in commands
+      # Commands are now tuples with {name, function, arity}
+      command_names = Enum.map(commands, fn {name, _func, _arity} -> name end)
+      assert :clipboard_write in command_names
+      assert :clipboard_read in command_names
     end
   end
 

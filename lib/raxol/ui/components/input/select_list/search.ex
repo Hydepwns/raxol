@@ -1,83 +1,111 @@
 defmodule Raxol.UI.Components.Input.SelectList.Search do
   @moduledoc """
-  Handles search and filtering functionality for the SelectList component.
+  Search/filter functionality for SelectList component.
   """
 
-  @type option :: {String.t(), any()}
-  @type options :: [option()]
+  alias Raxol.UI.Components.Input.SelectList
 
   @doc """
-  Filters options based on search text and optional searchable fields.
-  Returns nil if no search text is provided, otherwise returns filtered options.
+  Updates the search state with a new query.
   """
-  def filter_options(options, search_text, searchable_fields) do
-    do_filter_options(
-      search_text == "",
-      options,
-      search_text,
-      searchable_fields
-    )
-  end
+  @spec update_search_state(SelectList.t(), String.t()) :: SelectList.t()
+  def update_search_state(state, query) do
+    is_filtering = query != ""
 
-  defp do_filter_options(true, _options, _search_text, _searchable_fields),
-    do: nil
+    filtered_options =
+      if is_filtering do
+        filter_options(state.options, query)
+      else
+        nil
+      end
 
-  defp do_filter_options(false, options, search_text, searchable_fields) do
-    Enum.filter(options, fn option ->
-      search_matches?(option, search_text, searchable_fields)
-    end)
-  end
-
-  @doc """
-  Checks if an option matches the search text.
-  If searchable_fields is provided, only those fields are searched.
-  Otherwise, the option label is searched.
-  """
-  def search_matches?({label, _value}, search_text, nil) do
-    String.contains?(String.downcase(label), String.downcase(search_text))
-  end
-
-  def search_matches?({label, value}, search_text, searchable_fields) do
-    # Always search the label
-    label_match =
-      String.contains?(String.downcase(label), String.downcase(search_text))
-
-    # Search specified fields in the value if it's a map
-    value_match = search_value_fields(value, searchable_fields, search_text)
-
-    label_match or value_match
-  end
-
-  @doc """
-  Updates search-related state based on new search text.
-  """
-  def update_search_state(state, search_text) do
     %{
       state
-      | search_text: search_text,
-        is_filtering: search_text != "",
-        filtered_options:
-          filter_options(state.options, search_text, state.searchable_fields),
-        focused_index: 0,
+      | search_query: query,
+        filtered_options: filtered_options,
+        is_filtering: is_filtering,
+        selected_index: 0,
         scroll_offset: 0
     }
   end
 
-  defp search_value_fields(value, searchable_fields, search_text)
-       when is_map(value) do
-    Enum.any?(searchable_fields, fn field ->
-      case Map.get(value, field) do
-        nil ->
-          false
+  @doc """
+  Clears the current search.
+  """
+  @spec clear_search(SelectList.t()) :: SelectList.t()
+  def clear_search(state) do
+    %{
+      state
+      | search_query: "",
+        filtered_options: nil,
+        selected_index: 0,
+        scroll_offset: 0
+    }
+  end
 
-        field_value ->
-          String.contains?(
-            String.downcase(to_string(field_value)),
-            String.downcase(search_text)
-          )
+  @doc """
+  Checks if search is active.
+  """
+  @spec search_active?(SelectList.t()) :: boolean()
+  def search_active?(state) do
+    state.search_query != "" and state.search_query != nil
+  end
+
+  @doc """
+  Gets the current search results count.
+  """
+  @spec get_results_count(SelectList.t()) :: non_neg_integer()
+  def get_results_count(state) do
+    case state.filtered_options do
+      nil -> length(state.options)
+      filtered -> length(filtered)
+    end
+  end
+
+  @doc """
+  Appends a character to the search query.
+  """
+  @spec append_to_search(SelectList.t(), String.t()) :: SelectList.t()
+  def append_to_search(state, char) do
+    new_query = (state.search_query || "") <> char
+    update_search_state(state, new_query)
+  end
+
+  @doc """
+  Removes the last character from the search query.
+  """
+  @spec backspace_search(SelectList.t()) :: SelectList.t()
+  def backspace_search(state) do
+    query = state.search_query || ""
+
+    new_query =
+      if String.length(query) > 0 do
+        String.slice(query, 0..-2//1)
+      else
+        ""
       end
+
+    update_search_state(state, new_query)
+  end
+
+  # Private functions
+
+  defp filter_options(options, query) when query == "", do: options
+
+  defp filter_options(options, query) do
+    normalized_query = String.downcase(query)
+
+    Enum.filter(options, fn option ->
+      label = get_option_label(option)
+      String.downcase(label) =~ normalized_query
     end)
   end
 
-  defp search_value_fields(_value, _searchable_fields, _search_text), do: false
+  defp get_option_label(option) when is_binary(option), do: option
+  defp get_option_label({label, _value}), do: label
+  defp get_option_label(%{label: label}), do: label
+  defp get_option_label(%{text: text}), do: text
+  defp get_option_label(%{name: name}), do: name
+  defp get_option_label(%{value: value}), do: to_string(value)
+  defp get_option_label(option), do: to_string(option)
 end

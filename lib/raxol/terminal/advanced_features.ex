@@ -152,7 +152,7 @@ defmodule Raxol.Terminal.AdvancedFeatures do
         # These will appear atomically
       end)
   """
-  @spec with_synchronized_output((() -> any())) :: any()
+  @spec with_synchronized_output((-> any())) :: any()
   def with_synchronized_output(fun) when is_function(fun, 0) do
     begin_synchronized_output()
 

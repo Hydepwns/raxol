@@ -14,8 +14,8 @@ defmodule Raxol.UI.RendererCached do
 
   alias Raxol.UI.{Renderer, CellManager}
   alias Raxol.UI.Rendering.ComponentCache
-  alias Raxol.UI.ThemeResolverCached
-  alias Raxol.UI.StyleProcessorCached
+  alias Raxol.UI.ThemeResolver
+  alias Raxol.UI.StyleProcessor
 
   @doc """
   Renders elements to cells using cache when possible.
@@ -29,7 +29,7 @@ defmodule Raxol.UI.RendererCached do
     elements = CellManager.ensure_list(element_or_elements)
 
     # Use cached theme resolver
-    default_theme = theme || ThemeResolverCached.get_default_theme()
+    default_theme = theme || ThemeResolver.get_default_theme(cache: true)
 
     # Check if we can use batch rendering
     choose_render_strategy(
@@ -111,8 +111,8 @@ defmodule Raxol.UI.RendererCached do
   """
   def clear_cache do
     ComponentCache.invalidate_all()
-    ThemeResolverCached.clear_cache()
-    StyleProcessorCached.clear_cache()
+    ThemeResolver.clear_cache()
+    StyleProcessor.clear_cache()
   end
 
   @doc """
@@ -120,7 +120,7 @@ defmodule Raxol.UI.RendererCached do
   """
   def warmup_cache do
     ComponentCache.warmup()
-    ThemeResolverCached.get_default_theme()
+    ThemeResolver.get_default_theme(cache: true)
     :ok
   end
 
@@ -158,9 +158,10 @@ defmodule Raxol.UI.RendererCached do
     elements
     |> Enum.flat_map(fn element ->
       element_theme =
-        ThemeResolverCached.resolve_element_theme_with_inheritance(
+        ThemeResolver.resolve_element_theme_with_inheritance(
           element,
-          theme
+          theme,
+          cache: true
         )
 
       render_element(element, element_theme, %{})
@@ -198,10 +199,11 @@ defmodule Raxol.UI.RendererCached do
         children when is_list(children) ->
           # Use cached style processing
           element_style =
-            StyleProcessorCached.flatten_merged_style(
+            StyleProcessor.flatten_merged_style(
               parent_style,
               element,
-              theme
+              theme,
+              cache: true
             )
 
           Enum.flat_map(children, fn child ->

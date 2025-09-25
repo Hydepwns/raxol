@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Integration.Config do
 
   alias Raxol.Terminal.{
     Config,
-    Buffer.UnifiedManager,
+    ScreenBuffer.Manager,
     Scroll.UnifiedScroll,
     Render.UnifiedRenderer
   }
@@ -113,11 +113,11 @@ defmodule Raxol.Terminal.Integration.Config do
   Updates the buffer manager configuration.
   """
   def update_buffer_manager(buffer_manager_state, config) do
-    UnifiedManager.new(
+    Manager.new(
       buffer_manager_state.width,
       buffer_manager_state.height,
-      config.behavior.scrollback_limit,
-      config.memory_limit
+      scrollback_limit: config.behavior.scrollback_limit,
+      memory_limit: config.memory_limit
     )
   end
 

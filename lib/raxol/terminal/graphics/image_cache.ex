@@ -288,7 +288,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
         end
 
       entry ->
-        case is_expired?(entry, state.config.ttl) do
+        case expired?(entry, state.config.ttl) do
           true ->
             new_state = remove_entry(key, state)
             final_state = update_stats(new_state, :miss)
@@ -372,10 +372,11 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
 
   @impl true
   def terminate(_reason, state) do
-    _ = case state.cleanup_timer do
-      nil -> :ok
-      timer -> Process.cancel_timer(timer)
-    end
+    _ =
+      case state.cleanup_timer do
+        nil -> :ok
+        timer -> Process.cancel_timer(timer)
+      end
 
     :ok
   end
@@ -534,7 +535,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
     [key | List.delete(access_order, key)]
   end
 
-  defp is_expired?(entry, ttl) do
+  defp expired?(entry, ttl) do
     current_time = System.system_time(:second)
     current_time - entry.created_at > ttl
   end
@@ -600,7 +601,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
         {update_stats(state, :miss), {:error, :not_found}}
 
       entry ->
-        case is_expired?(entry, state.config.ttl) do
+        case expired?(entry, state.config.ttl) do
           true ->
             new_state = remove_entry(key, state) |> update_stats(:miss)
             {new_state, {:error, :expired}}

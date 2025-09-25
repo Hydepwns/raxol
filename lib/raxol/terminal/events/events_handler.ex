@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Events.Handler do
   """
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Terminal.ANSI.WindowManipulation
+  alias Raxol.Terminal.ANSI.Window.Manipulation, as: WindowManipulation
 
   @doc """
   Handles window-related events.
@@ -213,7 +213,8 @@ defmodule Raxol.Terminal.Events.Handler do
   @doc """
   Handles selection events.
   """
-  @spec handle_selection_event(any(), any()) :: {:ok, any()} | {:error, String.t()}
+  @spec handle_selection_event(any(), any()) ::
+          {:ok, any()} | {:error, String.t()}
   def handle_selection_event(emulator_state, event) do
     case event do
       %{start_pos: start_pos, end_pos: end_pos, text: text} ->
@@ -343,7 +344,8 @@ defmodule Raxol.Terminal.Events.Handler do
   @doc """
   Handles clipboard events.
   """
-  @spec handle_clipboard_event(any(), any()) :: {:ok, any()} | {:error, String.t()}
+  @spec handle_clipboard_event(any(), any()) ::
+          {:ok, any()} | {:error, String.t()}
   def handle_clipboard_event(emulator_state, event) do
     case event do
       %{op: op, content: content} ->

@@ -1,327 +1,216 @@
 defmodule Raxol.Terminal.ANSI.SGRProcessor do
   @moduledoc """
-  Optimized SGR (Select Graphic Rendition) processor for ANSI escape sequences.
+  Processes SGR (Select Graphic Rendition) ANSI escape sequences.
 
-  This version uses compile-time optimizations and pattern matching for
-  maximum performance.
+  SGR sequences control text formatting attributes like colors, bold, italic, etc.
+  This module handles parsing SGR parameters and updating terminal styles accordingly.
   """
-
-  alias Raxol.Terminal.ANSI.TextFormatting
 
   @doc """
-  Processes SGR parameters and applies them to the current style.
+  Handles SGR parameters and updates the style state.
+
+  ## Parameters
+    - params: String of SGR parameters (e.g., "31", "1;4;31;48;5;196")
+    - style: Current style state (can be nil or a map)
+
+  ## Returns
+    Updated style map
   """
-  @spec handle_sgr(binary(), TextFormatting.t()) :: TextFormatting.t()
-  def handle_sgr(params, style) do
-    # Parse SGR parameters (e.g., "31;1;4")
-    codes =
-      params
-      |> String.split(";")
-      |> Enum.map(fn code ->
-        case Integer.parse(code) do
-          {int, _} -> int
-          :error -> nil
-        end
-      end)
-      |> Enum.filter(& &1)
+  @spec handle_sgr(String.t(), any()) :: map()
+  def handle_sgr(params, style) when is_binary(params) do
+    style = ensure_style_map(style)
 
-    # Start with current style
-    style = style || TextFormatting.new()
-
-    # Apply each SGR code
-    process_sgr_codes(codes, style)
+    params
+    |> parse_params()
+    |> process_params(style)
   end
 
-  # Direct pattern matching for common SGR codes - much faster than map lookup
-  def process_sgr_codes([], style), do: style
+  @doc """
+  Process SGR codes with parsed parameters.
 
-  # Reset all - most common operation
-  def process_sgr_codes([0 | rest], _style) do
-    process_sgr_codes(rest, TextFormatting.new())
+  ## Parameters
+    - codes: List of integer SGR codes
+    - style: Current style map
+
+  ## Returns
+    Updated style map
+  """
+  @spec process_sgr_codes(list(integer()), map()) :: map()
+  def process_sgr_codes(codes, style) do
+    style = ensure_style_map(style)
+    process_params(codes, style)
   end
 
-  # Foreground colors (30-37, 90-97)
-  def process_sgr_codes([30 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :black})
+  # Private functions
+
+  defp ensure_style_map(nil), do: default_style()
+  defp ensure_style_map(style) when is_map(style), do: style
+  defp ensure_style_map(_), do: default_style()
+
+  defp default_style do
+    %{
+      foreground: nil,
+      background: nil,
+      bold: false,
+      italic: false,
+      underline: false,
+      blink: false,
+      reverse: false,
+      hidden: false,
+      strikethrough: false,
+      dim: false,
+      # Extended attributes
+      underline_color: nil,
+      underline_style: :single,
+      overline: false
+    }
   end
 
-  def process_sgr_codes([31 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :red})
+  defp parse_params(""), do: [0]
+
+  defp parse_params(params) do
+    params
+    |> String.split(";")
+    |> Enum.map(&parse_int/1)
+    |> Enum.reject(&is_nil/1)
   end
 
-  def process_sgr_codes([32 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :green})
+  defp parse_int(str) do
+    case Integer.parse(str) do
+      {num, ""} -> num
+      _ -> nil
+    end
   end
 
-  def process_sgr_codes([33 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :yellow})
+  defp process_params([], style), do: style
+
+  defp process_params([code | rest], style) do
+    updated_style = apply_sgr_code(code, style, rest)
+    {_consumed, remaining} = get_consumed_params(code, rest)
+    process_params(remaining, updated_style)
   end
 
-  def process_sgr_codes([34 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :blue})
-  end
-
-  def process_sgr_codes([35 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :magenta})
-  end
-
-  def process_sgr_codes([36 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :cyan})
-  end
-
-  def process_sgr_codes([37 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :white})
-  end
-
-  # Default foreground
-  def process_sgr_codes([39 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: nil})
-  end
-
-  # Background colors (40-47, 100-107)
-  def process_sgr_codes([40 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :black})
-  end
-
-  def process_sgr_codes([41 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :red})
-  end
-
-  def process_sgr_codes([42 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :green})
-  end
-
-  def process_sgr_codes([43 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :yellow})
-  end
-
-  def process_sgr_codes([44 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :blue})
-  end
-
-  def process_sgr_codes([45 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :magenta})
-  end
-
-  def process_sgr_codes([46 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :cyan})
-  end
-
-  def process_sgr_codes([47 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :white})
-  end
-
-  # Default background
-  def process_sgr_codes([49 | rest], style) do
-    process_sgr_codes(rest, %{style | background: nil})
-  end
-
-  # Bright foreground colors (90-97) - set base color + bold for compatibility
-  def process_sgr_codes([90 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :black, bold: true})
-  end
-
-  def process_sgr_codes([91 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :red, bold: true})
-  end
-
-  def process_sgr_codes([92 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :green, bold: true})
-  end
-
-  def process_sgr_codes([93 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :yellow, bold: true})
-  end
-
-  def process_sgr_codes([94 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :blue, bold: true})
-  end
-
-  def process_sgr_codes([95 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :magenta, bold: true})
-  end
-
-  def process_sgr_codes([96 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :cyan, bold: true})
-  end
-
-  def process_sgr_codes([97 | rest], style) do
-    process_sgr_codes(rest, %{style | foreground: :white, bold: true})
-  end
-
-  # Bright background colors (100-107) - just base colors, no bold
-  def process_sgr_codes([100 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :black})
-  end
-
-  def process_sgr_codes([101 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :red})
-  end
-
-  def process_sgr_codes([102 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :green})
-  end
-
-  def process_sgr_codes([103 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :yellow})
-  end
-
-  def process_sgr_codes([104 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :blue})
-  end
-
-  def process_sgr_codes([105 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :magenta})
-  end
-
-  def process_sgr_codes([106 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :cyan})
-  end
-
-  def process_sgr_codes([107 | rest], style) do
-    process_sgr_codes(rest, %{style | background: :white})
-  end
+  defp apply_sgr_code(0, _style, _rest), do: default_style()
 
   # Text attributes
-  def process_sgr_codes([1 | rest], style) do
-    process_sgr_codes(rest, %{style | bold: true})
+  defp apply_sgr_code(1, style, _rest), do: Map.put(style, :bold, true)
+  defp apply_sgr_code(2, style, _rest), do: Map.put(style, :dim, true)
+  defp apply_sgr_code(3, style, _rest), do: Map.put(style, :italic, true)
+  defp apply_sgr_code(4, style, _rest), do: Map.put(style, :underline, true)
+  defp apply_sgr_code(5, style, _rest), do: Map.put(style, :blink, true)
+  # Rapid blink
+  defp apply_sgr_code(6, style, _rest), do: Map.put(style, :blink, true)
+  defp apply_sgr_code(7, style, _rest), do: Map.put(style, :reverse, true)
+  defp apply_sgr_code(8, style, _rest), do: Map.put(style, :hidden, true)
+  defp apply_sgr_code(9, style, _rest), do: Map.put(style, :strikethrough, true)
+
+  # Reset specific attributes
+  defp apply_sgr_code(21, style, _rest), do: Map.put(style, :bold, false)
+  defp apply_sgr_code(22, style, _rest), do: %{style | bold: false, dim: false}
+  defp apply_sgr_code(23, style, _rest), do: Map.put(style, :italic, false)
+  defp apply_sgr_code(24, style, _rest), do: Map.put(style, :underline, false)
+  defp apply_sgr_code(25, style, _rest), do: Map.put(style, :blink, false)
+  defp apply_sgr_code(27, style, _rest), do: Map.put(style, :reverse, false)
+  defp apply_sgr_code(28, style, _rest), do: Map.put(style, :hidden, false)
+
+  defp apply_sgr_code(29, style, _rest),
+    do: Map.put(style, :strikethrough, false)
+
+  # Basic foreground colors (30-37)
+  defp apply_sgr_code(code, style, _rest) when code >= 30 and code <= 37 do
+    Map.put(style, :foreground, basic_color(code - 30))
   end
 
-  def process_sgr_codes([2 | rest], style) do
-    process_sgr_codes(rest, %{style | faint: true})
+  # Extended foreground color (38)
+  defp apply_sgr_code(38, style, [5, color | _rest])
+       when color >= 0 and color <= 255 do
+    Map.put(style, :foreground, {:indexed, color})
   end
 
-  def process_sgr_codes([3 | rest], style) do
-    process_sgr_codes(rest, %{style | italic: true})
+  defp apply_sgr_code(38, style, [2, r, g, b | _rest])
+       when r >= 0 and r <= 255 and g >= 0 and g <= 255 and b >= 0 and b <= 255 do
+    Map.put(style, :foreground, {:rgb, r, g, b})
   end
 
-  def process_sgr_codes([4 | rest], style) do
-    process_sgr_codes(rest, %{style | underline: true})
+  # Default foreground (39)
+  defp apply_sgr_code(39, style, _rest), do: Map.put(style, :foreground, nil)
+
+  # Basic background colors (40-47)
+  defp apply_sgr_code(code, style, _rest) when code >= 40 and code <= 47 do
+    Map.put(style, :background, basic_color(code - 40))
   end
 
-  def process_sgr_codes([5 | rest], style) do
-    process_sgr_codes(rest, %{style | blink: true})
+  # Extended background color (48)
+  defp apply_sgr_code(48, style, [5, color | _rest])
+       when color >= 0 and color <= 255 do
+    Map.put(style, :background, {:indexed, color})
   end
 
-  def process_sgr_codes([6 | rest], style) do
-    # Rapid blink
-    process_sgr_codes(rest, %{style | blink: true})
+  defp apply_sgr_code(48, style, [2, r, g, b | _rest])
+       when r >= 0 and r <= 255 and g >= 0 and g <= 255 and b >= 0 and b <= 255 do
+    Map.put(style, :background, {:rgb, r, g, b})
   end
 
-  def process_sgr_codes([7 | rest], style) do
-    process_sgr_codes(rest, %{style | reverse: true})
+  # Default background (49)
+  defp apply_sgr_code(49, style, _rest), do: Map.put(style, :background, nil)
+
+  # Overline (53)
+  defp apply_sgr_code(53, style, _rest), do: Map.put(style, :overline, true)
+  defp apply_sgr_code(55, style, _rest), do: Map.put(style, :overline, false)
+
+  # Underline color (58)
+  defp apply_sgr_code(58, style, [5, color | _rest])
+       when color >= 0 and color <= 255 do
+    Map.put(style, :underline_color, {:indexed, color})
   end
 
-  def process_sgr_codes([8 | rest], style) do
-    process_sgr_codes(rest, %{style | conceal: true})
+  defp apply_sgr_code(58, style, [2, r, g, b | _rest])
+       when r >= 0 and r <= 255 and g >= 0 and g <= 255 and b >= 0 and b <= 255 do
+    Map.put(style, :underline_color, {:rgb, r, g, b})
   end
 
-  def process_sgr_codes([9 | rest], style) do
-    process_sgr_codes(rest, %{style | strikethrough: true})
+  # Default underline color (59)
+  defp apply_sgr_code(59, style, _rest),
+    do: Map.put(style, :underline_color, nil)
+
+  # Bright foreground colors (90-97)
+  defp apply_sgr_code(code, style, _rest) when code >= 90 and code <= 97 do
+    Map.put(style, :foreground, bright_color(code - 90))
   end
 
-  # Additional text attributes
-  def process_sgr_codes([20 | rest], style) do
-    process_sgr_codes(rest, %{style | fraktur: true})
+  # Bright background colors (100-107)
+  defp apply_sgr_code(code, style, _rest) when code >= 100 and code <= 107 do
+    Map.put(style, :background, bright_color(code - 100))
   end
 
-  def process_sgr_codes([21 | rest], style) do
-    process_sgr_codes(rest, %{style | double_underline: true})
-  end
+  # Unhandled codes - return style unchanged
+  defp apply_sgr_code(_code, style, _rest), do: style
 
-  # Reset attributes
-  def process_sgr_codes([22 | rest], style) do
-    process_sgr_codes(rest, %{style | bold: false, faint: false})
-  end
+  defp get_consumed_params(38, [5, _ | rest]), do: {2, rest}
+  defp get_consumed_params(38, [2, _, _, _ | rest]), do: {4, rest}
+  defp get_consumed_params(48, [5, _ | rest]), do: {2, rest}
+  defp get_consumed_params(48, [2, _, _, _ | rest]), do: {4, rest}
+  defp get_consumed_params(58, [5, _ | rest]), do: {2, rest}
+  defp get_consumed_params(58, [2, _, _, _ | rest]), do: {4, rest}
+  defp get_consumed_params(_, rest), do: {0, rest}
 
-  def process_sgr_codes([23 | rest], style) do
-    process_sgr_codes(rest, %{style | italic: false, fraktur: false})
-  end
+  defp basic_color(0), do: :black
+  defp basic_color(1), do: :red
+  defp basic_color(2), do: :green
+  defp basic_color(3), do: :yellow
+  defp basic_color(4), do: :blue
+  defp basic_color(5), do: :magenta
+  defp basic_color(6), do: :cyan
+  defp basic_color(7), do: :white
+  defp basic_color(_), do: nil
 
-  def process_sgr_codes([24 | rest], style) do
-    process_sgr_codes(rest, %{style | underline: false, double_underline: false})
-  end
-
-  def process_sgr_codes([25 | rest], style) do
-    process_sgr_codes(rest, %{style | blink: false})
-  end
-
-  def process_sgr_codes([27 | rest], style) do
-    process_sgr_codes(rest, %{style | reverse: false})
-  end
-
-  def process_sgr_codes([28 | rest], style) do
-    process_sgr_codes(rest, %{style | conceal: false})
-  end
-
-  def process_sgr_codes([29 | rest], style) do
-    process_sgr_codes(rest, %{style | strikethrough: false})
-  end
-
-  # Framed, encircled, overlined
-  def process_sgr_codes([51 | rest], style) do
-    process_sgr_codes(rest, %{style | framed: true})
-  end
-
-  def process_sgr_codes([52 | rest], style) do
-    process_sgr_codes(rest, %{style | encircled: true})
-  end
-
-  def process_sgr_codes([53 | rest], style) do
-    process_sgr_codes(rest, %{style | overlined: true})
-  end
-
-  def process_sgr_codes([54 | rest], style) do
-    process_sgr_codes(rest, %{style | framed: false, encircled: false})
-  end
-
-  def process_sgr_codes([55 | rest], style) do
-    process_sgr_codes(rest, %{style | overlined: false})
-  end
-
-  # 256-color support (38;5;n for foreground, 48;5;n for background)
-  def process_sgr_codes([38, 5, color | rest], style) do
-    process_sgr_codes(
-      rest,
-      TextFormatting.set_foreground(style, {:index, color})
-    )
-  end
-
-  def process_sgr_codes([48, 5, color | rest], style) do
-    process_sgr_codes(
-      rest,
-      TextFormatting.set_background(style, {:index, color})
-    )
-  end
-
-  # RGB color support (38;2;r;g;b for foreground, 48;2;r;g;b for background)
-  def process_sgr_codes([38, 2, r, g, b | rest], style) do
-    process_sgr_codes(
-      rest,
-      TextFormatting.set_foreground(style, {:rgb, r, g, b})
-    )
-  end
-
-  def process_sgr_codes([48, 2, r, g, b | rest], style) do
-    process_sgr_codes(
-      rest,
-      TextFormatting.set_background(style, {:rgb, r, g, b})
-    )
-  end
-
-  # Unknown codes - skip them
-  def process_sgr_codes([_unknown | rest], style) do
-    process_sgr_codes(rest, style)
-  end
-
-  @doc """
-  Returns the mapping of SGR codes to their corresponding style update functions.
-  Kept for backward compatibility but not used in optimized path.
-  """
-  @spec sgr_code_mappings() :: %{}
-  def sgr_code_mappings do
-    # This function is kept for backward compatibility
-    # but the optimized version uses pattern matching instead
-    %{}
-  end
+  defp bright_color(0), do: :bright_black
+  defp bright_color(1), do: :bright_red
+  defp bright_color(2), do: :bright_green
+  defp bright_color(3), do: :bright_yellow
+  defp bright_color(4), do: :bright_blue
+  defp bright_color(5), do: :bright_magenta
+  defp bright_color(6), do: :bright_cyan
+  defp bright_color(7), do: :bright_white
+  defp bright_color(_), do: nil
 end

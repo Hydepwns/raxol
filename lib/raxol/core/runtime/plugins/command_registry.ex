@@ -5,7 +5,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   REFACTORED: All try/rescue/catch blocks replaced with functional patterns.
   """
 
-  @behaviour Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
+  # Removed undefined @behaviour Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
 
   require Raxol.Core.Runtime.Log
 
@@ -19,12 +19,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
         }
   @type command :: {command_name(), command_handler(), command_metadata()}
 
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
+  # Removed @impl for undefined behaviour
   def new do
     :command_registry_table
   end
 
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
+  # Removed @impl for undefined behaviour
   def register_command(
         table_name,
         namespace,
@@ -46,8 +46,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
           {command_name, handler, metadata} | namespace_commands
         ]
 
-        _updated_table = Map.put(table, namespace, updated_commands)
-        :ok
+        updated_table = Map.put(table, namespace, updated_commands)
+        updated_table
 
       _ ->
         # If table is not a map, return error
@@ -55,7 +55,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
+  # Removed @impl for undefined behaviour
   def unregister_command(table_name, namespace, command_name) do
     case table_name do
       table when is_map(table) ->
@@ -80,7 +80,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
+  # Removed @impl for undefined behaviour
   def lookup_command(table_name, namespace, command_name) do
     case table_name do
       table when is_map(table) ->
@@ -106,16 +106,15 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour
+  # Removed @impl for undefined behaviour
   def unregister_commands_by_module(table_name, module) do
     case table_name do
       table when is_map(table) ->
         # Remove all commands for this module
-        _updated_table = Map.delete(table, module)
-        :ok
+        Map.delete(table, module)
 
       _ ->
-        :ok
+        table_name
     end
   end
 
@@ -173,6 +172,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end)
   end
 
+  @spec check_command_conflicts(any(), any()) :: any()
   defp check_command_conflicts(commands, command_table) do
     Enum.reduce_while(commands, :ok, fn {name, _, _}, :ok ->
       case command_exists?(name, command_table) do
@@ -185,12 +185,14 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end)
   end
 
+  @spec command_exists?(String.t() | atom(), any()) :: boolean()
   defp command_exists?(name, command_table) do
     Enum.any?(command_table, fn {_, commands} ->
       Enum.any?(commands, fn {cmd_name, _, _} -> cmd_name == name end)
     end)
   end
 
+  @spec register_commands(any(), module(), map(), any()) :: any()
   defp register_commands(commands, plugin_module, plugin_state, command_table) do
     with {:ok, new_commands} <- safe_map_commands(commands, plugin_state) do
       updated_table = Map.put(command_table, plugin_module, new_commands)
@@ -205,6 +207,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
+  @spec safe_map_commands(any(), map()) :: any()
   defp safe_map_commands(commands, plugin_state) do
     # Use Task to safely map commands with error isolation
     task =
@@ -222,6 +225,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
+  @spec unregister_commands(any(), any(), module()) :: any()
   defp unregister_commands(_commands, command_table, plugin_module) do
     # Use functional approach for safe deletion
     task =
@@ -255,6 +259,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
+  @spec wrap_handler(any(), map()) :: any()
   defp wrap_handler(handler, plugin_state) do
     fn args, context ->
       safe_execute_handler(
@@ -265,6 +270,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
+  @spec safe_execute_handler(any(), list(), any()) :: any()
   defp safe_execute_handler(handler, args, context) do
     # Use Task for safe execution with error isolation
     task =
@@ -300,6 +306,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
+  @spec get_plugin_commands(module()) :: any() | nil
   defp get_plugin_commands(plugin_module) do
     case plugin_module.commands() do
       commands when is_list(commands) -> {:ok, commands}
@@ -307,6 +314,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
+  @spec validate_commands(any()) :: {:ok, any()} | {:error, any()}
   defp validate_commands(commands) do
     Enum.reduce_while(commands, :ok, fn command, :ok ->
       case validate_command(command) do
@@ -316,6 +324,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end)
   end
 
+  @spec validate_command(any()) :: {:ok, any()} | {:error, any()}
   defp validate_command(command) do
     with :ok <- validate_command_handler(command.handler),
          :ok <- validate_command_metadata(command.metadata) do
@@ -323,6 +332,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
+  @spec validate_command_handler(any()) :: {:ok, any()} | {:error, any()}
   defp validate_command_handler(handler) do
     case is_function(handler, 2) do
       true -> :ok
@@ -330,6 +340,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
+  @spec validate_command_metadata(any()) :: {:ok, any()} | {:error, any()}
   defp validate_command_metadata(metadata) do
     with true <- is_map(metadata),
          true <- valid_metadata_fields?(metadata) do
@@ -339,6 +350,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
+  @spec valid_metadata_fields?(any()) :: boolean()
   defp valid_metadata_fields?(metadata) do
     Enum.all?(metadata, fn {key, value} ->
       case key do
@@ -351,6 +363,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end)
   end
 
+  @spec execute_with_timeout(any(), list(), any()) :: any()
   defp execute_with_timeout(handler, args, metadata) do
     timeout = Map.get(metadata, :timeout, 5000)
 
@@ -385,8 +398,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
+  @spec format_error_message(any()) :: String.t()
   defp format_error_message(reason) when is_binary(reason), do: reason
+  @spec format_error_message(any()) :: String.t()
   defp format_error_message(%{message: msg}), do: msg
+  @spec format_error_message(any()) :: String.t()
   defp format_error_message({:timeout, _}), do: "Command execution timeout"
+  @spec format_error_message(any()) :: String.t()
   defp format_error_message(reason), do: inspect(reason)
 end

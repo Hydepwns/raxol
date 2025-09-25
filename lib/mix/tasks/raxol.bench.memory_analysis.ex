@@ -148,7 +148,10 @@ defmodule Mix.Tasks.Raxol.Bench.MemoryAnalysis do
       recommendations: recommendations
     }
 
-    case MemoryDashboard.generate_dashboard(results, [output_path: dashboard_path, config: dashboard_config]) do
+    case MemoryDashboard.generate_dashboard(results,
+           output_path: dashboard_path,
+           config: dashboard_config
+         ) do
       {:ok, _} ->
         Mix.shell().info("Dashboard generated: #{dashboard_path}")
 

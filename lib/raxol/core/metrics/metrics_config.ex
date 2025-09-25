@@ -214,33 +214,44 @@ defmodule Raxol.Core.Metrics.Config do
   end
 
   # Validation functions for existing keys
+  @spec validate_setting(any(), any()) :: {:ok, any()} | {:error, any()}
   defp validate_setting(:retention_period, value),
     do: validate_retention_period(value)
 
+  @spec validate_setting(any(), any()) :: {:ok, any()} | {:error, any()}
   defp validate_setting(:max_samples, value), do: validate_max_samples(value)
 
+  @spec validate_setting(any(), any()) :: {:ok, any()} | {:error, any()}
   defp validate_setting(:flush_interval, value),
     do: validate_flush_interval(value)
 
+  @spec validate_setting(any(), any()) :: {:ok, any()} | {:error, any()}
   defp validate_setting(:enabled_metrics, value),
     do: validate_enabled_metrics(value)
 
+  @spec validate_retention_period(any()) :: {:ok, any()} | {:error, any()}
   defp validate_retention_period(period) when is_integer(period) and period > 0,
     do: :ok
 
+  @spec validate_retention_period(any()) :: {:ok, any()} | {:error, any()}
   defp validate_retention_period(_), do: {:error, :invalid_retention_period}
 
+  @spec validate_max_samples(any()) :: {:ok, any()} | {:error, any()}
   defp validate_max_samples(samples) when is_integer(samples) and samples > 0,
     do: :ok
 
+  @spec validate_max_samples(any()) :: {:ok, any()} | {:error, any()}
   defp validate_max_samples(_), do: {:error, :invalid_max_samples}
 
+  @spec validate_flush_interval(any()) :: {:ok, any()} | {:error, any()}
   defp validate_flush_interval(interval)
        when is_integer(interval) and interval > 0,
        do: :ok
 
+  @spec validate_flush_interval(any()) :: {:ok, any()} | {:error, any()}
   defp validate_flush_interval(_), do: {:error, :invalid_flush_interval}
 
+  @spec validate_enabled_metrics(any()) :: {:ok, any()} | {:error, any()}
   defp validate_enabled_metrics(metrics) when is_list(metrics) do
     case Enum.all?(
            metrics,
@@ -251,20 +262,26 @@ defmodule Raxol.Core.Metrics.Config do
     end
   end
 
+  @spec validate_enabled_metrics(any()) :: {:ok, any()} | {:error, any()}
   defp validate_enabled_metrics(_), do: {:error, :invalid_enabled_metrics}
 
   # Validation functions for new keys
+  @spec validate_aggregation_window(any()) :: {:ok, any()} | {:error, any()}
   defp validate_aggregation_window(window)
        when window in [:hour, :day, :week, :month],
        do: :ok
 
+  @spec validate_aggregation_window(any()) :: {:ok, any()} | {:error, any()}
   defp validate_aggregation_window(_), do: {:error, :invalid_aggregation_window}
 
+  @spec validate_storage_backend(any()) :: {:ok, any()} | {:error, any()}
   defp validate_storage_backend(backend) when backend in [:memory, :disk],
     do: :ok
 
+  @spec validate_storage_backend(any()) :: {:ok, any()} | {:error, any()}
   defp validate_storage_backend(_), do: {:error, :invalid_storage_backend}
 
+  @spec validate_retention_policies(any()) :: {:ok, any()} | {:error, any()}
   defp validate_retention_policies(policies) when is_list(policies) do
     case Enum.all?(policies, &valid_retention_policy?/1) do
       true -> :ok
@@ -272,13 +289,16 @@ defmodule Raxol.Core.Metrics.Config do
     end
   end
 
+  @spec validate_retention_policies(any()) :: {:ok, any()} | {:error, any()}
   defp validate_retention_policies(_), do: {:error, :invalid_retention_policies}
 
+  @spec valid_retention_policy?(any()) :: boolean()
   defp valid_retention_policy?(%{metric: metric, duration: duration})
        when is_binary(metric) and is_binary(duration) do
     # Basic validation - duration should be in format like "7d", "24h", etc.
     String.match?(duration, ~r/^\d+[dhms]$/)
   end
 
+  @spec valid_retention_policy?(any()) :: boolean()
   defp valid_retention_policy?(_), do: false
 end

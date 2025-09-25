@@ -11,7 +11,6 @@ defmodule Raxol.Terminal.Driver do
   - Restoring terminal state on exit
   """
   use GenServer
-  @behaviour Raxol.Terminal.Driver.Behaviour
 
   require Raxol.Core.Runtime.Log
   # Import Bitwise for bitwise operations
@@ -295,21 +294,22 @@ defmodule Raxol.Terminal.Driver do
   def terminate(_reason, %{termbox_state: :initialized} = _state) do
     Raxol.Core.Runtime.Log.info("Terminal Driver terminating.")
     # Only attempt shutdown if not in test environment
-    _ = case {Mix.env(), real_tty?()} do
-      {:test, _} ->
-        :ok
+    _ =
+      case {Mix.env(), real_tty?()} do
+        {:test, _} ->
+          :ok
 
-      {_, false} ->
-        :ok
+        {_, false} ->
+          :ok
 
-      {_, true} ->
-        _ =
-          if @termbox2_available do
-            apply(:termbox2_nif, :tb_shutdown, [])
-          else
-            0
-          end
-    end
+        {_, true} ->
+          _ =
+            if @termbox2_available do
+              apply(:termbox2_nif, :tb_shutdown, [])
+            else
+              0
+            end
+      end
 
     :ok
   end
@@ -326,21 +326,22 @@ defmodule Raxol.Terminal.Driver do
   Processes a terminal title change event.
   """
   def process_title_change(title, state) when is_binary(title) do
-    _ = case {Mix.env(), real_tty?()} do
-      {:test, _} ->
-        :ok
+    _ =
+      case {Mix.env(), real_tty?()} do
+        {:test, _} ->
+          :ok
 
-      {_, false} ->
-        :ok
+        {_, false} ->
+          :ok
 
-      {_, true} ->
-        _ =
-          if @termbox2_available do
-            apply(:termbox2_nif, :tb_set_title, [title])
-          else
-            0
-          end
-    end
+        {_, true} ->
+          _ =
+            if @termbox2_available do
+              apply(:termbox2_nif, :tb_set_title, [title])
+            else
+              0
+            end
+      end
 
     {:noreply, state}
   end
@@ -350,21 +351,22 @@ defmodule Raxol.Terminal.Driver do
   """
   def process_position_change(x, y, state)
       when is_integer(x) and is_integer(y) do
-    _ = case {Mix.env(), real_tty?()} do
-      {:test, _} ->
-        :ok
+    _ =
+      case {Mix.env(), real_tty?()} do
+        {:test, _} ->
+          :ok
 
-      {_, false} ->
-        :ok
+        {_, false} ->
+          :ok
 
-      {_, true} ->
-        _ =
-          if @termbox2_available do
-            apply(:termbox2_nif, :tb_set_position, [x, y])
-          else
-            0
-          end
-    end
+        {_, true} ->
+          _ =
+            if @termbox2_available do
+              apply(:termbox2_nif, :tb_set_position, [x, y])
+            else
+              0
+            end
+      end
 
     {:noreply, state}
   end
@@ -472,9 +474,12 @@ defmodule Raxol.Terminal.Driver do
 
   defp initialize_termbox do
     case call_termbox_init() do
-      0 -> :ok
-      -1 -> {:error, :init_failed}
-      # NIF only returns 0 or -1
+      0 ->
+        :ok
+
+      -1 ->
+        {:error, :init_failed}
+        # NIF only returns 0 or -1
     end
   end
 

@@ -43,6 +43,7 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
 
   alias Raxol.Core.Events.EventManager, as: EventManager
   alias Raxol.Core.FocusManager
+  alias Raxol.Core.NavigationUtils
 
   @default_config %{
     next_key: :tab,
@@ -240,11 +241,7 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
         _from,
         state
       ) do
-    from_paths = Map.get(state.navigation_paths, from_id, %{})
-    updated_from_paths = Map.put(from_paths, direction, to_id)
-    new_nav_paths = Map.put(state.navigation_paths, from_id, updated_from_paths)
-
-    new_state = %{state | navigation_paths: new_nav_paths}
+    new_state = NavigationUtils.define_navigation_path(state, from_id, direction, to_id)
     {:reply, :ok, new_state}
   end
 
@@ -328,6 +325,7 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
 
   # Private Helper Functions
 
+  @spec process_keyboard_event(any(), map()) :: any()
   defp process_keyboard_event({:keyboard, key_data}, state)
        when is_map(key_data) do
     config = state.config
@@ -364,27 +362,53 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
+  @spec process_keyboard_event(any(), map()) :: any()
   defp process_keyboard_event(_event, _state), do: :ok
 
+  @spec handle_next_navigation(map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_next_navigation(_state) do
     FocusManager.focus_next()
   end
 
+  @spec handle_previous_navigation(map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_previous_navigation(_state) do
     FocusManager.focus_previous()
   end
 
+  @spec handle_arrow_navigation(any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_arrow_navigation(direction, state) do
     current_focus = FocusManager.get_focused_element()
     handle_arrow_with_focus(current_focus, direction, state)
   end
 
+  @spec handle_arrow_with_focus(any(), any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_arrow_with_focus(current_focus, direction, state)
        when is_binary(current_focus) and state.config.spatial_navigation do
     next_component = find_spatial_neighbor(current_focus, direction, state)
     focus_if_present(next_component)
   end
 
+  @spec handle_arrow_with_focus(any(), any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_arrow_with_focus(_current_focus, direction, _state) do
     # Fallback to regular navigation
     case direction do
@@ -394,9 +418,16 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
+  @spec focus_if_present(any()) :: any()
   defp focus_if_present(nil), do: :ok
+  @spec focus_if_present(String.t() | integer()) :: any()
   defp focus_if_present(component_id), do: FocusManager.set_focus(component_id)
 
+  @spec handle_vim_navigation(any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_vim_navigation(key, state) do
     direction =
       case key do
@@ -414,12 +445,19 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     dispatch_activation_if_focused(current_focus)
   end
 
+  @spec dispatch_activation_if_focused(any()) :: any()
   defp dispatch_activation_if_focused(nil), do: :ok
 
+  @spec dispatch_activation_if_focused(any()) :: any()
   defp dispatch_activation_if_focused(current_focus) do
     EventManager.dispatch({:activate, %{component_id: current_focus}})
   end
 
+  @spec handle_dismiss(map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_dismiss(state) do
     # Try to pop focus stack first
     case state.focus_stack do
@@ -433,6 +471,7 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
+  @spec find_spatial_neighbor(String.t() | integer(), any(), map()) :: any()
   defp find_spatial_neighbor(current_id, direction, state) do
     # Check explicit navigation paths first
     case get_in(state.navigation_paths, [current_id, direction]) do
@@ -445,6 +484,8 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
+  @spec calculate_spatial_neighbor(String.t() | integer(), any(), any()) ::
+          any()
   defp calculate_spatial_neighbor(current_id, direction, spatial_map) do
     case Map.get(spatial_map, current_id) do
       nil ->
@@ -455,7 +496,7 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
         spatial_map
         |> Map.delete(current_id)
         |> Enum.filter(fn {_id, pos} ->
-          is_in_direction?(current_pos, pos, direction)
+          in_direction?(current_pos, pos, direction)
         end)
         |> Enum.min_by(
           fn {_id, pos} ->
@@ -467,7 +508,8 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
-  defp is_in_direction?(from, to, direction) do
+  @spec in_direction?(any(), any(), any()) :: boolean()
+  defp in_direction?(from, to, direction) do
     case direction do
       :up -> to.center_y < from.center_y
       :down -> to.center_y > from.center_y
@@ -476,6 +518,7 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
+  @spec distance(any(), any()) :: any()
   defp distance(pos1, pos2) do
     dx = pos1.center_x - pos2.center_x
     dy = pos1.center_y - pos2.center_y
@@ -484,6 +527,7 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
 
   # Helper functions for if statement elimination
 
+  @spec add_component_to_group(String.t() | integer(), any()) :: any()
   defp add_component_to_group(component_id, group_members) do
     case component_id in group_members do
       true -> group_members
@@ -491,14 +535,21 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
+  @spec update_group_members(any(), String.t() | atom(), any()) :: any()
   defp update_group_members(groups, group_name, []) do
     Map.delete(groups, group_name)
   end
 
+  @spec update_group_members(any(), String.t() | atom(), any()) :: any()
   defp update_group_members(groups, group_name, updated_members) do
     Map.put(groups, group_name, updated_members)
   end
 
+  @spec handle_tab_navigation(any(), any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_tab_navigation(:next, mods, state) do
     case :shift in mods do
       # Shift+key, ignore for next navigation
@@ -507,6 +558,11 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
+  @spec handle_tab_navigation(any(), any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_tab_navigation(:previous, mods, state) do
     case :shift in mods do
       true -> handle_previous_navigation(state)
@@ -515,6 +571,11 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
+  @spec handle_activation_key(any(), any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_activation_key(key, activate_keys) do
     case key in activate_keys do
       true -> handle_activation()

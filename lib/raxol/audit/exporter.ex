@@ -643,9 +643,10 @@ defmodule Raxol.Audit.Exporter do
     case :queue.out(state.export_queue) do
       {{:value, schedule}, new_queue} ->
         # Process scheduled export
-        {:ok, _} = Task.start(fn ->
-          perform_scheduled_export(schedule)
-        end)
+        {:ok, _} =
+          Task.start(fn ->
+            perform_scheduled_export(schedule)
+          end)
 
         %{state | export_queue: new_queue}
 

@@ -114,6 +114,7 @@ defmodule Raxol.Core.Session.WebSession do
     |> Base.encode16(case: :lower)
   end
 
+  @spec sanitize_session(any()) :: any()
   defp sanitize_session(session) do
     %{
       id: session.id,

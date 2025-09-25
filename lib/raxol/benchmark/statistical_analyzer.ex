@@ -67,6 +67,7 @@ defmodule Raxol.Benchmark.StatisticalAnalyzer do
 
         f_int = trunc(f)
         c_int = trunc(c)
+
         if f_int == c_int do
           Enum.at(sorted_data, f_int)
         else

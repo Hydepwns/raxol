@@ -7,7 +7,7 @@ defmodule StateManager do
   for consistency and performance.
   """
 
-  alias Raxol.Core.UnifiedStateManager
+  alias Raxol.Core.StateManager, as: UnifiedStateManager
   require Logger
 
   @type plugin_id :: String.t()
@@ -257,6 +257,7 @@ defmodule StateManager do
 
   # Private Implementation
 
+  @spec generate_plugin_id(module()) :: any()
   defp generate_plugin_id(plugin_module) do
     plugin_module
     |> to_string()
@@ -265,6 +266,7 @@ defmodule StateManager do
     |> String.replace(".", "_")
   end
 
+  @spec has_init_callback?(module()) :: boolean()
   defp has_init_callback?(plugin_module) do
     try do
       plugin_module.module_info(:exports)

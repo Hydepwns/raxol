@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.ANSI.MouseTrackingTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.ANSI.MouseTracking
+  alias Raxol.Terminal.ANSI.Mouse.Tracking, as: MouseTracking
 
   describe "enable_mouse_tracking/1" do
     test ~c"enables normal mouse tracking" do

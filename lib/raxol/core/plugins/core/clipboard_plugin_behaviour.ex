@@ -10,8 +10,9 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginBehaviour do
 
   @doc """
   Returns the list of commands supported by the clipboard plugin.
+  Each command is a tuple of {command_name, handler_function, arity}.
   """
-  @callback get_commands() :: list(atom())
+  @callback get_commands() :: [{atom(), atom(), non_neg_integer()}]
 
   @doc """
   Handles a clipboard command with the given arguments and state.

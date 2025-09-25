@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
   - Horizontal and Vertical Position Absolute (HPA/VPA)
   """
 
-  alias Raxol.Terminal.Cursor
+  alias Raxol.Terminal.Commands.CSIHandler.Cursor
   alias Raxol.Terminal.Emulator
   require Logger
 
@@ -32,8 +32,8 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
       # Sanitize amount - default to 1 if 0
       move_amount = max(1, amount)
 
-      # Use existing Cursor.move_up which handles bounds checking
-      updated_emulator = Cursor.move_up(emulator, move_amount)
+      # Use CSIHandler.Cursor functions which handle direct row/col fields
+      {:ok, updated_emulator} = Cursor.handle_command(emulator, [move_amount], "A")
 
       Logger.debug("Cursor moved up by #{move_amount}")
       {:ok, updated_emulator}
@@ -53,7 +53,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
   def handle_cursor_down(emulator, amount) do
     try do
       move_amount = max(1, amount)
-      updated_emulator = Cursor.move_down(emulator, move_amount)
+      {:ok, updated_emulator} = Cursor.handle_command(emulator, [move_amount], "B")
 
       Logger.debug("Cursor moved down by #{move_amount}")
       {:ok, updated_emulator}
@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
   def handle_cursor_forward(emulator, amount) do
     try do
       move_amount = max(1, amount)
-      updated_emulator = Cursor.move_right(emulator, move_amount)
+      {:ok, updated_emulator} = Cursor.handle_command(emulator, [move_amount], "C")
 
       Logger.debug("Cursor moved forward by #{move_amount}")
       {:ok, updated_emulator}
@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
   def handle_cursor_backward(emulator, amount) do
     try do
       move_amount = max(1, amount)
-      updated_emulator = Cursor.move_left(emulator, move_amount)
+      {:ok, updated_emulator} = Cursor.handle_command(emulator, [move_amount], "D")
 
       Logger.debug("Cursor moved backward by #{move_amount}")
       {:ok, updated_emulator}
@@ -150,21 +150,13 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
       bounded_row = max(0, min(row, emulator.height - 1))
       bounded_col = max(0, min(col, emulator.width - 1))
 
-      # Use existing Cursor.set_position if available, otherwise update directly
-      updated_emulator =
-        case function_exported?(Cursor, :set_position, 2) do
-          true ->
-            Cursor.set_position(emulator, {bounded_col, bounded_row})
+      # Update cursor position directly using the established pattern
+      new_cursor = %{
+        emulator.cursor
+        | position: {bounded_col, bounded_row}
+      }
 
-          false ->
-            # Fallback: update cursor position directly
-            new_cursor = %{
-              emulator.cursor
-              | position: {bounded_col, bounded_row}
-            }
-
-            %{emulator | cursor: new_cursor}
-        end
+      updated_emulator = %{emulator | cursor: new_cursor}
 
       Logger.debug("Cursor position set to (#{bounded_col}, #{bounded_row})")
       {:ok, updated_emulator}

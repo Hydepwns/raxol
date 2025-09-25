@@ -283,17 +283,20 @@ defmodule Raxol.Audit.Logger do
     }
 
     # Schedule periodic tasks
-    _ = case config.enabled do
-      true ->
-        {:ok, _} = :timer.send_interval(config.flush_interval_ms, :flush_buffer)
-        # Every hour
-        {:ok, _} = :timer.send_interval(3_600_000, :cleanup_old_logs)
-        # Daily
-        {:ok, _} = :timer.send_interval(86_400_000, :verify_integrity)
+    _ =
+      case config.enabled do
+        true ->
+          {:ok, _} =
+            :timer.send_interval(config.flush_interval_ms, :flush_buffer)
 
-      false ->
-        :ok
-    end
+          # Every hour
+          {:ok, _} = :timer.send_interval(3_600_000, :cleanup_old_logs)
+          # Daily
+          {:ok, _} = :timer.send_interval(86_400_000, :verify_integrity)
+
+        false ->
+          :ok
+      end
 
     Logger.info("Audit logger initialized with config: #{inspect(config)}")
     {:ok, state}
@@ -357,18 +360,20 @@ defmodule Raxol.Audit.Logger do
 
   @impl GenServer
   def handle_info(:cleanup_old_logs, state) do
-    {:ok, _} = Task.start(fn ->
-      cleanup_expired_logs(state)
-    end)
+    {:ok, _} =
+      Task.start(fn ->
+        cleanup_expired_logs(state)
+      end)
 
     {:noreply, state}
   end
 
   @impl GenServer
   def handle_info(:verify_integrity, state) do
-    {:ok, _} = Task.start(fn ->
-      verify_daily_integrity(state)
-    end)
+    {:ok, _} =
+      Task.start(fn ->
+        verify_daily_integrity(state)
+      end)
 
     {:noreply, state}
   end
@@ -417,10 +422,11 @@ defmodule Raxol.Audit.Logger do
     new_state = update_metrics(new_state, category, severity)
 
     # Send alerts if needed
-    _ = case severity in [:critical, :high] and state.config.alert_on_critical do
-      true -> send_alerts(final_event, severity, state)
-      false -> :ok
-    end
+    _ =
+      case severity in [:critical, :high] and state.config.alert_on_critical do
+        true -> send_alerts(final_event, severity, state)
+        false -> :ok
+      end
 
     # Flush if needed
     case should_flush do

@@ -659,7 +659,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
 
   defp find_next_available_row(grid, row, col, col_count, row_count)
        when row <= row_count do
-    case is_cell_available(grid, row, col) do
+    case cell_available?(grid, row, col) do
       true -> {row, col}
       false -> find_next_available_row(grid, row, col + 1, col_count, row_count)
     end
@@ -677,7 +677,7 @@ defmodule Raxol.UI.Layout.CSSGrid do
 
   defp find_next_available_column(grid, row, col, col_count, row_count)
        when col <= col_count do
-    case is_cell_available(grid, row, col) do
+    case cell_available?(grid, row, col) do
       true ->
         {row, col}
 
@@ -691,13 +691,13 @@ defmodule Raxol.UI.Layout.CSSGrid do
     nil
   end
 
-  defp is_cell_available(grid, row, col)
+  defp cell_available?(grid, row, col)
        when row > 0 and row <= length(grid) and col > 0 do
     row_data = Enum.at(grid, row - 1)
     check_column_availability(row_data, col)
   end
 
-  defp is_cell_available(_grid, _row, _col), do: false
+  defp cell_available?(_grid, _row, _col), do: false
 
   defp check_column_availability(row_data, col) when col <= length(row_data) do
     not Enum.at(row_data, col - 1)

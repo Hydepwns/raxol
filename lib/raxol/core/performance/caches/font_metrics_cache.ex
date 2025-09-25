@@ -230,14 +230,17 @@ defmodule Raxol.Core.Performance.Caches.FontMetricsCache do
   # Private functions
 
   # Key builders
+  @spec build_char_width_key(any()) :: any()
   defp build_char_width_key(char) when is_integer(char) do
     @char_width_prefix <> Integer.to_string(char)
   end
 
+  @spec build_char_width_key(any()) :: any()
   defp build_char_width_key(char) when is_binary(char) do
     @char_width_prefix <> char
   end
 
+  @spec build_string_width_key(any()) :: any()
   defp build_string_width_key(string) do
     # Use hash for long strings to keep key size manageable
     case String.length(string) > 50 do
@@ -250,17 +253,20 @@ defmodule Raxol.Core.Performance.Caches.FontMetricsCache do
     end
   end
 
+  @spec build_font_dims_key(any()) :: any()
   defp build_font_dims_key(%FontManager{} = fm) do
     @font_dims_prefix <>
       "#{fm.family}:#{fm.size}:#{fm.weight}:#{fm.style}:#{fm.line_height}:#{fm.letter_spacing}"
   end
 
+  @spec build_font_stack_key(any()) :: any()
   defp build_font_stack_key(%FontManager{} = fm) do
     @font_stack_prefix <>
       "#{fm.family}:" <> Enum.join(fm.fallback_fonts, ":")
   end
 
   # Font dimension calculations
+  @spec calculate_char_width(any()) :: any()
   defp calculate_char_width(%FontManager{size: size, letter_spacing: spacing}) do
     # Base calculation: typical monospace width is 0.6 * font size
     # This matches the default in WindowHandlers (8px for 14pt font)
@@ -269,6 +275,7 @@ defmodule Raxol.Core.Performance.Caches.FontMetricsCache do
     base_width + round(spacing)
   end
 
+  @spec calculate_char_height(any()) :: any()
   defp calculate_char_height(%FontManager{size: size, line_height: line_height}) do
     # Character height is font size * line height
     # This matches the default in WindowHandlers (16px for 14pt font with 1.2 line height)
@@ -280,6 +287,7 @@ defmodule Raxol.Core.Performance.Caches.FontMetricsCache do
   #   emit_telemetry(event, %{})
   # end
 
+  @spec emit_telemetry(any(), any()) :: any()
   defp emit_telemetry(event, metadata) do
     :telemetry.execute(
       @telemetry_prefix ++ [event],

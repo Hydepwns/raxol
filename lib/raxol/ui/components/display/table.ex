@@ -3,7 +3,6 @@ defmodule Raxol.UI.Components.Display.Table do
   A component for displaying tabular data with sorting, filtering, and pagination.
   """
   require Raxol.Core.Runtime.Log
-  require Raxol.View.Elements
 
   # alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
@@ -177,9 +176,10 @@ defmodule Raxol.UI.Components.Display.Table do
         %{state | selected_row: row_index}
 
       _ ->
-        _ = Raxol.Core.Runtime.Log.warning(
-          "Unhandled Table update: #{inspect(message)}"
-        )
+        _ =
+          Raxol.Core.Runtime.Log.warning(
+            "Unhandled Table update: #{inspect(message)}"
+          )
 
         state
     end
@@ -191,29 +191,32 @@ defmodule Raxol.UI.Components.Display.Table do
     attrs = context.attrs
     current_visible_height = get_visible_height(context)
 
-    result = case event do
-      {:keypress, key} ->
-        handle_keypress(state, key, attrs, current_visible_height)
+    result =
+      case event do
+        {:keypress, key} ->
+          handle_keypress(state, key, attrs, current_visible_height)
 
-      {:click, click_data} ->
-        handle_click(state, click_data, attrs)
+        {:click, click_data} ->
+          handle_click(state, click_data, attrs)
 
-      {:input, input_data} ->
-        handle_input(state, input_data, attrs)
+        {:input, input_data} ->
+          handle_input(state, input_data, attrs)
 
-      {:focus, focus_data} ->
-        handle_focus(state, focus_data)
+        {:focus, focus_data} ->
+          handle_focus(state, focus_data)
 
-      _ ->
-        {:noreply, state}
-    end
+        _ ->
+          {:noreply, state}
+      end
 
     # Convert {:noreply, state} or {:noreply, state, commands} to expected format
     case result do
       {:noreply, new_state} ->
         {new_state, []}
+
       {:noreply, new_state, commands} ->
         {new_state, commands}
+
       other ->
         other
     end

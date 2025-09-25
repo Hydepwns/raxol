@@ -206,13 +206,14 @@ defmodule Raxol.Debug do
   """
   @spec debug_breakpoint(atom(), binary()) :: :ok
   def debug_breakpoint(component, reason \\ "Debug breakpoint") do
-    _ = if debug_enabled?(component) and interactive_mode?() do
-      IO.puts("Debug breakpoint hit: #{reason}")
-      IO.puts("Component: #{component}")
-      IO.puts("Process: #{inspect(self())}")
-      IO.puts("Press Enter to continue...")
-      IO.read(:line)
-    end
+    _ =
+      if debug_enabled?(component) and interactive_mode?() do
+        IO.puts("Debug breakpoint hit: #{reason}")
+        IO.puts("Component: #{component}")
+        IO.puts("Process: #{inspect(self())}")
+        IO.puts("Press Enter to continue...")
+        IO.read(:line)
+      end
 
     :ok
   end
@@ -390,9 +391,10 @@ defmodule Raxol.Debug do
     }
 
     # Start performance monitoring if in debug mode
-    _ = if level != :off do
-      schedule_performance_monitoring()
-    end
+    _ =
+      if level != :off do
+        schedule_performance_monitoring()
+      end
 
     {:ok, state}
   end
@@ -400,14 +402,16 @@ defmodule Raxol.Debug do
   @impl true
   def handle_call({:set_level, level}, _from, state) do
     # Cancel existing monitoring if going to :off
-    _ = if level == :off and state.level != :off and state[:monitor_ref] do
-      Process.cancel_timer(state[:monitor_ref])
-    end
+    _ =
+      if level == :off and state.level != :off and state[:monitor_ref] do
+        Process.cancel_timer(state[:monitor_ref])
+      end
 
     # Start monitoring if enabling debug
-    _ = if level != :off and state.level == :off do
-      schedule_performance_monitoring()
-    end
+    _ =
+      if level != :off and state.level == :off do
+        schedule_performance_monitoring()
+      end
 
     {:reply, :ok, %{state | level: level}}
   end

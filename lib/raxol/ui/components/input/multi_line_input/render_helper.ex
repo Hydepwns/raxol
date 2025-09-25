@@ -1,284 +1,218 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
   @moduledoc """
-  UI adapter for MultiLineInput's RenderHelper. Delegates to the implementation in
-  Raxol.UI.Components.Input.MultiLineInput.RenderHelper.
+  Rendering helper functions for MultiLineInput component.
   """
 
-  alias Raxol.UI.Components.Input.MultiLineInput.RenderHelper,
-    as: ComponentRenderHelper
-
-  alias Raxol.View.Components
+  alias Raxol.UI.Components.Input.MultiLineInput
 
   @doc """
-  Renders the multi-line input component with proper styling based on the state.
-  Returns a grid of cell data for the visible portion of text.
-
-  Delegates to the implementation in Raxol.UI.Components.Input.MultiLineInput.RenderHelper.
-
-  ## Parameters
-  - state: The MultiLineInput state
-  - context: The render context
-  - theme: The theme containing style information
+  Renders a single line with proper styling for cursor and selection.
   """
-  def render(state, context, theme) do
-    ComponentRenderHelper.render(state, context, theme)
-  end
-
-  @doc """
-  Renders a single line of the multi-line input, applying selection and cursor styles as needed.
-  Returns a list of label components for the segments of the line.
-  """
+  @spec render_line(integer(), String.t(), MultiLineInput.t(), map()) :: list()
   def render_line(line_index, line_content, state, theme) do
-    require Raxol.View.Components
+    # Get theme styles
+    text_style =
+      get_theme_style(theme, [:components, :multi_line_input, :text_style], %{})
 
-    {merged_theme, cursor_pos, focused, sel_start, sel_end, line_len,
-     safe_cursor_col} =
-      extract_render_data(state, theme, line_content)
+    cursor_style =
+      get_theme_style(theme, [:components, :multi_line_input, :cursor_style], %{
+        background: :red
+      })
 
-    selection_range =
-      calculate_selection_range(sel_start, sel_end, line_index, line_len)
+    selection_style =
+      get_theme_style(
+        theme,
+        [:components, :multi_line_input, :selection_style],
+        %{background: :blue}
+      )
 
-    cursor_on_this_line = focused and elem(cursor_pos, 0) == line_index
-    safe_slice = create_safe_slice(line_len)
+    # Check if this line has cursor
+    {cursor_row, cursor_col} = state.cursor_pos
+    has_cursor = line_index == cursor_row and state.focused
 
-    text_style = merged_theme[:text_style] || %{}
-    cursor_style = merged_theme[:cursor_style] || %{}
+    # Check if this line has selection
+    {selection_start, selection_end} = normalize_selection(state)
 
-    segments =
-      create_segments(
-        selection_range,
-        cursor_on_this_line,
+    line_has_selection =
+      line_in_selection?(line_index, selection_start, selection_end)
+
+    # Build line content with styles
+    if line_has_selection do
+      render_line_with_selection(
+        line_content,
+        line_index,
+        state,
+        text_style,
+        selection_style,
+        cursor_style,
+        has_cursor,
+        cursor_col
+      )
+    else
+      render_line_simple(
         line_content,
         text_style,
         cursor_style,
-        safe_cursor_col,
-        safe_slice,
-        line_len
+        has_cursor,
+        cursor_col
       )
-
-    case {is_list(segments), segments} do
-      {true, [%{type: :label} | _]} -> segments
-      _ -> process_segments(segments, line_content)
     end
   end
 
-  defp extract_render_data(state, theme, line_content) do
-    merged_theme =
-      theme[:components][:multi_line_input] || theme[:multi_line_input] || %{}
-
-    cursor_pos = state.cursor_pos
-    focused = Map.get(state, :focused, false)
-
-    {sel_start, sel_end} =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-        state
-      )
-
-    line_len = String.length(line_content)
-    safe_cursor_col = cursor_pos |> elem(1) |> max(0) |> min(line_len)
-
-    {merged_theme, cursor_pos, focused, sel_start, sel_end, line_len,
-     safe_cursor_col}
-  end
-
-  defp create_safe_slice(line_len) do
-    fn str, start, len ->
-      start = min(max(start, 0), line_len)
-      len = max(0, len)
-      String.slice(str, start, len)
-    end
-  end
-
-  defp process_segments(segments, line_content) do
-    segments =
-      Enum.filter(segments, fn {text, _} -> text != nil and text != "" end)
-
-    case {line_content, segments} do
-      {"", []} ->
-        []
-
-      _ ->
-        Enum.map(segments, fn {text, style} ->
-          Components.label(text, style: style)
-        end)
-    end
-  end
-
-  defp calculate_selection_range(nil, _sel_end, _line_index, _line_len), do: nil
-
-  defp calculate_selection_range(_sel_start, nil, _line_index, _line_len),
-    do: nil
-
-  defp calculate_selection_range(sel_start, sel_end, line_index, line_len) do
-    {{start_row, start_col}, {end_row, end_col}} = {sel_start, sel_end}
-    min_row = min(start_row, end_row)
-    max_row = max(start_row, end_row)
-
-    case line_index < min_row or line_index > max_row do
-      true ->
-        nil
-
-      false ->
-        {left, right} =
-          calculate_selection_bounds(
-            start_row,
-            start_col,
-            end_row,
-            end_col,
-            line_index,
-            line_len
-          )
-
-        {min(max(left, 0), line_len), min(max(right, 0), line_len)}
-    end
-  end
-
-  defp calculate_selection_bounds(
-         start_row,
-         start_col,
-         end_row,
-         end_col,
-         line_index,
-         line_len
-       )
-
-  defp calculate_selection_bounds(
-         start_row,
-         start_col,
-         end_row,
-         end_col,
-         _line_index,
-         _line_len
-       )
-       when start_row == end_row do
-    {min(start_col, end_col), max(start_col, end_col)}
-  end
-
-  defp calculate_selection_bounds(
-         start_row,
-         start_col,
-         _end_row,
-         _end_col,
-         line_index,
-         line_len
-       )
-       when line_index == start_row do
-    {start_col, line_len}
-  end
-
-  defp calculate_selection_bounds(
-         _start_row,
-         _start_col,
-         end_row,
-         end_col,
-         line_index,
-         _line_len
-       )
-       when line_index == end_row do
-    {0, end_col}
-  end
-
-  defp calculate_selection_bounds(
-         _start_row,
-         _start_col,
-         _end_row,
-         _end_col,
-         _line_index,
-         line_len
-       ) do
-    {0, line_len}
-  end
-
-  defp create_segments(
-         selection_range,
-         cursor_on_this_line,
+  defp render_line_simple(
          line_content,
          text_style,
          cursor_style,
-         safe_cursor_col,
-         safe_slice,
-         line_len
-       )
+         has_cursor,
+         cursor_col
+       ) do
+    line_length = String.length(line_content)
 
-  defp create_segments(
-         selection_range,
-         true,
-         line_content,
-         text_style,
-         _cursor_style,
-         _safe_cursor_col,
-         _safe_slice,
-         _line_len
-       )
-       when not is_nil(selection_range) do
-    [{line_content, text_style}]
+    if has_cursor and cursor_col <= line_length do
+      # Split line at cursor position
+      {before_cursor, at_and_after} = String.split_at(line_content, cursor_col)
+
+      {cursor_char, after_cursor} =
+        case at_and_after do
+          # Show cursor at end of line
+          "" -> {" ", ""}
+          rest -> String.split_at(rest, 1)
+        end
+
+      [
+        if(before_cursor != "",
+          do: {:text, before_cursor, text_style},
+          else: nil
+        ),
+        {:text, cursor_char, cursor_style},
+        if(after_cursor != "", do: {:text, after_cursor, text_style}, else: nil)
+      ]
+      |> Enum.filter(&(&1 != nil))
+    else
+      # No cursor on this line
+      if line_content != "" do
+        [{:text, line_content, text_style}]
+      else
+        # Empty line placeholder
+        [{:text, " ", text_style}]
+      end
+    end
   end
 
-  defp create_segments(
-         selection_range,
-         false,
+  defp render_line_with_selection(
          line_content,
+         line_index,
+         state,
          text_style,
-         _cursor_style,
-         _safe_cursor_col,
-         _safe_slice,
-         _line_len
-       )
-       when not is_nil(selection_range) do
-    [{line_content, text_style}]
-  end
-
-  defp create_segments(
-         nil,
-         true,
-         line_content,
-         text_style,
-         _cursor_style,
-         safe_cursor_col,
-         _safe_slice,
-         line_len
-       )
-       when safe_cursor_col >= line_len do
-    [{line_content, text_style}]
-  end
-
-  defp create_segments(
-         nil,
-         true,
-         line_content,
-         text_style,
+         selection_style,
          cursor_style,
-         safe_cursor_col,
-         safe_slice,
-         line_len
+         has_cursor,
+         cursor_col
        ) do
-    before_cursor = safe_slice.(line_content, 0, safe_cursor_col)
-    cursor_char = safe_slice.(line_content, safe_cursor_col, 1)
+    {selection_start, selection_end} = normalize_selection(state)
+    {start_row, start_col} = selection_start
+    {end_row, end_col} = selection_end
 
-    after_cursor =
-      safe_slice.(
-        line_content,
-        safe_cursor_col + 1,
-        line_len - safe_cursor_col - 1
-      )
+    line_length = String.length(line_content)
 
-    [
-      {before_cursor, text_style},
-      {cursor_char, cursor_style},
-      {after_cursor, text_style}
-    ]
+    # Determine selection bounds for this line
+    sel_start = if line_index == start_row, do: start_col, else: 0
+    sel_end = if line_index == end_row, do: end_col, else: line_length
+
+    # Ensure bounds are valid
+    sel_start = max(0, min(sel_start, line_length))
+    sel_end = max(sel_start, min(sel_end, line_length))
+
+    parts = []
+
+    # Before selection
+    parts =
+      if sel_start > 0 do
+        before_sel = String.slice(line_content, 0, sel_start)
+        parts ++ [{:text, before_sel, text_style}]
+      else
+        parts
+      end
+
+    # Selection
+    parts =
+      if sel_end > sel_start do
+        selected_text =
+          String.slice(line_content, sel_start, sel_end - sel_start)
+
+        parts ++ [{:text, selected_text, selection_style}]
+      else
+        parts
+      end
+
+    # After selection
+    parts =
+      if sel_end < line_length do
+        after_sel = String.slice(line_content, sel_end, line_length - sel_end)
+        parts ++ [{:text, after_sel, text_style}]
+      else
+        parts
+      end
+
+    # Add cursor if on this line
+    parts =
+      if has_cursor do
+        add_cursor_to_parts(parts, cursor_col, cursor_style)
+      else
+        parts
+      end
+
+    if parts == [] do
+      # Empty line placeholder
+      [{:text, " ", text_style}]
+    else
+      parts
+    end
   end
 
-  defp create_segments(
-         nil,
-         false,
-         line_content,
-         text_style,
-         _cursor_style,
-         _safe_cursor_col,
-         _safe_slice,
-         _line_len
-       ) do
-    [{line_content, text_style}]
+  defp add_cursor_to_parts(parts, _cursor_col, cursor_style) do
+    # This is a simplified implementation
+    # In a full implementation, you'd need to carefully insert the cursor
+    # at the correct position within the styled parts
+    parts ++ [{:text, " ", cursor_style}]
+  end
+
+  defp normalize_selection(state) do
+    case {state.selection_start, state.selection_end} do
+      {nil, _} ->
+        {nil, nil}
+
+      {_, nil} ->
+        {nil, nil}
+
+      {start_pos, end_pos} ->
+        if pos_to_index(start_pos, state) <= pos_to_index(end_pos, state) do
+          {start_pos, end_pos}
+        else
+          {end_pos, start_pos}
+        end
+    end
+  end
+
+  defp line_in_selection?(_line_index, nil, _), do: false
+  defp line_in_selection?(_line_index, _, nil), do: false
+
+  defp line_in_selection?(line_index, {start_row, _}, {end_row, _}) do
+    line_index >= start_row and line_index <= end_row
+  end
+
+  defp pos_to_index({row, col}, state) do
+    # Calculate linear position in text
+    lines_before = Enum.take(state.lines, row)
+    # +1 for newline
+    chars_before = Enum.sum(Enum.map(lines_before, &(String.length(&1) + 1)))
+    chars_before + col
+  end
+
+  defp get_theme_style(theme, path, default) do
+    case get_in(theme, path) do
+      nil -> default
+      style -> style
+    end
   end
 end

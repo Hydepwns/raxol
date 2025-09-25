@@ -76,60 +76,69 @@ defmodule Raxol.UI.Components.Modal.Core do
   defp normalize_field(_), do: nil
 
   @doc "Handles show/hide state changes."
-  @spec handle_show(Raxol.UI.Components.Modal.t()) :: {Raxol.UI.Components.Modal.t(), list()}
+  @spec handle_show(Raxol.UI.Components.Modal.t()) ::
+          {Raxol.UI.Components.Modal.t(), list()}
   def handle_show(state) do
     cmd = Raxol.UI.Components.Modal.State.set_focus_command(state)
     new_state = %Raxol.UI.Components.Modal{state | visible: true}
 
-    _ = send(
-      self(),
-      {:modal_state_changed, Map.get(state, :id, nil), :visible, true}
-    )
+    _ =
+      send(
+        self(),
+        {:modal_state_changed, Map.get(state, :id, nil), :visible, true}
+      )
 
     {new_state, [cmd]}
   end
 
   @doc "Handles hiding the modal."
-  @spec handle_hide(Raxol.UI.Components.Modal.t()) :: {Raxol.UI.Components.Modal.t(), list()}
+  @spec handle_hide(Raxol.UI.Components.Modal.t()) ::
+          {Raxol.UI.Components.Modal.t(), list()}
   def handle_hide(state) do
     new_state = %Raxol.UI.Components.Modal{state | visible: false}
 
-    _ = send(
-      self(),
-      {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
-    )
+    _ =
+      send(
+        self(),
+        {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+      )
 
     {new_state, []}
   end
 
   @doc "Handles cancel operations."
-  @spec handle_cancel(Raxol.UI.Components.Modal.t(), any()) :: {Raxol.UI.Components.Modal.t(), list()}
+  @spec handle_cancel(Raxol.UI.Components.Modal.t(), any()) ::
+          {Raxol.UI.Components.Modal.t(), list()}
   def handle_cancel(state, original_msg) do
     new_state = %Raxol.UI.Components.Modal{state | visible: false}
 
-    _ = send(
-      self(),
-      {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
-    )
+    _ =
+      send(
+        self(),
+        {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+      )
 
     {new_state, [original_msg]}
   end
 
   @doc "Handles button click operations."
-  @spec handle_button_click(Raxol.UI.Components.Modal.t(), any()) :: {Raxol.UI.Components.Modal.t(), list()}
+  @spec handle_button_click(Raxol.UI.Components.Modal.t(), any()) ::
+          {Raxol.UI.Components.Modal.t(), list()}
   def handle_button_click(state, btn_msg) do
     new_state = %Raxol.UI.Components.Modal{state | visible: false}
 
-    _ = send(
-      self(),
-      {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
-    )
+    _ =
+      send(
+        self(),
+        {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
+      )
 
     {new_state, [btn_msg]}
   end
 
   @doc "Handles unknown messages."
-  @spec handle_unknown_message(Raxol.UI.Components.Modal.t(), any()) :: {Raxol.UI.Components.Modal.t(), list()}
+  @spec handle_unknown_message(Raxol.UI.Components.Modal.t(), any()) ::
+          {Raxol.UI.Components.Modal.t(), list()}
   def handle_unknown_message(state, msg) do
     Raxol.Core.Runtime.Log.warning(
       "Modal #{Map.get(state, :id, nil)} received unknown message: #{inspect(msg)}"

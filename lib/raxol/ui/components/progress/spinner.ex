@@ -1,274 +1,211 @@
 defmodule Raxol.UI.Components.Progress.Spinner do
   @moduledoc """
-  Handles spinner components.
+  Animated spinner component for terminal UIs.
+
+  Provides various spinner animations for loading states.
   """
 
-  require Raxol.View.Elements
+  @type state :: %{
+          style: atom(),
+          frames: list(String.t()),
+          frame_index: non_neg_integer(),
+          color_index: non_neg_integer(),
+          colors: list(atom()),
+          speed: non_neg_integer(),
+          text: String.t() | nil,
+          text_position: atom(),
+          last_update: integer()
+        }
+
+  @spinner_frames %{
+    dots: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
+    line: ["|", "/", "-", "\\"],
+    circle: ["( )", "(.)", "(o)", "(O)", "(o)", "(.)"],
+    arrow: ["v  ", "<  ", "^  ", ">  "],
+    bounce: ["⠁", "⠂", "⠄", "⠂"],
+    pulse: [
+      "[    ]",
+      "[=   ]",
+      "[==  ]",
+      "[=== ]",
+      "[====]",
+      "[=== ]",
+      "[==  ]",
+      "[=   ]"
+    ],
+    wave: ["~   ", " ~  ", "  ~ ", "   ~", "  ~ ", " ~  "],
+    dots3: [".  ", ".. ", "...", " ..", "  .", "   "],
+    square: ["[ ]", "[.]", "[o]", "[O]", "[o]", "[.]"],
+    flip: ["_", "_", "_", "-", "`", "`", "'", "'", "-", "_"]
+  }
 
   @doc """
-  Initializes a spinner state with the given properties.
+  Creates an animated spinner.
+
+  ## Parameters
+  - `message` - Optional message to display next to spinner
+  - `frame` - Current animation frame number
+  - `opts` - Options including :type for spinner style
   """
-  def init(props \\ %{}) do
+  @spec spinner(binary() | nil, integer(), keyword()) :: binary()
+  def spinner(message \\ nil, frame, opts \\ [])
+
+  def spinner(nil, frame, opts) do
+    type = Keyword.get(opts, :type, :dots)
+    frames = Map.get(@spinner_frames, type, @spinner_frames.dots)
+    frame_index = rem(frame, length(frames))
+
+    Enum.at(frames, frame_index)
+  end
+
+  def spinner(message, frame, opts) when is_binary(message) do
+    spinner_char = spinner(nil, frame, opts)
+    "#{spinner_char} #{message}"
+  end
+
+  def spinner(_, frame, opts), do: spinner(nil, frame, opts)
+
+  @doc """
+  Returns available spinner types.
+  """
+  @spec types() :: list(atom())
+  def types do
+    Map.keys(@spinner_frames)
+  end
+
+  @doc """
+  Gets the frames for a specific spinner type.
+  """
+  @spec frames(atom()) :: list(binary())
+  def frames(type) when is_atom(type) do
+    Map.get(@spinner_frames, type, @spinner_frames.dots)
+  end
+
+  @doc """
+  Initializes spinner state.
+  """
+  @spec init(map()) :: state()
+  def init(props) do
     style = Map.get(props, :style, :dots)
-    frames = get_frames_for_style(style, Map.get(props, :frames))
-    colors = Map.get(props, :colors, [:white])
+    custom_frames = Map.get(props, :frames)
+
+    frames =
+      if custom_frames do
+        custom_frames
+      else
+        Map.get(@spinner_frames, style, @spinner_frames.dots)
+      end
 
     %{
       style: style,
       frames: frames,
       frame_index: 0,
-      colors: colors,
       color_index: 0,
+      colors: Map.get(props, :colors, [:white]),
       speed: Map.get(props, :speed, 80),
-      text: Map.get(props, :text),
+      text: Map.get(props, :text, nil),
       text_position: Map.get(props, :text_position, :right),
       last_update: System.monotonic_time(:millisecond)
     }
   end
 
   @doc """
-  Updates the spinner state based on the given event.
+  Updates spinner state.
   """
+  @spec update(atom(), state()) :: state()
   def update(:tick, state) do
     current_time = System.monotonic_time(:millisecond)
-    update_spinner_if_time_elapsed(current_time, state)
-  end
+    elapsed = current_time - state.last_update
 
-  def update(:reset, state) do
-    %{state | frame_index: 0, color_index: 0}
-  end
+    if elapsed >= state.speed do
+      new_frame_index = rem(state.frame_index + 1, length(state.frames))
 
-  def update({:set_text, text}, state) do
-    %{state | text: text}
+      new_color_index =
+        if length(state.colors) > 0 do
+          rem(state.color_index + 1, length(state.colors))
+        else
+          0
+        end
+
+      %{state |
+        frame_index: new_frame_index,
+        color_index: new_color_index,
+        last_update: current_time}
+    else
+      state
+    end
   end
 
   def update({:set_style, style}, state) do
-    frames = get_frames_for_style(style)
-    %{state | style: style, frames: frames, frame_index: 0}
-  end
-
-  def update({:set_custom_frames, frames}, state) do
-    %{state | style: :custom, frames: frames, frame_index: 0}
-  end
-
-  def update({:set_colors, colors}, state) do
-    %{state | colors: colors, color_index: 0}
+    new_frames = Map.get(@spinner_frames, style, @spinner_frames.dots)
+    %{state | style: style, frames: new_frames, frame_index: 0}
   end
 
   def update({:set_speed, speed}, state) do
     %{state | speed: speed}
   end
 
+  def update({:set_colors, colors}, state) do
+    %{state | colors: colors, color_index: 0}
+  end
+
+  def update({:set_text, text}, state) do
+    %{state | text: text}
+  end
+
+  def update({:set_custom_frames, frames}, state) do
+    %{state | style: :custom, frames: frames, frame_index: 0}
+  end
+
+  def update(:reset, state) do
+    %{state | frame_index: 0, color_index: 0}
+  end
+
+  def update(_message, state), do: state
+
   @doc """
-  Handles events for the spinner component.
+  Convenience function for creating a saving spinner.
   """
-  def handle_event(
-        %Raxol.Core.Events.Event{type: :timer, data: %{id: :spinner_timer}},
-        _model,
-        state
-      ) do
+  @spec saving() :: state()
+  def saving do
+    init(%{style: :pulse, text: "Saving", colors: [:yellow, :green], speed: 500})
+  end
+
+  @doc """
+  Convenience function for creating a loading spinner.
+  """
+  @spec loading() :: state()
+  def loading do
+    init(%{style: :dots, text: "Loading", colors: [:white], speed: 150})
+  end
+
+  @doc """
+  Convenience function for creating a processing spinner.
+  """
+  @spec processing(String.t()) :: state()
+  def processing(message) do
+    init(%{style: :dots, text: message, colors: [:blue, :cyan, :green], speed: 100})
+  end
+
+  @doc """
+  Convenience function for creating an error spinner.
+  """
+  @spec error(String.t()) :: state()
+  def error(message) do
+    init(%{style: :pulse, text: message, colors: [:red], speed: 1000})
+  end
+
+  @doc """
+  Handles frame events (for compatibility with some tests).
+  """
+  @spec handle_event(any(), map(), state()) :: {state(), list()}
+  def handle_event(%{type: :timer}, _context, state) do
     {update(:tick, state), []}
   end
 
-  def handle_event(_event, _model, state) do
-    {state, []}
+  def handle_event(:frame, _context, state) do
+    {update(:tick, state), []}
   end
 
-  @doc """
-  Creates a default loading spinner.
-  """
-  def loading do
-    init(%{text: "Loading"})
-  end
-
-  @doc """
-  Creates a processing spinner with the given text.
-  """
-  def processing(text) do
-    init(%{
-      text: text,
-      colors: [:blue, :cyan, :green],
-      speed: 100
-    })
-  end
-
-  @doc """
-  Creates a saving spinner.
-  """
-  def saving do
-    init(%{
-      style: :pulse,
-      text: "Saving",
-      colors: [:yellow, :green],
-      speed: 500
-    })
-  end
-
-  @doc """
-  Creates an error spinner with the given text.
-  """
-  def error(text) do
-    init(%{
-      style: :pulse,
-      text: text,
-      colors: [:red],
-      speed: 1000
-    })
-  end
-
-  @spec render_spinner(map()) :: any()
-  def render_spinner(state) do
-    # Based on original spinner logic
-    frame =
-      Enum.at(state.frames, state.frame_index, "?")
-
-    Raxol.View.Elements.row id: Map.get(state, :id, nil), style: state.style do
-      Raxol.View.Elements.label(content: frame)
-      _ = render_label_if_present(state.label)
-    end
-  end
-
-  @spec spinner(String.t() | nil, integer(), keyword()) :: any()
-  @doc """
-  Renders a spinner animation for indicating loading or processing.
-
-  ## Parameters
-
-  * `message` - Optional message to display next to the spinner
-  * `frame` - Current animation frame (integer, typically incremented on each render)
-  * `opts` - Options for customizing the spinner
-
-  ## Options
-
-  * `:id` - Unique identifier for the spinner (default: "spinner")
-  * `:style` - Style for the spinner container
-  * `:spinner_style` - Style for the spinner character
-  * `:message_style` - Style for the message text
-  * `:type` - Type of spinner animation (default: :dots)
-
-  ## Returns
-
-  A view element representing the spinner.
-
-  ## Example
-
-  ```elixir
-  # In your update function, increment the frame on each update
-  def update(model, :tick) do
-    %{model | spinner_frame: model.spinner_frame + 1}
-  end
-
-  # In your view function
-  Progress.Spinner.spinner(
-    "Processing data...",
-    model.spinner_frame,
-    type: :braille,
-    spinner_style: %{fg: :cyan}
-  )
-  ```
-  """
-  def spinner(message \\ nil, frame, opts \\ []) do
-    # Extract options with defaults
-    id = Keyword.get(opts, :id, "spinner")
-    style = Keyword.get(opts, :style, %{})
-    spinner_style = Keyword.get(opts, :spinner_style, %{fg: :blue})
-    message_style = Keyword.get(opts, :message_style, %{})
-    spinner_type = Keyword.get(opts, :type, :dots)
-
-    # Get spinner frames
-    frames = Map.get(spinner_types(), spinner_type, default_spinner_frames())
-
-    # Calculate current frame to display
-    frame_index = rem(frame, length(frames))
-    current_frame = Enum.at(frames, frame_index)
-
-    # Create the spinner with optional message
-    Raxol.View.Elements.row([id: id, style: style],
-      do: fn ->
-        # Create spinner character element
-        spinner_element =
-          Raxol.View.Elements.label(
-            content: current_frame,
-            style: spinner_style
-          )
-
-        # Create message element if provided
-        message_element = create_message_element(message, message_style)
-
-        # Return elements, filtering nil
-        [spinner_element, message_element]
-        |> Enum.reject(&is_nil/1)
-      end
-    )
-  end
-
-  # Helper functions
-  defp default_spinner_frames do
-    [
-      "⠋",
-      "⠙",
-      "⠹",
-      "⠸",
-      "⠼",
-      "⠴",
-      "⠦",
-      "⠧",
-      "⠇",
-      "⠏"
-    ]
-  end
-
-  defp spinner_types do
-    %{
-      dots: default_spinner_frames(),
-      line: ["|", "/", "-", "\\"],
-      braille: ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"],
-      pulse: ["█", "▓", "▒", "░"],
-      circle: ["◐", "◓", "◑", "◒"],
-      bounce: ["⠁", "⠂", "⠄", "⠂"]
-    }
-  end
-
-  defp get_frames_for_style(style, custom_frames \\ nil) do
-    case style do
-      :custom when not is_nil(custom_frames) -> custom_frames
-      :custom -> default_spinner_frames()
-      _ -> Map.get(spinner_types(), style, default_spinner_frames())
-    end
-  end
-
-  # Helper functions for pattern matching instead of if statements
-
-  defp update_spinner_if_time_elapsed(current_time, state) do
-    case current_time - state.last_update >= state.speed do
-      true ->
-        %{
-          state
-          | frame_index: rem(state.frame_index + 1, length(state.frames)),
-            color_index: rem(state.color_index + 1, length(state.colors)),
-            last_update: current_time
-        }
-
-      false ->
-        state
-    end
-  end
-
-  defp render_label_if_present(nil), do: nil
-
-  defp render_label_if_present(label) do
-    Raxol.View.Elements.label(
-      content: label,
-      style: %{margin_left: 1}
-    )
-  end
-
-  defp create_message_element(nil, _message_style), do: nil
-
-  defp create_message_element(message, message_style) do
-    Raxol.View.Elements.label(
-      content: " #{message}",
-      style: message_style
-    )
-  end
+  def handle_event(_event, _context, state), do: {state, []}
 end

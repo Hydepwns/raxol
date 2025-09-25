@@ -96,7 +96,8 @@ defmodule Raxol.Core.Metrics.Aggregator do
   @doc """
   Calculates an aggregation of values using the specified method.
   """
-  @spec calculate_aggregation(list(number()), atom() | {:percentile, float()}) :: number()
+  @spec calculate_aggregation(list(number()), atom() | {:percentile, float()}) ::
+          number()
   def calculate_aggregation(values, :mean) do
     Enum.sum(values) / length(values)
   end
@@ -220,6 +221,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
     {:noreply, new_state}
   end
 
+  @spec validate_rule(any()) :: {:ok, any()} | {:error, any()}
   defp validate_rule(rule) do
     %{
       type: Map.get(rule, :type, :mean),
@@ -230,6 +232,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
     }
   end
 
+  @spec aggregate_metrics(any(), any()) :: any()
   defp aggregate_metrics(metrics, rule) do
     metrics
     |> group_metrics(rule.group_by)
@@ -248,10 +251,12 @@ defmodule Raxol.Core.Metrics.Aggregator do
     end)
   end
 
+  @spec group_metrics(any(), any()) :: any()
   defp group_metrics(metrics, []) do
     [{"all", metrics}]
   end
 
+  @spec group_metrics(any(), any()) :: any()
   defp group_metrics(metrics, group_by) do
     metrics
     |> Enum.group_by(fn metric ->
@@ -262,6 +267,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
     end)
   end
 
+  @spec update_all_aggregations(map()) :: any()
   defp update_all_aggregations(state) do
     Enum.reduce(state.rules, state, fn {rule_id, rule}, acc_state ->
       metrics = UnifiedCollector.get_metrics(rule.metric_name, rule.tags)

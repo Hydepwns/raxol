@@ -148,7 +148,7 @@ defmodule Raxol.Benchmark.Runner do
             emulator,
             "Hello, World!"
           )
-        end,
+        end
         # Commented out due to dialyzer type issues - need to fix emulator struct
         # "Cursor movement" => fn ->
         #   emulator = create_test_emulator()
@@ -472,7 +472,7 @@ defmodule Raxol.Benchmark.Runner do
 
   defmodule TestPlugin do
     @moduledoc "Test plugin for benchmark runner testing."
-    @behaviour Raxol.Plugin
+    # Removed undefined @behaviour Raxol.Plugin
     def init(_), do: {:ok, %{}}
     def commands, do: []
     def handle_event(_, state), do: {:ok, state}

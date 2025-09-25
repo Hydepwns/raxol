@@ -41,7 +41,9 @@ defmodule Raxol.UI.Components.Input.SelectList do
     "Tab" => :tab,
     :tab => :tab,
     "Backspace" => :backspace,
-    :backspace => :backspace
+    :backspace => :backspace,
+    "Space" => :space,
+    :space => :space
   }
 
   # Example: {"Option Label", :option_value}
@@ -115,11 +117,14 @@ defmodule Raxol.UI.Components.Input.SelectList do
       focused_index: 0,
       scroll_offset: 0,
       search_text: "",
+      search_query: "",
       filtered_options: nil,
       is_filtering: false,
       selected_indices: MapSet.new(),
+      selected_index: 0,
       is_search_focused: false,
       page_size: 10,
+      visible_items: 10,
       current_page: 0,
       enable_search: false,
       multiple: false,
@@ -134,7 +139,12 @@ defmodule Raxol.UI.Components.Input.SelectList do
       search_timer: nil,
       theme: %{},
       style: %{},
-      on_focus: nil
+      on_focus: nil,
+      selected_marker: "> ",
+      selected_style: %{reverse: true},
+      search_enabled: false,
+      paginated: false,
+      search_active: false
     }
 
     # Merge validated props with default internal state
@@ -403,6 +413,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
     :navigation_home => {:navigation, :home},
     :navigation_end => {:navigation, :end},
     :enter => {:selection, :enter},
+    :space => {:selection, :space},
     :tab => {:search, :toggle_focus},
     :backspace => {:search, :backspace}
   }
@@ -422,6 +433,11 @@ defmodule Raxol.UI.Components.Input.SelectList do
   end
 
   defp execute_key_action({:selection, :enter}, state) do
+    Selection.update_selection_state(state, state.focused_index)
+  end
+
+  defp execute_key_action({:selection, :space}, state) do
+    # Space key toggles selection in multiple mode, selects in single mode
     Selection.update_selection_state(state, state.focused_index)
   end
 

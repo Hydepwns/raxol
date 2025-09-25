@@ -81,73 +81,80 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
     Mix.shell().info("Running Terminal Component Memory Benchmarks...")
 
     config = memory_benchmark_config(opts)
-
-    jobs = %{
-      # Large Terminal Sizes - Tests memory scaling
-      "large_terminal_1000x1000" => fn ->
-        # Allocate a very large terminal buffer
-        _cells =
-          for _row <- 1..1000, _col <- 1..1000 do
-            %{char: " ", fg: :white, bg: :black, style: %{}}
-          end
-
-        :ok
-      end,
-      "huge_terminal_2000x2000" => fn ->
-        # Massive terminal allocation
-        _cells =
-          for _row <- 1..2000, _col <- 1..2000 do
-            %{char: "█", fg: :red, bg: :blue, style: %{bold: true}}
-          end
-
-        :ok
-      end,
-
-      # Multiple Concurrent Buffers
-      "multiple_terminal_buffers" => fn ->
-        # Simulate multiple terminal sessions
-        _buffers =
-          for _i <- 1..10 do
-            for _row <- 1..100, _col <- 1..100 do
-              %{char: "X", fg: :green, bg: :black, style: %{}}
-            end
-          end
-
-        :ok
-      end,
-
-      # Memory Manager Integration
-      "memory_manager_stress" => fn ->
-        # Test memory manager with heavy allocations
-        {:ok, manager} = Raxol.Terminal.MemoryManager.start_link()
-
-        # Allocate large chunks repeatedly
-        for _i <- 1..100 do
-          _large_chunk = Enum.map(1..10_000, fn j -> "Memory chunk #{j}" end)
-        end
-
-        GenServer.stop(manager)
-        :ok
-      end,
-
-      # Scrollback Buffer Memory
-      "scrollback_buffer_large" => fn ->
-        # Simulate large scrollback history
-        _scrollback =
-          for line <- 1..10_000 do
-            line_content =
-              Enum.map(1..120, fn col ->
-                %{char: "#{rem(col, 10)}", fg: :white, bg: :black}
-              end)
-
-            {line, line_content}
-          end
-
-        :ok
-      end
-    }
+    jobs = build_terminal_memory_jobs()
 
     Benchee.run(jobs, config)
+  end
+
+  defp build_terminal_memory_jobs do
+    %{
+      "large_terminal_1000x1000" => &benchmark_large_terminal/0,
+      "huge_terminal_2000x2000" => &benchmark_huge_terminal/0,
+      "multiple_terminal_buffers" => &benchmark_multiple_buffers/0,
+      "memory_manager_stress" => &benchmark_memory_manager/0,
+      "scrollback_buffer_large" => &benchmark_scrollback_buffer/0
+    }
+  end
+
+  defp benchmark_large_terminal do
+    # Allocate a very large terminal buffer
+    _cells = create_terminal_cells(1000, 1000, " ", :white, :black, %{})
+    :ok
+  end
+
+  defp benchmark_huge_terminal do
+    # Massive terminal allocation
+    _cells = create_terminal_cells(2000, 2000, "█", :red, :blue, %{bold: true})
+    :ok
+  end
+
+  defp benchmark_multiple_buffers do
+    # Simulate multiple terminal sessions
+    _buffers =
+      for _i <- 1..10 do
+        create_terminal_cells(100, 100, "X", :green, :black, %{})
+      end
+
+    :ok
+  end
+
+  defp benchmark_memory_manager do
+    # Test memory manager with heavy allocations
+    {:ok, manager} = Raxol.Terminal.MemoryManager.start_link()
+
+    allocate_memory_chunks(100, 10_000)
+
+    GenServer.stop(manager)
+    :ok
+  end
+
+  defp benchmark_scrollback_buffer do
+    # Simulate large scrollback history
+    _scrollback = create_scrollback_history(10_000, 120)
+    :ok
+  end
+
+  defp create_terminal_cells(rows, cols, char, fg, bg, style) do
+    for _row <- 1..rows, _col <- 1..cols do
+      %{char: char, fg: fg, bg: bg, style: style}
+    end
+  end
+
+  defp allocate_memory_chunks(iterations, size) do
+    for _i <- 1..iterations do
+      _large_chunk = Enum.map(1..size, fn j -> "Memory chunk #{j}" end)
+    end
+  end
+
+  defp create_scrollback_history(lines, width) do
+    for line <- 1..lines do
+      line_content =
+        Enum.map(1..width, fn col ->
+          %{char: "#{rem(col, 10)}", fg: :white, bg: :black}
+        end)
+
+      {line, line_content}
+    end
   end
 
   # =============================================================================
@@ -158,99 +165,119 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
     Mix.shell().info("Running Buffer Operations Memory Benchmarks...")
 
     config = memory_benchmark_config(opts)
-
-    jobs = %{
-      # Intensive Write Operations
-      "buffer_heavy_writes" => fn ->
-        # Simulate heavy writing to buffer
-        buffer_content =
-          for line <- 1..1000 do
-            for col <- 1..200 do
-              %{
-                char: "#{rem(line + col, 10)}",
-                fg: :cyan,
-                bg: :black,
-                style: %{italic: true}
-              }
-            end
-          end
-
-        # Add metadata for each line
-        _buffer_with_metadata =
-          Enum.map(buffer_content, fn line ->
-            %{
-              content: line,
-              timestamp: System.monotonic_time(),
-              metadata: %{dirty: true, rendered: false}
-            }
-          end)
-
-        :ok
-      end,
-
-      # Complex Character Data
-      "unicode_heavy_buffer" => fn ->
-        # Test with complex Unicode characters (higher memory per char)
-        unicode_chars = ["🌟", "🚀", "💎", "🔥", "⚡", "🎯", "🌈", "🎨", "🎭", "🎪"]
-
-        _unicode_buffer =
-          for _row <- 1..500, _col <- 1..100 do
-            char = Enum.random(unicode_chars)
-
-            %{
-              char: char,
-              fg: Enum.random([:red, :green, :blue, :yellow, :magenta]),
-              bg: :black,
-              style: %{bold: true, underline: true},
-              unicode_data: %{
-                codepoint: String.to_charlist(char) |> hd(),
-                # Wide characters
-                width: 2,
-                combining: false
-              }
-            }
-          end
-
-        :ok
-      end,
-
-      # Memory Fragmentation Test
-      "buffer_fragmentation" => fn ->
-        # Create many small allocations to test fragmentation
-        _fragments =
-          for _i <- 1..10_000 do
-            # Small random-sized allocations
-            size = Enum.random(10..100)
-            Enum.map(1..size, fn j -> "Fragment #{j}" end)
-          end
-
-        :ok
-      end,
-
-      # Graphics and Sixel Memory
-      "graphics_memory_simulation" => fn ->
-        # Simulate graphics/image data in terminal
-        width = 800
-        height = 600
-
-        _image_data =
-          for _y <- 1..height do
-            for _x <- 1..width do
-              %{
-                r: Enum.random(0..255),
-                g: Enum.random(0..255),
-                b: Enum.random(0..255),
-                a: 255,
-                palette_index: Enum.random(0..255)
-              }
-            end
-          end
-
-        :ok
-      end
-    }
+    jobs = build_buffer_memory_jobs()
 
     Benchee.run(jobs, config)
+  end
+
+  defp build_buffer_memory_jobs do
+    %{
+      "buffer_heavy_writes" => &benchmark_heavy_writes/0,
+      "unicode_heavy_buffer" => &benchmark_unicode_buffer/0,
+      "buffer_fragmentation" => &benchmark_fragmentation/0,
+      "graphics_memory_simulation" => &benchmark_graphics_memory/0
+    }
+  end
+
+  defp benchmark_heavy_writes do
+    # Simulate heavy writing to buffer
+    buffer_content = create_buffer_content(1000, 200)
+    _buffer_with_metadata = add_buffer_metadata(buffer_content)
+    :ok
+  end
+
+  defp benchmark_unicode_buffer do
+    # Test with complex Unicode characters (higher memory per char)
+    _unicode_buffer = create_unicode_buffer(500, 100)
+    :ok
+  end
+
+  defp benchmark_fragmentation do
+    # Create many small allocations to test fragmentation
+    _fragments = create_memory_fragments(10_000)
+    :ok
+  end
+
+  defp benchmark_graphics_memory do
+    # Simulate graphics/image data in terminal
+    _image_data = create_image_data(800, 600)
+    :ok
+  end
+
+  defp create_buffer_content(lines, cols) do
+    for line <- 1..lines do
+      for col <- 1..cols do
+        %{
+          char: "#{rem(line + col, 10)}",
+          fg: :cyan,
+          bg: :black,
+          style: %{italic: true}
+        }
+      end
+    end
+  end
+
+  defp add_buffer_metadata(buffer_content) do
+    Enum.map(buffer_content, fn line ->
+      %{
+        content: line,
+        timestamp: System.monotonic_time(),
+        metadata: %{dirty: true, rendered: false}
+      }
+    end)
+  end
+
+  defp create_unicode_buffer(rows, cols) do
+    unicode_chars = get_unicode_test_chars()
+
+    for _row <- 1..rows, _col <- 1..cols do
+      build_unicode_cell(unicode_chars)
+    end
+  end
+
+  defp get_unicode_test_chars do
+    ["🌟", "🚀", "💎", "🔥", "⚡", "🎯", "🌈", "🎨", "🎭", "🎪"]
+  end
+
+  defp build_unicode_cell(unicode_chars) do
+    char = Enum.random(unicode_chars)
+
+    %{
+      char: char,
+      fg: Enum.random([:red, :green, :blue, :yellow, :magenta]),
+      bg: :black,
+      style: %{bold: true, underline: true},
+      unicode_data: build_unicode_data(char)
+    }
+  end
+
+  defp build_unicode_data(char) do
+    %{
+      codepoint: String.to_charlist(char) |> hd(),
+      width: 2,
+      combining: false
+    }
+  end
+
+  defp create_memory_fragments(count) do
+    for _i <- 1..count do
+      size = Enum.random(10..100)
+      Enum.map(1..size, fn j -> "Fragment #{j}" end)
+    end
+  end
+
+  defp create_image_data(width, height) do
+    for _y <- 1..height do
+      for _x <- 1..width do
+        %{
+          r: Enum.random(0..255),
+          g: Enum.random(0..255),
+          b: Enum.random(0..255),
+          a: 255,
+          palette_index: Enum.random(0..255)
+        }
+      end
+    end
   end
 
   # =============================================================================
@@ -261,106 +288,132 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
     Mix.shell().info("Running Realistic Usage Simulation Memory Benchmarks...")
 
     config = memory_benchmark_config(opts)
-
-    jobs = %{
-      # Vim Session Simulation
-      "vim_editing_simulation" => fn ->
-        # Simulate editing a large file in vim
-        file_lines = 5000
-        line_length = 120
-
-        # File content with syntax highlighting data
-        _file_buffer =
-          for line_num <- 1..file_lines do
-            line_content = generate_code_line(line_num, line_length)
-            syntax_highlighting = generate_syntax_data(line_content)
-
-            %{
-              line_number: line_num,
-              content: line_content,
-              highlighting: syntax_highlighting,
-              metadata: %{
-                modified: Enum.random([true, false]),
-                dirty: false,
-                folded: line_num > 100 && rem(line_num, 50) == 0
-              }
-            }
-          end
-
-        :ok
-      end,
-
-      # Log Streaming Simulation
-      "log_streaming_simulation" => fn ->
-        # Simulate continuous log output
-        log_entries = 20_000
-
-        _log_buffer =
-          for i <- 1..log_entries do
-            timestamp = System.system_time(:millisecond)
-            level = Enum.random([:debug, :info, :warn, :error])
-            message = generate_log_message(i, level)
-
-            %{
-              timestamp: timestamp,
-              level: level,
-              message: message,
-              formatted: format_log_entry(timestamp, level, message),
-              metadata: %{
-                source: "application.#{rem(i, 10)}",
-                thread: "thread-#{rem(i, 4)}",
-                correlation_id: generate_uuid()
-              }
-            }
-          end
-
-        :ok
-      end,
-
-      # Interactive Shell Session
-      "shell_session_simulation" => fn ->
-        # Simulate an interactive shell with command history
-        command_history = 1000
-
-        _shell_state = %{
-          history: generate_command_history(command_history),
-          current_directory: "/very/long/path/to/current/working/directory",
-          environment: generate_environment_variables(),
-          output_buffer: generate_shell_output_buffer(),
-          prompt_state: %{
-            user: "developer",
-            hostname: "development-machine",
-            git_branch: "feature/memory-benchmarking-enhancement",
-            last_command_duration: 1234
-          }
-        }
-
-        :ok
-      end,
-
-      # Multi-pane Terminal Setup
-      "multi_pane_simulation" => fn ->
-        # Simulate tmux/screen with multiple panes
-        pane_count = 8
-
-        _panes =
-          for pane_id <- 1..pane_count do
-            %{
-              id: pane_id,
-              dimensions: {80, 24},
-              buffer: generate_pane_buffer(pane_id),
-              scrollback: generate_scrollback(pane_id),
-              application:
-                Enum.random([:vim, :htop, :tail, :ssh, :git, :shell]),
-              active: pane_id == 1
-            }
-          end
-
-        :ok
-      end
-    }
+    jobs = build_simulation_memory_jobs()
 
     Benchee.run(jobs, config)
+  end
+
+  defp build_simulation_memory_jobs do
+    %{
+      "vim_editing_simulation" => &benchmark_vim_session/0,
+      "log_streaming_simulation" => &benchmark_log_streaming/0,
+      "shell_session_simulation" => &benchmark_shell_session/0,
+      "multi_pane_simulation" => &benchmark_multi_pane/0
+    }
+  end
+
+  defp benchmark_vim_session do
+    # Simulate editing a large file in vim
+    _file_buffer = generate_vim_file_buffer(5000, 120)
+    :ok
+  end
+
+  defp benchmark_log_streaming do
+    # Simulate continuous log output
+    _log_buffer = generate_log_buffer(20_000)
+    :ok
+  end
+
+  defp benchmark_shell_session do
+    # Simulate an interactive shell with command history
+    _shell_state = generate_shell_state(1000)
+    :ok
+  end
+
+  defp benchmark_multi_pane do
+    # Simulate tmux/screen with multiple panes
+    _panes = generate_terminal_panes(8)
+    :ok
+  end
+
+  defp generate_vim_file_buffer(file_lines, line_length) do
+    for line_num <- 1..file_lines do
+      generate_vim_line_data(line_num, line_length)
+    end
+  end
+
+  defp generate_vim_line_data(line_num, line_length) do
+    line_content = generate_code_line(line_num, line_length)
+    syntax_highlighting = generate_syntax_data(line_content)
+
+    %{
+      line_number: line_num,
+      content: line_content,
+      highlighting: syntax_highlighting,
+      metadata: build_vim_line_metadata(line_num)
+    }
+  end
+
+  defp build_vim_line_metadata(line_num) do
+    %{
+      modified: Enum.random([true, false]),
+      dirty: false,
+      folded: line_num > 100 && rem(line_num, 50) == 0
+    }
+  end
+
+  defp generate_log_buffer(log_entries) do
+    for i <- 1..log_entries do
+      generate_log_entry(i)
+    end
+  end
+
+  defp generate_log_entry(index) do
+    timestamp = System.system_time(:millisecond)
+    level = Enum.random([:debug, :info, :warn, :error])
+    message = generate_log_message(index, level)
+
+    %{
+      timestamp: timestamp,
+      level: level,
+      message: message,
+      formatted: format_log_entry(timestamp, level, message),
+      metadata: build_log_metadata(index)
+    }
+  end
+
+  defp build_log_metadata(index) do
+    %{
+      source: "application.#{rem(index, 10)}",
+      thread: "thread-#{rem(index, 4)}",
+      correlation_id: generate_uuid()
+    }
+  end
+
+  defp generate_shell_state(command_history_size) do
+    %{
+      history: generate_command_history(command_history_size),
+      current_directory: "/very/long/path/to/current/working/directory",
+      environment: generate_environment_variables(),
+      output_buffer: generate_shell_output_buffer(),
+      prompt_state: build_prompt_state()
+    }
+  end
+
+  defp build_prompt_state do
+    %{
+      user: "developer",
+      hostname: "development-machine",
+      git_branch: "feature/memory-benchmarking-enhancement",
+      last_command_duration: 1234
+    }
+  end
+
+  defp generate_terminal_panes(pane_count) do
+    for pane_id <- 1..pane_count do
+      generate_pane_data(pane_id)
+    end
+  end
+
+  defp generate_pane_data(pane_id) do
+    %{
+      id: pane_id,
+      dimensions: {80, 24},
+      buffer: generate_pane_buffer(pane_id),
+      scrollback: generate_scrollback(pane_id),
+      application: Enum.random([:vim, :htop, :tail, :ssh, :git, :shell]),
+      active: pane_id == 1
+    }
   end
 
   # =============================================================================

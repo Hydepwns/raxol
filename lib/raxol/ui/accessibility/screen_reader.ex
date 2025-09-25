@@ -411,11 +411,12 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         :paragraph -> "paragraph by paragraph"
       end
 
-    _announcement = announce_to_screen_reader(
-      new_state,
-      "Reading mode: #{mode_description}",
-      :polite
-    )
+    _announcement =
+      announce_to_screen_reader(
+        new_state,
+        "Reading mode: #{mode_description}",
+        :polite
+      )
 
     {:reply, :ok, new_state}
   end
@@ -449,7 +450,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         false -> "disabled"
       end
 
-    _announcement = announce_to_screen_reader(new_state, "#{feature_name} #{status}", :polite)
+    _announcement =
+      announce_to_screen_reader(new_state, "#{feature_name} #{status}", :polite)
 
     {:reply, :ok, new_state}
   end
@@ -502,7 +504,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   def handle_cast({:describe_formatting, element_id, formatting}, state) do
     description = generate_formatting_description(formatting)
 
-    _announcement = announce_formatting_if_present(state, element_id, description)
+    _announcement =
+      announce_formatting_if_present(state, element_id, description)
 
     {:noreply, state}
   end
@@ -1195,7 +1198,13 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
        do: new_state
 
   defp handle_live_region_update(_live, true, new_state, properties, component) do
-    _announcement = announce_to_screen_reader(new_state, properties.text, component.config.live)
+    _announcement =
+      announce_to_screen_reader(
+        new_state,
+        properties.text,
+        component.config.live
+      )
+
     update_live_regions(new_state, properties.text, component.config.live)
   end
 

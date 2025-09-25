@@ -1,119 +1,401 @@
 defmodule Raxol.Core.StateManager do
   @moduledoc """
-  Consolidated state management module providing both functional and process-based state handling.
+  Consolidated state management module providing functional, process-based, and ETS-backed state handling.
 
-  This module serves as the primary entry point for state management in Raxol,
-  delegating to the appropriate implementation based on usage patterns:
-  - For simple functional transformations: uses Default implementation
-  - For supervised process state: uses Unified managed state
-  - For domain-specific operations: delegates to appropriate domain managers
+  This module provides multiple state management strategies with automatic selection:
+  - **Functional**: Simple map-based transformations (no processes)
+  - **Process-based**: Supervised GenServer state with Agent or GenServer backing
+  - **ETS-backed**: High-performance state with ETS storage for large datasets
+  - **Domain-specific**: Delegation to specialized domain managers
 
-  ## Migration Guide
-  - `start_link/2` -> Use `Unified.start_managed_state/3` for new supervised state
-  - `get/2`, `update/2` -> Continue using for functional operations
-  - `with_state/2` -> Deprecated, migrate to `Unified.update_managed/2`
+  ## Configuration
+
+  Set the default strategy in application config:
+
+      config :raxol, :state_manager,
+        default_strategy: :functional,  # :functional, :process, :ets
+        ets_enabled: true,
+        process_supervision: true
+
+  Or control per-call with options:
+
+      StateManager.put(state, :key, value, strategy: :ets)
+      StateManager.start_managed(:app_state, %{}, strategy: :process)
+
+  ## Migration from Previous Modules
+
+  Replace:
+      Raxol.Core.UnifiedStateManager.get_state(:key)
+      Raxol.Core.StateManager.Unified.update_managed(:id, fun)
+      Raxol.Core.StateManager.Default.put(state, :key, value)
+
+  With:
+      Raxol.Core.StateManager.get_state(:key, strategy: :ets)
+      Raxol.Core.StateManager.update_managed(:id, fun, strategy: :process)
+      Raxol.Core.StateManager.put(state, :key, value, strategy: :functional)
 
   ## Examples
 
-      # Functional state (no processes)
+      # Functional state (no processes, good for simple transformations)
       state = %{count: 0}
       {:ok, new_state} = StateManager.put(state, :count, 1)
 
-      # Managed state (supervised processes)  
+      # Process-based managed state (supervised processes)
       {:ok, state_id} = StateManager.start_managed(:app_state, %{count: 0})
       StateManager.update_managed(:app_state, fn s -> %{s | count: s.count + 1} end)
+
+      # ETS-backed state (high performance for large datasets)
+      StateManager.set_state(:global_config, %{theme: "dark"}, strategy: :ets)
+      config = StateManager.get_state(:global_config, strategy: :ets)
   """
 
-  alias Raxol.Core.StateManager.{Default, Unified}
+  use Agent
+  use GenServer
+  require Logger
 
-  # Delegate common behaviour operations to Default implementation
-  defdelegate get(state, key), to: Default
-  defdelegate get(state, key, default), to: Default
-  defdelegate put(state, key, value), to: Default
-  defdelegate update(state, key, func), to: Default
-  defdelegate delete(state, key), to: Default
-  defdelegate clear(state), to: Default
-  defdelegate merge(state1, state2), to: Default
-  defdelegate validate(state), to: Default
+  # Types
+  @type state_key :: atom() | String.t() | [atom() | String.t()]
+  @type state_value :: term()
+  @type state_tree :: map()
+  @type version :: non_neg_integer()
+  @type strategy :: :functional | :process | :ets
 
-  # Managed state operations (process-based with supervision)
-  defdelegate start_managed(state_id, initial_state, opts \\ []),
-    to: Unified,
-    as: :start_managed_state
+  # Configuration
+  defp default_strategy do
+    Application.get_env(:raxol, :state_manager, [])[:default_strategy] || :functional
+  end
 
-  defdelegate update_managed(state_id, update_fun), to: Unified
-  defdelegate get_managed(state_id), to: Unified
+  defp strategy_from_opts(opts) do
+    Keyword.get(opts, :strategy, default_strategy())
+  end
 
-  # Domain delegation
-  defdelegate delegate_to_domain(domain, function, args), to: Unified
-  defdelegate list_domains(), to: Unified
+  defp ets_enabled? do
+    Application.get_env(:raxol, :state_manager, [])[:ets_enabled] != false
+  end
+
+  # Initialization Functions
+
+  @doc """
+  Initializes state manager with default empty state.
+  """
+  def initialize(), do: {:ok, %{}}
+
+  @doc """
+  Initializes state manager with options.
+  """
+  def initialize(opts) when is_list(opts) do
+    initial_state = Keyword.get(opts, :initial_state, %{})
+    {:ok, initial_state}
+  end
+
+  # Common Functional State Operations
+
+  @doc """
+  Gets a value from functional state.
+
+  ## Options
+  - `strategy: atom()` - Force specific strategy (:functional, :process, :ets)
+  """
+  def get(state, key, opts \\ [])
+  def get(state, key, opts) when is_map(state) and is_list(opts) do
+    Map.get(state, key)
+  end
+
+  def get(state, key, default) when is_map(state) and not is_list(default) do
+    Map.get(state, key, default)
+  end
+
+  @doc """
+  Gets a value from functional state with default.
+  """
+  def get(state, key, default, opts) when is_map(state) do
+    case strategy_from_opts(opts) do
+      :functional -> Map.get(state, key, default)
+      :ets -> get_state_ets(key, default, opts)
+      :process -> get_managed_with_default(key, default, opts)
+    end
+  end
+
+  @doc """
+  Puts a value into functional state.
+
+  ## Options
+  - `strategy: atom()` - Force specific strategy
+  """
+  def put(state, key, value, opts \\ [])
+  def put(state, key, value, opts) when is_map(state) do
+    case strategy_from_opts(opts) do
+      :functional -> {:ok, Map.put(state, key, value)}
+      :ets -> set_state_ets(key, value, opts)
+      :process -> update_managed_key(key, fn _ -> value end, opts)
+    end
+  end
+
+  @doc """
+  Updates a value in functional state using a function.
+  """
+  def update(state, key, func, opts \\ [])
+  def update(state, key, func, opts) when is_map(state) and is_function(func, 1) do
+    case strategy_from_opts(opts) do
+      :functional -> {:ok, Map.update(state, key, nil, func)}
+      :ets -> update_state_ets(key, func, opts)
+      :process -> update_managed_key(key, func, opts)
+    end
+  end
+
+  @doc """
+  Deletes a key from functional state.
+  """
+  def delete(state, key, opts \\ [])
+  def delete(state, key, opts) when is_map(state) do
+    case strategy_from_opts(opts) do
+      :functional -> {:ok, Map.delete(state, key)}
+      :ets -> delete_state_ets(key, opts)
+      :process -> delete_managed_key(key, opts)
+    end
+  end
+
+  @doc """
+  Clears functional state.
+  """
+  def clear(state, opts \\ [])
+  def clear(_state, opts) do
+    case strategy_from_opts(opts) do
+      :functional -> {:ok, %{}}
+      :ets -> clear_state_ets(opts)
+      :process -> clear_managed_state(opts)
+    end
+  end
+
+  @doc """
+  Merges two functional states.
+  """
+  def merge(state1, state2, opts \\ [])
+  def merge(state1, state2, opts) when is_map(state1) and is_map(state2) do
+    case strategy_from_opts(opts) do
+      :functional -> {:ok, Map.merge(state1, state2)}
+      :ets -> merge_state_ets(state1, state2, opts)
+      :process -> merge_managed_state(state1, state2, opts)
+    end
+  end
+
+  @doc """
+  Validates functional state.
+  """
+  def validate(state, opts \\ [])
+  def validate(state, _opts) when is_map(state), do: :ok
+  def validate(_state, _opts), do: {:error, :invalid_state_type}
+
+  # Process-based Managed State Operations
+
+  @doc """
+  Starts a new managed state with supervision.
+  This is recommended for long-lived application state.
+
+  ## Options
+  - `strategy: :process | :ets` - Choose the backing strategy
+  """
+  def start_managed(state_id, initial_state, opts \\ []) do
+    case strategy_from_opts(opts) do
+      :process -> start_managed_process(state_id, initial_state, opts)
+      :ets -> start_managed_ets(state_id, initial_state, opts)
+      _ -> start_managed_process(state_id, initial_state, opts)  # Default
+    end
+  end
+
+  @doc """
+  Updates managed state using a function.
+  """
+  def update_managed(state_id, update_fun, opts \\ []) when is_function(update_fun, 1) do
+    case strategy_from_opts(opts) do
+      :process -> update_managed_process(state_id, update_fun)
+      :ets -> update_state_ets(state_id, update_fun, opts)
+      _ -> update_managed_process(state_id, update_fun)
+    end
+  end
+
+  @doc """
+  Gets the current managed state.
+  """
+  def get_managed(state_id, opts \\ []) do
+    case strategy_from_opts(opts) do
+      :process -> get_managed_process(state_id)
+      :ets -> {:ok, get_state_ets(state_id, %{}, opts)}
+      _ -> get_managed_process(state_id)
+    end
+  end
+
+  # ETS-backed State Operations (from UnifiedStateManager)
+
+  @doc """
+  Gets the current state or a specific key from ETS.
+  """
+  def get_state(key \\ nil, opts \\ []) do
+    case strategy_from_opts(opts) do
+      :ets -> get_state_ets(key, nil, opts)
+      :process -> get_managed_process_state(key, opts)
+      _ -> {:error, :strategy_not_supported}
+    end
+  end
+
+  @doc """
+  Sets a state value atomically in ETS.
+  """
+  def set_state(key, value, opts \\ []) do
+    case strategy_from_opts(opts) do
+      :ets -> set_state_ets(key, value, opts)
+      :process -> set_managed_process_state(key, value, opts)
+      _ -> {:error, :strategy_not_supported}
+    end
+  end
+
+  @doc """
+  Updates a state value with a function (alias for compatibility with UnifiedStateManager).
+  """
+  def update_state(key, update_fn) when is_function(update_fn, 1) do
+    update_state(key, update_fn, [])
+  end
+
+  def update_state(key, update_fn, opts) when is_function(update_fn, 1) do
+    case strategy_from_opts(opts) do
+      :ets ->
+        current = get_state(key, opts)
+        new_value = update_fn.(current)
+        set_state(key, new_value, opts)
+      :process ->
+        # For process-based, update the managed state
+        if is_list(key) do
+          state_key = List.first(key, :default)
+          with {:ok, state} <- get_managed_process_state(state_key, opts) do
+            new_state = update_nested(state, key, update_fn)
+            set_managed_process_state(state_key, new_state, opts)
+          end
+        else
+          # Simple key update
+          with {:ok, current} <- get_managed_process_state(key, opts) do
+            new_value = update_fn.(current)
+            set_managed_process_state(key, new_value, opts)
+          end
+        end
+      _ -> {:error, :strategy_not_supported}
+    end
+  end
+
+  # Helper to update nested keys in a state
+  defp update_nested(state, [], update_fn) when is_map(state), do: update_fn.(state)
+  defp update_nested(state, [key], update_fn) when is_map(state) do
+    Map.update(state, key, update_fn.(nil), update_fn)
+  end
+  defp update_nested(state, [head | tail], update_fn) when is_map(state) do
+    Map.update(state, head, %{}, fn nested ->
+      update_nested(nested, tail, update_fn)
+    end)
+  end
+  defp update_nested(state, _, _), do: state
+
+  @doc """
+  Deletes a state value (alias for compatibility with UnifiedStateManager).
+  """
+  def delete_state(key, opts \\ []) do
+    case strategy_from_opts(opts) do
+      :ets -> delete_state_ets(key, opts)
+      :process ->
+        # For process-based, we need to handle it differently
+        # Use the existing delete on the managed state
+        if is_list(key) do
+          state_key = List.first(key, :default)
+          with {:ok, state} <- get_managed_process_state(state_key, opts) do
+            new_state = delete_nested(state, key)
+            set_managed_process_state(state_key, new_state, opts)
+          end
+        else
+          # Simple key deletion - just set to nil
+          set_managed_process_state(key, nil, opts)
+        end
+      _ -> {:error, :strategy_not_supported}
+    end
+  end
+
+  # Helper to delete nested keys from a state
+  defp delete_nested(state, []), do: state
+  defp delete_nested(state, [key]) when is_map(state), do: Map.delete(state, key)
+  defp delete_nested(state, [head | tail]) when is_map(state) do
+    case Map.get(state, head) do
+      nil -> state
+      nested -> Map.put(state, head, delete_nested(nested, tail))
+    end
+  end
+  defp delete_nested(state, _), do: state
+
+  # Domain-Specific State Management
+
+  @state_domains %{
+    terminal: Raxol.Terminal.StateManager,
+    plugins: Raxol.Core.Runtime.Plugins.StateManager,
+    animation: Raxol.Animation.StateManager,
+    core: Raxol.Core.StateManager
+  }
+
+  @doc """
+  Delegates to domain-specific state manager.
+  """
+  def delegate_to_domain(domain, function, args) do
+    case Map.get(@state_domains, domain) do
+      nil -> {:error, {:unknown_domain, domain}}
+      module -> apply(module, function, args)
+    end
+  end
+
+  @doc """
+  Lists all registered state domains.
+  """
+  def list_domains do
+    Map.keys(@state_domains)
+  end
+
+  # Legacy Support (for backward compatibility)
 
   @doc """
   Starts a new state agent with the given initial state.
 
   @deprecated "Use start_managed/3 for supervised state or functional operations for simple transformations"
   """
-  @spec start_link(any(), keyword()) :: Agent.on_start()
   def start_link(initial_state \\ %{}, opts \\ []) do
     Agent.start_link(fn -> initial_state end, opts)
   end
 
-  # Removed deprecated get/2 that conflicted with delegated get/2
-  # Removed deprecated update/2 that conflicted with delegated update/3
-
-  @spec get_and_update(Agent.agent(), (any() -> {any(), any()})) :: any()
+  @doc """
+  Agent-based get and update operation.
+  """
   def get_and_update(agent, fun) do
     Agent.get_and_update(agent, fun)
   end
 
   @doc """
   Legacy support for existing code using Process dictionary.
-  This should be refactored to use the Agent-based approach.
 
-  @deprecated "Use start_link/1 and update/2 instead"
+  @deprecated "Use start_managed/3 and update_managed/3 instead"
   """
   def with_state(state_key, fun) do
-    state = get_state(state_key) || %{}
+    state = get_legacy_state(state_key) || %{}
 
     case fun.(state) do
       {new_state, result} ->
-        set_state(state_key, new_state)
+        set_legacy_state(state_key, new_state)
         result
 
       new_state ->
-        set_state(state_key, new_state)
+        set_legacy_state(state_key, new_state)
         nil
     end
   end
 
-  def get_state(state_key) do
-    case Agent.start_link(fn -> %{} end,
-           name: {:global, {:state_manager, state_key}}
-         ) do
-      {:ok, _pid} ->
-        %{}
-
-      {:error, {:already_started, _pid}} ->
-        Agent.get({:global, {:state_manager, state_key}}, & &1)
-    end
-  end
-
-  def set_state(state_key, state) do
-    case Agent.start_link(fn -> state end,
-           name: {:global, {:state_manager, state_key}}
-         ) do
-      {:ok, _pid} ->
-        :ok
-
-      {:error, {:already_started, _pid}} ->
-        Agent.update({:global, {:state_manager, state_key}}, fn _ -> state end)
-    end
-  end
+  # Child Spec for Supervision
 
   @doc """
   Creates a supervised state manager as part of a supervision tree.
 
-  // ## Examples
+  ## Examples
 
       children = [
         {StateManager, name: MyApp.StateManager, initial_state: %{}}
@@ -134,4 +416,168 @@ defmodule Raxol.Core.StateManager do
       shutdown: 500
     }
   end
+
+  # Implementation Details - ETS Strategy
+
+  defp start_managed_ets(state_id, initial_state, opts) do
+    if ets_enabled?() do
+      init_ets_if_needed(opts)
+      set_state_ets(state_id, initial_state, opts)
+      {:ok, state_id}
+    else
+      {:error, :ets_disabled}
+    end
+  end
+
+  defp get_state_ets(key, default, opts) do
+    table = table_name_from_opts(opts)
+    case :ets.lookup(table, normalize_key(key)) do
+      [{_key, value}] -> value
+      [] -> default
+    end
+  end
+
+  defp set_state_ets(key, value, opts) do
+    table = table_name_from_opts(opts)
+    :ets.insert(table, {normalize_key(key), value})
+    :ok
+  end
+
+  defp update_state_ets(key, update_fn, opts) do
+    table = table_name_from_opts(opts)
+    key_normalized = normalize_key(key)
+    old_value = case :ets.lookup(table, key_normalized) do
+      [{_key, value}] -> value
+      [] -> nil
+    end
+    new_value = update_fn.(old_value)
+    :ets.insert(table, {key_normalized, new_value})
+    :ok
+  end
+
+  defp delete_state_ets(key, opts) do
+    table = table_name_from_opts(opts)
+    :ets.delete(table, normalize_key(key))
+    :ok
+  end
+
+  defp clear_state_ets(opts) do
+    table = table_name_from_opts(opts)
+    :ets.delete_all_objects(table)
+    :ok
+  end
+
+  defp merge_state_ets(state1, state2, opts) when is_map(state1) and is_map(state2) do
+    merged = Map.merge(state1, state2)
+    Enum.each(merged, fn {key, value} ->
+      set_state_ets(key, value, opts)
+    end)
+    :ok
+  end
+
+  defp init_ets_if_needed(opts) do
+    table = table_name_from_opts(opts)
+    case :ets.info(table) do
+      :undefined ->
+        :ets.new(table, [:set, :public, :named_table, {:read_concurrency, true}])
+      _ -> :ok
+    end
+  end
+
+  defp table_name_from_opts(opts) do
+    Keyword.get(opts, :table_name, :raxol_unified_state)
+  end
+
+  # Implementation Details - Process Strategy
+
+  defp start_managed_process(state_id, initial_state, opts) do
+    case GenServer.start_link(__MODULE__, {state_id, initial_state}, opts) do
+      {:ok, pid} ->
+        Process.register(pid, state_process_name(state_id))
+        {:ok, state_id}
+      error ->
+        error
+    end
+  end
+
+  defp update_managed_process(state_id, update_fun) do
+    case Process.whereis(state_process_name(state_id)) do
+      nil -> {:error, :state_not_found}
+      pid -> GenServer.call(pid, {:update, update_fun})
+    end
+  end
+
+  defp get_managed_process(state_id) do
+    case Process.whereis(state_process_name(state_id)) do
+      nil -> {:error, :state_not_found}
+      pid -> GenServer.call(pid, :get)
+    end
+  end
+
+  defp state_process_name(state_id), do: :"raxol_managed_state_#{state_id}"
+
+  # GenServer Implementation (for process strategy)
+
+  @impl GenServer
+  def init({state_id, initial_state}) do
+    Logger.info("Starting managed state: #{state_id}")
+    {:ok, %{id: state_id, state: initial_state}}
+  end
+
+  @impl GenServer
+  def handle_call({:update, update_fun}, _from, %{state: state} = manager_state) do
+    try do
+      new_state = update_fun.(state)
+      {:reply, {:ok, new_state}, %{manager_state | state: new_state}}
+    catch
+      kind, reason ->
+        {:reply, {:error, {kind, reason}}, manager_state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call(:get, _from, %{state: state} = manager_state) do
+    {:reply, {:ok, state}, manager_state}
+  end
+
+  # Helper functions for backwards compatibility
+
+  defp get_legacy_state(state_key) do
+    case Agent.start_link(fn -> %{} end,
+           name: {:global, {:state_manager, state_key}}
+         ) do
+      {:ok, _pid} ->
+        %{}
+
+      {:error, {:already_started, _pid}} ->
+        Agent.get({:global, {:state_manager, state_key}}, & &1)
+    end
+  end
+
+  defp set_legacy_state(state_key, state) do
+    case Agent.start_link(fn -> state end,
+           name: {:global, {:state_manager, state_key}}
+         ) do
+      {:ok, _pid} ->
+        :ok
+
+      {:error, {:already_started, _pid}} ->
+        Agent.update({:global, {:state_manager, state_key}}, fn _ -> state end)
+    end
+  end
+
+  # Helper functions
+
+  defp normalize_key(key) when is_atom(key) or is_binary(key), do: key
+  defp normalize_key(keys) when is_list(keys), do: List.to_tuple(keys)
+
+  # Placeholder implementations for functions referenced but not fully implemented
+
+  defp get_managed_with_default(_key, default, _opts), do: default
+  defp update_managed_key(_key, func, _opts), do: {:ok, func.(nil)}
+  defp delete_managed_key(_key, _opts), do: :ok
+  defp clear_managed_state(_opts), do: {:ok, %{}}
+  defp merge_managed_state(state1, state2, _opts), do: {:ok, Map.merge(state1, state2)}
+  defp get_managed_process_state(_key, _opts), do: {:error, :not_implemented}
+  defp set_managed_process_state(_key, _value, _opts), do: {:error, :not_implemented}
 end

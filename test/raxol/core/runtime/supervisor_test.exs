@@ -48,13 +48,15 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   end
 
   # Define mocks for dependencies
-  Mox.defmock(Raxol.Core.Runtime.Events.DispatcherMock,
-    for: Raxol.Core.Runtime.Events.Dispatcher.Behaviour
-  )
+  # Dispatcher mock removed - no behavior exists for Events Dispatcher
+  # Mox.defmock(Raxol.Core.Runtime.Events.DispatcherMock,
+  #   for: Raxol.Core.Runtime.Events.Dispatcher.Behaviour
+  # )
 
-  Mox.defmock(Raxol.Core.Runtime.Rendering.EngineMock,
-    for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
-  )
+  # Rendering Engine mock removed - no behavior exists for Rendering Engine
+  # Mox.defmock(Raxol.Core.Runtime.Rendering.EngineMock,
+  #   for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
+  # )
 
   # PluginManager.Behaviour mock removed - behavior doesn't exist
   # Mox.defmock(Raxol.Core.Runtime.Plugins.PluginManagerMock,

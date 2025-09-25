@@ -28,10 +28,14 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
+
+  # Required for using View.Elements macros
+  require Raxol.View.Elements
+  require Raxol.Core.Renderer.View
   require Raxol.Core.Runtime.Log
 
   # Require view macros
-  require Raxol.View.Elements
+  # require Raxol.View.Elements  # Removed
 
   # Define state struct
   defstruct id: nil,

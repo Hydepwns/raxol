@@ -419,11 +419,11 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
     test "handles screen clearing sequences" do
       emulator = new_emulator()
       # These will just check that the function returns an emulator struct
-      state = CSIHandler.handle_sequence(emulator, [?J])
+      {:ok, state} = CSIHandler.handle_sequence(emulator, [?J])
       assert is_map(state)
-      state = CSIHandler.handle_sequence(state, [?1, ?J])
+      {:ok, state} = CSIHandler.handle_sequence(state, [?1, ?J])
       assert is_map(state)
-      state = CSIHandler.handle_sequence(state, [?2, ?J])
+      {:ok, state} = CSIHandler.handle_sequence(state, [?2, ?J])
       assert is_map(state)
     end
 
@@ -713,7 +713,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
         | cursor: %{row: 10, col: 10, top_margin: 0, bottom_margin: 23}
       }
 
-      result = CSIHandler.handle_cursor_up(emulator, 5)
+      {:ok, result} = CSIHandler.handle_cursor_up(emulator, 5)
       assert result.cursor.row == 5
     end
 
@@ -723,7 +723,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
         | cursor: %{row: 10, col: 10, top_margin: 0, bottom_margin: 23}
       }
 
-      result = CSIHandler.handle_cursor_down(emulator, 5)
+      {:ok, result} = CSIHandler.handle_cursor_down(emulator, 5)
       assert result.cursor.row == 15
     end
 
@@ -739,7 +739,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
           }
       }
 
-      result = CSIHandler.handle_cursor_forward(emulator, 5)
+      {:ok, result} = CSIHandler.handle_cursor_forward(emulator, 5)
       assert result.cursor.col == 15
     end
 
@@ -755,7 +755,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
           }
       }
 
-      result = CSIHandler.handle_cursor_backward(emulator, 5)
+      {:ok, result} = CSIHandler.handle_cursor_backward(emulator, 5)
       assert result.cursor.col == 5
     end
 

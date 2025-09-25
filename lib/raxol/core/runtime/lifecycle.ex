@@ -50,6 +50,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     GenServer.start_link(__MODULE__, {app_module, options}, name: name_option)
   end
 
+  @spec derive_process_name(module()) :: any()
   defp derive_process_name(app_module) do
     Module.concat(__MODULE__, Atom.to_string(app_module))
   end
@@ -91,6 +92,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
+  @spec initialize_components(module(), any()) :: any()
   defp initialize_components(app_module, options) do
     with {:ok, registry_table} <- initialize_registry_table(app_module),
          {:ok, pm_pid} <- start_plugin_manager(options),
@@ -108,6 +110,14 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
+  @spec build_initial_state(
+          module(),
+          any(),
+          String.t() | integer(),
+          any(),
+          String.t() | integer(),
+          any()
+        ) :: any()
   defp build_initial_state(
          app_module,
          options,
@@ -134,12 +144,14 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     }
   end
 
+  @spec log_successful_init(module(), String.t() | integer()) :: any()
   defp log_successful_init(app_module, dispatcher_pid) do
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] successfully initialized for #{inspect(app_module)}. Dispatcher PID: #{inspect(dispatcher_pid)}"
     )
   end
 
+  @spec initialize_registry_table(module()) :: any()
   defp initialize_registry_table(app_module) do
     registry_table_name =
       Module.concat(CommandRegistryTable, Atom.to_string(app_module))
@@ -159,6 +171,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
+  @spec start_plugin_manager(any()) :: any()
   defp start_plugin_manager(options) do
     plugin_manager_opts = Keyword.get(options, :plugin_manager_opts, [])
 
@@ -175,6 +188,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
+  @spec get_initial_model_args(any()) :: any() | nil
   defp get_initial_model_args(options) do
     %{
       width: Keyword.get(options, :width, 80),
@@ -183,6 +197,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     }
   end
 
+  @spec start_dispatcher(module(), any(), any(), String.t() | integer(), any()) ::
+          any()
   defp start_dispatcher(
          app_module,
          initialized_model,
@@ -211,6 +227,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
+  @spec initialize_app_model(module(), list()) :: any()
   defp initialize_app_model(app_module, initial_model_args) do
     init_function_exported = function_exported?(app_module, :init, 1)
 
@@ -221,6 +238,11 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     )
   end
 
+  @spec handle_app_model_initialization(any(), module(), list()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_app_model_initialization(false, app_module, _initial_model_args) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] #{inspect(app_module)}.init/1 not exported. Using empty model."
@@ -229,6 +251,11 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:ok, %{}}
   end
 
+  @spec handle_app_model_initialization(any(), module(), list()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_app_model_initialization(true, app_module, initial_model_args) do
     case app_module.init(initial_model_args) do
       {:ok, model} ->
@@ -300,6 +327,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:noreply, state}
   end
 
+  @spec maybe_process_initial_commands(any()) :: any()
   defp maybe_process_initial_commands(%State{} = state) do
     ready_to_process =
       state.dispatcher_ready && state.plugin_manager_ready &&
@@ -308,15 +336,26 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     handle_initial_commands_processing(ready_to_process, state)
   end
 
+  @spec handle_initial_commands_processing(any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_initial_commands_processing(true, state) do
     process_initial_commands(state)
   end
 
+  @spec handle_initial_commands_processing(any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_initial_commands_processing(false, state) do
     log_waiting_status(state)
     state
   end
 
+  @spec process_initial_commands(map()) :: any()
   defp process_initial_commands(state) do
     Raxol.Core.Runtime.Log.info_with_context(
       "Dispatcher and PluginManager ready. Dispatching initial commands: #{inspect(state.initial_commands)}"
@@ -332,28 +371,42 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     %{state | initial_commands: []}
   end
 
+  @spec execute_initial_command(any(), any()) :: any()
   defp execute_initial_command(command, context) do
     is_valid_command = match?(%Raxol.Core.Runtime.Command{}, command)
     handle_command_execution(is_valid_command, command, context)
   end
 
+  @spec handle_command_execution(any(), any(), any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_command_execution(true, command, context) do
     Raxol.Core.Runtime.Command.execute(command, context)
   end
 
+  @spec handle_command_execution(any(), any(), any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_command_execution(false, command, _context) do
     Raxol.Core.Runtime.Log.error(
       "Invalid initial command found: #{inspect(command)}. Expected %Raxol.Core.Runtime.Command{}."
     )
   end
 
+  @spec log_waiting_status(map()) :: any()
   defp log_waiting_status(state) do
     has_initial_commands = Enum.any?(state.initial_commands)
     log_if_has_commands(has_initial_commands, state)
   end
 
+  @spec log_if_has_commands(any(), map()) :: any()
   defp log_if_has_commands(false, _state), do: :ok
 
+  @spec log_if_has_commands(any(), map()) :: any()
   defp log_if_has_commands(true, state) do
     case {state.dispatcher_ready, state.plugin_manager_ready} do
       {false, false} ->
@@ -379,7 +432,35 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   @impl GenServer
   def handle_cast(:shutdown, state) do
-    Raxol.Core.Runtime.ShutdownHelper.handle_shutdown(__MODULE__, state)
+    Raxol.Core.Runtime.Log.info_with_context(
+      "[#{__MODULE__}] Received :shutdown cast for #{inspect(state.app_name)}. Stopping dependent processes..."
+    )
+
+    case state.dispatcher_pid do
+      nil ->
+        :ok
+
+      pid ->
+        Raxol.Core.Runtime.Log.info_with_context(
+          "[#{__MODULE__}] Stopping Dispatcher PID: #{inspect(pid)}"
+        )
+
+        GenServer.stop(pid, :shutdown, :infinity)
+    end
+
+    case state.plugin_manager do
+      nil ->
+        :ok
+
+      pid ->
+        Raxol.Core.Runtime.Log.info_with_context(
+          "[#{__MODULE__}] Stopping PluginManager PID: #{inspect(pid)}"
+        )
+
+        GenServer.stop(pid, :shutdown, :infinity)
+    end
+
+    {:stop, :normal, state}
   end
 
   @impl GenServer
@@ -427,6 +508,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   end
 
   # Private helper functions
+  @spec get_app_name(module(), any()) :: any() | nil
   defp get_app_name(app_module, options) do
     Keyword.get(options, :app_name, Atom.to_string(app_module))
   end
@@ -482,6 +564,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
+  @spec find_app_by_id(any(), String.t() | integer()) :: any()
   defp find_app_by_id(apps, app_id) do
     case Enum.find(apps, fn {id, _} -> id == app_id end) do
       nil -> {:error, :app_not_found}
@@ -547,8 +630,18 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   ## Helper Functions for Pattern Matching
 
+  @spec handle_plugin_manager_cleanup(any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_plugin_manager_cleanup(false, _state), do: :ok
 
+  @spec handle_plugin_manager_cleanup(any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_plugin_manager_cleanup(true, state) do
     Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] Terminate: Ensuring PluginManager PID #{inspect(state.plugin_manager)} is stopped."
@@ -570,8 +663,18 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
+  @spec handle_registry_table_cleanup(any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_registry_table_cleanup(false, _state), do: :ok
 
+  @spec handle_registry_table_cleanup(any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_registry_table_cleanup(true, state) do
     case CompilerState.safe_delete_table(state.command_registry_table) do
       :ok ->
@@ -586,6 +689,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
   end
 
+  @spec get_app_name_by_export(any(), module()) :: any() | nil
   defp get_app_name_by_export(false, _app_module), do: :default
+  @spec get_app_name_by_export(any(), module()) :: any() | nil
   defp get_app_name_by_export(true, app_module), do: app_module.app_name()
 end

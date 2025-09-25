@@ -113,7 +113,7 @@ defmodule Raxol.UI.Rendering.Renderer do
       Enum.reduce(ops, buffer, fn
         {:draw_text, y, text}, buf ->
           x = 0
-          Raxol.Terminal.Buffer.Operations.write_string(buf, x, y, text)
+          Raxol.Terminal.ScreenBuffer.write_string(buf, x, y, text)
 
         _, buf ->
           buf

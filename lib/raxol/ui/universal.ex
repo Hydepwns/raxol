@@ -141,9 +141,10 @@ defmodule Raxol.UI.Universal do
   def animate(element, properties, duration \\ 300) do
     start_time = System.monotonic_time(:millisecond)
 
-    _ = Task.start(fn ->
-      animate_loop(element, properties, duration, start_time)
-    end)
+    _ =
+      Task.start(fn ->
+        animate_loop(element, properties, duration, start_time)
+      end)
   end
 
   defp animate_loop(element, properties, duration, start_time) do
@@ -181,7 +182,7 @@ defmodule Raxol.UI.Universal do
        when is_binary(from) and is_binary(to) do
     # String and color interpolation based on progress
     cond do
-      is_hex_color?(from) and is_hex_color?(to) ->
+      hex_color?(from) and hex_color?(to) ->
         interpolate_hex_colors(from, to, progress)
 
       true ->
@@ -191,7 +192,7 @@ defmodule Raxol.UI.Universal do
   end
 
   # Check if a string is a hex color (e.g., "#FF0000")
-  defp is_hex_color?(string) do
+  defp hex_color?(string) do
     String.match?(string, ~r/^#[0-9A-Fa-f]{6}$/)
   end
 

@@ -27,7 +27,7 @@ defmodule Raxol.Test.Visual do
   """
 
   alias Raxol.Test.TestHelper
-  alias Raxol.Terminal.Buffer.Operations
+  alias Raxol.Terminal.ScreenBuffer.Operations
 
   defmacro __using__(_opts) do
     quote do
@@ -124,7 +124,10 @@ defmodule Raxol.Test.Visual do
   defp ensure_list(item), do: [item]
 
   defp apply_layout(elements, width, height) do
-    Raxol.Renderer.Layout.apply_layout(elements, %{width: width, height: height})
+    Raxol.Core.Renderer.Layout.apply_layout(elements, %{
+      width: width,
+      height: height
+    })
   end
 
   defp render_to_cells(layout_elements, theme) do

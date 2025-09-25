@@ -1,82 +1,32 @@
 defmodule Raxol.Terminal.Commands.DeviceHandler do
   @moduledoc """
-  @deprecated "Use Raxol.Terminal.Commands.UnifiedCommandHandler instead"
-
-  This module has been consolidated into the unified command handling system.
-  For new code, use:
-
-      # Instead of DeviceHandler.handle_n(emulator, params)
-      UnifiedCommandHandler.handle_csi(emulator, "n", params)
-      
-      # Instead of DeviceHandler.handle_c(emulator, params, intermediates)
-      UnifiedCommandHandler.handle_csi(emulator, "c", params)
+  Handles device-specific terminal commands like Device Attributes (DA) and Device Status Report (DSR).
+  This module delegates to UnifiedCommandHandler for actual implementation.
   """
 
   alias Raxol.Terminal.Commands.UnifiedCommandHandler
-  require Raxol.Core.Runtime.Log
 
-  @deprecated "Use UnifiedCommandHandler.handle_csi/3 instead"
+  @doc """
+  Handles Device Attributes (DA) request - CSI c command.
+
+  Primary DA (CSI 0 c or CSI c): Reports terminal capabilities
+  Secondary DA (CSI > 0 c): Reports terminal version and features
+  """
+  def handle_c(emulator, params, intermediates \\ "") do
+    UnifiedCommandHandler.handle_csi(emulator, "c", params, intermediates)
+  end
+
+  @doc """
+  Handles Device Status Report (DSR) request - CSI n command.
+
+  CSI 5 n: Device Status Report - reports "OK" status
+  CSI 6 n: Cursor Position Report - reports current cursor position
+  """
   def handle_n(emulator, params) do
-    IO.puts(
-      :stderr,
-      "Warning: DeviceHandler.handle_n/2 is deprecated. Use UnifiedCommandHandler instead."
-    )
-
-    UnifiedCommandHandler.handle_csi(emulator, "n", params || [])
-  end
-
-  @deprecated "Use UnifiedCommandHandler.handle_csi/3 instead"
-  def handle_c(emulator, params, intermediates_buffer \\ "") do
-    IO.puts(
-      :stderr,
-      "Warning: DeviceHandler.handle_c/3 is deprecated. Use UnifiedCommandHandler instead."
-    )
-
-    # Create command params that include intermediates information
-    cmd_params = %{
-      type: :csi,
-      command: "c",
-      params: params || [],
-      intermediates: intermediates_buffer || "",
-      private_markers: ""
-    }
-
-    UnifiedCommandHandler.handle_command(emulator, cmd_params)
-  end
-
-  # Keep the old private functions for any code that might call them directly
-  # (though this is unlikely)
-  def generate_dsr_response(code, _emulator) do
-    IO.puts(
-      :stderr,
-      "Warning: DeviceHandler.generate_dsr_response/2 is deprecated."
-    )
-
-    case code do
-      6 ->
-        # This would need cursor position - simplified version
-        # Default to 1;1
-        "\e[1;1R"
-
-      5 ->
-        "\e[0n"
-
-      _ ->
-        nil
-    end
-  end
-
-  def generate_da_response(intermediates_buffer) do
-    IO.puts(
-      :stderr,
-      "Warning: DeviceHandler.generate_da_response/1 is deprecated."
-    )
-
-    case intermediates_buffer do
-      # Secondary DA
-      ">" -> "\e[>0;279;0c"
-      # Primary DA
-      _ -> "\e[?6c"
+    case UnifiedCommandHandler.handle_csi(emulator, "n", params, "") do
+      {:ok, updated_emulator} -> {:ok, updated_emulator}
+      {:error, _reason, updated_emulator} -> {:ok, updated_emulator}
+      result -> result
     end
   end
 end

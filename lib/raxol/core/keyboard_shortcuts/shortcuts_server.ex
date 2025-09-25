@@ -325,13 +325,16 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
 
   # Private Helper Functions
 
+  @spec check_shortcut_conflict(any(), String.t() | integer()) :: any()
   defp check_shortcut_conflict(existing, override)
        when existing != nil and override == false do
     {:conflict, existing}
   end
 
+  @spec check_shortcut_conflict(any(), any()) :: any()
   defp check_shortcut_conflict(_, _), do: :allow
 
+  @spec announce_shortcut_registration(any(), String.t() | atom()) :: any()
   defp announce_shortcut_registration(shortcut, name) do
     case Accessibility.enabled?() do
       true ->
@@ -342,36 +345,46 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     end
   end
 
+  @spec get_shortcuts_by_context(map(), any()) :: any() | nil
   defp get_shortcuts_by_context(state, :global), do: state.shortcuts.global
 
+  @spec get_shortcuts_by_context(map(), any()) :: any() | nil
   defp get_shortcuts_by_context(state, context) do
     Map.get(state.shortcuts.contexts, context, %{})
   end
 
+  @spec get_context_shortcuts(map()) :: any() | nil
   defp get_context_shortcuts(state) when state.active_context != :global do
     Map.get(state.shortcuts.contexts, state.active_context, %{})
   end
 
+  @spec get_context_shortcuts(map()) :: any() | nil
   defp get_context_shortcuts(_state), do: %{}
 
+  @spec clear_shortcuts_for_context(map(), any()) :: any()
   defp clear_shortcuts_for_context(state, :global) do
     put_in(state, [:shortcuts, :global], %{})
   end
 
+  @spec clear_shortcuts_for_context(map(), any()) :: any()
   defp clear_shortcuts_for_context(state, context) do
     update_in(state, [:shortcuts, :contexts], &Map.delete(&1, context))
   end
 
+  @spec process_event_if_enabled(any(), map()) :: any()
   defp process_event_if_enabled(event, state) when state.enabled == true do
     process_keyboard_event(event, state)
   end
 
+  @spec process_event_if_enabled(any(), map()) :: any()
   defp process_event_if_enabled(_event, _state), do: :ok
 
+  @spec add_shortcut_by_context(map(), any(), any(), any()) :: any()
   defp add_shortcut_by_context(state, key, shortcut_def, :global) do
     put_in(state, [:shortcuts, :global, key], shortcut_def)
   end
 
+  @spec add_shortcut_by_context(map(), any(), any(), any()) :: any()
   defp add_shortcut_by_context(state, key, shortcut_def, context) do
     contexts = state.shortcuts.contexts
     context_shortcuts = Map.get(contexts, context, %{})
@@ -380,10 +393,12 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     %{state | shortcuts: %{state.shortcuts | contexts: updated_contexts}}
   end
 
+  @spec remove_shortcut_by_context(map(), any(), any()) :: any()
   defp remove_shortcut_by_context(state, key, :global) do
     update_in(state, [:shortcuts, :global], &Map.delete(&1, key))
   end
 
+  @spec remove_shortcut_by_context(map(), any(), any()) :: any()
   defp remove_shortcut_by_context(state, key, context) do
     update_in(
       state,
@@ -392,6 +407,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     )
   end
 
+  @spec remove_shortcut_by_name(map(), String.t() | atom(), any()) :: any()
   defp remove_shortcut_by_name(state, name, :global) do
     shortcuts = state.shortcuts.global
 
@@ -407,6 +423,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     end
   end
 
+  @spec remove_shortcut_by_name(map(), String.t() | atom(), any()) :: any()
   defp remove_shortcut_by_name(state, name, context) do
     shortcuts = Map.get(state.shortcuts.contexts, context, %{})
 
@@ -426,6 +443,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     end
   end
 
+  @spec find_matching_shortcut(map(), any()) :: any()
   defp find_matching_shortcut(state, key_str)
        when state.active_context != :global do
     context_shortcuts =
@@ -435,15 +453,19 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
       Map.get(state.shortcuts.global, key_str)
   end
 
+  @spec find_matching_shortcut(map(), any()) :: any()
   defp find_matching_shortcut(state, key_str) do
     Map.get(state.shortcuts.global, key_str)
   end
 
+  @spec execute_shortcut_callback(any()) :: any()
   defp execute_shortcut_callback(nil), do: :ok
 
+  @spec execute_shortcut_callback(any()) :: any()
   defp execute_shortcut_callback(shortcut) when shortcut.callback == nil,
     do: :ok
 
+  @spec execute_shortcut_callback(any()) :: any()
   defp execute_shortcut_callback(shortcut) do
     case Raxol.Core.ErrorHandling.safe_call(shortcut.callback) do
       {:ok, _result} ->
@@ -455,6 +477,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     end
   end
 
+  @spec announce_shortcut_execution(any()) :: any()
   defp announce_shortcut_execution(shortcut) do
     case {Accessibility.enabled?(), shortcut.description} do
       {true, description} when description != "" ->
@@ -465,6 +488,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     end
   end
 
+  @spec generate_context_help(map()) :: any()
   defp generate_context_help(state) when state.active_context != :global do
     context_shortcuts =
       Map.get(state.shortcuts.contexts, state.active_context, %{})
@@ -472,91 +496,79 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     format_shortcuts_group(to_string(state.active_context), context_shortcuts)
   end
 
+  @spec generate_context_help(map()) :: any()
   defp generate_context_help(_state), do: ""
 
+  @spec parse_shortcut(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_shortcut(shortcut) when is_binary(shortcut) do
     # Parse shortcut string like "Ctrl+S", "Alt+F4", "Cmd+Shift+P"
     parts = String.split(shortcut, "+")
-
     {modifiers, [key]} = Enum.split(parts, -1)
 
-    modifiers =
-      Enum.map_join(modifiers, fn mod ->
-        case String.downcase(mod) do
-          "ctrl" -> :ctrl
-          "control" -> :ctrl
-          "alt" -> :alt
-          "shift" -> :shift
-          "cmd" -> :cmd
-          "command" -> :cmd
-          "meta" -> :meta
-          "win" -> :win
-          _ -> String.to_atom(String.downcase(mod))
-        end
-      end)
-
-    key_atom =
-      case String.downcase(key) do
-        "space" ->
-          :space
-
-        "enter" ->
-          :enter
-
-        "return" ->
-          :enter
-
-        "tab" ->
-          :tab
-
-        "esc" ->
-          :escape
-
-        "escape" ->
-          :escape
-
-        "up" ->
-          :up
-
-        "down" ->
-          :down
-
-        "left" ->
-          :left
-
-        "right" ->
-          :right
-
-        single when byte_size(single) == 1 ->
-          String.to_atom(String.downcase(single))
-
-        other ->
-          String.to_atom(String.downcase(other))
-      end
-
     %{
-      modifiers: Enum.sort(modifiers),
-      key: key_atom
+      modifiers: Enum.sort(parse_modifiers(modifiers)),
+      key: parse_key(key)
     }
   end
 
+  @spec parse_modifiers(list(String.t())) :: list(atom())
+  defp parse_modifiers(modifiers) do
+    Enum.map(modifiers, &parse_modifier/1)
+  end
+
+  @spec parse_modifier(String.t()) :: atom()
+  defp parse_modifier(mod) do
+    case String.downcase(mod) do
+      "ctrl" -> :ctrl
+      "control" -> :ctrl
+      "alt" -> :alt
+      "shift" -> :shift
+      "cmd" -> :cmd
+      "command" -> :cmd
+      "meta" -> :meta
+      "win" -> :win
+      other -> String.to_atom(other)
+    end
+  end
+
+  @spec parse_key(String.t()) :: atom()
+  defp parse_key(key) do
+    case String.downcase(key) do
+      "space" -> :space
+      "enter" -> :enter
+      "return" -> :enter
+      "tab" -> :tab
+      "esc" -> :escape
+      "escape" -> :escape
+      "up" -> :up
+      "down" -> :down
+      "left" -> :left
+      "right" -> :right
+      other -> String.to_atom(other)
+    end
+  end
+
+  @spec get_shortcut_from_state(map(), any(), any()) :: any() | nil
   defp get_shortcut_from_state(state, parsed_shortcut, context) do
     shortcuts = get_shortcuts_by_context(state, context)
     Map.get(shortcuts, shortcut_key(parsed_shortcut))
   end
 
+  @spec add_shortcut_to_state(map(), any(), any(), any()) :: any()
   defp add_shortcut_to_state(state, parsed_shortcut, shortcut_def, context) do
     key = shortcut_key(parsed_shortcut)
 
     add_shortcut_by_context(state, key, shortcut_def, context)
   end
 
+  @spec remove_shortcut_from_state(map(), any(), any()) :: any()
   defp remove_shortcut_from_state(state, parsed_shortcut, context) do
     key = shortcut_key(parsed_shortcut)
 
     remove_shortcut_by_context(state, key, context)
   end
 
+  @spec shortcut_key(any()) :: any()
   defp shortcut_key(parsed_shortcut) do
     modifiers_str =
       if parsed_shortcut.modifiers == [] do
@@ -568,6 +580,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     "#{modifiers_str}#{parsed_shortcut.key}"
   end
 
+  @spec process_keyboard_event(any(), map()) :: any()
   defp process_keyboard_event(
          %Raxol.Core.Events.Event{
            type: :keyboard_event,
@@ -591,6 +604,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     execute_shortcut_callback(shortcut)
   end
 
+  @spec process_keyboard_event(any(), map()) :: any()
   defp process_keyboard_event(
          %Raxol.Core.Events.Event{type: :keyboard_event, data: key_data},
          state
@@ -612,8 +626,10 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     execute_shortcut_callback(shortcut)
   end
 
+  @spec process_keyboard_event(any(), map()) :: any()
   defp process_keyboard_event(_event, _state), do: :ok
 
+  @spec generate_help_text(map()) :: any()
   defp generate_help_text(state) do
     global_shortcuts = format_shortcuts_group("Global", state.shortcuts.global)
 
@@ -624,6 +640,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     |> Enum.join("\n\n")
   end
 
+  @spec format_shortcuts_group(any(), any()) :: String.t()
   defp format_shortcuts_group(title, shortcuts) when map_size(shortcuts) > 0 do
     header = "Available keyboard shortcuts for #{title}:\n"
 
@@ -640,5 +657,6 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
     header <> shortcuts_text
   end
 
+  @spec format_shortcuts_group(any(), any()) :: String.t()
   defp format_shortcuts_group(_title, _shortcuts), do: ""
 end

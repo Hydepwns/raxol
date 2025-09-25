@@ -65,9 +65,10 @@ defmodule Raxol.Protocols do
   def delete_protocol(id) do
     _ = ensure_started()
 
-    _ = Agent.get_and_update(@agent_name, fn protocols ->
-      {Map.get(protocols, id), Map.delete(protocols, id)}
-    end)
+    _ =
+      Agent.get_and_update(@agent_name, fn protocols ->
+        {Map.get(protocols, id), Map.delete(protocols, id)}
+      end)
 
     :ok
   end

@@ -34,6 +34,11 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     end
   end
 
+  @spec handle_set(non_neg_integer(), any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_set(index, spec, state) do
     case parse_color_spec(spec) do
       {:ok, color} ->
@@ -45,6 +50,11 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     end
   end
 
+  @spec handle_query(non_neg_integer(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_query(index, state) do
     case get_palette_color(state.palette, index) do
       {:ok, color} -> {:ok, state, format_color_response(index, color)}
@@ -54,6 +64,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
 
   # Private Helpers
 
+  @spec parse_command(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_command(rest) do
     case String.split(rest, ";", parts: 2) do
       [index_str, spec] ->
@@ -74,6 +85,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     end
   end
 
+  @spec parse_color_spec(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_color_spec(spec) do
     cond do
       parse_rgb_colon(spec) != :no_match -> parse_rgb_colon(spec)
@@ -85,6 +97,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     end
   end
 
+  @spec parse_and_validate_rgb(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_and_validate_rgb({r, g, b}) do
     with {:ok, r} <- parse_component(r),
          {:ok, g} <- parse_component(g),
@@ -95,21 +108,25 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     end
   end
 
+  @spec parse_rgb_colon(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_rgb_colon(spec) do
     starts_with_rgb = String.starts_with?(spec, "rgb:")
     parse_rgb_colon_by_prefix(starts_with_rgb, spec)
   end
 
+  @spec parse_hex6(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_hex6(spec) do
     is_hex6_format = String.starts_with?(spec, "#") and byte_size(spec) == 7
     parse_hex6_by_format(is_hex6_format, spec)
   end
 
+  @spec parse_hex3(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_hex3(spec) do
     is_hex3_format = String.starts_with?(spec, "#") and byte_size(spec) == 4
     parse_hex3_by_format(is_hex3_format, spec)
   end
 
+  @spec parse_rgb_decimal(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_rgb_decimal(spec) do
     matches_decimal_format =
       String.match?(spec, ~r/^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/)
@@ -117,6 +134,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     parse_rgb_decimal_by_format(matches_decimal_format, spec)
   end
 
+  @spec parse_rgb_percent(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_rgb_percent(spec) do
     matches_percent_format =
       String.match?(spec, ~r/^rgb\(\s*\d+%\s*,\s*\d+%\s*,\s*\d+%\s*\)$/)
@@ -124,6 +142,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     parse_rgb_percent_by_format(matches_percent_format, spec)
   end
 
+  @spec parse_and_validate_decimal(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_and_validate_decimal({r_str, g_str, b_str}) do
     with {:ok, r} <- parse_decimal_component(r_str),
          {:ok, g} <- parse_decimal_component(g_str),
@@ -134,6 +153,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     end
   end
 
+  @spec parse_and_validate_percent(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_and_validate_percent({r_str, g_str, b_str}) do
     with {:ok, r} <- parse_percent_component(r_str),
          {:ok, g} <- parse_percent_component(g_str),
@@ -145,6 +165,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   end
 
   # Parses decimal color component (0-255)
+  @spec parse_decimal_component(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_decimal_component(decimal_str) do
     case Integer.parse(decimal_str) do
       {val, ""} when val >= 0 and val <= 255 -> {:ok, val}
@@ -153,6 +174,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   end
 
   # Parses percentage color component (0-100%) and converts to 0-255
+  @spec parse_percent_component(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_percent_component(percent_str) do
     case Integer.parse(percent_str) do
       {val, ""} when val >= 0 and val <= 100 ->
@@ -164,14 +186,19 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   end
 
   # Parses hex color component (1-4 digits), scales to 0-255 appropriately
+  @spec parse_component(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_component(hex_str) do
     len = byte_size(hex_str)
     valid_length = len >= 1 and len <= 4
     parse_component_by_length_validity(valid_length, hex_str, len)
   end
 
+  @spec parse_component_by_length_validity(String.t(), String.t(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_component_by_length_validity(false, _hex_str, _len), do: :error
 
+  @spec parse_component_by_length_validity(String.t(), String.t(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_component_by_length_validity(true, hex_str, len) do
     case Integer.parse(hex_str, 16) do
       {val, ""} ->
@@ -190,6 +217,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     end
   end
 
+  @spec format_color_response(non_neg_integer(), any()) :: String.t()
   defp format_color_response(index, {r, g, b}) do
     # Format: OSC 4;index;rgb:r/g/b
     # Scale up to 16-bit range (0-65535)
@@ -206,6 +234,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   end
 
   # Helper for safe palette access
+  @spec get_palette_color(any(), non_neg_integer()) :: any() | nil
   defp get_palette_color(palette, index)
        when is_integer(index) and index >= 0 and index <= 255 do
     case Map.get(palette, index) do
@@ -214,13 +243,21 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     end
   end
 
+  @spec get_palette_color(any(), any()) :: any() | nil
   defp get_palette_color(_palette, _index), do: {:error, :invalid_color_index}
 
   ## Helper Functions for Pattern Matching
 
+  @spec parse_command_type(String.t(), non_neg_integer(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_command_type(true, index, _spec), do: {:query, index}
+
+  @spec parse_command_type(String.t(), non_neg_integer(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_command_type(false, index, spec), do: {:set, index, spec}
 
+  @spec parse_rgb_colon_by_prefix(String.t(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_rgb_colon_by_prefix(true, spec) do
     case String.split(String.trim_leading(spec, "rgb:"), "/", parts: 3) do
       [r_hex, g_hex, b_hex] ->
@@ -231,8 +268,12 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     end
   end
 
+  @spec parse_rgb_colon_by_prefix(String.t(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_rgb_colon_by_prefix(false, _spec), do: :no_match
 
+  @spec parse_hex6_by_format(String.t(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_hex6_by_format(true, spec) do
     r_hex = String.slice(spec, 1..2)
     g_hex = String.slice(spec, 3..4)
@@ -241,8 +282,12 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     parse_and_validate_rgb({r_hex, g_hex, b_hex})
   end
 
+  @spec parse_hex6_by_format(String.t(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_hex6_by_format(false, _spec), do: :no_match
 
+  @spec parse_hex3_by_format(String.t(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_hex3_by_format(true, spec) do
     r1 = String.slice(spec, 1..1)
     g1 = String.slice(spec, 2..2)
@@ -251,8 +296,12 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     parse_and_validate_rgb({r1 <> r1, g1 <> g1, b1 <> b1})
   end
 
+  @spec parse_hex3_by_format(String.t(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_hex3_by_format(false, _spec), do: :no_match
 
+  @spec parse_rgb_decimal_by_format(String.t(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_rgb_decimal_by_format(true, spec) do
     case Regex.run(~r/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/, spec,
            capture: :all_but_first
@@ -265,8 +314,12 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     end
   end
 
+  @spec parse_rgb_decimal_by_format(String.t(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_rgb_decimal_by_format(false, _spec), do: :no_match
 
+  @spec parse_rgb_percent_by_format(String.t(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_rgb_percent_by_format(true, spec) do
     case Regex.run(~r/rgb\(\s*(\d+)%\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/, spec,
            capture: :all_but_first
@@ -279,5 +332,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     end
   end
 
+  @spec parse_rgb_percent_by_format(String.t(), String.t()) ::
+          {:ok, any()} | {:error, any()}
   defp parse_rgb_percent_by_format(false, _spec), do: :no_match
 end

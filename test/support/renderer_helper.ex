@@ -28,13 +28,14 @@ defmodule Raxol.Test.RendererHelper do
         )
       )
 
-      # Setup metrics if enabled
+    # Setup metrics if enabled
     metrics_state =
       case Keyword.get(opts, :enable_metrics, true) do
         true ->
           Raxol.Test.MetricsHelper.setup_metrics_test(
             Keyword.get(opts, :metrics_opts, [])
           )
+
         false ->
           nil
       end

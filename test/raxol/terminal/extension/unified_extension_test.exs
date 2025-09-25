@@ -111,7 +111,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
       assert {:ok, extension_state} =
                UnifiedExtension.get_extension_state(extension_id)
 
-      assert extension_state.status == :active
+      assert extension_state.active == true
 
       # Deactivate extension
       assert :ok = UnifiedExtension.deactivate_extension(extension_id)
@@ -119,7 +119,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
       assert {:ok, extension_state} =
                UnifiedExtension.get_extension_state(extension_id)
 
-      assert extension_state.status == :idle
+      assert extension_state.active == false
     end
 
     test "handles invalid activation states" do
@@ -189,19 +189,19 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
 
       # Get all extensions
       assert {:ok, all_extensions} = UnifiedExtension.get_extensions()
-      assert map_size(all_extensions) == 2
+      assert length(all_extensions) == 2
 
       # Filter by type
       assert {:ok, theme_extensions} =
                UnifiedExtension.get_extensions(type: :theme)
 
-      assert map_size(theme_extensions) == 1
+      assert length(theme_extensions) == 1
 
-      # Filter by status
+      # Filter by status (inactive extensions)
       assert {:ok, idle_extensions} =
-               UnifiedExtension.get_extensions(status: :idle)
+               UnifiedExtension.get_extensions(active: false)
 
-      assert map_size(idle_extensions) == 2
+      assert length(idle_extensions) == 2
     end
 
     test "exports and imports extensions" do
@@ -254,14 +254,14 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
                UnifiedExtension.register_hook(extension_id, "init", callback)
 
       # Trigger hook
-      assert {:ok, [result]} = UnifiedExtension.trigger_hook("init", ["test"])
+      assert {:ok, result} = UnifiedExtension.trigger_hook(extension_id, "init", ["test"])
       assert result == {:ok, ["test"]}
 
       # Unregister hook
       assert :ok = UnifiedExtension.unregister_hook(extension_id, "init")
 
       # Verify hook is unregistered
-      assert {:ok, []} = UnifiedExtension.trigger_hook("init", ["test"])
+      assert {:error, :hook_not_found} = UnifiedExtension.trigger_hook(extension_id, "init", ["test"])
     end
 
     test "handles hook errors" do
@@ -281,7 +281,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtensionTest do
                UnifiedExtension.register_hook(extension_id, "error", callback)
 
       # Trigger hook
-      assert {:ok, [result]} = UnifiedExtension.trigger_hook("error", ["test"])
+      assert {:ok, result} = UnifiedExtension.trigger_hook(extension_id, "error", ["test"])
       assert result == {:error, :hook_execution_failed}
     end
   end

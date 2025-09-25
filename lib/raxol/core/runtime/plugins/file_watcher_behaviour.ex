@@ -1,17 +1,22 @@
 defmodule Raxol.Core.Runtime.Plugins.FileWatcherBehaviour do
   @moduledoc """
-  Behaviour defining the interface for file watching operations.
+  Behavior for file watcher plugins.
   """
 
-  @callback start_link(opts :: Keyword.t()) :: {:ok, pid()} | {:error, term()}
-  @callback stop(pid :: pid()) :: :ok
-  @callback watch_file(
-              pid :: pid(),
-              file_path :: String.t(),
-              callback :: function()
-            ) :: :ok | {:error, term()}
-  @callback unwatch_file(pid :: pid(), file_path :: String.t()) ::
+  @doc """
+  Callback for handling file change events.
+  """
+  @callback handle_file_change(file_path :: String.t(), change_type :: atom()) ::
               :ok | {:error, term()}
-  @callback get_watched_files(pid :: pid()) :: [String.t()]
-  @callback setup_file_watching(pid :: pid()) :: :ok | {:error, term()}
+
+  @doc """
+  Callback for starting the file watcher.
+  """
+  @callback start_watching(paths :: list(String.t()), opts :: keyword()) ::
+              {:ok, pid()} | {:error, term()}
+
+  @doc """
+  Callback for stopping the file watcher.
+  """
+  @callback stop_watching(watcher_pid :: pid()) :: :ok
 end

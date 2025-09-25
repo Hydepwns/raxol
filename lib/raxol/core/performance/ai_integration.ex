@@ -10,20 +10,20 @@ defmodule Raxol.Core.Performance.AIIntegration do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Performance.Analyzer
-  alias Raxol.AI.{ContentGeneration, PerformanceOptimization}
+  # AI modules removed - using stub implementations
 
   @type ai_service :: :openai | :anthropic | :local | :mock
   @type analysis_depth :: :basic | :detailed | :comprehensive
   @type optimization_level :: :minimal | :balanced | :aggressive
 
   @doc """
-  Analyzes performance metrics using AI and returns intelligent insights.
+  Analyzes performance metrics (AI features disabled - returns basic analysis).
 
   ## Parameters
     - metrics: Map containing performance metrics from the monitor
     - options: Map of analysis options
-      - :service (atom) - AI service to use (:openai, :anthropic, :local, :mock)
-      - :depth (atom) - Analysis depth (:basic, :detailed, :comprehensive)
+      - :service (atom) - AI service to use (currently disabled)
+      - :depth (atom) - Analysis depth (currently disabled)
       - :focus (list) - Areas to focus on ([:fps, :memory, :jank, :gc])
       - :historical_data (list) - Optional historical metrics for trend analysis
       - :optimization_level (atom) - Level of optimization suggestions
@@ -114,8 +114,9 @@ defmodule Raxol.Core.Performance.AIIntegration do
     - List of optimization suggestions with priority and impact
   """
   def get_optimization_suggestions(component_name, _context, _options \\ %{}) do
-    # Integrate with PerformanceOptimization module
-    suggestions = PerformanceOptimization.analyze_performance()
+    # AI module removed - returning basic suggestions
+    # Previously: PerformanceOptimization.analyze_performance()
+    suggestions = []
 
     # Filter suggestions for the specific component
     component_suggestions =
@@ -148,12 +149,11 @@ defmodule Raxol.Core.Performance.AIIntegration do
     - Generated help content with explanations and solutions
   """
   def generate_performance_help(issue_type, context \\ %{}) do
-    prompt = build_help_prompt(issue_type, context)
+    # AI features disabled - ContentGeneration module removed
+    _prompt = build_help_prompt(issue_type, context)
 
-    case ContentGeneration.generate(:help, prompt, max_length: 500) do
-      {:ok, content} -> {:ok, content}
-      {:error, reason} -> {:error, reason}
-    end
+    {:ok,
+     "AI performance help disabled. Issue type: #{issue_type}, Context: #{inspect(context, limit: 50)}"}
   end
 
   @doc """
@@ -190,6 +190,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     {:ok, predictions}
   end
 
+  @spec generate_mock_analysis(any()) :: any()
   defp generate_mock_analysis(_ai_data) do
     %{
       insights: [
@@ -279,6 +280,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     }
   end
 
+  @spec call_openai_service(any()) :: any()
   defp call_openai_service(ai_data) do
     api_key = System.get_env("OPENAI_API_KEY")
 
@@ -307,6 +309,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end
   end
 
+  @spec make_openai_request(any(), any()) :: any()
   defp make_openai_request(ai_data, api_key) do
     url = "https://api.openai.com/v1/chat/completions"
 
@@ -328,6 +331,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     HTTPoison.post(url, body, headers, timeout: 30_000, recv_timeout: 30_000)
   end
 
+  @spec parse_openai_response(String.t()) :: {:ok, any()} | {:error, any()}
   defp parse_openai_response(response) do
     case response do
       %{status_code: 200, body: body} ->
@@ -346,6 +350,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end
   end
 
+  @spec build_performance_analysis_prompt(any()) :: any()
   defp build_performance_analysis_prompt(ai_data) do
     """
     Analyze the following performance metrics and provide insights:
@@ -358,6 +363,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     """
   end
 
+  @spec call_anthropic_service(any()) :: any()
   defp call_anthropic_service(ai_data) do
     Raxol.Core.Runtime.Log.warning(
       "Anthropic service integration not yet implemented, falling back to mock analysis",
@@ -367,6 +373,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     generate_mock_analysis(ai_data)
   end
 
+  @spec call_local_ai_service(any()) :: any()
   defp call_local_ai_service(ai_data) do
     Raxol.Core.Runtime.Log.warning(
       "Local AI service integration not yet implemented, falling back to mock analysis",
@@ -376,6 +383,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     generate_mock_analysis(ai_data)
   end
 
+  @spec generate_report_content(any(), any()) :: any()
   defp generate_report_content(analysis, options) do
     format = Map.get(options, :format, :text)
     include_code_samples = Map.get(options, :include_code_samples, false)
@@ -389,6 +397,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end
   end
 
+  @spec format_text_report(any(), any()) :: String.t()
   defp format_text_report(analysis, include_code_samples) do
     """
     Performance Analysis Report
@@ -415,6 +424,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     """
   end
 
+  @spec format_html_report(any(), any()) :: String.t()
   defp format_html_report(analysis, include_code_samples) do
     """
     <!DOCTYPE html>
@@ -469,6 +479,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     """
   end
 
+  @spec format_markdown_report(any(), any()) :: String.t()
   defp format_markdown_report(analysis, include_code_samples) do
     """
     # Performance Analysis Report
@@ -494,6 +505,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     """
   end
 
+  @spec format_recommendations(any()) :: String.t()
   defp format_recommendations(recommendations) do
     Enum.map_join(recommendations, "\n", fn rec ->
       """
@@ -509,6 +521,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end)
   end
 
+  @spec format_recommendations_html(any()) :: String.t()
   defp format_recommendations_html(recommendations) do
     Enum.map_join(recommendations, "\n", fn rec ->
       """
@@ -526,6 +539,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end)
   end
 
+  @spec format_recommendations_markdown(any()) :: String.t()
   defp format_recommendations_markdown(recommendations) do
     Enum.map_join(recommendations, "\n", fn rec ->
       """
@@ -541,6 +555,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end)
   end
 
+  @spec format_risk_assessment(any()) :: String.t()
   defp format_risk_assessment(risk) do
     """
     Overall Risk: #{risk.overall_risk}
@@ -556,6 +571,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     """
   end
 
+  @spec format_risk_assessment_html(any()) :: String.t()
   defp format_risk_assessment_html(risk) do
     """
     <p><strong>Overall Risk:</strong> <span class="#{risk.overall_risk}">#{risk.overall_risk}</span></p>
@@ -577,6 +593,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     """
   end
 
+  @spec format_risk_assessment_markdown(any()) :: String.t()
   defp format_risk_assessment_markdown(risk) do
     """
     **Overall Risk:** #{risk.overall_risk}
@@ -592,10 +609,12 @@ defmodule Raxol.Core.Performance.AIIntegration do
     """
   end
 
+  @spec format_impact(any()) :: String.t()
   defp format_impact(impact) do
     Enum.map_join(impact, "\n", fn {area, value} -> "#{area}: #{value}" end)
   end
 
+  @spec format_impact_html(any()) :: String.t()
   defp format_impact_html(impact) do
     """
     <ul>
@@ -604,12 +623,14 @@ defmodule Raxol.Core.Performance.AIIntegration do
     """
   end
 
+  @spec format_impact_markdown(any()) :: String.t()
   defp format_impact_markdown(impact) do
     Enum.map_join(impact, "\n", fn {area, value} ->
       "- **#{area}:** #{value}"
     end)
   end
 
+  @spec format_code_suggestions(any()) :: String.t()
   defp format_code_suggestions(suggestions) do
     Enum.map_join(suggestions, "\n", fn suggestion ->
       """
@@ -621,6 +642,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end)
   end
 
+  @spec format_code_suggestions_html(any()) :: String.t()
   defp format_code_suggestions_html(suggestions) do
     Enum.map_join(suggestions, "\n", fn suggestion ->
       """
@@ -640,6 +662,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end)
   end
 
+  @spec format_code_suggestions_markdown(any()) :: String.t()
   defp format_code_suggestions_markdown(suggestions) do
     Enum.map_join(suggestions, "\n", fn suggestion ->
       """
@@ -659,6 +682,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end)
   end
 
+  @spec calculate_priority(any()) :: any()
   defp calculate_priority(suggestion) do
     case suggestion.issue do
       :slow_rendering when suggestion.avg_time > 100 -> "high"
@@ -669,6 +693,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end
   end
 
+  @spec estimate_impact(any()) :: any()
   defp estimate_impact(suggestion) do
     case suggestion.issue do
       :slow_rendering when suggestion.avg_time > 100 ->
@@ -688,6 +713,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end
   end
 
+  @spec estimate_effort(any()) :: any()
   defp estimate_effort(suggestion) do
     case suggestion.issue do
       :slow_rendering -> "Medium"
@@ -697,6 +723,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end
   end
 
+  @spec build_help_prompt(any(), any()) :: any()
   defp build_help_prompt(issue_type, context) do
     base_prompts = %{
       slow_rendering: "How to optimize slow component rendering",
@@ -723,6 +750,7 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end
   end
 
+  @spec analyze_trends(any()) :: any()
   defp analyze_trends(historical_data) do
     # Simple trend analysis - in a real implementation, this would use more sophisticated algorithms
     case historical_data do
@@ -751,21 +779,25 @@ defmodule Raxol.Core.Performance.AIIntegration do
     end
   end
 
+  @spec predict_short_term_issues(any(), any()) :: any()
   defp predict_short_term_issues(_current_analysis, _trend_analysis) do
     # Predict issues in the next few minutes
     []
   end
 
+  @spec predict_medium_term_issues(any(), any()) :: any()
   defp predict_medium_term_issues(_current_analysis, _trend_analysis) do
     # Predict issues in the next few hours
     []
   end
 
+  @spec predict_long_term_issues(any(), any()) :: any()
   defp predict_long_term_issues(_current_analysis, _trend_analysis) do
     # Predict issues in the next few days/weeks
     []
   end
 
+  @spec calculate_prediction_confidence(any(), any()) :: any()
   defp calculate_prediction_confidence(_current_analysis, _trend_analysis) do
     # Calculate confidence based on data quality and trend consistency
     0.75

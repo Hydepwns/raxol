@@ -62,6 +62,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end
   end
 
+  @spec calculate_content_size(any(), any()) :: any()
   defp calculate_content_size(box, {width, height}) do
     {padding_left, padding_right, padding_top, padding_bottom} = box.padding
     border_width = if box.border == :none, do: 0, else: 2
@@ -72,6 +73,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     {content_width, content_height}
   end
 
+  @spec layout_children(any(), any()) :: any()
   defp layout_children(children, {width, height}) do
     # Get layout mode from box style or default to vertical
     layout_mode = get_layout_mode(children)
@@ -84,6 +86,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end
   end
 
+  @spec get_layout_mode(any()) :: any() | nil
   defp get_layout_mode(children) do
     # Check if any child has a layout mode specified
     Enum.find_value(children, :vertical, fn child ->
@@ -91,6 +94,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end)
   end
 
+  @spec layout_vertical(any(), any()) :: any()
   defp layout_vertical(children, {width, height}) do
     children
     |> Enum.scan({0, 0}, fn child, {_prev_x, prev_y} ->
@@ -108,6 +112,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     |> Enum.map(fn {_pos, child} -> child end)
   end
 
+  @spec layout_horizontal(any(), any()) :: any()
   defp layout_horizontal(children, {width, height}) do
     children
     |> Enum.scan({0, 0}, fn child, {prev_x, _prev_y} ->
@@ -125,6 +130,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     |> Enum.map(fn {_pos, child} -> child end)
   end
 
+  @spec layout_stack(any(), any()) :: any()
   defp layout_stack(children, {width, height}) do
     # Stack all children at the same position, only the last one visible
     children
@@ -144,6 +150,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end)
   end
 
+  @spec get_child_width(any(), String.t() | integer()) :: any() | nil
   defp get_child_width(child, available_width) do
     case Map.get(child, :width) do
       nil -> available_width
@@ -153,6 +160,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end
   end
 
+  @spec get_child_height(any(), any()) :: any() | nil
   defp get_child_height(child, available_height) do
     case Map.get(child, :height) do
       # Default height for text-like content
@@ -163,6 +171,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end
   end
 
+  @spec apply_box_model(any(), any(), any()) :: any()
   defp apply_box_model(box, children_layout, {_width, _height}) do
     {margin_top, margin_right, margin_bottom, margin_left} = box.margin
     {padding_top, padding_right, padding_bottom, padding_left} = box.padding
@@ -188,6 +197,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end
   end
 
+  @spec apply_margins(any(), any()) :: any()
   defp apply_margins(layout, {top, _right, _bottom, left}) do
     # Apply margins by adjusting the overall box position
     # This affects the box's position relative to its parent
@@ -206,6 +216,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end)
   end
 
+  @spec apply_padding(any(), any()) :: any()
   defp apply_padding(layout, {top, right, bottom, left}) do
     # Apply padding by adjusting child positions
     Enum.map(layout, fn child ->
@@ -227,6 +238,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end)
   end
 
+  @spec apply_border(any(), any()) :: any()
   defp apply_border(layout, style) do
     # Get border characters for the style
     border_chars = get_border_characters(style)
@@ -258,6 +270,7 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     end)
   end
 
+  @spec get_border_characters(any()) :: any() | nil
   defp get_border_characters(style) do
     case style do
       :single ->
@@ -335,17 +348,22 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
   end
 
   # Helper function to normalize spacing values
+  @spec normalize_spacing(any()) :: any()
   defp normalize_spacing(n) when is_integer(n) and n >= 0, do: {n, n, n, n}
+  @spec normalize_spacing(any()) :: any()
   defp normalize_spacing({n}) when is_integer(n) and n >= 0, do: {n, n, n, n}
 
+  @spec normalize_spacing(any()) :: any()
   defp normalize_spacing({h, v})
        when is_integer(h) and is_integer(v) and h >= 0 and v >= 0,
        do: {h, v, h, v}
 
+  @spec normalize_spacing(any()) :: any()
   defp normalize_spacing({t, r, b, l})
        when is_integer(t) and is_integer(r) and is_integer(b) and is_integer(l) and
               t >= 0 and r >= 0 and b >= 0 and l >= 0,
        do: {t, r, b, l}
 
+  @spec normalize_spacing(any()) :: any()
   defp normalize_spacing(_), do: {0, 0, 0, 0}
 end

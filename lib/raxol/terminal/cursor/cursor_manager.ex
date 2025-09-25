@@ -200,6 +200,11 @@ defmodule Raxol.Terminal.Cursor.Manager do
     %{cursor | row: row, col: col, position: {row, col}}
   end
 
+  # Handle plain maps (for backward compatibility)
+  def move_to(%{} = cursor, row, col) do
+    %{cursor | row: row, col: col, position: {row, col}}
+  end
+
   def move_to(pid, row, col) when is_pid(pid) do
     GenServer.call(pid, {:move_to, row, col})
     pid

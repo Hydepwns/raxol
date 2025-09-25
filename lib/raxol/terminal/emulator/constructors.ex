@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   """
 
   alias Raxol.Terminal.{ScreenBuffer, ModeManager, Cursor.Manager}
+  alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
 
   @doc """
   Creates a new terminal emulator instance with default dimensions.
@@ -25,7 +26,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
 
     buffer_pid =
       get_pid(
-        Raxol.Terminal.Buffer.Manager.start_link(width: width, height: height)
+        Raxol.Terminal.ScreenBuffer.Manager.start_link(width: width, height: height)
       )
 
     config_pid =
@@ -42,6 +43,17 @@ defmodule Raxol.Terminal.Emulator.Constructors do
     main_buffer = ScreenBuffer.new(width, height)
     alternate_buffer = ScreenBuffer.new(width, height)
 
+    # Create a proper CursorManager struct
+    cursor = %Manager{
+      row: 0,
+      col: 0,
+      position: {0, 0},
+      visible: true,
+      blinking: true,
+      style: :block,
+      bottom_margin: height - 1
+    }
+
     %Raxol.Terminal.Emulator{
       # Core managers
       state: state_pid,
@@ -49,7 +61,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
       buffer: buffer_pid,
       config: config_pid,
       command: command_pid,
-      cursor: nil,
+      cursor: cursor,
       cursor_manager: cursor_manager_pid,
       window_manager: window_manager_pid,
       mode_manager: mode_manager,
@@ -67,6 +79,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
         g3: :us_ascii,
         gl: :g0,
         gr: :g0,
+        active: :g0,
         single_shift: nil
       },
 
@@ -124,7 +137,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
 
     buffer_pid =
       get_pid(
-        Raxol.Terminal.Buffer.Manager.start_link(
+        Raxol.Terminal.ScreenBuffer.Manager.start_link(
           [width: width, height: height] ++ opts
         )
       )
@@ -145,6 +158,17 @@ defmodule Raxol.Terminal.Emulator.Constructors do
     main_buffer = ScreenBuffer.new(width, height)
     alternate_buffer = ScreenBuffer.new(width, height)
 
+    # Create a proper CursorManager struct
+    cursor = %Manager{
+      row: 0,
+      col: 0,
+      position: {0, 0},
+      visible: true,
+      blinking: true,
+      style: :block,
+      bottom_margin: height - 1
+    }
+
     # Get plugin manager from options
     plugin_manager = Keyword.get(opts, :plugin_manager)
 
@@ -155,7 +179,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
       buffer: buffer_pid,
       config: config_pid,
       command: command_pid,
-      cursor: nil,
+      cursor: cursor,
       cursor_manager: cursor_manager_pid,
       window_manager: window_manager_pid,
       mode_manager: mode_manager,
@@ -173,6 +197,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
         g3: :us_ascii,
         gl: :g0,
         gr: :g0,
+        active: :g0,
         single_shift: nil
       },
 
@@ -222,7 +247,11 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   @doc """
   Creates a new terminal emulator instance with options map.
   """
-  @spec new(%{required(:width) => non_neg_integer(), required(:height) => non_neg_integer(), optional(atom()) => term()}) :: Raxol.Terminal.Emulator.t()
+  @spec new(%{
+          required(:width) => non_neg_integer(),
+          required(:height) => non_neg_integer(),
+          optional(atom()) => term()
+        }) :: Raxol.Terminal.Emulator.t()
   def new(%{width: width, height: height} = opts) do
     plugin_manager = Map.get(opts, :plugin_manager)
     emulator = new(width, height, [])
@@ -256,7 +285,8 @@ defmodule Raxol.Terminal.Emulator.Constructors do
 
   # Private functions
 
-  @spec get_pid({:ok, pid()} | {:error, {:already_started, pid()} | term()}) :: pid() | no_return()
+  @spec get_pid({:ok, pid()} | {:error, {:already_started, pid()} | term()}) ::
+          pid() | no_return()
   defp get_pid({:ok, pid}), do: pid
   defp get_pid({:error, {:already_started, pid}}), do: pid
 

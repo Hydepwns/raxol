@@ -56,7 +56,7 @@ defmodule Mix.Tasks.Raxol.Memory.Stability do
   """
 
   use Mix.Task
-  alias Raxol.Terminal.{ANSI.AnsiParser, Cursor.Manager}
+  alias Raxol.Terminal.{ANSI.Utils.AnsiParser, Cursor.Manager}
 
   @shortdoc "Run long-running memory stability tests"
 

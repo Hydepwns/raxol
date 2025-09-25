@@ -52,10 +52,10 @@ defmodule PerformanceSummary do
       end)
     end)
     
-    # Minimal emulator (reduced GenServers)
+    # Minimal emulator (no GenServers)
     {time_minimal, _} = :timer.tc(fn ->
       Enum.each(1..ops, fn _ ->
-        Emulator.new_minimal(80, 24)
+        Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
       end)
     end)
     
@@ -69,7 +69,7 @@ defmodule PerformanceSummary do
     IO.puts("\n#{String.pad_trailing("Emulator Type", 30)} | Time/op (μs) | Speedup")
     IO.puts(String.duplicate("-", 60))
     IO.puts("#{String.pad_trailing("Original (7 GenServers)", 30)} | #{String.pad_leading(Float.to_string(Float.round(time_heavy/ops, 2)), 12)} | 1.0x")
-    IO.puts("#{String.pad_trailing("Minimal (3 GenServers)", 30)} | #{String.pad_leading(Float.to_string(Float.round(time_minimal/ops, 2)), 12)} | #{Float.round(time_heavy/time_minimal, 1)}x")
+    IO.puts("#{String.pad_trailing("Minimal (0 GenServers)", 30)} | #{String.pad_leading(Float.to_string(Float.round(time_minimal/ops, 2)), 12)} | #{Float.round(time_heavy/time_minimal, 1)}x")
     IO.puts("#{String.pad_trailing("Lite (0 GenServers)", 30)} | #{String.pad_leading(Float.to_string(Float.round(time_lite/ops, 2)), 12)} | #{Float.round(time_heavy/time_lite, 1)}x")
     
     IO.puts("\n" <> String.duplicate("-", 80))
@@ -77,7 +77,7 @@ defmodule PerformanceSummary do
     IO.puts(String.duplicate("-", 80))
     
     # Use minimal emulator for parser tests
-    emulator = Emulator.new_minimal(80, 24)
+    emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
     
     # Warm up
     Enum.each(1..10, fn _ ->

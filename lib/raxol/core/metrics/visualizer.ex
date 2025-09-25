@@ -162,6 +162,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
     end
   end
 
+  @spec prepare_chart_data(any(), any()) :: any()
   defp prepare_chart_data(metrics, options) do
     case options.type do
       :line -> prepare_line_chart(metrics, options)
@@ -171,6 +172,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
     end
   end
 
+  @spec prepare_line_chart(any(), any()) :: any()
   defp prepare_line_chart(metrics, options) do
     %{
       type: "line",
@@ -208,6 +210,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
     }
   end
 
+  @spec prepare_bar_chart(any(), any()) :: any()
   defp prepare_bar_chart(metrics, options) do
     %{
       type: "bar",
@@ -243,6 +246,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
     }
   end
 
+  @spec prepare_gauge_chart(any(), any()) :: any()
   defp prepare_gauge_chart(metrics, options) do
     value = get_latest_metric_value(metrics)
     max_value = get_max_metric_value(metrics)
@@ -283,6 +287,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
     }
   end
 
+  @spec prepare_histogram_chart(any(), any()) :: any()
   defp prepare_histogram_chart(metrics, options) do
     values = get_metric_values(metrics)
     buckets = calculate_histogram_buckets(values)
@@ -321,6 +326,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
     }
   end
 
+  @spec get_time_labels(any(), any()) :: any() | nil
   defp get_time_labels(metrics, options) do
     filtered_metrics = filter_metrics_by_time_range(metrics, options.time_range)
 
@@ -330,28 +336,33 @@ defmodule Raxol.Core.Metrics.Visualizer do
     |> Enum.map(&format_time_label/1)
   end
 
+  @spec get_metric_values(any()) :: any() | nil
   defp get_metric_values(metrics) do
     metrics
     |> Enum.map(& &1.value)
   end
 
+  @spec get_filtered_metric_values(any(), any()) :: any() | nil
   defp get_filtered_metric_values(metrics, options) do
     filtered_metrics = filter_metrics_by_time_range(metrics, options.time_range)
     get_metric_values(filtered_metrics)
   end
 
+  @spec get_latest_metric_value(any()) :: any() | nil
   defp get_latest_metric_value(metrics) do
     metrics
     |> List.first()
     |> Map.get(:value, 0)
   end
 
+  @spec get_max_metric_value(any()) :: any() | nil
   defp get_max_metric_value(metrics) do
     metrics
     |> Enum.map(& &1.value)
     |> Enum.max(fn -> 100 end)
   end
 
+  @spec calculate_histogram_buckets(any()) :: any()
   defp calculate_histogram_buckets(values) do
     min = Enum.min(values, fn -> 0 end)
     max = Enum.max(values, fn -> 100 end)
@@ -366,8 +377,10 @@ defmodule Raxol.Core.Metrics.Visualizer do
     end)
   end
 
+  @spec filter_metrics_by_time_range(any(), any()) :: any()
   defp filter_metrics_by_time_range(metrics, nil), do: metrics
 
+  @spec filter_metrics_by_time_range(any(), any()) :: any()
   defp filter_metrics_by_time_range(metrics, {start, end_}) do
     # IO.puts("DEBUG: Filtering metrics with time range: #{start} to #{end_}")
     # IO.puts("DEBUG: Total metrics before filtering: #{length(metrics)}")
@@ -391,18 +404,22 @@ defmodule Raxol.Core.Metrics.Visualizer do
     filtered
   end
 
+  @spec format_time_label(any()) :: String.t()
   defp format_time_label(datetime) do
     Calendar.strftime(datetime, "%H:%M:%S")
   end
 
+  @spec format_bucket_label(any()) :: String.t()
   defp format_bucket_label(%{start: start, end: end_}) do
     "#{Float.round(start, 2)} - #{Float.round(end_, 2)}"
   end
 
+  @spec format_gauge_value(any()) :: String.t()
   defp format_gauge_value(value) do
     Float.round(value, 2)
   end
 
+  @spec export_chart_data(any(), any()) :: any()
   defp export_chart_data(chart, format) do
     case format do
       :json -> Jason.encode!(chart)
@@ -411,6 +428,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
     end
   end
 
+  @spec export_to_csv(any()) :: any()
   defp export_to_csv(chart) do
     headers = ["Timestamp", "Value"]
 
@@ -430,6 +448,7 @@ defmodule Raxol.Core.Metrics.Visualizer do
     |> Enum.map_join("\n", &Enum.join(&1, ","))
   end
 
+  @spec export_to_png(any()) :: any()
   defp export_to_png(_chart) do
     # This would typically use a library like Chart.js or similar
     # to render the chart to a PNG file

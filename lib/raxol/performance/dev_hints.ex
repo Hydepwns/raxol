@@ -145,12 +145,13 @@ defmodule Raxol.Performance.DevHints do
       [:raxol, :plugin, :execute]
     ]
 
-    _ = :telemetry.attach_many(
-      "raxol-dev-hints",
-      events,
-      &handle_telemetry_event/4,
-      self()
-    )
+    _ =
+      :telemetry.attach_many(
+        "raxol-dev-hints",
+        events,
+        &handle_telemetry_event/4,
+        self()
+      )
 
     state = %__MODULE__{
       config: config,

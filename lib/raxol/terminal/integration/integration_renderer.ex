@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
   """
 
   alias Raxol.Terminal.Integration.State
-  alias Raxol.Terminal.Buffer.Manager
+  alias Raxol.Terminal.ScreenBuffer.Manager
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   require Logger
 
@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
   Returns :ok or {:error, reason}.
   """
   def render(%State{} = state) do
-    active_buffer = Manager.get_screen_buffer(state.buffer_manager)
+    active_buffer = Manager.get_active_buffer(state.buffer_manager)
 
     render_buffer_if_present(active_buffer, state)
   end

@@ -490,24 +490,31 @@ defmodule Raxol.Core.Performance.MetricsCollector do
 
   # Private helper functions
 
+  @spec send_initialization_telemetry(any()) :: any()
   defp send_initialization_telemetry(true) do
     send_telemetry(:collector_initialized, %{}, %{})
   end
 
+  @spec send_initialization_telemetry(any()) :: any()
   defp send_initialization_telemetry(false), do: :ok
 
+  @spec send_frame_telemetry(any(), any()) :: any()
   defp send_frame_telemetry(true, frame_time) do
     fps = calculate_fps_from_frame_time(frame_time)
     send_telemetry(:frame_rendered, %{frame_time: frame_time}, %{fps: fps})
   end
 
+  @spec send_frame_telemetry(any(), any()) :: any()
   defp send_frame_telemetry(false, _frame_time), do: :ok
 
+  @spec calculate_fps_from_frame_time(any()) :: any()
   defp calculate_fps_from_frame_time(frame_time) when frame_time > 0,
     do: 1000 / frame_time
 
+  @spec calculate_fps_from_frame_time(any()) :: any()
   defp calculate_fps_from_frame_time(_frame_time), do: 0.0
 
+  @spec calculate_memory_growth_rate(any(), any(), any()) :: any()
   defp calculate_memory_growth_rate(time_diff, current_memory, last_memory)
        when time_diff > 0 do
     # Calculate memory growth rate
@@ -516,9 +523,11 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     memory_growth / time_diff * 1000
   end
 
+  @spec calculate_memory_growth_rate(any(), any(), any()) :: any()
   defp calculate_memory_growth_rate(_time_diff, _current_memory, _last_memory),
     do: 0.0
 
+  @spec send_event_telemetry(any(), any(), any(), any()) :: any()
   defp send_event_telemetry(true, processing_time, event_type, updated_timings) do
     send_telemetry(:event_processed, %{processing_time: processing_time}, %{
       event_type: event_type,
@@ -526,6 +535,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     })
   end
 
+  @spec send_event_telemetry(any(), any(), any(), any()) :: any()
   defp send_event_telemetry(
          false,
          _processing_time,
@@ -534,14 +544,17 @@ defmodule Raxol.Core.Performance.MetricsCollector do
        ),
        do: :ok
 
+  @spec send_operation_telemetry(any(), any(), any()) :: any()
   defp send_operation_telemetry(true, duration, operation_type) do
     send_telemetry(:operation_completed, %{duration: duration}, %{
       operation_type: operation_type
     })
   end
 
+  @spec send_operation_telemetry(any(), any(), any()) :: any()
   defp send_operation_telemetry(false, _duration, _operation_type), do: :ok
 
+  @spec send_cpu_telemetry(any(), any(), any(), any()) :: any()
   defp send_cpu_telemetry(true, cpu_usage, run_queue, logical_processors) do
     send_telemetry(:cpu_sampled, %{cpu_usage: cpu_usage}, %{
       run_queue: run_queue,
@@ -549,15 +562,19 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     })
   end
 
+  @spec send_cpu_telemetry(any(), any(), any(), any()) :: any()
   defp send_cpu_telemetry(false, _cpu_usage, _run_queue, _logical_processors),
     do: :ok
 
+  @spec calculate_memory_score(any()) :: any()
   defp calculate_memory_score(memory_trend) when memory_trend < 0, do: 100.0
 
+  @spec calculate_memory_score(any()) :: any()
   defp calculate_memory_score(memory_trend) do
     max(0.0, 100.0 - abs(memory_trend) / 1000.0)
   end
 
+  @spec send_telemetry(String.t() | atom(), any(), any()) :: any()
   defp send_telemetry(event_name, measurements, metadata) do
     :telemetry.execute(
       [:raxol, :performance, event_name],
@@ -566,13 +583,16 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     )
   end
 
+  @spec get_average_event_time(any()) :: any() | nil
   defp get_average_event_time(timings)
        when is_list(timings) and length(timings) > 0 do
     Enum.sum(timings) / length(timings)
   end
 
+  @spec get_average_event_time(any()) :: any() | nil
   defp get_average_event_time(_), do: 0.0
 
+  @spec get_event_timing_stats(any()) :: any() | nil
   defp get_event_timing_stats(collector) do
     Enum.map(collector.event_timings, fn {event_type, timings} ->
       {event_type,
@@ -585,10 +605,12 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     |> Map.new()
   end
 
+  @spec get_current_cpu_usage(any()) :: any() | nil
   defp get_current_cpu_usage(collector) do
     List.first(collector.cpu_samples, 0.0)
   end
 
+  @spec get_average_cpu_usage(any()) :: any() | nil
   defp get_average_cpu_usage(collector) do
     case collector.cpu_samples do
       [] -> 0.0
@@ -596,6 +618,7 @@ defmodule Raxol.Core.Performance.MetricsCollector do
     end
   end
 
+  @spec calculate_performance_score(any()) :: any()
   defp calculate_performance_score(collector) do
     # Calculate overall performance score (0-100)
     fps = get_fps(collector)

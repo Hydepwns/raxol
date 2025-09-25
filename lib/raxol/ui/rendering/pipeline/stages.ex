@@ -1,199 +1,180 @@
 defmodule Raxol.UI.Rendering.Pipeline.Stages do
   @moduledoc """
-  Core rendering pipeline stage execution.
-  Manages the sequential execution of rendering stages:
-  1. Layout - Calculate positions and sizes
-  2. Composition - Build render tree
-  3. Paint - Convert to draw commands
-  4. Commit - Send to renderer
+  Defines and executes the rendering pipeline stages for UI components.
   """
-
-  require Logger
-  alias Raxol.UI.Rendering.{Layouter, Composer, Painter}
-
-  @type diff_result :: term()
-  @type tree :: map() | nil
-  @type layout_data :: map() | nil
-  @type composed_data :: map() | nil
-  @type painted_data :: term()
 
   @doc """
-  Executes all rendering stages in sequence.
-  Returns {painted_output, composed_tree} for state storage.
+  Executes the rendering pipeline stages.
+
+  This function processes the render operation through various stages
+  to produce the final rendered output.
   """
-  @spec execute_render_stages(
-          diff_result(),
-          tree(),
-          module(),
-          composed_data(),
-          painted_data()
-        ) :: {painted_data(), composed_data()}
-  def execute_render_stages(
-        diff_result,
-        new_tree_for_reference,
-        _renderer_module,
-        previous_composed_tree,
-        previous_painted_output
-      ) do
-    process_render_stages(
-      should_process_tree?(diff_result, new_tree_for_reference),
-      diff_result,
-      new_tree_for_reference,
-      previous_composed_tree,
-      previous_painted_output
-    )
+  @spec execute_render_stages(tuple(), any(), module(), any(), any()) :: any()
+  def execute_render_stages(operation, tree, renderer_module, context, options) do
+    # Process through the pipeline stages
+    tree
+    |> validate_tree()
+    |> preprocess(operation)
+    |> apply_styles()
+    |> layout()
+    |> render(renderer_module, context, options)
+    |> postprocess()
   end
 
-  defp process_render_stages(
-         false,
-         _diff_result,
-         _new_tree_for_reference,
-         previous_composed_tree,
-         previous_painted_output
-       ) do
-    Logger.debug(
-      "Render Pipeline: No effective tree to process based on initial diff_result and new_tree_for_reference."
-    )
-
-    {previous_painted_output, previous_composed_tree}
+  # Stage 1: Validate the tree structure
+  defp validate_tree(tree) do
+    # Basic validation - ensure tree is not nil
+    case tree do
+      nil -> %{}
+      tree -> tree
+    end
   end
 
-  defp process_render_stages(
-         _should_process,
-         diff_result,
-         new_tree_for_reference,
-         previous_composed_tree,
-         previous_painted_output
-       ) do
-    layout_data = Layouter.layout_tree(diff_result, new_tree_for_reference)
+  # Stage 2: Preprocess based on operation type
+  defp preprocess(tree, operation) do
+    case operation do
+      {:replace, _tree} ->
+        # Full replacement - use the tree as-is
+        tree
 
-    process_layout_stage(
-      should_process_layout?(diff_result, layout_data),
-      diff_result,
-      layout_data,
-      new_tree_for_reference,
-      previous_composed_tree,
-      previous_painted_output
-    )
+      {:update, region, subtree} ->
+        # Partial update - merge subtree into region
+        Map.put(tree, :region, region)
+        |> Map.put(:subtree, subtree)
+
+      _ ->
+        tree
+    end
   end
 
-  defp process_layout_stage(
-         false,
-         _diff_result,
-         _layout_data,
-         _new_tree_for_reference,
-         previous_composed_tree,
-         previous_painted_output
-       ) do
-    Logger.debug(
-      "Render Pipeline: Layout stage resulted in nil, skipping compose, paint and commit."
-    )
-
-    {previous_painted_output, previous_composed_tree}
+  # Stage 3: Apply styles to the tree
+  defp apply_styles(tree) do
+    # Apply any pending styles or transformations
+    tree
+    |> apply_default_styles()
+    |> apply_theme_styles()
+    |> apply_custom_styles()
   end
 
-  defp process_layout_stage(
-         _should_process,
-         _diff_result,
-         layout_data,
-         new_tree_for_reference,
-         previous_composed_tree,
-         previous_painted_output
-       ) do
-    composed_data =
-      Composer.compose_render_tree(
-        layout_data,
-        new_tree_for_reference,
-        previous_composed_tree
-      )
+  defp apply_default_styles(tree) do
+    # Apply default styles if not present
+    Map.put_new(tree, :style, %{})
+  end
 
-    handle_composition_stage(
-      composed_data,
-      layout_data,
-      previous_painted_output,
-      previous_composed_tree,
-      new_tree_for_reference
-    )
+  defp apply_theme_styles(tree) do
+    # Apply theme-based styles
+    # This would integrate with the theme system
+    tree
+  end
+
+  defp apply_custom_styles(tree) do
+    # Apply any custom styles from the tree
+    tree
+  end
+
+  # Stage 4: Layout calculation
+  defp layout(tree) do
+    # Calculate layout positions and dimensions
+    tree
+    |> calculate_dimensions()
+    |> calculate_positions()
+    |> apply_constraints()
+  end
+
+  defp calculate_dimensions(tree) do
+    # Calculate width and height based on content and constraints
+    Map.put_new(tree, :dimensions, %{width: 0, height: 0})
+  end
+
+  defp calculate_positions(tree) do
+    # Calculate x and y positions
+    Map.put_new(tree, :position, %{x: 0, y: 0})
+  end
+
+  defp apply_constraints(tree) do
+    # Apply any layout constraints (min/max width/height, etc.)
+    tree
+  end
+
+  # Stage 5: Render using the specified renderer
+  defp render(tree, renderer_module, context, options) do
+    # Delegate to the renderer module if available
+    if renderer_module && function_exported?(renderer_module, :render, 3) do
+      renderer_module.render(tree, context, options)
+    else
+      # Fallback rendering
+      default_render(tree)
+    end
+  end
+
+  defp default_render(tree) do
+    # Basic rendering fallback
+    %{
+      rendered: true,
+      content: tree,
+      output: generate_output(tree)
+    }
+  end
+
+  defp generate_output(tree) do
+    # Generate the actual output (string, buffer, etc.)
+    case tree do
+      %{content: content} when is_binary(content) -> content
+      %{text: text} when is_binary(text) -> text
+      _ -> ""
+    end
+  end
+
+  # Stage 6: Post-processing
+  defp postprocess(rendered) do
+    rendered
+    |> optimize_output()
+    |> apply_effects()
+    |> finalize()
+  end
+
+  defp optimize_output(rendered) do
+    # Optimize the rendered output (remove redundant operations, etc.)
+    rendered
+  end
+
+  defp apply_effects(rendered) do
+    # Apply any post-render effects (shadows, animations, etc.)
+    rendered
+  end
+
+  defp finalize(rendered) do
+    # Final cleanup and preparation for display
+    rendered
   end
 
   @doc """
-  Handles the composition and paint stages after successful layout.
+  Executes a simplified render for performance-critical paths.
   """
-  @spec handle_composition_stage(
-          composed_data(),
-          layout_data(),
-          painted_data(),
-          composed_data(),
-          tree()
-        ) :: {painted_data(), composed_data()}
-  def handle_composition_stage(
-        composed_data,
-        layout_data,
-        previous_painted_output,
-        previous_composed_tree,
-        new_tree_for_reference
-      ) do
-    process_composition_stage(
-      should_process_composition?(composed_data, layout_data),
-      composed_data,
-      new_tree_for_reference,
-      previous_composed_tree,
-      previous_painted_output
-    )
+  @spec fast_render(any(), module()) :: any()
+  def fast_render(tree, renderer_module) do
+    tree
+    |> validate_tree()
+    |> render(renderer_module, nil, nil)
   end
 
-  defp process_composition_stage(
-         false,
-         composed_data,
-         _new_tree_for_reference,
-         _previous_composed_tree,
-         previous_painted_output
-       ) do
-    Logger.debug(
-      "Render Pipeline: Composition stage resulted in nil, skipping paint and commit."
-    )
-
-    {previous_painted_output, composed_data}
+  @doc """
+  Executes only the layout stage.
+  """
+  @spec layout_only(any()) :: any()
+  def layout_only(tree) do
+    tree
+    |> validate_tree()
+    |> layout()
   end
 
-  defp process_composition_stage(
-         _should_process,
-         composed_data,
-         new_tree_for_reference,
-         previous_composed_tree,
-         previous_painted_output
-       ) do
-    painted_data =
-      Painter.paint(
-        composed_data,
-        new_tree_for_reference,
-        previous_composed_tree,
-        previous_painted_output
-      )
-
-    {painted_data, composed_data}
-  end
-
-  # Stage validation functions
-
-  @doc false
-  def should_process_tree?(diff_result, new_tree_for_reference) do
-    is_map(new_tree_for_reference) or
-      diff_result == {:replace, nil} or
-      (is_tuple(diff_result) and elem(diff_result, 0) == :replace)
-  end
-
-  @doc false
-  def should_process_layout?(diff_result, layout_data) do
-    is_map(layout_data) or
-      (is_tuple(diff_result) and elem(diff_result, 0) == :replace and
-         elem(diff_result, 1) == nil)
-  end
-
-  @doc false
-  def should_process_composition?(composed_data, layout_data) do
-    is_map(composed_data) or
-      (is_map(layout_data) and map_size(layout_data) == 0) or
-      layout_data == nil
+  @doc """
+  Executes only the style application stage.
+  """
+  @spec style_only(any()) :: any()
+  def style_only(tree) do
+    tree
+    |> validate_tree()
+    |> apply_styles()
   end
 end

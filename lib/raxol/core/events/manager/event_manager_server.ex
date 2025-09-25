@@ -503,6 +503,7 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
 
   # Private Helper Functions
 
+  @spec do_dispatch(map(), any()) :: any()
   defp do_dispatch(state, event) do
     event_type = extract_event_type(event)
 
@@ -577,24 +578,31 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
     maybe_record_event(state, event)
   end
 
+  @spec maybe_record_event(any(), any()) :: any()
   defp maybe_record_event(%{config: %{enable_history: true}} = state, event) do
     history = [{event, DateTime.utc_now()} | state.event_history]
     limited_history = Enum.take(history, state.config.history_limit)
     %{state | event_history: limited_history}
   end
 
+  @spec maybe_record_event(map(), any()) :: any()
   defp maybe_record_event(state, _event), do: state
 
+  @spec extract_event_type(any()) :: any()
   defp extract_event_type(event)
        when is_tuple(event) and tuple_size(event) > 0 do
     elem(event, 0)
   end
 
+  @spec extract_event_type(any()) :: any()
   defp extract_event_type(event) when is_atom(event), do: event
+  @spec extract_event_type(any()) :: any()
   defp extract_event_type(_), do: :unknown
 
+  @spec matches_filters?(any(), any()) :: boolean()
   defp matches_filters?(_event, []), do: true
 
+  @spec matches_filters?(any(), any()) :: boolean()
   defp matches_filters?(event, filters) do
     Enum.all?(filters, fn {key, value} ->
       case event do
@@ -608,6 +616,7 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
   end
 
   # Helper for handler filter evaluation
+  @spec apply_filter?(any(), any()) :: boolean()
   defp apply_filter?(event, filter) do
     case filter do
       nil -> true

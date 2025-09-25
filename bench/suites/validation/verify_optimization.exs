@@ -28,7 +28,7 @@ IO.puts("Optimized SGRProcessor [31]: #{Float.round(time_new/1000, 2)} μs/op")
 IO.puts("Speedup: #{Float.round(time_old/time_new, 1)}x")
 
 # Test through the parser
-emulator = Emulator.new_minimal(80, 24)
+emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
 
 # Warm up
 Parser.parse(emulator, "\e[31mWarmup\e[0m")

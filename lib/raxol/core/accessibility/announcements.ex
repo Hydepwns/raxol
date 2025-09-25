@@ -61,12 +61,25 @@ defmodule Raxol.Core.Accessibility.Announcements do
     :ok
   end
 
+  @spec validate_user_preferences(any()) :: {:ok, any()} | {:error, any()}
   defp validate_user_preferences(nil) do
     raise "Accessibility.Announcements.announce/3 must be called with a user_preferences_pid_or_name."
   end
 
+  @spec validate_user_preferences(String.t() | integer()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_user_preferences(_user_preferences_pid_or_name), do: :ok
 
+  @spec handle_announcement(
+          any(),
+          String.t(),
+          keyword(),
+          String.t() | integer()
+        ) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_announcement(
          false,
          _message,
@@ -75,16 +88,29 @@ defmodule Raxol.Core.Accessibility.Announcements do
        ),
        do: :ok
 
+  @spec handle_announcement(
+          any(),
+          String.t(),
+          keyword(),
+          String.t() | integer()
+        ) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_announcement(true, message, opts, user_preferences_pid_or_name) do
     process_announcement(message, opts, user_preferences_pid_or_name)
   end
 
+  @spec should_announce?(String.t() | integer()) :: boolean()
   defp should_announce?(user_preferences_pid_or_name) do
     # Delegate to the GenServer for state checking
     alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
     Server.should_announce?(user_preferences_pid_or_name)
   end
 
+  @spec process_announcement(String.t(), keyword(), String.t() | integer()) ::
+          any()
   defp process_announcement(message, opts, user_preferences_pid_or_name) do
     # Delegate to the GenServer for announcement processing
     alias Raxol.Core.Accessibility.AccessibilityServer, as: Server
@@ -156,6 +182,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
 
   # --- Private Functions ---
 
+  @spec send_announcement_to_subscribers(String.t()) :: any()
   defp send_announcement_to_subscribers(message) do
     subscriptions = get_subscriptions()
 
@@ -180,8 +207,12 @@ defmodule Raxol.Core.Accessibility.Announcements do
     end)
   end
 
+  @spec send_to_alive_process(any(), String.t() | integer(), String.t()) ::
+          any()
   defp send_to_alive_process(false, _pid, _message), do: :ok
 
+  @spec send_to_alive_process(any(), String.t() | integer(), String.t()) ::
+          any()
   defp send_to_alive_process(true, pid, message) do
     send(pid, message)
   end

@@ -60,6 +60,13 @@ defmodule Raxol.Terminal.TerminalParser do
 
         {emu, state, rest}
 
+      {{:error, _reason}, parser_state, rest} ->
+        # Handle error case - return original emulator with updated parser state
+        Raxol.Core.Runtime.Log.debug(
+          "[Parser.parse_chunk] Parser error occurred, continuing with original emulator"
+        )
+        {emulator, parser_state, rest}
+
       unexpected_result ->
         Raxol.Core.Runtime.Log.error(
           "[Parser.parse_chunk] Unexpected result from parse_loop: #{inspect(unexpected_result)}"

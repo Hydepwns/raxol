@@ -5,10 +5,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
 
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Runtime.Events.Dispatcher
-  alias Raxol.Core.UserPreferences.Behaviour, as: UserPreferencesBehaviour
 
   # Mox defmocks
-  defmock(UserPreferencesMock, for: UserPreferencesBehaviour)
   defmock(ThemeMock, for: Raxol.UI.Theming.ThemeBehaviour)
 
   # Mock Application module that implements Application behavior
@@ -116,12 +114,6 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       {:error, {:already_started, _pid}} -> :ok
     end
 
-    Mox.stub(UserPreferencesMock, :get, fn
-      "theme.active_id" -> :default
-      [:theme, :active_id] -> :default
-      # Fallback for unexpected calls
-      _ -> :error
-    end)
 
     # Stub all ThemeBehaviour callbacks to prevent missing function errors
     Mox.stub(ThemeMock, :register, fn _ -> :ok end)

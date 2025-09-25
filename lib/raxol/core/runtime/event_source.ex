@@ -103,6 +103,7 @@ defmodule Raxol.Core.Runtime.EventSource do
         end
       end
 
+      @spec send_event(any(), any()) :: any()
       defp send_event(context, event) do
         send(context.pid, {:subscription, event})
       end

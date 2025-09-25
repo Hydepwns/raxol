@@ -85,7 +85,6 @@ defmodule Raxol.System.Clipboard do
     end
   end
 
-
   @doc """
   Retrieves text from the system clipboard.
 
@@ -180,5 +179,4 @@ defmodule Raxol.System.Clipboard do
         end
     end
   end
-
 end

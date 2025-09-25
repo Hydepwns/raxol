@@ -182,7 +182,8 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.scroll_up(buffer, 1)
       iex> # Content is scrolled up within region 5-15
   """
-  @spec scroll_up(ScreenBuffer.t(), integer(), {integer(), integer()} | nil) :: ScreenBuffer.t()
+  @spec scroll_up(ScreenBuffer.t(), integer(), {integer(), integer()} | nil) ::
+          {ScreenBuffer.t(), list()}
   def scroll_up(buffer, lines, scroll_region_arg \\ nil)
 
   def scroll_up(buffer, lines, scroll_region_arg) when lines > 0 do
@@ -191,18 +192,22 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
 
     case lines >= visible_lines do
       true ->
-        _scrolled_lines =
+        scrolled_lines =
           extract_lines_from_region(buffer, scroll_start, scroll_end)
 
-        clear_region(buffer, scroll_start, scroll_end)
+        updated_buffer = clear_region(buffer, scroll_start, scroll_end)
+        {updated_buffer, scrolled_lines}
 
       false ->
-        scroll_region_up_with_lines(buffer, scroll_start, scroll_end, lines)
+        {updated_buffer, scrolled_lines} =
+          scroll_region_up_with_lines(buffer, scroll_start, scroll_end, lines)
+
+        {updated_buffer, scrolled_lines}
     end
   end
 
   def scroll_up(buffer, lines, _scroll_region_arg) when lines <= 0 do
-    buffer
+    {buffer, []}
   end
 
   defp clear_region(buffer, start, ending) do
@@ -228,7 +233,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       Enum.split(region_and_after, scroll_end - scroll_start + 1)
 
     # Move region content up by lines
-    {_scrolled_out, remaining} = Enum.split(region, lines)
+    {scrolled_out, remaining} = Enum.split(region, lines)
 
     # Create empty lines for the bottom
     empty_lines = List.duplicate(empty_line, lines)
@@ -236,9 +241,8 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     # Combine: before + (remaining + empty_lines) + after_part
     new_cells = before ++ (remaining ++ empty_lines) ++ after_part
 
-    %{buffer | cells: new_cells}
+    {%{buffer | cells: new_cells}, scrolled_out}
   end
-
 
   @doc """
   Scrolls the content down within the scroll region.
@@ -260,7 +264,8 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
       iex> buffer = ScrollRegion.scroll_down(buffer, 1)
       iex> # Content is scrolled down within region 5-15
   """
-  @spec scroll_down(ScreenBuffer.t(), integer(), {integer(), integer()} | nil) :: ScreenBuffer.t()
+  @spec scroll_down(ScreenBuffer.t(), integer(), {integer(), integer()} | nil) ::
+          ScreenBuffer.t()
   def scroll_down(buffer, lines, scroll_region_arg \\ nil)
 
   def scroll_down(buffer, lines, scroll_region_arg) when lines > 0 do
@@ -283,7 +288,9 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
 
     # Split cells into before, region, and after
     {before, region_and_after} = Enum.split(buffer.cells, scroll_start)
-    {region, after_part} = Enum.split(region_and_after, scroll_end - scroll_start + 1)
+
+    {region, after_part} =
+      Enum.split(region_and_after, scroll_end - scroll_start + 1)
 
     # Create empty lines for the top
     empty_lines = List.duplicate(empty_line, lines)
@@ -340,7 +347,6 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     |> Enum.filter(fn line -> line != [] end)
   end
 
-
   defp get_effective_region(buffer, scroll_region_arg) do
     case scroll_region_arg do
       {start, ending}
@@ -368,7 +374,8 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     end
   end
 
-  @spec scroll_to(ScreenBuffer.t(), integer(), integer(), integer()) :: ScreenBuffer.t()
+  @spec scroll_to(ScreenBuffer.t(), integer(), integer(), integer()) ::
+          ScreenBuffer.t()
   def scroll_to(buffer, top, bottom, line) do
     {top, bottom} = clamp_region({top, bottom}, buffer.height)
     line = max(top, min(line, bottom))
@@ -454,6 +461,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     case cells do
       [] ->
         []
+
       [first | _] ->
         region_height = bottom - top + 1
         {before, region_and_after} = Enum.split(cells, top)
@@ -462,6 +470,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
         case region do
           [] ->
             cells
+
           _ ->
             {_to_shift, remaining} = Enum.split(region, shift)
             empty_line = List.duplicate(Cell.new(), length(first))

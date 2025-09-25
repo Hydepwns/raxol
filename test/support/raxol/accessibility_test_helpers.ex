@@ -47,11 +47,12 @@ defmodule Raxol.AccessibilityTestHelpers do
     table_created =
       case :ets.whereis(:accessibility_test_announcements) do
         :undefined ->
-          _ = :ets.new(:accessibility_test_announcements, [
-            :set,
-            :public,
-            :named_table
-          ])
+          _ =
+            :ets.new(:accessibility_test_announcements, [
+              :set,
+              :public,
+              :named_table
+            ])
 
           true
 
@@ -450,10 +451,11 @@ defmodule Raxol.AccessibilityTestHelpers do
         announcements = ProcessStore.get(:accessibility_test_announcements, [])
         updated_announcements = [message | announcements]
 
-        _ = ProcessStore.put(
-          :accessibility_test_announcements,
-          updated_announcements
-        )
+        _ =
+          ProcessStore.put(
+            :accessibility_test_announcements,
+            updated_announcements
+          )
 
         # Also try to send to the test process if we can identify it
         case ProcessStore.get(:test_process_pid) do

@@ -168,9 +168,10 @@ if Code.ensure_loaded?(Mox) do
   #   for: Raxol.Core.Runtime.Plugins.TimerManager.Behaviour
   # )
 
-  Mox.defmock(Raxol.Core.Runtime.Rendering.EngineMock,
-    for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
-  )
+  # Rendering Engine mock removed - no behavior exists for Rendering Engine
+  # Mox.defmock(Raxol.Core.Runtime.Rendering.EngineMock,
+  #   for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
+  # )
 
   # System and UI mocks
   Mox.defmock(Raxol.System.DeltaUpdaterSystemAdapterMock,
@@ -198,8 +199,9 @@ if Code.ensure_loaded?(Mox) do
     for: Raxol.Core.FocusManager.Behaviour
   )
 
+  # KeyboardShortcuts mock for UX refinement tests
   Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
-    for: Raxol.Core.KeyboardShortcutsRefactoredBehaviour
+    for: Raxol.Core.KeyboardShortcutsBehaviour
   )
 
   IO.puts("[TestHelper] Mox mocks configured successfully")

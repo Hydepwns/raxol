@@ -20,9 +20,10 @@ defmodule Raxol.Architecture.CQRSIntegrationTest do
     :ok = Setup.setup()
 
     on_exit(fn ->
-      GenServer.stop(event_store)
-      GenServer.stop(registry)
-      GenServer.stop(dispatcher)
+      # Safely stop processes if they're still alive
+      if Process.alive?(event_store), do: GenServer.stop(event_store)
+      if Process.alive?(registry), do: GenServer.stop(registry)
+      if Process.alive?(dispatcher), do: GenServer.stop(dispatcher)
     end)
 
     %{

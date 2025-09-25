@@ -38,7 +38,7 @@ defmodule Raxol.Architecture.EventSourcing.Event do
       end
   """
 
-  # @derive Jason.Encoder
+  @derive Jason.Encoder
   defstruct [
     :id,
     :stream_name,
@@ -147,11 +147,14 @@ defmodule Raxol.Architecture.EventSourcing.Event do
   @doc """
   Checks if an event is of a specific type.
   """
-  def is_event_type?(%__MODULE__{event_type: type}, expected_type),
+  def event_type?(%__MODULE__{event_type: type}, expected_type),
     do: type == expected_type
 
-  def is_event_type?(%{__struct__: type}, expected_type),
+  def event_type?(%{__struct__: type}, expected_type),
     do: type == expected_type
+
+  @deprecated "Use event_type?/2 instead"
+  def is_event_type?(event, expected_type), do: event_type?(event, expected_type)
 
   @doc """
   Serializes an event to JSON.

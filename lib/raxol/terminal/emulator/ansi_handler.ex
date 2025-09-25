@@ -17,6 +17,8 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
     ModeManager
   }
 
+  alias Raxol.Terminal.Emulator.CommandHandler
+
   @doc """
   Handles ANSI sequences for the emulator.
 
@@ -184,11 +186,16 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
          {:cursor_horizontal_absolute, col, remaining},
          emulator
        ) do
-    # DEBUG: handle_parsed_sequence cursor_horizontal_absolute col=#{inspect(col)}
+    require Raxol.Core.Runtime.Log
+    Raxol.Core.Runtime.Log.debug("handle_sequence_type cursor_horizontal_absolute col=#{inspect(col)}")
 
     result = CursorHandler.handle_G(emulator, [col + 1])
-    # DEBUG output removed
-    {result, remaining}
+    Raxol.Core.Runtime.Log.debug("CursorHandler.handle_G result: #{inspect(result)}")
+
+    case result do
+      {:ok, updated_emulator} -> {updated_emulator, remaining}
+      updated_emulator -> {updated_emulator, remaining}
+    end
   end
 
   # Mode handling functions
@@ -284,9 +291,9 @@ defmodule Raxol.Terminal.Emulator.ANSIHandler do
     emulator
   end
 
-  def handle_csi_general(_params, _final_byte, emulator, _intermediates) do
-    # Implementation for general CSI commands
-    emulator
+  def handle_csi_general(params, final_byte, emulator, intermediates) do
+    # Delegate to the command handler for actual CSI processing
+    CommandHandler.handle_csi_general(params, final_byte, emulator, intermediates)
   end
 
   # Private helper functions

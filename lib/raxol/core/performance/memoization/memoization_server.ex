@@ -263,24 +263,30 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
 
   # Private helpers
 
+  @spec ensure_monitored(String.t() | integer(), map()) :: any()
   defp ensure_monitored(pid, state) do
     ensure_monitoring(Map.has_key?(state.monitors, pid), pid, state)
   end
 
+  @spec ensure_monitoring(any(), String.t() | integer(), map()) :: any()
   defp ensure_monitoring(true, _pid, state), do: state
 
+  @spec ensure_monitoring(any(), String.t() | integer(), map()) :: any()
   defp ensure_monitoring(false, pid, state) do
     ref = Process.monitor(pid)
     %{state | monitors: Map.put(state.monitors, pid, ref)}
   end
 
+  @spec expired?(any(), any()) :: boolean()
   defp expired?(_timestamp, :infinity), do: false
 
+  @spec expired?(any(), any()) :: boolean()
   defp expired?(timestamp, ttl) do
     now = System.monotonic_time(:millisecond)
     now - timestamp > ttl
   end
 
+  @spec maybe_evict_entries(any(), String.t() | integer(), any()) :: any()
   defp maybe_evict_entries(cache, pid, max_entries) do
     # Count entries for this process
     process_entries =
@@ -296,6 +302,11 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
     )
   end
 
+  @spec handle_cache_hit(any(), any(), any(), any(), any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_cache_hit(true, _value, _timestamp, cache_key, fun, state) do
     # Expired - recompute
     value = fun.()
@@ -305,27 +316,45 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
     {:reply, value, updated_state}
   end
 
+  @spec handle_cache_hit(any(), any(), any(), any(), any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_cache_hit(false, value, _timestamp, _cache_key, _fun, state) do
     # Valid cache hit
     {:reply, value, %{state | hits: state.hits + 1}}
   end
 
+  @spec handle_get_cache_hit(any(), any(), any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_get_cache_hit(true, _value, cache_key, state) do
     # Expired - remove from cache
     cache = Map.delete(state.cache, cache_key)
     {:reply, :miss, %{state | cache: cache, misses: state.misses + 1}}
   end
 
+  @spec handle_get_cache_hit(any(), any(), any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_get_cache_hit(false, value, _cache_key, state) do
     {:reply, {:ok, value}, %{state | hits: state.hits + 1}}
   end
 
+  @spec calculate_hit_rate(any(), any(), any()) :: any()
   defp calculate_hit_rate(true, hits, misses) do
     hits / (hits + misses) * 100
   end
 
+  @spec calculate_hit_rate(any(), any(), any()) :: any()
   defp calculate_hit_rate(false, _hits, _misses), do: 0.0
 
+  @spec cleanup_expired_entries(any(), any(), any()) :: any()
   defp cleanup_expired_entries(true, cache, ttl) do
     cache
     |> Enum.reject(fn {_, {_, timestamp}} ->
@@ -334,8 +363,14 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
     |> Enum.into(%{})
   end
 
+  @spec cleanup_expired_entries(any(), any(), any()) :: any()
   defp cleanup_expired_entries(false, cache, _ttl), do: cache
 
+  @spec handle_eviction(any(), any(), String.t() | integer(), any(), any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_eviction(true, cache, pid, process_entries, max_entries) do
     # Evict oldest entries
     entries_to_keep =
@@ -351,6 +386,11 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
     |> Map.merge(entries_to_keep)
   end
 
+  @spec handle_eviction(any(), any(), String.t() | integer(), any(), any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_eviction(false, cache, _pid, _process_entries, _max_entries),
     do: cache
 

@@ -182,6 +182,7 @@ defmodule Raxol.Core.ErrorExperience do
 
   # Private implementation
 
+  @spec classify_error(any(), any()) :: any()
   defp classify_error(error, context) do
     error_string = inspect(error) |> String.downcase()
 
@@ -215,6 +216,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
+  @spec generate_suggestions(any(), any(), any()) :: any()
   defp generate_suggestions(error, category, context) do
     # Pattern-based suggestions from Phase 3 experience
     pattern_suggestions = find_pattern_suggestions(error)
@@ -234,6 +236,7 @@ defmodule Raxol.Core.ErrorExperience do
     |> Enum.sort_by(& &1.confidence, :desc)
   end
 
+  @spec find_pattern_suggestions(any()) :: any()
   defp find_pattern_suggestions(error) do
     error_text = inspect(error) |> String.downcase()
 
@@ -250,6 +253,7 @@ defmodule Raxol.Core.ErrorExperience do
     end)
   end
 
+  @spec performance_suggestions(any(), any()) :: any()
   defp performance_suggestions(_error, context) do
     base_suggestions = [
       %{
@@ -287,6 +291,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
+  @spec rendering_suggestions(any(), any()) :: any()
   defp rendering_suggestions(_error, _context) do
     [
       %{
@@ -311,6 +316,7 @@ defmodule Raxol.Core.ErrorExperience do
     ]
   end
 
+  @spec terminal_suggestions(any(), any()) :: any()
   defp terminal_suggestions(_error, _context) do
     [
       %{
@@ -324,6 +330,7 @@ defmodule Raxol.Core.ErrorExperience do
     ]
   end
 
+  @spec optimization_suggestions(any(), any()) :: any()
   defp optimization_suggestions(_error, _context) do
     [
       %{
@@ -337,6 +344,7 @@ defmodule Raxol.Core.ErrorExperience do
     ]
   end
 
+  @spec general_suggestions(any(), any()) :: any()
   defp general_suggestions(_error, _context) do
     [
       %{
@@ -350,6 +358,7 @@ defmodule Raxol.Core.ErrorExperience do
     ]
   end
 
+  @spec assess_performance_impact(any(), any()) :: any()
   defp assess_performance_impact(error, context) do
     error_text = inspect(error) |> String.downcase()
 
@@ -363,6 +372,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
+  @spec find_related_optimizations(any(), any()) :: any()
   defp find_related_optimizations(_error, category) do
     case category do
       :performance ->
@@ -382,6 +392,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
+  @spec determine_severity(any(), any()) :: any()
   defp determine_severity(error, performance_impact) do
     case {error, performance_impact} do
       {_, :critical} -> :critical
@@ -393,6 +404,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
+  @spec enrich_context(any(), any()) :: any()
   defp enrich_context(context, category) do
     base_context =
       Map.merge(context, %{
@@ -419,6 +431,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
+  @spec determine_recovery_options(any(), any()) :: any()
   defp determine_recovery_options(category, performance_impact) do
     base_options = [:retry, :ignore, :debug]
 
@@ -446,6 +459,7 @@ defmodule Raxol.Core.ErrorExperience do
     ]
   end
 
+  @spec display_error_summary(any()) :: any()
   defp display_error_summary(enhanced_error) do
     IO.puts("\n" <> IO.ANSI.yellow() <> "Error Summary:" <> IO.ANSI.reset())
     IO.puts("Category: #{enhanced_error.category}")
@@ -459,6 +473,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
+  @spec display_suggestions(any()) :: any()
   defp display_suggestions(suggestions) do
     IO.puts("\n" <> IO.ANSI.green() <> "Fix Suggestions:" <> IO.ANSI.reset())
 
@@ -486,6 +501,7 @@ defmodule Raxol.Core.ErrorExperience do
     end)
   end
 
+  @spec display_performance_context(any()) :: any()
   defp display_performance_context(enhanced_error) do
     IO.puts(
       "\n" <> IO.ANSI.magenta() <> "Performance Context:" <> IO.ANSI.reset()
@@ -503,6 +519,11 @@ defmodule Raxol.Core.ErrorExperience do
     )
   end
 
+  @spec handle_recovery_interaction(any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_recovery_interaction(enhanced_error) do
     IO.puts("\n" <> IO.ANSI.blue() <> "Recovery Options:" <> IO.ANSI.reset())
 
@@ -522,6 +543,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
+  @spec format_recovery_option(any()) :: String.t()
   defp format_recovery_option(option) do
     case option do
       :retry -> "Retry operation"
@@ -538,6 +560,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
+  @spec execute_recovery_option(any(), any()) :: any()
   defp execute_recovery_option(option, _enhanced_error) do
     case option do
       :analyze ->
@@ -562,6 +585,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
+  @spec log_enhanced_error(any()) :: any()
   defp log_enhanced_error(enhanced_error) do
     level =
       case enhanced_error.severity do
@@ -580,6 +604,7 @@ defmodule Raxol.Core.ErrorExperience do
     )
   end
 
+  @spec maybe_trigger_analysis_tools(any()) :: any()
   defp maybe_trigger_analysis_tools(enhanced_error) do
     # Auto-trigger tools for critical performance issues
     case enhanced_error.performance_impact do
@@ -600,6 +625,7 @@ defmodule Raxol.Core.ErrorExperience do
     end
   end
 
+  @spec extract_phase3_metrics(any()) :: any()
   defp extract_phase3_metrics(enhanced_error) do
     %{
       targets_referenced: enhanced_error.context[:phase3_targets],
@@ -611,12 +637,14 @@ defmodule Raxol.Core.ErrorExperience do
     }
   end
 
+  @spec generate_error_id(any()) :: any()
   defp generate_error_id(enhanced_error) do
     :crypto.hash(:md5, inspect(enhanced_error.original_error))
     |> Base.encode16(case: :lower)
     |> String.slice(0..7)
   end
 
+  @spec store_error_report(any()) :: any()
   defp store_error_report(report) do
     # Store in tmp for now - in production would use proper storage
     reports_dir = "/tmp/raxol_error_reports"

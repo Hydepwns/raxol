@@ -38,12 +38,8 @@ defmodule Raxol.UI do
           use Raxol.Component
 
         :svelte ->
-          use Raxol.Svelte.Component
-          use Raxol.Svelte.Reactive
-          use Raxol.Svelte.Actions
-          use Raxol.Svelte.Context
-          use Raxol.Svelte.Slots
-          use Raxol.Svelte.Transitions
+          # Svelte framework removed - use :react or :raw instead
+          raise "Svelte framework has been removed. Please use :react, :liveview, :heex, or :raw instead"
 
         :liveview ->
           use Raxol.LiveView

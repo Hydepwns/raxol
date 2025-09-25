@@ -27,11 +27,11 @@ for mod <- modules do
 end
 
 IO.puts("\nFirst emulator creation:")
-{time1, em1} = :timer.tc(fn -> Emulator.new_minimal(80, 24) end)
+{time1, em1} = :timer.tc(fn -> Emulator.new(80, 24, enable_history: false, alternate_buffer: false) end)
 IO.puts("  Time: #{time1} μs")
 
 IO.puts("\nSecond emulator creation:")
-{time2, em2} = :timer.tc(fn -> Emulator.new_minimal(80, 24) end)
+{time2, em2} = :timer.tc(fn -> Emulator.new(80, 24, enable_history: false, alternate_buffer: false) end)
 IO.puts("  Time: #{time2} μs")
 
 IO.puts("\nFirst parse (simple text):")

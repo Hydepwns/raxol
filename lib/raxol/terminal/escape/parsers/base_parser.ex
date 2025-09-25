@@ -1,66 +1,146 @@
 defmodule Raxol.Terminal.Escape.Parsers.BaseParser do
   @moduledoc """
-  Common utilities for parsing escape sequences.
+  Base parser utilities for escape sequence parsers.
 
-  This module provides shared functionality for parsing escape sequences,
-  including parameter parsing and validation.
+  Provides common functionality for logging and handling unknown sequences.
   """
 
   require Raxol.Core.Runtime.Log
 
   @doc """
-  Parses numeric parameters from a string, handling empty values.
-  Returns a list of integers or nil values.
-  """
-  @spec parse_params(String.t()) :: [integer() | nil]
-  def parse_params(""), do: []
+  Logs an unknown escape sequence for debugging purposes.
 
-  def parse_params(params_str) do
-    params_str
-    |> String.split(";", trim: true)
-    |> Enum.map(fn
-      # Empty param means default (often 1, depends on command)
-      "" -> nil
-      num_str -> elem(Integer.parse(num_str), 0)
-    end)
+  ## Parameters
+    - prefix: The escape sequence prefix (e.g., "ESC", "CSI")
+    - sequence: The unknown sequence
+
+  ## Returns
+    :ok
+  """
+  @spec log_unknown_sequence(String.t(), String.t()) :: :ok
+  def log_unknown_sequence(prefix, sequence) do
+    Raxol.Core.Runtime.Log.debug(
+      "Unknown #{prefix} sequence",
+      sequence: sequence,
+      bytes: :erlang.binary_to_list(sequence)
+    )
+
+    :ok
   end
 
   @doc """
-  Gets a parameter value at the specified index, returning the default if not found.
+  Parses a numeric parameter from a string.
+
+  ## Parameters
+    - str: String containing the number
+
+  ## Returns
+    The parsed integer or nil if parsing fails
   """
-  @spec param_at([integer() | nil], non_neg_integer(), integer() | nil) ::
-          integer() | nil
-  def param_at(params, index, default) do
-    case Enum.at(params, index) do
-      # Covers both out-of-bounds and explicitly parsed nil ("")
-      nil -> default
-      val -> val
+  @spec parse_int(String.t()) :: integer() | nil
+  def parse_int(""), do: nil
+
+  def parse_int(str) do
+    case Integer.parse(str) do
+      {num, ""} -> num
+      _ -> nil
     end
   end
 
   @doc """
-  Validates if a string could be a valid escape sequence start.
+  Splits parameters by semicolon and parses them as integers.
+
+  ## Parameters
+    - params: String containing semicolon-separated parameters
+
+  ## Returns
+    List of parsed integers (nils are filtered out)
   """
-  @spec valid_sequence_start?(String.t()) :: boolean()
-  def valid_sequence_start?(data) do
-    String.match?(data, ~r/^[\d;?]*[@A-Za-z~]?$/)
+  @spec parse_params(String.t()) :: list(integer())
+  def parse_params(params) when is_binary(params) do
+    params
+    |> String.split(";")
+    |> Enum.map(&parse_int/1)
+    |> Enum.reject(&is_nil/1)
   end
 
   @doc """
-  Logs an unknown sequence with context.
+  Extracts the final byte from a CSI sequence.
+
+  The final byte determines the command type in CSI sequences.
+
+  ## Parameters
+    - input: The input string
+
+  ## Returns
+    {final_byte, params_string} or nil if no final byte found
   """
-  @spec log_unknown_sequence(String.t(), String.t()) :: :ok
-  def log_unknown_sequence(prefix, data) do
-    Raxol.Core.Runtime.Log.debug("Unknown #{prefix} sequence: #{inspect(data)}")
+  @spec extract_final_byte(String.t()) :: {String.t(), String.t()} | nil
+  def extract_final_byte(input) do
+    # CSI sequences end with a byte in the range 0x40-0x7E (@ through ~)
+    case Regex.run(~r/^([\x20-\x3F]*)([\x40-\x7E])(.*)$/s, input) do
+      [_, params, final, rest] ->
+        {final, params, rest}
+
+      _ ->
+        nil
+    end
   end
 
   @doc """
-  Logs an invalid sequence with context.
+  Checks if a character is a valid CSI intermediate character.
+
+  Intermediate characters are in the range 0x20-0x2F (space through /)
+
+  ## Parameters
+    - char: Character code to check
+
+  ## Returns
+    Boolean indicating if it's an intermediate character
   """
-  @spec log_invalid_sequence(String.t(), String.t()) :: :ok
-  def log_invalid_sequence(prefix, data) do
-    Raxol.Core.Runtime.Log.debug(
-      "Invalid or unsupported #{prefix} sequence fragment: #{inspect(data)}"
-    )
+  @spec intermediate?(integer()) :: boolean()
+  def intermediate?(char) when is_integer(char) do
+    char >= 0x20 and char <= 0x2F
   end
+
+  @deprecated "Use intermediate?/1 instead"
+  def is_intermediate?(char), do: intermediate?(char)
+
+  @doc """
+  Checks if a character is a valid CSI parameter character.
+
+  Parameter characters are in the range 0x30-0x3F (0 through ?)
+
+  ## Parameters
+    - char: Character code to check
+
+  ## Returns
+    Boolean indicating if it's a parameter character
+  """
+  @spec parameter?(integer()) :: boolean()
+  def parameter?(char) when is_integer(char) do
+    char >= 0x30 and char <= 0x3F
+  end
+
+  @deprecated "Use parameter?/1 instead"
+  def is_parameter?(char), do: parameter?(char)
+
+  @doc """
+  Checks if a character is a valid CSI final character.
+
+  Final characters are in the range 0x40-0x7E (@ through ~)
+
+  ## Parameters
+    - char: Character code to check
+
+  ## Returns
+    Boolean indicating if it's a final character
+  """
+  @spec final?(integer()) :: boolean()
+  def final?(char) when is_integer(char) do
+    char >= 0x40 and char <= 0x7E
+  end
+
+  @deprecated "Use final?/1 instead"
+  def is_final?(char), do: final?(char)
 end

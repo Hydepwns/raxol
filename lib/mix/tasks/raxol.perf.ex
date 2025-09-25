@@ -277,18 +277,20 @@ defmodule Mix.Tasks.Raxol.Perf do
     # Simulate typical Raxol operations for comprehensive profiling
     try do
       # Terminal operations
-      _ = if Code.ensure_loaded?(Raxol.Terminal.Emulator) do
-        emulator = Raxol.Terminal.Emulator.new(80, 24)
-        _ = Raxol.Terminal.Emulator.process_input(emulator, "Hello, World!")
-      end
+      _ =
+        if Code.ensure_loaded?(Raxol.Terminal.Emulator) do
+          emulator = Raxol.Terminal.Emulator.new(80, 24)
+          _ = Raxol.Terminal.Emulator.process_input(emulator, "Hello, World!")
+        end
 
       # Buffer operations
-      _ = if Code.ensure_loaded?(Raxol.Terminal.ScreenBuffer) do
-        alias Raxol.Terminal.ScreenBuffer
-        %ScreenBuffer{} = buffer = ScreenBuffer.new(80, 24)
-        _ = ScreenBuffer.write_string(buffer, 0, 0, "Test content")
-        :ok
-      end
+      _ =
+        if Code.ensure_loaded?(Raxol.Terminal.ScreenBuffer) do
+          alias Raxol.Terminal.ScreenBuffer
+          %ScreenBuffer{} = buffer = ScreenBuffer.new(80, 24)
+          _ = ScreenBuffer.write_string(buffer, 0, 0, "Test content")
+          :ok
+        end
     catch
       _, _ -> :ok
     end

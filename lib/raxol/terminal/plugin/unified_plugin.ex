@@ -166,6 +166,9 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
 
       {:error, reason} ->
         {:reply, {:error, reason}, state}
+
+      {:error, reason, new_state} ->
+        {:reply, {:error, reason, new_state}, new_state}
     end
   end
 
@@ -275,7 +278,14 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp check_dependencies(plugin_state, loaded_plugins) do
-    case Enum.all?(plugin_state.dependencies, &Map.has_key?(loaded_plugins, &1)) do
+    # Check if all dependencies exist by looking up plugin names
+    dependency_satisfied? = fn dep_name ->
+      Enum.any?(loaded_plugins, fn {_id, plugin} ->
+        plugin.name == dep_name and plugin.status == :active
+      end)
+    end
+
+    case Enum.all?(plugin_state.dependencies, dependency_satisfied?) do
       true -> :ok
       false -> {:error, :module_not_found}
     end

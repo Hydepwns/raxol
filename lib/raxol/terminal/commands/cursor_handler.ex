@@ -8,6 +8,7 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
   """
 
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Commands.CursorUtils
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
 
   require Raxol.Core.Runtime.Log
@@ -22,12 +23,13 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
     {row, col} = get_cursor_position(cursor)
 
     {new_row, new_col} =
-      case direction do
-        :up -> {max(0, row - amount), col}
-        :down -> {min(emulator.height - 1, row + amount), col}
-        :left -> {row, max(0, col - amount)}
-        :right -> {row, min(emulator.width - 1, col + amount)}
-      end
+      CursorUtils.calculate_new_cursor_position(
+        {row, col},
+        direction,
+        amount,
+        emulator.width,
+        emulator.height
+      )
 
     updated_cursor = set_cursor_position(cursor, {new_row, new_col})
     {:ok, %{emulator | cursor: updated_cursor}}

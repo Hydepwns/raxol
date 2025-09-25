@@ -81,7 +81,7 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
   end
 
   defp handle_plugin_state_creation(plugin_state, module, config) do
-    case is_valid_plugin_struct(plugin_state) do
+    case valid_plugin_struct?(plugin_state) do
       true ->
         {:ok, plugin_state}
 
@@ -91,12 +91,12 @@ defmodule Raxol.Plugins.Lifecycle.Initialization do
     end
   end
 
-  defp is_valid_plugin_struct(plugin_state) when is_struct(plugin_state) do
+  defp valid_plugin_struct?(plugin_state) when is_struct(plugin_state) do
     plugin_state.__struct__ == Raxol.Plugins.Plugin or
       function_exported?(plugin_state.__struct__, :__struct__, 0)
   end
 
-  defp is_valid_plugin_struct(_plugin_state), do: false
+  defp valid_plugin_struct?(_plugin_state), do: false
 
   defp normalize_plugin_state(plugin_state) when is_struct(plugin_state),
     do: %{}

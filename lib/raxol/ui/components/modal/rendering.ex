@@ -5,6 +5,7 @@ defmodule Raxol.UI.Components.Modal.Rendering do
 
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
+  require Raxol.Core.Renderer.View
   alias Raxol.UI.Components.Selection.Dropdown
 
   @doc "Renders the modal content when visible."

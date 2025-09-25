@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.ANSI.WindowEventsTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.ANSI.WindowEvents
+  alias Raxol.Terminal.ANSI.Window, as: WindowEvents
 
   describe "process_sequence/2" do
     test ~c"handles window close event" do

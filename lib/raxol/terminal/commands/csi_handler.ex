@@ -35,10 +35,18 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   """
   def handle_cursor_movement(emulator, [command_byte]) do
     case command_byte do
-      ?A -> handle_cursor_up(emulator, 1)
-      ?B -> handle_cursor_down(emulator, 1)
-      ?C -> handle_cursor_forward(emulator, 1)
-      ?D -> handle_cursor_backward(emulator, 1)
+      ?A ->
+        {:ok, updated_emulator} = handle_cursor_up(emulator, 1)
+        updated_emulator
+      ?B ->
+        {:ok, updated_emulator} = handle_cursor_down(emulator, 1)
+        updated_emulator
+      ?C ->
+        {:ok, updated_emulator} = handle_cursor_forward(emulator, 1)
+        updated_emulator
+      ?D ->
+        {:ok, updated_emulator} = handle_cursor_backward(emulator, 1)
+        updated_emulator
       _ -> emulator
     end
   end
@@ -112,7 +120,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   end
 
   defp handle_sgr(emulator, params) do
-    alias Raxol.Terminal.ANSI.SGRProcessor
+    alias Raxol.Terminal.ANSI.SGR.Processor, as: SGRProcessor
 
     # Convert params list to string format expected by SGRProcessor
     params_string =
@@ -141,7 +149,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   end
 
   def handle_cursor_command(emulator, params, final_byte) do
-    case Cursor.handle_command(emulator, params, final_byte) do
+    case Cursor.handle_command(emulator, params, <<final_byte>>) do
       {:error, :unknown_cursor_command} -> emulator
       {:ok, updated_emulator} -> updated_emulator
     end
@@ -151,9 +159,11 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     # Delegate to Screen module for screen commands
     alias Raxol.Terminal.Commands.CSIHandler.Screen
 
-    case Screen.handle_command(emulator, params, final_byte) do
+    case Screen.handle_command(emulator, params, <<final_byte>>) do
       {:ok, updated_emulator} -> updated_emulator
-      {:error, _, updated_emulator} -> updated_emulator
+      {:error, _reason} ->
+        # Unknown command - return original emulator unchanged
+        emulator
       updated_emulator -> updated_emulator
     end
   end
@@ -221,7 +231,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     end
   end
 
-  def handle_device_command(emulator, params, _intermediates, final_byte) do
+  def handle_device_command(emulator, params, intermediates, final_byte) do
     # Delegate to UnifiedCommandHandler for device commands
     alias Raxol.Terminal.Commands.UnifiedCommandHandler
 
@@ -229,13 +239,13 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
       ?c ->
         # Device Attributes (DA)
         {:ok, updated_emulator} =
-          UnifiedCommandHandler.handle_csi(emulator, params, "c")
+          UnifiedCommandHandler.handle_csi(emulator, "c", params, intermediates)
 
         updated_emulator
 
       ?n ->
         # Device Status Report (DSR)
-        case UnifiedCommandHandler.handle_csi(emulator, params, "n") do
+        case UnifiedCommandHandler.handle_csi(emulator, "n", params, intermediates) do
           {:ok, updated_emulator} -> updated_emulator
           {:error, _, updated_emulator} -> updated_emulator
         end
@@ -311,7 +321,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
         1048 -> :decsc_deccara
         # Alternate screen buffer (with save cursor)
         1049 -> :alt_screen_buffer
-        2004 -> :bracketed_paste_mode
+        2004 -> :bracketed_paste
         _ -> nil
       end
 
@@ -402,9 +412,40 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     end
   end
 
-  def handle_scs(emulator, _params_buffer, _final_byte) do
-    # SCS commands not yet implemented
-    emulator
+  def handle_scs(emulator, params_buffer, final_byte) do
+    # Handle Select Character Set (SCS) commands
+    # final_byte determines which character set (G0-G3)
+    # params_buffer contains the designation character
+
+    gset = case final_byte do
+      40 -> :g0  # '(' - G0
+      41 -> :g1  # ')' - G1
+      42 -> :g2  # '*' - G2
+      43 -> :g3  # '+' - G3
+      _ -> nil
+    end
+
+    if gset do
+      char_code = case params_buffer do
+        <<char>> -> char
+        _ -> nil
+      end
+
+      charset = case char_code do
+        ?0 -> :dec_special_graphics  # DEC Special Graphics
+        ?> -> :dec_special_graphics  # DEC Technical
+        ?R -> :dec_technical         # DEC Technical Character Set
+        ?A -> :uk                    # UK ASCII
+        ?B -> :us_ascii              # US ASCII
+        ?6 -> :portuguese            # Portuguese
+        _ -> :us_ascii               # Default to US ASCII
+      end
+
+      updated_charset_state = Map.put(emulator.charset_state, gset, charset)
+      {:ok, %{emulator | charset_state: updated_charset_state}}
+    else
+      {:error, :invalid_charset_designation, emulator}
+    end
   end
 
   def handle_q_deccusr(emulator, params) do
@@ -470,10 +511,21 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   end
 
   def handle_mode_change(emulator, mode, enabled) do
-    # Map to actual mode handling
-    mode_state = Map.get(emulator, :mode_state, %{})
-    updated_mode_state = Map.put(mode_state, mode, enabled)
-    {:ok, %{emulator | mode_state: updated_mode_state}}
+    # Handle mode changes through ModeManager
+    mode_manager = Map.get(emulator, :mode_manager, %ModeManager{})
+
+    updated_mode_manager = case mode do
+      4 -> %{mode_manager | insert_mode: enabled}
+      25 -> %{mode_manager | cursor_visible: enabled}
+      _ -> mode_manager  # Unknown mode, no change
+    end
+
+    if updated_mode_manager == mode_manager do
+      # No change for unknown mode
+      emulator
+    else
+      %{emulator | mode_manager: updated_mode_manager}
+    end
   end
 
   def handle_scroll_up(emulator, _lines) do
@@ -568,8 +620,39 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     case params do
       [?s] -> handle_s(emulator, [])
       [?u] -> handle_u(emulator, [])
+      [?J] -> handle_erase_display(emulator, 0)
+      [?1, ?J] -> handle_erase_display(emulator, 1)
+      [?2, ?J] -> handle_erase_display(emulator, 2)
+      # Character set locking shifts
+      [?N] -> handle_locking_shift(emulator, :g0)
+      [?O] -> handle_locking_shift(emulator, :g1)
+      [?P] -> handle_locking_shift(emulator, :g2)
+      [?Q] -> handle_locking_shift(emulator, :g3)
+      # Character set single shifts
+      [?R] -> handle_single_shift(emulator, :g2)
+      [?S] -> handle_single_shift(emulator, :g3)
       _ -> {:ok, emulator}
     end
+  end
+
+  @doc """
+  Handles locking shift operations for character sets.
+  """
+  def handle_locking_shift(emulator, gset) do
+    new_charset_state = Map.put(emulator.charset_state, :gl, gset)
+    updated_emulator = Map.put(emulator, :charset_state, new_charset_state)
+    {:ok, updated_emulator}
+  end
+
+  @doc """
+  Handles single shift operations for character sets.
+  """
+  def handle_single_shift(emulator, gset) do
+    # For single shift, we set the single_shift field to the value of the specified G-set
+    gset_value = Map.get(emulator.charset_state, gset, :us_ascii)
+    new_charset_state = Map.put(emulator.charset_state, :single_shift, gset_value)
+    updated_emulator = Map.put(emulator, :charset_state, new_charset_state)
+    {:ok, updated_emulator}
   end
 
   def handle_save_restore_cursor(emulator, [command]) do

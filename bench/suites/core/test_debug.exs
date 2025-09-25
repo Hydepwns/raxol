@@ -5,7 +5,7 @@ alias Raxol.Terminal.Emulator
 alias Raxol.Terminal.Parser
 
 # Same setup as test
-emulator = Emulator.new_minimal(80, 24)
+emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
 ansi_text = "\e[31mRed\e[0m \e[32mGreen\e[0m \e[34mBlue\e[0m"
 
 IO.puts("Emulator type: #{inspect(emulator.__struct__)}")

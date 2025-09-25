@@ -23,7 +23,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     {:ok, opts}
   end
 
-  @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+  # Not part of the behaviour - internal helper function
   def load_plugin(
         plugin_id_or_module,
         config,
@@ -73,6 +73,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     end
   end
 
+  @spec initialize_and_register_plugin(any()) :: any()
   defp initialize_and_register_plugin(%{
          plugin_id: plugin_id,
          plugin_module: plugin_module,
@@ -115,6 +116,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     end
   end
 
+  @spec register_plugin_components(any()) :: any()
   defp register_plugin_components(%{
          plugin_id: plugin_id,
          plugin_module: plugin_module,
@@ -146,6 +148,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     end
   end
 
+  @spec _build_updated_maps(any()) :: any()
   defp _build_updated_maps(%{
          plugin_id: plugin_id,
          plugin_module: plugin_module,
@@ -167,11 +170,11 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     }
   end
 
+  @spec _register_plugin(String.t() | integer(), any()) :: any()
   defp _register_plugin(plugin_id, plugin_metadata) do
     Raxol.Core.UnifiedRegistry.register(:plugins, plugin_id, plugin_metadata)
   end
 
-  @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
   def initialize_plugins(
         plugins,
         metadata,
@@ -192,14 +195,14 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     )
   end
 
-  @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+  # Not part of the behaviour - internal helper function
   def cleanup_plugin(plugin_id, metadata) do
     case PluginLifecycleCallbacks.cleanup_plugin(plugin_id, metadata) do
       {:ok, _metadata} -> :ok
     end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+  # Not part of the behaviour - internal helper function
   def handle_state_transition(plugin_id, old_state, new_state) do
     PluginLifecycleCallbacks.handle_state_transition(
       plugin_id,
@@ -208,12 +211,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     )
   end
 
-  @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+  # Not part of the behaviour - internal helper function
   def init_plugin(plugin_id, metadata) do
     PluginLifecycleCallbacks.init_plugin(plugin_id, metadata)
   end
 
-  @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+  # Not part of the behaviour - internal helper function
   def load_plugin_by_module(
         module,
         metadata,
@@ -236,7 +239,6 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     )
   end
 
-  @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
   def reload_plugin(
         plugin_id,
         metadata,
@@ -257,14 +259,14 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     )
   end
 
-  @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+  # Not part of the behaviour - internal helper function
   def terminate_plugin(plugin_id, metadata, reason) do
     case PluginLifecycleCallbacks.terminate_plugin(plugin_id, metadata, reason) do
       {:ok, _metadata} -> :ok
     end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+  # Not part of the behaviour - internal helper function
   def handle_event(
         event,
         plugins,
@@ -292,7 +294,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+  # Not part of the behaviour - internal helper function
   def reload_plugin_from_disk(
         plugin_id,
         _plugin_module,
@@ -306,7 +308,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     PluginReloader.reload_plugin(plugin_id, %{})
   end
 
-  @impl Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+  # Not part of the behaviour - internal helper function
   def unload_plugin(plugin_id, metadata, config, states, command_table, opts) do
     PluginUnloader.unload_plugin(
       plugin_id,
@@ -321,7 +323,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   @doc """
   Enables a plugin by updating its state to enabled.
   """
-  @impl true
+  # Not part of the behaviour - internal helper function
   def enable_plugin(plugin, plugin_states) do
     # For now, just return the existing plugin state as enabled
     # This is a simple implementation that can be enhanced later
@@ -345,7 +347,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   @doc """
   Disables a plugin by updating its state to disabled.
   """
-  @impl true
+  # Not part of the behaviour - internal helper function
   def disable_plugin(plugin, plugin_states) do
     # For now, just return the existing plugin state as disabled
     # This is a simple implementation that can be enhanced later
@@ -371,5 +373,34 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   """
   def load_plugin(_a, _b, _c) do
     {:error, {:not_implemented, "Use load_plugin/8 instead of load_plugin/3"}}
+  end
+
+  # Implement required behaviour callbacks
+  @impl true
+  def init_lifecycle(plugin_id, opts) do
+    # Initialize plugin with default metadata and config
+    case init_plugin(plugin_id, opts[:metadata] || %{}) do
+      {:ok, _} -> {:ok, plugin_id}
+      error -> error
+    end
+  end
+
+  @impl true
+  def start_lifecycle(plugin_id, _state) do
+    # Return success - plugin is already initialized
+    {:ok, plugin_id}
+  end
+
+  @impl true
+  def stop_lifecycle(plugin_id, _state) do
+    # Return success - plugin can be stopped
+    {:ok, plugin_id}
+  end
+
+  @impl true
+  def terminate_lifecycle(plugin_id, _state) do
+    # Simple termination logic
+    terminate_plugin(plugin_id, %{}, :shutdown)
+    :ok
   end
 end

@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Commands.Screen do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Buffer.Eraser
+  alias Raxol.Terminal.ScreenBuffer.Operations
 
   require Raxol.Core.Runtime.Log
 
@@ -53,21 +53,36 @@ defmodule Raxol.Terminal.Commands.Screen do
       "[Screen.clear_line] CALLED with mode: #{mode}, cursor_x: #{cursor_x}, cursor_y from emulator: #{cursor_y}"
     )
 
-    default_style = emulator.style
+    Raxol.Core.Runtime.Log.debug(
+      "[Screen.clear_line] Buffer type: #{inspect(buffer.__struct__)}"
+    )
+
+    _default_style = emulator.style
+
+    # Update buffer cursor position to match emulator cursor
+    buffer_with_cursor = %{buffer | cursor_position: {cursor_x, cursor_y}}
+
+    Raxol.Core.Runtime.Log.debug(
+      "[Screen.clear_line] Buffer cursor set to: #{inspect(buffer_with_cursor.cursor_position)}"
+    )
 
     new_buffer =
       case mode do
         # Clear from cursor to end of line
         0 ->
-          Eraser.clear_line_from(buffer, cursor_y, cursor_x, default_style)
+          result = Operations.clear_to_end_of_line(buffer_with_cursor)
+          Raxol.Core.Runtime.Log.debug(
+            "[Screen.clear_line] After clear_to_end_of_line operation"
+          )
+          result
 
         # Clear from beginning of line to cursor
         1 ->
-          Eraser.clear_line_to(buffer, cursor_y, cursor_x, default_style)
+          Operations.clear_to_beginning_of_line(buffer_with_cursor)
 
         # Clear entire line
         2 ->
-          Eraser.clear_line(buffer, cursor_y, default_style)
+          Operations.clear_line(buffer_with_cursor, cursor_y)
 
         # Unknown mode, do nothing
         _ ->

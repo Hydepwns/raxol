@@ -39,7 +39,12 @@ defmodule Raxol.Performance.ETSCacheManager do
   Cache a parsed CSI sequence.
   """
   def cache_csi(sequence, result) do
-    _ = :ets.insert(@csi_parser_cache, {sequence, result, System.monotonic_time()})
+    _ =
+      :ets.insert(
+        @csi_parser_cache,
+        {sequence, result, System.monotonic_time()}
+      )
+
     _ = enforce_cache_limit(@csi_parser_cache, @max_csi_entries)
     result
   end
@@ -51,11 +56,12 @@ defmodule Raxol.Performance.ETSCacheManager do
     case :ets.lookup(@csi_parser_cache, sequence) do
       [{^sequence, result, _timestamp}] ->
         # Update timestamp on access for LRU
-        _ = :ets.update_element(
-          @csi_parser_cache,
-          sequence,
-          {3, System.monotonic_time()}
-        )
+        _ =
+          :ets.update_element(
+            @csi_parser_cache,
+            sequence,
+            {3, System.monotonic_time()}
+          )
 
         {:ok, result}
 
@@ -95,7 +101,10 @@ defmodule Raxol.Performance.ETSCacheManager do
   """
   def cache_style(theme_id, component_type, attrs_hash, resolved_style) do
     key = {theme_id, component_type, attrs_hash}
-    _ = :ets.insert(@style_cache, {key, resolved_style, System.monotonic_time()})
+
+    _ =
+      :ets.insert(@style_cache, {key, resolved_style, System.monotonic_time()})
+
     _ = enforce_cache_limit(@style_cache, @max_style_entries)
     resolved_style
   end
@@ -134,7 +143,9 @@ defmodule Raxol.Performance.ETSCacheManager do
 
     case :ets.lookup(@buffer_cache, key) do
       [{^key, data, _timestamp}] ->
-        _ = :ets.update_element(@buffer_cache, key, {3, System.monotonic_time()})
+        _ =
+          :ets.update_element(@buffer_cache, key, {3, System.monotonic_time()})
+
         {:ok, data}
 
       [] ->
@@ -162,7 +173,9 @@ defmodule Raxol.Performance.ETSCacheManager do
 
     case :ets.lookup(@layout_cache, key) do
       [{^key, result, _timestamp}] ->
-        _ = :ets.update_element(@layout_cache, key, {3, System.monotonic_time()})
+        _ =
+          :ets.update_element(@layout_cache, key, {3, System.monotonic_time()})
+
         {:ok, result}
 
       [] ->
@@ -176,9 +189,10 @@ defmodule Raxol.Performance.ETSCacheManager do
   Useful for pre-computing common viewport sizes.
   """
   def cache_layouts_batch(layouts) do
-    _ = Enum.each(layouts, fn {tree_hash, constraints, result} ->
-      cache_layout(tree_hash, constraints, result)
-    end)
+    _ =
+      Enum.each(layouts, fn {tree_hash, constraints, result} ->
+        cache_layout(tree_hash, constraints, result)
+      end)
   end
 
   defp find_compatible_layout(tree_hash, constraints) do
@@ -189,7 +203,9 @@ defmodule Raxol.Performance.ETSCacheManager do
     case find_best_match(candidates, constraints) do
       {key, result, _timestamp} ->
         # Update timestamp for LRU
-        _ = :ets.update_element(@layout_cache, key, {3, System.monotonic_time()})
+        _ =
+          :ets.update_element(@layout_cache, key, {3, System.monotonic_time()})
+
         {:ok, result}
 
       nil ->
@@ -212,11 +228,12 @@ defmodule Raxol.Performance.ETSCacheManager do
   def get_font_metrics(key) do
     case :ets.lookup(@font_metrics_cache, key) do
       [{^key, result, _timestamp}] ->
-        _ = :ets.update_element(
-          @font_metrics_cache,
-          key,
-          {3, System.monotonic_time()}
-        )
+        _ =
+          :ets.update_element(
+            @font_metrics_cache,
+            key,
+            {3, System.monotonic_time()}
+          )
 
         {:ok, result}
 
@@ -289,45 +306,56 @@ defmodule Raxol.Performance.ETSCacheManager do
   @impl true
   def init(_opts) do
     # Create ETS tables with optimal settings for each cache type
-    _ = :ets.new(@csi_parser_cache, [
-      :set,
-      :public,
-      :named_table,
-      read_concurrency: true
-    ])
+    _ =
+      :ets.new(@csi_parser_cache, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true
+      ])
 
-    _ = :ets.new(@cell_cache, [
-      :set,
-      :public,
-      :named_table,
-      read_concurrency: true,
-      write_concurrency: true
-    ])
+    _ =
+      :ets.new(@cell_cache, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true,
+        write_concurrency: true
+      ])
 
-    _ = :ets.new(@style_cache, [:set, :public, :named_table, read_concurrency: true])
+    _ =
+      :ets.new(@style_cache, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true
+      ])
 
-    _ = :ets.new(@buffer_cache, [
-      :set,
-      :public,
-      :named_table,
-      read_concurrency: true,
-      write_concurrency: true
-    ])
+    _ =
+      :ets.new(@buffer_cache, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true,
+        write_concurrency: true
+      ])
 
-    _ = :ets.new(@layout_cache, [
-      :set,
-      :public,
-      :named_table,
-      read_concurrency: true
-    ])
+    _ =
+      :ets.new(@layout_cache, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true
+      ])
 
-    _ = :ets.new(@font_metrics_cache, [
-      :set,
-      :public,
-      :named_table,
-      read_concurrency: true,
-      write_concurrency: true
-    ])
+    _ =
+      :ets.new(@font_metrics_cache, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true,
+        write_concurrency: true
+      ])
 
     # Track hit/miss statistics
     stats = %{
@@ -396,9 +424,10 @@ defmodule Raxol.Performance.ETSCacheManager do
       |> Enum.take(count)
 
     # Delete the oldest entries
-    _ = Enum.each(entries, fn {key, _, _} ->
-      :ets.delete(table, key)
-    end)
+    _ =
+      Enum.each(entries, fn {key, _, _} ->
+        :ets.delete(table, key)
+      end)
   end
 
   defp table_stats(table) do

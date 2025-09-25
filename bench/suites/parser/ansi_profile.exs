@@ -10,7 +10,7 @@ IO.puts("ANSI Parsing Profile")
 IO.puts("=" <> String.duplicate("=", 40))
 
 # Create minimal emulator
-emulator = Emulator.new_minimal(80, 24)
+emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
 
 # Warm up everything
 Parser.parse(emulator, "\e[31mWarmup\e[0m")

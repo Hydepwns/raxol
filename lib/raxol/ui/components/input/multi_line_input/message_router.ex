@@ -1,147 +1,120 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.MessageRouter do
   @moduledoc """
-  Handles message routing for MultiLineInput component to reduce complexity.
+  Message routing for MultiLineInput component.
+  Handles routing different message types to appropriate handler functions.
   """
 
-  @message_handlers %{
-    {:update_props, :_} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_update_props/2,
-    {:input, :_} => &Raxol.UI.Components.Input.MultiLineInput.handle_input/2,
-    {:backspace} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_backspace/1,
-    {:delete} => &Raxol.UI.Components.Input.MultiLineInput.handle_delete/1,
-    {:enter} => &Raxol.UI.Components.Input.MultiLineInput.handle_enter/1,
-    {:move_cursor, :_} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_move_cursor/2,
-    {:move_cursor_line_start} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_move_cursor_line_start/1,
-    {:move_cursor_line_end} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_move_cursor_line_end/1,
-    {:move_cursor_page, :_} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_move_cursor_page/2,
-    {:move_cursor_doc_start} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_move_cursor_doc_start/1,
-    {:move_cursor_doc_end} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_move_cursor_doc_end/1,
-    {:move_cursor_to, :_} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_move_cursor_to/2,
-    {:select_and_move, :_} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_selection_move/2,
-    {:select_all} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_select_all/1,
-    {:copy} => &Raxol.UI.Components.Input.MultiLineInput.handle_copy/1,
-    {:cut} => &Raxol.UI.Components.Input.MultiLineInput.handle_cut/1,
-    {:paste} => &Raxol.UI.Components.Input.MultiLineInput.handle_paste/1,
-    {:clipboard_content, :_} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_clipboard_content/2,
-    :focus => &Raxol.UI.Components.Input.MultiLineInput.handle_focus/1,
-    :blur => &Raxol.UI.Components.Input.MultiLineInput.handle_blur/1,
-    {:set_shift_held, :_} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_set_shift_held/2,
-    {:delete_selection, :_} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_delete_selection/2,
-    {:copy_selection} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_copy_selection/1,
-    {:move_cursor_word_left} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_move_cursor_word_left/1,
-    {:move_cursor_word_right} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_move_cursor_word_right/1,
-    {:move_cursor_select, :_} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_selection_move/2,
-    {:select_to, :_} =>
-      &Raxol.UI.Components.Input.MultiLineInput.handle_select_to/2
-  }
+  alias Raxol.UI.Components.Input.MultiLineInput
 
+  @doc """
+  Routes messages to appropriate handler functions.
+  Returns {:ok, result} if message was handled, :error if not.
+  """
+  @spec route(any(), MultiLineInput.t()) :: {:ok, any()} | :error
   def route(msg, state) do
-    case find_handler(msg) do
-      {handler, args} -> {:ok, apply_handler(handler, args, state)}
-      nil -> :error
-    end
-  end
+    case msg do
+      # Focus and blur
+      :focus ->
+        {:ok, MultiLineInput.handle_focus(state)}
 
-  defp find_handler(msg) do
-    Enum.find_value(@message_handlers, fn {pattern, handler} ->
-      case matches_pattern?(msg, pattern) do
-        true -> {handler, extract_args(msg, pattern)}
-        false -> nil
-      end
-    end)
-  end
+      :blur ->
+        {:ok, MultiLineInput.handle_blur(state)}
 
-  defp matches_pattern?(msg, pattern) do
-    case {msg, pattern} do
-      {msg, pattern} when msg == pattern -> true
-      {{tag, _}, {tag, :_}} -> matches_tag_pattern?(tag, msg)
-      _ -> false
-    end
-  end
+      # Text input
+      {:input, char_codepoint} ->
+        {:ok, MultiLineInput.handle_input(char_codepoint, state)}
 
-  defp matches_tag_pattern?(:update_props, _msg), do: true
-  defp matches_tag_pattern?(:input, _msg), do: true
+      # Text editing
+      {:backspace} ->
+        {:ok, MultiLineInput.handle_backspace(state)}
 
-  defp matches_tag_pattern?(:move_cursor, {:move_cursor, direction}),
-    do: direction in [:left, :right, :up, :down]
+      {:delete} ->
+        {:ok, MultiLineInput.handle_delete(state)}
 
-  defp matches_tag_pattern?(:move_cursor_page, {:move_cursor_page, direction}),
-    do: direction in [:up, :down]
+      {:enter} ->
+        {:ok, MultiLineInput.handle_enter(state)}
 
-  defp matches_tag_pattern?(:move_cursor_to, _msg), do: true
-  defp matches_tag_pattern?(:select_and_move, _msg), do: true
+      # Cursor movement
+      {:move_cursor, direction} ->
+        {:ok, MultiLineInput.handle_move_cursor(direction, state)}
 
-  defp matches_tag_pattern?(:clipboard_content, {:clipboard_content, content}),
-    do: is_binary(content)
+      {:move_cursor_line_start} ->
+        {:ok, MultiLineInput.handle_move_cursor_line_start(state)}
 
-  defp matches_tag_pattern?(:set_shift_held, _msg), do: true
+      {:move_cursor_line_end} ->
+        {:ok, MultiLineInput.handle_move_cursor_line_end(state)}
 
-  defp matches_tag_pattern?(:delete_selection, {:delete_selection, direction}),
-    do: direction in [:backward, :forward]
+      {:move_cursor_page, direction} ->
+        {:ok, MultiLineInput.handle_move_cursor_page(direction, state)}
 
-  defp matches_tag_pattern?(
-         :move_cursor_select,
-         {:move_cursor_select, direction}
-       ),
-       do:
-         direction in [
-           :left,
-           :right,
-           :up,
-           :down,
-           :line_start,
-           :line_end,
-           :page_up,
-           :page_down,
-           :doc_start,
-           :doc_end
-         ]
+      {:move_cursor_doc_start} ->
+        {:ok, MultiLineInput.handle_move_cursor_doc_start(state)}
 
-  defp matches_tag_pattern?(:select_to, _msg), do: true
-  defp matches_tag_pattern?(_, _), do: false
+      {:move_cursor_doc_end} ->
+        {:ok, MultiLineInput.handle_move_cursor_doc_end(state)}
 
-  defp extract_args(msg, pattern) do
-    case {msg, pattern} do
-      {{tag, arg}, {tag, :_}} -> extract_tag_args(tag, arg)
-      _ -> []
-    end
-  end
+      {:move_cursor_to, position} ->
+        {:ok, MultiLineInput.handle_move_cursor_to(position, state)}
 
-  defp extract_tag_args(:update_props, new_props), do: [new_props]
-  defp extract_tag_args(:input, char_codepoint), do: [char_codepoint]
-  defp extract_tag_args(:move_cursor, direction), do: [direction]
-  defp extract_tag_args(:move_cursor_page, direction), do: [direction]
-  defp extract_tag_args(:move_cursor_to, pos), do: [pos]
-  defp extract_tag_args(:select_and_move, direction), do: [direction]
-  defp extract_tag_args(:clipboard_content, content), do: [content]
-  defp extract_tag_args(:set_shift_held, held), do: [held]
-  defp extract_tag_args(:delete_selection, direction), do: [direction]
-  defp extract_tag_args(:move_cursor_select, direction), do: [direction]
-  defp extract_tag_args(:select_to, pos), do: [pos]
-  defp extract_tag_args(_, _), do: []
+      {:move_cursor_word_left} ->
+        {:ok, MultiLineInput.handle_move_cursor_word_left(state)}
 
-  defp apply_handler(handler, args, state) do
-    case length(args) do
-      0 -> handler.(state)
-      1 -> apply(handler, [Enum.at(args, 0), state])
-      2 -> apply(handler, args ++ [state])
+      {:move_cursor_word_right} ->
+        {:ok, MultiLineInput.handle_move_cursor_word_right(state)}
+
+      # Selection
+      {:select_all} ->
+        {:ok, MultiLineInput.handle_select_all(state)}
+
+      {:select_to, position} ->
+        {:ok, MultiLineInput.handle_select_to(position, state)}
+
+      {:selection_move, direction} ->
+        {:ok, MultiLineInput.handle_selection_move(state, direction)}
+
+      {:copy_selection} ->
+        {:ok, MultiLineInput.handle_copy_selection(state)}
+
+      {:delete_selection, direction} ->
+        {:ok, MultiLineInput.handle_delete_selection(direction, state)}
+
+      # Clipboard operations
+      {:copy} ->
+        {:ok, MultiLineInput.handle_copy(state)}
+
+      {:cut} ->
+        {:ok, MultiLineInput.handle_cut(state)}
+
+      {:paste} ->
+        {:ok, MultiLineInput.handle_paste(state)}
+
+      {:clipboard_content, content} ->
+        {:ok, MultiLineInput.handle_clipboard_content(content, state)}
+
+      # State changes
+      {:set_shift_held, held} ->
+        {:ok, MultiLineInput.handle_set_shift_held(held, state)}
+
+      {:update_props, new_props} ->
+        {:ok, MultiLineInput.handle_update_props(new_props, state)}
+
+      # Properties update
+      {:set_value, new_value} ->
+        new_state = %{state | value: new_value}
+
+        new_lines =
+          MultiLineInput.TextHelper.split_into_lines(
+            new_value,
+            state.width,
+            state.wrap
+          )
+
+        final_state = %{new_state | lines: new_lines, cursor_pos: {0, 0}}
+        {:ok, {:noreply, final_state, nil}}
+
+      # Unknown message
+      _ ->
+        :error
     end
   end
 end

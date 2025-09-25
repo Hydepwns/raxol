@@ -113,7 +113,8 @@ defmodule Raxol.Core.ErrorHandlingStandard do
   @doc """
   Wraps a function that might raise an exception into a result tuple.
   """
-  @spec safe_call((-> any()), standard_error()) :: {:ok, any()} | {:error, standard_error(), map()}
+  @spec safe_call((-> any()), standard_error()) ::
+          {:ok, any()} | {:error, standard_error(), map()}
   def safe_call(fun, error_type \\ :internal_error) do
     try do
       {:ok, fun.()}
@@ -136,7 +137,8 @@ defmodule Raxol.Core.ErrorHandlingStandard do
       validate_required(%{name: "John"}, [:name, :email])
       # => {:error, :invalid_argument, %{missing_fields: [:email]}}
   """
-  @spec validate_required(map(), [atom()]) :: {:ok, map()} | {:error, :invalid_argument, map()}
+  @spec validate_required(map(), [atom()]) ::
+          {:ok, map()} | {:error, :invalid_argument, map()}
   def validate_required(data, required_fields) do
     missing = Enum.filter(required_fields, &(not Map.has_key?(data, &1)))
 
@@ -165,6 +167,7 @@ defmodule Raxol.Core.ErrorHandlingStandard do
     do_retry(fun, max_attempts, initial_delay, max_delay, jitter, 1)
   end
 
+  @spec do_retry(any(), any(), any(), any(), any(), any()) :: any()
   defp do_retry(fun, max_attempts, delay, max_delay, jitter, attempt) do
     case fun.() do
       {:ok, _} = success ->
@@ -188,11 +191,13 @@ defmodule Raxol.Core.ErrorHandlingStandard do
     end
   end
 
+  @spec calculate_delay(any(), any(), any()) :: any()
   defp calculate_delay(base_delay, max_delay, true) do
     jitter = :rand.uniform(div(base_delay, 2))
     min(base_delay + jitter, max_delay)
   end
 
+  @spec calculate_delay(any(), any(), any()) :: any()
   defp calculate_delay(base_delay, max_delay, false) do
     min(base_delay, max_delay)
   end
@@ -211,7 +216,8 @@ defmodule Raxol.Core.ErrorHandlingStandard do
       aggregate_errors(results)
       # => {:error, :multiple_errors, %{errors: [...]}}
   """
-  @spec aggregate_errors([result(any())]) :: {:ok, [any()]} | {:error, :multiple_errors, map()}
+  @spec aggregate_errors([result(any())]) ::
+          {:ok, [any()]} | {:error, :multiple_errors, map()}
   def aggregate_errors(results) do
     {oks, errors} = Enum.split_with(results, &match?({:ok, _}, &1))
 

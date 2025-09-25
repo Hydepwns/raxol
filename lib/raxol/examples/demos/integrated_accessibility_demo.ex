@@ -1,152 +1,256 @@
 defmodule Raxol.Examples.Demos.IntegratedAccessibilityDemo do
   @moduledoc """
-  A demo showcasing integrated accessibility features.
+  Demo showcasing accessibility features including screen reader support,
+  high contrast mode, and keyboard navigation.
   """
 
-  @behaviour Raxol.Core.Runtime.Application
+  alias Raxol.Core.Events.Event
 
-  alias Raxol.Core.Renderer.View
-  require Raxol.Core.Renderer.View
-  # If this demo uses Accessibility features directly:
-  # alias Raxol.Core.Accessibility, as: Accessibility
+  @type t :: %__MODULE__{
+          mode: :menu | :contrast | :screen_reader | :navigation,
+          selected_option: non_neg_integer(),
+          contrast_level: :normal | :high | :highest,
+          screen_reader_enabled: boolean(),
+          navigation_mode: :standard | :vim,
+          announcements: [String.t()]
+        }
 
-  @impl true
-  def init(_opts) do
-    model = %{
-      message: "Welcome to the Accessibility Demo",
-      button_clicks: 0,
-      checkbox_checked: false
-    }
-
-    {:ok, {model, []}}
-  end
-
-  @impl true
-  def update(model, {:button_clicked}) do
-    {:ok, %{model | button_clicks: model.button_clicks + 1}}
-  end
-
-  @impl true
-  def update(model, {:checkbox_toggled}) do
-    {:ok, %{model | checkbox_checked: !model.checkbox_checked}}
-  end
-
-  @impl true
-  def update(model, _event), do: {:ok, model}
-
-  @impl true
-  def handle_event(event) do
-    {:ok, event}
-  end
-
-  @impl Raxol.Core.Runtime.Application
-  def handle_message(_message, model), do: {:noreply, model}
-
-  @impl Raxol.Core.Runtime.Application
-  def handle_tick(model), do: {:noreply, model}
-
-  @impl Raxol.Core.Runtime.Application
-  def subscriptions(_model), do: []
-
-  @impl Raxol.Core.Runtime.Application
-  def terminate(_reason, _model), do: :ok
-
-  @impl Raxol.Core.Runtime.Application
-  def view(model), do: demo_view(model)
+  defstruct mode: :menu,
+            selected_option: 0,
+            contrast_level: :normal,
+            screen_reader_enabled: false,
+            navigation_mode: :standard,
+            announcements: []
 
   @doc """
-  Renders the accessibility demo view.
-
-  ## Parameters
-    - model: The model to render
-
-  ## Returns
-    - The rendered view
+  Initializes the accessibility demo.
   """
-  def demo_view(model) do
-    View.column(
-      do: [
-        View.text(model.message, style: [[:bold]]),
-        View.button(
-          "Click Me (#{model.button_clicks})",
-          on_click: {:button_clicked},
-          aria_label: "Increment click counter button",
-          aria_description:
-            "Press to increment the number of times this button has been clicked."
-        ),
-        View.checkbox(
-          "Enable Feature",
-          checked: model.checkbox_checked,
-          on_toggle: {:checkbox_toggled},
-          aria_label: "Enable or disable the example feature",
-          aria_description: "Toggles a conceptual feature on or off."
-        ),
-        View.text(
-          "Checkbox is: #{if model.checkbox_checked, do: "Checked", else: "Unchecked"}",
-          aria_live: :polite
-        ),
-        View.text_input(
-          placeholder: "Enter your name...",
-          value: "",
-          aria_label: "Name input field",
-          aria_description: "Enter your first and last name here."
-        )
-      ]
-    )
+  @spec init(keyword()) :: {:ok, {t(), list()}}
+  def init(_opts \\ []) do
+    state = %__MODULE__{
+      announcements: ["Welcome to the Accessibility Demo"]
+    }
+
+    commands = [
+      {:announce, "Welcome to the Accessibility Demo. Press H for help."}
+    ]
+
+    {:ok, {state, commands}}
   end
 
   @doc """
-  Gets the accessibility settings.
-
-  ## Parameters
-    - user_preferences_pid_or_name: The user preferences process ID or name
-
-  ## Returns
-    - A map containing the accessibility settings
+  Updates the demo state based on events.
   """
-  def get_settings(user_preferences_pid_or_name) do
-    alias Raxol.Core.Accessibility.Preferences
+  @spec update(Event.t(), t()) :: {t(), list()}
+  def update(%Event{type: :key, data: %{key: key}}, state) do
+    case {state.mode, key} do
+      # Global navigation
+      {_, "q"} ->
+        {state, [{:exit}]}
 
-    %{
-      enabled:
-        Preferences.get_option(:enabled, user_preferences_pid_or_name, true),
-      screen_reader:
-        Preferences.get_option(
-          :screen_reader,
-          user_preferences_pid_or_name,
-          true
-        ),
-      high_contrast:
-        Preferences.get_option(
-          :high_contrast,
-          user_preferences_pid_or_name,
-          false
-        ),
-      reduced_motion:
-        Preferences.get_option(
-          :reduced_motion,
-          user_preferences_pid_or_name,
-          false
-        ),
-      keyboard_focus:
-        Preferences.get_option(
-          :keyboard_focus,
-          user_preferences_pid_or_name,
-          true
-        ),
-      large_text:
-        Preferences.get_option(:large_text, user_preferences_pid_or_name, false),
-      silence_announcements:
-        Preferences.get_option(
-          :silence_announcements,
-          user_preferences_pid_or_name,
-          false
-        )
-    }
+      # Menu mode navigation
+      {:menu, "h"} ->
+        show_help(state)
+
+      {:menu, "1"} ->
+        {%{state | mode: :contrast}, [{:announce, "Contrast settings mode"}]}
+
+      {:menu, "2"} ->
+        {%{state | mode: :screen_reader},
+         [{:announce, "Screen reader settings"}]}
+
+      {:menu, "3"} ->
+        {%{state | mode: :navigation}, [{:announce, "Navigation settings"}]}
+
+      {:menu, :escape} ->
+        {state, [{:exit}]}
+
+      # Contrast mode
+      {:contrast, "n"} ->
+        set_contrast(state, :normal)
+
+      {:contrast, "c"} ->
+        set_contrast(state, :high)
+
+      {:contrast, "x"} ->
+        set_contrast(state, :highest)
+
+      {:contrast, "h"} ->
+        show_help(state)
+
+      {:contrast, :escape} ->
+        {%{state | mode: :menu}, [{:announce, "Back to main menu"}]}
+
+      # Screen reader mode
+      {:screen_reader, "e"} ->
+        toggle_screen_reader(state, true)
+
+      {:screen_reader, "d"} ->
+        toggle_screen_reader(state, false)
+
+      {:screen_reader, :escape} ->
+        {%{state | mode: :menu}, [{:announce, "Back to main menu"}]}
+
+      # Navigation mode
+      {:navigation, "s"} ->
+        set_navigation(state, :standard)
+
+      {:navigation, "v"} ->
+        set_navigation(state, :vim)
+
+      {:navigation, :escape} ->
+        {%{state | mode: :menu}, [{:announce, "Back to main menu"}]}
+
+      # Default - no action
+      _ ->
+        {state, []}
+    end
   end
 
-  # Optional: If this demo needs to be run directly
-  # def main(args \\ []) do
-  #   Raxol.run(__MODULE__, args)
-  # end
+  def update(_event, state), do: {state, []}
+
+  @doc """
+  Renders the current view.
+  """
+  @spec view(t()) :: iolist()
+  def view(state) do
+    case state.mode do
+      :menu -> render_menu(state)
+      :contrast -> render_contrast_settings(state)
+      :screen_reader -> render_screen_reader_settings(state)
+      :navigation -> render_navigation_settings(state)
+    end
+  end
+
+  # Private functions
+
+  defp show_help(state) do
+    help_text = """
+    Accessibility Demo Help:
+
+    Main Menu:
+      1 - Contrast Settings
+      2 - Screen Reader Settings
+      3 - Navigation Settings
+      Q - Quit
+      H - Show this help
+
+    In Settings:
+      ESC - Return to main menu
+
+    Current Status:
+      Contrast: #{state.contrast_level}
+      Screen Reader: #{if state.screen_reader_enabled, do: "Enabled", else: "Disabled"}
+      Navigation: #{state.navigation_mode}
+    """
+
+    announcement = "Help displayed. Press any key to continue."
+    {state, [{:announce, announcement}, {:display, help_text}]}
+  end
+
+  defp set_contrast(state, level) do
+    state = %{state | contrast_level: level}
+    announcement = "Contrast level set to #{level}"
+
+    commands = [
+      {:announce, announcement},
+      {:set_contrast, level}
+    ]
+
+    {state, commands}
+  end
+
+  defp toggle_screen_reader(state, enabled) do
+    state = %{state | screen_reader_enabled: enabled}
+    status = if enabled, do: "enabled", else: "disabled"
+    announcement = "Screen reader #{status}"
+
+    commands = [
+      {:announce, announcement},
+      {:set_screen_reader, enabled}
+    ]
+
+    {state, commands}
+  end
+
+  defp set_navigation(state, mode) do
+    state = %{state | navigation_mode: mode}
+    announcement = "Navigation mode set to #{mode}"
+
+    commands = [
+      {:announce, announcement},
+      {:set_navigation_mode, mode}
+    ]
+
+    {state, commands}
+  end
+
+  defp render_menu(state) do
+    """
+    ====================================
+        ACCESSIBILITY DEMO
+    ====================================
+
+    Main Menu:
+      [1] Contrast Settings (#{state.contrast_level})
+      [2] Screen Reader (#{if state.screen_reader_enabled, do: "ON", else: "OFF"})
+      [3] Navigation Mode (#{state.navigation_mode})
+
+    Press H for help, Q to quit
+    ====================================
+    """
+  end
+
+  defp render_contrast_settings(state) do
+    """
+    ====================================
+        CONTRAST SETTINGS
+    ====================================
+
+    Current Level: #{state.contrast_level}
+
+    Options:
+      [N] Normal Contrast
+      [C] High Contrast
+      [X] Highest Contrast
+      [H] Help
+
+    Press ESC to return to menu
+    ====================================
+    """
+  end
+
+  defp render_screen_reader_settings(state) do
+    """
+    ====================================
+        SCREEN READER SETTINGS
+    ====================================
+
+    Status: #{if state.screen_reader_enabled, do: "ENABLED", else: "DISABLED"}
+
+    Options:
+      [E] Enable Screen Reader
+      [D] Disable Screen Reader
+
+    Press ESC to return to menu
+    ====================================
+    """
+  end
+
+  defp render_navigation_settings(state) do
+    """
+    ====================================
+        NAVIGATION SETTINGS
+    ====================================
+
+    Current Mode: #{state.navigation_mode}
+
+    Options:
+      [S] Standard Navigation
+      [V] Vim-style Navigation
+
+    Press ESC to return to menu
+    ====================================
+    """
+  end
 end

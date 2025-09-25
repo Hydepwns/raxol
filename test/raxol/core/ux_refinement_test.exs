@@ -3,7 +3,7 @@ defmodule Raxol.Core.UXRefinementTest do
   import Mox
   
   alias Raxol.Core.UXRefinement, as: UXR
-  alias Raxol.Core.UXRefinement.UXServer, as: Server
+  alias Raxol.Core.UXRefinement.UxServer, as: Server
   
   setup :verify_on_exit!
   setup :set_mox_global

@@ -50,7 +50,13 @@ defmodule Raxol.Core.ErrorHandling do
       iex> safe_call(fn -> raise "oops" end)
       {:error, %RuntimeError{message: "oops"}}
   """
-  @spec safe_call((-> any())) :: {:ok, any()} | {:error, Exception.t() | {:exit, term()} | {:throw, term()} | {atom(), term()}}
+  @spec safe_call((-> any())) ::
+          {:ok, any()}
+          | {:error,
+             Exception.t()
+             | {:exit, term()}
+             | {:throw, term()}
+             | {atom(), term()}}
   def safe_call(fun) when is_function(fun, 0) do
     {:ok, fun.()}
   rescue
@@ -139,10 +145,12 @@ defmodule Raxol.Core.ErrorHandling do
     |> normalize_deserialize_error()
   end
 
+  @spec normalize_deserialize_error(any()) :: any()
   defp normalize_deserialize_error({:error, _}) do
     {:error, :invalid_binary}
   end
 
+  @spec normalize_deserialize_error(any()) :: any()
   defp normalize_deserialize_error(result), do: result
 
   @doc """
@@ -226,7 +234,13 @@ defmodule Raxol.Core.ErrorHandling do
   Safely calls an optional callback on a module.
   Returns {:ok, nil} if the callback doesn't exist.
   """
-  @spec safe_callback(module(), atom(), list()) :: {:ok, any()} | {:error, Exception.t() | {:exit, term()} | {:throw, term()} | {atom(), term()}}
+  @spec safe_callback(module(), atom(), list()) ::
+          {:ok, any()}
+          | {:error,
+             Exception.t()
+             | {:exit, term()}
+             | {:throw, term()}
+             | {atom(), term()}}
   def safe_callback(module, function, args) do
     case function_exported?(module, function, length(args)) do
       true -> safe_call(fn -> apply(module, function, args) end)
@@ -352,7 +366,13 @@ defmodule Raxol.Core.ErrorHandling do
   @doc """
   Ensures cleanup is called regardless of success or failure.
   """
-  @spec ensure_cleanup((-> any()), (-> any())) :: {:ok, any()} | {:error, Exception.t() | {:exit, term()} | {:throw, term()} | {atom(), term()}}
+  @spec ensure_cleanup((-> any()), (-> any())) ::
+          {:ok, any()}
+          | {:error,
+             Exception.t()
+             | {:exit, term()}
+             | {:throw, term()}
+             | {atom(), term()}}
   def ensure_cleanup(main_fun, cleanup_fun) do
     result = safe_call(main_fun)
     _ = safe_call(cleanup_fun)
@@ -388,10 +408,12 @@ defmodule Raxol.Core.ErrorHandling do
     do_safe_sequence(functions, [])
   end
 
+  @spec do_safe_sequence(any(), any()) :: any()
   defp do_safe_sequence([], results) do
     {:ok, Enum.reverse(results)}
   end
 
+  @spec do_safe_sequence(any(), any()) :: any()
   defp do_safe_sequence([fun | rest], results) do
     case safe_call(fun) do
       {:ok, result} -> do_safe_sequence(rest, [result | results])

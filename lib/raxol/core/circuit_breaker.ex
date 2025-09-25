@@ -225,6 +225,11 @@ defmodule Raxol.Core.CircuitBreaker do
 
   # Private Functions
 
+  @spec handle_closed_call(any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_closed_call(fun, state) do
     result = execute_function(fun)
     new_metrics = update_metrics(state.metrics, :total_calls)
@@ -262,6 +267,11 @@ defmodule Raxol.Core.CircuitBreaker do
     end
   end
 
+  @spec handle_open_call(any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_open_call(_fun, state) do
     # Check if we should transition to half-open
     if should_attempt_reset?(state) do
@@ -277,6 +287,11 @@ defmodule Raxol.Core.CircuitBreaker do
     end
   end
 
+  @spec handle_half_open_call(any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_half_open_call(fun, state) do
     result = execute_function(fun)
     new_metrics = update_metrics(state.metrics, :total_calls)
@@ -321,6 +336,7 @@ defmodule Raxol.Core.CircuitBreaker do
     end
   end
 
+  @spec execute_function(any()) :: any()
   defp execute_function(fun) do
     try do
       result = fun.()
@@ -340,6 +356,7 @@ defmodule Raxol.Core.CircuitBreaker do
     end
   end
 
+  @spec should_open_circuit?(map()) :: boolean()
   defp should_open_circuit?(state) do
     cond do
       # Threshold-based opening
@@ -356,6 +373,7 @@ defmodule Raxol.Core.CircuitBreaker do
     end
   end
 
+  @spec should_attempt_reset?(map()) :: boolean()
   defp should_attempt_reset?(state) do
     case state.last_failure_time do
       nil ->
@@ -367,6 +385,7 @@ defmodule Raxol.Core.CircuitBreaker do
     end
   end
 
+  @spec transition_to_open(map()) :: any()
   defp transition_to_open(state) do
     Logger.info("Circuit breaker #{state.name} transitioning to OPEN")
     state.on_state_change.(state.state, :open)
@@ -377,6 +396,7 @@ defmodule Raxol.Core.CircuitBreaker do
     %{state | state: :open, metrics: add_state_change(state.metrics, :open)}
   end
 
+  @spec transition_to_half_open(map()) :: any()
   defp transition_to_half_open(state) do
     Logger.info("Circuit breaker #{state.name} transitioning to HALF-OPEN")
     state.on_state_change.(state.state, :half_open)
@@ -390,6 +410,7 @@ defmodule Raxol.Core.CircuitBreaker do
     }
   end
 
+  @spec transition_to_closed(map()) :: any()
   defp transition_to_closed(state) do
     Logger.info("Circuit breaker #{state.name} transitioning to CLOSED")
     state.on_state_change.(state.state, :closed)
@@ -404,10 +425,12 @@ defmodule Raxol.Core.CircuitBreaker do
     }
   end
 
+  @spec update_metrics(any(), any()) :: any()
   defp update_metrics(metrics, key) do
     Map.update(metrics, key, 1, &(&1 + 1))
   end
 
+  @spec add_state_change(any(), map()) :: any()
   defp add_state_change(metrics, new_state) do
     change = %{
       state: new_state,

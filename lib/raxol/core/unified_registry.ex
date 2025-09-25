@@ -396,6 +396,7 @@ defmodule Raxol.Core.UnifiedRegistry do
 
   # Private Helper Functions
 
+  @spec get_registry(map(), any()) :: any() | nil
   defp get_registry(state, type) do
     case type do
       :sessions -> {:ok, state.sessions}
@@ -407,6 +408,7 @@ defmodule Raxol.Core.UnifiedRegistry do
     end
   end
 
+  @spec put_registry(map(), any(), any()) :: any()
   defp put_registry(state, type, registry) do
     case type do
       :sessions -> %{state | sessions: registry}

@@ -5,14 +5,15 @@ defmodule Raxol.Commands.CreateTerminalCommand do
 
   use Raxol.Architecture.CQRS.Command
 
-  import Raxol.Architecture.CQRS.Command, only: [
-    generate_command_id: 0,
-    generate_correlation_id: 0,
-    build_metadata: 1,
-    validate_required: 2,
-    validate_range: 3,
-    validate_inclusion: 2
-  ]
+  import Raxol.Architecture.CQRS.Command,
+    only: [
+      generate_command_id: 0,
+      generate_correlation_id: 0,
+      build_metadata: 1,
+      validate_required: 2,
+      validate_range: 3,
+      validate_inclusion: 2
+    ]
 
   defstruct [
     :command_id,
@@ -96,7 +97,9 @@ defmodule Raxol.Commands.CreateTerminalCommand do
     check_user_authentication(command.user_id)
   end
 
-  defp check_user_authentication(user_id) when is_binary(user_id) and user_id != "", do: :ok
+  defp check_user_authentication(user_id)
+       when is_binary(user_id) and user_id != "",
+       do: :ok
 
   defp check_user_authentication(_user_id),
     do: {:error, :user_not_authenticated}
@@ -105,7 +108,6 @@ defmodule Raxol.Commands.CreateTerminalCommand do
     "term_" <>
       (:crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false))
   end
-
 end
 
 defmodule Raxol.Commands.UpdateTerminalCommand do
@@ -115,14 +117,15 @@ defmodule Raxol.Commands.UpdateTerminalCommand do
 
   use Raxol.Architecture.CQRS.Command
 
-  import Raxol.Architecture.CQRS.Command, only: [
-    generate_command_id: 0,
-    generate_correlation_id: 0,
-    build_metadata: 1,
-    validate_required: 2,
-    validate_range: 3,
-    validate_inclusion: 2
-  ]
+  import Raxol.Architecture.CQRS.Command,
+    only: [
+      generate_command_id: 0,
+      generate_correlation_id: 0,
+      build_metadata: 1,
+      validate_required: 2,
+      validate_range: 3,
+      validate_inclusion: 2
+    ]
 
   defstruct [
     :command_id,
@@ -206,14 +209,15 @@ defmodule Raxol.Commands.SendInputCommand do
 
   use Raxol.Architecture.CQRS.Command
 
-  import Raxol.Architecture.CQRS.Command, only: [
-    generate_command_id: 0,
-    generate_correlation_id: 0,
-    build_metadata: 1,
-    validate_required: 2,
-    validate_range: 3,
-    validate_inclusion: 2
-  ]
+  import Raxol.Architecture.CQRS.Command,
+    only: [
+      generate_command_id: 0,
+      generate_correlation_id: 0,
+      build_metadata: 1,
+      validate_required: 2,
+      validate_range: 3,
+      validate_inclusion: 2
+    ]
 
   defstruct [
     :command_id,
@@ -291,14 +295,15 @@ defmodule Raxol.Commands.CloseTerminalCommand do
 
   use Raxol.Architecture.CQRS.Command
 
-  import Raxol.Architecture.CQRS.Command, only: [
-    generate_command_id: 0,
-    generate_correlation_id: 0,
-    build_metadata: 1,
-    validate_required: 2,
-    validate_range: 3,
-    validate_inclusion: 2
-  ]
+  import Raxol.Architecture.CQRS.Command,
+    only: [
+      generate_command_id: 0,
+      generate_correlation_id: 0,
+      build_metadata: 1,
+      validate_required: 2,
+      validate_range: 3,
+      validate_inclusion: 2
+    ]
 
   defstruct [
     :command_id,
@@ -372,12 +377,13 @@ defmodule Raxol.Commands.ApplyThemeCommand do
 
   use Raxol.Architecture.CQRS.Command
 
-  import Raxol.Architecture.CQRS.Command, only: [
-    generate_command_id: 0,
-    generate_correlation_id: 0,
-    build_metadata: 1,
-    validate_required: 2
-  ]
+  import Raxol.Architecture.CQRS.Command,
+    only: [
+      generate_command_id: 0,
+      generate_correlation_id: 0,
+      build_metadata: 1,
+      validate_required: 2
+    ]
 
   defstruct [
     :command_id,
@@ -466,8 +472,8 @@ defmodule Raxol.Commands.ApplyThemeCommand do
 
           {r, g, b}
           when is_integer(r) and r >= 0 and r <= 255 and
-               is_integer(g) and g >= 0 and g <= 255 and
-               is_integer(b) and b >= 0 and b <= 255 ->
+                 is_integer(g) and g >= 0 and g <= 255 and
+                 is_integer(b) and b >= 0 and b <= 255 ->
             false
 
           "#" <> hex when is_binary(hex) and byte_size(hex) == 6 ->

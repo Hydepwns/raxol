@@ -294,33 +294,39 @@ defmodule Raxol.Animation.CSSTransitions do
   defp extract_duration([]), do: {300, []}
 
   defp extract_easing([easing_str | rest]) do
-    easing_atom =
-      case easing_str do
-        "linear" -> :linear
-        "ease" -> :ease_out_quad
-        "ease-in" -> :ease_in_quad
-        "ease-out" -> :ease_out_quad
-        "ease-in-out" -> :ease_in_out_quad
-        "ease-in-cubic" -> :ease_in_cubic
-        "ease-out-cubic" -> :ease_out_cubic
-        "ease-in-out-cubic" -> :ease_in_out_cubic
-        "ease-in-back" -> :ease_in_back
-        "ease-out-back" -> :ease_out_back
-        "ease-in-out-back" -> :ease_in_out_back
-        "ease-in-bounce" -> :ease_in_bounce
-        "ease-out-bounce" -> :ease_out_bounce
-        "ease-in-out-bounce" -> :ease_in_out_bounce
-        "ease-in-elastic" -> :ease_in_elastic
-        "ease-out-elastic" -> :ease_out_elastic
-        "ease-in-out-elastic" -> :ease_in_out_elastic
-        # Unknown easing, put back
-        _ -> {:linear, [easing_str | rest]}
-      end
+    easing_atom = map_easing_string(easing_str)
 
-    handle_easing_result(is_tuple(easing_atom), easing_atom, rest)
+    case easing_atom do
+      :unknown -> {:linear, [easing_str | rest]}
+      easing -> {easing, rest}
+    end
   end
 
   defp extract_easing([]), do: {:linear, []}
+
+  @easing_mappings %{
+    "linear" => :linear,
+    "ease" => :ease_out_quad,
+    "ease-in" => :ease_in_quad,
+    "ease-out" => :ease_out_quad,
+    "ease-in-out" => :ease_in_out_quad,
+    "ease-in-cubic" => :ease_in_cubic,
+    "ease-out-cubic" => :ease_out_cubic,
+    "ease-in-out-cubic" => :ease_in_out_cubic,
+    "ease-in-back" => :ease_in_back,
+    "ease-out-back" => :ease_out_back,
+    "ease-in-out-back" => :ease_in_out_back,
+    "ease-in-bounce" => :ease_in_bounce,
+    "ease-out-bounce" => :ease_out_bounce,
+    "ease-in-out-bounce" => :ease_in_out_bounce,
+    "ease-in-elastic" => :ease_in_elastic,
+    "ease-out-elastic" => :ease_out_elastic,
+    "ease-in-out-elastic" => :ease_in_out_elastic
+  }
+
+  defp map_easing_string(easing_str) do
+    Map.get(@easing_mappings, easing_str, :unknown)
+  end
 
   defp extract_delay([delay_str | rest]) do
     parse_delay_value(delay_str, rest)
@@ -650,8 +656,6 @@ defmodule Raxol.Animation.CSSTransitions do
     do: {:cont, {keyframe_progress, properties}}
 
   # Helper functions for refactored if statements
-  defp handle_easing_result(true, easing_tuple, _rest), do: easing_tuple
-  defp handle_easing_result(false, easing_atom, rest), do: {easing_atom, rest}
 
   defp handle_direction_result(true, direction_tuple, _rest),
     do: direction_tuple

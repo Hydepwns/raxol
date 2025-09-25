@@ -401,10 +401,11 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
       %{plugin_id: plugin_id}
     )
 
-    {:ok, updated_metadata} = Raxol.Core.Runtime.Plugins.Discovery.cleanup_plugin(
-      plugin_id,
-      metadata
-    )
+    {:ok, updated_metadata} =
+      Raxol.Core.Runtime.Plugins.Discovery.cleanup_plugin(
+        plugin_id,
+        metadata
+      )
 
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Successfully cleaned up plugin: #{plugin_id}",

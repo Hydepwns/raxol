@@ -22,7 +22,7 @@ defmodule Raxol.Audit.Events do
       :actor,
       :resource
     ]
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -85,6 +85,7 @@ defmodule Raxol.Audit.Events do
 
     # use Raxol.Architecture.EventSourcing.Event
 
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -97,7 +98,13 @@ defmodule Raxol.Audit.Events do
       :user_agent,
       :session_id,
       :mfa_used,
-      :metadata
+      :metadata,
+      # Enrichment fields added by audit logger
+      :node,
+      :environment,
+      :version,
+      :enriched_at,
+      :signature
     ]
 
     @type authentication_method ::
@@ -116,7 +123,13 @@ defmodule Raxol.Audit.Events do
             user_agent: String.t() | nil,
             session_id: String.t() | nil,
             mfa_used: boolean(),
-            metadata: map()
+            metadata: map(),
+            # Enrichment fields added by audit logger
+            node: atom() | nil,
+            environment: String.t() | nil,
+            version: String.t() | nil,
+            enriched_at: integer() | nil,
+            signature: String.t() | nil
           }
 
     def validate(event) do
@@ -144,7 +157,7 @@ defmodule Raxol.Audit.Events do
     Audit event for authorization decisions.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -185,7 +198,7 @@ defmodule Raxol.Audit.Events do
     Audit event for data access operations.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -233,7 +246,7 @@ defmodule Raxol.Audit.Events do
     Audit event for system configuration changes.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -276,7 +289,7 @@ defmodule Raxol.Audit.Events do
     Audit event for security-related incidents.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -327,7 +340,7 @@ defmodule Raxol.Audit.Events do
     Audit event for compliance-related activities.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -367,7 +380,7 @@ defmodule Raxol.Audit.Events do
     Audit event specific to terminal operations.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,
@@ -434,7 +447,7 @@ defmodule Raxol.Audit.Events do
     Audit event for GDPR and privacy-related operations.
     """
 
-    # @derive Jason.Encoder
+    @derive Jason.Encoder
     defstruct [
       :event_id,
       :timestamp,

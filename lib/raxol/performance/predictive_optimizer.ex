@@ -114,10 +114,11 @@ defmodule Raxol.Performance.PredictiveOptimizer do
     }
 
     # Check if immediate optimization is needed
-    _ = case should_optimize_immediately?(new_state) do
-      true -> perform_optimization(new_state)
-      false -> :ok
-    end
+    _ =
+      case should_optimize_immediately?(new_state) do
+        true -> perform_optimization(new_state)
+        false -> :ok
+      end
 
     {:noreply, new_state}
   end
@@ -165,12 +166,13 @@ defmodule Raxol.Performance.PredictiveOptimizer do
     Enum.map(events, fn event ->
       ref = make_ref()
 
-      _ = :telemetry.attach(
-        {__MODULE__, ref},
-        event,
-        &handle_telemetry_event/4,
-        nil
-      )
+      _ =
+        :telemetry.attach(
+          {__MODULE__, ref},
+          event,
+          &handle_telemetry_event/4,
+          nil
+        )
 
       ref
     end)

@@ -65,6 +65,7 @@ defmodule Raxol.Terminal.TerminalUtils do
           "Detected invalid terminal width (#{width}). Using defaults.",
           %{}
         )
+
         {default_width, default_height}
 
       height <= 0 ->
@@ -72,6 +73,7 @@ defmodule Raxol.Terminal.TerminalUtils do
           "Detected invalid terminal height (#{height}). Using defaults.",
           %{}
         )
+
         {default_width, default_height}
 
       true ->

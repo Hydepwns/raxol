@@ -120,6 +120,15 @@ defmodule Raxol.Core.Events.EventManager do
   end
 
   @doc """
+  Gets all registered handlers.
+  Returns a list of handler entries.
+  """
+  @spec get_handlers() :: list()
+  def get_handlers do
+    GenServer.call(__MODULE__, :get_handlers)
+  end
+
+  @doc """
   Dispatches an event using :telemetry.
 
   This method now delegates to telemetry for event dispatching while maintaining
@@ -252,6 +261,31 @@ defmodule Raxol.Core.Events.EventManager do
     {:reply, :ok, state}
   end
 
+  def handle_call(:get_handlers, _from, state) do
+    # Convert ETS table entries to a map grouped by event type
+    handlers_list = :ets.tab2list(state.handlers)
+
+    handlers_map =
+      Enum.reduce(handlers_list, %{}, fn entry, acc ->
+        case entry do
+          {event_type, target, handler, priority} ->
+            Map.update(
+              acc,
+              event_type,
+              [{target, handler, priority}],
+              fn existing ->
+                [{target, handler, priority} | existing]
+              end
+            )
+
+          _ ->
+            acc
+        end
+      end)
+
+    {:reply, handlers_map, state}
+  end
+
   @impl GenServer
   def handle_cast({:notify, event_type, event_data}, state) do
     # Dispatch to handlers
@@ -286,6 +320,7 @@ defmodule Raxol.Core.Events.EventManager do
 
   # Private Implementation
 
+  @spec dispatch_to_handlers(any(), any(), any()) :: any()
   defp dispatch_to_handlers(handlers_table, event_type, event_data) do
     handlers = :ets.lookup(handlers_table, event_type)
 
@@ -294,6 +329,7 @@ defmodule Raxol.Core.Events.EventManager do
     end)
   end
 
+  @spec dispatch_to_subscribers(any(), any(), any()) :: any()
   defp dispatch_to_subscribers(subscriptions_table, event_type, event_data) do
     subscribers = :ets.lookup(subscriptions_table, event_type)
 
@@ -304,6 +340,7 @@ defmodule Raxol.Core.Events.EventManager do
     end)
   end
 
+  @spec safe_call_handler(any(), any(), any(), any()) :: any()
   defp safe_call_handler(target, handler, event_type, event_data)
        when is_pid(target) do
     if Process.alive?(target) do
@@ -311,6 +348,7 @@ defmodule Raxol.Core.Events.EventManager do
     end
   end
 
+  @spec safe_call_handler(any(), any(), any(), any()) :: any()
   defp safe_call_handler(target, handler, event_type, event_data)
        when is_atom(target) do
     try do
@@ -321,24 +359,29 @@ defmodule Raxol.Core.Events.EventManager do
     end
   end
 
+  @spec safe_call_handler(any(), any(), any(), any()) :: any()
   defp safe_call_handler({module, function}, _handler, event_type, event_data) do
     safe_call_handler(module, function, event_type, event_data)
   end
 
+  @spec safe_send_event(String.t() | integer(), any(), any()) :: any()
   defp safe_send_event(pid, event_type, event_data) do
     if Process.alive?(pid) do
       send(pid, {:event, event_type, event_data})
     end
   end
 
+  @spec event_matches_filter?(any(), any()) :: boolean()
   defp event_matches_filter?(_event_data, []), do: true
 
+  @spec event_matches_filter?(any(), any()) :: boolean()
   defp event_matches_filter?(event_data, filter) do
     Enum.all?(filter, fn {key, expected_value} ->
       Map.get(event_data, key) == expected_value
     end)
   end
 
+  @spec cleanup_dead_process(map(), String.t() | integer()) :: any()
   defp cleanup_dead_process(state, dead_pid) do
     # Remove handlers for dead process
     handler_match_spec = [

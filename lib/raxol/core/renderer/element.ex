@@ -67,11 +67,17 @@ defmodule Raxol.Core.Renderer.Element do
     {:ok, element}
   end
 
+  @spec validate_tag(any()) :: {:ok, any()} | {:error, any()}
   defp validate_tag(_tag), do: :ok
+  @spec validate_attributes(any()) :: {:ok, any()} | {:error, any()}
   defp validate_attributes(_attrs), do: :ok
+  @spec validate_children(any()) :: {:ok, any()} | {:error, any()}
   defp validate_children(_children), do: :ok
 
+  @spec normalize_attributes(any()) :: any()
   defp normalize_attributes(attrs) when is_list(attrs), do: attrs
+  @spec normalize_attributes(any()) :: any()
   defp normalize_attributes(attrs) when is_map(attrs), do: Map.to_list(attrs)
+  @spec normalize_attributes(any()) :: any()
   defp normalize_attributes(_attrs), do: []
 end

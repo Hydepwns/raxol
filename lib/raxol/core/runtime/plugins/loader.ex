@@ -31,9 +31,14 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   @doc """
   Loads a plugin from the given path.
   """
-  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  # Implementation of load_plugin/1 (not part of behaviour)
   def load_plugin(plugin_path) when is_binary(plugin_path) do
-    GenServer.call(__MODULE__, {:load_plugin, plugin_path})
+    load_plugin(plugin_path, [])
+  end
+
+  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  def load_plugin(plugin_spec, opts \\ []) do
+    GenServer.call(__MODULE__, {:load_plugin, plugin_spec, opts})
   end
 
   @doc """
@@ -47,7 +52,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   @doc """
   Reloads a plugin.
   """
-  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  # reload_plugin is not part of the behaviour
   def reload_plugin(plugin) do
     GenServer.call(__MODULE__, {:reload_plugin, plugin})
   end
@@ -55,7 +60,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   @doc """
   Gets the list of loaded plugins.
   """
-  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  # get_loaded_plugins is not part of the behaviour
   def get_loaded_plugins do
     GenServer.call(__MODULE__, :get_loaded_plugins)
   end
@@ -63,9 +68,24 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   @doc """
   Checks if a plugin is loaded.
   """
-  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  # plugin_loaded? is not part of the behaviour
   def plugin_loaded?(plugin) do
     GenServer.call(__MODULE__, {:plugin_loaded?, plugin})
+  end
+
+  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  def list_available_plugins(opts \\ []) do
+    # Simple implementation - returns empty list for now
+    GenServer.call(__MODULE__, {:list_available_plugins, opts})
+  end
+
+  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  def validate_plugin(plugin_spec) do
+    # Simple validation - just check if it's a valid module or path
+    case plugin_spec do
+      spec when is_atom(spec) or is_binary(spec) -> :ok
+      _ -> {:error, :invalid_plugin_spec}
+    end
   end
 
   @doc """
@@ -155,6 +175,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
   # Private Functions
 
+  @spec do_load_plugin(String.t(), map()) :: any()
   defp do_load_plugin(plugin_path, state) do
     try do
       compiled_modules = Code.compile_file(plugin_path)
@@ -169,10 +190,12 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
                 state
                 | loaded_plugins:
                     Map.put(state.loaded_plugins, plugin_path, plugin_module),
-                  plugin_configs: Map.put(state.plugin_configs, plugin_path, %{}),
+                  plugin_configs:
+                    Map.put(state.plugin_configs, plugin_path, %{}),
                   plugin_metadata:
                     Map.put(state.plugin_metadata, plugin_path, plugin_metadata)
               }
+
               {:ok, new_state}
 
             {:error, reason} ->
@@ -187,6 +210,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
+  @spec do_unload_plugin(any(), map()) :: any()
   defp do_unload_plugin(plugin, state) do
     case Map.get(state.loaded_plugins, plugin) do
       nil ->
@@ -206,6 +230,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
+  @spec do_reload_plugin(any(), map()) :: any()
   defp do_reload_plugin(plugin, state) do
     with {:ok, new_state} <- do_unload_plugin(plugin, state),
          {:ok, final_state} <- do_load_plugin(plugin, new_state) do

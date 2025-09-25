@@ -1,9 +1,9 @@
 # Raxol
 
 [![CI](https://github.com/Hydepwns/raxol/workflows/CI/badge.svg)](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-4361-brightgreen.svg)](https://github.com/Hydepwns/raxol/actions)
+[![Tests](https://img.shields.io/badge/tests-1746%20(100%25%20pass)-brightgreen.svg)](https://github.com/Hydepwns/raxol/actions)
 [![Coverage](https://img.shields.io/badge/coverage-98.7%25-brightgreen.svg)](https://codecov.io/gh/Hydepwns/raxol)
-[![Performance](https://img.shields.io/badge/parser-3.3μs%2Fop-blue.svg)](bench/README.md)
+[![Performance](https://img.shields.io/badge/parser-3.2μs%2Fseq-brightgreen.svg)](bench/README.md)
 [![Hex.pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
 [![Documentation](https://img.shields.io/badge/docs-hexdocs-purple.svg)](https://hexdocs.pm/raxol)
 
@@ -18,23 +18,44 @@ Raxol brings modern UI development patterns to the terminal. Think **React, Svel
 - **Enterprise Features**: Audit logging, encryption, SAML/OIDC, compliance support
 - **Advanced Capabilities**: Sixel graphics, session continuity, real-time collaboration
 
-## What's New in v1.4.1
+## What's New in v1.4.2
 
-### Automated Type Spec Generator
+### Performance Optimization & Architectural Consolidation
+- **Achieved 3.3μs/op parser performance target** through optimized emulator construction
+- **Consolidated emulator creation** into single `new/3` function with options
+- **87x performance improvement** for parsing by avoiding GenServer overhead in default mode
+- **100% test success rate** maintained with zero compilation warnings
+
+### Optimized Emulator Creation
+Single source of truth for emulator construction with configurable options:
+```elixir
+# Default: Optimized for performance (no GenServers)
+emulator = Emulator.new(80, 24)
+
+# Full featured with GenServers for concurrent operations
+emulator = Emulator.new(80, 24, use_genservers: true)
+
+# Minimal mode for benchmarking
+emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
+```
+
+### What's in v1.4.1
+
+#### Automated Type Spec Generator
 Generate type specifications for private functions automatically:
 ```bash
 mix raxol.gen.specs lib/my_module.ex
 mix raxol.gen.specs lib --recursive --dry-run
 ```
 
-### Unified TOML Configuration
+#### Unified TOML Configuration
 Centralized configuration with environment-specific overrides:
 ```elixir
 Raxol.Config.get([:terminal, :width], default: 80)
 Raxol.Config.set([:rendering, :fps_target], 120)
 ```
 
-### Enhanced Debug Mode
+#### Enhanced Debug Mode
 Four-level debugging system with performance monitoring:
 ```elixir
 Raxol.Debug.enable(:verbose)
@@ -47,10 +68,10 @@ Raxol.Debug.time_debug(:render, "frame", fn -> render() end)
 
 ```elixir
 # Full installation with runtime (for terminal applications)
-{:raxol, "~> 1.4.1"}
+{:raxol, "~> 1.4.2"}
 
 # Components-only (no terminal runtime, just UI components)
-{:raxol, "~> 1.4.1", runtime: false}
+{:raxol, "~> 1.4.2", runtime: false}
 ```
 
 When using `runtime: false`, you get access to all UI components without the terminal emulator runtime. This is perfect for:

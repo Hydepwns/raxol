@@ -602,9 +602,10 @@ defmodule Raxol.Performance.DevProfiler do
   end
 
   defp continuous_profiling_loop(interval, duration, auto_hints) do
-    _ = if auto_hints do
-      analyze_current_performance()
-    end
+    _ =
+      if auto_hints do
+        analyze_current_performance()
+      end
 
     Process.sleep(interval)
     continuous_profiling_loop(interval, duration, auto_hints)

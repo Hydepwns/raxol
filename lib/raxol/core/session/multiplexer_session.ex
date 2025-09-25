@@ -221,6 +221,7 @@ defmodule Raxol.Core.Session.MultiplexerSession do
 
   ## Private Functions
 
+  @spec create_initial_windows(any(), map()) :: any()
   defp create_initial_windows(session, config) do
     window_count = Map.get(config, :windows, 1)
     layout = Map.get(config, :layout, :main_horizontal)
@@ -253,6 +254,12 @@ defmodule Raxol.Core.Session.MultiplexerSession do
     {updated_session, windows}
   end
 
+  @spec create_window_with_panes(
+          String.t() | integer(),
+          String.t() | integer(),
+          String.t() | atom(),
+          map()
+        ) :: any()
   defp create_window_with_panes(window_id, session_id, window_name, config) do
     now = System.monotonic_time(:millisecond)
     layout = Map.get(config, :layout, :main_horizontal)
@@ -281,6 +288,7 @@ defmodule Raxol.Core.Session.MultiplexerSession do
     }
   end
 
+  @spec create_pane(String.t() | integer(), map(), non_neg_integer()) :: any()
   defp create_pane(window_id, config, index) do
     pane_id = generate_pane_id()
     working_dir = Map.get(config, :working_directory, System.user_home!())
@@ -302,6 +310,7 @@ defmodule Raxol.Core.Session.MultiplexerSession do
     }
   end
 
+  @spec generate_session_id(String.t() | atom()) :: any()
   defp generate_session_id(name) do
     timestamp = System.unique_integer([:positive, :monotonic])
 

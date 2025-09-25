@@ -593,12 +593,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   defp do_backspace_with_selection(_selection, state) do
-    {s, _deleted} =
-      Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(
-        state
-      )
-
-    s
+    Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(
+      state
+    )
   end
 
   defp process_delete_with_selection_check(state) do
@@ -617,12 +614,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   defp do_delete_with_selection(_selection, state) do
-    {s, _deleted} =
-      Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(
-        state
-      )
-
-    s
+    Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(
+      state
+    )
   end
 
   defp handle_enter_selection_delete(state) do

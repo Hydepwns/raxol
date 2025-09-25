@@ -264,6 +264,31 @@ defmodule Raxol.Core.Renderer.View do
   end
 
   @doc """
+  Creates a table view.
+
+  ## Options
+    * `:data` - Table data (list of lists)
+    * `:headers` - Column headers
+    * `:style` - Table style options
+    * `:border` - Border style for the table
+
+  ## Examples
+
+      View.table(data: [[1, 2], [3, 4]], headers: ["A", "B"])
+  """
+  def table(opts \\ []) do
+    validate_keyword_opts(opts, "View.table")
+    # Basic table implementation
+    %{
+      type: :table,
+      data: Keyword.get(opts, :data, []),
+      headers: Keyword.get(opts, :headers, []),
+      style: Keyword.get(opts, :style, %{}),
+      border: Keyword.get(opts, :border, :single)
+    }
+  end
+
+  @doc """
   Applies layout to a view, calculating absolute positions for all elements.
   Delegates to Raxol.Renderer.Layout.apply_layout/2.
   """
@@ -591,6 +616,7 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
+  @spec normalize_spacing(any()) :: any()
   defp normalize_spacing(view) do
     padding = Map.get(view, :padding, {0, 0, 0, 0})
     margin = Map.get(view, :margin, {0, 0, 0, 0})
@@ -657,6 +683,7 @@ defmodule Raxol.Core.Renderer.View do
     Components.shadow(opts)
   end
 
+  @spec process_layout_result(any(), any()) :: any()
   defp process_layout_result(result, _view), do: result
 
   # Helper functions for if statement elimination
@@ -671,6 +698,8 @@ defmodule Raxol.Core.Renderer.View do
           "#{function_name} expects a keyword list as the first argument, got: #{inspect(opts)}"
   end
 
+  @spec validate_keyword_list(keyword(), atom()) ::
+          {:ok, any()} | {:error, any()}
   defp validate_keyword_list(opts, _function_name) when is_list(opts) do
     case opts do
       [] -> :ok

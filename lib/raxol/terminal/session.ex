@@ -18,6 +18,7 @@ defmodule Raxol.Terminal.Session do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
+  alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
   alias Raxol.Terminal.Session.Storage
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
@@ -236,9 +237,10 @@ defmodule Raxol.Terminal.Session do
   end
 
   def handle_cast(:save_session, state) do
-    _ = Task.start(fn ->
-      safe_save_session_async(state)
-    end)
+    _ =
+      Task.start(fn ->
+        safe_save_session_async(state)
+      end)
 
     {:noreply, state}
   end

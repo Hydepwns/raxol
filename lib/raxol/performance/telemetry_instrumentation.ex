@@ -200,24 +200,26 @@ defmodule Raxol.Performance.TelemetryInstrumentation do
   """
   def setup_default_handlers do
     # Performance reporter
-    _ = :telemetry.attach(
-      "raxol-performance-reporter",
-      [:raxol, :terminal, :parse],
-      &handle_performance_event/4,
-      nil
-    )
+    _ =
+      :telemetry.attach(
+        "raxol-performance-reporter",
+        [:raxol, :terminal, :parse],
+        &handle_performance_event/4,
+        nil
+      )
 
     # Cache reporter
-    _ = :telemetry.attach_many(
-      "raxol-cache-reporter",
-      [
-        [:raxol, :cache, :hit],
-        [:raxol, :cache, :miss],
-        [:raxol, :cache, :eviction]
-      ],
-      &handle_cache_event/4,
-      nil
-    )
+    _ =
+      :telemetry.attach_many(
+        "raxol-cache-reporter",
+        [
+          [:raxol, :cache, :hit],
+          [:raxol, :cache, :miss],
+          [:raxol, :cache, :eviction]
+        ],
+        &handle_cache_event/4,
+        nil
+      )
 
     # Slow operation detector
     :telemetry.attach_many(

@@ -410,7 +410,8 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
     new_state = %{state | projections: new_projections}
 
     # Start projection processing
-    {:ok, _} = Task.start(fn -> process_projection(projection_name, new_state) end)
+    {:ok, _} =
+      Task.start(fn -> process_projection(projection_name, new_state) end)
 
     Logger.info("Created projection: #{projection_name}")
     {:reply, :ok, new_state}

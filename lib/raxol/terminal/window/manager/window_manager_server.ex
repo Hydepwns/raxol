@@ -36,6 +36,7 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
   require Logger
 
   alias Raxol.Terminal.{Window, Config}
+  alias Raxol.Core.NavigationUtils
 
   @default_state %{
     windows: %{},
@@ -599,11 +600,7 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
         _from,
         state
       ) do
-    from_paths = Map.get(state.navigation_paths, from_id, %{})
-    updated_from_paths = Map.put(from_paths, direction, to_id)
-    new_nav_paths = Map.put(state.navigation_paths, from_id, updated_from_paths)
-
-    new_state = %{state | navigation_paths: new_nav_paths}
+    new_state = NavigationUtils.define_navigation_path(state, from_id, direction, to_id)
     {:reply, :ok, new_state}
   end
 

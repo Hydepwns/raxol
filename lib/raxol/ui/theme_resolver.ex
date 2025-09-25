@@ -1,12 +1,97 @@
 defmodule Raxol.UI.ThemeResolver do
   @moduledoc """
-  Handles theme resolution, color processing, and theme-related utilities.
+  Consolidated theme resolution, color processing, and theme-related utilities.
+
+  This module provides theme resolution with optional caching for high-performance applications.
+
+  ## Configuration
+
+  Set the default caching strategy in application config:
+
+      config :raxol, :theme_resolver,
+        cache_enabled: true
+
+  Or control per-call with options:
+
+      ThemeResolver.resolve_styles(attrs, component_type, theme, cache: true)
+
+  ## Migration from ThemeResolverCached
+
+  Replace:
+      Raxol.UI.ThemeResolverCached.resolve_styles(attrs, component_type, theme)
+      Raxol.UI.ThemeResolverCached.get_default_theme()
+
+  With:
+      Raxol.UI.ThemeResolver.resolve_styles(attrs, component_type, theme, cache: true)
+      Raxol.UI.ThemeResolver.get_default_theme(cache: true)
+
+  ## Examples
+
+      # Non-cached (simple operations)
+      theme = ThemeResolver.resolve_element_theme(element_theme, default_theme)
+
+      # Cached (performance-critical operations)
+      {fg, bg, attrs} = ThemeResolver.resolve_styles(attrs, :button, theme, cache: true)
   """
+
+  # Caching configuration and helpers
+
+  defp should_use_cache?(opts) do
+    cache_from_opts = Keyword.get(opts, :cache)
+    cache_from_config = Application.get_env(:raxol, :theme_resolver, [])[:cache_enabled]
+
+    # opts override config, default to false
+    case {cache_from_opts, cache_from_config} do
+      {nil, nil} -> false
+      {nil, config} -> !!config
+      {opt, _} -> !!opt
+    end and cache_available?()
+  end
+
+  defp cache_available? do
+    Code.ensure_loaded?(Raxol.Performance.ETSCacheManager)
+  end
 
   @doc """
   Resolves an element's theme, handling string themes and providing fallbacks.
+
+  ## Options
+  - `cache: boolean()` - Enable caching for this operation (default: false)
   """
-  def resolve_element_theme(element_theme, default_theme) do
+  def resolve_element_theme(element_theme, default_theme, opts \\ [])
+  def resolve_element_theme(element_theme, default_theme, opts) do
+    if should_use_cache?(opts) do
+      resolve_element_theme_cached(element_theme, default_theme)
+    else
+      resolve_element_theme_direct(element_theme, default_theme)
+    end
+  end
+
+  # Cached implementation
+  defp resolve_element_theme_cached(element_theme, default_theme) do
+    # For string themes, cache the lookup
+    case element_theme do
+      theme_name when is_binary(theme_name) ->
+        cache_key = {:theme_lookup, theme_name}
+
+        case get_cached_theme(cache_key) do
+          {:ok, theme} ->
+            theme
+
+          :miss ->
+            theme = resolve_element_theme_direct(element_theme, default_theme)
+            cache_theme(cache_key, theme)
+            theme
+        end
+
+      _ ->
+        # For non-string themes, use direct resolver
+        resolve_element_theme_direct(element_theme, default_theme)
+    end
+  end
+
+  # Direct implementation (original logic)
+  defp resolve_element_theme_direct(element_theme, default_theme) do
     case element_theme do
       nil ->
         default_theme
@@ -28,10 +113,39 @@ defmodule Raxol.UI.ThemeResolver do
 
   @doc """
   Resolves an element's theme with inheritance support.
+
+  ## Options
+  - `cache: boolean()` - Enable caching for this operation (default: false)
   """
-  def resolve_element_theme_with_inheritance(element, default_theme) do
+  def resolve_element_theme_with_inheritance(element, default_theme, opts \\ [])
+  def resolve_element_theme_with_inheritance(element, default_theme, opts) do
+    if should_use_cache?(opts) do
+      resolve_element_theme_with_inheritance_cached(element, default_theme)
+    else
+      resolve_element_theme_with_inheritance_direct(element, default_theme)
+    end
+  end
+
+  # Cached implementation
+  defp resolve_element_theme_with_inheritance_cached(element, default_theme) do
+    # Create cache key based on element's theme configuration
+    cache_key = build_inheritance_cache_key(element)
+
+    case get_cached_theme(cache_key) do
+      {:ok, theme} ->
+        theme
+
+      :miss ->
+        theme = resolve_element_theme_with_inheritance_direct(element, default_theme)
+        cache_theme(cache_key, theme)
+        theme
+    end
+  end
+
+  # Direct implementation (original logic)
+  defp resolve_element_theme_with_inheritance_direct(element, default_theme) do
     # Get the main theme
-    main_theme = resolve_element_theme(Map.get(element, :theme), default_theme)
+    main_theme = resolve_element_theme_direct(Map.get(element, :theme), default_theme)
 
     # Check for parent theme inheritance
     parent_theme = Map.get(element, :parent_theme)
@@ -74,8 +188,36 @@ defmodule Raxol.UI.ThemeResolver do
 
   @doc """
   Gets the default theme with fallback creation.
+
+  ## Options
+  - `cache: boolean()` - Enable caching for this operation (default: false)
   """
-  def get_default_theme do
+  def get_default_theme(opts \\ [])
+  def get_default_theme(opts) do
+    if should_use_cache?(opts) do
+      get_default_theme_cached()
+    else
+      get_default_theme_direct()
+    end
+  end
+
+  # Cached implementation
+  defp get_default_theme_cached do
+    cache_key = :default_theme
+
+    case get_cached_theme(cache_key) do
+      {:ok, theme} ->
+        theme
+
+      :miss ->
+        theme = get_default_theme_direct()
+        cache_theme(cache_key, theme)
+        theme
+    end
+  end
+
+  # Direct implementation (original logic)
+  defp get_default_theme_direct do
     case Raxol.UI.Theming.Theme.get(:default) do
       nil -> create_fallback_theme()
       theme -> theme
@@ -99,8 +241,40 @@ defmodule Raxol.UI.ThemeResolver do
   @doc """
   Resolves foreground and background colors with proper fallbacks.
   Returns {fg_color, bg_color, style_attrs}.
+
+  ## Options
+  - `cache: boolean()` - Enable caching for this operation (default: false)
   """
-  def resolve_styles(attrs, component_type, theme) do
+  def resolve_styles(attrs, component_type, theme, opts \\ [])
+  def resolve_styles(attrs, component_type, theme, opts) do
+    if should_use_cache?(opts) do
+      resolve_styles_cached(attrs, component_type, theme)
+    else
+      resolve_styles_direct(attrs, component_type, theme)
+    end
+  end
+
+  # Cached implementation
+  defp resolve_styles_cached(attrs, component_type, theme) do
+    # Generate cache key
+    theme_id = get_theme_id(theme)
+    attrs_hash = hash_attrs(attrs)
+
+    # Check cache first
+    case get_cached_style(theme_id, component_type, attrs_hash) do
+      {:ok, cached_result} ->
+        cached_result
+
+      :miss ->
+        # Compute and cache the result
+        result = resolve_styles_direct(attrs, component_type, theme)
+        cache_style(theme_id, component_type, attrs_hash, result)
+        result
+    end
+  end
+
+  # Direct implementation (original logic)
+  defp resolve_styles_direct(attrs, component_type, theme) do
     component_styles = get_component_styles(component_type, theme)
     fg_color = resolve_fg_color(attrs, component_styles, theme)
     bg_color = resolve_bg_color(attrs, component_styles, theme)
@@ -273,5 +447,116 @@ defmodule Raxol.UI.ThemeResolver do
       nil -> nil
       value -> value
     end
+  end
+
+  # Cache Management Functions
+
+  @doc """
+  Clear all theme/style caches.
+  """
+  def clear_cache do
+    if cache_available?() do
+      require Raxol.Performance.ETSCacheManager
+      Raxol.Performance.ETSCacheManager.clear_cache(:style)
+    end
+  end
+
+  @doc """
+  Invalidate cache entries for a specific theme.
+  """
+  def invalidate_theme(_theme_id) do
+    # This would require more sophisticated cache management
+    # For now, clear all style cache when a theme changes
+    clear_cache()
+  end
+
+  # Private cache operation helpers
+
+  defp get_cached_style(theme_id, component_type, attrs_hash) do
+    if cache_available?() do
+      Raxol.Performance.ETSCacheManager.get_style(theme_id, component_type, attrs_hash)
+    else
+      :miss
+    end
+  end
+
+  defp cache_style(theme_id, component_type, attrs_hash, result) do
+    if cache_available?() do
+      Raxol.Performance.ETSCacheManager.cache_style(theme_id, component_type, attrs_hash, result)
+    end
+  end
+
+  defp get_cached_theme(key) do
+    if cache_available?() do
+      # Use the style cache table for theme data
+      Raxol.Performance.ETSCacheManager.get_style(:theme_cache, nil, :erlang.phash2(key))
+    else
+      :miss
+    end
+  end
+
+  defp cache_theme(key, theme) do
+    if cache_available?() do
+      Raxol.Performance.ETSCacheManager.cache_style(:theme_cache, nil, :erlang.phash2(key), theme)
+    end
+  end
+
+  # Cache key generation helpers
+
+  defp get_theme_id(nil), do: :no_theme
+  defp get_theme_id(theme) when is_atom(theme), do: theme
+  defp get_theme_id(theme) when is_binary(theme), do: theme
+
+  defp get_theme_id(theme) when is_map(theme) do
+    # Use theme name if available, otherwise hash the theme
+    Map.get(theme, :name, :erlang.phash2(theme))
+  end
+
+  defp get_theme_id(_), do: :unknown_theme
+
+  defp hash_attrs(nil), do: 0
+
+  defp hash_attrs(attrs) when is_map(attrs) do
+    # Create a stable hash of relevant style attributes
+    relevant_keys = [
+      :fg,
+      :foreground,
+      :bg,
+      :background,
+      :variant,
+      :style,
+      :bold,
+      :italic,
+      :underline,
+      :blink,
+      :reverse
+    ]
+
+    attrs
+    |> Map.take(relevant_keys)
+    |> :erlang.phash2()
+  end
+
+  defp hash_attrs(_), do: 0
+
+  defp hash_theme(nil), do: 0
+
+  defp hash_theme(theme) when is_map(theme) do
+    # Hash only the parts of theme that affect style resolution
+    %{
+      colors: Map.get(theme, :colors, %{}),
+      component_styles: Map.get(theme, :component_styles, %{}),
+      variants: Map.get(theme, :variants, %{})
+    }
+    |> :erlang.phash2()
+  end
+
+  defp hash_theme(_), do: 0
+
+  defp build_inheritance_cache_key(element) do
+    element_theme = Map.get(element, :theme)
+    parent_theme = Map.get(element, :parent_theme)
+
+    {:inheritance, get_theme_id(element_theme), hash_theme(parent_theme)}
   end
 end

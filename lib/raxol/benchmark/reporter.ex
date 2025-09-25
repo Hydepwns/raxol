@@ -551,7 +551,6 @@ defmodule Raxol.Benchmark.Reporter do
     )
   end
 
-
   defp print_detailed_results(results) do
     Enum.each(results, fn suite ->
       IO.puts("\n#{suite.suite_name}")

@@ -32,34 +32,39 @@ defmodule Mix.Tasks.Raxol.Bench do
   def run(args) do
     {opts, args, _} = OptionParser.parse(args, switches: @switches)
 
-    if opts[:help] do
-      print_help()
-    else
-      Mix.Task.run("app.start")
+    case {opts[:help], args} do
+      {true, _} ->
+        print_help()
 
-      case args do
-        [] ->
-          run_all_benchmarks(opts)
+      {false, benchmark_args} ->
+        Mix.Task.run("app.start")
+        execute_benchmark(benchmark_args, opts)
+    end
+  end
 
-        ["parser"] ->
-          run_parser_only(opts)
+  defp execute_benchmark(args, opts) do
+    case args do
+      [] ->
+        run_all_benchmarks(opts)
 
-        ["terminal"] ->
-          run_terminal_only(opts)
+      ["parser"] ->
+        run_parser_only(opts)
 
-        ["rendering"] ->
-          run_rendering_only(opts)
+      ["terminal"] ->
+        run_terminal_only(opts)
 
-        ["memory"] ->
-          run_memory_only(opts)
+      ["rendering"] ->
+        run_rendering_only(opts)
 
-        ["dashboard"] ->
-          run_dashboard_only(opts)
+      ["memory"] ->
+        run_memory_only(opts)
 
-        [benchmark] ->
-          Mix.shell().error("Unknown benchmark: #{benchmark}")
-          print_help()
-      end
+      ["dashboard"] ->
+        run_dashboard_only(opts)
+
+      [benchmark] ->
+        Mix.shell().error("Unknown benchmark: #{benchmark}")
+        print_help()
     end
   end
 
@@ -191,7 +196,7 @@ defmodule Mix.Tasks.Raxol.Bench do
   defp run_parser_benchmarks(config, opts \\ []) do
     # Proper aliases for Raxol modules
     alias Raxol.Terminal.Emulator
-    alias Raxol.Terminal.ANSI.AnsiParser
+    alias Raxol.Terminal.ANSI.Utils.AnsiParser
     alias Raxol.Terminal.ANSI.StateMachine
 
     _emulator = Emulator.new(80, 24)
@@ -220,113 +225,15 @@ defmodule Mix.Tasks.Raxol.Bench do
   end
 
   defp run_terminal_benchmarks(config, opts \\ []) do
-    alias Raxol.Terminal.ScreenBuffer
-    alias Raxol.Terminal.Cursor
-    alias Raxol.Terminal.ANSI.SGRProcessor
-    alias Raxol.Terminal.Emulator
-
-    jobs =
-      if opts[:quick] do
-        %{
-          "emulator_creation" => fn -> Emulator.new(80, 24) end,
-          "buffer_write_char" => fn ->
-            buffer = ScreenBuffer.new(80, 24)
-            _ = ScreenBuffer.write_char(buffer, 10, 5, "A")
-          end,
-          "cursor_move" => fn ->
-            cursor = Cursor.new()
-            Cursor.move_to(cursor, {10, 5}, 80, 24)
-          end
-        }
-      else
-        %{
-          "emulator_creation_small" => fn -> Emulator.new(80, 24) end,
-          "emulator_creation_large" => fn -> Emulator.new(200, 50) end,
-          "buffer_write_char" => fn ->
-            buffer = ScreenBuffer.new(80, 24)
-            _ = ScreenBuffer.write_char(buffer, 10, 5, "A")
-          end,
-          "buffer_write_string" => fn ->
-            buffer = ScreenBuffer.new(80, 24)
-            _ = ScreenBuffer.write_string(buffer, 0, 0, "Hello World")
-          end,
-          "buffer_scroll_up" => fn ->
-            buffer = ScreenBuffer.new(80, 24)
-            {_, _} = ScreenBuffer.scroll_up(buffer, 1)
-          end,
-          "buffer_scroll_down" => fn ->
-            buffer = ScreenBuffer.new(80, 24)
-            _ = ScreenBuffer.scroll_down(buffer, 1)
-          end,
-          "buffer_erase_line" => fn ->
-            buffer = ScreenBuffer.new(80, 24)
-            cursor = {0, 5}
-            ScreenBuffer.erase_line(buffer, :to_end, cursor, 0, 79)
-          end,
-          "buffer_erase_screen" => fn ->
-            buffer = ScreenBuffer.new(80, 24)
-            ScreenBuffer.erase_screen(buffer)
-          end,
-          "cursor_move_relative" => fn ->
-            cursor = Cursor.new()
-            Cursor.move_relative(cursor, 1, 1)
-          end,
-          "cursor_move_absolute" => fn ->
-            cursor = Cursor.new()
-            Cursor.move_to(cursor, {10, 5}, 80, 24)
-          end,
-          "cursor_save_restore" => fn ->
-            cursor = Cursor.new()
-            saved = Cursor.save(cursor)
-            Cursor.restore(cursor, saved)
-          end,
-          "sgr_process_simple" => fn ->
-            style = nil
-            SGRProcessor.process_sgr_codes([31], style)
-          end,
-          "sgr_process_complex" => fn ->
-            style = nil
-            SGRProcessor.process_sgr_codes([1, 4, 31, 48, 5, 196], style)
-          end
-        }
-      end
-
+    jobs = if opts[:quick], do: terminal_quick_jobs(), else: terminal_comprehensive_jobs()
     Benchee.run(jobs, config)
   end
 
   defp run_rendering_benchmarks(config) do
-    alias Raxol.Terminal.ScreenBuffer
     alias Raxol.UI.Rendering.Pipeline
     alias Raxol.UI.Rendering.RenderBatcher
-    alias Raxol.Terminal.Cursor
 
-    %ScreenBuffer{} = small_buffer = ScreenBuffer.new(80, 24)
-    %ScreenBuffer{} = medium_buffer = ScreenBuffer.new(120, 40)
-    %ScreenBuffer{} = large_buffer = ScreenBuffer.new(200, 50)
-    _cursor = Cursor.new()
-
-    # Fill buffers with some content
-    small_buffer = Enum.reduce(0..10, small_buffer, fn y, acc ->
-      ScreenBuffer.write_string(acc, 0, y, "Sample line #{y}")
-    end)
-
-    medium_buffer = Enum.reduce(0..10, medium_buffer, fn y, acc ->
-      ScreenBuffer.write_string(
-        acc,
-        0,
-        y,
-        "Sample line #{y} with more content"
-      )
-    end)
-
-    large_buffer = Enum.reduce(0..10, large_buffer, fn y, acc ->
-      ScreenBuffer.write_string(
-        acc,
-        0,
-        y,
-        "Sample line #{y} with even more content for testing"
-      )
-    end)
+    {small_buffer, medium_buffer, large_buffer} = create_test_buffers()
 
     jobs = %{
       "render_small_buffer" => fn -> Pipeline.render(small_buffer) end,
@@ -347,9 +254,9 @@ defmodule Mix.Tasks.Raxol.Bench do
 
   defp run_memory_benchmarks(config) do
     alias Raxol.Terminal.Emulator
-    alias Raxol.Terminal.ScreenBuffer
+    alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
     alias Raxol.Terminal.Cursor
-    alias Raxol.Terminal.ANSI.AnsiParser
+    alias Raxol.Terminal.ANSI.Utils.AnsiParser
     alias Raxol.Terminal.ANSI.StateMachine
 
     jobs = %{
@@ -367,16 +274,18 @@ defmodule Mix.Tasks.Raxol.Bench do
         {emulator, state_machine}
       end,
       "memory_buffer_operations" => fn ->
-        %ScreenBuffer{} = buffer = ScreenBuffer.new(100, 30)
+        buffer = ScreenBuffer.new(100, 30)
         _cursor = Cursor.new()
-        buffer = Enum.reduce(1..50, buffer, fn i, acc ->
-          ScreenBuffer.write_string(
-            acc,
-            0,
-            rem(i, 30),
-            "Test line #{i}"
-          )
-        end)
+
+        buffer =
+          Enum.reduce(1..50, buffer, fn i, acc ->
+            ScreenBuffer.write_string(
+              acc,
+              0,
+              rem(i, 30),
+              "Test line #{i}"
+            )
+          end)
 
         buffer
       end,
@@ -413,12 +322,12 @@ defmodule Mix.Tasks.Raxol.Bench do
   end
 
   defp bench_buffer_writes do
-    alias Raxol.Terminal.Buffer.UnifiedManager
-    {:ok, manager} = UnifiedManager.start_link()
+    alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
+    buffer = ScreenBuffer.new(80, 24)
 
     1..10
     |> Enum.map(fn i ->
-      Task.async(fn -> UnifiedManager.write_at(manager, i, i, "X") end)
+      Task.async(fn -> ScreenBuffer.write_char(buffer, i, i, "X") end)
     end)
     |> Task.await_many()
   end
@@ -872,28 +781,12 @@ defmodule Mix.Tasks.Raxol.Bench do
   defp run_comparison_analysis(_results, timestamp) do
     Mix.shell().info("Running performance comparison analysis...")
 
-    # Look for previous benchmark files
-    previous_files =
-      Path.wildcard("bench/output/enhanced/json/benchmark_*.json")
-      |> Enum.sort()
-      |> Enum.reverse()
+    case find_comparison_files() do
+      {:ok, current_file, previous_file} ->
+        perform_comparison(current_file, previous_file, timestamp)
 
-    if length(previous_files) > 1 do
-      Mix.shell().info("Comparing with previous benchmark results...")
-
-      # Load and compare previous results
-      [current | [previous | _]] = previous_files
-
-      with {:ok, current_content} <- File.read(current),
-           {:ok, previous_content} <- File.read(previous),
-           {:ok, current_data} <- Jason.decode(current_content),
-           {:ok, previous_data} <- Jason.decode(previous_content) do
-        generate_comparison_report(current_data, previous_data, timestamp)
-      else
-        _ -> Mix.shell().error("Failed to load comparison data")
-      end
-    else
-      Mix.shell().info("No previous benchmarks found for comparison")
+      {:error, :no_previous_files} ->
+        Mix.shell().info("No previous benchmarks found for comparison")
     end
   end
 
@@ -996,5 +889,155 @@ defmodule Mix.Tasks.Raxol.Bench do
       • Regression analysis reports
       • Baseline metrics for comparison
     """)
+  end
+
+  defp find_comparison_files do
+    files = Path.wildcard("bench/output/enhanced/json/benchmark_*.json")
+            |> Enum.sort()
+            |> Enum.reverse()
+
+    case files do
+      [current | [previous | _]] ->
+        {:ok, current, previous}
+
+      _ ->
+        {:error, :no_previous_files}
+    end
+  end
+
+  defp perform_comparison(current_file, previous_file, timestamp) do
+    Mix.shell().info("Comparing with previous benchmark results...")
+
+    with {:ok, current_content} <- File.read(current_file),
+         {:ok, previous_content} <- File.read(previous_file),
+         {:ok, current_data} <- Jason.decode(current_content),
+         {:ok, previous_data} <- Jason.decode(previous_content) do
+      generate_comparison_report(current_data, previous_data, timestamp)
+    else
+      _ -> Mix.shell().error("Failed to load comparison data")
+    end
+  end
+
+  defp create_test_buffers do
+    alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
+
+    small_buffer = ScreenBuffer.new(80, 24)
+    medium_buffer = ScreenBuffer.new(120, 40)
+    large_buffer = ScreenBuffer.new(200, 50)
+
+    # Fill buffers with test content
+    small_buffer = fill_buffer(small_buffer, "Sample line")
+    medium_buffer = fill_buffer(medium_buffer, "Sample line with more content")
+    large_buffer = fill_buffer(large_buffer, "Sample line with even more content for testing")
+
+    {small_buffer, medium_buffer, large_buffer}
+  end
+
+  defp fill_buffer(buffer, content_template) do
+    alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
+
+    Enum.reduce(0..10, buffer, fn y, acc ->
+      ScreenBuffer.write_string(acc, 0, y, "#{content_template} #{y}")
+    end)
+  end
+
+  defp terminal_quick_jobs do
+    alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
+    alias Raxol.Terminal.Cursor
+    alias Raxol.Terminal.Emulator
+
+    %{
+      "emulator_creation" => fn -> Emulator.new(80, 24) end,
+      "buffer_write_char" => fn ->
+        buffer = ScreenBuffer.new(80, 24)
+        _ = ScreenBuffer.write_char(buffer, 10, 5, "A")
+      end,
+      "cursor_move" => fn ->
+        cursor = Cursor.new()
+        Cursor.move_to(cursor, {10, 5}, 80, 24)
+      end
+    }
+  end
+
+  defp terminal_comprehensive_jobs do
+    Map.merge(terminal_emulator_jobs(), terminal_buffer_jobs())
+    |> Map.merge(terminal_cursor_jobs())
+    |> Map.merge(terminal_sgr_jobs())
+  end
+
+  defp terminal_emulator_jobs do
+    alias Raxol.Terminal.Emulator
+
+    %{
+      "emulator_creation_small" => fn -> Emulator.new(80, 24) end,
+      "emulator_creation_large" => fn -> Emulator.new(200, 50) end
+    }
+  end
+
+  defp terminal_buffer_jobs do
+    alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
+
+    %{
+      "buffer_write_char" => fn ->
+        buffer = ScreenBuffer.new(80, 24)
+        _ = ScreenBuffer.write_char(buffer, 10, 5, "A")
+      end,
+      "buffer_write_string" => fn ->
+        buffer = ScreenBuffer.new(80, 24)
+        _ = ScreenBuffer.write_string(buffer, 0, 0, "Hello World")
+      end,
+      "buffer_scroll_up" => fn ->
+        buffer = ScreenBuffer.new(80, 24)
+        {_, _} = ScreenBuffer.scroll_up(buffer, 1)
+      end,
+      "buffer_scroll_down" => fn ->
+        buffer = ScreenBuffer.new(80, 24)
+        _ = ScreenBuffer.scroll_down(buffer, 1)
+      end,
+      "buffer_erase_line" => fn ->
+        buffer = ScreenBuffer.new(80, 24)
+        cursor = {0, 5}
+        ScreenBuffer.erase_line(buffer, :to_end, cursor, 0, 79)
+      end,
+      "buffer_erase_screen" => fn ->
+        buffer = ScreenBuffer.new(80, 24)
+        ScreenBuffer.erase_screen(buffer)
+      end
+    }
+  end
+
+  defp terminal_cursor_jobs do
+    alias Raxol.Terminal.Cursor
+
+    %{
+      "cursor_move_relative" => fn ->
+        cursor = Cursor.new()
+        Cursor.move_relative(cursor, 1, 1)
+      end,
+      "cursor_move_absolute" => fn ->
+        cursor = Cursor.new()
+        Cursor.move_to(cursor, {10, 5}, 80, 24)
+      end,
+      "cursor_save_restore" => fn ->
+        cursor = Cursor.new()
+        saved = Cursor.save(cursor)
+        Cursor.restore(cursor, saved)
+      end
+    }
+  end
+
+  defp terminal_sgr_jobs do
+    alias Raxol.Terminal.ANSI.SGR.Processor, as: SGRProcessor
+
+    %{
+      "sgr_process_simple" => fn ->
+        style = nil
+        SGRProcessor.handle_sgr("31", style)
+      end,
+      "sgr_process_complex" => fn ->
+        style = nil
+        SGRProcessor.handle_sgr("1;4;31;48;5;196", style)
+      end
+    }
   end
 end

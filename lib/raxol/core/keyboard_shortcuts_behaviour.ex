@@ -1,45 +1,43 @@
-defmodule Raxol.Core.KeyboardShortcutsRefactoredBehaviour do
+defmodule Raxol.Core.KeyboardShortcutsBehaviour do
   @moduledoc """
-  Behaviour for the KeyboardShortcuts module.
-  This allows for mocking the KeyboardShortcuts module in tests.
+  Behavior for KeyboardShortcuts implementation.
+
+  This defines the expected interface for keyboard shortcuts functionality
+  used by the UX refinement system.
   """
 
-  @type shortcut :: String.t()
-  @type shortcut_name :: atom() | String.t()
-  @type shortcut_callback :: function()
-  @type shortcut_opts :: keyword()
-  @type shortcut_context :: atom() | nil
+  @doc """
+  Initialize the keyboard shortcuts system.
+  """
+  @callback init() :: :ok | {:error, term()}
 
-  @callback init() :: :ok
-  @callback cleanup() :: :ok
-  @callback register_shortcut(
-              shortcut :: shortcut(),
-              name :: shortcut_name(),
-              callback :: shortcut_callback(),
-              opts :: shortcut_opts()
-            ) :: :ok
+  @doc """
+  Set the current shortcuts context.
+  """
+  @callback set_context(context :: atom()) :: :ok | {:error, term()}
 
-  @callback unregister_shortcut(
-              name :: shortcut_name(),
-              context :: shortcut_context()
-            ) :: :ok
-  @callback set_context(context :: shortcut_context()) :: :ok
-  @callback get_current_context() :: shortcut_context()
+  @doc """
+  Get available shortcuts for the current context.
+  """
+  @callback get_available_shortcuts() :: list(map())
 
-  @callback get_shortcuts_for_context(context :: shortcut_context()) ::
-              list(map())
+  @doc """
+  Get shortcuts for a specific context.
+  """
+  @callback get_shortcuts_for_context(context :: atom() | nil) :: term()
 
-  # show_shortcuts_help/0 in KeyboardShortcuts returns {:ok, String.t()}
-  @callback show_shortcuts_help(
-              user_preferences_pid_or_name :: pid() | atom() | nil
-            ) :: {:ok, String.t()} | :ok
+  @doc """
+  Show shortcuts help.
+  """
+  @callback show_shortcuts_help(user_prefs :: term()) :: :ok | {:error, term()}
 
-  @callback trigger_shortcut(
-              name :: shortcut_name(),
-              context :: shortcut_context()
-            ) ::
-              :ok | {:error, :shortcut_not_found}
+  @doc """
+  Handle keyboard events.
+  """
+  @callback handle_keyboard_event(atom(), term()) :: :ok | {:error, term()}
 
-  # Based on KeyboardShortcuts.handle_keyboard_event/1
-  @callback handle_keyboard_event(event :: tuple()) :: :ok
+  @doc """
+  Clean up the keyboard shortcuts system.
+  """
+  @callback cleanup() :: :ok | {:error, term()}
 end

@@ -69,12 +69,26 @@ defmodule Raxol.Core.Renderer.View.Style.Border do
     [top | middle] ++ [bottom]
   end
 
+  @spec build_top_border(
+          any(),
+          String.t() | integer(),
+          any(),
+          String.t() | integer(),
+          any()
+        ) :: any()
   defp build_top_border(chars, width, nil, _title_width, _title_padding) do
     chars.top_left <>
       String.duplicate(chars.horizontal, width - 2) <>
       chars.top_right
   end
 
+  @spec build_top_border(
+          any(),
+          String.t() | integer(),
+          any(),
+          String.t() | integer(),
+          any()
+        ) :: any()
   defp build_top_border(chars, width, title, title_width, title_padding) do
     left_width = div(width - title_width - title_padding, 2)
     right_width = width - left_width - title_width - title_padding
@@ -86,11 +100,14 @@ defmodule Raxol.Core.Renderer.View.Style.Border do
       chars.top_right
   end
 
+  @spec build_middle_border(any(), String.t() | integer(), pos_integer()) ::
+          any()
   defp build_middle_border(chars, width, height) do
     line = chars.vertical <> String.duplicate(" ", width - 2) <> chars.vertical
     List.duplicate(line, height)
   end
 
+  @spec build_bottom_border(any(), String.t() | integer()) :: any()
   defp build_bottom_border(chars, width) do
     chars.bottom_left <>
       String.duplicate(chars.horizontal, width - 2) <>

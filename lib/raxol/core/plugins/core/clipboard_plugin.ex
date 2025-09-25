@@ -17,7 +17,10 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
 
   @impl Raxol.Core.Plugins.Core.ClipboardPluginBehaviour
   def get_commands do
-    [:clipboard_write, :clipboard_read]
+    [
+      {:clipboard_write, :handle_clipboard_command, 2},
+      {:clipboard_read, :handle_clipboard_command, 1}
+    ]
   end
 
   @impl Raxol.Core.Plugins.Core.ClipboardPluginBehaviour

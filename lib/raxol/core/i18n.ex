@@ -189,6 +189,7 @@ defmodule Raxol.Core.I18n do
 
   # Private Functions
 
+  @spec ensure_server_started(map()) :: any()
   defp ensure_server_started(config \\ %{}) do
     case Process.whereis(@server) do
       nil ->

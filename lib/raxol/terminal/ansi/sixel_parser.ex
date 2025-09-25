@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   require Raxol.Core.Runtime.Log
   require Logger
 
-  alias Raxol.Terminal.ANSI.SixelPatternMap
+  alias Raxol.Terminal.ANSI.Utils.SixelPatternMap
   alias Raxol.Terminal.ANSI.SixelPalette
 
   defmodule ParserState do

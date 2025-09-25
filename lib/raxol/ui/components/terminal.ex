@@ -25,7 +25,7 @@ defmodule Raxol.UI.Components.Terminal do
   require Raxol.Core.Runtime.Log
 
   # Require view macros
-  require Raxol.View.Elements
+  # require Raxol.View.Elements  # Removed
 
   # Define state struct
   defstruct id: nil,

@@ -6,7 +6,6 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
   require Raxol.Core.Runtime.Log
   import Bitwise
 
-
   @doc """
   Renders the image stored in the pixel_buffer as a Sixel data stream.
   """

@@ -4,13 +4,13 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   Uses functional patterns with proper error handling using with statements and Tasks.
   """
 
-  @behaviour Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
+  # Removed undefined @behaviour Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
 
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Plugins.CommandRegistry
 
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
+  # Removed @impl for undefined behaviour
   def find_plugin_for_command(command_table, command_name, namespace, _arity) do
     # Normalize command name: trim whitespace and downcase
     processed_command_name =
@@ -37,6 +37,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
+  @spec process_namespace(String.t() | atom()) :: any()
   defp process_namespace(namespace) when is_binary(namespace) do
     # Functional approach to converting namespace string to atom
     with {:ok, atom} <- safe_string_to_existing_atom(namespace) do
@@ -51,9 +52,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
+  @spec process_namespace(String.t() | atom()) :: any()
   defp process_namespace(namespace) when is_atom(namespace), do: namespace
+  @spec process_namespace(any()) :: any()
   defp process_namespace(_), do: nil
 
+  @spec safe_string_to_existing_atom(any()) :: any()
   defp safe_string_to_existing_atom(string) do
     # Safe conversion without try/catch
     case atom_exists?(string) do
@@ -65,6 +69,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
+  @spec atom_exists?(any()) :: boolean()
   defp atom_exists?(string) do
     # Check if the atom already exists in the atom table
     # This is a safe way to check without creating new atoms
@@ -79,24 +84,24 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
+  # Removed @impl for undefined behaviour
   def register_plugin_commands(plugin_module, _plugin_state, command_table) do
     case function_exported?(plugin_module, :get_commands, 0) do
       true ->
         with {:ok, commands} <- safe_get_commands(plugin_module) do
-          _ = process_commands(plugin_module, commands, command_table)
+          process_commands(plugin_module, commands, command_table)
         else
           {:error, error} ->
             log_command_error(plugin_module, error)
+            command_table
         end
 
       false ->
-        :ok
+        command_table
     end
-
-    :ok
   end
 
+  @spec safe_get_commands(module()) :: any()
   defp safe_get_commands(plugin_module) do
     # Use Task to safely execute and handle any errors
     case Raxol.Core.ErrorHandling.safe_call(fn ->
@@ -116,6 +121,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
+  @spec process_commands(module(), any(), any()) :: any()
   defp process_commands(plugin_module, commands, command_table)
        when is_list(commands) do
     Enum.reduce(
@@ -125,11 +131,13 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     )
   end
 
+  @spec process_commands(module(), String.t() | integer(), any()) :: any()
   defp process_commands(plugin_module, _invalid, command_table) do
     log_invalid_commands(plugin_module)
     command_table
   end
 
+  @spec register_command(module(), any(), any()) :: any()
   defp register_command(plugin_module, {name, function, arity}, acc)
        when is_atom(name) and is_atom(function) and is_integer(arity) and
               arity >= 0 do
@@ -146,27 +154,42 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
+  @spec register_command(module(), String.t() | integer(), any()) :: any()
   defp register_command(_plugin_module, _invalid, acc), do: acc
 
+  @spec valid_command_name?(String.t() | atom()) :: boolean()
   defp valid_command_name?(name_str) do
     not String.contains?(name_str, " ") and
       String.match?(name_str, ~r/^[a-zA-Z0-9_-]+$/)
   end
 
+  @spec register_valid_command(
+          any(),
+          module(),
+          String.t() | atom(),
+          atom(),
+          any()
+        ) :: any()
   defp register_valid_command(acc, plugin_module, name_str, function, arity) do
-    case CommandRegistry.register_command(
-           acc,
-           plugin_module,
-           name_str,
-           plugin_module,
-           function,
-           arity
-         ) do
-      :ok -> acc
+    result =
+      CommandRegistry.register_command(
+        acc,
+        plugin_module,
+        name_str,
+        plugin_module,
+        function,
+        arity
+      )
+
+    case result do
+      updated_table when is_map(updated_table) -> updated_table
       {:error, :already_registered} -> acc
+      _ -> acc
     end
   end
 
+  @spec log_invalid_command(module(), String.t() | atom(), atom(), any()) ::
+          any()
   defp log_invalid_command(plugin_module, name_str, function, arity) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Plugin #{inspect(plugin_module)} does not export #{function}/#{arity} for command #{inspect(name_str)}. Skipping registration.",
@@ -175,6 +198,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     )
   end
 
+  @spec log_invalid_commands(module()) :: any()
   defp log_invalid_commands(plugin_module) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Plugin #{inspect(plugin_module)} get_commands/0 did not return a list.",
@@ -183,6 +207,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     )
   end
 
+  @spec log_command_error(module(), any()) :: any()
   defp log_command_error(plugin_module, error) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "Error calling get_commands/0 on #{inspect(plugin_module)}: #{inspect(error)}",
@@ -191,7 +216,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     )
   end
 
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
+  # Removed @impl for undefined behaviour
   def handle_command(command_table, command_name_str, _namespace, args, state) do
     with {:ok, {plugin_module, handler, _arity}} <-
            lookup_valid_command(command_table, command_name_str, args),
@@ -209,21 +234,32 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
       {:ok, updated_plugin_states}
     else
       {:error, :not_found} ->
-        :not_found
+        {:error, :not_found}
+
+      {:error, :invalid_args} ->
+        {:error, :invalid_args, state.plugin_states}
 
       {:error, :missing_plugin_state} ->
-        {:error, :missing_plugin_state}
+        {:error, :missing_plugin_state, state.plugin_states}
+
+      {:error, :exception, new_state, plugin_id} ->
+        updated_plugin_states =
+          Map.put(state.plugin_states, plugin_id, new_state)
+
+        {:error, :exception, updated_plugin_states}
 
       {:error, reason, new_state, plugin_id} ->
         updated_plugin_states =
           Map.put(state.plugin_states, plugin_id, new_state)
-        {:error, {:command_error, reason, updated_plugin_states}}
+
+        {:error, reason, updated_plugin_states}
 
       {:error, reason} ->
         {:error, reason}
     end
   end
 
+  @spec lookup_valid_command(any(), String.t() | atom(), list()) :: any()
   defp lookup_valid_command(command_table, command_name_str, args) do
     with :ok <- validate_command_args(args) do
       # Search for the command in all namespaces in the command table
@@ -231,9 +267,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
         {:ok, result} -> {:ok, result}
         {:error, :not_found} -> {:error, :not_found}
       end
+    else
+      {:error, :invalid_args} -> {:error, :invalid_args}
     end
   end
 
+  @spec find_command_in_table(any(), String.t() | atom()) :: any()
   defp find_command_in_table(command_table, command_name_str) do
     # Search through all namespaces in the command table
     Enum.find_value(command_table, {:error, :not_found}, fn {_namespace,
@@ -253,6 +292,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end)
   end
 
+  @spec get_plugin_state(map(), module()) :: any() | nil
   defp get_plugin_state(state, plugin_module) do
     case find_plugin_id_by_module(state.plugins, plugin_module) do
       nil ->
@@ -266,6 +306,13 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
+  @spec execute_and_update_state(
+          any(),
+          list(),
+          map(),
+          String.t() | integer(),
+          map()
+        ) :: any()
   defp execute_and_update_state(handler, args, plugin_state, plugin_id, _state) do
     case execute_command(handler, args, plugin_state) do
       {:ok, new_state, result} ->
@@ -279,6 +326,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
+  @spec execute_command(any(), list(), map()) :: any()
   defp execute_command(handler, args, plugin_state) do
     case with_timeout(fn -> handler.(args, plugin_state) end, 5000) do
       {:ok, new_state, result} when is_map(new_state) ->
@@ -295,18 +343,17 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.PluginCommandHelper.Behaviour
+  # Removed @impl for undefined behaviour
   def unregister_plugin_commands(command_table, plugin_module) do
     Raxol.Core.Runtime.Log.debug(
       "Unregistering commands for module: #{inspect(plugin_module)}"
     )
 
-    # Use correct function name and handle return value
-    _ = CommandRegistry.unregister_commands_by_module(
+    # Use correct function name and return updated table
+    CommandRegistry.unregister_commands_by_module(
       command_table,
       plugin_module
     )
-    :ok
   end
 
   @doc """
@@ -330,6 +377,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   end
 
   # Functional helper function to execute a function with a timeout using Task
+  @spec with_timeout(any(), timeout()) :: any()
   defp with_timeout(fun, timeout) do
     task =
       Task.async(fn ->
@@ -348,6 +396,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
     end
   end
 
+  @spec safe_execute(any()) :: any()
   defp safe_execute(fun) do
     # Execute the function safely and return structured result
     case Raxol.Core.ErrorHandling.safe_call(fn ->

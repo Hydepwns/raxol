@@ -99,6 +99,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
 
   # Private helper functions
 
+  @spec discover_plugins_in_dir_helper(any(), map()) :: any()
   defp discover_plugins_in_dir_helper(dir, state) do
     case File.dir?(dir) do
       true -> load_plugins_in_dir(dir, state)
@@ -106,6 +107,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     end
   end
 
+  @spec load_plugins_in_dir(any(), map()) :: any()
   defp load_plugins_in_dir(dir, state) do
     plugins =
       dir
@@ -116,6 +118,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     Enum.reduce_while(plugins, {:ok, state}, &load_plugin_with_reduce/2)
   end
 
+  @spec load_plugin_with_reduce(String.t(), any()) :: any()
   defp load_plugin_with_reduce(plugin_path, {:ok, acc_state}) do
     case load_discovered_plugin(plugin_path, acc_state) do
       {:ok, new_state} -> {:cont, {:ok, new_state}}
@@ -123,6 +126,11 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     end
   end
 
+  @spec handle_missing_dir(any(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_missing_dir(dir, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[#{__MODULE__}] Plugin directory not found: #{dir}",
@@ -132,11 +140,14 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     {:ok, state}
   end
 
+  @spec load_discovered_plugin(String.t(), map()) :: any()
   defp load_discovered_plugin(plugin_path, state) do
     plugin_id = Path.basename(plugin_path, ".ex")
     load_and_initialize_plugin(plugin_id, plugin_path, state)
   end
 
+  @spec load_and_initialize_plugin(String.t() | integer(), String.t(), map()) ::
+          any()
   defp load_and_initialize_plugin(plugin_id, plugin_path, state) do
     case state.loader_module.load_plugin(plugin_id, %{}) do
       {:ok, plugin, metadata} ->
@@ -147,6 +158,13 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     end
   end
 
+  @spec initialize_plugin(
+          String.t() | integer(),
+          any(),
+          any(),
+          String.t(),
+          map()
+        ) :: any()
   defp initialize_plugin(plugin_id, plugin, metadata, plugin_path, state) do
     case state.lifecycle_helper_module.initialize_plugin(plugin, %{}) do
       {:ok, initial_state} ->
@@ -165,6 +183,14 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     end
   end
 
+  @spec update_state_with_plugin(
+          map(),
+          String.t() | integer(),
+          any(),
+          any(),
+          map(),
+          String.t()
+        ) :: any()
   defp update_state_with_plugin(
          state,
          plugin_id,
@@ -185,6 +211,11 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     }
   end
 
+  @spec handle_load_error(any(), String.t() | integer()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_load_error(reason, plugin_id) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "[#{__MODULE__}] Failed to load discovered plugin",
@@ -196,6 +227,11 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
     {:error, reason}
   end
 
+  @spec handle_init_error(any(), String.t() | integer()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_init_error(reason, plugin_id) do
     Raxol.Core.Runtime.Log.error_with_stacktrace(
       "[#{__MODULE__}] Failed to initialize discovered plugin",
@@ -324,10 +360,11 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
         {:error, :not_found}
 
       _plugin ->
-        {:ok, initial_state} = Raxol.Core.Runtime.Plugins.LifecycleHelper.init_plugin(
-          plugin_id,
-          state.metadata
-        )
+        {:ok, initial_state} =
+          Raxol.Core.Runtime.Plugins.LifecycleHelper.init_plugin(
+            plugin_id,
+            state.metadata
+          )
 
         updated_state = %{
           state
@@ -464,10 +501,12 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
   Cleans up a plugin.
   """
   def cleanup_plugin(plugin_id, metadata) do
-    :ok = Raxol.Core.Runtime.Plugins.LifecycleHelper.cleanup_plugin(
-      plugin_id,
-      metadata
-    )
+    :ok =
+      Raxol.Core.Runtime.Plugins.LifecycleHelper.cleanup_plugin(
+        plugin_id,
+        metadata
+      )
+
     {:ok, metadata}
   end
 

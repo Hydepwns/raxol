@@ -275,6 +275,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
 
   ## Private functions
 
+  @spec start_worker_supervisor(String.t() | atom()) :: any()
   defp start_worker_supervisor(pool_name) do
     # Simple supervisor for workers
     DynamicSupervisor.start_link(
@@ -283,6 +284,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     )
   end
 
+  @spec start_workers(String.t() | integer(), non_neg_integer()) :: any()
   defp start_workers(supervisor_pid, count) do
     for _ <- 1..count do
       {:ok, worker_pid} = start_worker(supervisor_pid)
@@ -290,6 +292,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     end
   end
 
+  @spec start_worker(String.t() | integer()) :: any()
   defp start_worker(supervisor_pid) do
     spec = {Worker, []}
 
@@ -304,6 +307,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     end
   end
 
+  @spec get_available_worker(map()) :: any() | nil
   defp get_available_worker(state) do
     case state.strategy do
       :lifo ->
@@ -317,6 +321,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     end
   end
 
+  @spec get_available_worker_lifo(map()) :: any() | nil
   defp get_available_worker_lifo(state) do
     case state.available_workers do
       [worker_pid | rest] ->
@@ -333,6 +338,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     end
   end
 
+  @spec get_available_worker_fifo(map()) :: any() | nil
   defp get_available_worker_fifo(state) do
     case Enum.reverse(state.available_workers) do
       [worker_pid | rest] ->
@@ -349,6 +355,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     end
   end
 
+  @spec get_available_worker_random(map()) :: any() | nil
   defp get_available_worker_random(state) do
     case state.available_workers do
       [] ->
@@ -367,6 +374,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     end
   end
 
+  @spec create_overflow_worker(map()) :: any()
   defp create_overflow_worker(state) do
     case length(state.overflow_workers) < state.max_overflow do
       true ->
@@ -389,6 +397,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     end
   end
 
+  @spec collect_worker_stats(any()) :: any()
   defp collect_worker_stats(workers) do
     workers
     |> Enum.map(fn worker_pid ->
@@ -402,6 +411,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     end)
   end
 
+  @spec replace_worker(any(), any(), any()) :: any()
   defp replace_worker(worker_list, old_worker, new_worker) do
     Enum.map(worker_list, fn
       ^old_worker -> new_worker
@@ -410,6 +420,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
   end
 
   # Helper functions for scaling and crash handling
+  @spec scale_pool(any(), any(), map()) :: any()
   defp scale_pool(new_size, current_size, state) when new_size > current_size do
     # Scale up
     additional_workers = new_size - current_size
@@ -426,6 +437,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     {:reply, :ok, updated_state}
   end
 
+  @spec scale_pool(any(), any(), map()) :: any()
   defp scale_pool(new_size, current_size, state) when new_size < current_size do
     # Scale down
     {workers_to_keep, workers_to_terminate} =
@@ -452,16 +464,23 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     {:reply, :ok, updated_state}
   end
 
+  @spec scale_pool(any(), any(), map()) :: any()
   defp scale_pool(_new_size, _current_size, state) do
     # No change needed
     {:reply, :ok, state}
   end
 
+  @spec handle_worker_crash(String.t() | integer(), map()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_worker_crash(worker_pid, state) do
     crash_type = classify_worker_crash(worker_pid, state)
     execute_crash_handling(crash_type, worker_pid, state)
   end
 
+  @spec classify_worker_crash(String.t() | integer(), map()) :: any()
   defp classify_worker_crash(worker_pid, state) do
     worker_location =
       {worker_pid in state.workers, worker_pid in state.overflow_workers}
@@ -473,6 +492,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     end
   end
 
+  @spec execute_crash_handling(any(), String.t() | integer(), map()) :: any()
   defp execute_crash_handling(:permanent_worker, worker_pid, state) do
     # Replace crashed permanent worker
     {:ok, new_worker} = start_worker(state.supervisor_pid)
@@ -488,6 +508,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     {:noreply, updated_state}
   end
 
+  @spec execute_crash_handling(any(), String.t() | integer(), map()) :: any()
   defp execute_crash_handling(:overflow_worker, worker_pid, state) do
     # Remove crashed overflow worker
     updated_state = %{
@@ -499,6 +520,7 @@ defmodule Raxol.Core.Concurrency.WorkerPool do
     {:noreply, updated_state}
   end
 
+  @spec execute_crash_handling(any(), String.t() | integer(), map()) :: any()
   defp execute_crash_handling(:unknown_worker, _worker_pid, state) do
     # Unknown worker, ignore
     {:noreply, state}

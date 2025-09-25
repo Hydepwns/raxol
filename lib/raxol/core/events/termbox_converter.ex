@@ -108,6 +108,11 @@ defmodule Raxol.Core.Events.TermboxConverter do
     end
   end
 
+  @spec handle_event(any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_event(%{
          type: :key,
          key: key_code,
@@ -128,23 +133,41 @@ defmodule Raxol.Core.Events.TermboxConverter do
     {:ok, event}
   end
 
+  @spec handle_event(any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_event(%{type: :resize, width: w, height: h}) do
     {:ok, %Event{type: :resize, data: %{width: w, height: h}}}
   end
 
+  @spec handle_event(any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_event(%{type: :mouse, x: x, y: y, button: button_code}) do
     mouse_event = translate_mouse_event(x, y, button_code)
     {:ok, %Event{type: :mouse, data: mouse_event}}
   end
 
+  @spec handle_event(any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_event(_), do: :ignore
 
   # Translates termbox key codes to Raxol key atoms
+  @spec translate_key(any()) :: any()
   defp translate_key(key_code) do
     Map.get(@key_mapping, key_code, :unknown)
   end
 
   # Translates termbox mouse events to Raxol mouse event maps
+  @spec translate_mouse_event(non_neg_integer(), non_neg_integer(), any()) ::
+          any()
   defp translate_mouse_event(x, y, button_code) do
     button = Map.get(@button_mapping, button_code, :unknown)
     action = Map.get(@action_mapping, button, :press)

@@ -194,6 +194,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
     :ok
   end
 
+  @spec pref_key(any()) :: any()
   defp pref_key(key), do: "accessibility.#{key}"
 
   @doc """
@@ -251,13 +252,13 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       %{bg: :black, fg: :white}  # Returns high contrast colors when enabled
   """
   @spec get_color_scheme() :: %{
-    bg: :black | {:rgb, 30, 30, 30},
-    fg: :white | {:rgb, 220, 220, 220},
-    accent: :yellow | :blue,
-    error: :red,
-    success: :green,
-    warning: :yellow
-  }
+          bg: :black | {:rgb, 30, 30, 30},
+          fg: :white | {:rgb, 220, 220, 220},
+          accent: :yellow | :blue,
+          error: :red,
+          success: :green,
+          warning: :yellow
+        }
   def get_color_scheme do
     mode = get_accessibility_mode()
 
@@ -299,8 +300,18 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
     get_text_scale_factor(large_text)
   end
 
+  @spec handle_test_cleanup(any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_test_cleanup(false), do: :ok
 
+  @spec handle_test_cleanup(any()) ::
+          {:ok, any()}
+          | {:error, any()}
+          | {:reply, any(), any()}
+          | {:noreply, any()}
   defp handle_test_cleanup(true) do
     # Only try to reset if the process exists
     case Process.whereis(UserPreferences) do
@@ -309,15 +320,21 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
     end
   end
 
+  @spec determine_accessibility_mode(any()) :: any()
   defp determine_accessibility_mode(true), do: :high_contrast
+  @spec determine_accessibility_mode(any()) :: any()
   defp determine_accessibility_mode(false), do: :standard
 
+  @spec apply_theme_adjustments(any(), any(), any()) :: any()
   defp apply_theme_adjustments(true, theme, _mode) do
     Theme.adjust_for_high_contrast(theme)
   end
 
+  @spec apply_theme_adjustments(any(), any(), any()) :: any()
   defp apply_theme_adjustments(false, theme, _mode), do: theme
 
+  @spec get_text_scale_factor(any()) :: any() | nil
   defp get_text_scale_factor(true), do: 1.5
+  @spec get_text_scale_factor(any()) :: any() | nil
   defp get_text_scale_factor(false), do: 1.0
 end

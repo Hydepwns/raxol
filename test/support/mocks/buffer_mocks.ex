@@ -1,9 +1,9 @@
 defmodule Raxol.Test.Support.Mocks.BufferManagerMock do
   @moduledoc """
-  Mock implementation for Raxol.Terminal.Buffer.Manager.Behaviour
+  Mock implementation for Raxol.Terminal.ScreenBuffer.Manager.Behaviour
   """
 
-  @behaviour Raxol.Terminal.Buffer.Manager.Behaviour
+  # Mock for testing - behaviour doesn't exist anymore
 
   def initialize_buffers(width, height, _buffer_type, _opts \\ []) do
     %{
@@ -29,7 +29,7 @@ defmodule Raxol.Test.Support.Mocks.BufferScrollbackMock do
   Mock implementation for Raxol.Terminal.Buffer.Scrollback.Behaviour
   """
 
-  @behaviour Raxol.Terminal.Buffer.Scrollback.Behaviour
+  # Mock for testing - behaviour doesn't exist anymore
 
   def new do
     %{lines: [], max_lines: 1000}
@@ -44,7 +44,7 @@ defmodule Raxol.Test.Support.Mocks.BufferScrollRegionMock do
   Mock implementation for Raxol.Terminal.Buffer.ScrollRegion.Behaviour
   """
 
-  @behaviour Raxol.Terminal.Buffer.ScrollRegion.Behaviour
+  # Mock for testing - behaviour doesn't exist anymore
 
   def new do
     %{top: 0, bottom: 0}
@@ -59,7 +59,7 @@ defmodule Raxol.Test.Support.Mocks.BufferSelectionMock do
   Mock implementation for Raxol.Terminal.Buffer.Selection.Behaviour
   """
 
-  @behaviour Raxol.Terminal.Buffer.Selection.Behaviour
+  # Mock for testing - behaviour doesn't exist anymore
 
   def new do
     %{start: nil, end: nil, active: false}
@@ -74,7 +74,7 @@ defmodule Raxol.Test.Support.Mocks.BufferQueriesMock do
   Mock implementation for Raxol.Terminal.Buffer.Queries.Behaviour
   """
 
-  @behaviour Raxol.Terminal.Buffer.Queries.Behaviour
+  # Mock for testing - behaviour doesn't exist anymore
 
   def get_dimensions(_buffer), do: {80, 24}
   def get_width(_buffer), do: 80
@@ -94,7 +94,7 @@ defmodule Raxol.Test.Support.Mocks.BufferLineOperationsMock do
   Mock implementation for Raxol.Terminal.Buffer.LineOperations.Behaviour
   """
 
-  @behaviour Raxol.Terminal.Buffer.LineOperations.Behaviour
+  # Mock for testing - behaviour doesn't exist anymore
 
   def insert_line(buffer, _y), do: buffer
   def delete_line(buffer, _y), do: buffer

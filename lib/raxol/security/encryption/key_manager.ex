@@ -575,12 +575,11 @@ defmodule Raxol.Security.Encryption.KeyManager do
            decrypt_data(encrypted_package.ciphertext, old_key, []),
          {:ok, new_key, state} <- retrieve_key(key_id, :latest, state),
          {:ok, new_ciphertext} <- encrypt_data(plaintext, new_key, []) do
-      new_package = %{
+      new_package =
         encrypted_package
-        | key_version: new_key.version,
-          ciphertext: new_ciphertext,
-          reencrypted_at: System.system_time(:millisecond)
-      }
+        |> Map.put(:key_version, new_key.version)
+        |> Map.put(:ciphertext, new_ciphertext)
+        |> Map.put(:reencrypted_at, System.system_time(:millisecond))
 
       {:ok, new_package, state}
     end
@@ -820,15 +819,20 @@ defmodule Raxol.Security.Encryption.KeyManager do
   end
 
   defp audit_key_operation(operation, key_id, details) do
-    AuditLogger.log_security_event(
-      :key_operation,
-      :info,
-      "Key operation: #{operation}",
-      key_id: key_id,
-      operation: operation,
-      details: details,
-      user: get_current_user()
-    )
+    if Process.whereis(AuditLogger) do
+      AuditLogger.log_security_event(
+        :key_operation,
+        :info,
+        "Key operation: #{operation}",
+        key_id: key_id,
+        operation: operation,
+        details: details,
+        user: get_current_user()
+      )
+    else
+      Logger.debug("Audit logging skipped - audit logger not available",
+        operation: operation, key_id: key_id)
+    end
   end
 
   # Helper functions for if statement elimination

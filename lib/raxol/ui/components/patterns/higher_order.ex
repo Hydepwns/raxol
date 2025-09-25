@@ -456,13 +456,14 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
         render_time_ms = (render_end - render_start) / 1000
 
         # Update render time (async to avoid affecting current render)
-        _ = Task.start(fn ->
-          log_slow_render_if_needed(
-            render_time_ms,
-            report_threshold_ms,
-            component_module
-          )
-        end)
+        _ =
+          Task.start(fn ->
+            log_slow_render_if_needed(
+              render_time_ms,
+              report_threshold_ms,
+              component_module
+            )
+          end)
 
         result
       end

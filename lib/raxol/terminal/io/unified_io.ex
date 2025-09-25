@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{
-    Buffer.UnifiedManager,
+    ScreenBuffer.Manager,
     Scroll.UnifiedScroll,
     Render.UnifiedRenderer,
     Commands.History
@@ -274,13 +274,12 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   def handle_call({:init_terminal, width, height, config}, _from, state) do
     # Initialize components
-    {:ok, buffer_manager} =
-      UnifiedManager.new(
-        width,
-        height,
-        config.scrollback_limit,
-        config.memory_limit
-      )
+    buffer_manager = Manager.new(
+      width,
+      height,
+      scrollback_limit: config.scrollback_limit,
+      memory_limit: config.memory_limit
+    )
 
     scroll_buffer = UnifiedScroll.new(config.scrollback_limit)
     {:ok, renderer} = UnifiedRenderer.start_link(config.rendering)
@@ -526,8 +525,8 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   end
 
   defp update_existing_components(state, config) do
-    {:ok, new_buffer_manager} =
-      UnifiedManager.update_config(state.buffer_manager, config)
+    # ScreenBuffer.Manager doesn't need config updates - just use existing manager
+    new_buffer_manager = state.buffer_manager
 
     new_scroll_buffer =
       UnifiedScroll.set_max_height(state.scroll_buffer, config.scrollback_limit)
@@ -539,13 +538,12 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   end
 
   defp initialize_new_components(config) do
-    {:ok, new_buffer_manager} =
-      UnifiedManager.start_link(
-        width: config.width || 80,
-        height: config.height || 24,
-        scrollback_limit: config.scrollback_limit || 1000,
-        memory_limit: config.memory_limit || 50 * 1024 * 1024
-      )
+    new_buffer_manager = Manager.new(
+      config.width || 80,
+      config.height || 24,
+      scrollback_limit: config.scrollback_limit || 1000,
+      memory_limit: config.memory_limit || 50 * 1024 * 1024
+    )
 
     new_scroll_buffer = UnifiedScroll.new(config.scrollback_limit || 1000)
     {:ok, new_renderer} = UnifiedRenderer.start_link(config.rendering || %{})
@@ -558,15 +556,12 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     # Ensure buffer manager exists
     buffer_manager =
       state.buffer_manager ||
-        case UnifiedManager.new(
-               width,
-               height,
-               state.config[:scrollback_limit] || 1000,
-               state.config[:memory_limit] || 50 * 1024 * 1024
-             ) do
-          {:ok, manager} -> manager
-          _ -> nil
-        end
+        Manager.new(
+          width,
+          height,
+          scrollback_limit: state.config[:scrollback_limit] || 1000,
+          memory_limit: state.config[:memory_limit] || 50 * 1024 * 1024
+        )
 
     handle_buffer_manager_resize(buffer_manager, state, width, height)
   end
@@ -578,8 +573,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   defp handle_buffer_manager_resize(buffer_manager, state, width, height) do
     # Update buffer manager
-    {:ok, new_buffer_manager} =
-      UnifiedManager.resize(buffer_manager, width, height)
+    new_buffer_manager = Manager.resize(buffer_manager, width, height)
 
     # Update renderer if it exists
     update_renderer_if_exists(state.renderer, width, height)

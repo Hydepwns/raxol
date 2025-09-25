@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.ScreenManager do
   """
 
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Buffer.Manager
+  alias Raxol.Terminal.ScreenBuffer.Manager
   alias Raxol.Terminal.Emulator.Struct, as: EmulatorStruct
 
   @doc """

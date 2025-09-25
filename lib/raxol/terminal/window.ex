@@ -361,7 +361,8 @@ defmodule Raxol.Terminal.Window do
   @doc """
   Sets a hyperlink with the given ID and URL.
   """
-  @spec set_hyperlink(t(), String.t(), String.t()) :: {:ok, t()} | {:error, term()}
+  @spec set_hyperlink(t(), String.t(), String.t()) ::
+          {:ok, t()} | {:error, term()}
   def set_hyperlink(%__MODULE__{}, _id, _url) do
     {:error, :hyperlinks_not_supported}
   end
