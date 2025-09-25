@@ -99,8 +99,6 @@ defmodule Raxol.Terminal.Renderer do
     bold_blue: "font-weight: bold; color: #0000FF"
   }
 
-  # Maximum cache size to prevent memory growth
-  @max_cache_size 100
 
   @doc """
   Creates a new renderer with the given screen buffer.
@@ -116,7 +114,7 @@ defmodule Raxol.Terminal.Renderer do
         screen_buffer,
         theme \\ %{},
         font_settings \\ %{},
-        style_batching \\ true
+        style_batching \\ false
       ) do
     %__MODULE__{
       screen_buffer: screen_buffer,
@@ -144,151 +142,112 @@ defmodule Raxol.Terminal.Renderer do
 
   @doc """
   Renders the terminal content with additional options.
-  Returns {content, updated_renderer} to preserve cache state.
   """
   def render(%__MODULE__{} = renderer, _opts \\ %{}, _additional_opts \\ %{}) do
-    {content, _updated_renderer} = render_with_cache(renderer)
+    content =
+      renderer.screen_buffer
+      |> get_styled_content_optimized(renderer.theme, renderer.style_batching)
+      |> apply_font_settings(renderer.font_settings)
+      |> maybe_apply_cursor(renderer.cursor)
+
     content
   end
 
-  @doc """
-  Renders the terminal content and returns both content and updated renderer.
-  Use this for stateful rendering to preserve the style cache.
-  """
-  def render_with_cache(%__MODULE__{} = renderer) do
-    {content, updated_cache} =
-      renderer.screen_buffer
-      |> get_styled_content_cached(renderer.theme, renderer.style_batching, renderer.style_cache)
-      |> apply_font_settings(renderer.font_settings)
-      |> maybe_apply_cursor(renderer.cursor)
-      |> extract_content_and_cache()
-
-    updated_renderer = %{renderer | style_cache: updated_cache}
-    {content, updated_renderer}
-  end
-
-  defp get_styled_content_cached(buffer, theme, style_batching, style_cache) do
-    {content, final_cache} = buffer.cells
-    |> Enum.map_reduce(style_cache, fn row, acc_cache ->
-      {row_content, updated_cache} = render_row_with_caching(row, theme, style_batching, acc_cache)
-      {row_content, updated_cache}
+  defp get_styled_content_optimized(buffer, theme, style_batching) do
+    buffer.cells
+    |> Enum.map_join("\n", fn row ->
+      render_row_optimized(row, theme, style_batching)
     end)
-
-    {Enum.join(content, "\n"), final_cache}
   end
 
-  defp render_row_with_caching(row, theme, style_batching, cache) do
-    {result, final_cache} = if style_batching do
-      render_batched_with_cache(row, theme, cache)
-    else
-      render_individual_with_cache(row, theme, cache)
+  defp render_row_optimized(row, theme, style_batching) do
+    case style_batching do
+      true -> render_batched_optimized(row, theme)
+      false -> render_individual_optimized(row, theme)
     end
-    {result, final_cache}
   end
 
-  # Optimized batched rendering with caching
-  defp render_batched_with_cache(row, theme, cache) do
-    {grouped_cells, updated_cache} = group_cells_by_style_cached(row, theme, cache)
-
-    content = grouped_cells
-    |> Enum.map_join("", fn {style_string, chars} ->
-      if style_string == "" do
-        chars
-      else
-        "<span style=\"#{style_string}\">#{chars}</span>"
-      end
-    end)
-
-    {content, updated_cache}
-  end
-
-  # Individual cell rendering with caching
-  defp render_individual_with_cache(row, theme, cache) do
-    {cells_content, final_cache} = row
-    |> Enum.map_reduce(cache, fn cell, acc_cache ->
-      {style_string, updated_cache} = get_cached_style_string(cell.style, theme, acc_cache)
-      content = if style_string == "" do
-        cell.char
-      else
-        "<span style=\"#{style_string}\">#{cell.char}</span>"
-      end
-      {content, updated_cache}
-    end)
-
-    {Enum.join(cells_content, ""), final_cache}
-  end
-
-  defp group_cells_by_style_cached(row, theme, cache) do
-    {grouped_data, final_cache} = row
-    |> Enum.chunk_by(&(&1.style))
-    |> Enum.map_reduce(cache, fn cells_with_same_style, acc_cache ->
+  # Simple optimized batched rendering
+  defp render_batched_optimized(row, theme) do
+    row
+    |> Enum.chunk_by(& &1.style)
+    |> Enum.map_join("", fn cells_with_same_style ->
       style = hd(cells_with_same_style).style
       chars = Enum.map_join(cells_with_same_style, "", & &1.char)
-      {style_string, updated_cache} = get_cached_style_string(style, theme, acc_cache)
-      {{style_string, chars}, updated_cache}
+      style_string = build_style_string_fast(style, theme)
+
+      case style_string do
+        "" -> chars
+        _ -> "<span style=\"#{style_string}\">#{chars}</span>"
+      end
     end)
-
-    {grouped_data, final_cache}
   end
 
-  # Fast cached style string lookup with templates
-  defp get_cached_style_string(style, theme, cache) do
-    cache_key = create_cache_key(style, theme)
+  # Simple optimized individual rendering
+  defp render_individual_optimized(row, theme) do
+    row
+    |> Enum.map_join("", fn cell ->
+      style_string = build_style_string_fast(cell.style, theme)
 
-    case Map.get(cache, cache_key) do
-      nil ->
-        # Cache miss - check templates first, then build
-        style_string = get_template_or_build(style, theme)
-        updated_cache = put_in_cache(cache, cache_key, style_string)
-        {style_string, updated_cache}
-
-      cached_string ->
-        # Cache hit
-        {cached_string, cache}
-    end
+      case style_string do
+        "" -> cell.char
+        _ -> "<span style=\"#{style_string}\">#{cell.char}</span>"
+      end
+    end)
   end
 
-  defp get_template_or_build(style, theme) do
-    template_key = get_template_key(style)
+  # Fast style string building with pre-compiled templates
+  defp build_style_string_fast(style, theme) do
+    style_map = normalize_style(style)
 
-    case Map.get(@style_templates, template_key) do
+    # Check templates first for common patterns
+    case get_template_match(style_map) do
       nil -> build_style_string_optimized(style, theme)
       template -> template
     end
   end
 
-  defp get_template_key(style) do
-    style_map = normalize_style(style)
-
+  defp get_template_match(style_map) do
     cond do
-      is_default_style?(style_map) -> :default
-      is_simple_color?(style_map) -> get_simple_color_key(style_map)
-      is_simple_attribute?(style_map) -> get_simple_attribute_key(style_map)
-      is_common_combo?(style_map) -> get_combo_key(style_map)
+      is_default_style?(style_map) -> Map.get(@style_templates, :default)
+      is_simple_color_match?(style_map, :red) -> Map.get(@style_templates, :red)
+      is_simple_color_match?(style_map, :green) -> Map.get(@style_templates, :green)
+      is_simple_color_match?(style_map, :blue) -> Map.get(@style_templates, :blue)
+      is_simple_attribute_match?(style_map, :bold) -> Map.get(@style_templates, :bold)
+      is_bold_color_combo?(style_map, :red) -> Map.get(@style_templates, :bold_red)
+      is_bold_color_combo?(style_map, :green) -> Map.get(@style_templates, :bold_green)
+      is_bold_color_combo?(style_map, :blue) -> Map.get(@style_templates, :bold_blue)
       true -> nil
     end
   end
 
-  # Helper functions for cache management and style analysis
-  defp create_cache_key(style, theme) do
-    style_hash = :erlang.phash2(normalize_style(style))
-    theme_hash = :erlang.phash2(Map.take(theme, [:foreground, :background]))
-    {style_hash, theme_hash}
+  # Fast template matchers using pattern matching
+  defp is_simple_color_match?(style_map, color) do
+    Map.get(style_map, :foreground) == color and
+    not Map.get(style_map, :bold, false) and
+    not Map.get(style_map, :italic, false) and
+    not Map.get(style_map, :underline, false) and
+    is_nil(Map.get(style_map, :background))
   end
 
-  defp put_in_cache(cache, key, value) do
-    if map_size(cache) >= @max_cache_size do
-      # Simple LRU - remove first 10 entries to avoid thrashing
-      cache
-      |> Enum.drop(10)
-      |> Map.new()
-      |> Map.put(key, value)
-    else
-      Map.put(cache, key, value)
-    end
+  defp is_simple_attribute_match?(style_map, attr) do
+    Map.get(style_map, attr, false) == true and
+    is_nil(Map.get(style_map, :foreground)) and
+    is_nil(Map.get(style_map, :background)) and
+    not Map.get(style_map, :italic, false) and
+    not Map.get(style_map, :underline, false) and
+    (attr != :bold or not Map.get(style_map, :italic, false))
   end
 
-  # Template matching functions
+  defp is_bold_color_combo?(style_map, color) do
+    Map.get(style_map, :foreground) == color and
+    Map.get(style_map, :bold, false) == true and
+    not Map.get(style_map, :italic, false) and
+    not Map.get(style_map, :underline, false) and
+    is_nil(Map.get(style_map, :background))
+  end
+
+  # Template matching helper
   defp is_default_style?(style_map) do
     Enum.all?([:foreground, :background, :bold, :italic, :underline], fn key ->
       case Map.get(style_map, key) do
@@ -299,72 +258,45 @@ defmodule Raxol.Terminal.Renderer do
     end)
   end
 
-  defp is_simple_color?(style_map) do
-    Map.get(style_map, :foreground) in [:red, :green, :blue, :yellow, :cyan, :magenta, :white, :black] and
-    is_nil(Map.get(style_map, :background)) and
-    not Map.get(style_map, :bold, false) and
-    not Map.get(style_map, :italic, false) and
-    not Map.get(style_map, :underline, false)
-  end
-
-  defp get_simple_color_key(style_map) do
-    Map.get(style_map, :foreground)
-  end
-
-  defp is_simple_attribute?(style_map) do
-    attribute_count = Enum.count([:bold, :italic, :underline], fn attr ->
-      Map.get(style_map, attr, false)
-    end)
-
-    attribute_count == 1 and
-    is_nil(Map.get(style_map, :foreground)) and
-    is_nil(Map.get(style_map, :background))
-  end
-
-  defp get_simple_attribute_key(style_map) do
-    cond do
-      Map.get(style_map, :bold, false) -> :bold
-      Map.get(style_map, :italic, false) -> :italic
-      Map.get(style_map, :underline, false) -> :underline
-      true -> nil
-    end
-  end
-
-  defp is_common_combo?(style_map) do
-    Map.get(style_map, :bold, false) and
-    Map.get(style_map, :foreground) in [:red, :green, :blue] and
-    is_nil(Map.get(style_map, :background)) and
-    not Map.get(style_map, :italic, false) and
-    not Map.get(style_map, :underline, false)
-  end
-
-  defp get_combo_key(style_map) do
-    case Map.get(style_map, :foreground) do
-      :red -> :bold_red
-      :green -> :bold_green
-      :blue -> :bold_blue
-      _ -> nil
-    end
-  end
-
   defp build_style_string_optimized(style, theme) do
     style_map = normalize_style(style)
 
-    style_parts = []
-    |> add_color_style(style_map, :foreground, "color", theme)
-    |> add_color_style(style_map, :background, "background-color", theme)
-    |> add_boolean_style(style_map, :bold, "font-weight", "bold")
-    |> add_boolean_style(style_map, :italic, "font-style", "italic")
-    |> add_boolean_style(style_map, :underline, "text-decoration", "underline")
+    # Use iolist for efficient string building
+    parts = []
 
-    case style_parts do
+    # Add foreground color
+    parts = case Map.get(style_map, :foreground) do
+      nil -> parts
+      color ->
+        css_color = resolve_color_value(color, theme)
+        case css_color do
+          "" -> parts
+          _ -> ["color: " <> css_color | parts]
+        end
+    end
+
+    # Add background color
+    parts = case Map.get(style_map, :background) do
+      nil -> parts
+      color ->
+        css_color = resolve_color_value(color, theme)
+        case css_color do
+          "" -> parts
+          _ -> ["background-color: " <> css_color | parts]
+        end
+    end
+
+    # Add text attributes
+    parts = if Map.get(style_map, :bold, false), do: ["font-weight: bold" | parts], else: parts
+    parts = if Map.get(style_map, :italic, false), do: ["font-style: italic" | parts], else: parts
+    parts = if Map.get(style_map, :underline, false), do: ["text-decoration: underline" | parts], else: parts
+
+    case parts do
       [] -> ""
-      parts -> parts |> Enum.reverse() |> Enum.join("; ")
+      _ -> parts |> Enum.reverse() |> Enum.join("; ")
     end
   end
 
-  defp extract_content_and_cache({content, cache}), do: {content, cache}
-  defp extract_content_and_cache(content), do: {content, %{}}
 
   defp normalize_style(%{__struct__: _} = style) do
     Map.from_struct(style)
