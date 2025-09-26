@@ -1,8 +1,8 @@
 # Dockerfile for Raxol Playground (Phoenix app in web/ directory)
 # This should be run from the repository root
 
-ARG ELIXIR_VERSION=1.14.5
-ARG OTP_VERSION=25.2.3
+ARG ELIXIR_VERSION=1.16.3
+ARG OTP_VERSION=26.0.2
 ARG DEBIAN_VERSION=bullseye-20250908-slim
 
 ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
