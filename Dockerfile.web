@@ -10,8 +10,10 @@ ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
 
 FROM ${BUILDER_IMAGE} as builder
 
-# install build dependencies
-RUN apt-get update -y && apt-get install -y build-essential git \
+# install build dependencies including Node.js
+RUN apt-get update -y && apt-get install -y build-essential git curl \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
     && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # prepare build dir - copy entire repo
@@ -34,17 +36,18 @@ WORKDIR /app/web
 RUN mix deps.get --only $MIX_ENV
 RUN mix deps.compile
 
-# Compile assets
-COPY web/assets assets
-RUN mix assets.deploy
-
-# Compile the release
+# Compile the application
 RUN mix compile
 
-# Changes to config/runtime.exs don't require recompiling the code
-COPY web/config/runtime.exs config/
+# Install and build assets (if they exist)
+RUN if [ -d "assets" ]; then \
+      cd assets && \
+      npm install && \
+      cd .. && \
+      mix phx.digest; \
+    fi
 
-COPY web/rel rel
+# Build the release
 RUN mix release
 
 # Start a new build stage for the runtime
