@@ -73,20 +73,19 @@ defmodule Raxol.Playground.Examples do
       initial_props: %{content: "Hello, Raxol!"},
       steps: [
         %{
-          instruction:
-            "This is a basic text component displaying 'Hello, Raxol!'",
+          instruction: "Basic text component with 'Hello, Raxol!'",
           action: :preview
         },
         %{
-          instruction: "Let's change the text color to blue",
+          instruction: "Change text color to blue",
           action: {:set_prop, :style, %{color: :blue}}
         },
         %{
-          instruction: "Now make it bold",
+          instruction: "Make it bold",
           action: {:set_prop, :style, %{color: :blue, bold: true}}
         },
         %{
-          instruction: "Perfect! You've styled your first component.",
+          instruction: "First component styled.",
           action: :complete
         }
       ]
@@ -104,28 +103,27 @@ defmodule Raxol.Playground.Examples do
       initial_props: %{label: "Click Me"},
       steps: [
         %{
-          instruction:
-            "Here's a default button. Let's explore different variants.",
+          instruction: "Default button. Explore variants.",
           action: :preview
         },
         %{
-          instruction: "Change to a primary button",
+          instruction: "Set as primary button",
           action: {:set_prop, :variant, :primary}
         },
         %{
-          instruction: "Try a danger button for destructive actions",
+          instruction: "Danger button for destructive actions",
           action: {:set_prop, :variant, :danger}
         },
         %{
-          instruction: "Secondary buttons are great for less important actions",
+          instruction: "Secondary for less important actions",
           action: {:set_prop, :variant, :secondary}
         },
         %{
-          instruction: "You can also disable buttons",
+          instruction: "Disable button",
           action: {:set_prop, :disabled, true}
         },
         %{
-          instruction: "Great! You've learned about button variants.",
+          instruction: "Button variants complete.",
           action: :complete
         }
       ]
@@ -143,7 +141,7 @@ defmodule Raxol.Playground.Examples do
       initial_props: %{content: "Styleable Text"},
       steps: [
         %{
-          instruction: "Let's explore different text styling options",
+          instruction: "Explore text styling options",
           action: :preview
         },
         %{
@@ -151,17 +149,17 @@ defmodule Raxol.Playground.Examples do
           action: {:set_prop, :style, %{color: :red, bold: true}}
         },
         %{
-          instruction: "Add italics to the mix",
+          instruction: "Add italics",
           action: {:set_prop, :style, %{color: :red, bold: true, italic: true}}
         },
         %{
-          instruction: "Underline can be added too",
+          instruction: "Add underline",
           action:
             {:set_prop, :style,
              %{color: :red, bold: true, italic: true, underline: true}}
         },
         %{
-          instruction: "You've mastered text styling!",
+          instruction: "Text styling complete.",
           action: :complete
         }
       ]
@@ -181,12 +179,12 @@ defmodule Raxol.Playground.Examples do
         %{
           component_id: "text_input",
           props: %{placeholder: "Enter your name", width: 25},
-          instruction: "Text inputs are perfect for single-line data entry"
+          instruction: "Single-line data entry"
         },
         %{
           component_id: "text_area",
           props: %{placeholder: "Enter your message", rows: 4, cols: 30},
-          instruction: "Text areas handle multi-line input"
+          instruction: "Multi-line input"
         },
         %{
           component_id: "select",
@@ -194,12 +192,12 @@ defmodule Raxol.Playground.Examples do
             options: ["Red", "Green", "Blue"],
             placeholder: "Choose a color"
           },
-          instruction: "Dropdowns let users select from predefined options"
+          instruction: "Select from predefined options"
         },
         %{
           component_id: "checkbox",
           props: %{label: "I agree to the terms", checked: false},
-          instruction: "Checkboxes are great for boolean choices"
+          instruction: "Boolean choices"
         }
       ]
     }
@@ -216,17 +214,17 @@ defmodule Raxol.Playground.Examples do
         %{
           component_id: "box",
           props: %{title: "Welcome", border: :single, padding: 2},
-          instruction: "Boxes create containers with borders and padding"
+          instruction: "Containers with borders and padding"
         },
         %{
           component_id: "flex",
           props: %{direction: :horizontal, gap: 2},
-          instruction: "Flex layouts arrange items horizontally or vertically"
+          instruction: "Arrange items horizontally or vertically"
         },
         %{
           component_id: "grid",
           props: %{columns: 3, gap: 1},
-          instruction: "Grids create structured layouts with rows and columns"
+          instruction: "Structured layouts with rows and columns"
         }
       ]
     }
@@ -250,7 +248,7 @@ defmodule Raxol.Playground.Examples do
               ["Charlie", "35", "Chicago"]
             ]
           },
-          instruction: "Tables organize data in rows and columns"
+          instruction: "Organize data in rows and columns"
         },
         %{
           component_id: "list",
@@ -259,12 +257,12 @@ defmodule Raxol.Playground.Examples do
             ordered: false,
             marker: "•"
           },
-          instruction: "Lists display items in sequence"
+          instruction: "Display items in sequence"
         },
         %{
           component_id: "progress_bar",
           props: %{value: 75, max: 100, width: 30},
-          instruction: "Progress bars show completion status"
+          instruction: "Show completion status"
         }
       ]
     }
@@ -328,7 +326,7 @@ defmodule Raxol.Playground.Examples do
       ],
       steps: [
         %{
-          instruction: "Let's explore custom theming with this button",
+          instruction: "Explore custom theming",
           action: :preview
         },
         %{
@@ -355,7 +353,7 @@ defmodule Raxol.Playground.Examples do
       difficulty: :advanced,
       estimated_time: 18,
       composition: true,
-      instruction: "Learn to combine components for rich user interfaces",
+      instruction: "Combine components for rich UIs",
       layout: :form,
       components: [
         %{
@@ -440,10 +438,10 @@ defmodule Raxol.Playground.Examples do
               props: %{
                 headers: ["Metric", "Current", "Target", "Status"],
                 rows: [
-                  ["CPU Usage", "45%", "< 80%", "✓"],
-                  ["Memory", "67%", "< 85%", "✓"],
-                  ["Storage", "89%", "< 90%", "⚠"],
-                  ["Network", "12%", "< 70%", "✓"]
+                  ["CPU Usage", "45%", "< 80%", "[OK]"],
+                  ["Memory", "67%", "< 85%", "[OK]"],
+                  ["Storage", "89%", "< 90%", "[WARN]"],
+                  ["Network", "12%", "< 70%", "[OK]"]
                 ]
               }
             }
@@ -500,7 +498,7 @@ defmodule Raxol.Playground.Examples do
   defp run_interactive_example(example) do
     IO.puts("""
 
-    #{IO.ANSI.bright()}🎯 #{example.title}#{IO.ANSI.reset()}
+    #{IO.ANSI.bright()}[TARGET] #{example.title}#{IO.ANSI.reset()}
     #{String.duplicate("─", String.length(example.title) + 5)}
 
     #{example.description}
@@ -549,7 +547,7 @@ defmodule Raxol.Playground.Examples do
           IO.puts("\n#{preview}")
 
         :complete ->
-          IO.puts("\n#{IO.ANSI.green()}✨ Example completed!#{IO.ANSI.reset()}")
+          IO.puts("\n#{IO.ANSI.green()}[+] Example completed#{IO.ANSI.reset()}")
 
         _ ->
           :ok
@@ -577,12 +575,12 @@ defmodule Raxol.Playground.Examples do
       handle_sequence_continuation(index < length(sequence))
     end)
 
-    IO.puts("\n#{IO.ANSI.green()}✨ Sequence completed!#{IO.ANSI.reset()}")
+    IO.puts("\n#{IO.ANSI.green()}[+] Sequence completed#{IO.ANSI.reset()}")
   end
 
   defp run_composition_example(example) do
     IO.puts(
-      "\n#{IO.ANSI.bright()}Building composed interface...#{IO.ANSI.reset()}\n"
+      "\n#{IO.ANSI.bright()}Building interface...#{IO.ANSI.reset()}\n"
     )
 
     example.components
@@ -601,13 +599,13 @@ defmodule Raxol.Playground.Examples do
     end)
 
     IO.puts(
-      "#{IO.ANSI.green()}✨ Composition example completed!#{IO.ANSI.reset()}"
+      "#{IO.ANSI.green()}[+] Composition completed#{IO.ANSI.reset()}"
     )
   end
 
   defp run_simple_example(example) do
     setup_simple_component(Map.has_key?(example, :component_id), example)
-    IO.puts("\n#{IO.ANSI.green()}✨ Example completed!#{IO.ANSI.reset()}")
+    IO.puts("\n#{IO.ANSI.green()}[+] Example completed#{IO.ANSI.reset()}")
   end
 
   # Helper functions for if statement elimination

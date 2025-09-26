@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Display.AsciiArt do
   def success do
     """
      ╭───────────────────────────────╮
-     │  ✓  Operation successful!     │
+     │  [OK]  Operation successful!     │
      ╰───────────────────────────────╯
     """
   end
@@ -41,7 +41,7 @@ defmodule Raxol.Terminal.Display.AsciiArt do
   def error do
     """
      ╭───────────────────────────────╮
-     │  ✗  Operation failed!         │
+     │  [FAIL]  Operation failed!         │
      ╰───────────────────────────────╯
     """
   end
@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Display.AsciiArt do
   def warning do
     """
      ╭───────────────────────────────╮
-     │  ⚠  Warning!                  │
+     │  [WARN]  Warning!             │
      ╰───────────────────────────────╯
     """
   end

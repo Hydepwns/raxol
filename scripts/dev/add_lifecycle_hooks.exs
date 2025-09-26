@@ -60,12 +60,12 @@ defmodule LifecycleAdder do
           end
           
           File.write!(file, new_content)
-          IO.puts("✓ Added hooks to #{Path.basename(file)}")
+          IO.puts("[OK] Added hooks to #{Path.basename(file)}")
         else
           IO.puts("⚬ Skipped #{Path.basename(file)} (already has hooks)")
         end
       else
-        IO.puts("✗ File not found: #{file}")
+        IO.puts("[FAIL] File not found: #{file}")
       end
     end)
   end

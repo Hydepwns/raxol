@@ -54,7 +54,7 @@ defmodule FixReferences do
 
           if content != fixed_content do
             File.write!(file_path, fixed_content)
-            IO.puts("✓ Fixed: #{file_path}")
+            IO.puts("[OK] Fixed: #{file_path}")
             %{success: true, file: file_path}
           else
             %{success: true, file: file_path, unchanged: true}

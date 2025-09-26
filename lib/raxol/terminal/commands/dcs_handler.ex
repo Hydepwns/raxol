@@ -247,9 +247,9 @@ defmodule Raxol.Terminal.Commands.DCSHandler do
           })
 
         # Create a cell with the background color and sixel flag set to true
-        # Use write_char to update the buffer with the sixel pixel
+        # Use write_sixel_char to update the buffer with the sixel pixel
         # We write a space character with the sixel style
-        Raxol.Terminal.ScreenBuffer.Operations.write_char(buffer, screen_x, screen_y, " ", style)
+        Raxol.Terminal.ScreenBuffer.Operations.write_sixel_char(buffer, screen_x, screen_y, " ", style)
 
       nil ->
         Logger.debug("No color found for index #{color_index}")

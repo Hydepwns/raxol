@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.ANSI.CachedParser do
 
   # Original parsing logic for non-cached sequences
   # (Simplified version - delegates to original parser for complex cases)
-  defp parse_bytes(input, text_acc, acc) do
+  defp parse_bytes(input, _text_acc, _acc) do
     # For Phase 1, delegate to original parser
     # This ensures correctness while we optimize the common cases
     Raxol.Terminal.ANSI.Parser.parse(input)

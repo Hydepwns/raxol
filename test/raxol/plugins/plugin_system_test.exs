@@ -12,6 +12,8 @@ defmodule Raxol.Plugins.PluginSystemTest do
   alias Raxol.Plugins.ThemePlugin
   alias Raxol.Terminal.Emulator.Struct, as: Emulator
   alias Raxol.Plugins.Lifecycle
+  alias Raxol.Plugins.EventHandler
+  alias Raxol.Plugins.EventHandler.InputEvents
   alias Raxol.Plugins.EventHandler.MouseEvents
   alias Raxol.Plugins.EventHandler.OutputEvents
 

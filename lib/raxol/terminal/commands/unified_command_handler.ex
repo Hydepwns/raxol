@@ -36,7 +36,8 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
   """
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.{OutputManager, ScreenBuffer, Cell}
+  alias Raxol.Terminal.{OutputManager, ScreenBuffer}
+  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.Commands.CursorUtils
@@ -544,9 +545,7 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
   defp get_position_from_pid(pid) do
     case CursorManager.get_position(pid) do
       {:ok, pos} when is_tuple(pos) -> pos
-      {:ok, {row, col}} -> {row, col}
       pos when is_tuple(pos) -> pos
-      {row, col} when is_integer(row) and is_integer(col) -> {row, col}
       _ -> {0, 0}
     end
   end
@@ -922,10 +921,15 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
         updated_emulator = update_emulator_buffer(emulator, updated_buffer)
         {:ok, updated_emulator}
 
-      _ ->
-        Raxol.Core.Runtime.Log.debug("DL NOT using scroll region: y=#{y}, scroll_region=#{inspect(Map.get(emulator, :scroll_region))}")
-        updated_buffer = delete_lines(active_buffer, y, count, style)
-        # CRITICAL FIX: Actually update the emulator with new buffer
+      {scroll_top, scroll_bottom} ->
+        # Scroll region exists but cursor is outside it - no effect
+        Raxol.Core.Runtime.Log.debug("DL outside scroll region: y=#{y}, scroll_region={#{scroll_top}, #{scroll_bottom}} - no effect")
+        {:ok, emulator}
+
+      nil ->
+        # No scroll region - normal delete
+        Raxol.Core.Runtime.Log.debug("DL with no scroll region: y=#{y} - normal delete")
+        updated_buffer = delete_lines_normal(active_buffer, y, count, style)
         updated_emulator = update_emulator_buffer(emulator, updated_buffer)
         {:ok, updated_emulator}
     end
@@ -978,14 +982,12 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
 
       _ ->
         TextFormatting.new()
-        |> Map.from_struct()
-        |> Map.put(:attributes, %{})
     end
   end
 
   defp insert_lines_normal(buffer, y, count, style) do
     # Create blank lines
-    blank_cell = %Cell{style: style, char: " "}
+    blank_cell = Cell.new(" ", style)
     blank_line = List.duplicate(blank_cell, buffer.width)
     blank_lines = List.duplicate(blank_line, count)
 
@@ -1008,9 +1010,8 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
          scroll_top,
          scroll_bottom
        ) do
-    # This is a complex implementation similar to buffer_handler.ex
-    # Create blank lines
-    blank_cell = %Cell{style: style, char: " "}
+    # Create blank lines using Cell.new
+    blank_cell = Cell.new(" ", style)
     blank_line = List.duplicate(blank_cell, buffer.width)
     blank_lines_to_insert = List.duplicate(blank_line, count)
 
@@ -1020,20 +1021,25 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
     {scroll_region_lines, lines_after_scroll} =
       Enum.split(rest, scroll_bottom - scroll_top + 1)
 
+
     # Split scroll region at insertion point
     insertion_point = y - scroll_top
 
     {scroll_before, scroll_after} =
       Enum.split(scroll_region_lines, insertion_point)
 
-    # Calculate lines to keep after insertion
+    # When inserting lines, we keep lines before insertion point,
+    # add blank lines, and keep as many lines after as will fit
+    # Lines that don't fit are discarded (scrolled off bottom of region)
     max_lines_in_region = scroll_bottom - scroll_top + 1
-    lines_after_count = max_lines_in_region - insertion_point - count
+    available_space_after = max_lines_in_region - insertion_point - count
 
     kept_lines =
-      if lines_after_count > 0 do
-        Enum.take(scroll_after, lines_after_count)
+      if available_space_after > 0 do
+        # Keep only lines that fit in the remaining space
+        Enum.take(scroll_after, available_space_after)
       else
+        # No space left, all lines after insertion are pushed out
         []
       end
 
@@ -1068,7 +1074,7 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
          scroll_bottom
        ) do
     # Create blank lines for replacement
-    blank_cell = %Cell{style: style, char: " "}
+    blank_cell = Cell.new(" ", style)
     blank_line = List.duplicate(blank_cell, buffer.width)
     blank_lines_to_add = List.duplicate(blank_line, count)
 
@@ -1110,8 +1116,8 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
     %{buffer | cells: final_cells}
   end
 
-  defp delete_lines(buffer, y, count, style) do
-    blank_cell = %Cell{style: style, char: " "}
+  defp delete_lines_normal(buffer, y, count, style) do
+    blank_cell = Cell.new(" ", style)
     blank_line = List.duplicate(blank_cell, buffer.width)
 
     # Remove lines starting at y
@@ -1138,7 +1144,7 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
         remaining_chars = Enum.drop(chars_after, count)
 
         # Pad with blanks
-        blank_cell = %Cell{style: style, char: " "}
+        blank_cell = Cell.new(" ", style)
         blanks_needed = count
         blank_chars = List.duplicate(blank_cell, blanks_needed)
 
@@ -1163,7 +1169,7 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
         {chars_before, chars_after} = Enum.split(line, x)
 
         # Insert blank characters
-        blank_cell = %Cell{style: style, char: " "}
+        blank_cell = Cell.new(" ", style)
         blank_chars = List.duplicate(blank_cell, count)
 
         # Combine and ensure we don't exceed width

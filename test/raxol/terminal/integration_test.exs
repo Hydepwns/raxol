@@ -9,9 +9,9 @@ defmodule Raxol.Terminal.IntegrationTest do
   # Helper to extract text from a ScreenBuffer
   defp buffer_text(buffer) do
     buffer.cells
-    |> Enum.map_join(fn line ->
-      Enum.map_join(line, &(&1.char || " "))
-    end, "\n")
+    |> Enum.map_join("\n", fn line ->
+      Enum.map_join(line, "", &(&1.char || " "))
+    end)
     |> String.trim_trailing()
   end
 
@@ -88,8 +88,8 @@ defmodule Raxol.Terminal.IntegrationTest do
 
       {state, _output} = Emulator.process_input(state, "HelloWorld")
 
-      # Terminal is 5 chars wide, actual wrapping behavior produces "HellW\norld"
-      assert buffer_text(state.main_screen_buffer) == "HellW\norld"
+      # Terminal is 5 chars wide, should fit 5 chars per line: "Hello" then wrap
+      assert buffer_text(state.main_screen_buffer) == "Hello\nWorld"
     end
 
     test ~c"handles screen scrolling" do

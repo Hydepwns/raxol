@@ -11,8 +11,9 @@ defmodule Raxol.Audit.Exporter do
   - PDF (for compliance reports)
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
+  alias Raxol.Core.Utils.TimerManager
 
   defstruct [
     :config,
@@ -34,9 +35,8 @@ defmodule Raxol.Audit.Exporter do
 
   ## Client API
 
-  def start_link(config) do
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1
+  # Usage: Raxol.Audit.Exporter.start_link(name: __MODULE__, config: config)
 
   @doc """
   Exports audit events in the specified format.
@@ -75,10 +75,11 @@ defmodule Raxol.Audit.Exporter do
     GenServer.call(exporter, {:schedule_export, schedule_config})
   end
 
-  ## GenServer Implementation
+  ## BaseManager Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    config = Keyword.get(opts, :config, %{})
     state = %__MODULE__{
       config: config,
       export_queue: :queue.new(),
@@ -87,22 +88,21 @@ defmodule Raxol.Audit.Exporter do
       templates: load_templates()
     }
 
-    # Process export queue periodically
-    {:ok, _} = :timer.send_interval(10_000, :process_queue)
+    # Process export queue periodically using TimerManager
+    {:ok, _} = TimerManager.start_interval(:process_queue, 10_000)
 
     Logger.info("Audit exporter initialized")
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:export, format, filters, opts}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:export, format, filters, opts}, _from, state) do
     {:ok, exported_data} = perform_export(format, filters, opts, state)
     new_state = record_export(format, filters, state)
     {:reply, {:ok, exported_data}, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:send_to_siem, events, siem_config}, _from, state) do
+  def handle_manager_call({:send_to_siem, events, siem_config}, _from, state) do
     case send_events_to_siem(events, siem_config, state) do
       :ok ->
         {:reply, :ok, state}
@@ -112,8 +112,7 @@ defmodule Raxol.Audit.Exporter do
     end
   end
 
-  @impl GenServer
-  def handle_call(
+  def handle_manager_call(
         {:generate_compliance_report, framework, time_range, opts},
         _from,
         state
@@ -127,8 +126,7 @@ defmodule Raxol.Audit.Exporter do
     end
   end
 
-  @impl GenServer
-  def handle_call({:schedule_export, schedule_config}, _from, state) do
+  def handle_manager_call({:schedule_export, schedule_config}, _from, state) do
     # Add to export queue
     new_queue = :queue.in(schedule_config, state.export_queue)
     new_state = %{state | export_queue: new_queue}
@@ -136,8 +134,8 @@ defmodule Raxol.Audit.Exporter do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_info(:process_queue, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:process_queue, state) do
     new_state = process_export_queue(state)
     {:noreply, new_state}
   end

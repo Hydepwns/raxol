@@ -46,13 +46,14 @@ defmodule Raxol.Minimal do
         enable_telemetry: true
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Terminal.ANSI.Utils.AnsiParser
   alias Raxol.Terminal.Buffer
   alias Raxol.Terminal.Buffer.Cell
   alias Raxol.Terminal.ScreenBuffer.Operations
+  alias Raxol.Core.Utils.GenServerHelpers
 
   @type terminal_mode :: :raw | :cooked | :cbreak
   @type color_mode :: :none | :ansi16 | :ansi256 | :rgb
@@ -140,7 +141,9 @@ defmodule Raxol.Minimal do
   def start_terminal(opts \\ []) do
     merged_opts = Keyword.merge(get_config_defaults(), opts)
 
-    GenServer.start_link(__MODULE__, merged_opts,
+    # Use BaseManager's start_link
+    start_link = Application.get_env(:raxol, :start_link_fn, &GenServer.start_link/3)
+    start_link.(__MODULE__, merged_opts,
       hibernate_after: merged_opts[:hibernate_after]
     )
   end
@@ -201,17 +204,17 @@ defmodule Raxol.Minimal do
     GenServer.cast(pid, :reset)
   end
 
-  # GenServer Callbacks
+  # BaseManager Implementation
 
-  @impl GenServer
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     start_time = System.monotonic_time(:microsecond)
 
     state = initialize_state(opts)
 
     startup_time = System.monotonic_time(:microsecond) - start_time
 
-    if state.telemetry_enabled do
+    with true <- state.telemetry_enabled do
       :telemetry.execute(
         [:raxol, :minimal, :startup],
         %{duration: startup_time},
@@ -224,65 +227,70 @@ defmodule Raxol.Minimal do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
-    {:reply, state, state}
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_state, _from, state) do
+    GenServerHelpers.handle_get_state(state)
   end
 
-  def handle_call(:get_dimensions, _from, state) do
+  def handle_manager_call(:get_dimensions, _from, state) do
     {:reply, {state.width, state.height}, state}
   end
 
-  def handle_call({:resize, width, height}, _from, state) do
+  def handle_manager_call({:resize, width, height}, _from, state) do
     new_state = resize_terminal(state, width, height)
     {:reply, :ok, new_state}
   end
 
-  def handle_call(:get_metrics, _from, state) do
-    {:reply, state.metrics, state}
+  def handle_manager_call(:get_metrics, _from, state) do
+    GenServerHelpers.handle_get_metrics(state)
   end
 
-  @impl GenServer
-  def handle_cast({:input, data}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:input, data}, state) do
     start_time =
-      if state.telemetry_enabled, do: System.monotonic_time(:microsecond)
+      case state.telemetry_enabled do
+        true -> System.monotonic_time(:microsecond)
+        false -> nil
+      end
 
     new_state = process_input(data, state)
 
     final_state =
-      if state.telemetry_enabled do
-        duration = System.monotonic_time(:microsecond) - start_time
+      case {state.telemetry_enabled, start_time} do
+        {true, start_time} when is_integer(start_time) ->
+          duration = System.monotonic_time(:microsecond) - start_time
 
-        :telemetry.execute(
-          [:raxol, :minimal, :input],
-          %{duration: duration, bytes: byte_size(data)},
-          %{}
-        )
+          :telemetry.execute(
+            [:raxol, :minimal, :input],
+            %{duration: duration, bytes: byte_size(data)},
+            %{}
+          )
 
-        update_metrics(new_state, :input_processing, duration)
-      else
-        new_state
+          update_metrics(new_state, :input_processing, duration)
+
+        {false, _} ->
+          new_state
       end
 
     {:noreply, final_state}
   end
 
-  def handle_cast(:clear, state) do
+  def handle_manager_cast(:clear, state) do
     new_buffer = Buffer.clear(get_active_buffer(state))
     new_state = put_active_buffer(state, new_buffer)
     {:noreply, %{new_state | cursor: {0, 0}}}
   end
 
-  def handle_cast(:reset, state) do
+  def handle_manager_cast(:reset, state) do
     {:noreply, initialize_state(get_init_opts(state))}
   end
 
-  @impl GenServer
-  def handle_info(:hibernate, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:hibernate, state) do
     {:noreply, state, :hibernate}
   end
 
-  def handle_info(_msg, state) do
+  def handle_manager_info(_msg, state) do
     {:noreply, state}
   end
 
@@ -301,10 +309,9 @@ defmodule Raxol.Minimal do
     main_buffer = Buffer.new({width, height})
 
     alternate_buffer =
-      if MapSet.member?(features, :alternate_screen) do
-        Buffer.new({width, height})
-      else
-        nil
+      case MapSet.member?(features, :alternate_screen) do
+        true -> Buffer.new({width, height})
+        false -> nil
       end
 
     %State{
@@ -463,20 +470,21 @@ defmodule Raxol.Minimal do
             {buf, new_x, cur_y}
 
           _ ->
-            if cur_x < state.width and cur_y < state.height do
-              # Write character directly to buffer
-              cell = Cell.new(char, state.char_attrs)
-              new_buf = Buffer.set_cell(buf, cur_x, cur_y, cell)
-              {new_buf, cur_x + 1, cur_y}
-            else
-              # Wrap to next line if at end of line
-              if cur_x >= state.width and cur_y < state.height - 1 do
+            cond do
+              cur_x < state.width and cur_y < state.height ->
+                # Write character directly to buffer
+                cell = Cell.new(char, state.char_attrs)
+                new_buf = Buffer.set_cell(buf, cur_x, cur_y, cell)
+                {new_buf, cur_x + 1, cur_y}
+
+              cur_x >= state.width and cur_y < state.height - 1 ->
+                # Wrap to next line if at end of line
                 cell = Cell.new(char, state.char_attrs)
                 new_buf = Buffer.set_cell(buf, 0, cur_y + 1, cell)
                 {new_buf, 1, cur_y + 1}
-              else
+
+              true ->
                 {buf, cur_x, cur_y}
-              end
             end
         end
       end)
@@ -586,10 +594,9 @@ defmodule Raxol.Minimal do
     main_buffer = Buffer.resize(state.main_buffer, width, height)
 
     alternate_buffer =
-      if state.alternate_buffer do
-        Buffer.resize(state.alternate_buffer, width, height)
-      else
-        nil
+      case state.alternate_buffer do
+        nil -> nil
+        buffer -> Buffer.resize(buffer, width, height)
       end
 
     {cur_x, cur_y} = state.cursor
@@ -634,11 +641,12 @@ defmodule Raxol.Minimal do
     max_time = max(metrics.max_input_time, duration)
 
     memory =
-      if rem(count, 100) == 0 do
-        {:memory, bytes} = Process.info(self(), :memory)
-        bytes
-      else
-        metrics.memory_bytes
+      case rem(count, 100) do
+        0 ->
+          {:memory, bytes} = Process.info(self(), :memory)
+          bytes
+        _ ->
+          metrics.memory_bytes
       end
 
     new_metrics = %{

@@ -4,8 +4,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Handles cursor position, visibility, style, and blinking state.
   """
 
-  use GenServer
-  require Logger
+  use Raxol.Core.Behaviours.BaseManager
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Cursor.{Movement, Callbacks}
@@ -25,7 +25,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
             saved_blinking: nil,
             saved_color: nil,
             top_margin: 0,
-            bottom_margin: 24,
+            bottom_margin: 23,
             blink_timer: nil,
             state: :visible,
             # {row, col} format (row first, then column)
@@ -74,15 +74,6 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   # Client API
 
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name)
-    gen_server_opts = Keyword.delete(opts, :name)
-
-    case name do
-      nil -> GenServer.start_link(__MODULE__, gen_server_opts)
-      _ -> GenServer.start_link(__MODULE__, gen_server_opts, name: name)
-    end
-  end
 
   @doc """
   Creates a new cursor manager instance.
@@ -475,198 +466,172 @@ defmodule Raxol.Terminal.Cursor.Manager do
     State.set_state(state, state_atom)
   end
 
-  # Server Callbacks
+  # BaseManager Implementation
 
-  @impl GenServer
-  def init(_opts) do
+  @impl true
+  def init_manager(_opts) do
     {:ok, new()}
   end
 
-  # GenServer Callbacks - delegated to Callbacks module
-  @impl GenServer
-  def handle_call(:get_position, _from, state) do
+  # Manager Callbacks - delegated to Callbacks module
+  @impl true
+  def handle_manager_call(:get_position, _from, state) do
     {result, new_state} = Callbacks.handle_get_position(state)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:set_position, row, col}, _from, state) do
+  def handle_manager_call({:set_position, row, col}, _from, state) do
     {result, new_state} = Callbacks.handle_set_position(state, row, col)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:move_cursor, direction, count}, _from, state) do
+  def handle_manager_call({:move_cursor, direction, count}, _from, state) do
     {result, new_state} = Callbacks.handle_move_cursor(state, direction, count)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_visibility, _from, state) do
+  def handle_manager_call(:get_visibility, _from, state) do
     {result, new_state} = Callbacks.handle_get_visibility(state)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:set_visibility, visible}, _from, state) do
+  def handle_manager_call({:set_visibility, visible}, _from, state) do
     {result, new_state} = Callbacks.handle_set_visibility(state, visible)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_style, _from, state) do
+  def handle_manager_call(:get_style, _from, state) do
     {result, new_state} = Callbacks.handle_get_style(state)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:set_style, style}, _from, state) do
+  def handle_manager_call({:set_style, style}, _from, state) do
     {result, new_state} = Callbacks.handle_set_style(state, style)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_blink, _from, state) do
+  def handle_manager_call(:get_blink, _from, state) do
     {result, new_state} = Callbacks.handle_get_blink(state)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:set_blink, blink}, _from, state) do
+  def handle_manager_call({:set_blink, blink}, _from, state) do
     {result, new_state} = Callbacks.handle_set_blink(state, blink)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:set_custom_shape, shape, params}, _from, state) do
+  def handle_manager_call({:set_custom_shape, shape, params}, _from, state) do
     {result, new_state} =
       Callbacks.handle_set_custom_shape(state, shape, params)
 
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:update_position, row, col}, _from, state) do
+  def handle_manager_call({:update_position, row, col}, _from, state) do
     {result, new_state} = Callbacks.handle_update_position(state, row, col)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:reset_position, _from, state) do
+  def handle_manager_call(:reset_position, _from, state) do
     {result, new_state} = Callbacks.handle_reset_position(state)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:update_position_from_text, text}, _from, state) do
+  def handle_manager_call({:update_position_from_text, text}, _from, state) do
     {result, new_state} =
       Callbacks.handle_update_position_from_text(state, text)
 
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:update_blink, _from, state) do
+  def handle_manager_call(:update_blink, _from, state) do
     {result, new_state} = Callbacks.handle_update_blink(state)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
+  def handle_manager_call(:get_state, _from, state) do
     {result, new_state} = Callbacks.handle_get_state(state)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_state_atom, _from, state) do
+  def handle_manager_call(:get_state_atom, _from, state) do
     {result, new_state} = Callbacks.handle_get_state_atom(state)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:move_down, count, width, height}, _from, state) do
+  def handle_manager_call({:move_down, count, width, height}, _from, state) do
     {result, new_state} =
       Callbacks.handle_move_down(state, count, width, height)
 
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:move_up, lines, width, height}, _from, state) do
+  def handle_manager_call({:move_up, lines, width, height}, _from, state) do
     {result, new_state} = Callbacks.handle_move_up(state, lines, width, height)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:move_right, cols, width, height}, _from, state) do
+  def handle_manager_call({:move_right, cols, width, height}, _from, state) do
     {result, new_state} =
       Callbacks.handle_move_right(state, cols, width, height)
 
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:move_left, cols, width, height}, _from, state) do
+  def handle_manager_call({:move_left, cols, width, height}, _from, state) do
     {result, new_state} = Callbacks.handle_move_left(state, cols, width, height)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:move_to, row, col}, _from, state) do
+  def handle_manager_call({:move_to, row, col}, _from, state) do
     {result, new_state} = Callbacks.handle_move_to(state, row, col)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:move_to_column, column}, _from, state) do
+  def handle_manager_call({:move_to_column, column}, _from, state) do
     {result, new_state} = Callbacks.handle_move_to_column(state, column)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:move_to_column, column, width, height}, _from, state) do
+  def handle_manager_call({:move_to_column, column, width, height}, _from, state) do
     {result, new_state} =
       Callbacks.handle_move_to_column_bounded(state, column, width, height)
 
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:move_to, row, col, width, height}, _from, state) do
+  def handle_manager_call({:move_to, row, col, width, height}, _from, state) do
     {result, new_state} =
       Callbacks.handle_move_to_bounded(state, row, col, width, height)
 
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:move_to_bounded, row, col, width, height}, _from, state) do
+  def handle_manager_call({:move_to_bounded, row, col, width, height}, _from, state) do
     {result, new_state} =
       Callbacks.handle_move_to_bounded_position(state, row, col, width, height)
 
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:set_state_atom, state_atom}, _from, state) do
+  def handle_manager_call({:set_state_atom, state_atom}, _from, state) do
     {result, new_state} = Callbacks.handle_set_state_atom(state, state_atom)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call(request, _from, state) do
+  def handle_manager_call(request, _from, state) do
     {result, new_state} = Callbacks.handle_unknown_request(request, state)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_cast({:set_visibility, visible}, state) do
+  @impl true
+  def handle_manager_cast({:set_visibility, visible}, state) do
     {new_state} = Callbacks.handle_set_visibility_cast(state, visible)
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_info({:blink, timer_id}, state) do
+  @impl true
+  def handle_manager_info({:blink, timer_id}, state) do
     {new_state} = Callbacks.handle_blink_info(state, timer_id)
     {:noreply, new_state}
   end

@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Sync.Manager do
   Provides a high-level interface for component synchronization and state management.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Terminal.Sync.{System, Component}
@@ -37,11 +37,7 @@ defmodule Raxol.Terminal.Sync.Manager do
   @doc """
   Starts the sync manager.
   """
-  @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
+  # BaseManager provides start_link/1 which calls init_manager/1
 
   def register_component(component_id, component_type, initial_state \\ %{}) do
     GenServer.call(
@@ -81,8 +77,9 @@ defmodule Raxol.Terminal.Sync.Manager do
     GenServer.call(__MODULE__, {:get_component_stats, component_id})
   end
 
-  # Server Callbacks
-  def init(opts) do
+  # BaseManager Callbacks
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     state = %__MODULE__{
       components: %{},
       sync_id: generate_sync_id(opts)
@@ -91,7 +88,8 @@ defmodule Raxol.Terminal.Sync.Manager do
     {:ok, state}
   end
 
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:register_component, component_id, component_type, initial_state},
         _from,
         state
@@ -123,7 +121,7 @@ defmodule Raxol.Terminal.Sync.Manager do
     end
   end
 
-  def handle_call({:unregister_component, component_id}, _from, state) do
+  def handle_manager_call({:unregister_component, component_id}, _from, state) do
     case Map.get(state.components, component_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -138,7 +136,7 @@ defmodule Raxol.Terminal.Sync.Manager do
     end
   end
 
-  def handle_call(
+  def handle_manager_call(
         {:sync_state, component_id, component_type, new_state, opts},
         _from,
         state
@@ -168,7 +166,7 @@ defmodule Raxol.Terminal.Sync.Manager do
     end
   end
 
-  def handle_call({:sync_state_simple, component_id, new_state}, _from, state) do
+  def handle_manager_call({:sync_state_simple, component_id, new_state}, _from, state) do
     case Map.get(state.components, component_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -194,14 +192,14 @@ defmodule Raxol.Terminal.Sync.Manager do
     end
   end
 
-  def handle_call({:get_state, component_id}, _from, state) do
+  def handle_manager_call({:get_state, component_id}, _from, state) do
     case Map.get(state.components, component_id) do
       nil -> {:reply, {:error, :not_found}, state}
       component -> {:reply, {:ok, component.state}, state}
     end
   end
 
-  def handle_call({:get_component_stats, component_id}, _from, state) do
+  def handle_manager_call({:get_component_stats, component_id}, _from, state) do
     case Map.get(state.components, component_id) do
       nil ->
         {:reply, {:error, :not_found}, state}

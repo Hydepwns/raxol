@@ -7,7 +7,7 @@ Mix.install([{:jason, "~> 1.4"}])
 
 defmodule CursorBenchmark do
   def run do
-    IO.puts("👆 Cursor Performance Benchmark")
+    IO.puts("[CURSOR] Cursor Performance Benchmark")
     IO.puts("Target: <100μs per cursor operation")
     IO.puts("")
     
@@ -16,7 +16,7 @@ defmodule CursorBenchmark do
     benchmark_visibility_operations()
     benchmark_save_restore_operations()
     
-    IO.puts("\n✅ Cursor benchmark completed")
+    IO.puts("\n[DONE] Cursor benchmark completed")
   end
   
   defp benchmark_movement_operations do
@@ -35,7 +35,7 @@ defmodule CursorBenchmark do
     
     for {name, operation} <- operations do
       time = benchmark_operation(operation)
-      status = if time <= 100.0, do: "✅", else: "❌"
+      status = if time <= 100.0, do: "[OK]", else: "[SLOW]"
       IO.puts("  #{status} #{name}: #{Float.round(time, 2)}μs")
     end
     
@@ -54,7 +54,7 @@ defmodule CursorBenchmark do
     
     for {name, operation} <- operations do
       time = benchmark_operation(operation)
-      status = if time <= 50.0, do: "✅", else: "❌"  # Even faster for position ops
+      status = if time <= 50.0, do: "[OK]", else: "[SLOW]"  # Even faster for position ops
       IO.puts("  #{status} #{name}: #{Float.round(time, 2)}μs")
     end
     
@@ -73,7 +73,7 @@ defmodule CursorBenchmark do
     
     for {name, operation} <- operations do
       time = benchmark_operation(operation)
-      status = if time <= 25.0, do: "✅", else: "❌"  # Very fast for visibility
+      status = if time <= 25.0, do: "[OK]", else: "[SLOW]"  # Very fast for visibility
       IO.puts("  #{status} #{name}: #{Float.round(time, 2)}μs")
     end
     
@@ -94,7 +94,7 @@ defmodule CursorBenchmark do
     
     for {name, operation} <- operations do
       time = benchmark_operation(operation)
-      status = if time <= 75.0, do: "✅", else: "❌"
+      status = if time <= 75.0, do: "[OK]", else: "[SLOW]"
       IO.puts("  #{status} #{name}: #{Float.round(time, 2)}μs")
     end
     

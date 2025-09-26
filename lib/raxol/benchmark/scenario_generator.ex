@@ -31,7 +31,7 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
       multiline: "Line 1\nLine 2\nLine 3",
       with_tabs: "Column1\tColumn2\tColumn3",
       with_carriage_return: "Progress: 50%\rProgress: 100%",
-      unicode: "Hello 世界 🌍",
+      unicode: "Hello 世界 [WORLD]",
       special_chars: "!@#$%^&*()_+-=[]{}|;':\",./<>?"
     }
   end
@@ -157,7 +157,7 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
       zero_width: "Hello\u200bWorld",
       # Mixed LTR/RTL
       rtl_text: "Hello עברית مرحبا",
-      emojis: "🚀💻🎨🔥⚡️🌈",
+      emojis: "[FAST][CODE][STYLE][HOT][POWER][COLOR]",
 
       # Control characters
       all_controls: Enum.map_join(0..31, fn i -> <<i>> end),
@@ -374,7 +374,7 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
     \e[90m⠋\e[0m Installing dependencies...
     \e[1A\e[K\e[90m⠙\e[0m Installing dependencies...
     \e[1A\e[K\e[90m⠹\e[0m Installing dependencies...
-    \e[1A\e[K\e[32m✔\e[0m Dependencies installed
+    \e[1A\e[K\e[32m[OK]\e[0m Dependencies installed
 
     added 234 packages, and audited 567 packages in 12s
 

@@ -1,6 +1,6 @@
-# Raxol Benchmark Suite
+# Benchmark Suite
 
-This directory contains all benchmarking-related files for the Raxol project.
+Benchmarking files for Raxol.
 
 ## Directory Structure
 
@@ -46,42 +46,42 @@ mix run bench/suites/core/performance_summary.exs
 ## Benchmark Suites
 
 ### Parser Suite (`suites/parser/`)
-- **parser_benchmark.exs**: Main ANSI parser performance tests
-- **ansi_profile.exs**: Detailed ANSI sequence processing profiles  
-- **parser_chain_profile.exs**: Parser state chain performance
-- **sgr_comparison.exs**: SGR (color) sequence benchmark comparisons
+- `parser_benchmark.exs`: ANSI parser performance
+- `ansi_profile.exs`: ANSI sequence processing
+- `parser_chain_profile.exs`: Parser state chain
+- `sgr_comparison.exs`: SGR sequence benchmarks
 
 ### Terminal Suite (`suites/terminal/`)
-- **buffer_benchmark.exs**: Screen buffer memory and performance tests
-- **cursor_benchmark.exs**: Cursor movement and positioning benchmarks
-- **emulator_profiling.exs**: Terminal emulator performance profiling
-- **lite_emulator_test.exs**: Lightweight emulator performance tests
+- `buffer_benchmark.exs`: Screen buffer performance
+- `cursor_benchmark.exs`: Cursor movement benchmarks
+- `emulator_profiling.exs`: Terminal emulator profiling
+- `lite_emulator_test.exs`: Lightweight emulator tests
 
 ### Rendering Suite (`suites/rendering/`)
-- **render_performance_simple.exs**: Basic rendering pipeline benchmarks
-- **render_pipeline_profiling.exs**: Advanced rendering performance analysis
+- `render_performance_simple.exs`: Basic rendering benchmarks
+- `render_pipeline_profiling.exs`: Advanced rendering analysis
 
 ### Core Suite (`suites/core/`)
-- **performance_summary.exs**: System-wide performance overview
-- **performance_improvements_benchmark.exs**: Before/after optimization tests
+- `performance_summary.exs`: System-wide overview
+- `performance_improvements_benchmark.exs`: Optimization tests
 
 ### Validation Suite (`suites/validation/`)
-- **validate_optimizations.exs**: Validation of optimization changes
-- **verify_optimization.exs**: Verification of performance improvements
+- `validate_optimizations.exs`: Optimization validation
+- `verify_optimization.exs`: Performance verification
 
 ## Documentation
 
-For comprehensive benchmarking documentation including all available suites, advanced options, and performance guidelines, see [docs/bench/README.md](../docs/bench/README.md).
+See [docs/bench/README.md](../docs/bench/README.md) for comprehensive documentation.
 
 ## Output Files
 
-- **HTML Reports**: Generated in `output/` directory
-- **Results**: Stored in `results/` directory (.benchee and JSON files)
-- **Baselines**: Reference benchmarks in `baselines/`
+- HTML reports: `output/` directory
+- Results: `results/` directory (.benchee, JSON files)
+- Baselines: `baselines/` directory
 
 ## Best Practices
 
-1. Run benchmarks before committing performance-critical changes
-2. Use descriptive names with timestamps for result files
-3. Update baselines after significant improvements
-4. Document any performance regressions in PRs
+1. Run benchmarks before performance changes
+2. Use descriptive timestamped names
+3. Update baselines after improvements
+4. Document regressions in PRs

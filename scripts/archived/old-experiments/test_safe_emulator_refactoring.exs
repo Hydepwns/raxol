@@ -5,17 +5,17 @@
 
 defmodule SafeEmulatorRefactoringTest do
   def run do
-    IO.puts("🔍 Testing safe_emulator.ex refactoring...")
+    IO.puts("[CHECK] Testing safe_emulator.ex refactoring...")
 
     # Test 1: Check file can be parsed (syntax validation)
     case Code.string_to_quoted!(
            File.read!("lib/raxol/terminal/emulator/safe_emulator.ex")
          ) do
       {:defmodule, _, _} ->
-        IO.puts("✅ Module syntax is valid")
+        IO.puts("[OK] Module syntax is valid")
 
       _ ->
-        IO.puts("❌ Module syntax error")
+        IO.puts("[FAIL] Module syntax error")
         System.halt(1)
     end
 
@@ -50,17 +50,17 @@ defmodule SafeEmulatorRefactoringTest do
     # Should be minimal in main logic
     if main_try_catch_count > 2 do
       IO.puts(
-        "❌ Too many try/catch blocks in main logic: #{main_try_catch_count}"
+        "[FAIL] Too many try/catch blocks in main logic: #{main_try_catch_count}"
       )
 
       System.halt(1)
     else
       IO.puts(
-        "✅ Main logic converted to functional patterns (#{main_try_catch_count} remaining)"
+        "[OK] Main logic converted to functional patterns (#{main_try_catch_count} remaining)"
       )
 
       IO.puts(
-        "✅ Helper functions use appropriate exception handling: #{try_catch_count - main_try_catch_count}"
+        "[OK] Helper functions use appropriate exception handling: #{try_catch_count - main_try_catch_count}"
       )
     end
 
@@ -72,10 +72,10 @@ defmodule SafeEmulatorRefactoringTest do
 
     # Should have at least 10 'with' statements from our refactoring
     if with_count < 10 do
-      IO.puts("❌ Not enough 'with' statements found: #{with_count}")
+      IO.puts("[FAIL] Not enough 'with' statements found: #{with_count}")
       System.halt(1)
     else
-      IO.puts("✅ Functional 'with' statements added: #{with_count}")
+      IO.puts("[OK] Functional 'with' statements added: #{with_count}")
     end
 
     # Test 4: Check for functional helper functions
@@ -92,18 +92,18 @@ defmodule SafeEmulatorRefactoringTest do
       |> Enum.reject(fn helper -> String.contains?(content, helper) end)
 
     if length(missing_helpers) > 0 do
-      IO.puts("❌ Missing helper functions: #{inspect(missing_helpers)}")
+      IO.puts("[FAIL] Missing helper functions: #{inspect(missing_helpers)}")
       System.halt(1)
     else
-      IO.puts("✅ All functional helper functions present")
+      IO.puts("[OK] All functional helper functions present")
     end
 
     IO.puts("\n🎉 Safe emulator refactoring validation successful!")
-    IO.puts("📊 Conversion summary:")
+    IO.puts("[REPORT] Conversion summary:")
     IO.puts("  • Try/catch blocks: minimized")
     IO.puts("  • With statements: #{with_count}")
     IO.puts("  • Helper functions: #{length(helper_functions)}")
-    IO.puts("  • Functional error handling: ✅")
+    IO.puts("  • Functional error handling: [OK]")
   end
 end
 

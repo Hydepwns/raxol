@@ -52,10 +52,9 @@ defmodule Raxol.Protocols.UIComponentImplementations do
         )
 
       pagination =
-        if table.options.paginate do
-          render_pagination(table)
-        else
-          ""
+        case table.options.paginate do
+          true -> render_pagination(table)
+          false -> ""
         end
 
       [header, body, pagination]
@@ -75,14 +74,15 @@ defmodule Raxol.Protocols.UIComponentImplementations do
           apply_column_header_style(label, col)
         end)
 
-      if show_borders do
-        border_line =
-          column_widths
-          |> Enum.map_join("─┼─", &String.duplicate("─", &1))
+      case show_borders do
+        true ->
+          border_line =
+            column_widths
+            |> Enum.map_join("─┼─", &String.duplicate("─", &1))
 
-        "#{header_row}\n#{border_line}"
-      else
-        header_row
+          "#{header_row}\n#{border_line}"
+        false ->
+          header_row
       end
     end
 
@@ -209,16 +209,16 @@ defmodule Raxol.Protocols.UIComponentImplementations do
     end
 
     defp apply_style_to_text(text, style) do
-      if style == %{} do
-        text
-      else
-        ansi_codes = Styleable.to_ansi(%{style: style})
-
-        if ansi_codes == "" do
+      case style do
+        %{} when map_size(style) == 0 ->
           text
-        else
-          "#{ansi_codes}#{text}\e[0m"
-        end
+        _ ->
+          ansi_codes = Styleable.to_ansi(%{style: style})
+
+          case ansi_codes do
+            "" -> text
+            codes -> "#{codes}#{text}\e[0m"
+          end
       end
     end
 

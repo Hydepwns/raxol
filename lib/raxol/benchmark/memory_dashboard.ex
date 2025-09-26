@@ -388,13 +388,13 @@ defmodule Raxol.Benchmark.MemoryDashboard do
     analysis = dashboard_data.analysis
 
     regression_status =
-      if analysis.regression_detected, do: "⚠️ Detected", else: "✅ None"
+      if analysis.regression_detected, do: "[WARN] Detected", else: "[OK] None"
 
     fragmentation_level =
       cond do
-        analysis.fragmentation_ratio > 0.5 -> "🔴 High"
-        analysis.fragmentation_ratio > 0.2 -> "🟡 Moderate"
-        true -> "🟢 Low"
+        analysis.fragmentation_ratio > 0.5 -> "[HIGH] High"
+        analysis.fragmentation_ratio > 0.2 -> "[MED] Moderate"
+        true -> "[LOW] Low"
       end
 
     """

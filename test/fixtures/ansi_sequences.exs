@@ -202,7 +202,7 @@ defmodule Raxol.Test.Fixtures.ANSISequences do
       progress_bar: "\e[1G[\e[32m████████          \e[0m] 40%\e[K",
       
       # Table with colors
-      colored_table: "\e[1m Name    \e[0m│\e[1m Status \e[0m\n\e[32m✓\e[0m Test 1 │ \e[32mPASS\e[0m",
+      colored_table: "\e[1m Name    \e[0m│\e[1m Status \e[0m\n\e[32m[OK]\e[0m Test 1 │ \e[32mPASS\e[0m",
       
       # Nested attributes
       nested_attrs: "\e[1m\e[4m\e[31mBold Underline Red\e[21m Still Underline Red\e[0m"

@@ -65,8 +65,9 @@ defmodule Mix.Tasks.Raxol.Check do
 
     print_summary(results)
 
-    if Enum.any?(results, fn {_, status} -> status != :ok end) do
-      Mix.raise("Some checks failed")
+    case Enum.any?(results, fn {_, status} -> status != :ok end) do
+      true -> Mix.raise("Some checks failed")
+      false -> :ok
     end
   end
 
@@ -81,11 +82,11 @@ defmodule Mix.Tasks.Raxol.Check do
       true ->
         checks = @all_checks
 
-        if opts[:skip] do
-          skip = parse_check_list(opts[:skip])
-          Enum.reject(checks, &(&1 in skip))
-        else
-          checks
+        case opts[:skip] do
+          nil -> checks
+          skip_str ->
+            skip = parse_check_list(skip_str)
+            Enum.reject(checks, &(&1 in skip))
         end
     end
   end
@@ -106,11 +107,11 @@ defmodule Mix.Tasks.Raxol.Check do
       System.put_env("MIX_ENV", "test")
 
       Mix.Task.run("compile", ["--warnings-as-errors"])
-      Mix.shell().info("    ✓ Compilation successful")
+      Mix.shell().info("    [OK] Compilation successful")
       {:compile, :ok}
     rescue
       e ->
-        Mix.shell().error("    ✗ Compilation failed: #{Exception.message(e)}")
+        Mix.shell().error("    [FAIL] Compilation failed: #{Exception.message(e)}")
         {:compile, :error}
     end
   end
@@ -120,11 +121,11 @@ defmodule Mix.Tasks.Raxol.Check do
 
     case Mix.shell().cmd("mix format --check-formatted") do
       0 ->
-        Mix.shell().info("    ✓ Code is properly formatted")
+        Mix.shell().info("    [OK] Code is properly formatted")
         {:format, :ok}
 
       _ ->
-        Mix.shell().error("    ✗ Code formatting issues found")
+        Mix.shell().error("    [FAIL] Code formatting issues found")
         Mix.shell().info("    Run 'mix format' to fix")
         {:format, :warning}
     end
@@ -133,57 +134,60 @@ defmodule Mix.Tasks.Raxol.Check do
   defp run_check(:credo) do
     Mix.shell().info("==> Running Credo analysis...")
 
-    if Code.ensure_loaded?(Credo) do
-      case Mix.shell().cmd("mix credo --strict") do
-        0 ->
-          Mix.shell().info("    ✓ Credo analysis passed")
-          {:credo, :ok}
+    case Code.ensure_loaded?(Credo) do
+      true ->
+        case Mix.shell().cmd("mix credo --strict") do
+          0 ->
+            Mix.shell().info("    [OK] Credo analysis passed")
+            {:credo, :ok}
 
-        _ ->
-          Mix.shell().error("    ✗ Credo found issues")
-          {:credo, :warning}
-      end
-    else
-      Mix.shell().info("    ⚠ Credo not available")
-      {:credo, :skipped}
+          _ ->
+            Mix.shell().error("    [FAIL] Credo found issues")
+            {:credo, :warning}
+        end
+      false ->
+        Mix.shell().info("    [WARN] Credo not available")
+        {:credo, :skipped}
     end
   end
 
   defp run_check(:dialyzer) do
     Mix.shell().info("==> Running Dialyzer...")
 
-    if Code.ensure_loaded?(Dialyxir) do
+    case Code.ensure_loaded?(Dialyxir) do
+      true ->
       case Mix.shell().cmd("mix dialyzer") do
         0 ->
-          Mix.shell().info("    ✓ Dialyzer analysis passed")
+          Mix.shell().info("    [OK] Dialyzer analysis passed")
           {:dialyzer, :ok}
 
         _ ->
-          Mix.shell().error("    ✗ Dialyzer found issues")
+          Mix.shell().error("    [FAIL] Dialyzer found issues")
           {:dialyzer, :warning}
       end
-    else
-      Mix.shell().info("    ⚠ Dialyzer not available")
-      {:dialyzer, :skipped}
+      false ->
+        Mix.shell().info("    [WARN] Dialyzer not available")
+        {:dialyzer, :skipped}
     end
   end
 
   defp run_check(:security) do
     Mix.shell().info("==> Running security audit...")
 
-    if Code.ensure_loaded?(Sobelow) do
-      case Mix.shell().cmd("mix sobelow --config") do
-        0 ->
-          Mix.shell().info("    ✓ Security audit passed")
-          {:security, :ok}
+    case Code.ensure_loaded?(Sobelow) do
+      true ->
+        case Mix.shell().cmd("mix sobelow --config") do
+          0 ->
+            Mix.shell().info("    [OK] Security audit passed")
+            {:security, :ok}
 
-        _ ->
-          Mix.shell().error("    ✗ Security issues found")
-          {:security, :warning}
-      end
-    else
-      Mix.shell().info("    ⚠ Sobelow not available")
-      {:security, :skipped}
+          _ ->
+            Mix.shell().error("    [FAIL] Security issues found")
+            {:security, :warning}
+        end
+      false ->
+        Mix.shell().info("    [WARN] Sobelow not available")
+        {:security, :skipped}
     end
   end
 
@@ -198,11 +202,11 @@ defmodule Mix.Tasks.Raxol.Check do
            "mix test --exclude slow --exclude integration --exclude docker"
          ) do
       0 ->
-        Mix.shell().info("    ✓ All tests passed")
+        Mix.shell().info("    [OK] All tests passed")
         {:test, :ok}
 
       _ ->
-        Mix.shell().error("    ✗ Some tests failed")
+        Mix.shell().error("    [FAIL] Some tests failed")
         {:test, :error}
     end
   end
@@ -221,10 +225,10 @@ defmodule Mix.Tasks.Raxol.Check do
     Enum.each(results, fn {check, status} ->
       status_str =
         case status do
-          :ok -> "✓ PASSED"
-          :warning -> "⚠ WARNING"
-          :error -> "✗ FAILED"
-          :skipped -> "⊘ SKIPPED"
+          :ok -> "[OK] PASSED"
+          :warning -> "[WARN] WARNING"
+          :error -> "[FAIL] FAILED"
+          :skipped -> "[SKIP] SKIPPED"
         end
 
       Mix.shell().info("  #{check}: #{status_str}")

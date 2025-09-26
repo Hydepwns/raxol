@@ -20,14 +20,14 @@ defmodule Raxol.Examples.Showcase do
   }
 
   @components [
-    %{id: "text", name: "Text & Typography", icon: "📝"},
-    %{id: "buttons", name: "Buttons", icon: "🔘"},
-    %{id: "inputs", name: "Form Inputs", icon: "📋"},
-    %{id: "layout", name: "Layout", icon: "📐"},
-    %{id: "data", name: "Data Display", icon: "📊"},
-    %{id: "feedback", name: "Feedback", icon: "💬"},
-    %{id: "navigation", name: "Navigation", icon: "🧭"},
-    %{id: "advanced", name: "Advanced", icon: "⚡"}
+    %{id: "text", name: "Text & Typography", icon: "[TEXT]"},
+    %{id: "buttons", name: "Buttons", icon: "[BTN]"},
+    %{id: "inputs", name: "Form Inputs", icon: "[FORM]"},
+    %{id: "layout", name: "Layout", icon: "[LAYOUT]"},
+    %{id: "data", name: "Data Display", icon: "[DATA]"},
+    %{id: "feedback", name: "Feedback", icon: "[CHAT]"},
+    %{id: "navigation", name: "Navigation", icon: "[NAV]"},
+    %{id: "advanced", name: "Advanced", icon: "[ADV]"}
   ]
 
   @impl true
@@ -164,8 +164,8 @@ defmodule Raxol.Examples.Showcase do
       </Stack>
       
       <Stack direction="horizontal" spacing={2}>
-        <Button leftIcon="➕">Add Item</Button>
-        <Button rightIcon="→">Continue</Button>
+        <Button leftIcon="[+]">Add Item</Button>
+        <Button rightIcon="[>]">Continue</Button>
         <Button disabled>Disabled</Button>
         <Button loading>Loading</Button>
       </Stack>
@@ -432,11 +432,11 @@ defmodule Raxol.Examples.Showcase do
       <!-- Menu -->
       <Text bold marginTop={2}>Menu Component</Text>
       <Menu>
-        <MenuItem onClick="menu_action" icon="📁">Open File</MenuItem>
-        <MenuItem onClick="menu_action" icon="💾">Save</MenuItem>
+        <MenuItem onClick="menu_action" icon="[OPEN]">Open File</MenuItem>
+        <MenuItem onClick="menu_action" icon="[SAVE]">Save</MenuItem>
         <MenuDivider />
-        <MenuItem onClick="menu_action" icon="⚙️">Settings</MenuItem>
-        <MenuItem onClick="menu_action" icon="🚪" shortcut="Ctrl+Q">Exit</MenuItem>
+        <MenuItem onClick="menu_action" icon="[CONFIG]">Settings</MenuItem>
+        <MenuItem onClick="menu_action" icon="[EXIT]" shortcut="Ctrl+Q">Exit</MenuItem>
       </Menu>
     </Stack>
     """
@@ -591,7 +591,7 @@ defmodule Raxol.Examples.Showcase do
     <Button 
       variant="primary"
       onClick="handle_click"
-      leftIcon="➕"
+      leftIcon="[+]"
     >
       Add Item
     </Button>
@@ -668,9 +668,9 @@ defmodule Raxol.Examples.Showcase.ThemeToggle do
     >
       <%= case @theme do %>
         <% "dark" -> %>
-          🌙 Dark
+          [DARK] Dark
         <% _ -> %>
-          ☀️ Light
+          [LIGHT] Light
       <% end %>
     </Button>
     """

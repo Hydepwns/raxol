@@ -136,6 +136,9 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     emulator = resize_emulator_buffers(emulator, target_width)
     emulator = update_column_width_mode(emulator, new_column_mode)
 
+    # VT100 spec: DECCOLM clears the screen and homes the cursor
+    emulator = clear_screen_and_home_cursor(emulator)
+
     {:ok, emulator}
   end
 
@@ -371,5 +374,39 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
       new_width,
       buffer.height
     )
+  end
+
+  defp clear_screen_and_home_cursor(emulator) do
+    # Clear the screen buffer
+    cleared_buffer = clear_buffer(emulator.main_screen_buffer)
+
+    # Also clear alternate buffer if it exists
+    cleared_alt_buffer =
+      case emulator.alternate_screen_buffer do
+        nil -> nil
+        buffer -> clear_buffer(buffer)
+      end
+
+    # Home the cursor (0, 0)
+    cursor = %{emulator.cursor | row: 0, col: 0, position: {0, 0}}
+
+    %{emulator |
+      main_screen_buffer: cleared_buffer,
+      alternate_screen_buffer: cleared_alt_buffer,
+      cursor: cursor
+    }
+  end
+
+  defp clear_buffer(buffer) do
+    # Get the configured screen buffer module
+    screen_buffer_impl =
+      Application.get_env(
+        :raxol,
+        :screen_buffer_impl,
+        Raxol.Terminal.ScreenBuffer
+      )
+
+    # Create a new clean buffer with the same dimensions
+    screen_buffer_impl.new(buffer.width, buffer.height)
   end
 end

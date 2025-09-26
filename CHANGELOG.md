@@ -1,10 +1,46 @@
+## [1.5.4] - 2025-09-26
+
+### Major Release - Code Consolidation & BaseManager Pattern
+
+### Added
+
+- **BaseManager Pattern**: Unified behavior for GenServer-based modules
+  - Advanced BaseManager pattern adoption across 22+ modules
+  - Consistent lifecycle management and error handling
+  - Standardized init, call, cast, and info handlers
+  - Enhanced state management and configuration handling
+
+- **TimerManager Integration**: Centralized timer management system
+  - Unified timer intervals and scheduling across core modules
+  - Reduced timer pattern duplication throughout codebase
+  - Improved timer lifecycle and cleanup handling
+
+### Fixed
+
+- **Zero Compilation Warnings**: Achieved strict error checking compliance
+  - Resolved all @doc and @impl attribute conflicts
+  - Fixed unused variable warnings across all modules
+  - Enhanced pattern matching in CSI handlers
+  - Added proper mock implementations for testing
+
+- **Enhanced Test Coverage**: Improved to 99.8% (1632/1635 tests passing)
+  - Tagged performance tests appropriately
+  - Resolved environment-dependent test failures
+  - Fixed BaseManager conversion issues
+
+### Performance
+
+- **Ultra-fast Operations**: Parser 0.17-1.25μs | Render 265-283μs
+- **Maintained Memory Efficiency**: <2.8MB per session
+- **Exceeded Frame Rate**: 3,500+ FPS capability
+
 ## [1.4.1] - 2025-09-16
 
 ### Major Release - Zero Warnings & Enhanced Developer Experience
 
 ### Added
 
-- **Automated Type Spec Generator**: `mix raxol.gen.specs` - Revolutionary tool for automatic type specification generation
+- **Automated Type Spec Generator**: `mix raxol.gen.specs` - Tool for automatic type specification generation
   - Intelligent type inference based on function/argument naming patterns
   - Supports dry-run, interactive, and backup modes
   - Handles guard clauses and pattern matching correctly
@@ -156,9 +192,9 @@
   - Enhanced TypeScript example completeness
 
 - **Linter Analysis Results**:
-  - Critical Issues: ✅ All fixed
-  - High Priority Performance: ✅ 15+ fixed  
-  - Code Duplication: ✅ 5 patterns eliminated
+  - Critical Issues: [FIXED] All fixed
+  - High Priority Performance: [FIXED] 15+ fixed  
+  - Code Duplication: [FIXED] 5 patterns eliminated
   - Remaining: 700+ minor optimizations (low impact, deferred)
 
 ### Documentation and Project Organization
@@ -315,20 +351,20 @@ mix credo
 ## [1.0.1] - 2025-08-11
 
 ### Changed
-- **✅ Security Validation Complete**: Zero vulnerabilities confirmed via Snyk security scanning
-- **📚 Documentation Links Fixed**: Updated README with correct paths to generated docs and HexDocs
-- **⚡ Performance Documentation Updated**: Confirmed all targets exceeded with 3.3μs parser operations
-- **🔧 Release Preparation**: Fixed broken links, validated security, documented performance achievements
+- **[SECURE] Security Validation Complete**: Zero vulnerabilities confirmed via Snyk security scanning
+- **[DOCS] Documentation Links Fixed**: Updated README with correct paths to generated docs and HexDocs
+- **[PERF] Performance Documentation Updated**: Confirmed all targets exceeded with 3.3μs parser operations
+- **[PREP] Release Preparation**: Fixed broken links, validated security, documented performance achievements
 - Updated package documentation and performance benchmarks
 - Added professional release notes for v1.0.0
 - Improved test infrastructure stability
 - Enhanced NIF loading reliability
 
-### 🎯 v1.0 Launch Milestones Achieved
-- ✅ **Zero Security Vulnerabilities**: Comprehensive security scan passed
-- ✅ **All Documentation Links Working**: README and docs fully functional  
-- ✅ **Performance Targets Exceeded**: 30x better than target (3.3μs vs 100μs)
-- ✅ **Multi-Framework Architecture**: World's first terminal UI framework supporting React, Svelte, LiveView, HEEx, and raw terminal - Revolutionary developer choice without vendor lock-in
+### v1.0 Launch Milestones Achieved
+- [SECURE] **Zero Security Vulnerabilities**: Comprehensive security scan passed
+- [DOCS] **All Documentation Links Working**: README and docs fully functional  
+- [FAST] **Performance Targets Exceeded**: 30x better than target (3.3μs vs 100μs)
+- [ARCH] **Multi-Framework Architecture**: Terminal UI framework supporting React, Svelte, LiveView, HEEx, and raw terminal
 
 ## [1.0.0] - 2025-08-11
 
@@ -361,7 +397,7 @@ mix credo
   - Disabled documentation generation for faster builds
   - Compilation time reduced from timeout-prone to ~25 seconds
 
-### Revolutionary Multi-Framework Architecture - COMPLETE
+### Multi-Framework Architecture - Complete
 
 - **First Terminal Framework Supporting 5 UI Paradigms**
   - React-style components with hooks and state management
@@ -408,7 +444,7 @@ mix credo
 
 ### Added
 
-- **Svelte-Style Component System (Revolutionary Architecture)**
+- **Svelte-Style Component System**
   - Complete Svelte-inspired framework bringing compile-time optimization to terminals
   - Actions system with `use:` directive (tooltip, clickOutside, focusTrap, draggable, autoSave, lazyLoad)
   - Reactive stores with automatic dependency tracking and derived values
@@ -610,7 +646,7 @@ mix credo
 
 ### Added
 
-- **Phase 8: Release Process Streamlining (COMPLETED ✅)**
+- **Phase 8: Release Process Streamlining (COMPLETED)**
   - Simplified `burrito.exs` configuration (127→98 lines, 23% reduction)
   - Added standardized mix aliases for release tasks:
     - `mix release.dev` - Development builds

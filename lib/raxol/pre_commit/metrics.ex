@@ -313,7 +313,7 @@ defmodule Raxol.PreCommit.Metrics do
     header = """
     ═══ Pre-commit Performance Report ═══
 
-    📊 Summary (last #{length(history)} runs)
+    [STATS] Summary (last #{length(history)} runs)
     ────────────────────────────────────
       Average time: #{stats.average_time}ms
       Median time:  #{stats.median_time}ms
@@ -330,9 +330,9 @@ defmodule Raxol.PreCommit.Metrics do
     Enum.join([header, check_details, recent_runs, recommendations], "\n")
   end
 
-  defp format_trend(:improving), do: "📈 Improving"
-  defp format_trend(:degrading), do: "📉 Degrading"
-  defp format_trend(:stable), do: "➡️  Stable"
+  defp format_trend(:improving), do: "[TREND] Improving"
+  defp format_trend(:degrading), do: "[DOWN] Degrading"
+  defp format_trend(:stable), do: "[STABLE]  Stable"
 
   defp format_check_details(by_check, verbose) do
     rows =
@@ -356,7 +356,7 @@ defmodule Raxol.PreCommit.Metrics do
 
     """
 
-    📋 Check Performance
+    [LIST] Check Performance
     ────────────────────────────────────
     #{Enum.join(rows, "\n")}
     """
@@ -376,7 +376,7 @@ defmodule Raxol.PreCommit.Metrics do
 
     """
 
-    🕐 Recent Runs
+    [TIME] Recent Runs
     ────────────────────────────────────
     #{Enum.join(rows, "\n")}
     """
@@ -436,10 +436,10 @@ defmodule Raxol.PreCommit.Metrics do
 
     case recommendations do
       [] ->
-        "\n💡 Recommendations\n────────────────────────────────────\n  ✅ Performance is healthy\n"
+        "\n[TIP] Recommendations\n────────────────────────────────────\n  [OK] Performance is healthy\n"
 
       recs ->
-        "\n💡 Recommendations\n────────────────────────────────────\n#{Enum.join(recs, "\n")}\n"
+        "\n[TIP] Recommendations\n────────────────────────────────────\n#{Enum.join(recs, "\n")}\n"
     end
   end
 
@@ -459,8 +459,8 @@ defmodule Raxol.PreCommit.Metrics do
     failed = Enum.count(checks, fn {_, data} -> data["status"] == "error" end)
 
     case failed do
-      0 -> "✅"
-      n -> "❌ (#{n} failed)"
+      0 -> "[OK]"
+      n -> "[FAIL] (#{n} failed)"
     end
   end
 

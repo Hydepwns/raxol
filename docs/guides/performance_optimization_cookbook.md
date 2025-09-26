@@ -576,9 +576,9 @@ defmodule MyApp.Benchmarks do
     IO.puts("Average parse time: #{avg_time_per_op}μs per operation")
     
     if avg_time_per_op > 3.3 do
-      IO.puts("⚠️  Parser performance below target (3.3μs)")
+      IO.puts("[WARN]  Parser performance below target (3.3μs)")
     else
-      IO.puts("✅ Parser performance meets target")
+      IO.puts("[OK] Parser performance meets target")
     end
   end
 end
@@ -674,13 +674,13 @@ end
 ### 1. Synchronous Heavy Operations
 
 ```elixir
-# ❌ DON'T: Block the UI thread
+# [FAIL] DON'T: Block the UI thread
 def handle_event("generate_report", _params, socket) do
   report = generate_heavy_report()  # Takes 5 seconds
   {:noreply, assign(socket, :report, report)}
 end
 
-# ✅ DO: Use background processing
+# [OK] DO: Use background processing
 def handle_event("generate_report", _params, socket) do
   Task.Supervisor.start_child(MyApp.TaskSupervisor, fn ->
     report = generate_heavy_report()
@@ -703,7 +703,7 @@ end
 ### 2. Inefficient State Updates
 
 ```elixir
-# ❌ DON'T: Update entire large data structures
+# [FAIL] DON'T: Update entire large data structures
 def handle_event("update_item", %{"id" => id, "value" => value}, socket) do
   items = 
     socket.assigns.items
@@ -718,7 +718,7 @@ def handle_event("update_item", %{"id" => id, "value" => value}, socket) do
   {:noreply, assign(socket, :items, items)}
 end
 
-# ✅ DO: Use targeted updates
+# [OK] DO: Use targeted updates
 def handle_event("update_item", %{"id" => id, "value" => value}, socket) do
   socket = update(socket, :items, fn items ->
     Map.update!(items, id, &%{&1 | value: value})
@@ -731,13 +731,13 @@ end
 ### 3. Memory Leaks
 
 ```elixir
-# ❌ DON'T: Accumulate unbounded data
+# [FAIL] DON'T: Accumulate unbounded data
 def handle_info({:log_event, event}, socket) do
   events = [event | socket.assigns.events]
   {:noreply, assign(socket, :events, events)}
 end
 
-# ✅ DO: Implement bounded collections
+# [OK] DO: Implement bounded collections
 def handle_info({:log_event, event}, socket) do
   events = 
     [event | socket.assigns.events]

@@ -182,7 +182,7 @@ Add to your CI pipeline:
 # In your CI script
 mix raxol.check.duplicates --strict
 if [ $? -ne 0 ]; then
-  echo "❌ Duplicate filename check failed"
+  echo "[FAIL] Duplicate filename check failed"
   exit 1
 fi
 ```
@@ -193,13 +193,13 @@ Most editors support Credo integration, so the duplicate filename check will app
 ## Example Output
 
 ```bash
-🔍 Checking for duplicate filenames...
+[CHECK] Checking for duplicate filenames...
 Scanning directories: lib, test
 
 🔴 CRITICAL - 'validator.ex' (2 files):
   • lib/raxol/terminal/extension/validator.ex
   • lib/raxol/terminal/config/validator.ex
-  📝 Suggested renames:
+  [NOTE] Suggested renames:
     lib/raxol/terminal/extension/validator.ex → extension_validator.ex
     lib/raxol/terminal/config/validator.ex → config_validator.ex
 
@@ -231,11 +231,11 @@ Scanning directories: lib, test
 ## Implementation Status
 
 As of v1.2.0:
-- ✅ Standalone script implemented
-- ✅ Mix task created
-- ✅ Credo integration complete
-- ✅ Documentation written
-- ⏳ Historical duplicates being resolved gradually
+- [OK] Standalone script implemented
+- [OK] Mix task created
+- [OK] Credo integration complete
+- [OK] Documentation written
+- [WAIT] Historical duplicates being resolved gradually
 
 ## Troubleshooting
 

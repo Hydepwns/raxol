@@ -73,14 +73,14 @@
 ### Step 2: UnifiedCommandHandler Enhancement Plan
 
 #### Current UnifiedCommandHandler Coverage Analysis:
-✅ Basic cursor commands (A, B, C, D, E, F, G, H, f)
-✅ Basic erase commands (J, K, X)  
-✅ Basic device commands (c, n)
-✅ Basic mode commands (h, l)
-✅ Basic text commands (m)
-✅ Basic scrolling commands (S, T)
-✅ Tab commands (g)
-✅ OSC commands (0, 1, 2, 4, 10, 11)
+[OK] Basic cursor commands (A, B, C, D, E, F, G, H, f)
+[OK] Basic erase commands (J, K, X)  
+[OK] Basic device commands (c, n)
+[OK] Basic mode commands (h, l)
+[OK] Basic text commands (m)
+[OK] Basic scrolling commands (S, T)
+[OK] Tab commands (g)
+[OK] OSC commands (0, 1, 2, 4, 10, 11)
 
 #### Missing Implementations Needed:
 - [ ] Buffer operations from buffer_handler.ex

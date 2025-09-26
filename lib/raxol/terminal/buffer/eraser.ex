@@ -26,11 +26,11 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   end
 
   @doc """
-  Erases from start to cursor.
+  Erases from start of line to cursor.
   """
   @spec erase_from_start_to_cursor(term()) :: term()
   def erase_from_start_to_cursor(buffer) do
-    ConsolidatedOps.clear_to_beginning_of_screen(buffer)
+    ConsolidatedOps.clear_to_beginning_of_line(buffer)
   end
 
   @doc """

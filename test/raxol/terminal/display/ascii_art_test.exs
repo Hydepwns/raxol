@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
     test ~c"returns a success message with checkmark" do
       success = AsciiArt.success()
       assert is_binary(success)
-      assert String.contains?(success, "✓")
+      assert String.contains?(success, "[OK]")
       assert String.contains?(success, "successful")
     end
   end
@@ -25,7 +25,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
     test ~c"returns an error message with x mark" do
       error = AsciiArt.error()
       assert is_binary(error)
-      assert String.contains?(error, "✗")
+      assert String.contains?(error, "[FAIL]")
       assert String.contains?(error, "failed")
     end
   end

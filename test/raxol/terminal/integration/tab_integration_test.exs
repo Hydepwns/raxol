@@ -142,7 +142,7 @@ defmodule Raxol.Terminal.Integration.TabIntegrationTest do
       # Update tab configuration
       new_config = %{
         name: "Updated Tab",
-        icon: "🔄",
+        icon: "[RELOAD]",
         color: "#00FF00"
       }
 

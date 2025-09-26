@@ -182,7 +182,7 @@ Raxol.Terminal.write(term, "│ │ │")
 Raxol.Terminal.write(term, "└─┴─┘")
 
 # Emoji support
-Raxol.Terminal.write(term, "Status: ✅")
+Raxol.Terminal.write(term, "Status: [OK]")
 ```
 
 ## Performance

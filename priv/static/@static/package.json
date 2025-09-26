@@ -1,6 +1,6 @@
 {
   "name": "raxol-assets",
-  "version": "1.0.0",
+  "version": "1.5.4",
   "private": true,
   "scripts": {
     "build": "esbuild app.js --bundle --target=es2017 --outdir=../priv/static/js",

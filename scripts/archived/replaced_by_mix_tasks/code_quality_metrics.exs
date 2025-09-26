@@ -7,14 +7,14 @@ defmodule CodeQualityMetrics do
   """
 
   def run do
-    IO.puts("\n🔍 Raxol Code Quality Metrics Analysis")
+    IO.puts("\n[CHECK] Raxol Code Quality Metrics Analysis")
     IO.puts("=" |> String.duplicate(50))
     
     lib_files = find_elixir_files("lib")
     test_files = find_elixir_files("test")
     all_files = lib_files ++ test_files
     
-    IO.puts("\n📊 File Statistics:")
+    IO.puts("\n[REPORT] File Statistics:")
     IO.puts("  Library files: #{length(lib_files)}")
     IO.puts("  Test files: #{length(test_files)}")
     IO.puts("  Total files: #{length(all_files)}")
@@ -77,18 +77,18 @@ defmodule CodeQualityMetrics do
   end
   
   defp print_metrics(metrics) do
-    IO.puts("\n🎯 Code Quality Metrics:\n")
+    IO.puts("\n[TARGET] Code Quality Metrics:\n")
     
-    print_metric("❌ Process Dictionary Usage", metrics.process_dict, :critical)
-    print_metric("⚠️  Try/Catch Blocks", metrics.try_catch, :high)
-    print_metric("✅ With Statements", metrics.with_statements, :good)
+    print_metric("[FAIL] Process Dictionary Usage", metrics.process_dict, :critical)
+    print_metric("[WARN]  Try/Catch Blocks", metrics.try_catch, :high)
+    print_metric("[OK] With Statements", metrics.with_statements, :good)
     print_metric("🔄 If/Else Statements", metrics.if_else, :medium)
     print_metric("🔄 Cond Statements", metrics.cond_statements, :low)
-    print_metric("✅ Pattern Matching in Functions", metrics.pattern_matching, :good)
+    print_metric("[OK] Pattern Matching in Functions", metrics.pattern_matching, :good)
     print_metric("📦 Agent Usage", metrics.agents, :medium)
-    print_metric("✅ GenServer Usage", metrics.genservers, :good)
+    print_metric("[OK] GenServer Usage", metrics.genservers, :good)
     print_metric("💾 ETS Tables", metrics.ets_usage, :low)
-    print_metric("⚠️  Imperative Loops", metrics.imperative_loops, :high)
+    print_metric("[WARN]  Imperative Loops", metrics.imperative_loops, :high)
   end
   
   defp print_metric(label, data, severity) do
@@ -202,7 +202,7 @@ defmodule CodeQualityMetrics do
     File.mkdir_p!("metrics")
     File.write!("metrics/code_quality_#{Date.utc_today()}.json", Jason.encode!(report, pretty: true))
     
-    IO.puts("📊 Report saved to metrics/code_quality_#{Date.utc_today()}.json")
+    IO.puts("[REPORT] Report saved to metrics/code_quality_#{Date.utc_today()}.json")
   end
 end
 

@@ -2,7 +2,7 @@
   "name": "raxol",
   "displayName": "Raxol Language Support",
   "description": "Language support for Raxol terminal UI framework",
-  "version": "1.0.0",
+  "version": "1.5.4",
   "publisher": "axol-io",
   "license": "MIT",
   "repository": {

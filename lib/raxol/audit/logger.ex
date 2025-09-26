@@ -16,11 +16,12 @@ defmodule Raxol.Audit.Logger do
   - Tamper-proof event storage using cryptographic signatures
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Architecture.EventSourcing.EventStore
   alias Raxol.Audit.{Events, Storage, Analyzer, Exporter}
+  alias Raxol.Core.Utils.TimerManager
 
   alias Raxol.Audit.Events.{
     AuthorizationEvent,
@@ -37,7 +38,8 @@ defmodule Raxol.Audit.Logger do
     :metrics,
     :alert_handlers,
     :retention_policy,
-    :encryption_key
+    :encryption_key,
+    :timers
   ]
 
   @type config :: %{
@@ -68,16 +70,8 @@ defmodule Raxol.Audit.Logger do
 
   ## Client API
 
-  @doc """
-  Starts the audit logger.
-  """
-  def start_link(opts \\ []) do
-    config =
-      Keyword.get(opts, :config, %{})
-      |> then(&Map.merge(@default_config, &1))
-
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 which handles GenServer initialization
+  # Usage: Raxol.Audit.Logger.start_link(name: __MODULE__, config: custom_config)
 
   @doc """
   Logs an authentication attempt.
@@ -257,10 +251,14 @@ defmodule Raxol.Audit.Logger do
     )
   end
 
-  ## GenServer Implementation
+  ## BaseManager Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    config =
+      opts
+      |> Keyword.get(:config, %{})
+      |> then(&Map.merge(@default_config, &1))
     Process.flag(:trap_exit, true)
 
     # Initialize components
@@ -282,28 +280,27 @@ defmodule Raxol.Audit.Logger do
       encryption_key: init_encryption_key(config)
     }
 
-    # Schedule periodic tasks
-    _ =
+    # Schedule periodic tasks using TimerManager
+    timers =
       case config.enabled do
         true ->
-          {:ok, _} =
-            :timer.send_interval(config.flush_interval_ms, :flush_buffer)
-
-          # Every hour
-          {:ok, _} = :timer.send_interval(3_600_000, :cleanup_old_logs)
-          # Daily
-          {:ok, _} = :timer.send_interval(86_400_000, :verify_integrity)
+          %{}
+          |> TimerManager.add_timer(:flush_buffer, :interval, config.flush_interval_ms)
+          |> TimerManager.add_timer(:cleanup_old_logs, :interval, TimerManager.intervals().hour)
+          |> TimerManager.add_timer(:verify_integrity, :interval, TimerManager.intervals().day)
 
         false ->
-          :ok
+          %{}
       end
+
+    state = Map.put(state, :timers, timers)
 
     Logger.info("Audit logger initialized with config: #{inspect(config)}")
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:log_event, event, category, severity}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:log_event, event, category, severity}, _from, state) do
     case state.config.enabled and should_log?(severity, state.config.log_level) do
       true ->
         case process_event(event, category, severity, state) do
@@ -320,46 +317,41 @@ defmodule Raxol.Audit.Logger do
     end
   end
 
-  @impl GenServer
-  def handle_call({:query_logs, filters, opts}, _from, state) do
+  def handle_manager_call({:query_logs, filters, opts}, _from, state) do
     case Storage.query(filters, opts) do
       {:ok, results} -> {:reply, {:ok, results}, state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call({:export_logs, format, filters, opts}, _from, state) do
+  def handle_manager_call({:export_logs, format, filters, opts}, _from, state) do
     case Exporter.export(format, filters, opts) do
       {:ok, exported_data} -> {:reply, {:ok, exported_data}, state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call({:get_statistics, time_range}, _from, state) do
+  def handle_manager_call({:get_statistics, time_range}, _from, state) do
     stats = calculate_statistics(state, time_range)
     {:reply, {:ok, stats}, state}
   end
 
-  @impl GenServer
-  def handle_call({:verify_integrity, start_time, end_time}, _from, state) do
+  def handle_manager_call({:verify_integrity, start_time, end_time}, _from, state) do
     case verify_log_integrity(state, start_time, end_time) do
       :ok -> {:reply, {:ok, :verified}, state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
-  @impl GenServer
-  def handle_info(:flush_buffer, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:flush_buffer, state) do
     case flush_buffer_to_storage(state) do
       {:ok, new_state} -> {:noreply, new_state}
       {:error, _reason} -> {:noreply, state}
     end
   end
 
-  @impl GenServer
-  def handle_info(:cleanup_old_logs, state) do
+  def handle_manager_info(:cleanup_old_logs, state) do
     {:ok, _} =
       Task.start(fn ->
         cleanup_expired_logs(state)
@@ -368,8 +360,7 @@ defmodule Raxol.Audit.Logger do
     {:noreply, state}
   end
 
-  @impl GenServer
-  def handle_info(:verify_integrity, state) do
+  def handle_manager_info(:verify_integrity, state) do
     {:ok, _} =
       Task.start(fn ->
         verify_daily_integrity(state)
@@ -380,6 +371,8 @@ defmodule Raxol.Audit.Logger do
 
   @impl GenServer
   def terminate(_reason, state) do
+    # Cancel all timers
+    TimerManager.cancel_all_timers(Map.get(state, :timers, %{}))
     # Flush any remaining buffered events
     _ = flush_buffer_to_storage(state)
     :ok
@@ -643,8 +636,11 @@ defmodule Raxol.Audit.Logger do
             false
 
           signature ->
+            # Remove signature field for verification
             event_without_sig = Map.delete(event, :signature)
 
+            # The signature was computed on the event AS STORED, so we verify against
+            # the stored event structure (which includes enrichment fields)
             expected_sig =
               :crypto.mac(
                 :hmac,
@@ -654,6 +650,7 @@ defmodule Raxol.Audit.Logger do
               )
               |> Base.encode64()
 
+            # The signature should match exactly
             signature != expected_sig
         end
       end)

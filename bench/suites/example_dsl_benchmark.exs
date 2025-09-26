@@ -55,7 +55,7 @@ defmodule ExampleDSLBenchmark do
     )
 
     # Compare with baseline
-    compare_with baseline: "v1.4.0"
+    compare_with baseline: "v1.5.4"
 
     # Tag scenarios for filtering
     tag [:parser, :core]
@@ -150,13 +150,13 @@ end
 # Module to run the example benchmark
 defmodule RunExampleBenchmark do
   def run do
-    IO.puts("\n🚀 Running Example Benchmark with New DSL\n")
+    IO.puts("\n[RAXOL] Running Example Benchmark with New DSL\n")
 
     # Run the benchmarks
     results = ExampleDSLBenchmark.run_benchmarks()
 
     # Display results
-    IO.puts("\n✅ Benchmark completed successfully!")
+    IO.puts("\n[OK] Benchmark completed successfully!")
     IO.puts("\nResults have been saved to bench/output/")
 
     results

@@ -38,7 +38,7 @@ defmodule Raxol.Benchmarks.Performance.EventHandling do
       events_per_second: calculate_events_per_second(keyboard_latency)
     }
 
-    IO.puts("✓ Event handling benchmarks complete")
+    IO.puts("[OK] Event handling benchmarks complete")
     results
   end
 

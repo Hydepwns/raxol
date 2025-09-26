@@ -11,8 +11,9 @@ defmodule Raxol.Audit.Analyzer do
   - Compliance violations
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
+  alias Raxol.Core.Utils.TimerManager
 
   defstruct [
     :config,
@@ -36,9 +37,8 @@ defmodule Raxol.Audit.Analyzer do
 
   ## Client API
 
-  def start_link(config) do
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1
+  # Usage: Raxol.Audit.Analyzer.start_link(name: __MODULE__, config: config)
 
   @doc """
   Analyzes an audit event for threats and anomalies.
@@ -68,10 +68,11 @@ defmodule Raxol.Audit.Analyzer do
     GenServer.call(analyzer, :get_compliance_status)
   end
 
-  ## GenServer Implementation
+  ## BaseManager Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    config = Keyword.get(opts, :config, %{})
     state = %__MODULE__{
       config: config,
       detection_rules: init_detection_rules(),
@@ -84,48 +85,43 @@ defmodule Raxol.Audit.Analyzer do
       metrics: init_metrics()
     }
 
-    # Schedule periodic analysis tasks
-    # Every minute
-    {:ok, _} = :timer.send_interval(60_000, :analyze_patterns)
-    # Every 5 minutes
-    {:ok, _} = :timer.send_interval(300_000, :update_profiles)
+    # Schedule periodic analysis tasks using TimerManager
+    intervals = TimerManager.intervals()
+    {:ok, _} = TimerManager.start_interval(:analyze_patterns, intervals.minute)
+    {:ok, _} = TimerManager.start_interval(:update_profiles, intervals.five_minutes)
 
     Logger.info("Audit analyzer initialized")
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:analyze_event, event}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:analyze_event, event}, _from, state) do
     {analysis_result, new_state} = perform_analysis(event, state)
     {:reply, analysis_result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:analyze_batch, events}, _from, state) do
+  def handle_manager_call({:analyze_batch, events}, _from, state) do
     {analysis_results, new_state} = perform_batch_analysis(events, state)
     {:reply, analysis_results, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_threat_assessment, _from, state) do
+  def handle_manager_call(:get_threat_assessment, _from, state) do
     assessment = calculate_threat_assessment(state)
     {:reply, {:ok, assessment}, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_compliance_status, _from, state) do
+  def handle_manager_call(:get_compliance_status, _from, state) do
     status = check_compliance_status(state)
     {:reply, {:ok, status}, state}
   end
 
-  @impl GenServer
-  def handle_info(:analyze_patterns, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:analyze_patterns, state) do
     new_state = analyze_recent_patterns(state)
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_info(:update_profiles, state) do
+  def handle_manager_info(:update_profiles, state) do
     new_state = update_user_profiles(state)
     {:noreply, new_state}
   end

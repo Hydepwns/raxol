@@ -44,16 +44,16 @@ defmodule DuplicateFileChecker do
   def main(args \\ []) do
     show_suggestions = "--fix-suggestions" in args
     
-    IO.puts("🔍 Scanning for duplicate filenames...")
+    IO.puts("[CHECK] Scanning for duplicate filenames...")
     IO.puts("Directories: #{Enum.join(@scan_dirs, ", ")}")
     IO.puts("")
     
     duplicates = find_duplicates()
     
     if Enum.empty?(duplicates) do
-      IO.puts("✅ No duplicate filenames found!")
+      IO.puts("[OK] No duplicate filenames found!")
     else
-      IO.puts("❌ Found #{length(duplicates)} sets of duplicate filenames:")
+      IO.puts("[FAIL] Found #{length(duplicates)} sets of duplicate filenames:")
       IO.puts("")
       
       display_duplicates(duplicates, show_suggestions)
@@ -118,7 +118,7 @@ defmodule DuplicateFileChecker do
   end
 
   defp show_naming_suggestions(basename, paths) do
-    IO.puts("  📝 Suggested renames:")
+    IO.puts("  [NOTE] Suggested renames:")
     
     Enum.each(paths, fn path ->
       suggestion = generate_rename_suggestion(path, basename)

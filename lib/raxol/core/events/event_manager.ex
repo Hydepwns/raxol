@@ -10,8 +10,8 @@ defmodule Raxol.Core.Events.EventManager do
   is maintained for backward compatibility but will be deprecated in a future version.
   """
 
-  use GenServer
-  require Logger
+  use Raxol.Core.Behaviours.BaseManager
+  require Raxol.Core.Runtime.Log
   alias Raxol.Core.Events.TelemetryAdapter
 
   @type event_type :: atom()
@@ -23,21 +23,13 @@ defmodule Raxol.Core.Events.EventManager do
   # Client API
 
   @doc """
-  Starts the event manager GenServer.
-  """
-  @spec start_link(keyword()) :: {:ok, pid()}
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
-
-  @doc """
   Initializes the event manager state.
   """
   @spec init() :: :ok
   def init do
     case GenServer.whereis(__MODULE__) do
       nil ->
-        Logger.warning("EventManager not started, call start_link/1 first")
+        Raxol.Core.Runtime.Log.warning("EventManager not started, call start_link/1 first")
         :ok
 
       _pid ->
@@ -181,8 +173,8 @@ defmodule Raxol.Core.Events.EventManager do
 
   # GenServer Implementation
 
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     # Create ETS tables for fast lookups
     handlers_table = :ets.new(:event_handlers, [:bag, :protected])
     subscriptions_table = :ets.new(:event_subscriptions, [:bag, :protected])
@@ -193,15 +185,15 @@ defmodule Raxol.Core.Events.EventManager do
       config: opts
     }
 
-    Logger.info(
+    Raxol.Core.Runtime.Log.info(
       "Event Manager started with tables #{inspect(handlers_table)}, #{inspect(subscriptions_table)}"
     )
 
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:register_handler, event_type, target, handler},
         _from,
         state
@@ -211,8 +203,8 @@ defmodule Raxol.Core.Events.EventManager do
     {:reply, :ok, state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:unregister_handler, event_type, target, handler},
         _from,
         state
@@ -230,8 +222,8 @@ defmodule Raxol.Core.Events.EventManager do
     {:reply, :ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:subscribe, event_types, opts, subscriber_pid}, _from, state) do
+  @impl true
+  def handle_manager_call({:subscribe, event_types, opts, subscriber_pid}, _from, state) do
     ref = make_ref()
     filter = Keyword.get(opts, :filter, [])
 
@@ -246,8 +238,8 @@ defmodule Raxol.Core.Events.EventManager do
     {:reply, {:ok, ref}, state}
   end
 
-  @impl GenServer
-  def handle_call({:unsubscribe, ref}, _from, state) do
+  @impl true
+  def handle_manager_call({:unsubscribe, ref}, _from, state) do
     # Remove all subscriptions with this ref
     match_spec = [
       {
@@ -261,7 +253,7 @@ defmodule Raxol.Core.Events.EventManager do
     {:reply, :ok, state}
   end
 
-  def handle_call(:get_handlers, _from, state) do
+  def handle_manager_call(:get_handlers, _from, state) do
     # Convert ETS table entries to a map grouped by event type
     handlers_list = :ets.tab2list(state.handlers)
 
@@ -286,8 +278,8 @@ defmodule Raxol.Core.Events.EventManager do
     {:reply, handlers_map, state}
   end
 
-  @impl GenServer
-  def handle_cast({:notify, event_type, event_data}, state) do
+  @impl true
+  def handle_manager_cast({:notify, event_type, event_data}, state) do
     # Dispatch to handlers
     dispatch_to_handlers(state.handlers, event_type, event_data)
 
@@ -297,22 +289,22 @@ defmodule Raxol.Core.Events.EventManager do
     {:noreply, state}
   end
 
-  @impl GenServer
-  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+  @impl true
+  def handle_manager_info({:DOWN, _ref, :process, pid, _reason}, state) do
     # Clean up dead process handlers and subscriptions
     cleanup_dead_process(state, pid)
     {:noreply, state}
   end
 
-  @impl GenServer
-  def handle_info(msg, state) do
-    Logger.debug("EventManager received unexpected message: #{inspect(msg)}")
+  @impl true
+  def handle_manager_info(msg, state) do
+    Raxol.Core.Runtime.Log.debug("EventManager received unexpected message: #{inspect(msg)}")
     {:noreply, state}
   end
 
   @impl GenServer
   def terminate(reason, state) do
-    Logger.info("Event Manager terminating: #{inspect(reason)}")
+    Raxol.Core.Runtime.Log.info("Event Manager terminating: #{inspect(reason)}")
     :ets.delete(state.handlers)
     :ets.delete(state.subscriptions)
     :ok
@@ -355,7 +347,7 @@ defmodule Raxol.Core.Events.EventManager do
       apply(target, handler, [event_type, event_data])
     rescue
       error ->
-        Logger.error("Handler #{target}.#{handler} failed: #{inspect(error)}")
+        Raxol.Core.Runtime.Log.error("Handler #{target}.#{handler} failed: #{inspect(error)}")
     end
   end
 

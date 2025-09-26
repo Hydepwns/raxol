@@ -1,27 +1,27 @@
-# Validate our render optimizations work correctly
+# Validate render optimizations
 Logger.configure(level: :error)
 
 alias Raxol.UI.Rendering.{TreeDiffer, DamageTracker}
 
-IO.puts("Validating Rendering Pipeline Optimizations")
-IO.puts("=" <> String.duplicate("=", 50))
+IO.puts("Validating Render Optimizations")
+IO.puts(String.duplicate("=", 40))
 
-# Test 1: Validate damage tracking reduces work
+# Damage tracking validation
 simple_tree = %{type: :view, children: [%{type: :label, attrs: %{text: "Hello"}}]}
 modified_tree = %{simple_tree | children: [%{type: :label, attrs: %{text: "Hello World"}}]}
 
 diff_result = TreeDiffer.diff_trees(simple_tree, modified_tree)
 damage_regions = DamageTracker.compute_damage(diff_result, simple_tree)
 
-IO.puts("\n1. Damage Tracking Validation:")
+IO.puts("\n1. Damage Tracking:")
 IO.puts("  Tree diff result: #{inspect(elem(diff_result, 0))}")
 IO.puts("  Damage regions: #{map_size(damage_regions)}")
-IO.puts("  ✅ Damage tracking working - only changed regions identified")
+IO.puts("  [OK] Damage tracking - changed regions identified")
 
-# Test 2: Performance comparison
-IO.puts("\n2. Performance Validation:")
+# Performance validation
+IO.puts("\n2. Performance:")
 
-# Test performance of our optimized TreeDiffer vs naive approach
+# TreeDiffer performance
 complex_tree = %{
   type: :view,
   children: for i <- 1..100 do
@@ -48,7 +48,7 @@ IO.puts("  Complex diff time: #{Float.round(diff_time / 1000, 2)} ms")
 IO.puts("  Damage computation: #{Float.round(damage_time / 1000, 2)} ms") 
 IO.puts("  Total optimization overhead: #{Float.round((diff_time + damage_time) / 1000, 2)} ms")
 
-# Test 3: Validate memory efficiency  
+# Memory efficiency
 IO.puts("\n3. Memory Efficiency:")
 
 large_damage_map = for i <- 1..1000 do
@@ -64,11 +64,10 @@ IO.puts("  Original damage map: #{original_memory} words")
 IO.puts("  Optimized damage map: #{optimized_memory} words") 
 IO.puts("  Memory efficiency: #{Float.round((1 - optimized_memory/original_memory) * 100, 1)}% reduction")
 
-# Test 4: Validate performance targets from TODO.md
-IO.puts("\n4. Performance Target Validation:")
+# Performance targets
+IO.puts("\n4. Performance Targets:")
 IO.puts("   Target: Render <1ms, Parser <3μs")
 
-# Simple diff should be very fast
 {simple_diff_time, _} = :timer.tc(fn ->
   for _ <- 1..1000 do
     TreeDiffer.diff_trees(simple_tree, modified_tree)
@@ -78,21 +77,20 @@ end)
 avg_diff_time = simple_diff_time / 1000  # μs per operation
 
 if avg_diff_time < 10.0 do
-  IO.puts("  ✅ Diff performance: #{Float.round(avg_diff_time, 2)} μs/op (target: contribute to <1ms render)")
+  IO.puts("  [OK] Diff performance: #{Float.round(avg_diff_time, 2)} μs/op (target: contribute to <1ms render)")
 else
-  IO.puts("  ❌ Diff performance: #{Float.round(avg_diff_time, 2)} μs/op (too slow)")
+  IO.puts("  [FAIL] Diff performance: #{Float.round(avg_diff_time, 2)} μs/op (too slow)")
 end
 
-# Test 5: Validate batching reduces render calls
-IO.puts("\n5. Render Batching Validation:")
+# Render batching
+IO.puts("\n5. Render Batching:")
 
-# Simulate rapid updates that should be batched
+# Rapid updates simulation
 updates = for i <- 1..10 do
   %{simple_tree | children: [%{type: :label, attrs: %{text: "Update #{i}"}}]}
 end
 
 {batch_time, _} = :timer.tc(fn ->
-  # Simulate the batching decision logic
   Enum.reduce(updates, %{}, fn tree, acc_damage ->
     diff = TreeDiffer.diff_trees(simple_tree, tree)
     damage = DamageTracker.compute_damage(diff, simple_tree)
@@ -101,8 +99,8 @@ end
 end)
 
 IO.puts("  Batched 10 updates in: #{Float.round(batch_time / 1000, 2)} ms")
-IO.puts("  ✅ Batching working - multiple updates processed efficiently")
+IO.puts("  [OK] Batching - multiple updates processed efficiently")
 
-IO.puts("\n" <> String.duplicate("=", 50))
-IO.puts("✅ All optimizations validated successfully!")
-IO.puts("🚀 Phase 3: Performance Optimization complete")
+IO.puts("\n" <> String.duplicate("=", 40))
+IO.puts("[OK] All optimizations validated")
+IO.puts("Performance optimization complete")

@@ -956,7 +956,7 @@ defmodule Raxol.Terminal.Emulator do
       max_command_history: if(enable_history, do: 100, else: 0),
       scrollback_buffer: [],
       scrollback_limit: scrollback_limit,
-      output_buffer: [],
+      output_buffer: "",
       current_command_buffer: current_command_buffer,
 
       # Other state
@@ -970,7 +970,10 @@ defmodule Raxol.Terminal.Emulator do
       cursor_blink_rate: 500,
       device_status_reported: false,
       cursor_position_reported: false,
-      last_col_exceeded: false
+      last_col_exceeded: false,
+
+      # Plugin system
+      plugin_manager: Keyword.get(opts, :plugin_manager)
     }
   end
 end

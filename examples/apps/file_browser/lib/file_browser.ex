@@ -699,29 +699,29 @@ defmodule FileBrowser do
   defp get_file_icon(file) do
     case file.type do
       :directory ->
-        "📁"
+        "[DIR]"
 
       :file ->
         case Path.extname(file.name) do
-          ".txt" -> "📄"
-          ".md" -> "📝"
-          ".ex" -> "💎"
-          ".exs" -> "💎"
-          ".js" -> "📜"
-          ".html" -> "🌐"
-          ".css" -> "🎨"
-          ".json" -> "📋"
-          ".png" -> "🖼️"
-          ".jpg" -> "🖼️"
-          ".jpeg" -> "🖼️"
-          ".gif" -> "🖼️"
-          ".mp3" -> "🎵"
-          ".mp4" -> "🎬"
-          ".pdf" -> "📕"
-          ".zip" -> "🗜️"
-          ".tar" -> "🗜️"
-          ".gz" -> "🗜️"
-          _ -> "📄"
+          ".txt" -> "[TXT]"
+          ".md" -> "[MD]"
+          ".ex" -> "[RUBY]"
+          ".exs" -> "[RUBY]"
+          ".js" -> "[JS]"
+          ".html" -> "[WEB]"
+          ".css" -> "[CSS]"
+          ".json" -> "[JSON]"
+          ".png" -> "[IMG]"
+          ".jpg" -> "[IMG]"
+          ".jpeg" -> "[IMG]"
+          ".gif" -> "[IMG]"
+          ".mp3" -> "[AUDIO]"
+          ".mp4" -> "[VIDEO]"
+          ".pdf" -> "[PDF]"
+          ".zip" -> "[COMPRESS]"
+          ".tar" -> "[COMPRESS]"
+          ".gz" -> "[COMPRESS]"
+          _ -> "[TXT]"
         end
     end
   end

@@ -19,10 +19,10 @@ defmodule Examples.MultiFrameworkDemo do
     liveview_chat = create_liveview_chat()
     heex_profile = create_heex_profile()
 
-    IO.puts("✅ Created React counter component")
-    IO.puts("✅ Created Svelte dashboard component")
-    IO.puts("✅ Created LiveView chat component")
-    IO.puts("✅ Created HEEx profile component")
+    IO.puts("[OK] Created React counter component")
+    IO.puts("[OK] Created Svelte dashboard component")
+    IO.puts("[OK] Created LiveView chat component")
+    IO.puts("[OK] Created HEEx profile component")
 
     IO.puts("\n=== Framework Comparison ===")
     show_framework_comparison()

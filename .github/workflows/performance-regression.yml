@@ -87,17 +87,17 @@ jobs:
 
     - name: Run current performance benchmarks
       run: |
-        echo "🚀 Running current performance benchmarks..."
+        echo "[PERF] Running current performance benchmarks..."
         mix run bench/suites/parser/parser_benchmark.exs --json > performance/current/parser.json
         mix run bench/suites/terminal/buffer_benchmark.exs --json > performance/current/buffer.json
         mix run bench/suites/terminal/cursor_benchmark.exs --json > performance/current/cursor.json
-        echo "✅ Current benchmarks complete"
+        echo "[OK] Current benchmarks complete"
 
     - name: Checkout baseline commit
       if: github.event_name == 'pull_request'
       run: |
         BASELINE_REF="${{ github.event.inputs.baseline_ref || 'origin/master' }}"
-        echo "📊 Checking out baseline: $BASELINE_REF"
+        echo "[INFO] Checking out baseline: $BASELINE_REF"
         git fetch origin
         git checkout $BASELINE_REF
         
@@ -108,11 +108,11 @@ jobs:
     - name: Run baseline performance benchmarks
       if: github.event_name == 'pull_request'
       run: |
-        echo "⏱️  Running baseline performance benchmarks..."
+        echo "[BENCH] Running baseline performance benchmarks..."
         mix run bench/suites/parser/parser_benchmark.exs --json > performance/baselines/parser.json
         mix run bench/suites/terminal/buffer_benchmark.exs --json > performance/baselines/buffer.json  
         mix run bench/suites/terminal/cursor_benchmark.exs --json > performance/baselines/cursor.json
-        echo "✅ Baseline benchmarks complete"
+        echo "[OK] Baseline benchmarks complete"
 
     - name: Return to current branch
       if: github.event_name == 'pull_request'
@@ -134,7 +134,7 @@ jobs:
 
     - name: Generate performance regression report
       run: |
-        echo "📈 Generating performance regression report..."
+        echo "[REPORT] Generating performance regression report..."
         
         # Create analysis script
         cat > analyze_performance.exs << 'EOF'
@@ -170,12 +170,12 @@ jobs:
           end
           
           defp compare_benchmarks(baseline, current, module_name) when baseline == %{} do
-            IO.puts("⚠️  No baseline data for #{module_name}, skipping comparison")
+            IO.puts("[WARN] No baseline data for #{module_name}, skipping comparison")
             %{status: :no_baseline, regressions: [], improvements: []}
           end
           
           defp compare_benchmarks(baseline, current, module_name) do
-            IO.puts("🔍 Analyzing #{module_name} performance...")
+            IO.puts("[ANALYSIS] Analyzing #{module_name} performance...")
             
             regressions = []
             improvements = []
@@ -257,23 +257,23 @@ jobs:
           end
           
           defp generate_report(results) do
-            IO.puts("\n📊 Performance Regression Report")
+            IO.puts("\n[REPORT] Performance Regression Report")
             IO.puts("================================")
             
             total_regressions = count_total(results, :regressions)
             total_improvements = count_total(results, :improvements)
             
             IO.puts("Summary:")
-            IO.puts("  🔴 Regressions: #{total_regressions}")
-            IO.puts("  🟢 Improvements: #{total_improvements}")
+            IO.puts("  [REGR] Regressions: #{total_regressions}")
+            IO.puts("  [IMPR] Improvements: #{total_improvements}")
             
             for {module, result} <- results do
               IO.puts("\n#{String.capitalize(Atom.to_string(module))} Module:")
               
               case result.regressions do
-                [] -> IO.puts("  ✅ No regressions detected")
+                [] -> IO.puts("  [OK] No regressions detected")
                 regressions ->
-                  IO.puts("  🔴 #{length(regressions)} regression(s):")
+                  IO.puts("  [REGR] #{length(regressions)} regression(s):")
                   for reg <- regressions do
                     IO.puts("    - #{reg.metric}: #{Float.round(reg.change_percent, 2)}% slower")
                   end
@@ -282,7 +282,7 @@ jobs:
               case result.improvements do
                 [] -> nil
                 improvements ->
-                  IO.puts("  🟢 #{length(improvements)} improvement(s):")
+                  IO.puts("  [IMPR] #{length(improvements)} improvement(s):")
                   for imp <- improvements do
                     IO.puts("    - #{imp.metric}: #{abs(Float.round(imp.change_percent, 2))}% faster")
                   end
@@ -300,7 +300,7 @@ jobs:
             }, pretty: true)
             
             File.write!("performance/reports/regression_report.json", report_content)
-            IO.puts("\n📝 Detailed report saved to performance/reports/regression_report.json")
+            IO.puts("\nDetailed report saved to performance/reports/regression_report.json")
           end
           
           defp count_total(results, key) do
@@ -348,7 +348,7 @@ jobs:
         script: |
           const fs = require('fs');
           
-          let reportContent = "## 📊 Performance Regression Test Results\n\n";
+          let reportContent = "## Performance Regression Test Results\n\n";
           
           try {
             if (fs.existsSync('performance/reports/regression_report.json')) {
@@ -376,14 +376,14 @@ jobs:
                 }
                 
                 if (results.regressions.length === 0 && results.improvements.length === 0) {
-                  reportContent += `✅ No significant changes\n`;
+                  reportContent += `[PASS] No significant changes\n`;
                 }
                 
                 reportContent += `\n`;
               }
               
               if (report.summary.total_regressions > 0) {
-                reportContent += `\n⚠️ **Performance regressions detected!** Please review the changes.\n`;
+                reportContent += `\n[WARN] Performance regressions detected. Review required.\n`;
                 reportContent += `\nPerformance targets (from TODO.md):\n`;
                 reportContent += `- Parser: <3μs average\n`;
                 reportContent += `- Render: <1ms average\n`;  
@@ -391,10 +391,10 @@ jobs:
               }
               
             } else {
-              reportContent += "❌ Could not generate performance report. Check workflow logs.\n";
+              reportContent += "[ERROR] Could not generate performance report. Check workflow logs.\n";
             }
           } catch (error) {
-            reportContent += `❌ Error reading performance report: ${error.message}\n`;
+            reportContent += `[ERROR] Error reading performance report: ${error.message}\n`;
           }
           
           // Find existing comment
@@ -451,10 +451,10 @@ jobs:
       run: |
         mkdir -p benchmarks/weekly
         
-        echo "📊 Running comprehensive weekly benchmarks..."
+        echo "Running comprehensive weekly benchmarks..."
         mix run bench/suites/core/performance_summary.exs --json > benchmarks/weekly/$(date +%Y-%m-%d).json
         
-        echo "✅ Weekly benchmarks completed"
+        echo "Weekly benchmarks completed"
 
     - name: Upload weekly benchmarks
       uses: actions/upload-artifact@v4

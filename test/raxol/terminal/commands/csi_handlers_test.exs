@@ -429,11 +429,11 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
 
     test "handles line clearing sequences" do
       emulator = new_emulator()
-      state = CSIHandler.handle_sequence(emulator, [?K])
+      {:ok, state} = CSIHandler.handle_sequence(emulator, [?K])
       assert is_map(state)
-      state = CSIHandler.handle_sequence(state, [?1, ?K])
+      {:ok, state} = CSIHandler.handle_sequence(state, [?1, ?K])
       assert is_map(state)
-      state = CSIHandler.handle_sequence(state, [?2, ?K])
+      {:ok, state} = CSIHandler.handle_sequence(state, [?2, ?K])
       assert is_map(state)
     end
 
@@ -771,7 +771,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
           }
       }
 
-      result = CSIHandler.handle_cursor_column(emulator, 5)
+      {:ok, result} = CSIHandler.handle_cursor_column(emulator, 5)
       # The function converts 1-indexed to 0-indexed, so 5 becomes 4
       assert result.cursor.col == 4
     end
@@ -796,8 +796,10 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
           emu -> emu
         end
 
-      assert emulator_result.cursor.col == 5
-      assert emulator_result.cursor.row == 15
+      # handle_cursor_position takes (emulator, row, col) with 1-based coords
+      # so row=5 becomes 4 (0-based), col=15 becomes 14 (0-based)
+      assert emulator_result.cursor.row == 4  # 5-1 = 4 (0-based)
+      assert emulator_result.cursor.col == 14 # 15-1 = 14 (0-based)
     end
 
     test "clamps cursor to screen boundaries", %{emulator: emulator} do
@@ -860,7 +862,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlerTest do
           }
       }
 
-      result = CSIHandler.handle_cursor_up(emulator, 0)
+      {:ok, result} = CSIHandler.handle_cursor_up(emulator, 0)
       assert result.cursor.row == 10
     end
   end

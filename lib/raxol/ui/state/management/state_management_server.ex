@@ -16,17 +16,11 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
   - Automatic cleanup on process termination
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Client API
 
-  @doc """
-  Starts the UI State Management server.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Returns a child specification for this server.
@@ -189,8 +183,8 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
 
   # Server Callbacks
 
-  @impl true
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     state = %{
       # Store state
       store_data: Keyword.get(opts, :initial_state, %{}),

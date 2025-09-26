@@ -27,16 +27,16 @@ pg_running =
 
     case status do
       0 ->
-        IO.puts("✅ PostgreSQL is running: #{String.trim(output)}")
+        IO.puts("[OK] PostgreSQL is running: #{String.trim(output)}")
         true
       _ ->
-        IO.puts("❌ PostgreSQL is not running: #{String.trim(output)}")
+        IO.puts("[FAIL] PostgreSQL is not running: #{String.trim(output)}")
         IO.puts("   Try starting PostgreSQL with: brew services start postgresql")
         false
     end
   rescue
     e ->
-      IO.puts("❌ Could not check PostgreSQL status: #{inspect(e)}")
+      IO.puts("[FAIL] Could not check PostgreSQL status: #{inspect(e)}")
       false
   end
 
@@ -58,16 +58,16 @@ if pg_running do
       System.delete_env("PGPASSWORD")
 
       if status == 0 && String.contains?(output, "(1 row)") do
-        IO.puts("✅ Database '#{db_name}' exists")
+        IO.puts("[OK] Database '#{db_name}' exists")
         true
       else
-        IO.puts("❌ Database '#{db_name}' does not exist")
+        IO.puts("[FAIL] Database '#{db_name}' does not exist")
         IO.puts("   Run: scripts/setup_db.sh to create it")
         false
       end
     rescue
       e ->
-        IO.puts("❌ Error checking database existence: #{inspect(e)}")
+        IO.puts("[FAIL] Error checking database existence: #{inspect(e)}")
         false
     end
 
@@ -94,29 +94,29 @@ if pg_running do
           case Postgrex.query(conn, "SELECT version();", []) do
             {:ok, result} ->
               version = result.rows |> List.first() |> List.first()
-              IO.puts("✅ Successfully connected to database")
+              IO.puts("[OK] Successfully connected to database")
               IO.puts("PostgreSQL version: #{version}")
 
               # Check schema_migrations table
               case Postgrex.query(conn, "SELECT count(*) FROM schema_migrations;", []) do
                 {:ok, result} ->
                   count = result.rows |> List.first() |> List.first()
-                  IO.puts("✅ Found #{count} completed migrations")
+                  IO.puts("[OK] Found #{count} completed migrations")
 
                 {:error, error} ->
-                  IO.puts("❌ Could not check migrations: #{inspect(error)}")
+                  IO.puts("[FAIL] Could not check migrations: #{inspect(error)}")
                   IO.puts("   Run: mix ecto.migrate to set up the database schema")
               end
 
             {:error, error} ->
-              IO.puts("❌ Query failed: #{inspect(error)}")
+              IO.puts("[FAIL] Query failed: #{inspect(error)}")
           end
 
           # Close the connection
           Process.exit(conn, :normal)
 
         {:error, error} ->
-          IO.puts("❌ Connection failed: #{inspect(error)}")
+          IO.puts("[FAIL] Connection failed: #{inspect(error)}")
 
           # Safely inspect error details without matching on Postgrex.Error struct
           error_map = inspect(error)
@@ -135,7 +135,7 @@ if pg_running do
           end
       end
     rescue
-      e -> IO.puts("❌ Postgrex error: #{inspect(e)}")
+      e -> IO.puts("[FAIL] Postgrex error: #{inspect(e)}")
     end
   end
 end

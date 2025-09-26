@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.Split.ManagerTest do
   use ExUnit.Case, async: true
-  alias Raxol.Terminal.Split.Manager
+  alias Raxol.Terminal.Split.SplitManager, as: Manager
 
   setup do
     {:ok, pid} = Manager.start_link()

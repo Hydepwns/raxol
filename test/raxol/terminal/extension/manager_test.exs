@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Extension.ManagerTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Terminal.Extension.Manager
+  alias Raxol.Terminal.Extension.ExtensionManager, as: Manager
 
   setup do
     manager = Manager.new()

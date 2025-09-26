@@ -56,11 +56,11 @@ defmodule CleanupBackups do
     results = Enum.map(files, fn file ->
       try do
         File.rm!(file)
-        IO.puts("✓ Deleted: #{file}")
+        IO.puts("[OK] Deleted: #{file}")
         {:ok, file}
       rescue
         e ->
-          IO.puts("✗ Failed to delete #{file}: #{inspect(e)}")
+          IO.puts("[FAIL] Failed to delete #{file}: #{inspect(e)}")
           {:error, file, e}
       end
     end)
@@ -87,10 +87,10 @@ if System.get_env("AUTO_CONFIRM") == "true" do
   
   Enum.each(backup_files, fn file ->
     File.rm!(file)
-    IO.puts("✓ Deleted: #{file}")
+    IO.puts("[OK] Deleted: #{file}")
   end)
   
-  IO.puts("\n✓ All #{length(backup_files)} backup files deleted")
+  IO.puts("\n[OK] All #{length(backup_files)} backup files deleted")
 else
   CleanupBackups.run()
 end

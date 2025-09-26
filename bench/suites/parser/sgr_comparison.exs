@@ -103,7 +103,7 @@ for {name, codes} <- test_cases do
   original = SGRProcessor.process_sgr_codes(codes, style)
   optimized = SGRProcessorOptimized.process_sgr_codes(codes, style)
   match = original == optimized
-  IO.puts("  #{String.pad_trailing(name, 25)}: #{if match, do: "✓", else: "✗"}")
+  IO.puts("  #{String.pad_trailing(name, 25)}: #{if match, do: "[OK]", else: "[FAIL]"}")
 
   if not match do
     IO.puts("    Original:  #{inspect(original)}")

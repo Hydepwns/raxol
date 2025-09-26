@@ -21,7 +21,7 @@ defmodule Raxol.Benchmark.MemoryDSL do
       assert_memory_sustained :large_buffer, less_than: 30_000_000  # 30MB
       assert_gc_pressure :large_buffer, less_than: 10  # Max 10 GC collections
       assert_memory_efficiency :large_buffer, greater_than: 0.7  # 70% efficiency
-      assert_no_memory_regression baseline: "v1.4.0"
+      assert_no_memory_regression baseline: "v1.5.4"
     end
   """
 

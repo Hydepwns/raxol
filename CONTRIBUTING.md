@@ -1,6 +1,6 @@
 # Contributing to Raxol
 
-Thank you for your interest in contributing to Raxol! We welcome contributions from the community and are grateful for any help you can provide.
+Contributions welcome. Guidelines below.
 
 ## Table of Contents
 - [Getting Started](#getting-started)
@@ -14,16 +14,9 @@ Thank you for your interest in contributing to Raxol! We welcome contributions f
 
 ## Getting Started
 
-1. **Fork the repository** on GitHub
-2. **Clone your fork** locally:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/raxol.git
-   cd raxol
-   ```
-3. **Add upstream remote**:
-   ```bash
-   git remote add upstream https://github.com/Hydepwns/raxol.git
-   ```
+1. Fork repository
+2. Clone locally: `git clone https://github.com/YOUR_USERNAME/raxol.git`
+3. Add upstream: `git remote add upstream https://github.com/Hydepwns/raxol.git`
 
 ## Development Setup
 
@@ -52,72 +45,50 @@ mix raxol.tutorial
 ```
 
 ### Development Tools
-- **Formatter**: Run `mix format` before committing
-- **Dialyzer**: Run `mix dialyzer` for static analysis
-- **Documentation**: Run `mix docs` to generate documentation
-- **Coverage**: Run `mix test --cover` for test coverage
+- Format: `mix format`
+- Analysis: `mix dialyzer`
+- Docs: `mix docs`
+- Coverage: `mix test --cover`
 
 ## Making Contributions
 
 ### Types of Contributions
 
 #### Bug Fixes
-- Check existing issues for duplicates
-- Create a new issue if none exists
-- Reference the issue in your PR
+- Check for duplicate issues
+- Create new issue if needed
+- Reference issue in PR
 
 #### Features
-- Discuss major features in an issue first
-- Break large features into smaller PRs
-- Update documentation and tests
+- Discuss in issue first
+- Break into smaller PRs
+- Update docs and tests
 
 #### Documentation
-- Fix typos and clarify existing docs
+- Fix typos, clarify content
 - Add examples and guides
-- Improve API documentation
+- Improve API docs
 
 #### Tests
-- Add tests for uncovered code
-- Improve test reliability
+- Cover new code
+- Improve reliability
 - Add property-based tests
 
 ### Development Workflow
 
-1. **Create a feature branch**:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make your changes**:
-   - Write clean, idiomatic Elixir code
-   - Follow existing patterns and conventions
-   - Add tests for new functionality
-
-3. **Test your changes**:
-   ```bash
-   # Run all tests
-   mix test
-   
-   # Run specific test file
-   mix test test/path/to/test.exs
-   
-   # Run with coverage
-   mix test --cover
-   ```
-
-4. **Format your code**:
-   ```bash
-   mix format
-   ```
+1. Create branch: `git checkout -b feature/name`
+2. Make changes: clean Elixir code, follow patterns, add tests
+3. Test: `mix test` or `mix test --cover`
+4. Format: `mix format`
 
 ## Code Style
 
 ### Elixir Guidelines
-- Follow the [Elixir Style Guide](https://github.com/christopheradams/elixir_style_guide)
-- Use descriptive variable and function names
-- Keep functions small and focused
-- Document public functions with `@doc`
-- Add type specs with `@spec`
+- Follow [Elixir Style Guide](https://github.com/christopheradams/elixir_style_guide)
+- Descriptive names
+- Small, focused functions
+- Document with `@doc`
+- Add `@spec` type specs
 
 ### Project Conventions
 - Prefix private functions with underscore for internal modules
@@ -165,11 +136,11 @@ end
 ## Testing
 
 ### Test Guidelines
-- Write tests for all new functionality
-- Maintain existing test coverage (>95%)
-- Use descriptive test names
-- Test edge cases and error conditions
-- Mock external dependencies appropriately
+- Test new functionality
+- Maintain >95% coverage
+- Descriptive test names
+- Test edge cases
+- Mock external dependencies
 
 ### Running Tests
 ```bash
@@ -231,23 +202,14 @@ open doc/index.html
 
 ### Pull Request Process
 
-1. **Update your fork**:
-   ```bash
-   git fetch upstream
-   git rebase upstream/master
-   ```
-
-2. **Push your changes**:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-3. **Create a Pull Request**:
-   - Use a clear, descriptive title
-   - Reference any related issues
-   - Describe what changes you made and why
-   - Include screenshots for UI changes
-   - Ensure all CI checks pass
+1. Update: `git fetch upstream && git rebase upstream/master`
+2. Push: `git push origin feature/name`
+3. Create PR:
+   - Clear title
+   - Reference issues
+   - Describe changes
+   - Include screenshots for UI
+   - Ensure CI passes
 
 ### PR Title Format
 ```
@@ -262,35 +224,35 @@ Fixes #123
 Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 ### Review Process
-- PRs require at least one review
-- Address review feedback promptly
-- Keep PRs focused and reasonable in size
-- Be patient and respectful
+- Requires one review
+- Address feedback promptly
+- Keep PRs focused
+- Be respectful
 
 ## Community
 
-### Communication Channels
-- **GitHub Issues**: Bug reports and feature requests
-- **GitHub Discussions**: General questions and ideas
-- **Pull Requests**: Code contributions and reviews
+### Communication
+- Issues: bugs, features
+- Discussions: questions, ideas
+- PRs: code contributions
 
 ### Code of Conduct
-- Be respectful and inclusive
-- Welcome newcomers and help them get started
-- Focus on constructive criticism
+- Respectful and inclusive
+- Welcome newcomers
+- Constructive feedback
 - Assume good intentions
 
 ### Getting Help
-- Check existing documentation first
-- Search issues for similar problems
-- Ask clear, specific questions
-- Provide context and examples
+- Check documentation
+- Search existing issues
+- Ask specific questions
+- Provide context
 
 ## Recognition
 
-Contributors will be recognized in:
-- The project README
+Contributors recognized in:
+- Project README
 - Release notes
-- Special thanks in documentation
+- Documentation
 
-Thank you for contributing to Raxol! Your efforts help make this project better for everyone.
+Thank you for contributing to Raxol.

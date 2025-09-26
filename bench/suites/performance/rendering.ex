@@ -37,7 +37,7 @@ defmodule Raxol.Benchmarks.Performance.Rendering do
       renders_per_second: calculate_renders_per_second(full_screen_time)
     }
 
-    IO.puts("✓ Rendering benchmarks complete")
+    IO.puts("[OK] Rendering benchmarks complete")
     results
   end
 

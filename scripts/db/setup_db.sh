@@ -45,9 +45,9 @@ PGPASSWORD=$DB_PASS createdb -h $DB_HOST -U $DB_USER $DB_NAME -O $DB_USER 2>/dev
 # Check if we can connect to the database
 echo "Verifying database connection..."
 if PGPASSWORD=$DB_PASS psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "SELECT 1" > /dev/null 2>&1; then
-  echo "✅ Database connection verified"
+  echo "[+] Database connection verified"
 else
-  echo "❌ Could not connect to database. Please check your credentials and ensure PostgreSQL is running properly."
+  echo "[!] Could not connect to database. Please check your credentials and ensure PostgreSQL is running properly."
   exit 1
 fi
 

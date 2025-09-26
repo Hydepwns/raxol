@@ -35,6 +35,7 @@ defmodule Raxol.Application do
   use Application
   require Logger
   require Raxol.Core.Runtime.Log
+  alias Raxol.Core.Utils.TimerManager
 
   @type feature_flag :: atom()
   @type start_mode :: :full | :minimal | :custom
@@ -420,7 +421,7 @@ defmodule Raxol.Application do
 
   defp schedule_health_checks(_mode) do
     if feature_enabled?(:health_checks) do
-      Process.send_after(self(), :perform_health_check, :timer.seconds(30))
+      TimerManager.send_after(:perform_health_check, 30_000)
     end
   end
 

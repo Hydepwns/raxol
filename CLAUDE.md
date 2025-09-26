@@ -3,12 +3,20 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Status
-**Current Version**: v1.4.0 → v1.4.1 (Ready for Release)  
-**Compilation Status**: Zero warnings achieved (fully clean with `--warnings-as-errors`)  
-**Test Coverage**: 98.7% (target: 100%)  
-**Performance**: Parser 3.3μs/op | Memory <2.8MB | Render <1ms
+**Current Version**: v1.5.4 (Released) → v1.5.5 (Next)
+**Compilation Status**: Zero warnings achieved (fully clean with `--warnings-as-errors`)
+**Test Coverage**: 99.8% (1632/1635 tests passing)
+**Performance**: Parser 0.17-1.25μs | Render 265-283μs | Memory <2.8MB
 
-## New in v1.4.1
+## New in v1.5.4
+
+### Code Consolidation and BaseManager Pattern
+- Advanced BaseManager pattern adoption across 22+ modules
+- TimerManager integration for centralized timer management
+- Zero compilation warnings achieved with strict error checking
+- Enhanced test coverage to 99.8% (1632/1635 passing)
+
+### Previous Features (v1.4.1)
 
 ### Automated Type Spec Generation
 ```bash

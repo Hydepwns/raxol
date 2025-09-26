@@ -6,7 +6,8 @@ defmodule Raxol.Audit.AnalyzerTest do
   setup do
     config = %{
       enabled: true,
-      alert_on_critical: false
+      alert_on_critical: false,
+      name: Analyzer
     }
 
     {:ok, _pid} = Analyzer.start_link(config)

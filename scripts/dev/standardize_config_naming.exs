@@ -34,11 +34,11 @@ defmodule StandardizeConfig do
     
     # Write updated config
     File.write!(config_file, updated_config)
-    IO.puts("  ✓ Merged Configuration fields into Config")
+    IO.puts("  [OK] Merged Configuration fields into Config")
     
     # Delete Configuration file
     File.rm!(configuration_file)
-    IO.puts("  ✓ Removed Terminal.Configuration module")
+    IO.puts("  [OK] Removed Terminal.Configuration module")
   end
   
   defp extract_additional_fields(configuration_content) do

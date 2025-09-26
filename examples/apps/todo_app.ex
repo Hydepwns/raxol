@@ -48,7 +48,7 @@ defmodule Raxol.Examples.TodoApp do
       <Box padding={2}>
         <!-- Header -->
         <Stack direction="horizontal" justify="between" marginBottom={2}>
-          <Heading level={1}>📝 Todo List</Heading>
+          <Heading level={1}>[TODO] Todo List</Heading>
           <Text color="gray">
             <%= stats.active %> active, <%= stats.completed %> completed
           </Text>
@@ -60,7 +60,7 @@ defmodule Raxol.Examples.TodoApp do
             value={@search}
             onChange="update_search"
             placeholder="Search todos... (Ctrl+F or /)"
-            leftIcon="🔍"
+            leftIcon="[SEARCH]"
           />
         </Box>
         
@@ -118,7 +118,7 @@ defmodule Raxol.Examples.TodoApp do
         <Stack direction="horizontal" justify="between" marginTop={2}>
           <ButtonGroup size="small">
             <Button onClick="mark_all_complete">
-              ✓ Mark All Complete
+              [OK] Mark All Complete
             </Button>
             <Button onClick="clear_completed" variant="danger">
               Clear Completed
@@ -344,7 +344,7 @@ defmodule Raxol.Examples.TodoApp do
 
   defp empty_message(:all, ""), do: "No todos yet. Add one above!"
   defp empty_message(:all, _search), do: "No todos match your search."
-  defp empty_message(:active, _), do: "No active todos. Nice work!"
+  defp empty_message(:active, _), do: "No active todos."
   defp empty_message(:completed, _), do: "No completed todos yet."
 
   defp generate_id do
@@ -455,7 +455,7 @@ defmodule Raxol.Examples.TodoApp.TodoItem do
               params={%{id: @todo.id}}
               title="Edit (double-click)"
             >
-              ✏️
+              [EDIT]
             </Button>
             <Button
               variant="ghost"
@@ -464,7 +464,7 @@ defmodule Raxol.Examples.TodoApp.TodoItem do
               title="Delete"
               color="red"
             >
-              🗑️
+              [DEL]
             </Button>
           </ButtonGroup>
         <% end %>

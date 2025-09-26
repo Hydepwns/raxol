@@ -35,9 +35,9 @@ Enum.each(files_to_fix, fn file ->
 
     if new_content != content do
       File.write!(file, new_content)
-      IO.puts("✅ Fixed module name in #{file}")
+      IO.puts("[OK] Fixed module name in #{file}")
     end
   end
 end)
 
-IO.puts("✅ Module name fixes complete!")
+IO.puts("[OK] Module name fixes complete!")

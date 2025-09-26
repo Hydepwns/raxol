@@ -1,6 +1,6 @@
-# Raxol Documentation Hub
+# Documentation
 
-Central navigation for all Raxol documentation.
+Navigation for Raxol documentation.
 
 ## Quick Navigation
 
@@ -28,12 +28,12 @@ Central navigation for all Raxol documentation.
 - [Benchmarks](bench/)
 
 ### Tools & Automation
-- **Scripts** - Development scripts in `scripts/` directory
-- **CI/CD Workflows** - GitHub Actions in `.github/workflows/`
+- Scripts: `scripts/` directory
+- CI/CD: `.github/workflows/`
 
-### Standards & Guidelines
-- [**Naming Conventions**](development/NAMING_CONVENTIONS.md) - Code organization
-- [**Duplicate Prevention**](development/duplicate_filename_prevention.md) - File naming
+### Standards
+- [Naming Conventions](development/NAMING_CONVENTIONS.md)
+- [Duplicate Prevention](development/duplicate_filename_prevention.md)
 
 ## Quick Links
 
@@ -75,14 +75,13 @@ mix run bench/scripts/ansi_parser_bench.exs
 mix docs
 ```
 
-## Documentation Updates
+## Updates
 
-To update documentation:
-1. Follow patterns in existing docs
-2. Update this index if adding new sections
+1. Follow existing patterns
+2. Update index for new sections
 3. Keep examples executable
-4. Run `mix docs` to verify generation
+4. Verify with `mix docs`
 
 ---
 
-For questions or improvements, please [open an issue](https://github.com/Hydepwns/raxol/issues).
+Questions: [open an issue](https://github.com/Hydepwns/raxol/issues)

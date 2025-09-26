@@ -264,18 +264,19 @@ defmodule Raxol.Core.StateManager do
         set_state(key, new_value, opts)
       :process ->
         # For process-based, update the managed state
-        if is_list(key) do
-          state_key = List.first(key, :default)
-          with {:ok, state} <- get_managed_process_state(state_key, opts) do
-            new_state = update_nested(state, key, update_fn)
-            set_managed_process_state(state_key, new_state, opts)
-          end
-        else
-          # Simple key update
-          with {:ok, current} <- get_managed_process_state(key, opts) do
-            new_value = update_fn.(current)
-            set_managed_process_state(key, new_value, opts)
-          end
+        case is_list(key) do
+          true ->
+            state_key = List.first(key, :default)
+            with {:ok, state} <- get_managed_process_state(state_key, opts) do
+              new_state = update_nested(state, key, update_fn)
+              set_managed_process_state(state_key, new_state, opts)
+            end
+          false ->
+            # Simple key update
+            with {:ok, current} <- get_managed_process_state(key, opts) do
+              new_value = update_fn.(current)
+              set_managed_process_state(key, new_value, opts)
+            end
         end
       _ -> {:error, :strategy_not_supported}
     end

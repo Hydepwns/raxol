@@ -18,9 +18,9 @@ echo "Build complete. Output saved to tmp/build_and_compile.log"
 echo "Checking for compilation warnings..."
 mix compile --warnings-as-errors 2>&1 | tee tmp/warnings_check.log
 if [ $? -eq 0 ]; then
-    echo "✅ Zero warnings - compilation check passed!"
+    echo "[+] Zero warnings - compilation check passed!"
 else
-    echo "❌ Compilation warnings detected - see tmp/warnings_check.log"
+    echo "[!] Compilation warnings detected - see tmp/warnings_check.log"
     exit 1
 fi
 

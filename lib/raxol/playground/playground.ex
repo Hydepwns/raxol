@@ -233,7 +233,7 @@ defmodule Raxol.Playground do
     IO.puts("""
 
     #{IO.ANSI.cyan()}╔════════════════════════════════════════════════════╗
-    ║        Raxol Component Playground 🎨               ║
+    ║        Raxol Component Playground [STYLE]               ║
     ╚════════════════════════════════════════════════════╝#{IO.ANSI.reset()}
 
     Welcome to the interactive component showcase!
@@ -265,7 +265,7 @@ defmodule Raxol.Playground do
 
     case parse_command(input) do
       {:exit} ->
-        IO.puts("Goodbye! Thanks for using Raxol Playground! 🎨")
+        IO.puts("Goodbye! [STYLE]")
         :ok
 
       {:error, message} ->
@@ -334,7 +334,7 @@ defmodule Raxol.Playground do
     case switch_theme(String.to_atom(theme_name)) do
       {:ok, preview} ->
         IO.puts(
-          "#{IO.ANSI.green()}✓ Theme switched to: #{theme_name}#{IO.ANSI.reset()}"
+          "#{IO.ANSI.green()}[OK] Theme switched to: #{theme_name}#{IO.ANSI.reset()}"
         )
 
         display_preview(preview)
@@ -612,7 +612,7 @@ defmodule Raxol.Playground do
         case update_props(%{String.to_atom(prop) => parsed_value}) do
           {:ok, preview} ->
             IO.puts(
-              "#{IO.ANSI.green()}✓ Updated #{prop} = #{inspect(parsed_value)}#{IO.ANSI.reset()}"
+              "#{IO.ANSI.green()}[OK] Updated #{prop} = #{inspect(parsed_value)}#{IO.ANSI.reset()}"
             )
 
             display_preview(preview)

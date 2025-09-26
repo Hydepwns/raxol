@@ -392,13 +392,13 @@ jobs:
           end
 
           defp generate_report(results) do
-            IO.puts("\n📊 Memory Regression Report - #{results.scenario}")
+            IO.puts("\n[REPORT] Memory Regression Report - #{results.scenario}")
             IO.puts("=================================================")
 
             # Performance gates
             IO.puts("\n🚪 Memory Performance Gates:")
             for gate <- results.memory_gates do
-              status_icon = if gate.status == :passed, do: "✅", else: "❌"
+              status_icon = if gate.status == :passed, do: "[PASS]", else: "[FAIL]"
               IO.puts("  #{status_icon} #{gate.gate}: #{format_bytes(gate.value)} (limit: #{format_bytes(gate.limit)})")
             end
 
@@ -406,12 +406,12 @@ jobs:
             analysis_regressions = length(results.analysis_comparison.regressions)
             analysis_improvements = length(results.analysis_comparison.improvements)
 
-            IO.puts("\n📈 Analysis Comparison:")
+            IO.puts("\n[ANALYSIS] Analysis Comparison:")
             IO.puts("  🔴 Regressions: #{analysis_regressions}")
             IO.puts("  🟢 Improvements: #{analysis_improvements}")
 
             for reg <- results.analysis_comparison.regressions do
-              severity_icon = if reg.severity == :critical, do: "🚨", else: "⚠️"
+              severity_icon = if reg.severity == :critical, do: "[CRITICAL]", else: "[WARN]"
               IO.puts("    #{severity_icon} #{reg.metric}: +#{format_bytes(reg.change_absolute)} (+#{Float.round(reg.change_percent, 2)}%)")
             end
 
@@ -423,12 +423,12 @@ jobs:
             benchmark_regressions = length(results.benchmark_comparison.regressions)
             benchmark_improvements = length(results.benchmark_comparison.improvements)
 
-            IO.puts("\n⚡ Benchmark Comparison:")
+            IO.puts("\nBenchmark Comparison:")
             IO.puts("  🔴 Regressions: #{benchmark_regressions}")
             IO.puts("  🟢 Improvements: #{benchmark_improvements}")
 
             for reg <- results.benchmark_comparison.regressions do
-              severity_icon = if reg.severity == :critical, do: "🚨", else: "⚠️"
+              severity_icon = if reg.severity == :critical, do: "[CRITICAL]", else: "[WARN]"
               IO.puts("    #{severity_icon} #{reg.metric}: +#{format_bytes(reg.change_absolute)} (+#{Float.round(reg.change_percent, 2)}%)")
             end
 
@@ -439,7 +439,7 @@ jobs:
             # Save detailed report
             report_content = Jason.encode!(results, pretty: true)
             File.write!("memory/reports/#{results.scenario}_regression_report.json", report_content)
-            IO.puts("\n📝 Detailed report saved to memory/reports/#{results.scenario}_regression_report.json")
+            IO.puts("\nDetailed report saved to memory/reports/#{results.scenario}_regression_report.json")
           end
 
           defp format_bytes(bytes) when is_number(bytes) do
@@ -523,15 +523,15 @@ jobs:
               const passedGates = gates.filter(g => g.status === 'passed').length;
               const failedGates = gates.filter(g => g.status === 'failed').length;
 
-              reportContent += `- ✅ Passed: ${passedGates}\n`;
-              reportContent += `- ❌ Failed: ${failedGates}\n\n`;
+              reportContent += `- [PASS] Passed: ${passedGates}\n`;
+              reportContent += `- [FAIL] Failed: ${failedGates}\n\n`;
 
               if (failedGates > 0) {
                 reportContent += `**Failed Gates:**\n`;
                 for (const gate of gates.filter(g => g.status === 'failed')) {
                   const valueFormatted = formatBytes(gate.value);
                   const limitFormatted = formatBytes(gate.limit);
-                  reportContent += `- ❌ ${gate.gate}: ${valueFormatted} (limit: ${limitFormatted})\n`;
+                  reportContent += `- [FAIL] ${gate.gate}: ${valueFormatted} (limit: ${limitFormatted})\n`;
                 }
                 reportContent += `\n`;
               }
@@ -547,7 +547,7 @@ jobs:
               if (analysisRegressions > 0) {
                 for (const reg of report.analysis_comparison.regressions) {
                   const changeFormatted = formatBytes(reg.change_absolute);
-                  const severityIcon = reg.severity === 'critical' ? '🚨' : '⚠️';
+                  const severityIcon = reg.severity === 'critical' ? '[CRITICAL]' : '[WARN]';
                   reportContent += `- ${severityIcon} ${reg.metric}: +${changeFormatted} (+${reg.change_percent.toFixed(2)}%)\n`;
                 }
                 reportContent += `\n`;
@@ -557,14 +557,14 @@ jobs:
               const benchmarkRegressions = report.benchmark_comparison?.regressions?.length || 0;
               const benchmarkImprovements = report.benchmark_comparison?.improvements?.length || 0;
 
-              reportContent += `### ⚡ Benchmark Results\n`;
+              reportContent += `### Benchmark Results\n`;
               reportContent += `- 🔴 Regressions: ${benchmarkRegressions}\n`;
               reportContent += `- 🟢 Improvements: ${benchmarkImprovements}\n\n`;
 
               if (benchmarkRegressions > 0) {
                 for (const reg of report.benchmark_comparison.regressions) {
                   const changeFormatted = formatBytes(reg.change_absolute);
-                  const severityIcon = reg.severity === 'critical' ? '🚨' : '⚠️';
+                  const severityIcon = reg.severity === 'critical' ? '[CRITICAL]' : '[WARN]';
                   reportContent += `- ${severityIcon} ${reg.metric}: +${changeFormatted} (+${reg.change_percent.toFixed(2)}%)\n`;
                 }
                 reportContent += `\n`;
@@ -573,20 +573,20 @@ jobs:
               // Overall Status
               const totalRegressions = analysisRegressions + benchmarkRegressions + failedGates;
               if (totalRegressions > 0) {
-                reportContent += `\n⚠️ **Memory regressions detected for ${{ matrix.scenario }}!** Please review the changes.\n`;
+                reportContent += `\n[WARN] Memory regressions detected for ${{ matrix.scenario }}. Review required.\n`;
                 reportContent += `\n**Memory targets (from TODO.md):**\n`;
                 reportContent += `- Peak memory: <3MB per session\n`;
                 reportContent += `- Sustained memory: <2.5MB per session\n`;
                 reportContent += `- GC pressure: <0.8 score\n`;
               } else {
-                reportContent += `\n✅ **No memory regressions detected for ${{ matrix.scenario }}**\n`;
+                reportContent += `\n[PASS] No memory regressions detected for ${{ matrix.scenario }}\n`;
               }
 
             } else {
-              reportContent += `❌ Could not generate memory report for ${{ matrix.scenario }}. Check workflow logs.\n`;
+              reportContent += `[ERROR] Could not generate memory report for ${{ matrix.scenario }}. Check workflow logs.\n`;
             }
           } catch (error) {
-            reportContent += `❌ Error reading memory report: ${error.message}\n`;
+            reportContent += `[ERROR] Error reading memory report: ${error.message}\n`;
           }
 
           function formatBytes(bytes) {

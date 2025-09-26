@@ -152,9 +152,9 @@ defmodule Raxol.PlatformTestRunner do
 
     # Print result
     case status do
-      :ok -> IO.puts("✅ PASS: #{message}")
-      :warning -> IO.puts("⚠️ WARNING: #{message}")
-      :error -> IO.puts("❌ FAIL: #{message}")
+      :ok -> IO.puts("[OK] PASS: #{message}")
+      :warning -> IO.puts("[WARN] WARNING: #{message}")
+      :error -> IO.puts("[FAIL] FAIL: #{message}")
     end
 
     # Return updated results
@@ -176,15 +176,15 @@ defmodule Raxol.PlatformTestRunner do
     end)
 
     IO.puts("Results:")
-    IO.puts("  ✅ Passed: #{status_counts.ok}")
-    IO.puts("  ⚠️ Warnings: #{status_counts.warning}")
-    IO.puts("  ❌ Failed: #{status_counts.error}")
+    IO.puts("  [OK] Passed: #{status_counts.ok}")
+    IO.puts("  [WARN] Warnings: #{status_counts.warning}")
+    IO.puts("  [FAIL] Failed: #{status_counts.error}")
 
     # Overall status
     if results.success do
-      IO.puts("\n✅ OVERALL: PASS - Platform compatibility verified")
+      IO.puts("\n[OK] OVERALL: PASS - Platform compatibility verified")
     else
-      IO.puts("\n❌ OVERALL: FAIL - Platform compatibility issues detected")
+      IO.puts("\n[FAIL] OVERALL: FAIL - Platform compatibility issues detected")
 
       # List failures
       failures = Enum.filter(results.tests, fn test -> test.status == :error end)
@@ -217,9 +217,9 @@ defmodule Raxol.PlatformTestRunner do
     ============
     #{Enum.map_join(Enum.reverse(results.tests), "\n", fn test ->
       status_icon = case test.status do
-        :ok -> "✓"
+        :ok -> "[OK]"
         :warning -> "!"
-        :error -> "✗"
+        :error -> "[FAIL]"
       end
       "#{status_icon} #{test.name}: #{test.message}"
     end)}

@@ -135,15 +135,20 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
 
   # Private helper functions
 
-  @spec validate_plugin_id(String.t() | integer()) ::
+  @spec validate_plugin_id(String.t() | atom() | integer()) ::
           {:ok, any()} | {:error, any()}
   defp validate_plugin_id(plugin_id) when is_binary(plugin_id) do
     validate_plugin_id_length(String.length(plugin_id), plugin_id)
   end
 
+  defp validate_plugin_id(plugin_id) when is_atom(plugin_id) do
+    # Accept atoms as valid plugin IDs (module names)
+    {:ok, plugin_id}
+  end
+
   @spec validate_plugin_id(any()) :: {:ok, any()} | {:error, any()}
   defp validate_plugin_id(_) do
-    error(:validation, "Plugin ID must be a string")
+    {:error, "Plugin ID must be a string or atom"}
   end
 
   @spec validate_plugin_id_length(any(), String.t() | integer()) ::
@@ -161,7 +166,7 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
   @spec validate_config(map()) :: {:ok, any()} | {:error, any()}
   defp validate_config(config) when is_map(config), do: {:ok, config}
   @spec validate_config(any()) :: {:ok, any()} | {:error, any()}
-  defp validate_config(_), do: error(:validation, "Config must be a map")
+  defp validate_config(_), do: {:error, "Config must be a map"}
 
   @spec check_plugin_not_loaded(String.t() | integer(), map()) :: any()
   defp check_plugin_not_loaded(plugin_id, state) do
@@ -173,7 +178,7 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
 
   @spec do_check_plugin_not_loaded(any(), String.t() | integer()) :: any()
   defp do_check_plugin_not_loaded(true, plugin_id) do
-    error(:validation, "Plugin already loaded: #{plugin_id}")
+    {:error, "Plugin already loaded: #{plugin_id}"}
   end
 
   @spec do_check_plugin_not_loaded(any(), String.t() | integer()) :: any()
@@ -182,17 +187,39 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
   end
 
   @spec do_load_plugin(String.t() | integer(), map(), map()) :: any()
-  defp do_load_plugin(plugin_id, config, state) do
-    # Simulate actual plugin loading
-    case load_plugin_module(plugin_id) do
-      {:ok, module} ->
+  defp do_load_plugin(plugin_module, config, state) when is_atom(plugin_module) do
+    # Call the plugin's init function safely
+    case Raxol.Core.ErrorHandling.safe_call(fn -> plugin_module.init(config) end) do
+      {:ok, {:ok, plugin_state}} ->
+        # Extract plugin metadata from the state
+        plugin_id = Map.get(plugin_state, :name, plugin_module |> to_string())
+
         new_state =
           Map.put(
             state,
             :plugins,
             Map.put(state.plugins, plugin_id, %{
-              module: module,
+              module: plugin_module,
               config: config,
+              state: plugin_state,
+              loaded_at: DateTime.utc_now()
+            })
+          )
+
+        {:ok, new_state}
+
+      {:ok, plugin_state} when is_map(plugin_state) ->
+        # Handle case where init returns state directly without {:ok, state}
+        plugin_id = Map.get(plugin_state, :name, plugin_module |> to_string())
+
+        new_state =
+          Map.put(
+            state,
+            :plugins,
+            Map.put(state.plugins, plugin_id, %{
+              module: plugin_module,
+              config: config,
+              state: plugin_state,
               loaded_at: DateTime.utc_now()
             })
           )
@@ -200,9 +227,21 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
         {:ok, new_state}
 
       {:error, reason} ->
-        error(:runtime, "Failed to load plugin module: #{reason}", %{
-          plugin_id: plugin_id
-        })
+        {:error, "Plugin init crashed: #{inspect(reason)}"}
+
+      {:ok, other} ->
+        {:error, "Plugin init returned invalid response: #{inspect(other)}"}
+    end
+  end
+
+  defp do_load_plugin(plugin_id, config, state) do
+    # Handle string plugin_id by converting to module atom
+    case load_plugin_module(plugin_id) do
+      {:ok, module} ->
+        do_load_plugin(module, config, state)
+
+      {:error, reason} ->
+        {:error, "Failed to load plugin module: #{reason}"}
     end
   end
 

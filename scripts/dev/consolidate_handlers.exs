@@ -45,14 +45,14 @@ defmodule ConsolidateHandlers do
     
     # Write updated main file
     File.write!(main_file, updated_main)
-    IO.puts("  ✓ Updated main WindowHandler with caching functions")
+    IO.puts("  [OK] Updated main WindowHandler with caching functions")
     
     # Delete redundant files
     File.rm!(csi_file)
-    IO.puts("  ✓ Removed CSIHandler.WindowHandlers (wrapper)")
+    IO.puts("  [OK] Removed CSIHandler.WindowHandlers (wrapper)")
     
     File.rm!(cached_file)
-    IO.puts("  ✓ Removed WindowHandlersCached (merged into main)")
+    IO.puts("  [OK] Removed WindowHandlersCached (merged into main)")
     
     # Update references
     update_window_handler_references()
@@ -87,14 +87,14 @@ defmodule ConsolidateHandlers do
     
     # Write updated main file
     File.write!(main_file, updated_main)
-    IO.puts("  ✓ Updated main CursorHandler with merged functions")
+    IO.puts("  [OK] Updated main CursorHandler with merged functions")
     
     # Delete redundant files
     File.rm!(terminal_file)
-    IO.puts("  ✓ Removed Terminal.CursorHandler (merged)")
+    IO.puts("  [OK] Removed Terminal.CursorHandler (merged)")
     
     File.rm!(csi_cursor_file)
-    IO.puts("  ✓ Removed CSIHandler.Cursor (merged)")
+    IO.puts("  [OK] Removed CSIHandler.Cursor (merged)")
     
     # Update references
     update_cursor_handler_references()

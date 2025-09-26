@@ -11,7 +11,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
   """
   @spec insert_lines(map(), integer()) :: map()
   def insert_lines(buffer, count) do
-    insert_lines(buffer, buffer.cursor_y, count)
+    {_x, y} = buffer.cursor_position
+    insert_lines(buffer, y, count)
   end
 
   @spec insert_lines(map(), integer(), integer()) :: map()
@@ -42,38 +43,24 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
   """
   @spec do_insert_lines(map(), integer(), integer(), map()) :: map()
   def do_insert_lines(buffer, y, count, style) do
-    lines = Map.get(buffer, :lines, %{})
-    height = Map.get(buffer, :height, 24)
-    width = Map.get(buffer, :width, 80)
+    alias Raxol.Terminal.ScreenBuffer.DataAdapter
 
-    # Shift existing lines down
-    new_lines =
-      Enum.reduce(0..(height - 1), %{}, fn line_y, acc ->
-        cond do
-          line_y < y ->
-            # Lines before insertion point stay the same
-            Map.put(acc, line_y, Map.get(lines, line_y))
+    DataAdapter.with_lines_format(buffer, fn buffer_with_lines ->
+      lines = Map.get(buffer_with_lines, :lines, %{})
+      height = Map.get(buffer_with_lines, :height, 24)
+      width = Map.get(buffer_with_lines, :width, 80)
 
-          line_y < y + count ->
-            # Insert new empty lines
-            Map.put(acc, line_y, create_empty_line(width, style))
+      # Build new lines using pattern matching
+      new_lines =
+        0..(height - 1)
+        |> Enum.map(fn line_y ->
+          {line_y, build_line_at_position(lines, line_y, y, count, width, style, height)}
+        end)
+        |> Enum.reject(fn {_line_y, line} -> is_nil(line) end)
+        |> Enum.into(%{})
 
-          line_y < height ->
-            # Shift remaining lines down if they fit
-            source_y = line_y - count
-
-            if source_y < height - count do
-              Map.put(acc, line_y, Map.get(lines, source_y))
-            else
-              acc
-            end
-
-          true ->
-            acc
-        end
-      end)
-
-    %{buffer | lines: new_lines}
+      %{buffer_with_lines | lines: new_lines}
+    end)
   end
 
   @doc """
@@ -101,7 +88,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
         cond do
           # Outside scroll region - keep unchanged
           line_y < top or line_y > bottom ->
-            Map.put(acc, line_y, Map.get(lines, line_y))
+            original_line = Map.get(lines, line_y)
+            Map.put(acc, line_y, original_line)
 
           # Before insertion point - keep unchanged
           line_y < y ->
@@ -132,6 +120,36 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
   defp create_empty_line(width, style) do
     Enum.map(0..(width - 1), fn _ -> %{char: " ", style: style} end)
   end
+
+  # Pattern match on line position relative to insertion point
+  defp build_line_at_position(lines, line_y, insert_y, _count, _width, _style, _height)
+       when line_y < insert_y do
+    # Lines before insertion point stay the same
+    Map.get(lines, line_y)
+  end
+
+  defp build_line_at_position(_lines, line_y, insert_y, count, width, style, _height)
+       when line_y >= insert_y and line_y < insert_y + count do
+    # Insert new empty lines
+    create_empty_line(width, style)
+  end
+
+  defp build_line_at_position(lines, line_y, _insert_y, count, _width, _style, height)
+       when line_y < height do
+    # Shift remaining lines down if they fit
+    source_y = line_y - count
+    build_shifted_line(lines, source_y, height - count)
+  end
+
+  defp build_line_at_position(_lines, _line_y, _insert_y, _count, _width, _style, _height) do
+    nil
+  end
+
+  defp build_shifted_line(lines, source_y, max_source) when source_y < max_source do
+    Map.get(lines, source_y)
+  end
+
+  defp build_shifted_line(_lines, _source_y, _max_source), do: nil
 
   defp fill_new_lines(buffer, start_y, count, style) do
     Utils.fill_new_lines(buffer, start_y, count, style)

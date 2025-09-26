@@ -29,14 +29,22 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
   @spec handle_cursor_up(emulator(), cursor_amount()) :: {:ok, emulator()}
   def handle_cursor_up(emulator, amount) do
     try do
-      # Sanitize amount - default to 1 if 0
-      move_amount = max(1, amount)
-
-      # Use CSIHandler.Cursor functions which handle direct row/col fields
-      {:ok, updated_emulator} = Cursor.handle_command(emulator, [move_amount], "A")
-
-      Logger.debug("Cursor moved up by #{move_amount}")
-      {:ok, updated_emulator}
+      # Sanitize amount - if 0, don't move
+      case amount do
+        0 ->
+          # No movement for 0
+          {:ok, emulator}
+        n when n > 0 ->
+          # Use CSIHandler.Cursor functions which handle direct row/col fields
+          {:ok, updated_emulator} = Cursor.handle_command(emulator, [n], "A")
+          Logger.debug("Cursor moved up by #{n}")
+          {:ok, updated_emulator}
+        _ ->
+          # Default to 1 for invalid amounts
+          {:ok, updated_emulator} = Cursor.handle_command(emulator, [1], "A")
+          Logger.debug("Cursor moved up by 1 (default)")
+          {:ok, updated_emulator}
+      end
     rescue
       error ->
         Logger.error("Cursor up movement failed: #{inspect(error)}")
@@ -110,9 +118,12 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
           {:ok, emulator()}
   def handle_cursor_position(emulator, params) do
     try do
+      # Parse parameters, handling semicolon-separated format
+      parsed_params = parse_semicolon_params(params)
+
       # Parse row and column from params (1-indexed in ANSI, 0-indexed internally)
-      row = get_param_or_default(params, 0, 1) - 1
-      col = get_param_or_default(params, 1, 1) - 1
+      row = get_param_or_default(parsed_params, 0, 1) - 1
+      col = get_param_or_default(parsed_params, 1, 1) - 1
 
       handle_cursor_position_direct(emulator, row, col)
     rescue
@@ -153,7 +164,9 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
       # Update cursor position directly using the established pattern
       new_cursor = %{
         emulator.cursor
-        | position: {bounded_col, bounded_row}
+        | position: {bounded_col, bounded_row},
+          row: bounded_row,
+          col: bounded_col
       }
 
       updated_emulator = %{emulator | cursor: new_cursor}
@@ -248,4 +261,12 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
   end
 
   defp get_param_or_default(_params, _index, default), do: default
+
+  defp parse_semicolon_params(params) when is_list(params) do
+    params
+    |> Enum.reject(&(&1 == ?;))  # Remove semicolon characters (59)
+    |> Enum.filter(&is_integer/1)  # Keep only integers
+  end
+
+  defp parse_semicolon_params(params), do: params
 end

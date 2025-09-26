@@ -38,9 +38,10 @@ defmodule Raxol.Terminal.Commands.DeviceHandlerTest do
     end
 
     test "responds to CPR request (6)", %{emulator: emulator} do
-      # Set cursor position using the cursor manager
-      CursorManager.set_position(emulator.cursor, {5, 5})
-      result = unwrap_ok(DeviceHandler.handle_n(emulator, [6]))
+      # Set cursor position by updating the cursor struct
+      updated_cursor = %{emulator.cursor | position: {5, 5}, row: 5, col: 5}
+      updated_emulator = %{emulator | cursor: updated_cursor}
+      result = unwrap_ok(DeviceHandler.handle_n(updated_emulator, [6]))
       assert OutputManager.get_content(result) == "\e[6;6R"
     end
 
@@ -57,9 +58,10 @@ defmodule Raxol.Terminal.Commands.DeviceHandlerTest do
     end
 
     test "reports cursor position (CPR 6)", %{emulator: emulator} do
-      # Move cursor to position (5,5) using the cursor manager
-      CursorManager.set_position(emulator.cursor, {5, 5})
-      result = unwrap_ok(DeviceHandler.handle_n(emulator, [6]))
+      # Move cursor to position (5,5) by updating cursor struct
+      updated_cursor = %{emulator.cursor | position: {5, 5}, row: 5, col: 5}
+      emulator_with_cursor = %{emulator | cursor: updated_cursor}
+      result = unwrap_ok(DeviceHandler.handle_n(emulator_with_cursor, [6]))
       assert OutputManager.get_content(result) == "\e[6;6R"
     end
   end

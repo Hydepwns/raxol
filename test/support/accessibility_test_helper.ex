@@ -63,11 +63,23 @@ defmodule Raxol.Core.AccessibilityTestHelper do
   end
 
   def setup_test_preferences_with_events(prefs_name) do
-    # Ensure EventManager is started
-    Raxol.Core.Events.EventManager.init()
+    # Ensure EventManager is started and supervised (if not already running)
+    case Process.whereis(Raxol.Core.Events.EventManager) do
+      nil ->
+        start_supervised!({Raxol.Core.Events.EventManager, []})
+        Process.sleep(10)
+      _pid ->
+        :ok  # Already running
+    end
 
     # Check if UserPreferences is already running
     pid_of_prefs = get_or_start_preferences()
+
+    # Ensure AccessibilityServer is started and supervised
+    accessibility_pid = start_supervised!({Raxol.Core.Accessibility.AccessibilityServer, []})
+
+    # Wait a bit to ensure servers are ready
+    Process.sleep(10)
 
     # Set up preferences
     Raxol.Core.UserPreferences.set(pref_key(:screen_reader), true, pid_of_prefs)
@@ -80,12 +92,10 @@ defmodule Raxol.Core.AccessibilityTestHelper do
     on_exit(fn ->
       # Clean up accessibility and stop the process if alive
       cleanup_process_if_alive(pid_of_prefs)
-
-      # Only clean up EventManager
-      Raxol.Core.Events.EventManager.cleanup()
+      # EventManager is now supervised and will be cleaned up automatically
     end)
 
-    {:ok, prefs_name: prefs_name, pref_pid: pid_of_prefs}
+    {:ok, prefs_name: prefs_name, pref_pid: pid_of_prefs, accessibility_pid: accessibility_pid}
   end
 
   def register_test_elements do

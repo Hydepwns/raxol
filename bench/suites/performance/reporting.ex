@@ -188,8 +188,8 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
     IO.puts("  No validation results available")
   end
 
-  defp get_status_icon(:pass), do: "✓"
-  defp get_status_icon(:fail), do: "✗"
+  defp get_status_icon(:pass), do: "[OK]"
+  defp get_status_icon(:fail), do: "[FAIL]"
   defp get_status_icon(:skip), do: "?"
   defp get_status_icon(_), do: "-"
 

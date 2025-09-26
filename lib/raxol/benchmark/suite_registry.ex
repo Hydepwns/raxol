@@ -4,16 +4,9 @@ defmodule Raxol.Benchmark.SuiteRegistry do
   Manages suite discovery, registration, and execution.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
 
   # Client API
-
-  @doc """
-  Start the suite registry process.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Register a benchmark suite module.
@@ -76,8 +69,8 @@ defmodule Raxol.Benchmark.SuiteRegistry do
 
   # Server Callbacks
 
-  @impl true
-  def init(_opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(_opts) do
     state = %{
       suites: %{},
       results: %{},
@@ -95,8 +88,8 @@ defmodule Raxol.Benchmark.SuiteRegistry do
     {:ok, state}
   end
 
-  @impl true
-  def handle_call({:register_suite, module}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:register_suite, module}, _from, state) do
     case validate_suite_module(module) do
       {:ok, suite_info} ->
         name = suite_info.name
@@ -108,8 +101,7 @@ defmodule Raxol.Benchmark.SuiteRegistry do
     end
   end
 
-  @impl true
-  def handle_call(:list_suites, _from, state) do
+  def handle_manager_call(:list_suites, _from, state) do
     suite_list =
       state.suites
       |> Enum.map(fn {name, info} ->
@@ -126,16 +118,14 @@ defmodule Raxol.Benchmark.SuiteRegistry do
     {:reply, suite_list, state}
   end
 
-  @impl true
-  def handle_call({:get_suite, name}, _from, state) do
+  def handle_manager_call({:get_suite, name}, _from, state) do
     case Map.get(state.suites, name) do
       nil -> {:reply, {:error, :not_found}, state}
       suite -> {:reply, {:ok, suite}, state}
     end
   end
 
-  @impl true
-  def handle_call({:run_all, opts}, _from, state) do
+  def handle_manager_call({:run_all, opts}, _from, state) do
     results = run_all_suites(state.suites, opts)
 
     updated_state =
@@ -146,8 +136,7 @@ defmodule Raxol.Benchmark.SuiteRegistry do
     {:reply, {:ok, results}, updated_state}
   end
 
-  @impl true
-  def handle_call({:run_suites, filter, opts}, _from, state) do
+  def handle_manager_call({:run_suites, filter, opts}, _from, state) do
     filtered_suites = filter_suites(state.suites, filter)
     results = run_all_suites(filtered_suites, opts)
 
@@ -159,21 +148,18 @@ defmodule Raxol.Benchmark.SuiteRegistry do
     {:reply, {:ok, results}, updated_state}
   end
 
-  @impl true
-  def handle_call(:discover_suites, _from, state) do
+  def handle_manager_call(:discover_suites, _from, state) do
     updated_state = apply_discovered_suites(state)
     count = map_size(updated_state.suites) - map_size(state.suites)
     {:reply, {:ok, count}, updated_state}
   end
 
-  @impl true
-  def handle_call({:get_history, suite_name, limit}, _from, state) do
+  def handle_manager_call({:get_history, suite_name, limit}, _from, state) do
     history = get_suite_history(state.results, suite_name, limit)
     {:reply, history, state}
   end
 
-  @impl true
-  def handle_call(
+  def handle_manager_call(
         {:compare_baseline, suite_name, baseline_version},
         _from,
         state
@@ -182,8 +168,8 @@ defmodule Raxol.Benchmark.SuiteRegistry do
     {:reply, comparison, state}
   end
 
-  @impl true
-  def handle_info(:auto_discover, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:auto_discover, state) do
     updated_state = apply_discovered_suites(state)
     {:noreply, updated_state}
   end

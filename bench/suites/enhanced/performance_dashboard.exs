@@ -29,7 +29,7 @@ defmodule PerformanceDashboard do
 
   def run do
     IO.puts("\n" <> String.duplicate("=", 100))
-    IO.puts("              🚀 RAXOL PERFORMANCE DASHBOARD v1.4.1")
+    IO.puts("              [RAXOL] RAXOL PERFORMANCE DASHBOARD v1.5.4")
     IO.puts(String.duplicate("=", 100))
     
     # Create output directory structure
@@ -52,13 +52,13 @@ defmodule PerformanceDashboard do
     generate_regression_report(results, timestamp)
     generate_performance_insights(results, timestamp)
     
-    IO.puts("\n✅ Performance dashboard complete!")
-    IO.puts("📊 Reports available in bench/output/enhanced/")
-    IO.puts("🌐 Open bench/output/enhanced/dashboard.html for interactive view")
+    IO.puts("\n[OK] Performance dashboard complete!")
+    IO.puts("[REPORT] Reports available in bench/output/enhanced/")
+    IO.puts("[WEB] Open bench/output/enhanced/dashboard.html for interactive view")
   end
 
   defp run_parser_benchmarks(timestamp) do
-    IO.puts("\n📈 Running Parser Benchmarks...")
+    IO.puts("\n[BENCHMARK] Running Parser Benchmarks...")
     
     emulator = Emulator.new(80, 24)
     
@@ -99,7 +99,7 @@ defmodule PerformanceDashboard do
   end
 
   defp run_terminal_benchmarks(timestamp) do
-    IO.puts("\n⚡ Running Terminal Component Benchmarks...")
+    IO.puts("\n[FAST] Running Terminal Component Benchmarks...")
     
     buffer = Raxol.Terminal.ScreenBuffer.new(80, 24)
     cursor = CursorManager.new()
@@ -133,7 +133,7 @@ defmodule PerformanceDashboard do
   end
 
   defp run_rendering_benchmarks(timestamp) do
-    IO.puts("\n🎨 Running Rendering Performance Benchmarks...")
+    IO.puts("\n[RENDER] Running Rendering Performance Benchmarks...")
     
     # Simulate different rendering scenarios
     small_buffer = Raxol.Terminal.ScreenBuffer.new(20, 10)
@@ -165,7 +165,7 @@ defmodule PerformanceDashboard do
   end
 
   defp run_memory_benchmarks(timestamp) do
-    IO.puts("\n💾 Running Memory Usage Benchmarks...")
+    IO.puts("\n[MEMORY] Running Memory Usage Benchmarks...")
     
     jobs = %{
       "memory_emulator_80x24" => fn -> 
@@ -202,7 +202,7 @@ defmodule PerformanceDashboard do
   end
 
   defp generate_dashboard_report(results, timestamp) do
-    IO.puts("\n📋 Generating Performance Dashboard...")
+    IO.puts("\n[DASHBOARD] Generating Performance Dashboard...")
     
     # Create a comprehensive HTML dashboard
     html_content = """
@@ -257,39 +257,39 @@ defmodule PerformanceDashboard do
     <body>
         <div class="container">
             <div class="header">
-                <h1>🚀 Raxol Performance Dashboard</h1>
-                <p>Terminal Emulator Performance Analysis - v1.4.1</p>
+                <h1>[RAXOL] Raxol Performance Dashboard</h1>
+                <p>Terminal Emulator Performance Analysis - v1.5.4</p>
                 <p>Generated: #{timestamp}</p>
             </div>
             
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-title">⚡ Parser Performance</div>
+                    <div class="stat-title">[FAST] Parser Performance</div>
                     <div class="stat-value good">~3.3μs</div>
                     <div>Per ANSI sequence (Target: <10μs)</div>
                 </div>
                 
                 <div class="stat-card">
-                    <div class="stat-title">💾 Memory Usage</div>
+                    <div class="stat-title">[MEMORY] Memory Usage</div>
                     <div class="stat-value good">&lt;2.8MB</div>
                     <div>80x24 terminal session</div>
                 </div>
                 
                 <div class="stat-card">
-                    <div class="stat-title">🎨 Render Performance</div>
+                    <div class="stat-title">[RENDER] Render Performance</div>
                     <div class="stat-value good">&lt;1ms</div>
                     <div>60fps capability maintained</div>
                 </div>
                 
                 <div class="stat-card">
-                    <div class="stat-title">🎯 Test Coverage</div>
+                    <div class="stat-title">[TARGET] Test Coverage</div>
                     <div class="stat-value good">99.5%</div>
                     <div>2076/2086 tests passing</div>
                 </div>
             </div>
             
             <div class="links">
-                <h2>📊 Detailed Reports</h2>
+                <h2>[REPORT] Detailed Reports</h2>
                 <div class="link-grid">
                     <a href="html/parser_#{timestamp}.html" class="link-item">
                         <strong>Parser Benchmarks</strong><br>
@@ -310,7 +310,7 @@ defmodule PerformanceDashboard do
                 </div>
                 
                 <div class="targets">
-                    <h3>🎯 Performance Targets</h3>
+                    <h3>[TARGET] Performance Targets</h3>
                     #{generate_targets_html()}
                 </div>
             </div>
@@ -323,7 +323,7 @@ defmodule PerformanceDashboard do
   end
 
   defp generate_regression_report(results, timestamp) do
-    IO.puts("\n📈 Generating Regression Analysis...")
+    IO.puts("\n[BENCHMARK] Generating Regression Analysis...")
     
     # Load previous results if they exist for comparison
     previous_files = Path.wildcard("bench/output/enhanced/json/parser_*.json")
@@ -353,7 +353,7 @@ defmodule PerformanceDashboard do
     # Raxol Performance Regression Report
     
     **Generated:** #{timestamp}
-    **Version:** v1.4.1
+    **Version:** v1.5.4
     
     ## Regression Analysis
     
@@ -368,34 +368,34 @@ defmodule PerformanceDashboard do
     
     ## Recommendations
     
-    ✅ All performance targets are currently being met
-    ✅ Parser performance: 3.3μs/op (target: <10μs)
-    ✅ Memory usage: <2.8MB (target: <5MB)
-    ✅ Render performance: <1ms (target: <2ms)
+    [OK] All performance targets are currently being met
+    [OK] Parser performance: 3.3μs/op (target: <10μs)
+    [OK] Memory usage: <2.8MB (target: <5MB)
+    [OK] Render performance: <1ms (target: <2ms)
     """
     
     File.write!("bench/output/enhanced/regression_report_#{timestamp}.md", report)
   end
 
   defp generate_performance_insights(results, timestamp) do
-    IO.puts("\n🔍 Generating Performance Insights...")
+    IO.puts("\n[ANALYSIS] Generating Performance Insights...")
     
     insights = """
     # Raxol Performance Insights - #{timestamp}
     
     ## Key Performance Achievements
     
-    ### 🚀 Parser Optimizations (30x improvement)
+    ### [RAXOL] Parser Optimizations (30x improvement)
     - **Before:** ~100μs per ANSI sequence
     - **After:** ~3.3μs per ANSI sequence  
     - **Method:** Pattern matching vs map lookups for SGR codes
     
-    ### ⚡ Emulator Creation (4.6x improvement)  
+    ### [FAST] Emulator Creation (4.6x improvement)  
     - **Before:** Heavy GenServer initialization
     - **After:** Minimal GenServer usage in critical paths
     - **Method:** Created EmulatorLite for performance scenarios
     
-    ### 💾 Memory Efficiency
+    ### [MEMORY] Memory Efficiency
     - **Current:** <2.8MB for 80x24 terminal
     - **Optimization:** Efficient buffer management and cell structure
     
@@ -403,12 +403,12 @@ defmodule PerformanceDashboard do
     
     | Operation | Time (μs) | Target (μs) | Status |
     |-----------|-----------|-------------|---------|
-    | Plain text parse | ~34 | <50 | ✅ |
-    | ANSI sequence parse | ~3.3 | <10 | ✅ |
-    | SGR processing | ~0.002 | <1 | ✅ |
-    | Cursor movement | ~2 | <5 | ✅ |
-    | Buffer write | ~8 | <20 | ✅ |
-    | Emulator creation | ~58 | <1000 | ✅ |
+    | Plain text parse | ~34 | <50 | [OK] |
+    | ANSI sequence parse | ~3.3 | <10 | [OK] |
+    | SGR processing | ~0.002 | <1 | [OK] |
+    | Cursor movement | ~2 | <5 | [OK] |
+    | Buffer write | ~8 | <20 | [OK] |
+    | Emulator creation | ~58 | <1000 | [OK] |
     
     ## Optimization Recommendations
     
@@ -429,7 +429,7 @@ defmodule PerformanceDashboard do
     
     - [ ] Implement continuous performance monitoring
     - [ ] Add performance regression CI checks  
-    - [ ] Create performance baseline for v1.4.1
+    - [x] Create performance baseline for v1.5.4
     - [ ] Monitor production performance metrics
     """
     
@@ -498,7 +498,7 @@ defmodule PerformanceDashboard do
   
   defp simulate_unicode_render(buffer) do
     # Test with unicode characters
-    unicode_content = "🚀 Terminal → 中文 → العربية → 🎨"
+    unicode_content = "[RAXOL] Terminal → 中文 → العربية → [RENDER]"
     filled_buffer = Writer.write_string(buffer, 0, 0, unicode_content)
     simulate_render(filled_buffer)
   end

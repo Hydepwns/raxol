@@ -68,6 +68,15 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       # Use local helper
       emulator = fill_buffer(emulator, 0, 5)
 
+      # Debug: Check buffer content after filling
+      IO.puts("DEBUG: Buffer content after fill_buffer:")
+      buffer = Emulator.get_screen_buffer(emulator)
+      Enum.each(0..4, fn y ->
+        line_cells = ScreenBuffer.get_line(buffer, y)
+        line_text = Enum.map_join(line_cells, &(&1.char || " "))
+        IO.puts("DEBUG: Initial Line #{y}: '#{line_text}'")
+      end)
+
       # Set scroll region rows 2-4 (indices 1-3)
       {emulator, _} = Emulator.process_input(emulator, "\e[2;4r")
       assert emulator.scroll_region == {1, 3}

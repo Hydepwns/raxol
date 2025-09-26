@@ -6,14 +6,14 @@ defmodule Sprint9Analysis do
   """
 
   def run do
-    IO.puts("\n🔍 SPRINT 9 ANALYSIS - Pattern Matching & Optimizations\n")
+    IO.puts("\n[CHECK] SPRINT 9 ANALYSIS - Pattern Matching & Optimizations\n")
     IO.puts("=" |> String.duplicate(80))
 
     lib_files = Path.wildcard("lib/**/*.ex")
     test_files = Path.wildcard("test/**/*.ex")
     all_files = lib_files ++ test_files
 
-    IO.puts("\n📊 File Statistics:")
+    IO.puts("\n[REPORT] File Statistics:")
     IO.puts("  Library files: #{length(lib_files)}")
     IO.puts("  Test files: #{length(test_files)}")
     IO.puts("  Total files: #{length(all_files)}")
@@ -21,7 +21,7 @@ defmodule Sprint9Analysis do
     # Analyze patterns
     patterns = analyze_patterns(lib_files)
 
-    IO.puts("\n🎯 Pattern Analysis (lib/ only):")
+    IO.puts("\n[TARGET] Pattern Analysis (lib/ only):")
     IO.puts("\n1. IF/ELSE Patterns:")
     IO.puts("   Total if statements: #{patterns.if_count}")
     IO.puts("   Files with most if statements:")
@@ -84,7 +84,7 @@ defmodule Sprint9Analysis do
 
     IO.puts("   Guard clause opportunities: #{patterns.guard_opportunities}")
 
-    IO.puts("\n✅ Recommended Refactoring Priority:")
+    IO.puts("\n[OK] Recommended Refactoring Priority:")
 
     IO.puts(
       "   1. Replace #{patterns.simple_if_count} simple if/else with pattern matching"
@@ -400,7 +400,7 @@ defmodule Sprint9Analysis do
     """
 
     File.write!(plan_file, content)
-    IO.puts("\n📝 Refactoring plan written to: #{plan_file}")
+    IO.puts("\n[NOTE] Refactoring plan written to: #{plan_file}")
   end
 end
 

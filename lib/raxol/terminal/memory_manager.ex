@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.MemoryManager do
   Manages memory usage and limits for the terminal emulator.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
 
   @type t :: %__MODULE__{
           max_memory: non_neg_integer(),
@@ -20,13 +20,6 @@ defmodule Raxol.Terminal.MemoryManager do
   ]
 
   # Client API
-
-  @doc """
-  Starts the memory manager process.
-  """
-  def start_link do
-    GenServer.start_link(__MODULE__, [], name: __MODULE__)
-  end
 
   @doc """
   Gets the current memory usage.
@@ -94,29 +87,31 @@ defmodule Raxol.Terminal.MemoryManager do
     calculate_memory_usage(state)
   end
 
-  # Server Callbacks
+  # BaseManager Callbacks
 
-  def init(_) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(_opts) do
     {:ok, %__MODULE__{}}
   end
 
-  def handle_call({:within_limits, state}, _from, memory_manager) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:within_limits, state}, _from, memory_manager) do
     current_memory = calculate_memory_usage(state)
     within_limits = current_memory <= memory_manager.memory_limit
     {:reply, within_limits, %{memory_manager | current_memory: current_memory}}
   end
 
-  def handle_call({:should_scroll, state}, _from, memory_manager) do
+  def handle_manager_call({:should_scroll, state}, _from, memory_manager) do
     current_memory = calculate_memory_usage(state)
     should_scroll = current_memory > memory_manager.memory_limit * 0.8
     {:reply, should_scroll, %{memory_manager | current_memory: current_memory}}
   end
 
-  def handle_call(:get_memory_usage, _from, memory_manager) do
+  def handle_manager_call(:get_memory_usage, _from, memory_manager) do
     {:reply, memory_manager.current_memory, memory_manager}
   end
 
-  def handle_call(:get_limit, _from, memory_manager) do
+  def handle_manager_call(:get_limit, _from, memory_manager) do
     {:reply, memory_manager.memory_limit, memory_manager}
   end
 

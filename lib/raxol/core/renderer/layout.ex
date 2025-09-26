@@ -346,7 +346,7 @@ defmodule Raxol.Core.Renderer.Layout do
 
     checkbox_text =
       case checked do
-        true -> "[✓]"
+        true -> "[[OK]]"
         false -> "[ ]"
       end
 

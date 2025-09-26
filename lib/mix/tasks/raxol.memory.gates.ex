@@ -546,7 +546,7 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
     Mix.shell().info("Memory Gates:")
 
     Enum.each(gates, fn gate ->
-      status_icon = if gate.status == :passed, do: "✅", else: "❌"
+      status_icon = if gate.status == :passed, do: "[OK]", else: "[FAIL]"
 
       Mix.shell().info(
         "  #{status_icon} #{gate.name}: #{format_value(gate.value, gate.unit)} (limit: #{format_value(gate.threshold, gate.unit)})"
@@ -559,7 +559,7 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
   end
 
   defp print_baseline_comparison(%{status: :ok}) do
-    Mix.shell().info("Baseline: ✅ No regressions detected")
+    Mix.shell().info("Baseline: [OK] No regressions detected")
   end
 
   defp print_baseline_comparison(%{
@@ -567,7 +567,7 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
          regressions: regressions
        }) do
     Mix.shell().info(
-      "Baseline: ❌ #{length(regressions)} regression(s) detected"
+      "Baseline: [FAIL] #{length(regressions)} regression(s) detected"
     )
 
     Enum.each(regressions, fn reg ->
@@ -577,13 +577,13 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
     end)
   end
 
-  defp print_scenario_status(:passed), do: Mix.shell().info("Status: ✅ PASSED")
+  defp print_scenario_status(:passed), do: Mix.shell().info("Status: [OK] PASSED")
 
   defp print_scenario_status(:gate_failures),
-    do: Mix.shell().info("Status: ❌ FAILED (gate failures)")
+    do: Mix.shell().info("Status: [FAIL] FAILED (gate failures)")
 
   defp print_scenario_status(:regressions),
-    do: Mix.shell().info("Status: ⚠️ FAILED (regressions)")
+    do: Mix.shell().info("Status: [WARN] FAILED (regressions)")
 
   defp print_overall_summary(summary) do
     Mix.shell().info("\n" <> String.duplicate("=", 60))
@@ -601,15 +601,15 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
   defp determine_exit_code(summary) do
     cond do
       summary.failed_gates > 0 ->
-        Mix.shell().info("Result: ❌ FAILED - Memory gates failed")
+        Mix.shell().info("Result: [FAIL] FAILED - Memory gates failed")
         1
 
       summary.total_regressions > 0 ->
-        Mix.shell().info("Result: ⚠️ FAILED - Memory regressions detected")
+        Mix.shell().info("Result: [WARN] FAILED - Memory regressions detected")
         1
 
       true ->
-        Mix.shell().info("Result: ✅ PASSED - All memory gates passed")
+        Mix.shell().info("Result: [OK] PASSED - All memory gates passed")
         0
     end
   end

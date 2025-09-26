@@ -651,7 +651,7 @@ defmodule Raxol.Playground.Preview do
       Enum.map(options, fn option ->
         prefix =
           case option == selected do
-            true -> "✓"
+            true -> "[OK]"
             false -> " "
           end
 
@@ -763,7 +763,7 @@ defmodule Raxol.Playground.Preview do
     apply_checkbox_style(icon, checked, disabled)
   end
 
-  defp get_checkbox_icon(true), do: "✓"
+  defp get_checkbox_icon(true), do: "[OK]"
   defp get_checkbox_icon(false), do: " "
 
   defp apply_checkbox_style(icon, _checked, true) do

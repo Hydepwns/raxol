@@ -11,7 +11,8 @@ defmodule Raxol.Debug do
   """
 
   require Logger
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+  alias Raxol.Core.Utils.TimerManager
 
   @debug_levels [:off, :basic, :detailed, :verbose]
   # Sample every 100ms in debug mode
@@ -28,13 +29,8 @@ defmodule Raxol.Debug do
 
   ## Client API
 
-  @doc """
-  Starts the debug server.
-  """
-  @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1
+  # Usage: Raxol.Debug.start_link(name: __MODULE__, level: :basic)
 
   @doc """
   Enables debug mode at the specified level.
@@ -84,11 +80,10 @@ defmodule Raxol.Debug do
   """
   @spec debug_log(binary() | atom(), any(), keyword()) :: :ok
   def debug_log(component, message, opts \\ []) when is_atom(component) do
-    if debug_enabled?(component) do
-      context = Keyword.get(opts, :context, %{})
-      metadata = Keyword.get(opts, :metadata, [])
-
-      formatted_message = format_debug_message(component, message, context)
+    with true <- debug_enabled?(component),
+         context <- Keyword.get(opts, :context, %{}),
+         metadata <- Keyword.get(opts, :metadata, []),
+         formatted_message <- format_debug_message(component, message, context) do
       Logger.debug(formatted_message, metadata)
     end
 
@@ -100,16 +95,18 @@ defmodule Raxol.Debug do
   """
   @spec time_debug(atom(), binary(), function()) :: any()
   def time_debug(component, operation, fun) when is_function(fun, 0) do
-    if debug_enabled?(component) do
-      {time_us, result} = :timer.tc(fun)
+    case debug_enabled?(component) do
+      true ->
+        {time_us, result} = :timer.tc(fun)
 
-      debug_log(component, "#{operation} completed in #{time_us}μs",
-        metadata: [operation: operation, duration_us: time_us]
-      )
+        debug_log(component, "#{operation} completed in #{time_us}μs",
+          metadata: [operation: operation, duration_us: time_us]
+        )
 
-      result
-    else
-      fun.()
+        result
+
+      false ->
+        fun.()
     end
   end
 
@@ -118,11 +115,10 @@ defmodule Raxol.Debug do
   """
   @spec log_terminal_state(map(), keyword()) :: :ok
   def log_terminal_state(state, opts \\ []) do
-    if debug_enabled?(:terminal) do
-      cursor_pos = get_in(state, [:cursor, :position]) || {0, 0}
-      dimensions = get_in(state, [:dimensions]) || {80, 24}
-      mode = get_in(state, [:mode]) || :normal
-
+    with true <- debug_enabled?(:terminal),
+         cursor_pos <- get_in(state, [:cursor, :position]) || {0, 0},
+         dimensions <- get_in(state, [:dimensions]) || {80, 24},
+         mode <- get_in(state, [:mode]) || :normal do
       debug_log(:terminal, "Terminal State",
         context: %{
           cursor_position: cursor_pos,
@@ -143,7 +139,7 @@ defmodule Raxol.Debug do
   """
   @spec log_ansi_sequence(binary(), map(), keyword()) :: :ok
   def log_ansi_sequence(sequence, parsed_data, opts \\ []) do
-    if debug_enabled?(:parser) do
+    with true <- debug_enabled?(:parser) do
       debug_log(:parser, "ANSI Sequence Parsed",
         context: %{
           raw_sequence: inspect(sequence),
@@ -164,7 +160,7 @@ defmodule Raxol.Debug do
   """
   @spec log_event_flow(atom(), map(), map(), keyword()) :: :ok
   def log_event_flow(event_type, event_data, handler_result, opts \\ []) do
-    if debug_enabled?(:terminal) do
+    with true <- debug_enabled?(:terminal) do
       debug_log(:terminal, "Event Flow",
         context: %{
           event_type: event_type,
@@ -184,7 +180,7 @@ defmodule Raxol.Debug do
   """
   @spec log_render_metrics(map(), keyword()) :: :ok
   def log_render_metrics(metrics, opts \\ []) do
-    if debug_enabled?(:rendering) do
+    with true <- debug_enabled?(:rendering) do
       debug_log(:rendering, "Render Metrics",
         context: %{
           frame_time_us: metrics[:frame_time_us],
@@ -206,14 +202,14 @@ defmodule Raxol.Debug do
   """
   @spec debug_breakpoint(atom(), binary()) :: :ok
   def debug_breakpoint(component, reason \\ "Debug breakpoint") do
-    _ =
-      if debug_enabled?(component) and interactive_mode?() do
-        IO.puts("Debug breakpoint hit: #{reason}")
-        IO.puts("Component: #{component}")
-        IO.puts("Process: #{inspect(self())}")
-        IO.puts("Press Enter to continue...")
-        IO.read(:line)
-      end
+    with true <- debug_enabled?(component),
+         true <- interactive_mode?() do
+      IO.puts("Debug breakpoint hit: #{reason}")
+      IO.puts("Component: #{component}")
+      IO.puts("Process: #{inspect(self())}")
+      IO.puts("Press Enter to continue...")
+      IO.read(:line)
+    end
 
     :ok
   end
@@ -223,9 +219,8 @@ defmodule Raxol.Debug do
   """
   @spec dump_process_state(atom()) :: :ok
   def dump_process_state(component) do
-    if debug_enabled?(component) do
-      process_info = Process.info(self())
-
+    with true <- debug_enabled?(component),
+         process_info <- Process.info(self()) do
       debug_log(component, "Process State Dump",
         context: %{
           pid: inspect(self()),
@@ -336,10 +331,9 @@ defmodule Raxol.Debug do
     timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
 
     context_str =
-      if map_size(context) > 0 do
-        " | Context: #{inspect(context)}"
-      else
-        ""
+      case map_size(context) do
+        0 -> ""
+        _ -> " | Context: #{inspect(context)}"
       end
 
     "[#{timestamp}] [#{String.upcase(to_string(component))}] #{message}#{context_str}"
@@ -369,10 +363,10 @@ defmodule Raxol.Debug do
     Code.ensure_loaded?(IEx) and Process.get(:iex_history) != nil
   end
 
-  ## Server Callbacks
+  ## BaseManager Implementation
 
-  @impl true
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     level = opts[:level] || :off
 
     state = %{
@@ -392,43 +386,48 @@ defmodule Raxol.Debug do
 
     # Start performance monitoring if in debug mode
     _ =
-      if level != :off do
-        schedule_performance_monitoring()
+      case level do
+        :off -> nil
+        _ -> schedule_performance_monitoring()
       end
 
     {:ok, state}
   end
 
-  @impl true
-  def handle_call({:set_level, level}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_level, level}, _from, state) do
     # Cancel existing monitoring if going to :off
     _ =
-      if level == :off and state.level != :off and state[:monitor_ref] do
-        Process.cancel_timer(state[:monitor_ref])
+      case {level, state.level, state[:monitor_ref]} do
+        {:off, old_level, ref} when old_level != :off and ref != nil ->
+          TimerManager.cancel_timer(ref)
+        _ ->
+          nil
       end
 
     # Start monitoring if enabling debug
     _ =
-      if level != :off and state.level == :off do
-        schedule_performance_monitoring()
+      case {level, state.level} do
+        {new_level, :off} when new_level != :off ->
+          schedule_performance_monitoring()
+        _ ->
+          nil
       end
 
     {:reply, :ok, %{state | level: level}}
   end
 
-  @impl true
-  def handle_call(:get_level, _from, state) do
+  def handle_manager_call(:get_level, _from, state) do
     {:reply, state.level, state}
   end
 
-  @impl true
-  def handle_call(:stats, _from, state) do
+  def handle_manager_call(:stats, _from, state) do
     stats = Map.put(state.stats, :current_level, state.level)
     {:reply, stats, state}
   end
 
-  @impl true
-  def handle_cast({:log, level, message, context}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:log, level, message, context}, state) do
     log_entry = %{
       level: level,
       message: message,
@@ -442,14 +441,15 @@ defmodule Raxol.Debug do
     {:noreply, %{state | logs: new_logs, stats: new_stats}}
   end
 
-  @impl true
-  def handle_info(:monitor_performance, state) do
-    if state.level != :off do
-      collect_performance_metrics(state)
-      ref = schedule_performance_monitoring()
-      {:noreply, Map.put(state, :monitor_ref, ref)}
-    else
-      {:noreply, state}
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:monitor_performance, state) do
+    case state.level do
+      :off ->
+        {:noreply, state}
+      _ ->
+        collect_performance_metrics(state)
+        ref = schedule_performance_monitoring()
+        {:noreply, Map.put(state, :monitor_ref, ref)}
     end
   end
 
@@ -457,18 +457,21 @@ defmodule Raxol.Debug do
 
   @spec schedule_performance_monitoring() :: reference()
   defp schedule_performance_monitoring do
-    Process.send_after(self(), :monitor_performance, @performance_sample_rate)
+    TimerManager.send_after(:monitor_performance, @performance_sample_rate)
   end
 
   @spec collect_performance_metrics(map()) :: :ok
   defp collect_performance_metrics(state) do
-    if state.level in [:detailed, :verbose] do
-      memory = :erlang.memory()
-      stats = :erlang.statistics(:run_queue)
+    case state.level do
+      level when level in [:detailed, :verbose] ->
+        memory = :erlang.memory()
+        stats = :erlang.statistics(:run_queue)
 
-      Logger.debug(
-        "Performance: memory=#{inspect(memory)}, run_queue=#{inspect(stats)}"
-      )
+        Logger.debug(
+          "Performance: memory=#{inspect(memory)}, run_queue=#{inspect(stats)}"
+        )
+      _ ->
+        :ok
     end
 
     :ok

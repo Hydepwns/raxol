@@ -35,7 +35,7 @@ examples/
 
 ## Learning Path
 
-### 🚀 Getting Started (`getting_started/`)
+### [RAXOL] Getting Started (`getting_started/`)
 Perfect for beginners - start here to learn Raxol basics.
 - `hello_world.exs` - Your first Raxol application
 - `counter.exs` - Basic state management and events  
@@ -43,7 +43,7 @@ Perfect for beginners - start here to learn Raxol basics.
 
 [→ Getting Started Guide](getting_started/README.md)
 
-### ⚡ Scripts (`scripts/`)
+### [FAST] Scripts (`scripts/`)
 Quick script examples for specific features (run with `elixir`).
 - `rendering.exs` - Basic rendering patterns
 - `event_handling.exs` - Interactive event examples
@@ -51,7 +51,7 @@ Quick script examples for specific features (run with `elixir`).
 
 [→ Script Examples](scripts/README.md)
 
-### 🧩 Components (`components/`)
+### [COMPONENTS] Components (`components/`)
 Learn Raxol's component system with focused examples.
 - **Forms:** Input handling, validation, data binding
 - **Displays:** Progress bars, tables, data visualization  
@@ -69,14 +69,14 @@ Real-world applications showing architectural patterns.
 
 [→ Application Examples](apps/README.md)
 
-### 🔧 Frameworks (`frameworks/`)
+### [CONFIG] Frameworks (`frameworks/`)
 Integration examples for different UI frameworks.
 - **Svelte:** Reactive components and state management
 - **TypeScript:** Type-safe Raxol development
 
 [→ Framework Integration](frameworks/README.md)
 
-### ⚡ Advanced (`advanced/`)
+### [FAST] Advanced (`advanced/`)
 Complex patterns for experienced developers.
 - **Performance:** Optimization techniques and monitoring
 - **Architecture:** Large-scale application design patterns

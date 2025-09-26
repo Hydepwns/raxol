@@ -649,7 +649,7 @@ end
 ### 1. State Management Differences
 
 ```elixir
-# ❌ Don't assume state works the same way
+# [FAIL] Don't assume state works the same way
 defmodule BadMigration do
   # This won't work when migrating from LiveView to React
   def handle_event("update", params, socket) do
@@ -658,7 +658,7 @@ defmodule BadMigration do
   end
 end
 
-# ✅ Use framework-agnostic state patterns
+# [OK] Use framework-agnostic state patterns
 defmodule GoodMigration do
   def update_value(new_value) do
     case current_framework() do
@@ -679,7 +679,7 @@ end
 ### 2. Event Handler Differences
 
 ```elixir
-# ❌ Framework-specific event syntax
+# [FAIL] Framework-specific event syntax
 def bad_event_handling(assigns) do
   case assigns.framework do
     :react ->
@@ -689,7 +689,7 @@ def bad_event_handling(assigns) do
   end
 end
 
-# ✅ Universal event handling
+# [OK] Universal event handling
 def good_event_handling(assigns) do
   ~H"""
   <button 
@@ -714,7 +714,7 @@ end
 ### 3. Template Syntax Confusion
 
 ```elixir
-# ❌ Mixed template syntaxes
+# [FAIL] Mixed template syntaxes
 def confusing_template(assigns) do
   ~H"""
   <!-- This mixes React and Svelte syntax -->
@@ -724,7 +724,7 @@ def confusing_template(assigns) do
   """
 end
 
-# ✅ Consistent template patterns
+# [OK] Consistent template patterns
 def clean_template(assigns) do
   ~H"""
   <%= if @show do %>

@@ -115,7 +115,7 @@ defmodule Raxol.Terminal.CompatibilityTest do
       end)
 
     Enum.each(feature_results, fn {feature, supported} ->
-      status = if supported, do: "✓ Supported", else: "✗ Not supported"
+      status = if supported, do: "[OK] Supported", else: "[FAIL] Not supported"
       IO.puts("#{feature}: #{status}")
     end)
 
@@ -254,7 +254,7 @@ defmodule Raxol.Terminal.CompatibilityTest do
     IO.puts("└─────────────────────┘\n")
 
     # Test emoji rendering if terminal likely supports it
-    IO.puts("Emojis: 🚀 🔥 💻 🎯 🎨 🧩 📊 🔍 🛠️ ⚙️\n")
+    IO.puts("Symbols: [>] [*] [+] [o] [#] [=] [|] [?] [!] [@]\\n")
 
     # Test various unicode characters
     IO.puts("Unicode symbols:")

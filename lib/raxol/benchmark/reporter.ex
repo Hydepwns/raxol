@@ -259,12 +259,12 @@ defmodule Raxol.Benchmark.Reporter do
     """)
 
     # Summary Section
-    IO.puts("📊 SUMMARY")
+    IO.puts("[STATS] SUMMARY")
     IO.puts("=" |> String.duplicate(70))
     print_summary(report_data.summary)
 
     # Performance Highlights
-    IO.puts("\n🚀 PERFORMANCE HIGHLIGHTS")
+    IO.puts("\n[FAST] PERFORMANCE HIGHLIGHTS")
     IO.puts("=" |> String.duplicate(70))
     print_performance_highlights(report_data.performance_metrics)
 
@@ -278,7 +278,7 @@ defmodule Raxol.Benchmark.Reporter do
     print_recommendations_section(report_data.recommendations)
 
     # Detailed Results
-    IO.puts("\n📈 DETAILED RESULTS")
+    IO.puts("\n[TREND] DETAILED RESULTS")
     IO.puts("=" |> String.duplicate(70))
     print_detailed_results(report_data.detailed_results)
 

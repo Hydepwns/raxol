@@ -118,7 +118,7 @@ defmodule Raxol.PreCommit.ErrorFormatter do
     IO.puts("")
 
     # Print main message
-    IO.puts(color_text("  ❌ #{formatted.message}", :red, color))
+    IO.puts(color_text("  [FAIL] #{formatted.message}", :red, color))
     IO.puts("")
 
     # Print details if verbose
@@ -135,10 +135,10 @@ defmodule Raxol.PreCommit.ErrorFormatter do
     # Print fix suggestion
     case formatted.fix_command do
       nil ->
-        IO.puts(color_text("  💡 #{formatted.fix_description}", :cyan, color))
+        IO.puts(color_text("  [TIP] #{formatted.fix_description}", :cyan, color))
 
       cmd ->
-        IO.puts(color_text("  💡 To fix:", :cyan, color))
+        IO.puts(color_text("  [TIP] To fix:", :cyan, color))
         IO.puts(color_text("     $ #{cmd}", :green, color))
         IO.puts("")
         IO.puts(color_text("  #{formatted.fix_description}", :white, color))
@@ -151,7 +151,7 @@ defmodule Raxol.PreCommit.ErrorFormatter do
 
         IO.puts(
           color_text(
-            "  🔧 This can be auto-fixed with: mix raxol.pre_commit --fix",
+            "  [FIX] This can be auto-fixed with: mix raxol.pre_commit --fix",
             :blue,
             color
           )
@@ -168,7 +168,7 @@ defmodule Raxol.PreCommit.ErrorFormatter do
 
       url ->
         IO.puts("")
-        IO.puts(color_text("  📚 Learn more: #{url}", :white, color))
+        IO.puts(color_text("  [DOCS] Learn more: #{url}", :white, color))
     end
 
     IO.puts("")

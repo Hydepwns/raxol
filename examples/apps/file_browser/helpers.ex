@@ -8,24 +8,24 @@ defmodule Examples.FileBrowser.Helpers do
   def file_icon(entry) do
     case entry.type do
       :directory ->
-        "📁"
+        "[DIR]"
 
       :symlink ->
-        "🔗"
+        "[LINK]"
 
       _ ->
         case entry.extension do
-          ext when ext in [".ex", ".exs"] -> "💧"
-          ext when ext in [".js", ".ts"] -> "🟨"
-          ext when ext in [".py"] -> "🐍"
-          ext when ext in [".rb"] -> "💎"
-          ext when ext in [".md"] -> "📝"
-          ext when ext in [".txt", ".log"] -> "📄"
-          ext when ext in [".jpg", ".png", ".gif"] -> "🖼️"
-          ext when ext in [".mp3", ".wav", ".ogg"] -> "🎵"
-          ext when ext in [".mp4", ".avi", ".mov"] -> "🎬"
-          ext when ext in [".zip", ".tar", ".gz"] -> "📦"
-          _ -> "📄"
+          ext when ext in [".ex", ".exs"] -> "[ELIXIR]"
+          ext when ext in [".js", ".ts"] -> "[JS]"
+          ext when ext in [".py"] -> "[PYTHON]"
+          ext when ext in [".rb"] -> "[RUBY]"
+          ext when ext in [".md"] -> "[MD]"
+          ext when ext in [".txt", ".log"] -> "[TXT]"
+          ext when ext in [".jpg", ".png", ".gif"] -> "[IMG]"
+          ext when ext in [".mp3", ".wav", ".ogg"] -> "[AUDIO]"
+          ext when ext in [".mp4", ".avi", ".mov"] -> "[VIDEO]"
+          ext when ext in [".zip", ".tar", ".gz"] -> "[ARCHIVE]"
+          _ -> "[TXT]"
         end
     end
   end

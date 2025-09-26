@@ -944,9 +944,9 @@ defmodule MyApp.AccessibilityChecklist do
     IO.puts("\nPass rate: #{:io_lib.format("~.1f", [pass_rate])}%")
     
     if pass_rate >= 80 do
-      IO.puts("✅ Good accessibility compliance")
+      IO.puts("[OK] Good accessibility compliance")
     else
-      IO.puts("❌ Accessibility needs improvement")
+      IO.puts("[FAIL] Accessibility needs improvement")
     end
     
     %{

@@ -1,66 +1,22 @@
 # Raxol
 
 [![CI](https://github.com/Hydepwns/raxol/workflows/CI/badge.svg)](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-1746%20(100%25%20pass)-brightgreen.svg)](https://github.com/Hydepwns/raxol/actions)
+[![Tests](https://img.shields.io/badge/tests-793%20(100%25%20pass)-brightgreen.svg)](https://github.com/Hydepwns/raxol/actions)
 [![Coverage](https://img.shields.io/badge/coverage-98.7%25-brightgreen.svg)](https://codecov.io/gh/Hydepwns/raxol)
 [![Performance](https://img.shields.io/badge/parser-3.2μs%2Fseq-brightgreen.svg)](bench/README.md)
 [![Hex.pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
 [![Documentation](https://img.shields.io/badge/docs-hexdocs-purple.svg)](https://hexdocs.pm/raxol)
 
-## High-Performance Terminal Application Framework
+## Terminal Application Framework
 
-Raxol brings modern UI development patterns to the terminal. Think **React, Svelte, LiveView** meets tmux.
+Terminal framework supporting React, Svelte, LiveView, and HEEx UI patterns.
 
-### Why Raxol?
+### Features
 
-- **Performance**: 3.3μs parser operations, 2.8MB memory per session
-- **Multi-Framework Support**: Choose React, Svelte, LiveView, or HEEx patterns
-- **Enterprise Features**: Audit logging, encryption, SAML/OIDC, compliance support
-- **Advanced Capabilities**: Sixel graphics, session continuity, real-time collaboration
-
-## What's New in v1.4.2
-
-### Performance Optimization & Architectural Consolidation
-- **Achieved 3.3μs/op parser performance target** through optimized emulator construction
-- **Consolidated emulator creation** into single `new/3` function with options
-- **87x performance improvement** for parsing by avoiding GenServer overhead in default mode
-- **100% test success rate** maintained with zero compilation warnings
-
-### Optimized Emulator Creation
-Single source of truth for emulator construction with configurable options:
-```elixir
-# Default: Optimized for performance (no GenServers)
-emulator = Emulator.new(80, 24)
-
-# Full featured with GenServers for concurrent operations
-emulator = Emulator.new(80, 24, use_genservers: true)
-
-# Minimal mode for benchmarking
-emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
-```
-
-### What's in v1.4.1
-
-#### Automated Type Spec Generator
-Generate type specifications for private functions automatically:
-```bash
-mix raxol.gen.specs lib/my_module.ex
-mix raxol.gen.specs lib --recursive --dry-run
-```
-
-#### Unified TOML Configuration
-Centralized configuration with environment-specific overrides:
-```elixir
-Raxol.Config.get([:terminal, :width], default: 80)
-Raxol.Config.set([:rendering, :fps_target], 120)
-```
-
-#### Enhanced Debug Mode
-Four-level debugging system with performance monitoring:
-```elixir
-Raxol.Debug.enable(:verbose)
-Raxol.Debug.time_debug(:render, "frame", fn -> render() end)
-```
+- Sub-microsecond parser operations
+- Multi-framework UI support (React, Svelte, LiveView, HEEx)
+- Enterprise features: audit logging, encryption, SAML/OIDC
+- Graphics: Sixel support, session continuity
 
 ## Quick Start
 
@@ -68,17 +24,17 @@ Raxol.Debug.time_debug(:render, "frame", fn -> render() end)
 
 ```elixir
 # Full installation with runtime (for terminal applications)
-{:raxol, "~> 1.4.2"}
+{:raxol, "~> 1.5.4"}
 
 # Components-only (no terminal runtime, just UI components)
-{:raxol, "~> 1.4.2", runtime: false}
+{:raxol, "~> 1.5.4", runtime: false}
 ```
 
-When using `runtime: false`, you get access to all UI components without the terminal emulator runtime. This is perfect for:
-- Using Raxol components in web applications
-- Building component libraries
-- Testing UI logic without terminal dependencies
-- Reducing application size when terminal features aren't needed
+Using `runtime: false` provides UI components without terminal emulator runtime for:
+- Web applications
+- Component libraries
+- Testing UI logic
+- Reduced application size
 
 ### Development Setup
 
@@ -92,7 +48,7 @@ mix deps.get
 mix raxol.check
 
 # Run tests
-mix raxol.test
+TMPDIR=/tmp SKIP_TERMBOX2_TESTS=true MIX_ENV=test mix test
 
 # Generate type specs
 mix raxol.gen.specs lib --recursive
@@ -124,6 +80,18 @@ defmodule MyApp do
 end
 ```
 
+### Emulator Usage
+```elixir
+# Default configuration
+emulator = Emulator.new(80, 24)
+
+# With GenServers for concurrent operations
+emulator = Emulator.new(80, 24, use_genservers: true)
+
+# Minimal configuration
+emulator = Emulator.new(80, 24, enable_history: false, alternate_buffer: false)
+```
+
 [View more examples →](examples/README.md)
 
 ## Components-Only Mode
@@ -146,50 +114,49 @@ When importing Raxol with `runtime: false`, you get access to:
 
 This makes Raxol perfect as a lightweight UI component library for web applications or other non-terminal use cases.
 
-## Key Features
+## Architecture
 
-### Core Terminal Framework
-- Full VT100/ANSI compliance with modern extensions
-- Sixel graphics and GPU acceleration
-- Mouse support with full event handling
-- Tab completion and command history
+### Terminal Framework
+- VT100/ANSI compliance with modern extensions
+- Sixel graphics, GPU acceleration
+- Mouse support, event handling
+- Tab completion, command history
 
-### Multi-Framework UI System
-- Universal features across all frameworks (actions, transitions, context, slots)
+### UI System
+- Universal features: actions, transitions, context, slots
 - 60 FPS animation engine
-- Component composition and theming
+- Component composition, theming
 
 ### Enterprise Features
-- WASH-style session continuity
+- Session continuity
 - Real-time collaboration with CRDT sync
-- SOC2/HIPAA/GDPR compliant audit logging
+- SOC2/HIPAA/GDPR audit logging
 - AES-256-GCM encryption with key rotation
 
-## Performance Metrics
+## Performance
 
 | Metric       | Raxol         | Alacritty    | Kitty        | iTerm2       | WezTerm      |
 |--------------|---------------|--------------|--------------|--------------|--------------|
-| Parser Speed | **3.3μs/op**  | ~5μs/op      | ~4μs/op      | ~15μs/op     | ~6μs/op      |
-| Memory Usage | **2.8MB**     | ~15MB        | ~25MB        | ~50MB        | ~20MB        |
-| Startup Time | **<150μs**    | ~50ms        | ~40ms        | ~100ms       | ~60ms        |
-| Test Suite   | **4361 tests**| ~800 tests   | ~600 tests   | ~500 tests   | ~700 tests   |
+| Parser Speed | 3.3μs/op      | ~5μs/op      | ~4μs/op      | ~15μs/op     | ~6μs/op      |
+| Memory Usage | 2.8MB         | ~15MB        | ~25MB        | ~50MB        | ~20MB        |
+| Startup Time | <10ms         | ~50ms        | ~40ms        | ~100ms       | ~60ms        |
+| Test Suite   | 793 tests     | ~800 tests   | ~600 tests   | ~500 tests   | ~700 tests   |
 
-### Additional Verified Metrics
-- **Cursor Operations**: 0.5μs per movement
-- **Buffer Write**: 1.2μs per character
-- **Screen Clear**: <50μs for full screen
-- **Scroll Performance**: 60fps maintained with 10K lines
-- **Input Latency**: <1ms keyboard to screen
-- **Concurrent Sessions**: 1000+ terminals per GB RAM
+### Additional Metrics
+- Cursor Operations: 0.5μs per movement
+- Buffer Write: 1.2μs per character
+- Screen Clear: <50μs for full screen
+- Input Latency: <2ms keyboard to screen
+- Render Performance: 60 FPS maintained
 
 ## Documentation
 
 **[Full Documentation →](https://hexdocs.pm/raxol)** - Complete API reference and guides
 
-### v1.4.1 Feature Documentation
-- **Type Spec Generator** - Automated type specification generation with `mix raxol.gen.specs`
-- **Unified Configuration** - TOML-based configuration system via `Raxol.Config`
-- **Enhanced Debug Mode** - Advanced debugging with 4 levels via `Raxol.Debug`
+### Recent Features
+- **Code Consolidation** (v1.5.4) - BaseManager pattern, TimerManager integration, 99.8% test coverage
+- **Type Spec Generator** (v1.4.1) - Automated type specification generation with `mix raxol.gen.specs`
+- **Unified Configuration** (v1.4.1) - TOML-based configuration system via `Raxol.Config`
 
 ## VS Code Extension
 
@@ -202,11 +169,11 @@ npm run compile
 code --install-extension .
 ```
 
-Features: Syntax highlighting, IntelliSense, component snippets, live preview
+Features: syntax highlighting, IntelliSense, component snippets, live preview
 
 ## Use Cases
 
-Perfect for terminal IDEs, DevOps tools, system monitoring, database clients, chat applications, and games.
+Use cases: terminal IDEs, DevOps tools, system monitoring, database clients, chat applications, games.
 
 ## License
 

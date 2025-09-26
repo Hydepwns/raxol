@@ -217,7 +217,7 @@ defmodule Raxol.Core.Performance.Caches.FontMetricsCache do
     end
 
     # Cache common emoji
-    common_emoji = ["😀", "😊", "👍", "❤️", "🔥", "✨", "🎉", "💯", "🚀", "⭐"]
+    common_emoji = ["[SMILE]", "[HAPPY]", "[THUMBS]", "[HEART]", "[HOT]", "[SHINE]", "[DONE]", "[100]", "[FAST]", "[STAR]"]
 
     for char <- common_emoji do
       get_char_width(char)

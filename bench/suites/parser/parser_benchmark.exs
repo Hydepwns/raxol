@@ -1,16 +1,13 @@
 defmodule ParserBenchmark do
-  @moduledoc """
-  Benchmarks for the ANSI parser to identify performance bottlenecks.
-  """
+  @moduledoc "ANSI parser performance benchmarks."
 
   alias Raxol.Terminal.TerminalParser, as: Parser
   alias Raxol.Terminal.Emulator
 
   def run do
-    # Create a base emulator for testing
     emulator = Emulator.new(80, 24)
-    
-    # Test cases with increasing complexity
+
+    # Test cases
     simple_text = "Hello, World!"
     
     ansi_colored = "\e[31mRed \e[32mGreen \e[34mBlue\e[0m Normal"
@@ -25,7 +22,6 @@ defmodule ParserBenchmark do
       "\e[#{i};1H\e[KLine #{i}"
     end) |> Enum.join("")
     
-    # Large text block for throughput testing
     large_text = String.duplicate("Lorem ipsum dolor sit amet, consectetur adipiscing elit. ", 1000)
     
     Benchee.run(%{
@@ -43,22 +39,21 @@ defmodule ParserBenchmark do
       {Benchee.Formatters.HTML, file: "bench/output/parser_benchmark.html"}
     ])
     
-    # Profile specific operations
     profile_csi_parsing(emulator)
     profile_state_transitions(emulator)
   end
   
   defp profile_csi_parsing(emulator) do
-    IO.puts("\n=== CSI Parsing Profile ===")
+    IO.puts("\nCSI Parsing Profile:")
     
     csi_sequences = [
-      "\e[31m",     # SGR - color
-      "\e[1;1H",    # CUP - cursor position
-      "\e[2J",      # ED - erase display
-      "\e[K",       # EL - erase line
-      "\e[10;20r",  # DECSTBM - set scroll region
-      "\e[?25h",    # DECTCEM - show cursor
-      "\e[?25l"     # DECTCEM - hide cursor
+      "\e[31m",     # SGR
+      "\e[1;1H",    # CUP
+      "\e[2J",      # ED
+      "\e[K",       # EL
+      "\e[10;20r",  # DECSTBM
+      "\e[?25h",    # DECTCEM show
+      "\e[?25l"     # DECTCEM hide
     ]
     
     results = Enum.map(csi_sequences, fn seq ->
@@ -74,7 +69,7 @@ defmodule ParserBenchmark do
   end
   
   defp profile_state_transitions(emulator) do
-    IO.puts("\n=== State Transition Profile ===")
+    IO.puts("\nState Transition Profile:")
     
     transitions = [
       {"ground->escape", "\e"},
@@ -97,5 +92,4 @@ defmodule ParserBenchmark do
   end
 end
 
-# Run the benchmark
 ParserBenchmark.run()

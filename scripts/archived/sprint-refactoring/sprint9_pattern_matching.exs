@@ -6,7 +6,7 @@ defmodule Sprint9PatternMatching do
   """
 
   def run do
-    IO.puts("\n🔧 SPRINT 9 - Pattern Matching Refactoring\n")
+    IO.puts("\n[CONFIG] SPRINT 9 - Pattern Matching Refactoring\n")
     IO.puts("=" |> String.duplicate(80))
 
     # Find high-priority files to refactor
@@ -24,10 +24,10 @@ defmodule Sprint9PatternMatching do
 
     Enum.each(high_priority_files, fn file ->
       if File.exists?(file) do
-        IO.puts("  ✅ #{file}")
+        IO.puts("  [OK] #{file}")
         analyze_and_suggest_refactoring(file)
       else
-        IO.puts("  ❌ #{file} - Not found")
+        IO.puts("  [FAIL] #{file} - Not found")
       end
     end)
   end
@@ -48,7 +48,7 @@ defmodule Sprint9PatternMatching do
     suggestions = suggestions ++ find_nested_conditions(lines)
 
     if length(suggestions) > 0 do
-      IO.puts("\n  📝 Refactoring suggestions for #{Path.basename(file)}:")
+      IO.puts("\n  [NOTE] Refactoring suggestions for #{Path.basename(file)}:")
 
       Enum.each(suggestions, fn suggestion ->
         IO.puts("    - #{suggestion}")

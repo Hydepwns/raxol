@@ -6,7 +6,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
   that can be used with the Colors.convert_to_palette/2 function.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   @type palette_name :: atom()
@@ -17,12 +17,6 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
 
   # Client API
 
-  @doc """
-  Starts the palette registry.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Registers a custom color palette.

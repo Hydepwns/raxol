@@ -16,10 +16,10 @@ defmodule CheckLinks do
     broken_links = check_all_links(doc_files)
 
     if broken_links == [] do
-      IO.puts("✅ All documentation links are valid!")
+      IO.puts("[OK] All documentation links are valid!")
       System.halt(0)
     else
-      IO.puts("❌ Found broken links:")
+      IO.puts("[FAIL] Found broken links:")
 
       Enum.each(broken_links, fn {file, link} ->
         IO.puts("  #{file}: #{link}")

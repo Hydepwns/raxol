@@ -5,15 +5,15 @@
 
 defmodule HotReloadRefactoringTest do
   def run do
-    IO.puts("🔍 Testing hot_reload.ex refactoring...")
+    IO.puts("[CHECK] Testing hot_reload.ex refactoring...")
 
     # Test 1: Check file can be parsed (syntax validation)
     case Code.string_to_quoted!(File.read!("lib/raxol/devtools/hot_reload.ex")) do
       {:defmodule, _, _} ->
-        IO.puts("✅ Module syntax is valid")
+        IO.puts("[OK] Module syntax is valid")
 
       _ ->
-        IO.puts("❌ Module syntax error")
+        IO.puts("[FAIL] Module syntax error")
         System.halt(1)
     end
 
@@ -49,15 +49,15 @@ defmodule HotReloadRefactoringTest do
 
     if main_try_catch_count > 0 do
       IO.puts(
-        "❌ Main logic still has try/catch blocks: #{main_try_catch_count}"
+        "[FAIL] Main logic still has try/catch blocks: #{main_try_catch_count}"
       )
 
       System.halt(1)
     else
-      IO.puts("✅ Main logic converted to functional patterns")
+      IO.puts("[OK] Main logic converted to functional patterns")
 
       IO.puts(
-        "✅ Helper functions use appropriate exception handling: #{helper_try_catch_count}"
+        "[OK] Helper functions use appropriate exception handling: #{helper_try_catch_count}"
       )
     end
 
@@ -69,10 +69,10 @@ defmodule HotReloadRefactoringTest do
 
     # Should have at least 8 'with' statements from our refactoring
     if with_count < 8 do
-      IO.puts("❌ Not enough 'with' statements found: #{with_count}")
+      IO.puts("[FAIL] Not enough 'with' statements found: #{with_count}")
       System.halt(1)
     else
-      IO.puts("✅ Functional 'with' statements added: #{with_count}")
+      IO.puts("[OK] Functional 'with' statements added: #{with_count}")
     end
 
     # Test 4: Check for functional helper functions
@@ -91,10 +91,10 @@ defmodule HotReloadRefactoringTest do
       |> Enum.reject(fn helper -> String.contains?(content, helper) end)
 
     if length(missing_helpers) > 0 do
-      IO.puts("❌ Missing helper functions: #{inspect(missing_helpers)}")
+      IO.puts("[FAIL] Missing helper functions: #{inspect(missing_helpers)}")
       System.halt(1)
     else
-      IO.puts("✅ All functional helper functions present")
+      IO.puts("[OK] All functional helper functions present")
     end
 
     # Test 5: Check that complex functional flows are preserved
@@ -116,19 +116,19 @@ defmodule HotReloadRefactoringTest do
         {pattern, count}
       end)
 
-    IO.puts("✅ Critical functional patterns found:")
+    IO.puts("[OK] Critical functional patterns found:")
 
     Enum.each(pattern_counts, fn {pattern, count} ->
       IO.puts("  • #{pattern}: #{count}")
     end)
 
     IO.puts("\n🎉 Hot reload refactoring validation successful!")
-    IO.puts("📊 Conversion summary:")
+    IO.puts("[REPORT] Conversion summary:")
     IO.puts("  • Main logic try/catch: #{main_try_catch_count}")
     IO.puts("  • Helper try/catch: #{helper_try_catch_count}")
     IO.puts("  • With statements: #{with_count}")
     IO.puts("  • Helper functions: #{length(helper_functions)}")
-    IO.puts("  • Functional error handling: ✅")
+    IO.puts("  • Functional error handling: [OK]")
   end
 end
 

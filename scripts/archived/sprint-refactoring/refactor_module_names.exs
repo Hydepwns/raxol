@@ -168,9 +168,9 @@ defmodule ModuleRefactor do
         # Delete old file if it's different from new path
         if old_path != new_path do
           File.rm!(old_path)
-          IO.puts("  ✓ Renamed file: #{old_path} -> #{new_path}")
+          IO.puts("  [OK] Renamed file: #{old_path} -> #{new_path}")
         else
-          IO.puts("  ✓ Updated module name in: #{old_path}")
+          IO.puts("  [OK] Updated module name in: #{old_path}")
         end
 
         # Update all references in the codebase
@@ -203,7 +203,7 @@ defmodule ModuleRefactor do
 
         # Update references from EventHandlers to Raxol.Terminal.EventHandlers
         update_references("EventHandlers", "Raxol.Terminal.EventHandlers")
-        IO.puts("  ✓ Fixed namespace")
+        IO.puts("  [OK] Fixed namespace")
       else
         IO.puts(
           "  Would fix namespace: EventHandlers -> Raxol.Terminal.EventHandlers"

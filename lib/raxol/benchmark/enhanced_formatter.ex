@@ -469,7 +469,7 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
   defp generate_header_html(analysis, timestamp) do
     """
     <div class="header">
-        <h1>🚀 Raxol Performance Analysis</h1>
+        <h1>[FAST] Raxol Performance Analysis</h1>
         <p>Enhanced Benchmark Report - #{timestamp}</p>
         <p>#{analysis.summary.scenario_count} scenarios analyzed</p>
     </div>
@@ -481,7 +481,7 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
 
     """
     <div class="card">
-        <h2>📊 Performance Summary</h2>
+        <h2>[STATS] Performance Summary</h2>
         <div class="grid">
             <div class="metric">
                 <div class="metric-value good">#{summary.scenario_count}</div>
@@ -523,7 +523,7 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
 
     """
     <div class="card">
-        <h2>⚡ Performance Analysis</h2>
+        <h2>[POWER] Performance Analysis</h2>
         <table>
             <thead>
                 <tr>
@@ -573,7 +573,7 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
 
     """
     <div class="card">
-        <h2>🎯 Target Compliance</h2>
+        <h2>[TARGET] Target Compliance</h2>
         <table>
             <thead>
                 <tr>
@@ -598,7 +598,7 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
     if memory.available do
       """
       <div class="card">
-          <h2>💾 Memory Analysis</h2>
+          <h2>[SAVE] Memory Analysis</h2>
           <p><strong>Total Memory:</strong> #{memory.total_memory_mb} MB</p>
           <p><strong>Average Memory:</strong> #{memory.average_memory_mb} MB</p>
           <!-- Memory details would go here -->
@@ -607,7 +607,7 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
     else
       """
       <div class="card">
-          <h2>💾 Memory Analysis</h2>
+          <h2>[SAVE] Memory Analysis</h2>
           <p>#{memory.message}</p>
       </div>
       """
@@ -619,7 +619,7 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
 
     """
     <div class="card">
-        <h2>🔍 Statistical Insights</h2>
+        <h2>[SEARCH] Statistical Insights</h2>
         <p><strong>Coefficient of Variation:</strong> #{Float.round(insights.coefficient_of_variation, 3)}</p>
         <p><strong>Performance Distribution:</strong> #{insights.performance_distribution}</p>
         <!-- More insights would go here -->
@@ -633,8 +633,8 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
     if Enum.empty?(recommendations) do
       """
       <div class="card">
-          <h2>💡 Recommendations</h2>
-          <p class="good">✅ All benchmarks performing well - no specific recommendations at this time.</p>
+          <h2>[TIP] Recommendations</h2>
+          <p class="good">[OK] All benchmarks performing well - no specific recommendations at this time.</p>
       </div>
       """
     else
@@ -645,7 +645,7 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
 
       """
       <div class="card">
-          <h2>💡 Recommendations</h2>
+          <h2>[TIP] Recommendations</h2>
           <ul>#{rec_items}</ul>
       </div>
       """
@@ -655,7 +655,7 @@ defmodule Raxol.Benchmark.EnhancedFormatter do
   defp generate_charts_html(_analysis) do
     """
     <div class="card">
-        <h2>📈 Performance Charts</h2>
+        <h2>[TREND] Performance Charts</h2>
         <div class="chart-container">
             <canvas id="performanceChart"></canvas>
         </div>

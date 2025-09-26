@@ -395,7 +395,7 @@ defmodule Raxol.UI.Layout.Engine do
   defp get_display_text("", placeholder), do: placeholder
   defp get_display_text(value, _placeholder), do: value
 
-  defp get_checkbox_text(true), do: "[✓]"
+  defp get_checkbox_text(true), do: "[[OK]]"
   defp get_checkbox_text(false), do: "[ ]"
 
   # --- End Measurement Logic ---

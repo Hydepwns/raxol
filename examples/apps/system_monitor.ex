@@ -118,7 +118,7 @@ defmodule SystemMonitor do
     ~H"""
     <div class="monitor-header">
       <div class="title">
-        🖥️  System Monitor - <%= @current_view |> to_string() |> String.capitalize() %>
+        [SYS] System Monitor - <%= @current_view |> to_string() |> String.capitalize() %>
       </div>
       <div class="stats">
         <span>Refresh: <%= @refresh_rate %>s</span>

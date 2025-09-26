@@ -14,18 +14,16 @@ defmodule Raxol.Metrics do
   REFACTORED: All try/catch blocks replaced with functional error handling patterns.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Repo
+  alias Raxol.Core.Utils.TimerManager
   require Raxol.Core.Runtime.Log
 
   # 5 seconds
   @collection_interval 5_000
 
-  def start_link(_) do
-    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
-  end
-
-  def init(_) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(_opts) do
     schedule_metrics_collection()
     {:ok, initial_state()}
   end
@@ -116,24 +114,27 @@ defmodule Raxol.Metrics do
     )
   end
 
-  def handle_call(:get_metrics, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_metrics, _from, state) do
     {:reply, state, state}
   end
 
-  def handle_cast({:gauge, name, value}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:gauge, name, value}, state) do
     gauges = Map.get(state, :gauges, %{})
     updated_gauges = Map.put(gauges, name, value)
     {:noreply, Map.put(state, :gauges, updated_gauges)}
   end
 
-  def handle_cast({:increment, name}, state) do
+  def handle_manager_cast({:increment, name}, state) do
     counters = Map.get(state, :counters, %{})
     current_value = Map.get(counters, name, 0)
     updated_counters = Map.put(counters, name, current_value + 1)
     {:noreply, Map.put(state, :counters, updated_counters)}
   end
 
-  def handle_info({:collect_metrics, _timer_id}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info({:collect_metrics, _timer_id}, state) do
     new_state = %{
       cpu_usage: get_cpu_usage(),
       memory_usage: get_memory_usage(),
@@ -167,8 +168,7 @@ defmodule Raxol.Metrics do
   defp schedule_metrics_collection do
     timer_id = System.unique_integer([:positive])
 
-    Process.send_after(
-      self(),
+    TimerManager.send_after(
       {:collect_metrics, timer_id},
       @collection_interval
     )

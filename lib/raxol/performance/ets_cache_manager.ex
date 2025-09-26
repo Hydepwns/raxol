@@ -12,8 +12,8 @@ defmodule Raxol.Performance.ETSCacheManager do
   Uses ETS tables with optimized access patterns and LRU eviction.
   """
 
-  use GenServer
-  require Logger
+  use Raxol.Core.Behaviours.BaseManager
+  require Raxol.Core.Runtime.Log
 
   @csi_parser_cache :raxol_csi_parser_cache
   @cell_cache :raxol_cell_cache
@@ -30,10 +30,6 @@ defmodule Raxol.Performance.ETSCacheManager do
   @max_font_metrics_entries 10000
 
   # Client API
-
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Cache a parsed CSI sequence.
@@ -301,10 +297,10 @@ defmodule Raxol.Performance.ETSCacheManager do
     GenServer.call(__MODULE__, :stats)
   end
 
-  # Server callbacks
+  # BaseManager Implementation
 
   @impl true
-  def init(_opts) do
+  def init_manager(_opts) do
     # Create ETS tables with optimal settings for each cache type
     _ =
       :ets.new(@csi_parser_cache, [
@@ -371,31 +367,31 @@ defmodule Raxol.Performance.ETSCacheManager do
   end
 
   @impl true
-  def handle_call(:clear_all, _from, state) do
+  def handle_manager_call(:clear_all, _from, state) do
     _ = :ets.delete_all_objects(@csi_parser_cache)
     _ = :ets.delete_all_objects(@cell_cache)
     _ = :ets.delete_all_objects(@style_cache)
     _ = :ets.delete_all_objects(@buffer_cache)
     _ = :ets.delete_all_objects(@layout_cache)
+    _ = :ets.delete_all_objects(@font_metrics_cache)
 
     {:reply, :ok, state}
   end
 
-  @impl true
-  def handle_call({:clear_cache, cache_name}, _from, state) do
+  def handle_manager_call({:clear_cache, cache_name}, _from, state) do
     table = get_table_name(cache_name)
     _ = :ets.delete_all_objects(table)
     {:reply, :ok, state}
   end
 
-  @impl true
-  def handle_call(:stats, _from, state) do
+  def handle_manager_call(:stats, _from, state) do
     stats = %{
       csi_parser: table_stats(@csi_parser_cache),
       cell: table_stats(@cell_cache),
       style: table_stats(@style_cache),
       buffer: table_stats(@buffer_cache),
       layout: table_stats(@layout_cache),
+      font_metrics: table_stats(@font_metrics_cache),
       hit_rates: state.stats
     }
 
@@ -444,5 +440,6 @@ defmodule Raxol.Performance.ETSCacheManager do
   defp get_table_name(:style), do: @style_cache
   defp get_table_name(:buffer), do: @buffer_cache
   defp get_table_name(:layout), do: @layout_cache
+  defp get_table_name(:font_metrics), do: @font_metrics_cache
   defp get_table_name(name), do: name
 end

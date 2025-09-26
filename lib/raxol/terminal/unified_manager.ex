@@ -54,13 +54,14 @@ defmodule Raxol.Terminal.UnifiedManager do
       {:ok, session} = UnifiedManager.execute_command(manager, session_id, command)
   """
 
-  use GenServer
-  require Logger
+  use Raxol.Core.Behaviours.BaseManager
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Commands.UnifiedCommandHandler
   alias Raxol.Terminal.ScreenBuffer.Manager, as: BufferManager
-  alias Raxol.Core.StateManager
+  alias Raxol.Core.State.UnifiedStateManager
   alias Raxol.Core.Events.EventManager
+  alias Raxol.Core.Utils.TimerManager
   alias Raxol.Terminal.Emulator
 
   defstruct [
@@ -87,28 +88,8 @@ defmodule Raxol.Terminal.UnifiedManager do
           features: list(atom())
         }
 
-  @default_config %{
-    max_sessions: 1000,
-    default_width: 80,
-    default_height: 24,
-    default_scrollback: 1000,
-    cleanup_interval: :timer.minutes(5),
-    performance_monitoring: true,
-    plugin_system_enabled: true
-  }
 
   ## Public API
-
-  @doc """
-  Starts the unified terminal manager.
-  """
-  @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts \\ []) do
-    config =
-      Keyword.get(opts, :config, %{}) |> then(&Map.merge(@default_config, &1))
-
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
 
   @doc """
   Creates a new terminal session.
@@ -204,11 +185,11 @@ defmodule Raxol.Terminal.UnifiedManager do
 
   ## GenServer Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl true
+  def init_manager(config) do
     # Initialize subsystems
     # BufferManager is a functional module, not a GenServer
-    {:ok, state_manager} = StateManager.start_link([])
+    {:ok, state_manager} = UnifiedStateManager.start_link([])
     {:ok, event_manager} = EventManager.start_link()
 
     # Initialize state
@@ -231,8 +212,8 @@ defmodule Raxol.Terminal.UnifiedManager do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:create_session, user_id, config}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:create_session, user_id, config}, _from, state) do
     case create_session_impl(state, user_id, config) do
       {:ok, session_id, updated_state} ->
         Logger.info(
@@ -246,8 +227,7 @@ defmodule Raxol.Terminal.UnifiedManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:terminate_session, session_id}, _from, state) do
+  def handle_manager_call({:terminate_session, session_id}, _from, state) do
     case terminate_session_impl(state, session_id) do
       {:ok, updated_state} ->
         Logger.info("Terminated terminal session #{session_id}")
@@ -258,8 +238,7 @@ defmodule Raxol.Terminal.UnifiedManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:process_input, session_id, input}, _from, state) do
+  def handle_manager_call({:process_input, session_id, input}, _from, state) do
     case process_input_impl(state, session_id, input) do
       {:ok, output, updated_state} ->
         {:reply, {:ok, output}, updated_state}
@@ -269,8 +248,7 @@ defmodule Raxol.Terminal.UnifiedManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:get_output, session_id}, _from, state) do
+  def handle_manager_call({:get_output, session_id}, _from, state) do
     case get_output_impl(state, session_id) do
       {:ok, output} ->
         {:reply, {:ok, output}, state}
@@ -280,8 +258,7 @@ defmodule Raxol.Terminal.UnifiedManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:execute_command, session_id, command}, _from, state) do
+  def handle_manager_call({:execute_command, session_id, command}, _from, state) do
     case execute_command_impl(state, session_id, command) do
       {:ok, result, updated_state} ->
         {:reply, {:ok, result}, updated_state}
@@ -291,8 +268,7 @@ defmodule Raxol.Terminal.UnifiedManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:resize_session, session_id, width, height}, _from, state) do
+  def handle_manager_call({:resize_session, session_id, width, height}, _from, state) do
     case resize_session_impl(state, session_id, width, height) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
@@ -302,8 +278,7 @@ defmodule Raxol.Terminal.UnifiedManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:get_session_info, session_id}, _from, state) do
+  def handle_manager_call({:get_session_info, session_id}, _from, state) do
     case get_session_info_impl(state, session_id) do
       {:ok, info} ->
         {:reply, {:ok, info}, state}
@@ -313,33 +288,29 @@ defmodule Raxol.Terminal.UnifiedManager do
     end
   end
 
-  @impl GenServer
-  def handle_call(:list_sessions, _from, state) do
+  def handle_manager_call(:list_sessions, _from, state) do
     sessions = list_sessions_impl(state)
     {:reply, {:ok, sessions}, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_manager_stats, _from, state) do
+  def handle_manager_call(:get_manager_stats, _from, state) do
     stats = get_manager_stats_impl(state)
     {:reply, {:ok, stats}, state}
   end
 
-  @impl GenServer
-  def handle_call(:cleanup, _from, state) do
+  def handle_manager_call(:cleanup, _from, state) do
     updated_state = cleanup_impl(state)
     {:reply, :ok, updated_state}
   end
 
-  @impl GenServer
-  def handle_info(:cleanup_timer, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:cleanup_timer, state) do
     updated_state = cleanup_impl(state)
     _ = schedule_cleanup(state.config.cleanup_interval)
     {:noreply, updated_state}
   end
 
-  @impl GenServer
-  def handle_info(_msg, state) do
+  def handle_manager_info(_msg, state) do
     {:noreply, state}
   end
 
@@ -596,7 +567,7 @@ defmodule Raxol.Terminal.UnifiedManager do
   end
 
   defp schedule_cleanup(interval) when is_integer(interval) do
-    Process.send_after(self(), :cleanup_timer, interval)
+    TimerManager.send_after(:cleanup_timer, interval)
   end
 
   defp schedule_cleanup(_), do: :ok

@@ -7,8 +7,9 @@ defmodule Raxol.Audit.Storage do
   using pure functional error handling patterns instead of try/catch blocks.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
+  alias Raxol.Core.Utils.TimerManager
 
   defstruct [
     :config,
@@ -17,7 +18,8 @@ defmodule Raxol.Audit.Storage do
     :current_file,
     :file_rotation,
     :compression_enabled,
-    :search_index
+    :search_index,
+    :timers
   ]
 
   @type query_filter :: %{
@@ -43,9 +45,8 @@ defmodule Raxol.Audit.Storage do
 
   ## Client API
 
-  def start_link(config) do
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1
+  # Usage: Raxol.Audit.Storage.start_link(name: __MODULE__, config: config)
 
   @doc """
   Stores a batch of audit events.
@@ -96,10 +97,11 @@ defmodule Raxol.Audit.Storage do
     GenServer.call(storage, :get_statistics)
   end
 
-  ## GenServer Implementation
+  ## BaseManager Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    config = Keyword.get(opts, :config, %{})
     storage_path = config[:storage_path] || "priv/data/audit"
 
     # Ensure storage directory exists
@@ -118,16 +120,16 @@ defmodule Raxol.Audit.Storage do
     # Load existing indexes
     _ = load_existing_indexes(state)
 
-    # Schedule file rotation
-    # Hourly
-    {:ok, _} = :timer.send_interval(3_600_000, :rotate_file)
+    # Schedule file rotation using TimerManager
+    timers = %{}
+    |> TimerManager.add_timer(:rotate_file, :interval, TimerManager.intervals().hour)
 
     Logger.info("Audit storage initialized at #{storage_path}")
-    {:ok, state}
+    {:ok, Map.put(state, :timers, timers)}
   end
 
-  @impl GenServer
-  def handle_call({:store_batch, events}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:store_batch, events}, _from, state) do
     case store_events(events, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -137,28 +139,24 @@ defmodule Raxol.Audit.Storage do
     end
   end
 
-  @impl GenServer
-  def handle_call({:query, filters, opts}, _from, state) do
+  def handle_manager_call({:query, filters, opts}, _from, state) do
     result = execute_query(filters, opts, state)
     {:reply, result, state}
   end
 
-  @impl GenServer
-  def handle_call({:get_range, start_time, end_time}, _from, state) do
+  def handle_manager_call({:get_range, start_time, end_time}, _from, state) do
     filters = %{start_time: start_time, end_time: end_time}
     result = execute_query(filters, [], state)
     {:reply, result, state}
   end
 
-  @impl GenServer
-  def handle_call({:delete_before, timestamp}, _from, state) do
+  def handle_manager_call({:delete_before, timestamp}, _from, state) do
     # delete_old_events/2 always returns {:ok, count, new_state}, no error case possible
     {:ok, count, new_state} = delete_old_events(timestamp, state)
     {:reply, {:ok, count}, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:create_index, field}, _from, state) do
+  def handle_manager_call({:create_index, field}, _from, state) do
     new_indexes = create_field_index(field, state.indexes)
     new_state = %{state | indexes: new_indexes}
 
@@ -168,14 +166,13 @@ defmodule Raxol.Audit.Storage do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_statistics, _from, state) do
+  def handle_manager_call(:get_statistics, _from, state) do
     stats = calculate_statistics(state)
     {:reply, {:ok, stats}, state}
   end
 
-  @impl GenServer
-  def handle_info(:rotate_file, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:rotate_file, state) do
     # rotate_log_file/1 currently always returns {:ok, new_state}
     {:ok, new_state} = rotate_log_file(state)
     {:noreply, new_state}

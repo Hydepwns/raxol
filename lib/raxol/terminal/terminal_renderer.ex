@@ -310,23 +310,6 @@ defmodule Raxol.Terminal.Renderer do
     %{}
   end
 
-  # Optimized style building functions
-  defp add_color_style(parts, style_map, key, css_prop, theme) do
-    case Map.get(style_map, key) do
-      nil -> parts
-      color ->
-        css_value = resolve_color_value(color, theme)
-        if css_value == "", do: parts, else: ["#{css_prop}: #{css_value}" | parts]
-    end
-  end
-
-  defp add_boolean_style(parts, style_map, key, css_prop, css_value) do
-    if Map.get(style_map, key, false) do
-      ["#{css_prop}: #{css_value}" | parts]
-    else
-      parts
-    end
-  end
 
   defp resolve_color_value(color, theme) when is_atom(color) do
     # Basic color resolution with fallback to default color map

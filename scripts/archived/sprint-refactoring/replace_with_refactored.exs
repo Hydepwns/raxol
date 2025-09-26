@@ -40,17 +40,17 @@ defmodule ReplaceWithRefactored do
 
     case mode do
       :dry_run ->
-        IO.puts("\n🔍 DRY RUN - No files will be modified")
+        IO.puts("\n[CHECK] DRY RUN - No files will be modified")
         Enum.each(@replacements, &analyze_replacement/1)
 
       :apply ->
-        IO.puts("\n⚠️  APPLYING REPLACEMENTS - Files will be replaced!")
+        IO.puts("\n[WARN]  APPLYING REPLACEMENTS - Files will be replaced!")
         IO.puts("Press Enter to continue or Ctrl+C to abort...")
         IO.gets("")
 
         Enum.each(@replacements, &apply_replacement/1)
 
-        IO.puts("\n✅ Replacement complete!")
+        IO.puts("\n[OK] Replacement complete!")
         IO.puts("\nNext steps:")
         IO.puts("1. Update module names in refactored files")
         IO.puts("2. Run tests: mix test")
@@ -61,17 +61,17 @@ defmodule ReplaceWithRefactored do
   defp analyze_replacement({target, source}) do
     cond do
       not File.exists?(source) ->
-        IO.puts("❌ Missing source: #{source}")
+        IO.puts("[FAIL] Missing source: #{source}")
 
       not File.exists?(target) ->
-        IO.puts("❌ Missing target: #{target}")
+        IO.puts("[FAIL] Missing target: #{target}")
 
       true ->
         source_size = File.stat!(source).size
         target_size = File.stat!(target).size
 
         IO.puts(
-          "✅ #{target} ← #{source} (#{source_size} bytes → #{target_size} bytes)"
+          "[OK] #{target} ← #{source} (#{source_size} bytes → #{target_size} bytes)"
         )
     end
   end
@@ -79,10 +79,10 @@ defmodule ReplaceWithRefactored do
   defp apply_replacement({target, source}) do
     cond do
       not File.exists?(source) ->
-        IO.puts("❌ Skipping #{target}: source #{source} not found")
+        IO.puts("[FAIL] Skipping #{target}: source #{source} not found")
 
       not File.exists?(target) ->
-        IO.puts("❌ Skipping #{target}: target not found")
+        IO.puts("[FAIL] Skipping #{target}: target not found")
 
       true ->
         # Read the refactored content
@@ -98,7 +98,7 @@ defmodule ReplaceWithRefactored do
         # Write to target
         File.write!(target, fixed_content)
 
-        IO.puts("✅ Replaced: #{target}")
+        IO.puts("[OK] Replaced: #{target}")
         IO.puts("   Module: #{refactored_module} → #{original_module}")
     end
   end

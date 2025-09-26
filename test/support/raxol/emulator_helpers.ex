@@ -18,10 +18,17 @@ defmodule Raxol.Test.EmulatorHelpers do
         # Move to start of line y (0-based index -> y+1 is 1-based row)
         {emu_moved, _} = Emulator.process_input(emu, "\e[#{y + 1};1H")
 
-        # Write line number y
+        # Get buffer width to truncate text if needed
+        buffer = Emulator.get_screen_buffer(emu_moved)
+        width = buffer.width
+
+        # Write line number y - but truncate to fit buffer width
         line_text = "Line #{y}"
-        # SIMPLIFIED: Just write the line text, let emulator handle rest
-        text_to_write = line_text
+        text_to_write = if String.length(line_text) > width do
+          String.slice(line_text, 0, width)
+        else
+          line_text
+        end
 
         # Write the content for the line
         {emu_written, _} = Emulator.process_input(emu_moved, text_to_write)

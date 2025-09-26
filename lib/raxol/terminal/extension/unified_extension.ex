@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   unloading, and managing terminal extensions.
   """
   use GenServer
-  alias Raxol.Terminal.Extension.Manager
+  alias Raxol.Terminal.Extension.ExtensionManager, as: Manager
 
   # Client API
 

@@ -58,6 +58,36 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   end
 
   @doc """
+  Writes a sixel graphics character at the specified position with the sixel flag set.
+  """
+  @spec write_sixel_char(
+          Core.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t(),
+          map() | nil
+        ) :: Core.t()
+  def write_sixel_char(buffer, x, y, char, style \\ nil) do
+    if Core.within_bounds?(buffer, x, y) do
+      style = style || buffer.default_style
+      cell = Raxol.Terminal.Cell.new_sixel(char, style)
+
+      new_cells =
+        List.update_at(buffer.cells, y, fn row ->
+          List.replace_at(row, x, cell)
+        end)
+
+      %{
+        buffer
+        | cells: new_cells,
+          damage_regions: add_damage_region(buffer.damage_regions, x, y, 1, 1)
+      }
+    else
+      buffer
+    end
+  end
+
+  @doc """
   Writes a string starting at the specified position.
   """
   @spec write_text(
@@ -486,10 +516,13 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   def clear_line(buffer, _y, _mode), do: buffer
 
   @doc """
-  Deletes characters at cursor (stub).
+  Deletes characters at cursor position.
   """
   @spec delete_chars(Core.t(), non_neg_integer()) :: Core.t()
-  def delete_chars(buffer, _count), do: buffer
+  def delete_chars(buffer, count) do
+    alias Raxol.Terminal.Buffer.LineOperations
+    LineOperations.delete_chars(buffer, count)
+  end
 
   @doc """
   Deletes lines (stub with 2 args).
@@ -507,7 +540,27 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   Erases characters (stub with 2 args).
   """
   @spec erase_chars(Core.t(), non_neg_integer()) :: Core.t()
-  def erase_chars(buffer, _count), do: buffer
+  def erase_chars(buffer, count) do
+    {x, y} = buffer.cursor_position
+    case y < buffer.height and x < buffer.width do
+      true ->
+        line = Enum.at(buffer.cells, y, [])
+        empty_cell = Cell.empty()
+
+        # Erase count characters starting at x - delete them and shift content left
+        {before, after_x} = Enum.split(line, x)
+        {_erased, remaining} = Enum.split(after_x, count)
+        # Pad at end to maintain line width
+        erased_count = length(after_x) - length(remaining)
+        padding = List.duplicate(empty_cell, erased_count)
+        new_line = before ++ remaining ++ padding
+
+        new_cells = List.replace_at(buffer.cells, y, new_line)
+        %{buffer | cells: new_cells, damage_regions: add_damage_region(buffer.damage_regions, x, y, count, 1)}
+      false ->
+        buffer
+    end
+  end
 
   @doc """
   Erases characters at position (stub with 4 args).
@@ -599,10 +652,19 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   def insert_lines(buffer, _x, _y, _count, _style), do: buffer
 
   @doc """
-  Prepends lines to buffer (stub).
+  Prepends lines to buffer.
   """
+  @spec prepend_lines(Core.t(), integer()) :: Core.t()
+  def prepend_lines(buffer, count) when is_integer(count) do
+    alias Raxol.Terminal.Buffer.LineOperations
+    LineOperations.prepend_lines(buffer, count)
+  end
+
   @spec prepend_lines(Core.t(), list()) :: Core.t()
-  def prepend_lines(buffer, _lines), do: buffer
+  def prepend_lines(buffer, lines) when is_list(lines) do
+    alias Raxol.Terminal.Buffer.LineOperations
+    LineOperations.prepend_lines(buffer, lines)
+  end
 
   @doc """
   Scrolls content down (stub).

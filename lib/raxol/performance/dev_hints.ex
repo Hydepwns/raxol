@@ -162,7 +162,7 @@ defmodule Raxol.Performance.DevHints do
       start_time: System.monotonic_time(:millisecond)
     }
 
-    Logger.info("🔍 Performance hints enabled for development")
+    Logger.info("[SEARCH] Performance hints enabled for development")
 
     {:ok, state}
   end
@@ -315,12 +315,12 @@ defmodule Raxol.Performance.DevHints do
   defp show_hint(category, message, metadata) do
     category_emoji =
       case category do
-        :slow_operation -> "🐌"
-        :error_pattern -> "❌"
-        :memory_usage -> "🧠"
-        :pattern_detected -> "🔍"
-        :optimization -> "⚡"
-        _ -> "💡"
+        :slow_operation -> "[SLOW]"
+        :error_pattern -> "[FAIL]"
+        :memory_usage -> "[BRAIN]"
+        :pattern_detected -> "[SEARCH]"
+        :optimization -> "[POWER]"
+        _ -> "[TIP]"
       end
 
     Logger.warning([

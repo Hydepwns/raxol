@@ -6,7 +6,7 @@ The Raxol Type Spec Generator (`mix raxol.gen.specs`) is an automated tool that 
 
 ## Installation
 
-The generator is included with Raxol v1.4.1+ and requires no additional installation.
+The generator is included with Raxol v1.4.1+ and requires no additional installation. Enhanced in v1.5.4 with improved BaseManager support.
 
 ## Usage
 

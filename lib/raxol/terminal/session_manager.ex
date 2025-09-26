@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.SessionManager do
       SessionManager.detach_client(client)
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   defmodule Session do
@@ -217,13 +217,8 @@ defmodule Raxol.Terminal.SessionManager do
 
   ## Public API
 
-  @doc """
-  Starts the session manager.
-  """
-  def start_link(config \\ %{}) do
-    merged_config = Map.merge(@default_config, config)
-    GenServer.start_link(__MODULE__, merged_config, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 which will call init_manager/1
+  # Callers should use: SessionManager.start_link(name: __MODULE__)
 
   @doc """
   Creates a new terminal session.
@@ -372,10 +367,15 @@ defmodule Raxol.Terminal.SessionManager do
     GenServer.call(__MODULE__, {:get_session_stats, session_id})
   end
 
-  ## GenServer Implementation
+  ## BaseManager Implementation
 
-  @impl GenServer
-  def init(config) do
+  # BaseManager provides GenServer callbacks that delegate to handle_manager_*
+
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    # Merge with default config
+    config = Map.merge(@default_config, Map.new(opts))
+
     # Initialize persistence directory
     persistence_dir = Path.expand(config.persistence_directory)
     File.mkdir_p!(persistence_dir)
@@ -410,8 +410,8 @@ defmodule Raxol.Terminal.SessionManager do
     {:ok, final_state}
   end
 
-  @impl GenServer
-  def handle_call({:create_session, name, config}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:create_session, name, config}, _from, state) do
     session_id = generate_session_id(name)
 
     case create_new_session(session_id, name, config, state) do
@@ -424,8 +424,7 @@ defmodule Raxol.Terminal.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_call(:list_sessions, _from, state) do
+  def handle_manager_call(:list_sessions, _from, state) do
     sessions_summary =
       state.sessions
       |> Map.values()
@@ -434,16 +433,14 @@ defmodule Raxol.Terminal.SessionManager do
     {:reply, sessions_summary, state}
   end
 
-  @impl GenServer
-  def handle_call({:get_session, session_id}, _from, state) do
+  def handle_manager_call({:get_session, session_id}, _from, state) do
     case Map.get(state.sessions, session_id) do
       nil -> {:reply, {:error, :session_not_found}, state}
       session -> {:reply, {:ok, session}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call({:destroy_session, session_id}, _from, state) do
+  def handle_manager_call({:destroy_session, session_id}, _from, state) do
     case Map.get(state.sessions, session_id) do
       nil ->
         {:reply, {:error, :session_not_found}, state}
@@ -459,8 +456,7 @@ defmodule Raxol.Terminal.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:attach_session, session_id, client_config}, _from, state) do
+  def handle_manager_call({:attach_session, session_id, client_config}, _from, state) do
     case Map.get(state.sessions, session_id) do
       nil ->
         {:reply, {:error, :session_not_found}, state}
@@ -485,8 +481,7 @@ defmodule Raxol.Terminal.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:detach_client, client_id}, _from, state) do
+  def handle_manager_call({:detach_client, client_id}, _from, state) do
     case Map.get(state.clients, client_id) do
       nil ->
         {:reply, {:error, :client_not_found}, state}
@@ -516,8 +511,7 @@ defmodule Raxol.Terminal.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_call(
+  def handle_manager_call(
         {:create_window, session_id, window_name, config},
         _from,
         state
@@ -531,8 +525,7 @@ defmodule Raxol.Terminal.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_call(
+  def handle_manager_call(
         {:split_pane, session_id, window_id, pane_id, direction, config},
         _from,
         state
@@ -555,8 +548,7 @@ defmodule Raxol.Terminal.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_call(
+  def handle_manager_call(
         {:send_input, session_id, window_id, pane_id, input},
         _from,
         state
@@ -574,8 +566,7 @@ defmodule Raxol.Terminal.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:save_session, session_id}, _from, state) do
+  def handle_manager_call({:save_session, session_id}, _from, state) do
     case Map.get(state.sessions, session_id) do
       nil ->
         {:reply, {:error, :session_not_found}, state}
@@ -588,15 +579,14 @@ defmodule Raxol.Terminal.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_info(:cleanup_sessions, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:cleanup_sessions, state) do
     Logger.debug("Running session cleanup")
     new_state = cleanup_expired_sessions(state)
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_info({:session_activity, session_id}, state) do
+  def handle_manager_info({:session_activity, session_id}, state) do
     # Update last activity timestamp
     case Map.get(state.sessions, session_id) do
       nil ->
@@ -613,8 +603,7 @@ defmodule Raxol.Terminal.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_info(_msg, state) do
+  def handle_manager_info(_msg, state) do
     {:noreply, state}
   end
 

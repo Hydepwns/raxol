@@ -6,9 +6,17 @@ defmodule Raxol.Core.Runtime.Events.HandlerTest do
   alias Raxol.Core.Runtime.Events.Handler, as: Handlers
 
   setup do
+    # Clean up any existing handlers before each test
+    ProcessStore.clear()
+
     # Create a sample event and state for testing
     event = %{type: :test_event, data: "test data"}
     state = %{count: 0}
+
+    on_exit(fn ->
+      # Clean up handlers after each test
+      ProcessStore.clear()
+    end)
 
     # Return these as the test context
     {:ok, %{event: event, state: state}}

@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   @spec new(non_neg_integer(), non_neg_integer()) :: Raxol.Terminal.Emulator.t()
   def new(width, height) do
     # Initialize all required managers and processes
-    state_pid = get_pid(Raxol.Terminal.State.Manager.start_link([]))
+    state_pid = get_pid(Raxol.Terminal.State.TerminalStateManager.start_link([]))
     event_pid = get_pid(Raxol.Terminal.Event.Handler.start_link([]))
 
     buffer_pid =
@@ -132,7 +132,7 @@ defmodule Raxol.Terminal.Emulator.Constructors do
   @spec new(non_neg_integer(), non_neg_integer(), keyword()) ::
           Raxol.Terminal.Emulator.t()
   def new(width, height, opts) do
-    state_pid = get_pid(Raxol.Terminal.State.Manager.start_link(opts))
+    state_pid = get_pid(Raxol.Terminal.State.TerminalStateManager.start_link(opts))
     event_pid = get_pid(Raxol.Terminal.Event.Handler.start_link(opts))
 
     buffer_pid =

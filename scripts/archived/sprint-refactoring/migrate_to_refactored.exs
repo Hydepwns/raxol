@@ -74,21 +74,21 @@ defmodule MigrateToRefactored do
 
     files = find_files_to_migrate()
 
-    IO.puts("\n📊 Files to migrate: #{length(files)}")
+    IO.puts("\n[REPORT] Files to migrate: #{length(files)}")
 
     case mode do
       :dry_run ->
-        IO.puts("\n🔍 DRY RUN - No files will be modified")
+        IO.puts("\n[CHECK] DRY RUN - No files will be modified")
         Enum.each(files, &analyze_file/1)
 
       :apply ->
-        IO.puts("\n⚠️  APPLYING MIGRATIONS - Files will be modified!")
+        IO.puts("\n[WARN]  APPLYING MIGRATIONS - Files will be modified!")
         IO.puts("Press Enter to continue or Ctrl+C to abort...")
         IO.gets("")
 
         Enum.each(files, &migrate_file/1)
 
-        IO.puts("\n✅ Migration complete!")
+        IO.puts("\n[OK] Migration complete!")
         IO.puts("\nNext steps:")
 
         IO.puts(
@@ -171,7 +171,7 @@ defmodule MigrateToRefactored do
       # Write migrated version
       File.write!(file, new_content)
 
-      IO.puts("✅ Migrated: #{file}")
+      IO.puts("[OK] Migrated: #{file}")
       IO.puts("   Backup: #{file}.backup")
     end
   end

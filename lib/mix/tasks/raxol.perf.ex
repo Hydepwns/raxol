@@ -67,16 +67,16 @@ defmodule Mix.Tasks.Raxol.Perf do
   defp handle_command([], _opts), do: handle_command(["analyze"], [])
 
   defp handle_command(["analyze"], _opts) do
-    Mix.shell().info("🔍 Analyzing current performance...")
+    Mix.shell().info("[SEARCH] Analyzing current performance...")
 
     analysis = Raxol.Performance.DevProfiler.analyze_current_performance()
 
-    Mix.shell().info("\n📊 Performance Analysis Results:")
+    Mix.shell().info("\n[STATS] Performance Analysis Results:")
     Mix.shell().info("Memory: #{analysis.memory.total_mb}MB total")
     Mix.shell().info("Processes: #{analysis.processes.count}")
 
     if length(analysis.memory.issues) > 0 do
-      Mix.shell().info("\n⚠️  Issues detected:")
+      Mix.shell().info("\n[WARN]  Issues detected:")
 
       Enum.each(
         analysis.memory.issues ++
@@ -86,7 +86,7 @@ defmodule Mix.Tasks.Raxol.Perf do
         end
       )
     else
-      Mix.shell().info("\n✅ No performance issues detected")
+      Mix.shell().info("\n[OK] No performance issues detected")
     end
   end
 
@@ -96,7 +96,7 @@ defmodule Mix.Tasks.Raxol.Perf do
       module = Module.concat([module_name])
 
       if Code.ensure_loaded?(module) do
-        Mix.shell().info("🔬 Profiling module: #{module}")
+        Mix.shell().info("[PROF] Profiling module: #{module}")
 
         profile_opts = build_profile_opts(opts)
 
@@ -107,7 +107,7 @@ defmodule Mix.Tasks.Raxol.Perf do
             profile_module_functions(module)
           end)
 
-        Mix.shell().info("✅ Profiling complete")
+        Mix.shell().info("[OK] Profiling complete")
       else
         Mix.shell().error("Module #{module} not found or not loaded")
       end
@@ -122,7 +122,7 @@ defmodule Mix.Tasks.Raxol.Perf do
   end
 
   defp handle_command(["hints"], _opts) do
-    Mix.shell().info("💡 Current Performance Hints:")
+    Mix.shell().info("[TIP] Current Performance Hints:")
 
     if Raxol.Performance.DevHints.enabled?() do
       stats = Raxol.Performance.DevHints.stats()
@@ -153,7 +153,7 @@ defmodule Mix.Tasks.Raxol.Perf do
     interval = Keyword.get(opts, :interval, 30) * 1000
     duration = Keyword.get(opts, :duration, 5) * 1000
 
-    Mix.shell().info("📊 Starting continuous performance monitoring...")
+    Mix.shell().info("[STATS] Starting continuous performance monitoring...")
 
     Mix.shell().info(
       "Interval: #{interval / 1000}s, Duration: #{duration / 1000}s per session"
@@ -176,7 +176,7 @@ defmodule Mix.Tasks.Raxol.Perf do
   defp handle_command(["memory"], opts) do
     duration = Keyword.get(opts, :duration, 10) * 1000
 
-    Mix.shell().info("🧠 Profiling memory usage for #{duration / 1000}s...")
+    Mix.shell().info("[BRAIN] Profiling memory usage for #{duration / 1000}s...")
 
     Raxol.Performance.DevProfiler.profile_memory(duration)
   end
@@ -184,7 +184,7 @@ defmodule Mix.Tasks.Raxol.Perf do
   defp handle_command(["report"], opts) do
     format = Keyword.get(opts, :format, "text")
 
-    Mix.shell().info("📋 Generating performance report...")
+    Mix.shell().info("[LIST] Generating performance report...")
 
     profile_opts = build_profile_opts(opts)
 

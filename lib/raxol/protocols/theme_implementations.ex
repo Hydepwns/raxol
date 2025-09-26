@@ -60,19 +60,17 @@ defmodule Raxol.Protocols.ThemeImplementations do
             codes
         end
 
-      if codes == [] do
-        ""
-      else
-        "\e[#{Enum.join(codes, ";")}m"
+      case codes do
+        [] -> ""
+        codes -> "\e[#{Enum.join(codes, ";")}m"
       end
     end
 
     defp deep_merge_styles(current, new) when is_map(current) and is_map(new) do
       Map.merge(current, new, fn _key, v1, v2 ->
-        if is_map(v1) and is_map(v2) do
-          deep_merge_styles(v1, v2)
-        else
-          v2
+        case {is_map(v1), is_map(v2)} do
+          {true, true} -> deep_merge_styles(v1, v2)
+          _ -> v2
         end
       end)
     end
@@ -170,26 +168,26 @@ defmodule Raxol.Protocols.ThemeImplementations do
     defp render_color_swatches(theme, width) do
       colors = theme.colors || %{}
 
-      if map_size(colors) == 0 do
-        "No colors defined"
-      else
-        colors
-        # Limit based on width
-        |> Enum.take(div(width, 12))
-        |> Enum.map_join("  ", fn {name, value} ->
-          swatch = render_color_swatch(value)
-          "#{swatch} #{String.slice(to_string(name), 0, 8)}"
-        end)
+      case map_size(colors) do
+        0 ->
+          "No colors defined"
+        _ ->
+          colors
+          # Limit based on width
+          |> Enum.take(div(width, 12))
+          |> Enum.map_join("  ", fn {name, value} ->
+            swatch = render_color_swatch(value)
+            "#{swatch} #{String.slice(to_string(name), 0, 8)}"
+          end)
       end
     end
 
     defp render_component_styles_preview(theme, _width) do
       components = theme.component_styles || %{}
 
-      if map_size(components) == 0 do
-        "No component styles defined"
-      else
-        "Component Styles: #{Enum.join(Map.keys(components), ", ")}"
+      case map_size(components) do
+        0 -> "No component styles defined"
+        _ -> "Component Styles: #{Enum.join(Map.keys(components), ", ")}"
       end
     end
 
@@ -340,12 +338,13 @@ defmodule Raxol.Protocols.ThemeImplementations do
       reset = "\e[0m"
       swatch = "#{ansi_bg}    #{reset}"
 
-      if show_info do
-        hex = color.hex || "#000000"
-        name = if color.name, do: " (#{color.name})", else: ""
-        "#{swatch} #{hex}#{name}"
-      else
-        swatch
+      case show_info do
+        true ->
+          hex = color.hex || "#000000"
+          name = if color.name, do: " (#{color.name})", else: ""
+          "#{swatch} #{hex}#{name}"
+        false ->
+          swatch
       end
     end
 

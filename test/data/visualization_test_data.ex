@@ -48,9 +48,9 @@ defmodule Raxol.Test.VisualizationTestData do
 
       # Dataset with unicode and emoji
       unicode_labels: [
-        %{label: "🚀 Rocket", value: 75},
-        %{label: "🌈 Rainbow", value: 45},
-        %{label: "⭐ Star ⭐ Star", value: 30},
+        %{label: "[>] Rocket", value: 75},
+        %{label: "[~] Rainbow", value: 45},
+        %{label: "[*] Star [*] Star", value: 30},
         %{label: "Café München", value: 60}
       ],
 
@@ -198,7 +198,7 @@ defmodule Raxol.Test.VisualizationTestData do
 
       # Unicode and emoji names
       unicode_names: %{
-        name: "🌍 World",
+        name: "[WORLD] World",
         value: 100,
         children: [
           %{

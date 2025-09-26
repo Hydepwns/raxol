@@ -48,7 +48,7 @@ defmodule Raxol.Benchmarks.Performance.MemoryUsage do
         )
     }
 
-    IO.puts("✓ Memory usage benchmarks complete")
+    IO.puts("[OK] Memory usage benchmarks complete")
     results
   end
 

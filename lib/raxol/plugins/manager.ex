@@ -4,17 +4,10 @@ defmodule Raxol.Plugins.Manager do
   Handles plugin lifecycle, registration, and state management.
   """
 
-  use GenServer
-  require Logger
+  use Raxol.Core.Behaviours.BaseManager
+  require Raxol.Core.Runtime.Log
 
   # Client API
-
-  @doc """
-  Start the plugin manager.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   List all registered plugins.
@@ -44,10 +37,10 @@ defmodule Raxol.Plugins.Manager do
     GenServer.call(__MODULE__, {:unregister_plugin, plugin_id})
   end
 
-  # Server Callbacks
+  # BaseManager Implementation
 
   @impl true
-  def init(_opts) do
+  def init_manager(_opts) do
     state = %{
       plugins: %{},
       enabled: %{}
@@ -57,29 +50,26 @@ defmodule Raxol.Plugins.Manager do
   end
 
   @impl true
-  def handle_call(:list_plugins, _from, state) do
+  def handle_manager_call(:list_plugins, _from, state) do
     plugins = Map.keys(state.plugins)
     {:reply, plugins, state}
   end
 
-  @impl true
-  def handle_call({:get_plugin_state, plugin_id}, _from, state) do
+  def handle_manager_call({:get_plugin_state, plugin_id}, _from, state) do
     case Map.get(state.plugins, plugin_id) do
       nil -> {:reply, {:error, :not_found}, state}
       plugin -> {:reply, {:ok, plugin}, state}
     end
   end
 
-  @impl true
-  def handle_call({:register_plugin, plugin}, _from, state) do
+  def handle_manager_call({:register_plugin, plugin}, _from, state) do
     plugin_id = Map.get(plugin, :id) || Map.get(plugin, "id")
     updated_plugins = Map.put(state.plugins, plugin_id, plugin)
     updated_state = %{state | plugins: updated_plugins}
     {:reply, :ok, updated_state}
   end
 
-  @impl true
-  def handle_call({:unregister_plugin, plugin_id}, _from, state) do
+  def handle_manager_call({:unregister_plugin, plugin_id}, _from, state) do
     updated_plugins = Map.delete(state.plugins, plugin_id)
     updated_enabled = Map.delete(state.enabled, plugin_id)
 

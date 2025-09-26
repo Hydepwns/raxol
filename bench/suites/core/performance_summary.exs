@@ -152,10 +152,10 @@ defmodule PerformanceSummary do
     IO.puts("""
     
     Key Achievements:
-    ✓ Emulator creation: 4.6x faster (eliminated GenServer overhead)
-    ✓ ANSI parsing: ~30x faster (from ~100 μs to ~3 μs)
-    ✓ SGR processing: 442x faster (pattern matching vs map lookups)
-    ✓ Plain text parsing: Optimized to ~34 μs
+    [OK] Emulator creation: 4.6x faster (eliminated GenServer overhead)
+    [OK] ANSI parsing: ~30x faster (from ~100 μs to ~3 μs)
+    [OK] SGR processing: 442x faster (pattern matching vs map lookups)
+    [OK] Plain text parsing: Optimized to ~34 μs
     
     Architecture Changes:
     • Created EmulatorLite for performance-critical paths (no GenServers)
@@ -164,9 +164,9 @@ defmodule PerformanceSummary do
     • Optimized parser state transitions
     
     Performance Targets Met:
-    ✓ Plain text parsing < 500 μs (achieved: ~34 μs)
-    ✓ ANSI parsing < 100 μs (achieved: ~3 μs)
-    ✓ Emulator creation < 1000 μs (achieved: ~58 μs)
+    [OK] Plain text parsing < 500 μs (achieved: ~34 μs)
+    [OK] ANSI parsing < 100 μs (achieved: ~3 μs)
+    [OK] Emulator creation < 1000 μs (achieved: ~58 μs)
     """)
     
     IO.puts(String.duplicate("=", 80))

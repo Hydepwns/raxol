@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.Tab.UnifiedTabTest do
     test "creates tab with custom configuration" do
       config = %{
         name: "Custom Tab",
-        icon: "🔧",
+        icon: "[CONFIG]",
         color: "#FF0000",
         state: :active
       }
@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.Tab.UnifiedTabTest do
       assert {:ok, tab_id} = UnifiedTab.create_tab(config)
       assert {:ok, tab_state} = UnifiedTab.get_tab_state(tab_id)
       assert tab_state.config.name == "Custom Tab"
-      assert tab_state.config.icon == "🔧"
+      assert tab_state.config.icon == "[CONFIG]"
       assert tab_state.config.color == "#FF0000"
       assert tab_state.config.state == :active
     end
@@ -72,14 +72,14 @@ defmodule Raxol.Terminal.Tab.UnifiedTabTest do
 
       new_config = %{
         name: "Updated Tab",
-        icon: "🔄",
+        icon: "[RELOAD]",
         color: "#00FF00"
       }
 
       assert :ok = UnifiedTab.update_tab_config(tab_id, new_config)
       assert {:ok, tab_state} = UnifiedTab.get_tab_state(tab_id)
       assert tab_state.config.name == "Updated Tab"
-      assert tab_state.config.icon == "🔄"
+      assert tab_state.config.icon == "[RELOAD]"
       assert tab_state.config.color == "#00FF00"
     end
 

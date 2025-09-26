@@ -11,26 +11,29 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
   """
   @spec delete_lines(map(), integer()) :: map()
   def delete_lines(buffer, count) do
-    delete_lines(buffer, buffer.cursor_y, count)
+    {_x, y} = buffer.cursor_position
+    delete_lines(buffer, y, count)
   end
 
   @spec delete_lines(map(), integer(), integer()) :: map()
   def delete_lines(buffer, start_y, count) do
-    lines = Map.get(buffer, :lines, %{})
-    height = Map.get(buffer, :height, 24)
+    alias Raxol.Terminal.ScreenBuffer.DataAdapter
 
-    # Remove the specified lines
-    new_lines =
-      Enum.reduce(0..(height - 1), %{}, fn y, acc ->
-        cond do
-          y < start_y -> Map.put(acc, y, Map.get(lines, y))
-          # Skip deleted lines
-          y < start_y + count -> acc
-          true -> Map.put(acc, y - count, Map.get(lines, y))
-        end
-      end)
+    DataAdapter.with_lines_format(buffer, fn buffer_with_lines ->
+      lines = Map.get(buffer_with_lines, :lines, %{})
+      height = Map.get(buffer_with_lines, :height, 24)
 
-    %{buffer | lines: new_lines}
+      # Remove the specified lines using functional patterns
+      new_lines =
+        0..(height - 1)
+        |> Enum.map(fn new_y ->
+          {new_y, map_deleted_line(lines, new_y, start_y, count, height)}
+        end)
+        |> Enum.reject(fn {_y, line} -> is_nil(line) end)
+        |> Enum.into(%{})
+
+      %{buffer_with_lines | lines: new_lines}
+    end)
   end
 
   @spec delete_lines(map(), integer(), integer(), integer(), integer()) :: map()
@@ -89,6 +92,28 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
     width = Map.get(buffer, :width, 80)
     Enum.map(0..(width - 1), fn _ -> %{char: " ", style: %{}} end)
   end
+
+  # Pattern match for new line positions after deletion
+  # Lines before deletion stay in same position
+  defp map_deleted_line(lines, new_y, start_y, _count, _height) when new_y < start_y do
+    Map.get(lines, new_y)
+  end
+
+  # Lines after deletion get content from shifted positions
+  defp map_deleted_line(lines, new_y, start_y, count, height) when new_y >= start_y do
+    source_y = new_y + count
+    map_shifted_line(lines, source_y, height)
+  end
+
+  defp create_empty_line_with_defaults do
+    Enum.map(0..79, fn _ -> %{char: " ", style: %{}} end)
+  end
+
+  defp map_shifted_line(lines, source_y, height) when source_y < height do
+    Map.get(lines, source_y)
+  end
+
+  defp map_shifted_line(_lines, _source_y, _height), do: create_empty_line_with_defaults()
 
   defp fill_new_lines(buffer, start_y, count, style) do
     Utils.fill_new_lines(buffer, start_y, count, style)

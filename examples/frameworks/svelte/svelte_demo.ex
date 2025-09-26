@@ -149,12 +149,12 @@ defmodule Examples.SvelteDemo do
   defp demo_todo_app do
     IO.puts("  Todo App Demo (Architecture Overview):")
 
-    IO.puts("    ✓ Reactive state management")
-    IO.puts("    ✓ Derived computed values")
-    IO.puts("    ✓ Two-way data binding")
-    IO.puts("    ✓ Conditional rendering")
-    IO.puts("    ✓ Array operations")
-    IO.puts("    ✓ Event handling")
+    IO.puts("    [OK] Reactive state management")
+    IO.puts("    [OK] Derived computed values")
+    IO.puts("    [OK] Two-way data binding")
+    IO.puts("    [OK] Conditional rendering")
+    IO.puts("    [OK] Array operations")
+    IO.puts("    [OK] Event handling")
 
     # Demonstrate the data flow concepts
     todos = [

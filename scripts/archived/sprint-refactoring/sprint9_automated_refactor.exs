@@ -18,11 +18,11 @@ defmodule Sprint9AutomatedRefactor do
     # Fix clause grouping in GenServers
     fix_genserver_clause_grouping()
 
-    IO.puts("\n✅ Refactoring complete! Run tests to verify changes.")
+    IO.puts("\n[OK] Refactoring complete! Run tests to verify changes.")
   end
 
   defp refactor_simple_type_checks do
-    IO.puts("\n📝 Refactoring simple type checks to guard clauses...")
+    IO.puts("\n[NOTE] Refactoring simple type checks to guard clauses...")
 
     patterns = [
       # is_binary check
@@ -104,7 +104,7 @@ defmodule Sprint9AutomatedRefactor do
   end
 
   defp refactor_cond_statements do
-    IO.puts("\n📝 Analyzing cond statements for refactoring...")
+    IO.puts("\n[NOTE] Analyzing cond statements for refactoring...")
 
     # Find files with cond statements
     files_with_cond =
@@ -140,10 +140,10 @@ defmodule Sprint9AutomatedRefactor do
         )
 
         if can_convert_to_pattern_match?(conditions) do
-          IO.puts("      ✅ Can be converted to pattern matching")
+          IO.puts("      [OK] Can be converted to pattern matching")
           suggest_pattern_match_conversion(conditions)
         else
-          IO.puts("      ⚠️  Complex conditions - manual refactoring needed")
+          IO.puts("      [WARN]  Complex conditions - manual refactoring needed")
         end
       end)
     end
@@ -224,7 +224,7 @@ defmodule Sprint9AutomatedRefactor do
   end
 
   defp fix_genserver_clause_grouping do
-    IO.puts("\n📝 Fixing GenServer clause grouping...")
+    IO.puts("\n[NOTE] Fixing GenServer clause grouping...")
 
     genserver_files =
       Path.wildcard("lib/**/*{server,manager}.ex")

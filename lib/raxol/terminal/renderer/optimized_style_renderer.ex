@@ -13,11 +13,11 @@ defmodule Raxol.Terminal.Renderer.OptimizedStyleRenderer do
   """
 
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell
+  # alias Raxol.Terminal.Cell  # Not used currently
   alias Raxol.Terminal.ANSI.TextFormatting
 
   # Pre-compiled at compile time for zero runtime cost
-  @default_style %TextFormatting{}
+  # @default_style %TextFormatting{}  # Not used currently
 
   # Common style patterns pre-compiled as binaries
   @style_patterns %{
@@ -232,7 +232,7 @@ defmodule Raxol.Terminal.Renderer.OptimizedStyleRenderer do
   end
 
   defp maybe_add_cursor(content, nil, _width), do: content
-  defp maybe_add_cursor(content, {y, x}, width) do
+  defp maybe_add_cursor(content, {y, x}, _width) do
     # Add cursor overlay element
     cursor_style = "position:absolute;left:#{x}ch;top:#{y}lh;width:1ch;height:1lh;background:rgba(255,255,255,0.5)"
     [content, "<div class=\"cursor\" style=\"", cursor_style, "\"></div>"]

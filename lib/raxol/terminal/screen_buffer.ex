@@ -41,6 +41,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
     Writer
   }
 
+  alias Raxol.Core.Utils.Validation
   alias Raxol.Terminal.ScreenBuffer.{
     EraseOperations,
     MemoryUtils,
@@ -121,12 +122,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   @spec validate_dimension(integer(), non_neg_integer()) :: non_neg_integer()
-  defp validate_dimension(dimension, _default)
-       when is_integer(dimension) and dimension > 0 do
-    dimension
+  defp validate_dimension(dimension, default) do
+    Validation.validate_dimension(dimension, default)
   end
-
-  defp validate_dimension(_, default), do: default
 
   @spec create_empty_grid(non_neg_integer(), non_neg_integer()) ::
           list(list(Cell.t()))
@@ -222,11 +220,12 @@ defmodule Raxol.Terminal.ScreenBuffer do
           TextFormatting.text_style() | nil
         ) :: t()
   def write_char(buffer, x, y, char, style) when x >= 0 and y >= 0 do
-    if x < buffer.width and y < buffer.height do
-      # Use Writer module to handle wide characters properly
-      Writer.write_char(buffer, x, y, char, style)
-    else
-      buffer
+    case {x < buffer.width, y < buffer.height} do
+      {true, true} ->
+        # Use Writer module to handle wide characters properly
+        Writer.write_char(buffer, x, y, char, style)
+      _ ->
+        buffer
     end
   end
 
@@ -247,26 +246,28 @@ defmodule Raxol.Terminal.ScreenBuffer do
           TextFormatting.text_style() | nil
         ) :: t()
   def write_string(buffer, x, y, string, style) when x >= 0 and y >= 0 do
-    if x < buffer.width and y < buffer.height do
-      # Use the Writer module which properly handles wide characters
-      Writer.write_string(buffer, x, y, string, style)
-    else
-      buffer
+    case {x < buffer.width, y < buffer.height} do
+      {true, true} ->
+        # Use the Writer module which properly handles wide characters
+        Writer.write_string(buffer, x, y, string, style)
+      _ ->
+        buffer
     end
   end
 
   @impl Raxol.Terminal.ScreenBufferBehaviour
   def get_char(buffer, x, y) do
-    if x >= 0 and x < buffer.width and y >= 0 and y < buffer.height do
-      row = Enum.at(buffer.cells, y, [])
-      cell = Enum.at(row, x)
+    case {x >= 0 and x < buffer.width, y >= 0 and y < buffer.height} do
+      {true, true} ->
+        row = Enum.at(buffer.cells, y, [])
+        cell = Enum.at(row, x)
 
-      case cell do
-        %{char: char} -> char
-        _ -> " "
-      end
-    else
-      " "
+        case cell do
+          %{char: char} -> char
+          _ -> " "
+        end
+      _ ->
+        " "
     end
   end
 
@@ -318,8 +319,15 @@ defmodule Raxol.Terminal.ScreenBuffer do
               end
           end)
           |> Enum.join("")
+          |> String.trim_trailing()
         end)
-        |> Enum.join("\n")
+        |> Enum.reverse()
+        |> Enum.drop_while(&(&1 == ""))
+        |> Enum.reverse()
+        |> case do
+          [] -> ""
+          lines -> Enum.join(lines, "\n")
+        end
       _ -> ""
     end
   end

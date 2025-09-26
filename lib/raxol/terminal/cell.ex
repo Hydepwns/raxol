@@ -78,6 +78,19 @@ defmodule Raxol.Terminal.Cell do
   end
 
   @doc """
+  Creates a new cell representing a sixel graphics pixel.
+  """
+  def new_sixel(char \\ " ", style \\ TextFormatting.new()) do
+    %__MODULE__{
+      char: char || " ",
+      style: style,
+      dirty: true,
+      wide_placeholder: false,
+      sixel: true
+    }
+  end
+
+  @doc """
   Returns the character of the cell.
   """
   @spec get_char(t()) :: String.t() | char()

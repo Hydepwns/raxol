@@ -65,11 +65,11 @@ defmodule RefactoredCleanup do
       
       # Write the updated content to the original path
       File.write!(original_path, updated_content)
-      IO.puts("  ✓ Replaced original with refactored version")
+      IO.puts("  [OK] Replaced original with refactored version")
       
       # Delete the refactored file
       File.rm!(refactored_path)
-      IO.puts("  ✓ Removed refactored file")
+      IO.puts("  [OK] Removed refactored file")
       
       %{success: true, file: refactored_path}
     rescue

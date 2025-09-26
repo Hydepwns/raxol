@@ -321,21 +321,21 @@ defmodule Raxol.PreCommit.Progress do
     end
   end
 
-  defp status_icon(:pending, _), do: "⏳"
+  defp status_icon(:pending, _), do: "[WAIT]"
 
   defp status_icon(:running, spinner_index) do
     Enum.at(@spinner_frames, spinner_index)
   end
 
-  defp status_icon(:completed, _), do: "✅"
-  defp status_icon(:warning, _), do: "⚠️"
-  defp status_icon(:failed, _), do: "❌"
+  defp status_icon(:completed, _), do: "[OK]"
+  defp status_icon(:warning, _), do: "[WARN]"
+  defp status_icon(:failed, _), do: "[FAIL]"
 
-  defp final_status_icon(:pending), do: "⏳"
-  defp final_status_icon(:running), do: "🔄"
-  defp final_status_icon(:completed), do: "✅"
-  defp final_status_icon(:warning), do: "⚠️"
-  defp final_status_icon(:failed), do: "❌"
+  defp final_status_icon(:pending), do: "[WAIT]"
+  defp final_status_icon(:running), do: "[RELOAD]"
+  defp final_status_icon(:completed), do: "[OK]"
+  defp final_status_icon(:warning), do: "[WARN]"
+  defp final_status_icon(:failed), do: "[FAIL]"
 
   defp format_check_name(name) when is_atom(name) do
     name |> to_string() |> String.capitalize() |> String.pad_trailing(10)

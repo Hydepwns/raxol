@@ -3,15 +3,15 @@ defmodule Raxol.Plugins.EventHandler do
   Handles events for plugin system.
   """
 
+  alias Raxol.Plugins.EventHandler.InputEvents
   alias Raxol.Plugins.EventHandler.OutputEvents
 
   @doc """
   Handles input events.
   """
   @spec handle_input(term(), term()) :: {:ok, term()}
-  def handle_input(manager, _input) do
-    # Stub implementation
-    {:ok, manager}
+  def handle_input(manager, input) do
+    InputEvents.handle_input(manager, input)
   end
 
   @doc """

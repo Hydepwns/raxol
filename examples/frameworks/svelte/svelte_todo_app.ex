@@ -64,7 +64,7 @@ defmodule Examples.SvelteTodoApp do
       status =
         cond do
           @total_count == 0 -> "No todos yet"
-          @active_count == 0 -> "All done! 🎉"
+          @active_count == 0 -> "All done! [DONE]"
           @active_count == 1 -> "1 item left"
           true -> "#{@active_count} items left"
         end

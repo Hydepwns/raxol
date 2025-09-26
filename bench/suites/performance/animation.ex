@@ -40,7 +40,7 @@ defmodule Raxol.Benchmarks.Performance.Animation do
         calculate_animation_smoothness(frame_time_consistency, dropped_frames)
     }
 
-    IO.puts("✓ Animation performance benchmarks complete")
+    IO.puts("[OK] Animation performance benchmarks complete")
     results
   end
 

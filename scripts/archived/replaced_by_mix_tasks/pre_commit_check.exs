@@ -197,16 +197,16 @@ defmodule PreCommitCheck do
     # Check if it's a real warning or just NIF build failure
     cond do
       exit_code == 0 ->
-        IO.puts("✅ Zero compilation warnings detected!")
+        IO.puts("[OK] Zero compilation warnings detected!")
         :ok
       
       String.contains?(output, "Could not compile with \"make\"") ->
         # NIF build failure, not a warning issue
-        IO.puts("⚠️  NIF build failed (not a warning issue), continuing...")
+        IO.puts("[WARN]  NIF build failed (not a warning issue), continuing...")
         :ok
         
       true ->
-        IO.puts("❌ Compilation warnings found:")
+        IO.puts("[FAIL] Compilation warnings found:")
         IO.puts(output)
         :error
     end

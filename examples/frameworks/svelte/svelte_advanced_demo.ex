@@ -220,7 +220,7 @@ defmodule Examples.SvelteAdvancedDemo.Navigation do
       
       <List spacing={1}>
         <NavItem 
-          icon="📊" 
+          icon="[CHART]" 
           label="Dashboard" 
           page={:dashboard}
           active={current == :dashboard}
@@ -229,7 +229,7 @@ defmodule Examples.SvelteAdvancedDemo.Navigation do
         />
         
         <NavItem 
-          icon="📈" 
+          icon="[GRAPH]" 
           label="Analytics" 
           page={:analytics}
           active={current == :analytics}
@@ -238,7 +238,7 @@ defmodule Examples.SvelteAdvancedDemo.Navigation do
         />
         
         <NavItem 
-          icon="⚙️" 
+          icon="[CONFIG]" 
           label="Settings" 
           page={:settings}
           active={current == :settings}
@@ -324,7 +324,7 @@ defmodule Examples.SvelteAdvancedDemo.TopBar do
           size="small"
           use:tooltip={"#{count} notifications"}
         >
-          🔔
+          [BELL]
           {#if count > 0}
             <Badge count={count} color="red" />
           {/if}
@@ -332,7 +332,7 @@ defmodule Examples.SvelteAdvancedDemo.TopBar do
         
         <!-- User Menu -->
         <Button variant="ghost" on_click={on_show_modal} use:tooltip="User menu">
-          👤
+          [USER]
         </Button>
       </Row>
     </Row>

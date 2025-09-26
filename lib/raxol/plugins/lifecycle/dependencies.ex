@@ -32,9 +32,13 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
       |> Enum.into(%{})
 
     # Simplified dependency check - just verify dependencies exist
+    # Dependencies are {name, version} tuples, extract the name
     missing =
       (plugin.dependencies || [])
+      |> Enum.map(&extract_dependency_name/1)
       |> Enum.filter(&(!Map.has_key?(loaded_plugins_map, &1)))
+      |> Enum.zip(plugin.dependencies || [])
+      |> Enum.map(fn {_name, dep} -> dep end)
 
     if Enum.empty?(missing) do
       :ok
@@ -42,6 +46,10 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
       {:error, :missing_dependencies, missing, [plugin.name]}
     end
   end
+
+  # Extract dependency name from dependency tuple or string
+  defp extract_dependency_name({name, _version}) when is_binary(name), do: name
+  defp extract_dependency_name(name) when is_binary(name), do: name
 
   def resolve_plugin_order(initialized_plugins) do
     # Simplified load order - just return plugins in received order
@@ -67,8 +75,9 @@ defmodule Raxol.Plugins.Lifecycle.Dependencies do
     # Simplified circular dependency check - just check immediate dependencies
     # Complex topological sorting removed
     dependencies = plugin.dependencies || []
+    dependency_names = Enum.map(dependencies, &extract_dependency_name/1)
 
-    if plugin.name in dependencies do
+    if plugin.name in dependency_names do
       {:error, {:circular_dependency, plugin.name}}
     else
       :ok

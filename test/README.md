@@ -1,10 +1,10 @@
-# 🧪 Raxol Test Suite
+# [TEST] Raxol Test Suite
 
 Welcome! This directory contains Raxol's comprehensive test suite, designed for reliability, speed, and maintainability.
 
 ---
 
-## 🗂️ Test Structure
+## [STRUCTURE] Test Structure
 
 - `test/support/` — Test helpers and support modules
   - `data_case.ex` — Database test setup
@@ -13,7 +13,7 @@ Welcome! This directory contains Raxol's comprehensive test suite, designed for 
 
 ---
 
-## ✅ Best Practices
+## [BEST PRACTICES] Best Practices
 
 - **No `Process.sleep`:**
   Use event-based synchronization (`assert_receive`) or `Raxol.TestHelpers.wait_for_state/2` for polling.
@@ -28,7 +28,7 @@ Welcome! This directory contains Raxol's comprehensive test suite, designed for 
 
 ---
 
-## 🧪 Test Categories
+## [CATEGORIES] Test Categories
 
 - **Unit Tests:**
   Test individual functions/modules (`ExUnit.Case`, `async: true`).
@@ -51,7 +51,7 @@ mix test test/path/to/test.exs:123  # Run a specific test
 
 ---
 
-## ⚙️ Test Configuration
+## [CONFIG] Test Configuration
 
 Configuration is in `config/test.exs`. Key settings:
 
@@ -73,7 +73,7 @@ Configuration is in `config/test.exs`. Key settings:
 
 ---
 
-## 🛠️ Test Helpers
+## [HELPERS] Test Helpers
 
 - **Raxol.TestHelpers:**
   Event-based sync, process/ETS/registry cleanup, temp file handling.

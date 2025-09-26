@@ -21,7 +21,7 @@ domains=(
     "raxol.cc"
 )
 
-echo "🔍 Checking raxol domain availability..."
+echo "[+] Checking raxol domain availability..."
 echo
 
 for domain in "${domains[@]}"; do
@@ -29,9 +29,9 @@ for domain in "${domains[@]}"; do
     
     # Try DNS lookup first (fastest)
     if nslookup "$domain" >/dev/null 2>&1; then
-        echo "❌ taken"
+        echo "[X] taken"
     else
-        echo "✅ AVAILABLE?"
+        echo "[+] AVAILABLE?"
     fi
 done
 

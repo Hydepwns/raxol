@@ -388,16 +388,16 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
     {row, col} = position
 
     # Check if cursor has both row and col fields
-    if Map.has_key?(cursor, :row) and Map.has_key?(cursor, :col) do
-      # Also update position field if it exists
-      if Map.has_key?(cursor, :position) do
-        %{cursor | row: row, col: col, position: {row, col}}
-      else
-        %{cursor | row: row, col: col}
-      end
-    else
-      # If cursor doesn't have expected fields, just return it unchanged
-      cursor
+    case {Map.has_key?(cursor, :row), Map.has_key?(cursor, :col)} do
+      {true, true} ->
+        # Also update position field if it exists
+        case Map.has_key?(cursor, :position) do
+          true -> %{cursor | row: row, col: col, position: {row, col}}
+          false -> %{cursor | row: row, col: col}
+        end
+      _ ->
+        # If cursor doesn't have expected fields, just return it unchanged
+        cursor
     end
   end
 

@@ -25,7 +25,7 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
             Integer.to_string(System.unique_integer([:positive]))
         )
 
-      {:ok, context} = Helper.setup_test_preferences(prefs_name)
+      {:ok, context} = Helper.setup_test_preferences_with_events(prefs_name)
       context
     end
 

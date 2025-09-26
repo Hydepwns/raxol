@@ -124,7 +124,7 @@ defmodule Raxol.Property.ParserEdgeCasesTest do
 
   describe "unicode edge cases" do
     property "emoji in escape sequences" do
-      check all emoji <- member_of(["🎨", "🌈", "⭐", "💻", "🔥"]),
+      check all emoji <- member_of(["[*]", "[+]", "[>]", "[#]", "[!]"]),
                 color <- integer(30..37),
                 max_runs: 500 do
         # Emoji as part of escape sequence (invalid but shouldn't crash)

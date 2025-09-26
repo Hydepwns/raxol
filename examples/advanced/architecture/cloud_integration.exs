@@ -22,10 +22,10 @@ IO.puts("Initializing cloud system...")
 
 case status do
   :ok ->
-    IO.puts("✅ Cloud system initialized successfully")
+    IO.puts("[OK] Cloud system initialized successfully")
 
   :error ->
-    IO.puts("❌ Failed to initialize cloud system: #{inspect(result)}")
+    IO.puts("[FAIL] Failed to initialize cloud system: #{inspect(result)}")
     System.halt(1)
 end
 
@@ -36,10 +36,10 @@ edge_config = Raxol.Cloud.config(:get, :edge)
 
 case status do
   :ok ->
-    IO.puts("✅ Configuration updated successfully")
+    IO.puts("[OK] Configuration updated successfully")
 
   :error ->
-    IO.puts("❌ Failed to update configuration: #{inspect(result)}")
+    IO.puts("[FAIL] Failed to update configuration: #{inspect(result)}")
 end
 
 Raxol.Cloud.status()
@@ -59,7 +59,7 @@ Raxol.Cloud.monitor(:metric, "example.timer",
   tags: ["example:true", "operation:test"]
 )
 
-IO.puts("✅ Metrics recorded")
+IO.puts("[OK] Metrics recorded")
 IO.puts("")
 
 # Record an error
@@ -72,7 +72,7 @@ Raxol.Cloud.monitor(:error, error,
   tags: ["example:true"]
 )
 
-IO.puts("✅ Error recorded")
+IO.puts("[OK] Error recorded")
 IO.puts("")
 
 # Run a health check
@@ -97,10 +97,10 @@ IO.puts("Executing a function...")
 case status do
   :ok ->
     {location, data} = result
-    IO.puts("✅ Function executed successfully at #{location}")
+    IO.puts("[OK] Function executed successfully at #{location}")
 
   :error ->
-    IO.puts("❌ Function execution failed: #{inspect(result)}")
+    IO.puts("[FAIL] Function execution failed: #{inspect(result)}")
 end
 
 IO.puts("")
@@ -111,14 +111,14 @@ IO.puts("Discovering services...")
 
 case status do
   :ok ->
-    IO.puts("✅ Services discovered:")
+    IO.puts("[OK] Services discovered:")
 
     Enum.each(services, fn service ->
       IO.puts("  - #{service.name} (#{service.type}): #{service.endpoint}")
     end)
 
   :error ->
-    IO.puts("❌ Service discovery failed: #{inspect(services)}")
+    IO.puts("[FAIL] Service discovery failed: #{inspect(services)}")
 end
 
 IO.puts("")
@@ -136,10 +136,10 @@ IO.puts("Registering a service...")
 
 case status do
   :ok ->
-    IO.puts("✅ Service registered: #{result.registration_id}")
+    IO.puts("[OK] Service registered: #{result.registration_id}")
 
   :error ->
-    IO.puts("❌ Service registration failed: #{inspect(result)}")
+    IO.puts("[FAIL] Service registration failed: #{inspect(result)}")
 end
 
 IO.puts("")
@@ -157,10 +157,10 @@ IO.puts("Deploying a component...")
 
 case status do
   :ok ->
-    IO.puts("✅ Deployment started: #{result.deployment_id}")
+    IO.puts("[OK] Deployment started: #{result.deployment_id}")
 
   :error ->
-    IO.puts("❌ Deployment failed: #{inspect(result)}")
+    IO.puts("[FAIL] Deployment failed: #{inspect(result)}")
 end
 
 IO.puts("")
@@ -182,11 +182,11 @@ IO.puts("Scaling a service...")
 case status do
   :ok ->
     IO.puts(
-      "✅ Scaling initiated: #{result.service} from #{result.current} to #{result.target} instances"
+      "[OK] Scaling initiated: #{result.service} from #{result.current} to #{result.target} instances"
     )
 
   :error ->
-    IO.puts("❌ Scaling failed: #{inspect(result)}")
+    IO.puts("[FAIL] Scaling failed: #{inspect(result)}")
 end
 
 IO.puts("")
@@ -203,10 +203,10 @@ IO.puts("Getting a service connection...")
 
 case status do
   :ok ->
-    IO.puts("✅ Service connection established: #{result.endpoint}")
+    IO.puts("[OK] Service connection established: #{result.endpoint}")
 
   :error ->
-    IO.puts("❌ Service connection failed: #{inspect(result)}")
+    IO.puts("[FAIL] Service connection failed: #{inspect(result)}")
 end
 
 IO.puts("")
@@ -223,13 +223,13 @@ Raxol.Cloud.monitor(:alert, :example_alert,
   severity: :warning
 )
 
-IO.puts("✅ Alert triggered")
+IO.puts("[OK] Alert triggered")
 IO.puts("")
 
 # Stop the cloud system
 IO.puts("Stopping cloud system...")
 Raxol.Cloud.stop()
-IO.puts("✅ Cloud system stopped")
+IO.puts("[OK] Cloud system stopped")
 IO.puts("")
 
 IO.puts("Example completed successfully!")

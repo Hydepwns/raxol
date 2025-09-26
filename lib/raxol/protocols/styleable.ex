@@ -198,10 +198,9 @@ defimpl Raxol.Protocols.Styleable, for: Map do
         _ -> codes
       end
 
-    if codes == [] do
-      ""
-    else
-      "\e[#{Enum.join(codes, ";")}m"
+    case codes do
+      [] -> ""
+      codes -> "\e[#{Enum.join(codes, ";")}m"
     end
   end
 end

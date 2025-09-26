@@ -110,7 +110,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
   # Command implementations
 
   defp run_suite_benchmarks(opts) do
-    Mix.shell().info("🚀 Running Benchmark Suites...")
+    Mix.shell().info("[FAST] Running Benchmark Suites...")
 
     # Discover available suites
     {:ok, count} = SuiteRegistry.discover_suites()
@@ -136,7 +136,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
   end
 
   defp run_competitor_comparison(opts) do
-    Mix.shell().info("⚡ Running Competitor Comparison...")
+    Mix.shell().info("[POWER] Running Competitor Comparison...")
 
     competitor = opts[:competitor] || "all"
     Mix.shell().info("Comparing against: #{competitor}")
@@ -155,7 +155,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
   end
 
   defp run_regression_analysis(opts) do
-    Mix.shell().info("📊 Running Regression Analysis...")
+    Mix.shell().info("[STATS] Running Regression Analysis...")
 
     # Load current and baseline results
     current = load_latest_results()
@@ -179,10 +179,10 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
 
       # Exit with error code if regressions found
       if length(detection.regressions) > 0 do
-        Mix.shell().error("❌ Performance regressions detected!")
+        Mix.shell().error("[FAIL] Performance regressions detected!")
         System.halt(1)
       else
-        Mix.shell().info("✅ No performance regressions detected")
+        Mix.shell().info("[OK] No performance regressions detected")
       end
     else
       Mix.shell().error("Unable to load benchmark results for comparison")
@@ -191,7 +191,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
   end
 
   defp run_profiling_session(opts) do
-    Mix.shell().info("🔍 Running Profiling Session...")
+    Mix.shell().info("[SEARCH] Running Profiling Session...")
 
     suite = opts[:suite] || "all"
 
@@ -220,7 +220,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
   end
 
   defp run_continuous_monitoring(opts) do
-    Mix.shell().info("📈 Starting Continuous Monitoring...")
+    Mix.shell().info("[TREND] Starting Continuous Monitoring...")
 
     # Default: 1 minute
     interval = opts[:interval] || 60_000
@@ -237,7 +237,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
   end
 
   defp generate_comprehensive_report(opts) do
-    Mix.shell().info("📝 Generating Comprehensive Report...")
+    Mix.shell().info("[DOC] Generating Comprehensive Report...")
 
     # Load all available results
     results = load_all_results()
@@ -263,7 +263,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
   end
 
   defp run_statistical_analysis(opts) do
-    Mix.shell().info("📐 Running Statistical Analysis...")
+    Mix.shell().info("[STAT] Running statistical analysis")
 
     # Load results
     results = load_latest_results()
@@ -292,7 +292,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
   end
 
   defp discover_and_run_suites(opts) do
-    Mix.shell().info("🔎 Discovering and Running Benchmark Suites...")
+    Mix.shell().info("[DISC] Discovering and running benchmark suites")
 
     # Discover all available suites
     {:ok, count} = SuiteRegistry.discover_suites()
@@ -447,10 +447,10 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
 
   defp get_performance_symbol(percentage) do
     cond do
-      percentage > 110 -> "🚀"
-      percentage > 100 -> "✅"
-      percentage > 90 -> "⚠️"
-      true -> "❌"
+      percentage > 110 -> "[FAST]"
+      percentage > 100 -> "[OK]"
+      percentage > 90 -> "[WARN]"
+      true -> "[FAIL]"
     end
   end
 
@@ -506,7 +506,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
   end
 
   defp print_regressions(regressions) do
-    Mix.shell().error("\n⚠️  Performance Regressions Detected:")
+    Mix.shell().error("\n[WARN]  Performance Regressions Detected:")
 
     Enum.each(regressions, fn reg ->
       Mix.shell().error(
@@ -552,7 +552,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
       outliers = get_in(data, [:statistics, :outliers, :outliers]) || []
 
       if length(outliers) > 0 do
-        Mix.shell().warn("  ⚠️  #{suite}: #{length(outliers)} outliers detected")
+        Mix.shell().warn("  [WARN]  #{suite}: #{length(outliers)} outliers detected")
       end
     end)
   end

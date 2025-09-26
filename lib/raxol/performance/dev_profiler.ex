@@ -80,13 +80,13 @@ defmodule Raxol.Performance.DevProfiler do
 
   def profile(opts, fun) when is_list(opts) and is_function(fun) do
     if Mix.env() != :dev do
-      Logger.warning("DevProfiler should only be used in development mode")
+      Logger.warning("DevProfiler: development mode only")
       fun.()
     end
 
     opts = Keyword.merge(@default_opts, opts)
 
-    Logger.info("🔬 Starting performance profiling...")
+    Logger.info("[PROF] Starting profiling")
 
     start_time = System.monotonic_time(:microsecond)
     memory_before = if opts[:memory], do: get_memory_info(), else: nil
@@ -142,7 +142,7 @@ defmodule Raxol.Performance.DevProfiler do
   """
   def start_continuous(opts \\ []) do
     if Mix.env() != :dev do
-      Logger.warning("Continuous profiling should only be used in development")
+      Logger.warning("Continuous profiling: development only")
       :ignored
     end
 
@@ -178,7 +178,7 @@ defmodule Raxol.Performance.DevProfiler do
   Profile memory usage over time.
   """
   def profile_memory(duration \\ 10_000) do
-    Logger.info("📊 Profiling memory usage for #{duration}ms...")
+    Logger.info("[STATS] Memory profiling: #{duration}ms")
 
     samples = []
     start_time = System.monotonic_time(:millisecond)
@@ -462,13 +462,13 @@ defmodule Raxol.Performance.DevProfiler do
     hints = (hints ++ analysis.system.issues) |> Enum.map(&"System: #{&1}")
 
     if length(hints) > 0 do
-      Logger.warning("🔍 Performance Analysis Hints:")
+      Logger.warning("[PERF] Analysis hints:")
 
       Enum.each(hints, fn hint ->
         Logger.warning("  • #{hint}")
       end)
     else
-      Logger.info("✅ No performance issues detected")
+      Logger.info("[OK] No issues detected")
     end
 
     hints
@@ -479,7 +479,7 @@ defmodule Raxol.Performance.DevProfiler do
 
     report = """
 
-    📊 Performance Profile Report
+    [STATS] Performance Profile Report
     ═══════════════════════════════════════
 
     Execution Time: #{Float.round(duration_ms, 2)}ms
@@ -510,11 +510,11 @@ defmodule Raxol.Performance.DevProfiler do
       report <>
         """
 
-        💡 Optimization Suggestions:
+        [TIP] Optimization Suggestions:
         #{Enum.map_join(suggestions, "\n", &"  • #{&1}")}
         """
     else
-      report <> "\n\n✅ No obvious optimizations detected"
+      report <> "\n\n[OK] No obvious optimizations detected"
     end
   end
 
@@ -563,11 +563,11 @@ defmodule Raxol.Performance.DevProfiler do
         html_report = generate_html_report(report)
         filename = "/tmp/raxol_profile_#{:os.system_time()}.html"
         _ = File.write!(filename, html_report)
-        Logger.info("📄 HTML report written to: #{filename}")
+        Logger.info("[FILE] HTML report written to: #{filename}")
 
       :json ->
         json_report = Jason.encode!(parse_report_to_map(report))
-        Logger.info("📋 JSON Report: #{json_report}")
+        Logger.info("[LIST] JSON Report: #{json_report}")
     end
   end
 
@@ -625,7 +625,7 @@ defmodule Raxol.Performance.DevProfiler do
       collect_memory_samples([sample | samples], end_time)
     else
       Logger.info(
-        "📈 Memory profiling complete. #{length(samples)} samples collected."
+        "[TREND] Complete. #{length(samples)} samples."
       )
 
       analyze_memory_samples(samples)
@@ -642,11 +642,11 @@ defmodule Raxol.Performance.DevProfiler do
       duration = last.timestamp - first.timestamp
 
       Logger.info(
-        "Memory growth: #{Float.round(growth_mb, 2)}MB over #{duration}ms"
+        "Growth: #{Float.round(growth_mb, 2)}MB/#{duration}ms"
       )
 
       if growth_mb > 10 do
-        Logger.warning("⚠️  Significant memory growth detected during profiling")
+        Logger.warning("[WARN] Significant memory growth")
       end
     end
 

@@ -9,12 +9,12 @@ All modules follow the pattern: `<domain>_<function>.ex`
 
 ### Examples
 
-#### ✅ Correct Naming
+#### [OK] Correct Naming
 - `lib/raxol/terminal/cursor/cursor_manager.ex` → `Raxol.Terminal.Cursor.CursorManager`
 - `lib/raxol/core/events/event_manager.ex` → `Raxol.Core.Events.EventManager`
 - `lib/raxol/terminal/buffer/buffer_server.ex` → `Raxol.Terminal.Buffer.BufferServer`
 
-#### ❌ Previous Naming (Fixed)
+#### [FAIL] Previous Naming (Fixed)
 - `lib/raxol/terminal/cursor/manager.ex` → `Raxol.Terminal.Cursor.Manager`
 - `lib/raxol/core/events/manager.ex` → `Raxol.Core.Events.Manager`
 - `lib/raxol/terminal/buffer/server.ex` → `Raxol.Terminal.Buffer.Server`
@@ -115,9 +115,9 @@ Avoid generic names like:
 
 ## Migration Status
 
-✅ **Completed**: All 154+ duplicate filenames resolved in Sprint 22-23
-✅ **Verified**: Zero compilation warnings from naming conflicts
-✅ **Tested**: All module references updated and tests passing
+[OK] **Completed**: All 154+ duplicate filenames resolved in Sprint 22-23
+[OK] **Verified**: Zero compilation warnings from naming conflicts
+[OK] **Tested**: All module references updated and tests passing
 
 ## Implementation Notes
 

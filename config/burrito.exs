@@ -12,7 +12,7 @@ use Mix.Config
 # Common platform configurations
 @common_config [
   include_erts: true,
-  identifier: "io.github.hydepwns.raxol"
+  identifier: "https://raxol.io"
 ]
 
 # Package metadata for distribution

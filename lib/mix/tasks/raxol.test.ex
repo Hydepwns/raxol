@@ -91,10 +91,10 @@ defmodule Mix.Tasks.Raxol.Test do
 
     case Mix.shell().cmd("mix test #{Enum.join(test_args, " ")}") do
       0 ->
-        Mix.shell().info("✓ All tests passed")
+        Mix.shell().info("[OK] All tests passed")
 
       _ ->
-        Mix.shell().error("✗ Some tests failed")
+        Mix.shell().error("[FAIL] Some tests failed")
         Mix.raise("Test suite failed")
     end
   end
@@ -113,10 +113,10 @@ defmodule Mix.Tasks.Raxol.Test do
 
     case Mix.shell().cmd("mix test #{Enum.join(test_args, " ")}") do
       0 ->
-        Mix.shell().info("✓ All tests passed")
+        Mix.shell().info("[OK] All tests passed")
 
       _ ->
-        Mix.shell().error("✗ Some tests failed")
+        Mix.shell().error("[FAIL] Some tests failed")
         Mix.raise("Test suite failed")
     end
   end
@@ -129,11 +129,11 @@ defmodule Mix.Tasks.Raxol.Test do
 
     case Mix.shell().cmd("mix test #{Enum.join(test_args, " ")}") do
       0 ->
-        Mix.shell().info("✓ All tests passed")
+        Mix.shell().info("[OK] All tests passed")
         show_coverage_summary()
 
       _ ->
-        Mix.shell().error("✗ Some tests failed")
+        Mix.shell().error("[FAIL] Some tests failed")
         show_coverage_summary()
         Mix.raise("Test suite failed")
     end
@@ -157,10 +157,10 @@ defmodule Mix.Tasks.Raxol.Test do
 
     case result do
       0 ->
-        Mix.shell().info("✓ All tests passed")
+        Mix.shell().info("[OK] All tests passed")
 
       _ ->
-        Mix.shell().error("✗ Some tests failed")
+        Mix.shell().error("[FAIL] Some tests failed")
         Mix.raise("Test suite failed")
     end
   end

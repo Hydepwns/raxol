@@ -2,7 +2,7 @@
 
 ## Overview
 
-Raxol v1.4.1 introduces a unified configuration system based on TOML files. The `Raxol.Config` module provides centralized configuration management with environment-specific overrides, runtime updates, and validation.
+Raxol v1.4.1 introduces a unified configuration system based on TOML files. Enhanced in v1.5.4 with UnifiedConfigManager using BaseManager pattern. The `Raxol.Config` module provides centralized configuration management with environment-specific overrides, runtime updates, and validation.
 
 ## Features
 

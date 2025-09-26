@@ -37,6 +37,11 @@ defmodule Raxol.Core.KeyboardShortcutsBehaviour do
   @callback handle_keyboard_event(atom(), term()) :: :ok | {:error, term()}
 
   @doc """
+  Register a keyboard shortcut with callback.
+  """
+  @callback register_shortcut(shortcut_key :: String.t(), name :: String.t(), callback :: function(), opts :: Keyword.t()) :: :ok | {:error, term()}
+
+  @doc """
   Clean up the keyboard shortcuts system.
   """
   @callback cleanup() :: :ok | {:error, term()}

@@ -421,10 +421,46 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   def in_selection?(_buffer, _x, _y), do: false
 
   @doc """
-  Gets text in region (stub).
+  Gets text in region.
   """
   @spec get_text_in_region(Core.t(), integer(), integer(), integer(), integer()) :: String.t()
-  def get_text_in_region(_buffer, _x1, _y1, _x2, _y2), do: ""
+  def get_text_in_region(buffer, x1, y1, x2, y2) do
+    # Extract text from the specified region
+    case buffer.cells do
+      nil -> ""
+      cells when is_list(cells) ->
+        # Ensure coordinates are within bounds and properly ordered
+        start_y = max(0, min(y1, y2))
+        end_y = min(length(cells) - 1, max(y1, y2))
+
+        if start_y > end_y do
+          ""
+        else
+          cells
+          |> Enum.slice(start_y..end_y)
+          |> Enum.map(fn line when is_list(line) ->
+            start_x = max(0, min(x1, x2))
+            end_x = min(length(line) - 1, max(x1, x2))
+
+            if start_x > end_x do
+              ""
+            else
+              line
+              |> Enum.slice(start_x..end_x)
+              |> Enum.map(fn
+                %{char: char} -> char
+                _ -> " "
+              end)
+              |> Enum.join("")
+              |> String.trim_trailing()
+            end
+          end)
+          |> Enum.reject(&(&1 == ""))
+          |> Enum.join("\n")
+        end
+      _ -> ""
+    end
+  end
 
   @doc """
   Checks if attribute is set (stub).

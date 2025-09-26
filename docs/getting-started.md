@@ -1,6 +1,6 @@
 # Getting Started with Raxol
 
-Welcome to Raxol! This guide will help you get up and running with the most advanced terminal framework in Elixir. Raxol brings modern UI development patterns to the terminal with support for multiple frameworks and enterprise features.
+Terminal framework for Elixir supporting multiple UI patterns.
 
 ## Table of Contents
 - [Installation](#installation)
@@ -22,9 +22,7 @@ Raxol requires:
 - **Erlang/OTP** 26.0 or later
 - **Node.js** 20+ (for web interface)
 
-### Recommended: Using Nix (For Development)
-
-For the best development experience, we recommend using Nix:
+### Using Nix (Development)
 
 ```bash
 # Clone the repository
@@ -40,11 +38,11 @@ git submodule update --init --recursive
 mix setup
 ```
 
-The Nix environment provides all necessary dependencies including Erlang, Elixir, PostgreSQL, and build tools.
+Nix provides Erlang, Elixir, PostgreSQL, and build tools.
 
-### Using Mix (For Production)
+### Using Mix (Production)
 
-Add Raxol to your `mix.exs` dependencies:
+Add to `mix.exs`:
 
 ```elixir
 def deps do
@@ -140,11 +138,11 @@ end
 mix raxol.run --app MyTerminalApp.App
 ```
 
-Congratulations! You've created your first Raxol terminal application!
+Application created successfully.
 
 ## Understanding Components
 
-Raxol uses a component-based architecture similar to React or Phoenix LiveView. Choose the framework style that feels most comfortable:
+Component-based architecture. Choose your framework style:
 
 ### Framework Options
 
@@ -202,7 +200,7 @@ end
 
 ### Built-in Components
 
-Raxol provides a rich set of pre-built components:
+Built-in components:
 - **Layout**: `<Box>`, `<Grid>`, `<Stack>`, `<Spacer>`
 - **Text**: `<Text>`, `<Heading>`, `<Code>`, `<Link>`
 - **Input**: `<TextInput>`, `<TextArea>`, `<Select>`, `<Checkbox>`, `<RadioGroup>`
@@ -210,7 +208,7 @@ Raxol provides a rich set of pre-built components:
 
 ## Adding Interactivity
 
-Make your applications interactive with event handling:
+Event handling:
 
 ### Counter Example
 
@@ -416,7 +414,7 @@ end
 
 ## Web Interface
 
-One of Raxol's most powerful features is the ability to access your terminal application through a web browser with full session continuity.
+Access terminal applications through web browser with session continuity.
 
 ### Enable Web Access
 
@@ -458,15 +456,15 @@ mix phx.server
 # Visit http://localhost:4000
 ```
 
-Your application now runs in both terminal and web with:
+Features:
 - Real-time synchronization
 - Multiple user support
 - Persistent sessions
-- Full keyboard and mouse support
+- Keyboard and mouse support
 
 ## Plugin System
 
-Extend Raxol with plugins for additional functionality:
+Plugin system:
 
 ```elixir
 defmodule MyApp.StatsPlugin do
@@ -511,7 +509,7 @@ Raxol.Core.Runtime.Plugins.Manager.load_plugin_by_module(MyApp.StatsPlugin)
 
 ## Next Steps
 
-Now that you've learned the basics, explore these advanced topics:
+Advanced topics:
 
 ### Interactive Examples
 ```bash
@@ -534,11 +532,10 @@ mix raxol.examples dashboard # Dashboard demo
 - **GPU Acceleration**: Hardware-accelerated rendering pipeline
 
 ### Performance
-Raxol delivers world-class performance:
-- **Parser Speed**: 3.3μs/operation
-- **Memory Usage**: 2.8MB per session
-- **Startup Time**: <10ms
-- **Render Speed**: 1.3μs
+- Parser: 3.3μs/operation
+- Memory: 2.8MB per session
+- Startup: <10ms
+- Render: 1.3μs
 
 ### Learn More
 - [Component API Reference](./api-reference.md)
@@ -554,15 +551,13 @@ Raxol delivers world-class performance:
 
 ## Troubleshooting
 
-**Terminal rendering issues**: Set `export TERM=xterm-256color`  
-**Components not updating**: Ensure handlers return `{:noreply, socket}`  
-**Performance issues**: Use `Raxol.Profile.start()` to identify bottlenecks  
-**Permission issues**: Make executable with `chmod +x /path/to/raxol`
+**Terminal rendering**: Set `export TERM=xterm-256color`
+**Component updates**: Ensure handlers return `{:noreply, socket}`
+**Performance**: Use `Raxol.Profile.start()` for profiling
+**Permissions**: Use `chmod +x /path/to/raxol`
 
 See [Troubleshooting Guide](./TROUBLESHOOTING.md) for detailed help.
 
 ---
 
-**You're ready to build amazing terminal applications with Raxol!**
-
-Remember: The terminal is your canvas, and Raxol is your paintbrush. Create something beautiful!
+Ready to build terminal applications with Raxol.

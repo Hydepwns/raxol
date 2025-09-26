@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
   """
 
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.ANSI.TextFormatting
+  # alias Raxol.Terminal.ANSI.TextFormatting  # Not used currently
 
   @type t :: %__MODULE__{
           screen_buffer: ScreenBuffer.t(),

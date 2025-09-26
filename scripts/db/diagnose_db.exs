@@ -17,9 +17,9 @@ pg_version_cmd = System.cmd("psql", ["--version"], stderr_to_stdout: true)
 
 case pg_version_cmd do
   {version, 0} ->
-    IO.puts("✅ PostgreSQL installed: #{String.trim(version)}")
+    IO.puts("[OK] PostgreSQL installed: #{String.trim(version)}")
   {error, _} ->
-    IO.puts("❌ PostgreSQL not properly installed: #{error}")
+    IO.puts("[FAIL] PostgreSQL not properly installed: #{error}")
 end
 
 # Check if PostgreSQL is running
@@ -28,9 +28,9 @@ pg_running_cmd = System.cmd("pg_isready", ["-h", db_config[:hostname] || "localh
 
 case pg_running_cmd do
   {output, 0} ->
-    IO.puts("✅ PostgreSQL is running: #{String.trim(output)}")
+    IO.puts("[OK] PostgreSQL is running: #{String.trim(output)}")
   {output, _} ->
-    IO.puts("❌ PostgreSQL is not running: #{String.trim(output)}")
+    IO.puts("[FAIL] PostgreSQL is not running: #{String.trim(output)}")
     IO.puts("   Try starting PostgreSQL with: brew services start postgresql")
 end
 
@@ -46,13 +46,13 @@ db_exists_cmd = System.cmd("psql", [
 case db_exists_cmd do
   {output, 0} ->
     if String.contains?(output, "(1 row)") do
-      IO.puts("✅ Database '#{db_config[:database]}' exists")
+      IO.puts("[OK] Database '#{db_config[:database]}' exists")
     else
-      IO.puts("❌ Database '#{db_config[:database]}' does not exist")
+      IO.puts("[FAIL] Database '#{db_config[:database]}' does not exist")
       IO.puts("   Run: scripts/setup_db.sh to create it")
     end
   {error, _} ->
-    IO.puts("❌ Error checking database existence: #{error}")
+    IO.puts("[FAIL] Error checking database existence: #{error}")
 end
 
 # Try to connect to database using Ecto
@@ -70,7 +70,7 @@ try do
 
   case query_result do
     {:ok, result} ->
-      IO.puts("✅ Successfully connected to database")
+      IO.puts("[OK] Successfully connected to database")
       IO.puts("PostgreSQL version: #{List.first(result.rows) |> List.first()}")
 
       # Test migrations
@@ -85,10 +85,10 @@ try do
       case migrations_query do
         {:ok, result} ->
           completed_migrations = length(result.rows)
-          IO.puts("✅ #{completed_migrations} migrations have been run")
+          IO.puts("[OK] #{completed_migrations} migrations have been run")
 
           if completed_migrations < length(migration_files) do
-            IO.puts("⚠️  Not all migrations have been run. Run: mix ecto.migrate")
+            IO.puts("[WARN]  Not all migrations have been run. Run: mix ecto.migrate")
           end
 
         {:error, error} ->
@@ -100,7 +100,7 @@ try do
   end
 rescue
   error ->
-    IO.puts("❌ Error connecting to database: #{inspect(error)}")
+    IO.puts("[FAIL] Error connecting to database: #{inspect(error)}")
 
     case error do
       # Handle other types of errors that might occur
@@ -117,7 +117,7 @@ IO.puts("\n===== End of Database Diagnostics =====")
 
 # Helper function to handle Postgres errors
 defp handle_postgres_error(error, default_message) do
-  IO.puts("❌ #{default_message}")
+  IO.puts("[FAIL] #{default_message}")
 
   case error do
     %Postgrex.Error{postgres: %{code: code, message: message}} ->

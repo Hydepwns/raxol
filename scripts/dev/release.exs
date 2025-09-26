@@ -59,8 +59,8 @@ defmodule Raxol.Release do
     total = length(results)
 
     IO.puts "\n=== Build Summary ==="
-    IO.puts "✅ Successful: #{successful}/#{total}"
-    if successful < total, do: IO.puts "❌ Failed: #{total - successful}/#{total}"
+    IO.puts "[OK] Successful: #{successful}/#{total}"
+    if successful < total, do: IO.puts "[FAIL] Failed: #{total - successful}/#{total}"
     
     IO.puts "Release artifacts available in burrito_out/#{env}/"
     create_artifact_manifest(env, platforms, results)
@@ -79,10 +79,10 @@ defmodule Raxol.Release do
 
     case System.cmd("sh", ["-c", command], into: IO.stream(:stdio, :line)) do
       {_, 0} ->
-        IO.puts "✅ Successfully built #{@app_name} for #{platform} in #{env} mode"
+        IO.puts "[OK] Successfully built #{@app_name} for #{platform} in #{env} mode"
         :ok
       {_, error_code} ->
-        IO.puts "❌ Failed to build #{@app_name} for #{platform} with exit code #{error_code}"
+        IO.puts "[FAIL] Failed to build #{@app_name} for #{platform} with exit code #{error_code}"
         :error
     end
   end
@@ -107,7 +107,7 @@ defmodule Raxol.Release do
   defp clean_builds do
     IO.puts "Cleaning up previous builds..."
     File.rm_rf!("burrito_out")
-    IO.puts "✅ Build directory cleaned"
+    IO.puts "[OK] Build directory cleaned"
   end
 
   defp create_version_tag do
@@ -116,7 +116,7 @@ defmodule Raxol.Release do
     # Check if working directory is clean
     {status_output, _} = System.cmd("git", ["status", "--porcelain"])
     if String.trim(status_output) != "" do
-      IO.puts "⚠️  Working directory has uncommitted changes:"
+      IO.puts "[WARN]  Working directory has uncommitted changes:"
       IO.puts status_output
       IO.puts "Please commit or stash changes before tagging."
       System.halt(1)
@@ -125,7 +125,7 @@ defmodule Raxol.Release do
     # Check if tag already exists
     case System.cmd("git", ["tag", "-l", "v#{@version}"]) do
       {output, 0} when output != "" ->
-        IO.puts "⚠️  Tag v#{@version} already exists. Use 'git tag -d v#{@version}' to delete it first."
+        IO.puts "[WARN]  Tag v#{@version} already exists. Use 'git tag -d v#{@version}' to delete it first."
         System.halt(1)
       _ -> :ok
     end
@@ -142,15 +142,15 @@ defmodule Raxol.Release do
       IO.puts "#{description}..."
       case System.cmd("sh", ["-c", command]) do
         {_, 0} -> 
-          IO.puts "✅ #{description} completed"
+          IO.puts "[OK] #{description} completed"
         {output, error_code} ->
-          IO.puts "❌ #{description} failed with exit code #{error_code}"
+          IO.puts "[FAIL] #{description} failed with exit code #{error_code}"
           IO.puts "Output: #{String.trim(output)}"
           System.halt(1)
       end
     end
 
-    IO.puts "✅ Version v#{@version} tagged and pushed successfully"
+    IO.puts "[OK] Version v#{@version} tagged and pushed successfully"
   end
 
   defp create_artifact_manifest(env, platforms, results) do
@@ -172,7 +172,7 @@ defmodule Raxol.Release do
 
     File.mkdir_p!(Path.dirname(manifest_path))
     File.write!(manifest_path, Jason.encode!(manifest, pretty: true))
-    IO.puts "📋 Build manifest created: #{manifest_path}"
+    IO.puts "[BUILD] Build manifest created: #{manifest_path}"
   end
 
   defp get_executable_name(platform, env) do
