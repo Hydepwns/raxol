@@ -3,18 +3,18 @@
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'raxol-playground'
+app = 'raxol'
 primary_region = 'sjc'
 kill_signal = 'SIGTERM'
 
 [build]
-  dockerfile = "Dockerfile.web"
+  dockerfile = "docker/Dockerfile.web"
 
 [deploy]
   release_command = '/app/bin/migrate'
 
 [env]
-  PHX_HOST = 'raxol-playground.fly.dev'
+  PHX_HOST = 'raxol.fly.dev'
   PORT = '8080'
 
 [http_service]

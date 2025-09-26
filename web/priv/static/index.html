@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raxol Playground - Interactive Terminal UI Demos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2a5298;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: #333;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #2a5298;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .demo-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .demo-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .demo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .terminal-preview {
+            background: #1a1a1a;
+            padding: 1rem;
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        .terminal-content {
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #00ff00;
+            line-height: 1.4;
+        }
+
+        .demo-info {
+            padding: 1.5rem;
+        }
+
+        .demo-title {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .demo-description {
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .demo-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .terminal-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            padding: 2rem;
+        }
+
+        .terminal-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .terminal-window {
+            background: #1a1a1a;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 900px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .terminal-titlebar {
+            background: #2d2d2d;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .terminal-body {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .terminal-output {
+            color: #00ff00;
+            white-space: pre-wrap;
+        }
+
+        .terminal-input {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-top: 1px solid #333;
+            background: #1a1a1a;
+        }
+
+        .terminal-prompt {
+            color: #00ff00;
+            margin-right: 0.5rem;
+        }
+
+        .terminal-input-field {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .close-btn {
+            background: #ff5f56;
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .close-btn:hover {
+            opacity: 0.8;
+        }
+
+        .cta-section {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #2a5298;
+            box-shadow: 0 4px 15px rgba(255,255,255,0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,255,255,0.4);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">Raxol Playground</div>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="https://github.com/Hydepwns/raxol">GitHub</a></li>
+                    <li><a href="https://hexdocs.pm/raxol">Docs</a></li>
+                    <li><a href="https://hex.pm/packages/raxol">Hex</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <h1>Interactive Terminal UI Playground</h1>
+        <p>Experience the power of Raxol's high-performance terminal UI framework through interactive demos</p>
+    </section>
+
+    <section class="demo-section">
+        <div class="demo-grid">
+            <div class="demo-card" onclick="openDemo('file-browser')">
+                <div class="terminal-preview">
+                    <div class="terminal-header">
+                        <div class="terminal-dot dot-red"></div>
+                        <div class="terminal-dot dot-yellow"></div>
+                        <div class="terminal-dot dot-green"></div>
+                    </div>
+                    <div class="terminal-content">
+$ ls -la
+drwxr-xr-x  12 user  staff   384  Sep 26 lib/
+drwxr-xr-x   8 user  staff   256  Sep 26 test/
+-rw-r--r--   1 user  staff  4096  Sep 26 mix.exs
+-rw-r--r--   1 user  staff  2048  Sep 26 README.md
+                    </div>
+                </div>
+                <div class="demo-info">
+                    <h3 class="demo-title">File Browser</h3>
+                    <p class="demo-description">Navigate files and directories with an interactive TUI file manager</p>
+                    <div class="demo-tags">
+                        <span class="tag">Navigation</span>
+                        <span class="tag">Filesystem</span>
+                        <span class="tag">Tree View</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="demo-card" onclick="openDemo('task-dashboard')">
+                <div class="terminal-preview">
+                    <div class="terminal-header">
+                        <div class="terminal-dot dot-red"></div>
+                        <div class="terminal-dot dot-yellow"></div>
+                        <div class="terminal-dot dot-green"></div>
+                    </div>
+                    <div class="terminal-content">
+┌─ Active Tasks ────────────┐
+│ ████████░░ Deploy     80% │
+│ ██████░░░░ Testing    60% │
+│ ████░░░░░░ Docs       40% │
+│ ██░░░░░░░░ Review     20% │
+└───────────────────────────┘
+                    </div>
+                </div>
+                <div class="demo-info">
+                    <h3 class="demo-title">Task Dashboard</h3>
+                    <p class="demo-description">Real-time task management with progress tracking and analytics</p>
+                    <div class="demo-tags">
+                        <span class="tag">Dashboard</span>
+                        <span class="tag">Real-time</span>
+                        <span class="tag">Progress</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="demo-card" onclick="openDemo('system-monitor')">
+                <div class="terminal-preview">
+                    <div class="terminal-header">
+                        <div class="terminal-dot dot-red"></div>
+                        <div class="terminal-dot dot-yellow"></div>
+                        <div class="terminal-dot dot-green"></div>
+                    </div>
+                    <div class="terminal-content">
+CPU:  ████████░░ 80% [2.4GHz]
+RAM:  ██████░░░░ 60% [9.6/16GB]
+DISK: ███░░░░░░░ 30% [150/500GB]
+NET:  ↑1.2MB/s ↓850KB/s
+                    </div>
+                </div>
+                <div class="demo-info">
+                    <h3 class="demo-title">System Monitor</h3>
+                    <p class="demo-description">Live system metrics with graphs, alerts, and performance analysis</p>
+                    <div class="demo-tags">
+                        <span class="tag">Monitoring</span>
+                        <span class="tag">Metrics</span>
+                        <span class="tag">Charts</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="demo-card" onclick="openDemo('git-ui')">
+                <div class="terminal-preview">
+                    <div class="terminal-header">
+                        <div class="terminal-dot dot-red"></div>
+                        <div class="terminal-dot dot-yellow"></div>
+                        <div class="terminal-dot dot-green"></div>
+                    </div>
+                    <div class="terminal-content">
+On branch: master
+Status: ✓ Clean
+
+Recent commits:
+• feat: add terminal UI
+• fix: resolve rendering issue
+• docs: update README
+                    </div>
+                </div>
+                <div class="demo-info">
+                    <h3 class="demo-title">Git UI</h3>
+                    <p class="demo-description">Visual git interface with branch management and diff viewing</p>
+                    <div class="demo-tags">
+                        <span class="tag">Git</span>
+                        <span class="tag">Version Control</span>
+                        <span class="tag">Diff</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="demo-card" onclick="openDemo('data-table')">
+                <div class="terminal-preview">
+                    <div class="terminal-header">
+                        <div class="terminal-dot dot-red"></div>
+                        <div class="terminal-dot dot-yellow"></div>
+                        <div class="terminal-dot dot-green"></div>
+                    </div>
+                    <div class="terminal-content">
+┌──────┬────────┬──────┬──────┐
+│ ID   │ Name   │ CPU  │ Mem  │
+├──────┼────────┼──────┼──────┤
+│ 1234 │ raxol  │ 12%  │ 156M │
+│ 5678 │ beam   │ 8%   │ 89M  │
+└──────┴────────┴──────┴──────┘
+                    </div>
+                </div>
+                <div class="demo-info">
+                    <h3 class="demo-title">Data Tables</h3>
+                    <p class="demo-description">Interactive sortable tables with filtering and pagination</p>
+                    <div class="demo-tags">
+                        <span class="tag">Tables</span>
+                        <span class="tag">Sorting</span>
+                        <span class="tag">Filtering</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="demo-card" onclick="openDemo('form-builder')">
+                <div class="terminal-preview">
+                    <div class="terminal-header">
+                        <div class="terminal-dot dot-red"></div>
+                        <div class="terminal-dot dot-yellow"></div>
+                        <div class="terminal-dot dot-green"></div>
+                    </div>
+                    <div class="terminal-content">
+╭─ User Registration ──────╮
+│ Name: [________________] │
+│ Email: [_______________] │
+│ Role: [▼ Select       ]  │
+│ [✓] Accept terms         │
+│ [Submit]  [Cancel]       │
+╰──────────────────────────╯
+                    </div>
+                </div>
+                <div class="demo-info">
+                    <h3 class="demo-title">Form Builder</h3>
+                    <p class="demo-description">Build interactive forms with validation and dynamic fields</p>
+                    <div class="demo-tags">
+                        <span class="tag">Forms</span>
+                        <span class="tag">Input</span>
+                        <span class="tag">Validation</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="cta-buttons">
+            <a href="https://github.com/Hydepwns/raxol" class="btn btn-primary">View on GitHub</a>
+            <a href="https://hexdocs.pm/raxol" class="btn btn-secondary">Read Documentation</a>
+        </div>
+    </section>
+
+    <!-- Terminal Modal -->
+    <div id="terminal-modal" class="terminal-modal">
+        <div class="terminal-window">
+            <div class="terminal-titlebar">
+                <div class="terminal-header">
+                    <div class="terminal-dot dot-red"></div>
+                    <div class="terminal-dot dot-yellow"></div>
+                    <div class="terminal-dot dot-green"></div>
+                    <span style="color: #888; margin-left: 1rem; font-size: 0.9rem;">Raxol Interactive Demo</span>
+                </div>
+                <button class="close-btn" onclick="closeDemo()"></button>
+            </div>
+            <div class="terminal-body">
+                <div id="terminal-output" class="terminal-output"></div>
+            </div>
+            <div class="terminal-input">
+                <span class="terminal-prompt">$</span>
+                <input type="text" id="terminal-input-field" class="terminal-input-field" placeholder="Type 'help' for commands..." onkeypress="handleInput(event)">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const demos = {
+            'file-browser': {
+                title: 'File Browser Demo',
+                welcome: 'Welcome to the Raxol File Browser Demo!\n\nAvailable commands:\n  ls      - List directory contents\n  cd      - Change directory\n  pwd     - Print working directory\n  mkdir   - Create directory\n  help    - Show this help\n\n',
+                commands: {
+                    'ls': () => 'drwxr-xr-x  12 user  staff   384  Sep 26 lib/\ndrwxr-xr-x   8 user  staff   256  Sep 26 test/\ndrwxr-xr-x   5 user  staff   160  Sep 26 config/\n-rw-r--r--   1 user  staff  4096  Sep 26 mix.exs\n-rw-r--r--   1 user  staff  2048  Sep 26 README.md\n',
+                    'pwd': () => '/home/user/raxol\n',
+                    'cd lib': () => 'Changed directory to: lib/\n',
+                    'cd test': () => 'Changed directory to: test/\n',
+                    'cd ..': () => 'Changed directory to: parent\n',
+                    'mkdir demo': () => 'Directory created: demo/\n'
+                }
+            },
+            'task-dashboard': {
+                title: 'Task Dashboard Demo',
+                welcome: 'Welcome to the Raxol Task Dashboard Demo!\n\nAvailable commands:\n  status  - Show task status\n  add     - Add new task\n  update  - Update task progress\n  list    - List all tasks\n  help    - Show this help\n\n',
+                commands: {
+                    'status': () => '┌─ Task Status ──────────────────────────┐\n│ ID │ Task        │ Progress │ Status   │\n├────┼─────────────┼──────────┼──────────┤\n│ 1  │ Deploy      │ ████████░░ 80%     │\n│ 2  │ Testing     │ ██████░░░░ 60%     │\n│ 3  │ Docs        │ ████░░░░░░ 40%     │\n│ 4  │ Review      │ ██░░░░░░░░ 20%     │\n└────┴─────────────┴──────────┴──────────┘\n',
+                    'list': () => 'Tasks:\n1. Deploy to production (80% complete)\n2. Run test suite (60% complete)\n3. Update documentation (40% complete)\n4. Code review (20% complete)\n',
+                    'add demo': () => 'Task added: "demo" with ID: 5\n',
+                    'update 1 90': () => 'Task 1 updated: Deploy is now 90% complete\n'
+                }
+            },
+            'system-monitor': {
+                title: 'System Monitor Demo',
+                welcome: 'Welcome to the Raxol System Monitor Demo!\n\nAvailable commands:\n  top     - Show top processes\n  cpu     - Show CPU usage\n  memory  - Show memory usage\n  network - Show network stats\n  help    - Show this help\n\n',
+                commands: {
+                    'top': () => '┌─ Top Processes ─────────────────────────┐\n│ PID   │ NAME        │ CPU  │ MEMORY    │\n├───────┼─────────────┼──────┼───────────┤\n│ 1234  │ raxol       │ 12%  │ 156.2 MB  │\n│ 5678  │ phoenix     │  8%  │ 89.4 MB   │\n│ 9012  │ postgres    │  3%  │ 234.1 MB  │\n│ 3456  │ redis       │  1%  │ 23.8 MB   │\n└───────┴─────────────┴──────┴───────────┘\n',
+                    'cpu': () => 'CPU Usage: ████████░░ 80% (2.4GHz / 3.0GHz)\nCores: 8 (16 threads)\nTemperature: 72°C\n',
+                    'memory': () => 'Memory Usage: ██████░░░░ 60% (9.6GB / 16GB)\nSwap: 2GB / 8GB\nCache: 3.2GB\n',
+                    'network': () => 'Network Stats:\nUpload:   1.2 MB/s\nDownload: 850 KB/s\nTotal sent: 1.8 GB\nTotal received: 3.4 GB\n'
+                }
+            },
+            'git-ui': {
+                title: 'Git UI Demo',
+                welcome: 'Welcome to the Raxol Git UI Demo!\n\nAvailable commands:\n  status  - Show git status\n  log     - Show commit log\n  branch  - List branches\n  diff    - Show changes\n  help    - Show this help\n\n',
+                commands: {
+                    'status': () => 'On branch master\nYour branch is up to date with origin/master\n\nChanges to be committed:\n  modified:   lib/raxol/ui.ex\n  new file:   test/ui_test.exs\n\nUntracked files:\n  tmp/\n',
+                    'log': () => 'commit 8a03767 (HEAD -> master)\nAuthor: Developer <dev@example.com>\nDate:   Sep 26 2025\n\n    feat: add terminal UI framework\n\ncommit ff407af\nAuthor: Developer <dev@example.com>\nDate:   Sep 25 2025\n\n    fix: resolve rendering issue\n',
+                    'branch': () => '* master\n  develop\n  feature/ui-components\n  bugfix/memory-leak\n',
+                    'diff': () => 'diff --git a/lib/raxol/ui.ex b/lib/raxol/ui.ex\n+++ b/lib/raxol/ui.ex\n@@ -1,3 +1,5 @@\n defmodule Raxol.UI do\n+  @moduledoc "Terminal UI framework"\n+\n   def render(component) do\n     # Render logic here\n   end\n'
+                }
+            },
+            'data-table': {
+                title: 'Data Table Demo',
+                welcome: 'Welcome to the Raxol Data Table Demo!\n\nAvailable commands:\n  show    - Show data table\n  sort    - Sort by column\n  filter  - Filter results\n  page    - Change page\n  help    - Show this help\n\n',
+                commands: {
+                    'show': () => '┌──────┬────────────┬──────┬────────┬─────────┐\n│ ID   │ Name       │ CPU  │ Memory │ Status  │\n├──────┼────────────┼──────┼────────┼─────────┤\n│ 1234 │ web-server │ 12%  │ 156MB  │ Running │\n│ 5678 │ database   │ 8%   │ 89MB   │ Running │\n│ 9012 │ cache      │ 3%   │ 234MB  │ Running │\n│ 3456 │ worker     │ 15%  │ 67MB   │ Pending │\n└──────┴────────────┴──────┴────────┴─────────┘\nPage 1 of 3 | 4 items shown\n',
+                    'sort cpu': () => 'Sorted by CPU usage (descending)\n',
+                    'filter running': () => 'Showing 3 items with status: Running\n',
+                    'page 2': () => 'Showing page 2 of 3\n'
+                }
+            },
+            'form-builder': {
+                title: 'Form Builder Demo',
+                welcome: 'Welcome to the Raxol Form Builder Demo!\n\nAvailable commands:\n  form    - Show form\n  fill    - Fill form field\n  submit  - Submit form\n  validate- Validate form\n  help    - Show this help\n\n',
+                commands: {
+                    'form': () => '╭─ User Registration Form ────────────────╮\n│                                          │\n│ Name:     [____________________]        │\n│ Email:    [____________________]        │\n│ Password: [____________________]        │\n│ Role:     [▼ Select Role      ]         │\n│                                          │\n│ [✓] Accept terms and conditions          │\n│ [ ] Subscribe to newsletter              │\n│                                          │\n│     [Submit]        [Cancel]             │\n╰──────────────────────────────────────────╯\n',
+                    'fill name John': () => 'Field "name" set to: John\n',
+                    'validate': () => 'Validation Results:\n✓ Name: Valid\n✗ Email: Required\n✗ Password: Must be at least 8 characters\n✓ Terms: Accepted\n',
+                    'submit': () => 'Form cannot be submitted. Please fix validation errors.\n'
+                }
+            }
+        };
+
+        let currentDemo = null;
+        let commandHistory = [];
+        let historyIndex = -1;
+
+        function openDemo(demoId) {
+            currentDemo = demos[demoId];
+            if (!currentDemo) return;
+
+            const modal = document.getElementById('terminal-modal');
+            const output = document.getElementById('terminal-output');
+            const input = document.getElementById('terminal-input-field');
+
+            output.textContent = currentDemo.welcome;
+            input.value = '';
+            input.focus();
+
+            modal.classList.add('active');
+            commandHistory = [];
+            historyIndex = -1;
+        }
+
+        function closeDemo() {
+            const modal = document.getElementById('terminal-modal');
+            modal.classList.remove('active');
+            currentDemo = null;
+        }
+
+        function handleInput(event) {
+            if (event.key === 'Enter') {
+                const input = document.getElementById('terminal-input-field');
+                const output = document.getElementById('terminal-output');
+                const command = input.value.trim();
+
+                if (command) {
+                    // Add to history
+                    commandHistory.push(command);
+                    historyIndex = commandHistory.length;
+
+                    // Display command
+                    output.textContent += '$ ' + command + '\n';
+
+                    // Process command
+                    if (command === 'help') {
+                        output.textContent += currentDemo.welcome.split('\n').slice(2).join('\n');
+                    } else if (command === 'clear') {
+                        output.textContent = currentDemo.welcome;
+                    } else if (currentDemo.commands[command]) {
+                        output.textContent += currentDemo.commands[command]() + '\n';
+                    } else {
+                        // Check for commands with arguments
+                        let handled = false;
+                        for (let cmd in currentDemo.commands) {
+                            if (command.startsWith(cmd)) {
+                                output.textContent += currentDemo.commands[cmd]() + '\n';
+                                handled = true;
+                                break;
+                            }
+                        }
+                        if (!handled) {
+                            output.textContent += `Command not found: ${command}\nType 'help' for available commands.\n\n`;
+                        }
+                    }
+
+                    // Clear input
+                    input.value = '';
+
+                    // Scroll to bottom
+                    const terminalBody = output.parentElement;
+                    terminalBody.scrollTop = terminalBody.scrollHeight;
+                }
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    document.getElementById('terminal-input-field').value = commandHistory[historyIndex];
+                }
+            } else if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    document.getElementById('terminal-input-field').value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = commandHistory.length;
+                    document.getElementById('terminal-input-field').value = '';
+                }
+            }
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDemo();
+            }
+        });
+
+        // Close modal on background click
+        document.getElementById('terminal-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'terminal-modal') {
+                closeDemo();
+            }
+        });
+    </script>
+</body>
+</html>

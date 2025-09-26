@@ -1,0 +1,13 @@
+# Cloudflare Pages redirects for Raxol Playground
+
+# SPA routing - send all non-asset requests to Phoenix
+/*    /index.html   200
+
+# API routes
+/api/*    /api/:splat   200
+
+# WebSocket upgrades
+/live/websocket    /live/websocket   200
+
+# Health check endpoint
+/health    /health   200
