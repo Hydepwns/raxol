@@ -1,0 +1,75 @@
+name: Deploy Web Playground to Cloudflare Pages
+
+on:
+  push:
+    branches: [master]
+    paths: ['web/**', 'lib/**', 'mix.exs']
+  pull_request:
+    branches: [master]
+    paths: ['web/**', 'lib/**', 'mix.exs']
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.17.x'
+          otp-version: '27.x'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+            web/deps
+            web/_build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
+
+      - name: Install dependencies
+        run: |
+          cd web
+          mix deps.get --only prod
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: web/assets/package-lock.json
+
+      - name: Install Node dependencies
+        run: |
+          cd web/assets
+          npm ci
+
+      - name: Build assets
+        run: |
+          cd web
+          mix assets.deploy
+
+      - name: Build Phoenix app
+        env:
+          MIX_ENV: prod
+        run: |
+          cd web
+          mix compile
+          mix phx.digest
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: raxol-playground
+          directory: web/priv/static
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          wranglerVersion: '3'

@@ -1,0 +1,23 @@
+name = "raxol-playground"
+compatibility_date = "2024-09-26"
+pages_build_output_dir = "priv/static"
+
+[build]
+command = "mix assets.deploy && MIX_ENV=prod mix phx.digest"
+
+[[pages_builds]]
+directory = "priv/static"
+
+[env.production]
+name = "raxol-playground"
+
+[env.preview]
+name = "raxol-playground-preview"
+
+[vars]
+MIX_ENV = "prod"
+PHX_SERVER = "true"
+
+# Functions for SSR (if needed later)
+# [functions]
+# directory = "functions"
