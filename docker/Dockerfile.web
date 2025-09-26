@@ -1,12 +1,12 @@
 # Dockerfile for Raxol Playground (Phoenix app in web/ directory)
 # This should be run from the repository root
 
-ARG ELIXIR_VERSION=1.16.3
-ARG OTP_VERSION=26.2.5.2
-ARG DEBIAN_VERSION=bullseye-20240701-slim
+ARG ELIXIR_VERSION=1.15.8
+ARG OTP_VERSION=26.2.5.15
+ARG UBUNTU_VERSION=noble-20250910
 
-ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
-ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
+ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-ubuntu-${UBUNTU_VERSION}"
+ARG RUNNER_IMAGE="ubuntu:${UBUNTU_VERSION}"
 
 FROM ${BUILDER_IMAGE} as builder
 
@@ -54,7 +54,7 @@ RUN mix release
 FROM ${RUNNER_IMAGE} as runner
 
 RUN apt-get update -y && \
-  apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates \
+  apt-get install -y libstdc++6 openssl libncurses6 locales ca-certificates \
   && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # Set the locale
