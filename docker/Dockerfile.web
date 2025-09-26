@@ -54,7 +54,7 @@ RUN mix release
 FROM ${RUNNER_IMAGE} as runner
 
 RUN apt-get update -y && \
-  apt-get install -y libstdc++6 openssl libncurses6 locales ca-certificates \
+  apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates \
   && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # Set the locale
@@ -75,4 +75,4 @@ COPY --from=builder --chown=nobody:root /app/web/_build/${MIX_ENV}/rel/raxol_pla
 
 USER nobody
 
-CMD ["/app/bin/server"]
+CMD ["/app/bin/raxol_playground", "start"]
