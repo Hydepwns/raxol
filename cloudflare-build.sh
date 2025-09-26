@@ -54,8 +54,11 @@ else
     fi
 fi
 
-# Create a simple index.html if it doesn't exist
-if [ ! -f "priv/static/index.html" ]; then
+# Use the static playground if it exists, otherwise create a simple index.html
+if [ -f "static-playground.html" ]; then
+    echo "Copying static playground..."
+    cp static-playground.html priv/static/index.html
+elif [ ! -f "priv/static/index.html" ]; then
     echo "Creating default index.html..."
     cat > priv/static/index.html << 'EOF'
 <!DOCTYPE html>
