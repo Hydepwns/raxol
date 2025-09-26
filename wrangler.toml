@@ -2,19 +2,18 @@ name = "raxol-playground"
 compatibility_date = "2024-09-26"
 pages_build_output_dir = "web/priv/static"
 
-[build]
-command = "cd web && bash _build.sh"
-
-[[pages_builds]]
-directory = "web/priv/static"
-
 [env.production]
 name = "raxol-playground"
+[env.production.vars]
+MIX_ENV = "prod"
+PHX_SERVER = "true"
+NODE_VERSION = "23.4.0"
+ERLANG_VERSION = "25.3.2.7"
+ELIXIR_VERSION = "1.17.1"
 
 [env.preview]
 name = "raxol-playground-preview"
-
-[vars]
+[env.preview.vars]
 MIX_ENV = "prod"
 PHX_SERVER = "true"
 NODE_VERSION = "23.4.0"
