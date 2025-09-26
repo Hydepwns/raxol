@@ -18,13 +18,18 @@ defmodule RaxolPlaygroundWeb.Router do
     pipe_through :browser
 
     live "/", PlaygroundLive, :index
+    live "/gallery", GalleryLive, :index
     live "/components", ComponentsLive, :index
     live "/components/:component", ComponentsLive, :show
     live "/examples", ExamplesLive, :index
     live "/examples/:example", ExamplesLive, :show
+    live "/demos", DemoLive, :index
+    live "/demos/:demo", DemoLive, :show
     live "/docs", DocsLive, :index
     live "/docs/*path", DocsLive, :show
     live "/repl", ReplLive, :index
+    live "/benchmark", BenchmarkLive, :index
+    get "/health", HealthController, :check
   end
 
   scope "/api", RaxolPlaygroundWeb do
