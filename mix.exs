@@ -8,7 +8,7 @@ defmodule Raxol.MixProject do
     [
       app: :raxol,
       version: @version,
-      elixir: "~> 1.17",
+      elixir: "~> 1.16",
       elixirc_paths: elixirc_paths(Mix.env()),
       elixirc_options: [
         warnings_as_errors: Mix.env() == :prod,
