@@ -546,9 +546,186 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       |> Enum.join(";")
     end
 
-    def parse_sgr_param(_param, style) do
+    def parse_sgr_param(param, style) do
       # Parse SGR parameter and update style
-      style
+      case param do
+        # Reset all attributes
+        0 ->
+          Raxol.Terminal.ANSI.TextFormatting.Core.new()
+
+        # Text attributes
+        1 ->
+          %{style | bold: true}
+
+        2 ->
+          %{style | faint: true}
+
+        3 ->
+          %{style | italic: true}
+
+        4 ->
+          %{style | underline: true}
+
+        5 ->
+          %{style | blink: true}
+
+        7 ->
+          %{style | reverse: true}
+
+        8 ->
+          %{style | conceal: true}
+
+        9 ->
+          %{style | strikethrough: true}
+
+        # Reset attributes
+        22 ->
+          %{style | bold: false, faint: false}
+
+        23 ->
+          %{style | italic: false}
+
+        24 ->
+          %{style | underline: false}
+
+        25 ->
+          %{style | blink: false}
+
+        27 ->
+          %{style | reverse: false}
+
+        28 ->
+          %{style | conceal: false}
+
+        29 ->
+          %{style | strikethrough: false}
+
+        # Standard foreground colors (30-37)
+        30 ->
+          %{style | foreground: :black}
+
+        31 ->
+          %{style | foreground: :red}
+
+        32 ->
+          %{style | foreground: :green}
+
+        33 ->
+          %{style | foreground: :yellow}
+
+        34 ->
+          %{style | foreground: :blue}
+
+        35 ->
+          %{style | foreground: :magenta}
+
+        36 ->
+          %{style | foreground: :cyan}
+
+        37 ->
+          %{style | foreground: :white}
+
+        # Default foreground
+        39 ->
+          %{style | foreground: nil}
+
+        # Standard background colors (40-47)
+        40 ->
+          %{style | background: :black}
+
+        41 ->
+          %{style | background: :red}
+
+        42 ->
+          %{style | background: :green}
+
+        43 ->
+          %{style | background: :yellow}
+
+        44 ->
+          %{style | background: :blue}
+
+        45 ->
+          %{style | background: :magenta}
+
+        46 ->
+          %{style | background: :cyan}
+
+        47 ->
+          %{style | background: :white}
+
+        # Default background
+        49 ->
+          %{style | background: nil}
+
+        # Bright foreground colors (90-97)
+        90 ->
+          %{style | foreground: :bright_black}
+
+        91 ->
+          %{style | foreground: :bright_red}
+
+        92 ->
+          %{style | foreground: :bright_green}
+
+        93 ->
+          %{style | foreground: :bright_yellow}
+
+        94 ->
+          %{style | foreground: :bright_blue}
+
+        95 ->
+          %{style | foreground: :bright_magenta}
+
+        96 ->
+          %{style | foreground: :bright_cyan}
+
+        97 ->
+          %{style | foreground: :bright_white}
+
+        # Bright background colors (100-107)
+        100 ->
+          %{style | background: :bright_black}
+
+        101 ->
+          %{style | background: :bright_red}
+
+        102 ->
+          %{style | background: :bright_green}
+
+        103 ->
+          %{style | background: :bright_yellow}
+
+        104 ->
+          %{style | background: :bright_blue}
+
+        105 ->
+          %{style | background: :bright_magenta}
+
+        106 ->
+          %{style | background: :bright_cyan}
+
+        107 ->
+          %{style | background: :bright_white}
+
+        # 8-bit color codes
+        {:fg_8bit, n} when is_integer(n) and n >= 0 and n <= 255 ->
+          %{style | foreground: {:index, n}}
+
+        {:bg_8bit, n} when is_integer(n) and n >= 0 and n <= 255 ->
+          %{style | background: {:index, n}}
+
+        # 24-bit RGB codes
+        {:fg_rgb, r, g, b} ->
+          %{style | foreground: {:rgb, r, g, b}}
+
+        {:bg_rgb, r, g, b} ->
+          %{style | background: {:rgb, r, g, b}}
+
+        # Unknown parameter, return unchanged
+        _ ->
+          style
+      end
     end
   end
 

@@ -1,5 +1,6 @@
 defmodule Raxol.Benchmark.RunnerTest do
   use ExUnit.Case, async: true
+  @moduletag :benchmark
 
   alias Raxol.Benchmark.{Runner, Analyzer, Reporter}
 
@@ -23,6 +24,7 @@ defmodule Raxol.Benchmark.RunnerTest do
       assert scenario.run_time_data.statistics.average > 0
     end
 
+    @tag timeout: :infinity
     test "can run a benchmark suite" do
       suite = %{
         name: "Test Suite",

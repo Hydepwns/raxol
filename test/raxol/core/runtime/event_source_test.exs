@@ -5,7 +5,9 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
   """
   # Must be false due to process monitoring
   use ExUnit.Case, async: false
-  
+
+  alias Raxol.Core.Runtime.EventSourceTest.TestEventSource
+
   describe "EventSource behaviour" do
     setup do
       context = %{pid: self()}

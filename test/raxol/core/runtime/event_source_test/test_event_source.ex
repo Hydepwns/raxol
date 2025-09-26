@@ -37,6 +37,24 @@ defmodule Raxol.Core.Runtime.EventSourceTest.TestEventSource do
   end
 
   @impl GenServer
+  def handle_info(:send_event, state) do
+    # Send test event to context pid (the test process)
+    if state.context[:pid] do
+      send(state.context.pid, {:subscription, {:test_event, state.args[:data]}})
+    end
+    {:noreply, state}
+  end
+
+  @impl GenServer
+  def handle_info(:stop, state) do
+    # Send termination message to context pid
+    if state.context[:pid] do
+      send(state.context.pid, :terminated_normally)
+    end
+    {:stop, :normal, state}
+  end
+
+  @impl GenServer
   def handle_cast({:emit, event}, state) do
     new_events = [event | state.events]
     notify_subscribers(event, state.subscribers)

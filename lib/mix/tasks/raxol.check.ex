@@ -43,6 +43,7 @@ defmodule Mix.Tasks.Raxol.Check do
 
   @all_checks [:compile, :format, :credo, :dialyzer, :security, :test]
   @quick_checks [:compile, :format, :credo, :test]
+  @precommit_checks [:compile, :format, :credo, :test]
 
   @impl Mix.Task
   def run(args) do
@@ -206,8 +207,9 @@ defmodule Mix.Tasks.Raxol.Check do
     System.put_env("SKIP_TERMBOX2_TESTS", "true")
     System.put_env("MIX_ENV", "test")
 
+    # Exclude slow tests and benchmarks
     case Mix.shell().cmd(
-           "mix test --exclude slow --exclude integration --exclude docker"
+           "mix test --exclude slow --exclude integration --exclude docker --exclude benchmark --max-failures 10"
          ) do
       0 ->
         Mix.shell().info("    [OK] All tests passed")

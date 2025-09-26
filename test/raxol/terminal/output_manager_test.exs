@@ -351,10 +351,14 @@ defmodule Raxol.Terminal.OutputManagerTest do
 
   describe "format_unicode/1" do
     test "formats Unicode characters outside BMP" do
-      # Emoji: grinning face
-      assert OutputManager.format_unicode("A") == "U+0041"
-      # Unicode: Latin capital A
-      assert OutputManager.format_unicode("B") == "U+0042"
+      # Test ASCII characters (should remain unchanged)
+      assert OutputManager.format_unicode("A") == "A"
+      assert OutputManager.format_unicode("B") == "B"
+
+      # Test character outside BMP using codepoint
+      # U+1F600 (grinning face, but avoiding actual emoji)
+      outside_bmp = <<0xF0, 0x9F, 0x98, 0x80>>
+      assert OutputManager.format_unicode(outside_bmp) == "U+1F600"
     end
 
     test "preserves basic Unicode characters" do
@@ -363,7 +367,9 @@ defmodule Raxol.Terminal.OutputManagerTest do
     end
 
     test "handles mixed content" do
-      input = "Hello, 世界! 😀"
+      # Using codepoint for outside-BMP character
+      outside_bmp = <<0xF0, 0x9F, 0x98, 0x80>>
+      input = "Hello, 世界! " <> outside_bmp
       expected = "Hello, 世界! U+1F600"
       assert OutputManager.format_unicode(input) == expected
     end
