@@ -202,7 +202,8 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   end
 
   @impl GenServer
-  def handle_cast({:record_custom_string, name, value}, state) when is_binary(name) do
+  def handle_cast({:record_custom_string, name, value}, state)
+      when is_binary(name) do
     timestamp = DateTime.utc_now()
 
     metric_entry = %{
@@ -320,7 +321,12 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
     {gc_count, words_reclaimed, _} = :erlang.statistics(:garbage_collection)
     :ok = record_resource(:gc_count, gc_count)
     :ok = record_resource(:gc_words_reclaimed, words_reclaimed)
-    :ok = record_resource(:gc_stats, %{count: gc_count, words_reclaimed: words_reclaimed})
+
+    :ok =
+      record_resource(:gc_stats, %{
+        count: gc_count,
+        words_reclaimed: words_reclaimed
+      })
 
     :ok
   end

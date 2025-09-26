@@ -100,7 +100,10 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   Registers a hook for an extension.
   """
   def register_hook(extension_id, hook_name, callback) do
-    GenServer.call(__MODULE__, {:register_hook, extension_id, hook_name, callback})
+    GenServer.call(
+      __MODULE__,
+      {:register_hook, extension_id, hook_name, callback}
+    )
   end
 
   @doc """
@@ -152,11 +155,12 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     }
 
     # Auto-load extensions if enabled
-    state = if state.auto_load do
-      auto_load_extensions(state)
-    else
-      state
-    end
+    state =
+      if state.auto_load do
+        auto_load_extensions(state)
+      else
+        state
+      end
 
     {:ok, state}
   end
@@ -165,22 +169,25 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   def handle_call({:load_extension, path, type, metadata}, _from, state) do
     # Validate extension type
     valid_types = [:theme, :plugin, :script, :tool, :custom]
+
     unless type in valid_types do
       {:reply, {:error, {:module_load_failed, :invalid_extension_type}}, state}
     else
       extension_id = generate_extension_id()
 
       # Convert metadata to map if it's a keyword list
-      metadata_map = case metadata do
-        map when is_map(map) -> map
-        list when is_list(list) -> Enum.into(list, %{})
-        _ -> %{}
-      end
+      metadata_map =
+        case metadata do
+          map when is_map(map) -> map
+          list when is_list(list) -> Enum.into(list, %{})
+          _ -> %{}
+        end
 
       # Validate dependencies if present
       case Map.get(metadata_map, :dependencies) do
         deps when is_binary(deps) ->
           {:reply, {:error, :invalid_extension_dependencies}, state}
+
         _ ->
           # Provide default values for required fields only if not present
           defaults = %{
@@ -189,23 +196,26 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
             author: "Unknown"
           }
 
-          extension = defaults
-          |> Map.merge(metadata_map)
-          |> Map.merge(%{
-            id: extension_id,
-            path: path,
-            type: type,
-            active: false,
-            config: %{}
-          })
-          |> Map.put_new(:hooks, [])
+          extension =
+            defaults
+            |> Map.merge(metadata_map)
+            |> Map.merge(%{
+              id: extension_id,
+              path: path,
+              type: type,
+              active: false,
+              config: %{}
+            })
+            |> Map.put_new(:hooks, [])
 
           case Manager.load_extension(state.manager, extension) do
             {:ok, updated_manager} ->
-              updated_state = %{state |
-                manager: updated_manager,
-                extensions: Map.put(state.extensions, extension_id, extension)
+              updated_state = %{
+                state
+                | manager: updated_manager,
+                  extensions: Map.put(state.extensions, extension_id, extension)
               }
+
               {:reply, {:ok, extension_id}, updated_state}
 
             {:error, reason} ->
@@ -223,12 +233,15 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
       _extension ->
         case Manager.unload_extension(state.manager, extension_id) do
           {:ok, updated_manager} ->
-            updated_state = %{state |
-              manager: updated_manager,
-              extensions: Map.delete(state.extensions, extension_id),
-              active_extensions: MapSet.delete(state.active_extensions, extension_id),
-              hooks: Map.delete(state.hooks, extension_id)
+            updated_state = %{
+              state
+              | manager: updated_manager,
+                extensions: Map.delete(state.extensions, extension_id),
+                active_extensions:
+                  MapSet.delete(state.active_extensions, extension_id),
+                hooks: Map.delete(state.hooks, extension_id)
             }
+
             {:reply, :ok, updated_state}
 
           {:error, reason} ->
@@ -257,10 +270,15 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
           {:reply, {:error, :invalid_extension_state}, state}
         else
           updated_extension = Map.put(extension, :active, true)
-          updated_state = %{state |
-            extensions: Map.put(state.extensions, extension_id, updated_extension),
-            active_extensions: MapSet.put(state.active_extensions, extension_id)
+
+          updated_state = %{
+            state
+            | extensions:
+                Map.put(state.extensions, extension_id, updated_extension),
+              active_extensions:
+                MapSet.put(state.active_extensions, extension_id)
           }
+
           {:reply, :ok, updated_state}
         end
     end
@@ -274,10 +292,15 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
       extension ->
         if extension.active do
           updated_extension = Map.put(extension, :active, false)
-          updated_state = %{state |
-            extensions: Map.put(state.extensions, extension_id, updated_extension),
-            active_extensions: MapSet.delete(state.active_extensions, extension_id)
+
+          updated_state = %{
+            state
+            | extensions:
+                Map.put(state.extensions, extension_id, updated_extension),
+              active_extensions:
+                MapSet.delete(state.active_extensions, extension_id)
           }
+
           {:reply, :ok, updated_state}
         else
           {:reply, {:error, :invalid_extension_state}, state}
@@ -295,10 +318,15 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
         case config do
           map when is_map(map) ->
             updated_extension = Map.put(extension, :config, config)
-            updated_state = %{state |
-              extensions: Map.put(state.extensions, extension_id, updated_extension)
+
+            updated_state = %{
+              state
+              | extensions:
+                  Map.put(state.extensions, extension_id, updated_extension)
             }
+
             {:reply, :ok, updated_state}
+
           _ ->
             {:reply, {:error, :invalid_extension_config}, state}
         end
@@ -334,9 +362,10 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   end
 
   def handle_call({:list_extensions, filters}, _from, state) do
-    extensions = state.extensions
-    |> Map.values()
-    |> filter_extensions(filters)
+    extensions =
+      state.extensions
+      |> Map.values()
+      |> filter_extensions(filters)
 
     {:reply, {:ok, extensions}, state}
   end
@@ -367,9 +396,11 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
         extension = export_data.extension
         extension_id = extension.id
 
-        updated_state = %{state |
-          extensions: Map.put(state.extensions, extension_id, extension)
+        updated_state = %{
+          state
+          | extensions: Map.put(state.extensions, extension_id, extension)
         }
+
         {:reply, {:ok, extension_id}, updated_state}
 
       {:error, reason} ->
@@ -377,7 +408,11 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
     end
   end
 
-  def handle_call({:register_hook, extension_id, hook_name, callback}, _from, state) do
+  def handle_call(
+        {:register_hook, extension_id, hook_name, callback},
+        _from,
+        state
+      ) do
     case Map.get(state.extensions, extension_id) do
       nil ->
         {:reply, {:error, :extension_not_found}, state}
@@ -385,18 +420,23 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
       extension ->
         # Validate that the hook name is in the extension's allowed hooks
         allowed_hooks = Map.get(extension, :hooks, %{})
-        allowed_hook_names = case allowed_hooks do
-          list when is_list(list) -> list
-          map when is_map(map) -> Map.keys(map)
-          _ -> []
-        end
+
+        allowed_hook_names =
+          case allowed_hooks do
+            list when is_list(list) -> list
+            map when is_map(map) -> Map.keys(map)
+            _ -> []
+          end
 
         if hook_name in allowed_hook_names do
           hooks = Map.get(state.hooks, extension_id, %{})
           updated_hooks = Map.put(hooks, hook_name, callback)
-          updated_state = %{state |
-            hooks: Map.put(state.hooks, extension_id, updated_hooks)
+
+          updated_state = %{
+            state
+            | hooks: Map.put(state.hooks, extension_id, updated_hooks)
           }
+
           {:reply, :ok, updated_state}
         else
           {:reply, {:error, :hook_not_found}, state}
@@ -412,9 +452,12 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
       _extension ->
         hooks = Map.get(state.hooks, extension_id, %{})
         updated_hooks = Map.delete(hooks, hook_name)
-        updated_state = %{state |
-          hooks: Map.put(state.hooks, extension_id, updated_hooks)
+
+        updated_state = %{
+          state
+          | hooks: Map.put(state.hooks, extension_id, updated_hooks)
         }
+
         {:reply, :ok, updated_state}
     end
   end
@@ -426,6 +469,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
 
       _extension ->
         hooks = Map.get(state.hooks, extension_id, %{})
+
         case Map.get(hooks, hook_name) do
           nil ->
             {:reply, {:error, :hook_not_found}, state}
@@ -457,7 +501,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   # Helper functions
 
   defp generate_extension_id do
-    "ext_" <> :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+    ("ext_" <> :crypto.strong_rand_bytes(8)) |> Base.encode16(case: :lower)
   end
 
   defp auto_load_extensions(state) do
@@ -467,6 +511,7 @@ defmodule Raxol.Terminal.Extension.UnifiedExtension do
   end
 
   defp filter_extensions(extensions, []), do: extensions
+
   defp filter_extensions(extensions, filters) do
     Enum.filter(extensions, fn ext ->
       Enum.all?(filters, fn

@@ -14,7 +14,15 @@ defmodule MockTerminal do
   """
 
   def new(width, height, _opts) do
-    %{width: width, height: height, buffer: %{}, loaded_plugins: [], visible_panels: [], status_line: "", state: %{}}
+    %{
+      width: width,
+      height: height,
+      buffer: %{},
+      loaded_plugins: [],
+      visible_panels: [],
+      status_line: "",
+      state: %{}
+    }
   end
 
   def get_buffer(terminal) do
@@ -174,9 +182,10 @@ defmodule Raxol.Plugins.Testing.PluginTestFramework do
   defp validate_required_fields(manifest) do
     required = [:name, :version, :description, :author]
 
-    missing = Enum.filter(required, fn field ->
-      not Map.has_key?(manifest, field) or is_nil(Map.get(manifest, field))
-    end)
+    missing =
+      Enum.filter(required, fn field ->
+        not Map.has_key?(manifest, field) or is_nil(Map.get(manifest, field))
+      end)
 
     if Enum.empty?(missing) do
       :ok
@@ -196,15 +205,16 @@ defmodule Raxol.Plugins.Testing.PluginTestFramework do
       {:config_schema, :map}
     ]
 
-    errors = Enum.flat_map(validations, fn {field, expected_type} ->
-      value = Map.get(manifest, field)
+    errors =
+      Enum.flat_map(validations, fn {field, expected_type} ->
+        value = Map.get(manifest, field)
 
-      if value != nil and not is_type?(value, expected_type) do
-        [{field, expected_type, typeof(value)}]
-      else
-        []
-      end
-    end)
+        if value != nil and not is_type?(value, expected_type) do
+          [{field, expected_type, typeof(value)}]
+        else
+          []
+        end
+      end)
 
     if Enum.empty?(errors) do
       :ok
@@ -228,9 +238,10 @@ defmodule Raxol.Plugins.Testing.PluginTestFramework do
 
     capabilities = Map.get(manifest, :capabilities, [])
 
-    invalid = Enum.filter(capabilities, fn cap ->
-      cap not in valid_capabilities
-    end)
+    invalid =
+      Enum.filter(capabilities, fn cap ->
+        cap not in valid_capabilities
+      end)
 
     if Enum.empty?(invalid) do
       :ok
@@ -241,18 +252,22 @@ defmodule Raxol.Plugins.Testing.PluginTestFramework do
 
   defp validate_config_schema(manifest) do
     case Map.get(manifest, :config_schema) do
-      nil -> :ok
+      nil ->
+        :ok
+
       schema when is_map(schema) ->
         validate_config_fields(schema)
+
       _ ->
         {:error, :invalid_config_schema}
     end
   end
 
   defp validate_config_fields(schema) do
-    errors = Enum.flat_map(schema, fn {field_name, field_config} ->
-      validate_config_field(field_name, field_config)
-    end)
+    errors =
+      Enum.flat_map(schema, fn {field_name, field_config} ->
+        validate_config_field(field_name, field_config)
+      end)
 
     if Enum.empty?(errors) do
       :ok
@@ -265,16 +280,18 @@ defmodule Raxol.Plugins.Testing.PluginTestFramework do
     errors = []
 
     # Check required keys
-    errors = case Map.has_key?(field_config, :type) do
-      true -> errors
-      false -> [{field_name, :missing_type} | errors]
-    end
+    errors =
+      case Map.has_key?(field_config, :type) do
+        true -> errors
+        false -> [{field_name, :missing_type} | errors]
+      end
 
     # Check type validity
-    errors = case Map.get(field_config, :type) do
-      type when type in [:string, :integer, :boolean, :list, :map] -> errors
-      type -> [{field_name, {:invalid_type, type}} | errors]
-    end
+    errors =
+      case Map.get(field_config, :type) do
+        type when type in [:string, :integer, :boolean, :list, :map] -> errors
+        type -> [{field_name, {:invalid_type, type}} | errors]
+      end
 
     errors
   end
@@ -302,12 +319,14 @@ defmodule Raxol.Plugins.Testing.Assertions do
 
   def assert_plugin_loaded(terminal, plugin_name) do
     loaded_plugins = MockTerminal.get_loaded_plugins(terminal)
+
     assert plugin_name in loaded_plugins,
            "Expected plugin '#{plugin_name}' to be loaded, but got: #{inspect(loaded_plugins)}"
   end
 
   def assert_panel_visible(terminal, plugin_name) do
     visible_panels = MockTerminal.get_visible_panels(terminal)
+
     assert plugin_name in visible_panels,
            "Expected panel for '#{plugin_name}' to be visible, but got: #{inspect(visible_panels)}"
   end
@@ -334,6 +353,7 @@ defmodule Raxol.Plugins.Testing.Assertions do
 
   def assert_status_line_contains(terminal, expected_text) do
     status_line = MockTerminal.get_status_line(terminal)
+
     assert String.contains?(status_line, expected_text),
            "Expected status line to contain '#{expected_text}', but got: '#{status_line}'"
   end
@@ -355,6 +375,7 @@ defmodule Raxol.Plugins.Testing.Assertions do
       state when is_map(state) ->
         Enum.each(state, fn {key, expected_value} ->
           actual_value = Map.get(actual_state, key)
+
           assert actual_value == expected_value,
                  "Expected plugin state.#{key} to be #{inspect(expected_value)}, but got #{inspect(actual_value)}"
         end)
@@ -367,6 +388,7 @@ defmodule Raxol.Plugins.Testing.Assertions do
 
   def assert_plugin_output(plugin_pid, expected_output) do
     output = GenServer.call(plugin_pid, :get_output)
+
     assert output == expected_output,
            "Expected plugin output to be #{inspect(expected_output)}, but got #{inspect(output)}"
   end
@@ -401,7 +423,9 @@ defmodule Raxol.Plugins.Testing.Helpers do
   end
 
   def with_temp_directory(fun) do
-    temp_dir = System.tmp_dir!() |> Path.join("plugin_test_#{:rand.uniform(1000000)}")
+    temp_dir =
+      System.tmp_dir!() |> Path.join("plugin_test_#{:rand.uniform(1_000_000)}")
+
     File.mkdir_p!(temp_dir)
 
     try do
@@ -557,7 +581,11 @@ defmodule Raxol.Plugins.Testing.PluginRunner do
     case plugin_module.start_link(config) do
       {:ok, pid} ->
         # Register plugin with mock terminal
-        GenServer.cast(terminal, {:register_plugin, plugin_module.manifest().name, pid})
+        GenServer.cast(
+          terminal,
+          {:register_plugin, plugin_module.manifest().name, pid}
+        )
+
         {:ok, pid}
 
       error ->
@@ -572,13 +600,15 @@ defmodule Raxol.Plugins.Testing.BenchmarkHelper do
   """
 
   def benchmark_plugin_render(plugin_pid, iterations \\ 1000) do
-    {time, _result} = :timer.tc(fn ->
-      Enum.each(1..iterations, fn _ ->
-        GenServer.call(plugin_pid, {:render_panel, 80, 24})
+    {time, _result} =
+      :timer.tc(fn ->
+        Enum.each(1..iterations, fn _ ->
+          GenServer.call(plugin_pid, {:render_panel, 80, 24})
+        end)
       end)
-    end)
 
     time_per_iteration = time / iterations
+
     %{
       total_time: time,
       iterations: iterations,
@@ -588,13 +618,14 @@ defmodule Raxol.Plugins.Testing.BenchmarkHelper do
   end
 
   def benchmark_keypress_handling(plugin_pid, keys, iterations \\ 100) do
-    {time, _result} = :timer.tc(fn ->
-      Enum.each(1..iterations, fn _ ->
-        Enum.each(keys, fn key ->
-          GenServer.call(plugin_pid, {:handle_keypress, key})
+    {time, _result} =
+      :timer.tc(fn ->
+        Enum.each(1..iterations, fn _ ->
+          Enum.each(keys, fn key ->
+            GenServer.call(plugin_pid, {:handle_keypress, key})
+          end)
         end)
       end)
-    end)
 
     total_keypresses = length(keys) * iterations
     time_per_keypress = time / total_keypresses

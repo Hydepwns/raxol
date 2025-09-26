@@ -47,7 +47,9 @@ defmodule Raxol.UI.StyleProcessor do
         cached_style
 
       :miss ->
-        flattened = flatten_merged_style_direct(parent_style, child_element, theme)
+        flattened =
+          flatten_merged_style_direct(parent_style, child_element, theme)
+
         cache_flattened_style(cache_key, flattened)
         flattened
     end
@@ -131,7 +133,8 @@ defmodule Raxol.UI.StyleProcessor do
 
   # Cached implementation
   defp merge_styles_for_inheritance_cached(parent_style, child_style) do
-    cache_key = {:style_merge, hash_style(parent_style), hash_style(child_style)}
+    cache_key =
+      {:style_merge, hash_style(parent_style), hash_style(child_style)}
 
     case get_cached_merged_style(cache_key) do
       {:ok, merged} ->
@@ -175,7 +178,12 @@ defmodule Raxol.UI.StyleProcessor do
   ## Options
   - `cache: boolean()` - Enable caching for this operation (default: false)
   """
-  def inherit_colors(child_style_map, parent_element, parent_style_map, opts \\ []) do
+  def inherit_colors(
+        child_style_map,
+        parent_element,
+        parent_style_map,
+        opts \\ []
+      ) do
     if should_use_cache?(opts) do
       inherit_colors_cached(child_style_map, parent_element, parent_style_map)
     else
@@ -185,14 +193,22 @@ defmodule Raxol.UI.StyleProcessor do
 
   # Cached implementation
   defp inherit_colors_cached(child_style_map, parent_element, parent_style_map) do
-    cache_key = {:color_inherit, hash_style(child_style_map), hash_style(parent_element), hash_style(parent_style_map)}
+    cache_key =
+      {:color_inherit, hash_style(child_style_map), hash_style(parent_element),
+       hash_style(parent_style_map)}
 
     case get_cached_colors(cache_key) do
       {:ok, colors} ->
         colors
 
       :miss ->
-        colors = inherit_colors_direct(child_style_map, parent_element, parent_style_map)
+        colors =
+          inherit_colors_direct(
+            child_style_map,
+            parent_element,
+            parent_style_map
+          )
+
         cache_colors(cache_key, colors)
         colors
     end
@@ -238,7 +254,9 @@ defmodule Raxol.UI.StyleProcessor do
 
   defp should_use_cache?(opts) do
     cache_from_opts = Keyword.get(opts, :cache)
-    cache_from_config = Application.get_env(:raxol, :style_processor, [])[:cache_enabled]
+
+    cache_from_config =
+      Application.get_env(:raxol, :style_processor, [])[:cache_enabled]
 
     # opts override config, default to false
     case {cache_from_opts, cache_from_config} do
@@ -256,7 +274,11 @@ defmodule Raxol.UI.StyleProcessor do
 
   defp get_cached_flattened_style(key) do
     if cache_available?() do
-      Raxol.Performance.ETSCacheManager.get_style(:flatten_cache, nil, :erlang.phash2(key))
+      Raxol.Performance.ETSCacheManager.get_style(
+        :flatten_cache,
+        nil,
+        :erlang.phash2(key)
+      )
     else
       :miss
     end
@@ -264,13 +286,22 @@ defmodule Raxol.UI.StyleProcessor do
 
   defp cache_flattened_style(key, style) do
     if cache_available?() do
-      Raxol.Performance.ETSCacheManager.cache_style(:flatten_cache, nil, :erlang.phash2(key), style)
+      Raxol.Performance.ETSCacheManager.cache_style(
+        :flatten_cache,
+        nil,
+        :erlang.phash2(key),
+        style
+      )
     end
   end
 
   defp get_cached_merged_style(key) do
     if cache_available?() do
-      Raxol.Performance.ETSCacheManager.get_style(:merge_cache, nil, :erlang.phash2(key))
+      Raxol.Performance.ETSCacheManager.get_style(
+        :merge_cache,
+        nil,
+        :erlang.phash2(key)
+      )
     else
       :miss
     end
@@ -278,13 +309,22 @@ defmodule Raxol.UI.StyleProcessor do
 
   defp cache_merged_style(key, style) do
     if cache_available?() do
-      Raxol.Performance.ETSCacheManager.cache_style(:merge_cache, nil, :erlang.phash2(key), style)
+      Raxol.Performance.ETSCacheManager.cache_style(
+        :merge_cache,
+        nil,
+        :erlang.phash2(key),
+        style
+      )
     end
   end
 
   defp get_cached_colors(key) do
     if cache_available?() do
-      Raxol.Performance.ETSCacheManager.get_style(:colors_cache, nil, :erlang.phash2(key))
+      Raxol.Performance.ETSCacheManager.get_style(
+        :colors_cache,
+        nil,
+        :erlang.phash2(key)
+      )
     else
       :miss
     end
@@ -292,22 +332,35 @@ defmodule Raxol.UI.StyleProcessor do
 
   defp cache_colors(key, colors) do
     if cache_available?() do
-      Raxol.Performance.ETSCacheManager.cache_style(:colors_cache, nil, :erlang.phash2(key), colors)
+      Raxol.Performance.ETSCacheManager.cache_style(
+        :colors_cache,
+        nil,
+        :erlang.phash2(key),
+        colors
+      )
     end
   end
 
   # Cache key builders
 
   defp build_flatten_cache_key(parent_style, child_element, theme) do
-    {:flatten, hash_style(parent_style), hash_element(child_element), get_theme_id(theme)}
+    {:flatten, hash_style(parent_style), hash_element(child_element),
+     get_theme_id(theme)}
   end
 
   defp hash_style(nil), do: 0
 
   defp hash_style(style) when is_map(style) do
     relevant_keys = [
-      :style, :foreground, :background, :fg, :bg,
-      :bold, :italic, :underline, :variant
+      :style,
+      :foreground,
+      :background,
+      :fg,
+      :bg,
+      :bold,
+      :italic,
+      :underline,
+      :variant
     ]
 
     style

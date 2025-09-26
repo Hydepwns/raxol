@@ -17,9 +17,9 @@ defmodule Raxol.Terminal.Escape.Parsers.SCSParser do
     - input: The remaining input after the intermediate
 
   ## Returns
-    - {:ok, command, remaining} - Successfully parsed command
-    - {:incomplete, input} - Input is incomplete
-    - {:error, reason, input} - Parse error
+    - `{:ok, command, remaining}` - Successfully parsed command
+    - `{:incomplete, input}` - Input is incomplete
+    - `{:error, reason, input}` - Parse error
   """
   @spec parse(char(), String.t()) ::
           {:ok, term(), String.t()}

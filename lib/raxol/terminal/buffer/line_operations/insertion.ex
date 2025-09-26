@@ -54,7 +54,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
       new_lines =
         0..(height - 1)
         |> Enum.map(fn line_y ->
-          {line_y, build_line_at_position(lines, line_y, y, count, width, style, height)}
+          {line_y,
+           build_line_at_position(lines, line_y, y, count, width, style, height)}
         end)
         |> Enum.reject(fn {_line_y, line} -> is_nil(line) end)
         |> Enum.into(%{})
@@ -122,30 +123,63 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Insertion do
   end
 
   # Pattern match on line position relative to insertion point
-  defp build_line_at_position(lines, line_y, insert_y, _count, _width, _style, _height)
+  defp build_line_at_position(
+         lines,
+         line_y,
+         insert_y,
+         _count,
+         _width,
+         _style,
+         _height
+       )
        when line_y < insert_y do
     # Lines before insertion point stay the same
     Map.get(lines, line_y)
   end
 
-  defp build_line_at_position(_lines, line_y, insert_y, count, width, style, _height)
+  defp build_line_at_position(
+         _lines,
+         line_y,
+         insert_y,
+         count,
+         width,
+         style,
+         _height
+       )
        when line_y >= insert_y and line_y < insert_y + count do
     # Insert new empty lines
     create_empty_line(width, style)
   end
 
-  defp build_line_at_position(lines, line_y, _insert_y, count, _width, _style, height)
+  defp build_line_at_position(
+         lines,
+         line_y,
+         _insert_y,
+         count,
+         _width,
+         _style,
+         height
+       )
        when line_y < height do
     # Shift remaining lines down if they fit
     source_y = line_y - count
     build_shifted_line(lines, source_y, height - count)
   end
 
-  defp build_line_at_position(_lines, _line_y, _insert_y, _count, _width, _style, _height) do
+  defp build_line_at_position(
+         _lines,
+         _line_y,
+         _insert_y,
+         _count,
+         _width,
+         _style,
+         _height
+       ) do
     nil
   end
 
-  defp build_shifted_line(lines, source_y, max_source) when source_y < max_source do
+  defp build_shifted_line(lines, source_y, max_source)
+       when source_y < max_source do
     Map.get(lines, source_y)
   end
 

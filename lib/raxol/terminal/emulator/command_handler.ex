@@ -389,60 +389,73 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   # Additional CSI command handlers that delegate to UnifiedCommandHandler
   defp handle_erase_character(params, emulator, _intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "X", params) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "X", params)
+    |> extract_emulator()
   end
 
   defp handle_cursor_next_line(params, emulator, _intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "E", params) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "E", params)
+    |> extract_emulator()
   end
 
   defp handle_cursor_previous_line(params, emulator, _intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "F", params) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "F", params)
+    |> extract_emulator()
   end
 
   defp handle_cursor_horizontal_absolute(params, emulator, _intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "G", params) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "G", params)
+    |> extract_emulator()
   end
 
   defp handle_cursor_vertical_absolute(params, emulator, _intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "d", params) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "d", params)
+    |> extract_emulator()
   end
 
   defp handle_insert_lines(params, emulator, _intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "L", params) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "L", params)
+    |> extract_emulator()
   end
 
   defp handle_delete_lines(params, emulator, _intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "M", params) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "M", params)
+    |> extract_emulator()
   end
 
   defp handle_insert_characters(params, emulator, _intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "@", params) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "@", params)
+    |> extract_emulator()
   end
 
   defp handle_delete_characters(params, emulator, _intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "P", params) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "P", params)
+    |> extract_emulator()
   end
 
   defp handle_scroll_up(params, emulator, _intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "S", params) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "S", params)
+    |> extract_emulator()
   end
 
   defp handle_scroll_down(params, emulator, _intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "T", params) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "T", params)
+    |> extract_emulator()
   end
 
   defp handle_set_mode(params, emulator, intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "h", params, intermediates) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "h", params, intermediates)
+    |> extract_emulator()
   end
 
   defp handle_reset_mode(params, emulator, intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "l", params, intermediates) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "l", params, intermediates)
+    |> extract_emulator()
   end
 
-
   defp handle_tab_clear(params, emulator, _intermediates) do
-    UnifiedCommandHandler.handle_csi(emulator, "g", params) |> extract_emulator()
+    UnifiedCommandHandler.handle_csi(emulator, "g", params)
+    |> extract_emulator()
   end
 
   defp extract_emulator({:ok, emulator}), do: emulator
@@ -451,14 +464,24 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   defp handle_csi_command(final_byte, params, emulator, intermediates) do
     require Raxol.Core.Runtime.Log
-    Raxol.Core.Runtime.Log.debug("handle_csi_command: final_byte=#{inspect(final_byte)}, params=#{inspect(params)}")
+
+    Raxol.Core.Runtime.Log.debug(
+      "handle_csi_command: final_byte=#{inspect(final_byte)}, params=#{inspect(params)}"
+    )
 
     case csi_handlers()[final_byte] do
       {handler, _arity} ->
-        Raxol.Core.Runtime.Log.debug("Found handler for #{inspect(final_byte)}: #{inspect(handler)}")
+        Raxol.Core.Runtime.Log.debug(
+          "Found handler for #{inspect(final_byte)}: #{inspect(handler)}"
+        )
+
         apply(handler, [params, emulator, intermediates])
+
       nil ->
-        Raxol.Core.Runtime.Log.debug("No handler found for #{inspect(final_byte)}")
+        Raxol.Core.Runtime.Log.debug(
+          "No handler found for #{inspect(final_byte)}"
+        )
+
         emulator
     end
   end
@@ -486,7 +509,8 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
       # Cursor movement
       "H" => {&handle_cursor_position/2, 2},
-      "f" => {&handle_cursor_position/2, 2},  # HVP same as CUP
+      # HVP same as CUP
+      "f" => {&handle_cursor_position/2, 2},
       "A" => {&handle_cursor_up/2, 2},
       "B" => {&handle_cursor_down/2, 2},
       "C" => {&handle_cursor_forward/2, 2},

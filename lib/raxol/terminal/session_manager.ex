@@ -456,7 +456,11 @@ defmodule Raxol.Terminal.SessionManager do
     end
   end
 
-  def handle_manager_call({:attach_session, session_id, client_config}, _from, state) do
+  def handle_manager_call(
+        {:attach_session, session_id, client_config},
+        _from,
+        state
+      ) do
     case Map.get(state.sessions, session_id) do
       nil ->
         {:reply, {:error, :session_not_found}, state}

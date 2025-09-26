@@ -20,7 +20,9 @@ defmodule Raxol.UI.ThemeResolverCached do
   Resolves element theme with caching enabled.
   """
   def resolve_element_theme(element_theme, default_theme) do
-    ThemeResolver.resolve_element_theme(element_theme, default_theme, cache: true)
+    ThemeResolver.resolve_element_theme(element_theme, default_theme,
+      cache: true
+    )
   end
 
   @doc """

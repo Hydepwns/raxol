@@ -135,14 +135,21 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
 
   @impl true
   def handle_manager_call({:load_plugin, plugin_module}, _from, state) do
-    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_load_plugin(plugin_module, %{}, state) do
+    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_load_plugin(
+           plugin_module,
+           %{},
+           state
+         ) do
       {:ok, new_state} -> {:reply, :ok, new_state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
   def handle_manager_call({:unload_plugin, plugin_name}, _from, state) do
-    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_unload_plugin(plugin_name, state) do
+    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_unload_plugin(
+           plugin_name,
+           state
+         ) do
       {:ok, new_state} -> {:reply, :ok, new_state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
@@ -163,6 +170,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
       state
       |> Map.put(:initialized, true)
       |> Map.put(:plugin_config, config)
+
     {:reply, :ok, new_state}
   end
 
@@ -171,11 +179,24 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
     {:reply, plugins, state}
   end
 
-  def handle_manager_call({:load_plugin_by_module, module, config}, _from, state) do
-    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_load_plugin(module, config, state) do
-      {:ok, new_state} -> {:reply, :ok, new_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
-      {:error, type, message, _context} -> {:reply, {:error, "#{type}: #{message}"}, state}
+  def handle_manager_call(
+        {:load_plugin_by_module, module, config},
+        _from,
+        state
+      ) do
+    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_load_plugin(
+           module,
+           config,
+           state
+         ) do
+      {:ok, new_state} ->
+        {:reply, :ok, new_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+
+      {:error, type, message, _context} ->
+        {:reply, {:error, "#{type}: #{message}"}, state}
     end
   end
 
@@ -186,7 +207,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
 
   def handle_manager_call({:update_plugin, plugin_id, update_fun}, _from, state) do
     case Map.get(state.plugins, plugin_id) do
-      nil -> {:reply, {:error, :plugin_not_found}, state}
+      nil ->
+        {:reply, {:error, :plugin_not_found}, state}
+
       plugin ->
         updated_plugin = update_fun.(plugin)
         new_plugins = Map.put(state.plugins, plugin_id, updated_plugin)
@@ -195,16 +218,26 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
     end
   end
 
-  def handle_manager_call({:initialize_plugin, plugin_name, config}, _from, state) do
+  def handle_manager_call(
+        {:initialize_plugin, plugin_name, config},
+        _from,
+        state
+      ) do
     case Map.get(state.plugins, plugin_name) do
-      nil -> {:reply, {:error, :plugin_not_found}, state}
+      nil ->
+        {:reply, {:error, :plugin_not_found}, state}
+
       _plugin ->
-        new_plugin_states = Map.put(state.plugin_states, plugin_name, :initialized)
+        new_plugin_states =
+          Map.put(state.plugin_states, plugin_name, :initialized)
+
         new_plugin_config = Map.put(state.plugin_config, plugin_name, config)
+
         new_state =
           state
           |> Map.put(:plugin_states, new_plugin_states)
           |> Map.put(:plugin_config, new_plugin_config)
+
         {:reply, :ok, new_state}
     end
   end
@@ -219,9 +252,15 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
     {:reply, plugin_names, state}
   end
 
-  def handle_manager_call({:call_hook, plugin_name, _hook_name, args}, _from, state) do
+  def handle_manager_call(
+        {:call_hook, plugin_name, _hook_name, args},
+        _from,
+        state
+      ) do
     case Map.get(state.plugins, plugin_name) do
-      nil -> {:reply, {:error, :plugin_not_found}, state}
+      nil ->
+        {:reply, {:error, :plugin_not_found}, state}
+
       _plugin ->
         # Basic hook call implementation - just return success for now
         {:reply, {:ok, args}, state}
@@ -235,7 +274,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
 
   @impl true
   def handle_manager_cast({:reload_plugin, plugin_name}, state) do
-    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_reload_plugin(plugin_name, state) do
+    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_reload_plugin(
+           plugin_name,
+           state
+         ) do
       {:ok, new_state} -> {:noreply, new_state}
       {:error, _reason} -> {:noreply, state}
     end
@@ -243,7 +285,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
 
   def handle_manager_cast({:enable_plugin, plugin_id}, state) do
     case Map.get(state.plugins, plugin_id) do
-      nil -> {:noreply, state}
+      nil ->
+        {:noreply, state}
+
       plugin ->
         updated_plugin = Map.put(plugin, :enabled, true)
         new_plugins = Map.put(state.plugins, plugin_id, updated_plugin)
@@ -254,7 +298,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
 
   def handle_manager_cast({:disable_plugin, plugin_id}, state) do
     case Map.get(state.plugins, plugin_id) do
-      nil -> {:noreply, state}
+      nil ->
+        {:noreply, state}
+
       plugin ->
         updated_plugin = Map.put(plugin, :enabled, false)
         new_plugins = Map.put(state.plugins, plugin_id, updated_plugin)
@@ -264,14 +310,22 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
   end
 
   def handle_manager_cast({:unload_plugin, plugin_name}, state) do
-    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_unload_plugin(plugin_name, state) do
+    case Raxol.Core.Runtime.Plugins.SafeLifecycleOperations.safe_unload_plugin(
+           plugin_name,
+           state
+         ) do
       {:ok, new_state} -> {:noreply, new_state}
       {:error, _reason} -> {:noreply, state}
     end
   end
 
-  def handle_manager_cast({:set_plugin_state, plugin_id, new_plugin_state}, state) do
-    new_plugin_states = Map.put(state.plugin_states, plugin_id, new_plugin_state)
+  def handle_manager_cast(
+        {:set_plugin_state, plugin_id, new_plugin_state},
+        state
+      ) do
+    new_plugin_states =
+      Map.put(state.plugin_states, plugin_id, new_plugin_state)
+
     new_state = Map.put(state, :plugin_states, new_plugin_states)
     {:noreply, new_state}
   end
@@ -294,7 +348,6 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
   end
 
   defp process_plugin_event(_event, state), do: state
-
 
   def stop(pid \\ __MODULE__) do
     GenServer.stop(pid)

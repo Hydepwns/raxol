@@ -13,7 +13,11 @@ defmodule Raxol.Themes do
   Starts the theme manager.
   """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, :ok, Keyword.put_new(opts, :name, __MODULE__))
+    GenServer.start_link(
+      __MODULE__,
+      :ok,
+      Keyword.put_new(opts, :name, __MODULE__)
+    )
   end
 
   @doc """
@@ -88,7 +92,10 @@ defmodule Raxol.Themes do
   - `:ok` on success
   """
   def register_theme_callback(callback_module, callback_fun \\ :on_theme_change) do
-    GenServer.call(__MODULE__, {:register_callback, callback_module, callback_fun})
+    GenServer.call(
+      __MODULE__,
+      {:register_callback, callback_module, callback_fun}
+    )
   end
 
   # GenServer callbacks
@@ -119,6 +126,7 @@ defmodule Raxol.Themes do
         # Notify callbacks
         notify_theme_callbacks(theme, state.callbacks)
         {:reply, :ok, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -136,6 +144,7 @@ defmodule Raxol.Themes do
         new_state = %{state | current_theme: theme}
         notify_theme_callbacks(theme, state.callbacks)
         {:reply, {:ok, theme}, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -159,7 +168,9 @@ defmodule Raxol.Themes do
 
   defp validate_theme(theme) do
     required_keys = [:background, :foreground, :cursor]
-    missing_keys = Enum.filter(required_keys, fn key -> not Map.has_key?(theme, key) end)
+
+    missing_keys =
+      Enum.filter(required_keys, fn key -> not Map.has_key?(theme, key) end)
 
     case missing_keys do
       [] -> :ok
@@ -168,39 +179,43 @@ defmodule Raxol.Themes do
   end
 
   defp load_theme_from_identifier("default") do
-    {:ok, %{
-      background: :default,
-      foreground: :default,
-      cursor: :default,
-      selection: {128, 128, 128, 64}
-    }}
+    {:ok,
+     %{
+       background: :default,
+       foreground: :default,
+       cursor: :default,
+       selection: {128, 128, 128, 64}
+     }}
   end
 
   defp load_theme_from_identifier("dark") do
-    {:ok, %{
-      background: {0, 0, 0},
-      foreground: {255, 255, 255},
-      cursor: {255, 255, 255},
-      selection: {64, 64, 64, 128}
-    }}
+    {:ok,
+     %{
+       background: {0, 0, 0},
+       foreground: {255, 255, 255},
+       cursor: {255, 255, 255},
+       selection: {64, 64, 64, 128}
+     }}
   end
 
   defp load_theme_from_identifier("light") do
-    {:ok, %{
-      background: {255, 255, 255},
-      foreground: {0, 0, 0},
-      cursor: {0, 0, 0},
-      selection: {192, 192, 192, 128}
-    }}
+    {:ok,
+     %{
+       background: {255, 255, 255},
+       foreground: {0, 0, 0},
+       cursor: {0, 0, 0},
+       selection: {192, 192, 192, 128}
+     }}
   end
 
   defp load_theme_from_identifier("high_contrast") do
-    {:ok, %{
-      background: {0, 0, 0},
-      foreground: {255, 255, 255},
-      cursor: {255, 255, 0},
-      selection: {255, 255, 255, 128}
-    }}
+    {:ok,
+     %{
+       background: {0, 0, 0},
+       foreground: {255, 255, 255},
+       cursor: {255, 255, 0},
+       selection: {255, 255, 255, 128}
+     }}
   end
 
   defp load_theme_from_identifier(path) when is_binary(path) do
@@ -212,9 +227,11 @@ defmodule Raxol.Themes do
             theme = convert_theme_data(theme_data)
             validate_theme(theme)
             {:ok, theme}
+
           {:error, reason} ->
             {:error, "Failed to parse theme file: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "Failed to read theme file: #{reason}"}
     end
@@ -240,6 +257,7 @@ defmodule Raxol.Themes do
     cond do
       String.starts_with?(color, "#") ->
         parse_hex_color(color)
+
       true ->
         String.to_atom(color)
     end
@@ -260,6 +278,7 @@ defmodule Raxol.Themes do
         {g, _} = Integer.parse(String.slice(hex, 2, 2), 16)
         {b, _} = Integer.parse(String.slice(hex, 4, 2), 16)
         {r, g, b}
+
       8 ->
         # RGBA
         {r, _} = Integer.parse(String.slice(hex, 0, 2), 16)
@@ -267,6 +286,7 @@ defmodule Raxol.Themes do
         {b, _} = Integer.parse(String.slice(hex, 4, 2), 16)
         {a, _} = Integer.parse(String.slice(hex, 6, 2), 16)
         {r, g, b, a}
+
       _ ->
         :default
     end
@@ -277,7 +297,8 @@ defmodule Raxol.Themes do
       try do
         apply(module, fun, [theme])
       rescue
-        _error -> :ok  # Ignore callback errors
+        # Ignore callback errors
+        _error -> :ok
       end
     end)
   end

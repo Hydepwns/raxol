@@ -5,6 +5,10 @@ defmodule EventHandler do
   """
 
   defdelegate handle_input(manager, input), to: Raxol.Events.UnifiedEventHandler
-  defdelegate handle_output(manager, output), to: Raxol.Events.UnifiedEventHandler
-  defdelegate handle_resize(manager, width, height), to: Raxol.Events.UnifiedEventHandler
+
+  defdelegate handle_output(manager, output),
+    to: Raxol.Events.UnifiedEventHandler
+
+  defdelegate handle_resize(manager, width, height),
+    to: Raxol.Events.UnifiedEventHandler
 end

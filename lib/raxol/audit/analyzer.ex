@@ -73,6 +73,7 @@ defmodule Raxol.Audit.Analyzer do
   @impl Raxol.Core.Behaviours.BaseManager
   def init_manager(opts) do
     config = Keyword.get(opts, :config, %{})
+
     state = %__MODULE__{
       config: config,
       detection_rules: init_detection_rules(),
@@ -88,7 +89,9 @@ defmodule Raxol.Audit.Analyzer do
     # Schedule periodic analysis tasks using TimerManager
     intervals = TimerManager.intervals()
     {:ok, _} = TimerManager.start_interval(:analyze_patterns, intervals.minute)
-    {:ok, _} = TimerManager.start_interval(:update_profiles, intervals.five_minutes)
+
+    {:ok, _} =
+      TimerManager.start_interval(:update_profiles, intervals.five_minutes)
 
     Logger.info("Audit analyzer initialized")
     {:ok, state}

@@ -21,48 +21,48 @@ defmodule Raxol.Plugins.PluginSystemV2 do
   @type plugin_id :: String.t()
   @type version :: String.t()
   @type dependency_spec :: {plugin_id(), version_requirement()}
-  @type version_requirement :: String.t() # e.g., "^1.0.0", "~> 2.1", ">= 1.2.0"
+  # e.g., "^1.0.0", "~> 2.1", ">= 1.2.0"
+  @type version_requirement :: String.t()
 
   @type plugin_manifest :: %{
-    name: String.t(),
-    version: version(),
-    description: String.t(),
-    author: String.t(),
-    license: String.t(),
-    repository: String.t(),
-    api_version: version(),
-    dependencies: [dependency_spec()],
-    dev_dependencies: [dependency_spec()],
-    capabilities: [atom()],
-    sandbox_required: boolean(),
-    trust_level: :trusted | :sandboxed | :untrusted,
-    entry_point: atom(),
-    hooks: [atom()],
-    metadata: map()
-  }
+          name: String.t(),
+          version: version(),
+          description: String.t(),
+          author: String.t(),
+          license: String.t(),
+          repository: String.t(),
+          api_version: version(),
+          dependencies: [dependency_spec()],
+          dev_dependencies: [dependency_spec()],
+          capabilities: [atom()],
+          sandbox_required: boolean(),
+          trust_level: :trusted | :sandboxed | :untrusted,
+          entry_point: atom(),
+          hooks: [atom()],
+          metadata: map()
+        }
 
   @type plugin_state :: %{
-    manifest: plugin_manifest(),
-    status: :loaded | :starting | :running | :stopping | :stopped | :failed,
-    module: atom(),
-    process: pid() | nil,
-    supervisor: pid() | nil,
-    dependencies: [plugin_id()],
-    dependents: [plugin_id()],
-    last_reload: DateTime.t(),
-    sandbox_context: map() | nil,
-    performance_metrics: map()
-  }
+          manifest: plugin_manifest(),
+          status:
+            :loaded | :starting | :running | :stopping | :stopped | :failed,
+          module: atom(),
+          process: pid() | nil,
+          supervisor: pid() | nil,
+          dependencies: [plugin_id()],
+          dependents: [plugin_id()],
+          last_reload: DateTime.t(),
+          sandbox_context: map() | nil,
+          performance_metrics: map()
+        }
 
-  defstruct [
-    plugins: %{},
-    dependency_graph: %{},
-    load_order: [],
-    marketplace_client: nil,
-    sandbox_supervisor: nil,
-    file_watcher: nil,
-    performance_monitor: nil
-  ]
+  defstruct plugins: %{},
+            dependency_graph: %{},
+            load_order: [],
+            marketplace_client: nil,
+            sandbox_supervisor: nil,
+            file_watcher: nil,
+            performance_monitor: nil
 
   # Plugin System v2.0 API
 
@@ -145,6 +145,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
     case install_plugin_impl(source, opts, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -154,6 +155,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
     case load_plugin_with_deps(plugin_id, opts, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -163,6 +165,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
     case hot_reload_plugin_impl(plugin_id, opts, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -172,6 +175,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
     case resolve_dependencies_impl(manifest, state) do
       {:ok, resolution} ->
         {:reply, {:ok, resolution}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -186,6 +190,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
     case list_marketplace_plugins_impl(filters, state) do
       {:ok, plugins} ->
         {:reply, {:ok, plugins}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -195,6 +200,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
     case create_sandbox_impl(plugin_id, security_policy, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -210,7 +216,10 @@ defmodule Raxol.Plugins.PluginSystemV2 do
 
   defp load_plugin_with_deps(plugin_id, _opts, state) do
     # Implementation will be added in next steps
-    Logger.info("[PluginSystemV2] Loading plugin with dependencies: #{plugin_id}")
+    Logger.info(
+      "[PluginSystemV2] Loading plugin with dependencies: #{plugin_id}"
+    )
+
     {:ok, state}
   end
 
@@ -228,20 +237,26 @@ defmodule Raxol.Plugins.PluginSystemV2 do
 
   defp get_plugin_status_impl(plugin_id, state) do
     case Map.get(state.plugins, plugin_id) do
-      nil -> %{status: :not_found}
-      plugin_state -> %{
-        status: plugin_state.status,
-        version: plugin_state.manifest.version,
-        dependencies: plugin_state.dependencies,
-        performance: plugin_state.performance_metrics,
-        last_reload: plugin_state.last_reload
-      }
+      nil ->
+        %{status: :not_found}
+
+      plugin_state ->
+        %{
+          status: plugin_state.status,
+          version: plugin_state.manifest.version,
+          dependencies: plugin_state.dependencies,
+          performance: plugin_state.performance_metrics,
+          last_reload: plugin_state.last_reload
+        }
     end
   end
 
   defp list_marketplace_plugins_impl(filters, _state) do
     # Implementation will be added in next steps
-    Logger.info("[PluginSystemV2] Listing marketplace plugins with filters: #{inspect(filters)}")
+    Logger.info(
+      "[PluginSystemV2] Listing marketplace plugins with filters: #{inspect(filters)}"
+    )
+
     {:ok, []}
   end
 
@@ -261,7 +276,8 @@ defmodule Raxol.Plugins.PluginSystemV2 do
   defp initialize_marketplace_client(opts) do
     # Initialize client for plugin marketplace
     case Keyword.get(opts, :marketplace_enabled, true) do
-      true -> :mock_client # Will be implemented
+      # Will be implemented
+      true -> :mock_client
       false -> nil
     end
   end
@@ -269,7 +285,8 @@ defmodule Raxol.Plugins.PluginSystemV2 do
   defp start_sandbox_supervisor(opts) do
     # Start supervisor for sandboxed plugin processes
     case Keyword.get(opts, :sandbox_enabled, true) do
-      true -> :mock_supervisor # Will be implemented
+      # Will be implemented
+      true -> :mock_supervisor
       false -> nil
     end
   end
@@ -277,7 +294,8 @@ defmodule Raxol.Plugins.PluginSystemV2 do
   defp start_enhanced_file_watcher(opts) do
     # Enhanced file watcher with dependency tracking
     case Keyword.get(opts, :hot_reload_enabled, true) do
-      true -> :mock_watcher # Will be implemented
+      # Will be implemented
+      true -> :mock_watcher
       false -> nil
     end
   end
@@ -285,7 +303,8 @@ defmodule Raxol.Plugins.PluginSystemV2 do
   defp start_performance_monitor(opts) do
     # Performance monitoring for plugin resource usage
     case Keyword.get(opts, :performance_monitoring, true) do
-      true -> :mock_monitor # Will be implemented
+      # Will be implemented
+      true -> :mock_monitor
       false -> nil
     end
   end

@@ -155,9 +155,14 @@ defmodule Raxol.Terminal.Commands.CSIHandler.Cursor do
   # Helper functions to handle both full and minimal cursor structs
   defp get_cursor_position(cursor) do
     case cursor do
-      %{row: row, col: col} when is_integer(row) and is_integer(col) -> {row, col}
-      %{position: {row, col}} -> {row, col}
-      _ -> {0, 0}
+      %{row: row, col: col} when is_integer(row) and is_integer(col) ->
+        {row, col}
+
+      %{position: {row, col}} ->
+        {row, col}
+
+      _ ->
+        {0, 0}
     end
   end
 

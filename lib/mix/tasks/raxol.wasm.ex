@@ -106,13 +106,14 @@ defmodule Mix.Tasks.Raxol.Wasm do
     build_opts = build_options(opts)
 
     # Build or watch
-    result = if opts[:watch] do
-      Logger.info("Starting WASM watch mode...")
-      Builder.watch(build_opts)
-    else
-      Logger.info("Building WASM module...")
-      Builder.build(build_opts)
-    end
+    result =
+      if opts[:watch] do
+        Logger.info("Starting WASM watch mode...")
+        Builder.watch(build_opts)
+      else
+        Logger.info("Building WASM module...")
+        Builder.build(build_opts)
+      end
 
     case result do
       {:ok, info} ->
@@ -180,19 +181,20 @@ defmodule Mix.Tasks.Raxol.Wasm do
     Logger.info("Starting web server on http://localhost:#{port}")
 
     # Start a simple HTTP server using Erlang's built-in httpd
-    {:ok, _pid} = :inets.start(:httpd, [
-      port: port,
-      server_root: root,
-      document_root: root,
-      server_name: "raxol-wasm",
-      directory_index: ["index.html"],
-      mime_types: [
-        {"wasm", "application/wasm"},
-        {"js", "application/javascript"},
-        {"html", "text/html"},
-        {"css", "text/css"}
-      ]
-    ])
+    {:ok, _pid} =
+      :inets.start(:httpd,
+        port: port,
+        server_root: root,
+        document_root: root,
+        server_name: "raxol-wasm",
+        directory_index: ["index.html"],
+        mime_types: [
+          {"wasm", "application/wasm"},
+          {"js", "application/javascript"},
+          {"html", "text/html"},
+          {"css", "text/css"}
+        ]
+      )
 
     Mix.shell().info("""
 

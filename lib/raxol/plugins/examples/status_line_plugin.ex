@@ -168,6 +168,7 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
       case DateTime.diff(DateTime.utc_now(), state.last_update) do
         diff when diff >= 5 ->
           {get_git_branch(), get_git_status()}
+
         _ ->
           {state.git_branch, state.git_status}
       end
@@ -179,13 +180,14 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
     # Schedule next update
     timer_ref = start_update_timer(state.config.update_interval || 1000)
 
-    %{state |
-      git_branch: git_branch,
-      git_status: git_status,
-      cpu_usage: cpu,
-      memory_usage: memory,
-      timer_ref: timer_ref,
-      last_update: DateTime.utc_now()
+    %{
+      state
+      | git_branch: git_branch,
+        git_status: git_status,
+        cpu_usage: cpu,
+        memory_usage: memory,
+        timer_ref: timer_ref,
+        last_update: DateTime.utc_now()
     }
   end
 
@@ -214,19 +216,27 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
     # Git information
     components =
       case state.config.show_git && state.git_branch do
-        false -> components
-        nil -> components
-        _ -> [{:git, format_git(state.git_branch, state.git_status)} | components]
+        false ->
+          components
+
+        nil ->
+          components
+
+        _ ->
+          [{:git, format_git(state.git_branch, state.git_status)} | components]
       end
 
     # Resource usage
     components =
       case state.config.show_resources do
-        false -> components
-        _ -> [
-          {:cpu, format_cpu(state.cpu_usage)},
-          {:memory, format_memory(state.memory_usage)} | components
-        ]
+        false ->
+          components
+
+        _ ->
+          [
+            {:cpu, format_cpu(state.cpu_usage)},
+            {:memory, format_memory(state.memory_usage)} | components
+          ]
       end
 
     # Cursor position
@@ -252,17 +262,20 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
     theme = get_theme(config[:theme] || "default")
 
     # Build left, center, and right sections
-    left_components = Enum.filter(components, fn {type, _} ->
-      type in [:mode, :git]
-    end)
+    left_components =
+      Enum.filter(components, fn {type, _} ->
+        type in [:mode, :git]
+      end)
 
-    center_components = Enum.filter(components, fn {type, _} ->
-      type in [:cursor, :size]
-    end)
+    center_components =
+      Enum.filter(components, fn {type, _} ->
+        type in [:cursor, :size]
+      end)
 
-    right_components = Enum.filter(components, fn {type, _} ->
-      type in [:cpu, :memory, :time]
-    end)
+    right_components =
+      Enum.filter(components, fn {type, _} ->
+        type in [:cpu, :memory, :time]
+      end)
 
     # Format sections
     left = format_section(left_components, theme, :left)
@@ -279,10 +292,10 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
 
     # Build final line
     left <>
-    String.duplicate(" ", max(0, center_padding)) <>
-    center <>
-    String.duplicate(" ", max(0, available - center_padding - center_len)) <>
-    right
+      String.duplicate(" ", max(0, center_padding)) <>
+      center <>
+      String.duplicate(" ", max(0, available - center_padding - center_len)) <>
+      right
   end
 
   defp format_section(components, theme, _position) do
@@ -343,6 +356,7 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
         modified = Enum.count(lines, &String.starts_with?(&1, "M "))
         deleted = Enum.count(lines, &String.starts_with?(&1, "D "))
         {added, modified, deleted}
+
       _ ->
         {0, 0, 0}
     end
@@ -361,7 +375,7 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
 
     case system do
       0 -> 0.0
-      _ -> (total / system) * 100.0 |> min(100.0)
+      _ -> (total / system * 100.0) |> min(100.0)
     end
   end
 
@@ -435,6 +449,7 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
   end
 
   defp send_status_line(nil, _content, _position), do: :ok
+
   defp send_status_line(pid, content, position) do
     send(pid, {:render_status_line, content, position})
   end

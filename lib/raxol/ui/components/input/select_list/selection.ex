@@ -22,6 +22,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
       if Map.get(state, :multiple, false) do
         # Multiple selection: toggle the index in selected_indices
         current_indices = state.selected_indices || MapSet.new()
+
         updated_indices =
           if MapSet.member?(current_indices, new_index) do
             MapSet.delete(current_indices, new_index)
@@ -160,7 +161,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
     # Add on_select callback if present
     commands =
       case Map.get(state, :on_select) do
-        nil -> commands
+        nil ->
+          commands
+
         callback when is_function(callback) ->
           selected_value = get_selected_value(new_state)
           [{:callback, callback, [selected_value]} | commands]
@@ -169,7 +172,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
     # Add on_change callback if present
     commands =
       case Map.get(state, :on_change) do
-        nil -> commands
+        nil ->
+          commands
+
         callback when is_function(callback) ->
           [{:callback, callback, [new_state]} | commands]
       end

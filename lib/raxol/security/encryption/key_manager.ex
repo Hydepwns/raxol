@@ -831,7 +831,9 @@ defmodule Raxol.Security.Encryption.KeyManager do
       )
     else
       Logger.debug("Audit logging skipped - audit logger not available",
-        operation: operation, key_id: key_id)
+        operation: operation,
+        key_id: key_id
+      )
     end
   end
 

@@ -36,9 +36,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
             {2, true} ->
               # Write wide character + placeholder
               placeholder = Cell.new_wide_placeholder(style)
+
               row
               |> List.replace_at(x, cell)
               |> List.replace_at(x + 1, placeholder)
+
             _ ->
               # Write single-width character or wide char at edge
               List.replace_at(row, x, cell)
@@ -50,7 +52,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
       %{
         buffer
         | cells: new_cells,
-          damage_regions: add_damage_region(buffer.damage_regions, x, y, damage_width, 1)
+          damage_regions:
+            add_damage_region(buffer.damage_regions, x, y, damage_width, 1)
       }
     else
       buffer
@@ -124,7 +127,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   def insert_char(buffer, char, style \\ nil) do
     {x, y} = buffer.cursor_position
 
-    updated_buffer = SharedOperations.insert_char_core_logic(buffer, x, y, char, style)
+    updated_buffer =
+      SharedOperations.insert_char_core_logic(buffer, x, y, char, style)
 
     # Add damage tracking if buffer was modified
     if updated_buffer != buffer do
@@ -158,7 +162,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
           map() | nil
         ) :: Core.t()
   def insert_char(buffer, x, y, char, style) do
-    updated_buffer = SharedOperations.insert_char_core_logic(buffer, x, y, char, style)
+    updated_buffer =
+      SharedOperations.insert_char_core_logic(buffer, x, y, char, style)
 
     # Add damage tracking if buffer was modified
     if updated_buffer != buffer do
@@ -245,11 +250,17 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   def clear_to_end_of_line(buffer) do
     {x, y} = buffer.cursor_position
     require Raxol.Core.Runtime.Log
+
     Raxol.Core.Runtime.Log.debug(
       "[Operations.clear_to_end_of_line] cursor at (#{x}, #{y}), clearing region (#{x}, #{y}, #{buffer.width - x}, 1)"
     )
+
     result = clear_region(buffer, x, y, buffer.width - x, 1)
-    Raxol.Core.Runtime.Log.debug("[Operations.clear_to_end_of_line] operation complete")
+
+    Raxol.Core.Runtime.Log.debug(
+      "[Operations.clear_to_end_of_line] operation complete"
+    )
+
     result
   end
 
@@ -533,7 +544,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Deletes lines in region (stub with 5 args).
   """
-  @spec delete_lines(Core.t(), integer(), integer(), integer(), integer()) :: Core.t()
+  @spec delete_lines(Core.t(), integer(), integer(), integer(), integer()) ::
+          Core.t()
   def delete_lines(buffer, _x1, _y1, _x2, _y2), do: buffer
 
   @doc """
@@ -542,6 +554,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @spec erase_chars(Core.t(), non_neg_integer()) :: Core.t()
   def erase_chars(buffer, count) do
     {x, y} = buffer.cursor_position
+
     case y < buffer.height and x < buffer.width do
       true ->
         line = Enum.at(buffer.cells, y, [])
@@ -556,7 +569,14 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
         new_line = before ++ remaining ++ padding
 
         new_cells = List.replace_at(buffer.cells, y, new_line)
-        %{buffer | cells: new_cells, damage_regions: add_damage_region(buffer.damage_regions, x, y, count, 1)}
+
+        %{
+          buffer
+          | cells: new_cells,
+            damage_regions:
+              add_damage_region(buffer.damage_regions, x, y, count, 1)
+        }
+
       false ->
         buffer
     end
@@ -565,7 +585,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Erases characters at position (stub with 4 args).
   """
-  @spec erase_chars(Core.t(), integer(), integer(), non_neg_integer()) :: Core.t()
+  @spec erase_chars(Core.t(), integer(), integer(), non_neg_integer()) ::
+          Core.t()
   def erase_chars(buffer, _x, _y, _count), do: buffer
 
   @doc """
@@ -603,6 +624,7 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
     case Core.within_bounds?(buffer, x, y) do
       false ->
         buffer
+
       true ->
         # Get the current row
         row = Enum.at(buffer.cells, y, [])
@@ -611,22 +633,34 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
         {before_cursor, at_and_after} = Enum.split(row, x)
 
         # Create spaces to insert
-        spaces = Enum.map(1..count, fn _ ->
-          %Cell{char: " ", style: buffer.default_style}
-        end)
+        spaces =
+          Enum.map(1..count, fn _ ->
+            %Cell{char: " ", style: buffer.default_style}
+          end)
 
         # Reconstruct row: before + spaces + shifted content (truncated to width)
-        new_row = before_cursor ++ spaces ++ Enum.take(at_and_after, buffer.width - x - count)
-        |> Enum.take(buffer.width)  # Ensure we don't exceed buffer width
+        new_row =
+          (before_cursor ++
+             spaces ++ Enum.take(at_and_after, buffer.width - x - count))
+          # Ensure we don't exceed buffer width
+          |> Enum.take(buffer.width)
 
         # Update cells
         new_cells = List.replace_at(buffer.cells, y, new_row)
 
         # Return buffer with updated cells and damage region
         # IMPORTANT: Do not update cursor_position - it stays where it was
-        %{buffer |
-          cells: new_cells,
-          damage_regions: add_damage_region(buffer.damage_regions, x, y, buffer.width - x, 1)
+        %{
+          buffer
+          | cells: new_cells,
+            damage_regions:
+              add_damage_region(
+                buffer.damage_regions,
+                x,
+                y,
+                buffer.width - x,
+                1
+              )
         }
     end
   end
@@ -642,13 +676,15 @@ defmodule Raxol.Terminal.ScreenBuffer.Operations do
   @doc """
   Inserts lines in region (stub with 4 args).
   """
-  @spec insert_lines(Core.t(), integer(), integer(), non_neg_integer()) :: Core.t()
+  @spec insert_lines(Core.t(), integer(), integer(), non_neg_integer()) ::
+          Core.t()
   def insert_lines(buffer, _x, _y, _count), do: buffer
 
   @doc """
   Inserts lines in region with style (stub with 5 args).
   """
-  @spec insert_lines(Core.t(), integer(), integer(), non_neg_integer(), map()) :: Core.t()
+  @spec insert_lines(Core.t(), integer(), integer(), non_neg_integer(), map()) ::
+          Core.t()
   def insert_lines(buffer, _x, _y, _count, _style), do: buffer
 
   @doc """

@@ -13,15 +13,26 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.UnifiedHelper do
   @doc """
   Splits text into lines based on width and wrap mode.
   """
-  @spec split_into_lines(String.t(), integer(), :none | :char | :word) :: [String.t()]
+  @spec split_into_lines(String.t(), integer(), :none | :char | :word) :: [
+          String.t()
+        ]
   def split_into_lines(text, width, wrap_mode) do
     if text == "" do
       [""]
     else
       case wrap_mode do
-        :none -> String.split(text, "\n")
-        :char -> text |> String.split("\n") |> Enum.flat_map(&wrap_line_by_char(&1, width))
-        :word -> text |> String.split("\n") |> Enum.flat_map(&wrap_line_by_word(&1, width))
+        :none ->
+          String.split(text, "\n")
+
+        :char ->
+          text
+          |> String.split("\n")
+          |> Enum.flat_map(&wrap_line_by_char(&1, width))
+
+        :word ->
+          text
+          |> String.split("\n")
+          |> Enum.flat_map(&wrap_line_by_word(&1, width))
       end
     end
   end
@@ -71,7 +82,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.UnifiedHelper do
           |> List.replace_at(row - 1, merged_line)
           |> List.delete_at(row)
 
-        %{state | lines: new_lines, cursor_pos: {row - 1, String.length(prev_line)}}
+        %{
+          state
+          | lines: new_lines,
+            cursor_pos: {row - 1, String.length(prev_line)}
+        }
 
       true ->
         state
@@ -85,7 +100,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.UnifiedHelper do
   @doc """
   Moves cursor in the specified direction.
   """
-  @spec move_cursor(MultiLineInput.t(), :left | :right | :up | :down) :: MultiLineInput.t()
+  @spec move_cursor(MultiLineInput.t(), :left | :right | :up | :down) ::
+          MultiLineInput.t()
   def move_cursor(state, direction) do
     {row, col} = state.cursor_pos
 
@@ -100,16 +116,24 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.UnifiedHelper do
   @doc """
   Jumps cursor to beginning/end of line or document.
   """
-  @spec jump_cursor(MultiLineInput.t(), :line_start | :line_end | :doc_start | :doc_end) :: MultiLineInput.t()
+  @spec jump_cursor(
+          MultiLineInput.t(),
+          :line_start | :line_end | :doc_start | :doc_end
+        ) :: MultiLineInput.t()
   def jump_cursor(state, position) do
     {row, _col} = state.cursor_pos
 
     case position do
-      :line_start -> %{state | cursor_pos: {row, 0}}
+      :line_start ->
+        %{state | cursor_pos: {row, 0}}
+
       :line_end ->
         line_length = Enum.at(state.lines, row, "") |> String.length()
         %{state | cursor_pos: {row, line_length}}
-      :doc_start -> %{state | cursor_pos: {0, 0}}
+
+      :doc_start ->
+        %{state | cursor_pos: {0, 0}}
+
       :doc_end ->
         last_row = length(state.lines) - 1
         last_col = Enum.at(state.lines, last_row, "") |> String.length()
@@ -181,6 +205,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.UnifiedHelper do
     start_row..end_row
     |> Enum.map(fn row ->
       line = Enum.at(state.lines, row, "")
+
       if row == cursor_row do
         add_cursor_highlight(line, cursor_col)
       else
@@ -194,6 +219,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.UnifiedHelper do
   # =============================================================================
 
   defp wrap_line_by_char(line, width) when width <= 0, do: [line]
+
   defp wrap_line_by_char(line, width) do
     if String.length(line) <= width do
       [line]
@@ -204,15 +230,20 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.UnifiedHelper do
   end
 
   defp wrap_line_by_word(line, width) when width <= 0, do: [line]
+
   defp wrap_line_by_word(line, width) do
     words = String.split(line, " ")
     wrap_words(words, width, "", [])
   end
 
   defp wrap_words([], _width, "", acc), do: Enum.reverse(acc)
-  defp wrap_words([], _width, current_line, acc), do: Enum.reverse([current_line | acc])
+
+  defp wrap_words([], _width, current_line, acc),
+    do: Enum.reverse([current_line | acc])
+
   defp wrap_words([word | rest], width, current_line, acc) do
-    new_line = if current_line == "", do: word, else: current_line <> " " <> word
+    new_line =
+      if current_line == "", do: word, else: current_line <> " " <> word
 
     if String.length(new_line) <= width do
       wrap_words(rest, width, new_line, acc)
@@ -229,11 +260,15 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.UnifiedHelper do
 
   defp move_cursor_left(state, row, col) do
     cond do
-      col > 0 -> %{state | cursor_pos: {row, col - 1}}
+      col > 0 ->
+        %{state | cursor_pos: {row, col - 1}}
+
       row > 0 ->
         prev_line = Enum.at(state.lines, row - 1, "")
         %{state | cursor_pos: {row - 1, String.length(prev_line)}}
-      true -> state
+
+      true ->
+        state
     end
   end
 
@@ -291,7 +326,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.UnifiedHelper do
   defp delete_selection(state) do
     # Placeholder for selection deletion
     case Map.get(state, :selection) do
-      nil -> state
+      nil ->
+        state
+
       _selection ->
         # Would delete selected text and update cursor position
         %{state | selection: nil}
@@ -301,8 +338,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.UnifiedHelper do
   defp add_cursor_highlight(line, cursor_col) do
     if cursor_col <= String.length(line) do
       {left, right} = String.split_at(line, cursor_col)
+
       case right do
-        "" -> left <> "|"
+        "" ->
+          left <> "|"
+
         _ ->
           {cursor_char, remaining} = String.split_at(right, 1)
           left <> "[" <> cursor_char <> "]" <> remaining

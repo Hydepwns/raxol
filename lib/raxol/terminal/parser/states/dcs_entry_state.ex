@@ -24,13 +24,26 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
 
   defp handle_byte(emulator, parser_state, byte, rest) do
     case categorize_byte(byte) do
-      :param -> handle_param_byte(emulator, parser_state, byte, rest)
-      :separator -> handle_separator(emulator, parser_state, rest)
-      :intermediate -> handle_intermediate_byte(emulator, parser_state, byte, rest)
-      :final -> handle_final_byte(emulator, parser_state, byte, rest)
-      :can_sub -> handle_can_sub(emulator, parser_state, rest)
-      :ignored -> handle_ignored_byte(emulator, parser_state, byte, rest)
-      :unhandled -> handle_unhandled_byte(emulator, parser_state, byte, rest)
+      :param ->
+        handle_param_byte(emulator, parser_state, byte, rest)
+
+      :separator ->
+        handle_separator(emulator, parser_state, rest)
+
+      :intermediate ->
+        handle_intermediate_byte(emulator, parser_state, byte, rest)
+
+      :final ->
+        handle_final_byte(emulator, parser_state, byte, rest)
+
+      :can_sub ->
+        handle_can_sub(emulator, parser_state, rest)
+
+      :ignored ->
+        handle_ignored_byte(emulator, parser_state, byte, rest)
+
+      :unhandled ->
+        handle_unhandled_byte(emulator, parser_state, byte, rest)
     end
   end
 

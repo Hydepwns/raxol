@@ -309,11 +309,12 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
       translated = translate_char(codepoint, active_set, single_shift)
 
       # Clear single shift after use
-      new_state = if single_shift do
-        Map.put(state, :single_shift, nil)
-      else
-        state
-      end
+      new_state =
+        if single_shift do
+          Map.put(state, :single_shift, nil)
+        else
+          state
+        end
 
       {translated, new_state}
     end
@@ -821,34 +822,49 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     active_charset = get_active_charset(state)
 
     # Translate character based on active charset
-    translated = if active_charset == Raxol.Terminal.ANSI.CharacterSets.DEC do
-      # DEC special graphics mapping
-      case codepoint do
-        ?_ -> 9472  # Box drawing horizontal line
-        ?` -> 9474  # Box drawing vertical line
-        ?j -> 9496  # Box drawing bottom-right corner
-        ?k -> 9492  # Box drawing top-right corner
-        ?l -> 9488  # Box drawing top-left corner
-        ?m -> 9484  # Box drawing bottom-left corner
-        ?n -> 9532  # Box drawing cross
-        ?q -> 9516  # Box drawing horizontal line
-        ?t -> 9524  # Box drawing left tee
-        ?u -> 9508  # Box drawing right tee
-        ?v -> 9500  # Box drawing bottom tee
-        ?w -> 9532  # Box drawing top tee
-        ?x -> 9474  # Box drawing vertical line
-        _ -> codepoint
+    translated =
+      if active_charset == Raxol.Terminal.ANSI.CharacterSets.DEC do
+        # DEC special graphics mapping
+        case codepoint do
+          # Box drawing horizontal line
+          ?_ -> 9472
+          # Box drawing vertical line
+          ?` -> 9474
+          # Box drawing bottom-right corner
+          ?j -> 9496
+          # Box drawing top-right corner
+          ?k -> 9492
+          # Box drawing top-left corner
+          ?l -> 9488
+          # Box drawing bottom-left corner
+          ?m -> 9484
+          # Box drawing cross
+          ?n -> 9532
+          # Box drawing horizontal line
+          ?q -> 9516
+          # Box drawing left tee
+          ?t -> 9524
+          # Box drawing right tee
+          ?u -> 9508
+          # Box drawing bottom tee
+          ?v -> 9500
+          # Box drawing top tee
+          ?w -> 9532
+          # Box drawing vertical line
+          ?x -> 9474
+          _ -> codepoint
+        end
+      else
+        codepoint
       end
-    else
-      codepoint
-    end
 
     # Clear single shift after using it
-    new_state = if state.single_shift != nil do
-      %{state | single_shift: nil}
-    else
-      state
-    end
+    new_state =
+      if state.single_shift != nil do
+        %{state | single_shift: nil}
+      else
+        state
+      end
 
     {translated, new_state}
   end
@@ -869,6 +885,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
       active: :us_ascii
     }
   end
+
   defdelegate set_g0(state, charset), to: StateManager
   defdelegate set_g1(state, charset), to: StateManager
   defdelegate set_g2(state, charset), to: StateManager
@@ -901,7 +918,9 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
           gl = Map.get(state, :gl, :g0)
           Map.get(state, gl, state.g0)
         end
-      shift -> shift
+
+      shift ->
+        shift
     end
   end
 
@@ -918,19 +937,32 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
       |> Enum.map(fn char ->
         # DEC special graphics mapping for common characters
         case char do
-          ?_ -> 9472  # Box drawing horizontal line
-          ?` -> 9474  # Box drawing vertical line
-          ?j -> 9496  # Box drawing bottom-right corner
-          ?k -> 9492  # Box drawing top-right corner
-          ?l -> 9488  # Box drawing top-left corner
-          ?m -> 9484  # Box drawing bottom-left corner
-          ?n -> 9532  # Box drawing cross
-          ?q -> 9516  # Box drawing horizontal line
-          ?t -> 9524  # Box drawing left tee
-          ?u -> 9508  # Box drawing right tee
-          ?v -> 9500  # Box drawing bottom tee
-          ?w -> 9532  # Box drawing top tee
-          ?x -> 9474  # Box drawing vertical line
+          # Box drawing horizontal line
+          ?_ -> 9472
+          # Box drawing vertical line
+          ?` -> 9474
+          # Box drawing bottom-right corner
+          ?j -> 9496
+          # Box drawing top-right corner
+          ?k -> 9492
+          # Box drawing top-left corner
+          ?l -> 9488
+          # Box drawing bottom-left corner
+          ?m -> 9484
+          # Box drawing cross
+          ?n -> 9532
+          # Box drawing horizontal line
+          ?q -> 9516
+          # Box drawing left tee
+          ?t -> 9524
+          # Box drawing right tee
+          ?u -> 9508
+          # Box drawing bottom tee
+          ?v -> 9500
+          # Box drawing top tee
+          ?w -> 9532
+          # Box drawing vertical line
+          ?x -> 9474
           _ -> char
         end
       end)
@@ -945,13 +977,16 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   """
   def designate_charset(state, gset_index, charset_code) do
     # Map gset index to the appropriate character set designator
-    designator = case gset_index do
-      :g0 -> ?(
-      :g1 -> ?)
-      :g2 -> ?*
-      :g3 -> ?+
-      _ -> ?(  # Default to G0
-    end
+    designator =
+      case gset_index do
+        :g0 -> ?(
+        :g1 -> ?)
+        :g2 -> ?*
+        :g3 -> ?+
+        # Default to G0
+        _ -> ?(
+      end
+
     Handler.handle_sequence(state, [designator, charset_code])
   end
 

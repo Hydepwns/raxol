@@ -40,8 +40,11 @@ defmodule Raxol.Core.Behaviours.BaseRegistry do
       defstruct registry: %{}, metadata: %{}
 
       def start_link(init_opts \\ []) do
-        server_opts = Keyword.take(init_opts, [:name, :timeout, :debug, :spawn_opt])
-        registry_opts = Keyword.drop(init_opts, [:name, :timeout, :debug, :spawn_opt])
+        server_opts =
+          Keyword.take(init_opts, [:name, :timeout, :debug, :spawn_opt])
+
+        registry_opts =
+          Keyword.drop(init_opts, [:name, :timeout, :debug, :spawn_opt])
 
         GenServer.start_link(__MODULE__, registry_opts, server_opts)
       end
@@ -82,7 +85,9 @@ defmodule Raxol.Core.Behaviours.BaseRegistry do
               registry: %{},
               metadata: Map.get(custom_state, :metadata, %{})
             }
+
             {:ok, Map.merge(state, custom_state)}
+
           {:error, reason} ->
             {:stop, reason}
         end
@@ -94,7 +99,12 @@ defmodule Raxol.Core.Behaviours.BaseRegistry do
           :ok ->
             new_registry = Map.put(state.registry, key, resource)
             new_metadata = Map.put(state.metadata, key, metadata)
-            new_state = %{state | registry: new_registry, metadata: new_metadata}
+
+            new_state = %{
+              state
+              | registry: new_registry,
+                metadata: new_metadata
+            }
 
             if function_exported?(__MODULE__, :on_register, 3) do
               final_state = on_register(key, resource, new_state)
@@ -116,7 +126,12 @@ defmodule Raxol.Core.Behaviours.BaseRegistry do
           resource ->
             new_registry = Map.delete(state.registry, key)
             new_metadata = Map.delete(state.metadata, key)
-            new_state = %{state | registry: new_registry, metadata: new_metadata}
+
+            new_state = %{
+              state
+              | registry: new_registry,
+                metadata: new_metadata
+            }
 
             if function_exported?(__MODULE__, :on_unregister, 2) do
               final_state = on_unregister(key, new_state)
@@ -134,10 +149,12 @@ defmodule Raxol.Core.Behaviours.BaseRegistry do
       end
 
       def handle_call(:list_all, _from, state) do
-        all = Enum.map(state.registry, fn {key, resource} ->
-          metadata = Map.get(state.metadata, key, %{})
-          {key, resource, metadata}
-        end)
+        all =
+          Enum.map(state.registry, fn {key, resource} ->
+            metadata = Map.get(state.metadata, key, %{})
+            {key, resource, metadata}
+          end)
+
         {:reply, all, state}
       end
 

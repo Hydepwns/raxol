@@ -259,6 +259,7 @@ defmodule Raxol.Audit.Logger do
       opts
       |> Keyword.get(:config, %{})
       |> then(&Map.merge(@default_config, &1))
+
     Process.flag(:trap_exit, true)
 
     # Initialize components
@@ -285,9 +286,21 @@ defmodule Raxol.Audit.Logger do
       case config.enabled do
         true ->
           %{}
-          |> TimerManager.add_timer(:flush_buffer, :interval, config.flush_interval_ms)
-          |> TimerManager.add_timer(:cleanup_old_logs, :interval, TimerManager.intervals().hour)
-          |> TimerManager.add_timer(:verify_integrity, :interval, TimerManager.intervals().day)
+          |> TimerManager.add_timer(
+            :flush_buffer,
+            :interval,
+            config.flush_interval_ms
+          )
+          |> TimerManager.add_timer(
+            :cleanup_old_logs,
+            :interval,
+            TimerManager.intervals().hour
+          )
+          |> TimerManager.add_timer(
+            :verify_integrity,
+            :interval,
+            TimerManager.intervals().day
+          )
 
         false ->
           %{}
@@ -336,7 +349,11 @@ defmodule Raxol.Audit.Logger do
     {:reply, {:ok, stats}, state}
   end
 
-  def handle_manager_call({:verify_integrity, start_time, end_time}, _from, state) do
+  def handle_manager_call(
+        {:verify_integrity, start_time, end_time},
+        _from,
+        state
+      ) do
     case verify_log_integrity(state, start_time, end_time) do
       :ok -> {:reply, {:ok, :verified}, state}
       {:error, reason} -> {:reply, {:error, reason}, state}

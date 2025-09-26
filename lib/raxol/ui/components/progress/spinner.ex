@@ -127,10 +127,12 @@ defmodule Raxol.UI.Components.Progress.Spinner do
           0
         end
 
-      %{state |
-        frame_index: new_frame_index,
-        color_index: new_color_index,
-        last_update: current_time}
+      %{
+        state
+        | frame_index: new_frame_index,
+          color_index: new_color_index,
+          last_update: current_time
+      }
     else
       state
     end
@@ -184,7 +186,12 @@ defmodule Raxol.UI.Components.Progress.Spinner do
   """
   @spec processing(String.t()) :: state()
   def processing(message) do
-    init(%{style: :dots, text: message, colors: [:blue, :cyan, :green], speed: 100})
+    init(%{
+      style: :dots,
+      text: message,
+      colors: [:blue, :cyan, :green],
+      speed: 100
+    })
   end
 
   @doc """

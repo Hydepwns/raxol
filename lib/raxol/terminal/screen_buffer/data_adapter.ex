@@ -46,7 +46,8 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   Transforms `:lines` map back into `buffer.cells` (list of lists).
   """
   @spec lines_to_cells(map(), map()) :: map()
-  def lines_to_cells(buffer, lines_map) when is_map(buffer) and is_map(lines_map) do
+  def lines_to_cells(buffer, lines_map)
+      when is_map(buffer) and is_map(lines_map) do
     height = Map.get(buffer, :height, 24)
 
     cells =
@@ -57,7 +58,8 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
 
     buffer
     |> Map.put(:cells, cells)
-    |> Map.delete(:lines)  # Remove temporary lines map
+    # Remove temporary lines map
+    |> Map.delete(:lines)
   end
 
   @doc """
@@ -71,7 +73,8 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   - A tuple where the second element is the modified buffer map
   """
   @spec with_lines_format(map(), (map() -> map() | tuple())) :: map() | tuple()
-  def with_lines_format(buffer, operation_fn) when is_map(buffer) and is_function(operation_fn, 1) do
+  def with_lines_format(buffer, operation_fn)
+      when is_map(buffer) and is_function(operation_fn, 1) do
     # Convert to lines format
     buffer_with_lines = cells_to_lines(buffer)
 
@@ -155,7 +158,8 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
   Set a line in buffer regardless of format.
   """
   @spec set_line(map(), integer(), list()) :: map()
-  def set_line(buffer, y, line) when is_map(buffer) and is_integer(y) and is_list(line) do
+  def set_line(buffer, y, line)
+      when is_map(buffer) and is_integer(y) and is_list(line) do
     cond do
       has_lines_format?(buffer) ->
         lines = Map.put(buffer.lines, y, line)
@@ -177,11 +181,13 @@ defmodule Raxol.Terminal.ScreenBuffer.DataAdapter do
 
         # Create empty cells structure
         cells = create_empty_cells(width, height, default_style)
-        updated_cells = if y >= 0 and y < height do
-          List.replace_at(cells, y, line)
-        else
-          cells
-        end
+
+        updated_cells =
+          if y >= 0 and y < height do
+            List.replace_at(cells, y, line)
+          else
+            cells
+          end
 
         Map.put(buffer, :cells, updated_cells)
     end

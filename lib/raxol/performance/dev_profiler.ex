@@ -624,9 +624,7 @@ defmodule Raxol.Performance.DevProfiler do
       Process.sleep(100)
       collect_memory_samples([sample | samples], end_time)
     else
-      Logger.info(
-        "[TREND] Complete. #{length(samples)} samples."
-      )
+      Logger.info("[TREND] Complete. #{length(samples)} samples.")
 
       analyze_memory_samples(samples)
     end
@@ -641,9 +639,7 @@ defmodule Raxol.Performance.DevProfiler do
       growth_mb = growth / (1024 * 1024)
       duration = last.timestamp - first.timestamp
 
-      Logger.info(
-        "Growth: #{Float.round(growth_mb, 2)}MB/#{duration}ms"
-      )
+      Logger.info("Growth: #{Float.round(growth_mb, 2)}MB/#{duration}ms")
 
       if growth_mb > 10 do
         Logger.warning("[WARN] Significant memory growth")

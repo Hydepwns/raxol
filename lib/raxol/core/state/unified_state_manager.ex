@@ -13,11 +13,16 @@ defmodule Raxol.Core.State.UnifiedStateManager do
   @type namespace :: atom()
 
   defstruct [
-    :states,           # %{namespace => %{key => value}}
-    :subscribers,      # %{namespace => [pid()]}
-    :persistence,      # persistence configuration
-    :validators,       # %{namespace => validation_function}
-    :transformers      # %{namespace => transformation_function}
+    # %{namespace => %{key => value}}
+    :states,
+    # %{namespace => [pid()]}
+    :subscribers,
+    # persistence configuration
+    :persistence,
+    # %{namespace => validation_function}
+    :validators,
+    # %{namespace => transformation_function}
+    :transformers
   ]
 
   ## Client API
@@ -25,7 +30,8 @@ defmodule Raxol.Core.State.UnifiedStateManager do
   @doc """
   Gets a value from the specified namespace and key.
   """
-  @spec get(GenServer.server(), namespace(), state_key()) :: {:ok, state_value()} | {:error, :not_found}
+  @spec get(GenServer.server(), namespace(), state_key()) ::
+          {:ok, state_value()} | {:error, :not_found}
   def get(server \\ __MODULE__, namespace, key) do
     GenServer.call(server, {:get, namespace, key})
   end
@@ -33,7 +39,8 @@ defmodule Raxol.Core.State.UnifiedStateManager do
   @doc """
   Sets a value in the specified namespace and key.
   """
-  @spec set(GenServer.server(), namespace(), state_key(), state_value()) :: :ok | {:error, any()}
+  @spec set(GenServer.server(), namespace(), state_key(), state_value()) ::
+          :ok | {:error, any()}
   def set(server \\ __MODULE__, namespace, key, value) do
     GenServer.call(server, {:set, namespace, key, value})
   end
@@ -41,7 +48,8 @@ defmodule Raxol.Core.State.UnifiedStateManager do
   @doc """
   Gets all state for a namespace.
   """
-  @spec get_namespace(GenServer.server(), namespace()) :: {:ok, map()} | {:error, :not_found}
+  @spec get_namespace(GenServer.server(), namespace()) ::
+          {:ok, map()} | {:error, :not_found}
   def get_namespace(server \\ __MODULE__, namespace) do
     GenServer.call(server, {:get_namespace, namespace})
   end
@@ -49,7 +57,8 @@ defmodule Raxol.Core.State.UnifiedStateManager do
   @doc """
   Sets all state for a namespace.
   """
-  @spec set_namespace(GenServer.server(), namespace(), map()) :: :ok | {:error, any()}
+  @spec set_namespace(GenServer.server(), namespace(), map()) ::
+          :ok | {:error, any()}
   def set_namespace(server \\ __MODULE__, namespace, state) do
     GenServer.call(server, {:set_namespace, namespace, state})
   end
@@ -147,10 +156,16 @@ defmodule Raxol.Core.State.UnifiedStateManager do
     end
   end
 
-  def handle_manager_call({:set_namespace, namespace, new_namespace_state}, _from, state) do
+  def handle_manager_call(
+        {:set_namespace, namespace, new_namespace_state},
+        _from,
+        state
+      ) do
     case validate_namespace_state(state, namespace, new_namespace_state) do
       :ok ->
-        transformed_state = transform_namespace_state(state, namespace, new_namespace_state)
+        transformed_state =
+          transform_namespace_state(state, namespace, new_namespace_state)
+
         new_states = Map.put(state.states, namespace, transformed_state)
         new_state = %{state | states: new_states}
 
@@ -179,13 +194,21 @@ defmodule Raxol.Core.State.UnifiedStateManager do
     {:reply, :ok, new_state}
   end
 
-  def handle_manager_call({:register_validator, namespace, validator_fn}, _from, state) do
+  def handle_manager_call(
+        {:register_validator, namespace, validator_fn},
+        _from,
+        state
+      ) do
     new_validators = Map.put(state.validators, namespace, validator_fn)
     new_state = %{state | validators: new_validators}
     {:reply, :ok, new_state}
   end
 
-  def handle_manager_call({:register_transformer, namespace, transformer_fn}, _from, state) do
+  def handle_manager_call(
+        {:register_transformer, namespace, transformer_fn},
+        _from,
+        state
+      ) do
     new_transformers = Map.put(state.transformers, namespace, transformer_fn)
     new_state = %{state | transformers: new_transformers}
     {:reply, :ok, new_state}
@@ -203,6 +226,7 @@ defmodule Raxol.Core.State.UnifiedStateManager do
       {:ok, new_states} ->
         new_state = %{state | states: new_states}
         {:reply, :ok, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -231,7 +255,9 @@ defmodule Raxol.Core.State.UnifiedStateManager do
 
   defp validate_namespace_state(state, namespace, namespace_state) do
     case Map.get(state.validators, namespace) do
-      nil -> :ok
+      nil ->
+        :ok
+
       validator_fn ->
         Enum.reduce_while(namespace_state, :ok, fn {_key, value}, _acc ->
           case validator_fn.(value) do
@@ -251,7 +277,9 @@ defmodule Raxol.Core.State.UnifiedStateManager do
 
   defp transform_namespace_state(state, namespace, namespace_state) do
     case Map.get(state.transformers, namespace) do
-      nil -> namespace_state
+      nil ->
+        namespace_state
+
       transformer_fn ->
         Enum.reduce(namespace_state, %{}, fn {key, value}, acc ->
           Map.put(acc, key, transformer_fn.(value))
@@ -261,7 +289,9 @@ defmodule Raxol.Core.State.UnifiedStateManager do
 
   defp notify_subscribers(state, namespace, key, value) do
     case Map.get(state.subscribers, namespace) do
-      nil -> :ok
+      nil ->
+        :ok
+
       subscribers ->
         Enum.each(subscribers, fn pid ->
           send(pid, {:state_change, namespace, key, value})
@@ -271,7 +301,9 @@ defmodule Raxol.Core.State.UnifiedStateManager do
 
   defp notify_namespace_subscribers(state, namespace, namespace_state) do
     case Map.get(state.subscribers, namespace) do
-      nil -> :ok
+      nil ->
+        :ok
+
       subscribers ->
         Enum.each(subscribers, fn pid ->
           send(pid, {:namespace_change, namespace, namespace_state})
@@ -281,8 +313,10 @@ defmodule Raxol.Core.State.UnifiedStateManager do
 
   defp persist_state(state) do
     case state.persistence do
-      %{module: module, function: function} when is_atom(module) and is_atom(function) ->
+      %{module: module, function: function}
+      when is_atom(module) and is_atom(function) ->
         apply(module, function, [state.states])
+
       _ ->
         Logger.warning("No persistence configuration found")
         :ok
@@ -291,8 +325,10 @@ defmodule Raxol.Core.State.UnifiedStateManager do
 
   defp load_state(state) do
     case state.persistence do
-      %{module: module, function: load_function} when is_atom(module) and is_atom(load_function) ->
+      %{module: module, function: load_function}
+      when is_atom(module) and is_atom(load_function) ->
         apply(module, load_function, [])
+
       _ ->
         Logger.warning("No persistence configuration found")
         {:ok, %{}}

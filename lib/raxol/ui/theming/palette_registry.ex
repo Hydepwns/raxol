@@ -17,7 +17,6 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
 
   # Client API
 
-
   @doc """
   Registers a custom color palette.
 

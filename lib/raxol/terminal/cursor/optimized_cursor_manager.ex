@@ -54,11 +54,12 @@ defmodule Raxol.Terminal.Cursor.OptimizedCursorManager do
     }
 
     # Start blink timer if blinking is enabled
-    timer = if state.blinking do
-      :timer.send_interval(state.blink_rate, :blink_tick)
-    else
-      nil
-    end
+    timer =
+      if state.blinking do
+        :timer.send_interval(state.blink_rate, :blink_tick)
+      else
+        nil
+      end
 
     final_state = %{state | blink_timer: timer}
     {:ok, final_state}
@@ -95,11 +96,14 @@ defmodule Raxol.Terminal.Cursor.OptimizedCursorManager do
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_call({:move_to, row, col}, _from, state) do
     new_position = {row, col}
-    new_state = %{state |
-      row: row,
-      col: col,
-      position: new_position,
-      history: add_to_history(state.history, new_position, state.history_limit)
+
+    new_state = %{
+      state
+      | row: row,
+        col: col,
+        position: new_position,
+        history:
+          add_to_history(state.history, new_position, state.history_limit)
     }
 
     {:reply, :ok, new_state}
@@ -116,15 +120,17 @@ defmodule Raxol.Terminal.Cursor.OptimizedCursorManager do
   end
 
   def handle_manager_call(:save_position, _from, state) do
-    new_state = %{state |
-      saved_row: state.row,
-      saved_col: state.col,
-      saved_position: state.position,
-      saved_style: state.style,
-      saved_visible: state.visible,
-      saved_blinking: state.blinking,
-      saved_color: state.color
+    new_state = %{
+      state
+      | saved_row: state.row,
+        saved_col: state.col,
+        saved_position: state.position,
+        saved_style: state.style,
+        saved_visible: state.visible,
+        saved_blinking: state.blinking,
+        saved_color: state.color
     }
+
     {:reply, :ok, new_state}
   end
 
@@ -132,16 +138,19 @@ defmodule Raxol.Terminal.Cursor.OptimizedCursorManager do
     case state.saved_position do
       nil ->
         {:reply, {:error, :no_saved_position}, state}
+
       {row, col} ->
-        new_state = %{state |
-          row: row,
-          col: col,
-          position: {row, col},
-          style: state.saved_style || state.style,
-          visible: state.saved_visible || state.visible,
-          blinking: state.saved_blinking || state.blinking,
-          color: state.saved_color || state.color
+        new_state = %{
+          state
+          | row: row,
+            col: col,
+            position: {row, col},
+            style: state.saved_style || state.style,
+            visible: state.saved_visible || state.visible,
+            blinking: state.saved_blinking || state.blinking,
+            color: state.saved_color || state.color
         }
+
         {:reply, :ok, new_state}
     end
   end
@@ -152,10 +161,12 @@ defmodule Raxol.Terminal.Cursor.OptimizedCursorManager do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_info(:blink_tick, state) do
-    new_state = case state.state do
-      :visible -> %{state | state: :hidden}
-      :hidden -> %{state | state: :visible}
-    end
+    new_state =
+      case state.state do
+        :visible -> %{state | state: :hidden}
+        :hidden -> %{state | state: :visible}
+      end
+
     {:noreply, new_state}
   end
 
@@ -163,6 +174,7 @@ defmodule Raxol.Terminal.Cursor.OptimizedCursorManager do
 
   defp add_to_history(history, position, limit) do
     new_history = [position | history]
+
     if length(new_history) > limit do
       Enum.take(new_history, limit)
     else

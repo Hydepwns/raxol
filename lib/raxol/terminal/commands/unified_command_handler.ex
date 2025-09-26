@@ -153,15 +153,32 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
 
   defp categorize_csi_command(command) do
     cond do
-      command in ~w[A B C D E F G H f d] -> {:cursor, get_cursor_handler(command)}
-      command in ~w[J K X] -> {:erase, get_erase_handler(command)}
-      command in ~w[c n] -> {:device, get_device_handler(command)}
-      command in ~w[h l] -> {:mode, get_mode_handler(command)}
-      command == "m" -> {:text, &handle_sgr/3}
-      command in ~w[S T] -> {:scroll, get_scroll_handler(command)}
-      command in ~w[L M P @] -> {:buffer, get_buffer_handler(command)}
-      command == "g" -> {:tab, &handle_tab_clear/3}
-      true -> :unknown
+      command in ~w[A B C D E F G H f d] ->
+        {:cursor, get_cursor_handler(command)}
+
+      command in ~w[J K X] ->
+        {:erase, get_erase_handler(command)}
+
+      command in ~w[c n] ->
+        {:device, get_device_handler(command)}
+
+      command in ~w[h l] ->
+        {:mode, get_mode_handler(command)}
+
+      command == "m" ->
+        {:text, &handle_sgr/3}
+
+      command in ~w[S T] ->
+        {:scroll, get_scroll_handler(command)}
+
+      command in ~w[L M P @] ->
+        {:buffer, get_buffer_handler(command)}
+
+      command == "g" ->
+        {:tab, &handle_tab_clear/3}
+
+      true ->
+        :unknown
     end
   end
 
@@ -200,8 +217,10 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
       "F" => &handle_cursor_previous_line/3,
       "G" => &handle_cursor_horizontal_absolute/3,
       "H" => &handle_cursor_position/3,
-      "f" => &handle_cursor_position/3,  # HVP - same as CUP
-      "d" => &handle_cursor_vertical_absolute/3  # VPA
+      # HVP - same as CUP
+      "f" => &handle_cursor_position/3,
+      # VPA
+      "d" => &handle_cursor_vertical_absolute/3
     }
   end
 
@@ -386,6 +405,7 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
       end
 
     Raxol.Core.Runtime.Log.debug("DSR response: #{inspect(response)}")
+
     case response do
       nil -> {:ok, emulator}
       _ -> {:ok, OutputManager.write(emulator, response)}
@@ -673,10 +693,13 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
 
   defp generate_cursor_position_report(emulator) do
     pos = get_cursor_position(emulator)
-    {row, col} = case pos do
-      {r, c} when is_integer(r) and is_integer(c) -> {r, c}
-      _ -> {0, 0}
-    end
+
+    {row, col} =
+      case pos do
+        {r, c} when is_integer(r) and is_integer(c) -> {r, c}
+        _ -> {0, 0}
+      end
+
     # Convert to 1-based
     "\e[#{row + 1};#{col + 1}R"
   end
@@ -825,22 +848,42 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
 
   defp reset_text_attribute(style, attribute) do
     case attribute do
-      :bold_faint -> TextFormatting.reset_bold(style) |> TextFormatting.reset_faint()
-      :italic -> TextFormatting.reset_italic(style)
-      :underline -> TextFormatting.reset_underline(style)
-      :blink -> TextFormatting.reset_blink(style)
-      :reverse -> TextFormatting.reset_reverse(style)
-      :conceal -> TextFormatting.reset_conceal(style)
-      :strikethrough -> TextFormatting.reset_strikethrough(style)
+      :bold_faint ->
+        TextFormatting.reset_bold(style) |> TextFormatting.reset_faint()
+
+      :italic ->
+        TextFormatting.reset_italic(style)
+
+      :underline ->
+        TextFormatting.reset_underline(style)
+
+      :blink ->
+        TextFormatting.reset_blink(style)
+
+      :reverse ->
+        TextFormatting.reset_reverse(style)
+
+      :conceal ->
+        TextFormatting.reset_conceal(style)
+
+      :strikethrough ->
+        TextFormatting.reset_strikethrough(style)
     end
   end
 
   defp apply_color(style, type, value) do
     case {type, value} do
-      {:foreground, :reset} -> TextFormatting.reset_foreground(style)
-      {:background, :reset} -> TextFormatting.reset_background(style)
-      {:foreground, color_value} -> TextFormatting.set_foreground(style, color_value)
-      {:background, color_value} -> TextFormatting.set_background(style, color_value)
+      {:foreground, :reset} ->
+        TextFormatting.reset_foreground(style)
+
+      {:background, :reset} ->
+        TextFormatting.reset_background(style)
+
+      {:foreground, color_value} ->
+        TextFormatting.set_foreground(style, color_value)
+
+      {:background, color_value} ->
+        TextFormatting.set_background(style, color_value)
     end
   end
 
@@ -906,7 +949,10 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
     # Check for scroll region
     case Map.get(emulator, :scroll_region) do
       {scroll_top, scroll_bottom} when y >= scroll_top and y <= scroll_bottom ->
-        Raxol.Core.Runtime.Log.debug("DL using scroll region: y=#{y}, region=#{scroll_top}..#{scroll_bottom}")
+        Raxol.Core.Runtime.Log.debug(
+          "DL using scroll region: y=#{y}, region=#{scroll_top}..#{scroll_bottom}"
+        )
+
         updated_buffer =
           delete_lines_within_scroll_region(
             active_buffer,
@@ -923,12 +969,18 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
 
       {scroll_top, scroll_bottom} ->
         # Scroll region exists but cursor is outside it - no effect
-        Raxol.Core.Runtime.Log.debug("DL outside scroll region: y=#{y}, scroll_region={#{scroll_top}, #{scroll_bottom}} - no effect")
+        Raxol.Core.Runtime.Log.debug(
+          "DL outside scroll region: y=#{y}, scroll_region={#{scroll_top}, #{scroll_bottom}} - no effect"
+        )
+
         {:ok, emulator}
 
       nil ->
         # No scroll region - normal delete
-        Raxol.Core.Runtime.Log.debug("DL with no scroll region: y=#{y} - normal delete")
+        Raxol.Core.Runtime.Log.debug(
+          "DL with no scroll region: y=#{y} - normal delete"
+        )
+
         updated_buffer = delete_lines_normal(active_buffer, y, count, style)
         updated_emulator = update_emulator_buffer(emulator, updated_buffer)
         {:ok, updated_emulator}
@@ -950,24 +1002,50 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
     active_buffer = Emulator.get_screen_buffer(emulator)
     {y, x} = get_cursor_position(emulator)
 
-    Raxol.Core.Runtime.Log.debug("perform_insert_characters: count=#{count}, pos=({#{x}, #{y}})")
-    Raxol.Core.Runtime.Log.debug("Buffer type: #{inspect(active_buffer.__struct__)}")
-    Raxol.Core.Runtime.Log.debug("Buffer cells nil?: #{inspect(is_nil(active_buffer.cells))}")
-    Raxol.Core.Runtime.Log.debug("Buffer cells length: #{inspect(length(active_buffer.cells || []))}")
-    Raxol.Core.Runtime.Log.debug("Buffer dimensions: #{active_buffer.width}x#{active_buffer.height}")
-    Raxol.Core.Runtime.Log.debug("First cell value: #{inspect(Enum.at(active_buffer.cells, 0))}")
+    Raxol.Core.Runtime.Log.debug(
+      "perform_insert_characters: count=#{count}, pos=({#{x}, #{y}})"
+    )
+
+    Raxol.Core.Runtime.Log.debug(
+      "Buffer type: #{inspect(active_buffer.__struct__)}"
+    )
+
+    Raxol.Core.Runtime.Log.debug(
+      "Buffer cells nil?: #{inspect(is_nil(active_buffer.cells))}"
+    )
+
+    Raxol.Core.Runtime.Log.debug(
+      "Buffer cells length: #{inspect(length(active_buffer.cells || []))}"
+    )
+
+    Raxol.Core.Runtime.Log.debug(
+      "Buffer dimensions: #{active_buffer.width}x#{active_buffer.height}"
+    )
+
+    Raxol.Core.Runtime.Log.debug(
+      "First cell value: #{inspect(Enum.at(active_buffer.cells, 0))}"
+    )
 
     style = get_default_style(active_buffer)
     Raxol.Core.Runtime.Log.debug("Style: #{inspect(style)}")
 
     updated_buffer = insert_characters(active_buffer, y, x, count, style)
-    Raxol.Core.Runtime.Log.debug("Updated buffer cells nil?: #{inspect(is_nil(updated_buffer.cells))}")
+
+    Raxol.Core.Runtime.Log.debug(
+      "Updated buffer cells nil?: #{inspect(is_nil(updated_buffer.cells))}"
+    )
 
     if not is_nil(active_buffer.cells) and not is_nil(updated_buffer.cells) do
       line_before = Enum.at(active_buffer.cells, y)
       line_after = Enum.at(updated_buffer.cells, y)
-      Raxol.Core.Runtime.Log.debug("y=#{y}, line_before: #{inspect(line_before |> Enum.take(3))}")
-      Raxol.Core.Runtime.Log.debug("y=#{y}, line_after: #{inspect(line_after |> Enum.take(3))}")
+
+      Raxol.Core.Runtime.Log.debug(
+        "y=#{y}, line_before: #{inspect(line_before |> Enum.take(3))}"
+      )
+
+      Raxol.Core.Runtime.Log.debug(
+        "y=#{y}, line_after: #{inspect(line_after |> Enum.take(3))}"
+      )
     end
 
     # Update the emulator with the new buffer
@@ -1020,7 +1098,6 @@ defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
 
     {scroll_region_lines, lines_after_scroll} =
       Enum.split(rest, scroll_bottom - scroll_top + 1)
-
 
     # Split scroll region at insertion point
     insertion_point = y - scroll_top

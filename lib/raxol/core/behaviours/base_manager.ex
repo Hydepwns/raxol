@@ -13,7 +13,9 @@ defmodule Raxol.Core.Behaviours.BaseManager do
   Called to handle manager-specific requests.
   """
   @callback handle_manager_call(any(), GenServer.from(), any()) ::
-              {:reply, any(), any()} | {:noreply, any()} | {:stop, any(), any(), any()}
+              {:reply, any(), any()}
+              | {:noreply, any()}
+              | {:stop, any(), any(), any()}
 
   @doc """
   Called to handle manager-specific casts.
@@ -42,14 +44,18 @@ defmodule Raxol.Core.Behaviours.BaseManager do
 
       def start_link(init_opts \\ []) do
         # Convert map to keyword list if needed
-        opts_as_keywords = case init_opts do
-          opts when is_map(opts) -> Map.to_list(opts)
-          opts when is_list(opts) -> opts
-          _ -> []
-        end
+        opts_as_keywords =
+          case init_opts do
+            opts when is_map(opts) -> Map.to_list(opts)
+            opts when is_list(opts) -> opts
+            _ -> []
+          end
 
-        server_opts = Keyword.take(opts_as_keywords, [:name, :timeout, :debug, :spawn_opt])
-        manager_opts = Keyword.drop(opts_as_keywords, [:name, :timeout, :debug, :spawn_opt])
+        server_opts =
+          Keyword.take(opts_as_keywords, [:name, :timeout, :debug, :spawn_opt])
+
+        manager_opts =
+          Keyword.drop(opts_as_keywords, [:name, :timeout, :debug, :spawn_opt])
 
         GenServer.start_link(__MODULE__, manager_opts, server_opts)
       end
@@ -59,6 +65,7 @@ defmodule Raxol.Core.Behaviours.BaseManager do
         case init_manager(opts) do
           {:ok, state} ->
             {:ok, state}
+
           {:error, reason} ->
             {:stop, reason}
         end
@@ -95,7 +102,9 @@ defmodule Raxol.Core.Behaviours.BaseManager do
       end
 
       # Default implementations for callbacks
-      def handle_manager_call(_request, _from, state), do: {:reply, {:error, :not_implemented}, state}
+      def handle_manager_call(_request, _from, state),
+        do: {:reply, {:error, :not_implemented}, state}
+
       def handle_manager_cast(_msg, state), do: {:noreply, state}
       def handle_manager_info(_msg, state), do: {:noreply, state}
 

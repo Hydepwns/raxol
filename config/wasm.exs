@@ -15,8 +15,10 @@ config :raxol, :wasm,
   enable_wasi: false,
 
   # Memory configuration
-  initial_memory: 16,  # In MB
-  maximum_memory: 256, # In MB
+  # In MB
+  initial_memory: 16,
+  # In MB
+  maximum_memory: 256,
 
   # Features to include in WASM build
   features: [
@@ -94,7 +96,6 @@ config :raxol, :wasm_deps,
     # Minimal plugin support
     :plugin_loader
   ],
-
   excluded: [
     # Heavy dependencies
     :phoenix,

@@ -48,6 +48,7 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
       uptime: calculate_uptime(state),
       metrics: Map.get(state, :metrics, %{})
     }
+
     {:reply, status, state}
   end
 
@@ -58,8 +59,10 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
   @doc """
   Standard handler for updating configuration.
   """
-  @spec handle_update_config(map(), map()) :: {:reply, :ok | {:error, any()}, map()}
-  def handle_update_config(new_config, state) when is_map(state) and is_map(new_config) do
+  @spec handle_update_config(map(), map()) ::
+          {:reply, :ok | {:error, any()}, map()}
+  def handle_update_config(new_config, state)
+      when is_map(state) and is_map(new_config) do
     updated_config = Map.merge(Map.get(state, :config, %{}), new_config)
     new_state = Map.put(state, :config, updated_config)
     {:reply, :ok, new_state}
@@ -114,7 +117,9 @@ defmodule Raxol.Core.Utils.GenServerHelpers do
 
   @spec calculate_uptime(map()) :: non_neg_integer()
   defp calculate_uptime(state) when is_map(state) do
-    start_time = Map.get(state, :start_time, System.monotonic_time(:millisecond))
+    start_time =
+      Map.get(state, :start_time, System.monotonic_time(:millisecond))
+
     System.monotonic_time(:millisecond) - start_time
   end
 

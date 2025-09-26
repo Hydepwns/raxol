@@ -142,7 +142,9 @@ defmodule Raxol.Minimal do
     merged_opts = Keyword.merge(get_config_defaults(), opts)
 
     # Use BaseManager's start_link
-    start_link = Application.get_env(:raxol, :start_link_fn, &GenServer.start_link/3)
+    start_link =
+      Application.get_env(:raxol, :start_link_fn, &GenServer.start_link/3)
+
     start_link.(__MODULE__, merged_opts,
       hibernate_after: merged_opts[:hibernate_after]
     )
@@ -645,6 +647,7 @@ defmodule Raxol.Minimal do
         0 ->
           {:memory, bytes} = Process.info(self(), :memory)
           bytes
+
         _ ->
           metrics.memory_bytes
       end

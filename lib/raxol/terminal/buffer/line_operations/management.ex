@@ -88,7 +88,11 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Management do
             Map.put(acc, y, Map.get(lines, y + count))
           else
             # Fill bottom with empty lines
-            Map.put(acc, y, create_empty_line(Map.get(buffer_with_lines, :width, 80), %{}))
+            Map.put(
+              acc,
+              y,
+              create_empty_line(Map.get(buffer_with_lines, :width, 80), %{})
+            )
           end
         end)
 

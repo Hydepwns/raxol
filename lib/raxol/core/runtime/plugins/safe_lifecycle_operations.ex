@@ -187,7 +187,8 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
   end
 
   @spec do_load_plugin(String.t() | integer(), map(), map()) :: any()
-  defp do_load_plugin(plugin_module, config, state) when is_atom(plugin_module) do
+  defp do_load_plugin(plugin_module, config, state)
+       when is_atom(plugin_module) do
     # Call the plugin's init function safely
     case Raxol.Core.ErrorHandling.safe_call(fn -> plugin_module.init(config) end) do
       {:ok, {:ok, plugin_state}} ->

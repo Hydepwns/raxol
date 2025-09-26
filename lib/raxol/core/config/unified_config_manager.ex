@@ -27,7 +27,8 @@ defmodule Raxol.Core.Config.UnifiedConfigManager do
     :persistence
   ]
 
-  @type config_namespace :: :terminal | :plugins | :performance | :security | :ui | :benchmark
+  @type config_namespace ::
+          :terminal | :plugins | :performance | :security | :ui | :benchmark
   @type config_key :: atom() | String.t()
   @type config_value :: any()
 
@@ -47,7 +48,8 @@ defmodule Raxol.Core.Config.UnifiedConfigManager do
   @doc """
   Gets configuration value from specified namespace and key.
   """
-  @spec get(GenServer.server(), config_namespace(), config_key(), any()) :: any()
+  @spec get(GenServer.server(), config_namespace(), config_key(), any()) ::
+          any()
   def get(server \\ __MODULE__, namespace, key, default \\ nil) do
     GenServer.call(server, {:get, namespace, key, default})
   end
@@ -55,7 +57,12 @@ defmodule Raxol.Core.Config.UnifiedConfigManager do
   @doc """
   Sets configuration value in specified namespace and key.
   """
-  @spec set(GenServer.server(), config_namespace(), config_key(), config_value()) :: :ok | {:error, any()}
+  @spec set(
+          GenServer.server(),
+          config_namespace(),
+          config_key(),
+          config_value()
+        ) :: :ok | {:error, any()}
   def set(server \\ __MODULE__, namespace, key, value) do
     GenServer.call(server, {:set, namespace, key, value})
   end
@@ -71,7 +78,8 @@ defmodule Raxol.Core.Config.UnifiedConfigManager do
   @doc """
   Sets entire namespace configuration.
   """
-  @spec set_namespace(GenServer.server(), config_namespace(), map()) :: :ok | {:error, any()}
+  @spec set_namespace(GenServer.server(), config_namespace(), map()) ::
+          :ok | {:error, any()}
   def set_namespace(server \\ __MODULE__, namespace, config) do
     GenServer.call(server, {:set_namespace, namespace, config})
   end
@@ -95,7 +103,8 @@ defmodule Raxol.Core.Config.UnifiedConfigManager do
   @doc """
   Validates configuration for specified namespace.
   """
-  @spec validate(GenServer.server(), config_namespace()) :: :ok | {:error, [String.t()]}
+  @spec validate(GenServer.server(), config_namespace()) ::
+          :ok | {:error, [String.t()]}
   def validate(server \\ __MODULE__, namespace) do
     GenServer.call(server, {:validate, namespace})
   end
@@ -127,10 +136,11 @@ defmodule Raxol.Core.Config.UnifiedConfigManager do
     }
 
     # Load from file if it exists
-    final_config = case load_config_from_file() do
-      {:ok, loaded_config} -> merge_configs(config, loaded_config)
-      {:error, _reason} -> config
-    end
+    final_config =
+      case load_config_from_file() do
+        {:ok, loaded_config} -> merge_configs(config, loaded_config)
+        {:error, _reason} -> config
+      end
 
     if final_config.persistence.auto_save do
       schedule_auto_save(final_config.persistence.save_interval)
@@ -344,6 +354,7 @@ defmodule Raxol.Core.Config.UnifiedConfigManager do
 
   defp ensure_config_dir do
     config_path = config_dir()
+
     case File.mkdir_p(config_path) do
       :ok -> :ok
       {:error, reason} -> {:error, reason}
@@ -352,20 +363,36 @@ defmodule Raxol.Core.Config.UnifiedConfigManager do
 
   ## Private Functions - Validation
 
-  defp validate_config_value(:terminal, :width, value) when is_integer(value) and value > 0, do: :ok
-  defp validate_config_value(:terminal, :height, value) when is_integer(value) and value > 0, do: :ok
-  defp validate_config_value(:performance, :memory_limit_mb, value) when is_integer(value) and value > 0, do: :ok
-  defp validate_config_value(:security, :max_session_duration, value) when is_integer(value) and value > 0, do: :ok
-  defp validate_config_value(_namespace, _key, _value), do: :ok  # Default to allowing all values
+  defp validate_config_value(:terminal, :width, value)
+       when is_integer(value) and value > 0,
+       do: :ok
 
-  defp validate_namespace_config(_namespace, _config), do: :ok  # Simplified validation
+  defp validate_config_value(:terminal, :height, value)
+       when is_integer(value) and value > 0,
+       do: :ok
+
+  defp validate_config_value(:performance, :memory_limit_mb, value)
+       when is_integer(value) and value > 0,
+       do: :ok
+
+  defp validate_config_value(:security, :max_session_duration, value)
+       when is_integer(value) and value > 0,
+       do: :ok
+
+  # Default to allowing all values
+  defp validate_config_value(_namespace, _key, _value), do: :ok
+
+  # Simplified validation
+  defp validate_namespace_config(_namespace, _config), do: :ok
 
   ## Private Functions - Utilities
 
   defp merge_configs(base, override) do
     Map.merge(base, override, fn
-      _key, base_val, override_val when is_map(base_val) and is_map(override_val) ->
+      _key, base_val, override_val
+      when is_map(base_val) and is_map(override_val) ->
         Map.merge(base_val, override_val)
+
       _key, _base_val, override_val ->
         override_val
     end)

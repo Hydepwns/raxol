@@ -21,7 +21,6 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
 
   # Client API
 
-
   @doc """
   Returns a child specification for this server.
   """

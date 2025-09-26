@@ -135,7 +135,9 @@ defmodule Raxol.PreCommit.ErrorFormatter do
     # Print fix suggestion
     case formatted.fix_command do
       nil ->
-        IO.puts(color_text("  [TIP] #{formatted.fix_description}", :cyan, color))
+        IO.puts(
+          color_text("  [TIP] #{formatted.fix_description}", :cyan, color)
+        )
 
       cmd ->
         IO.puts(color_text("  [TIP] To fix:", :cyan, color))

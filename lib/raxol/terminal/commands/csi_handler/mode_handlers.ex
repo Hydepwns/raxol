@@ -8,7 +8,8 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ModeHandlers do
   @doc """
   Handles Set Mode (SM - 'h') and Reset Mode (RM - 'l') commands.
   """
-  @spec handle_h_or_l(Emulator.t(), list(), String.t(), integer()) :: {:ok, Emulator.t()}
+  @spec handle_h_or_l(Emulator.t(), list(), String.t(), integer()) ::
+          {:ok, Emulator.t()}
   def handle_h_or_l(emulator, params, intermediates, final_byte) do
     # Handle Set Mode (SM - 'h') and Reset Mode (RM - 'l')
     is_set = final_byte == ?h
@@ -75,21 +76,44 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ModeHandlers do
       updated_mode_manager =
         case mode_name do
           :cursor_keys_mode ->
-            Map.put(mode_manager, mode_name, if(is_set, do: :application, else: :normal))
+            Map.put(
+              mode_manager,
+              mode_name,
+              if(is_set, do: :application, else: :normal)
+            )
+
           :column_width_mode ->
-            Map.put(mode_manager, mode_name, if(is_set, do: :wide, else: :normal))
+            Map.put(
+              mode_manager,
+              mode_name,
+              if(is_set, do: :wide, else: :normal)
+            )
+
           :mouse_report_mode ->
             # Set based on specific mode number
-            mouse_mode = case mode do
-              1000 -> :x10
-              1002 -> :cell_motion
-              1003 -> :any_event
-              _ -> :none
-            end
-            Map.put(mode_manager, mode_name, if(is_set, do: mouse_mode, else: :none))
+            mouse_mode =
+              case mode do
+                1000 -> :x10
+                1002 -> :cell_motion
+                1003 -> :any_event
+                _ -> :none
+              end
+
+            Map.put(
+              mode_manager,
+              mode_name,
+              if(is_set, do: mouse_mode, else: :none)
+            )
+
           # For fields that don't exist in the struct, skip them
-          field when field in [:send_receive_mode, :save_cursor_mode, :save_cursor_and_alt_screen_mode] ->
+          field
+          when field in [
+                 :send_receive_mode,
+                 :save_cursor_mode,
+                 :save_cursor_and_alt_screen_mode
+               ] ->
             mode_manager
+
           _ ->
             Map.put(mode_manager, mode_name, is_set)
         end
@@ -100,8 +124,10 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ModeHandlers do
       case {mode_name, is_set} do
         {:column_width_mode, true} ->
           resize_screen_buffers(updated_emulator, 132)
+
         {:column_width_mode, false} ->
           resize_screen_buffers(updated_emulator, 80)
+
         _ ->
           updated_emulator
       end
@@ -133,11 +159,12 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ModeHandlers do
   defp resize_screen_buffers(emulator, new_width) do
     height = Raxol.Terminal.ScreenBuffer.get_height(emulator.main_screen_buffer)
 
-    main_buffer = Raxol.Terminal.ScreenBuffer.resize(
-      emulator.main_screen_buffer,
-      new_width,
-      height
-    )
+    main_buffer =
+      Raxol.Terminal.ScreenBuffer.resize(
+        emulator.main_screen_buffer,
+        new_width,
+        height
+      )
 
     alternate_buffer =
       case emulator.alternate_screen_buffer do
@@ -145,10 +172,11 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ModeHandlers do
         buffer -> Raxol.Terminal.ScreenBuffer.resize(buffer, new_width, height)
       end
 
-    %{emulator |
-      main_screen_buffer: main_buffer,
-      alternate_screen_buffer: alternate_buffer,
-      width: new_width
+    %{
+      emulator
+      | main_screen_buffer: main_buffer,
+        alternate_screen_buffer: alternate_buffer,
+        width: new_width
     }
   end
 end

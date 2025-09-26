@@ -99,7 +99,6 @@ defmodule Raxol.Terminal.Renderer do
     bold_blue: "font-weight: bold; color: #0000FF"
   }
 
-
   @doc """
   Creates a new renderer with the given screen buffer.
 
@@ -209,42 +208,59 @@ defmodule Raxol.Terminal.Renderer do
 
   defp get_template_match(style_map) do
     cond do
-      is_default_style?(style_map) -> Map.get(@style_templates, :default)
-      is_simple_color_match?(style_map, :red) -> Map.get(@style_templates, :red)
-      is_simple_color_match?(style_map, :green) -> Map.get(@style_templates, :green)
-      is_simple_color_match?(style_map, :blue) -> Map.get(@style_templates, :blue)
-      is_simple_attribute_match?(style_map, :bold) -> Map.get(@style_templates, :bold)
-      is_bold_color_combo?(style_map, :red) -> Map.get(@style_templates, :bold_red)
-      is_bold_color_combo?(style_map, :green) -> Map.get(@style_templates, :bold_green)
-      is_bold_color_combo?(style_map, :blue) -> Map.get(@style_templates, :bold_blue)
-      true -> nil
+      is_default_style?(style_map) ->
+        Map.get(@style_templates, :default)
+
+      is_simple_color_match?(style_map, :red) ->
+        Map.get(@style_templates, :red)
+
+      is_simple_color_match?(style_map, :green) ->
+        Map.get(@style_templates, :green)
+
+      is_simple_color_match?(style_map, :blue) ->
+        Map.get(@style_templates, :blue)
+
+      is_simple_attribute_match?(style_map, :bold) ->
+        Map.get(@style_templates, :bold)
+
+      is_bold_color_combo?(style_map, :red) ->
+        Map.get(@style_templates, :bold_red)
+
+      is_bold_color_combo?(style_map, :green) ->
+        Map.get(@style_templates, :bold_green)
+
+      is_bold_color_combo?(style_map, :blue) ->
+        Map.get(@style_templates, :bold_blue)
+
+      true ->
+        nil
     end
   end
 
   # Fast template matchers using pattern matching
   defp is_simple_color_match?(style_map, color) do
     Map.get(style_map, :foreground) == color and
-    not Map.get(style_map, :bold, false) and
-    not Map.get(style_map, :italic, false) and
-    not Map.get(style_map, :underline, false) and
-    is_nil(Map.get(style_map, :background))
+      not Map.get(style_map, :bold, false) and
+      not Map.get(style_map, :italic, false) and
+      not Map.get(style_map, :underline, false) and
+      is_nil(Map.get(style_map, :background))
   end
 
   defp is_simple_attribute_match?(style_map, attr) do
     Map.get(style_map, attr, false) == true and
-    is_nil(Map.get(style_map, :foreground)) and
-    is_nil(Map.get(style_map, :background)) and
-    not Map.get(style_map, :italic, false) and
-    not Map.get(style_map, :underline, false) and
-    (attr != :bold or not Map.get(style_map, :italic, false))
+      is_nil(Map.get(style_map, :foreground)) and
+      is_nil(Map.get(style_map, :background)) and
+      not Map.get(style_map, :italic, false) and
+      not Map.get(style_map, :underline, false) and
+      (attr != :bold or not Map.get(style_map, :italic, false))
   end
 
   defp is_bold_color_combo?(style_map, color) do
     Map.get(style_map, :foreground) == color and
-    Map.get(style_map, :bold, false) == true and
-    not Map.get(style_map, :italic, false) and
-    not Map.get(style_map, :underline, false) and
-    is_nil(Map.get(style_map, :background))
+      Map.get(style_map, :bold, false) == true and
+      not Map.get(style_map, :italic, false) and
+      not Map.get(style_map, :underline, false) and
+      is_nil(Map.get(style_map, :background))
   end
 
   # Template matching helper
@@ -265,38 +281,56 @@ defmodule Raxol.Terminal.Renderer do
     parts = []
 
     # Add foreground color
-    parts = case Map.get(style_map, :foreground) do
-      nil -> parts
-      color ->
-        css_color = resolve_color_value(color, theme)
-        case css_color do
-          "" -> parts
-          _ -> ["color: " <> css_color | parts]
-        end
-    end
+    parts =
+      case Map.get(style_map, :foreground) do
+        nil ->
+          parts
+
+        color ->
+          css_color = resolve_color_value(color, theme)
+
+          case css_color do
+            "" -> parts
+            _ -> ["color: " <> css_color | parts]
+          end
+      end
 
     # Add background color
-    parts = case Map.get(style_map, :background) do
-      nil -> parts
-      color ->
-        css_color = resolve_color_value(color, theme)
-        case css_color do
-          "" -> parts
-          _ -> ["background-color: " <> css_color | parts]
-        end
-    end
+    parts =
+      case Map.get(style_map, :background) do
+        nil ->
+          parts
+
+        color ->
+          css_color = resolve_color_value(color, theme)
+
+          case css_color do
+            "" -> parts
+            _ -> ["background-color: " <> css_color | parts]
+          end
+      end
 
     # Add text attributes
-    parts = if Map.get(style_map, :bold, false), do: ["font-weight: bold" | parts], else: parts
-    parts = if Map.get(style_map, :italic, false), do: ["font-style: italic" | parts], else: parts
-    parts = if Map.get(style_map, :underline, false), do: ["text-decoration: underline" | parts], else: parts
+    parts =
+      if Map.get(style_map, :bold, false),
+        do: ["font-weight: bold" | parts],
+        else: parts
+
+    parts =
+      if Map.get(style_map, :italic, false),
+        do: ["font-style: italic" | parts],
+        else: parts
+
+    parts =
+      if Map.get(style_map, :underline, false),
+        do: ["text-decoration: underline" | parts],
+        else: parts
 
     case parts do
       [] -> ""
       _ -> parts |> Enum.reverse() |> Enum.join("; ")
     end
   end
-
 
   defp normalize_style(%{__struct__: _} = style) do
     Map.from_struct(style)
@@ -310,10 +344,10 @@ defmodule Raxol.Terminal.Renderer do
     %{}
   end
 
-
   defp resolve_color_value(color, theme) when is_atom(color) do
     # Basic color resolution with fallback to default color map
     color_map = Map.get(theme, :foreground, %{})
+
     case Map.get(color_map, color) do
       nil -> get_default_color(color)
       value -> value
@@ -345,9 +379,9 @@ defmodule Raxol.Terminal.Renderer do
       bright_white: "#FFFFFF",
       bright_black: "#808080"
     }
+
     Map.get(default_colors, color, "")
   end
-
 
   defp apply_font_settings(content, _font_settings), do: content
   defp maybe_apply_cursor(content, nil), do: content

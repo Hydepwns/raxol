@@ -22,23 +22,21 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
   }
 
   @type integration_config :: %{
-    enable_marketplace: boolean(),
-    enable_sandbox: boolean(),
-    enable_hot_reload: boolean(),
-    default_trust_level: :trusted | :sandboxed | :untrusted,
-    plugin_directories: [String.t()],
-    security_policies: map()
-  }
+          enable_marketplace: boolean(),
+          enable_sandbox: boolean(),
+          enable_hot_reload: boolean(),
+          default_trust_level: :trusted | :sandboxed | :untrusted,
+          plugin_directories: [String.t()],
+          security_policies: map()
+        }
 
-  defstruct [
-    config: nil,
-    plugin_system: nil,
-    sandbox_manager: nil,
-    hot_reload_manager: nil,
-    marketplace_client: nil,
-    active_plugins: %{},
-    startup_complete: false
-  ]
+  defstruct config: nil,
+            plugin_system: nil,
+            sandbox_manager: nil,
+            hot_reload_manager: nil,
+            marketplace_client: nil,
+            active_plugins: %{},
+            startup_complete: false
 
   # Integration API
 
@@ -53,7 +51,11 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
   Installs a plugin from the marketplace with full integration.
   """
   def install_and_enable_plugin(plugin_id, opts \\ %{}) do
-    GenServer.call(__MODULE__, {:install_and_enable_plugin, plugin_id, opts}, 60_000)
+    GenServer.call(
+      __MODULE__,
+      {:install_and_enable_plugin, plugin_id, opts},
+      60_000
+    )
   end
 
   @doc """
@@ -119,7 +121,9 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
   def handle_continue(:initialize_components, state) do
     case initialize_all_components(state.config) do
       {:ok, initialized_state} ->
-        Logger.info("[PluginSystemV2Integration] All components initialized successfully")
+        Logger.info(
+          "[PluginSystemV2Integration] All components initialized successfully"
+        )
 
         # Run initial plugin discovery
         spawn(fn -> discover_and_load_plugins() end)
@@ -128,7 +132,10 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
         {:noreply, final_state}
 
       {:error, reason} ->
-        Logger.error("[PluginSystemV2Integration] Failed to initialize: #{inspect(reason)}")
+        Logger.error(
+          "[PluginSystemV2Integration] Failed to initialize: #{inspect(reason)}"
+        )
+
         {:noreply, state}
     end
   end
@@ -172,13 +179,14 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
   # Private Implementation
 
   defp initialize_all_components(config) do
-    Logger.info("[PluginSystemV2Integration] Initializing Plugin System v2.0 components...")
+    Logger.info(
+      "[PluginSystemV2Integration] Initializing Plugin System v2.0 components..."
+    )
 
     with {:ok, plugin_system} <- start_plugin_system(config),
          {:ok, sandbox_manager} <- start_sandbox_manager(config),
          {:ok, hot_reload_manager} <- start_hot_reload_manager(config),
          {:ok, marketplace_client} <- start_marketplace_client(config) do
-
       initialized_state = %__MODULE__{
         config: config,
         plugin_system: plugin_system,
@@ -208,7 +216,10 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
         {:ok, :started}
 
       error ->
-        Logger.error("[PluginSystemV2Integration] Failed to start Plugin System: #{inspect(error)}")
+        Logger.error(
+          "[PluginSystemV2Integration] Failed to start Plugin System: #{inspect(error)}"
+        )
+
         error
     end
   end
@@ -221,7 +232,10 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
           {:ok, :started}
 
         error ->
-          Logger.error("[PluginSystemV2Integration] Failed to start Sandbox: #{inspect(error)}")
+          Logger.error(
+            "[PluginSystemV2Integration] Failed to start Sandbox: #{inspect(error)}"
+          )
+
           error
       end
     else
@@ -242,7 +256,10 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
           {:ok, :started}
 
         error ->
-          Logger.error("[PluginSystemV2Integration] Failed to start Hot-Reload: #{inspect(error)}")
+          Logger.error(
+            "[PluginSystemV2Integration] Failed to start Hot-Reload: #{inspect(error)}"
+          )
+
           error
       end
     else
@@ -263,7 +280,10 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
           {:ok, :started}
 
         error ->
-          Logger.error("[PluginSystemV2Integration] Failed to start Marketplace: #{inspect(error)}")
+          Logger.error(
+            "[PluginSystemV2Integration] Failed to start Marketplace: #{inspect(error)}"
+          )
+
           error
       end
     else
@@ -283,14 +303,28 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
     # 6. Setup hot-reload if development mode
 
     with {:ok, plugin_info} <- MarketplaceClient.get_plugin_info(plugin_id),
-         {:ok, security_result} <- MarketplaceClient.verify_plugin_security(plugin_id, plugin_info.version),
+         {:ok, security_result} <-
+           MarketplaceClient.verify_plugin_security(
+             plugin_id,
+             plugin_info.version
+           ),
          :ok <- verify_security_policy(security_result, state.config),
-         {:ok, dependencies} <- resolve_dependencies_with_conflict_resolution(plugin_info),
-         :ok <- create_sandbox_if_needed(plugin_id, security_result.trust_level, state),
-         :ok <- MarketplaceClient.install_plugin(plugin_id, plugin_info.version, opts),
+         {:ok, dependencies} <-
+           resolve_dependencies_with_conflict_resolution(plugin_info),
+         :ok <-
+           create_sandbox_if_needed(
+             plugin_id,
+             security_result.trust_level,
+             state
+           ),
+         :ok <-
+           MarketplaceClient.install_plugin(
+             plugin_id,
+             plugin_info.version,
+             opts
+           ),
          :ok <- PluginSystemV2.load_plugin(plugin_id, opts),
          :ok <- enable_hot_reload_if_requested(plugin_id, opts, state) do
-
       # Track active plugin
       plugin_state = %{
         plugin_id: plugin_id,
@@ -305,7 +339,10 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
       {:ok, %{state | active_plugins: updated_active}}
     else
       {:error, reason} ->
-        Logger.error("[PluginSystemV2Integration] Failed to install #{plugin_id}: #{inspect(reason)}")
+        Logger.error(
+          "[PluginSystemV2Integration] Failed to install #{plugin_id}: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -313,13 +350,27 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
   defp create_development_plugin_impl(plugin_path, opts, state) do
     plugin_id = extract_plugin_id_from_path(plugin_path)
 
-    Logger.info("[PluginSystemV2Integration] Creating development plugin: #{plugin_id}")
+    Logger.info(
+      "[PluginSystemV2Integration] Creating development plugin: #{plugin_id}"
+    )
 
     with :ok <- validate_plugin_path(plugin_path),
-         :ok <- PluginSandbox.create_sandbox(plugin_id, PluginSandbox.trusted_policy()),
-         :ok <- HotReloadManager.enable_hot_reload(plugin_id, plugin_path, HotReloadManager.development_options()),
-         :ok <- PluginSystemV2.load_plugin(plugin_id, Map.merge(opts, %{development_mode: true})) do
-
+         :ok <-
+           PluginSandbox.create_sandbox(
+             plugin_id,
+             PluginSandbox.trusted_policy()
+           ),
+         :ok <-
+           HotReloadManager.enable_hot_reload(
+             plugin_id,
+             plugin_path,
+             HotReloadManager.development_options()
+           ),
+         :ok <-
+           PluginSystemV2.load_plugin(
+             plugin_id,
+             Map.merge(opts, %{development_mode: true})
+           ) do
       # Track development plugin
       plugin_state = %{
         plugin_id: plugin_id,
@@ -336,13 +387,18 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
       {:ok, %{state | active_plugins: updated_active}}
     else
       {:error, reason} ->
-        Logger.error("[PluginSystemV2Integration] Failed to create development plugin: #{inspect(reason)}")
+        Logger.error(
+          "[PluginSystemV2Integration] Failed to create development plugin: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
 
   defp run_integration_demo_impl(_state) do
-    Logger.info("[PluginSystemV2Integration] Running comprehensive integration demo...")
+    Logger.info(
+      "[PluginSystemV2Integration] Running comprehensive integration demo..."
+    )
 
     demo_steps = [
       {"Marketplace Search", fn -> demo_marketplace_search() end},
@@ -353,17 +409,20 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
       {"Plugin Lifecycle", fn -> demo_plugin_lifecycle() end}
     ]
 
-    results = Enum.map(demo_steps, fn {step_name, step_func} ->
-      Logger.info("[Demo] Running step: #{step_name}")
+    results =
+      Enum.map(demo_steps, fn {step_name, step_func} ->
+        Logger.info("[Demo] Running step: #{step_name}")
 
-      case step_func.() do
-        :ok -> {step_name, :success, nil}
-        {:ok, result} -> {step_name, :success, result}
-        {:error, reason} -> {step_name, :failed, reason}
-      end
-    end)
+        case step_func.() do
+          :ok -> {step_name, :success, nil}
+          {:ok, result} -> {step_name, :success, result}
+          {:error, reason} -> {step_name, :failed, reason}
+        end
+      end)
 
-    success_count = Enum.count(results, fn {_, status, _} -> status == :success end)
+    success_count =
+      Enum.count(results, fn {_, status, _} -> status == :success end)
+
     total_steps = length(results)
 
     demo_summary = %{
@@ -374,7 +433,10 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
       timestamp: DateTime.utc_now()
     }
 
-    Logger.info("[Demo] Completed #{success_count}/#{total_steps} steps successfully")
+    Logger.info(
+      "[Demo] Completed #{success_count}/#{total_steps} steps successfully"
+    )
+
     {:ok, demo_summary}
   end
 
@@ -407,7 +469,10 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
     # Demo dependency resolution
     mock_manifest = %{
       name: "complex-plugin",
-      dependencies: [{"terminal-themes", "^2.0.0"}, {"git-integration", "~> 1.5"}]
+      dependencies: [
+        {"terminal-themes", "^2.0.0"},
+        {"git-integration", "~> 1.5"}
+      ]
     }
 
     case DependencyResolverV2.resolve_dependencies(mock_manifest) do
@@ -428,9 +493,15 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
     case PluginSandbox.create_sandbox(plugin_id, security_policy) do
       :ok ->
         # Try to execute safe code
-        case PluginSandbox.execute_in_sandbox(plugin_id, Enum, :map, [[1, 2, 3], &(&1 * 2)]) do
+        case PluginSandbox.execute_in_sandbox(plugin_id, Enum, :map, [
+               [1, 2, 3],
+               &(&1 * 2)
+             ]) do
           {:ok, result} ->
-            Logger.info("[Demo] Sandbox execution successful: #{inspect(result)}")
+            Logger.info(
+              "[Demo] Sandbox execution successful: #{inspect(result)}"
+            )
+
             :ok
 
           error ->
@@ -474,16 +545,21 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
       {"Hot Reload", fn -> PluginSystemV2.hot_reload_plugin(plugin_id) end}
     ]
 
-    results = Enum.map(lifecycle_steps, fn {step, func} ->
-      case func.() do
-        :ok -> {step, :success}
-        {:ok, _} -> {step, :success}
-        error -> {step, error}
-      end
-    end)
+    results =
+      Enum.map(lifecycle_steps, fn {step, func} ->
+        case func.() do
+          :ok -> {step, :success}
+          {:ok, _} -> {step, :success}
+          error -> {step, error}
+        end
+      end)
 
-    success_count = Enum.count(results, fn {_, status} -> status == :success end)
-    Logger.info("[Demo] Plugin lifecycle: #{success_count}/#{length(results)} steps successful")
+    success_count =
+      Enum.count(results, fn {_, status} -> status == :success end)
+
+    Logger.info(
+      "[Demo] Plugin lifecycle: #{success_count}/#{length(results)} steps successful"
+    )
 
     {:ok, results}
   end
@@ -491,7 +567,10 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
   # Helper Functions
 
   defp discover_and_load_plugins do
-    Logger.info("[PluginSystemV2Integration] Discovering plugins in configured directories...")
+    Logger.info(
+      "[PluginSystemV2Integration] Discovering plugins in configured directories..."
+    )
+
     # Mock implementation - would scan plugin directories
     :ok
   end
@@ -521,11 +600,12 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
 
   defp create_sandbox_if_needed(plugin_id, trust_level, state) do
     if state.config.enable_sandbox and trust_level != :trusted do
-      security_policy = case trust_level do
-        :sandboxed -> PluginSandbox.sandboxed_policy()
-        :untrusted -> PluginSandbox.untrusted_policy()
-        _ -> PluginSandbox.sandboxed_policy()
-      end
+      security_policy =
+        case trust_level do
+          :sandboxed -> PluginSandbox.sandboxed_policy()
+          :untrusted -> PluginSandbox.untrusted_policy()
+          _ -> PluginSandbox.sandboxed_policy()
+        end
 
       PluginSandbox.create_sandbox(plugin_id, security_policy)
     else
@@ -534,7 +614,8 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
   end
 
   defp enable_hot_reload_if_requested(plugin_id, opts, state) do
-    if state.config.enable_hot_reload and Map.get(opts, :enable_hot_reload, false) do
+    if state.config.enable_hot_reload and
+         Map.get(opts, :enable_hot_reload, false) do
       plugin_path = Map.get(opts, :plugin_path, "/plugins/#{plugin_id}")
       HotReloadManager.enable_hot_reload(plugin_id, plugin_path)
     else

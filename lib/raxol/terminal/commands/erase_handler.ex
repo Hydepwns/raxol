@@ -23,12 +23,15 @@ defmodule Raxol.Terminal.Commands.EraseHandler do
       :screen ->
         # ED - Erase in Display
         handle_erase_display(emulator, mode, position)
+
       :line ->
         # EL - Erase in Line
         handle_erase_line(emulator, mode, position)
+
       :character ->
         # ECH - Erase Characters
         handle_erase_characters(emulator, mode, position)
+
       _ ->
         {:error, :invalid_erase_scope, emulator}
     end

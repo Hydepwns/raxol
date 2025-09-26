@@ -50,13 +50,18 @@ defmodule Raxol.Protocols.UnifiedProtocols do
     @doc """
     Serializes the data to the specified format.
     """
-    @spec serialize(t(), :json | :toml | :binary | :erlang_term) :: {:ok, binary()} | {:error, any()}
+    @spec serialize(t(), :json | :toml | :binary | :erlang_term) ::
+            {:ok, binary()} | {:error, any()}
     def serialize(data, format \\ :json)
 
     @doc """
     Deserializes data from the specified format.
     """
-    @spec deserialize(binary(), :json | :toml | :binary | :erlang_term, module()) :: {:ok, t()} | {:error, any()}
+    @spec deserialize(
+            binary(),
+            :json | :toml | :binary | :erlang_term,
+            module()
+          ) :: {:ok, t()} | {:error, any()}
     def deserialize(data, format, target_type)
 
     @doc """
@@ -185,7 +190,8 @@ defmodule Raxol.Protocols.UnifiedProtocols do
     @doc """
     Gets the current lifecycle state.
     """
-    @spec get_state(t()) :: :initialized | :starting | :running | :stopping | :stopped | :error
+    @spec get_state(t()) ::
+            :initialized | :starting | :running | :stopping | :stopped | :error
     def get_state(component)
   end
 end
@@ -199,27 +205,47 @@ defmodule Raxol.Protocols do
   alias Raxol.Protocols.UnifiedProtocols
 
   defdelegate render(component, opts), to: UnifiedProtocols.Component
-  defdelegate handle_event(component, event, state), to: UnifiedProtocols.Component
+
+  defdelegate handle_event(component, event, state),
+    to: UnifiedProtocols.Component
+
   defdelegate apply_style(component, style), to: UnifiedProtocols.Component
   defdelegate get_metadata(component), to: UnifiedProtocols.Component
   defdelegate validate(component), to: UnifiedProtocols.Component
 
   defdelegate serialize(data, format), to: UnifiedProtocols.Serializable
-  defdelegate deserialize(data, format, target_type), to: UnifiedProtocols.Serializable
+
+  defdelegate deserialize(data, format, target_type),
+    to: UnifiedProtocols.Serializable
+
   defdelegate get_schema(data), to: UnifiedProtocols.Serializable
 
-  defdelegate write(buffer, position, data), to: UnifiedProtocols.BufferOperations
+  defdelegate write(buffer, position, data),
+    to: UnifiedProtocols.BufferOperations
+
   defdelegate read(buffer, position), to: UnifiedProtocols.BufferOperations
   defdelegate clear(buffer, region), to: UnifiedProtocols.BufferOperations
   defdelegate get_dimensions(buffer), to: UnifiedProtocols.BufferOperations
-  defdelegate resize(buffer, width, height), to: UnifiedProtocols.BufferOperations
-  defdelegate scroll(buffer, direction, amount), to: UnifiedProtocols.BufferOperations
+
+  defdelegate resize(buffer, width, height),
+    to: UnifiedProtocols.BufferOperations
+
+  defdelegate scroll(buffer, direction, amount),
+    to: UnifiedProtocols.BufferOperations
 
   defdelegate get_config(configurable), to: UnifiedProtocols.Configurable
-  defdelegate set_config(configurable, config), to: UnifiedProtocols.Configurable
-  defdelegate validate_config(configurable, config), to: UnifiedProtocols.Configurable
-  defdelegate get_default_config(configurable), to: UnifiedProtocols.Configurable
-  defdelegate merge_config(configurable, config), to: UnifiedProtocols.Configurable
+
+  defdelegate set_config(configurable, config),
+    to: UnifiedProtocols.Configurable
+
+  defdelegate validate_config(configurable, config),
+    to: UnifiedProtocols.Configurable
+
+  defdelegate get_default_config(configurable),
+    to: UnifiedProtocols.Configurable
+
+  defdelegate merge_config(configurable, config),
+    to: UnifiedProtocols.Configurable
 
   defdelegate initialize(component, opts), to: UnifiedProtocols.Lifecycle
   defdelegate start(component), to: UnifiedProtocols.Lifecycle

@@ -42,7 +42,9 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
       # Configuration schema
       config_schema: %{
         animation_speed: {:integer, default: 100},
-        color_palette: {:list, default: [:red, :orange, :yellow, :green, :blue, :indigo, :violet]},
+        color_palette:
+          {:list,
+           default: [:red, :orange, :yellow, :green, :blue, :indigo, :violet]},
         auto_rotate: {:boolean, default: true},
         rotation_interval: {:integer, default: 5000}
       }
@@ -113,11 +115,12 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
     register_commands()
 
     # Start animation if auto_rotate is enabled
-    state = if state.config.auto_rotate do
-      start_animation(state)
-    else
-      state
-    end
+    state =
+      if state.config.auto_rotate do
+        start_animation(state)
+      else
+        state
+      end
 
     {:ok, %{state | active: true}}
   end
@@ -147,8 +150,14 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
           {speed, _} when speed > 0 ->
             new_config = %{state.config | animation_speed: speed}
             state = %{state | config: new_config}
-            state = if state.animation_timer, do: restart_animation(state), else: state
+
+            state =
+              if state.animation_timer,
+                do: restart_animation(state),
+                else: state
+
             {:ok, "Animation speed set to #{speed}ms", state}
+
           _ ->
             {:error, "Invalid speed value", state}
         end
@@ -156,7 +165,13 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
       ["palette" | colors] ->
         palette_atoms = Enum.map(colors, &String.to_atom/1)
         new_config = %{state.config | color_palette: palette_atoms}
-        state = %{state | config: new_config, palette: build_palette(palette_atoms)}
+
+        state = %{
+          state
+          | config: new_config,
+            palette: build_palette(palette_atoms)
+        }
+
         {:ok, "Color palette updated", state}
 
       ["next"] ->
@@ -172,6 +187,7 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
         - rainbow palette <colors>   Set color palette
         - rainbow next              Rotate to next color
         """
+
         {:ok, help_text, state}
     end
   end
@@ -210,6 +226,7 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
           palette: build_palette(new_config.color_palette),
           active: Map.get(old_state, :active, false)
         }
+
         {:ok, new_state}
 
       _ ->
@@ -246,12 +263,14 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
       :blue -> {0, 0, 255}
       :indigo -> {75, 0, 130}
       :violet -> {238, 130, 238}
-      _ -> {128, 128, 128}  # Default gray
+      # Default gray
+      _ -> {128, 128, 128}
     end
   end
 
   defp start_animation(state) do
-    state = stop_animation(state)  # Ensure no duplicate timers
+    # Ensure no duplicate timers
+    state = stop_animation(state)
 
     timer_ref = schedule_next_rotation(state)
     %{state | animation_timer: timer_ref}
@@ -261,6 +280,7 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
     if state.animation_timer do
       Process.cancel_timer(state.animation_timer)
     end
+
     %{state | animation_timer: nil}
   end
 
@@ -290,7 +310,8 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin do
       background: :default,
       foreground: {r, g, b},
       cursor: {r, g, b},
-      selection: {r, g, b, 64}  # With alpha
+      # With alpha
+      selection: {r, g, b, 64}
     }
 
     # Apply through the theme system
@@ -343,26 +364,40 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin.Tests do
 
   describe "commands" do
     test "starts animation", %{state: state} do
-      {:ok, message, new_state} = RainbowThemePlugin.on_command("rainbow", ["start"], state)
+      {:ok, message, new_state} =
+        RainbowThemePlugin.on_command("rainbow", ["start"], state)
+
       assert message == "Rainbow animation started"
       assert new_state.animation_timer != nil
     end
 
     test "stops animation", %{state: state} do
-      {:ok, _, started_state} = RainbowThemePlugin.on_command("rainbow", ["start"], state)
-      {:ok, message, stopped_state} = RainbowThemePlugin.on_command("rainbow", ["stop"], started_state)
+      {:ok, _, started_state} =
+        RainbowThemePlugin.on_command("rainbow", ["start"], state)
+
+      {:ok, message, stopped_state} =
+        RainbowThemePlugin.on_command("rainbow", ["stop"], started_state)
+
       assert message == "Rainbow animation stopped"
       assert stopped_state.animation_timer == nil
     end
 
     test "changes animation speed", %{state: state} do
-      {:ok, message, new_state} = RainbowThemePlugin.on_command("rainbow", ["speed", "200"], state)
+      {:ok, message, new_state} =
+        RainbowThemePlugin.on_command("rainbow", ["speed", "200"], state)
+
       assert message == "Animation speed set to 200ms"
       assert new_state.config.animation_speed == 200
     end
 
     test "updates color palette", %{state: state} do
-      {:ok, message, new_state} = RainbowThemePlugin.on_command("rainbow", ["palette", "red", "blue"], state)
+      {:ok, message, new_state} =
+        RainbowThemePlugin.on_command(
+          "rainbow",
+          ["palette", "red", "blue"],
+          state
+        )
+
       assert message == "Color palette updated"
       assert new_state.config.color_palette == [:red, :blue]
       assert map_size(new_state.palette) == 2
@@ -372,6 +407,7 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin.Tests do
   describe "state migration" do
     test "migrates from 0.9.0 to 1.0.0" do
       old_state = %{current_index: 5, active: true}
+
       new_config = %{
         animation_speed: 100,
         color_palette: [:red, :green],
@@ -379,7 +415,9 @@ defmodule Raxol.Plugins.Examples.RainbowThemePlugin.Tests do
         rotation_interval: 1000
       }
 
-      {:ok, migrated} = RainbowThemePlugin.migrate_state("0.9.0", old_state, new_config)
+      {:ok, migrated} =
+        RainbowThemePlugin.migrate_state("0.9.0", old_state, new_config)
+
       assert migrated.current_index == 5
       assert migrated.active == true
       assert migrated.config == new_config

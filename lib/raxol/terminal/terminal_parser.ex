@@ -65,6 +65,7 @@ defmodule Raxol.Terminal.TerminalParser do
         Raxol.Core.Runtime.Log.debug(
           "[Parser.parse_chunk] Parser error occurred, continuing with original emulator"
         )
+
         {emulator, parser_state, rest}
 
       unexpected_result ->

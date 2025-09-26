@@ -29,7 +29,10 @@ defmodule Raxol.Core.Events.EventManager do
   def init do
     case GenServer.whereis(__MODULE__) do
       nil ->
-        Raxol.Core.Runtime.Log.warning("EventManager not started, call start_link/1 first")
+        Raxol.Core.Runtime.Log.warning(
+          "EventManager not started, call start_link/1 first"
+        )
+
         :ok
 
       _pid ->
@@ -223,7 +226,11 @@ defmodule Raxol.Core.Events.EventManager do
   end
 
   @impl true
-  def handle_manager_call({:subscribe, event_types, opts, subscriber_pid}, _from, state) do
+  def handle_manager_call(
+        {:subscribe, event_types, opts, subscriber_pid},
+        _from,
+        state
+      ) do
     ref = make_ref()
     filter = Keyword.get(opts, :filter, [])
 
@@ -298,7 +305,10 @@ defmodule Raxol.Core.Events.EventManager do
 
   @impl true
   def handle_manager_info(msg, state) do
-    Raxol.Core.Runtime.Log.debug("EventManager received unexpected message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.debug(
+      "EventManager received unexpected message: #{inspect(msg)}"
+    )
+
     {:noreply, state}
   end
 
@@ -347,7 +357,9 @@ defmodule Raxol.Core.Events.EventManager do
       apply(target, handler, [event_type, event_data])
     rescue
       error ->
-        Raxol.Core.Runtime.Log.error("Handler #{target}.#{handler} failed: #{inspect(error)}")
+        Raxol.Core.Runtime.Log.error(
+          "Handler #{target}.#{handler} failed: #{inspect(error)}"
+        )
     end
   end
 

@@ -26,8 +26,10 @@ defmodule Raxol.Core.Utils.TimerManager do
       # Send {:check_status, :database} every 5 seconds
       {:ok, ref} = TimerManager.start_interval({:check_status, :database}, 5000)
   """
-  @spec start_interval(timer_msg(), non_neg_integer()) :: {:ok, timer_ref()} | {:error, term()}
-  def start_interval(message, interval_ms) when is_integer(interval_ms) and interval_ms > 0 do
+  @spec start_interval(timer_msg(), non_neg_integer()) ::
+          {:ok, timer_ref()} | {:error, term()}
+  def start_interval(message, interval_ms)
+      when is_integer(interval_ms) and interval_ms > 0 do
     case :timer.send_interval(interval_ms, message) do
       {:ok, ref} -> {:ok, ref}
       {:error, reason} -> {:error, reason}
@@ -46,7 +48,8 @@ defmodule Raxol.Core.Utils.TimerManager do
       ref = TimerManager.send_after({:retry, 1}, 1000)
   """
   @spec send_after(timer_msg(), non_neg_integer()) :: timer_ref()
-  def send_after(message, delay_ms) when is_integer(delay_ms) and delay_ms >= 0 do
+  def send_after(message, delay_ms)
+      when is_integer(delay_ms) and delay_ms >= 0 do
     Process.send_after(self(), message, delay_ms)
   end
 
@@ -129,7 +132,9 @@ defmodule Raxol.Core.Utils.TimerManager do
   @spec remove_timer(map(), atom()) :: map()
   def remove_timer(timers, name) do
     case Map.get(timers, name) do
-      nil -> timers
+      nil ->
+        timers
+
       ref ->
         safe_cancel(ref)
         Map.delete(timers, name)
@@ -175,9 +180,13 @@ defmodule Raxol.Core.Utils.TimerManager do
       # First retry after 1 second, then 2, 4, 8, up to max 30 seconds
       delay = TimerManager.exponential_backoff(attempt, 1000, 30_000)
   """
-  @spec exponential_backoff(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: non_neg_integer()
+  @spec exponential_backoff(
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: non_neg_integer()
   def exponential_backoff(attempt, base_ms, max_ms) do
-    delay = base_ms * :math.pow(2, attempt) |> round()
+    delay = (base_ms * :math.pow(2, attempt)) |> round()
     min(delay, max_ms)
   end
 
@@ -190,7 +199,8 @@ defmodule Raxol.Core.Utils.TimerManager do
       interval = TimerManager.add_jitter(5000, 0.1)
   """
   @spec add_jitter(non_neg_integer(), float()) :: non_neg_integer()
-  def add_jitter(interval_ms, jitter_factor \\ 0.1) when jitter_factor >= 0 and jitter_factor <= 1 do
+  def add_jitter(interval_ms, jitter_factor \\ 0.1)
+      when jitter_factor >= 0 and jitter_factor <= 1 do
     jitter = interval_ms * jitter_factor * (2 * :rand.uniform() - 1)
     max(1, round(interval_ms + jitter))
   end

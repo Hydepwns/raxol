@@ -24,11 +24,13 @@ defmodule Raxol.Test.EmulatorHelpers do
 
         # Write line number y - but truncate to fit buffer width
         line_text = "Line #{y}"
-        text_to_write = if String.length(line_text) > width do
-          String.slice(line_text, 0, width)
-        else
-          line_text
-        end
+
+        text_to_write =
+          if String.length(line_text) > width do
+            String.slice(line_text, 0, width)
+          else
+            line_text
+          end
 
         # Write the content for the line
         {emu_written, _} = Emulator.process_input(emu_moved, text_to_write)

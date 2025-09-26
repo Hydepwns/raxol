@@ -45,7 +45,8 @@ defmodule Raxol.Animation.Animation do
   """
   def stop_animation(name, element_id \\ nil) do
     case element_id do
-      nil -> :ok  # Handle legacy interface
+      # Handle legacy interface
+      nil -> :ok
       element_id -> Framework.stop_animation(name, element_id)
     end
   end

@@ -1065,24 +1065,34 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     handle_focus_change(__MODULE__, old_focus, new_focus)
   end
 
-  def handle_focus_change_event(event_type, event_data) when event_type == :focus_change do
+  def handle_focus_change_event(event_type, event_data)
+      when event_type == :focus_change do
     case event_data do
       %{nil: new_focus} ->
         # Handle the case where EventManager converts {nil, new_focus} to %{nil: new_focus}
         handle_focus_change(__MODULE__, nil, new_focus)
+
       {old_focus, new_focus} ->
         # Handle direct tuple format
         handle_focus_change(__MODULE__, old_focus, new_focus)
+
       new_focus when is_binary(new_focus) ->
         # Handle simple string format
         handle_focus_change(__MODULE__, nil, new_focus)
+
       map when is_map(map) ->
         # Handle maps like %{"search_button" => "text_input"} - take the values
         case Map.values(map) do
-          [new_focus] -> handle_focus_change(__MODULE__, nil, new_focus)
-          [old_focus, new_focus] -> handle_focus_change(__MODULE__, old_focus, new_focus)
-          _ -> handle_focus_change(__MODULE__, nil, inspect(map))
+          [new_focus] ->
+            handle_focus_change(__MODULE__, nil, new_focus)
+
+          [old_focus, new_focus] ->
+            handle_focus_change(__MODULE__, old_focus, new_focus)
+
+          _ ->
+            handle_focus_change(__MODULE__, nil, inspect(map))
         end
+
       _ ->
         handle_focus_change(__MODULE__, nil, event_data)
     end

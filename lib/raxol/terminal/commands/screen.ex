@@ -71,9 +71,11 @@ defmodule Raxol.Terminal.Commands.Screen do
         # Clear from cursor to end of line
         0 ->
           result = Operations.clear_to_end_of_line(buffer_with_cursor)
+
           Raxol.Core.Runtime.Log.debug(
             "[Screen.clear_line] After clear_to_end_of_line operation"
           )
+
           result
 
         # Clear from beginning of line to cursor

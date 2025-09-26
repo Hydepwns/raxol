@@ -38,16 +38,21 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
       ?A ->
         {:ok, updated_emulator} = handle_cursor_up(emulator, 1)
         updated_emulator
+
       ?B ->
         {:ok, updated_emulator} = handle_cursor_down(emulator, 1)
         updated_emulator
+
       ?C ->
         {:ok, updated_emulator} = handle_cursor_forward(emulator, 1)
         updated_emulator
+
       ?D ->
         {:ok, updated_emulator} = handle_cursor_backward(emulator, 1)
         updated_emulator
-      _ -> emulator
+
+      _ ->
+        emulator
     end
   end
 
@@ -116,6 +121,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
   def handle_erase_line(emulator, mode) do
     alias Raxol.Terminal.Commands.CSIHandler.ScreenHandlers
+
     case ScreenHandlers.handle_erase_line(emulator, mode) do
       {:ok, updated_emulator} -> updated_emulator
       {:error, _reason, fallback_emulator} -> fallback_emulator
@@ -163,11 +169,15 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     alias Raxol.Terminal.Commands.CSIHandler.Screen
 
     case Screen.handle_command(emulator, params, <<final_byte>>) do
-      {:ok, updated_emulator} -> updated_emulator
+      {:ok, updated_emulator} ->
+        updated_emulator
+
       {:error, _reason} ->
         # Unknown command - return original emulator unchanged
         emulator
-      updated_emulator -> updated_emulator
+
+      updated_emulator ->
+        updated_emulator
     end
   end
 
@@ -243,7 +253,12 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
       ?n ->
         # Device Status Report (DSR)
-        case UnifiedCommandHandler.handle_csi(emulator, "n", params, intermediates) do
+        case UnifiedCommandHandler.handle_csi(
+               emulator,
+               "n",
+               params,
+               intermediates
+             ) do
           {:ok, updated_emulator} -> updated_emulator
           {:error, _, updated_emulator} -> updated_emulator
         end
@@ -415,48 +430,76 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     # final_byte determines which character set (G0-G3)
     # params_buffer contains the designation character
 
-    gset = case final_byte do
-      40 -> :g0  # '(' - G0
-      41 -> :g1  # ')' - G1
-      42 -> :g2  # '*' - G2
-      43 -> :g3  # '+' - G3
-      _ -> nil
-    end
+    gset =
+      case final_byte do
+        # '(' - G0
+        40 -> :g0
+        # ')' - G1
+        41 -> :g1
+        # '*' - G2
+        42 -> :g2
+        # '+' - G3
+        43 -> :g3
+        _ -> nil
+      end
 
     if gset do
       # Debug log for testing
       require Logger
       Logger.debug("handle_scs params_buffer: #{inspect(params_buffer)}")
 
-      char_code = case params_buffer do
-        "0" -> ?0
-        "1" ->
-          Logger.debug("Matched '1' string, returning ?A (#{?A})")
-          ?A  # Test compatibility - "1" maps to UK ASCII (character 'A')
-        "16" -> ?0  # Test compatibility - "16" maps to character '0'
-        <<char>> -> char
-        str when is_binary(str) ->
-          # For other strings, try to get the first character
-          # But the special cases above should handle "1" and "16"
-          case String.to_charlist(str) do
-            [char | _] -> char
-            _ -> nil
-          end
-        _ -> nil
-      end
+      char_code =
+        case params_buffer do
+          "0" ->
+            ?0
 
-      charset = case char_code do
-        ?0 -> :dec_special_graphics  # DEC Special Graphics
-        ?> -> :dec_special_graphics  # DEC Technical (maps to special graphics)
-        ?R -> :dec_technical         # DEC Technical
-        ?A -> :uk                    # UK ASCII
-        ?B -> :us_ascii              # US ASCII
-        ?D -> :french                # French
-        ?F -> :german                # German
-        ?' -> :portuguese            # Portuguese (apostrophe character)
-        ?6 -> :portuguese            # Portuguese (alternate code)
-        _ -> :us_ascii               # Default to US ASCII
-      end
+          "1" ->
+            Logger.debug("Matched '1' string, returning ?A (#{?A})")
+            # Test compatibility - "1" maps to UK ASCII (character 'A')
+            ?A
+
+          # Test compatibility - "16" maps to character '0'
+          "16" ->
+            ?0
+
+          <<char>> ->
+            char
+
+          str when is_binary(str) ->
+            # For other strings, try to get the first character
+            # But the special cases above should handle "1" and "16"
+            case String.to_charlist(str) do
+              [char | _] -> char
+              _ -> nil
+            end
+
+          _ ->
+            nil
+        end
+
+      charset =
+        case char_code do
+          # DEC Special Graphics
+          ?0 -> :dec_special_graphics
+          # DEC Technical (maps to special graphics)
+          ?> -> :dec_special_graphics
+          # DEC Technical
+          ?R -> :dec_technical
+          # UK ASCII
+          ?A -> :uk
+          # US ASCII
+          ?B -> :us_ascii
+          # French
+          ?D -> :french
+          # German
+          ?F -> :german
+          # Portuguese (apostrophe character)
+          ?' -> :portuguese
+          # Portuguese (alternate code)
+          ?6 -> :portuguese
+          # Default to US ASCII
+          _ -> :us_ascii
+        end
 
       updated_charset_state = Map.put(emulator.charset_state, gset, charset)
       {:ok, %{emulator | charset_state: updated_charset_state}}
@@ -531,11 +574,13 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
     # Handle mode changes through ModeManager
     mode_manager = Map.get(emulator, :mode_manager, %ModeManager{})
 
-    updated_mode_manager = case mode do
-      4 -> %{mode_manager | insert_mode: enabled}
-      25 -> %{mode_manager | cursor_visible: enabled}
-      _ -> mode_manager  # Unknown mode, no change
-    end
+    updated_mode_manager =
+      case mode do
+        4 -> %{mode_manager | insert_mode: enabled}
+        25 -> %{mode_manager | cursor_visible: enabled}
+        # Unknown mode, no change
+        _ -> mode_manager
+      end
 
     if updated_mode_manager == mode_manager do
       # No change for unknown mode
@@ -559,6 +604,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
   def handle_erase_display(emulator, mode) do
     alias Raxol.Terminal.Commands.CSIHandler.ScreenHandlers
+
     case ScreenHandlers.handle_erase_display(emulator, mode) do
       {:ok, updated_emulator} -> updated_emulator
       {:error, _reason, fallback_emulator} -> fallback_emulator
@@ -642,72 +688,95 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
       [?A] ->
         {:ok, updated} = handle_cursor_up(emulator, 1)
         updated
+
       [?B] ->
         {:ok, updated} = handle_cursor_down(emulator, 1)
         updated
+
       [?C] ->
         {:ok, updated} = handle_cursor_forward(emulator, 1)
         updated
+
       [?D] ->
         {:ok, updated} = handle_cursor_backward(emulator, 1)
         updated
+
       # Cursor Home (H without parameters)
       [?H] ->
         # Move cursor to home position (0,0)
         %{emulator | cursor: %{emulator.cursor | row: 0, col: 0}}
+
       # Cursor Position with parameters (e.g., 2;3H)
       [?2, ?;, ?3, ?H] ->
         # Move cursor to row 1 (2-1), col 2 (3-1) - 1-based to 0-based conversion
         %{emulator | cursor: %{emulator.cursor | row: 1, col: 2}}
+
       # Save/Restore cursor
       [?s] ->
         {:ok, updated} = handle_s(emulator, [])
         updated
+
       [?u] ->
         {:ok, updated} = handle_u(emulator, [])
         updated
+
       # Erase display
       [?J] ->
         {:ok, handle_erase_display(emulator, 0)}
+
       [?1, ?J] ->
         {:ok, handle_erase_display(emulator, 1)}
+
       [?2, ?J] ->
         {:ok, handle_erase_display(emulator, 2)}
+
       # Erase line
       [?K] ->
         {:ok, handle_erase_line(emulator, 0)}
+
       [?1, ?K] ->
         {:ok, handle_erase_line(emulator, 1)}
+
       [?2, ?K] ->
         {:ok, handle_erase_line(emulator, 2)}
+
       # Character set locking shifts
       [?N] ->
         {:ok, updated} = handle_locking_shift(emulator, :g0)
         updated
+
       [?O] ->
         {:ok, updated} = handle_locking_shift(emulator, :g1)
         updated
+
       [?P] ->
         {:ok, updated} = handle_locking_shift(emulator, :g2)
         updated
+
       [?Q] ->
         {:ok, updated} = handle_locking_shift(emulator, :g3)
         updated
+
       # Character set single shifts
       [?R] ->
         {:ok, updated} = handle_single_shift(emulator, :g2)
         updated
+
       [?S] ->
         {:ok, updated} = handle_single_shift(emulator, :g3)
         updated
+
       # Device status sequences
       [?6, ?n] ->
         updated = handle_device_status(emulator, 6)
         %{updated | device_status_reported: true}
+
       [?6, ?R] ->
         updated = handle_device_status(emulator, 6)
         %{updated | cursor_position_reported: true}
-      _ -> emulator
+
+      _ ->
+        emulator
     end
   end
 
@@ -726,7 +795,10 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   def handle_single_shift(emulator, gset) do
     # For single shift, we set the single_shift field to the value of the specified G-set
     gset_value = Map.get(emulator.charset_state, gset, :us_ascii)
-    new_charset_state = Map.put(emulator.charset_state, :single_shift, gset_value)
+
+    new_charset_state =
+      Map.put(emulator.charset_state, :single_shift, gset_value)
+
     updated_emulator = Map.put(emulator, :charset_state, new_charset_state)
     {:ok, updated_emulator}
   end
@@ -766,11 +838,12 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   def handle_device_status(emulator, params) do
     # Handle device status reports
     # Normalize params to handle both single integer and list formats
-    param = case params do
-      param when is_integer(param) -> param
-      [param] when is_integer(param) -> param
-      _ -> nil
-    end
+    param =
+      case params do
+        param when is_integer(param) -> param
+        [param] when is_integer(param) -> param
+        _ -> nil
+      end
 
     case param do
       5 ->

@@ -42,6 +42,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   }
 
   alias Raxol.Core.Utils.Validation
+
   alias Raxol.Terminal.ScreenBuffer.{
     EraseOperations,
     MemoryUtils,
@@ -224,6 +225,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
       {true, true} ->
         # Use Writer module to handle wide characters properly
         Writer.write_char(buffer, x, y, char, style)
+
       _ ->
         buffer
     end
@@ -250,6 +252,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
       {true, true} ->
         # Use the Writer module which properly handles wide characters
         Writer.write_string(buffer, x, y, string, style)
+
       _ ->
         buffer
     end
@@ -266,6 +269,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
           %{char: char} -> char
           _ -> " "
         end
+
       _ ->
         " "
     end
@@ -305,13 +309,17 @@ defmodule Raxol.Terminal.ScreenBuffer do
   def get_content(buffer) do
     # Convert cells to string representation for compatibility with tests
     case buffer.cells do
-      nil -> ""
+      nil ->
+        ""
+
       cells when is_list(cells) ->
         cells
         |> Enum.map(fn line when is_list(line) ->
           line
           |> Enum.map(fn
-            %Cell{char: char} -> char
+            %Cell{char: char} ->
+              char
+
             cell ->
               case Map.get(cell, :char) do
                 nil -> " "
@@ -328,7 +336,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
           [] -> ""
           lines -> Enum.join(lines, "\n")
         end
-      _ -> ""
+
+      _ ->
+        ""
     end
   end
 

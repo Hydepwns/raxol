@@ -51,7 +51,10 @@ defmodule Raxol.Terminal.Emulator.EmulatorState do
   Sets the character set state.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_charset_state(EmulatorStruct.t(), CharacterSets.charset_state()) ::
+  @spec set_charset_state(
+          EmulatorStruct.t(),
+          CharacterSets.StateManager.charset_state()
+        ) ::
           {:ok, EmulatorStruct.t()} | {:error, String.t()}
   def set_charset_state(%EmulatorStruct{} = emulator, charset_state) do
     case validate_state(emulator) do
@@ -67,7 +70,8 @@ defmodule Raxol.Terminal.Emulator.EmulatorState do
   Gets the current character set state.
   Returns the current charset state.
   """
-  @spec get_charset_state(EmulatorStruct.t()) :: CharacterSets.charset_state()
+  @spec get_charset_state(EmulatorStruct.t()) ::
+          CharacterSets.StateManager.charset_state()
   def get_charset_state(%EmulatorStruct{} = emulator) do
     emulator.charset_state
   end

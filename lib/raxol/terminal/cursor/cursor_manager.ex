@@ -74,7 +74,6 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   # Client API
 
-
   @doc """
   Creates a new cursor manager instance.
   """
@@ -593,7 +592,11 @@ defmodule Raxol.Terminal.Cursor.Manager do
     {:reply, result, new_state}
   end
 
-  def handle_manager_call({:move_to_column, column, width, height}, _from, state) do
+  def handle_manager_call(
+        {:move_to_column, column, width, height},
+        _from,
+        state
+      ) do
     {result, new_state} =
       Callbacks.handle_move_to_column_bounded(state, column, width, height)
 
@@ -607,7 +610,11 @@ defmodule Raxol.Terminal.Cursor.Manager do
     {:reply, result, new_state}
   end
 
-  def handle_manager_call({:move_to_bounded, row, col, width, height}, _from, state) do
+  def handle_manager_call(
+        {:move_to_bounded, row, col, width, height},
+        _from,
+        state
+      ) do
     {result, new_state} =
       Callbacks.handle_move_to_bounded_position(state, row, col, width, height)
 

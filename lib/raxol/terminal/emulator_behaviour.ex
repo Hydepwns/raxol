@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.EmulatorBehaviour do
           scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
           style: TextFormatting.text_style(),
           memory_limit: non_neg_integer(),
-          charset_state: CharacterSets.charset_state(),
+          charset_state: CharacterSets.StateManager.charset_state(),
           mode_manager: ModeManager.t(),
           plugin_manager: Core.t(),
           options: map(),

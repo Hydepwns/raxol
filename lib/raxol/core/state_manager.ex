@@ -62,7 +62,8 @@ defmodule Raxol.Core.StateManager do
 
   # Configuration
   defp default_strategy do
-    Application.get_env(:raxol, :state_manager, [])[:default_strategy] || :functional
+    Application.get_env(:raxol, :state_manager, [])[:default_strategy] ||
+      :functional
   end
 
   defp strategy_from_opts(opts) do
@@ -97,6 +98,7 @@ defmodule Raxol.Core.StateManager do
   - `strategy: atom()` - Force specific strategy (:functional, :process, :ets)
   """
   def get(state, key, opts \\ [])
+
   def get(state, key, opts) when is_map(state) and is_list(opts) do
     Map.get(state, key)
   end
@@ -123,6 +125,7 @@ defmodule Raxol.Core.StateManager do
   - `strategy: atom()` - Force specific strategy
   """
   def put(state, key, value, opts \\ [])
+
   def put(state, key, value, opts) when is_map(state) do
     case strategy_from_opts(opts) do
       :functional -> {:ok, Map.put(state, key, value)}
@@ -135,7 +138,9 @@ defmodule Raxol.Core.StateManager do
   Updates a value in functional state using a function.
   """
   def update(state, key, func, opts \\ [])
-  def update(state, key, func, opts) when is_map(state) and is_function(func, 1) do
+
+  def update(state, key, func, opts)
+      when is_map(state) and is_function(func, 1) do
     case strategy_from_opts(opts) do
       :functional -> {:ok, Map.update(state, key, nil, func)}
       :ets -> update_state_ets(key, func, opts)
@@ -147,6 +152,7 @@ defmodule Raxol.Core.StateManager do
   Deletes a key from functional state.
   """
   def delete(state, key, opts \\ [])
+
   def delete(state, key, opts) when is_map(state) do
     case strategy_from_opts(opts) do
       :functional -> {:ok, Map.delete(state, key)}
@@ -159,6 +165,7 @@ defmodule Raxol.Core.StateManager do
   Clears functional state.
   """
   def clear(state, opts \\ [])
+
   def clear(_state, opts) do
     case strategy_from_opts(opts) do
       :functional -> {:ok, %{}}
@@ -171,6 +178,7 @@ defmodule Raxol.Core.StateManager do
   Merges two functional states.
   """
   def merge(state1, state2, opts \\ [])
+
   def merge(state1, state2, opts) when is_map(state1) and is_map(state2) do
     case strategy_from_opts(opts) do
       :functional -> {:ok, Map.merge(state1, state2)}
@@ -199,14 +207,16 @@ defmodule Raxol.Core.StateManager do
     case strategy_from_opts(opts) do
       :process -> start_managed_process(state_id, initial_state, opts)
       :ets -> start_managed_ets(state_id, initial_state, opts)
-      _ -> start_managed_process(state_id, initial_state, opts)  # Default
+      # Default
+      _ -> start_managed_process(state_id, initial_state, opts)
     end
   end
 
   @doc """
   Updates managed state using a function.
   """
-  def update_managed(state_id, update_fun, opts \\ []) when is_function(update_fun, 1) do
+  def update_managed(state_id, update_fun, opts \\ [])
+      when is_function(update_fun, 1) do
     case strategy_from_opts(opts) do
       :process -> update_managed_process(state_id, update_fun)
       :ets -> update_state_ets(state_id, update_fun, opts)
@@ -262,15 +272,18 @@ defmodule Raxol.Core.StateManager do
         current = get_state(key, opts)
         new_value = update_fn.(current)
         set_state(key, new_value, opts)
+
       :process ->
         # For process-based, update the managed state
         case is_list(key) do
           true ->
             state_key = List.first(key, :default)
+
             with {:ok, state} <- get_managed_process_state(state_key, opts) do
               new_state = update_nested(state, key, update_fn)
               set_managed_process_state(state_key, new_state, opts)
             end
+
           false ->
             # Simple key update
             with {:ok, current} <- get_managed_process_state(key, opts) do
@@ -278,20 +291,26 @@ defmodule Raxol.Core.StateManager do
               set_managed_process_state(key, new_value, opts)
             end
         end
-      _ -> {:error, :strategy_not_supported}
+
+      _ ->
+        {:error, :strategy_not_supported}
     end
   end
 
   # Helper to update nested keys in a state
-  defp update_nested(state, [], update_fn) when is_map(state), do: update_fn.(state)
+  defp update_nested(state, [], update_fn) when is_map(state),
+    do: update_fn.(state)
+
   defp update_nested(state, [key], update_fn) when is_map(state) do
     Map.update(state, key, update_fn.(nil), update_fn)
   end
+
   defp update_nested(state, [head | tail], update_fn) when is_map(state) do
     Map.update(state, head, %{}, fn nested ->
       update_nested(nested, tail, update_fn)
     end)
   end
+
   defp update_nested(state, _, _), do: state
 
   @doc """
@@ -299,12 +318,15 @@ defmodule Raxol.Core.StateManager do
   """
   def delete_state(key, opts \\ []) do
     case strategy_from_opts(opts) do
-      :ets -> delete_state_ets(key, opts)
+      :ets ->
+        delete_state_ets(key, opts)
+
       :process ->
         # For process-based, we need to handle it differently
         # Use the existing delete on the managed state
         if is_list(key) do
           state_key = List.first(key, :default)
+
           with {:ok, state} <- get_managed_process_state(state_key, opts) do
             new_state = delete_nested(state, key)
             set_managed_process_state(state_key, new_state, opts)
@@ -313,19 +335,25 @@ defmodule Raxol.Core.StateManager do
           # Simple key deletion - just set to nil
           set_managed_process_state(key, nil, opts)
         end
-      _ -> {:error, :strategy_not_supported}
+
+      _ ->
+        {:error, :strategy_not_supported}
     end
   end
 
   # Helper to delete nested keys from a state
   defp delete_nested(state, []), do: state
-  defp delete_nested(state, [key]) when is_map(state), do: Map.delete(state, key)
+
+  defp delete_nested(state, [key]) when is_map(state),
+    do: Map.delete(state, key)
+
   defp delete_nested(state, [head | tail]) when is_map(state) do
     case Map.get(state, head) do
       nil -> state
       nested -> Map.put(state, head, delete_nested(nested, tail))
     end
   end
+
   defp delete_nested(state, _), do: state
 
   # Domain-Specific State Management
@@ -432,6 +460,7 @@ defmodule Raxol.Core.StateManager do
 
   defp get_state_ets(key, default, opts) do
     table = table_name_from_opts(opts)
+
     case :ets.lookup(table, normalize_key(key)) do
       [{_key, value}] -> value
       [] -> default
@@ -447,10 +476,13 @@ defmodule Raxol.Core.StateManager do
   defp update_state_ets(key, update_fn, opts) do
     table = table_name_from_opts(opts)
     key_normalized = normalize_key(key)
-    old_value = case :ets.lookup(table, key_normalized) do
-      [{_key, value}] -> value
-      [] -> nil
-    end
+
+    old_value =
+      case :ets.lookup(table, key_normalized) do
+        [{_key, value}] -> value
+        [] -> nil
+      end
+
     new_value = update_fn.(old_value)
     :ets.insert(table, {key_normalized, new_value})
     :ok
@@ -468,20 +500,26 @@ defmodule Raxol.Core.StateManager do
     :ok
   end
 
-  defp merge_state_ets(state1, state2, opts) when is_map(state1) and is_map(state2) do
+  defp merge_state_ets(state1, state2, opts)
+       when is_map(state1) and is_map(state2) do
     merged = Map.merge(state1, state2)
+
     Enum.each(merged, fn {key, value} ->
       set_state_ets(key, value, opts)
     end)
+
     :ok
   end
 
   defp init_ets_if_needed(opts) do
     table = table_name_from_opts(opts)
+
     case :ets.info(table) do
       :undefined ->
         :ets.new(table, [:set, :public, :named_table, {:read_concurrency, true}])
-      _ -> :ok
+
+      _ ->
+        :ok
     end
   end
 
@@ -496,6 +534,7 @@ defmodule Raxol.Core.StateManager do
       {:ok, pid} ->
         Process.register(pid, state_process_name(state_id))
         {:ok, state_id}
+
       error ->
         error
     end
@@ -578,7 +617,12 @@ defmodule Raxol.Core.StateManager do
   defp update_managed_key(_key, func, _opts), do: {:ok, func.(nil)}
   defp delete_managed_key(_key, _opts), do: :ok
   defp clear_managed_state(_opts), do: {:ok, %{}}
-  defp merge_managed_state(state1, state2, _opts), do: {:ok, Map.merge(state1, state2)}
+
+  defp merge_managed_state(state1, state2, _opts),
+    do: {:ok, Map.merge(state1, state2)}
+
   defp get_managed_process_state(_key, _opts), do: {:error, :not_implemented}
-  defp set_managed_process_state(_key, _value, _opts), do: {:error, :not_implemented}
+
+  defp set_managed_process_state(_key, _value, _opts),
+    do: {:error, :not_implemented}
 end

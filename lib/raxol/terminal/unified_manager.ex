@@ -88,7 +88,6 @@ defmodule Raxol.Terminal.UnifiedManager do
           features: list(atom())
         }
 
-
   ## Public API
 
   @doc """
@@ -268,7 +267,11 @@ defmodule Raxol.Terminal.UnifiedManager do
     end
   end
 
-  def handle_manager_call({:resize_session, session_id, width, height}, _from, state) do
+  def handle_manager_call(
+        {:resize_session, session_id, width, height},
+        _from,
+        state
+      ) do
     case resize_session_impl(state, session_id, width, height) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}

@@ -140,14 +140,6 @@ defmodule Raxol.Terminal.ANSI.Behaviours do
     @callback reset_overlined(text_style()) :: text_style()
   end
 
-  # Convenience aliases for backward compatibility
-  # Delegate to the actual implementation module
-  alias Raxol.Terminal.ANSI.TextFormatting, as: TextFormattingImpl
-
-  defdelegate new(), to: TextFormattingImpl
-  defdelegate set_foreground(style, color), to: TextFormattingImpl
-  defdelegate set_background(style, color), to: TextFormattingImpl
-  defdelegate get_foreground(style), to: TextFormattingImpl
-  defdelegate get_background(style), to: TextFormattingImpl
-  defdelegate apply_attribute(style, attribute), to: TextFormattingImpl
+  # Note: Use Raxol.Terminal.ANSI.TextFormatting directly for actual text formatting operations.
+  # This module only defines the behaviour contracts.
 end

@@ -37,6 +37,7 @@ defmodule Raxol.Terminal.Sync.Manager do
   @doc """
   Starts the sync manager.
   """
+
   # BaseManager provides start_link/1 which calls init_manager/1
 
   def register_component(component_id, component_type, initial_state \\ %{}) do
@@ -166,7 +167,11 @@ defmodule Raxol.Terminal.Sync.Manager do
     end
   end
 
-  def handle_manager_call({:sync_state_simple, component_id, new_state}, _from, state) do
+  def handle_manager_call(
+        {:sync_state_simple, component_id, new_state},
+        _from,
+        state
+      ) do
     case Map.get(state.components, component_id) do
       nil ->
         {:reply, {:error, :not_found}, state}

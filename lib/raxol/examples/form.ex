@@ -12,7 +12,7 @@ defmodule Raxol.Examples.Form do
   def new(opts \\ %{}) do
     %{
       __struct__: __MODULE__,
-      id: "form_#{:rand.uniform(100000)}",
+      id: "form_#{:rand.uniform(100_000)}",
       children: [],
       state: %{submitted: false},
       props: opts

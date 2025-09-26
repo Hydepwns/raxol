@@ -236,7 +236,18 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
   end
 
   defp get_unicode_test_chars do
-    ["[STAR2]", "[FAST]", "[GEM]", "[HOT]", "[POWER]", "[TARGET]", "[COLOR]", "[STYLE]", "[THEATER]", "[CIRCUS]"]
+    [
+      "[STAR2]",
+      "[FAST]",
+      "[GEM]",
+      "[HOT]",
+      "[POWER]",
+      "[TARGET]",
+      "[COLOR]",
+      "[STYLE]",
+      "[THEATER]",
+      "[CIRCUS]"
+    ]
   end
 
   defp build_unicode_cell(unicode_chars) do

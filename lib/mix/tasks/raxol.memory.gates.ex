@@ -577,7 +577,8 @@ defmodule Mix.Tasks.Raxol.Memory.Gates do
     end)
   end
 
-  defp print_scenario_status(:passed), do: Mix.shell().info("Status: [OK] PASSED")
+  defp print_scenario_status(:passed),
+    do: Mix.shell().info("Status: [OK] PASSED")
 
   defp print_scenario_status(:gate_failures),
     do: Mix.shell().info("Status: [FAIL] FAILED (gate failures)")

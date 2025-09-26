@@ -252,7 +252,9 @@ defmodule Raxol.Terminal.Buffer.Writer do
           non_neg_integer(),
           String.t(),
           TextFormatting.text_style() | nil
-        ) :: {ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.Core.t(), non_neg_integer()}
+        ) ::
+          {ScreenBuffer.t() | Raxol.Terminal.ScreenBuffer.Core.t(),
+           non_neg_integer()}
   def write_segment(buffer, x, y, segment, style \\ nil) do
     Enum.reduce(String.graphemes(segment), {buffer, x}, fn char,
                                                            {acc_buffer, acc_x} ->

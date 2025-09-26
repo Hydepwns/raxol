@@ -176,7 +176,9 @@ defmodule Mix.Tasks.Raxol.Perf do
   defp handle_command(["memory"], opts) do
     duration = Keyword.get(opts, :duration, 10) * 1000
 
-    Mix.shell().info("[BRAIN] Profiling memory usage for #{duration / 1000}s...")
+    Mix.shell().info(
+      "[BRAIN] Profiling memory usage for #{duration / 1000}s..."
+    )
 
     Raxol.Performance.DevProfiler.profile_memory(duration)
   end

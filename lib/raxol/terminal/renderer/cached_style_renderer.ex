@@ -117,12 +117,13 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
     Process.put(:style_cache_hits, renderer.cache_hits)
     Process.put(:style_cache_misses, renderer.cache_misses)
 
-    content = renderer.screen_buffer.cells
-    |> Enum.map_join("\n", fn row ->
-      render_row_with_cached_styles(row, renderer)
-    end)
-    |> apply_font_settings(renderer.font_settings)
-    |> maybe_apply_cursor(renderer.cursor)
+    content =
+      renderer.screen_buffer.cells
+      |> Enum.map_join("\n", fn row ->
+        render_row_with_cached_styles(row, renderer)
+      end)
+      |> apply_font_settings(renderer.font_settings)
+      |> maybe_apply_cursor(renderer.cursor)
 
     # Get updated cache state from process dictionary
     final_cache = Process.get(:current_style_cache, renderer.style_cache)
@@ -134,10 +135,11 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
     Process.delete(:style_cache_hits)
     Process.delete(:style_cache_misses)
 
-    updated_renderer = %{renderer |
-      style_cache: final_cache,
-      cache_hits: final_hits,
-      cache_misses: final_misses
+    updated_renderer = %{
+      renderer
+      | style_cache: final_cache,
+        cache_hits: final_hits,
+        cache_misses: final_misses
     }
 
     {content, updated_renderer}
@@ -163,7 +165,12 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
   end
 
   defp render_styled_group(style_struct, chars, renderer) do
-    css_string = get_cached_style_string(style_struct, renderer.theme, renderer.style_cache)
+    css_string =
+      get_cached_style_string(
+        style_struct,
+        renderer.theme,
+        renderer.style_cache
+      )
 
     if css_string == "" do
       # No styling needed - just return the characters
@@ -187,17 +194,24 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
         updated_cache = Map.put(current_cache, cache_key, css_string)
 
         # Implement LRU eviction if cache is too large
-        final_cache = if map_size(updated_cache) > @max_cache_size do
-          # Remove oldest entries (simplified LRU - could be optimized)
-          updated_cache
-          |> Enum.take(@max_cache_size - 10)  # Remove 10 entries to avoid thrashing
-          |> Map.new()
-        else
-          updated_cache
-        end
+        final_cache =
+          if map_size(updated_cache) > @max_cache_size do
+            # Remove oldest entries (simplified LRU - could be optimized)
+            updated_cache
+            # Remove 10 entries to avoid thrashing
+            |> Enum.take(@max_cache_size - 10)
+            |> Map.new()
+          else
+            updated_cache
+          end
 
         Process.put(:current_style_cache, final_cache)
-        Process.put(:style_cache_misses, Process.get(:style_cache_misses, 0) + 1)
+
+        Process.put(
+          :style_cache_misses,
+          Process.get(:style_cache_misses, 0) + 1
+        )
+
         css_string
 
       cached_string ->
@@ -243,11 +257,20 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
     style_map = normalize_style(style_struct)
 
     cond do
-      is_default_style?(style_map) -> :default
-      is_simple_color_style?(style_map) -> get_simple_color_key(style_map)
-      is_simple_attribute_style?(style_map) -> get_simple_attribute_key(style_map)
-      is_common_combination?(style_map) -> get_combination_key(style_map)
-      true -> nil
+      is_default_style?(style_map) ->
+        :default
+
+      is_simple_color_style?(style_map) ->
+        get_simple_color_key(style_map)
+
+      is_simple_attribute_style?(style_map) ->
+        get_simple_attribute_key(style_map)
+
+      is_common_combination?(style_map) ->
+        get_combination_key(style_map)
+
+      true ->
+        nil
     end
   end
 
@@ -256,7 +279,8 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
   end
 
   defp is_simple_color_style?(style_map) do
-    has_only_foreground_color?(style_map) and is_basic_color?(Map.get(style_map, :foreground))
+    has_only_foreground_color?(style_map) and
+      is_basic_color?(Map.get(style_map, :foreground))
   end
 
   defp is_simple_attribute_style?(style_map) do
@@ -264,19 +288,26 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
   end
 
   defp is_common_combination?(style_map) do
-    is_bold_color_combination?(style_map) or is_underline_color_combination?(style_map)
+    is_bold_color_combination?(style_map) or
+      is_underline_color_combination?(style_map)
   end
 
   defp build_style_string_optimized(style_struct, theme) do
     style_map = normalize_style(style_struct)
 
     # Use iolist for efficient string building, then convert to string
-    style_parts = []
-    |> add_color_style(style_map, :foreground, "color", theme)
-    |> add_color_style(style_map, :background, "background-color", theme)
-    |> add_boolean_style(style_map, :bold, "font-weight", "bold")
-    |> add_boolean_style(style_map, :italic, "font-style", "italic")
-    |> add_boolean_style(style_map, :underline, "text-decoration", "underline")
+    style_parts =
+      []
+      |> add_color_style(style_map, :foreground, "color", theme)
+      |> add_color_style(style_map, :background, "background-color", theme)
+      |> add_boolean_style(style_map, :bold, "font-weight", "bold")
+      |> add_boolean_style(style_map, :italic, "font-style", "italic")
+      |> add_boolean_style(
+        style_map,
+        :underline,
+        "text-decoration",
+        "underline"
+      )
 
     case style_parts do
       [] -> ""
@@ -303,13 +334,25 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
 
   defp has_only_foreground_color?(style_map) do
     Map.get(style_map, :foreground) != nil and
-    Map.get(style_map, :background) == nil and
-    Map.get(style_map, :bold, false) == false and
-    Map.get(style_map, :italic, false) == false and
-    Map.get(style_map, :underline, false) == false
+      Map.get(style_map, :background) == nil and
+      Map.get(style_map, :bold, false) == false and
+      Map.get(style_map, :italic, false) == false and
+      Map.get(style_map, :underline, false) == false
   end
 
-  defp is_basic_color?(color) when color in [:red, :green, :blue, :yellow, :cyan, :magenta, :white, :black], do: true
+  defp is_basic_color?(color)
+       when color in [
+              :red,
+              :green,
+              :blue,
+              :yellow,
+              :cyan,
+              :magenta,
+              :white,
+              :black
+            ],
+       do: true
+
   defp is_basic_color?(_), do: false
 
   defp get_simple_color_key(style_map) do
@@ -328,11 +371,14 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
 
   defp has_single_text_attribute?(style_map) do
     attributes = [:bold, :italic, :underline]
-    active_attributes = Enum.filter(attributes, fn attr ->
-      Map.get(style_map, attr, false) == true
-    end)
 
-    length(active_attributes) == 1 and Map.get(style_map, :foreground) == nil and Map.get(style_map, :background) == nil
+    active_attributes =
+      Enum.filter(attributes, fn attr ->
+        Map.get(style_map, attr, false) == true
+      end)
+
+    length(active_attributes) == 1 and Map.get(style_map, :foreground) == nil and
+      Map.get(style_map, :background) == nil
   end
 
   defp get_simple_attribute_key(style_map) do
@@ -346,18 +392,18 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
 
   defp is_bold_color_combination?(style_map) do
     Map.get(style_map, :bold, false) == true and
-    is_basic_color?(Map.get(style_map, :foreground)) and
-    Map.get(style_map, :background) == nil and
-    Map.get(style_map, :italic, false) == false and
-    Map.get(style_map, :underline, false) == false
+      is_basic_color?(Map.get(style_map, :foreground)) and
+      Map.get(style_map, :background) == nil and
+      Map.get(style_map, :italic, false) == false and
+      Map.get(style_map, :underline, false) == false
   end
 
   defp is_underline_color_combination?(style_map) do
     Map.get(style_map, :underline, false) == true and
-    Map.get(style_map, :foreground) == :red and
-    Map.get(style_map, :background) == nil and
-    Map.get(style_map, :bold, false) == false and
-    Map.get(style_map, :italic, false) == false
+      Map.get(style_map, :foreground) == :red and
+      Map.get(style_map, :background) == nil and
+      Map.get(style_map, :bold, false) == false and
+      Map.get(style_map, :italic, false) == false
   end
 
   defp get_combination_key(style_map) do
@@ -373,17 +419,23 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
       is_underline_color_combination?(style_map) ->
         :underline_red
 
-      true -> nil
+      true ->
+        nil
     end
   end
 
   # Optimized style building functions
   defp add_color_style(parts, style_map, key, css_prop, theme) do
     case Map.get(style_map, key) do
-      nil -> parts
+      nil ->
+        parts
+
       color ->
         css_value = resolve_color_value(color, theme)
-        if css_value == "", do: parts, else: ["#{css_prop}: #{css_value}" | parts]
+
+        if css_value == "",
+          do: parts,
+          else: ["#{css_prop}: #{css_value}" | parts]
     end
   end
 
@@ -425,7 +477,8 @@ defmodule Raxol.Terminal.Renderer.CachedStyleRenderer do
     total = hits + misses
     hit_rate = if total > 0, do: hits / total * 100, else: 0.0
 
-    hit_rate_display = if is_float(hit_rate), do: Float.round(hit_rate, 1), else: hit_rate
+    hit_rate_display =
+      if is_float(hit_rate), do: Float.round(hit_rate, 1), else: hit_rate
 
     %{
       cache_hits: hits,

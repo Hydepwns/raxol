@@ -35,15 +35,18 @@ defmodule Raxol.Plugins.Lifecycle.ErrorHandling do
 
   def format_missing_dependencies_error(missing, chain, module) do
     chain_str = Enum.join(chain, " -> ")
-    missing_str = missing
-                  |> Enum.map(&format_dependency/1)
-                  |> Enum.join(", ")
+
+    missing_str =
+      missing
+      |> Enum.map(&format_dependency/1)
+      |> Enum.join(", ")
 
     "Plugin #{module} has missing dependencies: #{missing_str}. Dependency chain: #{chain_str}"
   end
 
   # Helper function to format dependency tuples as strings
-  defp format_dependency({name, version}) when is_binary(name) and is_binary(version) do
+  defp format_dependency({name, version})
+       when is_binary(name) and is_binary(version) do
     "#{name} #{version}"
   end
 

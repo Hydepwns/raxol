@@ -56,10 +56,16 @@ defmodule Mix.Tasks.Raxol.Memory do
     {opts, args, _} = OptionParser.parse(args, switches: @switches)
 
     case args do
-      [] -> show_help()
-      ["help" | _] -> show_help()
-      [command | rest] when command in ["debug", "profile", "gates", "stability"] ->
+      [] ->
+        show_help()
+
+      ["help" | _] ->
+        show_help()
+
+      [command | rest]
+      when command in ["debug", "profile", "gates", "stability"] ->
         handle_command(command, rest, opts)
+
       [command | _] ->
         Mix.shell().error("Unknown command: #{command}")
         show_help()

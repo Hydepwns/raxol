@@ -95,9 +95,10 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
     default_session = create_session("main")
     default_window = create_window("shell", config.default_shell)
 
-    session = %{default_session |
-      windows: [default_window],
-      active_window: default_window.id
+    session = %{
+      default_session
+      | windows: [default_window],
+        active_window: default_window.id
     }
 
     state = %__MODULE__{
@@ -134,7 +135,8 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   end
 
   # Event Handlers
-  def handle_event({:keyboard, key}, state) when key == state.config.prefix_key do
+  def handle_event({:keyboard, key}, state)
+      when key == state.config.prefix_key do
     activate_prefix(state)
   end
 
@@ -152,7 +154,8 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
     {:ok, state}
   end
 
-  def handle_event({:mouse, action, x, y}, state) when state.config.mouse_support do
+  def handle_event({:mouse, action, x, y}, state)
+      when state.config.mouse_support do
     handle_mouse_event(action, x, y, state)
   end
 
@@ -173,11 +176,13 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
         {:ok, %{state | last_command_time: DateTime.utc_now()}}
 
       false ->
-        {:ok, %{state | prefix_active: true, last_command_time: DateTime.utc_now()}}
+        {:ok,
+         %{state | prefix_active: true, last_command_time: DateTime.utc_now()}}
     end
   end
 
   defp check_double_tap(nil), do: false
+
   defp check_double_tap(last_time) do
     DateTime.diff(DateTime.utc_now(), last_time, :millisecond) < 500
   end
@@ -186,25 +191,60 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
     new_state = %{state | prefix_active: false}
 
     case key do
-      "c" -> create_new_window(new_state)
-      "n" -> next_window(new_state)
-      "p" -> previous_window(new_state)
-      "%" -> split_pane_horizontal(new_state)
-      "\"" -> split_pane_vertical(new_state)
-      "o" -> next_pane(new_state)
-      "x" -> close_pane(new_state)
-      "z" -> zoom_pane(new_state)
-      "d" -> detach_session(new_state)
-      "s" -> show_sessions(new_state)
-      "w" -> show_windows(new_state)
-      ":" -> enter_command_mode(new_state)
-      "?" -> show_help(new_state)
-      "up" -> select_pane(new_state, :up)
-      "down" -> select_pane(new_state, :down)
-      "left" -> select_pane(new_state, :left)
-      "right" -> select_pane(new_state, :right)
+      "c" ->
+        create_new_window(new_state)
+
+      "n" ->
+        next_window(new_state)
+
+      "p" ->
+        previous_window(new_state)
+
+      "%" ->
+        split_pane_horizontal(new_state)
+
+      "\"" ->
+        split_pane_vertical(new_state)
+
+      "o" ->
+        next_pane(new_state)
+
+      "x" ->
+        close_pane(new_state)
+
+      "z" ->
+        zoom_pane(new_state)
+
+      "d" ->
+        detach_session(new_state)
+
+      "s" ->
+        show_sessions(new_state)
+
+      "w" ->
+        show_windows(new_state)
+
+      ":" ->
+        enter_command_mode(new_state)
+
+      "?" ->
+        show_help(new_state)
+
+      "up" ->
+        select_pane(new_state, :up)
+
+      "down" ->
+        select_pane(new_state, :down)
+
+      "left" ->
+        select_pane(new_state, :left)
+
+      "right" ->
+        select_pane(new_state, :right)
+
       digit when digit in ~w(0 1 2 3 4 5 6 7 8 9) ->
         switch_to_window(new_state, String.to_integer(digit))
+
       _ ->
         {:ok, new_state}
     end
@@ -213,11 +253,17 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   # Window management
   defp create_new_window(state) do
     session = get_active_session(state)
-    window = create_window("shell-#{length(session.windows) + 1}", state.config.default_shell)
 
-    updated_session = %{session |
-      windows: session.windows ++ [window],
-      active_window: window.id
+    window =
+      create_window(
+        "shell-#{length(session.windows) + 1}",
+        state.config.default_shell
+      )
+
+    updated_session = %{
+      session
+      | windows: session.windows ++ [window],
+        active_window: window.id
     }
 
     new_state = update_session(state, updated_session)
@@ -253,7 +299,10 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   defp previous_window(state) do
     session = get_active_session(state)
     current_index = find_window_index(session, session.active_window)
-    prev_index = rem(current_index - 1 + length(session.windows), length(session.windows))
+
+    prev_index =
+      rem(current_index - 1 + length(session.windows), length(session.windows))
+
     prev_window = Enum.at(session.windows, prev_index)
 
     updated_session = %{session | active_window: prev_window.id}
@@ -266,7 +315,9 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
     session = get_active_session(state)
 
     case Enum.at(session.windows, index) do
-      nil -> {:ok, state}
+      nil ->
+        {:ok, state}
+
       window ->
         updated_session = %{session | active_window: window.id}
         new_state = update_session(state, updated_session)
@@ -294,27 +345,32 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
 
     # Create new pane
     new_pane = create_pane(state.config.default_shell)
-    new_pane = %{new_pane |
-      width: pane2.width,
-      height: pane2.height,
-      x: pane2.x,
-      y: pane2.y
+
+    new_pane = %{
+      new_pane
+      | width: pane2.width,
+        height: pane2.height,
+        x: pane2.x,
+        y: pane2.y
     }
 
     # Update existing pane
-    updated_pane = %{active_pane |
-      width: pane1.width,
-      height: pane1.height,
-      x: pane1.x,
-      y: pane1.y
+    updated_pane = %{
+      active_pane
+      | width: pane1.width,
+        height: pane1.height,
+        x: pane1.x,
+        y: pane1.y
     }
 
     # Update window
     updated_panes = update_pane_list(window.panes, updated_pane)
-    updated_window = %{window |
-      panes: updated_panes ++ [new_pane],
-      active_pane: new_pane.id,
-      layout: :split
+
+    updated_window = %{
+      window
+      | panes: updated_panes ++ [new_pane],
+        active_pane: new_pane.id,
+        layout: :split
     }
 
     # Update state
@@ -329,8 +385,14 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
     # Split horizontally (side by side)
     new_width = div(pane.width, 2)
     pane1 = %{width: new_width, height: pane.height, x: pane.x, y: pane.y}
-    pane2 = %{width: pane.width - new_width, height: pane.height,
-              x: pane.x + new_width, y: pane.y}
+
+    pane2 = %{
+      width: pane.width - new_width,
+      height: pane.height,
+      x: pane.x + new_width,
+      y: pane.y
+    }
+
     {pane1, pane2}
   end
 
@@ -338,8 +400,14 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
     # Split vertically (top and bottom)
     new_height = div(pane.height, 2)
     pane1 = %{width: pane.width, height: new_height, x: pane.x, y: pane.y}
-    pane2 = %{width: pane.width, height: pane.height - new_height,
-              x: pane.x, y: pane.y + new_height}
+
+    pane2 = %{
+      width: pane.width,
+      height: pane.height - new_height,
+      x: pane.x,
+      y: pane.y + new_height
+    }
+
     {pane1, pane2}
   end
 
@@ -347,7 +415,9 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
     session = get_active_session(state)
     window = get_active_window(session)
 
-    current_index = Enum.find_index(window.panes, &(&1.id == window.active_pane))
+    current_index =
+      Enum.find_index(window.panes, &(&1.id == window.active_pane))
+
     next_index = rem(current_index + 1, length(window.panes))
     next_pane = Enum.at(window.panes, next_index)
 
@@ -368,7 +438,9 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
     target_pane = find_adjacent_pane(window.panes, current_pane, direction)
 
     case target_pane do
-      nil -> {:ok, state}
+      nil ->
+        {:ok, state}
+
       pane ->
         updated_window = %{window | active_pane: pane.id}
         updated_session = update_window(session, updated_window)
@@ -385,9 +457,13 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
       end)
 
     # Return closest pane
-    Enum.min_by(candidates, fn pane ->
-      distance(current, pane)
-    end, fn -> nil end)
+    Enum.min_by(
+      candidates,
+      fn pane ->
+        distance(current, pane)
+      end,
+      fn -> nil end
+    )
   end
 
   defp is_adjacent?(pane1, pane2, :up), do: pane2.y < pane1.y
@@ -412,12 +488,15 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
 
       _ ->
         # Remove pane and redistribute space
-        remaining_panes = Enum.reject(window.panes, &(&1.id == window.active_pane))
+        remaining_panes =
+          Enum.reject(window.panes, &(&1.id == window.active_pane))
+
         redistributed_panes = redistribute_space(remaining_panes)
 
-        updated_window = %{window |
-          panes: redistributed_panes,
-          active_pane: List.first(redistributed_panes).id
+        updated_window = %{
+          window
+          | panes: redistributed_panes,
+            active_pane: List.first(redistributed_panes).id
         }
 
         updated_session = update_window(session, updated_window)
@@ -436,10 +515,13 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
         {:ok, state}
 
       _ ->
-        remaining_windows = Enum.reject(session.windows, &(&1.id == session.active_window))
-        updated_session = %{session |
-          windows: remaining_windows,
-          active_window: List.first(remaining_windows).id
+        remaining_windows =
+          Enum.reject(session.windows, &(&1.id == session.active_window))
+
+        updated_session = %{
+          session
+          | windows: remaining_windows,
+            active_window: List.first(remaining_windows).id
         }
 
         new_state = update_session(state, updated_session)
@@ -522,10 +604,11 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   end
 
   defp render_pane(state, pane, is_active) do
-    border_style = case is_active do
-      true -> :active
-      false -> :inactive
-    end
+    border_style =
+      case is_active do
+        true -> :active
+        false -> :inactive
+      end
 
     # Draw pane border
     draw_border(state.emulator_pid, pane, border_style)
@@ -543,16 +626,19 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   end
 
   defp build_status_line(session, window, _state) do
-    windows_info = session.windows
-    |> Enum.with_index()
-    |> Enum.map(fn {w, i} ->
-      prefix = case w.id == window.id do
-        true -> "*"
-        false -> " "
-      end
-      "#{prefix}#{i}:#{w.name}"
-    end)
-    |> Enum.join(" ")
+    windows_info =
+      session.windows
+      |> Enum.with_index()
+      |> Enum.map(fn {w, i} ->
+        prefix =
+          case w.id == window.id do
+            true -> "*"
+            false -> " "
+          end
+
+        "#{prefix}#{i}:#{w.name}"
+      end)
+      |> Enum.join(" ")
 
     "[#{session.name}] #{windows_info}"
   end
@@ -604,12 +690,14 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   end
 
   defp update_window(session, window) do
-    windows = Enum.map(session.windows, fn w ->
-      case w.id == window.id do
-        true -> window
-        false -> w
-      end
-    end)
+    windows =
+      Enum.map(session.windows, fn w ->
+        case w.id == window.id do
+          true -> window
+          false -> w
+        end
+      end)
+
     %{session | windows: windows}
   end
 
@@ -637,11 +725,12 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
     panes
     |> Enum.with_index()
     |> Enum.map(fn {pane, index} ->
-      %{pane |
-        x: index * width_per_pane,
-        y: 0,
-        width: width_per_pane,
-        height: total_height
+      %{
+        pane
+        | x: index * width_per_pane,
+          y: 0,
+          width: width_per_pane,
+          height: total_height
       }
     end)
   end
@@ -681,6 +770,7 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   end
 
   defp draw_border(nil, _pane, _style), do: :ok
+
   defp draw_border(pid, pane, style) do
     send(pid, {:draw_border, pane, style})
   end

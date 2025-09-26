@@ -52,7 +52,8 @@ defmodule Raxol.Terminal.Renderer.OptimizedStyleRenderer do
 
     # Underline variants
     {nil, nil, false, false, true} => "text-decoration:underline",
-    {:red, nil, false, false, true} => "color:#cc0000;text-decoration:underline",
+    {:red, nil, false, false, true} =>
+      "color:#cc0000;text-decoration:underline",
 
     # Italic variants
     {nil, nil, false, true, false} => "font-style:italic"
@@ -100,26 +101,30 @@ defmodule Raxol.Terminal.Renderer.OptimizedStyleRenderer do
 
   defp render_styled_span({style, text}) do
     case get_style_string_fast(style) do
-      "" -> text  # No style needed
+      # No style needed
+      "" -> text
       style_str -> ["<span style=\"", style_str, "\">", text, "</span>"]
     end
   end
 
   # Direct pattern matching for maximum performance
-  defp get_style_string_fast(%TextFormatting{
-    foreground: fg,
-    background: bg,
-    bold: bold,
-    italic: italic,
-    underline: underline
-  } = style) do
-
+  defp get_style_string_fast(
+         %TextFormatting{
+           foreground: fg,
+           background: bg,
+           bold: bold,
+           italic: italic,
+           underline: underline
+         } = style
+       ) do
     # Try pre-compiled patterns first (most common cases)
     key = {fg, bg, bold, italic, underline}
+
     case Map.get(@style_patterns, key) do
       nil ->
         # Fall back to building style string for uncommon combinations
         build_style_string_minimal(style)
+
       style_str ->
         style_str
     end
@@ -129,45 +134,55 @@ defmodule Raxol.Terminal.Renderer.OptimizedStyleRenderer do
   defp build_style_string_minimal(%TextFormatting{} = style) do
     parts = []
 
-    parts = case style.foreground do
-      nil -> parts
-      color -> [color_to_css(color, "color") | parts]
-    end
+    parts =
+      case style.foreground do
+        nil -> parts
+        color -> [color_to_css(color, "color") | parts]
+      end
 
-    parts = case style.background do
-      nil -> parts
-      color -> [color_to_css(color, "background-color") | parts]
-    end
+    parts =
+      case style.background do
+        nil -> parts
+        color -> [color_to_css(color, "background-color") | parts]
+      end
 
     parts = if style.bold, do: ["font-weight:bold" | parts], else: parts
     parts = if style.italic, do: ["font-style:italic" | parts], else: parts
-    parts = if style.underline, do: ["text-decoration:underline" | parts], else: parts
-    parts = if style.strikethrough, do: ["text-decoration:line-through" | parts], else: parts
+
+    parts =
+      if style.underline, do: ["text-decoration:underline" | parts], else: parts
+
+    parts =
+      if style.strikethrough,
+        do: ["text-decoration:line-through" | parts],
+        else: parts
 
     Enum.join(parts, ";")
   end
 
   # Efficient color conversion with pattern matching
   defp color_to_css(color, property) when is_atom(color) do
-    hex = case color do
-      :black -> "#000000"
-      :red -> "#cc0000"
-      :green -> "#4e9a06"
-      :yellow -> "#c4a000"
-      :blue -> "#3465a4"
-      :magenta -> "#75507b"
-      :cyan -> "#06989a"
-      :white -> "#d3d7cf"
-      :bright_black -> "#555753"
-      :bright_red -> "#ef2929"
-      :bright_green -> "#8ae234"
-      :bright_yellow -> "#fce94f"
-      :bright_blue -> "#729fcf"
-      :bright_magenta -> "#ad7fa8"
-      :bright_cyan -> "#34e2e2"
-      :bright_white -> "#eeeeec"
-      _ -> "#ffffff"
-    end
+    hex =
+      case color do
+        :black -> "#000000"
+        :red -> "#cc0000"
+        :green -> "#4e9a06"
+        :yellow -> "#c4a000"
+        :blue -> "#3465a4"
+        :magenta -> "#75507b"
+        :cyan -> "#06989a"
+        :white -> "#d3d7cf"
+        :bright_black -> "#555753"
+        :bright_red -> "#ef2929"
+        :bright_green -> "#8ae234"
+        :bright_yellow -> "#fce94f"
+        :bright_blue -> "#729fcf"
+        :bright_magenta -> "#ad7fa8"
+        :bright_cyan -> "#34e2e2"
+        :bright_white -> "#eeeeec"
+        _ -> "#ffffff"
+      end
+
     "#{property}:#{hex}"
   end
 
@@ -232,9 +247,12 @@ defmodule Raxol.Terminal.Renderer.OptimizedStyleRenderer do
   end
 
   defp maybe_add_cursor(content, nil, _width), do: content
+
   defp maybe_add_cursor(content, {y, x}, _width) do
     # Add cursor overlay element
-    cursor_style = "position:absolute;left:#{x}ch;top:#{y}lh;width:1ch;height:1lh;background:rgba(255,255,255,0.5)"
+    cursor_style =
+      "position:absolute;left:#{x}ch;top:#{y}lh;width:1ch;height:1lh;background:rgba(255,255,255,0.5)"
+
     [content, "<div class=\"cursor\" style=\"", cursor_style, "\"></div>"]
   end
 end

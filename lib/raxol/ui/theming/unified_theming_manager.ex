@@ -27,7 +27,6 @@ defmodule Raxol.UI.Theming.UnifiedThemingManager do
 
   ## Client API - Theme Management
 
-
   def get_theme(manager \\ __MODULE__, theme_id) do
     GenServer.call(manager, {:get_theme, theme_id})
   end

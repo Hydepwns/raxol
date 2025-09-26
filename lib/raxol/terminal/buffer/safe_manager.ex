@@ -6,14 +6,15 @@ defmodule Raxol.Terminal.Buffer.SafeManager do
   that failures don't crash the system and providing fallback behavior.
   """
 
-
   @doc """
   Starts a safe manager process.
   """
   @spec start_link() :: {:ok, pid()} | {:error, term()}
   def start_link() do
     # For now, delegate to regular Manager
-    GenServer.start_link(Raxol.Terminal.ScreenBuffer.Manager, %{}, name: __MODULE__)
+    GenServer.start_link(Raxol.Terminal.ScreenBuffer.Manager, %{},
+      name: __MODULE__
+    )
   end
 
   @doc """

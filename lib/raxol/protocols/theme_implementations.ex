@@ -171,6 +171,7 @@ defmodule Raxol.Protocols.ThemeImplementations do
       case map_size(colors) do
         0 ->
           "No colors defined"
+
         _ ->
           colors
           # Limit based on width
@@ -343,6 +344,7 @@ defmodule Raxol.Protocols.ThemeImplementations do
           hex = color.hex || "#000000"
           name = if color.name, do: " (#{color.name})", else: ""
           "#{swatch} #{hex}#{name}"
+
         false ->
           swatch
       end

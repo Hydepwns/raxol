@@ -68,15 +68,18 @@ defmodule Raxol.Core.AccessibilityTestHelper do
       nil ->
         start_supervised!({Raxol.Core.Events.EventManager, []})
         Process.sleep(10)
+
       _pid ->
-        :ok  # Already running
+        # Already running
+        :ok
     end
 
     # Check if UserPreferences is already running
     pid_of_prefs = get_or_start_preferences()
 
     # Ensure AccessibilityServer is started and supervised
-    accessibility_pid = start_supervised!({Raxol.Core.Accessibility.AccessibilityServer, []})
+    accessibility_pid =
+      start_supervised!({Raxol.Core.Accessibility.AccessibilityServer, []})
 
     # Wait a bit to ensure servers are ready
     Process.sleep(10)
@@ -95,7 +98,10 @@ defmodule Raxol.Core.AccessibilityTestHelper do
       # EventManager is now supervised and will be cleaned up automatically
     end)
 
-    {:ok, prefs_name: prefs_name, pref_pid: pid_of_prefs, accessibility_pid: accessibility_pid}
+    {:ok,
+     prefs_name: prefs_name,
+     pref_pid: pid_of_prefs,
+     accessibility_pid: accessibility_pid}
   end
 
   def register_test_elements do

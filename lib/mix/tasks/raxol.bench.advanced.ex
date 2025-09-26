@@ -552,7 +552,9 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
       outliers = get_in(data, [:statistics, :outliers, :outliers]) || []
 
       if length(outliers) > 0 do
-        Mix.shell().warn("  [WARN]  #{suite}: #{length(outliers)} outliers detected")
+        Mix.shell().warn(
+          "  [WARN]  #{suite}: #{length(outliers)} outliers detected"
+        )
       end
     end)
   end

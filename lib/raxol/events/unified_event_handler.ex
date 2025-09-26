@@ -38,10 +38,14 @@ defmodule Raxol.Events.UnifiedEventHandler do
   @type handler_result :: {:ok, any()} | {:error, term()}
 
   defstruct [
-    :handlers,           # %{event_type => handler_module}
-    :event_history,     # List of recent events for debugging
-    :tracing_enabled,   # Boolean for event tracing
-    :performance_stats  # Event processing performance metrics
+    # %{event_type => handler_module}
+    :handlers,
+    # List of recent events for debugging
+    :event_history,
+    # Boolean for event tracing
+    :tracing_enabled,
+    # Event processing performance metrics
+    :performance_stats
   ]
 
   ## Client API
@@ -49,7 +53,8 @@ defmodule Raxol.Events.UnifiedEventHandler do
   @doc """
   Handles any event by routing to appropriate specialized handler.
   """
-  @spec handle_event(GenServer.server(), event_type(), event_data()) :: handler_result()
+  @spec handle_event(GenServer.server(), event_type(), event_data()) ::
+          handler_result()
   def handle_event(server \\ __MODULE__, event_type, event_data) do
     GenServer.call(server, {:handle_event, event_type, event_data})
   end
@@ -57,7 +62,8 @@ defmodule Raxol.Events.UnifiedEventHandler do
   @doc """
   Handles terminal events (input, output, resize, etc.).
   """
-  @spec handle_terminal_event(GenServer.server(), atom(), any()) :: handler_result()
+  @spec handle_terminal_event(GenServer.server(), atom(), any()) ::
+          handler_result()
   def handle_terminal_event(server \\ __MODULE__, event_name, event_data) do
     handle_event(server, :terminal, %{event: event_name, data: event_data})
   end
@@ -65,7 +71,8 @@ defmodule Raxol.Events.UnifiedEventHandler do
   @doc """
   Handles plugin events (lifecycle, state changes, etc.).
   """
-  @spec handle_plugin_event(GenServer.server(), atom(), any()) :: handler_result()
+  @spec handle_plugin_event(GenServer.server(), atom(), any()) ::
+          handler_result()
   def handle_plugin_event(server \\ __MODULE__, event_name, event_data) do
     handle_event(server, :plugin, %{event: event_name, data: event_data})
   end
@@ -73,7 +80,8 @@ defmodule Raxol.Events.UnifiedEventHandler do
   @doc """
   Handles accessibility events (focus, navigation, etc.).
   """
-  @spec handle_accessibility_event(GenServer.server(), atom(), any()) :: handler_result()
+  @spec handle_accessibility_event(GenServer.server(), atom(), any()) ::
+          handler_result()
   def handle_accessibility_event(server \\ __MODULE__, event_name, event_data) do
     handle_event(server, :accessibility, %{event: event_name, data: event_data})
   end
@@ -86,11 +94,18 @@ defmodule Raxol.Events.UnifiedEventHandler do
   end
 
   def handle_output(manager, output) do
-    handle_terminal_event(__MODULE__, :output, %{manager: manager, output: output})
+    handle_terminal_event(__MODULE__, :output, %{
+      manager: manager,
+      output: output
+    })
   end
 
   def handle_resize(manager, width, height) do
-    handle_terminal_event(__MODULE__, :resize, %{manager: manager, width: width, height: height})
+    handle_terminal_event(__MODULE__, :resize, %{
+      manager: manager,
+      width: width,
+      height: height
+    })
   end
 
   @doc """
@@ -123,14 +138,15 @@ defmodule Raxol.Events.UnifiedEventHandler do
   def handle_call({:handle_event, event_type, event_data}, _from, state) do
     start_time = System.monotonic_time(:microsecond)
 
-    result = case Map.get(state.handlers, event_type) do
-      nil ->
-        Logger.warning("No handler for event type: #{event_type}")
-        {:error, :no_handler}
+    result =
+      case Map.get(state.handlers, event_type) do
+        nil ->
+          Logger.warning("No handler for event type: #{event_type}")
+          {:error, :no_handler}
 
-      handler_module ->
-        delegate_to_handler(handler_module, event_type, event_data, state)
-    end
+        handler_module ->
+          delegate_to_handler(handler_module, event_type, event_data, state)
+      end
 
     end_time = System.monotonic_time(:microsecond)
     duration = end_time - start_time
@@ -148,12 +164,16 @@ defmodule Raxol.Events.UnifiedEventHandler do
       case event_type do
         :terminal ->
           handle_terminal_delegation(handler_module, event_data)
+
         :plugin ->
           handle_plugin_delegation(handler_module, event_data)
+
         :accessibility ->
           handle_accessibility_delegation(handler_module, event_data)
+
         :system ->
           handle_system_delegation(handler_module, event_data)
+
         _ ->
           {:error, :unknown_event_type}
       end
@@ -164,12 +184,22 @@ defmodule Raxol.Events.UnifiedEventHandler do
     end
   end
 
-  defp handle_terminal_delegation(handler_module, %{event: event_name, data: data}) do
+  defp handle_terminal_delegation(handler_module, %{
+         event: event_name,
+         data: data
+       }) do
     case event_name do
-      :input -> handler_module.handle_input(data.manager, data.input)
-      :output -> handler_module.handle_output(data.manager, data.output)
-      :resize -> handler_module.handle_resize(data.manager, data.width, data.height)
-      _ -> apply(handler_module, :handle_event, [event_name, data])
+      :input ->
+        handler_module.handle_input(data.manager, data.input)
+
+      :output ->
+        handler_module.handle_output(data.manager, data.output)
+
+      :resize ->
+        handler_module.handle_resize(data.manager, data.width, data.height)
+
+      _ ->
+        apply(handler_module, :handle_event, [event_name, data])
     end
   end
 
@@ -181,7 +211,10 @@ defmodule Raxol.Events.UnifiedEventHandler do
     end
   end
 
-  defp handle_accessibility_delegation(handler_module, %{event: event_name, data: data}) do
+  defp handle_accessibility_delegation(handler_module, %{
+         event: event_name,
+         data: data
+       }) do
     apply(handler_module, :handle_event, [event_name, data])
   end
 
@@ -195,25 +228,31 @@ defmodule Raxol.Events.UnifiedEventHandler do
       type: event_type,
       timestamp: System.system_time(:millisecond),
       duration_us: duration,
-      result: case result do
-        {:ok, _} -> :ok
-        {:error, _} -> :error
-      end
+      result:
+        case result do
+          {:ok, _} -> :ok
+          {:error, _} -> :error
+        end
     }
 
     new_history = [event_entry | state.event_history] |> Enum.take(100)
 
     # Update performance stats
-    current_stats = Map.get(state.performance_stats, event_type, %{count: 0, total_time: 0})
+    current_stats =
+      Map.get(state.performance_stats, event_type, %{count: 0, total_time: 0})
+
     new_stats = %{
       count: current_stats.count + 1,
       total_time: current_stats.total_time + duration,
-      avg_time: (current_stats.total_time + duration) / (current_stats.count + 1)
+      avg_time:
+        (current_stats.total_time + duration) / (current_stats.count + 1)
     }
 
-    %{state |
-      event_history: new_history,
-      performance_stats: Map.put(state.performance_stats, event_type, new_stats)
+    %{
+      state
+      | event_history: new_history,
+        performance_stats:
+          Map.put(state.performance_stats, event_type, new_stats)
     }
   end
 end

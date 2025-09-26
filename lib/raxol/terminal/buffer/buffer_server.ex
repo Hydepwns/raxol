@@ -125,6 +125,7 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
   def init({width, height}) do
     # Initialize buffer as a map of coordinates to cells
     buffer = %{}
+
     state = %{
       buffer: buffer,
       width: width,
@@ -134,6 +135,7 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
       read_count: 0,
       write_count: 0
     }
+
     {:ok, state}
   end
 
@@ -141,12 +143,15 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
     case validate_coordinates(x, y, state) do
       :ok ->
         new_buffer = Map.put(state.buffer, {x, y}, cell)
-        new_state = %{state |
-          buffer: new_buffer,
-          damage_regions: [{x, y, 1, 1} | state.damage_regions],
-          operation_count: state.operation_count + 1,
-          write_count: state.write_count + 1
+
+        new_state = %{
+          state
+          | buffer: new_buffer,
+            damage_regions: [{x, y, 1, 1} | state.damage_regions],
+            operation_count: state.operation_count + 1,
+            write_count: state.write_count + 1
         }
+
         {:reply, :ok, new_state}
 
       {:error, reason} ->
@@ -157,7 +162,9 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
   def handle_call({:get_cell, x, y}, _from, state) do
     case validate_coordinates(x, y, state) do
       :ok ->
-        cell = Map.get(state.buffer, {x, y}, Cell.new(" ", TextFormatting.new()))
+        cell =
+          Map.get(state.buffer, {x, y}, Cell.new(" ", TextFormatting.new()))
+
         new_state = %{state | read_count: state.read_count + 1}
         {:reply, {:ok, cell}, new_state}
 
@@ -172,9 +179,11 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
 
   def handle_call({:batch_operations, operations}, _from, state) do
     try do
-      new_state = Enum.reduce(operations, state, fn operation, acc ->
-        apply_operation(operation, acc)
-      end)
+      new_state =
+        Enum.reduce(operations, state, fn operation, acc ->
+          apply_operation(operation, acc)
+        end)
+
       {:reply, :ok, new_state}
     catch
       :error, reason -> {:reply, {:error, reason}, state}
@@ -189,16 +198,18 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
     cell_b = Cell.new("B", TextFormatting.new())
     cell_c = Cell.new("C", TextFormatting.new())
 
-    new_buffer = state.buffer
-                 |> Map.put({0, 0}, cell_a)
-                 |> Map.put({1, 0}, cell_b)
-                 |> Map.put({2, 0}, cell_c)
+    new_buffer =
+      state.buffer
+      |> Map.put({0, 0}, cell_a)
+      |> Map.put({1, 0}, cell_b)
+      |> Map.put({2, 0}, cell_c)
 
-    new_state = %{state |
-      buffer: new_buffer,
-      damage_regions: [{0, 0, 3, 1} | state.damage_regions],
-      operation_count: state.operation_count + 3,
-      write_count: state.write_count + 3
+    new_state = %{
+      state
+      | buffer: new_buffer,
+        damage_regions: [{0, 0, 3, 1} | state.damage_regions],
+        operation_count: state.operation_count + 3,
+        write_count: state.write_count + 3
     }
 
     {:reply, :ok, new_state}
@@ -214,13 +225,16 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
       buffer_size: map_size(state.buffer),
       damage_regions: length(state.damage_regions)
     }
+
     {:reply, {:ok, metrics}, state}
   end
 
   def handle_call(:get_memory_usage, _from, state) do
     # Approximate memory usage calculation
-    base_memory = 1000  # Base memory for the process
-    buffer_memory = map_size(state.buffer) * 100  # rough estimate per cell
+    # Base memory for the process
+    base_memory = 1000
+    # rough estimate per cell
+    buffer_memory = map_size(state.buffer) * 100
     total_memory = base_memory + buffer_memory
     {:reply, total_memory, state}
   end
@@ -246,16 +260,19 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
 
   def handle_call({:resize, width, height}, _from, state) do
     # Simple resize: keep existing cells that fit, clear others
-    new_buffer = state.buffer
-                 |> Enum.filter(fn {{x, y}, _cell} -> x < width and y < height end)
-                 |> Enum.into(%{})
+    new_buffer =
+      state.buffer
+      |> Enum.filter(fn {{x, y}, _cell} -> x < width and y < height end)
+      |> Enum.into(%{})
 
-    new_state = %{state |
-      width: width,
-      height: height,
-      buffer: new_buffer,
-      damage_regions: [{0, 0, width, height} | state.damage_regions]
+    new_state = %{
+      state
+      | width: width,
+        height: height,
+        buffer: new_buffer,
+        damage_regions: [{0, 0, width, height} | state.damage_regions]
     }
+
     {:reply, :ok, new_state}
   end
 
@@ -263,12 +280,15 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
     case validate_coordinates(x, y, state) do
       :ok ->
         new_buffer = Map.put(state.buffer, {x, y}, cell)
-        new_state = %{state |
-          buffer: new_buffer,
-          damage_regions: [{x, y, 1, 1} | state.damage_regions],
-          operation_count: state.operation_count + 1,
-          write_count: state.write_count + 1
+
+        new_state = %{
+          state
+          | buffer: new_buffer,
+            damage_regions: [{x, y, 1, 1} | state.damage_regions],
+            operation_count: state.operation_count + 1,
+            write_count: state.write_count + 1
         }
+
         {:noreply, new_state}
 
       {:error, _reason} ->
@@ -290,11 +310,13 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
     case validate_coordinates(x, y, state) do
       :ok ->
         new_buffer = Map.put(state.buffer, {x, y}, cell)
-        %{state |
-          buffer: new_buffer,
-          damage_regions: [{x, y, 1, 1} | state.damage_regions],
-          operation_count: state.operation_count + 1,
-          write_count: state.write_count + 1
+
+        %{
+          state
+          | buffer: new_buffer,
+            damage_regions: [{x, y, 1, 1} | state.damage_regions],
+            operation_count: state.operation_count + 1,
+            write_count: state.write_count + 1
         }
 
       {:error, _reason} ->
@@ -304,6 +326,7 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
 
   defp apply_operation({:write_string, x, y, text}, state) do
     chars = String.graphemes(text)
+
     Enum.with_index(chars)
     |> Enum.reduce(state, fn {char, index}, acc ->
       cell = Cell.new(char, TextFormatting.new())
@@ -322,7 +345,9 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
   defp render_buffer_to_string(state) do
     for y <- 0..(state.height - 1) do
       for x <- 0..(state.width - 1) do
-        cell = Map.get(state.buffer, {x, y}, Cell.new(" ", TextFormatting.new()))
+        cell =
+          Map.get(state.buffer, {x, y}, Cell.new(" ", TextFormatting.new()))
+
         Cell.get_char(cell)
       end
       |> Enum.join("")

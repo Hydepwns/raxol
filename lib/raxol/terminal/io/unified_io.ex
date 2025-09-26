@@ -274,12 +274,13 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   def handle_call({:init_terminal, width, height, config}, _from, state) do
     # Initialize components
-    buffer_manager = Manager.new(
-      width,
-      height,
-      scrollback_limit: config.scrollback_limit,
-      memory_limit: config.memory_limit
-    )
+    buffer_manager =
+      Manager.new(
+        width,
+        height,
+        scrollback_limit: config.scrollback_limit,
+        memory_limit: config.memory_limit
+      )
 
     scroll_buffer = UnifiedScroll.new(config.scrollback_limit)
     {:ok, renderer} = UnifiedRenderer.start_link(config.rendering)
@@ -538,12 +539,13 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   end
 
   defp initialize_new_components(config) do
-    new_buffer_manager = Manager.new(
-      config.width || 80,
-      config.height || 24,
-      scrollback_limit: config.scrollback_limit || 1000,
-      memory_limit: config.memory_limit || 50 * 1024 * 1024
-    )
+    new_buffer_manager =
+      Manager.new(
+        config.width || 80,
+        config.height || 24,
+        scrollback_limit: config.scrollback_limit || 1000,
+        memory_limit: config.memory_limit || 50 * 1024 * 1024
+      )
 
     new_scroll_buffer = UnifiedScroll.new(config.scrollback_limit || 1000)
     {:ok, new_renderer} = UnifiedRenderer.start_link(config.rendering || %{})

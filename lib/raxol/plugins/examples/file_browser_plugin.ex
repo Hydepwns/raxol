@@ -57,7 +57,16 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
 
   # File Entry Structure
   defmodule Entry do
-    defstruct [:name, :path, :type, :size, :modified, :permissions, :children, :expanded]
+    defstruct [
+      :name,
+      :path,
+      :type,
+      :size,
+      :modified,
+      :permissions,
+      :children,
+      :expanded
+    ]
   end
 
   # Initialization
@@ -98,7 +107,8 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
     %__MODULE__{
       config: new_config,
       current_path: preserved_state.current_path,
-      entries: load_directory(preserved_state.current_path, new_config.show_hidden),
+      entries:
+        load_directory(preserved_state.current_path, new_config.show_hidden),
       selected_index: preserved_state.selected_index || 0,
       expanded_dirs: preserved_state.expanded_dirs || MapSet.new(),
       is_open: preserved_state.is_open || false,
@@ -222,8 +232,10 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
   # Navigation
   defp navigate(state, :up) do
     new_index = max(0, state.selected_index - 1)
-    new_state = %{state | selected_index: new_index}
-    |> adjust_scroll()
+
+    new_state =
+      %{state | selected_index: new_index}
+      |> adjust_scroll()
 
     render_browser(new_state)
     {:ok, new_state}
@@ -233,8 +245,10 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
     flat_entries = flatten_tree(state.entries, state.expanded_dirs)
     max_index = length(flat_entries) - 1
     new_index = min(max_index, state.selected_index + 1)
-    new_state = %{state | selected_index: new_index}
-    |> adjust_scroll()
+
+    new_state =
+      %{state | selected_index: new_index}
+      |> adjust_scroll()
 
     render_browser(new_state)
     {:ok, new_state}
@@ -244,7 +258,8 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
     flat_entries = flatten_tree(state.entries, state.expanded_dirs)
 
     case Enum.at(flat_entries, state.selected_index) do
-      nil -> {:ok, state}
+      nil ->
+        {:ok, state}
 
       %{type: :directory, path: path} = _entry ->
         # Toggle expansion
@@ -257,8 +272,15 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
         # Reload entries if expanding
         entries =
           case MapSet.member?(expanded_dirs, path) do
-            true -> reload_with_children(state.entries, path, state.config.show_hidden)
-            false -> state.entries
+            true ->
+              reload_with_children(
+                state.entries,
+                path,
+                state.config.show_hidden
+              )
+
+            false ->
+              state.entries
           end
 
         new_state = %{state | expanded_dirs: expanded_dirs, entries: entries}
@@ -270,7 +292,8 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
         open_file(entry.path)
         {:ok, state}
 
-      _ -> {:ok, state}
+      _ ->
+        {:ok, state}
     end
   end
 
@@ -304,11 +327,12 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
     expanded_path = Path.expand(path)
     entries = load_directory(expanded_path, state.config.show_hidden)
 
-    new_state = %{state |
-      current_path: expanded_path,
-      entries: entries,
-      selected_index: 0,
-      scroll_offset: 0
+    new_state = %{
+      state
+      | current_path: expanded_path,
+        entries: entries,
+        selected_index: 0,
+        scroll_offset: 0
     }
 
     render_browser(new_state)
@@ -360,7 +384,9 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
 
     # File tree
     flat_entries = flatten_tree(state.entries, state.expanded_dirs, 0)
-    visible_entries = get_visible_entries(flat_entries, state.scroll_offset, height - 4)
+
+    visible_entries =
+      get_visible_entries(flat_entries, state.scroll_offset, height - 4)
 
     # Build tree lines
     tree_lines =
@@ -374,13 +400,15 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
     # Footer
     footer = build_footer(state, width)
 
-    [header] ++ tree_lines ++ [footer]
+    ([header] ++ tree_lines ++ [footer])
     |> Enum.join("\n")
   end
 
   defp build_header(path, width) do
     truncated_path = truncate_path(path, width - 4)
-    padding = String.duplicate(" ", max(0, width - String.length(truncated_path) - 2))
+
+    padding =
+      String.duplicate(" ", max(0, width - String.length(truncated_path) - 2))
 
     [
       "┌" <> String.duplicate("─", width - 2) <> "┐",
@@ -395,10 +423,11 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
     indent = String.duplicate("  ", level)
 
     # Selection indicator
-    selector = case is_selected do
-      true -> "▶ "
-      false -> "  "
-    end
+    selector =
+      case is_selected do
+        true -> "▶ "
+        false -> "  "
+      end
 
     # Icon
     icon = get_icon(entry, expanded_dirs)
@@ -436,9 +465,11 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
       current = [{entry, level}]
 
       children =
-        case entry.type == :directory and MapSet.member?(expanded_dirs, entry.path) do
+        case entry.type == :directory and
+               MapSet.member?(expanded_dirs, entry.path) do
           true when is_list(entry.children) ->
             flatten_tree(entry.children, expanded_dirs, level + 1)
+
           _ ->
             []
         end
@@ -455,6 +486,7 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
           true -> "▼"
           false -> "▶"
         end
+
       :regular ->
         case Path.extname(entry.name) do
           ".ex" -> "※"
@@ -467,7 +499,9 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
           ".yml" -> "◈"
           _ -> "○"
         end
-      _ -> "?"
+
+      _ ->
+        "?"
     end
   end
 
@@ -520,8 +554,11 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
     flat_entries = flatten_tree(state.entries, state.expanded_dirs)
 
     case Enum.at(flat_entries, state.selected_index) do
-      nil -> {:ok, state}
-      {_entry, _level} -> expand_or_enter(%{state | selected_index: state.selected_index})
+      nil ->
+        {:ok, state}
+
+      {_entry, _level} ->
+        expand_or_enter(%{state | selected_index: state.selected_index})
     end
   end
 
@@ -554,11 +591,13 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
 
   # Integration
   defp send_panel(nil, _content, _position), do: :ok
+
   defp send_panel(pid, content, position) do
     send(pid, {:render_panel, content, position})
   end
 
   defp clear_panel(nil), do: :ok
+
   defp clear_panel(pid) do
     send(pid, :clear_panel)
   end

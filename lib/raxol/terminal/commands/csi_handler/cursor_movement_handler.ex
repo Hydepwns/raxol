@@ -34,11 +34,13 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
         0 ->
           # No movement for 0
           {:ok, emulator}
+
         n when n > 0 ->
           # Use CSIHandler.Cursor functions which handle direct row/col fields
           {:ok, updated_emulator} = Cursor.handle_command(emulator, [n], "A")
           Logger.debug("Cursor moved up by #{n}")
           {:ok, updated_emulator}
+
         _ ->
           # Default to 1 for invalid amounts
           {:ok, updated_emulator} = Cursor.handle_command(emulator, [1], "A")
@@ -61,7 +63,9 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
   def handle_cursor_down(emulator, amount) do
     try do
       move_amount = max(1, amount)
-      {:ok, updated_emulator} = Cursor.handle_command(emulator, [move_amount], "B")
+
+      {:ok, updated_emulator} =
+        Cursor.handle_command(emulator, [move_amount], "B")
 
       Logger.debug("Cursor moved down by #{move_amount}")
       {:ok, updated_emulator}
@@ -80,7 +84,9 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
   def handle_cursor_forward(emulator, amount) do
     try do
       move_amount = max(1, amount)
-      {:ok, updated_emulator} = Cursor.handle_command(emulator, [move_amount], "C")
+
+      {:ok, updated_emulator} =
+        Cursor.handle_command(emulator, [move_amount], "C")
 
       Logger.debug("Cursor moved forward by #{move_amount}")
       {:ok, updated_emulator}
@@ -99,7 +105,9 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
   def handle_cursor_backward(emulator, amount) do
     try do
       move_amount = max(1, amount)
-      {:ok, updated_emulator} = Cursor.handle_command(emulator, [move_amount], "D")
+
+      {:ok, updated_emulator} =
+        Cursor.handle_command(emulator, [move_amount], "D")
 
       Logger.debug("Cursor moved backward by #{move_amount}")
       {:ok, updated_emulator}
@@ -264,8 +272,10 @@ defmodule Raxol.Terminal.Commands.CSIHandler.CursorMovementHandler do
 
   defp parse_semicolon_params(params) when is_list(params) do
     params
-    |> Enum.reject(&(&1 == ?;))  # Remove semicolon characters (59)
-    |> Enum.filter(&is_integer/1)  # Keep only integers
+    # Remove semicolon characters (59)
+    |> Enum.reject(&(&1 == ?;))
+    # Keep only integers
+    |> Enum.filter(&is_integer/1)
   end
 
   defp parse_semicolon_params(params), do: params

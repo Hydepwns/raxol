@@ -395,6 +395,7 @@ defmodule Raxol.Terminal.Commands.CursorHandler do
           true -> %{cursor | row: row, col: col, position: {row, col}}
           false -> %{cursor | row: row, col: col}
         end
+
       _ ->
         # If cursor doesn't have expected fields, just return it unchanged
         cursor

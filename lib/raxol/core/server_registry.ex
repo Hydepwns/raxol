@@ -41,7 +41,8 @@ defmodule Raxol.Core.ServerRegistry do
     {Raxol.Terminal.Emulator.EmulatorServer, name: :emulator_server},
 
     # Performance and Monitoring
-    {Raxol.Core.Performance.Memoization.MemoizationServer, name: :memoization_server},
+    {Raxol.Core.Performance.Memoization.MemoizationServer,
+     name: :memoization_server},
 
     # Optional/Plugin Servers (conditionally started)
     {Raxol.Animation.StateServer, name: :animation_server, optional: true},
@@ -82,7 +83,9 @@ defmodule Raxol.Core.ServerRegistry do
   @spec health_check(server_name()) :: :ok | :error
   def health_check(server_name) do
     case get_server(server_name) do
-      nil -> :error
+      nil ->
+        :error
+
       pid ->
         try do
           GenServer.call(pid, :ping, 1000)
@@ -148,8 +151,10 @@ defmodule Raxol.Core.ServerRegistry do
     case get_server(server_name) do
       nil ->
         Logger.debug("Server #{server_name} not running")
+
       pid ->
         Logger.debug("Stopping server #{server_name}")
+
         try do
           GenServer.stop(pid, :normal, timeout)
         catch

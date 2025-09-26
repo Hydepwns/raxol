@@ -121,7 +121,8 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
     move_selection(state, :down)
   end
 
-  def handle_event({:keyboard, key}, %{is_open: true} = state) when byte_size(key) == 1 do
+  def handle_event({:keyboard, key}, %{is_open: true} = state)
+      when byte_size(key) == 1 do
     update_search(state, state.search_query <> key)
   end
 
@@ -190,11 +191,12 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
   end
 
   defp open_palette(state) do
-    new_state = %{state |
-      is_open: true,
-      search_query: "",
-      search_results: state.commands,
-      selected_index: 0
+    new_state = %{
+      state
+      | is_open: true,
+        search_query: "",
+        search_results: state.commands,
+        selected_index: 0
     }
 
     render_palette(new_state)
@@ -202,11 +204,12 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
   end
 
   defp close_palette(state) do
-    new_state = %{state |
-      is_open: false,
-      search_query: "",
-      search_results: [],
-      selected_index: 0
+    new_state = %{
+      state
+      | is_open: false,
+        search_query: "",
+        search_results: [],
+        selected_index: 0
     }
 
     clear_overlay(state.emulator_pid)
@@ -217,10 +220,11 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
     # Fuzzy search through commands
     results = fuzzy_search(state.commands, query)
 
-    new_state = %{state |
-      search_query: query,
-      search_results: results,
-      selected_index: 0
+    new_state = %{
+      state
+      | search_query: query,
+        search_results: results,
+        selected_index: 0
     }
 
     render_palette(new_state)
@@ -237,8 +241,8 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
     commands
     |> Enum.filter(fn cmd ->
       String.contains?(String.downcase(cmd.label), query_lower) or
-      String.contains?(String.downcase(cmd.description), query_lower) or
-      String.contains?(String.downcase(cmd.category), query_lower)
+        String.contains?(String.downcase(cmd.description), query_lower) or
+        String.contains?(String.downcase(cmd.category), query_lower)
     end)
     |> Enum.sort_by(fn cmd ->
       # Score based on match position (earlier = better)
@@ -251,7 +255,7 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
   defp string_position(haystack, needle) do
     case :binary.match(haystack, needle) do
       {pos, _} -> pos
-      :nomatch -> 999999
+      :nomatch -> 999_999
     end
   end
 
@@ -300,10 +304,18 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
     max_results = state.config.max_results || 10
 
     header = build_header(state.search_query, width)
-    results = build_results(state.search_results, state.selected_index, max_results, width)
+
+    results =
+      build_results(
+        state.search_results,
+        state.selected_index,
+        max_results,
+        width
+      )
+
     footer = build_footer(width)
 
-    [header | results] ++ [footer]
+    ([header | results] ++ [footer])
     |> Enum.join("\n")
   end
 
@@ -354,12 +366,14 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
   end
 
   defp send_overlay(nil, _content), do: :ok
+
   defp send_overlay(emulator_pid, content) do
     # Send overlay content to emulator
     send(emulator_pid, {:render_overlay, content})
   end
 
   defp clear_overlay(nil), do: :ok
+
   defp clear_overlay(emulator_pid) do
     send(emulator_pid, :clear_overlay)
   end
@@ -393,6 +407,7 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
         Enum.each(plugins, fn plugin_id ->
           Raxol.Plugins.HotReloadManager.reload_plugin(plugin_id)
         end)
+
       _ ->
         Logger.warning("[CommandPalette] Could not list plugins for reload")
     end
@@ -415,6 +430,7 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
     case command do
       nil ->
         {:reply, {:error, :command_not_found}, state}
+
       cmd ->
         spawn(fn -> cmd.action.() end)
         {:reply, :ok, state}

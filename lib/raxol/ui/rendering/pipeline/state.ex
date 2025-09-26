@@ -13,13 +13,13 @@ defmodule Raxol.UI.Rendering.Pipeline.State do
   ]
 
   @type t :: %__MODULE__{
-    current_tree: map(),
-    previous_tree: map() | nil,
-    renderer: module() | nil,
-    options: keyword(),
-    frame_count: non_neg_integer(),
-    last_render_time: integer() | nil
-  }
+          current_tree: map(),
+          previous_tree: map() | nil,
+          renderer: module() | nil,
+          options: keyword(),
+          frame_count: non_neg_integer(),
+          last_render_time: integer() | nil
+        }
 
   @doc """
   Creates a new pipeline state.
@@ -41,11 +41,12 @@ defmodule Raxol.UI.Rendering.Pipeline.State do
   """
   @spec update_tree(t(), map()) :: t()
   def update_tree(state, new_tree) do
-    %{state |
-      previous_tree: state.current_tree,
-      current_tree: new_tree,
-      frame_count: state.frame_count + 1,
-      last_render_time: System.monotonic_time()
+    %{
+      state
+      | previous_tree: state.current_tree,
+        current_tree: new_tree,
+        frame_count: state.frame_count + 1,
+        last_render_time: System.monotonic_time()
     }
   end
 end

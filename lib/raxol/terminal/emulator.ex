@@ -574,6 +574,7 @@ defmodule Raxol.Terminal.Emulator do
       true ->
         # Full featured with GenServers for concurrent operations
         create_full_emulator(width, height, opts)
+
       false ->
         # Optimized for performance without GenServers
         create_basic_emulator(width, height, opts)
@@ -599,7 +600,11 @@ defmodule Raxol.Terminal.Emulator do
 
   @deprecated "Use new/3 with enable_history: false, alternate_buffer: false options instead"
   def new_minimal(width \\ 80, height \\ 24) do
-    new(width, height, enable_history: false, alternate_buffer: false, use_genservers: false)
+    new(width, height,
+      enable_history: false,
+      alternate_buffer: false,
+      use_genservers: false
+    )
   end
 
   # Reset and cleanup functions - delegate to Coordinator
@@ -698,17 +703,24 @@ defmodule Raxol.Terminal.Emulator do
       end
 
     # Delegate to input processor
-    result = Raxol.Terminal.Input.CoreHandler.process_terminal_input(emulator, input)
+    result =
+      Raxol.Terminal.Input.CoreHandler.process_terminal_input(emulator, input)
+
     case result do
       {updated_emulator, output} when is_binary(output) ->
         {updated_emulator, output}
+
       {updated_emulator, output} when is_list(output) ->
         # Convert list output to string for backward compatibility
         {updated_emulator, IO.iodata_to_binary(output)}
+
       {updated_emulator, output, _extra} ->
         # Handle unexpected 3-tuple by ignoring extra element
-        output_str = if is_list(output), do: IO.iodata_to_binary(output), else: output
+        output_str =
+          if is_list(output), do: IO.iodata_to_binary(output), else: output
+
         {updated_emulator, output_str}
+
       _other ->
         # Return the original emulator with empty output instead of erroring
         {emulator, ""}
@@ -852,7 +864,11 @@ defmodule Raxol.Terminal.Emulator do
     rescue
       error ->
         require Logger
-        Logger.warning("Failed to create full emulator with GenServers: #{inspect(error)}")
+
+        Logger.warning(
+          "Failed to create full emulator with GenServers: #{inspect(error)}"
+        )
+
         # Fall back to basic emulator
         create_basic_emulator(width, height, opts)
     end
@@ -884,11 +900,12 @@ defmodule Raxol.Terminal.Emulator do
     }
 
     # Create alternate buffer only if requested
-    alternate_screen_buffer = if alternate_buffer do
-      ScreenBuffer.new(width, height)
-    else
-      nil
-    end
+    alternate_screen_buffer =
+      if alternate_buffer do
+        ScreenBuffer.new(width, height)
+      else
+        nil
+      end
 
     # Create history only if enabled
     command_history = if enable_history, do: [], else: nil

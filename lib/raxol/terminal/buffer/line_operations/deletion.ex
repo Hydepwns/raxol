@@ -95,12 +95,14 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
 
   # Pattern match for new line positions after deletion
   # Lines before deletion stay in same position
-  defp map_deleted_line(lines, new_y, start_y, _count, _height) when new_y < start_y do
+  defp map_deleted_line(lines, new_y, start_y, _count, _height)
+       when new_y < start_y do
     Map.get(lines, new_y)
   end
 
   # Lines after deletion get content from shifted positions
-  defp map_deleted_line(lines, new_y, start_y, count, height) when new_y >= start_y do
+  defp map_deleted_line(lines, new_y, start_y, count, height)
+       when new_y >= start_y do
     source_y = new_y + count
     map_shifted_line(lines, source_y, height)
   end
@@ -113,7 +115,8 @@ defmodule Raxol.Terminal.Buffer.LineOperations.Deletion do
     Map.get(lines, source_y)
   end
 
-  defp map_shifted_line(_lines, _source_y, _height), do: create_empty_line_with_defaults()
+  defp map_shifted_line(_lines, _source_y, _height),
+    do: create_empty_line_with_defaults()
 
   defp fill_new_lines(buffer, start_y, count, style) do
     Utils.fill_new_lines(buffer, start_y, count, style)

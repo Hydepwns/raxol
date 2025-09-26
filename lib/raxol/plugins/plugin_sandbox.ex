@@ -16,32 +16,30 @@ defmodule Raxol.Plugins.PluginSandbox do
 
   @type plugin_id :: String.t()
   @type security_policy :: %{
-    trust_level: :trusted | :sandboxed | :untrusted,
-    capabilities: [atom()],
-    resource_limits: map(),
-    allowed_modules: [atom()],
-    restricted_functions: [atom()],
-    audit_level: :none | :basic | :detailed
-  }
+          trust_level: :trusted | :sandboxed | :untrusted,
+          capabilities: [atom()],
+          resource_limits: map(),
+          allowed_modules: [atom()],
+          restricted_functions: [atom()],
+          audit_level: :none | :basic | :detailed
+        }
 
   @type sandbox_context :: %{
-    plugin_id: plugin_id(),
-    security_policy: security_policy(),
-    supervisor_pid: pid(),
-    worker_pid: pid() | nil,
-    resource_monitor: pid() | nil,
-    audit_logger: pid() | nil,
-    violations: [term()],
-    created_at: DateTime.t()
-  }
+          plugin_id: plugin_id(),
+          security_policy: security_policy(),
+          supervisor_pid: pid(),
+          worker_pid: pid() | nil,
+          resource_monitor: pid() | nil,
+          audit_logger: pid() | nil,
+          violations: [term()],
+          created_at: DateTime.t()
+        }
 
-  defstruct [
-    sandboxes: %{},
-    security_policies: %{},
-    resource_monitor: nil,
-    audit_system: nil,
-    violation_handlers: %{}
-  ]
+  defstruct sandboxes: %{},
+            security_policies: %{},
+            resource_monitor: nil,
+            audit_system: nil,
+            violation_handlers: %{}
 
   # Sandbox Management API
 
@@ -56,7 +54,10 @@ defmodule Raxol.Plugins.PluginSandbox do
   Executes code within a sandboxed environment.
   """
   def execute_in_sandbox(plugin_id, module, function, args) do
-    GenServer.call(__MODULE__, {:execute_in_sandbox, plugin_id, module, function, args})
+    GenServer.call(
+      __MODULE__,
+      {:execute_in_sandbox, plugin_id, module, function, args}
+    )
   end
 
   @doc """
@@ -134,10 +135,19 @@ defmodule Raxol.Plugins.PluginSandbox do
         max_network_connections: 2
       },
       allowed_modules: [
-        Enum, String, Integer, Float, Map, Keyword, DateTime,
-        Raxol.Terminal.Cell, Raxol.Terminal.ScreenBuffer,
-        Raxol.UI.Components, Raxol.Core.Renderer,
-        File  # Limited file access
+        Enum,
+        String,
+        Integer,
+        Float,
+        Map,
+        Keyword,
+        DateTime,
+        Raxol.Terminal.Cell,
+        Raxol.Terminal.ScreenBuffer,
+        Raxol.UI.Components,
+        Raxol.Core.Renderer,
+        # Limited file access
+        File
       ],
       restricted_functions: [
         {System, [:cmd, :shell]},
@@ -198,19 +208,31 @@ defmodule Raxol.Plugins.PluginSandbox do
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
-        Logger.error("[PluginSandbox] Failed to create sandbox for #{plugin_id}: #{inspect(reason)}")
+        Logger.error(
+          "[PluginSandbox] Failed to create sandbox for #{plugin_id}: #{inspect(reason)}"
+        )
+
         {:reply, {:error, reason}, state}
     end
   end
 
-  def handle_call({:execute_in_sandbox, plugin_id, module, function, args}, _from, state) do
+  def handle_call(
+        {:execute_in_sandbox, plugin_id, module, function, args},
+        _from,
+        state
+      ) do
     case execute_in_sandbox_impl(plugin_id, module, function, args, state) do
       {:ok, result} ->
         {:reply, {:ok, result}, state}
 
       {:error, reason} ->
         # Log security violation
-        log_security_violation(plugin_id, {:execution_denied, module, function}, state)
+        log_security_violation(
+          plugin_id,
+          {:execution_denied, module, function},
+          state
+        )
+
         {:reply, {:error, reason}, state}
     end
   end
@@ -231,7 +253,11 @@ defmodule Raxol.Plugins.PluginSandbox do
     {:reply, {:ok, status}, state}
   end
 
-  def handle_call({:update_security_policy, plugin_id, new_policy}, _from, state) do
+  def handle_call(
+        {:update_security_policy, plugin_id, new_policy},
+        _from,
+        state
+      ) do
     case update_security_policy_impl(plugin_id, new_policy, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
@@ -253,13 +279,17 @@ defmodule Raxol.Plugins.PluginSandbox do
               security_policy: security_policy,
               supervisor_pid: supervisor_pid,
               worker_pid: nil,
-              resource_monitor: start_plugin_resource_monitor(plugin_id, security_policy),
-              audit_logger: start_plugin_audit_logger(plugin_id, security_policy),
+              resource_monitor:
+                start_plugin_resource_monitor(plugin_id, security_policy),
+              audit_logger:
+                start_plugin_audit_logger(plugin_id, security_policy),
               violations: [],
               created_at: DateTime.utc_now()
             }
 
-            updated_sandboxes = Map.put(state.sandboxes, plugin_id, sandbox_context)
+            updated_sandboxes =
+              Map.put(state.sandboxes, plugin_id, sandbox_context)
+
             {:ok, %{state | sandboxes: updated_sandboxes}}
 
           {:error, reason} ->
@@ -277,9 +307,19 @@ defmodule Raxol.Plugins.PluginSandbox do
         {:error, :sandbox_not_found}
 
       sandbox_context ->
-        case validate_execution_permission(module, function, sandbox_context.security_policy) do
+        case validate_execution_permission(
+               module,
+               function,
+               sandbox_context.security_policy
+             ) do
           :ok ->
-            perform_sandboxed_execution(plugin_id, module, function, args, sandbox_context)
+            perform_sandboxed_execution(
+              plugin_id,
+              module,
+              function,
+              args,
+              sandbox_context
+            )
 
           {:error, reason} ->
             {:error, reason}
@@ -340,8 +380,13 @@ defmodule Raxol.Plugins.PluginSandbox do
       security_policy.trust_level == :trusted ->
         :ok
 
-      module in security_policy.allowed_modules or security_policy.allowed_modules == :all ->
-        case check_function_restrictions(module, function, security_policy.restricted_functions) do
+      module in security_policy.allowed_modules or
+          security_policy.allowed_modules == :all ->
+        case check_function_restrictions(
+               module,
+               function,
+               security_policy.restricted_functions
+             ) do
           :ok -> :ok
           error -> error
         end
@@ -353,28 +398,40 @@ defmodule Raxol.Plugins.PluginSandbox do
 
   defp check_function_restrictions(module, function, restricted_functions) do
     case Enum.find(restricted_functions, fn
-      {^module, :all} -> true
-      {^module, functions} when is_list(functions) -> function in functions
-      _ -> false
-    end) do
+           {^module, :all} -> true
+           {^module, functions} when is_list(functions) -> function in functions
+           _ -> false
+         end) do
       nil -> :ok
       _restriction -> {:error, {:function_restricted, module, function}}
     end
   end
 
-  defp perform_sandboxed_execution(_plugin_id, module, function, args, sandbox_context) do
+  defp perform_sandboxed_execution(
+         _plugin_id,
+         module,
+         function,
+         args,
+         sandbox_context
+       ) do
     # Create isolated process for execution
-    task = Task.Supervisor.async_nolink(
-      sandbox_context.supervisor_pid,
-      fn ->
-        # Apply resource limits
-        apply_resource_limits(sandbox_context.security_policy)
+    task =
+      Task.Supervisor.async_nolink(
+        sandbox_context.supervisor_pid,
+        fn ->
+          # Apply resource limits
+          apply_resource_limits(sandbox_context.security_policy)
 
-        # Execute with timeout
-        timeout = sandbox_context.security_policy.resource_limits.max_execution_time_ms
-        Task.await(Task.async(fn -> apply(module, function, args) end), timeout)
-      end
-    )
+          # Execute with timeout
+          timeout =
+            sandbox_context.security_policy.resource_limits.max_execution_time_ms
+
+          Task.await(
+            Task.async(fn -> apply(module, function, args) end),
+            timeout
+          )
+        end
+      )
 
     case Task.yield(task, :infinity) do
       {:ok, result} -> {:ok, result}
@@ -408,6 +465,7 @@ defmodule Raxol.Plugins.PluginSandbox do
     if security_policy.audit_level != :none do
       Logger.debug("[PluginSandbox] Started audit logger for #{plugin_id}")
     end
+
     :mock_logger
   end
 
@@ -419,7 +477,9 @@ defmodule Raxol.Plugins.PluginSandbox do
 
   defp apply_resource_limits(security_policy) do
     # Apply memory and CPU limits (would use system-specific mechanisms)
-    Logger.debug("[PluginSandbox] Applied resource limits: #{inspect(security_policy.resource_limits)}")
+    Logger.debug(
+      "[PluginSandbox] Applied resource limits: #{inspect(security_policy.resource_limits)}"
+    )
   end
 
   defp get_resource_usage(_sandbox_context) do
@@ -434,21 +494,29 @@ defmodule Raxol.Plugins.PluginSandbox do
 
   defp apply_policy_update(sandbox_context, _new_policy) do
     # Apply new security policy to running processes
-    Logger.info("[PluginSandbox] Applied policy update for #{sandbox_context.plugin_id}")
+    Logger.info(
+      "[PluginSandbox] Applied policy update for #{sandbox_context.plugin_id}"
+    )
   end
 
   defp log_security_violation(plugin_id, violation, state) do
-    Logger.warning("[PluginSandbox] Security violation for #{plugin_id}: #{inspect(violation)}")
+    Logger.warning(
+      "[PluginSandbox] Security violation for #{plugin_id}: #{inspect(violation)}"
+    )
 
     case Map.get(state.sandboxes, plugin_id) do
-      nil -> :ok
+      nil ->
+        :ok
+
       sandbox_context ->
         # Record violation and potentially take action
         updated_violations = [violation | sandbox_context.violations]
 
         # Check if violation threshold exceeded
         if length(updated_violations) >= 5 do
-          Logger.error("[PluginSandbox] Too many violations for #{plugin_id}, considering shutdown")
+          Logger.error(
+            "[PluginSandbox] Too many violations for #{plugin_id}, considering shutdown"
+          )
         end
     end
   end
@@ -474,10 +542,14 @@ defmodule Raxol.Plugins.PluginSandbox do
   defp initialize_violation_handlers(_opts) do
     %{
       execution_denied: fn plugin_id, details ->
-        Logger.warning("[PluginSandbox] Execution denied for #{plugin_id}: #{inspect(details)}")
+        Logger.warning(
+          "[PluginSandbox] Execution denied for #{plugin_id}: #{inspect(details)}"
+        )
       end,
       resource_exceeded: fn plugin_id, resource, limit ->
-        Logger.warning("[PluginSandbox] Resource limit exceeded for #{plugin_id}: #{resource} > #{limit}")
+        Logger.warning(
+          "[PluginSandbox] Resource limit exceeded for #{plugin_id}: #{resource} > #{limit}"
+        )
       end
     }
   end

@@ -120,21 +120,24 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
         Logger.info("Git Integration: Found repository at #{repo_path}")
 
         # Start file watcher and timer based on auto-refresh setting
-        {watcher_pid, timer} = case config.auto_refresh do
-          true ->
-            watcher = start_file_watcher(repo_path)
-            refresh_timer = :timer.send_interval(config.refresh_interval, :refresh)
-            {watcher, refresh_timer}
-          false ->
-            {nil, nil}
-        end
+        {watcher_pid, timer} =
+          case config.auto_refresh do
+            true ->
+              watcher = start_file_watcher(repo_path)
+
+              refresh_timer =
+                :timer.send_interval(config.refresh_interval, :refresh)
+
+              {watcher, refresh_timer}
+
+            false ->
+              {nil, nil}
+          end
 
         # Initial data load
-        updated_state = %{state |
-          watcher_pid: watcher_pid,
-          refresh_timer: timer
-        }
-        |> load_repository_data()
+        updated_state =
+          %{state | watcher_pid: watcher_pid, refresh_timer: timer}
+          |> load_repository_data()
 
         {:ok, updated_state}
     end
@@ -149,6 +152,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
       unstaged_changes: length(state.unstaged_changes || []),
       untracked_files: length(state.untracked_files || [])
     }
+
     {:reply, status_data, state}
   end
 
@@ -263,7 +267,9 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
 
   defp load_repository_data(state) do
     case state.repo_path do
-      nil -> state
+      nil ->
+        state
+
       repo_path ->
         state
         |> load_current_branch(repo_path)
@@ -283,16 +289,18 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   defp load_branches(state, repo_path) do
     case run_git_command(["branch", "-a"], repo_path) do
       {output, 0} ->
-        branches = output
-        |> String.split("\n")
-        |> Enum.map(&String.trim/1)
-        |> Enum.reject(&(&1 == ""))
-        |> Enum.map(&parse_branch_line/1)
-        |> Enum.reject(&is_nil/1)
+        branches =
+          output
+          |> String.split("\n")
+          |> Enum.map(&String.trim/1)
+          |> Enum.reject(&(&1 == ""))
+          |> Enum.map(&parse_branch_line/1)
+          |> Enum.reject(&is_nil/1)
 
         %{state | branches: branches}
 
-      _ -> %{state | branches: []}
+      _ ->
+        %{state | branches: []}
     end
   end
 
@@ -300,40 +308,44 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
     case run_git_command(["status", "--porcelain"], repo_path) do
       {output, 0} ->
         {staged, unstaged, untracked} = parse_status_output(output)
-        %{state |
-          staged_changes: staged,
-          unstaged_changes: unstaged,
-          untracked_files: untracked
+
+        %{
+          state
+          | staged_changes: staged,
+            unstaged_changes: unstaged,
+            untracked_files: untracked
         }
 
       _ ->
-        %{state |
-          staged_changes: [],
-          unstaged_changes: [],
-          untracked_files: []
-        }
+        %{state | staged_changes: [], unstaged_changes: [], untracked_files: []}
     end
   end
 
   defp load_commit_history(state, repo_path) do
     depth = state.config.graph_depth
+
     case run_git_command(["log", "--oneline", "-#{depth}"], repo_path) do
       {output, 0} ->
-        commits = output
-        |> String.split("\n")
-        |> Enum.reject(&(&1 == ""))
-        |> Enum.map(&parse_commit_line/1)
+        commits =
+          output
+          |> String.split("\n")
+          |> Enum.reject(&(&1 == ""))
+          |> Enum.map(&parse_commit_line/1)
 
         %{state | commit_history: commits}
 
-      _ -> %{state | commit_history: []}
+      _ ->
+        %{state | commit_history: []}
     end
   end
 
-  defp parse_branch_line("* " <> branch), do: %{name: branch, current: true, remote: false}
+  defp parse_branch_line("* " <> branch),
+    do: %{name: branch, current: true, remote: false}
+
   defp parse_branch_line("  remotes/" <> branch) do
     %{name: branch, current: false, remote: true}
   end
+
   defp parse_branch_line("  " <> branch) do
     # Local branch (not remote) - use pattern matching instead of if
     case branch do
@@ -341,31 +353,39 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
       local_branch -> %{name: local_branch, current: false, remote: false}
     end
   end
+
   defp parse_branch_line(_), do: nil
 
   defp parse_status_output(output) do
-    lines = String.split(output, "\n")
-    |> Enum.reject(&(&1 == ""))
+    lines =
+      String.split(output, "\n")
+      |> Enum.reject(&(&1 == ""))
 
-    staged = Enum.filter(lines, fn line ->
-      case String.at(line, 0) do
-        " " -> false
-        "?" -> false
-        _ -> true
-      end
-    end) |> Enum.map(&parse_status_line/1)
+    staged =
+      Enum.filter(lines, fn line ->
+        case String.at(line, 0) do
+          " " -> false
+          "?" -> false
+          _ -> true
+        end
+      end)
+      |> Enum.map(&parse_status_line/1)
 
-    unstaged = Enum.filter(lines, fn line ->
-      case {String.at(line, 0), String.at(line, 1)} do
-        {_, " "} -> false
-        {_, "?"} -> false
-        _ -> true
-      end
-    end) |> Enum.map(&parse_status_line/1)
+    unstaged =
+      Enum.filter(lines, fn line ->
+        case {String.at(line, 0), String.at(line, 1)} do
+          {_, " "} -> false
+          {_, "?"} -> false
+          _ -> true
+        end
+      end)
+      |> Enum.map(&parse_status_line/1)
 
-    untracked = Enum.filter(lines, fn line ->
-      String.starts_with?(line, "??")
-    end) |> Enum.map(&parse_status_line/1)
+    untracked =
+      Enum.filter(lines, fn line ->
+        String.starts_with?(line, "??")
+      end)
+      |> Enum.map(&parse_status_line/1)
 
     {staged, unstaged, untracked}
   end
@@ -420,24 +440,30 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
       case state.staged_changes do
         changes when is_list(changes) and length(changes) > 0 ->
           [render_section_header("Staged Changes", width)] ++
-          Enum.map(changes, &render_file_line(&1, :staged, width))
-        _ -> []
+            Enum.map(changes, &render_file_line(&1, :staged, width))
+
+        _ ->
+          []
       end,
 
       # Unstaged changes section
       case state.unstaged_changes do
         changes when is_list(changes) and length(changes) > 0 ->
           [render_section_header("Unstaged Changes", width)] ++
-          Enum.map(changes, &render_file_line(&1, :unstaged, width))
-        _ -> []
+            Enum.map(changes, &render_file_line(&1, :unstaged, width))
+
+        _ ->
+          []
       end,
 
       # Untracked files section
       case state.untracked_files do
         files when is_list(files) and length(files) > 0 ->
           [render_section_header("Untracked Files", width)] ++
-          Enum.map(files, &render_file_line(&1, :untracked, width))
-        _ -> []
+            Enum.map(files, &render_file_line(&1, :untracked, width))
+
+        _ ->
+          []
       end
     ]
 
@@ -451,10 +477,14 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   defp render_branches_view(state, width, height) do
     header_line = render_header("Branches", state.current_branch, width)
 
-    branch_lines = case state.branches do
-      branches when is_list(branches) -> Enum.map(branches, &render_branch_line(&1, width))
-      _ -> []
-    end
+    branch_lines =
+      case state.branches do
+        branches when is_list(branches) ->
+          Enum.map(branches, &render_branch_line(&1, width))
+
+        _ ->
+          []
+      end
 
     ([header_line] ++ branch_lines)
     |> Enum.take(height)
@@ -464,10 +494,14 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   defp render_history_view(state, width, height) do
     header_line = render_header("Commit History", state.current_branch, width)
 
-    commit_lines = case state.commit_history do
-      commits when is_list(commits) -> Enum.map(commits, &render_commit_line(&1, width))
-      _ -> []
-    end
+    commit_lines =
+      case state.commit_history do
+        commits when is_list(commits) ->
+          Enum.map(commits, &render_commit_line(&1, width))
+
+        _ ->
+          []
+      end
 
     ([header_line] ++ commit_lines)
     |> Enum.take(height)
@@ -513,17 +547,19 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   end
 
   defp render_file_line(file_info, type, width) do
-    icon = case type do
-      :staged -> "+"
-      :unstaged -> "M"
-      :untracked -> "?"
-    end
+    icon =
+      case type do
+        :staged -> "+"
+        :unstaged -> "M"
+        :untracked -> "?"
+      end
 
-    color = case type do
-      :staged -> :green
-      :unstaged -> :yellow
-      :untracked -> :red
-    end
+    color =
+      case type do
+        :staged -> :green
+        :unstaged -> :yellow
+        :untracked -> :red
+      end
 
     text = "#{icon} #{file_info.path}"
 
@@ -538,11 +574,14 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
     suffix = if branch_info.remote, do: " (remote)", else: ""
     text = "#{prefix}#{branch_info.name}#{suffix}"
 
-    style = if branch_info.current do
-      TextFormatting.new() |> TextFormatting.apply_attribute(:bold) |> TextFormatting.set_foreground(:green)
-    else
-      TextFormatting.new()
-    end
+    style =
+      if branch_info.current do
+        TextFormatting.new()
+        |> TextFormatting.apply_attribute(:bold)
+        |> TextFormatting.set_foreground(:green)
+      else
+        TextFormatting.new()
+      end
 
     %{
       text: String.pad_trailing(text, width),
@@ -566,9 +605,11 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
     }
 
     current_count = length(lines)
+
     case current_count do
       count when count < height ->
         lines ++ List.duplicate(empty_line, height - count)
+
       _count ->
         lines
     end
@@ -578,14 +619,24 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
 
   def handle_keypress(key, state) do
     case {key, state.view_mode} do
-      {"1", _} -> %{state | view_mode: :status}
-      {"2", _} -> %{state | view_mode: :branches}
-      {"3", _} -> %{state | view_mode: :history}
-      {"4", _} -> %{state | view_mode: :diff}
+      {"1", _} ->
+        %{state | view_mode: :status}
+
+      {"2", _} ->
+        %{state | view_mode: :branches}
+
+      {"3", _} ->
+        %{state | view_mode: :history}
+
+      {"4", _} ->
+        %{state | view_mode: :diff}
+
       {"r", _} ->
         GenServer.cast(__MODULE__, :refresh)
         state
-      _ -> state
+
+      _ ->
+        state
     end
   end
 
@@ -594,20 +645,23 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
     case state.repo_path do
       nil ->
         ""
+
       _repo_path ->
         staged_count = length(state.staged_changes || [])
         unstaged_count = length(state.unstaged_changes || [])
         untracked_count = length(state.untracked_files || [])
 
-        branch_info = case state.current_branch do
-          nil -> ""
-          branch -> " #{branch}"
-        end
+        branch_info =
+          case state.current_branch do
+            nil -> ""
+            branch -> " #{branch}"
+          end
 
-        changes_info = case {staged_count, unstaged_count, untracked_count} do
-          {0, 0, 0} -> " [OK]"
-          {s, u, t} -> " +#{s} ~#{u} ?#{t}"
-        end
+        changes_info =
+          case {staged_count, unstaged_count, untracked_count} do
+            {0, 0, 0} -> " [OK]"
+            {s, u, t} -> " +#{s} ~#{u} ?#{t}"
+          end
 
         "#{branch_info}#{changes_info}"
     end

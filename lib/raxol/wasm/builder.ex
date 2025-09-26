@@ -528,16 +528,24 @@ defmodule Raxol.WASM.Builder do
       Logger.info("Optimizing WASM binary...")
 
       # Use wasm-opt if available
-      cmd = "wasm-opt -Oz -o #{@wasm_output_dir}/raxol.optimized.wasm #{@wasm_output_dir}/raxol.wasm"
+      cmd =
+        "wasm-opt -Oz -o #{@wasm_output_dir}/raxol.optimized.wasm #{@wasm_output_dir}/raxol.wasm"
 
       case System.cmd("sh", ["-c", cmd], stderr_to_stdout: true) do
         {_, 0} ->
-          File.rename!("#{@wasm_output_dir}/raxol.optimized.wasm", "#{@wasm_output_dir}/raxol.wasm")
+          File.rename!(
+            "#{@wasm_output_dir}/raxol.optimized.wasm",
+            "#{@wasm_output_dir}/raxol.wasm"
+          )
+
           Logger.info("WASM optimization successful")
           :ok
 
         {output, _} ->
-          Logger.warning("wasm-opt not available, skipping optimization: #{output}")
+          Logger.warning(
+            "wasm-opt not available, skipping optimization: #{output}"
+          )
+
           :ok
       end
     else

@@ -579,9 +579,7 @@ defmodule Raxol.Playground.Examples do
   end
 
   defp run_composition_example(example) do
-    IO.puts(
-      "\n#{IO.ANSI.bright()}Building interface...#{IO.ANSI.reset()}\n"
-    )
+    IO.puts("\n#{IO.ANSI.bright()}Building interface...#{IO.ANSI.reset()}\n")
 
     example.components
     |> Enum.with_index(1)
@@ -598,9 +596,7 @@ defmodule Raxol.Playground.Examples do
       IO.puts("")
     end)
 
-    IO.puts(
-      "#{IO.ANSI.green()}[+] Composition completed#{IO.ANSI.reset()}"
-    )
+    IO.puts("#{IO.ANSI.green()}[+] Composition completed#{IO.ANSI.reset()}")
   end
 
   defp run_simple_example(example) do

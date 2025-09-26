@@ -83,6 +83,7 @@ defmodule Raxol.Terminal.Charset.Manager do
   def map_character(emulator, char) do
     # Use gl (left character set) as the active set for normal character mapping
     active_g_set = emulator.charset_state.gl || :g0
+
     # Get the actual charset designated to this g-set directly from the charset_state map
     charset = Map.get(emulator.charset_state, active_g_set, :us_ascii)
 

@@ -390,7 +390,11 @@ defmodule Raxol.Terminal.ScreenBuffer.Manager do
   @doc """
   Initializes buffers (stub for test compatibility).
   """
-  @spec initialize_buffers(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: t()
+  @spec initialize_buffers(
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: t()
   def initialize_buffers(width, height, scrollback_limit \\ 1000) do
     new(width, height, scrollback_limit: scrollback_limit)
   end

@@ -38,7 +38,9 @@ defmodule Raxol.UI.ThemeResolver do
 
   defp should_use_cache?(opts) do
     cache_from_opts = Keyword.get(opts, :cache)
-    cache_from_config = Application.get_env(:raxol, :theme_resolver, [])[:cache_enabled]
+
+    cache_from_config =
+      Application.get_env(:raxol, :theme_resolver, [])[:cache_enabled]
 
     # opts override config, default to false
     case {cache_from_opts, cache_from_config} do
@@ -59,6 +61,7 @@ defmodule Raxol.UI.ThemeResolver do
   - `cache: boolean()` - Enable caching for this operation (default: false)
   """
   def resolve_element_theme(element_theme, default_theme, opts \\ [])
+
   def resolve_element_theme(element_theme, default_theme, opts) do
     if should_use_cache?(opts) do
       resolve_element_theme_cached(element_theme, default_theme)
@@ -118,6 +121,7 @@ defmodule Raxol.UI.ThemeResolver do
   - `cache: boolean()` - Enable caching for this operation (default: false)
   """
   def resolve_element_theme_with_inheritance(element, default_theme, opts \\ [])
+
   def resolve_element_theme_with_inheritance(element, default_theme, opts) do
     if should_use_cache?(opts) do
       resolve_element_theme_with_inheritance_cached(element, default_theme)
@@ -136,7 +140,9 @@ defmodule Raxol.UI.ThemeResolver do
         theme
 
       :miss ->
-        theme = resolve_element_theme_with_inheritance_direct(element, default_theme)
+        theme =
+          resolve_element_theme_with_inheritance_direct(element, default_theme)
+
         cache_theme(cache_key, theme)
         theme
     end
@@ -145,7 +151,8 @@ defmodule Raxol.UI.ThemeResolver do
   # Direct implementation (original logic)
   defp resolve_element_theme_with_inheritance_direct(element, default_theme) do
     # Get the main theme
-    main_theme = resolve_element_theme_direct(Map.get(element, :theme), default_theme)
+    main_theme =
+      resolve_element_theme_direct(Map.get(element, :theme), default_theme)
 
     # Check for parent theme inheritance
     parent_theme = Map.get(element, :parent_theme)
@@ -193,6 +200,7 @@ defmodule Raxol.UI.ThemeResolver do
   - `cache: boolean()` - Enable caching for this operation (default: false)
   """
   def get_default_theme(opts \\ [])
+
   def get_default_theme(opts) do
     if should_use_cache?(opts) do
       get_default_theme_cached()
@@ -246,6 +254,7 @@ defmodule Raxol.UI.ThemeResolver do
   - `cache: boolean()` - Enable caching for this operation (default: false)
   """
   def resolve_styles(attrs, component_type, theme, opts \\ [])
+
   def resolve_styles(attrs, component_type, theme, opts) do
     if should_use_cache?(opts) do
       resolve_styles_cached(attrs, component_type, theme)
@@ -474,7 +483,11 @@ defmodule Raxol.UI.ThemeResolver do
 
   defp get_cached_style(theme_id, component_type, attrs_hash) do
     if cache_available?() do
-      Raxol.Performance.ETSCacheManager.get_style(theme_id, component_type, attrs_hash)
+      Raxol.Performance.ETSCacheManager.get_style(
+        theme_id,
+        component_type,
+        attrs_hash
+      )
     else
       :miss
     end
@@ -482,14 +495,23 @@ defmodule Raxol.UI.ThemeResolver do
 
   defp cache_style(theme_id, component_type, attrs_hash, result) do
     if cache_available?() do
-      Raxol.Performance.ETSCacheManager.cache_style(theme_id, component_type, attrs_hash, result)
+      Raxol.Performance.ETSCacheManager.cache_style(
+        theme_id,
+        component_type,
+        attrs_hash,
+        result
+      )
     end
   end
 
   defp get_cached_theme(key) do
     if cache_available?() do
       # Use the style cache table for theme data
-      Raxol.Performance.ETSCacheManager.get_style(:theme_cache, nil, :erlang.phash2(key))
+      Raxol.Performance.ETSCacheManager.get_style(
+        :theme_cache,
+        nil,
+        :erlang.phash2(key)
+      )
     else
       :miss
     end
@@ -497,7 +519,12 @@ defmodule Raxol.UI.ThemeResolver do
 
   defp cache_theme(key, theme) do
     if cache_available?() do
-      Raxol.Performance.ETSCacheManager.cache_style(:theme_cache, nil, :erlang.phash2(key), theme)
+      Raxol.Performance.ETSCacheManager.cache_style(
+        :theme_cache,
+        nil,
+        :erlang.phash2(key),
+        theme
+      )
     end
   end
 

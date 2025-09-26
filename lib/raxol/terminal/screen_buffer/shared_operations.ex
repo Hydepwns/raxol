@@ -19,7 +19,12 @@ defmodule Raxol.Terminal.ScreenBuffer.SharedOperations do
   ## Returns
     Updated buffer with erased characters
   """
-  @spec erase_chars_at_position(map(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: map()
+  @spec erase_chars_at_position(
+          map(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: map()
   def erase_chars_at_position(buffer, x, y, count)
       when x >= 0 and y >= 0 and count > 0 do
     cells = buffer.cells || []
@@ -56,7 +61,13 @@ defmodule Raxol.Terminal.ScreenBuffer.SharedOperations do
   ## Returns
     Buffer with updated cells (damage tracking handled by caller)
   """
-  @spec insert_char_core_logic(map(), non_neg_integer(), non_neg_integer(), String.t(), map() | nil) :: map()
+  @spec insert_char_core_logic(
+          map(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t(),
+          map() | nil
+        ) :: map()
   def insert_char_core_logic(buffer, x, y, char, style) do
     if within_bounds?(buffer, x, y) do
       style = style || buffer.default_style
@@ -86,7 +97,8 @@ defmodule Raxol.Terminal.ScreenBuffer.SharedOperations do
   ## Returns
     Updated buffer with deleted lines
   """
-  @spec delete_lines_core_logic(map(), non_neg_integer(), non_neg_integer()) :: map()
+  @spec delete_lines_core_logic(map(), non_neg_integer(), non_neg_integer()) ::
+          map()
   def delete_lines_core_logic(buffer, y, count) when count > 0 and y >= 0 do
     cells = buffer.cells || []
 
@@ -106,7 +118,10 @@ defmodule Raxol.Terminal.ScreenBuffer.SharedOperations do
   # Helper function to create an empty line
   defp create_empty_line(buffer) do
     width = Map.get(buffer, :width, 80)
-    Enum.map(0..(width - 1), fn _ -> %Cell{char: " ", style: buffer.default_style} end)
+
+    Enum.map(0..(width - 1), fn _ ->
+      %Cell{char: " ", style: buffer.default_style}
+    end)
   end
 
   # Helper function to check if coordinates are within buffer bounds

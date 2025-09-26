@@ -8,7 +8,8 @@ defmodule Raxol.Core.Utils.Validation do
   Validates that a dimension is a positive integer, returning default if invalid.
   """
   @spec validate_dimension(integer(), non_neg_integer()) :: non_neg_integer()
-  def validate_dimension(dimension, _default) when is_integer(dimension) and dimension > 0 do
+  def validate_dimension(dimension, _default)
+      when is_integer(dimension) and dimension > 0 do
     dimension
   end
 
@@ -17,8 +18,11 @@ defmodule Raxol.Core.Utils.Validation do
   @doc """
   Validates that coordinates are valid non-negative integers.
   """
-  @spec validate_coordinates(integer(), integer()) :: {:ok, {non_neg_integer(), non_neg_integer()}} | {:error, :invalid_coordinates}
-  def validate_coordinates(x, y) when is_integer(x) and x >= 0 and is_integer(y) and y >= 0 do
+  @spec validate_coordinates(integer(), integer()) ::
+          {:ok, {non_neg_integer(), non_neg_integer()}}
+          | {:error, :invalid_coordinates}
+  def validate_coordinates(x, y)
+      when is_integer(x) and x >= 0 and is_integer(y) and y >= 0 do
     {:ok, {x, y}}
   end
 
@@ -27,7 +31,8 @@ defmodule Raxol.Core.Utils.Validation do
   @doc """
   Validates a configuration map against required keys.
   """
-  @spec validate_config(map(), list(atom())) :: {:ok, map()} | {:error, {:missing_keys, list(atom())}}
+  @spec validate_config(map(), list(atom())) ::
+          {:ok, map()} | {:error, {:missing_keys, list(atom())}}
   def validate_config(config, required_keys) when is_map(config) do
     missing_keys = Enum.reject(required_keys, &Map.has_key?(config, &1))
 
@@ -42,8 +47,10 @@ defmodule Raxol.Core.Utils.Validation do
   @doc """
   Validates that a value is within specified bounds.
   """
-  @spec validate_bounds(number(), number(), number()) :: {:ok, number()} | {:error, :out_of_bounds}
-  def validate_bounds(value, min, max) when is_number(value) and value >= min and value <= max do
+  @spec validate_bounds(number(), number(), number()) ::
+          {:ok, number()} | {:error, :out_of_bounds}
+  def validate_bounds(value, min, max)
+      when is_number(value) and value >= min and value <= max do
     {:ok, value}
   end
 
@@ -52,18 +59,20 @@ defmodule Raxol.Core.Utils.Validation do
   @doc """
   Validates that a list contains only specific types.
   """
-  @spec validate_list_types(list(), atom()) :: {:ok, list()} | {:error, :invalid_types}
+  @spec validate_list_types(list(), atom()) ::
+          {:ok, list()} | {:error, :invalid_types}
   def validate_list_types(list, type) when is_list(list) do
-    valid = Enum.all?(list, fn item ->
-      case type do
-        :atom -> is_atom(item)
-        :string -> is_binary(item)
-        :integer -> is_integer(item)
-        :number -> is_number(item)
-        :map -> is_map(item)
-        _ -> false
-      end
-    end)
+    valid =
+      Enum.all?(list, fn item ->
+        case type do
+          :atom -> is_atom(item)
+          :string -> is_binary(item)
+          :integer -> is_integer(item)
+          :number -> is_number(item)
+          :map -> is_map(item)
+          _ -> false
+        end
+      end)
 
     case valid do
       true -> {:ok, list}
@@ -76,14 +85,16 @@ defmodule Raxol.Core.Utils.Validation do
   @doc """
   Validates that a string is not empty and optionally matches a pattern.
   """
-  @spec validate_string(binary(), Regex.t() | nil) :: {:ok, binary()} | {:error, :invalid_string}
+  @spec validate_string(binary(), Regex.t() | nil) ::
+          {:ok, binary()} | {:error, :invalid_string}
   def validate_string(str, pattern \\ nil)
 
   def validate_string(str, nil) when is_binary(str) and byte_size(str) > 0 do
     {:ok, str}
   end
 
-  def validate_string(str, pattern) when is_binary(str) and byte_size(str) > 0 do
+  def validate_string(str, pattern)
+      when is_binary(str) and byte_size(str) > 0 do
     case Regex.match?(pattern, str) do
       true -> {:ok, str}
       false -> {:error, :invalid_string}

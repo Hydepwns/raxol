@@ -154,7 +154,8 @@ defmodule Raxol.Architecture.EventSourcing.Event do
     do: type == expected_type
 
   @deprecated "Use event_type?/2 instead"
-  def is_event_type?(event, expected_type), do: event_type?(event, expected_type)
+  def is_event_type?(event, expected_type),
+    do: event_type?(event, expected_type)
 
   @doc """
   Serializes an event to JSON.

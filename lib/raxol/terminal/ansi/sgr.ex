@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.ANSI.SGR do
     Formats a style into SGR (Select Graphic Rendition) parameters.
     Returns a string of ANSI SGR codes.
     """
-    @spec format_sgr_params(Core.text_style()) :: String.t()
+    @spec format_sgr_params(TextFormatting.text_style()) :: String.t()
     def format_sgr_params(style) do
       style_codes = build_style_codes(style)
       fg_codes = Colors.build_foreground_codes(style.foreground)
@@ -41,7 +41,8 @@ defmodule Raxol.Terminal.ANSI.SGR do
     @doc """
     Parses an SGR parameter and applies it to the given style.
     """
-    @spec parse_sgr_param(integer(), Core.text_style()) :: Core.text_style()
+    @spec parse_sgr_param(integer(), TextFormatting.text_style()) ::
+            TextFormatting.text_style()
     def parse_sgr_param(param, style) when is_integer(param) do
       case param do
         0 ->

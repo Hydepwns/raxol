@@ -83,14 +83,16 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
     query = state.search_query || ""
     cursor = if state.search_active, do: "_", else: ""
 
-    content = [
-      "Search: ",
-      query,
-      cursor,
-      "\n",
-      String.duplicate("-", 40),
-      "\n"
-    ] |> IO.iodata_to_binary()
+    content =
+      [
+        "Search: ",
+        query,
+        cursor,
+        "\n",
+        String.duplicate("-", 40),
+        "\n"
+      ]
+      |> IO.iodata_to_binary()
 
     %{
       type: :text,
@@ -104,15 +106,17 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
     current_page = Pagination.get_current_page(state) + 1
     total_pages = Pagination.calculate_total_pages(state)
 
-    content = [
-      "\n",
-      String.duplicate("-", 40),
-      "\n",
-      "Page #{current_page} of #{total_pages}",
-      if(Pagination.has_prev_page?(state), do: " [<-Prev]", else: ""),
-      if(Pagination.has_next_page?(state), do: " [Next->]", else: ""),
-      "\n"
-    ] |> IO.iodata_to_binary()
+    content =
+      [
+        "\n",
+        String.duplicate("-", 40),
+        "\n",
+        "Page #{current_page} of #{total_pages}",
+        if(Pagination.has_prev_page?(state), do: " [<-Prev]", else: ""),
+        if(Pagination.has_next_page?(state), do: " [Next->]", else: ""),
+        "\n"
+      ]
+      |> IO.iodata_to_binary()
 
     %{
       type: :text,

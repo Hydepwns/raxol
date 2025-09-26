@@ -20,30 +20,29 @@ defmodule Raxol.Plugins.HotReloadManager do
   @type plugin_id :: String.t()
   @type reload_strategy :: :hot_swap | :graceful_restart | :dependency_cascade
   @type reload_options :: %{
-    strategy: reload_strategy(),
-    preserve_state: boolean(),
-    backup_enabled: boolean(),
-    dependency_handling: :ignore | :reload_dependents | :block_if_dependents,
-    timeout_ms: non_neg_integer()
-  }
+          strategy: reload_strategy(),
+          preserve_state: boolean(),
+          backup_enabled: boolean(),
+          dependency_handling:
+            :ignore | :reload_dependents | :block_if_dependents,
+          timeout_ms: non_neg_integer()
+        }
 
   @type file_change :: %{
-    path: String.t(),
-    type: :created | :modified | :deleted,
-    plugin_id: plugin_id(),
-    timestamp: DateTime.t()
-  }
+          path: String.t(),
+          type: :created | :modified | :deleted,
+          plugin_id: plugin_id(),
+          timestamp: DateTime.t()
+        }
 
-  defstruct [
-    watched_paths: %{},
-    plugin_states: %{},
-    reload_queue: [],
-    file_watcher_pid: nil,
-    dependency_graph: %{},
-    reload_history: [],
-    backup_states: %{},
-    active_reloads: %{}
-  ]
+  defstruct watched_paths: %{},
+            plugin_states: %{},
+            reload_queue: [],
+            file_watcher_pid: nil,
+            dependency_graph: %{},
+            reload_history: [],
+            backup_states: %{},
+            active_reloads: %{}
 
   # Hot-Reload API
 
@@ -58,7 +57,10 @@ defmodule Raxol.Plugins.HotReloadManager do
   Enables hot-reload for a plugin with specified options.
   """
   def enable_hot_reload(plugin_id, plugin_path, opts \\ %{}) do
-    GenServer.call(__MODULE__, {:enable_hot_reload, plugin_id, plugin_path, opts})
+    GenServer.call(
+      __MODULE__,
+      {:enable_hot_reload, plugin_id, plugin_path, opts}
+    )
   end
 
   @doc """
@@ -151,10 +153,17 @@ defmodule Raxol.Plugins.HotReloadManager do
   end
 
   @impl GenServer
-  def handle_call({:enable_hot_reload, plugin_id, plugin_path, opts}, _from, state) do
+  def handle_call(
+        {:enable_hot_reload, plugin_id, plugin_path, opts},
+        _from,
+        state
+      ) do
     case enable_hot_reload_impl(plugin_id, plugin_path, opts, state) do
       {:ok, updated_state} ->
-        Logger.info("[HotReloadManager] Enabled hot-reload for #{plugin_id} at #{plugin_path}")
+        Logger.info(
+          "[HotReloadManager] Enabled hot-reload for #{plugin_id} at #{plugin_path}"
+        )
+
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
@@ -216,7 +225,10 @@ defmodule Raxol.Plugins.HotReloadManager do
         {:noreply, updated_state}
 
       {:error, reason} ->
-        Logger.error("[HotReloadManager] Failed to handle file change: #{inspect(reason)}")
+        Logger.error(
+          "[HotReloadManager] Failed to handle file change: #{inspect(reason)}"
+        )
+
         {:noreply, state}
     end
   end
@@ -259,7 +271,11 @@ defmodule Raxol.Plugins.HotReloadManager do
 
       watch_config ->
         # Remove from file watcher
-        remove_path_from_watcher(watch_config.path, plugin_id, state.file_watcher_pid)
+        remove_path_from_watcher(
+          watch_config.path,
+          plugin_id,
+          state.file_watcher_pid
+        )
 
         updated_watched = Map.delete(state.watched_paths, plugin_id)
         {:ok, %{state | watched_paths: updated_watched}}
@@ -283,11 +299,13 @@ defmodule Raxol.Plugins.HotReloadManager do
               action: :reload,
               strategy: merged_opts.strategy,
               success: true,
-              duration_ms: 0  # Would measure actual duration
+              # Would measure actual duration
+              duration_ms: 0
             }
 
-            final_state = %{updated_state |
-              reload_history: [history_entry | updated_state.reload_history]
+            final_state = %{
+              updated_state
+              | reload_history: [history_entry | updated_state.reload_history]
             }
 
             {:ok, final_state}
@@ -304,8 +322,9 @@ defmodule Raxol.Plugins.HotReloadManager do
               duration_ms: 0
             }
 
-            updated_history_state = %{state |
-              reload_history: [history_entry | state.reload_history]
+            updated_history_state = %{
+              state
+              | reload_history: [history_entry | state.reload_history]
             }
 
             # Attempt rollback if backup enabled
@@ -313,11 +332,19 @@ defmodule Raxol.Plugins.HotReloadManager do
               true ->
                 case rollback_plugin_impl(plugin_id, updated_history_state) do
                   {:ok, final_state} ->
-                    Logger.warning("[HotReloadManager] Reload failed, rolled back #{plugin_id}")
+                    Logger.warning(
+                      "[HotReloadManager] Reload failed, rolled back #{plugin_id}"
+                    )
+
                     {:ok, final_state}
+
                   {:error, rollback_error} ->
-                    Logger.error("[HotReloadManager] Reload and rollback both failed for #{plugin_id}")
-                    {:error, {:reload_and_rollback_failed, reason, rollback_error}}
+                    Logger.error(
+                      "[HotReloadManager] Reload and rollback both failed for #{plugin_id}"
+                    )
+
+                    {:error,
+                     {:reload_and_rollback_failed, reason, rollback_error}}
                 end
 
               false ->
@@ -328,17 +355,22 @@ defmodule Raxol.Plugins.HotReloadManager do
   end
 
   defp perform_reload(plugin_id, opts, state) do
-    Logger.info("[HotReloadManager] Starting #{opts.strategy} reload for #{plugin_id}")
+    Logger.info(
+      "[HotReloadManager] Starting #{opts.strategy} reload for #{plugin_id}"
+    )
 
     # Create backup if enabled
-    state_with_backup = if opts.backup_enabled do
-      create_plugin_backup(plugin_id, state)
-    else
-      state
-    end
+    state_with_backup =
+      if opts.backup_enabled do
+        create_plugin_backup(plugin_id, state)
+      else
+        state
+      end
 
     # Mark as actively reloading
-    updated_active = Map.put(state_with_backup.active_reloads, plugin_id, DateTime.utc_now())
+    updated_active =
+      Map.put(state_with_backup.active_reloads, plugin_id, DateTime.utc_now())
+
     active_state = %{state_with_backup | active_reloads: updated_active}
 
     # Set timeout
@@ -359,11 +391,12 @@ defmodule Raxol.Plugins.HotReloadManager do
 
   defp perform_hot_swap_reload(plugin_id, opts, state) do
     # 1. Preserve current state if requested
-    preserved_state = if opts.preserve_state do
-      get_plugin_state(plugin_id)
-    else
-      nil
-    end
+    preserved_state =
+      if opts.preserve_state do
+        get_plugin_state(plugin_id)
+      else
+        nil
+      end
 
     # 2. Reload the plugin module
     case reload_plugin_module(plugin_id) do
@@ -416,7 +449,8 @@ defmodule Raxol.Plugins.HotReloadManager do
     # 2. Reload in dependency order
     plugins_to_reload = [plugin_id | dependents]
 
-    Enum.reduce_while(plugins_to_reload, {:ok, state}, fn current_plugin, {:ok, acc_state} ->
+    Enum.reduce_while(plugins_to_reload, {:ok, state}, fn current_plugin,
+                                                          {:ok, acc_state} ->
       case perform_hot_swap_reload(current_plugin, opts, acc_state) do
         {:ok, updated_state} ->
           {:cont, {:ok, updated_state}}
@@ -445,10 +479,12 @@ defmodule Raxol.Plugins.HotReloadManager do
               success: true
             }
 
-            {:ok, %{state |
-              backup_states: updated_backups,
-              reload_history: [history_entry | state.reload_history]
-            }}
+            {:ok,
+             %{
+               state
+               | backup_states: updated_backups,
+                 reload_history: [history_entry | state.reload_history]
+             }}
 
           {:error, reason} ->
             {:error, {:rollback_failed, reason}}
@@ -472,10 +508,20 @@ defmodule Raxol.Plugins.HotReloadManager do
           # Trigger reload after short delay (allow multiple file changes)
           Process.send_after(self(), {:process_reload_queue}, 100)
 
-          updated_watch_config = %{watch_config | last_change: file_change.timestamp}
-          updated_watched = Map.put(state.watched_paths, plugin_id, updated_watch_config)
+          updated_watch_config = %{
+            watch_config
+            | last_change: file_change.timestamp
+          }
 
-          {:ok, %{state | reload_queue: updated_queue, watched_paths: updated_watched}}
+          updated_watched =
+            Map.put(state.watched_paths, plugin_id, updated_watch_config)
+
+          {:ok,
+           %{
+             state
+             | reload_queue: updated_queue,
+               watched_paths: updated_watched
+           }}
         else
           {:ok, state}
         end
@@ -557,7 +603,9 @@ defmodule Raxol.Plugins.HotReloadManager do
 
   defp should_trigger_reload(watch_config, file_change) do
     case watch_config.last_change do
-      nil -> true
+      nil ->
+        true
+
       last_change ->
         # Debounce: only trigger if more than 500ms since last change
         DateTime.diff(file_change.timestamp, last_change, :millisecond) > 500
@@ -574,12 +622,15 @@ defmodule Raxol.Plugins.HotReloadManager do
   end
 
   defp filter_reload_history(history, nil), do: history
+
   defp filter_reload_history(history, plugin_id) do
     Enum.filter(history, fn entry -> entry.plugin_id == plugin_id end)
   end
 
   defp get_last_reload_time(plugin_id, history) do
-    case Enum.find(history, fn entry -> entry.plugin_id == plugin_id and entry.success end) do
+    case Enum.find(history, fn entry ->
+           entry.plugin_id == plugin_id and entry.success
+         end) do
       nil -> nil
       entry -> entry.timestamp
     end

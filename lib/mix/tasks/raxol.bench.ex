@@ -225,7 +225,11 @@ defmodule Mix.Tasks.Raxol.Bench do
   end
 
   defp run_terminal_benchmarks(config, opts \\ []) do
-    jobs = if opts[:quick], do: terminal_quick_jobs(), else: terminal_comprehensive_jobs()
+    jobs =
+      if opts[:quick],
+        do: terminal_quick_jobs(),
+        else: terminal_comprehensive_jobs()
+
     Benchee.run(jobs, config)
   end
 
@@ -892,9 +896,10 @@ defmodule Mix.Tasks.Raxol.Bench do
   end
 
   defp find_comparison_files do
-    files = Path.wildcard("bench/output/enhanced/json/benchmark_*.json")
-            |> Enum.sort()
-            |> Enum.reverse()
+    files =
+      Path.wildcard("bench/output/enhanced/json/benchmark_*.json")
+      |> Enum.sort()
+      |> Enum.reverse()
 
     case files do
       [current | [previous | _]] ->
@@ -928,7 +933,12 @@ defmodule Mix.Tasks.Raxol.Bench do
     # Fill buffers with test content
     small_buffer = fill_buffer(small_buffer, "Sample line")
     medium_buffer = fill_buffer(medium_buffer, "Sample line with more content")
-    large_buffer = fill_buffer(large_buffer, "Sample line with even more content for testing")
+
+    large_buffer =
+      fill_buffer(
+        large_buffer,
+        "Sample line with even more content for testing"
+      )
 
     {small_buffer, medium_buffer, large_buffer}
   end

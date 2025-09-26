@@ -18,12 +18,10 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
   @type dependency_spec :: {plugin_id(), version_requirement()}
   @type resolution_result :: {:ok, [dependency_spec()]} | {:error, term()}
 
-  defstruct [
-    available_plugins: %{},
-    dependency_graph: %{},
-    resolution_cache: %{},
-    conflict_strategies: %{}
-  ]
+  defstruct available_plugins: %{},
+            dependency_graph: %{},
+            resolution_cache: %{},
+            conflict_strategies: %{}
 
   @doc """
   Resolves dependencies for a plugin manifest.
@@ -61,7 +59,11 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
           {:ok, parsed_version} ->
             case Version.parse(target_version) do
               {:ok, parsed_target} ->
-                check_version_constraint(parsed_version, operator, parsed_target)
+                check_version_constraint(
+                  parsed_version,
+                  operator,
+                  parsed_target
+                )
 
               :error ->
                 false
@@ -111,14 +113,21 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
 
     Logger.debug("[DependencyResolver] Resolving dependencies for #{plugin_id}")
 
-    case collect_all_dependencies(dependencies, resolver, MapSet.new([plugin_id])) do
+    case collect_all_dependencies(
+           dependencies,
+           resolver,
+           MapSet.new([plugin_id])
+         ) do
       {:ok, all_deps} ->
         case detect_conflicts(all_deps) do
           [] ->
             {:ok, all_deps}
 
           conflicts ->
-            Logger.info("[DependencyResolver] Detected conflicts: #{inspect(conflicts)}")
+            Logger.info(
+              "[DependencyResolver] Detected conflicts: #{inspect(conflicts)}"
+            )
+
             resolve_conflicts(conflicts, resolver.conflict_strategies)
         end
 
@@ -128,20 +137,36 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
   end
 
   defp collect_all_dependencies(dependencies, resolver, visited) do
-    Enum.reduce_while(dependencies, {:ok, []}, fn {dep_id, requirement}, {:ok, acc} ->
+    Enum.reduce_while(dependencies, {:ok, []}, fn {dep_id, requirement},
+                                                  {:ok, acc} ->
       if MapSet.member?(visited, dep_id) do
-        Logger.warning("[DependencyResolver] Circular dependency detected: #{dep_id}")
+        Logger.warning(
+          "[DependencyResolver] Circular dependency detected: #{dep_id}"
+        )
+
         {:halt, {:error, {:circular_dependency, dep_id}}}
       else
-        case find_compatible_version(dep_id, requirement, resolver.available_plugins) do
+        case find_compatible_version(
+               dep_id,
+               requirement,
+               resolver.available_plugins
+             ) do
           {:ok, version} ->
             new_visited = MapSet.put(visited, dep_id)
             dep_spec = {dep_id, version}
 
             # Recursively resolve transitive dependencies
-            case get_plugin_manifest(dep_id, version, resolver.available_plugins) do
+            case get_plugin_manifest(
+                   dep_id,
+                   version,
+                   resolver.available_plugins
+                 ) do
               {:ok, dep_manifest} ->
-                case collect_all_dependencies(dep_manifest.dependencies || [], resolver, new_visited) do
+                case collect_all_dependencies(
+                       dep_manifest.dependencies || [],
+                       resolver,
+                       new_visited
+                     ) do
                   {:ok, transitive_deps} ->
                     {:cont, {:ok, [dep_spec | transitive_deps ++ acc]}}
 
@@ -166,9 +191,10 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
         {:error, :plugin_not_found}
 
       plugin_versions ->
-        compatible_versions = Enum.filter(plugin_versions, fn version ->
-          version_satisfies?(version, requirement)
-        end)
+        compatible_versions =
+          Enum.filter(plugin_versions, fn version ->
+            version_satisfies?(version, requirement)
+          end)
 
         case compatible_versions do
           [] ->
@@ -218,8 +244,8 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
   defp check_version_constraint(version, :tilde, target) do
     # ~>2.1.0 allows >=2.1.0 and <2.2.0
     version.major == target.major and
-    version.minor == target.minor and
-    Version.compare(version, target) != :lt
+      version.minor == target.minor and
+      Version.compare(version, target) != :lt
   end
 
   defp check_version_constraint(version, :gte, target) do
@@ -236,7 +262,8 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
 
   defp detect_conflicts(dependencies) do
     # Group by plugin ID and check for conflicting version requirements
-    grouped = Enum.group_by(dependencies, fn {plugin_id, _version} -> plugin_id end)
+    grouped =
+      Enum.group_by(dependencies, fn {plugin_id, _version} -> plugin_id end)
 
     Enum.flat_map(grouped, fn {plugin_id, versions} ->
       if length(versions) > 1 do
@@ -252,11 +279,23 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
 
     case strategy do
       :highest ->
-        highest_version = Enum.max_by(versions, fn {_id, version} -> Version.parse!(version) end, Version)
+        highest_version =
+          Enum.max_by(
+            versions,
+            fn {_id, version} -> Version.parse!(version) end,
+            Version
+          )
+
         {:ok, highest_version}
 
       :lowest ->
-        lowest_version = Enum.min_by(versions, fn {_id, version} -> Version.parse!(version) end, Version)
+        lowest_version =
+          Enum.min_by(
+            versions,
+            fn {_id, version} -> Version.parse!(version) end,
+            Version
+          )
+
         {:ok, lowest_version}
 
       :fail ->
@@ -267,7 +306,11 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
   defp topological_sort(dependencies, graph) do
     # Implement Kahn's algorithm for topological sorting
     in_degree = calculate_in_degrees(dependencies, graph)
-    queue = Enum.filter(dependencies, fn {plugin_id, _} -> Map.get(in_degree, plugin_id, 0) == 0 end)
+
+    queue =
+      Enum.filter(dependencies, fn {plugin_id, _} ->
+        Map.get(in_degree, plugin_id, 0) == 0
+      end)
 
     topological_sort_impl(queue, in_degree, graph, dependencies, [])
   end
@@ -280,27 +323,42 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
     end
   end
 
-  defp topological_sort_impl([{node, version} | queue], in_degree, graph, dependencies, result) do
+  defp topological_sort_impl(
+         [{node, version} | queue],
+         in_degree,
+         graph,
+         dependencies,
+         result
+       ) do
     new_result = [{node, version} | result]
 
     # Update in-degrees for dependent nodes
     dependents = Map.get(graph, node, [])
-    {new_queue, new_in_degree} = Enum.reduce(dependents, {queue, in_degree}, fn dependent, {acc_queue, acc_degrees} ->
-      new_degree = Map.get(acc_degrees, dependent, 0) - 1
-      updated_degrees = Map.put(acc_degrees, dependent, new_degree)
 
-      if new_degree == 0 do
-        # Find the version for this dependent
-        case Enum.find(dependencies, fn {dep_id, _} -> dep_id == dependent end) do
-          nil -> {acc_queue, updated_degrees}
-          dep_spec -> {[dep_spec | acc_queue], updated_degrees}
+    {new_queue, new_in_degree} =
+      Enum.reduce(dependents, {queue, in_degree}, fn dependent,
+                                                     {acc_queue, acc_degrees} ->
+        new_degree = Map.get(acc_degrees, dependent, 0) - 1
+        updated_degrees = Map.put(acc_degrees, dependent, new_degree)
+
+        if new_degree == 0 do
+          # Find the version for this dependent
+          case Enum.find(dependencies, fn {dep_id, _} -> dep_id == dependent end) do
+            nil -> {acc_queue, updated_degrees}
+            dep_spec -> {[dep_spec | acc_queue], updated_degrees}
+          end
+        else
+          {acc_queue, updated_degrees}
         end
-      else
-        {acc_queue, updated_degrees}
-      end
-    end)
+      end)
 
-    topological_sort_impl(new_queue, new_in_degree, graph, dependencies, new_result)
+    topological_sort_impl(
+      new_queue,
+      new_in_degree,
+      graph,
+      dependencies,
+      new_result
+    )
   end
 
   defp calculate_in_degrees(dependencies, graph) do
@@ -327,7 +385,8 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
 
         dependencies = Map.get(graph, node, [])
 
-        Enum.reduce_while(dependencies, {:ok, visited}, fn dep, {:ok, acc_visited} ->
+        Enum.reduce_while(dependencies, {:ok, visited}, fn dep,
+                                                           {:ok, acc_visited} ->
           case detect_cycle(dep, graph, acc_visited, new_visiting, new_path) do
             {:cycle, cycle_path} -> {:halt, {:cycle, cycle_path}}
             {:ok, new_visited} -> {:cont, {:ok, new_visited}}
@@ -351,14 +410,18 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
   defp get_plugin_manifest(plugin_id, version, available_plugins) do
     # Mock implementation - would load actual manifest
     case Map.get(available_plugins, plugin_id) do
-      nil -> {:error, :not_found}
+      nil ->
+        {:error, :not_found}
+
       versions when is_list(versions) ->
         if version in versions do
           {:ok, %{name: plugin_id, version: version, dependencies: []}}
         else
           {:error, :not_found}
         end
-      _ -> {:error, :not_found}
+
+      _ ->
+        {:error, :not_found}
     end
   end
 

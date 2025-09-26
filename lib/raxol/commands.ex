@@ -12,7 +12,11 @@ defmodule Raxol.Commands do
   Starts the command manager.
   """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, :ok, Keyword.put_new(opts, :name, __MODULE__))
+    GenServer.start_link(
+      __MODULE__,
+      :ok,
+      Keyword.put_new(opts, :name, __MODULE__)
+    )
   end
 
   @doc """
@@ -81,6 +85,7 @@ defmodule Raxol.Commands do
     case Map.has_key?(commands, command_name) do
       true ->
         {:reply, {:error, "Command already registered"}, commands}
+
       false ->
         new_commands = Map.put(commands, command_name, handler_module)
         {:reply, :ok, new_commands}
@@ -92,6 +97,7 @@ defmodule Raxol.Commands do
     case Map.pop(commands, command_name) do
       {nil, _} ->
         {:reply, {:error, "Command not found"}, commands}
+
       {_, new_commands} ->
         {:reply, :ok, new_commands}
     end
@@ -107,16 +113,19 @@ defmodule Raxol.Commands do
     case Map.get(commands, command_name) do
       nil ->
         {:reply, {:error, "Command not found"}, commands}
+
       handler_module ->
-        result = try do
-          if function_exported?(handler_module, :execute_command, 2) do
-            handler_module.execute_command(command_name, args)
-          else
-            {:error, "Handler module does not implement execute_command/2"}
+        result =
+          try do
+            if function_exported?(handler_module, :execute_command, 2) do
+              handler_module.execute_command(command_name, args)
+            else
+              {:error, "Handler module does not implement execute_command/2"}
+            end
+          rescue
+            error -> {:error, "Command execution failed: #{inspect(error)}"}
           end
-        rescue
-          error -> {:error, "Command execution failed: #{inspect(error)}"}
-        end
+
         {:reply, result, commands}
     end
   end

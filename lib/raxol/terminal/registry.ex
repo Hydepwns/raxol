@@ -54,6 +54,7 @@ defmodule Raxol.Terminal.Registry do
         # Monitor the process so we can clean up when it dies
         Process.monitor(pid)
         {:reply, :ok, state}
+
       false ->
         {:reply, {:error, :already_registered}, state}
     end

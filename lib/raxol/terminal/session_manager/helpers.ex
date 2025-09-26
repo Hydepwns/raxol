@@ -32,8 +32,8 @@ defmodule Raxol.Terminal.SessionManager.Helpers do
     - timer_ref: Timer reference to cancel
 
   ## Returns
-    - :ok if timer was canceled
-    - {:error, :not_found} if timer doesn't exist
+    - `:ok` if timer was canceled
+    - `{:error, :not_found}` if timer doesn't exist
   """
   @spec cancel_cleanup_timer(reference() | nil) :: :ok | {:error, :not_found}
   def cancel_cleanup_timer(nil), do: :ok
@@ -87,8 +87,8 @@ defmodule Raxol.Terminal.SessionManager.Helpers do
     - config: Session configuration map
 
   ## Returns
-    - {:ok, config} if valid
-    - {:error, reason} if invalid
+    - `{:ok, config}` if valid
+    - `{:error, reason}` if invalid
   """
   @spec validate_session_config(map()) :: {:ok, map()} | {:error, atom()}
   def validate_session_config(config) when is_map(config) do

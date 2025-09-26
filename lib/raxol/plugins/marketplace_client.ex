@@ -20,47 +20,45 @@ defmodule Raxol.Plugins.MarketplaceClient do
   @type plugin_id :: String.t()
   @type version :: String.t()
   @type search_filters :: %{
-    category: String.t() | nil,
-    author: String.t() | nil,
-    rating_min: float() | nil,
-    license: String.t() | nil,
-    tags: [String.t()] | nil,
-    compatibility: String.t() | nil
-  }
+          category: String.t() | nil,
+          author: String.t() | nil,
+          rating_min: float() | nil,
+          license: String.t() | nil,
+          tags: [String.t()] | nil,
+          compatibility: String.t() | nil
+        }
 
   @type marketplace_plugin :: %{
-    id: plugin_id(),
-    name: String.t(),
-    version: version(),
-    description: String.t(),
-    author: String.t(),
-    license: String.t(),
-    category: String.t(),
-    tags: [String.t()],
-    rating: float(),
-    downloads: non_neg_integer(),
-    repository: String.t(),
-    documentation: String.t(),
-    screenshots: [String.t()],
-    dependencies: [String.t()],
-    api_compatibility: String.t(),
-    trust_level: :trusted | :verified | :community | :unverified,
-    signature: String.t() | nil,
-    checksum: String.t(),
-    size_bytes: non_neg_integer(),
-    published_at: DateTime.t(),
-    updated_at: DateTime.t()
-  }
+          id: plugin_id(),
+          name: String.t(),
+          version: version(),
+          description: String.t(),
+          author: String.t(),
+          license: String.t(),
+          category: String.t(),
+          tags: [String.t()],
+          rating: float(),
+          downloads: non_neg_integer(),
+          repository: String.t(),
+          documentation: String.t(),
+          screenshots: [String.t()],
+          dependencies: [String.t()],
+          api_compatibility: String.t(),
+          trust_level: :trusted | :verified | :community | :unverified,
+          signature: String.t() | nil,
+          checksum: String.t(),
+          size_bytes: non_neg_integer(),
+          published_at: DateTime.t(),
+          updated_at: DateTime.t()
+        }
 
-  defstruct [
-    marketplace_url: nil,
-    api_key: nil,
-    cache: %{},
-    installed_plugins: %{},
-    update_notifications: [],
-    security_policies: %{},
-    download_cache_dir: nil
-  ]
+  defstruct marketplace_url: nil,
+            api_key: nil,
+            cache: %{},
+            installed_plugins: %{},
+            update_notifications: [],
+            security_policies: %{},
+            download_cache_dir: nil
 
   # Marketplace API
 
@@ -96,7 +94,11 @@ defmodule Raxol.Plugins.MarketplaceClient do
   Downloads and installs a plugin from the marketplace.
   """
   def install_plugin(plugin_id, version \\ "latest", opts \\ %{}) do
-    GenServer.call(__MODULE__, {:install_plugin, plugin_id, version, opts}, 60_000)
+    GenServer.call(
+      __MODULE__,
+      {:install_plugin, plugin_id, version, opts},
+      60_000
+    )
   end
 
   @doc """
@@ -145,7 +147,10 @@ defmodule Raxol.Plugins.MarketplaceClient do
   Submits a review for a plugin (requires authentication).
   """
   def submit_plugin_review(plugin_id, rating, review_text) do
-    GenServer.call(__MODULE__, {:submit_plugin_review, plugin_id, rating, review_text})
+    GenServer.call(
+      __MODULE__,
+      {:submit_plugin_review, plugin_id, rating, review_text}
+    )
   end
 
   # GenServer Implementation
@@ -153,7 +158,8 @@ defmodule Raxol.Plugins.MarketplaceClient do
   @impl GenServer
   def init(opts) do
     state = %__MODULE__{
-      marketplace_url: Keyword.get(opts, :marketplace_url, default_marketplace_url()),
+      marketplace_url:
+        Keyword.get(opts, :marketplace_url, default_marketplace_url()),
       api_key: Keyword.get(opts, :api_key),
       cache: %{},
       installed_plugins: load_installed_plugins(),
@@ -165,7 +171,10 @@ defmodule Raxol.Plugins.MarketplaceClient do
     # Schedule periodic update checks
     schedule_update_check()
 
-    Logger.info("[MarketplaceClient] Initialized with marketplace: #{state.marketplace_url}")
+    Logger.info(
+      "[MarketplaceClient] Initialized with marketplace: #{state.marketplace_url}"
+    )
+
     {:ok, state}
   end
 
@@ -185,7 +194,10 @@ defmodule Raxol.Plugins.MarketplaceClient do
       {:ok, plugin_info} ->
         # Update cache
         cache_key = {plugin_id, version}
-        updated_cache = Map.put(state.cache, cache_key, {plugin_info, DateTime.utc_now()})
+
+        updated_cache =
+          Map.put(state.cache, cache_key, {plugin_info, DateTime.utc_now()})
+
         {:reply, {:ok, plugin_info}, %{state | cache: updated_cache}}
 
       {:error, reason} ->
@@ -206,11 +218,17 @@ defmodule Raxol.Plugins.MarketplaceClient do
   def handle_call({:install_plugin, plugin_id, version, opts}, _from, state) do
     case install_plugin_impl(plugin_id, version, opts, state) do
       {:ok, updated_state} ->
-        Logger.info("[MarketplaceClient] Successfully installed #{plugin_id}@#{version}")
+        Logger.info(
+          "[MarketplaceClient] Successfully installed #{plugin_id}@#{version}"
+        )
+
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
-        Logger.error("[MarketplaceClient] Failed to install #{plugin_id}@#{version}: #{inspect(reason)}")
+        Logger.error(
+          "[MarketplaceClient] Failed to install #{plugin_id}@#{version}: #{inspect(reason)}"
+        )
+
         {:reply, {:error, reason}, state}
     end
   end
@@ -247,7 +265,9 @@ defmodule Raxol.Plugins.MarketplaceClient do
   end
 
   def handle_call(:list_installed_plugins, _from, state) do
-    installed_with_status = add_marketplace_status(state.installed_plugins, state)
+    installed_with_status =
+      add_marketplace_status(state.installed_plugins, state)
+
     {:reply, {:ok, installed_with_status}, state}
   end
 
@@ -271,7 +291,11 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end
   end
 
-  def handle_call({:submit_plugin_review, plugin_id, rating, review_text}, _from, state) do
+  def handle_call(
+        {:submit_plugin_review, plugin_id, rating, review_text},
+        _from,
+        state
+      ) do
     case submit_plugin_review_impl(plugin_id, rating, review_text, state) do
       {:ok, review} ->
         {:reply, {:ok, review}, state}
@@ -286,13 +310,19 @@ defmodule Raxol.Plugins.MarketplaceClient do
     case check_for_updates_impl(state) do
       {:ok, updates, updated_state} ->
         if length(updates) > 0 do
-          Logger.info("[MarketplaceClient] Found #{length(updates)} plugin updates available")
+          Logger.info(
+            "[MarketplaceClient] Found #{length(updates)} plugin updates available"
+          )
         end
+
         schedule_update_check()
         {:noreply, updated_state}
 
       {:error, reason} ->
-        Logger.error("[MarketplaceClient] Failed to check for updates: #{inspect(reason)}")
+        Logger.error(
+          "[MarketplaceClient] Failed to check for updates: #{inspect(reason)}"
+        )
+
         schedule_update_check()
         {:noreply, state}
     end
@@ -358,33 +388,36 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
   defp fetch_plugin_info_from_marketplace(plugin_id, version, _state) do
     # Mock implementation - would make HTTP request
-    Logger.debug("[MarketplaceClient] Fetching plugin info: #{plugin_id}@#{version}")
+    Logger.debug(
+      "[MarketplaceClient] Fetching plugin info: #{plugin_id}@#{version}"
+    )
 
     case plugin_id do
       "terminal-themes" ->
-        {:ok, %{
-          id: plugin_id,
-          name: "Terminal Themes",
-          version: version,
-          description: "Beautiful color themes for your terminal emulator",
-          author: "theme-creator",
-          license: "MIT",
-          category: "Appearance",
-          tags: ["themes", "colors", "ui", "customization"],
-          rating: 4.8,
-          downloads: 12543,
-          repository: "https://github.com/theme-creator/terminal-themes",
-          documentation: "https://terminal-themes.dev/docs",
-          screenshots: ["https://cdn.marketplace.com/screenshots/themes-1.png"],
-          dependencies: [],
-          api_compatibility: "^1.0.0",
-          trust_level: :verified,
-          signature: "signature-hash-here",
-          checksum: "sha256:abcd1234...",
-          size_bytes: 2048576,
-          published_at: ~U[2023-01-15 10:30:00Z],
-          updated_at: ~U[2023-09-20 14:45:00Z]
-        }}
+        {:ok,
+         %{
+           id: plugin_id,
+           name: "Terminal Themes",
+           version: version,
+           description: "Beautiful color themes for your terminal emulator",
+           author: "theme-creator",
+           license: "MIT",
+           category: "Appearance",
+           tags: ["themes", "colors", "ui", "customization"],
+           rating: 4.8,
+           downloads: 12543,
+           repository: "https://github.com/theme-creator/terminal-themes",
+           documentation: "https://terminal-themes.dev/docs",
+           screenshots: ["https://cdn.marketplace.com/screenshots/themes-1.png"],
+           dependencies: [],
+           api_compatibility: "^1.0.0",
+           trust_level: :verified,
+           signature: "signature-hash-here",
+           checksum: "sha256:abcd1234...",
+           size_bytes: 2_048_576,
+           published_at: ~U[2023-01-15 10:30:00Z],
+           updated_at: ~U[2023-09-20 14:45:00Z]
+         }}
 
       _other ->
         {:error, :plugin_not_found}
@@ -403,7 +436,12 @@ defmodule Raxol.Plugins.MarketplaceClient do
               case resolve_plugin_dependencies(plugin_info) do
                 {:ok, dependencies} ->
                   # 4. Download and install
-                  case download_and_install_plugin(plugin_info, dependencies, opts, state) do
+                  case download_and_install_plugin(
+                         plugin_info,
+                         dependencies,
+                         opts,
+                         state
+                       ) do
                     {:ok, updated_state} ->
                       {:ok, updated_state}
 
@@ -429,7 +467,9 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
   defp download_and_install_plugin(plugin_info, dependencies, _opts, state) do
     # Mock implementation - would download and install plugin
-    Logger.info("[MarketplaceClient] Installing #{plugin_info.name} with #{length(dependencies)} dependencies")
+    Logger.info(
+      "[MarketplaceClient] Installing #{plugin_info.name} with #{length(dependencies)} dependencies"
+    )
 
     # Simulate successful installation
     installation_info = %{
@@ -440,7 +480,9 @@ defmodule Raxol.Plugins.MarketplaceClient do
       dependencies: dependencies
     }
 
-    updated_installed = Map.put(state.installed_plugins, plugin_info.id, installation_info)
+    updated_installed =
+      Map.put(state.installed_plugins, plugin_info.id, installation_info)
+
     {:ok, %{state | installed_plugins: updated_installed}}
   end
 
@@ -454,7 +496,9 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
   defp verify_plugin_security_impl(plugin_id, version, _state) do
     # Mock implementation - would verify signatures and check security
-    Logger.debug("[MarketplaceClient] Verifying security for #{plugin_id}@#{version}")
+    Logger.debug(
+      "[MarketplaceClient] Verifying security for #{plugin_id}@#{version}"
+    )
 
     security_result = %{
       safe: true,
@@ -470,13 +514,17 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
   defp check_for_updates_impl(state) do
     # Check each installed plugin for updates
-    updates = Enum.reduce(state.installed_plugins, [], fn {plugin_id, install_info}, acc ->
-      case check_plugin_update(plugin_id, install_info.version, state) do
-        {:ok, nil} -> acc  # No update available
-        {:ok, update_info} -> [update_info | acc]
-        {:error, _reason} -> acc  # Skip errors
-      end
-    end)
+    updates =
+      Enum.reduce(state.installed_plugins, [], fn {plugin_id, install_info},
+                                                  acc ->
+        case check_plugin_update(plugin_id, install_info.version, state) do
+          # No update available
+          {:ok, nil} -> acc
+          {:ok, update_info} -> [update_info | acc]
+          # Skip errors
+          {:error, _reason} -> acc
+        end
+      end)
 
     # Update notification list
     updated_notifications = updates ++ state.update_notifications
@@ -491,12 +539,13 @@ defmodule Raxol.Plugins.MarketplaceClient do
         latest_version = Enum.max_by(versions, &Version.parse!/1, Version)
 
         if Version.compare(latest_version, current_version) == :gt do
-          {:ok, %{
-            plugin_id: plugin_id,
-            current_version: current_version,
-            latest_version: latest_version,
-            update_available: true
-          }}
+          {:ok,
+           %{
+             plugin_id: plugin_id,
+             current_version: current_version,
+             latest_version: latest_version,
+             update_available: true
+           }}
         else
           {:ok, nil}
         end
@@ -546,26 +595,31 @@ defmodule Raxol.Plugins.MarketplaceClient do
   end
 
   defp filter_by_category(results, nil), do: results
+
   defp filter_by_category(results, category) do
     Enum.filter(results, fn plugin -> plugin.category == category end)
   end
 
   defp filter_by_author(results, nil), do: results
+
   defp filter_by_author(results, author) do
     Enum.filter(results, fn plugin -> plugin.author == author end)
   end
 
   defp filter_by_rating(results, nil), do: results
+
   defp filter_by_rating(results, min_rating) do
     Enum.filter(results, fn plugin -> plugin.rating >= min_rating end)
   end
 
   defp filter_by_license(results, nil), do: results
+
   defp filter_by_license(results, license) do
     Enum.filter(results, fn plugin -> plugin.license == license end)
   end
 
   defp filter_by_tags(results, nil), do: results
+
   defp filter_by_tags(results, tags) do
     Enum.filter(results, fn plugin ->
       Enum.any?(tags, fn tag -> tag in plugin.tags end)
@@ -612,7 +666,12 @@ defmodule Raxol.Plugins.MarketplaceClient do
             {:error, :no_update_available}
 
           {:ok, update_info} ->
-            install_plugin_impl(plugin_id, update_info.latest_version, opts, state)
+            install_plugin_impl(
+              plugin_id,
+              update_info.latest_version,
+              opts,
+              state
+            )
 
           error ->
             error
@@ -623,11 +682,13 @@ defmodule Raxol.Plugins.MarketplaceClient do
   defp add_marketplace_status(installed_plugins, _state) do
     # Add marketplace status to installed plugins
     Map.new(installed_plugins, fn {plugin_id, install_info} ->
-      enhanced_info = Map.merge(install_info, %{
-        marketplace_status: :available,
-        update_available: false,  # Would check actual status
-        trust_level: :verified
-      })
+      enhanced_info =
+        Map.merge(install_info, %{
+          marketplace_status: :available,
+          # Would check actual status
+          update_available: false,
+          trust_level: :verified
+        })
 
       {plugin_id, enhanced_info}
     end)
@@ -651,9 +712,10 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
   defp submit_plugin_review_impl(_plugin_id, _rating, _review_text, _state) do
     # Mock implementation - would submit review to marketplace
-    {:ok, %{
-      status: :submitted,
-      message: "Review submitted successfully"
-    }}
+    {:ok,
+     %{
+       status: :submitted,
+       message: "Review submitted successfully"
+     }}
   end
 end

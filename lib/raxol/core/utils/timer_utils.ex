@@ -16,10 +16,10 @@ defmodule Raxol.Core.Utils.TimerUtils do
   @type timer_ref :: reference() | nil
   @type timer_type :: :periodic | :delayed | :debounced
   @type timer_opts :: [
-    interval: pos_integer(),
-    message: term(),
-    debounce_key: term()
-  ]
+          interval: pos_integer(),
+          message: term(),
+          debounce_key: term()
+        ]
 
   @doc """
   Starts a periodic timer that sends messages at regular intervals.
@@ -33,7 +33,8 @@ defmodule Raxol.Core.Utils.TimerUtils do
       timer_ref = TimerUtils.start_periodic(self(), :monitor_performance, 5_000)
   """
   @spec start_periodic(pid(), term(), pos_integer()) :: timer_ref()
-  def start_periodic(pid, message, interval) when is_pid(pid) and interval > 0 do
+  def start_periodic(pid, message, interval)
+      when is_pid(pid) and interval > 0 do
     Raxol.Core.Runtime.Log.debug(
       "Starting periodic timer",
       %{pid: pid, message: message, interval: interval}
@@ -73,6 +74,7 @@ defmodule Raxol.Core.Utils.TimerUtils do
   """
   @spec cancel_timer(timer_ref()) :: :ok
   def cancel_timer(nil), do: :ok
+
   def cancel_timer(timer_ref) when is_reference(timer_ref) do
     case Process.cancel_timer(timer_ref) do
       time_left when is_integer(time_left) ->
@@ -80,6 +82,7 @@ defmodule Raxol.Core.Utils.TimerUtils do
           "Cancelled timer",
           %{timer_ref: timer_ref, time_left: time_left}
         )
+
         :ok
 
       false ->
@@ -87,9 +90,11 @@ defmodule Raxol.Core.Utils.TimerUtils do
           "Timer already expired or invalid",
           %{timer_ref: timer_ref}
         )
+
         :ok
     end
   end
+
   def cancel_timer(_invalid), do: :ok
 
   @doc """
@@ -156,6 +161,7 @@ defmodule Raxol.Core.Utils.TimerUtils do
 
     :ok
   end
+
   def cancel_all_timers(_state), do: :ok
 
   @doc """
@@ -173,7 +179,8 @@ defmodule Raxol.Core.Utils.TimerUtils do
       flush: 1_000,
 
       # Rendering and UI
-      render_tick: 16,  # ~60fps
+      # ~60fps
+      render_tick: 16,
       animation_frame: 16,
 
       # File operations
@@ -197,7 +204,8 @@ defmodule Raxol.Core.Utils.TimerUtils do
   @spec get_interval(atom()) :: pos_integer()
   def get_interval(name) do
     intervals()
-    |> Map.get(name, 5_000)  # Default to 5 seconds
+    # Default to 5 seconds
+    |> Map.get(name, 5_000)
   end
 
   @doc """

@@ -83,7 +83,9 @@ defmodule Mix.Tasks.Raxol.Check do
         checks = @all_checks
 
         case opts[:skip] do
-          nil -> checks
+          nil ->
+            checks
+
           skip_str ->
             skip = parse_check_list(skip_str)
             Enum.reject(checks, &(&1 in skip))
@@ -111,7 +113,10 @@ defmodule Mix.Tasks.Raxol.Check do
       {:compile, :ok}
     rescue
       e ->
-        Mix.shell().error("    [FAIL] Compilation failed: #{Exception.message(e)}")
+        Mix.shell().error(
+          "    [FAIL] Compilation failed: #{Exception.message(e)}"
+        )
+
         {:compile, :error}
     end
   end
@@ -145,6 +150,7 @@ defmodule Mix.Tasks.Raxol.Check do
             Mix.shell().error("    [FAIL] Credo found issues")
             {:credo, :warning}
         end
+
       false ->
         Mix.shell().info("    [WARN] Credo not available")
         {:credo, :skipped}
@@ -156,15 +162,16 @@ defmodule Mix.Tasks.Raxol.Check do
 
     case Code.ensure_loaded?(Dialyxir) do
       true ->
-      case Mix.shell().cmd("mix dialyzer") do
-        0 ->
-          Mix.shell().info("    [OK] Dialyzer analysis passed")
-          {:dialyzer, :ok}
+        case Mix.shell().cmd("mix dialyzer") do
+          0 ->
+            Mix.shell().info("    [OK] Dialyzer analysis passed")
+            {:dialyzer, :ok}
 
-        _ ->
-          Mix.shell().error("    [FAIL] Dialyzer found issues")
-          {:dialyzer, :warning}
-      end
+          _ ->
+            Mix.shell().error("    [FAIL] Dialyzer found issues")
+            {:dialyzer, :warning}
+        end
+
       false ->
         Mix.shell().info("    [WARN] Dialyzer not available")
         {:dialyzer, :skipped}
@@ -185,6 +192,7 @@ defmodule Mix.Tasks.Raxol.Check do
             Mix.shell().error("    [FAIL] Security issues found")
             {:security, :warning}
         end
+
       false ->
         Mix.shell().info("    [WARN] Sobelow not available")
         {:security, :skipped}

@@ -390,10 +390,11 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
     # Home the cursor (0, 0)
     cursor = %{emulator.cursor | row: 0, col: 0, position: {0, 0}}
 
-    %{emulator |
-      main_screen_buffer: cleared_buffer,
-      alternate_screen_buffer: cleared_alt_buffer,
-      cursor: cursor
+    %{
+      emulator
+      | main_screen_buffer: cleared_buffer,
+        alternate_screen_buffer: cleared_alt_buffer,
+        cursor: cursor
     }
   end
 

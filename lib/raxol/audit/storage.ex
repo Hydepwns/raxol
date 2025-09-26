@@ -121,8 +121,13 @@ defmodule Raxol.Audit.Storage do
     _ = load_existing_indexes(state)
 
     # Schedule file rotation using TimerManager
-    timers = %{}
-    |> TimerManager.add_timer(:rotate_file, :interval, TimerManager.intervals().hour)
+    timers =
+      %{}
+      |> TimerManager.add_timer(
+        :rotate_file,
+        :interval,
+        TimerManager.intervals().hour
+      )
 
     Logger.info("Audit storage initialized at #{storage_path}")
     {:ok, Map.put(state, :timers, timers)}

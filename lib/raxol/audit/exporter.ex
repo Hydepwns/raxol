@@ -80,6 +80,7 @@ defmodule Raxol.Audit.Exporter do
   @impl Raxol.Core.Behaviours.BaseManager
   def init_manager(opts) do
     config = Keyword.get(opts, :config, %{})
+
     state = %__MODULE__{
       config: config,
       export_queue: :queue.new(),

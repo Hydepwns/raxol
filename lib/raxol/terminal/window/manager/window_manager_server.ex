@@ -600,7 +600,9 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
         _from,
         state
       ) do
-    new_state = NavigationUtils.define_navigation_path(state, from_id, direction, to_id)
+    new_state =
+      NavigationUtils.define_navigation_path(state, from_id, direction, to_id)
+
     {:reply, :ok, new_state}
   end
 

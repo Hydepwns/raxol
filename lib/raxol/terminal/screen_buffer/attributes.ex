@@ -360,13 +360,15 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   @doc """
   Starts selection (stub).
   """
-  @spec start_selection(Core.t(), non_neg_integer(), non_neg_integer()) :: Core.t()
+  @spec start_selection(Core.t(), non_neg_integer(), non_neg_integer()) ::
+          Core.t()
   def start_selection(buffer, x, y), do: %{buffer | selection: {x, y, x, y}}
 
   @doc """
   Updates selection (stub).
   """
-  @spec update_selection(Core.t(), non_neg_integer(), non_neg_integer()) :: Core.t()
+  @spec update_selection(Core.t(), non_neg_integer(), non_neg_integer()) ::
+          Core.t()
   def update_selection(buffer, x, y) do
     case buffer.selection do
       {sx, sy, _, _} -> %{buffer | selection: {sx, sy, x, y}}
@@ -383,7 +385,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   @doc """
   Gets selection (stub).
   """
-  @spec get_selection(Core.t()) :: {integer(), integer(), integer(), integer()} | nil
+  @spec get_selection(Core.t()) ::
+          {integer(), integer(), integer(), integer()} | nil
   def get_selection(buffer), do: buffer.selection
 
   @doc """
@@ -411,23 +414,28 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
   @doc """
   Gets selection boundaries (stub).
   """
-  @spec get_selection_boundaries(Core.t()) :: {integer(), integer(), integer(), integer()} | nil
+  @spec get_selection_boundaries(Core.t()) ::
+          {integer(), integer(), integer(), integer()} | nil
   def get_selection_boundaries(buffer), do: buffer.selection
 
   @doc """
   Checks if position is in selection (stub).
   """
-  @spec in_selection?(Core.t(), non_neg_integer(), non_neg_integer()) :: boolean()
+  @spec in_selection?(Core.t(), non_neg_integer(), non_neg_integer()) ::
+          boolean()
   def in_selection?(_buffer, _x, _y), do: false
 
   @doc """
   Gets text in region.
   """
-  @spec get_text_in_region(Core.t(), integer(), integer(), integer(), integer()) :: String.t()
+  @spec get_text_in_region(Core.t(), integer(), integer(), integer(), integer()) ::
+          String.t()
   def get_text_in_region(buffer, x1, y1, x2, y2) do
     # Extract text from the specified region
     case buffer.cells do
-      nil -> ""
+      nil ->
+        ""
+
       cells when is_list(cells) ->
         # Ensure coordinates are within bounds and properly ordered
         start_y = max(0, min(y1, y2))
@@ -458,7 +466,9 @@ defmodule Raxol.Terminal.ScreenBuffer.Attributes do
           |> Enum.reject(&(&1 == ""))
           |> Enum.join("\n")
         end
-      _ -> ""
+
+      _ ->
+        ""
     end
   end
 

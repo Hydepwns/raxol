@@ -103,6 +103,8 @@ defmodule Raxol.UI.Components.Input.SelectList do
           :on_focus => (integer() -> any()) | nil
         }
 
+  @type t :: state()
+
   # --- Component Implementation ---
 
   @doc """

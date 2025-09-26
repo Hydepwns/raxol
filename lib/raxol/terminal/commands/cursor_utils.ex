@@ -25,7 +25,13 @@ defmodule Raxol.Terminal.Commands.CursorUtils do
           pos_integer(),
           pos_integer()
         ) :: {non_neg_integer(), non_neg_integer()}
-  def calculate_new_cursor_position({row, col}, direction, amount, width, height) do
+  def calculate_new_cursor_position(
+        {row, col},
+        direction,
+        amount,
+        width,
+        height
+      ) do
     case direction do
       :up -> {max(0, row - amount), col}
       :down -> {min(height - 1, row + amount), col}

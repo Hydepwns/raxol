@@ -401,6 +401,7 @@ defmodule Raxol.Debug do
       case {level, state.level, state[:monitor_ref]} do
         {:off, old_level, ref} when old_level != :off and ref != nil ->
           TimerManager.cancel_timer(ref)
+
         _ ->
           nil
       end
@@ -410,6 +411,7 @@ defmodule Raxol.Debug do
       case {level, state.level} do
         {new_level, :off} when new_level != :off ->
           schedule_performance_monitoring()
+
         _ ->
           nil
       end
@@ -446,6 +448,7 @@ defmodule Raxol.Debug do
     case state.level do
       :off ->
         {:noreply, state}
+
       _ ->
         collect_performance_metrics(state)
         ref = schedule_performance_monitoring()
@@ -470,6 +473,7 @@ defmodule Raxol.Debug do
         Logger.debug(
           "Performance: memory=#{inspect(memory)}, run_queue=#{inspect(stats)}"
         )
+
       _ ->
         :ok
     end

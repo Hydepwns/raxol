@@ -81,6 +81,7 @@ defmodule Raxol.Protocols.UIComponentImplementations do
             |> Enum.map_join("─┼─", &String.duplicate("─", &1))
 
           "#{header_row}\n#{border_line}"
+
         false ->
           header_row
       end
@@ -212,6 +213,7 @@ defmodule Raxol.Protocols.UIComponentImplementations do
       case style do
         %{} when map_size(style) == 0 ->
           text
+
         _ ->
           ansi_codes = Styleable.to_ansi(%{style: style})
 

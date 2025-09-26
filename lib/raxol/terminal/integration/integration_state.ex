@@ -182,6 +182,7 @@ defmodule Raxol.Terminal.Integration.State do
       buffer_manager when is_map(buffer_manager) ->
         # Get the active buffer content
         _buffer = Manager.get_active_buffer(buffer_manager)
+
         # For now, return empty content as the Core module interface may be different
         ""
 
@@ -307,7 +308,8 @@ defmodule Raxol.Terminal.Integration.State do
   defp cleanup_buffer_manager(nil), do: :ok
 
   defp cleanup_buffer_manager(_buffer_manager),
-    do: :ok  # ScreenBuffer.Manager is a struct, no cleanup needed
+    # ScreenBuffer.Manager is a struct, no cleanup needed
+    do: :ok
 
   defp cleanup_scroll_buffer(nil), do: :ok
 
