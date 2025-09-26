@@ -8,8 +8,7 @@ primary_region = 'sjc'
 kill_signal = 'SIGTERM'
 
 [build]
-  dockerfile = "../Dockerfile.web"
-  build-target = "runner"
+  dockerfile = "Dockerfile.web"
 
 [deploy]
   release_command = '/app/bin/migrate'

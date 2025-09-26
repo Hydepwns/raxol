@@ -35,11 +35,15 @@ RUN mix local.hex --force && \
 ENV MIX_ENV="prod"
 ENV SKIP_TERMBOX2_TESTS="true"
 
+# Copy the entire parent directory for Raxol dependency
+# We need to copy the parent Raxol project since we depend on it
+COPY . /raxol
+WORKDIR /raxol/web
+
 # install mix dependencies
 COPY mix.exs mix.lock ./
-COPY ../mix.exs ../mix.lock ../
 RUN mix deps.get --only $MIX_ENV
-RUN mkdir config
+RUN mkdir -p config
 
 # copy compile-time config files before we compile dependencies
 # to ensure any relevant config change will trigger the dependencies
