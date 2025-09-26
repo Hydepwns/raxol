@@ -247,7 +247,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
         description: "Real-time task management with progress tracking",
         difficulty: "Advanced",
         tags: ["dashboard", "realtime", "progress"],
-        preview: "┌─ Active Tasks ────────┐\n│ ████████░░ Deploy    │\n│ ██████░░░░ Testing   │\n│ ████░░░░░░ Docs      │\n└───────────────────────┘",
+        preview: "+-- Active Tasks --------+\n| ########-- Deploy    |\n| ######---- Testing   |\n| ####------ Docs      |\n+------------------------+",
         technologies: ["Raxol.UI", "Phoenix PubSub", "Charts"],
         commands: [
           %{name: "task add <name>", description: "Add new task"},
@@ -301,7 +301,8 @@ defmodule RaxolPlaygroundWeb.DemoLive do
     Available commands: #{Enum.map_join(demo.commands, ", ", & &1.name)}
     Type 'help' for more information.
 
-    $\s"""
+    >
+    """
   end
 
   defp execute_demo_command(demo, command) do
@@ -309,58 +310,58 @@ defmodule RaxolPlaygroundWeb.DemoLive do
       {"file-browser", "ls"} ->
         """
 
-        [DIR] Documents/       4.2KB   Sep 26 2025 10:30
-        [DIR] Downloads/       1.8KB   Sep 26 2025 09:15
-        [DIR] Pictures/        2.1KB   Sep 25 2025 14:22
-        [FILE] README.md       1.2KB   Sep 26 2025 11:45
-        [FILE] package.json      890B   Sep 26 2025 10:20
-        [FILE] index.html      3.4KB   Sep 26 2025 12:00
+        [DIR] Documents/       4.2 KB   Sep 26 2025 10.30
+        [DIR] Downloads/       1.8 KB   Sep 26 2025 09.15
+        [DIR] Pictures/        2.1 KB   Sep 25 2025 14.22
+        [FILE] README.md       1.2 KB   Sep 26 2025 11.45
+        [FILE] package.json      890 B   Sep 26 2025 10.20
+        [FILE] index.html      3.4 KB   Sep 26 2025 12.00
 
-        $ """
+        > """
 
       {"file-browser", "cd " <> dir} ->
         """
 
         Changed to directory: #{dir}
-        $ """
+        > """
 
       {"task-dashboard", "task status"} ->
         """
 
-        ┌─ Task Status ──────────────────────────┐
-        │ ID │ Task        │ Progress │ Status   │
-        ├────┼─────────────┼──────────┼──────────┤
-        │ 1  │ Deploy      │ ████████░░ 80%     │
-        │ 2  │ Testing     │ ██████░░░░ 60%     │
-        │ 3  │ Docs        │ ████░░░░░░ 40%     │
-        │ 4  │ Review      │ ██░░░░░░░░ 20%     │
-        └────┴─────────────┴──────────┴──────────┘
+        +-- Task Status ----------------------------+
+        | ID | Task        | Progress | Status      |
+        |----+-------------+----------+-------------|
+        | 1  | Deploy      | ########-- 80%         |
+        | 2  | Testing     | ######---- 60%         |
+        | 3  | Docs        | ####------ 40%         |
+        | 4  | Review      | ##-------- 20%         |
+        +----+-------------+----------+-------------+
 
-        $ """
+        > """
 
       {"chat-interface", "users"} ->
         """
 
-        [USERS] Online Users (3):
-        * Alice     (Admin)      [ONLINE] Active
-        * Bob       (Developer)  [ONLINE] Active
-        * Charlie   (Designer)   [AWAY] Away
+        Online Users: 3
+        * Alice     - Admin      - ONLINE Active
+        * Bob       - Developer  - ONLINE Active
+        * Charlie   - Designer   - AWAY   Away
 
-        $ """
+        > """
 
       {"system-monitor", "top"} ->
         """
 
-        ┌─ Top Processes ─────────────────────────┐
-        │ PID   │ NAME        │ CPU  │ MEMORY    │
-        ├───────┼─────────────┼──────┼───────────┤
-        │ 1234  │ raxol       │ 12%  │ 156.2 MB │
-        │ 5678  │ phoenix     │  8%  │ 89.4 MB  │
-        │ 9012  │ postgres    │  3%  │ 234.1 MB │
-        │ 3456  │ redis       │  1%  │ 23.8 MB  │
-        └───────┴─────────────┴──────┴───────────┘
+        +-- Top Processes ---------------------------+
+        | PID   | NAME        | CPU  | MEMORY       |
+        |-------+-------------+------+-------------|
+        | 1234  | raxol       | 12%  | 156.2 MB    |
+        | 5678  | phoenix     |  8%  | 89.4 MB     |
+        | 9012  | postgres    |  3%  | 234.1 MB    |
+        | 3456  | redis       |  1%  | 23.8 MB     |
+        +-------+-------------+------+--------------+
 
-        $ """
+        > """
 
       {_, "help"} ->
         """
@@ -368,7 +369,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
         Available commands for #{demo.title}:
         #{Enum.map_join(demo.commands, "\n", fn cmd -> "  #{cmd.name} - #{cmd.description}" end)}
 
-        $ """
+        > """
 
       {_, "clear"} ->
         get_initial_output(demo)
@@ -377,7 +378,8 @@ defmodule RaxolPlaygroundWeb.DemoLive do
         """
 
         Command '#{command}' not recognized. Type 'help' for available commands.
-        $ """
+        >
+        """
     end
   end
 end

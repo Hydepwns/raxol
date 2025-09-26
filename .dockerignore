@@ -1,0 +1,46 @@
+# Git files
+.git/
+.gitignore
+
+# Build artifacts
+_build/
+deps/
+.fetch
+
+# Test and development
+test/
+bench/
+scripts/
+
+# Documentation
+docs/
+*.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# MacOS files
+.DS_Store
+
+# Elixir artifacts
+*.beam
+/tmp/
+erl_crash.dump
+
+# Node modules (in case they exist at root)
+node_modules/
+
+# Docker files themselves
+Dockerfile*
+docker/
+.dockerignore
+
+# CI/CD
+.github/
+
+# Large directories that aren't needed
+priv/static/

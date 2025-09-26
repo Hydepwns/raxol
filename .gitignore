@@ -1,11 +1,13 @@
 # The directory Mix will write compiled artifacts to.
 /_build/
+/web/_build/
 
 # If you run "mix test --cover", coverage assets end up here.
 /cover/
 
 # The directory Mix downloads your dependencies sources to.
 /deps/
+/web/deps/
 
 # Ignore specific priv directories and files
 /priv/plts/
