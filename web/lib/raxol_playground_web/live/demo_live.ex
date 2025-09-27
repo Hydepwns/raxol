@@ -55,7 +55,7 @@ defmodule RaxolPlaygroundWeb.DemoLive do
   end
 
   @impl true
-  def render(assigns) when is_nil(assigns[:demo]) do
+  def render(%{demo: nil} = assigns) do
     ~H"""
     <div class="demo-index min-h-screen bg-gray-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

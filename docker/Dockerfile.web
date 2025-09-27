@@ -40,11 +40,13 @@ RUN mix deps.compile
 RUN mix compile
 
 # Install and build assets (if they exist)
-RUN if [ -d "assets" ]; then \
-      cd assets && \
+RUN if [ -d "/app/web/assets" ] && [ -f "/app/web/assets/package.json" ]; then \
+      cd /app/web/assets && \
       npm install && \
-      cd .. && \
+      cd /app/web && \
       mix phx.digest; \
+    else \
+      echo "No assets directory or package.json found, skipping asset compilation"; \
     fi
 
 # Build the release

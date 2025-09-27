@@ -1,0 +1,9 @@
+## This file is a PO file for the "errors" domain.
+##
+## To add a new language, create a directory for the locale
+## code, e.g. priv/gettext/pt_BR/LC_MESSAGES, and create a copy of this
+## file there with the appropriate translations.
+
+msgid ""
+msgstr ""
+"Language: en\n"

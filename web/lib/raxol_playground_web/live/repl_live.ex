@@ -234,26 +234,29 @@ defmodule RaxolPlaygroundWeb.ReplLive do
         
         ":observer.start()" ->
           ":ok\n# Observer GUI started"
-        
-        code when String.starts_with?(code, "defmodule") ->
-          module_name = extract_module_name(code)
-          "{:module, #{module_name}, <<binary>>, :ok}"
-        
-        code when String.contains?(code, "=") ->
-          # Variable assignment simulation
-          parts = String.split(code, "=", parts: 2)
-          if length(parts) == 2 do
-            Enum.at(parts, 1) |> String.trim()
-          else
-            "** (SyntaxError) invalid syntax"
-          end
-        
-        _ ->
-          # Generic evaluation
-          if String.contains?(code, ["(", ")", "[", "]"]) do
-            ":ok"
-          else
-            code
+
+        code ->
+          cond do
+            String.starts_with?(code, "defmodule") ->
+              module_name = extract_module_name(code)
+              "{:module, #{module_name}, <<binary>>, :ok}"
+
+            String.contains?(code, "=") ->
+              # Variable assignment simulation
+              parts = String.split(code, "=", parts: 2)
+              if length(parts) == 2 do
+                Enum.at(parts, 1) |> String.trim()
+              else
+                "** (SyntaxError) invalid syntax"
+              end
+
+            true ->
+              # Generic evaluation
+              if String.contains?(code, ["(", ")", "[", "]"]) do
+                ":ok"
+              else
+                code
+              end
           end
       end
       
