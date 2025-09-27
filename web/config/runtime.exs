@@ -33,6 +33,19 @@ if config_env() == :prod do
     ],
     secret_key_base: secret_key_base
 
+  # Disable terminal features in production/container environments
+  config :raxol, :features,
+    terminal_driver: false,
+    web_interface: true,
+    database: false,
+    pubsub: true,
+    performance_monitoring: true,
+    terminal_sync: false,
+    rate_limiting: true,
+    telemetry: true,
+    plugins: false,
+    audit: false
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key
