@@ -99,7 +99,149 @@
 
 ## Next Priorities
 
-## v1.5.5 - Quality & Performance (NEXT RELEASE)
+## v1.5.5 Hotfix - Fly.io Deployment Issues (URGENT)
+
+### Critical Issue: Terminal Driver Crashes in Container Environment
+**Status**: In Progress
+**Impact**: Phoenix app crashes on Fly.io with "Runtime terminating during boot"
+**Root Cause**: Raxol terminal driver attempts to access TTY devices that don't exist in Docker containers
+
+### Required Fixes
+
+#### 1. Application Environment Detection
+**File**: `lib/raxol/application.ex`
+```elixir
+# Modify get_terminal_driver_children/0 to detect Fly.io environment
+defp get_terminal_driver_children do
+  case {IO.ANSI.enabled?(), System.get_env("FLY_APP_NAME"), System.get_env("RAXOL_MODE")} do
+    {_, _, "minimal"} -> []
+    {_, fly_app, _} when is_binary(fly_app) -> []
+    {true, _, _} -> [{Raxol.Terminal.Driver, nil}]
+    _ -> []
+  end
+end
+```
+
+#### 2. Conditional NIF Compilation
+**File**: `lib/termbox2_nif/termbox2_nif.ex`
+```elixir
+# Add compile-time flag for headless mode
+if System.get_env("RAXOL_HEADLESS") != "true" do
+  @on_load :load_nif
+  def load_nif do
+    # NIF loading logic
+  end
+else
+  # Stub functions for headless mode
+  def init(), do: {:ok, :headless}
+  def shutdown(), do: :ok
+end
+```
+
+#### 3. Web-Specific Application Configuration
+**File**: `web/lib/raxol_playground/application.ex`
+```elixir
+# Remove Raxol dependency or make it conditional
+defp deps do
+  base_deps = [
+    {:phoenix, "~> 1.8.0"},
+    # ... other deps
+  ]
+
+  if System.get_env("INCLUDE_RAXOL") == "true" do
+    base_deps ++ [{:raxol, path: "../", runtime: false}]
+  else
+    base_deps
+  end
+end
+```
+
+#### 4. Graceful Degradation Strategy
+- Create `Raxol.Headless` module for web deployments
+- Implement mock terminal functions for demos
+- Use JavaScript terminal emulator for web UI
+- Separate core logic from terminal I/O
+
+### Testing Strategy
+
+#### Local Container Testing
+```bash
+# Build and test locally before deploying
+docker build -f docker/Dockerfile.web -t raxol-web:test .
+docker run -p 4000:8080 -e SECRET_KEY_BASE=$(mix phx.gen.secret) raxol-web:test
+
+# Test with production config
+docker run -p 4000:8080 \
+  -e SECRET_KEY_BASE=$(mix phx.gen.secret) \
+  -e PHX_HOST=localhost \
+  -e PORT=8080 \
+  -e RAXOL_MODE=minimal \
+  raxol-web:test
+```
+
+#### Fly.io Deployment Testing
+```bash
+# Set required secrets
+fly secrets set RAXOL_MODE=minimal RAXOL_FORCE_TERMINAL=false -a raxol
+
+# Deploy with verbose logging
+fly deploy -a raxol --verbose
+
+# Debug crashed instances
+fly ssh console -a raxol
+cat /app/erl_crash.dump | head -100
+/app/bin/raxol_playground foreground
+
+# Monitor logs
+fly logs -a raxol --tail
+```
+
+### Implementation Timeline
+1. **Day 1**: Environment detection fixes
+2. **Day 2**: Conditional compilation implementation
+3. **Day 3**: Testing and validation
+4. **Day 4**: Documentation and deployment
+
+### Success Criteria
+- [ ] Phoenix app starts without crashes on Fly.io
+- [ ] Web interface accessible at raxol.fly.dev
+- [ ] No terminal driver errors in production logs
+- [ ] Graceful fallback for terminal features
+- [ ] Docker image builds successfully
+- [ ] Local container testing passes
+
+### Alternative Deployment Strategies
+
+#### Option A: Separate Web and Terminal Apps
+- Split into two separate applications
+- `raxol` - Core terminal library
+- `raxol_web` - Phoenix web interface
+- Deploy only web app to Fly.io
+- Advantages: Clean separation, easier maintenance
+- Disadvantages: Code duplication, sync challenges
+
+#### Option B: Runtime Feature Detection
+- Single codebase with runtime switching
+- Detect environment at startup
+- Load appropriate modules dynamically
+- Advantages: Single source of truth
+- Disadvantages: Complex configuration
+
+#### Option C: Build-Time Configuration
+- Use Mix configs to exclude terminal features
+- Separate release configurations
+- `MIX_ENV=prod_web` for web deployments
+- Advantages: Smaller deployment size
+- Disadvantages: Multiple build configurations
+
+### Recommended Approach
+**Option B + Gradual Migration to Option A**
+1. Implement runtime detection (immediate fix)
+2. Plan separation into distinct apps (long-term)
+3. Create shared library for common code
+4. Maintain backward compatibility
+
+## v1.5.5 - Quality & Performance (AFTER HOTFIX)
 
 ### Priority Actions
 1. **Complete BaseManager conversions** (150+ modules remaining)
