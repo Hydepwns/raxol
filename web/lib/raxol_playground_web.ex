@@ -59,7 +59,8 @@ defmodule RaxolPlaygroundWeb do
 
   defp html_helpers do
     quote do
-      use Phoenix.HTML
+      import Phoenix.HTML
+      import Phoenix.HTML.Form
       import Phoenix.LiveView.Helpers
       import RaxolPlaygroundWeb.CoreComponents
       import RaxolPlaygroundWeb.Gettext

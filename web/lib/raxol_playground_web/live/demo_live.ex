@@ -317,13 +317,15 @@ defmodule RaxolPlaygroundWeb.DemoLive do
         [FILE] package.json      890 B   Sep 26 2025 10.20
         [FILE] index.html      3.4 KB   Sep 26 2025 12.00
 
-        > """
+        >
+        """
 
       {"file-browser", "cd " <> dir} ->
         """
 
         Changed to directory: #{dir}
-        > """
+        >
+        """
 
       {"task-dashboard", "task status"} ->
         """
@@ -337,7 +339,8 @@ defmodule RaxolPlaygroundWeb.DemoLive do
         | 4  | Review      | ##-------- 20%         |
         +----+-------------+----------+-------------+
 
-        > """
+        >
+        """
 
       {"chat-interface", "users"} ->
         """
@@ -347,7 +350,8 @@ defmodule RaxolPlaygroundWeb.DemoLive do
         * Bob       - Developer  - ONLINE Active
         * Charlie   - Designer   - AWAY   Away
 
-        > """
+        >
+        """
 
       {"system-monitor", "top"} ->
         """
@@ -361,7 +365,8 @@ defmodule RaxolPlaygroundWeb.DemoLive do
         | 3456  | redis       |  1%  | 23.8 MB     |
         +-------+-------------+------+--------------+
 
-        > """
+        >
+        """
 
       {_, "help"} ->
         """
@@ -369,7 +374,8 @@ defmodule RaxolPlaygroundWeb.DemoLive do
         Available commands for #{demo.title}:
         #{Enum.map_join(demo.commands, "\n", fn cmd -> "  #{cmd.name} - #{cmd.description}" end)}
 
-        > """
+        >
+        """
 
       {_, "clear"} ->
         get_initial_output(demo)

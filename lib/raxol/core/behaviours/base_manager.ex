@@ -101,6 +101,9 @@ defmodule Raxol.Core.Behaviours.BaseManager do
         end
       end
 
+      # Make GenServer callbacks overridable so modules can define their own
+      defoverridable handle_call: 3, handle_cast: 2, handle_info: 2
+
       # Default implementations for callbacks
       def handle_manager_call(_request, _from, state),
         do: {:reply, {:error, :not_implemented}, state}
