@@ -15,9 +15,12 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
   - Complex tree structures
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
   require Raxol.Core.Runtime.Log
+
+  alias Raxol.UI.Rendering.UnifiedTimerManager
 
   @fps_60 16
   @fps_45 22
@@ -50,14 +53,6 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
   end
 
   # Public API
-
-  @doc """
-  Starts the adaptive framerate manager.
-  """
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
 
   @doc """
   Reports a completed render with timing and complexity metrics.
@@ -107,24 +102,36 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
     GenServer.cast(manager, :force_adaptation)
   end
 
-  # GenServer Implementation
+  # BaseManager Implementation
 
-  @impl GenServer
-  def init(_opts) do
-    # Schedule periodic adaptation checks
-    timer_ref = Process.send_after(self(), :check_adaptation, 1000)
-
-    state = %FramerateState{
-      adaptation_timer_ref: timer_ref
-    }
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(_opts) do
+    # Start unified timer manager for adaptation checks
+    state = case UnifiedTimerManager.start_adaptive_timer(self(), 1000) do
+      :ok ->
+        %FramerateState{
+          adaptation_timer_ref: :unified_timer
+        }
+      {:error, :not_started} ->
+        # Fallback to Process.send_after in test mode when UnifiedTimerManager isn't running
+        timer_ref = Process.send_after(self(), :adapt_framerate, 1000)
+        %FramerateState{
+          adaptation_timer_ref: timer_ref
+        }
+      error ->
+        Raxol.Core.Runtime.Log.warning("AdaptiveFramerate: Failed to start timer - #{inspect(error)}")
+        %FramerateState{
+          adaptation_timer_ref: nil
+        }
+    end
 
     Raxol.Core.Runtime.Log.debug("AdaptiveFramerate: Started with 60fps target")
 
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_cast(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast(
         {:report_render, render_time_us, complexity_score, damage_count,
          _timestamp},
         state
@@ -158,19 +165,19 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_cast(:force_adaptation, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast(:force_adaptation, state) do
     new_state = perform_adaptation(state)
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_frame_interval, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_frame_interval, _from, state) do
     {:reply, state.current_interval_ms, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_stats, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_stats, _from, state) do
     stats =
       Map.merge(state.stats, %{
         current_fps: fps_from_interval(state.current_interval_ms),
@@ -182,14 +189,13 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
     {:reply, stats, state}
   end
 
-  @impl GenServer
-  def handle_info(:check_adaptation, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info({:adaptive_frame_tick}, state) do
     # Perform adaptation check
     new_state = perform_adaptation(state)
 
-    # Schedule next check
-    timer_ref = Process.send_after(self(), :check_adaptation, 2000)
-    final_state = %{new_state | adaptation_timer_ref: timer_ref}
+    # Timer is already running via unified timer manager, no need to reschedule
+    final_state = new_state
 
     {:noreply, final_state}
   end

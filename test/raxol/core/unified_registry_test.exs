@@ -4,8 +4,8 @@ defmodule Raxol.Core.UnifiedRegistryTest do
   alias Raxol.Core.UnifiedRegistry
 
   setup do
-    # Start the registry for each test
-    start_supervised!({UnifiedRegistry, []})
+    # Start the registry for each test with the required name parameter
+    start_supervised!({UnifiedRegistry, [name: UnifiedRegistry]})
     :ok
   end
 
@@ -20,7 +20,7 @@ defmodule Raxol.Core.UnifiedRegistryTest do
       stop_supervised(UnifiedRegistry)
 
       config = %{max_entries: 1000, cleanup_interval: 60_000}
-      start_supervised!({UnifiedRegistry, [config: config]})
+      start_supervised!({UnifiedRegistry, [name: UnifiedRegistry, config: config]})
 
       assert Process.whereis(UnifiedRegistry) != nil
     end

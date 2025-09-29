@@ -3,9 +3,12 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   Manages plugin loading operations.
   """
 
-  use GenServer
-  require Logger
+  use Raxol.Core.Behaviours.BaseManager
+
+
   @behaviour Raxol.Core.Runtime.Plugins.LoaderBehaviour
+
+  require Logger
 
   defstruct [
     :loaded_plugins,
@@ -24,9 +27,6 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   @doc """
   Starts the plugin loader.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Loads a plugin from the given path.
@@ -118,8 +118,8 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
   # Server Callbacks
 
-  @impl GenServer
-  def init(_opts) do
+  @impl true
+  def init_manager(_opts) do
     state = %__MODULE__{
       loaded_plugins: %{},
       plugin_configs: %{},
@@ -129,8 +129,8 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:load_plugin, plugin_path}, _from, state) do
+  @impl true
+  def handle_manager_call({:load_plugin, plugin_path}, _from, state) do
     case do_load_plugin(plugin_path, state) do
       {:ok, new_state} ->
         {:reply, {:ok, Map.get(new_state.loaded_plugins, plugin_path)},
@@ -141,8 +141,8 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
-  @impl GenServer
-  def handle_call({:unload_plugin, plugin}, _from, state) do
+  @impl true
+  def handle_manager_call({:unload_plugin, plugin}, _from, state) do
     case do_unload_plugin(plugin, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -152,8 +152,8 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
-  @impl GenServer
-  def handle_call({:reload_plugin, plugin}, _from, state) do
+  @impl true
+  def handle_manager_call({:reload_plugin, plugin}, _from, state) do
     case do_reload_plugin(plugin, state) do
       {:ok, new_state} ->
         {:reply, {:ok, Map.get(new_state.loaded_plugins, plugin)}, new_state}
@@ -163,13 +163,13 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
-  @impl GenServer
-  def handle_call(:get_loaded_plugins, _from, state) do
+  @impl true
+  def handle_manager_call(:get_loaded_plugins, _from, state) do
     {:reply, Map.values(state.loaded_plugins), state}
   end
 
-  @impl GenServer
-  def handle_call({:plugin_loaded?, plugin}, _from, state) do
+  @impl true
+  def handle_manager_call({:plugin_loaded?, plugin}, _from, state) do
     {:reply, Map.has_key?(state.loaded_plugins, plugin), state}
   end
 

@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
   Handles theme management, preview, switching, and customization.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Types
@@ -24,16 +24,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
         }
 
   # Client API
-  def start_link(opts \\ []) do
-    opts =
-      case is_map(opts) do
-        true -> Enum.into(opts, [])
-        false -> opts
-      end
-
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
+  # BaseManager provides start_link/1 automatically with name: __MODULE__ as default
 
   @doc """
   Loads a theme from a file or directory.
@@ -99,20 +90,19 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
   end
 
   # Server Callbacks
-  def init(opts) when is_list(opts) do
-    # Convert keyword list to map
-    opts_map = Map.new(opts)
-    init(opts_map)
-  end
-
-  def init(opts) when is_map(opts) do
+  @impl true
+  def init_manager(opts) do
+    opts_map = case opts do
+      opts when is_list(opts) -> Map.new(opts)
+      opts when is_map(opts) -> opts
+    end
     state = %{
       themes: %{},
-      theme_paths: Map.get(opts, :theme_paths, []),
-      auto_load: Map.get(opts, :auto_load, true),
+      theme_paths: Map.get(opts_map, :theme_paths, []),
+      auto_load: Map.get(opts_map, :auto_load, true),
       current_theme: nil,
       preview_theme: nil,
-      theme_config: Map.get(opts, :theme_config, %{})
+      theme_config: Map.get(opts_map, :theme_config, %{})
     }
 
     case state.auto_load do
@@ -123,7 +113,8 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     {:ok, state}
   end
 
-  def handle_call({:load_theme, path, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:load_theme, path, opts}, _from, state) do
     case do_load_theme(path, opts, state) do
       {:ok, theme_id, theme_state} ->
         new_state = put_in(state.themes[theme_id], theme_state)
@@ -134,7 +125,8 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  def handle_call({:unload_theme, theme_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:unload_theme, theme_id}, _from, state) do
     case do_unload_theme(theme_id, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -144,19 +136,22 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  def handle_call({:get_theme_state, theme_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_theme_state, theme_id}, _from, state) do
     case Map.get(state.themes, theme_id) do
       nil -> {:reply, {:error, :theme_not_found}, state}
       theme_state -> {:reply, {:ok, theme_state}, state}
     end
   end
 
-  def handle_call({:get_themes, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_themes, opts}, _from, state) do
     themes = filter_themes(state.themes, opts)
     {:reply, {:ok, themes}, state}
   end
 
-  def handle_call({:update_theme_config, theme_id, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:update_theme_config, theme_id, config}, _from, state) do
     case do_update_theme_config(theme_id, config, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -166,7 +161,8 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  def handle_call({:apply_theme, theme_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:apply_theme, theme_id}, _from, state) do
     case do_apply_theme(theme_id, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -176,7 +172,8 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  def handle_call({:preview_theme, theme_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:preview_theme, theme_id}, _from, state) do
     case do_preview_theme(theme_id, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -186,7 +183,8 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  def handle_call({:export_theme, theme_id, path}, _from, state) do
+  @impl true
+  def handle_manager_call({:export_theme, theme_id, path}, _from, state) do
     case do_export_theme(theme_id, path, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -196,7 +194,8 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
     end
   end
 
-  def handle_call({:import_theme, path}, _from, state) do
+  @impl true
+  def handle_manager_call({:import_theme, path}, _from, state) do
     case do_import_theme(path, state) do
       {:ok, theme_id, new_state} ->
         {:reply, {:ok, theme_id}, new_state}

@@ -4,7 +4,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   Refactored to use functional error handling patterns instead of try/catch.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   alias Raxol.Core.ErrorRecovery
@@ -45,9 +46,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   @doc """
   Starts the safe emulator with error handling capabilities.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: opts[:name] || __MODULE__)
-  end
+  # BaseManager provides start_link/1 and start_link/2 automatically
 
   @doc """
   Safely processes input with validation and error recovery.
@@ -123,7 +122,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   # Server callbacks
 
   @impl true
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     with {:ok, initial_state} <- create_initial_emulator_state(opts),
          {:ok, config} <- build_config(opts) do
       state = %__MODULE__{
@@ -148,7 +148,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  def handle_call({:process_input, input}, _from, state) do
+  @impl true
+  def handle_manager_call({:process_input, input}, _from, state) do
     Telemetry.span(
       [:raxol, :emulator, :input],
       %{input_size: byte_size(input)},
@@ -170,7 +171,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  def handle_call({:handle_sequence, sequence}, _from, state) do
+  @impl true
+  def handle_manager_call({:handle_sequence, sequence}, _from, state) do
     Telemetry.span([:raxol, :emulator, :sequence], %{sequence: sequence}, fn ->
       with {:ok, valid_sequence} <- perform_sequence_validation(sequence),
            {:ok, new_emulator_state} <-
@@ -188,7 +190,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  def handle_call({:resize, width, height}, _from, state) do
+  @impl true
+  def handle_manager_call({:resize, width, height}, _from, state) do
     Telemetry.span(
       [:raxol, :emulator, :resize],
       %{width: width, height: height},
@@ -209,14 +212,16 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  def handle_call(:get_state, _from, state) do
+  @impl true
+  def handle_manager_call(:get_state, _from, state) do
     # Return a safe copy of the state
     safe_state = safe_state_copy(state.emulator_state)
     {:reply, {:ok, safe_state}, state}
   end
 
   @impl true
-  def handle_call(:get_health, _from, state) do
+  @impl true
+  def handle_manager_call(:get_health, _from, state) do
     health = %{
       status: determine_health_status(state),
       error_stats: state.error_stats,
@@ -228,7 +233,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  def handle_call(:checkpoint, _from, state) do
+  @impl true
+  def handle_manager_call(:checkpoint, _from, state) do
     checkpoint = create_checkpoint(state.emulator_state)
     new_state = %{state | last_checkpoint: checkpoint}
 
@@ -240,7 +246,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  def handle_call({:restore, checkpoint}, _from, state) do
+  @impl true
+  def handle_manager_call({:restore, checkpoint}, _from, state) do
     with {:ok, restored_state} <- perform_restore(checkpoint) do
       new_state = %{
         state
@@ -261,7 +268,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  def handle_call(:recover, _from, state) do
+  @impl true
+  def handle_manager_call(:recover, _from, state) do
     case state.recovery_state do
       %{attempts: attempts} when attempts >= 3 ->
         {:reply, {:error, :max_recovery_attempts_exceeded}, state}
@@ -280,14 +288,16 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  def handle_info(:health_check, state) do
+  @impl true
+  def handle_manager_info(:health_check, state) do
     new_state = perform_health_check(state)
     schedule_health_check()
     {:noreply, new_state}
   end
 
   @impl true
-  def handle_info({:retry_processing, input}, state) do
+  @impl true
+  def handle_manager_info({:retry_processing, input}, state) do
     with {:ok, _result} <- process_with_retry(input, state) do
       Logger.info("Retry successful for buffered input")
       new_state = %{state | input_buffer: <<>>, recovery_state: :healthy}
@@ -301,7 +311,8 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   end
 
   @impl true
-  def handle_info(msg, state) do
+  @impl true
+  def handle_manager_info(msg, state) do
     Logger.debug("Unhandled message: #{inspect(msg)}")
     {:noreply, state}
   end

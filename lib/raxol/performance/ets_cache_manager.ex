@@ -13,6 +13,7 @@ defmodule Raxol.Performance.ETSCacheManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   require Raxol.Core.Runtime.Log
 
   @csi_parser_cache :raxol_csi_parser_cache
@@ -302,56 +303,13 @@ defmodule Raxol.Performance.ETSCacheManager do
   @impl true
   def init_manager(_opts) do
     # Create ETS tables with optimal settings for each cache type
-    _ =
-      :ets.new(@csi_parser_cache, [
-        :set,
-        :public,
-        :named_table,
-        read_concurrency: true
-      ])
-
-    _ =
-      :ets.new(@cell_cache, [
-        :set,
-        :public,
-        :named_table,
-        read_concurrency: true,
-        write_concurrency: true
-      ])
-
-    _ =
-      :ets.new(@style_cache, [
-        :set,
-        :public,
-        :named_table,
-        read_concurrency: true
-      ])
-
-    _ =
-      :ets.new(@buffer_cache, [
-        :set,
-        :public,
-        :named_table,
-        read_concurrency: true,
-        write_concurrency: true
-      ])
-
-    _ =
-      :ets.new(@layout_cache, [
-        :set,
-        :public,
-        :named_table,
-        read_concurrency: true
-      ])
-
-    _ =
-      :ets.new(@font_metrics_cache, [
-        :set,
-        :public,
-        :named_table,
-        read_concurrency: true,
-        write_concurrency: true
-      ])
+    # Use try/catch to handle case where tables already exist
+    _ = create_table_safe(@csi_parser_cache, [:set, :public, :named_table, read_concurrency: true])
+    _ = create_table_safe(@cell_cache, [:set, :public, :named_table, read_concurrency: true, write_concurrency: true])
+    _ = create_table_safe(@style_cache, [:set, :public, :named_table, read_concurrency: true])
+    _ = create_table_safe(@buffer_cache, [:set, :public, :named_table, read_concurrency: true, write_concurrency: true])
+    _ = create_table_safe(@layout_cache, [:set, :public, :named_table, read_concurrency: true])
+    _ = create_table_safe(@font_metrics_cache, [:set, :public, :named_table, read_concurrency: true, write_concurrency: true])
 
     # Track hit/miss statistics
     stats = %{
@@ -442,4 +400,14 @@ defmodule Raxol.Performance.ETSCacheManager do
   defp get_table_name(:layout), do: @layout_cache
   defp get_table_name(:font_metrics), do: @font_metrics_cache
   defp get_table_name(name), do: name
+
+  defp create_table_safe(table_name, options) do
+    try do
+      :ets.new(table_name, options)
+    rescue
+      ArgumentError ->
+        # Table already exists, just return the table name
+        table_name
+    end
+  end
 end

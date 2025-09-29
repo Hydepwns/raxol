@@ -34,7 +34,8 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
   Handlers with the same priority are executed in registration order.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
   require Raxol.Core.Runtime.Log
 
@@ -53,25 +54,11 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
 
   # Client API
 
-  @doc """
-  Starts the Events.Manager server with optional configuration.
-  """
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    config = Keyword.get(opts, :config, @default_config)
-
-    initial_state = %{
-      @default_state
-      | config: Map.merge(@default_config, config)
-    }
-
-    GenServer.start_link(__MODULE__, initial_state, name: name)
-  end
 
   @doc """
   Initializes the event manager (for backward compatibility).
   """
-  def init_manager(server \\ __MODULE__) do
+  def reset_manager(server \\ __MODULE__) do
     GenServer.call(server, :init_manager)
   end
 
@@ -239,20 +226,27 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
 
   # GenServer Callbacks
 
-  @impl GenServer
-  def init(initial_state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    config = Keyword.get(opts, :config, @default_config)
+
+    initial_state = %{
+      @default_state
+      | config: Map.merge(@default_config, config)
+    }
+
     {:ok, initial_state}
   end
 
-  @impl GenServer
-  def handle_call(:init_manager, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:init_manager, _from, state) do
     # Reset to initial state while preserving config
     new_state = %{@default_state | config: state.config}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:register_handler, event_type, module, function, priority},
         _from,
         state
@@ -286,8 +280,8 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:register_handler_struct, event_type, handler_id, handler_struct,
          priority},
         _from,
@@ -331,8 +325,8 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:unregister_handler, event_type, module, function},
         _from,
         state
@@ -354,8 +348,8 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:subscribe, pid, event_types, opts}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:subscribe, pid, event_types, opts}, _from, state) do
     ref = System.unique_integer([:positive])
 
     # Monitor the subscribing process
@@ -380,8 +374,8 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
     {:reply, {:ok, ref}, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:unsubscribe, ref}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:unsubscribe, ref}, _from, state) do
     case Map.get(state.subscriptions, ref) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -403,24 +397,24 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
     end
   end
 
-  @impl GenServer
-  def handle_call({:dispatch_sync, event}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:dispatch_sync, event}, _from, state) do
     new_state = do_dispatch(state, event)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_handlers, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_handlers, _from, state) do
     {:reply, state.handlers, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_subscriptions, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_subscriptions, _from, state) do
     {:reply, state.subscriptions, state}
   end
 
-  @impl GenServer
-  def handle_call({:get_event_history, limit}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_event_history, limit}, _from, state) do
     history =
       case limit do
         nil -> state.event_history
@@ -430,14 +424,14 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
     {:reply, history, state}
   end
 
-  @impl GenServer
-  def handle_call(:clear_handlers, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:clear_handlers, _from, state) do
     new_state = %{state | handlers: %{}}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:clear_subscriptions, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:clear_subscriptions, _from, state) do
     # Demonitor all subscriptions
     Enum.each(state.subscriptions, fn {_ref, sub} ->
       Process.demonitor(sub.monitor_ref, [:flush])
@@ -447,25 +441,25 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:clear_history, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:clear_history, _from, state) do
     new_state = %{state | event_history: []}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl GenServer
-  def handle_cast({:dispatch, event}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:dispatch, event}, state) do
     new_state = do_dispatch(state, event)
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_cast({:broadcast, event}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:broadcast, event}, state) do
     # Send to all subscribers without filtering
     Enum.each(state.subscriptions, fn {_ref, subscription} ->
       send(subscription.pid, {:event, event})
@@ -475,8 +469,8 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_info({:DOWN, monitor_ref, :process, _pid, _reason}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info({:DOWN, monitor_ref, :process, _pid, _reason}, state) do
     # Clean up subscription when process dies
     case Map.get(state.monitors, monitor_ref) do
       nil ->
@@ -496,8 +490,8 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
     end
   end
 
-  @impl GenServer
-  def handle_info(_msg, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(_msg, state) do
     {:noreply, state}
   end
 
@@ -507,21 +501,22 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
   defp do_dispatch(state, event) do
     event_type = extract_event_type(event)
 
-    Raxol.Core.Runtime.Log.debug(
+    Logger.debug(
       "EventManager.Server dispatching event: #{inspect(event)}, type: #{inspect(event_type)}"
     )
 
     # Execute handlers in priority order
     handlers = Map.get(state.handlers, event_type, [])
 
-    Raxol.Core.Runtime.Log.debug(
-      "Found #{length(handlers)} handlers for event type #{inspect(event_type)}"
+    Logger.debug(
+      "Found #{length(handlers)} handlers for event type #{inspect(event_type)}: #{inspect(handlers)}"
     )
 
     Enum.each(handlers, fn handler ->
       case handler do
         # Traditional module/function handler
         {module, function, _priority} when is_atom(module) and is_atom(function) ->
+          Logger.debug("EventManager calling #{module}.#{function} with event: #{inspect(event)}")
           case Raxol.Core.ErrorHandling.safe_apply(module, function, [event]) do
             {:ok, _result} ->
               Raxol.Core.Runtime.Log.debug(

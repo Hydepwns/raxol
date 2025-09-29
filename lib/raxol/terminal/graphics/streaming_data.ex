@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
       StreamingData.start_stream(stream_id)
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Terminal.Graphics.DataVisualization
@@ -133,9 +133,9 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   @doc """
   Starts the streaming data manager.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+#  def start_link(opts \\ []) do
+#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+#  end
 
   @doc """
   Creates a new streaming data source.
@@ -293,7 +293,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   # GenServer Implementation
 
   @impl true
-  def init(opts) do
+  def init_manager(opts) do
     config = Map.merge(@default_config, Map.new(opts))
 
     initial_state = %__MODULE__{
@@ -311,7 +311,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   @impl true
-  def handle_call({:create_stream, config}, _from, state) do
+  def handle_manager_call({:create_stream, config}, _from, state) do
     case validate_stream_config(config) do
       :ok ->
         stream_id = generate_stream_id()
@@ -326,7 +326,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   @impl true
-  def handle_call(
+  def handle_manager_call(
         {:connect_visualization, stream_id, visualization_id},
         _from,
         state
@@ -352,7 +352,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   @impl true
-  def handle_call({:start_stream, stream_id}, _from, state) do
+  def handle_manager_call({:start_stream, stream_id}, _from, state) do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:reply, {:error, :stream_not_found}, state}
@@ -377,7 +377,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   @impl true
-  def handle_call({:stop_stream, stream_id}, _from, state) do
+  def handle_manager_call({:stop_stream, stream_id}, _from, state) do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:reply, {:error, :stream_not_found}, state}
@@ -394,7 +394,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   @impl true
-  def handle_call({:get_stream_stats, stream_id}, _from, state) do
+  def handle_manager_call({:get_stream_stats, stream_id}, _from, state) do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:reply, {:error, :stream_not_found}, state}
@@ -406,7 +406,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   @impl true
-  def handle_call(
+  def handle_manager_call(
         {:update_stream_config, stream_id, config_updates},
         _from,
         state
@@ -425,7 +425,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   @impl true
-  def handle_call({:get_windowed_data, stream_id, options}, _from, state) do
+  def handle_manager_call({:get_windowed_data, stream_id, options}, _from, state) do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:reply, {:error, :stream_not_found}, state}
@@ -439,7 +439,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   @impl true
-  def handle_info({:stream_data, stream_id, data_point}, state) do
+  def handle_manager_info({:stream_data, stream_id, data_point}, state) do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:noreply, state}
@@ -459,7 +459,7 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   @impl true
-  def handle_info({:process_stream, stream_id}, state) do
+  def handle_manager_info({:process_stream, stream_id}, state) do
     case Map.get(state.active_streams, stream_id) do
       nil ->
         {:noreply, state}
@@ -477,14 +477,14 @@ defmodule Raxol.Terminal.Graphics.StreamingData do
   end
 
   @impl true
-  def handle_info(:cleanup, state) do
+  def handle_manager_info(:cleanup, state) do
     new_state = perform_cleanup(state)
     schedule_cleanup()
     {:noreply, new_state}
   end
 
   @impl true
-  def handle_info(:collect_performance, state) do
+  def handle_manager_info(:collect_performance, state) do
     new_metrics = collect_performance_metrics(state)
     schedule_performance_collection()
     {:noreply, %{state | performance_metrics: new_metrics}}

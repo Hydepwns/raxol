@@ -5,6 +5,7 @@ defmodule Raxol.Plugins.Manager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   require Raxol.Core.Runtime.Log
 
   # Client API

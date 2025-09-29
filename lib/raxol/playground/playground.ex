@@ -14,7 +14,9 @@ defmodule Raxol.Playground do
   * Responsive layout testing
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+  @behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Playground.{
@@ -33,9 +35,6 @@ defmodule Raxol.Playground do
   @doc """
   Starts the component playground.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Launches the playground in the terminal.
@@ -116,7 +115,7 @@ defmodule Raxol.Playground do
   # Server Callbacks
 
   @impl true
-  def init(opts) do
+  def init_manager(opts) do
     port = Keyword.get(opts, :port, @default_port)
 
     state = %State{
@@ -138,12 +137,12 @@ defmodule Raxol.Playground do
   end
 
   @impl true
-  def handle_call(:get_catalog, _from, state) do
+  def handle_manager_call(:get_catalog, _from, state) do
     {:reply, state.catalog, state}
   end
 
   @impl true
-  def handle_call({:select_component, component_id}, _from, state) do
+  def handle_manager_call({:select_component, component_id}, _from, state) do
     case Catalog.get_component(state.catalog, component_id) do
       nil ->
         {:reply, {:error, "Component not found"}, state}
@@ -168,7 +167,7 @@ defmodule Raxol.Playground do
   end
 
   @impl true
-  def handle_call({:update_props, props}, _from, state) do
+  def handle_manager_call({:update_props, props}, _from, state) do
     new_state = %{state | current_props: Map.merge(state.current_props, props)}
 
     handle_component_operation(
@@ -179,7 +178,7 @@ defmodule Raxol.Playground do
   end
 
   @impl true
-  def handle_call({:update_state, new_component_state}, _from, state) do
+  def handle_manager_call({:update_state, new_component_state}, _from, state) do
     new_state = %{
       state
       | current_state: Map.merge(state.current_state, new_component_state)
@@ -193,7 +192,7 @@ defmodule Raxol.Playground do
   end
 
   @impl true
-  def handle_call({:switch_theme, theme}, _from, state) do
+  def handle_manager_call({:switch_theme, theme}, _from, state) do
     new_state = %{state | theme: theme}
 
     handle_theme_operation(
@@ -205,7 +204,7 @@ defmodule Raxol.Playground do
   end
 
   @impl true
-  def handle_call(:export_code, _from, state) do
+  def handle_manager_call(:export_code, _from, state) do
     handle_export_operation(
       state.selected_component,
       state
@@ -213,17 +212,17 @@ defmodule Raxol.Playground do
   end
 
   @impl true
-  def handle_call(:get_preview, _from, state) do
+  def handle_manager_call(:get_preview, _from, state) do
     handle_preview_request(state.selected_component, state)
   end
 
   @impl true
-  def handle_call(:refresh_preview, _from, state) do
+  def handle_manager_call(:refresh_preview, _from, state) do
     handle_refresh_request(state.selected_component, state)
   end
 
   @impl true
-  def handle_call(:get_state, _from, state) do
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 

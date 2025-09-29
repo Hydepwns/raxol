@@ -1,6 +1,6 @@
 defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
   @moduledoc """
-  GenServer implementation for keyboard navigation in Raxol terminal UI applications.
+  BaseManager implementation for keyboard navigation in Raxol terminal UI applications.
 
   This server provides a pure functional approach to keyboard navigation,
   eliminating Process dictionary usage and implementing proper OTP patterns.
@@ -38,7 +38,8 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
   ```
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   alias Raxol.Core.Events.EventManager, as: EventManager
@@ -67,20 +68,6 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
 
   # Client API
 
-  @doc """
-  Starts the Keyboard Navigator server.
-  """
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    initial_config = Keyword.get(opts, :config, @default_config)
-
-    initial_state = %{
-      @default_state
-      | config: Map.merge(@default_config, initial_config)
-    }
-
-    GenServer.start_link(__MODULE__, initial_state, name: name)
-  end
 
   @doc """
   Initializes the keyboard navigator.
@@ -192,30 +179,38 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     GenServer.call(server, :reset)
   end
 
-  # GenServer Callbacks
+  # BaseManager Callbacks
 
-  @impl GenServer
-  def init(initial_state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    _name = Keyword.get(opts, :name, __MODULE__)
+    initial_config = Keyword.get(opts, :config, @default_config)
+
+    initial_state = %{
+      @default_state
+      | config: Map.merge(@default_config, initial_config)
+    }
+
     {:ok, initial_state}
   end
 
-  @impl GenServer
-  def handle_call(:init_navigator, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:init_navigator, _from, state) do
     # Register event handler
     EventManager.register_handler(:keyboard, __MODULE__, :handle_keyboard_event)
     {:reply, :ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:configure, opts}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:configure, opts}, _from, state) do
     opts_map = Enum.into(opts, %{})
     new_config = Map.merge(state.config, opts_map)
     new_state = %{state | config: new_config}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:register_component_position, component_id, x, y, width, height},
         _from,
         state
@@ -235,8 +230,8 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:define_navigation_path, from_id, direction, to_id},
         _from,
         state
@@ -247,8 +242,8 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:register_to_group, component_id, group_name}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:register_to_group, component_id, group_name}, _from, state) do
     group_members = Map.get(state.groups, group_name, [])
 
     updated_members = add_component_to_group(component_id, group_members)
@@ -258,8 +253,8 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:unregister_from_group, component_id, group_name},
         _from,
         state
@@ -273,15 +268,15 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:push_focus, component_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:push_focus, component_id}, _from, state) do
     new_stack = [component_id | state.focus_stack]
     new_state = %{state | focus_stack: new_stack}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:pop_focus, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:pop_focus, _from, state) do
     case state.focus_stack do
       [] ->
         {:reply, nil, state}
@@ -294,33 +289,33 @@ defmodule Raxol.Core.KeyboardNavigator.NavigatorServer do
     end
   end
 
-  @impl GenServer
-  def handle_call(:get_config, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_config, _from, state) do
     {:reply, state.config, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_spatial_map, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_spatial_map, _from, state) do
     {:reply, state.spatial_map, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_navigation_paths, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_navigation_paths, _from, state) do
     {:reply, state.navigation_paths, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl GenServer
-  def handle_call(:reset, _from, _state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:reset, _from, _state) do
     {:reply, :ok, @default_state}
   end
 
-  @impl GenServer
-  def handle_cast({:handle_keyboard_event, event}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:handle_keyboard_event, event}, state) do
     process_keyboard_event(event, state)
     {:noreply, state}
   end

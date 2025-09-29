@@ -11,7 +11,9 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   """
 
   require Raxol.Core.Runtime.Log
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.UI.Layout.Engine, as: LayoutEngine
   alias Raxol.UI.Renderer, as: UIRenderer
@@ -35,14 +37,14 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   @doc "Starts the Rendering Engine process."
   def start_link(initial_state_map) when is_map(initial_state_map) do
-    GenServer.start_link(__MODULE__, initial_state_map, name: __MODULE__)
+    Raxol.Core.Behaviours.BaseManager.start_link(__MODULE__, initial_state_map, name: __MODULE__)
   end
 
-  # --- GenServer Callbacks ---
+  # --- BaseManager Callbacks ---
 
-  # Default GenServer init implementation
-  @impl GenServer
-  def init(initial_state_map) do
+  # Default BaseManager init implementation
+  @impl true
+  def init_manager(initial_state_map) do
     Raxol.Core.Runtime.Log.info("Rendering Engine initializing...")
 
     Raxol.Core.Runtime.Log.debug(
@@ -61,8 +63,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     {:ok, new_state}
   end
 
-  @impl GenServer
-  def handle_cast(:render_frame, state) do
+  @impl true
+  def handle_manager_cast(:render_frame, state) do
     Raxol.Core.Runtime.Log.debug(
       "Rendering Engine received :render_frame cast. State: #{inspect(state)}"
     )
@@ -96,8 +98,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end
   end
 
-  @impl GenServer
-  def handle_cast({:update_size, %{width: w, height: h}}, state) do
+  @impl true
+  def handle_manager_cast({:update_size, %{width: w, height: h}}, state) do
     Raxol.Core.Runtime.Log.debug(
       "RenderingEngine received size update: #{w}x#{h}"
     )
@@ -108,13 +110,13 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     {:noreply, %{new_state | buffer: resized_buffer}}
   end
 
-  @impl GenServer
-  def handle_call({:update_props, _new_props}, _from, state) do
+  @impl true
+  def handle_manager_call({:update_props, _new_props}, _from, state) do
     {:reply, :ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:get_state}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_state}, _from, state) do
     {:reply, state, state}
   end
 

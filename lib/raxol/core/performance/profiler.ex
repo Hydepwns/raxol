@@ -26,7 +26,9 @@ defmodule Raxol.Core.Performance.Profiler do
       Profiler.report()
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+
   require Logger
 
   @type metric_type :: :execution_time | :memory_usage | :call_count | :gc_runs
@@ -60,9 +62,7 @@ defmodule Raxol.Core.Performance.Profiler do
   @doc """
   Starts the profiler GenServer.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 and start_link/2 automatically
 
   @doc """
   Profiles a code block and records metrics.
@@ -280,7 +280,7 @@ defmodule Raxol.Core.Performance.Profiler do
   # Server callbacks
 
   @impl true
-  def init(_opts) do
+  def init_manager(_opts) do
     state = %{
       profiles: [],
       hot_paths: %{},
@@ -295,13 +295,13 @@ defmodule Raxol.Core.Performance.Profiler do
   end
 
   @impl true
-  def handle_call({:record_profile, profile_data}, _from, state) do
+  def handle_manager_call({:record_profile, profile_data}, _from, state) do
     updated_profiles = [profile_data | state.profiles] |> Enum.take(10_000)
     {:reply, :ok, %{state | profiles: updated_profiles}}
   end
 
   @impl true
-  def handle_call({:generate_report, format, operations}, _from, state) do
+  def handle_manager_call({:generate_report, format, operations}, _from, state) do
     report = build_report(state, operations)
 
     formatted_report =
@@ -314,18 +314,18 @@ defmodule Raxol.Core.Performance.Profiler do
   end
 
   @impl true
-  def handle_call(:suggest_optimizations, _from, state) do
+  def handle_manager_call(:suggest_optimizations, _from, state) do
     suggestions = analyze_for_optimizations(state)
     {:reply, suggestions, %{state | suggestions: suggestions}}
   end
 
   @impl true
-  def handle_call(:clear, _from, _state) do
+  def handle_manager_call(:clear, _from, _state) do
     {:reply, :ok, init_state()}
   end
 
   @impl true
-  def handle_info(:analyze, state) do
+  def handle_manager_info(:analyze, state) do
     # Periodic analysis of profiling data
     new_suggestions = analyze_for_optimizations(state)
 

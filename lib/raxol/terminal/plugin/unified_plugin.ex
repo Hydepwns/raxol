@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   All try/catch blocks have been replaced with with statements and proper error tuples.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Types
@@ -27,11 +27,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         }
 
   # Client API
-  def start_link(opts \\ []) do
-    opts = normalize_opts_to_list(opts)
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
+  # BaseManager provides start_link/1 automatically with name: __MODULE__ as default
 
   @doc """
   Loads a plugin from a file or directory.
@@ -86,7 +82,8 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   # Server Callbacks
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     opts_map = Map.new(opts)
 
     state = %{
@@ -101,7 +98,8 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     {:ok, state}
   end
 
-  def handle_call({:load_plugin, path, type, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:load_plugin, path, type, opts}, _from, state) do
     case do_load_plugin(path, type, opts, state) do
       {:ok, plugin_id, plugin_state} ->
         new_state = put_in(state.plugins[plugin_id], plugin_state)
@@ -112,7 +110,8 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
-  def handle_call({:unload_plugin, plugin_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:unload_plugin, plugin_id}, _from, state) do
     case do_unload_plugin(plugin_id, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -122,19 +121,22 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
-  def handle_call({:get_plugin_state, plugin_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_plugin_state, plugin_id}, _from, state) do
     case Map.get(state.plugins, plugin_id) do
       nil -> {:reply, {:error, :plugin_not_found}, state}
       plugin_state -> {:reply, {:ok, plugin_state}, state}
     end
   end
 
-  def handle_call({:get_plugins, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_plugins, opts}, _from, state) do
     plugins = filter_plugins(state.plugins, opts)
     {:reply, {:ok, plugins}, state}
   end
 
-  def handle_call({:update_plugin_config, plugin_id, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:update_plugin_config, plugin_id, config}, _from, state) do
     case do_update_plugin_config(plugin_id, config, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -144,7 +146,8 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:execute_plugin_function, plugin_id, function, args},
         _from,
         state
@@ -159,7 +162,8 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
     end
   end
 
-  def handle_call({:reload_plugin, plugin_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:reload_plugin, plugin_id}, _from, state) do
     case do_reload_plugin(plugin_id, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}

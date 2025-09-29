@@ -4,11 +4,8 @@ defmodule Raxol.PlaygroundTest do
   alias Raxol.Playground
 
   setup do
-    {:ok, pid} = Playground.start_link()
-
-    on_exit(fn ->
-      if Process.alive?(pid), do: GenServer.stop(pid)
-    end)
+    # Start the Playground with the registered name it expects
+    {:ok, pid} = start_supervised({Playground, [name: Playground]})
 
     {:ok, playground: pid}
   end

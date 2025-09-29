@@ -57,7 +57,8 @@ defmodule Raxol.Core.Session.SessionManager do
       )
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   alias Raxol.Core.Session.{
@@ -107,11 +108,18 @@ defmodule Raxol.Core.Session.SessionManager do
   @doc """
   Starts the unified session manager.
   """
-  def start_link(opts \\ []) do
+  # BaseManager provides start_link/1 and start_link/2 automatically
+  # We need to override for custom configuration handling
+  def start_link(opts) when is_list(opts) do
     config =
       Keyword.get(opts, :config, %{}) |> then(&Map.merge(@default_config, &1))
 
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
+    Raxol.Core.Behaviours.BaseManager.start_link(__MODULE__, config, name: __MODULE__)
+  end
+
+  def start_link(config) do
+    merged_config = Map.merge(@default_config, config)
+    Raxol.Core.Behaviours.BaseManager.start_link(__MODULE__, merged_config, name: __MODULE__)
   end
 
   ## Security Session API
@@ -306,8 +314,8 @@ defmodule Raxol.Core.Session.SessionManager do
 
   ## GenServer Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl true
+  def init_manager(config) do
     # Initialize session storage structures
     state = %__MODULE__{
       security_sessions: init_security_storage(config),
@@ -327,8 +335,8 @@ defmodule Raxol.Core.Session.SessionManager do
 
   ## Security Session Handlers
 
-  @impl GenServer
-  def handle_call({:create_security_session, user_id, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:create_security_session, user_id, opts}, _from, state) do
     case SecuritySession.create(
            user_id,
            opts,
@@ -344,8 +352,8 @@ defmodule Raxol.Core.Session.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:validate_security_session, session_id, token}, _from, state) do
+  @impl true
+  def handle_manager_call({:validate_security_session, session_id, token}, _from, state) do
     case SecuritySession.validate(session_id, token, state.security_sessions) do
       {:ok, session_info, updated_sessions} ->
         new_state = %{state | security_sessions: updated_sessions}
@@ -356,8 +364,8 @@ defmodule Raxol.Core.Session.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:invalidate_security_session, session_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:invalidate_security_session, session_id}, _from, state) do
     updated_sessions =
       SecuritySession.invalidate(session_id, state.security_sessions)
 
@@ -365,8 +373,8 @@ defmodule Raxol.Core.Session.SessionManager do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:invalidate_user_security_sessions, user_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:invalidate_user_security_sessions, user_id}, _from, state) do
     {count, updated_sessions} =
       SecuritySession.invalidate_user_sessions(user_id, state.security_sessions)
 
@@ -374,30 +382,30 @@ defmodule Raxol.Core.Session.SessionManager do
     {:reply, {:ok, count}, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:generate_csrf_token, session_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:generate_csrf_token, session_id}, _from, state) do
     token = SecuritySession.generate_csrf_token(session_id)
     {:reply, {:ok, token}, state}
   end
 
-  @impl GenServer
-  def handle_call({:validate_csrf_token, session_id, token}, _from, state) do
+  @impl true
+  def handle_manager_call({:validate_csrf_token, session_id, token}, _from, state) do
     valid = SecuritySession.validate_csrf_token(session_id, token)
     {:reply, {:ok, valid}, state}
   end
 
   ## Web Session Handlers
 
-  @impl GenServer
-  def handle_call({:create_web_session, user_id, metadata}, _from, state) do
+  @impl true
+  def handle_manager_call({:create_web_session, user_id, metadata}, _from, state) do
     {:ok, session} = WebSession.create(user_id, metadata, state.config)
     updated_sessions = Map.put(state.web_sessions, session.id, session)
     new_state = %{state | web_sessions: updated_sessions}
     {:reply, {:ok, session}, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_web_session, session_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_web_session, session_id}, _from, state) do
     case Map.get(state.web_sessions, session_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -414,8 +422,8 @@ defmodule Raxol.Core.Session.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:update_web_session, session_id, metadata}, _from, state) do
+  @impl true
+  def handle_manager_call({:update_web_session, session_id, metadata}, _from, state) do
     case Map.get(state.web_sessions, session_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -431,8 +439,8 @@ defmodule Raxol.Core.Session.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:end_web_session, session_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:end_web_session, session_id}, _from, state) do
     case Map.get(state.web_sessions, session_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -446,24 +454,24 @@ defmodule Raxol.Core.Session.SessionManager do
 
   ## Terminal Session Handlers
 
-  @impl GenServer
-  def handle_call({:create_terminal_session, user_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:create_terminal_session, user_id}, _from, state) do
     {:ok, session} = TerminalSession.create(user_id, state.config)
     updated_sessions = Map.put(state.terminal_sessions, session.id, session)
     new_state = %{state | terminal_sessions: updated_sessions}
     {:reply, {:ok, session}, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_terminal_session, session_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_terminal_session, session_id}, _from, state) do
     case Map.get(state.terminal_sessions, session_id) do
       nil -> {:reply, {:error, :not_found}, state}
       session -> {:reply, {:ok, session}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:authenticate_terminal_session, session_id, token},
         _from,
         state
@@ -487,8 +495,8 @@ defmodule Raxol.Core.Session.SessionManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:cleanup_terminal_session, session_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:cleanup_terminal_session, session_id}, _from, state) do
     updated_sessions = Map.delete(state.terminal_sessions, session_id)
     new_state = %{state | terminal_sessions: updated_sessions}
     {:reply, :ok, new_state}
@@ -496,8 +504,8 @@ defmodule Raxol.Core.Session.SessionManager do
 
   ## Multiplexer Session Handlers
 
-  @impl GenServer
-  def handle_call({:create_multiplexer_session, name, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:create_multiplexer_session, name, config}, _from, state) do
     {:ok, session} = MultiplexerSession.create(name, config, state.config)
 
     updated_sessions =
@@ -507,8 +515,8 @@ defmodule Raxol.Core.Session.SessionManager do
     {:reply, {:ok, session}, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:list_multiplexer_sessions, _from, state) do
+  @impl true
+  def handle_manager_call(:list_multiplexer_sessions, _from, state) do
     sessions =
       state.multiplexer_sessions
       |> Map.values()
@@ -517,8 +525,8 @@ defmodule Raxol.Core.Session.SessionManager do
     {:reply, sessions, state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:attach_multiplexer_session, session_id, client_config},
         _from,
         state
@@ -544,8 +552,8 @@ defmodule Raxol.Core.Session.SessionManager do
 
   ## Utility Handlers
 
-  @impl GenServer
-  def handle_call(:get_session_statistics, _from, state) do
+  @impl true
+  def handle_manager_call(:get_session_statistics, _from, state) do
     stats = %{
       security_sessions: SecuritySession.get_stats(state.security_sessions),
       web_sessions: map_size(state.web_sessions),
@@ -561,8 +569,8 @@ defmodule Raxol.Core.Session.SessionManager do
     {:reply, stats, state}
   end
 
-  @impl GenServer
-  def handle_call(:cleanup_all_sessions, _from, state) do
+  @impl true
+  def handle_manager_call(:cleanup_all_sessions, _from, state) do
     Logger.info("Running unified session cleanup")
 
     # Cleanup security sessions
@@ -593,8 +601,8 @@ defmodule Raxol.Core.Session.SessionManager do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_user_sessions, user_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_user_sessions, user_id}, _from, state) do
     user_sessions = %{
       security:
         SecuritySession.get_user_sessions(user_id, state.security_sessions),
@@ -611,8 +619,8 @@ defmodule Raxol.Core.Session.SessionManager do
     {:reply, user_sessions, state}
   end
 
-  @impl GenServer
-  def handle_info(:cleanup_timer, state) do
+  @impl true
+  def handle_manager_info(:cleanup_timer, state) do
     {:reply, _status, new_state} =
       handle_call(:cleanup_all_sessions, self(), state)
 

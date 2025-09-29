@@ -13,7 +13,8 @@ defmodule Raxol.Animation.Gestures.GestureServer do
   - Automatic cleanup on process termination
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   alias Raxol.Animation.Physics.{PhysicsEngine, Vector}
@@ -51,13 +52,6 @@ defmodule Raxol.Animation.Gestures.GestureServer do
   end
 
   # Client API
-
-  @doc """
-  Starts the Animation Gestures server.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Returns a child specification for this server.
@@ -196,8 +190,8 @@ defmodule Raxol.Animation.Gestures.GestureServer do
 
   # Server Callbacks
 
-  @impl true
-  def init(_opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(_opts) do
     state = %{
       # Map of pid -> gesture_state
       process_states: %{},

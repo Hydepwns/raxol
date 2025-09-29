@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
       AdaptiveFrameRate.set_power_mode(afr, :battery)
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   defstruct [
@@ -124,20 +124,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
 
   ## Public API
 
-  @doc """
-  Starts the adaptive frame rate manager.
-
-  ## Options
-  - `:target_fps` - Preferred frame rate (default: 60)
-  - `:min_fps` - Minimum frame rate (default: 1)
-  - `:max_fps` - Maximum frame rate (default: 120)
-  - `:strategy` - Refresh strategy (default: :adaptive)
-  - `:power_mode` - Power management mode (default: :balanced)
-  """
-  def start_link(opts \\ []) do
-    config = opts |> Enum.into(%{}) |> then(&Map.merge(@default_config, &1))
-    GenServer.start_link(__MODULE__, config)
-  end
+  # start_link is provided by BaseManager
 
   @doc """
   Registers a content change to influence frame rate decisions.
@@ -217,8 +204,8 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
 
   ## GenServer Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(config) do
     # Schedule periodic updates
     _ = :timer.send_interval(@stats_update_interval_ms, :update_stats)
     _ = :timer.send_interval(@thermal_check_interval_ms, :check_thermal_state)
@@ -246,19 +233,19 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_current_fps, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_current_fps, _from, state) do
     {:reply, state.current_fps, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_stats, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_stats, _from, state) do
     stats = calculate_comprehensive_stats(state)
     {:reply, stats, state}
   end
 
-  @impl GenServer
-  def handle_call({:set_power_mode, power_mode}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_power_mode, power_mode}, _from, state) do
     new_config = %{state.config | power_mode: power_mode}
     new_power_manager = init_power_manager(power_mode)
 
@@ -274,8 +261,8 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     {:reply, :ok, updated_state}
   end
 
-  @impl GenServer
-  def handle_call({:set_strategy, strategy}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_strategy, strategy}, _from, state) do
     new_config = %{state.config | strategy: strategy}
     new_state = %{state | config: new_config}
 
@@ -289,8 +276,8 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     {:reply, :ok, updated_state}
   end
 
-  @impl GenServer
-  def handle_call({:force_fps, fps}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:force_fps, fps}, _from, state) do
     clamped_fps = clamp_fps(fps, state.config)
 
     new_state = %{
@@ -303,8 +290,8 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:resume_adaptive, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:resume_adaptive, _from, state) do
     new_config = Map.delete(state.config, :forced_fps)
     new_state = %{state | config: new_config}
 
@@ -315,8 +302,8 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     {:reply, :ok, updated_state}
   end
 
-  @impl GenServer
-  def handle_call({:set_vsync, enabled}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_vsync, enabled}, _from, state) do
     new_config = %{state.config | enable_vsync: enabled}
     new_state = %{state | config: new_config}
 
@@ -324,8 +311,8 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_cast({:content_changed, change_type, intensity}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:content_changed, change_type, intensity}, state) do
     updated_analyzer =
       update_content_analyzer(state.content_analyzer, change_type, intensity)
 
@@ -337,8 +324,8 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     {:noreply, updated_state}
   end
 
-  @impl GenServer
-  def handle_cast({:user_interaction, interaction_type}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:user_interaction, interaction_type}, state) do
     updated_tracker =
       update_interaction_tracker(state.interaction_tracker, interaction_type)
 
@@ -350,8 +337,8 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     {:noreply, updated_state}
   end
 
-  @impl GenServer
-  def handle_cast({:set_focus_state, focus_state}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:set_focus_state, focus_state}, state) do
     now = System.monotonic_time(:millisecond)
     new_focus_tracker = %{state: focus_state, last_change: now}
     new_state = %{state | focus_tracker: new_focus_tracker}
@@ -366,8 +353,8 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     {:noreply, updated_state}
   end
 
-  @impl GenServer
-  def handle_info(:update_stats, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:update_stats, state) do
     new_stats = update_frame_stats(state.stats, state.current_fps)
     updated_state = %{state | stats: new_stats}
 
@@ -377,13 +364,13 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     {:noreply, optimized_state}
   end
 
-  @impl GenServer
-  def handle_info(:check_thermal_state, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:check_thermal_state, state) do
     handle_thermal_check(state.config.thermal_throttling, state)
   end
 
-  @impl GenServer
-  def handle_info(_msg, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(_msg, state) do
     {:noreply, state}
   end
 

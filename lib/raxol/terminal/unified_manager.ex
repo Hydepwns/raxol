@@ -55,6 +55,7 @@ defmodule Raxol.Terminal.UnifiedManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Commands.UnifiedCommandHandler

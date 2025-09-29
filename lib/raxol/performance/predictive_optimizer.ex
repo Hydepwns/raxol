@@ -15,7 +15,9 @@ defmodule Raxol.Performance.PredictiveOptimizer do
   - Workload classification
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+
   require Logger
 
   alias Raxol.Performance.ETSCacheManager
@@ -37,9 +39,7 @@ defmodule Raxol.Performance.PredictiveOptimizer do
 
   # Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 and start_link/2 automatically
 
   @doc """
   Record a telemetry event for analysis.
@@ -68,7 +68,7 @@ defmodule Raxol.Performance.PredictiveOptimizer do
   # Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init_manager(_opts) do
     # Attach to telemetry events
     telemetry_refs = attach_telemetry_handlers()
 
@@ -88,7 +88,7 @@ defmodule Raxol.Performance.PredictiveOptimizer do
   end
 
   @impl true
-  def handle_cast({:record_event, event_name, measurements, metadata}, state) do
+  def handle_manager_cast({:record_event, event_name, measurements, metadata}, state) do
     # Update pattern history
     pattern = extract_pattern(event_name, metadata)
     new_history = update_pattern_history(state.pattern_history, pattern)
@@ -124,19 +124,19 @@ defmodule Raxol.Performance.PredictiveOptimizer do
   end
 
   @impl true
-  def handle_call(:get_recommendations, _from, state) do
+  def handle_manager_call(:get_recommendations, _from, state) do
     recommendations = generate_recommendations(state)
     {:reply, recommendations, state}
   end
 
   @impl true
-  def handle_call(:optimize, _from, state) do
+  def handle_manager_call(:optimize, _from, state) do
     {result, new_state} = perform_optimization(state)
     {:reply, result, new_state}
   end
 
   @impl true
-  def handle_info(:scheduled_optimization, state) do
+  def handle_manager_info(:scheduled_optimization, state) do
     {_result, new_state} = perform_optimization(state)
     schedule_optimization()
     {:noreply, new_state}

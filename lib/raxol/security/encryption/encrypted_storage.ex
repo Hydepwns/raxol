@@ -17,7 +17,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
   - Automatic re-encryption on key rotation
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Security.Encryption.KeyManager
@@ -53,16 +53,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
 
   ## Client API
 
-  @doc """
-  Starts the encrypted storage service.
-  """
-  def start_link(opts \\ []) do
-    config =
-      Keyword.get(opts, :config, %{})
-      |> then(&Map.merge(@default_config, &1))
-
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
+  # BaseManager provides start_link
 
   @doc """
   Stores data with automatic encryption.
@@ -149,8 +140,8 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
 
   ## GenServer Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl true
+  def init_manager(config) do
     # Initialize storage backend
     backend = init_backend(config)
 
@@ -181,8 +172,8 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
 
   defp start_async_encryption_worker(_), do: :ok
 
-  @impl GenServer
-  def handle_call({:store, key, data, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:store, key, data, opts}, _from, state) do
     case encrypt_and_store(key, data, opts, state) do
       {:ok, metadata, new_state} ->
         {:reply, {:ok, metadata}, new_state}
@@ -192,8 +183,8 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     end
   end
 
-  @impl GenServer
-  def handle_call({:retrieve, key, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:retrieve, key, opts}, _from, state) do
     case retrieve_and_decrypt(key, opts, state) do
       {:ok, data, new_state} ->
         {:reply, {:ok, data}, new_state}
@@ -203,8 +194,8 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     end
   end
 
-  @impl GenServer
-  def handle_call({:store_file, file_path, encrypted_name, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:store_file, file_path, encrypted_name, opts}, _from, state) do
     case encrypt_file(file_path, encrypted_name, opts, state) do
       {:ok, metadata, new_state} ->
         {:reply, {:ok, metadata}, new_state}
@@ -214,8 +205,8 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     end
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:retrieve_file, encrypted_name, output_path, opts},
         _from,
         state
@@ -229,27 +220,27 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     end
   end
 
-  @impl GenServer
-  def handle_call({:delete, key, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:delete, key, opts}, _from, state) do
     # delete_encrypted/3 currently only returns {:ok, new_state}
     {:ok, new_state} = delete_encrypted(key, opts, state)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:list, prefix}, _from, state) do
+  @impl true
+  def handle_manager_call({:list, prefix}, _from, state) do
     items = list_encrypted_items(prefix, state)
     {:reply, {:ok, items}, state}
   end
 
-  @impl GenServer
-  def handle_call({:search, query, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:search, query, opts}, _from, state) do
     results = search_encrypted(query, opts, state)
     {:reply, {:ok, results}, state}
   end
 
-  @impl GenServer
-  def handle_call({:reencrypt, key, new_key_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:reencrypt, key, new_key_id}, _from, state) do
     case reencrypt_item(key, new_key_id, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -259,20 +250,20 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     end
   end
 
-  @impl GenServer
-  def handle_call({:reencrypt_all, new_key_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:reencrypt_all, new_key_id}, _from, state) do
     # reencrypt_all_items/2 currently only returns {:ok, count, new_state}
     {:ok, count, new_state} = reencrypt_all_items(new_key_id, state)
     {:reply, {:ok, count}, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_stats, _from, state) do
+  @impl true
+  def handle_manager_call(:get_stats, _from, state) do
     {:reply, state.stats, state}
   end
 
-  @impl GenServer
-  def handle_info(:process_encryption_queue, state) do
+  @impl true
+  def handle_manager_info(:process_encryption_queue, state) do
     new_state = process_async_encryption(state)
     {:noreply, new_state}
   end

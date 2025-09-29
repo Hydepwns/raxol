@@ -4,17 +4,13 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
   Coordinates between plugins and the command system.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+@behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Client API
 
-  @doc """
-  Start the plugin command manager.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Register commands for a plugin.
@@ -62,7 +58,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
   # Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init_manager(_opts) do
     state = %{
       commands: %{},
       plugin_commands: %{},
@@ -73,7 +69,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
   end
 
   @impl true
-  def handle_call(
+  def handle_manager_call(
         {:register_commands, plugin_id, commands, metadata},
         _from,
         state
@@ -105,7 +101,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
   end
 
   @impl true
-  def handle_call({:unregister_commands, plugin_id}, _from, state) do
+  def handle_manager_call({:unregister_commands, plugin_id}, _from, state) do
     Logger.debug("Unregistering commands for plugin #{plugin_id}")
 
     # Get commands for this plugin
@@ -134,18 +130,18 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
   end
 
   @impl true
-  def handle_call(:get_commands, _from, state) do
+  def handle_manager_call(:get_commands, _from, state) do
     {:reply, state.commands, state}
   end
 
   @impl true
-  def handle_call({:get_plugin_commands, plugin_id}, _from, state) do
+  def handle_manager_call({:get_plugin_commands, plugin_id}, _from, state) do
     commands = Map.get(state.plugin_commands, plugin_id, [])
     {:reply, commands, state}
   end
 
   @impl true
-  def handle_call({:dispatch_command, command_name, args}, _from, state) do
+  def handle_manager_call({:dispatch_command, command_name, args}, _from, state) do
     case Map.get(state.commands, command_name) do
       nil ->
         {:reply, {:error, :command_not_found}, state}

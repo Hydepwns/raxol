@@ -20,6 +20,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManager do
 
   use Raxol.Core.Behaviours.BaseManager
 
+
   require Raxol.Core.Runtime.Log
   alias Raxol.Core.Utils.TimerUtils
 

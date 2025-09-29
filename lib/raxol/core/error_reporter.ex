@@ -9,7 +9,8 @@ defmodule Raxol.Core.ErrorReporter do
   - Automatic report persistence and sharing
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
   alias Raxol.Core.{ErrorPatternLearner, ErrorTemplates, ErrorExperience}
 
@@ -48,8 +49,8 @@ defmodule Raxol.Core.ErrorReporter do
   @doc """
   Start the error reporter with optional configuration.
   """
-  def start_link(config \\ %{}) do
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
+  def start_link_legacy(config \\ %{}) do
+    __MODULE__.start_link(config)
   end
 
   @doc """
@@ -103,8 +104,8 @@ defmodule Raxol.Core.ErrorReporter do
 
   ## GenServer Implementation
 
-  @impl true
-  def init(config) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(config) do
     merged_config = Map.merge(@default_config, config)
     reports_dir = ensure_reports_directory()
     session_id = generate_session_id()

@@ -9,15 +9,13 @@ defmodule Raxol.Core.Renderer.RendererManager do
   * Screen updates
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   alias Raxol.Core.Renderer.Buffer
   alias Raxol.Core.Events.EventManager, as: Manager
   alias Raxol.Core.Runtime.ComponentManager
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   def initialize(opts \\ []) do
     GenServer.call(__MODULE__, {:init, opts})
@@ -31,8 +29,8 @@ defmodule Raxol.Core.Renderer.RendererManager do
     GenServer.call(__MODULE__, :cleanup)
   end
 
-  @impl GenServer
-  def init(_opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(_opts) do
     {:ok,
      %{
        buffer: nil,

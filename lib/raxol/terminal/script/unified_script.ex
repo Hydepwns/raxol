@@ -6,7 +6,8 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   REFACTORED: All try/rescue blocks replaced with functional patterns using Task.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   @type script_id :: String.t()
@@ -23,8 +24,8 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
           metadata: map()
         }
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_script_manager(opts \\ []) do
+    start_link([{:name, __MODULE__} | opts])
   end
 
   @doc """
@@ -111,8 +112,9 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     GenServer.call(__MODULE__, {:import_script, path, opts})
   end
 
-  # Server Callbacks
-  def init(opts) do
+  # BaseManager Callbacks
+  @impl true
+  def init_manager(opts) do
     state = %{
       scripts: %{},
       script_paths: Keyword.get(opts, :script_paths, ["scripts"]),
@@ -126,7 +128,8 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     {:ok, state}
   end
 
-  def handle_call({:load_script, source, type, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:load_script, source, type, opts}, _from, state) do
     script_id = generate_script_id()
     script_state = load_script_state(source, type, opts)
 
@@ -140,7 +143,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  def handle_call({:unload_script, script_id}, _from, state) do
+  def handle_manager_call({:unload_script, script_id}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}
@@ -151,7 +154,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  def handle_call({:get_script_state, script_id}, _from, state) do
+  def handle_manager_call({:get_script_state, script_id}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}
@@ -161,7 +164,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  def handle_call({:update_script_config, script_id, config}, _from, state) do
+  def handle_manager_call({:update_script_config, script_id, config}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}
@@ -171,7 +174,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  def handle_call({:execute_script, script_id, args}, _from, state) do
+  def handle_manager_call({:execute_script, script_id, args}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}
@@ -196,7 +199,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  def handle_call({:pause_script, script_id}, _from, state) do
+  def handle_manager_call({:pause_script, script_id}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}
@@ -206,7 +209,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  def handle_call({:resume_script, script_id}, _from, state) do
+  def handle_manager_call({:resume_script, script_id}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}
@@ -216,7 +219,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  def handle_call({:stop_script, script_id}, _from, state) do
+  def handle_manager_call({:stop_script, script_id}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}
@@ -226,7 +229,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  def handle_call({:get_script_output, script_id}, _from, state) do
+  def handle_manager_call({:get_script_output, script_id}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}
@@ -242,12 +245,12 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  def handle_call({:get_scripts, opts}, _from, state) do
+  def handle_manager_call({:get_scripts, opts}, _from, state) do
     scripts = filter_scripts(state.scripts, opts)
     {:reply, {:ok, scripts}, state}
   end
 
-  def handle_call({:export_script, script_id, path}, _from, state) do
+  def handle_manager_call({:export_script, script_id, path}, _from, state) do
     case Map.get(state.scripts, script_id) do
       nil ->
         {:reply, {:error, :script_not_found}, state}
@@ -263,7 +266,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
     end
   end
 
-  def handle_call({:import_script, path, opts}, _from, state) do
+  def handle_manager_call({:import_script, path, opts}, _from, state) do
     case import_script_from_file(path, opts) do
       {:ok, script} ->
         script_id = generate_script_id()

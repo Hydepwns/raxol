@@ -5,6 +5,7 @@ defmodule Raxol.UI.Theming.UnifiedThemingManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   defstruct [
@@ -59,8 +60,8 @@ defmodule Raxol.UI.Theming.UnifiedThemingManager do
 
   ## GenServer Implementation
 
-  @impl true
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     state = %__MODULE__{
       current_theme: nil,
       available_themes: %{},

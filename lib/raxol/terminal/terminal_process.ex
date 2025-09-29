@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.TerminalProcess do
   configuration management, and state persistence using event sourcing.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Terminal.TerminalRegistry
@@ -48,13 +48,13 @@ defmodule Raxol.Terminal.TerminalProcess do
   Starts a terminal process.
   """
   def start_link(terminal_config) do
-    GenServer.start_link(__MODULE__, terminal_config)
+    Raxol.Core.Behaviours.BaseManager.start_link(__MODULE__, terminal_config)
   end
 
-  ## GenServer Implementation
+  ## BaseManager Implementation
 
-  @impl GenServer
-  def init(terminal_config) do
+  @impl true
+  def init_manager(terminal_config) do
     # Initialize terminal state
     state = %__MODULE__{
       terminal_id: terminal_config.terminal_id,
@@ -82,13 +82,13 @@ defmodule Raxol.Terminal.TerminalProcess do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_config, _from, state) do
+  @impl true
+  def handle_manager_call(:get_config, _from, state) do
     {:reply, {:ok, state.config}, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
+  @impl true
+  def handle_manager_call(:get_state, _from, state) do
     terminal_state = %{
       terminal_id: state.terminal_id,
       user_id: state.user_id,
@@ -101,15 +101,15 @@ defmodule Raxol.Terminal.TerminalProcess do
     {:reply, {:ok, terminal_state}, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_next_input_sequence, _from, state) do
+  @impl true
+  def handle_manager_call(:get_next_input_sequence, _from, state) do
     new_sequence = state.input_sequence + 1
     new_state = %{state | input_sequence: new_sequence}
     {:reply, {:ok, new_sequence}, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:apply_config_changes, changes}, _from, state) do
+  @impl true
+  def handle_manager_call({:apply_config_changes, changes}, _from, state) do
     {:ok, new_state} = apply_configuration_changes(changes, state)
 
     updated_state = %{
@@ -121,14 +121,14 @@ defmodule Raxol.Terminal.TerminalProcess do
     {:reply, {:ok, updated_state.config}, updated_state}
   end
 
-  @impl GenServer
-  def handle_call({:send_input, input_message}, _from, state) do
+  @impl true
+  def handle_manager_call({:send_input, input_message}, _from, state) do
     {:ok, new_state} = process_input(input_message, state)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:capture_final_state, _from, state) do
+  @impl true
+  def handle_manager_call(:capture_final_state, _from, state) do
     final_state = %{
       width: state.config.width,
       height: state.config.height,
@@ -142,15 +142,15 @@ defmodule Raxol.Terminal.TerminalProcess do
     {:reply, {:ok, final_state}, state}
   end
 
-  @impl GenServer
-  def handle_call(:save_session, _from, state) do
+  @impl true
+  def handle_manager_call(:save_session, _from, state) do
     # save_terminal_session/1 always returns :ok, no error case possible
     :ok = save_terminal_session(state)
     {:reply, :ok, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_current_theme, _from, state) do
+  @impl true
+  def handle_manager_call(:get_current_theme, _from, state) do
     current_theme = Map.get(state.config, :theme)
 
     case current_theme do
@@ -159,15 +159,15 @@ defmodule Raxol.Terminal.TerminalProcess do
     end
   end
 
-  @impl GenServer
-  def handle_call({:apply_theme, theme}, _from, state) do
+  @impl true
+  def handle_manager_call({:apply_theme, theme}, _from, state) do
     # apply_theme_to_terminal/2 always returns {:ok, new_state}, no error case possible
     {:ok, new_state} = apply_theme_to_terminal(theme, state)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_info(:initialize_terminal, state) do
+  @impl true
+  def handle_manager_info(:initialize_terminal, state) do
     case initialize_terminal_components(state) do
       {:ok, new_state} ->
         Logger.info("Terminal #{state.terminal_id} initialized successfully")
@@ -182,14 +182,14 @@ defmodule Raxol.Terminal.TerminalProcess do
     end
   end
 
-  @impl GenServer
-  def handle_info({:output, data}, state) do
+  @impl true
+  def handle_manager_info({:output, data}, state) do
     # Handle output from the terminal emulator
     {:ok, new_state} = process_output(data, state)
     {:noreply, new_state}
   end
 
-  @impl GenServer
+  @impl true
   def terminate(reason, state) do
     Logger.info("Terminal #{state.terminal_id} terminating: #{inspect(reason)}")
 

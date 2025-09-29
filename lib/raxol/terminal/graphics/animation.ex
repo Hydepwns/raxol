@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
       })
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Animation.Framework
@@ -59,13 +59,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
 
   # Public API
 
-  @doc """
-  Starts the graphics animation server.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
-
+  # BaseManager provides start_link
   @doc """
   Creates a graphics animation definition for use with terminal graphics.
 
@@ -83,6 +77,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
     GenServer.call(__MODULE__, {:create_graphics_animation, name, params})
   end
 
+  # BaseManager provides start_link
   @doc """
   Starts a graphics animation on a specific graphics element.
 
@@ -101,6 +96,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
     )
   end
 
+  # BaseManager provides start_link
   @doc """
   Creates a smooth image animation between frames.
 
@@ -116,6 +112,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
     GenServer.call(__MODULE__, {:create_image_animation, name, frames, options})
   end
 
+  # BaseManager provides start_link
   @doc """
   Gets current performance metrics for graphics animations.
   """
@@ -124,6 +121,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
     GenServer.call(__MODULE__, :get_performance_metrics)
   end
 
+  # BaseManager provides start_link
   @doc """
   Stops a running graphics animation.
   """
@@ -135,7 +133,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
   # GenServer Implementation
 
   @impl true
-  def init(opts) do
+  def init_manager(opts) do
     config = Map.merge(@default_config, Map.new(opts))
 
     # Schedule animation frame processing
@@ -152,7 +150,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
   end
 
   @impl true
-  def handle_call({:create_graphics_animation, name, params}, _from, state) do
+  def handle_manager_call({:create_graphics_animation, name, params}, _from, state) do
     case validate_animation_params(params) do
       :ok ->
         # Create the animation definition with the existing framework
@@ -227,13 +225,12 @@ defmodule Raxol.Terminal.Graphics.Animation do
     end
   end
 
-  @impl true
-  def handle_call(:get_performance_metrics, _from, state) do
+  def handle_manager_call(:get_performance_metrics, _from, state) do
     {:reply, state.performance_metrics, state}
   end
 
   @impl true
-  def handle_call({:stop_graphics_animation, animation_id}, _from, state) do
+  def handle_manager_call({:stop_graphics_animation, animation_id}, _from, state) do
     case Map.get(state.active_animations, animation_id) do
       nil ->
         {:reply, {:error, :animation_not_found}, state}
@@ -246,7 +243,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
   end
 
   @impl true
-  def handle_info(:frame_tick, state) do
+  def handle_manager_info(:frame_tick, state) do
     # Process active animations and apply to graphics
     new_state = process_animation_frame(state)
 

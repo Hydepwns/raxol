@@ -12,17 +12,12 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
   - Cache hit/miss tracking
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   # Client API
 
-  @doc """
-  Starts the Memoization server.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Returns a child specification for this server.
@@ -96,7 +91,8 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
   # Server Callbacks
 
   @impl true
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     # Start a timer to clean up expired entries periodically
     schedule_cleanup()
 
@@ -119,7 +115,7 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
   end
 
   @impl true
-  def handle_call({:get_or_compute, pid, key, fun}, _from, state) do
+  def handle_manager_call({:get_or_compute, pid, key, fun}, _from, state) do
     cache_key = {pid, key}
 
     case Map.get(state.cache, cache_key) do
@@ -155,7 +151,7 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
   end
 
   @impl true
-  def handle_call({:get, pid, key}, _from, state) do
+  def handle_manager_call({:get, pid, key}, _from, state) do
     cache_key = {pid, key}
 
     case Map.get(state.cache, cache_key) do
@@ -173,7 +169,7 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
   end
 
   @impl true
-  def handle_call({:put, pid, key, value}, _from, state) do
+  def handle_manager_call({:put, pid, key, value}, _from, state) do
     cache_key = {pid, key}
     timestamp = System.monotonic_time(:millisecond)
 
@@ -190,7 +186,7 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
   end
 
   @impl true
-  def handle_call({:clear, pid}, _from, state) do
+  def handle_manager_call({:clear, pid}, _from, state) do
     # Remove all entries for this process
     cache =
       state.cache
@@ -201,7 +197,7 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
   end
 
   @impl true
-  def handle_call({:clear_key, pid, key}, _from, state) do
+  def handle_manager_call({:clear_key, pid, key}, _from, state) do
     cache_key = {pid, key}
     cache = Map.delete(state.cache, cache_key)
 
@@ -209,7 +205,7 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
   end
 
   @impl true
-  def handle_call(:stats, _from, state) do
+  def handle_manager_call(:stats, _from, state) do
     total_entries = map_size(state.cache)
 
     processes_count =
@@ -235,7 +231,7 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
   end
 
   @impl true
-  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+  def handle_manager_info({:DOWN, _ref, :process, pid, _reason}, state) do
     # Clean up cache for dead process
     cache =
       state.cache
@@ -248,7 +244,7 @@ defmodule Raxol.Core.Performance.Memoization.MemoizationServer do
   end
 
   @impl true
-  def handle_info(:cleanup, state) do
+  def handle_manager_info(:cleanup, state) do
     # Remove expired entries
     _now = System.monotonic_time(:millisecond)
 

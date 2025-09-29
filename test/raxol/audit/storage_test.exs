@@ -16,7 +16,7 @@ defmodule Raxol.Audit.StorageTest do
       keep_files: 7
     }
 
-    {:ok, _pid} = Storage.start_link(config)
+    {:ok, _pid} = Storage.start_link(name: Storage, config: config)
 
     on_exit(fn ->
       case Process.whereis(Storage) do
@@ -293,7 +293,7 @@ defmodule Raxol.Audit.StorageTest do
         compress_logs: true
       }
 
-      {:ok, _pid} = Storage.start_link(config)
+      {:ok, _pid} = Storage.start_link(name: Storage, config: config)
 
       # Store events and trigger rotation
       events = create_test_events(10)

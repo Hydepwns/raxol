@@ -28,7 +28,8 @@ defmodule Raxol.Core.ConnectionPool do
       end)
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   @default_opts [
@@ -69,14 +70,6 @@ defmodule Raxol.Core.ConnectionPool do
 
   # Client API
 
-  @doc """
-  Starts a connection pool with the given options.
-  """
-  @spec start_link(pool_opts()) :: GenServer.on_start()
-  def start_link(opts) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
 
   @doc """
   Executes a function with a connection from the pool.
@@ -115,7 +108,8 @@ defmodule Raxol.Core.ConnectionPool do
   # Server Callbacks
 
   @impl true
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     opts = Keyword.merge(@default_opts, opts)
 
     state = %__MODULE__{
@@ -150,7 +144,7 @@ defmodule Raxol.Core.ConnectionPool do
   end
 
   @impl true
-  def handle_call({:checkout, fun, timeout}, _from, state)
+  def handle_manager_call({:checkout, fun, timeout}, _from, state)
       when is_function(fun) do
     case do_checkout(state, timeout) do
       {:ok, conn, new_state} ->
@@ -174,7 +168,7 @@ defmodule Raxol.Core.ConnectionPool do
   end
 
   @impl true
-  def handle_call({:checkout, timeout}, _from, state) do
+  def handle_manager_call({:checkout, timeout}, _from, state) do
     case do_checkout(state, timeout) do
       {:ok, conn, new_state} ->
         {:reply, {:ok, conn}, new_state}
@@ -185,7 +179,7 @@ defmodule Raxol.Core.ConnectionPool do
   end
 
   @impl true
-  def handle_call(:stats, _from, state) do
+  def handle_manager_call(:stats, _from, state) do
     stats = %{
       pool_size: state.pool_size,
       available: length(state.connections.available),
@@ -199,19 +193,19 @@ defmodule Raxol.Core.ConnectionPool do
   end
 
   @impl true
-  def handle_cast({:checkin, conn}, state) do
+  def handle_manager_cast({:checkin, conn}, state) do
     {:noreply, do_checkin(state, conn)}
   end
 
   @impl true
-  def handle_info(:health_check, state) do
+  def handle_manager_info(:health_check, state) do
     state = perform_health_checks(state)
     schedule_health_check(state.health_check_interval)
     {:noreply, state}
   end
 
   @impl true
-  def handle_info({:idle_timeout, conn}, state) do
+  def handle_manager_info({:idle_timeout, conn}, state) do
     state = handle_idle_timeout(state, conn)
     {:noreply, state}
   end

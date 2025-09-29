@@ -5,12 +5,12 @@ defmodule Raxol.UI.ThemeResolverCachedTest do
   alias Raxol.Performance.ETSCacheManager
   
   setup do
-    # Ensure cache manager is running
+    # Ensure cache manager is running with a name
     case Process.whereis(ETSCacheManager) do
-      nil -> {:ok, _} = ETSCacheManager.start_link()
+      nil -> {:ok, _} = ETSCacheManager.start_link(name: ETSCacheManager)
       _pid -> :ok
     end
-    
+
     # Clear cache before each test
     ETSCacheManager.clear_cache(:style)
     

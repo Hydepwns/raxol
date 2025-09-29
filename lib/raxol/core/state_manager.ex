@@ -50,7 +50,8 @@ defmodule Raxol.Core.StateManager do
   """
 
   use Agent
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   # Types
@@ -389,7 +390,7 @@ defmodule Raxol.Core.StateManager do
 
   @deprecated "Use start_managed/3 for supervised state or functional operations for simple transformations"
   """
-  def start_link(initial_state \\ %{}, opts \\ []) do
+  def start_link_agent(initial_state \\ %{}, opts \\ []) do
     Agent.start_link(fn -> initial_state end, opts)
   end
 
@@ -558,11 +559,20 @@ defmodule Raxol.Core.StateManager do
 
   # GenServer Implementation (for process strategy)
 
-  @impl GenServer
-  def init({state_id, initial_state}) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    {state_id, initial_state} =
+      case opts do
+        [{:state_id, id}, {:initial_state, state}] -> {id, state}
+        %{state_id: id, initial_state: state} -> {id, state}
+        opts when is_tuple(opts) -> opts
+        _ -> {nil, %{}}
+      end
+
     Logger.info("Starting managed state: #{state_id}")
     {:ok, %{id: state_id, state: initial_state}}
   end
+
 
   @impl GenServer
   def handle_call({:update, update_fun}, _from, %{state: state} = manager_state) do

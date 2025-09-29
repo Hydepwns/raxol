@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Cache.System do
   - General purpose caching
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Terminal.Cache.EvictionHelpers
 
   @type namespace :: :buffer | :animation | :scroll | :clipboard | :general
@@ -34,19 +34,7 @@ defmodule Raxol.Terminal.Cache.System do
           eviction_count: non_neg_integer()
         }
 
-  @doc """
-  Starts the unified cache system.
-
-  ## Options
-    * `:max_size` - Maximum cache size in bytes (default: 100MB)
-    * `:default_ttl` - Default time-to-live in seconds (default: 3600)
-    * `:eviction_policy` - Cache eviction policy (:lru, :lfu, :fifo) (default: :lru)
-    * `:compression_enabled` - Whether to enable compression (default: true)
-    * `:namespace_configs` - Configuration for specific namespaces
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link
 
   @doc """
   Gets a value from the cache.
@@ -125,7 +113,7 @@ defmodule Raxol.Terminal.Cache.System do
     System.monotonic_time(:millisecond)
   end
 
-  def init(opts) do
+  def init_manager(opts) do
     max_size = Keyword.get(opts, :max_size, 100 * 1024 * 1024)
     default_ttl = Keyword.get(opts, :default_ttl, 3600)
     eviction_policy = Keyword.get(opts, :eviction_policy, :lru)
@@ -144,7 +132,7 @@ defmodule Raxol.Terminal.Cache.System do
     {:ok, state}
   end
 
-  def handle_call({:get, namespace, key}, _from, state) do
+  def handle_manager_call({:get, namespace, key}, _from, state) do
     case get_namespace(state, namespace) do
       nil ->
         {:reply, {:error, :namespace_not_found}, state}
@@ -154,7 +142,7 @@ defmodule Raxol.Terminal.Cache.System do
     end
   end
 
-  def handle_call({:put, namespace, key, value, ttl, metadata}, _from, state) do
+  def handle_manager_call({:put, namespace, key, value, ttl, metadata}, _from, state) do
     case get_namespace(state, namespace) do
       nil ->
         {:reply, {:error, :namespace_not_found}, state}
@@ -204,7 +192,7 @@ defmodule Raxol.Terminal.Cache.System do
     end
   end
 
-  def handle_call({:invalidate, namespace, key}, _from, state) do
+  def handle_manager_call({:invalidate, namespace, key}, _from, state) do
     case get_namespace(state, namespace) do
       nil ->
         {:reply, {:error, :namespace_not_found}, state}
@@ -229,7 +217,7 @@ defmodule Raxol.Terminal.Cache.System do
     end
   end
 
-  def handle_call({:stats, namespace}, _from, state) do
+  def handle_manager_call({:stats, namespace}, _from, state) do
     case get_namespace(state, namespace) do
       nil ->
         {:reply, {:error, :namespace_not_found}, state}
@@ -248,7 +236,7 @@ defmodule Raxol.Terminal.Cache.System do
     end
   end
 
-  def handle_call({:clear, namespace}, _from, state) do
+  def handle_manager_call({:clear, namespace}, _from, state) do
     case get_namespace(state, namespace) do
       nil ->
         {:reply, {:error, :namespace_not_found}, state}

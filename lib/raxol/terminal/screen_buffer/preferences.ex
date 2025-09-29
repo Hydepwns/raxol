@@ -3,7 +3,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Preferences do
   Manages screen buffer preferences and settings.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   defstruct [
     :font_size,
@@ -27,28 +28,25 @@ defmodule Raxol.Terminal.ScreenBuffer.Preferences do
           cursor_blink: boolean()
         }
 
-  def start_link(_) do
-    GenServer.start_link(__MODULE__, default_preferences(), name: __MODULE__)
-  end
+  # BaseManager provides start_link/1
+  # Usage: Raxol.Terminal.ScreenBuffer.Preferences.start_link(name: __MODULE__, ...)
 
-  def init(preferences) do
-    %__MODULE__{
-      scrollback_size: Keyword.get(preferences, :scrollback_size, 1000),
-      tab_width: Keyword.get(preferences, :tab_width, 8),
-      auto_wrap: Keyword.get(preferences, :auto_wrap, true),
-      cursor_style: Keyword.get(preferences, :cursor_style, :block),
-      cursor_blink: Keyword.get(preferences, :cursor_blink, true)
-    }
-  end
-
-  def init do
-    %__MODULE__{
-      scrollback_size: 1000,
-      tab_width: 8,
-      auto_wrap: true,
-      cursor_style: :block,
-      cursor_blink: true
-    }
+  @impl true
+  def init_manager(opts) do
+    prefs = Keyword.get(opts, :preferences, default_preferences())
+    state = case prefs do
+      %__MODULE__{} = p -> p
+      keyword when is_list(keyword) ->
+        %__MODULE__{
+          scrollback_size: Keyword.get(keyword, :scrollback_size, 1000),
+          tab_width: Keyword.get(keyword, :tab_width, 8),
+          auto_wrap: Keyword.get(keyword, :auto_wrap, true),
+          cursor_style: Keyword.get(keyword, :cursor_style, :block),
+          cursor_blink: Keyword.get(keyword, :cursor_blink, true)
+        }
+      _ -> default_preferences()
+    end
+    {:ok, state}
   end
 
   defp default_preferences do
@@ -69,11 +67,13 @@ defmodule Raxol.Terminal.ScreenBuffer.Preferences do
     GenServer.call(__MODULE__, {:set, preferences})
   end
 
-  def handle_call(:get, _from, state) do
+  @impl true
+  def handle_manager_call(:get, _from, state) do
     {:reply, state, state}
   end
 
-  def handle_call({:set, preferences}, _from, _state) do
+  @impl true
+  def handle_manager_call({:set, preferences}, _from, _state) do
     {:reply, preferences, preferences}
   end
 end

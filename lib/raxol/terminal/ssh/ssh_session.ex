@@ -33,7 +33,7 @@ if Code.ensure_loaded?(:ssh) do
         output = SSHSession.get_output(session)
     """
 
-    use GenServer
+    use Raxol.Core.Behaviours.BaseManager
     require Logger
 
     @type pty_options :: %{
@@ -115,7 +115,7 @@ if Code.ensure_loaded?(:ssh) do
     """
     @spec start(pid(), pty_options()) :: {:ok, pid()} | {:error, term()}
     def start(ssh_client, pty_options \\ %{}) do
-      GenServer.start_link(__MODULE__, {ssh_client, pty_options})
+      start_link([ssh_client: ssh_client, pty_options: pty_options])
     end
 
     @doc """
@@ -294,10 +294,12 @@ if Code.ensure_loaded?(:ssh) do
       GenServer.cast(session, :terminate)
     end
 
-    ## GenServer Callbacks
+    ## BaseManager Callbacks
 
     @impl true
-    def init({ssh_client, pty_options}) do
+    def init_manager(opts) do
+      ssh_client = Keyword.get(opts, :ssh_client)
+      pty_options = Keyword.get(opts, :pty_options, %{})
       Process.flag(:trap_exit, true)
 
       # Get connection reference from SSH client
@@ -335,7 +337,7 @@ if Code.ensure_loaded?(:ssh) do
     end
 
     @impl true
-    def handle_call({:resize, width, height}, _from, state) do
+    def handle_manager_call({:resize, width, height}, _from, state) do
       case resize_pty(state, width, height) do
         :ok ->
           new_pty_options =
@@ -349,7 +351,7 @@ if Code.ensure_loaded?(:ssh) do
       end
     end
 
-    def handle_call({:get_output, clear_buffer}, _from, state) do
+    def handle_manager_call({:get_output, clear_buffer}, _from, state) do
       output = state.output_buffer
 
       new_state =
@@ -362,7 +364,7 @@ if Code.ensure_loaded?(:ssh) do
       {:reply, output, new_state}
     end
 
-    def handle_call({:start_recording, file_path}, _from, state) do
+    def handle_manager_call({:start_recording, file_path}, _from, state) do
       case start_session_recording(state, file_path) do
         {:ok, new_state} ->
           {:reply, :ok, new_state}
@@ -372,12 +374,12 @@ if Code.ensure_loaded?(:ssh) do
       end
     end
 
-    def handle_call(:stop_recording, _from, state) do
+    def handle_manager_call(:stop_recording, _from, state) do
       new_state = stop_session_recording(state)
       {:reply, :ok, new_state}
     end
 
-    def handle_call(:get_session_info, _from, state) do
+    def handle_manager_call(:get_session_info, _from, state) do
       info = %{
         started_at: state.started_at,
         last_activity: state.last_activity,
@@ -390,7 +392,7 @@ if Code.ensure_loaded?(:ssh) do
       {:reply, {:ok, info}, state}
     end
 
-    def handle_call({:send_signal, signal}, _from, state) do
+    def handle_manager_call({:send_signal, signal}, _from, state) do
       case send_session_signal(state, signal) do
         :ok ->
           {:reply, :ok, update_activity(state)}
@@ -401,7 +403,7 @@ if Code.ensure_loaded?(:ssh) do
     end
 
     @impl true
-    def handle_cast({:send_input, data}, state) do
+    def handle_manager_cast({:send_input, data}, state) do
       case send_session_input(state, data) do
         :ok ->
           new_input_buffer = state.input_buffer <> data
@@ -414,7 +416,7 @@ if Code.ensure_loaded?(:ssh) do
       end
     end
 
-    def handle_cast({:subscribe, subscriber}, state) do
+    def handle_manager_cast({:subscribe, subscriber}, state) do
       if subscriber in state.subscribers do
         {:noreply, state}
       else
@@ -424,17 +426,17 @@ if Code.ensure_loaded?(:ssh) do
       end
     end
 
-    def handle_cast({:unsubscribe, subscriber}, state) do
+    def handle_manager_cast({:unsubscribe, subscriber}, state) do
       new_subscribers = List.delete(state.subscribers, subscriber)
       {:noreply, %{state | subscribers: new_subscribers}}
     end
 
-    def handle_cast(:terminate, state) do
+    def handle_manager_cast(:terminate, state) do
       {:stop, :normal, state}
     end
 
     @impl true
-    def handle_info(
+    def handle_manager_info(
           {:ssh_cm, connection_ref, {:data, channel_id, 0, data}},
           state
         )
@@ -465,7 +467,7 @@ if Code.ensure_loaded?(:ssh) do
       {:noreply, new_state}
     end
 
-    def handle_info(
+    def handle_manager_info(
           {:ssh_cm, connection_ref, {:exit_status, channel_id, status}},
           state
         )
@@ -476,20 +478,20 @@ if Code.ensure_loaded?(:ssh) do
       {:noreply, new_state}
     end
 
-    def handle_info({:ssh_cm, connection_ref, {:closed, channel_id}}, state)
+    def handle_manager_info({:ssh_cm, connection_ref, {:closed, channel_id}}, state)
         when connection_ref == state.connection_ref and
                channel_id == state.channel_id do
       Logger.info("SSH session channel closed")
       {:stop, :normal, state}
     end
 
-    def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+    def handle_manager_info({:DOWN, _ref, :process, pid, _reason}, state) do
       # Remove dead subscriber
       new_subscribers = List.delete(state.subscribers, pid)
       {:noreply, %{state | subscribers: new_subscribers}}
     end
 
-    def handle_info(msg, state) do
+    def handle_manager_info(msg, state) do
       Logger.debug("Unhandled SSH session message: #{inspect(msg)}")
       {:noreply, state}
     end
@@ -762,9 +764,11 @@ else
     in your OTP installation.
     """
 
-    use GenServer
+    use Raxol.Core.Behaviours.BaseManager
 
-    def start_link(_client, _options \\ []) do
+    @behaviour Raxol.Core.Behaviours.BaseManager
+
+    def start(client, pty_options \\ %{}) do
       {:error, :ssh_not_available}
     end
 
@@ -780,17 +784,21 @@ else
       {:error, :ssh_not_available}
     end
 
-    # GenServer callbacks (required)
-    def init(_) do
+    # BaseManager callbacks (required)
+    @impl true
+    def init_manager(_) do
       {:stop, :ssh_not_available}
     end
 
-    def handle_call(_, _, state),
+    @impl true
+    def handle_manager_call(_, _, state),
       do: {:reply, {:error, :ssh_not_available}, state}
 
-    def handle_cast(_, state), do: {:noreply, state}
-    def handle_info(_, state), do: {:noreply, state}
-    def terminate(_, _), do: :ok
+    @impl true
+    def handle_manager_cast(_, state), do: {:noreply, state}
+    @impl true
+    def handle_manager_info(_, state), do: {:noreply, state}
+    def terminate_manager(_, _), do: :ok
     def code_change(_, state, _), do: {:ok, state}
   end
 end

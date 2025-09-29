@@ -59,7 +59,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
       })
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   alias Raxol.Core.Platform
@@ -178,20 +179,14 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
   ## Public API
 
-  @doc """
-  Starts the screen reader support system.
-
-  ## Options
-  - `:screen_reader` - Target screen reader (:nvda, :jaws, :voiceover, :orca, :auto_detect)
-  - `:language` - Language code for speech synthesis (default: "en-US")
-  - `:speech_rate` - Words per minute (default: 200)
-  - `:enable_braille` - Enable braille display support (default: true)
-  - `:verbosity_level` - Amount of information to announce (default: :normal)
-  """
-  def start_link(opts \\ %{}) do
-    config = Map.merge(@default_config, opts)
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 which handles GenServer initialization
+  # Usage: Raxol.UI.Accessibility.ScreenReader.start_link(name: __MODULE__, config: custom_config)
+  # Options:
+  #   - `:screen_reader` - Target screen reader (:nvda, :jaws, :voiceover, :orca, :auto_detect)
+  #   - `:language` - Language code for speech synthesis (default: "en-US")
+  #   - `:speech_rate` - Words per minute (default: 200)
+  #   - `:enable_braille` - Enable braille display support (default: true)
+  #   - `:verbosity_level` - Amount of information to announce (default: :normal)
 
   @doc """
   Registers a UI component for screen reader accessibility.
@@ -266,8 +261,9 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
   ## GenServer Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    config = Map.merge(@default_config, Keyword.get(opts, :config, %{}))
     # Detect available screen readers
     screen_reader_type = detect_screen_reader(config.screen_reader)
 
@@ -310,8 +306,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:register_component, component_id, component_config},
         _from,
         state
@@ -351,8 +347,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:set_focus, component_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_focus, component_id}, _from, state) do
     case Map.get(state.component_registry, component_id) do
       nil ->
         {:reply, {:error, :component_not_found}, state}
@@ -378,16 +374,16 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     end
   end
 
-  @impl GenServer
-  def handle_call({:get_accessibility_state, component_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_accessibility_state, component_id}, _from, state) do
     case Map.get(state.component_registry, component_id) do
       nil -> {:reply, {:error, :component_not_found}, state}
       component -> {:reply, {:ok, component}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call({:announce_shortcuts, component_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:announce_shortcuts, component_id}, _from, state) do
     case Map.get(state.component_registry, component_id) do
       nil ->
         {:reply, {:error, :component_not_found}, state}
@@ -398,8 +394,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     end
   end
 
-  @impl GenServer
-  def handle_call({:set_reading_mode, mode}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_reading_mode, mode}, _from, state) do
     new_reading_state = %{state.reading_state | mode: mode}
     new_state = %{state | reading_state: new_reading_state}
 
@@ -421,8 +417,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:read_at_cursor, verbosity}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:read_at_cursor, verbosity}, _from, state) do
     cursor_content = get_content_at_cursor(state)
 
     reading_text =
@@ -437,8 +433,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     {:reply, :ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:configure_feature, feature, enabled}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:configure_feature, feature, enabled}, _from, state) do
     new_config = Map.put(state.config, feature, enabled)
     new_state = %{state | config: new_config}
 
@@ -456,8 +452,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_cast({:announce, text, priority}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:announce, text, priority}, state) do
     _announcement = announce_to_screen_reader(state, text, priority)
 
     # Update live regions if applicable
@@ -466,8 +462,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     {:noreply, updated_state}
   end
 
-  @impl GenServer
-  def handle_cast({:update_property, component_id, properties}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:update_property, component_id, properties}, state) do
     case Map.get(state.component_registry, component_id) do
       nil ->
         Logger.warning(
@@ -500,8 +496,8 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     end
   end
 
-  @impl GenServer
-  def handle_cast({:describe_formatting, element_id, formatting}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:describe_formatting, element_id, formatting}, state) do
     description = generate_formatting_description(formatting)
 
     _announcement =

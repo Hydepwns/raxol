@@ -24,7 +24,8 @@ defmodule Raxol.Core.UnifiedRegistry do
       commands = UnifiedRegistry.search(:commands, pattern)
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   @type registry_type ::
@@ -64,13 +65,6 @@ defmodule Raxol.Core.UnifiedRegistry do
   ]
 
   # Client API
-
-  @doc """
-  Starts the unified registry.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Registers an entry in the specified registry.
@@ -210,8 +204,8 @@ defmodule Raxol.Core.UnifiedRegistry do
 
   # GenServer Implementation
 
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     config = Keyword.get(opts, :config, %{})
 
     state = %__MODULE__{
@@ -227,8 +221,8 @@ defmodule Raxol.Core.UnifiedRegistry do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:register, type, id, data}, _from, state) do
+  @impl true
+  def handle_manager_call({:register, type, id, data}, _from, state) do
     case get_registry(state, type) do
       {:ok, registry} ->
         updated_registry =
@@ -247,8 +241,8 @@ defmodule Raxol.Core.UnifiedRegistry do
     end
   end
 
-  @impl GenServer
-  def handle_call({:unregister, type, id}, _from, state) do
+  @impl true
+  def handle_manager_call({:unregister, type, id}, _from, state) do
     case get_registry(state, type) do
       {:ok, registry} ->
         updated_registry = Map.delete(registry, id)
@@ -260,8 +254,8 @@ defmodule Raxol.Core.UnifiedRegistry do
     end
   end
 
-  @impl GenServer
-  def handle_call({:lookup, type, id}, _from, state) do
+  @impl true
+  def handle_manager_call({:lookup, type, id}, _from, state) do
     case get_registry(state, type) do
       {:ok, registry} ->
         case Map.get(registry, id) do
@@ -274,8 +268,8 @@ defmodule Raxol.Core.UnifiedRegistry do
     end
   end
 
-  @impl GenServer
-  def handle_call({:list, type}, _from, state) do
+  @impl true
+  def handle_manager_call({:list, type}, _from, state) do
     case get_registry(state, type) do
       {:ok, registry} ->
         entries = registry |> Map.values() |> Enum.map(& &1.data)
@@ -286,8 +280,8 @@ defmodule Raxol.Core.UnifiedRegistry do
     end
   end
 
-  @impl GenServer
-  def handle_call({:count, type}, _from, state) do
+  @impl true
+  def handle_manager_call({:count, type}, _from, state) do
     case get_registry(state, type) do
       {:ok, registry} ->
         {:reply, map_size(registry), state}
@@ -297,8 +291,8 @@ defmodule Raxol.Core.UnifiedRegistry do
     end
   end
 
-  @impl GenServer
-  def handle_call({:search, type, pattern}, _from, state) do
+  @impl true
+  def handle_manager_call({:search, type, pattern}, _from, state) do
     case get_registry(state, type) do
       {:ok, registry} ->
         regex = Regex.compile!(pattern, [:caseless])
@@ -319,8 +313,8 @@ defmodule Raxol.Core.UnifiedRegistry do
     end
   end
 
-  @impl GenServer
-  def handle_call({:filter, type, filter_fn}, _from, state) do
+  @impl true
+  def handle_manager_call({:filter, type, filter_fn}, _from, state) do
     case get_registry(state, type) do
       {:ok, registry} ->
         matching_entries =
@@ -336,8 +330,8 @@ defmodule Raxol.Core.UnifiedRegistry do
     end
   end
 
-  @impl GenServer
-  def handle_call(:stats, _from, state) do
+  @impl true
+  def handle_manager_call(:stats, _from, state) do
     stats = %{
       sessions: map_size(state.sessions),
       plugins: map_size(state.plugins),
@@ -353,8 +347,8 @@ defmodule Raxol.Core.UnifiedRegistry do
     {:reply, stats, state}
   end
 
-  @impl GenServer
-  def handle_call({:bulk_register, type, entries}, _from, state) do
+  @impl true
+  def handle_manager_call({:bulk_register, type, entries}, _from, state) do
     case get_registry(state, type) do
       {:ok, registry} ->
         now = System.monotonic_time(:millisecond)
@@ -377,8 +371,8 @@ defmodule Raxol.Core.UnifiedRegistry do
     end
   end
 
-  @impl GenServer
-  def handle_call({:bulk_unregister, type, ids}, _from, state) do
+  @impl true
+  def handle_manager_call({:bulk_unregister, type, ids}, _from, state) do
     case get_registry(state, type) do
       {:ok, registry} ->
         updated_registry =

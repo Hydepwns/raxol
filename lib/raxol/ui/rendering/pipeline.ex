@@ -30,10 +30,12 @@ defmodule Raxol.UI.Rendering.Pipeline do
   - Connect to the real rendering backend (commit stage calls a renderer module)
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   alias Raxol.UI.Rendering.Renderer
   alias Raxol.UI.Rendering.TreeDiffer
+  alias Raxol.UI.Rendering.UnifiedTimerManager
 
   # New pipeline modules
   alias Raxol.UI.Rendering.Pipeline.{State, Stages}
@@ -51,14 +53,6 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   # Public API
 
-  @doc """
-  Starts the rendering pipeline GenServer. Registers under the module name by default.
-  """
-  def start_link(opts \\ []) do
-    name = get_process_name(opts)
-
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
 
   @doc """
   Child spec for supervision trees.
@@ -266,10 +260,10 @@ defmodule Raxol.UI.Rendering.Pipeline do
     Application.get_env(:raxol, :renderer_module, @default_renderer)
   end
 
-  # GenServer Implementation
+  # BaseManager Implementation
 
-  @impl GenServer
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     initial_tree = Keyword.get(opts, :initial_tree, %{})
     opts_with_renderer = Keyword.put(opts, :renderer, get_renderer())
 
@@ -277,11 +271,14 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
     state_with_tree = maybe_update_initial_tree(state, initial_tree)
 
+    # Start unified timer manager if not already running
+    start_unified_timer_manager()
+
     {:ok, state_with_tree}
   end
 
-  @impl GenServer
-  def handle_cast({:update_tree, new_tree}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:update_tree, new_tree}, state) do
     case tree_changed?(state.current_tree, new_tree) do
       false ->
         Raxol.Core.Runtime.Log.debug(
@@ -336,8 +333,8 @@ defmodule Raxol.UI.Rendering.Pipeline do
     end
   end
 
-  @impl GenServer
-  def handle_cast({:trigger_render, data}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:trigger_render, data}, state) do
     tree_to_render = data || state.current_tree
 
     case tree_to_render do
@@ -363,8 +360,8 @@ defmodule Raxol.UI.Rendering.Pipeline do
     end
   end
 
-  @impl GenServer
-  def handle_cast({:request_animation_frame, pid, ref}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:request_animation_frame, pid, ref}, state) do
     Raxol.Core.Runtime.Log.debug(
       "Pipeline: Received request_animation_frame from #{inspect(pid)} with ref #{inspect(ref)}"
     )
@@ -375,8 +372,8 @@ defmodule Raxol.UI.Rendering.Pipeline do
     {:noreply, final_state}
   end
 
-  @impl GenServer
-  def handle_cast(:schedule_render_on_next_frame, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast(:schedule_render_on_next_frame, state) do
     case state.current_tree do
       nil ->
         Raxol.Core.Runtime.Log.debug(
@@ -396,8 +393,8 @@ defmodule Raxol.UI.Rendering.Pipeline do
     end
   end
 
-  @impl GenServer
-  def handle_call({:request_animation_frame, pid, ref}, from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:request_animation_frame, pid, ref}, from, state) do
     Raxol.Core.Runtime.Log.debug(
       "Pipeline: Received request_animation_frame call from #{inspect(pid)}, ref #{inspect(ref)}, from #{inspect(from)}"
     )
@@ -411,8 +408,8 @@ defmodule Raxol.UI.Rendering.Pipeline do
     {:noreply, final_state}
   end
 
-  @impl GenServer
-  def handle_info(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(
         {:deferred_render, diff_result, new_tree_for_reference, timer_id},
         state
       ) do
@@ -422,7 +419,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
           execute_render_stages(
             diff_result,
             new_tree_for_reference,
-            state.renderer_module,
+            state.renderer,
             state.previous_composed_tree,
             state.previous_painted_output
           )
@@ -430,7 +427,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
         # Commit the painted output to the renderer
         commit(
           painted_data,
-          state.renderer_module,
+          state.renderer,
           diff_result,
           new_tree_for_reference
         )
@@ -451,8 +448,52 @@ defmodule Raxol.UI.Rendering.Pipeline do
     end
   end
 
-  @impl GenServer
-  def handle_info({:animation_tick, :timer_ref}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info({:render_debounce_tick}, state) do
+    # Handle deferred render from unified timer manager
+    case state.deferred_render_data do
+      {diff_result, new_tree_for_reference, _unique_id} ->
+        Raxol.Core.Runtime.Log.debug("Pipeline: Processing deferred render from unified timer")
+
+        render_result =
+          execute_render_stages(
+            diff_result,
+            new_tree_for_reference,
+            state.renderer,
+            state.previous_composed_tree,
+            state.previous_painted_output
+          )
+
+        painted_data = render_result
+        composed_data = render_result.content
+
+        commit(painted_data, state.renderer, diff_result, new_tree_for_reference)
+
+        new_state = %{
+          state
+          | last_render_time: System.monotonic_time(:millisecond),
+            render_timer_ref: nil,
+            render_scheduled_for_next_frame: false,
+            previous_composed_tree: composed_data,
+            previous_painted_output: painted_data,
+            deferred_render_data: nil
+        }
+
+        {:noreply, new_state}
+
+      nil ->
+        Raxol.Core.Runtime.Log.debug("Pipeline: Received debounce tick but no deferred render data")
+        {:noreply, state}
+    end
+  end
+
+  # Handle direct animation tick (fallback when UnifiedTimerManager unavailable)
+  def handle_manager_info(:animation_tick, state) do
+    # Delegate to the main animation tick handler
+    handle_manager_info({:animation_tick, :timer_ref}, state)
+  end
+
+  def handle_manager_info({:animation_tick, :timer_ref}, state) do
     case state.animation_ticker_ref do
       nil ->
         {:noreply, state}
@@ -508,15 +549,18 @@ defmodule Raxol.UI.Rendering.Pipeline do
         # This ensures the ticker continues running for future requests
         case should_continue_ticker?(final_state) do
           true ->
-            # Use the actual timer reference returned by Process.send_after
-            timer_ref =
-              Process.send_after(
-                self(),
-                {:animation_tick, :timer_ref},
-                @animation_tick_interval_ms
-              )
-
-            %{final_state | animation_ticker_ref: timer_ref}
+            # Try unified timer manager first, fallback to direct timer
+            case UnifiedTimerManager.start_animation_timer(self(), @animation_tick_interval_ms) do
+              :ok ->
+                %{final_state | animation_ticker_ref: :unified_timer}
+              {:error, :not_started} ->
+                # Fallback to direct timer if UnifiedTimerManager not available
+                timer_ref = Process.send_after(self(), :animation_tick, @animation_tick_interval_ms)
+                %{final_state | animation_ticker_ref: timer_ref}
+              error ->
+                Raxol.Core.Runtime.Log.error("Failed to reschedule animation timer: #{inspect(error)}")
+                %{final_state | animation_ticker_ref: nil}
+            end
 
           _ ->
             Raxol.Core.Runtime.Log.debug(
@@ -554,19 +598,22 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
     _ = cancel_timer_if_exists(state.render_timer_ref)
 
-    {painted_data, composed_data} =
+    render_result =
       execute_render_stages(
         diff_result,
         new_tree_for_reference,
-        state.renderer_module,
+        state.renderer,
         state.previous_composed_tree,
         state.previous_painted_output
       )
 
+    painted_data = render_result
+    composed_data = render_result.content
+
     # Commit the painted output to the renderer
     commit(
       painted_data,
-      state.renderer_module,
+      state.renderer,
       diff_result,
       new_tree_for_reference
     )
@@ -601,19 +648,22 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
     _ = cancel_timer_if_exists(state.render_timer_ref)
 
-    {painted_data, composed_data} =
+    render_result =
       execute_render_stages(
         diff_result,
         new_tree_for_reference,
-        state.renderer_module,
+        state.renderer,
         state.previous_composed_tree,
         state.previous_painted_output
       )
 
+    painted_data = render_result
+    composed_data = render_result.content
+
     # Commit the painted output to the renderer
     commit(
       painted_data,
-      state.renderer_module,
+      state.renderer,
       diff_result,
       new_tree_for_reference
     )
@@ -642,19 +692,25 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
     _ = cancel_timer_if_exists(state.render_timer_ref)
 
-    timer_ref =
-      Process.send_after(
-        self(),
-        {:deferred_render, diff_result, new_tree_for_reference,
-         System.unique_integer([:positive])},
-        delay
-      )
+    # Use unified timer manager for debounce timer
+    :ok = UnifiedTimerManager.start_debounce_timer(self(), delay)
 
-    %{state | render_timer_ref: timer_ref}
+    # Store deferred render data in state instead of timer message
+    state_with_deferred = %{state |
+      render_timer_ref: :unified_timer,
+      deferred_render_data: {diff_result, new_tree_for_reference, System.unique_integer([:positive])}
+    }
+
+    state_with_deferred
   end
 
   defp calculate_time_since_last_render(last_render_time, now) do
     calculate_time_diff(last_render_time, now)
+  end
+
+  defp cancel_timer_if_exists(:unified_timer) do
+    # Timer is managed by UnifiedTimerManager, stop debounce timer
+    UnifiedTimerManager.stop_timer(:render_debounce)
   end
 
   defp cancel_timer_if_exists(timer_ref) do
@@ -678,15 +734,18 @@ defmodule Raxol.UI.Rendering.Pipeline do
           "Pipeline: Animation ticker not running, starting it."
         )
 
-        # Use the actual timer reference returned by Process.send_after
-        timer_ref =
-          Process.send_after(
-            self(),
-            {:animation_tick, :timer_ref},
-            @animation_tick_interval_ms
-          )
-
-        %{state | animation_ticker_ref: timer_ref}
+        # Use unified timer manager instead of direct Process.send_after
+        case UnifiedTimerManager.start_animation_timer(self(), @animation_tick_interval_ms) do
+          :ok ->
+            %{state | animation_ticker_ref: :unified_timer}
+          {:error, :not_started} ->
+            # Fallback to direct timer if UnifiedTimerManager not available
+            timer_ref = Process.send_after(self(), :animation_tick, @animation_tick_interval_ms)
+            %{state | animation_ticker_ref: timer_ref}
+          error ->
+            Raxol.Core.Runtime.Log.error("Failed to start animation timer: #{inspect(error)}")
+            %{state | animation_ticker_ref: nil}
+        end
 
       _ticker_ref ->
         Raxol.Core.Runtime.Log.debug(
@@ -699,8 +758,26 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   # Helper functions using pattern matching instead of if statements
 
-  defp get_process_name(opts) do
-    Keyword.get(opts, :name, __MODULE__)
+  defp start_unified_timer_manager do
+    # Start UnifiedTimerManager if not already running
+    case GenServer.whereis(UnifiedTimerManager) do
+      nil ->
+        case UnifiedTimerManager.start_link([]) do
+          {:ok, _pid} ->
+            Raxol.Core.Runtime.Log.info("Pipeline: Started UnifiedTimerManager")
+
+          {:error, {:already_started, _pid}} ->
+            Raxol.Core.Runtime.Log.debug("Pipeline: UnifiedTimerManager already started")
+
+          {:error, reason} ->
+            Raxol.Core.Runtime.Log.error("Pipeline: Failed to start UnifiedTimerManager: #{inspect(reason)}")
+        end
+
+      _pid ->
+        Raxol.Core.Runtime.Log.debug("Pipeline: UnifiedTimerManager already running")
+    end
+
+    :ok
   end
 
   defp maybe_update_initial_tree(state, %{}), do: state

@@ -8,8 +8,9 @@ defmodule Raxol.Core.Metrics.AlertManagerTest do
 
   setup do
     # Start UnifiedCollector for metrics dependency if not already started
+    # UnifiedCollector uses BaseManager and requires a name parameter
     uc_pid =
-      case Raxol.Core.Metrics.UnifiedCollector.start_link() do
+      case Raxol.Core.Metrics.UnifiedCollector.start_link(name: Raxol.Core.Metrics.UnifiedCollector) do
         {:ok, pid} ->
           pid
 

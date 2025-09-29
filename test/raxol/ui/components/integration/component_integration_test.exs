@@ -8,8 +8,8 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
   import Raxol.Test.UnifiedTestHelper
 
   setup do
-    # Start ComponentManager for tests
-    {:ok, _pid} = ComponentManager.start_link()
+    # Start ComponentManager for tests with name parameter required by BaseManager
+    _pid = start_supervised!({ComponentManager, [name: ComponentManager]})
     :ok
   end
 

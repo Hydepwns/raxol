@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
       {:ok, results} = GraphicsGPUAccelerator.batch_process(context, graphics_list)
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Terminal.Rendering.GPUAccelerator, as: BaseGPUAccelerator
@@ -94,9 +94,9 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   @doc """
   Starts the graphics GPU accelerator.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+#  def start_link(opts \\ []) do
+#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+#  end
 
   @doc """
   Initializes GPU acceleration for terminal graphics.
@@ -198,7 +198,7 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   # GenServer Implementation
 
   @impl true
-  def init(opts) do
+  def init_manager(opts) do
     config = Map.merge(@default_config, Map.new(opts))
 
     initial_state = %__MODULE__{
@@ -216,7 +216,7 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   end
 
   @impl true
-  def handle_call({:init, config}, _from, state) do
+  def handle_manager_call({:init, config}, _from, state) do
     case initialize_gpu_acceleration(Map.merge(state.config, config)) do
       {:ok, gpu_state} ->
         {:reply, {:ok, gpu_state.gpu_context}, gpu_state}
@@ -228,7 +228,7 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   end
 
   @impl true
-  def handle_call(
+  def handle_manager_call(
         {:process_graphics, context, graphics_data, operations},
         _from,
         state
@@ -263,7 +263,7 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   end
 
   @impl true
-  def handle_call(
+  def handle_manager_call(
         {:batch_process, context, graphics_list, options},
         _from,
         state
@@ -282,7 +282,7 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   end
 
   @impl true
-  def handle_call(
+  def handle_manager_call(
         {:create_texture_atlas, context, graphics_list, options},
         _from,
         state
@@ -294,12 +294,12 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   end
 
   @impl true
-  def handle_call(:get_performance_metrics, _from, state) do
+  def handle_manager_call(:get_performance_metrics, _from, state) do
     {:reply, state.performance_metrics, state}
   end
 
   @impl true
-  def handle_call(:gpu_available?, _from, state) do
+  def handle_manager_call(:gpu_available?, _from, state) do
     available = state.gpu_context != nil
     {:reply, available, state}
   end

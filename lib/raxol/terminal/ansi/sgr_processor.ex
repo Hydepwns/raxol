@@ -59,6 +59,13 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
       hidden: false,
       strikethrough: false,
       dim: false,
+      faint: false,
+      conceal: false,
+      fraktur: false,
+      double_underline: false,
+      framed: false,
+      encircled: false,
+      overlined: false,
       # Extended attributes
       underline_color: nil,
       underline_style: :single,
@@ -94,27 +101,37 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
 
   # Text attributes
   defp apply_sgr_code(1, style, _rest), do: Map.put(style, :bold, true)
-  defp apply_sgr_code(2, style, _rest), do: Map.put(style, :dim, true)
+  defp apply_sgr_code(2, style, _rest), do: %{style | dim: true, faint: true}
   defp apply_sgr_code(3, style, _rest), do: Map.put(style, :italic, true)
   defp apply_sgr_code(4, style, _rest), do: Map.put(style, :underline, true)
   defp apply_sgr_code(5, style, _rest), do: Map.put(style, :blink, true)
   # Rapid blink
   defp apply_sgr_code(6, style, _rest), do: Map.put(style, :blink, true)
   defp apply_sgr_code(7, style, _rest), do: Map.put(style, :reverse, true)
-  defp apply_sgr_code(8, style, _rest), do: Map.put(style, :hidden, true)
+  defp apply_sgr_code(8, style, _rest), do: %{style | hidden: true, conceal: true}
   defp apply_sgr_code(9, style, _rest), do: Map.put(style, :strikethrough, true)
 
+  # Extended text attributes
+  defp apply_sgr_code(20, style, _rest), do: Map.put(style, :fraktur, true)
+  defp apply_sgr_code(21, style, _rest), do: %{style | double_underline: true, underline: false}
+
   # Reset specific attributes
-  defp apply_sgr_code(21, style, _rest), do: Map.put(style, :bold, false)
-  defp apply_sgr_code(22, style, _rest), do: %{style | bold: false, dim: false}
-  defp apply_sgr_code(23, style, _rest), do: Map.put(style, :italic, false)
-  defp apply_sgr_code(24, style, _rest), do: Map.put(style, :underline, false)
+  defp apply_sgr_code(22, style, _rest), do: %{style | bold: false, dim: false, faint: false}
+  defp apply_sgr_code(23, style, _rest), do: %{style | italic: false, fraktur: false}
+  defp apply_sgr_code(24, style, _rest), do: %{style | underline: false, double_underline: false}
   defp apply_sgr_code(25, style, _rest), do: Map.put(style, :blink, false)
   defp apply_sgr_code(27, style, _rest), do: Map.put(style, :reverse, false)
-  defp apply_sgr_code(28, style, _rest), do: Map.put(style, :hidden, false)
+  defp apply_sgr_code(28, style, _rest), do: %{style | hidden: false, conceal: false}
 
   defp apply_sgr_code(29, style, _rest),
     do: Map.put(style, :strikethrough, false)
+
+  # Framed, encircled, overlined attributes
+  defp apply_sgr_code(51, style, _rest), do: Map.put(style, :framed, true)
+  defp apply_sgr_code(52, style, _rest), do: Map.put(style, :encircled, true)
+  defp apply_sgr_code(53, style, _rest), do: %{style | overlined: true, overline: true}
+  defp apply_sgr_code(54, style, _rest), do: %{style | framed: false, encircled: false}
+  defp apply_sgr_code(55, style, _rest), do: %{style | overlined: false, overline: false}
 
   # Basic foreground colors (30-37)
   defp apply_sgr_code(code, style, _rest) when code >= 30 and code <= 37 do
@@ -154,10 +171,6 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
   # Default background (49)
   defp apply_sgr_code(49, style, _rest), do: Map.put(style, :background, nil)
 
-  # Overline (53)
-  defp apply_sgr_code(53, style, _rest), do: Map.put(style, :overline, true)
-  defp apply_sgr_code(55, style, _rest), do: Map.put(style, :overline, false)
-
   # Underline color (58)
   defp apply_sgr_code(58, style, [5, color | _rest])
        when color >= 0 and color <= 255 do
@@ -173,14 +186,14 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
   defp apply_sgr_code(59, style, _rest),
     do: Map.put(style, :underline_color, nil)
 
-  # Bright foreground colors (90-97)
+  # Bright foreground colors (90-97) - set base color and bold
   defp apply_sgr_code(code, style, _rest) when code >= 90 and code <= 97 do
-    Map.put(style, :foreground, bright_color(code - 90))
+    %{style | foreground: basic_color(code - 90), bold: true}
   end
 
-  # Bright background colors (100-107)
+  # Bright background colors (100-107) - just set base color, no bold
   defp apply_sgr_code(code, style, _rest) when code >= 100 and code <= 107 do
-    Map.put(style, :background, bright_color(code - 100))
+    Map.put(style, :background, basic_color(code - 100))
   end
 
   # Unhandled codes - return style unchanged
@@ -203,14 +216,4 @@ defmodule Raxol.Terminal.ANSI.SGRProcessor do
   defp basic_color(6), do: :cyan
   defp basic_color(7), do: :white
   defp basic_color(_), do: nil
-
-  defp bright_color(0), do: :bright_black
-  defp bright_color(1), do: :bright_red
-  defp bright_color(2), do: :bright_green
-  defp bright_color(3), do: :bright_yellow
-  defp bright_color(4), do: :bright_blue
-  defp bright_color(5), do: :bright_magenta
-  defp bright_color(6), do: :bright_cyan
-  defp bright_color(7), do: :bright_white
-  defp bright_color(_), do: nil
 end

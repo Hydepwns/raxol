@@ -10,7 +10,9 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   - Frame skipping for high-frequency updates
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+@behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Performance profiling macro
@@ -115,9 +117,6 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
 
   # Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Optimized tree update that batches changes.
@@ -139,7 +138,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   # Server callbacks
 
   @impl true
-  def init(opts) do
+  def init_manager(opts) do
     state = %State{
       current_tree: nil,
       previous_tree: nil,
@@ -159,7 +158,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   end
 
   @impl true
-  def handle_cast({:update_tree, tree, timestamp}, state) do
+  def handle_manager_cast({:update_tree, tree, timestamp}, state) do
     # Add to render queue with timestamp
     new_queue = :queue.in({tree, timestamp}, state.render_queue)
 
@@ -175,12 +174,12 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   end
 
   @impl true
-  def handle_call(:force_render, _from, state) do
+  def handle_manager_call(:force_render, _from, state) do
     new_state = execute_render(state, :forced)
     {:reply, :ok, new_state}
   end
 
-  def handle_call(:get_stats, _from, state) do
+  def handle_manager_call(:get_stats, _from, state) do
     stats =
       Map.put(
         state.stats,
@@ -192,7 +191,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   end
 
   @impl true
-  def handle_info(:render_tick, state) do
+  def handle_manager_info(:render_tick, state) do
     start_time = System.monotonic_time(:millisecond)
 
     # Check if we should skip this frame

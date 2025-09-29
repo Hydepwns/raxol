@@ -6,7 +6,8 @@ defmodule Raxol.Core.UXRefinement.UxServer do
   replacing the Process dictionary usage with proper OTP patterns.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   require Raxol.Core.Runtime.Log
 
@@ -19,14 +20,6 @@ defmodule Raxol.Core.UXRefinement.UxServer do
   ]
 
   # Client API
-
-  @doc """
-  Starts the UX refinement server.
-  """
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
 
   @doc """
   Initialize the UX refinement system.
@@ -114,8 +107,8 @@ defmodule Raxol.Core.UXRefinement.UxServer do
 
   # Server Callbacks
 
-  @impl GenServer
-  def init(_opts) do
+  @impl true
+  def init_manager(_opts) do
     state = %__MODULE__{
       features: MapSet.new(),
       hints: %{},
@@ -127,8 +120,8 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call(:init_system, _from, state) do
+  @impl true
+  def handle_manager_call(:init_system, _from, state) do
     # Initialize Events Manager
     Raxol.Core.Events.EventManager.init()
 
@@ -137,32 +130,32 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:enable_feature, feature, opts, user_prefs}, _from, state) do
+  @impl true
+  def handle_manager_call({:enable_feature, feature, opts, user_prefs}, _from, state) do
     {result, new_state} = do_enable_feature(feature, opts, user_prefs, state)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:disable_feature, feature}, _from, state) do
+  @impl true
+  def handle_manager_call({:disable_feature, feature}, _from, state) do
     {result, new_state} = do_disable_feature(feature, state)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:feature_enabled?, feature}, _from, state) do
+  @impl true
+  def handle_manager_call({:feature_enabled?, feature}, _from, state) do
     enabled = MapSet.member?(state.features, feature)
     {:reply, enabled, state}
   end
 
-  @impl GenServer
-  def handle_call({:register_hint, component_id, hint}, _from, state) do
+  @impl true
+  def handle_manager_call({:register_hint, component_id, hint}, _from, state) do
     new_state = do_register_hint(component_id, hint, state)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:register_component_hint, component_id, hint_info},
         _from,
         state
@@ -171,26 +164,26 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_hint, component_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_hint, component_id}, _from, state) do
     hint = get_hint_from_state(component_id, :basic, state)
     {:reply, hint, state}
   end
 
-  @impl GenServer
-  def handle_call({:get_component_hint, component_id, level}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_component_hint, component_id, level}, _from, state) do
     hint = get_hint_from_state(component_id, level, state)
     {:reply, hint, state}
   end
 
-  @impl GenServer
-  def handle_call({:get_component_shortcuts, component_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_component_shortcuts, component_id}, _from, state) do
     shortcuts = get_shortcuts_from_state(component_id, state)
     {:reply, shortcuts, state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:register_accessibility_metadata, component_id, metadata},
         _from,
         state
@@ -208,8 +201,8 @@ defmodule Raxol.Core.UXRefinement.UxServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_accessibility_metadata, component_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_accessibility_metadata, component_id}, _from, state) do
     accessibility_enabled = MapSet.member?(state.features, :accessibility)
 
     metadata =

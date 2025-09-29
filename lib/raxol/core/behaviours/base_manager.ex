@@ -43,81 +43,74 @@ defmodule Raxol.Core.Behaviours.BaseManager do
       @behaviour Raxol.Core.Behaviours.BaseManager
 
       def start_link(init_opts \\ []) do
-        # Convert map to keyword list if needed
-        opts_as_keywords =
-          case init_opts do
-            opts when is_map(opts) -> Map.to_list(opts)
-            opts when is_list(opts) -> opts
-            _ -> []
-          end
-
-        server_opts =
-          Keyword.take(opts_as_keywords, [:name, :timeout, :debug, :spawn_opt])
-
-        manager_opts =
-          Keyword.drop(opts_as_keywords, [:name, :timeout, :debug, :spawn_opt])
-
+        {server_opts, manager_opts} = normalize_and_split_opts(init_opts)
         GenServer.start_link(__MODULE__, manager_opts, server_opts)
       end
 
       @impl GenServer
       def init(opts) do
-        case init_manager(opts) do
-          {:ok, state} ->
-            {:ok, state}
-
-          {:error, reason} ->
-            {:stop, reason}
-        end
+        init_manager(opts)
+        |> normalize_init_result()
       end
 
       @impl GenServer
       def handle_call(request, from, state) do
-        if function_exported?(__MODULE__, :handle_manager_call, 3) do
-          handle_manager_call(request, from, state)
-        else
-          Logger.warning("Unhandled call: #{inspect(request)}")
-          {:reply, {:error, :not_implemented}, state}
-        end
+        handle_manager_call(request, from, state)
       end
 
       @impl GenServer
       def handle_cast(msg, state) do
-        if function_exported?(__MODULE__, :handle_manager_cast, 2) do
-          handle_manager_cast(msg, state)
-        else
-          Logger.warning("Unhandled cast: #{inspect(msg)}")
-          {:noreply, state}
-        end
+        handle_manager_cast(msg, state)
       end
 
       @impl GenServer
       def handle_info(msg, state) do
-        if function_exported?(__MODULE__, :handle_manager_info, 2) do
-          handle_manager_info(msg, state)
-        else
-          Logger.debug("Unhandled info: #{inspect(msg)}")
-          {:noreply, state}
-        end
+        handle_manager_info(msg, state)
       end
 
-      # Make GenServer callbacks overridable so modules can define their own
-      defoverridable handle_call: 3, handle_cast: 2, handle_info: 2
+      # Default implementations for optional callbacks
+      def handle_manager_call(request, _from, state) do
+        Logger.warning("Unhandled call: #{inspect(request)}")
+        {:reply, {:error, :not_implemented}, state}
+      end
 
-      # Default implementations for callbacks
-      def handle_manager_call(_request, _from, state),
-        do: {:reply, {:error, :not_implemented}, state}
+      def handle_manager_cast(msg, state) do
+        Logger.warning("Unhandled cast: #{inspect(msg)}")
+        {:noreply, state}
+      end
 
-      def handle_manager_cast(_msg, state), do: {:noreply, state}
-      def handle_manager_info(_msg, state), do: {:noreply, state}
+      def handle_manager_info(msg, state) do
+        Logger.debug("Unhandled info: #{inspect(msg)}")
+        {:noreply, state}
+      end
 
-      # Default implementations
+      # Default implementation for required callback
       def init_manager(_opts), do: {:ok, %{}}
 
+      # Private helper functions using pattern matching
+      defp normalize_and_split_opts(opts) when is_map(opts) do
+        normalize_and_split_opts(Map.to_list(opts))
+      end
+
+      defp normalize_and_split_opts(opts) when is_list(opts) do
+        server_keys = [:name, :timeout, :debug, :spawn_opt]
+        {Keyword.take(opts, server_keys), Keyword.drop(opts, server_keys)}
+      end
+
+      defp normalize_and_split_opts(_), do: {[], []}
+
+      defp normalize_init_result({:ok, state}), do: {:ok, state}
+      defp normalize_init_result({:error, reason}), do: {:stop, reason}
+      defp normalize_init_result(other), do: {:stop, {:bad_return_value, other}}
+
+      # All callbacks are overridable
       defoverridable init_manager: 1,
                      handle_manager_call: 3,
                      handle_manager_cast: 2,
-                     handle_manager_info: 2
+                     handle_manager_info: 2,
+                     handle_call: 3,
+                     handle_cast: 2,
+                     handle_info: 2
     end
   end
 end

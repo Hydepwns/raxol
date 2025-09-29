@@ -56,6 +56,9 @@ defmodule Raxol.AnimationTest do
   setup _context do
     Process.flag(:trap_exit, true)
 
+    # Start AccessibilityServer first with the expected name
+    {:ok, _accessibility_pid} = start_supervised({Raxol.Core.Accessibility.AccessibilityServer, [name: Raxol.Core.Accessibility.AccessibilityServer]})
+
     # Start UserPreferences with a test-specific name
     local_user_prefs_name = __MODULE__.UserPreferences
     user_prefs_opts = [name: local_user_prefs_name, test_mode?: true]

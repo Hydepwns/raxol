@@ -32,7 +32,8 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
   ```
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   alias Raxol.Terminal.{Window, Config}
@@ -54,14 +55,6 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
 
   # Client API
 
-  @doc """
-  Starts the Window Manager server.
-  """
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    initial_state = Keyword.get(opts, :initial_state, @default_state)
-    GenServer.start_link(__MODULE__, initial_state, name: name)
-  end
 
   @doc """
   Creates a new window with the given configuration.
@@ -261,15 +254,15 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     GenServer.call(server, :reset)
   end
 
-  # GenServer Callbacks
+  # BaseManager Callbacks
 
-  @impl GenServer
-  def init(initial_state) do
+  @impl true
+  def init_manager(initial_state) do
     {:ok, initial_state}
   end
 
-  @impl GenServer
-  def handle_call({:create_window, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:create_window, config}, _from, state) do
     window_id = "window_#{state.next_window_id}"
 
     window = %Window{
@@ -299,16 +292,16 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     {:reply, {:ok, window}, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_window, window_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_window, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil -> {:reply, {:error, :not_found}, state}
       window -> {:reply, {:ok, window}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call({:destroy_window, window_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:destroy_window, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -342,14 +335,14 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl GenServer
-  def handle_call(:list_windows, _from, state) do
+  @impl true
+  def handle_manager_call(:list_windows, _from, state) do
     windows = Map.values(state.windows)
     {:reply, {:ok, windows}, state}
   end
 
-  @impl GenServer
-  def handle_call({:set_active_window, window_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_active_window, window_id}, _from, state) do
     handle_set_active_window(
       Map.has_key?(state.windows, window_id),
       window_id,
@@ -357,8 +350,8 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     )
   end
 
-  @impl GenServer
-  def handle_call(:get_active_window, _from, state) do
+  @impl true
+  def handle_manager_call(:get_active_window, _from, state) do
     case state.active_window do
       nil ->
         {:reply, nil, state}
@@ -371,14 +364,14 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl GenServer
-  def handle_call({:set_window_state, state_value}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_window_state, state_value}, _from, state) do
     new_state = %{state | window_state: state_value}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:set_window_state_by_id, window_id, state_value},
         _from,
         state
@@ -395,19 +388,19 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl GenServer
-  def handle_call(:get_window_state, _from, state) do
+  @impl true
+  def handle_manager_call(:get_window_state, _from, state) do
     {:reply, state.window_state, state}
   end
 
-  @impl GenServer
-  def handle_call({:set_window_size, width, height}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_window_size, width, height}, _from, state) do
     new_state = %{state | window_size: {width, height}}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:set_window_size_by_id, window_id, width, height},
         _from,
         state
@@ -430,19 +423,19 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl GenServer
-  def handle_call(:get_window_size, _from, state) do
+  @impl true
+  def handle_manager_call(:get_window_size, _from, state) do
     {:reply, state.window_size, state}
   end
 
-  @impl GenServer
-  def handle_call({:set_window_title, title}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_window_title, title}, _from, state) do
     new_state = %{state | window_title: title}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:set_window_title_by_id, window_id, title}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_window_title_by_id, window_id, title}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -455,20 +448,20 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl GenServer
-  def handle_call({:set_icon_name, icon_name}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_icon_name, icon_name}, _from, state) do
     new_state = %{state | icon_name: icon_name}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:set_icon_title, icon_title}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_icon_title, icon_title}, _from, state) do
     new_state = %{state | icon_title: icon_title}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:move_window_to_front, window_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:move_window_to_front, window_id}, _from, state) do
     handle_move_window_to_front(
       Map.has_key?(state.windows, window_id),
       window_id,
@@ -476,8 +469,8 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     )
   end
 
-  @impl GenServer
-  def handle_call({:move_window_to_back, window_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:move_window_to_back, window_id}, _from, state) do
     handle_move_window_to_back(
       Map.has_key?(state.windows, window_id),
       window_id,
@@ -485,8 +478,8 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     )
   end
 
-  @impl GenServer
-  def handle_call({:set_window_position, window_id, x, y}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_window_position, window_id, x, y}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -499,8 +492,8 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl GenServer
-  def handle_call({:create_child_window, parent_id, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:create_child_window, parent_id, config}, _from, state) do
     case Map.get(state.windows, parent_id) do
       nil ->
         {:reply, {:error, :parent_not_found}, state}
@@ -538,8 +531,8 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl GenServer
-  def handle_call({:get_child_windows, parent_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_child_windows, parent_id}, _from, state) do
     case Map.get(state.windows, parent_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -553,8 +546,8 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl GenServer
-  def handle_call({:get_parent_window, child_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_parent_window, child_id}, _from, state) do
     case Map.get(state.windows, child_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -573,8 +566,8 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     end
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:register_window_position, window_id, x, y, width, height},
         _from,
         state
@@ -594,8 +587,8 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:define_navigation_path, from_id, direction, to_id},
         _from,
         state
@@ -606,8 +599,8 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
+  @impl true
+  def handle_manager_call(:get_state, _from, state) do
     # Return a map compatible with the original implementation
     legacy_state = %{
       title: state.window_title,
@@ -622,8 +615,8 @@ defmodule Raxol.Terminal.Window.Manager.WindowManagerServer do
     {:reply, legacy_state, state}
   end
 
-  @impl GenServer
-  def handle_call(:reset, _from, _state) do
+  @impl true
+  def handle_manager_call(:reset, _from, _state) do
     {:reply, :ok, @default_state}
   end
 

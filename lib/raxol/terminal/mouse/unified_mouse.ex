@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
   This module handles mouse events, tracking, and state management.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Types
@@ -22,13 +22,7 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
         }
 
   # Client API
-  @doc """
-  Starts the mouse manager with the given options.
-  """
-  @spec start_link(map()) :: GenServer.on_start()
-  def start_link(opts \\ %{}) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 automatically with name: __MODULE__ as default
 
   @doc """
   Creates a new mouse context with the given configuration.
@@ -155,7 +149,8 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
   end
 
   # Server Callbacks
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     state = %{
       mice: %{},
       active_mouse: nil,
@@ -166,7 +161,8 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
     {:ok, state}
   end
 
-  def handle_call({:create_mouse, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:create_mouse, config}, _from, state) do
     mouse_id = state.next_id
 
     mouse_state = %{
@@ -192,18 +188,21 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
     {:reply, {:ok, mouse_id}, new_state}
   end
 
-  def handle_call(:get_mice, _from, state) do
+  @impl true
+  def handle_manager_call(:get_mice, _from, state) do
     {:reply, Map.keys(state.mice), state}
   end
 
-  def handle_call(:get_active_mouse, _from, state) do
+  @impl true
+  def handle_manager_call(:get_active_mouse, _from, state) do
     case state.active_mouse do
       nil -> {:reply, {:error, :no_active_mouse}, state}
       mouse_id -> {:reply, {:ok, mouse_id}, state}
     end
   end
 
-  def handle_call({:set_active_mouse, mouse_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_active_mouse, mouse_id}, _from, state) do
     case Map.get(state.mice, mouse_id) do
       nil ->
         {:reply, {:error, :mouse_not_found}, state}
@@ -214,14 +213,16 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
     end
   end
 
-  def handle_call({:get_mouse_state, mouse_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_mouse_state, mouse_id}, _from, state) do
     case Map.get(state.mice, mouse_id) do
       nil -> {:reply, {:error, :mouse_not_found}, state}
       mouse_state -> {:reply, {:ok, mouse_state}, state}
     end
   end
 
-  def handle_call({:update_mouse_config, mouse_id, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:update_mouse_config, mouse_id, config}, _from, state) do
     case Map.get(state.mice, mouse_id) do
       nil ->
         {:reply, {:error, :mouse_not_found}, state}
@@ -239,7 +240,8 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
     end
   end
 
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:process_mouse_event, mouse_id, event, button, position, modifiers},
         _from,
         state
@@ -261,21 +263,24 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
     end
   end
 
-  def handle_call({:get_mouse_position, mouse_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_mouse_position, mouse_id}, _from, state) do
     case Map.get(state.mice, mouse_id) do
       nil -> {:reply, {:error, :mouse_not_found}, state}
       mouse_state -> {:reply, {:ok, mouse_state.position}, state}
     end
   end
 
-  def handle_call({:get_mouse_button_state, mouse_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_mouse_button_state, mouse_id}, _from, state) do
     case Map.get(state.mice, mouse_id) do
       nil -> {:reply, {:error, :mouse_not_found}, state}
       mouse_state -> {:reply, {:ok, mouse_state.button_state}, state}
     end
   end
 
-  def handle_call({:close_mouse, mouse_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:close_mouse, mouse_id}, _from, state) do
     case Map.get(state.mice, mouse_id) do
       nil ->
         {:reply, {:error, :mouse_not_found}, state}
@@ -293,13 +298,15 @@ defmodule Raxol.Terminal.Mouse.UnifiedMouse do
     end
   end
 
-  def handle_call({:update_config, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:update_config, config}, _from, state) do
     new_config = Map.merge(state.config, config)
     new_state = %{state | config: new_config}
     {:reply, :ok, new_state}
   end
 
-  def handle_call(:cleanup, _from, state) do
+  @impl true
+  def handle_manager_call(:cleanup, _from, state) do
     # Clean up all mouse contexts
     {:reply, :ok, %{state | mice: %{}, active_mouse: nil}}
   end

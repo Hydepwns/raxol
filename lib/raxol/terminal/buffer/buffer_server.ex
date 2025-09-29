@@ -6,21 +6,14 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
   to maintain compatibility with legacy tests during the architecture transition.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
 
   # Client API
 
-  @doc """
-  Starts the buffer server with the given dimensions.
-  """
-  def start_link(opts) do
-    width = Keyword.get(opts, :width, 80)
-    height = Keyword.get(opts, :height, 24)
-    GenServer.start_link(__MODULE__, {width, height})
-  end
 
   @doc """
   Sets a cell at the given coordinates asynchronously.
@@ -122,7 +115,12 @@ defmodule Raxol.Terminal.Buffer.BufferServer do
 
   # Server implementation
 
-  def init({width, height}) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    # Extract width and height from keyword list opts
+    width = Keyword.get(opts, :width, 80)
+    height = Keyword.get(opts, :height, 24)
+
     # Initialize buffer as a map of coordinates to cells
     buffer = %{}
 

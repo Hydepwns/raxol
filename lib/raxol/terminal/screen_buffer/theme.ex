@@ -3,7 +3,8 @@ defmodule Raxol.Terminal.ScreenBuffer.Theme do
   Manages themes for the screen buffer.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   defstruct [
     :name,
@@ -21,28 +22,25 @@ defmodule Raxol.Terminal.ScreenBuffer.Theme do
           selection: String.t()
         }
 
-  def start_link(_) do
-    GenServer.start_link(__MODULE__, default_theme(), name: __MODULE__)
-  end
+  # BaseManager provides start_link/1
+  # Usage: Raxol.Terminal.ScreenBuffer.Theme.start_link(name: __MODULE__, ...)
 
-  def init(theme) do
-    %__MODULE__{
-      name: Keyword.get(theme, :name, "default"),
-      foreground: Keyword.get(theme, :foreground, "#FFFFFF"),
-      background: Keyword.get(theme, :background, "#000000"),
-      cursor: Keyword.get(theme, :cursor, "#FFFFFF"),
-      selection: Keyword.get(theme, :selection, "#444444")
-    }
-  end
-
-  def init do
-    %__MODULE__{
-      name: "default",
-      foreground: "#FFFFFF",
-      background: "#000000",
-      cursor: "#FFFFFF",
-      selection: "#444444"
-    }
+  @impl true
+  def init_manager(opts) do
+    theme = Keyword.get(opts, :theme, default_theme())
+    state = case theme do
+      %__MODULE__{} = t -> t
+      keyword when is_list(keyword) ->
+        %__MODULE__{
+          name: Keyword.get(keyword, :name, "default"),
+          foreground: Keyword.get(keyword, :foreground, "#FFFFFF"),
+          background: Keyword.get(keyword, :background, "#000000"),
+          cursor: Keyword.get(keyword, :cursor, "#FFFFFF"),
+          selection: Keyword.get(keyword, :selection, "#444444")
+        }
+      _ -> default_theme()
+    end
+    {:ok, state}
   end
 
   def current do
@@ -53,11 +51,13 @@ defmodule Raxol.Terminal.ScreenBuffer.Theme do
     GenServer.call(__MODULE__, {:set, light_theme()})
   end
 
-  def handle_call(:current, _from, state) do
+  @impl true
+  def handle_manager_call(:current, _from, state) do
     {:reply, state, state}
   end
 
-  def handle_call({:set, theme}, _from, _state) do
+  @impl true
+  def handle_manager_call({:set, theme}, _from, _state) do
     {:reply, theme, theme}
   end
 

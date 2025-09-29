@@ -58,6 +58,7 @@ defmodule Raxol.Terminal.SessionManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   defmodule Session do

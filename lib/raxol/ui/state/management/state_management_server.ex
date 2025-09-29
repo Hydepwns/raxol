@@ -17,6 +17,7 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   # Client API

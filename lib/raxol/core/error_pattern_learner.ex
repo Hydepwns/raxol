@@ -17,7 +17,8 @@ defmodule Raxol.Core.ErrorPatternLearner do
   - Automatic template enhancement
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   @table_name :raxol_error_patterns
@@ -58,9 +59,6 @@ defmodule Raxol.Core.ErrorPatternLearner do
   @doc """
   Start the error pattern learning system.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Record a new error occurrence for learning.
@@ -137,8 +135,8 @@ defmodule Raxol.Core.ErrorPatternLearner do
 
   # GenServer implementation
 
-  @impl GenServer
-  def init(_opts) do
+  @impl true
+  def init_manager(_opts) do
     # Create ETS table for fast pattern lookups
     _ =
       :ets.new(@table_name, [
@@ -162,8 +160,8 @@ defmodule Raxol.Core.ErrorPatternLearner do
     {:ok, initial_state}
   end
 
-  @impl GenServer
-  def handle_cast({:record_error, error, context, timestamp}, state) do
+  @impl true
+  def handle_manager_cast({:record_error, error, context, timestamp}, state) do
     error_signature = generate_error_signature(error)
 
     # Update pattern in ETS for fast access
@@ -197,8 +195,8 @@ defmodule Raxol.Core.ErrorPatternLearner do
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_cast(
+  @impl true
+  def handle_manager_cast(
         {:record_fix_outcome, error_signature, fix_description, outcome},
         state
       ) do
@@ -232,8 +230,8 @@ defmodule Raxol.Core.ErrorPatternLearner do
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_cast({:import_patterns, patterns_data}, state) do
+  @impl true
+  def handle_manager_cast({:import_patterns, patterns_data}, state) do
     imported_patterns = parse_imported_patterns(patterns_data)
     merged_patterns = Map.merge(state.patterns, imported_patterns)
 
@@ -249,14 +247,14 @@ defmodule Raxol.Core.ErrorPatternLearner do
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:predict_errors, context}, _from, state) do
+  @impl true
+  def handle_manager_call({:predict_errors, context}, _from, state) do
     predictions = generate_predictions(state, context)
     {:reply, predictions, state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:enhance_suggestions, error, base_suggestions, context},
         _from,
         state
@@ -267,8 +265,8 @@ defmodule Raxol.Core.ErrorPatternLearner do
     {:reply, enhanced, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_learning_stats, _from, state) do
+  @impl true
+  def handle_manager_call(:get_learning_stats, _from, state) do
     stats = %{
       total_patterns: map_size(state.patterns),
       total_error_occurrences: calculate_total_occurrences(state.patterns),
@@ -282,26 +280,26 @@ defmodule Raxol.Core.ErrorPatternLearner do
     {:reply, stats, state}
   end
 
-  @impl GenServer
-  def handle_call({:get_common_patterns, limit}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_common_patterns, limit}, _from, state) do
     common_patterns = get_top_patterns(state.patterns, limit)
     {:reply, common_patterns, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_phase3_correlations, _from, state) do
+  @impl true
+  def handle_manager_call(:get_phase3_correlations, _from, state) do
     correlations = analyze_phase3_correlations(state)
     {:reply, correlations, state}
   end
 
-  @impl GenServer
-  def handle_call({:export_patterns, format}, _from, state) do
+  @impl true
+  def handle_manager_call({:export_patterns, format}, _from, state) do
     exported_data = export_learning_data(state, format)
     {:reply, exported_data, state}
   end
 
-  @impl GenServer
-  def handle_info(:cleanup_and_persist, state) do
+  @impl true
+  def handle_manager_info(:cleanup_and_persist, state) do
     # Cleanup old patterns
     cleaned_patterns = cleanup_old_patterns(state.patterns)
 
@@ -320,8 +318,8 @@ defmodule Raxol.Core.ErrorPatternLearner do
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_info(_msg, state) do
+  @impl true
+  def handle_manager_info(_msg, state) do
     {:noreply, state}
   end
 

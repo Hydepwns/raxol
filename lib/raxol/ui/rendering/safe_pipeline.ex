@@ -6,7 +6,9 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   with automatic fallback rendering and performance degradation strategies.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+@behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   import Raxol.Core.ErrorHandler
@@ -50,9 +52,6 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   @doc """
   Starts the safe rendering pipeline.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: opts[:name] || __MODULE__)
-  end
 
   @doc """
   Safely renders a frame with automatic error recovery.
@@ -104,7 +103,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   # Server callbacks
 
   @impl true
-  def init(opts) do
+  def init_manager(opts) do
     state =
       with_error_handling :init do
         # Start the underlying pipeline
@@ -155,7 +154,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   end
 
   @impl true
-  def handle_call({:render, scene}, from, state) do
+  def handle_manager_call({:render, scene}, from, state) do
     # Profile render operation
     profile :render, metadata: %{scene_complexity: estimate_complexity(scene)} do
       case safe_render(scene, state) do
@@ -170,13 +169,13 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   end
 
   @impl true
-  def handle_call({:update_config, config}, _from, state) do
+  def handle_manager_call({:update_config, config}, _from, state) do
     new_config = Map.merge(state.config, config)
     {:reply, :ok, %{state | config: new_config}}
   end
 
   @impl true
-  def handle_call(:get_stats, _from, state) do
+  def handle_manager_call(:get_stats, _from, state) do
     stats =
       Map.merge(state.stats, %{
         performance_mode: state.performance_monitor.performance_mode,
@@ -189,7 +188,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   end
 
   @impl true
-  def handle_cast({:animate, animation, opts}, state) do
+  def handle_manager_cast({:animate, animation, opts}, state) do
     new_state =
       with_error_handling :animate do
         safe_animate(animation, opts, state)
@@ -199,7 +198,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   end
 
   @impl true
-  def handle_cast({:set_performance_mode, enabled}, state) do
+  def handle_manager_cast({:set_performance_mode, enabled}, state) do
     new_monitor = Map.put(state.performance_monitor, :performance_mode, enabled)
 
     Logger.info("Performance mode #{get_performance_mode_status(enabled)}")
@@ -208,7 +207,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   end
 
   @impl true
-  def handle_info(
+  def handle_manager_info(
         {:DOWN, _ref, :process, pid, reason},
         %{pipeline: pid} = state
       ) do
@@ -221,7 +220,7 @@ defmodule Raxol.UI.Rendering.SafePipeline do
   end
 
   @impl true
-  def handle_info({:process_queue, _}, state) do
+  def handle_manager_info({:process_queue, _}, state) do
     new_state = process_render_queue(state)
     schedule_queue_processing()
 

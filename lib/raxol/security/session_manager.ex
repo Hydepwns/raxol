@@ -10,8 +10,11 @@ defmodule Raxol.Security.SessionManager do
   - Secure session storage
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
+
+  alias Raxol.Core.Utils.TimerManager
 
   # 30 minutes
   @session_timeout_ms 30 * 60 * 1000
@@ -35,8 +38,8 @@ defmodule Raxol.Security.SessionManager do
 
   # Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link_legacy(opts \\ []) do
+    __MODULE__.start_link(opts)
   end
 
   @doc """
@@ -95,8 +98,8 @@ defmodule Raxol.Security.SessionManager do
 
   # Server callbacks
 
-  @impl true
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     # Create ETS tables for fast lookups (safe creation)
     _ =
       Raxol.Core.CompilerState.ensure_table(:sessions, [
@@ -380,7 +383,8 @@ defmodule Raxol.Security.SessionManager do
 
   defp schedule_cleanup do
     # Run cleanup every 5 minutes
-    Process.send_after(self(), :cleanup_expired, 5 * 60 * 1000)
+    # Use TimerManager for consistent timer handling
+    TimerManager.send_after(:cleanup_expired, 5 * 60 * 1000)
   end
 
   @doc """

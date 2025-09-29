@@ -9,14 +9,14 @@ defmodule Raxol.Audit.ExporterTest do
       compress_logs: false
     }
 
-    {:ok, _storage} = Storage.start_link(storage_config)
+    {:ok, _storage} = Storage.start_link(name: Storage, config: storage_config)
 
     # Start exporter
     exporter_config = %{
       export_path: "test/audit_exports"
     }
 
-    {:ok, _exporter} = Exporter.start_link(exporter_config)
+    {:ok, _exporter} = Exporter.start_link(name: Exporter, config: exporter_config)
 
     # Store some test events
     events = create_test_events()

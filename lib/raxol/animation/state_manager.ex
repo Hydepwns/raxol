@@ -29,7 +29,7 @@ defmodule Raxol.Animation.StateManager do
   def ensure_started do
     case Process.whereis(StateServer) do
       nil ->
-        {:ok, _pid} = StateServer.start_link()
+        {:ok, _pid} = StateServer.start_link(name: StateServer)
         :ok
 
       _pid ->

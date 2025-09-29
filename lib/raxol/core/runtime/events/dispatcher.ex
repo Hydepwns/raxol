@@ -4,7 +4,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   `update/2` function. It also handles commands returned by `update/2`.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   require Raxol.Core.Runtime.Log
   require Raxol.Core.Events.Event
@@ -33,19 +34,21 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
               command_module: Raxol.Core.Runtime.Command
   end
 
+  # BaseManager provides start_link/1 and start_link/2 automatically
+  # Custom start_link to handle the runtime_pid and initial_state parameters
   def start_link(runtime_pid, initial_state, opts \\ []) do
     command_module =
       Keyword.get(opts, :command_module, Raxol.Core.Runtime.Command)
 
-    GenServer.start_link(
+    Raxol.Core.Behaviours.BaseManager.start_link(
       __MODULE__,
       {runtime_pid, initial_state, command_module},
       name: __MODULE__
     )
   end
 
-  @impl GenServer
-  def init({runtime_pid, initial_state, command_module}) do
+  @impl true
+  def init_manager({runtime_pid, initial_state, command_module}) do
     state = %State{
       runtime_pid: runtime_pid,
       app_module: initial_state.app_module,
@@ -266,10 +269,10 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     :ok
   end
 
-  # --- GenServer Callbacks ---
+  # --- BaseManager Callbacks ---
 
-  @impl GenServer
-  def handle_cast({:dispatch, event}, state) do
+  @impl true
+  def handle_manager_cast({:dispatch, event}, state) do
     Raxol.Core.Runtime.Log.debug(
       "[Dispatcher] handle_cast :dispatch event: #{inspect(event)}"
     )
@@ -307,7 +310,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     end
   end
 
-  def handle_cast({:register_dispatcher, _pid}, state) do
+  @impl true
+  def handle_manager_cast({:register_dispatcher, _pid}, state) do
     # This message is from Terminal.Driver to register itself.
     # No specific action needed here other than acknowledging it if necessary.
     # Or, if the dispatcher needs to know about the driver's PID, store it.
@@ -318,7 +322,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:noreply, state}
   end
 
-  def handle_cast({:internal_event, event}, state) do
+  @impl true
+  def handle_manager_cast({:internal_event, event}, state) do
     # This is for events that are internal to the dispatcher or runtime system.
     Raxol.Core.Runtime.Log.warning_with_context(
       "Dispatcher received unhandled internal_event",
@@ -329,7 +334,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   # Catch-all for other cast messages
-  def handle_cast(msg, state) do
+  @impl true
+  def handle_manager_cast(msg, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Dispatcher received unhandled cast message",
       %{module: __MODULE__, message: msg, state: state}
@@ -338,13 +344,14 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:noreply, state}
   end
 
-  @impl GenServer
-  def handle_info({:command_result, msg}, %State{} = state) do
+  @impl true
+  def handle_manager_info({:command_result, msg}, %State{} = state) do
     full_message = {:command_result, msg}
     process_command_result(state, full_message)
   end
 
-  def handle_info(msg, state) do
+  @impl true
+  def handle_manager_info(msg, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Dispatcher received unhandled info message",
       %{module: __MODULE__, message: msg, state: state}
@@ -414,13 +421,13 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     )
   end
 
-  @impl GenServer
-  def handle_call(:get_model, _from, state) do
+  @impl true
+  def handle_manager_call(:get_model, _from, state) do
     {:reply, {:ok, state.model}, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_render_context, _from, state) do
+  @impl true
+  def handle_manager_call(:get_render_context, _from, state) do
     Raxol.Core.Runtime.Log.debug(
       "Dispatcher received :get_render_context call. State: #{inspect(state)}"
     )
@@ -437,7 +444,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     {:reply, {:ok, render_context}, state}
   end
 
-  @impl GenServer
+  @impl true
   def terminate(reason, _state) do
     Raxol.Core.Runtime.Log.info(
       "Event Dispatcher terminating. Reason: #{inspect(reason)}"

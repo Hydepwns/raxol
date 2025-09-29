@@ -12,7 +12,9 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
   - Icon support
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+  @behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Plugin Manifest
@@ -70,7 +72,8 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
   end
 
   # Initialization
-  def init(config) do
+  @impl true
+  def init_manager(config) do
     Logger.info("[FileBrowser] Initializing with config: #{inspect(config)}")
 
     initial_path = Path.expand(config.initial_path || ".")
@@ -602,12 +605,14 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
     send(pid, :clear_panel)
   end
 
-  # GenServer callbacks
-  def handle_cast({:set_emulator, pid}, state) do
+  # BaseManager callbacks
+  @impl true
+  def handle_manager_cast({:set_emulator, pid}, state) do
     {:noreply, %{state | emulator_pid: pid}}
   end
 
-  def handle_info({:file_changed, path}, state) do
+  @impl true
+  def handle_manager_info({:file_changed, path}, state) do
     # Reload if current directory changed
     case Path.dirname(path) == state.current_path do
       true ->
@@ -621,7 +626,8 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
     end
   end
 
-  def handle_info(msg, state) do
+  @impl true
+  def handle_manager_info(msg, state) do
     Logger.debug("[FileBrowser] Received message: #{inspect(msg)}")
     {:noreply, state}
   end

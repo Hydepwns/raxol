@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
   This module handles tab creation, switching, state management, and configuration.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Terminal.Integration.State
@@ -21,13 +21,7 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
         }
 
   # Client API
-  @doc """
-  Starts the tab manager with the given options.
-  """
-  @spec start_link(map()) :: GenServer.on_start()
-  def start_link(opts \\ %{}) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 automatically with name: __MODULE__ as default
 
   @doc """
   Creates a new tab with the given configuration.
@@ -110,7 +104,8 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
   end
 
   # Server Callbacks
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     state = %{
       tabs: %{},
       active_tab: nil,
@@ -121,7 +116,8 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     {:ok, state}
   end
 
-  def handle_call({:create_tab, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:create_tab, config}, _from, state) do
     tab_id = state.next_id
     window_state = State.new(config)
 
@@ -148,7 +144,8 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     {:reply, {:ok, tab_id}, new_state}
   end
 
-  def handle_call(:get_tabs, _from, state) do
+  @impl true
+  def handle_manager_call(:get_tabs, _from, state) do
     # Return tabs in position order, not creation order
     tab_order =
       state.tabs
@@ -159,14 +156,16 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     {:reply, tab_order, state}
   end
 
-  def handle_call(:get_active_tab, _from, state) do
+  @impl true
+  def handle_manager_call(:get_active_tab, _from, state) do
     case state.active_tab do
       nil -> {:reply, {:error, :no_active_tab}, state}
       tab_id -> {:reply, {:ok, tab_id}, state}
     end
   end
 
-  def handle_call({:set_active_tab, tab_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_active_tab, tab_id}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil ->
         {:reply, {:error, :tab_not_found}, state}
@@ -177,14 +176,16 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     end
   end
 
-  def handle_call({:get_tab_state, tab_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_tab_state, tab_id}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil -> {:reply, {:error, :tab_not_found}, state}
       tab_state -> {:reply, {:ok, tab_state}, state}
     end
   end
 
-  def handle_call({:update_tab_config, tab_id, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:update_tab_config, tab_id, config}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil ->
         {:reply, {:error, :tab_not_found}, state}
@@ -197,7 +198,8 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     end
   end
 
-  def handle_call({:close_tab, tab_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:close_tab, tab_id}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil ->
         {:reply, {:error, :tab_not_found}, state}
@@ -228,7 +230,8 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     end
   end
 
-  def handle_call({:move_tab, tab_id, position}, _from, state) do
+  @impl true
+  def handle_manager_call({:move_tab, tab_id, position}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil ->
         {:reply, {:error, :tab_not_found}, state}
@@ -257,13 +260,15 @@ defmodule Raxol.Terminal.Tab.UnifiedTab do
     end
   end
 
-  def handle_call({:update_config, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:update_config, config}, _from, state) do
     new_config = Map.merge(state.config, config)
     new_state = %{state | config: new_config}
     {:reply, :ok, new_state}
   end
 
-  def handle_call(:cleanup, _from, state) do
+  @impl true
+  def handle_manager_call(:cleanup, _from, state) do
     # Clean up all tab states
     Enum.each(state.tabs, fn {_id, tab_state} ->
       State.cleanup(tab_state.window_state)

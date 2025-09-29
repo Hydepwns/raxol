@@ -88,7 +88,16 @@ defmodule Raxol.View.Components do
   """
   @spec label(keyword() | map()) :: map()
   def label(opts \\ []) do
-    text(opts)
+    opts = if is_list(opts), do: Map.new(opts), else: opts
+
+    %{
+      type: :label,
+      attrs: [
+        content: Map.get(opts, :content, ""),
+        style: Map.get(opts, :style, %{})
+      ],
+      id: Map.get(opts, :id)
+    }
   end
 
   @doc """

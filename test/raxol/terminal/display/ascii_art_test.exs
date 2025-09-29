@@ -34,7 +34,7 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
     test ~c"returns a warning message with warning symbol" do
       warning = AsciiArt.warning()
       assert is_binary(warning)
-      assert String.contains?(warning, "⚠")
+      assert String.contains?(warning, "[WARN]")
       assert String.contains?(warning, "Warning")
     end
   end

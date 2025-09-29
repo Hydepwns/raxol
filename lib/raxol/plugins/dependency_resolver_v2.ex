@@ -211,7 +211,7 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
   defp parse_requirement(requirement) do
     cond do
       String.starts_with?(requirement, "^") ->
-        version = String.slice(requirement, 1..-1)
+        version = String.slice(requirement, 1..-1//1)
         {:ok, {:caret, version}}
 
       String.starts_with?(requirement, "~>") ->

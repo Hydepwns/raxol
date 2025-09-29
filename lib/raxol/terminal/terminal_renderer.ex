@@ -175,10 +175,8 @@ defmodule Raxol.Terminal.Renderer do
       chars = Enum.map_join(cells_with_same_style, "", & &1.char)
       style_string = build_style_string_fast(style, theme)
 
-      case style_string do
-        "" -> chars
-        _ -> "<span style=\"#{style_string}\">#{chars}</span>"
-      end
+      # Always wrap in span for consistent HTML output
+      "<span style=\"#{style_string}\">#{chars}</span>"
     end)
   end
 
@@ -188,10 +186,8 @@ defmodule Raxol.Terminal.Renderer do
     |> Enum.map_join("", fn cell ->
       style_string = build_style_string_fast(cell.style, theme)
 
-      case style_string do
-        "" -> cell.char
-        _ -> "<span style=\"#{style_string}\">#{cell.char}</span>"
-      end
+      # Always wrap in span for consistent HTML output
+      "<span style=\"#{style_string}\">#{cell.char}</span>"
     end)
   end
 
@@ -199,17 +195,23 @@ defmodule Raxol.Terminal.Renderer do
   defp build_style_string_fast(style, theme) do
     style_map = normalize_style(style)
 
-    # Check templates first for common patterns
-    case get_template_match(style_map) do
-      nil -> build_style_string_optimized(style, theme)
-      template -> template
+    # Templates should only be used when we have no theme restrictions
+    # If theme is provided but empty, we should respect that and not apply defaults
+    case should_use_templates?(theme, style_map) do
+      true ->
+        case get_template_match(style_map) do
+          nil -> build_style_string_optimized(style, theme)
+          template -> template
+        end
+      false -> build_style_string_optimized(style, theme)
     end
   end
 
   defp get_template_match(style_map) do
     cond do
       is_default_style?(style_map) ->
-        Map.get(@style_templates, :default)
+        # Don't use static template for default style - need dynamic theme colors
+        nil
 
       is_simple_color_match?(style_map, :red) ->
         Map.get(@style_templates, :red)
@@ -274,6 +276,13 @@ defmodule Raxol.Terminal.Renderer do
     end)
   end
 
+
+  defp should_use_templates?(theme, _style_map) do
+    # Only use templates when theme is completely nil/undefined
+    # If theme is an empty map %{}, that's an intentional choice to disable defaults
+    is_nil(theme)
+  end
+
   defp build_style_string_optimized(style, theme) do
     style_map = normalize_style(style)
 
@@ -284,7 +293,12 @@ defmodule Raxol.Terminal.Renderer do
     parts =
       case Map.get(style_map, :foreground) do
         nil ->
-          parts
+          # Apply default theme color when no explicit foreground is set
+          default_color = get_default_foreground_color(theme)
+          case default_color do
+            "" -> parts
+            _ -> ["color: " <> default_color | parts]
+          end
 
         color ->
           css_color = resolve_color_value(color, theme)
@@ -299,10 +313,15 @@ defmodule Raxol.Terminal.Renderer do
     parts =
       case Map.get(style_map, :background) do
         nil ->
-          parts
+          # Apply default theme background color when no explicit background is set
+          default_bg_color = get_default_background_color(theme)
+          case default_bg_color do
+            "" -> parts
+            _ -> ["background-color: " <> default_bg_color | parts]
+          end
 
         color ->
-          css_color = resolve_color_value(color, theme)
+          css_color = resolve_background_color_value(color, theme)
 
           case css_color do
             "" -> parts
@@ -349,7 +368,13 @@ defmodule Raxol.Terminal.Renderer do
     color_map = Map.get(theme, :foreground, %{})
 
     case Map.get(color_map, color) do
-      nil -> get_default_color(color)
+      nil ->
+        # Only use default colors if theme has some color configuration
+        # If theme is empty/minimal, return empty string to avoid unwanted defaults
+        case map_size(theme) > 0 and map_size(color_map) > 0 do
+          true -> get_default_color(color)
+          false -> ""
+        end
       value -> value
     end
   end
@@ -359,6 +384,28 @@ defmodule Raxol.Terminal.Renderer do
   end
 
   defp resolve_color_value(color, _theme), do: to_string(color)
+
+  defp resolve_background_color_value(color, theme) when is_atom(color) do
+    # Background color resolution with fallback to default color map
+    color_map = Map.get(theme, :background, %{})
+
+    case Map.get(color_map, color) do
+      nil ->
+        # Only use default colors if theme has some color configuration
+        # If theme is empty/minimal, return empty string to avoid unwanted defaults
+        case map_size(theme) > 0 and map_size(color_map) > 0 do
+          true -> get_default_color(color)
+          false -> ""
+        end
+      value -> value
+    end
+  end
+
+  defp resolve_background_color_value(%{r: r, g: g, b: b}, _theme) do
+    "##{Integer.to_string(r, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(g, 16) |> String.pad_leading(2, "0")}#{Integer.to_string(b, 16) |> String.pad_leading(2, "0")}"
+  end
+
+  defp resolve_background_color_value(color, _theme), do: to_string(color)
 
   defp get_default_color(color) do
     default_colors = %{
@@ -381,6 +428,22 @@ defmodule Raxol.Terminal.Renderer do
     }
 
     Map.get(default_colors, color, "")
+  end
+
+  defp get_default_foreground_color(theme) do
+    # Get the default foreground color from theme
+    case get_in(theme, [:foreground, :default]) do
+      nil -> ""
+      color -> color
+    end
+  end
+
+  defp get_default_background_color(theme) do
+    # Get the default background color from theme
+    case get_in(theme, [:background, :default]) do
+      nil -> ""
+      color -> color
+    end
   end
 
   defp apply_font_settings(content, _font_settings), do: content

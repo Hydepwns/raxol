@@ -9,7 +9,8 @@ defmodule Raxol.Core.Metrics.Config do
   - Default settings
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   @type metric_type :: :performance | :resource | :operation | :system | :custom
   @type config_key ::
@@ -41,9 +42,6 @@ defmodule Raxol.Core.Metrics.Config do
   @doc """
   Starts the configuration server.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Gets the current configuration value for the given key.
@@ -143,47 +141,47 @@ defmodule Raxol.Core.Metrics.Config do
     GenServer.call(__MODULE__, {:set_environment, env})
   end
 
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     config = Map.merge(@default_config, Map.new(opts))
     {:ok, config}
   end
 
-  @impl GenServer
-  def handle_call({:get, key, default}, _from, state) do
+  @impl true
+  def handle_manager_call({:get, key, default}, _from, state) do
     value = Map.get(state, key, default)
     {:reply, value, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_all, _from, state) do
+  @impl true
+  def handle_manager_call(:get_all, _from, state) do
     {:reply, {:ok, state}, state}
   end
 
-  @impl GenServer
-  def handle_call({:update, config_updates}, _from, state) do
+  @impl true
+  def handle_manager_call({:update, config_updates}, _from, state) do
     new_state = Map.merge(state, config_updates)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:set, key, value}, _from, state) do
+  @impl true
+  def handle_manager_call({:set, key, value}, _from, state) do
     new_state = Map.put(state, key, value)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:reset, _from, _state) do
+  @impl true
+  def handle_manager_call(:reset, _from, _state) do
     {:reply, :ok, @default_config}
   end
 
-  @impl GenServer
-  def handle_call(:environment, _from, state) do
+  @impl true
+  def handle_manager_call(:environment, _from, state) do
     {:reply, state.environment, state}
   end
 
-  @impl GenServer
-  def handle_call({:set_environment, env}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_environment, env}, _from, state) do
     new_state = Map.put(state, :environment, env)
     {:reply, :ok, new_state}
   end

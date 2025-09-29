@@ -31,7 +31,7 @@ defmodule Raxol.Performance.DevHints do
         hint_cooldown: 30_000  # milliseconds between same hints
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   @default_config %{
@@ -82,15 +82,7 @@ defmodule Raxol.Performance.DevHints do
   @doc """
   Starts the performance hints system.
   """
-  def start_link(opts \\ []) do
-    config = get_config(opts)
-
-    if config.enabled do
-      GenServer.start_link(__MODULE__, config, name: __MODULE__)
-    else
-      :ignore
-    end
-  end
+  # start_link is provided by BaseManager
 
   @doc """
   Manually trigger a performance hint.
@@ -124,9 +116,17 @@ defmodule Raxol.Performance.DevHints do
 
   # Server Implementation
 
-  @impl true
-  def init(config) do
-    # Attach to telemetry events
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    config = get_config(opts)
+
+    if config.enabled do
+      Logger.info("[DevHints] Attaching telemetry handlers")
+
+      # Schedule periodic cleanup
+      _ = :timer.send_interval(60_000, self(), {:cleanup_history})
+
+      # Attach to telemetry events
     events = [
       [:raxol, :terminal, :parse],
       [:raxol, :terminal, :write],
@@ -162,26 +162,30 @@ defmodule Raxol.Performance.DevHints do
       start_time: System.monotonic_time(:millisecond)
     }
 
-    Logger.info("[SEARCH] Performance hints enabled for development")
+      Logger.info("[SEARCH] Performance hints enabled for development")
 
-    {:ok, state}
+      {:ok, state}
+    else
+      :ignore
+    end
   end
 
-  @impl true
-  def handle_cast({:manual_hint, category, message, metadata}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:manual_hint, category, message, metadata}, state) do
     state = maybe_show_hint(state, category, message, metadata)
     {:noreply, state}
   end
 
-  def handle_cast({:telemetry_event, event, measurements, metadata}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:telemetry_event, event, measurements, metadata}, state) do
     state = record_operation(state, event, measurements, metadata)
     state = check_for_hints(state, event, measurements, metadata)
 
     {:noreply, state}
   end
 
-  @impl true
-  def handle_call(:stats, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:stats, _from, state) do
     now = System.monotonic_time(:millisecond)
     uptime = now - state.start_time
 
@@ -197,8 +201,8 @@ defmodule Raxol.Performance.DevHints do
     {:reply, stats, state}
   end
 
-  @impl true
-  def handle_info({:cleanup_history}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info({:cleanup_history}, state) do
     # Clean up old operation history
     # 1 minute ago
     cutoff = System.monotonic_time(:millisecond) - 60_000

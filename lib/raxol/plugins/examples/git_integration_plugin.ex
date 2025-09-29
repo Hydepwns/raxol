@@ -14,7 +14,8 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   - Git graph visualization
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
   alias Raxol.Terminal.ANSI.TextFormatting
 
@@ -68,9 +69,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   ]
 
   # Public API
-  def start_link(config) do
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
+  # start_link is provided by BaseManager
 
   def get_status do
     GenServer.call(__MODULE__, :get_status)
@@ -100,9 +99,9 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
     GenServer.call(__MODULE__, {:create_branch, name})
   end
 
-  # GenServer Callbacks
-  @impl true
-  def init(config) do
+  # BaseManager Callbacks
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(config) do
     state = %__MODULE__{
       config: config,
       repo_path: find_git_repo(),
@@ -143,8 +142,8 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
     end
   end
 
-  @impl true
-  def handle_call(:get_status, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_status, _from, state) do
     status_data = %{
       repo_path: state.repo_path,
       current_branch: state.current_branch,
@@ -156,8 +155,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
     {:reply, status_data, state}
   end
 
-  @impl true
-  def handle_call({:stage_file, file}, _from, state) do
+  def handle_manager_call({:stage_file, file}, _from, state) do
     case run_git_command(["add", file], state.repo_path) do
       {_output, 0} ->
         updated_state = load_repository_data(state)
@@ -169,8 +167,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
     end
   end
 
-  @impl true
-  def handle_call({:unstage_file, file}, _from, state) do
+  def handle_manager_call({:unstage_file, file}, _from, state) do
     case run_git_command(["reset", "HEAD", file], state.repo_path) do
       {_output, 0} ->
         updated_state = load_repository_data(state)
@@ -182,8 +179,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
     end
   end
 
-  @impl true
-  def handle_call({:commit, message}, _from, state) do
+  def handle_manager_call({:commit, message}, _from, state) do
     case run_git_command(["commit", "-m", message], state.repo_path) do
       {output, 0} ->
         updated_state = load_repository_data(state)
@@ -195,8 +191,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
     end
   end
 
-  @impl true
-  def handle_call({:checkout_branch, branch}, _from, state) do
+  def handle_manager_call({:checkout_branch, branch}, _from, state) do
     case run_git_command(["checkout", branch], state.repo_path) do
       {_output, 0} ->
         updated_state = load_repository_data(state)
@@ -208,8 +203,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
     end
   end
 
-  @impl true
-  def handle_call({:create_branch, name}, _from, state) do
+  def handle_manager_call({:create_branch, name}, _from, state) do
     case run_git_command(["checkout", "-b", name], state.repo_path) do
       {_output, 0} ->
         updated_state = load_repository_data(state)
@@ -221,26 +215,25 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
     end
   end
 
-  @impl true
-  def handle_cast(:refresh, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast(:refresh, state) do
     updated_state = load_repository_data(state)
     {:noreply, updated_state}
   end
 
-  @impl true
-  def handle_info(:refresh, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:refresh, state) do
     updated_state = load_repository_data(state)
     {:noreply, updated_state}
   end
 
-  @impl true
-  def handle_info({:file_event, _watcher_pid, {_path, _events}}, state) do
+  def handle_manager_info({:file_event, _watcher_pid, {_path, _events}}, state) do
     # File changed, refresh repository data
     updated_state = load_repository_data(state)
     {:noreply, updated_state}
   end
 
-  @impl true
+  @impl GenServer
   def terminate(_reason, state) do
     # Cleanup timers and watchers using pattern matching
     case state.refresh_timer do
@@ -404,7 +397,24 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   end
 
   defp run_git_command(args, repo_path) do
-    System.cmd("git", args, cd: repo_path, stderr_to_stdout: true)
+    # Verify directory exists and is accessible
+    case File.exists?(repo_path) do
+      true ->
+        case System.cmd("git", args, cd: repo_path) do
+          {output, 0} ->
+            {output, 0}
+
+          {_output, exit_code} ->
+            # Get detailed error information
+            {error_output, _} =
+              System.cmd("git", args, cd: repo_path, stderr_to_stdout: true)
+
+            {error_output, exit_code}
+        end
+
+      false ->
+        {"Repository path does not exist: #{repo_path}", 1}
+    end
   end
 
   defp start_file_watcher(_repo_path) do
@@ -421,6 +431,8 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
       :branches -> render_branches_view(state, width, height)
       :history -> render_history_view(state, width, height)
       :diff -> render_diff_view(state, width, height)
+      # Default to status view
+      nil -> render_status_view(state, width, height)
     end
   end
 

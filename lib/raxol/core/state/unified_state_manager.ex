@@ -6,6 +6,7 @@ defmodule Raxol.Core.State.UnifiedStateManager do
 
   use Raxol.Core.Behaviours.BaseManager
 
+
   require Logger
 
   @type state_key :: atom() | String.t()

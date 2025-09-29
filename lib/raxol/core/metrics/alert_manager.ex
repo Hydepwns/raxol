@@ -10,7 +10,8 @@ defmodule Raxol.Core.Metrics.AlertManager do
   - Alert history
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   alias Raxol.Core.Metrics.{UnifiedCollector, Aggregator}
 
   @type alert_condition :: :above | :below | :equals | :not_equals
@@ -46,13 +47,8 @@ defmodule Raxol.Core.Metrics.AlertManager do
   @spec process_name(any()) :: any()
   defp process_name(_), do: __MODULE__
 
-  @doc """
-  Starts the alert manager.
-  """
-  def start_link(opts \\ []) do
-    name = opts[:name] || __MODULE__
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
+  # BaseManager provides start_link/1 which handles GenServer initialization
+  # Usage: Raxol.Core.Metrics.AlertManager.start_link(name: __MODULE__, ...)
 
   @doc """
   Adds a new alert rule.
@@ -96,8 +92,8 @@ defmodule Raxol.Core.Metrics.AlertManager do
     GenServer.stop(process_name(pid))
   end
 
-  @impl GenServer
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     state = %{
       rules: %{},
       next_rule_id: 1,
@@ -110,8 +106,8 @@ defmodule Raxol.Core.Metrics.AlertManager do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:add_rule, rule}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:add_rule, rule}, _from, state) do
     rule_id = state.next_rule_id
     validated_rule = validate_rule(rule)
 
@@ -132,29 +128,29 @@ defmodule Raxol.Core.Metrics.AlertManager do
     {:reply, {:ok, rule_id}, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_rules, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_rules, _from, state) do
     {:reply, {:ok, state.rules}, state}
   end
 
-  @impl GenServer
-  def handle_call({:get_alert_state, rule_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_alert_state, rule_id}, _from, state) do
     case Map.get(state.alert_states, rule_id) do
       nil -> {:reply, {:error, :rule_not_found}, state}
       alert_state -> {:reply, {:ok, alert_state}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call({:get_alert_history, rule_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_alert_history, rule_id}, _from, state) do
     case Map.get(state.alert_history, rule_id) do
       nil -> {:reply, {:error, :rule_not_found}, state}
       history -> {:reply, {:ok, history}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call({:acknowledge_alert, rule_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:acknowledge_alert, rule_id}, _from, state) do
     case Map.get(state.alert_states, rule_id) do
       nil ->
         {:reply, {:error, :rule_not_found}, state}
@@ -171,8 +167,8 @@ defmodule Raxol.Core.Metrics.AlertManager do
     end
   end
 
-  @impl GenServer
-  def handle_info({:check_alerts, _timer_id}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info({:check_alerts, _timer_id}, state) do
     new_state = check_all_alerts(state)
     schedule_check()
     {:noreply, new_state}

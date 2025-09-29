@@ -7,7 +7,8 @@ defmodule Raxol.Terminal.TerminalRegistry do
   the system.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   alias Raxol.Events.{TerminalCreatedEvent, TerminalClosedEvent}
@@ -26,12 +27,8 @@ defmodule Raxol.Terminal.TerminalRegistry do
 
   ## Client API
 
-  @doc """
-  Starts the terminal registry.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 and start_link/2 automatically
+  # The @doc above was duplicated - removed
 
   @doc """
   Registers a terminal process with the registry.
@@ -96,10 +93,10 @@ defmodule Raxol.Terminal.TerminalRegistry do
     GenServer.call(registry, :get_statistics)
   end
 
-  ## GenServer Implementation
+  ## BaseManager Implementation
 
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     config = Keyword.get(opts, :config, %{})
 
     state = %__MODULE__{
@@ -121,8 +118,8 @@ defmodule Raxol.Terminal.TerminalRegistry do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:register, terminal_id, process, metadata}, _from, state) do
+  @impl true
+  def handle_manager_call({:register, terminal_id, process, metadata}, _from, state) do
     case Map.get(state.terminals, terminal_id) do
       nil ->
         # Monitor the process
@@ -171,8 +168,8 @@ defmodule Raxol.Terminal.TerminalRegistry do
     end
   end
 
-  @impl GenServer
-  def handle_call({:unregister, terminal_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:unregister, terminal_id}, _from, state) do
     case Map.get(state.terminals, terminal_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -184,22 +181,22 @@ defmodule Raxol.Terminal.TerminalRegistry do
     end
   end
 
-  @impl GenServer
-  def handle_call({:lookup, terminal_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:lookup, terminal_id}, _from, state) do
     case Map.get(state.terminals, terminal_id) do
       nil -> {:reply, {:error, :not_found}, state}
       process -> {:reply, {:ok, process}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call({:exists, terminal_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:exists, terminal_id}, _from, state) do
     exists = Map.has_key?(state.terminals, terminal_id)
     {:reply, exists, state}
   end
 
-  @impl GenServer
-  def handle_call({:list_user_terminals, user_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:list_user_terminals, user_id}, _from, state) do
     terminal_ids = Map.get(state.user_terminals, user_id, [])
 
     terminals =
@@ -215,8 +212,8 @@ defmodule Raxol.Terminal.TerminalRegistry do
     {:reply, terminals, state}
   end
 
-  @impl GenServer
-  def handle_call(:list_all_terminals, _from, state) do
+  @impl true
+  def handle_manager_call(:list_all_terminals, _from, state) do
     terminals =
       Enum.map(state.terminals, fn {terminal_id, process} ->
         %{
@@ -230,16 +227,16 @@ defmodule Raxol.Terminal.TerminalRegistry do
     {:reply, terminals, state}
   end
 
-  @impl GenServer
-  def handle_call({:get_metadata, terminal_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_metadata, terminal_id}, _from, state) do
     case get_in(state.terminal_metadata, [terminal_id]) do
       nil -> {:reply, {:error, :not_found}, state}
       metadata_info -> {:reply, {:ok, metadata_info}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call({:update_metadata, terminal_id, new_metadata}, _from, state) do
+  @impl true
+  def handle_manager_call({:update_metadata, terminal_id, new_metadata}, _from, state) do
     case get_in(state.terminal_metadata, [terminal_id]) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -260,8 +257,8 @@ defmodule Raxol.Terminal.TerminalRegistry do
     end
   end
 
-  @impl GenServer
-  def handle_call(:get_statistics, _from, state) do
+  @impl true
+  def handle_manager_call(:get_statistics, _from, state) do
     stats = %{
       total_terminals: map_size(state.terminals),
       active_users: map_size(state.user_terminals),
@@ -272,8 +269,8 @@ defmodule Raxol.Terminal.TerminalRegistry do
     {:reply, stats, state}
   end
 
-  @impl GenServer
-  def handle_info(:subscribe_to_events, state) do
+  @impl true
+  def handle_manager_info(:subscribe_to_events, state) do
     # Subscribe to terminal events now that initialization is complete
     Raxol.Architecture.EventSourcing.EventStore.subscribe(
       Raxol.Architecture.EventSourcing.EventStore,
@@ -285,8 +282,8 @@ defmodule Raxol.Terminal.TerminalRegistry do
     {:noreply, state}
   end
 
-  @impl GenServer
-  def handle_info({:DOWN, _ref, :process, pid, reason}, state) do
+  @impl true
+  def handle_manager_info({:DOWN, _ref, :process, pid, reason}, state) do
     case Map.get(state.monitors, pid) do
       nil ->
         {:noreply, state}
@@ -301,8 +298,8 @@ defmodule Raxol.Terminal.TerminalRegistry do
     end
   end
 
-  @impl GenServer
-  def handle_info({:event_appended, _stream_name, event}, state) do
+  @impl true
+  def handle_manager_info({:event_appended, _stream_name, event}, state) do
     case event.data do
       %TerminalCreatedEvent{} = created_event ->
         handle_terminal_created_event(created_event, state)
@@ -315,8 +312,8 @@ defmodule Raxol.Terminal.TerminalRegistry do
     end
   end
 
-  @impl GenServer
-  def handle_info(_msg, state) do
+  @impl true
+  def handle_manager_info(_msg, state) do
     {:noreply, state}
   end
 

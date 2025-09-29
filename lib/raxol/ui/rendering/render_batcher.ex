@@ -10,7 +10,9 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
   - Adaptive batching based on complexity
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+@behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
   require Raxol.Core.Runtime.Log
 
@@ -40,13 +42,6 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
 
   # Public API
 
-  @doc """
-  Starts the render batcher GenServer.
-  """
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
 
   @doc """
   Submits a render update to the batcher.
@@ -109,8 +104,8 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
 
   # GenServer Implementation
 
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     frame_interval =
       Keyword.get(opts, :frame_interval_ms, @default_frame_interval_ms)
 
@@ -122,8 +117,8 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_cast(
+  @impl true
+  def handle_manager_cast(
         {:submit_update, tree, diff_result, priority, timestamp},
         state
       ) do
@@ -161,21 +156,21 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
     {:noreply, final_state}
   end
 
-  @impl GenServer
-  def handle_cast({:set_frame_interval, interval_ms}, state) do
+  @impl true
+  def handle_manager_cast({:set_frame_interval, interval_ms}, state) do
     {:noreply, %{state | frame_interval_ms: interval_ms}}
   end
 
-  @impl GenServer
-  def handle_call(:force_flush, _from, state) do
+  @impl true
+  def handle_manager_call(:force_flush, _from, state) do
     Raxol.Core.Runtime.Log.debug("RenderBatcher: Force flush requested")
 
     new_state = flush_pending_updates(state)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_stats, _from, state) do
+  @impl true
+  def handle_manager_call(:get_stats, _from, state) do
     stats =
       Map.merge(state.stats, %{
         pending_updates: length(state.pending_updates),
@@ -185,8 +180,8 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
     {:reply, stats, state}
   end
 
-  @impl GenServer
-  def handle_info(
+  @impl true
+  def handle_manager_info(
         {:batch_flush, timer_ref},
         %{batch_timer_ref: timer_ref} = state
       ) do
@@ -196,8 +191,8 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_info({:batch_flush, _old_timer_ref}, state) do
+  @impl true
+  def handle_manager_info({:batch_flush, _old_timer_ref}, state) do
     # Ignore stale timer messages
     {:noreply, state}
   end

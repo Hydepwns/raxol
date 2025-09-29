@@ -16,7 +16,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
     end
 
     # Start and initialize event manager for tests
-    case EventManager.start_link() do
+    case EventManager.start_link(name: EventManager) do
       {:ok, _pid} -> :ok
       {:error, {:already_started, _pid}} -> :ok
       error -> raise "Failed to start EventManager: #{inspect(error)}"

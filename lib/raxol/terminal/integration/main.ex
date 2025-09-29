@@ -283,52 +283,52 @@ defmodule Raxol.Terminal.Integration.Main do
   Main integration module that provides a GenServer-based interface for terminal integration.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
 
   @doc """
   Starts the integration main process.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # start_link is provided by BaseManager
 
-  @impl GenServer
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+def init_manager(opts) do
     state = Raxol.Terminal.Integration.init(opts)
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:handle_input, input_event}, _from, state) do
+
+
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:handle_input, input_event}, _from, state) do
     new_state = Raxol.Terminal.Integration.handle_input(state, input_event)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:write, text}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:write, text}, _from, state) do
     output = Raxol.Terminal.Integration.write(state, text)
     {:reply, {:ok, output}, state}
   end
 
-  @impl GenServer
-  def handle_call({:clear}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:clear}, _from, state) do
     new_state = Raxol.Terminal.Integration.clear(state)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_state}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_state}, _from, state) do
     {:reply, state, state}
   end
 
-  @impl GenServer
-  def handle_call({:resize, width, height}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:resize, width, height}, _from, state) do
     new_state = Raxol.Terminal.Integration.resize(state, width, height)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:update_config, config}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:update_config, config}, _from, state) do
     new_state = Raxol.Terminal.Integration.update_config(state, config)
     {:reply, :ok, new_state}
   end

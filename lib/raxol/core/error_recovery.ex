@@ -16,7 +16,8 @@ defmodule Raxol.Core.ErrorRecovery do
   - State recovery mechanisms
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   @type recovery_strategy ::
@@ -39,12 +40,6 @@ defmodule Raxol.Core.ErrorRecovery do
 
   # Client API
 
-  @doc """
-  Starts the error recovery GenServer.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Executes a function with circuit breaker protection.
@@ -212,7 +207,8 @@ defmodule Raxol.Core.ErrorRecovery do
   # Server callbacks
 
   @impl true
-  def init(_opts) do
+  @impl true
+  def init_manager(_opts) do
     state = %{
       circuits: %{},
       degraded_features: %{},
@@ -223,33 +219,33 @@ defmodule Raxol.Core.ErrorRecovery do
   end
 
   @impl true
-  def handle_call({:check_circuit, name}, _from, state) do
+  def handle_manager_call({:check_circuit, name}, _from, state) do
     circuit = get_or_create_circuit(state.circuits, name)
     {:reply, circuit.state, put_in(state.circuits[name], circuit)}
   end
 
   @impl true
-  def handle_call({:record_success, name}, _from, state) do
+  def handle_manager_call({:record_success, name}, _from, state) do
     circuit = get_or_create_circuit(state.circuits, name)
     updated_circuit = record_circuit_success(circuit)
     {:reply, :ok, put_in(state.circuits[name], updated_circuit)}
   end
 
   @impl true
-  def handle_call({:record_failure, name}, _from, state) do
+  def handle_manager_call({:record_failure, name}, _from, state) do
     circuit = get_or_create_circuit(state.circuits, name)
     updated_circuit = record_circuit_failure(circuit)
     {:reply, :ok, put_in(state.circuits[name], updated_circuit)}
   end
 
   @impl true
-  def handle_call({:feature_available?, feature}, _from, state) do
+  def handle_manager_call({:feature_available?, feature}, _from, state) do
     available = not Map.has_key?(state.degraded_features, feature)
     {:reply, available, state}
   end
 
   @impl true
-  def handle_call({:mark_feature_degraded, feature, error}, _from, state) do
+  def handle_manager_call({:mark_feature_degraded, feature, error}, _from, state) do
     degraded_features =
       Map.put(state.degraded_features, feature, %{
         error: error,

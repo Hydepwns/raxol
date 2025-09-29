@@ -9,7 +9,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
 
   setup do
     # Start ComponentManager with clean state
-    start_supervised!(ComponentManager)
+    start_supervised!({ComponentManager, [name: ComponentManager]})
 
     # Set runtime_pid to self() so we can receive component_updated messages
     ComponentManager.set_runtime_pid(self())
@@ -134,7 +134,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       defmodule ErrorComponent do
         def init(_props), do: {:ok, %{error_count: 0}}
         def mount(state), do: {state, []}
-        def update(:trigger_error, state), do: raise("Test error")
+        def update(:trigger_error, _state), do: raise("Test error")
         def update(_msg, state), do: {state, []}
       end
 

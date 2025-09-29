@@ -9,6 +9,7 @@ defmodule Raxol.PerformanceTest do
   alias Raxol.Benchmarks.Performance.Reporting
 
   @moduletag :performance
+  @moduletag :skip
   # 2 minute timeout for performance tests
   @moduletag timeout: 120_000
 

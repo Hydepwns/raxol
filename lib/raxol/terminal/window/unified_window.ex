@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
   window creation, splitting, resizing, and other window operations.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   @type window_id :: non_neg_integer()
@@ -43,9 +43,6 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
   # Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   def create_window(opts \\ []) do
     GenServer.call(__MODULE__, {:create_window, opts})
@@ -105,7 +102,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
 
   # Server callbacks
 
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     # Handle both keyword lists and maps
     opts_map =
       case is_map(opts) do
@@ -129,12 +127,14 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
      }}
   end
 
-  def handle_call({:create_window, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:create_window, opts}, _from, state) do
     {window_id, new_state} = do_create_window(opts, state)
     {:reply, {:ok, window_id}, new_state}
   end
 
-  def handle_call({:split_window, window_id, direction}, _from, state) do
+  @impl true
+  def handle_manager_call({:split_window, window_id, direction}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :window_not_found}, state}
@@ -144,18 +144,21 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  def handle_call(:get_active_window, _from, state) do
+  @impl true
+  def handle_manager_call(:get_active_window, _from, state) do
     {:reply, {:ok, state.active_window}, state}
   end
 
-  def handle_call({:get_window_state, window_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_window_state, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil -> {:reply, {:error, :window_not_found}, state}
       window -> {:reply, {:ok, window}, state}
     end
   end
 
-  def handle_call({:set_title, window_id, title}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_title, window_id, title}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :window_not_found}, state}
@@ -172,7 +175,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  def handle_call({:set_icon_name, window_id, icon_name}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_icon_name, window_id, icon_name}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :window_not_found}, state}
@@ -189,7 +193,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  def handle_call({:resize, window_id, width, height}, _from, state) do
+  @impl true
+  def handle_manager_call({:resize, window_id, width, height}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :window_not_found}, state}
@@ -206,7 +211,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  def handle_call({:move, window_id, x, y}, _from, state) do
+  @impl true
+  def handle_manager_call({:move, window_id, x, y}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :window_not_found}, state}
@@ -223,7 +229,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  def handle_call({:set_stacking_order, window_id, order}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_stacking_order, window_id, order}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :window_not_found}, state}
@@ -240,7 +247,8 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  def handle_call({:set_maximized, window_id, maximized}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_maximized, window_id, maximized}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil ->
         {:reply, {:error, :window_not_found}, state}
@@ -268,26 +276,30 @@ defmodule Raxol.Terminal.Window.UnifiedWindow do
     end
   end
 
-  def handle_call({:set_active_window, window_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_active_window, window_id}, _from, state) do
     case Map.get(state.windows, window_id) do
       nil -> {:reply, {:error, :window_not_found}, state}
       _window -> {:reply, :ok, %{state | active_window: window_id}}
     end
   end
 
-  def handle_call({:close_window, window_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:close_window, window_id}, _from, state) do
     case do_close_window(window_id, state) do
       {:ok, new_state} -> {:reply, :ok, new_state}
       {:error, new_state} -> {:reply, {:error, :window_not_found}, new_state}
     end
   end
 
-  def handle_call({:update_config, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:update_config, config}, _from, state) do
     new_state = %{state | config: Map.merge(state.config, config)}
     {:reply, :ok, new_state}
   end
 
-  def handle_call(:cleanup, _from, state) do
+  @impl true
+  def handle_manager_call(:cleanup, _from, state) do
     # Clean up all windows
     new_state = %{state | windows: %{}, active_window: nil}
     {:reply, :ok, new_state}

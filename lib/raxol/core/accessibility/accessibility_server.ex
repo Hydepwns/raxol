@@ -42,7 +42,8 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   ```
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
   alias Raxol.Core.Events.EventManager, as: EventManager
 
@@ -71,14 +72,6 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
 
   # Client API
 
-  @doc """
-  Starts the Accessibility server.
-  """
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    initial_state = Keyword.get(opts, :initial_state, @default_state)
-    GenServer.start_link(__MODULE__, initial_state, name: name)
-  end
 
   @doc """
   Enables accessibility features with the given options.
@@ -456,15 +449,16 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     GenServer.call(server, :get_focus_history)
   end
 
-  # GenServer Callbacks
+  # BaseManager Callbacks
 
-  @impl GenServer
-  def init(initial_state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    initial_state = Keyword.get(opts, :initial_state, @default_state)
     {:ok, initial_state}
   end
 
-  @impl GenServer
-  def handle_call({:enable, options, user_preferences_pid}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:enable, options, user_preferences_pid}, _from, state) do
     preferences = merge_preferences(state.preferences, options)
 
     new_state = %{
@@ -489,8 +483,8 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:disable, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:disable, _from, state) do
     new_state = %{state | enabled: false}
 
     # Unregister event handlers
@@ -502,13 +496,13 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:is_enabled, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:is_enabled, _from, state) do
     {:reply, state.enabled, state}
   end
 
-  @impl GenServer
-  def handle_call({:set_preference, key, value}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_preference, key, value}, _from, state) do
     new_preferences = Map.put(state.preferences, key, value)
     new_state = %{state | preferences: new_preferences}
 
@@ -538,8 +532,8 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:set_preference_with_prefs, key, value, user_preferences_pid},
         _from,
         state
@@ -573,8 +567,8 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_preference, key}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_preference, key}, _from, state) do
     value =
       case key do
         :enabled -> state.enabled
@@ -584,64 +578,64 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     {:reply, value, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_preferences, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_preferences, _from, state) do
     {:reply, state.preferences, state}
   end
 
-  @impl GenServer
-  def handle_call({:announce_sync, message, opts}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:announce_sync, message, opts}, _from, state) do
     new_state = process_announcement(state, message, opts)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:set_metadata, component_id, metadata}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_metadata, component_id, metadata}, _from, state) do
     new_metadata = Map.put(state.metadata, component_id, metadata)
     new_state = %{state | metadata: new_metadata}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_metadata, component_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_metadata, component_id}, _from, state) do
     metadata = Map.get(state.metadata, component_id)
     {:reply, metadata, state}
   end
 
-  @impl GenServer
-  def handle_call({:remove_metadata, component_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:remove_metadata, component_id}, _from, state) do
     new_metadata = Map.delete(state.metadata, component_id)
     new_state = %{state | metadata: new_metadata}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_announcement_history, limit}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_announcement_history, limit}, _from, state) do
     history = get_limited_history(state.announcements.history, limit)
 
     {:reply, history, state}
   end
 
-  @impl GenServer
-  def handle_call(:clear_announcement_history, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:clear_announcement_history, _from, state) do
     new_announcements = %{state.announcements | history: []}
     new_state = %{state | announcements: new_announcements}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:set_announcement_callback, callback}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_announcement_callback, callback}, _from, state) do
     new_state = %{state | announcement_callback: callback}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_next_announcement, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_next_announcement, _from, state) do
     Raxol.Core.Runtime.Log.debug(
       "get_next_announcement: queue length=#{length(state.announcements.queue)}"
     )
@@ -665,22 +659,22 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     end
   end
 
-  @impl GenServer
-  def handle_call(:clear_all_announcements, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:clear_all_announcements, _from, state) do
     new_announcements = %{state.announcements | queue: []}
     new_state = %{state | announcements: new_announcements}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:register_metadata, element_id, metadata}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:register_metadata, element_id, metadata}, _from, state) do
     new_metadata = Map.put(state.metadata, element_id, metadata)
     new_state = %{state | metadata: new_metadata}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:register_component_style, component_type, style},
         _from,
         state
@@ -692,36 +686,36 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_component_style, component_type}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_component_style, component_type}, _from, state) do
     style_key = {:component_style, component_type}
     style = Map.get(state.metadata, style_key, %{})
     {:reply, style, state}
   end
 
-  @impl GenServer
-  def handle_call({:unregister_component_style, component_type}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:unregister_component_style, component_type}, _from, state) do
     style_key = {:component_style, component_type}
     new_metadata = Map.delete(state.metadata, style_key)
     new_state = %{state | metadata: new_metadata}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_focus_history, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_focus_history, _from, state) do
     # Return focus history from metadata or empty list
     focus_history = Map.get(state.metadata, :focus_history, [])
     {:reply, focus_history, state}
   end
 
-  @impl GenServer
-  def handle_cast({:announce, message, opts}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:announce, message, opts}, state) do
     new_state = process_announcement(state, message, opts)
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_cast({:handle_focus_change, _old_focus, new_focus}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:handle_focus_change, _old_focus, new_focus}, state) do
     handle_focus_change_with_state(state, new_focus)
   end
 
@@ -1061,13 +1055,37 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
   end
 
   # Event handler callbacks (called by EventManager)
+  # Group all handle_focus_change_event/1 clauses together - specific clauses first
+  def handle_focus_change_event(:focus_change) do
+    Logger.warning("AccessibilityServer.handle_focus_change_event/1 called with just event type, this is a known issue with EventManager dispatch")
+    # This is likely a bug in the EventManager but we'll work around it
+    # Since we can't get the event data, we'll just silently ignore this call
+    :ok
+  end
+
   def handle_focus_change_event({:focus_change, old_focus, new_focus}) do
+    handle_focus_change(__MODULE__, old_focus, new_focus)
+  end
+
+  def handle_focus_change_event(unexpected_arg) do
+    Logger.warning("AccessibilityServer.handle_focus_change_event/1 called with unexpected argument: #{inspect(unexpected_arg)}")
+    # Note: This should never match {:focus_change, old_focus, new_focus} as it's handled above
+    :ok
+  end
+
+  # Group all handle_focus_change_event/2 clauses together
+
+  def handle_focus_change_event({:focus_change, old_focus, new_focus}, _metadata) do
     handle_focus_change(__MODULE__, old_focus, new_focus)
   end
 
   def handle_focus_change_event(event_type, event_data)
       when event_type == :focus_change do
     case event_data do
+      %{old_focus: old_focus, new_focus: new_focus} ->
+        # Handle properly formatted focus change event data
+        handle_focus_change(__MODULE__, old_focus, new_focus)
+
       %{nil: new_focus} ->
         # Handle the case where EventManager converts {nil, new_focus} to %{nil: new_focus}
         handle_focus_change(__MODULE__, nil, new_focus)
@@ -1102,6 +1120,15 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     handle_focus_change(__MODULE__, old_focus, new_focus)
   end
 
+  # Telemetry handler - receives (event_name, measurements, metadata, config)
+  def handle_focus_change_event(_event_name, _measurements, metadata, _config)
+      when is_map(metadata) do
+    old_focus = Map.get(metadata, :old_focus, nil)
+    new_focus = Map.get(metadata, :new_focus, nil)
+    Logger.debug("AccessibilityServer telemetry handler called with metadata: #{inspect(metadata)}")
+    handle_focus_change(__MODULE__, old_focus, new_focus)
+  end
+
   def handle_preference_changed_event({:preference_changed, _key, _value}) do
     # Handle preference changes from other systems
     :ok
@@ -1112,13 +1139,13 @@ defmodule Raxol.Core.Accessibility.AccessibilityServer do
     :ok
   end
 
-  @impl GenServer
-  def handle_info({:preferences_applied, _name}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info({:preferences_applied, _name}, state) do
     # Ignore preferences_applied messages from UserPreferences
     {:noreply, state}
   end
 
-  def handle_info(msg, state) do
+  def handle_manager_info(msg, state) do
     Raxol.Core.Runtime.Log.error(
       "#{__MODULE__} received unexpected message in handle_info/2: #{inspect(msg)}"
     )

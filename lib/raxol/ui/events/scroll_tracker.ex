@@ -3,7 +3,8 @@ defmodule Raxol.UI.Events.ScrollTracker do
   Tracks scroll events for virtual scrolling components.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   defstruct [
@@ -15,9 +16,8 @@ defmodule Raxol.UI.Events.ScrollTracker do
 
   ## Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 which handles GenServer initialization
+  # Usage: Raxol.UI.Events.ScrollTracker.start_link(name: __MODULE__, ...)
 
   def track_scroll(tracker \\ __MODULE__, position) do
     GenServer.cast(tracker, {:scroll, position})
@@ -27,10 +27,10 @@ defmodule Raxol.UI.Events.ScrollTracker do
     GenServer.call(tracker, :get_position)
   end
 
-  ## GenServer Implementation
+  ## BaseManager Implementation
 
-  @impl GenServer
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     config = Keyword.get(opts, :config, %{})
 
     state = %__MODULE__{
@@ -44,14 +44,14 @@ defmodule Raxol.UI.Events.ScrollTracker do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_cast({:scroll, position}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:scroll, position}, state) do
     new_state = %{state | scroll_position: position}
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_position, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_position, _from, state) do
     {:reply, state.scroll_position, state}
   end
 end

@@ -51,7 +51,8 @@ defmodule Raxol.Terminal.Manager do
 
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   require Raxol.Core.Runtime.Log
   require Logger
@@ -91,18 +92,19 @@ defmodule Raxol.Terminal.Manager do
       iex> Process.alive?(pid)
       true
   """
-  def start_link(opts \\ []) do
+  def start_link_custom(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
     gen_server_opts = Keyword.delete(opts, :name)
 
-    state = %{
+    _state = %{
       sessions: %{},
       terminal: Keyword.get(gen_server_opts, :terminal),
       runtime_pid: Keyword.get(gen_server_opts, :runtime_pid),
       callback_module: Keyword.get(gen_server_opts, :callback_module)
     }
 
-    GenServer.start_link(__MODULE__, state, name: name)
+    # Use BaseManager's start_link with proper options
+    __MODULE__.start_link(Keyword.put(gen_server_opts, :name, name))
   end
 
   @doc """
@@ -266,60 +268,70 @@ defmodule Raxol.Terminal.Manager do
 
   # Callbacks
 
-  def init(state) do
-    {:ok,
-     Map.merge(
-       %{sessions: %{}, terminal: nil, runtime_pid: nil, callback_module: nil},
-       state
-     )}
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    # Convert keyword list to map and merge with defaults (defaults first, then overrides)
+    init_state =
+      %{sessions: %{}, terminal: nil, runtime_pid: nil, callback_module: nil}
+      |> Map.merge(Enum.into(opts, %{}))
+
+    {:ok, init_state}
   end
 
-  def handle_call({:create_session, opts}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:create_session, opts}, _from, state) do
     case SessionHandler.create_session(opts, state) do
       {:ok, session_id, new_state} -> {:reply, {:ok, session_id}, new_state}
       error -> {:reply, error, state}
     end
   end
 
-  def handle_call({:destroy_session, session_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:destroy_session, session_id}, _from, state) do
     case SessionHandler.destroy_session(session_id, state) do
       {:ok, new_state} -> {:reply, :ok, new_state}
       error -> {:reply, error, state}
     end
   end
 
-  def handle_call({:get_session, session_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_session, session_id}, _from, state) do
     case SessionHandler.get_session(session_id, state) do
       {:ok, session_state} -> {:reply, {:ok, session_state}, state}
       error -> {:reply, error, state}
     end
   end
 
-  def handle_call(:list_sessions, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:list_sessions, _from, state) do
     sessions = SessionHandler.list_sessions(state)
     {:reply, sessions, state}
   end
 
-  def handle_call(:count_sessions, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:count_sessions, _from, state) do
     count = SessionHandler.count_sessions(state)
     {:reply, count, state}
   end
 
-  def handle_call({:monitor_session, session_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:monitor_session, session_id}, _from, state) do
     case SessionHandler.monitor_session(session_id, state) do
       :ok -> {:reply, :ok, state}
       error -> {:reply, error, state}
     end
   end
 
-  def handle_call({:unmonitor_session, session_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:unmonitor_session, session_id}, _from, state) do
     case SessionHandler.unmonitor_session(session_id, state) do
       :ok -> {:reply, :ok, state}
       error -> {:reply, error, state}
     end
   end
 
-  def handle_call({:process_event, event}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:process_event, event}, _from, state) do
     case EventHandler.process_event(event, state) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -341,21 +353,24 @@ defmodule Raxol.Terminal.Manager do
     end
   end
 
-  def handle_call({:update_screen, update}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:update_screen, update}, _from, state) do
     case ScreenHandler.process_update(update, state) do
       {:ok, new_state} -> {:reply, :ok, new_state}
       error -> {:reply, error, state}
     end
   end
 
-  def handle_call({:batch_update_screen, updates}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:batch_update_screen, updates}, _from, state) do
     case ScreenHandler.process_batch_updates(updates, state) do
       {:ok, new_state} -> {:reply, :ok, new_state}
       error -> {:reply, error, state}
     end
   end
 
-  def handle_call(:get_terminal_state, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_terminal_state, _from, state) do
     case state.runtime_pid do
       nil ->
         :ok
@@ -367,7 +382,8 @@ defmodule Raxol.Terminal.Manager do
     {:reply, state.terminal, state}
   end
 
-  def handle_call({:update_state, new_state}, _from, _state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:update_state, new_state}, _from, _state) do
     struct_state =
       case new_state do
         %__MODULE__{} = s -> s
@@ -377,10 +393,12 @@ defmodule Raxol.Terminal.Manager do
     {:reply, :ok, struct_state}
   end
 
-  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info({:DOWN, _ref, :process, pid, _reason}, state) do
     new_state = SessionHandler.handle_session_down(pid, state)
     {:noreply, new_state}
   end
+
 end
 
 defmodule Raxol.Terminal.Manager.Callback do

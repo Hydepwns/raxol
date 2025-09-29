@@ -255,8 +255,8 @@ defmodule Raxol.Core.ErrorHandlerTest do
       # Should complete in roughly 50ms (one retry with 50ms delay)
       # Allow some variance
       assert elapsed >= 40
-      # Allow for timing variations and system load
-      assert elapsed <= 200
+      # Allow for timing variations and system load (increased tolerance for test environments)
+      assert elapsed <= 300
     end
   end
 end

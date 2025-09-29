@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.MemoryManager do
 
   use Raxol.Core.Behaviours.BaseManager
 
+
   @type t :: %__MODULE__{
           max_memory: non_neg_integer(),
           current_memory: non_neg_integer(),

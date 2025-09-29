@@ -30,9 +30,7 @@ defmodule Raxol.View.Elements do
   Creates a label (text) element.
   """
   def label(opts \\ []) do
-    content = Keyword.get(opts, :content, "")
-    style = Keyword.get(opts, :style, %{})
-    View.text(content, style: style)
+    Raxol.View.Components.label(opts)
   end
 
   @doc """

@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Command.Manager do
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   @moduledoc """
@@ -23,10 +23,6 @@ defmodule Raxol.Terminal.Command.Manager do
         }
 
   # --- Client API ---
-
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Creates a new command manager.
@@ -130,14 +126,14 @@ defmodule Raxol.Terminal.Command.Manager do
 
   # --- Server Callbacks ---
 
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     state = new(opts)
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:execute_command, command}, _from, state) do
+  @impl true
+  def handle_manager_call({:execute_command, command}, _from, state) do
     case Map.get(state.commands, command) do
       nil ->
         {:reply, {:error, :command_not_found}, state}
@@ -154,53 +150,53 @@ defmodule Raxol.Terminal.Command.Manager do
     end
   end
 
-  @impl GenServer
-  def handle_call(:get_command_history, _from, state) do
+  @impl true
+  def handle_manager_call(:get_command_history, _from, state) do
     {:reply, state.history, state}
   end
 
-  @impl GenServer
-  def handle_call({:add_to_history, command}, _from, state)
+  @impl true
+  def handle_manager_call({:add_to_history, command}, _from, state)
       when is_binary(command) do
     new_state = add_to_history_state(state, command)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:clear_command_history, _from, state) do
+  @impl true
+  def handle_manager_call(:clear_command_history, _from, state) do
     new_state = %{state | history: [], history_index: -1}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_current_command, _from, state) do
+  @impl true
+  def handle_manager_call(:get_current_command, _from, state) do
     {:reply, state.current_command, state}
   end
 
-  @impl GenServer
-  def handle_call({:set_current_command, command}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_current_command, command}, _from, state) do
     new_state = %{state | current_command: command}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_command_buffer, _from, state) do
+  @impl true
+  def handle_manager_call(:get_command_buffer, _from, state) do
     {:reply, state.command_buffer, state}
   end
 
-  @impl GenServer
-  def handle_call(:clear_command_buffer, _from, state) do
+  @impl true
+  def handle_manager_call(:clear_command_buffer, _from, state) do
     new_state = %{state | command_buffer: []}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_command_state, _from, state) do
+  @impl true
+  def handle_manager_call(:get_command_state, _from, state) do
     {:reply, state.command_state, state}
   end
 
-  @impl GenServer
-  def handle_call({:set_command_state, new_state}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_command_state, new_state}, _from, state) do
     new_state = %{state | command_state: new_state}
     {:reply, :ok, new_state}
   end

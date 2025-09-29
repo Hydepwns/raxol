@@ -17,6 +17,7 @@ defmodule Raxol.Audit.Logger do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   alias Raxol.Architecture.EventSourcing.EventStore
@@ -264,9 +265,9 @@ defmodule Raxol.Audit.Logger do
 
     # Initialize components
     {:ok, event_store} = get_or_start_event_store()
-    {:ok, storage} = Storage.start_link(config)
-    {:ok, analyzer} = Analyzer.start_link(config)
-    {:ok, exporter} = Exporter.start_link(config)
+    {:ok, storage} = Storage.start_link(name: Storage, config: config)
+    {:ok, analyzer} = Analyzer.start_link(name: Analyzer, config: config)
+    {:ok, exporter} = Exporter.start_link(name: Exporter, config: config)
 
     state = %__MODULE__{
       config: config,

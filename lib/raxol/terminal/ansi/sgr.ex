@@ -63,6 +63,9 @@ defmodule Raxol.Terminal.ANSI.SGR do
         5 ->
           %{style | blink: true}
 
+        6 ->
+          %{style | blink: true}
+
         7 ->
           %{style | reverse: true}
 
@@ -122,13 +125,13 @@ defmodule Raxol.Terminal.ANSI.SGR do
         n when n >= 40 and n <= 47 ->
           %{style | background: color_from_sgr(n - 40)}
 
-        # Bright foreground colors
+        # Bright foreground colors (also set bold)
         n when n >= 90 and n <= 97 ->
-          %{style | foreground: bright_color_from_sgr(n - 90)}
+          %{style | foreground: color_from_sgr(n - 90), bold: true}
 
         # Bright background colors
         n when n >= 100 and n <= 107 ->
-          %{style | background: bright_color_from_sgr(n - 100)}
+          %{style | background: color_from_sgr(n - 100)}
 
         # Default foreground/background
         39 ->
@@ -162,19 +165,6 @@ defmodule Raxol.Terminal.ANSI.SGR do
       end
     end
 
-    defp bright_color_from_sgr(n) do
-      case n do
-        0 -> :bright_black
-        1 -> :bright_red
-        2 -> :bright_green
-        3 -> :bright_yellow
-        4 -> :bright_blue
-        5 -> :bright_magenta
-        6 -> :bright_cyan
-        7 -> :bright_white
-        _ -> nil
-      end
-    end
   end
 
   defmodule Handler do
@@ -459,6 +449,10 @@ defmodule Raxol.Terminal.ANSI.SGR do
           defp apply_sgr_code(5, style, _rest),
             do: TextFormatting.set_blink(style)
 
+        6 ->
+          defp apply_sgr_code(6, style, _rest),
+            do: TextFormatting.set_blink(style)
+
         7 ->
           defp apply_sgr_code(7, style, _rest),
             do: TextFormatting.set_reverse(style)
@@ -470,6 +464,15 @@ defmodule Raxol.Terminal.ANSI.SGR do
         9 ->
           defp apply_sgr_code(9, style, _rest),
             do: TextFormatting.set_strikethrough(style)
+
+        # Extended attributes
+        20 ->
+          defp apply_sgr_code(20, style, _rest),
+            do: TextFormatting.set_fraktur(style)
+
+        21 ->
+          defp apply_sgr_code(21, style, _rest),
+            do: TextFormatting.set_double_underline(style)
 
         # Reset attributes
         22 ->
@@ -491,6 +494,14 @@ defmodule Raxol.Terminal.ANSI.SGR do
         27 ->
           defp apply_sgr_code(27, style, _rest),
             do: TextFormatting.reset_reverse(style)
+
+        28 ->
+          defp apply_sgr_code(28, style, _rest),
+            do: TextFormatting.reset_conceal(style)
+
+        29 ->
+          defp apply_sgr_code(29, style, _rest),
+            do: TextFormatting.reset_strikethrough(style)
 
         # Standard foreground colors (30-37)
         30 ->
@@ -581,6 +592,27 @@ defmodule Raxol.Terminal.ANSI.SGR do
           defp apply_sgr_code(49, style, _rest) do
             TextFormatting.set_background(style, nil)
           end
+
+        # Framed, encircled, overlined attributes
+        51 ->
+          defp apply_sgr_code(51, style, _rest),
+            do: TextFormatting.set_framed(style)
+
+        52 ->
+          defp apply_sgr_code(52, style, _rest),
+            do: TextFormatting.set_encircled(style)
+
+        53 ->
+          defp apply_sgr_code(53, style, _rest),
+            do: TextFormatting.set_overlined(style)
+
+        54 ->
+          defp apply_sgr_code(54, style, _rest),
+            do: TextFormatting.reset_framed_encircled(style)
+
+        55 ->
+          defp apply_sgr_code(55, style, _rest),
+            do: TextFormatting.reset_overlined(style)
 
         # Bright foreground colors (90-97)
         90 ->

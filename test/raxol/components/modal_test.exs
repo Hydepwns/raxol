@@ -160,7 +160,7 @@ defmodule Raxol.UI.Components.ModalTest do
       %{
         id: :option,
         type: :dropdown,
-        label: ~c"Choose",
+        label: "Choose",
         value: "b",
         options: [{"A", "a"}, {"B", "b"}]
       }
@@ -208,7 +208,8 @@ defmodule Raxol.UI.Components.ModalTest do
     # Defensive check for :type field
     assert is_map(inner_column_map)
     assert Map.has_key?(inner_column_map, :type)
-    assert inner_column_map.type == :column
+    assert inner_column_map.type == :flex
+    assert inner_column_map.direction == :column
     # This is the list [title, spacer, content, spacer, buttons]
     list_of_elements = inner_column_map.children
 
@@ -217,7 +218,8 @@ defmodule Raxol.UI.Components.ModalTest do
     # Defensive check for :type field
     assert is_map(content_element)
     assert Map.has_key?(content_element, :type)
-    assert content_element.type == :column
+    assert content_element.type == :flex
+    assert content_element.direction == :column
     # The children of the content column IS the list of field columns
     field_columns = content_element.children
 
@@ -228,12 +230,14 @@ defmodule Raxol.UI.Components.ModalTest do
     field1_column = Enum.at(field_columns, 0)
     assert is_map(field1_column)
     assert Map.has_key?(field1_column, :type)
-    assert field1_column.type == :column
+    assert field1_column.type == :flex
+    assert field1_column.direction == :column
     # The %{type: :row, ...} map
     field1_row_map = Enum.at(field1_column.children, 0)
     assert is_map(field1_row_map)
     assert Map.has_key?(field1_row_map, :type)
-    assert field1_row_map.type == :row
+    assert field1_row_map.type == :flex
+    assert field1_row_map.direction == :row
     # The list [label_map, input_map]
     field1_row_children = field1_row_map.children
     # Assuming input is second
@@ -246,11 +250,13 @@ defmodule Raxol.UI.Components.ModalTest do
     field2_column = Enum.at(field_columns, 1)
     assert is_map(field2_column)
     assert Map.has_key?(field2_column, :type)
-    assert field2_column.type == :column
+    assert field2_column.type == :flex
+    assert field2_column.direction == :column
     field2_row_map = Enum.at(field2_column.children, 0)
     assert is_map(field2_row_map)
     assert Map.has_key?(field2_row_map, :type)
-    assert field2_row_map.type == :row
+    assert field2_row_map.type == :flex
+    assert field2_row_map.direction == :row
     field2_row_children = field2_row_map.children
     input2_map = Enum.at(field2_row_children, 1)
     assert is_map(input2_map)
@@ -261,11 +267,13 @@ defmodule Raxol.UI.Components.ModalTest do
     field3_column = Enum.at(field_columns, 2)
     assert is_map(field3_column)
     assert Map.has_key?(field3_column, :type)
-    assert field3_column.type == :column
+    assert field3_column.type == :flex
+    assert field3_column.direction == :column
     field3_row_map = Enum.at(field3_column.children, 0)
     assert is_map(field3_row_map)
     assert Map.has_key?(field3_row_map, :type)
-    assert field3_row_map.type == :row
+    assert field3_row_map.type == :flex
+    assert field3_row_map.direction == :row
     field3_row_children = field3_row_map.children
     input3_map = Enum.at(field3_row_children, 1)
     assert is_map(input3_map)

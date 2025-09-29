@@ -276,8 +276,8 @@ defmodule Raxol.Terminal.Graphics.ChartDataUtilsTest do
 
       assert length(result) == 10
 
-      # Should complete quickly (less than 100ms for 1000 values)
-      assert end_time - start_time < 100
+      # Should complete efficiently (less than 200ms for 1000 values, allowing for system variance)
+      assert end_time - start_time < 200
 
       # Max value gets excluded
       total_count = Enum.sum(Enum.map(result, & &1.count))

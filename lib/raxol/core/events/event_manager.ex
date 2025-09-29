@@ -11,6 +11,7 @@ defmodule Raxol.Core.Events.EventManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   require Raxol.Core.Runtime.Log
   alias Raxol.Core.Events.TelemetryAdapter
 
@@ -124,6 +125,14 @@ defmodule Raxol.Core.Events.EventManager do
   end
 
   @doc """
+  Clears all registered handlers.
+  """
+  @spec clear_handlers() :: :ok
+  def clear_handlers do
+    GenServer.call(__MODULE__, :clear_handlers)
+  end
+
+  @doc """
   Dispatches an event using :telemetry.
 
   This method now delegates to telemetry for event dispatching while maintaining
@@ -139,6 +148,14 @@ defmodule Raxol.Core.Events.EventManager do
     :ok = TelemetryAdapter.dispatch(event_type, event_data)
     # Also notify GenServer for backward compatibility
     :ok = notify(__MODULE__, event_type, event_data)
+    :ok
+  end
+
+  def dispatch({:focus_change, old_focus, new_focus}) do
+    event_data = %{old_focus: old_focus, new_focus: new_focus}
+    :ok = TelemetryAdapter.dispatch(:focus_change, event_data)
+    # Also notify GenServer for backward compatibility
+    :ok = notify(__MODULE__, :focus_change, event_data)
     :ok
   end
 
@@ -201,7 +218,9 @@ defmodule Raxol.Core.Events.EventManager do
         _from,
         state
       ) do
-    handler_entry = {event_type, target, handler, :os.system_time(:millisecond)}
+    # Use a default priority of 50 for consistent test behavior
+    priority = 50
+    handler_entry = {event_type, target, handler, priority}
     :ets.insert(state.handlers, handler_entry)
     {:reply, :ok, state}
   end
@@ -285,6 +304,11 @@ defmodule Raxol.Core.Events.EventManager do
     {:reply, handlers_map, state}
   end
 
+  def handle_manager_call(:clear_handlers, _from, state) do
+    :ets.delete_all_objects(state.handlers)
+    {:reply, :ok, state}
+  end
+
   @impl true
   def handle_manager_cast({:notify, event_type, event_data}, state) do
     # Dispatch to handlers
@@ -354,7 +378,14 @@ defmodule Raxol.Core.Events.EventManager do
   defp safe_call_handler(target, handler, event_type, event_data)
        when is_atom(target) do
     try do
-      apply(target, handler, [event_type, event_data])
+      # For atom events with no data, pass just the event_type
+      # For all other events, use standard 2-parameter approach
+      case {event_type, event_data} do
+        {event_type, data} when is_atom(event_type) and is_map(data) and map_size(data) == 0 ->
+          apply(target, handler, [event_type])
+        _ ->
+          apply(target, handler, [event_type, event_data])
+      end
     rescue
       error ->
         Raxol.Core.Runtime.Log.error(

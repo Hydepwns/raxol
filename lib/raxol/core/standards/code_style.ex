@@ -38,7 +38,7 @@ defmodule Raxol.Core.Standards.CodeStyle do
       @behaviour SomeBehaviour
 
       # Use macros
-      use GenServer
+      use Raxol.Core.Behaviours.BaseManager
 
       # Import statements (grouped by origin)
             import Bitwise, only: [band: 2, bor: 2]
@@ -66,14 +66,14 @@ defmodule Raxol.Core.Standards.CodeStyle do
           {:ok, pid}
       \"\"\"
       @spec start_link(keyword()) :: GenServer.on_start()
-      def start_link(opts \\\\ []) do
-        GenServer.start_link(__MODULE__, opts, name: opts[:name])
-      end
+#       def start_link(opts \\\\ []) do
+#         GenServer.start_link(__MODULE__, opts, name: opts[:name])
+#       end
 
       # GenServer callbacks
 
       @impl true
-      def init(opts) do
+      def init_manager(opts) do
         state = %{
           timeout: Keyword.get(opts, :timeout, @default_timeout)
         }
@@ -81,8 +81,8 @@ defmodule Raxol.Core.Standards.CodeStyle do
       end
 
       @impl true
-      def handle_call(request, from, state)
-      def handle_call(:get_state, _from, state) do
+      def handle_manager_call(request, from, state)
+      def handle_manager_call(:get_state, _from, state) do
         {:reply, {:ok, state}, state}
       end
 
@@ -285,16 +285,16 @@ defmodule Raxol.Core.Standards.CodeStyle do
       # 5. terminate/2 (if needed)
 
       @impl true
-      def init(opts) do
+      def init_manager(opts) do
         # Always return quickly
         # Schedule initialization work if needed
         {:ok, initial_state()}
       end
 
       @impl true
-      def handle_call(request, from, state)
+      def handle_manager_call(request, from, state)
 
-      def handle_call(:sync_operation, _from, state) do
+      def handle_manager_call(:sync_operation, _from, state) do
         case perform_operation(state) do
           {:ok, result, new_state} ->
             {:reply, {:ok, result}, new_state}
@@ -305,9 +305,9 @@ defmodule Raxol.Core.Standards.CodeStyle do
       end
 
       @impl true
-      def handle_cast(request, state)
+      def handle_manager_cast(request, state)
 
-      def handle_cast({:async_operation, data}, state) do
+      def handle_manager_cast({:async_operation, data}, state) do
         new_state = process_async(data, state)
         {:noreply, new_state}
       end
@@ -407,7 +407,7 @@ defmodule Raxol.Core.Standards.CodeStyle do
     %{
       ets_usage: """
       # Use ETS for shared state and caching
-      def init(_opts) do
+      def init_manager(_opts) do
         :ets.new(:cache_table, [:set, :public, :named_table])
         {:ok, %{}}
       end

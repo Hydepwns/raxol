@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.ANSI.Monitor do
   Tracks performance metrics, errors, and sequence statistics.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ANSI.{Parser, Processor}
 
@@ -24,15 +24,7 @@ defmodule Raxol.Terminal.ANSI.Monitor do
 
   # --- Client API ---
 
-  @doc """
-  Starts the ANSI monitor process.
-  """
-  @spec start_link(Keyword.t()) :: GenServer.on_start()
-  def start_link(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
+  # BaseManager provides start_link/1 automatically with name: __MODULE__ as default
 
   @doc """
   Records the processing of an ANSI sequence.
@@ -68,13 +60,13 @@ defmodule Raxol.Terminal.ANSI.Monitor do
 
   # --- Server Callbacks ---
 
-  @impl GenServer
-  def init(_opts) do
+  @impl true
+  def init_manager(_opts) do
     {:ok, initial_state()}
   end
 
-  @impl GenServer
-  def handle_cast({:record_sequence, input}, state) do
+  @impl true
+  def handle_manager_cast({:record_sequence, input}, state) do
     {parse_time, parsed} = :timer.tc(Parser, :parse, [input])
     {process_time, _} = :timer.tc(Processor, :process_sequences, [parsed])
 
@@ -88,20 +80,20 @@ defmodule Raxol.Terminal.ANSI.Monitor do
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_cast({:record_error, _input, reason, context}, state) do
+  @impl true
+  def handle_manager_cast({:record_error, _input, reason, context}, state) do
     error = {DateTime.utc_now(), reason, context}
     new_state = %{state | errors: [error | state.errors]}
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_cast(:reset_metrics, _state) do
+  @impl true
+  def handle_manager_cast(:reset_metrics, _state) do
     {:noreply, initial_state()}
   end
 
-  @impl GenServer
-  def handle_call(:get_metrics, _from, state) do
+  @impl true
+  def handle_manager_call(:get_metrics, _from, state) do
     {:reply, state, state}
   end
 

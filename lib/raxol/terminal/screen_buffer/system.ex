@@ -3,7 +3,8 @@ defmodule Raxol.Terminal.ScreenBuffer.System do
   Manages system-related settings for the screen buffer.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   defstruct [
     :update_interval,
@@ -17,24 +18,23 @@ defmodule Raxol.Terminal.ScreenBuffer.System do
           debug_mode: boolean()
         }
 
-  def start_link(_) do
-    GenServer.start_link(__MODULE__, default_settings(), name: __MODULE__)
-  end
+  # BaseManager provides start_link/1
+  # Usage: Raxol.Terminal.ScreenBuffer.System.start_link(name: __MODULE__, ...)
 
-  def init(settings) do
-    %__MODULE__{
-      update_interval: Keyword.get(settings, :update_interval, 16),
-      auto_update: Keyword.get(settings, :auto_update, true),
-      debug_mode: Keyword.get(settings, :debug_mode, false)
-    }
-  end
-
-  def init do
-    %__MODULE__{
-      update_interval: 16,
-      auto_update: true,
-      debug_mode: false
-    }
+  @impl true
+  def init_manager(opts) do
+    settings = Keyword.get(opts, :settings, default_settings())
+    state = case settings do
+      %__MODULE__{} = s -> s
+      keyword when is_list(keyword) ->
+        %__MODULE__{
+          update_interval: Keyword.get(keyword, :update_interval, 16),
+          auto_update: Keyword.get(keyword, :auto_update, true),
+          debug_mode: Keyword.get(keyword, :debug_mode, false)
+        }
+      _ -> default_settings()
+    end
+    {:ok, state}
   end
 
   defp default_settings do
@@ -49,7 +49,8 @@ defmodule Raxol.Terminal.ScreenBuffer.System do
     GenServer.call(__MODULE__, :get_update_settings)
   end
 
-  def handle_call(:get_update_settings, _from, state) do
+  @impl true
+  def handle_manager_call(:get_update_settings, _from, state) do
     {:reply, state, state}
   end
 end

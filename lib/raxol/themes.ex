@@ -7,18 +7,10 @@ defmodule Raxol.Themes do
   theme customization.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
 
-  @doc """
-  Starts the theme manager.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(
-      __MODULE__,
-      :ok,
-      Keyword.put_new(opts, :name, __MODULE__)
-    )
-  end
+@behaviour Raxol.Core.Behaviours.BaseManager
+
 
   @doc """
   Applies a theme to the terminal.
@@ -101,7 +93,8 @@ defmodule Raxol.Themes do
   # GenServer callbacks
 
   @impl true
-  def init(:ok) do
+  @impl true
+  def init_manager(:ok) do
     default_theme = %{
       background: :default,
       foreground: :default,
@@ -118,7 +111,8 @@ defmodule Raxol.Themes do
   end
 
   @impl true
-  def handle_call({:apply_theme, theme}, _from, state) do
+  @impl true
+  def handle_manager_call({:apply_theme, theme}, _from, state) do
     # Validate theme structure
     case validate_theme(theme) do
       :ok ->
@@ -133,12 +127,14 @@ defmodule Raxol.Themes do
   end
 
   @impl true
-  def handle_call(:get_current_theme, _from, state) do
+  @impl true
+  def handle_manager_call(:get_current_theme, _from, state) do
     {:reply, state.current_theme, state}
   end
 
   @impl true
-  def handle_call({:load_theme, theme_identifier}, _from, state) do
+  @impl true
+  def handle_manager_call({:load_theme, theme_identifier}, _from, state) do
     case load_theme_from_identifier(theme_identifier) do
       {:ok, theme} ->
         new_state = %{state | current_theme: theme}
@@ -151,13 +147,15 @@ defmodule Raxol.Themes do
   end
 
   @impl true
-  def handle_call(:list_themes, _from, state) do
+  @impl true
+  def handle_manager_call(:list_themes, _from, state) do
     themes = ["default", "dark", "light", "high_contrast"]
     {:reply, themes, state}
   end
 
   @impl true
-  def handle_call({:register_callback, module, fun}, _from, state) do
+  @impl true
+  def handle_manager_call({:register_callback, module, fun}, _from, state) do
     callback = {module, fun}
     new_callbacks = [callback | state.callbacks]
     new_state = %{state | callbacks: new_callbacks}

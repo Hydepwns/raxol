@@ -173,7 +173,7 @@ defmodule Raxol.Storage.EventStorage.Memory do
 
   @behaviour Raxol.Storage.EventStorage
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Architecture.EventSourcing.{Event, EventStream}
@@ -188,9 +188,9 @@ defmodule Raxol.Storage.EventStorage.Memory do
 
   ## Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+#  def start_link(opts \\ []) do
+#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+#  end
 
   @impl Raxol.Storage.EventStorage
   def append_event(storage \\ __MODULE__, event, stream_name) do
@@ -229,8 +229,8 @@ defmodule Raxol.Storage.EventStorage.Memory do
 
   ## GenServer Implementation
 
-  @impl GenServer
-  def init(_opts) do
+  @impl true
+  def init_manager(_opts) do
     state = %__MODULE__{
       events: [],
       streams: %{},
@@ -243,15 +243,15 @@ defmodule Raxol.Storage.EventStorage.Memory do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:append_event, event, stream_name}, _from, state) do
+  @impl true
+  def handle_manager_call({:append_event, event, stream_name}, _from, state) do
     # do_append_event/3 always returns {:ok, event_id, new_state}, no error case possible
     {:ok, event_id, new_state} = do_append_event(event, stream_name, state)
     {:reply, {:ok, event_id}, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:append_events, events, stream_name}, _from, state) do
+  @impl true
+  def handle_manager_call({:append_events, events, stream_name}, _from, state) do
     case do_append_events(events, stream_name, state) do
       {:ok, event_ids, new_state} ->
         {:reply, {:ok, event_ids}, new_state}
@@ -261,8 +261,8 @@ defmodule Raxol.Storage.EventStorage.Memory do
     end
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:read_stream, stream_name, start_position, count},
         _from,
         state
@@ -277,8 +277,8 @@ defmodule Raxol.Storage.EventStorage.Memory do
     {:reply, {:ok, events}, state}
   end
 
-  @impl GenServer
-  def handle_call({:read_all, start_position, count}, _from, state) do
+  @impl true
+  def handle_manager_call({:read_all, start_position, count}, _from, state) do
     events =
       state.events
       |> Enum.filter(fn event -> event.position >= start_position end)
@@ -288,22 +288,22 @@ defmodule Raxol.Storage.EventStorage.Memory do
     {:reply, {:ok, events}, state}
   end
 
-  @impl GenServer
-  def handle_call(:list_streams, _from, state) do
+  @impl true
+  def handle_manager_call(:list_streams, _from, state) do
     streams = Map.values(state.streams)
     {:reply, {:ok, streams}, state}
   end
 
-  @impl GenServer
-  def handle_call({:save_snapshot, snapshot}, _from, state) do
+  @impl true
+  def handle_manager_call({:save_snapshot, snapshot}, _from, state) do
     new_snapshots = Map.put(state.snapshots, snapshot.stream_name, snapshot)
     new_state = %{state | snapshots: new_snapshots}
 
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:load_snapshot, stream_name}, _from, state) do
+  @impl true
+  def handle_manager_call({:load_snapshot, stream_name}, _from, state) do
     case Map.get(state.snapshots, stream_name) do
       nil -> {:reply, {:error, :not_found}, state}
       snapshot -> {:reply, {:ok, snapshot}, state}
@@ -392,7 +392,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
 
   @behaviour Raxol.Storage.EventStorage
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Architecture.EventSourcing.{Event, EventStream}
@@ -415,13 +415,13 @@ defmodule Raxol.Storage.EventStorage.Disk do
 
   ## Client API
 
-  def start_link(opts \\ []) do
-    config =
-      Keyword.get(opts, :config, %{})
-      |> then(&Map.merge(@default_config, &1))
-
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
+#  def start_link(opts \\ []) do
+#    config =
+#      Keyword.get(opts, :config, %{})
+#      |> then(&Map.merge(@default_config, &1))
+#
+#    GenServer.start_link(__MODULE__, config, name: __MODULE__)
+#  end
 
   @impl Raxol.Storage.EventStorage
   def append_event(storage \\ __MODULE__, event, stream_name) do
@@ -460,8 +460,8 @@ defmodule Raxol.Storage.EventStorage.Disk do
 
   ## GenServer Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl true
+  def init_manager(config) do
     data_dir = config.data_directory
 
     # Ensure data directory exists
@@ -492,8 +492,8 @@ defmodule Raxol.Storage.EventStorage.Disk do
     end
   end
 
-  @impl GenServer
-  def handle_call({:append_event, event, stream_name}, _from, state) do
+  @impl true
+  def handle_manager_call({:append_event, event, stream_name}, _from, state) do
     case do_append_event(event, stream_name, state) do
       {:ok, event_id, new_state} ->
         {:reply, {:ok, event_id}, new_state}
@@ -503,8 +503,8 @@ defmodule Raxol.Storage.EventStorage.Disk do
     end
   end
 
-  @impl GenServer
-  def handle_call({:append_events, events, stream_name}, _from, state) do
+  @impl true
+  def handle_manager_call({:append_events, events, stream_name}, _from, state) do
     case do_append_events(events, stream_name, state) do
       {:ok, event_ids, new_state} ->
         {:reply, {:ok, event_ids}, new_state}
@@ -514,8 +514,8 @@ defmodule Raxol.Storage.EventStorage.Disk do
     end
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:read_stream, stream_name, start_position, count},
         _from,
         state
@@ -529,20 +529,20 @@ defmodule Raxol.Storage.EventStorage.Disk do
     end
   end
 
-  @impl GenServer
-  def handle_call({:read_all, start_position, count}, _from, state) do
+  @impl true
+  def handle_manager_call({:read_all, start_position, count}, _from, state) do
     {:ok, events} = read_all_events(start_position, count, state)
     {:reply, {:ok, events}, state}
   end
 
-  @impl GenServer
-  def handle_call(:list_streams, _from, state) do
+  @impl true
+  def handle_manager_call(:list_streams, _from, state) do
     streams = Map.values(state.streams_index)
     {:reply, {:ok, streams}, state}
   end
 
-  @impl GenServer
-  def handle_call({:save_snapshot, snapshot}, _from, state) do
+  @impl true
+  def handle_manager_call({:save_snapshot, snapshot}, _from, state) do
     case write_snapshot_to_disk(snapshot, state) do
       :ok ->
         {:reply, :ok, state}
@@ -552,8 +552,8 @@ defmodule Raxol.Storage.EventStorage.Disk do
     end
   end
 
-  @impl GenServer
-  def handle_call({:load_snapshot, stream_name}, _from, state) do
+  @impl true
+  def handle_manager_call({:load_snapshot, stream_name}, _from, state) do
     case read_snapshot_from_disk(stream_name, state) do
       {:ok, snapshot} ->
         {:reply, {:ok, snapshot}, state}
@@ -563,7 +563,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
     end
   end
 
-  @impl GenServer
+  @impl true
   def terminate(_reason, state) do
     # Close all file handles
     Enum.each(state.file_handles, fn {_stream, handle} ->

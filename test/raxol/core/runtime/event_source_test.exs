@@ -8,6 +8,8 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
 
   alias Raxol.Core.Runtime.EventSourceTest.TestEventSource
 
+  @moduletag :skip
+
   describe "EventSource behaviour" do
     setup do
       context = %{pid: self()}

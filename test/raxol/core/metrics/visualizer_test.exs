@@ -8,7 +8,7 @@ defmodule Raxol.Core.Metrics.VisualizerTest do
 
   setup do
     # Start the Visualizer process supervised for each test
-    start_supervised!(Visualizer)
+    start_supervised!({Visualizer, [name: Visualizer]})
     :ok
   end
 

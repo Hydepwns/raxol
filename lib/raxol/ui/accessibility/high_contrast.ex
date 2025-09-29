@@ -61,7 +61,8 @@ defmodule Raxol.UI.Accessibility.HighContrast do
       })
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   alias Raxol.Core.Platform
@@ -248,19 +249,13 @@ defmodule Raxol.UI.Accessibility.HighContrast do
 
   ## Public API
 
-  @doc """
-  Starts the high contrast system.
-
-  ## Options
-  - `:default_theme` - Initial theme to apply
-  - `:compliance_level` - WCAG compliance level (:wcag_aa, :wcag_aaa)
-  - `:auto_detect_system` - Detect system high contrast settings
-  - `:color_blind_support` - Enable color blindness accommodations
-  """
-  def start_link(opts \\ %{}) do
-    config = Map.merge(@default_config, opts)
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 which handles GenServer initialization
+  # Usage: Raxol.UI.Accessibility.HighContrast.start_link(name: __MODULE__, config: custom_config)
+  # Options:
+  #   - `:default_theme` - Initial theme to apply
+  #   - `:compliance_level` - WCAG compliance level (:wcag_aa, :wcag_aaa)
+  #   - `:auto_detect_system` - Detect system high contrast settings
+  #   - `:color_blind_support` - Enable color blindness accommodations
 
   @doc """
   Applies a high contrast theme.
@@ -339,8 +334,9 @@ defmodule Raxol.UI.Accessibility.HighContrast do
 
   ## GenServer Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    config = Map.merge(@default_config, Keyword.get(opts, :config, %{}))
     # Initialize theme registry with built-in themes
     theme_registry = @builtin_themes
 
@@ -375,8 +371,8 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     {:ok, final_state}
   end
 
-  @impl GenServer
-  def handle_call({:apply_theme, theme_name}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:apply_theme, theme_name}, _from, state) do
     case apply_theme_internal(state, theme_name) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -386,8 +382,8 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     end
   end
 
-  @impl GenServer
-  def handle_call({:register_theme, theme}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:register_theme, theme}, _from, state) do
     # Validate theme structure
     case validate_theme(theme) do
       {:ok, validated_theme} ->
@@ -437,13 +433,13 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     end
   end
 
-  @impl GenServer
-  def handle_call(:get_current_theme, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_current_theme, _from, state) do
     {:reply, state.current_theme, state}
   end
 
-  @impl GenServer
-  def handle_call(:list_themes, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:list_themes, _from, state) do
     themes =
       state.theme_registry
       |> Map.keys()
@@ -460,13 +456,13 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     {:reply, themes, state}
   end
 
-  @impl GenServer
-  def handle_call({:configure_color_blindness, type, options}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:configure_color_blindness, type, options}, _from, state) do
     configure_color_blindness_internal(state, type, options)
   end
 
-  @impl GenServer
-  def handle_call({:set_large_text_mode, enabled}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_large_text_mode, enabled}, _from, state) do
     new_config = %{state.config | large_text_mode: enabled}
     new_state = %{state | config: new_config}
 
@@ -478,8 +474,8 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     {:reply, :ok, updated_state}
   end
 
-  @impl GenServer
-  def handle_call(:toggle_invert_colors, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:toggle_invert_colors, _from, state) do
     new_invert = not state.config.invert_colors
     new_config = %{state.config | invert_colors: new_invert}
     new_state = %{state | config: new_config}
@@ -492,8 +488,8 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     {:reply, :ok, updated_state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:validate_contrast, foreground, background, options},
         _from,
         state
@@ -518,8 +514,8 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     {:reply, result, state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:suggest_contrast_improvement, foreground, background},
         _from,
         state
@@ -549,8 +545,8 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     {:reply, result, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_accessibility_info, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_accessibility_info, _from, state) do
     info = build_accessibility_info(state)
     {:reply, info, state}
   end

@@ -4,7 +4,8 @@ defmodule Raxol.Examples.Form do
   This is a stub implementation for test compatibility.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   @doc """
   Creates a new form instance.
@@ -19,23 +20,22 @@ defmodule Raxol.Examples.Form do
     }
   end
 
-  @doc """
-  Starts the form component.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts)
-  end
+  # BaseManager provides start_link/1
+  # Usage: Raxol.Examples.Form.start_link(name: __MODULE__, ...)
 
-  # GenServer callbacks
-  def init(opts) do
+  # BaseManager callbacks
+  @impl true
+  def init_manager(opts) do
     {:ok, %{opts: opts, children: []}}
   end
 
-  def handle_call(:get_state, _from, state) do
+  @impl true
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  def handle_cast({:add_child, child}, state) do
+  @impl true
+  def handle_manager_cast({:add_child, child}, state) do
     {:noreply, %{state | children: [child | state.children]}}
   end
 

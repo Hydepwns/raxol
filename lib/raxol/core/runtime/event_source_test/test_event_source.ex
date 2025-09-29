@@ -3,15 +3,16 @@ defmodule Raxol.Core.Runtime.EventSourceTest.TestEventSource do
   A test implementation of an event source for testing purposes.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
-  def start_link(args \\ %{}, context \\ %{}) do
-    GenServer.start_link(__MODULE__, {args, context}, name: __MODULE__)
-  end
 
-  @impl GenServer
-  def init({args, context}) do
+  @impl true
+  def init_manager(opts) do
+    args = Keyword.get(opts, :args, %{})
+    context = Keyword.get(opts, :context, %{})
+
     state = %{
       args: args,
       context: context,
@@ -22,31 +23,31 @@ defmodule Raxol.Core.Runtime.EventSourceTest.TestEventSource do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_events, _from, state) do
+  @impl true
+  def handle_manager_call(:get_events, _from, state) do
     {:reply, state.events, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
+  @impl true
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl GenServer
-  def handle_cast({:emit, event}, state) do
+  @impl true
+  def handle_manager_cast({:emit, event}, state) do
     new_events = [event | state.events]
     notify_subscribers(event, state.subscribers)
     {:noreply, %{state | events: new_events}}
   end
 
-  @impl GenServer
-  def handle_cast({:subscribe, pid}, state) do
+  @impl true
+  def handle_manager_cast({:subscribe, pid}, state) do
     new_subscribers = MapSet.put(state.subscribers, pid)
     {:noreply, %{state | subscribers: new_subscribers}}
   end
 
-  @impl GenServer
-  def handle_cast({:unsubscribe, pid}, state) do
+  @impl true
+  def handle_manager_cast({:unsubscribe, pid}, state) do
     new_subscribers = MapSet.delete(state.subscribers, pid)
     {:noreply, %{state | subscribers: new_subscribers}}
   end

@@ -10,7 +10,9 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
   - Memory pressure management with intelligent eviction
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+
   require Logger
 
   # Configuration constants
@@ -32,9 +34,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
 
   # Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 and start_link/2 automatically
 
   @doc """
   Get current optimization state and recommendations.
@@ -60,7 +60,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
   # Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init_manager(_opts) do
     state = %__MODULE__{
       performance_history: initialize_performance_history(),
       optimization_state: initialize_optimization_state(),
@@ -81,13 +81,13 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
   end
 
   @impl true
-  def handle_call(:get_optimization_status, _from, state) do
+  def handle_manager_call(:get_optimization_status, _from, state) do
     status = generate_optimization_status(state)
     {:reply, status, state}
   end
 
   @impl true
-  def handle_call(:optimize_now, _from, state) do
+  def handle_manager_call(:optimize_now, _from, state) do
     case perform_adaptive_optimization(state) do
       {:ok, new_state, results} ->
         {:reply, {:ok, results}, new_state}
@@ -98,7 +98,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
   end
 
   @impl true
-  def handle_call({:configure_thresholds, thresholds}, _from, state) do
+  def handle_manager_call({:configure_thresholds, thresholds}, _from, state) do
     new_state = %{
       state
       | adaptive_thresholds: Map.merge(state.adaptive_thresholds, thresholds)
@@ -108,7 +108,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
   end
 
   @impl true
-  def handle_info(:perform_optimization, state) do
+  def handle_manager_info(:perform_optimization, state) do
     case perform_adaptive_optimization(state) do
       {:ok, new_state, _results} ->
         schedule_optimization()
@@ -121,7 +121,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
   end
 
   @impl true
-  def handle_info({:telemetry_event, event_name, measurements, metadata}, state) do
+  def handle_manager_info({:telemetry_event, event_name, measurements, metadata}, state) do
     new_state =
       process_telemetry_event(state, event_name, measurements, metadata)
 

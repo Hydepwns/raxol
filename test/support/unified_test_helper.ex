@@ -569,8 +569,8 @@ defmodule Raxol.Test.UnifiedTestHelper do
   """
   def start_test_event_source(args \\ %{}, context \\ %{pid: self()}) do
     case Raxol.Core.Runtime.EventSourceTest.TestEventSource.start_link(
-           args,
-           context
+           args: args,
+           context: context
          ) do
       {:ok, pid} -> pid
       other -> other

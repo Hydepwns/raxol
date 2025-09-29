@@ -11,6 +11,7 @@ defmodule Raxol.Core.Config.UnifiedConfigManager do
 
   use Raxol.Core.Behaviours.BaseManager
 
+
   require Logger
 
   @config_dir ".config/raxol"

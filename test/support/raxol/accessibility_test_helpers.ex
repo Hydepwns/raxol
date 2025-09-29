@@ -442,7 +442,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   @doc """
   Spy handler for screen reader announcements.
   """
-  def handle_announcement_spy({:screen_reader_announcement, message}) do
+  def handle_announcement_spy(:screen_reader_announcement, message) do
     # Store in a way that's accessible across processes
     # Use an ETS table if it exists, otherwise try to send to the test process
     case :ets.whereis(:accessibility_test_announcements) do
@@ -483,7 +483,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   @doc """
   Spy handler for shortcut execution.
   """
-  def handle_shortcut_spy({:shortcut_executed, shortcut_id, _shortcut}) do
+  def handle_shortcut_spy(:shortcut_executed, {shortcut_id, _shortcut}) do
     # Record execution
     _ = ProcessStore.put(:shortcut_action_executed, true)
     _ = ProcessStore.put(:shortcut_action_id, shortcut_id)

@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Tab.Manager do
   - Tab stop management for terminal operations
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Types
@@ -36,9 +36,7 @@ defmodule Raxol.Terminal.Tab.Manager do
             default_tab_width: 8
 
   # Client API
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link
 
   @doc """
   Creates a new tab manager instance.
@@ -296,8 +294,8 @@ defmodule Raxol.Terminal.Tab.Manager do
   end
 
   # Server Callbacks
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     state = %__MODULE__{
       default_tab_width: Keyword.get(opts, :default_tab_width, 8)
     }
@@ -306,7 +304,7 @@ defmodule Raxol.Terminal.Tab.Manager do
   end
 
   @impl true
-  def handle_call({:create_tab, config}, _from, state) do
+  def handle_manager_call({:create_tab, config}, _from, state) do
     tab_id = generate_tab_id(state)
 
     default_config = %{
@@ -328,7 +326,7 @@ defmodule Raxol.Terminal.Tab.Manager do
     {:reply, {:ok, tab_id}, updated_state}
   end
 
-  def handle_call({:delete_tab, tab_id}, _from, state) do
+  def handle_manager_call({:delete_tab, tab_id}, _from, state) do
     case Map.has_key?(state.tabs, tab_id) do
       true ->
         updated_state = %{
@@ -348,7 +346,7 @@ defmodule Raxol.Terminal.Tab.Manager do
     end
   end
 
-  def handle_call({:switch_tab, tab_id}, _from, state) do
+  def handle_manager_call({:switch_tab, tab_id}, _from, state) do
     case Map.has_key?(state.tabs, tab_id) do
       true ->
         updated_state = %{state | active_tab: tab_id}
@@ -359,14 +357,14 @@ defmodule Raxol.Terminal.Tab.Manager do
     end
   end
 
-  def handle_call({:get_tab_config, tab_id}, _from, state) do
+  def handle_manager_call({:get_tab_config, tab_id}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil -> {:reply, {:error, :tab_not_found}, state}
       config -> {:reply, {:ok, config}, state}
     end
   end
 
-  def handle_call({:update_tab_config, tab_id, config_updates}, _from, state) do
+  def handle_manager_call({:update_tab_config, tab_id, config_updates}, _from, state) do
     case Map.get(state.tabs, tab_id) do
       nil ->
         {:reply, {:error, :tab_not_found}, state}
@@ -383,32 +381,32 @@ defmodule Raxol.Terminal.Tab.Manager do
     end
   end
 
-  def handle_call(:list_tabs, _from, state) do
+  def handle_manager_call(:list_tabs, _from, state) do
     {:reply, state.tabs, state}
   end
 
-  def handle_call(:get_active_tab, _from, state) do
+  def handle_manager_call(:get_active_tab, _from, state) do
     {:reply, state.active_tab, state}
   end
 
-  def handle_call({:set_horizontal_tab, position}, _from, state) do
+  def handle_manager_call({:set_horizontal_tab, position}, _from, state) do
     updated_stops = MapSet.put(state.tab_stops, position)
     updated_state = %{state | tab_stops: updated_stops}
     {:reply, {:ok, updated_state}, updated_state}
   end
 
-  def handle_call({:clear_tab_stop, position}, _from, state) do
+  def handle_manager_call({:clear_tab_stop, position}, _from, state) do
     updated_stops = MapSet.delete(state.tab_stops, position)
     updated_state = %{state | tab_stops: updated_stops}
     {:reply, {:ok, updated_state}, updated_state}
   end
 
-  def handle_call(:clear_all_tab_stops, _from, state) do
+  def handle_manager_call(:clear_all_tab_stops, _from, state) do
     updated_state = %{state | tab_stops: MapSet.new()}
     {:reply, {:ok, updated_state}, updated_state}
   end
 
-  def handle_call({:get_next_tab_stop, current_position}, _from, state) do
+  def handle_manager_call({:get_next_tab_stop, current_position}, _from, state) do
     next_stop = find_next_tab_stop(current_position, state.tab_stops)
     {:reply, next_stop, state}
   end

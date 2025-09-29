@@ -221,7 +221,9 @@ IO.puts("[TestHelper] Starting event registry...")
 # Start the EventManager for tests
 IO.puts("[TestHelper] Starting EventManager...")
 
-case Raxol.Core.Events.EventManager.start_link() do
+case Raxol.Core.Events.EventManager.start_link(
+       name: Raxol.Core.Events.EventManager
+     ) do
   {:ok, _pid} ->
     IO.puts("[TestHelper] EventManager started successfully")
 

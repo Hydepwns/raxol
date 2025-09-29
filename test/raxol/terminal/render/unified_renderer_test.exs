@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Render.UnifiedRendererTest do
 
   setup do
     # Start the renderer with the default name (module name)
-    {:ok, pid} = UnifiedRenderer.start_link()
+    {:ok, pid} = UnifiedRenderer.start_link(name: UnifiedRenderer)
     %{pid: pid}
   end
 

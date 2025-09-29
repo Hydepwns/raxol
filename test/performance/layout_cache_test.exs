@@ -5,15 +5,15 @@ defmodule Raxol.Performance.LayoutCacheTest do
   alias Raxol.Performance.ETSCacheManager
   
   setup do
-    # Ensure cache manager is started
-    case ETSCacheManager.start_link() do
+    # Ensure cache manager is started with a name
+    case ETSCacheManager.start_link(name: ETSCacheManager) do
       {:ok, pid} -> {:ok, pid}
       {:error, {:already_started, pid}} -> {:ok, pid}
     end
-    
+
     # Clear layout cache before each test
     ETSCacheManager.clear_cache(:layout)
-    
+
     :ok
   end
   

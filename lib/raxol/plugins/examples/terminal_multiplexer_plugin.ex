@@ -11,7 +11,8 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   - Command routing
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   # Plugin Manifest
@@ -88,7 +89,8 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
   ]
 
   # Initialization
-  def init(config) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(config) do
     Logger.info("[Multiplexer] Initializing with config: #{inspect(config)}")
 
     # Create default session with one window
@@ -805,12 +807,14 @@ defmodule Raxol.Plugins.Examples.TerminalMultiplexerPlugin do
     """
   end
 
-  # GenServer callbacks
-  def handle_cast({:set_emulator, pid}, state) do
+  # BaseManager callbacks
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:set_emulator, pid}, state) do
     {:noreply, %{state | emulator_pid: pid}}
   end
 
-  def handle_info(msg, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(msg, state) do
     Logger.debug("[Multiplexer] Received message: #{inspect(msg)}")
     {:noreply, state}
   end

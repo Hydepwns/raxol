@@ -11,7 +11,9 @@ defmodule Raxol.Plugins.PluginSystemV2 do
   - Performance monitoring and isolation
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+@behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Aliases will be used when implementing full functionality
@@ -66,12 +68,6 @@ defmodule Raxol.Plugins.PluginSystemV2 do
 
   # Plugin System v2.0 API
 
-  @doc """
-  Starts the Plugin System v2.0 with enhanced capabilities.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Installs a plugin from the marketplace or local source.
@@ -125,7 +121,8 @@ defmodule Raxol.Plugins.PluginSystemV2 do
   # GenServer Implementation
 
   @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     state = %__MODULE__{
       plugins: %{},
       dependency_graph: build_dependency_graph(%{}),
@@ -141,7 +138,8 @@ defmodule Raxol.Plugins.PluginSystemV2 do
   end
 
   @impl GenServer
-  def handle_call({:install_plugin, source, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:install_plugin, source, opts}, _from, state) do
     case install_plugin_impl(source, opts, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
@@ -151,7 +149,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
     end
   end
 
-  def handle_call({:load_plugin, plugin_id, opts}, _from, state) do
+  def handle_manager_call({:load_plugin, plugin_id, opts}, _from, state) do
     case load_plugin_with_deps(plugin_id, opts, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
@@ -161,7 +159,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
     end
   end
 
-  def handle_call({:hot_reload_plugin, plugin_id, opts}, _from, state) do
+  def handle_manager_call({:hot_reload_plugin, plugin_id, opts}, _from, state) do
     case hot_reload_plugin_impl(plugin_id, opts, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
@@ -171,7 +169,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
     end
   end
 
-  def handle_call({:resolve_dependencies, manifest}, _from, state) do
+  def handle_manager_call({:resolve_dependencies, manifest}, _from, state) do
     case resolve_dependencies_impl(manifest, state) do
       {:ok, resolution} ->
         {:reply, {:ok, resolution}, state}
@@ -181,12 +179,12 @@ defmodule Raxol.Plugins.PluginSystemV2 do
     end
   end
 
-  def handle_call({:get_plugin_status, plugin_id}, _from, state) do
+  def handle_manager_call({:get_plugin_status, plugin_id}, _from, state) do
     status = get_plugin_status_impl(plugin_id, state)
     {:reply, {:ok, status}, state}
   end
 
-  def handle_call({:list_marketplace_plugins, filters}, _from, state) do
+  def handle_manager_call({:list_marketplace_plugins, filters}, _from, state) do
     case list_marketplace_plugins_impl(filters, state) do
       {:ok, plugins} ->
         {:reply, {:ok, plugins}, state}
@@ -196,7 +194,7 @@ defmodule Raxol.Plugins.PluginSystemV2 do
     end
   end
 
-  def handle_call({:create_sandbox, plugin_id, security_policy}, _from, state) do
+  def handle_manager_call({:create_sandbox, plugin_id, security_policy}, _from, state) do
     case create_sandbox_impl(plugin_id, security_policy, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}

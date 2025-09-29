@@ -9,7 +9,8 @@ defmodule Raxol.Core.Metrics.Cloud do
   - Metric batching and compression
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   @type cloud_service :: :datadog | :prometheus | :cloudwatch
   @type cloud_config :: %{
@@ -28,13 +29,6 @@ defmodule Raxol.Core.Metrics.Cloud do
     flush_interval: 10_000,
     compression: true
   }
-
-  @doc """
-  Starts the cloud metrics service.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Configures the cloud metrics service.
@@ -57,8 +51,8 @@ defmodule Raxol.Core.Metrics.Cloud do
     GenServer.call(__MODULE__, :flush_metrics)
   end
 
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     config = Map.merge(@default_config, Map.new(opts))
     test_pid = Keyword.get(opts, :test_pid)
 
@@ -73,8 +67,8 @@ defmodule Raxol.Core.Metrics.Cloud do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:configure, new_config}, _from, state) do
+  @impl true
+  def handle_manager_call({:configure, new_config}, _from, state) do
     case validate_cloud_config(new_config) do
       :ok ->
         new_state = %{state | config: Map.merge(state.config, new_config)}
@@ -85,26 +79,26 @@ defmodule Raxol.Core.Metrics.Cloud do
     end
   end
 
-  @impl GenServer
-  def handle_call(:get_config, _from, state) do
+  @impl true
+  def handle_manager_call(:get_config, _from, state) do
     {:reply, state.config, state}
   end
 
-  @impl GenServer
-  def handle_call(:flush_metrics, _from, state) do
+  @impl true
+  def handle_manager_call(:flush_metrics, _from, state) do
     {new_state, result} = flush_metrics_to_cloud(state)
     {:reply, result, new_state}
   end
 
-  @impl GenServer
-  def handle_info(:flush_metrics, state) do
+  @impl true
+  def handle_manager_info(:flush_metrics, state) do
     {new_state, _result} = flush_metrics_to_cloud(state)
     schedule_flush()
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_info({:metrics, type, name, value, tags}, state) do
+  @impl true
+  def handle_manager_info({:metrics, type, name, value, tags}, state) do
     metric = %{
       type: type,
       name: name,
@@ -127,15 +121,15 @@ defmodule Raxol.Core.Metrics.Cloud do
     end
   end
 
-  @impl GenServer
-  def handle_info({:metrics_formatted, _formatted_metrics}, state) do
+  @impl true
+  def handle_manager_info({:metrics_formatted, _formatted_metrics}, state) do
     # Ignore metrics_formatted messages - they are sent back to the process
     # that initiated the metrics processing for testing purposes
     {:noreply, state}
   end
 
-  @impl GenServer
-  def handle_info({:metrics_sent, _result}, state) do
+  @impl true
+  def handle_manager_info({:metrics_sent, _result}, state) do
     # Ignore metrics_sent messages - they are sent back to the process
     # that initiated the metrics processing for testing purposes
     {:noreply, state}

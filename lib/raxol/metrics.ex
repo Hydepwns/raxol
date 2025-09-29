@@ -15,6 +15,7 @@ defmodule Raxol.Metrics do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   alias Raxol.Repo
   alias Raxol.Core.Utils.TimerManager
   require Raxol.Core.Runtime.Log

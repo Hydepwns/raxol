@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
       GPUAccelerator.enable_effect(context, :glow, color: {0, 255, 128})
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # @behaviour Raxol.Terminal.Rendering.Backend  # Commented out due to init/1 conflict with GenServer
@@ -191,12 +191,10 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   ## GenServer Implementation
 
-  def start_link(config) do
-    GenServer.start_link(__MODULE__, config)
-  end
+  # start_link is provided by BaseManager
 
-  @impl GenServer
-  def init(config) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(config) do
     backend = determine_backend(config.backend)
 
     case initialize_backend(backend, config) do
@@ -225,8 +223,8 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     end
   end
 
-  @impl GenServer
-  def handle_call({:create_surface, opts}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:create_surface, opts}, _from, state) do
     width = Keyword.get(opts, :width, 800)
     height = Keyword.get(opts, :height, 600)
     surface_id = generate_surface_id(width, height)
@@ -242,8 +240,8 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     {:reply, {:ok, surface_id}, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:render, surface_id, terminal_buffer, opts}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:render, surface_id, terminal_buffer, opts}, _from, state) do
     start_time = System.monotonic_time(:microsecond)
 
     case Map.get(state.surface_cache, surface_id) do
@@ -265,27 +263,27 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     end
   end
 
-  @impl GenServer
-  def handle_call({:enable_effect, effect_type, params}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:enable_effect, effect_type, params}, _from, state) do
     # apply_effect/3 currently always returns {:ok, state}
     {:ok, new_state} = apply_effect(state, effect_type, params)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:disable_effect, effect_type}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:disable_effect, effect_type}, _from, state) do
     # remove_effect/2 currently always returns {:ok, state}
     {:ok, new_state} = remove_effect(state, effect_type)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_stats, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_stats, _from, state) do
     {:reply, state.render_stats, state}
   end
 
-  @impl GenServer
-  def handle_call({:destroy_surface, surface}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:destroy_surface, surface}, _from, state) do
     case remove_surface(state, surface) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
@@ -295,8 +293,8 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
     end
   end
 
-  @impl GenServer
-  def handle_call({:update_config, new_config}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:update_config, new_config}, _from, state) do
     merged_config = Map.merge(state.config, new_config)
 
     # Reinitialize if backend changed

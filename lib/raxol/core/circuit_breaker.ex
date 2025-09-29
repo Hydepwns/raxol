@@ -35,7 +35,8 @@ defmodule Raxol.Core.CircuitBreaker do
       end)
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   @default_opts [
@@ -82,14 +83,6 @@ defmodule Raxol.Core.CircuitBreaker do
 
   # Client API
 
-  @doc """
-  Starts a circuit breaker with the given options.
-  """
-  @spec start_link(breaker_opts()) :: GenServer.on_start()
-  def start_link(opts) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
 
   @doc """
   Executes a function through the circuit breaker.
@@ -142,7 +135,8 @@ defmodule Raxol.Core.CircuitBreaker do
   # Server Callbacks
 
   @impl true
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     opts = Keyword.merge(@default_opts, opts)
 
     state = %__MODULE__{
@@ -174,7 +168,7 @@ defmodule Raxol.Core.CircuitBreaker do
   end
 
   @impl true
-  def handle_call({:call, fun}, _from, state) do
+  def handle_manager_call({:call, fun}, _from, state) do
     case state.state do
       :closed ->
         handle_closed_call(fun, state)
@@ -188,12 +182,12 @@ defmodule Raxol.Core.CircuitBreaker do
   end
 
   @impl true
-  def handle_call(:state, _from, state) do
+  def handle_manager_call(:state, _from, state) do
     {:reply, state.state, state}
   end
 
   @impl true
-  def handle_call(:stats, _from, state) do
+  def handle_manager_call(:stats, _from, state) do
     stats = %{
       state: state.state,
       failure_count: state.failure_count,
@@ -206,19 +200,19 @@ defmodule Raxol.Core.CircuitBreaker do
   end
 
   @impl true
-  def handle_cast(:reset, state) do
+  def handle_manager_cast(:reset, state) do
     new_state = transition_to_closed(state)
     {:noreply, new_state}
   end
 
   @impl true
-  def handle_info({:timeout, :half_open}, state) do
+  def handle_manager_info({:timeout, :half_open}, state) do
     new_state = transition_to_half_open(state)
     {:noreply, new_state}
   end
 
   @impl true
-  def handle_info({:timeout, :reset}, state) do
+  def handle_manager_info({:timeout, :reset}, state) do
     new_state = transition_to_closed(state)
     {:noreply, new_state}
   end

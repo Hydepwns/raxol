@@ -5,7 +5,7 @@ defmodule Raxol.Storage.EventStorage.Distributed do
 
   @behaviour Raxol.Storage.EventStorage
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # EventSourcing aliases will be added when needed
@@ -26,13 +26,6 @@ defmodule Raxol.Storage.EventStorage.Distributed do
 
   ## Client API
 
-  def start_link(opts \\ []) do
-    config =
-      Keyword.get(opts, :config, %{})
-      |> then(&Map.merge(@default_config, &1))
-
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
 
   @impl Raxol.Storage.EventStorage
   def append_event(storage \\ __MODULE__, event, stream_name) do
@@ -69,10 +62,20 @@ defmodule Raxol.Storage.EventStorage.Distributed do
     GenServer.call(storage, {:load_snapshot, stream_name})
   end
 
-  ## GenServer Implementation
+  ## BaseManager Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl true
+  def init_manager(opts) when is_list(opts) do
+    config =
+      Keyword.get(opts, :config, %{})
+      |> then(&Map.merge(@default_config, &1))
+
+    init_manager(config)
+  end
+
+  def init_manager(config) when is_map(config) do
+    # Ensure we have complete config
+    config = Map.merge(@default_config, config)
     # Start local storage backend
     {:ok, local_storage} = Raxol.Storage.EventStorage.Disk.start_link()
 
@@ -91,8 +94,8 @@ defmodule Raxol.Storage.EventStorage.Distributed do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:append_event, event, stream_name}, _from, state) do
+  @impl true
+  def handle_manager_call({:append_event, event, stream_name}, _from, state) do
     # For now, delegate to local storage
     # In a full implementation, this would replicate across nodes
     result =
@@ -105,8 +108,8 @@ defmodule Raxol.Storage.EventStorage.Distributed do
     {:reply, result, state}
   end
 
-  @impl GenServer
-  def handle_call({:append_events, events, stream_name}, _from, state) do
+  @impl true
+  def handle_manager_call({:append_events, events, stream_name}, _from, state) do
     result =
       Raxol.Storage.EventStorage.Disk.append_events(
         state.local_storage,
@@ -117,8 +120,8 @@ defmodule Raxol.Storage.EventStorage.Distributed do
     {:reply, result, state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:read_stream, stream_name, start_position, count},
         _from,
         state
@@ -134,8 +137,8 @@ defmodule Raxol.Storage.EventStorage.Distributed do
     {:reply, result, state}
   end
 
-  @impl GenServer
-  def handle_call({:read_all, start_position, count}, _from, state) do
+  @impl true
+  def handle_manager_call({:read_all, start_position, count}, _from, state) do
     result =
       Raxol.Storage.EventStorage.Disk.read_all(
         state.local_storage,
@@ -146,14 +149,14 @@ defmodule Raxol.Storage.EventStorage.Distributed do
     {:reply, result, state}
   end
 
-  @impl GenServer
-  def handle_call(:list_streams, _from, state) do
+  @impl true
+  def handle_manager_call(:list_streams, _from, state) do
     result = Raxol.Storage.EventStorage.Disk.list_streams(state.local_storage)
     {:reply, result, state}
   end
 
-  @impl GenServer
-  def handle_call({:save_snapshot, snapshot}, _from, state) do
+  @impl true
+  def handle_manager_call({:save_snapshot, snapshot}, _from, state) do
     result =
       Raxol.Storage.EventStorage.Disk.save_snapshot(
         state.local_storage,
@@ -163,8 +166,8 @@ defmodule Raxol.Storage.EventStorage.Distributed do
     {:reply, result, state}
   end
 
-  @impl GenServer
-  def handle_call({:load_snapshot, stream_name}, _from, state) do
+  @impl true
+  def handle_manager_call({:load_snapshot, stream_name}, _from, state) do
     result =
       Raxol.Storage.EventStorage.Disk.load_snapshot(
         state.local_storage,

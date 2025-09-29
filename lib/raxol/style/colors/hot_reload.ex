@@ -7,7 +7,7 @@ defmodule Raxol.Style.Colors.HotReload do
   to theme change events.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
 
   alias Raxol.Style.Colors.Persistence
 
@@ -22,9 +22,9 @@ defmodule Raxol.Style.Colors.HotReload do
 
   # Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+#  def start_link(opts \\ []) do
+#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+#  end
 
   @doc """
   Subscribe to theme change events.
@@ -68,8 +68,8 @@ defmodule Raxol.Style.Colors.HotReload do
 
   # Server Callbacks
 
-  @impl GenServer
-  def init(_opts) do
+  @impl true
+  def init_manager(_opts) do
     # Get theme paths from config
     theme_paths = get_theme_paths()
 
@@ -89,32 +89,32 @@ defmodule Raxol.Style.Colors.HotReload do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call(:subscribe, {from_pid, _ref}, state) do
+  @impl true
+  def handle_manager_call(:subscribe, {from_pid, _ref}, state) do
     {:reply, :ok, %{state | subscribers: [from_pid | state.subscribers]}}
   end
 
-  @impl GenServer
-  def handle_call(:unsubscribe, {from_pid, _ref}, state) do
+  @impl true
+  def handle_manager_call(:unsubscribe, {from_pid, _ref}, state) do
     {:reply, :ok,
      %{state | subscribers: List.delete(state.subscribers, from_pid)}}
   end
 
-  @impl GenServer
-  def handle_call({:watch_path, path}, _from, state) do
+  @impl true
+  def handle_manager_call({:watch_path, path}, _from, state) do
     new_state = init_path_watch(path, state)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_info({:check_changes, _timer_id}, state) do
+  @impl true
+  def handle_manager_info({:check_changes, _timer_id}, state) do
     new_state = check_for_changes(state)
     schedule_check()
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_info({:theme_reloaded, _theme}, state) do
+  @impl true
+  def handle_manager_info({:theme_reloaded, _theme}, state) do
     # Ignore theme_reloaded messages sent to self
     {:noreply, state}
   end

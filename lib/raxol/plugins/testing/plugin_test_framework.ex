@@ -404,7 +404,13 @@ defmodule Raxol.Plugins.Testing.Helpers do
       enabled: true,
       hotkey: "ctrl+t",
       panel_width: 30,
-      refresh_interval: 1000
+      refresh_interval: 1000,
+      auto_refresh: false,
+      show_untracked: true,
+      show_ignored: false,
+      position: "right",
+      graph_depth: 20,
+      diff_context: 3
     }
 
     Map.merge(default_config, overrides)
@@ -423,16 +429,30 @@ defmodule Raxol.Plugins.Testing.Helpers do
   end
 
   def with_temp_directory(fun) do
-    temp_dir =
-      System.tmp_dir!() |> Path.join("plugin_test_#{:rand.uniform(1_000_000)}")
+    # Force use of /tmp directly to avoid macOS symlink issues with /private/tmp
+    temp_dir = Path.join("/tmp", "plugin_test_#{:rand.uniform(1_000_000)}")
 
     File.mkdir_p!(temp_dir)
 
+    # Always use the real path to ensure git commands work properly
+    real_temp_dir = Path.expand(temp_dir)
+
     try do
-      fun.(temp_dir)
+      fun.(real_temp_dir)
     after
       File.rm_rf!(temp_dir)
     end
+  end
+
+  def create_temp_directory() do
+    # Create temp directory but don't clean it up automatically
+    temp_dir = Path.join("/tmp", "plugin_test_#{:rand.uniform(1_000_000)}")
+    File.mkdir_p!(temp_dir)
+    Path.expand(temp_dir)
+  end
+
+  def cleanup_temp_directory(temp_dir) do
+    File.rm_rf!(temp_dir)
   end
 
   def create_test_files(base_path, file_specs) do
@@ -453,7 +473,8 @@ defmodule Raxol.Plugins.Testing.MockTerminal do
   Mock terminal implementation for plugin testing
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   defstruct [
     :width,
@@ -468,7 +489,7 @@ defmodule Raxol.Plugins.Testing.MockTerminal do
   ]
 
   def new(width, height, opts \\ []) do
-    {:ok, pid} = GenServer.start_link(__MODULE__, {width, height, opts})
+    {:ok, pid} = start_link({width, height, opts})
     pid
   end
 
@@ -500,10 +521,10 @@ defmodule Raxol.Plugins.Testing.MockTerminal do
     GenServer.call(terminal, :get_state)
   end
 
-  # GenServer callbacks
+  # BaseManager callbacks
 
   @impl true
-  def init({width, height, _opts}) do
+  def init_manager({width, height, _opts}) do
     state = %__MODULE__{
       width: width,
       height: height,
@@ -520,40 +541,41 @@ defmodule Raxol.Plugins.Testing.MockTerminal do
   end
 
   @impl true
-  def handle_call(:get_buffer, _from, state) do
+  def handle_manager_call(:get_buffer, _from, state) do
     {:reply, state.buffer, state}
   end
 
-  @impl true
-  def handle_call(:get_loaded_plugins, _from, state) do
+  def handle_manager_call(:get_loaded_plugins, _from, state) do
     {:reply, state.loaded_plugins, state}
   end
 
-  @impl true
-  def handle_call(:get_visible_panels, _from, state) do
+  def handle_manager_call(:get_visible_panels, _from, state) do
     {:reply, state.visible_panels, state}
   end
 
-  @impl true
-  def handle_call({:get_panel_content, plugin_name}, _from, state) do
+  def handle_manager_call({:get_panel_content, plugin_name}, _from, state) do
     content = Map.get(state.panel_contents, plugin_name, "")
     {:reply, content, state}
   end
 
-  @impl true
-  def handle_call(:get_status_line, _from, state) do
+  def handle_manager_call(:get_status_line, _from, state) do
     {:reply, state.status_line, state}
   end
 
-  @impl true
-  def handle_call(:get_state, _from, state) do
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state.state, state}
   end
 
   @impl true
-  def handle_cast({:keypress, key}, state) do
+  def handle_manager_cast({:keypress, key}, state) do
     # Simulate keypress handling
     new_state = handle_keypress_simulation(key, state)
+    {:noreply, new_state}
+  end
+
+  def handle_manager_cast({:register_plugin, plugin_name, _pid}, state) do
+    # Add plugin to loaded plugins list
+    new_state = %{state | loaded_plugins: [plugin_name | state.loaded_plugins]}
     {:noreply, new_state}
   end
 

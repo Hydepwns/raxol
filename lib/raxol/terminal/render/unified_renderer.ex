@@ -3,7 +3,8 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   Provides a unified interface for terminal rendering operations.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   alias Raxol.Terminal.Buffer
 
@@ -34,16 +35,6 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
         }
 
   # Client API
-
-  @doc """
-  Starts the renderer.
-  """
-  @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts \\ []) do
-    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
 
   @doc """
   Renders the current state.
@@ -162,8 +153,8 @@ defmodule Raxol.Terminal.Render.UnifiedRenderer do
   @doc """
   Initializes the GenServer with default state.
   """
-  @impl GenServer
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     initial_state = build_initial_state(opts)
     {:ok, initial_state}
   end

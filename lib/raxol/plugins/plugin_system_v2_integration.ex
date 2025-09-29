@@ -10,7 +10,8 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
   - Marketplace integration
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   alias Raxol.Plugins.{
@@ -43,8 +44,8 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
   @doc """
   Starts the integrated Plugin System v2.0 with all components.
   """
-  def start_link(config \\ default_config()) do
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
+  def start_system(config \\ default_config()) do
+    start_link([{:name, __MODULE__}, {:config, config}])
   end
 
   @doc """
@@ -103,10 +104,11 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
     }
   end
 
-  # GenServer Implementation
+  # BaseManager Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl true
+  def init_manager(opts) do
+    config = Keyword.get(opts, :config, default_config())
     state = %__MODULE__{
       config: config,
       active_plugins: %{},
@@ -114,11 +116,12 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
     }
 
     # Initialize components asynchronously
-    {:ok, state, {:continue, :initialize_components}}
+    send(self(), {:continue, :initialize_components})
+    {:ok, state}
   end
 
-  @impl GenServer
-  def handle_continue(:initialize_components, state) do
+  @impl true
+  def handle_manager_info({:continue, :initialize_components}, state) do
     case initialize_all_components(state.config) do
       {:ok, initialized_state} ->
         Logger.info(
@@ -140,8 +143,8 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
     end
   end
 
-  @impl GenServer
-  def handle_call({:install_and_enable_plugin, plugin_id, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:install_and_enable_plugin, plugin_id, opts}, _from, state) do
     case install_and_enable_plugin_impl(plugin_id, opts, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
@@ -151,7 +154,7 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
     end
   end
 
-  def handle_call({:create_development_plugin, plugin_path, opts}, _from, state) do
+  def handle_manager_call({:create_development_plugin, plugin_path, opts}, _from, state) do
     case create_development_plugin_impl(plugin_path, opts, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
@@ -161,12 +164,12 @@ defmodule Raxol.Plugins.PluginSystemV2Integration do
     end
   end
 
-  def handle_call(:get_system_status, _from, state) do
+  def handle_manager_call(:get_system_status, _from, state) do
     status = get_comprehensive_status(state)
     {:reply, {:ok, status}, state}
   end
 
-  def handle_call(:run_integration_demo, _from, state) do
+  def handle_manager_call(:run_integration_demo, _from, state) do
     case run_integration_demo_impl(state) do
       {:ok, demo_results} ->
         {:reply, {:ok, demo_results}, state}

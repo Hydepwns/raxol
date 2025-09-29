@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
       })
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Terminal.Graphics.ChartRenderers
@@ -118,9 +118,9 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   @doc """
   Starts the data visualization manager.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+#  def start_link(opts \\ []) do
+#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+#  end
 
   @doc """
   Creates a real-time streaming chart.
@@ -311,14 +311,14 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   # GenServer Implementation
 
   @impl true
-  def init(opts) do
+  def init_manager(opts) do
     initial_state = StreamingManager.create_initial_state(opts)
     StreamingManager.schedule_streaming_updates()
     {:ok, initial_state}
   end
 
   @impl true
-  def handle_call({:create_streaming_chart, type, config}, _from, state) do
+  def handle_manager_call({:create_streaming_chart, type, config}, _from, state) do
     case StreamingManager.handle_chart_creation(
            type,
            config,
@@ -346,7 +346,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   end
 
   @impl true
-  def handle_call({:create_heatmap, data, config}, _from, state) do
+  def handle_manager_call({:create_heatmap, data, config}, _from, state) do
     StreamingManager.handle_chart_creation(
       :heatmap,
       config,
@@ -358,7 +358,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   end
 
   @impl true
-  def handle_call({:create_scatter_plot, points, config}, _from, state) do
+  def handle_manager_call({:create_scatter_plot, points, config}, _from, state) do
     StreamingManager.handle_chart_creation(
       :scatter,
       config,
@@ -370,7 +370,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   end
 
   @impl true
-  def handle_call({:create_histogram, values, config}, _from, state) do
+  def handle_manager_call({:create_histogram, values, config}, _from, state) do
     StreamingManager.handle_chart_creation(
       :histogram,
       config,
@@ -382,7 +382,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   end
 
   @impl true
-  def handle_call(
+  def handle_manager_call(
         {:enable_interaction, chart_id, interaction_config},
         _from,
         state
@@ -405,7 +405,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   end
 
   @impl true
-  def handle_call({:export_chart, chart_id, format}, _from, state) do
+  def handle_manager_call({:export_chart, chart_id, format}, _from, state) do
     case Map.get(state.active_charts, chart_id) do
       nil ->
         {:reply, {:error, :chart_not_found}, state}
@@ -422,13 +422,13 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   end
 
   @impl true
-  def handle_call(:get_performance_stats, _from, state) do
+  def handle_manager_call(:get_performance_stats, _from, state) do
     stats = StreamingManager.calculate_performance_stats(state)
     {:reply, stats, state}
   end
 
   @impl true
-  def handle_cast({:add_data_point, chart_id, data_point}, state) do
+  def handle_manager_cast({:add_data_point, chart_id, data_point}, state) do
     case Map.get(state.streaming_charts, chart_id) do
       nil ->
         {:noreply, state}
@@ -443,7 +443,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   end
 
   @impl true
-  def handle_cast({:add_data_points, chart_id, data_points}, state) do
+  def handle_manager_cast({:add_data_points, chart_id, data_points}, state) do
     case Map.get(state.streaming_charts, chart_id) do
       nil ->
         {:noreply, state}
@@ -458,7 +458,7 @@ defmodule Raxol.Terminal.Graphics.DataVisualization do
   end
 
   @impl true
-  def handle_info(:update_streaming_charts, state) do
+  def handle_manager_info(:update_streaming_charts, state) do
     new_state = ChartOperations.update_all_streaming_charts(state)
     StreamingManager.schedule_streaming_updates()
     {:noreply, new_state}

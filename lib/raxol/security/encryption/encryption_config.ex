@@ -20,7 +20,7 @@ defmodule Raxol.Security.Encryption.Config do
   - `:sox` - Financial data
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Audit.Logger, as: AuditLogger
@@ -51,9 +51,7 @@ defmodule Raxol.Security.Encryption.Config do
   @doc """
   Starts the encryption configuration service.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 automatically
 
   @doc """
   Gets the encryption policy for a data classification.
@@ -97,10 +95,10 @@ defmodule Raxol.Security.Encryption.Config do
     GenServer.call(config, {:set_algorithm_preference, algorithms})
   end
 
-  ## GenServer Implementation
+  ## Server Implementation
 
-  @impl GenServer
-  def init(_opts) do
+  @impl true
+  def init_manager(_opts) do
     state = %__MODULE__{
       policies: init_default_policies(),
       compliance_profiles: init_compliance_profiles(),
@@ -114,14 +112,14 @@ defmodule Raxol.Security.Encryption.Config do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:get_policy, classification}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_policy, classification}, _from, state) do
     policy = Map.get(state.policies, classification, default_policy())
     {:reply, {:ok, policy}, state}
   end
 
-  @impl GenServer
-  def handle_call({:set_policy, classification, policy}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_policy, classification, policy}, _from, state) do
     # Validate policy
     case validate_policy(policy) do
       :ok ->
@@ -138,26 +136,26 @@ defmodule Raxol.Security.Encryption.Config do
     end
   end
 
-  @impl GenServer
-  def handle_call({:get_compliance_profile, profile}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_compliance_profile, profile}, _from, state) do
     profile_config = Map.get(state.compliance_profiles, profile)
     {:reply, {:ok, profile_config}, state}
   end
 
-  @impl GenServer
-  def handle_call({:validate_compliance, params, profile}, _from, state) do
+  @impl true
+  def handle_manager_call({:validate_compliance, params, profile}, _from, state) do
     result = validate_against_profile(params, profile, state)
     {:reply, result, state}
   end
 
-  @impl GenServer
-  def handle_call({:get_recommendations, attributes}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_recommendations, attributes}, _from, state) do
     recommendations = generate_recommendations(attributes, state)
     {:reply, {:ok, recommendations}, state}
   end
 
-  @impl GenServer
-  def handle_call({:set_algorithm_preference, algorithms}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_algorithm_preference, algorithms}, _from, state) do
     new_state = %{state | algorithm_preferences: algorithms}
 
     # Audit configuration change

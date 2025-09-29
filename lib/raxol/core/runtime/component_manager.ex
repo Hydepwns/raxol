@@ -13,7 +13,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   - Full backward compatibility maintained
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Raxol.Core.Runtime.Log
 
   alias UUID
@@ -21,9 +22,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   # Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   # Setter for runtime_pid (for tests)
   def set_runtime_pid(pid) do
@@ -80,8 +78,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   # Server Callbacks
 
-  @impl GenServer
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     runtime_pid = Keyword.get(opts, :runtime_pid, nil)
 
     {:ok,
@@ -97,8 +95,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
      }}
   end
 
-  @impl GenServer
-  def handle_call({:mount, component_module, props}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:mount, component_module, props}, _from, state) do
     with {:ok, component_module} <- validate_component_module(component_module),
          {:ok, component_id} <- generate_component_id(component_module),
          {:ok, initial_state} <- safe_component_init(component_module, props) do
@@ -114,8 +112,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:unmount, component_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:unmount, component_id}, _from, state) do
     case Map.get(state.components, component_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -141,8 +139,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:update, component_id, message}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:update, component_id, message}, _from, state) do
     case Map.get(state.components, component_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -210,8 +208,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:set_component_state, component_id, new_state}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_component_state, component_id, new_state}, _from, state) do
     case Map.get(state.components, component_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -235,27 +233,27 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
-  @impl GenServer
-  def handle_call(:get_and_clear_render_queue, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_and_clear_render_queue, _from, state) do
     # Get current queue and clear it
     queue = state.render_queue
     new_state = %{state | render_queue: []}
     {:reply, queue, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_component, component_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_component, component_id}, _from, state) do
     component = Map.get(state.components, component_id)
     {:reply, component, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_all_components, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_all_components, _from, state) do
     {:reply, state.components, state}
   end
 
-  @impl GenServer
-  def handle_info({:update, component_id, message}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info({:update, component_id, message}, state) do
     case Map.get(state.components, component_id) do
       nil ->
         # Component might have been unmounted before message arrived
@@ -307,14 +305,14 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     end
   end
 
-  @impl GenServer
-  def handle_info({:update, component_id, message, _timer_id}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info({:update, component_id, message, _timer_id}, state) do
     # Handle scheduled updates with timer_id (for compatibility)
     handle_info({:update, component_id, message}, state)
   end
 
-  @impl GenServer
-  def handle_cast({:dispatch_event, event}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:dispatch_event, event}, state) do
     # Dispatch event to all components
     state =
       Enum.reduce(state.components, state, fn {component_id, component}, acc ->
@@ -339,8 +337,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     {:noreply, state}
   end
 
-  @impl GenServer
-  def handle_cast({:set_runtime_pid, pid}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:set_runtime_pid, pid}, state) do
     {:noreply, %{state | runtime_pid: pid}}
   end
 
@@ -394,15 +392,26 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   @spec safe_component_update(any(), String.t()) :: any()
   defp safe_component_update(component, message) do
-    # Use Task for safe execution with timeout
+    # Use Task for safe execution with timeout and exception handling
     task =
       Task.async(fn ->
-        component.module.update(message, component.state)
+        try do
+          result = component.module.update(message, component.state)
+          {:success, result}
+        rescue
+          error -> {:error, error}
+        catch
+          :exit, reason -> {:error, {:exit, reason}}
+          error -> {:error, error}
+        end
       end)
 
     case Task.yield(task, 5000) do
-      {:ok, result} ->
+      {:ok, {:success, result}} ->
         {:ok, result}
+
+      {:ok, {:error, error}} ->
+        {:error, {:update_crashed, error}}
 
       nil ->
         _ = Task.shutdown(task, :brutal_kill)

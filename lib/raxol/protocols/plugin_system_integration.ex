@@ -311,13 +311,11 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
 
   # Plugin registry that maintains protocol-aware plugins.
   defmodule PluginRegistry do
-    use GenServer
+    use Raxol.Core.Behaviours.BaseManager
 
     defstruct plugins: %{}, capabilities_index: %{}
 
-    def start_link(opts \\ []) do
-      GenServer.start_link(__MODULE__, %__MODULE__{}, opts)
-    end
+    # start_link is provided by BaseManager
 
     def register_plugin(registry, plugin_module, opts \\ []) do
       plugin = ProtocolPlugin.new(plugin_module, opts)
@@ -345,13 +343,14 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
     end
 
     # GenServer callbacks
-    @impl true
-    def init(state) do
+    @impl Raxol.Core.Behaviours.BaseManager
+    def init_manager(_opts) do
+      state = %__MODULE__{}
       {:ok, state}
     end
 
-    @impl true
-    def handle_call({:register, plugin}, _from, state) do
+    @impl Raxol.Core.Behaviours.BaseManager
+    def handle_manager_call({:register, plugin}, _from, state) do
       updated_plugins = Map.put(state.plugins, plugin.id, plugin)
 
       updated_capabilities =
@@ -370,8 +369,8 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
       {:reply, {:ok, plugin.id}, new_state}
     end
 
-    @impl true
-    def handle_call({:unregister, plugin_id}, _from, state) do
+    @impl Raxol.Core.Behaviours.BaseManager
+    def handle_manager_call({:unregister, plugin_id}, _from, state) do
       case Map.get(state.plugins, plugin_id) do
         nil ->
           {:reply, {:error, :not_found}, state}
@@ -401,20 +400,20 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
       end
     end
 
-    @impl true
-    def handle_call({:get, plugin_id}, _from, state) do
+    @impl Raxol.Core.Behaviours.BaseManager
+    def handle_manager_call({:get, plugin_id}, _from, state) do
       plugin = Map.get(state.plugins, plugin_id)
       {:reply, plugin, state}
     end
 
-    @impl true
-    def handle_call(:list, _from, state) do
+    @impl Raxol.Core.Behaviours.BaseManager
+    def handle_manager_call(:list, _from, state) do
       plugins = Map.values(state.plugins)
       {:reply, plugins, state}
     end
 
-    @impl true
-    def handle_call({:find_by_capability, capability}, _from, state) do
+    @impl Raxol.Core.Behaviours.BaseManager
+    def handle_manager_call({:find_by_capability, capability}, _from, state) do
       plugin_ids = Map.get(state.capabilities_index, capability, MapSet.new())
 
       plugins =
@@ -425,8 +424,8 @@ defmodule Raxol.Protocols.PluginSystemIntegration do
       {:reply, plugins, state}
     end
 
-    @impl true
-    def handle_call({:dispatch_event, event}, _from, state) do
+    @impl Raxol.Core.Behaviours.BaseManager
+    def handle_manager_call({:dispatch_event, event}, _from, state) do
       results =
         state.plugins
         |> Map.values()

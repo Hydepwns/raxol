@@ -124,7 +124,10 @@ defmodule Raxol.Application do
   defp get_children_for_mode(:test) do
     # Minimal children for test environment
     # Tests can start their own processes as needed
-    []
+    [
+      # ETSCacheManager for performance tests
+      {Raxol.Performance.ETSCacheManager, []}
+    ]
   end
 
   defp get_children_for_mode(:minimal) do
@@ -249,6 +252,7 @@ defmodule Raxol.Application do
   defp maybe_add_performance_monitoring do
     if feature_enabled?(:performance_monitoring) do
       [
+        {Raxol.Performance.ETSCacheManager, [hibernate_after: 30_000]},
         {Raxol.Core.Performance.Profiler, [hibernate_after: 30_000]},
         {Raxol.Core.Performance.Monitor, [hibernate_after: 60_000]}
       ]
@@ -293,18 +297,39 @@ defmodule Raxol.Application do
   end
 
   defp get_terminal_driver_children do
-    case {IO.ANSI.enabled?(), System.get_env("RAXOL_FORCE_TERMINAL")} do
-      {true, _} ->
+    case {IO.ANSI.enabled?(), System.get_env("FLY_APP_NAME"),
+          System.get_env("RAXOL_MODE"),
+          System.get_env("RAXOL_FORCE_TERMINAL")} do
+      # Skip terminal driver in minimal mode
+      {_, _, "minimal", _} ->
+        Logger.info(
+          "[Raxol.Application] Minimal mode - terminal driver disabled"
+        )
+
+        []
+
+      # Skip terminal driver on Fly.io
+      {_, fly_app, _, _} when is_binary(fly_app) ->
+        Logger.info(
+          "[Raxol.Application] Running on Fly.io (#{fly_app}) - terminal driver disabled"
+        )
+
+        []
+
+      # Start terminal driver if TTY is available
+      {true, _, _, _} ->
         [{Raxol.Terminal.Driver, nil}]
 
-      {false, "true"} ->
+      # Force terminal driver if explicitly requested
+      {false, _, _, "true"} ->
         Logger.warning(
           "[Raxol.Application] Forcing terminal driver despite no TTY"
         )
 
         [{Raxol.Terminal.Driver, nil}]
 
-      {false, _} ->
+      # No TTY and not forced
+      {false, _, _, _} ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "[Raxol.Application] Not attached to a TTY. Terminal driver will not be started.",
           %{}

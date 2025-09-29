@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
       })
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # bytes
@@ -127,9 +127,9 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   @doc """
   Starts the memory manager with the given configuration.
   """
-  def start_link(config \\ %{}) do
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
+#  def start_link(config \\ %{}) do
+#    GenServer.start_link(__MODULE__, config, name: __MODULE__)
+#  end
 
   @doc """
   Allocates memory for graphics operations.
@@ -240,7 +240,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   # GenServer Implementation
 
   @impl true
-  def init(config) do
+  def init_manager(config) do
     merged_config = Map.merge(@default_config, config)
 
     initial_state = %__MODULE__{
@@ -259,7 +259,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   end
 
   @impl true
-  def handle_call({:allocate, size, metadata}, _from, state) do
+  def handle_manager_call({:allocate, size, metadata}, _from, state) do
     case can_allocate?(size, state) do
       true ->
         {:ok, allocation_id, buffer, new_state} =
@@ -277,7 +277,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   end
 
   @impl true
-  def handle_call({:deallocate, allocation_id}, _from, state) do
+  def handle_manager_call({:deallocate, allocation_id}, _from, state) do
     case Map.get(state.allocations, allocation_id) do
       nil ->
         {:reply, {:error, :allocation_not_found}, state}
@@ -296,7 +296,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   end
 
   @impl true
-  def handle_call({:create_pool, pool_id, config}, _from, state) do
+  def handle_manager_call({:create_pool, pool_id, config}, _from, state) do
     case Map.get(state.memory_pools, pool_id) do
       nil ->
         {:ok, pool, new_state} = create_memory_pool(pool_id, config, state)
@@ -308,7 +308,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   end
 
   @impl true
-  def handle_call({:allocate_from_pool, pool_id, metadata}, _from, state) do
+  def handle_manager_call({:allocate_from_pool, pool_id, metadata}, _from, state) do
     case Map.get(state.memory_pools, pool_id) do
       nil ->
         {:reply, {:error, :pool_not_found}, state}
@@ -322,7 +322,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   end
 
   @impl true
-  def handle_call({:return_to_pool, pool_id, allocation_id}, _from, state) do
+  def handle_manager_call({:return_to_pool, pool_id, allocation_id}, _from, state) do
     case {Map.get(state.memory_pools, pool_id),
           Map.get(state.allocations, allocation_id)} do
       {nil, _} ->
@@ -338,25 +338,25 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   end
 
   @impl true
-  def handle_call(:garbage_collect, _from, state) do
+  def handle_manager_call(:garbage_collect, _from, state) do
     {:ok, new_state, stats} = perform_garbage_collection(state)
     {:reply, {:ok, stats}, new_state}
   end
 
   @impl true
-  def handle_call(:defragment, _from, state) do
+  def handle_manager_call(:defragment, _from, state) do
     {:ok, new_state, stats} = perform_defragmentation(state)
     {:reply, {:ok, stats}, new_state}
   end
 
   @impl true
-  def handle_call(:get_stats, _from, state) do
+  def handle_manager_call(:get_stats, _from, state) do
     current_stats = calculate_current_stats(state)
     {:reply, current_stats, state}
   end
 
   @impl true
-  def handle_call({:set_budget, new_budget}, _from, state) do
+  def handle_manager_call({:set_budget, new_budget}, _from, state) do
     case new_budget > 0 do
       true ->
         new_config = Map.put(state.config, :total_budget, new_budget)
@@ -369,14 +369,14 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   end
 
   @impl true
-  def handle_info(:maintenance, state) do
+  def handle_manager_info(:maintenance, state) do
     new_state = perform_maintenance(state)
     schedule_maintenance()
     {:noreply, new_state}
   end
 
   @impl true
-  def handle_info({:monitoring, stats}, state) do
+  def handle_manager_info({:monitoring, stats}, state) do
     # Update monitoring statistics
     Logger.debug("Memory stats: #{inspect(stats)}")
     {:noreply, state}

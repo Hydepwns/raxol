@@ -7,7 +7,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
   analysis, and component management.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
 
   # AI modules removed - AI features disabled
   require Logger
@@ -37,12 +37,12 @@ defmodule Raxol.Extensions.VSCodeBackend do
     end
   end
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+#  def start_link(opts \\ []) do
+#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+#  end
 
-  @impl GenServer
-  def init(_opts) do
+  @impl true
+  def init_manager(_opts) do
     state = State.new()
     initialize_mode(state.mode, state.capabilities)
     {:ok, state}
@@ -57,15 +57,15 @@ defmodule Raxol.Extensions.VSCodeBackend do
 
   defp initialize_mode(_mode, _capabilities), do: :ok
 
-  @impl GenServer
-  def handle_cast({:handle_message, message}, state) do
+  @impl true
+  def handle_manager_cast({:handle_message, message}, state) do
     # handle_extension_message always returns {:ok, state}
     {:ok, new_state} = handle_extension_message(message, state)
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_cast({:send_response, request_id, response}, state) do
+  @impl true
+  def handle_manager_cast({:send_response, request_id, response}, state) do
     send_json_message(%{
       type: "response",
       request_id: request_id,
@@ -263,7 +263,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
   defp component_file?(file_path) do
     content = File.read!(file_path)
 
-    String.contains?(content, ["defmodule", "@behaviour", "use GenServer"]) and
+    String.contains?(content, ["defmodule", "@behaviour", "use Raxol.Core.Behaviours.BaseManager"]) and
       not String.contains?(file_path, ["test/", "_test.exs"])
   end
 

@@ -25,7 +25,9 @@ defmodule Raxol.Events.UnifiedEventHandler do
   - **System Events**: Performance metrics, error conditions, state changes
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+
   require Logger
 
   alias Raxol.Core.Runtime.Events.EventsHandler
@@ -111,14 +113,12 @@ defmodule Raxol.Events.UnifiedEventHandler do
   @doc """
   Start the unified event handler.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 and start_link/2 automatically
 
   ## GenServer Implementation
 
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     state = %__MODULE__{
       handlers: %{
         terminal: TerminalEventHandler,
@@ -135,7 +135,8 @@ defmodule Raxol.Events.UnifiedEventHandler do
   end
 
   @impl GenServer
-  def handle_call({:handle_event, event_type, event_data}, _from, state) do
+  @impl true
+  def handle_manager_call({:handle_event, event_type, event_data}, _from, state) do
     start_time = System.monotonic_time(:microsecond)
 
     result =

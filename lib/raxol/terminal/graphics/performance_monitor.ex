@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
       metrics = PerformanceMonitor.get_metrics()
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   @type operation_type :: atom()
@@ -123,9 +123,9 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   @doc """
   Starts the performance monitor with the given configuration.
   """
-  def start_link(config \\ %{}) do
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
+#  def start_link(config \\ %{}) do
+#    GenServer.start_link(__MODULE__, config, name: __MODULE__)
+#  end
 
   @doc """
   Starts monitoring a graphics operation.
@@ -241,7 +241,7 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   # GenServer Implementation
 
   @impl true
-  def init(config) do
+  def init_manager(config) do
     merged_config = Map.merge(@default_config, config)
 
     initial_state = %__MODULE__{
@@ -263,7 +263,7 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   end
 
   @impl true
-  def handle_call({:start_operation, operation_type, metadata}, _from, state) do
+  def handle_manager_call({:start_operation, operation_type, metadata}, _from, state) do
     operation_id = generate_operation_id()
     start_time = System.monotonic_time(:microsecond)
 
@@ -281,7 +281,7 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   end
 
   @impl true
-  def handle_call({:end_operation, operation_id, result}, _from, state) do
+  def handle_manager_call({:end_operation, operation_id, result}, _from, state) do
     case Map.get(state.active_operations, operation_id) do
       nil ->
         {:reply, {:error, :operation_not_found}, state}
@@ -349,19 +349,19 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   end
 
   @impl true
-  def handle_call(:get_metrics, _from, state) do
+  def handle_manager_call(:get_metrics, _from, state) do
     metrics = calculate_performance_stats(state)
     {:reply, metrics, state}
   end
 
   @impl true
-  def handle_call({:get_performance_history, options}, _from, state) do
+  def handle_manager_call({:get_performance_history, options}, _from, state) do
     filtered_history = filter_history(state.performance_history, options)
     {:reply, filtered_history, state}
   end
 
   @impl true
-  def handle_call({:configure_alert, alert_name, alert_config}, _from, state) do
+  def handle_manager_call({:configure_alert, alert_name, alert_config}, _from, state) do
     case validate_alert_config(alert_config) do
       :ok ->
         new_configs = Map.put(state.alert_configs, alert_name, alert_config)
@@ -378,13 +378,13 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   end
 
   @impl true
-  def handle_call({:generate_report, options}, _from, state) do
+  def handle_manager_call({:generate_report, options}, _from, state) do
     {:ok, report} = generate_performance_report(state, options)
     {:reply, {:ok, report}, state}
   end
 
   @impl true
-  def handle_call(:reset_statistics, _from, state) do
+  def handle_manager_call(:reset_statistics, _from, state) do
     new_state = %{
       state
       | active_operations: %{},
@@ -400,7 +400,7 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   end
 
   @impl true
-  def handle_cast({:record_metric, metric_name, value, metadata}, state) do
+  def handle_manager_cast({:record_metric, metric_name, value, metadata}, state) do
     timestamp =
       Map.get(metadata, :timestamp, System.monotonic_time(:microsecond))
 
@@ -419,21 +419,21 @@ defmodule Raxol.Terminal.Graphics.PerformanceMonitor do
   end
 
   @impl true
-  def handle_info(:cleanup, state) do
+  def handle_manager_info(:cleanup, state) do
     new_state = perform_cleanup(state)
     schedule_cleanup()
     {:noreply, new_state}
   end
 
   @impl true
-  def handle_info(:analysis, state) do
+  def handle_manager_info(:analysis, state) do
     new_state = perform_analysis(state)
     schedule_analysis()
     {:noreply, new_state}
   end
 
   @impl true
-  def handle_info({:system_metric, metric_data}, state) do
+  def handle_manager_info({:system_metric, metric_data}, state) do
     new_system_metrics = Map.merge(state.system_metrics, metric_data)
     {:noreply, %{state | system_metrics: new_system_metrics}}
   end

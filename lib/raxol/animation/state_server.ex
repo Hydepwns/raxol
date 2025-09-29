@@ -28,7 +28,8 @@ defmodule Raxol.Animation.StateServer do
   state consistency.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   @default_state %{
@@ -38,15 +39,6 @@ defmodule Raxol.Animation.StateServer do
   }
 
   # Client API
-
-  @doc """
-  Starts the Animation StateServer with optional initial settings.
-  """
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    settings = Keyword.get(opts, :settings, %{})
-    GenServer.start_link(__MODULE__, settings, name: name)
-  end
 
   @doc """
   Initializes the animation state storage with the given settings.
@@ -160,8 +152,8 @@ defmodule Raxol.Animation.StateServer do
 
   # GenServer Callbacks
 
-  @impl GenServer
-  def init(settings) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(settings) do
     initial_state = %{
       settings: settings,
       animations: %{},
@@ -171,8 +163,8 @@ defmodule Raxol.Animation.StateServer do
     {:ok, initial_state}
   end
 
-  @impl GenServer
-  def handle_call({:init_state, settings}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:init_state, settings}, _from, state) do
     new_state = %{
       state
       | settings: settings,
@@ -183,37 +175,37 @@ defmodule Raxol.Animation.StateServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_settings, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_settings, _from, state) do
     {:reply, state.settings, state}
   end
 
-  @impl GenServer
-  def handle_call({:update_settings, settings}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:update_settings, settings}, _from, state) do
     new_state = %{state | settings: settings}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:put_animation, animation}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:put_animation, animation}, _from, state) do
     updated_animations = Map.put(state.animations, animation.name, animation)
     new_state = %{state | animations: updated_animations}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_animation, animation_name}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_animation, animation_name}, _from, state) do
     animation = Map.get(state.animations, animation_name)
     {:reply, animation, state}
   end
 
-  @impl GenServer
-  def handle_call(:get_all_animations, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_all_animations, _from, state) do
     {:reply, state.animations, state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:put_active_animation, element_id, animation_name, instance},
         _from,
         state
@@ -230,13 +222,13 @@ defmodule Raxol.Animation.StateServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_active_animations, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_active_animations, _from, state) do
     {:reply, state.active_animations, state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:get_active_animation, element_id, animation_name},
         _from,
         state
@@ -249,8 +241,8 @@ defmodule Raxol.Animation.StateServer do
     {:reply, animation, state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:remove_active_animation, element_id, animation_name},
         _from,
         state
@@ -259,26 +251,26 @@ defmodule Raxol.Animation.StateServer do
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:remove_element_animations, element_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:remove_element_animations, element_id}, _from, state) do
     updated_active_animations = Map.delete(state.active_animations, element_id)
     new_state = %{state | active_animations: updated_active_animations}
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:clear_all, _from, _state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:clear_all, _from, _state) do
     new_state = @default_state
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl GenServer
-  def handle_call({:batch_update_active_animations, updates}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:batch_update_active_animations, updates}, _from, state) do
     new_state = apply_batch_updates(state, updates)
     {:reply, :ok, new_state}
   end

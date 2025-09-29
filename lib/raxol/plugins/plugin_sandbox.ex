@@ -11,7 +11,8 @@ defmodule Raxol.Plugins.PluginSandbox do
   - Automatic sandbox violation handling
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   @type plugin_id :: String.t()
@@ -180,14 +181,10 @@ defmodule Raxol.Plugins.PluginSandbox do
     }
   end
 
-  # GenServer Implementation
+  # BaseManager Implementation
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
-
-  @impl GenServer
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     state = %__MODULE__{
       sandboxes: %{},
       security_policies: initialize_default_policies(),
@@ -200,8 +197,8 @@ defmodule Raxol.Plugins.PluginSandbox do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:create_sandbox, plugin_id, security_policy}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:create_sandbox, plugin_id, security_policy}, _from, state) do
     case create_sandbox_impl(plugin_id, security_policy, state) do
       {:ok, updated_state} ->
         Logger.info("[PluginSandbox] Created sandbox for #{plugin_id}")
@@ -216,7 +213,7 @@ defmodule Raxol.Plugins.PluginSandbox do
     end
   end
 
-  def handle_call(
+  def handle_manager_call(
         {:execute_in_sandbox, plugin_id, module, function, args},
         _from,
         state
@@ -237,7 +234,7 @@ defmodule Raxol.Plugins.PluginSandbox do
     end
   end
 
-  def handle_call({:destroy_sandbox, plugin_id}, _from, state) do
+  def handle_manager_call({:destroy_sandbox, plugin_id}, _from, state) do
     case destroy_sandbox_impl(plugin_id, state) do
       {:ok, updated_state} ->
         Logger.info("[PluginSandbox] Destroyed sandbox for #{plugin_id}")
@@ -248,12 +245,12 @@ defmodule Raxol.Plugins.PluginSandbox do
     end
   end
 
-  def handle_call({:get_sandbox_status, plugin_id}, _from, state) do
+  def handle_manager_call({:get_sandbox_status, plugin_id}, _from, state) do
     status = get_sandbox_status_impl(plugin_id, state)
     {:reply, {:ok, status}, state}
   end
 
-  def handle_call(
+  def handle_manager_call(
         {:update_security_policy, plugin_id, new_policy},
         _from,
         state

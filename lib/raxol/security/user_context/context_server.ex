@@ -12,17 +12,12 @@ defmodule Raxol.Security.UserContext.ContextServer do
   - Audit trail support
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Client API
 
-  @doc """
-  Starts the User Context server.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link
 
   @doc """
   Returns a child specification for this server.
@@ -99,7 +94,7 @@ defmodule Raxol.Security.UserContext.ContextServer do
   # Server Callbacks
 
   @impl true
-  def init(opts) do
+  def init_manager(opts) do
     # Monitor processes to clean up when they die
     {:ok, _pid} = :pg.start_link()
 
@@ -119,7 +114,7 @@ defmodule Raxol.Security.UserContext.ContextServer do
   end
 
   @impl true
-  def handle_call({:set_user, pid, user_id}, _from, state) do
+  def handle_manager_call({:set_user, pid, user_id}, _from, state) do
     # Monitor the process if not already monitored
     state = ensure_monitored(pid, state)
 
@@ -136,7 +131,7 @@ defmodule Raxol.Security.UserContext.ContextServer do
   end
 
   @impl true
-  def handle_call({:get_user, pid}, _from, state) do
+  def handle_manager_call({:get_user, pid}, _from, state) do
     user =
       case Map.get(state.contexts, pid) do
         nil -> state.default_user
@@ -147,7 +142,7 @@ defmodule Raxol.Security.UserContext.ContextServer do
   end
 
   @impl true
-  def handle_call({:clear_user, pid}, _from, state) do
+  def handle_manager_call({:clear_user, pid}, _from, state) do
     contexts =
       Map.update(
         state.contexts,
@@ -160,7 +155,7 @@ defmodule Raxol.Security.UserContext.ContextServer do
   end
 
   @impl true
-  def handle_call({:set_context, pid, key, value}, _from, state) do
+  def handle_manager_call({:set_context, pid, key, value}, _from, state) do
     # Monitor the process if not already monitored
     state = ensure_monitored(pid, state)
 
@@ -178,7 +173,7 @@ defmodule Raxol.Security.UserContext.ContextServer do
   end
 
   @impl true
-  def handle_call({:get_context, pid, key, default}, _from, state) do
+  def handle_manager_call({:get_context, pid, key, default}, _from, state) do
     value =
       case Map.get(state.contexts, pid) do
         nil -> default
@@ -189,7 +184,7 @@ defmodule Raxol.Security.UserContext.ContextServer do
   end
 
   @impl true
-  def handle_call({:get_all_context, pid}, _from, state) do
+  def handle_manager_call({:get_all_context, pid}, _from, state) do
     context =
       case Map.get(state.contexts, pid) do
         nil -> %{user: state.default_user, context: %{}}
@@ -200,7 +195,7 @@ defmodule Raxol.Security.UserContext.ContextServer do
   end
 
   @impl true
-  def handle_call({:clear_context, pid}, _from, state) do
+  def handle_manager_call({:clear_context, pid}, _from, state) do
     contexts =
       case Map.has_key?(state.contexts, pid) do
         true ->
@@ -226,7 +221,7 @@ defmodule Raxol.Security.UserContext.ContextServer do
   end
 
   @impl true
-  def handle_cast({:audit_log, pid, action, details}, state) do
+  def handle_manager_cast({:audit_log, pid, action, details}, state) do
     user =
       case Map.get(state.contexts, pid) do
         nil -> state.default_user
@@ -251,7 +246,7 @@ defmodule Raxol.Security.UserContext.ContextServer do
   end
 
   @impl true
-  def handle_info({:DOWN, ref, :process, pid, _reason}, state) do
+  def handle_manager_info({:DOWN, ref, :process, pid, _reason}, state) do
     # Clean up context for dead process
     contexts = Map.delete(state.contexts, pid)
     monitors = Map.delete(state.monitors, ref)

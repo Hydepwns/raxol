@@ -11,7 +11,8 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
   - Resource monitoring integration
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   # Plugin Manifest
@@ -57,7 +58,8 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
   ]
 
   # Initialization
-  def init(config) do
+  @impl true
+  def init_manager(config) do
     Logger.info("[StatusLine] Initializing with config: #{inspect(config)}")
 
     state = %__MODULE__{
@@ -127,8 +129,9 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
     {:ok, state}
   end
 
-  # GenServer Callbacks
-  def handle_info(:update_tick, state) do
+  # BaseManager Callbacks
+  @impl true
+  def handle_manager_info(:update_tick, state) do
     # Update system information
     new_state = update_system_info(state)
 
@@ -138,12 +141,13 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
     {:noreply, new_state}
   end
 
-  def handle_info(msg, state) do
+  def handle_manager_info(msg, state) do
     Logger.debug("[StatusLine] Received message: #{inspect(msg)}")
     {:noreply, state}
   end
 
-  def handle_cast({:set_emulator, pid}, state) do
+  @impl true
+  def handle_manager_cast({:set_emulator, pid}, state) do
     {:noreply, %{state | emulator_pid: pid}}
   end
 

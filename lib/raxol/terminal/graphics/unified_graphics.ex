@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
       
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Terminal.Graphics.KittyProtocol
@@ -75,12 +75,12 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   Starts the graphics manager with the given options.
   """
   @spec start_link(map()) :: GenServer.on_start()
-  def start_link(opts \\ %{}) do
-    opts = ensure_map_opts(opts)
-    name = Map.get(opts, :name, __MODULE__)
-    gen_server_opts = Map.delete(opts, :name)
-    GenServer.start_link(__MODULE__, gen_server_opts, name: name)
-  end
+#  def start_link(opts \\ %{}) do
+#    opts = ensure_map_opts(opts)
+#    name = Map.get(opts, :name, __MODULE__)
+#    gen_server_opts = Map.delete(opts, :name)
+#    GenServer.start_link(__MODULE__, gen_server_opts, name: name)
+#  end
 
   @doc """
   Creates a new graphics context with the given configuration.
@@ -421,7 +421,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   end
 
   # Server Callbacks
-  def init(opts) do
+  def init_manager(opts) do
     # Detect graphics capabilities on startup
     graphics_support = Platform.detect_graphics_support()
 
@@ -465,7 +465,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     {:ok, state}
   end
 
-  def handle_call({:display_image, image_data, options}, _from, state) do
+  def handle_manager_call({:display_image, image_data, options}, _from, state) do
     with {:ok, protocol} <- select_protocol(options, state),
          {:ok, processed_options} <-
            prepare_display_options(options, protocol, state),
@@ -496,7 +496,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_call({:display_images, images, shared_options}, _from, state) do
+  def handle_manager_call({:display_images, images, shared_options}, _from, state) do
     results =
       Enum.map(images, fn
         {image_data, individual_options} ->
@@ -522,7 +522,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_call(
+  def handle_manager_call(
         {:convert_and_display, image_data, target_format, options},
         _from,
         state
@@ -542,7 +542,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_call({:optimize_and_display, image_data, options}, _from, state) do
+  def handle_manager_call({:optimize_and_display, image_data, options}, _from, state) do
     # Create terminal capability profiles based on current system
     terminal_profiles = create_terminal_profiles(state.graphics_support)
 
@@ -573,21 +573,21 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_call({:get_image_info, graphics_id}, _from, state) do
+  def handle_manager_call({:get_image_info, graphics_id}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil -> {:reply, {:error, :graphics_not_found}, state}
       graphics_info -> {:reply, {:ok, graphics_info}, state}
     end
   end
 
-  def handle_call({:manage_cache, action, params}, _from, state) do
+  def handle_manager_call({:manage_cache, action, params}, _from, state) do
     case state.cache_enabled do
       false -> {:reply, {:error, :cache_disabled}, state}
       true -> handle_cache_management(action, params, state)
     end
   end
 
-  def handle_call(:get_graphics_info, _from, state) do
+  def handle_manager_call(:get_graphics_info, _from, state) do
     info = %{
       supported_protocols: get_supported_protocols(state.graphics_support),
       preferred_protocol: state.preferred_protocol,
@@ -601,7 +601,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     {:reply, info, state}
   end
 
-  def handle_call({:create_animation, frames, options}, _from, state) do
+  def handle_manager_call({:create_animation, frames, options}, _from, state) do
     case select_protocol(options, state) do
       {:ok, :kitty} ->
         # Use Kitty protocol for animation
@@ -635,7 +635,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_call(
+  def handle_manager_call(
         {:set_preferred_protocol, protocol, fallback_enabled},
         _from,
         state
@@ -655,7 +655,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_call(
+  def handle_manager_call(
         {:update_graphics_properties, graphics_id, properties},
         _from,
         state
@@ -688,7 +688,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_call({:create_graphics, config}, _from, state) do
+  def handle_manager_call({:create_graphics, config}, _from, state) do
     graphics_id = state.next_id
 
     graphics_state = %{
@@ -712,18 +712,18 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     {:reply, {:ok, graphics_id}, new_state}
   end
 
-  def handle_call(:get_graphics, _from, state) do
+  def handle_manager_call(:get_graphics, _from, state) do
     {:reply, Map.keys(state.graphics), state}
   end
 
-  def handle_call(:get_active_graphics, _from, state) do
+  def handle_manager_call(:get_active_graphics, _from, state) do
     case state.active_graphics do
       nil -> {:reply, {:error, :no_active_graphics}, state}
       graphics_id -> {:reply, {:ok, graphics_id}, state}
     end
   end
 
-  def handle_call({:set_active_graphics, graphics_id}, _from, state) do
+  def handle_manager_call({:set_active_graphics, graphics_id}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil ->
         {:reply, {:error, :graphics_not_found}, state}
@@ -734,14 +734,14 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_call({:get_graphics_state, graphics_id}, _from, state) do
+  def handle_manager_call({:get_graphics_state, graphics_id}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil -> {:reply, {:error, :graphics_not_found}, state}
       graphics_state -> {:reply, {:ok, graphics_state}, state}
     end
   end
 
-  def handle_call({:update_graphics_config, graphics_id, config}, _from, state) do
+  def handle_manager_call({:update_graphics_config, graphics_id, config}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil ->
         {:reply, {:error, :graphics_not_found}, state}
@@ -759,7 +759,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_call({:render_graphics, graphics_id, data}, _from, state) do
+  def handle_manager_call({:render_graphics, graphics_id, data}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil ->
         {:reply, {:error, :graphics_not_found}, state}
@@ -770,7 +770,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_call({:swap_buffers, graphics_id}, _from, state) do
+  def handle_manager_call({:swap_buffers, graphics_id}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil ->
         {:reply, {:error, :graphics_not_found}, state}
@@ -792,7 +792,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_call({:clear_graphics, graphics_id}, _from, state) do
+  def handle_manager_call({:clear_graphics, graphics_id}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil ->
         {:reply, {:error, :graphics_not_found}, state}
@@ -809,7 +809,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_call({:close_graphics, graphics_id}, _from, state) do
+  def handle_manager_call({:close_graphics, graphics_id}, _from, state) do
     case Map.get(state.graphics, graphics_id) do
       nil ->
         {:reply, {:error, :graphics_not_found}, state}
@@ -836,13 +836,13 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
     end
   end
 
-  def handle_call({:update_config, config}, _from, state) do
+  def handle_manager_call({:update_config, config}, _from, state) do
     new_config = Map.merge(state.config, config)
     new_state = %{state | config: new_config}
     {:reply, :ok, new_state}
   end
 
-  def handle_call(:cleanup, _from, state) do
+  def handle_manager_call(:cleanup, _from, state) do
     # Clean up all graphics contexts
     {:reply, :ok, %{state | graphics: %{}, active_graphics: nil}}
   end

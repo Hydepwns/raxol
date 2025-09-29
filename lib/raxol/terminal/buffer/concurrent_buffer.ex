@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   processes are reading/writing to the buffer simultaneously.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Terminal.Buffer
   alias Raxol.Terminal.Buffer.Cell
 
@@ -21,20 +21,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   """
   @spec start_server(keyword()) :: {:ok, pid()} | {:error, term()}
   def start_server(opts \\ []) do
-    width = Keyword.get(opts, :width, 80)
-    height = Keyword.get(opts, :height, 24)
-    name = Keyword.get(opts, :name)
-
-    initial_state = %{
-      buffer: Buffer.new({width, height}),
-      width: width,
-      height: height
-    }
-
-    case name do
-      nil -> GenServer.start_link(__MODULE__, initial_state)
-      _ -> GenServer.start_link(__MODULE__, initial_state, name: name)
-    end
+    start_link(opts)
   end
 
   @doc """
@@ -139,12 +126,21 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   # Server callbacks
 
   @impl true
-  def init(state) do
+  def init_manager(opts) do
+    width = Keyword.get(opts, :width, 80)
+    height = Keyword.get(opts, :height, 24)
+
+    state = %{
+      buffer: Buffer.new({width, height}),
+      width: width,
+      height: height
+    }
+
     {:ok, state}
   end
 
   @impl true
-  def handle_call({:set_cell, x, y, cell}, _from, state) do
+  def handle_manager_call({:set_cell, x, y, cell}, _from, state) do
     case validate_coords(x, y, state) do
       :ok ->
         # Update the buffer with the new cell
@@ -159,7 +155,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   end
 
   @impl true
-  def handle_call({:get_cell, x, y}, _from, state) do
+  def handle_manager_call({:get_cell, x, y}, _from, state) do
     case validate_coords(x, y, state) do
       :ok ->
         cell = Buffer.get_cell(state.buffer, x, y)
@@ -173,7 +169,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   end
 
   @impl true
-  def handle_call({:write, x, y, text, style}, _from, state) do
+  def handle_manager_call({:write, x, y, text, style}, _from, state) do
     case validate_coords(x, y, state) do
       :ok ->
         updated_buffer = write_text(state.buffer, x, y, text, style)
@@ -187,13 +183,13 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   end
 
   @impl true
-  def handle_call(:clear, _from, state) do
+  def handle_manager_call(:clear, _from, state) do
     cleared_buffer = Buffer.new({state.width, state.height})
     {:reply, :ok, %{state | buffer: cleared_buffer}}
   end
 
   @impl true
-  def handle_call(
+  def handle_manager_call(
         {:fill_region, x, y, width, height, char, style},
         _from,
         state
@@ -213,7 +209,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   end
 
   @impl true
-  def handle_call({:scroll, lines}, _from, state) do
+  def handle_manager_call({:scroll, lines}, _from, state) do
     # Simplified scroll implementation
     # In a real implementation, this would shift buffer content
     updated_buffer = perform_scroll(state.buffer, lines, state.height)
@@ -223,12 +219,12 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   end
 
   @impl true
-  def handle_call(:get_buffer, _from, state) do
+  def handle_manager_call(:get_buffer, _from, state) do
     {:reply, {:ok, state.buffer}, state}
   end
 
   @impl true
-  def handle_call({:batch, fun}, _from, state) do
+  def handle_manager_call({:batch, fun}, _from, state) do
     try do
       updated_buffer = fun.(state.buffer)
       {:reply, :ok, %{state | buffer: updated_buffer}}
@@ -238,7 +234,7 @@ defmodule Raxol.Terminal.Buffer.ConcurrentBuffer do
   end
 
   @impl true
-  def handle_call({:batch_operations, operations}, _from, state) do
+  def handle_manager_call({:batch_operations, operations}, _from, state) do
     try do
       updated_buffer = apply_batch_operations(operations, state.buffer, state)
       {:reply, :ok, %{state | buffer: updated_buffer}}

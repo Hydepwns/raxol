@@ -1,5 +1,5 @@
 defmodule Raxol.System.Updater do
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   @moduledoc """
@@ -16,9 +16,7 @@ defmodule Raxol.System.Updater do
 
   # --- Client API ---
 
-  def start_link(opts \\ []) do
-    Core.start_link(opts)
-  end
+  # start_link is provided by BaseManager
 
   def get_update_settings do
     State.get_update_settings()
@@ -102,33 +100,33 @@ defmodule Raxol.System.Updater do
 
   # --- Server Callbacks ---
 
-  @impl GenServer
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     Core.init(opts)
   end
 
-  @impl GenServer
-  def handle_call({:install_update, version}, from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:install_update, version}, from, state) do
     Core.handle_call({:install_update, version}, from, state)
   end
 
-  @impl GenServer
-  def handle_call(:get_update_settings, from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_update_settings, from, state) do
     Core.handle_call(:get_update_settings, from, state)
   end
 
-  @impl GenServer
-  def handle_call({:set_update_settings, settings}, from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_update_settings, settings}, from, state) do
     Core.handle_call({:set_update_settings, settings}, from, state)
   end
 
-  @impl GenServer
-  def handle_call(:check_for_updates, from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:check_for_updates, from, state) do
     Core.handle_call(:check_for_updates, from, state)
   end
 
-  @impl GenServer
-  def handle_call(:get_update_status, from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_update_status, from, state) do
     Core.handle_call(:get_update_status, from, state)
   end
 

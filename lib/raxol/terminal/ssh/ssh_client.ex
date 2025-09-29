@@ -34,7 +34,7 @@ if Code.ensure_loaded?(:ssh) do
         {:ok, session} = SSHClient.start_shell(client)
     """
 
-    use GenServer
+    use Raxol.Core.Behaviours.BaseManager
     require Logger
 
     @type connection_options :: %{
@@ -105,7 +105,7 @@ if Code.ensure_loaded?(:ssh) do
     @spec connect(String.t(), pos_integer(), connection_options()) ::
             {:ok, pid()} | {:error, term()}
     def connect(host, port \\ @default_port, options \\ %{}) do
-      GenServer.start_link(__MODULE__, {host, port, options})
+      start_link([{:init_args, {host, port, options}}])
     end
 
     @doc """
@@ -245,10 +245,10 @@ if Code.ensure_loaded?(:ssh) do
       GenServer.cast(client, :disconnect)
     end
 
-    ## GenServer Callbacks
+    ## BaseManager Callbacks
 
     @impl true
-    def init({host, port, options}) do
+    def init_manager({host, port, options}) do
       # Set up process trapping to handle cleanup
       Process.flag(:trap_exit, true)
 
@@ -277,7 +277,7 @@ if Code.ensure_loaded?(:ssh) do
     end
 
     @impl true
-    def handle_call(
+    def handle_manager_call(
           {:exec, _command, _timeout},
           _from,
           %{connected: false} = state
@@ -285,7 +285,7 @@ if Code.ensure_loaded?(:ssh) do
       {:reply, {:error, :not_connected}, state}
     end
 
-    def handle_call({:exec, command, timeout}, _from, state) do
+    def handle_manager_call({:exec, command, timeout}, _from, state) do
       case execute_command(state, command, timeout) do
         {:ok, result} ->
           {:reply, {:ok, result}, update_activity(state)}
@@ -295,7 +295,7 @@ if Code.ensure_loaded?(:ssh) do
       end
     end
 
-    def handle_call(
+    def handle_manager_call(
           {:start_shell, _options},
           _from,
           %{connected: false} = state
@@ -303,7 +303,7 @@ if Code.ensure_loaded?(:ssh) do
       {:reply, {:error, :not_connected}, state}
     end
 
-    def handle_call({:start_shell, options}, _from, state) do
+    def handle_manager_call({:start_shell, options}, _from, state) do
       case start_shell_session(state, options) do
         {:ok, session_pid} ->
           {:reply, {:ok, session_pid}, update_activity(state)}
@@ -313,11 +313,11 @@ if Code.ensure_loaded?(:ssh) do
       end
     end
 
-    def handle_call(:open_sftp, _from, %{connected: false} = state) do
+    def handle_manager_call(:open_sftp, _from, %{connected: false} = state) do
       {:reply, {:error, :not_connected}, state}
     end
 
-    def handle_call(:open_sftp, _from, state) do
+    def handle_manager_call(:open_sftp, _from, state) do
       case open_sftp_channel(state) do
         {:ok, sftp_ref} ->
           {:reply, {:ok, sftp_ref}, update_activity(state)}
@@ -327,7 +327,7 @@ if Code.ensure_loaded?(:ssh) do
       end
     end
 
-    def handle_call(
+    def handle_manager_call(
           {:local_forward, local_port, remote_host, remote_port},
           _from,
           state
@@ -347,7 +347,7 @@ if Code.ensure_loaded?(:ssh) do
       end
     end
 
-    def handle_call(
+    def handle_manager_call(
           {:remote_forward, remote_port, local_host, local_port},
           _from,
           state
@@ -367,22 +367,22 @@ if Code.ensure_loaded?(:ssh) do
       end
     end
 
-    def handle_call(:get_connection_info, _from, %{connected: false} = state) do
+    def handle_manager_call(:get_connection_info, _from, %{connected: false} = state) do
       {:reply, {:error, :not_connected}, state}
     end
 
-    def handle_call(:get_connection_info, _from, state) do
+    def handle_manager_call(:get_connection_info, _from, state) do
       {:reply, {:ok, state.connection_info}, state}
     end
 
     @impl true
-    def handle_cast(:disconnect, state) do
+    def handle_manager_cast(:disconnect, state) do
       new_state = perform_disconnect(state)
       {:noreply, new_state}
     end
 
     @impl true
-    def handle_info(:keepalive, state) do
+    def handle_manager_info(:keepalive, state) do
       case send_keepalive(state) do
         :ok ->
           timer_ref = schedule_keepalive(state.options.keepalive_interval)
@@ -394,23 +394,23 @@ if Code.ensure_loaded?(:ssh) do
       end
     end
 
-    def handle_info({:ssh_connection_lost, _ref}, state) do
+    def handle_manager_info({:ssh_connection_lost, _ref}, state) do
       Logger.warning("SSH connection lost, attempting reconnect")
       {:noreply, attempt_reconnect(state)}
     end
 
-    def handle_info({:EXIT, _pid, reason}, state) do
+    def handle_manager_info({:EXIT, _pid, reason}, state) do
       Logger.warning("SSH process exited: #{inspect(reason)}")
       {:noreply, attempt_reconnect(state)}
     end
 
-    def handle_info(msg, state) do
+    def handle_manager_info(msg, state) do
       Logger.debug("Unhandled SSH message: #{inspect(msg)}")
       {:noreply, state}
     end
 
     @impl true
-    def terminate(reason, state) do
+    def terminate_manager(reason, state) do
       Logger.info("SSH client terminating: #{inspect(reason)}")
       perform_disconnect(state)
       :ok

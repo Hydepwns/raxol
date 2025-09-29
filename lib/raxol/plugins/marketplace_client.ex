@@ -12,7 +12,9 @@ defmodule Raxol.Plugins.MarketplaceClient do
   - License compliance checking
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+@behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Plugins.{DependencyResolverV2, PluginSandbox}
@@ -65,9 +67,6 @@ defmodule Raxol.Plugins.MarketplaceClient do
   @doc """
   Starts the marketplace client with configuration.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Searches for plugins in the marketplace.
@@ -155,8 +154,8 @@ defmodule Raxol.Plugins.MarketplaceClient do
 
   # GenServer Implementation
 
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     state = %__MODULE__{
       marketplace_url:
         Keyword.get(opts, :marketplace_url, default_marketplace_url()),
@@ -178,8 +177,8 @@ defmodule Raxol.Plugins.MarketplaceClient do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:search_plugins, query, filters}, _from, state) do
+  @impl true
+  def handle_manager_call({:search_plugins, query, filters}, _from, state) do
     case search_plugins_impl(query, filters, state) do
       {:ok, results} ->
         {:reply, {:ok, results}, state}
@@ -189,7 +188,8 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end
   end
 
-  def handle_call({:get_plugin_info, plugin_id, version}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_plugin_info, plugin_id, version}, _from, state) do
     case get_plugin_info_impl(plugin_id, version, state) do
       {:ok, plugin_info} ->
         # Update cache
@@ -205,7 +205,8 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end
   end
 
-  def handle_call({:list_plugin_versions, plugin_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:list_plugin_versions, plugin_id}, _from, state) do
     case list_plugin_versions_impl(plugin_id, state) do
       {:ok, versions} ->
         {:reply, {:ok, versions}, state}
@@ -215,7 +216,8 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end
   end
 
-  def handle_call({:install_plugin, plugin_id, version, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:install_plugin, plugin_id, version, opts}, _from, state) do
     case install_plugin_impl(plugin_id, version, opts, state) do
       {:ok, updated_state} ->
         Logger.info(
@@ -233,7 +235,8 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end
   end
 
-  def handle_call({:uninstall_plugin, plugin_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:uninstall_plugin, plugin_id}, _from, state) do
     case uninstall_plugin_impl(plugin_id, state) do
       {:ok, updated_state} ->
         Logger.info("[MarketplaceClient] Successfully uninstalled #{plugin_id}")
@@ -244,7 +247,8 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end
   end
 
-  def handle_call({:update_plugin, plugin_id, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:update_plugin, plugin_id, opts}, _from, state) do
     case update_plugin_impl(plugin_id, opts, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
@@ -254,7 +258,8 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end
   end
 
-  def handle_call(:check_for_updates, _from, state) do
+  @impl true
+  def handle_manager_call(:check_for_updates, _from, state) do
     case check_for_updates_impl(state) do
       {:ok, updates, updated_state} ->
         {:reply, {:ok, updates}, updated_state}
@@ -264,14 +269,16 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end
   end
 
-  def handle_call(:list_installed_plugins, _from, state) do
+  @impl true
+  def handle_manager_call(:list_installed_plugins, _from, state) do
     installed_with_status =
       add_marketplace_status(state.installed_plugins, state)
 
     {:reply, {:ok, installed_with_status}, state}
   end
 
-  def handle_call({:verify_plugin_security, plugin_id, version}, _from, state) do
+  @impl true
+  def handle_manager_call({:verify_plugin_security, plugin_id, version}, _from, state) do
     case verify_plugin_security_impl(plugin_id, version, state) do
       {:ok, verification_result} ->
         {:reply, {:ok, verification_result}, state}
@@ -281,7 +288,8 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end
   end
 
-  def handle_call({:get_plugin_reviews, plugin_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_plugin_reviews, plugin_id}, _from, state) do
     case get_plugin_reviews_impl(plugin_id, state) do
       {:ok, reviews} ->
         {:reply, {:ok, reviews}, state}
@@ -291,7 +299,8 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end
   end
 
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:submit_plugin_review, plugin_id, rating, review_text},
         _from,
         state
@@ -305,8 +314,8 @@ defmodule Raxol.Plugins.MarketplaceClient do
     end
   end
 
-  @impl GenServer
-  def handle_info(:check_updates, state) do
+  @impl true
+  def handle_manager_info(:check_updates, state) do
     case check_for_updates_impl(state) do
       {:ok, updates, updated_state} ->
         if length(updates) > 0 do

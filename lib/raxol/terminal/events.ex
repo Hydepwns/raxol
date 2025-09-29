@@ -7,7 +7,8 @@ defmodule Raxol.Terminal.Events do
   to be processed at the application level.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   @doc """
@@ -50,17 +51,11 @@ defmodule Raxol.Terminal.Events do
     GenServer.cast(__MODULE__, {:trigger_click, position})
   end
 
-  @doc """
-  Starts the events server.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
-  # GenServer callbacks
+  # BaseManager callbacks
 
   @impl true
-  def init(_opts) do
+  def init_manager(_opts) do
     {:ok,
      %{
        click_handlers: %{},
@@ -70,19 +65,19 @@ defmodule Raxol.Terminal.Events do
   end
 
   @impl true
-  def handle_call({:register_click_handler, ref, handler}, _from, state) do
+  def handle_manager_call({:register_click_handler, ref, handler}, _from, state) do
     new_handlers = Map.put(state.click_handlers, ref, handler)
     {:reply, :ok, %{state | click_handlers: new_handlers}}
   end
 
   @impl true
-  def handle_cast({:unregister_click_handler, ref}, state) do
+  def handle_manager_cast({:unregister_click_handler, ref}, state) do
     new_handlers = Map.delete(state.click_handlers, ref)
     {:noreply, %{state | click_handlers: new_handlers}}
   end
 
   @impl true
-  def handle_cast({:trigger_click, position}, state) do
+  def handle_manager_cast({:trigger_click, position}, state) do
     # Call all registered click handlers
     Enum.each(state.click_handlers, fn {_ref, handler} ->
       case Raxol.Core.ErrorHandling.safe_call(fn ->

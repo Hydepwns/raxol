@@ -64,21 +64,21 @@ defmodule Raxol.UI.State.Streams do
 
   # Subject for hot observables
   defmodule Subject do
-    use GenServer
+    use Raxol.Core.Behaviours.BaseManager
 
     defstruct [:observers, :completed, :error]
 
-    def start_link(opts \\ []) do
-      GenServer.start_link(
-        __MODULE__,
-        %__MODULE__{
-          observers: %{},
-          completed: false,
-          error: nil
-        },
-        opts
-      )
-    end
+#     def start_link(opts \\ []) do
+#       GenServer.start_link(
+#         __MODULE__,
+#         %__MODULE__{
+#           observers: %{},
+#           completed: false,
+#           error: nil
+#         },
+#         opts
+#       )
+#     end
 
     def next(subject, value) do
       GenServer.call(subject, {:next, value})
@@ -96,13 +96,13 @@ defmodule Raxol.UI.State.Streams do
       GenServer.call(subject, {:subscribe, observer})
     end
 
-    @impl GenServer
-    def init(state) do
+    @impl true
+    def init_manager(state) do
       {:ok, state}
     end
 
-    @impl GenServer
-    def handle_call({:next, value}, _from, state) do
+    @impl true
+    def handle_manager_call({:next, value}, _from, state) do
       with false <- state.completed,
            nil <- state.error do
         # Notify all observers with functional error handling
@@ -119,8 +119,8 @@ defmodule Raxol.UI.State.Streams do
       end
     end
 
-    @impl GenServer
-    def handle_call({:error, error}, _from, state) do
+    @impl true
+    def handle_manager_call({:error, error}, _from, state) do
       with false <- state.completed do
         # Notify all observers of error
         state.observers
@@ -135,8 +135,8 @@ defmodule Raxol.UI.State.Streams do
       end
     end
 
-    @impl GenServer
-    def handle_call(:complete, _from, state) do
+    @impl true
+    def handle_manager_call(:complete, _from, state) do
       with false <- state.completed,
            nil <- state.error do
         # Notify all observers of completion
@@ -152,8 +152,8 @@ defmodule Raxol.UI.State.Streams do
       end
     end
 
-    @impl GenServer
-    def handle_call({:subscribe, observer}, _from, state) do
+    @impl true
+    def handle_manager_call({:subscribe, observer}, _from, state) do
       with false <- state.completed do
         observer_id = System.unique_integer([:positive, :monotonic])
         new_observers = Map.put(state.observers, observer_id, observer)
@@ -177,8 +177,8 @@ defmodule Raxol.UI.State.Streams do
       end
     end
 
-    @impl GenServer
-    def handle_call({:unsubscribe, observer_id}, _from, state) do
+    @impl true
+    def handle_manager_call({:unsubscribe, observer_id}, _from, state) do
       new_observers = Map.delete(state.observers, observer_id)
       {:reply, :ok, %{state | observers: new_observers}}
     end
@@ -497,11 +497,11 @@ defmodule Raxol.UI.State.Streams do
 
   # Debouncer GenServer for managing debounced emissions
   defmodule DebouncerServer do
-    use GenServer
+    use Raxol.Core.Behaviours.BaseManager
 
-    def start_link(observer, delay) do
-      GenServer.start_link(__MODULE__, {observer, delay})
-    end
+#     def start_link(observer, delay) do
+#       GenServer.start_link(__MODULE__, {observer, delay})
+#     end
 
     def emit(server, value) do
       _ = GenServer.cast(server, {:emit, value})
@@ -512,13 +512,13 @@ defmodule Raxol.UI.State.Streams do
       GenServer.stop(server, :normal)
     end
 
-    @impl GenServer
-    def init({observer, delay}) do
+    @impl true
+    def init_manager({observer, delay}) do
       {:ok, %{observer: observer, delay: delay, timer: nil, last_value: nil}}
     end
 
-    @impl GenServer
-    def handle_cast({:emit, value}, state) do
+    @impl true
+    def handle_manager_cast({:emit, value}, state) do
       # Cancel existing timer if present
       _ = Raxol.UI.State.Streams.cancel_existing_timer(state.timer)
 
@@ -527,8 +527,8 @@ defmodule Raxol.UI.State.Streams do
       {:noreply, %{state | timer: timer, last_value: value}}
     end
 
-    @impl GenServer
-    def handle_info(:flush, state) do
+    @impl true
+    def handle_manager_info(:flush, state) do
       Raxol.UI.State.Streams.emit_debounced_value(
         state.last_value,
         state.observer
@@ -618,11 +618,11 @@ defmodule Raxol.UI.State.Streams do
 
   # Combiner GenServer for managing combined streams
   defmodule CombinerServer do
-    use GenServer
+    use Raxol.Core.Behaviours.BaseManager
 
-    def start_link(observables, observer) do
-      GenServer.start_link(__MODULE__, {length(observables), observer})
-    end
+#     def start_link(observables, observer) do
+#       GenServer.start_link(__MODULE__, {length(observables), observer})
+#     end
 
     def update(server, index, value) do
       _ = GenServer.cast(server, {:update, index, value})
@@ -639,8 +639,8 @@ defmodule Raxol.UI.State.Streams do
       :ok
     end
 
-    @impl GenServer
-    def init({count, observer}) do
+    @impl true
+    def init_manager({count, observer}) do
       {:ok,
        %{
          values: List.duplicate(nil, count),
@@ -651,18 +651,18 @@ defmodule Raxol.UI.State.Streams do
        }}
     end
 
-    @impl GenServer
-    def handle_cast({:update, index, value}, state) do
+    @impl true
+    def handle_manager_cast({:update, index, value}, state) do
       handle_combiner_update(state, index, value)
     end
 
-    @impl GenServer
-    def handle_cast({:error, error}, state) do
+    @impl true
+    def handle_manager_cast({:error, error}, state) do
       handle_combiner_error(state, error)
     end
 
-    @impl GenServer
-    def handle_cast({:complete, index}, state) do
+    @impl true
+    def handle_manager_cast({:complete, index}, state) do
       new_completed = List.replace_at(state.completed, index, true)
 
       complete_if_all_streams_done(new_completed, state.errored, state.observer)

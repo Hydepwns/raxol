@@ -6,7 +6,8 @@ defmodule Raxol.Terminal.Tooltip do
   allowing contextual help text to appear on hover or focus.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   @doc """
@@ -39,32 +40,29 @@ defmodule Raxol.Terminal.Tooltip do
   @doc """
   Starts the tooltip server.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 with proper option handling
 
-  # GenServer callbacks
+  # BaseManager callbacks
 
-  @impl true
-  def init(_opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(_opts) do
     {:ok, %{visible: false, text: "", position: {0, 0}}}
   end
 
-  @impl true
-  def handle_cast({:show, text}, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_cast({:show, text}, state) do
     # In a real implementation, this would render the tooltip
     Logger.debug("Showing tooltip: #{text}")
     {:noreply, %{state | visible: true, text: text}}
   end
 
-  @impl true
-  def handle_cast(:hide, state) do
+  def handle_manager_cast(:hide, state) do
     Logger.debug("Hiding tooltip")
     {:noreply, %{state | visible: false, text: ""}}
   end
 
-  @impl true
-  def handle_call(:get_state, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 end

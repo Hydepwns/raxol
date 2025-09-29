@@ -267,7 +267,8 @@ defmodule Raxol.UI.StyleProcessor do
   end
 
   defp cache_available? do
-    Code.ensure_loaded?(Raxol.Performance.ETSCacheManager)
+    Code.ensure_loaded?(Raxol.Performance.ETSCacheManager) and
+      Process.whereis(Raxol.Performance.ETSCacheManager) != nil
   end
 
   # Cache operations (require ETSCacheManager to be available)

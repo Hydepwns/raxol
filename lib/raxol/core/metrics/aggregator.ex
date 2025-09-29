@@ -10,7 +10,8 @@ defmodule Raxol.Core.Metrics.Aggregator do
   - Real-time aggregation updates
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   alias Raxol.Core.Metrics.UnifiedCollector
 
   @type aggregation_type :: :sum | :mean | :median | :min | :max | :percentile
@@ -33,12 +34,8 @@ defmodule Raxol.Core.Metrics.Aggregator do
     update_interval: 60
   }
 
-  @doc """
-  Starts the metric aggregator.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # BaseManager provides start_link/1 which handles GenServer initialization
+  # Usage: Raxol.Core.Metrics.Aggregator.start_link(name: __MODULE__, ...)
 
   @doc """
   Adds a new aggregation rule.
@@ -142,8 +139,8 @@ defmodule Raxol.Core.Metrics.Aggregator do
     calculate_aggregation(values, {:percentile, 0.9})
   end
 
-  @impl GenServer
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     state = %{
       rules: %{},
       next_rule_id: 1,
@@ -155,8 +152,8 @@ defmodule Raxol.Core.Metrics.Aggregator do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:add_rule, rule}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:add_rule, rule}, _from, state) do
     rule_id = state.next_rule_id
     validated_rule = validate_rule(rule)
 
@@ -170,16 +167,16 @@ defmodule Raxol.Core.Metrics.Aggregator do
     {:reply, {:ok, rule_id}, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_aggregated_metrics, rule_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_aggregated_metrics, rule_id}, _from, state) do
     case Map.get(state.aggregations, rule_id) do
       nil -> {:reply, {:error, :rule_not_found}, state}
       metrics -> {:reply, {:ok, metrics}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call({:update_aggregation, rule_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:update_aggregation, rule_id}, _from, state) do
     case Map.get(state.rules, rule_id) do
       nil ->
         {:reply, {:error, :rule_not_found}, state}
@@ -197,13 +194,13 @@ defmodule Raxol.Core.Metrics.Aggregator do
     end
   end
 
-  @impl GenServer
-  def handle_call(:get_rules, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_rules, _from, state) do
     {:reply, {:ok, state.rules}, state}
   end
 
-  @impl GenServer
-  def handle_call(:clear, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:clear, _from, state) do
     cleared_state = %{
       state
       | rules: %{},
@@ -214,8 +211,8 @@ defmodule Raxol.Core.Metrics.Aggregator do
     {:reply, :ok, cleared_state}
   end
 
-  @impl GenServer
-  def handle_info(:update_aggregations, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:update_aggregations, state) do
     new_state = update_all_aggregations(state)
     schedule_update()
     {:noreply, new_state}

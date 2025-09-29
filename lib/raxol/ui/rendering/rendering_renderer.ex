@@ -4,28 +4,14 @@ defmodule Raxol.UI.Rendering.Renderer do
   Receives commands from the rendering pipeline and coordinates rendering actions.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Raxol.Core.Runtime.Log
   require Logger
 
   # Public API
 
-  @doc """
-  Starts the rendering process.
-  """
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name)
-    gen_server_opts = Keyword.delete(opts, :name)
-    start_genserver_with_name(name != nil, name, gen_server_opts)
-  end
-
-  defp start_genserver_with_name(true, name, gen_server_opts) do
-    GenServer.start_link(__MODULE__, %{}, [name: name] ++ gen_server_opts)
-  end
-
-  defp start_genserver_with_name(false, _name, gen_server_opts) do
-    GenServer.start_link(__MODULE__, %{}, gen_server_opts)
-  end
+  # BaseManager provides start_link/1 and start_link/2 automatically
 
   @doc """
   Sets animation settings for the renderer.
@@ -161,8 +147,8 @@ defmodule Raxol.UI.Rendering.Renderer do
 
   # GenServer Callbacks
 
-  @impl GenServer
-  def init(_init_arg) do
+  @impl true
+  def init_manager(_init_arg) do
     emulator = Raxol.Terminal.Emulator.new(80, 24, [])
 
     {:ok,
@@ -174,13 +160,13 @@ defmodule Raxol.UI.Rendering.Renderer do
      }}
   end
 
-  @impl GenServer
-  def handle_cast({:set_animation_settings, settings}, state) do
+  @impl true
+  def handle_manager_cast({:set_animation_settings, settings}, state) do
     {:noreply, %{state | animation_settings: settings}}
   end
 
-  @impl GenServer
-  def handle_cast({:render, data}, state) do
+  @impl true
+  def handle_manager_cast({:render, data}, state) do
     require Logger
 
     Logger.debug(
@@ -204,18 +190,18 @@ defmodule Raxol.UI.Rendering.Renderer do
     {:noreply, %{new_state | last_render: data}}
   end
 
-  @impl GenServer
-  def handle_cast({:set_test_pid, pid}, state) do
+  @impl true
+  def handle_manager_cast({:set_test_pid, pid}, state) do
     {:noreply, %{state | test_pid: pid}}
   end
 
-  @impl GenServer
-  def handle_cast({:apply_diff, :no_change, _new_tree}, state) do
+  @impl true
+  def handle_manager_cast({:apply_diff, :no_change, _new_tree}, state) do
     # No update needed
     {:noreply, state}
   end
 
-  def handle_cast({:apply_diff, {:replace, new_tree}, _new_tree}, state) do
+  def handle_manager_cast({:apply_diff, {:replace, new_tree}, _new_tree}, state) do
     # Full replacement
     # Convert the tree to paint operations for consistency with other handlers
     ops = ui_tree_to_terminal_ops_with_lines(new_tree)
@@ -233,8 +219,8 @@ defmodule Raxol.UI.Rendering.Renderer do
     {:noreply, %{new_state | last_render: new_tree}}
   end
 
-  @impl GenServer
-  def handle_cast(
+  @impl true
+  def handle_manager_cast(
         {:apply_diff, {:update, path, _changes} = diff, new_tree},
         state
       ) do

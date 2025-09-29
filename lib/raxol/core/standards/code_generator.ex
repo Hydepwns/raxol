@@ -24,7 +24,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
       #{format_state_docs(state_fields)}
       \"\"\"
 
-      use GenServer
+      use Raxol.Core.Behaviours.BaseManager
       require Logger
 
       # Type definitions
@@ -49,16 +49,16 @@ defmodule Raxol.Core.Standards.CodeGenerator do
           true
       \"\"\"
       @spec start_link(keyword()) :: GenServer.on_start()
-      def start_link(opts \\\\ []) do
-        GenServer.start_link(__MODULE__, opts, name: opts[:name])
-      end
+#       def start_link(opts \\\\ []) do
+#         GenServer.start_link(__MODULE__, opts, name: opts[:name])
+#       end
 
       #{_generate_public_api(module_name, callbacks)}
 
       # GenServer callbacks
 
       @impl true
-      def init(opts) do
+      def init_manager(opts) do
         state = %{
           #{_format_initial_state(state_fields, opts)}
         }
@@ -96,12 +96,12 @@ defmodule Raxol.Core.Standards.CodeGenerator do
       Starts the supervisor.
       \"\"\"
       @spec start_link(keyword()) :: Supervisor.on_start()
-      def start_link(opts \\\\ []) do
-        Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
-      end
+#       def start_link(opts \\\\ []) do
+#         Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
+#       end
 
       @impl true
-      def init(_opts) do
+      def init_manager(_opts) do
         children = [
           #{format_children_specs(children)}
         ]
@@ -385,7 +385,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
         :get_state ->
           """
           @impl true
-          def handle_call(:get_state, _from, state) do
+          def handle_manager_call(:get_state, _from, state) do
             {:reply, {:ok, state}, state}
           end
           """
@@ -393,7 +393,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
         :update ->
           """
           @impl true
-          def handle_call({:update, data}, _from, state) do
+          def handle_manager_call({:update, data}, _from, state) do
             case validate_update(data) do
               {:ok, valid_data} ->
                 new_state = Map.merge(state, valid_data)

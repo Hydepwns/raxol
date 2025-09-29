@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
   Handles mode dependencies, conflicts, and state persistence.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Terminal.Modes.Types.ModeTypes
@@ -16,12 +16,7 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
 
   # Client API
 
-  @doc """
-  Starts the ModeStateManager process.
-  """
-  def start_link(init_arg) do
-    GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
-  end
+  # BaseManager provides start_link
 
   @doc """
   Creates a new mode state with default values.
@@ -71,34 +66,34 @@ defmodule Raxol.Terminal.Modes.ModeStateManager do
 
   # Server Callbacks
 
-  @impl GenServer
-  def init(_init_arg) do
+  @impl true
+  def init_manager(_init_arg) do
     {:ok, new()}
   end
 
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
+  @impl true
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl GenServer
-  def handle_call({:set_mode, mode_name, value}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_mode, mode_name, value}, _from, state) do
     case set_mode(state, mode_name, value) do
       {:ok, new_state} -> {:reply, :ok, new_state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call({:reset_mode, mode_name}, _from, state) do
+  @impl true
+  def handle_manager_call({:reset_mode, mode_name}, _from, state) do
     case reset_mode(state, mode_name) do
       {:ok, new_state} -> {:reply, :ok, new_state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call({:get_mode, mode_name}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_mode, mode_name}, _from, state) do
     value = mode_enabled?(state, mode_name)
     {:reply, value, state}
   end

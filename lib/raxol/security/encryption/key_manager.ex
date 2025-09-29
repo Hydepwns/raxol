@@ -16,7 +16,8 @@ defmodule Raxol.Security.Encryption.KeyManager do
   - Audit logging for all key operations
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   alias Raxol.Audit.Logger, as: AuditLogger
@@ -63,16 +64,6 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
   ## Client API
 
-  @doc """
-  Starts the key manager.
-  """
-  def start_link(opts \\ []) do
-    config =
-      Keyword.get(opts, :config, %{})
-      |> then(&Map.merge(@default_config, &1))
-
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
 
   @doc """
   Generates a new data encryption key.
@@ -84,14 +75,14 @@ defmodule Raxol.Security.Encryption.KeyManager do
   @doc """
   Gets an encryption key by ID and version.
   """
-  def get_key(key_manager \\ __MODULE__, key_id, version \\ :latest) do
+  def get_key(key_id, version \\ :latest, key_manager \\ __MODULE__) do
     GenServer.call(key_manager, {:get_key, key_id, version})
   end
 
   @doc """
   Encrypts data using the specified key.
   """
-  def encrypt(key_manager \\ __MODULE__, key_id, plaintext, opts \\ []) do
+  def encrypt(key_id, plaintext, opts \\ [], key_manager \\ __MODULE__) do
     GenServer.call(key_manager, {:encrypt, key_id, plaintext, opts})
   end
 
@@ -99,11 +90,11 @@ defmodule Raxol.Security.Encryption.KeyManager do
   Decrypts data using the specified key.
   """
   def decrypt(
-        key_manager \\ __MODULE__,
         key_id,
         ciphertext,
         version,
-        opts \\ []
+        opts \\ [],
+        key_manager \\ __MODULE__
       ) do
     GenServer.call(key_manager, {:decrypt, key_id, ciphertext, version, opts})
   end
@@ -111,7 +102,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
   @doc """
   Rotates a key to a new version.
   """
-  def rotate_key(key_manager \\ __MODULE__, key_id) do
+  def rotate_key(key_id, key_manager \\ __MODULE__) do
     GenServer.call(key_manager, {:rotate_key, key_id})
   end
 
@@ -157,10 +148,12 @@ defmodule Raxol.Security.Encryption.KeyManager do
     GenServer.call(key_manager, {:delete_key, key_id})
   end
 
-  ## GenServer Implementation
+  ## BaseManager Implementation
 
-  @impl GenServer
-  def init(config) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
+    base_config = Keyword.get(opts, :config, %{})
+    config = Map.merge(@default_config, base_config)
     # Initialize master key
     master_key = init_master_key(config)
 
@@ -197,15 +190,15 @@ defmodule Raxol.Security.Encryption.KeyManager do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:generate_dek, purpose, opts}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:generate_dek, purpose, opts}, _from, state) do
     {:ok, key, new_state} = generate_data_encryption_key(purpose, opts, state)
     audit_key_operation(:generate, key.id, purpose)
     {:reply, {:ok, key}, new_state}
   end
 
-  @impl GenServer
-  def handle_call({:get_key, key_id, version}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_key, key_id, version}, _from, state) do
     case retrieve_key(key_id, version, state) do
       {:ok, key, new_state} ->
         audit_key_operation(:access, key_id, version)
@@ -216,8 +209,8 @@ defmodule Raxol.Security.Encryption.KeyManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:encrypt, key_id, plaintext, opts}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:encrypt, key_id, plaintext, opts}, _from, state) do
     case perform_encryption(key_id, plaintext, opts, state) do
       {:ok, ciphertext, new_state} ->
         audit_key_operation(:encrypt, key_id, byte_size(plaintext))
@@ -228,8 +221,8 @@ defmodule Raxol.Security.Encryption.KeyManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:decrypt, key_id, ciphertext, version, opts}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:decrypt, key_id, ciphertext, version, opts}, _from, state) do
     case perform_decryption(key_id, ciphertext, version, opts, state) do
       {:ok, plaintext, new_state} ->
         audit_key_operation(:decrypt, key_id, version)
@@ -240,8 +233,8 @@ defmodule Raxol.Security.Encryption.KeyManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:rotate_key, key_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:rotate_key, key_id}, _from, state) do
     case rotate_encryption_key(key_id, state) do
       {:ok, new_version, new_state} ->
         audit_key_operation(:rotate, key_id, new_version)
@@ -252,8 +245,8 @@ defmodule Raxol.Security.Encryption.KeyManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:reencrypt, key_id, ciphertext, old_version}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:reencrypt, key_id, ciphertext, old_version}, _from, state) do
     case reencrypt_data(key_id, ciphertext, old_version, state) do
       {:ok, new_ciphertext, new_state} ->
         audit_key_operation(:reencrypt, key_id, {old_version, :latest})
@@ -264,8 +257,8 @@ defmodule Raxol.Security.Encryption.KeyManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:wrap_key, dek, kek_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:wrap_key, dek, kek_id}, _from, state) do
     case wrap_data_key(dek, kek_id, state) do
       {:ok, wrapped_key, new_state} ->
         audit_key_operation(:wrap, kek_id, dek.id)
@@ -276,8 +269,8 @@ defmodule Raxol.Security.Encryption.KeyManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:unwrap_key, wrapped_dek, kek_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:unwrap_key, wrapped_dek, kek_id}, _from, state) do
     case unwrap_data_key(wrapped_dek, kek_id, state) do
       {:ok, dek, new_state} ->
         audit_key_operation(:unwrap, kek_id, nil)
@@ -288,33 +281,33 @@ defmodule Raxol.Security.Encryption.KeyManager do
     end
   end
 
-  @impl GenServer
-  def handle_call({:get_key_metadata, key_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:get_key_metadata, key_id}, _from, state) do
     metadata = get_metadata(key_id, state)
     {:reply, {:ok, metadata}, state}
   end
 
-  @impl GenServer
-  def handle_call(:list_keys, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:list_keys, _from, state) do
     keys = list_all_keys(state)
     {:reply, {:ok, keys}, state}
   end
 
-  @impl GenServer
-  def handle_call({:delete_key, key_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:delete_key, key_id}, _from, state) do
     {:ok, new_state} = mark_key_deleted(key_id, state)
     audit_key_operation(:delete, key_id, nil)
     {:reply, :ok, new_state}
   end
 
-  @impl GenServer
-  def handle_info(:check_key_rotation, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:check_key_rotation, state) do
     new_state = check_and_rotate_keys(state)
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_info(:cleanup_cache, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_info(:cleanup_cache, state) do
     new_state = cleanup_expired_cache(state)
     {:noreply, new_state}
   end

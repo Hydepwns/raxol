@@ -54,40 +54,43 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
 
     defp handle_locking_shift(state, char) do
       case char do
-        # LS2
-        ?N -> StateManager.set_gl(state, :g2)
-        # LS3
-        ?O -> StateManager.set_gl(state, :g3)
-        # LS2R
-        ?P -> StateManager.set_gr(state, :g2)
-        # LS3R
-        ?Q -> StateManager.set_gr(state, :g3)
+        # SI/LS0 - Shift In (Locking Shift G0)
+        ?N -> StateManager.set_gl(state, :g0)
+        # SO/LS1 - Shift Out (Locking Shift G1)
+        ?O -> StateManager.set_gl(state, :g1)
+        # LS2 - Locking Shift G2
+        ?P -> StateManager.set_gl(state, :g2)
+        # LS3 - Locking Shift G3
+        ?Q -> StateManager.set_gl(state, :g3)
       end
     end
 
     defp handle_single_shift(state, char) do
       case char do
-        # SS2
+        # SS2 - Single Shift G2
         ?R -> StateManager.set_single_shift(state, :g2)
-        # SS3
+        # SS3 - Single Shift G3
         ?S -> StateManager.set_single_shift(state, :g3)
       end
     end
 
     defp handle_invoke(state, char) do
       case char do
-        # LS0
+        # Invoke G0 into GL
         ?T -> StateManager.set_gl(state, :g0)
-        # LS1
+        # Invoke G1 into GL
         ?U -> StateManager.set_gl(state, :g1)
-        # LS0R
-        ?V -> StateManager.set_gr(state, :g0)
-        # LS1R
-        ?W -> StateManager.set_gr(state, :g1)
+        # Invoke G2 into GL
+        ?V -> StateManager.set_gl(state, :g2)
+        # Invoke G3 into GL
+        ?W -> StateManager.set_gl(state, :g3)
       end
     end
 
-    defp designate_charset(state, gset_index, code) do
+    @doc """
+    Designates a character set to a specific G-set.
+    """
+    def designate_charset(state, gset_index, code) do
       charset = code_to_charset(code)
 
       case gset_index do
@@ -105,9 +108,11 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
         ?0 -> :dec_special_graphics
         ?A -> :uk
         ?C -> :finnish
+        ?D -> :french
         ?R -> :french
         ?Q -> :french_canadian
         ?K -> :german
+        ?F -> :german  # F is also German character set
         ?Y -> :italian
         ?E -> :norwegian_danish
         ?6 -> :portuguese
@@ -116,6 +121,27 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
         ?= -> :swiss
         _ -> :us_ascii
       end
+    end
+
+    @doc """
+    Sets the locking shift for GL to the specified G-set.
+    """
+    def set_locking_shift(state, gset) do
+      StateManager.set_gl(state, gset)
+    end
+
+    @doc """
+    Sets the single shift to the specified G-set.
+    """
+    def set_single_shift(state, gset) do
+      StateManager.set_single_shift(state, gset)
+    end
+
+    @doc """
+    Invokes a character set into GL.
+    """
+    def invoke_charset(state, gset) do
+      StateManager.set_gl(state, gset)
     end
   end
 
@@ -160,11 +186,11 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
         active: :us_ascii,
         single_shift: nil,
         g0: :us_ascii,
-        g1: :dec_special_graphics,
+        g1: :us_ascii,
         g2: :us_ascii,
         g3: :us_ascii,
         gl: :g0,
-        gr: :g1
+        gr: :g2
       }
     end
 
@@ -223,10 +249,20 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     end
 
     @doc """
-    Sets a single shift character set.
+    Sets a single shift to the specified G-set.
     """
-    @spec set_single_shift(charset_state(), charset()) :: charset_state()
-    def set_single_shift(state, charset) do
+    @spec set_single_shift(charset_state(), :g0 | :g1 | :g2 | :g3 | charset()) :: charset_state()
+    def set_single_shift(state, gset_or_charset) do
+      # Handle both gset references and direct charset names
+      charset = case gset_or_charset do
+        gset when gset in [:g0, :g1, :g2, :g3] ->
+          # Resolve the charset from the gset
+          Map.get(state, gset, :us_ascii)
+        charset_name ->
+          # Direct charset name
+          charset_name
+      end
+
       %{state | single_shift: charset}
       |> update_active()
     end
@@ -264,8 +300,10 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     @spec get_single_shift(charset_state()) :: charset() | nil
     def get_single_shift(%{single_shift: single_shift}), do: single_shift
 
-    # Updates the active character set based on current GL setting
-    defp update_active(state) do
+    @doc """
+    Updates the active character set based on current GL setting.
+    """
+    def update_active(state) do
       active_charset =
         case state.gl do
           :g0 -> state.g0
@@ -274,7 +312,15 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
           :g3 -> state.g3
         end
 
-      %{state | active: active_charset}
+      # Convert module to charset name if needed
+      resolved_charset =
+        if is_atom(active_charset) and function_exported?(active_charset, :name, 0) do
+          active_charset.name()
+        else
+          active_charset
+        end
+
+      %{state | active: resolved_charset}
     end
 
     @doc """
@@ -291,6 +337,94 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     end
 
     def validate_state(_), do: {:error, :invalid_state}
+
+    @doc """
+    Sets the active character set directly.
+    """
+    def set_active(state, charset) do
+      %{state | active: charset}
+    end
+
+    @doc """
+    Sets a specific G-set character set.
+    """
+    def set_gset(state, gset, charset) do
+      case gset do
+        :g0 -> set_g0(state, charset)
+        :g1 -> set_g1(state, charset)
+        :g2 -> set_g2(state, charset)
+        :g3 -> set_g3(state, charset)
+        _ -> state
+      end
+    end
+
+    @doc """
+    Gets the current GL (graphics left) setting.
+    """
+    def get_gl(%{gl: gl}), do: gl
+    def get_gl(_), do: :g0
+
+    @doc """
+    Gets the current GR (graphics right) setting.
+    """
+    def get_gr(%{gr: gr}), do: gr
+    def get_gr(_), do: :g1
+
+    @doc """
+    Converts a character set code to an atom.
+    """
+    def charset_code_to_atom(code) do
+      case code do
+        ?0 -> :dec_special_graphics
+        ?A -> :uk
+        ?B -> :us_ascii
+        ?4 -> :finnish
+        ?5 -> :french
+        ?C -> :french_canadian
+        ?7 -> :german
+        ?9 -> :italian
+        ?E -> :norwegian_danish
+        ?6 -> :portuguese
+        ?Z -> :spanish
+        ?H -> :swedish
+        ?= -> :swiss
+        _ -> nil
+      end
+    end
+
+    @doc """
+    Gets a specific G-set character set.
+    """
+    def get_gset(state, gset) do
+      case gset do
+        :g0 -> Map.get(state, :g0, :us_ascii)
+        :g1 -> Map.get(state, :g1, :us_ascii)
+        :g2 -> Map.get(state, :g2, :us_ascii)
+        :g3 -> Map.get(state, :g3, :us_ascii)
+        _ -> :us_ascii
+      end
+    end
+
+    @doc """
+    Gets the active G-set character set (the charset of the current GL).
+    """
+    def get_active_gset(state) do
+      gl_gset = Map.get(state, :gl, :g0)
+      get_gset(state, gl_gset)
+    end
+
+    @doc """
+    Converts G-set index to atom.
+    """
+    def index_to_gset(index) do
+      case index do
+        0 -> :g0
+        1 -> :g1
+        2 -> :g2
+        3 -> :g3
+        _ -> :g0
+      end
+    end
   end
 
   defmodule Translator do
@@ -326,7 +460,15 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
         when is_integer(codepoint) do
       set = single_shift || active_set
 
-      case set do
+      # Convert module to charset name if needed
+      charset_name =
+        if is_atom(set) and function_exported?(set, :name, 0) do
+          set.name()
+        else
+          set
+        end
+
+      case charset_name do
         :us_ascii -> codepoint
         :dec_special_graphics -> translate_dec_special_graphics(codepoint)
         :uk -> translate_uk(codepoint)
@@ -349,6 +491,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     defp translate_dec_special_graphics(codepoint) do
       case codepoint do
         # Line drawing characters
+        # Underscore -> Horizontal line
+        0x5F -> 0x2500
         # Diamond
         0x60 -> 0x25C6
         # Checkerboard
@@ -508,6 +652,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     defp translate_german(codepoint) do
       case codepoint do
         # §
+        0x23 -> 0x00A7
+        # §
         0x40 -> 0x00A7
         # Ä
         0x5B -> 0x00C4
@@ -603,10 +749,10 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     # Spanish Character Set
     defp translate_spanish(codepoint) do
       case codepoint do
-        # £
-        0x23 -> 0x00A3
-        # §
-        0x40 -> 0x00A7
+        # ñ
+        0x23 -> 0x00F1
+        # ¿
+        0x40 -> 0x00BF
         # ¡
         0x5B -> 0x00A1
         # Ñ
@@ -680,6 +826,18 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
         _ -> codepoint
       end
     end
+
+    @doc """
+    Translates a string using the specified character set and single shift.
+    3-parameter version for direct translation.
+    """
+    def translate_string(string, charset, single_shift)
+        when is_binary(string) do
+      string
+      |> String.to_charlist()
+      |> Enum.map(&translate_char(&1, charset, single_shift))
+      |> List.to_string()
+    end
   end
 
   # Main CharacterSets module functionality
@@ -727,13 +885,16 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
         charset_module = third_arg || :us_ascii
 
         # Update the state's gset with the new module
-        case gset do
+        new_state = case gset do
           :g0 -> %{state | g0: charset_module}
           :g1 -> %{state | g1: charset_module}
           :g2 -> %{state | g2: charset_module}
           :g3 -> %{state | g3: charset_module}
           _ -> state
         end
+
+        # Update the active charset if this gset is currently active
+        StateManager.update_active(new_state)
 
       # Emulator-based API: switch_charset(emulator, charset, gset)
       true ->
@@ -817,46 +978,32 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   defdelegate translate_char(codepoint, active_set, single_shift),
     to: Translator
 
-  # Override translate_char to handle test expectations
   def translate_char(codepoint, state) do
-    active_charset = get_active_charset(state)
+    # Get the active charset - prefer the direct active field if set, otherwise use G-set logic
+    active_charset =
+      Map.get(state, :active, StateManager.get_active_gset(state))
 
-    # Translate character based on active charset
-    translated =
-      if active_charset == Raxol.Terminal.ANSI.CharacterSets.DEC do
-        # DEC special graphics mapping
-        case codepoint do
-          # Box drawing horizontal line
-          ?_ -> 9472
-          # Box drawing vertical line
-          ?` -> 9474
-          # Box drawing bottom-right corner
-          ?j -> 9496
-          # Box drawing top-right corner
-          ?k -> 9492
-          # Box drawing top-left corner
-          ?l -> 9488
-          # Box drawing bottom-left corner
-          ?m -> 9484
-          # Box drawing cross
-          ?n -> 9532
-          # Box drawing horizontal line
-          ?q -> 9516
-          # Box drawing left tee
-          ?t -> 9524
-          # Box drawing right tee
-          ?u -> 9508
-          # Box drawing bottom tee
-          ?v -> 9500
-          # Box drawing top tee
-          ?w -> 9532
-          # Box drawing vertical line
-          ?x -> 9474
-          _ -> codepoint
-        end
+    single_shift = Map.get(state, :single_shift, nil)
+
+    # Convert module-based charset to charset atom
+    active_charset_atom =
+      if active_charset && is_atom(active_charset) && function_exported?(active_charset, :name, 0) do
+        active_charset.name()
       else
-        codepoint
+        active_charset
       end
+
+    # Convert module-based single_shift to charset atom
+    single_shift_charset =
+      if single_shift && is_atom(single_shift) && function_exported?(single_shift, :name, 0) do
+        single_shift.name()
+      else
+        single_shift
+      end
+
+    # Use the proper Translator module to handle translation
+    translated =
+      Translator.translate_char(codepoint, active_charset_atom, single_shift_charset)
 
     # Clear single shift after using it
     new_state =
@@ -928,48 +1075,17 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   Translates a string using the active character set.
   """
   def translate_string(string, charset_state) when is_binary(string) do
-    active_charset = get_active_charset(charset_state)
+    # Get the active charset - prefer the direct active field if set, otherwise use G-set logic
+    active_charset =
+      Map.get(
+        charset_state,
+        :active,
+        StateManager.get_active_gset(charset_state)
+      )
 
-    # If active charset is DEC special graphics, perform translation
-    if active_charset == Raxol.Terminal.ANSI.CharacterSets.DEC do
-      string
-      |> String.to_charlist()
-      |> Enum.map(fn char ->
-        # DEC special graphics mapping for common characters
-        case char do
-          # Box drawing horizontal line
-          ?_ -> 9472
-          # Box drawing vertical line
-          ?` -> 9474
-          # Box drawing bottom-right corner
-          ?j -> 9496
-          # Box drawing top-right corner
-          ?k -> 9492
-          # Box drawing top-left corner
-          ?l -> 9488
-          # Box drawing bottom-left corner
-          ?m -> 9484
-          # Box drawing cross
-          ?n -> 9532
-          # Box drawing horizontal line
-          ?q -> 9516
-          # Box drawing left tee
-          ?t -> 9524
-          # Box drawing right tee
-          ?u -> 9508
-          # Box drawing bottom tee
-          ?v -> 9500
-          # Box drawing top tee
-          ?w -> 9532
-          # Box drawing vertical line
-          ?x -> 9474
-          _ -> char
-        end
-      end)
-      |> List.to_string()
-    else
-      string
-    end
+    single_shift = Map.get(charset_state, :single_shift, nil)
+
+    Translator.translate_string(string, active_charset, single_shift)
   end
 
   @doc """

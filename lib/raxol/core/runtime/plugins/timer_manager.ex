@@ -1,56 +1,55 @@
 defmodule Raxol.Core.Runtime.Plugins.TimerManager do
   @moduledoc """
   Handles timer management for plugin operations including periodic ticks and file event timers.
+
+  This module has been enhanced to use the centralized TimerManager for consistent
+  timer handling across the plugin system.
   """
 
   require Raxol.Core.Runtime.Log
 
+  alias Raxol.Core.Utils.TimerManager
+
   @doc """
-  Cancels an existing timer.
+  Cancels an existing timer using the centralized TimerManager.
   """
   def cancel_existing_timer(state) do
     case state.file_event_timer do
       nil ->
         state
 
-      timer_ref when is_reference(timer_ref) ->
+      timer_ref ->
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Cancelling existing file event timer",
           %{timer_ref: timer_ref}
         )
 
-        _ = Process.cancel_timer(timer_ref)
+        TimerManager.safe_cancel(timer_ref)
         %{state | file_event_timer: nil}
-
-      _ ->
-        state
     end
   end
 
   @doc """
-  Cancels a periodic tick timer.
+  Cancels a periodic tick timer using the centralized TimerManager.
   """
   def cancel_periodic_tick(state) do
     case state.tick_timer do
       nil ->
         {:ok, state}
 
-      timer_ref when is_reference(timer_ref) ->
+      timer_ref ->
         Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Cancelling periodic tick timer",
           %{timer_ref: timer_ref}
         )
 
-        _ = Process.cancel_timer(timer_ref)
+        TimerManager.safe_cancel(timer_ref)
         {:ok, %{state | tick_timer: nil}}
-
-      _ ->
-        {:ok, state}
     end
   end
 
   @doc """
-  Starts a periodic tick timer.
+  Starts a periodic tick timer using the centralized TimerManager.
   """
   def start_periodic_tick(state, interval \\ 5000) do
     Raxol.Core.Runtime.Log.info(
@@ -58,12 +57,12 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
       %{interval: interval}
     )
 
-    timer_ref = Process.send_after(self(), :tick, interval)
+    timer_ref = TimerManager.send_after(:tick, interval)
     %{state | tick_timer: timer_ref}
   end
 
   @doc """
-  Schedules a file event timer.
+  Schedules a file event timer using the centralized TimerManager.
   """
   def schedule_file_event_timer(state, plugin_id, path, interval \\ 1000) do
     Raxol.Core.Runtime.Log.info(
@@ -74,13 +73,8 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManager do
     # Cancel existing timer first
     new_state = cancel_existing_timer(state)
 
-    # Schedule new timer
-    timer_ref =
-      Process.send_after(
-        self(),
-        {:reload_plugin_file_debounced, plugin_id, path},
-        interval
-      )
+    # Schedule new timer using TimerManager
+    timer_ref = TimerManager.send_after({:reload_plugin_file_debounced, plugin_id, path}, interval)
 
     %{new_state | file_event_timer: timer_ref}
   end

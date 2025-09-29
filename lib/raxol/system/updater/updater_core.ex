@@ -2,7 +2,7 @@ defmodule Raxol.System.Updater.Core do
   @moduledoc """
   Core update logic and GenServer callbacks for the Raxol System Updater.
   """
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
 
   require Logger
 
@@ -13,9 +13,9 @@ defmodule Raxol.System.Updater.Core do
 
   # --- Client API ---
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+#  def start_link(opts \\ []) do
+#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+#  end
 
   def check_for_updates do
     settings = State.get_update_settings()
@@ -187,8 +187,8 @@ defmodule Raxol.System.Updater.Core do
 
   # --- Server Callbacks ---
 
-  @impl GenServer
-  def init(_opts) do
+  @impl true
+  def init_manager(_opts) do
     state = %{
       settings: State.default_update_settings(),
       status: :idle,
@@ -201,27 +201,27 @@ defmodule Raxol.System.Updater.Core do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call({:install_update, version}, _from, state) do
+  @impl true
+  def handle_manager_call({:install_update, version}, _from, state) do
     case perform_install_update(version, state) do
       {:ok, new_state} -> {:reply, :ok, new_state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call(:get_update_settings, _from, state) do
+  @impl true
+  def handle_manager_call(:get_update_settings, _from, state) do
     {:reply, state.settings, state}
   end
 
-  @impl GenServer
-  def handle_call({:set_update_settings, settings}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_update_settings, settings}, _from, state) do
     state = %{state | settings: settings}
     {:reply, :ok, state}
   end
 
-  @impl GenServer
-  def handle_call(:check_for_updates, _from, state) do
+  @impl true
+  def handle_manager_call(:check_for_updates, _from, state) do
     case check_updates(state) do
       {:ok, updates} ->
         state = %{
@@ -240,8 +240,8 @@ defmodule Raxol.System.Updater.Core do
     end
   end
 
-  @impl GenServer
-  def handle_call(:get_update_status, _from, state) do
+  @impl true
+  def handle_manager_call(:get_update_status, _from, state) do
     status = %{
       current_version: state.current_version,
       available_updates: state.available_updates,

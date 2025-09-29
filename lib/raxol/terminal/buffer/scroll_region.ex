@@ -20,6 +20,7 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
   """
 
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.ScreenBuffer.Core, as: ScreenBufferCore
   alias Raxol.Terminal.Cell
   require Raxol.Core.Runtime.Log
 
@@ -363,6 +364,18 @@ defmodule Raxol.Terminal.Buffer.ScrollRegion do
     do: {start, min(height - 1, ending)}
 
   defp get_buffer_region(%ScreenBuffer{scroll_region: region, height: height}) do
+    case region do
+      {start, ending}
+      when is_integer(start) and start >= 0 and is_integer(ending) and
+             ending >= start ->
+        clamp_region({start, ending}, height)
+
+      _ ->
+        {0, height - 1}
+    end
+  end
+
+  defp get_buffer_region(%ScreenBufferCore{scroll_region: region, height: height}) do
     case region do
       {start, ending}
       when is_integer(start) and start >= 0 and is_integer(ending) and

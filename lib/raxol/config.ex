@@ -10,7 +10,8 @@ defmodule Raxol.Config do
   - Supports default values and overrides
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   @default_config_file "config/raxol.toml"
@@ -26,9 +27,9 @@ defmodule Raxol.Config do
   @doc """
   Starts the configuration server.
   """
-  @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  @spec start_link_legacy(keyword()) :: GenServer.on_start()
+  def start_link_legacy(opts \\ []) do
+    __MODULE__.start_link(Keyword.put(opts, :name, __MODULE__))
   end
 
   @doc """
@@ -101,8 +102,8 @@ defmodule Raxol.Config do
 
   ## Server Callbacks
 
-  @impl true
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     config_file = opts[:config_file] || @default_config_file
     env = opts[:env] || Mix.env()
 

@@ -28,7 +28,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
       })
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   @type coordinates :: %{x: non_neg_integer(), y: non_neg_integer()}
@@ -105,12 +105,7 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
 
   # Public API
 
-  @doc """
-  Starts the mouse interaction manager.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+  # start_link is provided by BaseManager
 
   @doc """
   Registers a graphics element for mouse interaction.
@@ -233,8 +228,8 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
 
   # GenServer Implementation
 
-  @impl true
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     config = Map.merge(@default_config, Map.new(opts))
 
     initial_state = %__MODULE__{
@@ -250,8 +245,10 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
     {:ok, initial_state}
   end
 
-  @impl true
-  def handle_call(
+
+
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(
         {:register_element, graphics_id, element_config},
         _from,
         state
@@ -267,14 +264,14 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
     end
   end
 
-  @impl true
-  def handle_call({:unregister_element, graphics_id}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:unregister_element, graphics_id}, _from, state) do
     elements = Map.delete(state.interactive_elements, graphics_id)
     {:reply, :ok, %{state | interactive_elements: elements}}
   end
 
-  @impl true
-  def handle_call({:handle_mouse_event, mouse_event}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:handle_mouse_event, mouse_event}, _from, state) do
     # Add timestamp if not present
     event =
       Map.put_new(mouse_event, :timestamp, System.system_time(:millisecond))
@@ -289,8 +286,8 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
     {:reply, result, new_state}
   end
 
-  @impl true
-  def handle_call({:update_bounds, graphics_id, new_bounds}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:update_bounds, graphics_id, new_bounds}, _from, state) do
     case Map.get(state.interactive_elements, graphics_id) do
       nil ->
         {:reply, {:error, :element_not_found}, state}
@@ -305,8 +302,8 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
     end
   end
 
-  @impl true
-  def handle_call({:set_enabled, graphics_id, enabled}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_enabled, graphics_id, enabled}, _from, state) do
     case Map.get(state.interactive_elements, graphics_id) do
       nil ->
         {:reply, {:error, :element_not_found}, state}
@@ -321,29 +318,29 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
     end
   end
 
-  @impl true
-  def handle_call(:get_elements, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_elements, _from, state) do
     elements = Map.values(state.interactive_elements)
     {:reply, elements, state}
   end
 
-  @impl true
-  def handle_call(:get_selection_state, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_selection_state, _from, state) do
     {:reply, state.selection_state, state}
   end
 
-  @impl true
-  def handle_call(:clear_selection, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:clear_selection, _from, state) do
     {:reply, :ok, %{state | selection_state: nil}}
   end
 
-  @impl true
-  def handle_call(:get_drag_state, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call(:get_drag_state, _from, state) do
     {:reply, state.drag_state, state}
   end
 
-  @impl true
-  def handle_call({:set_text_selection, graphics_id, enabled}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:set_text_selection, graphics_id, enabled}, _from, state) do
     case Map.get(state.interactive_elements, graphics_id) do
       nil ->
         {:reply, {:error, :element_not_found}, state}
@@ -359,8 +356,8 @@ defmodule Raxol.Terminal.Graphics.MouseInteraction do
     end
   end
 
-  @impl true
-  def handle_call({:update_config, config_updates}, _from, state) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def handle_manager_call({:update_config, config_updates}, _from, state) do
     new_config = Map.merge(state.config, config_updates)
     {:reply, :ok, %{state | config: new_config}}
   end

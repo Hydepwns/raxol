@@ -10,7 +10,8 @@ defmodule Raxol.Core.Metrics.Visualizer do
   - Export capabilities
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   @type chart_type :: :line | :bar | :gauge | :histogram
   @type chart_options :: %{
@@ -35,12 +36,6 @@ defmodule Raxol.Core.Metrics.Visualizer do
     time_range: nil
   }
 
-  @doc """
-  Starts the metrics visualizer.
-  """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Creates a new chart with the given metrics and options.
@@ -86,8 +81,8 @@ defmodule Raxol.Core.Metrics.Visualizer do
     GenServer.stop(pid)
   end
 
-  @impl GenServer
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     state = %{
       charts: %{},
       next_chart_id: 1,

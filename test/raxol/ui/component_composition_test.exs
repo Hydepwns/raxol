@@ -2,7 +2,6 @@ defmodule Raxol.UI.ComponentCompositionTest do
   use ExUnit.Case
   alias Raxol.UI.Renderer
   alias Raxol.Test.RendererTestHelper, as: Helper
-  import Raxol.Test.Visual.Assertions
 
   setup do
     # UserPreferences is already started by the supervision tree in test_helper.exs
@@ -11,6 +10,10 @@ defmodule Raxol.UI.ComponentCompositionTest do
 
     # Initialize theme system
     Raxol.UI.Theming.Theme.init()
+
+    # Start AccessibilityServer under supervision for this test with proper name
+    {:ok, _pid} = start_supervised({Raxol.Core.Accessibility.AccessibilityServer,
+      [name: Raxol.Core.Accessibility.AccessibilityServer]})
 
     # Initialize accessibility system with default settings
     Raxol.Core.Accessibility.init()

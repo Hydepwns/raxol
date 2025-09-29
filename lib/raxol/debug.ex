@@ -12,6 +12,7 @@ defmodule Raxol.Debug do
 
   require Logger
   use Raxol.Core.Behaviours.BaseManager
+
   alias Raxol.Core.Utils.TimerManager
 
   @debug_levels [:off, :basic, :detailed, :verbose]

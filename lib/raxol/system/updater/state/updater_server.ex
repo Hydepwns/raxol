@@ -13,7 +13,7 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
   - Supervised state management
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   @update_settings_file "~/.raxol/update_settings.json"
@@ -23,9 +23,9 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
   @doc """
   Starts the System Updater State server.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+#  def start_link(opts \\ []) do
+#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+#  end
 
   @doc """
   Returns a child specification for this server.
@@ -117,7 +117,7 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
   # Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init_manager(_opts) do
     # Load settings from file or use defaults
     settings = load_or_default_settings()
 
@@ -138,12 +138,12 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
 
   # Handle settings retrieval
   @impl true
-  def handle_call(:get_update_settings, _from, state) do
+  def handle_manager_call(:get_update_settings, _from, state) do
     {:reply, state.settings, state}
   end
 
   @impl true
-  def handle_call({:set_update_settings, settings}, _from, state) do
+  def handle_manager_call({:set_update_settings, settings}, _from, state) do
     # Save to disk
     case save_update_settings(settings) do
       :ok ->
@@ -156,13 +156,13 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
 
   # Handle history management
   @impl true
-  def handle_call(:get_update_history, _from, state) do
+  def handle_manager_call(:get_update_history, _from, state) do
     history = load_history(state.settings)
     {:reply, {:ok, history}, %{state | history: history}}
   end
 
   @impl true
-  def handle_call(:clear_update_history, _from, state) do
+  def handle_manager_call(:clear_update_history, _from, state) do
     history_file =
       Path.join(state.settings.download_path, "update_history.json")
 
@@ -177,22 +177,22 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
 
   # Handle progress tracking
   @impl true
-  def handle_call(:get_update_progress, _from, state) do
+  def handle_manager_call(:get_update_progress, _from, state) do
     {:reply, state.update_progress, state}
   end
 
   @impl true
-  def handle_call({:set_update_progress, progress}, _from, state) do
+  def handle_manager_call({:set_update_progress, progress}, _from, state) do
     {:reply, :ok, %{state | update_progress: progress}}
   end
 
   @impl true
-  def handle_call({:set_update_pid, pid}, _from, state) do
+  def handle_manager_call({:set_update_pid, pid}, _from, state) do
     {:reply, :ok, %{state | update_pid: pid}}
   end
 
   @impl true
-  def handle_call(:cancel_update, _from, state) do
+  def handle_manager_call(:cancel_update, _from, state) do
     case state.update_pid do
       nil ->
         {:reply, {:error, :no_update_in_progress}, state}
@@ -205,23 +205,23 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
 
   # Handle error tracking
   @impl true
-  def handle_call(:get_update_error, _from, state) do
+  def handle_manager_call(:get_update_error, _from, state) do
     {:reply, state.update_error, state}
   end
 
   @impl true
-  def handle_call({:set_update_error, error}, _from, state) do
+  def handle_manager_call({:set_update_error, error}, _from, state) do
     {:reply, :ok, %{state | update_error: error}}
   end
 
   @impl true
-  def handle_call(:clear_update_error, _from, state) do
+  def handle_manager_call(:clear_update_error, _from, state) do
     {:reply, :ok, %{state | update_error: nil}}
   end
 
   # Handle logging
   @impl true
-  def handle_call(:get_update_log, _from, state) do
+  def handle_manager_call(:get_update_log, _from, state) do
     log_file = Path.join(state.settings.download_path, "update.log")
 
     result =
@@ -235,7 +235,7 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
   end
 
   @impl true
-  def handle_call(:clear_update_log, _from, state) do
+  def handle_manager_call(:clear_update_log, _from, state) do
     log_file = Path.join(state.settings.download_path, "update.log")
 
     result =
@@ -249,13 +249,13 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
 
   # Handle statistics
   @impl true
-  def handle_call(:get_update_stats, _from, state) do
+  def handle_manager_call(:get_update_stats, _from, state) do
     stats = load_stats(state.settings)
     {:reply, {:ok, stats}, %{state | stats: stats}}
   end
 
   @impl true
-  def handle_call(:clear_update_stats, _from, state) do
+  def handle_manager_call(:clear_update_stats, _from, state) do
     stats_file = Path.join(state.settings.download_path, "update_stats.json")
     new_stats = default_stats()
 
@@ -269,7 +269,7 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
   end
 
   @impl true
-  def handle_call({:update_stats, stats}, _from, state) do
+  def handle_manager_call({:update_stats, stats}, _from, state) do
     stats_file = Path.join(state.settings.download_path, "update_stats.json")
 
     case File.write(stats_file, Jason.encode!(stats)) do
@@ -283,7 +283,7 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
 
   # Handle auto-check setting
   @impl true
-  def handle_call({:set_auto_check, enabled}, _from, state)
+  def handle_manager_call({:set_auto_check, enabled}, _from, state)
       when is_boolean(enabled) do
     updated_settings = Map.put(state.settings, :auto_check, enabled)
 
@@ -297,7 +297,7 @@ defmodule Raxol.System.Updater.State.UpdaterServer do
   end
 
   @impl true
-  def handle_cast({:log_update, message}, state) do
+  def handle_manager_cast({:log_update, message}, state) do
     log_file = Path.join(state.settings.download_path, "update.log")
     timestamp = DateTime.utc_now() |> DateTime.to_iso8601()
     log_entry = "[#{timestamp}] #{message}\n"

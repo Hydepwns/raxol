@@ -11,7 +11,9 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
   - Dependency management
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+  @behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Plugin Manifest
@@ -52,7 +54,8 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
   ]
 
   # Initialization
-  def init(config) do
+  @impl true
+  def init_manager(config) do
     Logger.info("[CommandPalette] Initializing with config: #{inspect(config)}")
 
     state = %__MODULE__{
@@ -419,12 +422,14 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
     System.cmd("open", ["https://docs.raxol.io"])
   end
 
-  # GenServer callbacks
-  def handle_call(:get_state, _from, state) do
+  # BaseManager callbacks
+  @impl true
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  def handle_call({:execute_command, command_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:execute_command, command_id}, _from, state) do
     command = Enum.find(state.commands, &(&1.id == command_id))
 
     case command do
@@ -437,16 +442,19 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
     end
   end
 
-  def handle_cast({:set_emulator, pid}, state) do
+  @impl true
+  def handle_manager_cast({:set_emulator, pid}, state) do
     {:noreply, %{state | emulator_pid: pid}}
   end
 
-  def handle_cast({:add_command, command}, state) do
+  @impl true
+  def handle_manager_cast({:add_command, command}, state) do
     new_commands = [command | state.commands]
     {:noreply, %{state | commands: new_commands}}
   end
 
-  def handle_info(msg, state) do
+  @impl true
+  def handle_manager_info(msg, state) do
     Logger.debug("[CommandPalette] Received message: #{inspect(msg)}")
     {:noreply, state}
   end

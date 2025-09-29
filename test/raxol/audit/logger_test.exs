@@ -17,7 +17,7 @@ defmodule Raxol.Audit.LoggerTest do
       siem_integration: nil
     }
 
-    {:ok, _pid} = Logger.start_link(config: config)
+    {:ok, _pid} = Logger.start_link(name: Logger, config: config)
 
     on_exit(fn ->
       case Process.whereis(Logger) do

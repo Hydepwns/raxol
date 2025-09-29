@@ -51,7 +51,8 @@ defmodule Raxol.UI.ThemeResolver do
   end
 
   defp cache_available? do
-    Code.ensure_loaded?(Raxol.Performance.ETSCacheManager)
+    Code.ensure_loaded?(Raxol.Performance.ETSCacheManager) and
+      Process.whereis(Raxol.Performance.ETSCacheManager) != nil
   end
 
   @doc """

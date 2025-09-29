@@ -14,7 +14,7 @@ defmodule Raxol.Terminal.Session do
   - Session persistence and recovery
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
@@ -54,19 +54,7 @@ defmodule Raxol.Terminal.Session do
       true
   """
   @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts \\ []) do
-    id = Keyword.get(opts, :id, UUID.uuid4())
-    width = Keyword.get(opts, :width, 80)
-    height = Keyword.get(opts, :height, 24)
-    title = Keyword.get(opts, :title, "Terminal")
-    theme = Keyword.get(opts, :theme, %{})
-    auto_save = Keyword.get(opts, :auto_save, true)
-
-    GenServer.start_link(
-      __MODULE__,
-      {id, width, height, title, theme, auto_save}
-    )
-  end
+  # BaseManager provides start_link
 
   @doc """
   Stops a terminal session.
@@ -198,7 +186,19 @@ defmodule Raxol.Terminal.Session do
 
   # Callbacks
 
-  def init({id, width, height, title, theme, auto_save}) do
+  def init_manager(opts) when is_list(opts) do
+    # Handle keyword list options
+    id = Keyword.get(opts, :id, "session_#{:erlang.unique_integer([:positive])}")
+    width = Keyword.get(opts, :width, 80)
+    height = Keyword.get(opts, :height, 24)
+    title = Keyword.get(opts, :title, "Raxol Session")
+    theme = Keyword.get(opts, :theme, :default)
+    auto_save = Keyword.get(opts, :auto_save, false)
+
+    init_manager({id, width, height, title, theme, auto_save})
+  end
+
+  def init_manager({id, width, height, title, theme, auto_save}) do
     # Create emulator with explicit dimensions
     scrollback_limit =
       Application.get_env(:raxol, :terminal, [])
@@ -230,13 +230,13 @@ defmodule Raxol.Terminal.Session do
     {:ok, state}
   end
 
-  def handle_cast({:input, input}, state) do
+  def handle_manager_cast({:input, input}, state) do
     # Handle process_input with safe execution
     new_state = safe_process_input(state, input)
     {:noreply, new_state}
   end
 
-  def handle_cast(:save_session, state) do
+  def handle_manager_cast(:save_session, state) do
     _ =
       Task.start(fn ->
         safe_save_session_async(state)
@@ -245,21 +245,21 @@ defmodule Raxol.Terminal.Session do
     {:noreply, state}
   end
 
-  def handle_call(:get_state, _from, state) do
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  def handle_call({:update_config, config}, _from, state) do
+  def handle_manager_call({:update_config, config}, _from, state) do
     new_state = update_state_from_config(state, config)
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:set_auto_save, enabled}, _from, state) do
+  def handle_manager_call({:set_auto_save, enabled}, _from, state) do
     new_state = %{state | auto_save: enabled}
     {:reply, :ok, new_state}
   end
 
-  def handle_call(:save_session, _from, state) do
+  def handle_manager_call(:save_session, _from, state) do
     Raxol.Core.Runtime.Log.info(
       "Starting save_session for session: #{state.id}"
     )
@@ -268,7 +268,7 @@ defmodule Raxol.Terminal.Session do
     {:reply, result, state}
   end
 
-  def handle_info(:auto_save, state) do
+  def handle_manager_info(:auto_save, state) do
     _ = execute_auto_save(state.auto_save, state)
 
     # Schedule next auto-save

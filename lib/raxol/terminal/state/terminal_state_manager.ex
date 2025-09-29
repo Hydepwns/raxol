@@ -4,7 +4,9 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   This module is responsible for maintaining and updating the terminal's state.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+
   alias Raxol.Terminal.{Emulator, State}
   require Raxol.Core.Runtime.Log
 
@@ -13,49 +15,43 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
   @doc """
   Starts the state manager.
   """
-  @spec start_link() :: GenServer.on_start()
-  def start_link do
-    start_link([])
-  end
-
-  @doc """
-  Starts the state manager with options.
-  """
-  @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts,
-      name: Keyword.get(opts, :name, __MODULE__)
-    )
-  end
+  # BaseManager provides start_link/1 and start_link/2 automatically
 
   # Server Callbacks
 
-  def init(_opts) do
+  @impl true
+  def init_manager(_opts) do
     {:ok, new()}
   end
 
-  def handle_call(:get_state, _from, state) do
+  @impl true
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  def handle_call({:set_state, new_state}, _from, _state) do
+  @impl true
+  def handle_manager_call({:set_state, new_state}, _from, _state) do
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:get_mode, mode}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_mode, mode}, _from, state) do
     {:reply, get_in(state.modes, [mode]), state}
   end
 
-  def handle_call({:set_mode, mode, value}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_mode, mode, value}, _from, state) do
     new_state = %{state | modes: Map.put(state.modes, mode, value)}
     {:reply, new_state, new_state}
   end
 
-  def handle_call({:get_attribute, attribute}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_attribute, attribute}, _from, state) do
     {:reply, get_in(state.attributes, [attribute]), state}
   end
 
-  def handle_call({:set_attribute, attribute, value}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_attribute, attribute, value}, _from, state) do
     new_state = %{
       state
       | attributes: Map.put(state.attributes, attribute, value)
@@ -64,12 +60,14 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
     {:reply, new_state, new_state}
   end
 
-  def handle_call(:push_state, _from, state) do
+  @impl true
+  def handle_manager_call(:push_state, _from, state) do
     new_state = %{state | state_stack: [state | state.state_stack]}
     {:reply, new_state, new_state}
   end
 
-  def handle_call(:pop_state, _from, state) do
+  @impl true
+  def handle_manager_call(:pop_state, _from, state) do
     case state.state_stack do
       [popped_state | rest] ->
         new_state = %{state | state_stack: rest}
@@ -80,26 +78,31 @@ defmodule Raxol.Terminal.State.TerminalStateManager do
     end
   end
 
-  def handle_call(:get_state_stack, _from, state) do
+  @impl true
+  def handle_manager_call(:get_state_stack, _from, state) do
     {:reply, state.state_stack, state}
   end
 
-  def handle_call(:clear_state_stack, _from, state) do
+  @impl true
+  def handle_manager_call(:clear_state_stack, _from, state) do
     new_state = %{state | state_stack: []}
     {:reply, new_state, new_state}
   end
 
-  def handle_call(:reset_state, _from, _state) do
+  @impl true
+  def handle_manager_call(:reset_state, _from, _state) do
     new_state = new()
     {:reply, new_state, new_state}
   end
 
-  def handle_cast({:update_state, update_fun}, state)
+  @impl true
+  def handle_manager_cast({:update_state, update_fun}, state)
       when is_function(update_fun) do
     {:noreply, update_fun.(state)}
   end
 
-  def handle_info(_msg, state) do
+  @impl true
+  def handle_manager_info(_msg, state) do
     {:noreply, state}
   end
 

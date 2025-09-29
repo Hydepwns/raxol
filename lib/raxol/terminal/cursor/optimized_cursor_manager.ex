@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.Cursor.OptimizedCursorManager do
 
   use Raxol.Core.Behaviours.BaseManager
 
+
   require Raxol.Core.Runtime.Log
 
   defstruct row: 0,

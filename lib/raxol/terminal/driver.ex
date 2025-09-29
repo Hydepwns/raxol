@@ -10,7 +10,8 @@ defmodule Raxol.Terminal.Driver do
   - Sending parsed events to the `Dispatcher`
   - Restoring terminal state on exit
   """
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
 
   require Raxol.Core.Runtime.Log
   # Import Bitwise for bitwise operations
@@ -44,22 +45,13 @@ defmodule Raxol.Terminal.Driver do
 
   # --- Public API ---
 
-  @doc """
-  Starts the GenServer.
-  """
-  # Allow nil or pid
-  def start_link(dispatcher_pid) do
-    Raxol.Core.Runtime.Log.info(
-      "[#{__MODULE__}] start_link called for dispatcher: #{inspect(dispatcher_pid)}"
-    )
+  # BaseManager provides start_link/1 and start_link/2 automatically
+  # We can override if needed but the dispatcher_pid is passed as init argument
 
-    GenServer.start_link(__MODULE__, dispatcher_pid, name: __MODULE__)
-  end
+  # --- BaseManager Callbacks ---
 
-  # --- GenServer Callbacks ---
-
-  # dispatcher_pid can be nil here
-  def init(dispatcher_pid) do
+  @impl true
+  def init_manager(dispatcher_pid) do
     Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] init called with dispatcher: #{inspect(dispatcher_pid)}"
     )
@@ -133,9 +125,10 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  # --- GenServer handle_info callbacks ---
+  # --- BaseManager handle_info callbacks ---
 
-  def handle_info(:retry_init, %{init_retries: retries} = state)
+  @impl true
+  def handle_manager_info(:retry_init, %{init_retries: retries} = state)
       when retries < @max_init_retries do
     case initialize_termbox() do
       :ok ->
@@ -152,7 +145,8 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  def handle_info(:retry_init, state) do
+  @impl true
+  def handle_manager_info(:retry_init, state) do
     Raxol.Core.Runtime.Log.error(
       "Failed to initialize termbox after #{@max_init_retries} attempts. Terminal features will be disabled."
     )
@@ -160,7 +154,8 @@ defmodule Raxol.Terminal.Driver do
     {:noreply, state}
   end
 
-  def handle_info(
+  @impl true
+  def handle_manager_info(
         {:termbox_event, event_map},
         %{termbox_state: :initialized, dispatcher_pid: dispatcher_pid} = state
       ) do
@@ -196,12 +191,14 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  def handle_info({:termbox_event, _event_map}, state) do
+  @impl true
+  def handle_manager_info({:termbox_event, _event_map}, state) do
     # Ignore events if termbox is not initialized
     {:noreply, state}
   end
 
-  def handle_info({:termbox_error, reason}, state) do
+  @impl true
+  def handle_manager_info({:termbox_error, reason}, state) do
     Raxol.Core.Runtime.Log.error(
       "Received termbox error: #{inspect(reason)}. Attempting recovery..."
     )
@@ -212,14 +209,16 @@ defmodule Raxol.Terminal.Driver do
     end
   end
 
-  def handle_info({:register_dispatcher, pid}, state) when is_pid(pid) do
+  @impl true
+  def handle_manager_info({:register_dispatcher, pid}, state) when is_pid(pid) do
     Raxol.Core.Runtime.Log.info("Registering dispatcher PID: #{inspect(pid)}")
     # Send initial size event now that we have the PID
     send_initial_resize_event(pid)
     {:noreply, %{state | dispatcher_pid: pid}}
   end
 
-  def handle_info({:test_input, input_data}, %{dispatcher_pid: nil} = state) do
+  @impl true
+  def handle_manager_info({:test_input, input_data}, %{dispatcher_pid: nil} = state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "Received test input before dispatcher registration: #{inspect(input_data)}",
       %{}
@@ -228,7 +227,8 @@ defmodule Raxol.Terminal.Driver do
     {:noreply, state}
   end
 
-  def handle_info({:test_input, input_data}, state) do
+  @impl true
+  def handle_manager_info({:test_input, input_data}, state) do
     # Construct a basic event. Tests might need more specific event types later.
     # We need to parse the input_data into something the MockApp expects.
     Raxol.Core.Runtime.Log.debug(
@@ -249,11 +249,13 @@ defmodule Raxol.Terminal.Driver do
     {:noreply, state}
   end
 
-  def handle_info({:EXIT, _pid, _reason}, state) do
+  @impl true
+  def handle_manager_info({:EXIT, _pid, _reason}, state) do
     {:noreply, state}
   end
 
-  def handle_info(unhandled_message, state) do
+  @impl true
+  def handle_manager_info(unhandled_message, state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "#{__MODULE__} received unhandled message: #{inspect(unhandled_message)}",
       %{}
@@ -263,8 +265,9 @@ defmodule Raxol.Terminal.Driver do
   end
 
   # Forward cast messages to handle_info for test_input
-  def handle_cast({:test_input, input_data}, state) do
-    handle_info({:test_input, input_data}, state)
+  @impl true
+  def handle_manager_cast({:test_input, input_data}, state) do
+    handle_manager_info({:test_input, input_data}, state)
   end
 
   defp handle_termbox_recovery(reason, state) do

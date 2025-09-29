@@ -5,7 +5,8 @@ defmodule Raxol.Core.UserPreferences do
   Acts as a GenServer holding the preferences state and handles persistence.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Preferences.Persistence
@@ -18,14 +19,9 @@ defmodule Raxol.Core.UserPreferences do
               save_timer: nil
   end
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts,
-      name: Keyword.get(opts, :name, __MODULE__)
-    )
-  end
 
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     preferences = initialize_preferences(Keyword.get(opts, :test_mode?, false))
     {:ok, %State{preferences: preferences}}
   end
@@ -62,15 +58,15 @@ defmodule Raxol.Core.UserPreferences do
     end
   end
 
-  @impl GenServer
-  def handle_call({:get, key_or_path}, _from, state) do
+  @impl true
+  def handle_manager_call({:get, key_or_path}, _from, state) do
     path = normalize_path(key_or_path)
     value = get_in(state.preferences, path)
     {:reply, value, state}
   end
 
-  @impl GenServer
-  def handle_call({:set, key_or_path, value}, from, state) do
+  @impl true
+  def handle_manager_call({:set, key_or_path, value}, from, state) do
     path = normalize_path(key_or_path)
     current_value = get_in(state.preferences, path)
 
@@ -84,13 +80,13 @@ defmodule Raxol.Core.UserPreferences do
     )
   end
 
-  @impl GenServer
-  def handle_call(:get_all, _from, state) do
+  @impl true
+  def handle_manager_call(:get_all, _from, state) do
     {:reply, state.preferences, state}
   end
 
-  @impl GenServer
-  def handle_call({:set_preferences, preferences}, from, state) do
+  @impl true
+  def handle_manager_call({:set_preferences, preferences}, from, state) do
     new_preferences = deep_merge(state.preferences, preferences)
 
     Raxol.Core.Runtime.Log.debug(
@@ -110,8 +106,8 @@ defmodule Raxol.Core.UserPreferences do
     {:reply, :ok, schedule_save(new_state)}
   end
 
-  @impl GenServer
-  def handle_call(:save_now, _from, state) do
+  @impl true
+  def handle_manager_call(:save_now, _from, state) do
     cancel_save_timer(state.save_timer)
 
     case Persistence.save(state.preferences) do
@@ -128,8 +124,8 @@ defmodule Raxol.Core.UserPreferences do
     end
   end
 
-  @impl GenServer
-  def handle_call(:reset_to_defaults, _from, state) do
+  @impl true
+  def handle_manager_call(:reset_to_defaults, _from, state) do
     Raxol.Core.Runtime.Log.info(
       "UserPreferences resetting to defaults for test."
     )
@@ -168,13 +164,13 @@ defmodule Raxol.Core.UserPreferences do
   @spec cancel_save_timer(any()) :: any()
   defp cancel_save_timer(_), do: :ok
 
-  @impl GenServer
-  def handle_info({:perform_delayed_save, timer_id}, state) do
+  @impl true
+  def handle_manager_info({:perform_delayed_save, timer_id}, state) do
     handle_delayed_save(timer_id == state.save_timer, timer_id, state)
   end
 
-  @impl GenServer
-  def handle_info(msg, state) do
+  @impl true
+  def handle_manager_info(msg, state) do
     case msg do
       {:preferences_applied, _pid} ->
         {:noreply, state}

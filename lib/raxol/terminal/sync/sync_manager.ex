@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Sync.Manager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   alias Raxol.Terminal.Sync.{System, Component}
@@ -97,7 +98,7 @@ defmodule Raxol.Terminal.Sync.Manager do
       ) do
     case Map.get(state.components, component_id) do
       nil ->
-        now = System.monotonic_time(:millisecond)
+        now = Elixir.System.monotonic_time(:millisecond)
 
         component = %Component{
           id: component_id,
@@ -224,7 +225,7 @@ defmodule Raxol.Terminal.Sync.Manager do
 
   # Private Functions
   def generate_sync_id(_state) do
-    timestamp = System.monotonic_time(:millisecond)
+    timestamp = Elixir.System.monotonic_time(:millisecond)
     random = :rand.uniform(1_000_000)
     "#{timestamp}-#{random}"
   end

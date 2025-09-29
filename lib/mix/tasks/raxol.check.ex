@@ -43,7 +43,6 @@ defmodule Mix.Tasks.Raxol.Check do
 
   @all_checks [:compile, :format, :credo, :dialyzer, :security, :test]
   @quick_checks [:compile, :format, :credo, :test]
-  @precommit_checks [:compile, :format, :credo, :test]
 
   @impl Mix.Task
   def run(args) do

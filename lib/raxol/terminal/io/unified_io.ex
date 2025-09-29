@@ -12,7 +12,9 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   - Performance optimizations
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+@behaviour Raxol.Core.Behaviours.BaseManager
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{
@@ -139,19 +141,6 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   defp process_name(name) when is_atom(name), do: name
   defp process_name(_), do: __MODULE__
 
-  @doc """
-  Starts the unified IO system.
-  """
-  def start_link(opts \\ %{}) do
-    opts = convert_opts_to_keyword_list(opts)
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
-
-  defp convert_opts_to_keyword_list(opts) when is_map(opts),
-    do: Enum.into(opts, [])
-
-  defp convert_opts_to_keyword_list(opts), do: opts
 
   @doc """
   Initializes the terminal IO system.
@@ -225,7 +214,8 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   # Server Callbacks
 
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     # Convert keyword list to map for config
     config = convert_keyword_to_map(opts)
 
@@ -272,7 +262,8 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   defp convert_keyword_to_map(opts), do: opts
 
-  def handle_call({:init_terminal, width, height, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:init_terminal, width, height, config}, _from, state) do
     # Initialize components
     buffer_manager =
       Manager.new(
@@ -298,7 +289,8 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:process_input, event}, _from, state) do
+  @impl true
+  def handle_manager_call({:process_input, event}, _from, state) do
     case process_input_event(state, event) do
       {:ok, new_state, commands} ->
         {:reply, {:ok, commands}, new_state}
@@ -308,19 +300,22 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     end
   end
 
-  def handle_call({:process_output, data}, _from, state) do
+  @impl true
+  def handle_manager_call({:process_output, data}, _from, state) do
     {:ok, new_state, commands} = process_output_data(state, data)
     {:reply, {:ok, commands}, new_state}
   end
 
-  def handle_call({:update_config, config}, _from, state) do
+  @impl true
+  def handle_manager_call({:update_config, config}, _from, state) do
     # Merge with defaults to ensure all required keys are present
     merged_config = Map.merge(get_default_config(), config)
     new_state = update_io_config(state, merged_config)
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:set_config_value, path, value}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_config_value, path, value}, _from, state) do
     # Ensure we have a config to work with
     config = state.config || get_default_config()
 
@@ -334,32 +329,38 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
     {:reply, :ok, new_state}
   end
 
-  def handle_call(:reset_config, _from, state) do
+  @impl true
+  def handle_manager_call(:reset_config, _from, state) do
     new_config = get_default_config()
     new_state = update_io_config(state, new_config)
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:resize, width, height}, _from, state) do
+  @impl true
+  def handle_manager_call({:resize, width, height}, _from, state) do
     new_state = handle_resize(state, width, height)
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:set_cursor_visibility, visible}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_cursor_visibility, visible}, _from, state) do
     # Only call UnifiedRenderer if it's available
     set_cursor_visibility_if_available(visible)
     {:reply, :ok, state}
   end
 
-  def handle_call(:get_title, _from, state) do
+  @impl true
+  def handle_manager_call(:get_title, _from, state) do
     {:reply, {:ok, ""}, state}
   end
 
-  def handle_call({:set_title, _title}, _from, state) do
+  @impl true
+  def handle_manager_call({:set_title, _title}, _from, state) do
     {:reply, :ok, state}
   end
 
-  def handle_call(:cleanup, _from, state) do
+  @impl true
+  def handle_manager_call(:cleanup, _from, state) do
     # Reset all state to initial values
     new_state = %__MODULE__{
       # Input state

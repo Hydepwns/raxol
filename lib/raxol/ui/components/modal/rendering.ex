@@ -11,16 +11,23 @@ defmodule Raxol.UI.Components.Modal.Rendering do
   @doc "Renders the modal content when visible."
   @spec render_modal_content(map()) :: any()
   def render_modal_content(state) do
-    Raxol.View.Elements.box id: get_modal_box_id(state),
-                            style: get_modal_style(state) do
-      Raxol.View.Elements.column style: %{width: :fill, padding: 1} do
+    # Get modal style as a Map
+    box_style_map = get_modal_style(state)
+
+    # Convert style Map to Keyword list for Box.new
+    box_style_keyword = Enum.map(box_style_map, fn {k, v} -> {k, v} end)
+
+    Raxol.Core.Renderer.View.Components.Box.new([
+      id: get_modal_box_id(state),
+      style: box_style_keyword,
+      children: Raxol.View.Elements.column(style: %{width: :fill, padding: 1}) do
         build_modal_elements(
           render_title(state.title),
           render_content(state),
           render_buttons(state.buttons)
         )
       end
-    end
+    ])
   end
 
   @doc "Renders the modal title."
@@ -163,7 +170,12 @@ defmodule Raxol.UI.Components.Modal.Rendering do
         "on_change" => {:field_update, field.id}
       })
 
-    Raxol.View.Elements.text_input(text_input_props)
+    # Convert Map to Keyword list for text_input function
+    keyword_props = Enum.map(text_input_props, fn {k, v} ->
+      {String.to_atom(to_string(k)), v}
+    end)
+
+    Raxol.View.Elements.text_input(keyword_props)
   end
 
   @doc "Renders checkbox field."
@@ -176,7 +188,12 @@ defmodule Raxol.UI.Components.Modal.Rendering do
         "on_toggle" => {:field_update, field.id}
       })
 
-    Raxol.View.Elements.checkbox(checkbox_props)
+    # Convert Map to Keyword list for checkbox function
+    keyword_props = Enum.map(checkbox_props, fn {k, v} ->
+      {String.to_atom(to_string(k)), v}
+    end)
+
+    Raxol.View.Elements.checkbox(keyword_props)
   end
 
   @doc "Renders dropdown field."

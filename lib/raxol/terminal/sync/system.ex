@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Sync.System do
   Handles synchronization between splits, windows, and tabs with different consistency levels.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Types
@@ -30,11 +30,6 @@ defmodule Raxol.Terminal.Sync.System do
         }
 
   # Client API
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
-
   def sync(sync_id, key, value, opts \\ []) do
     require Logger
 
@@ -66,7 +61,8 @@ defmodule Raxol.Terminal.Sync.System do
   end
 
   # Server Callbacks
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     # Convert keyword list to map if needed
     opts_map = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
 
@@ -86,7 +82,8 @@ defmodule Raxol.Terminal.Sync.System do
     {:ok, state}
   end
 
-  def handle_call({:sync, sync_id, key, value, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:sync, sync_id, key, value, opts}, _from, state) do
     # Convert keyword list to map if needed
     opts_map = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
 
@@ -113,31 +110,36 @@ defmodule Raxol.Terminal.Sync.System do
     end
   end
 
-  def handle_call({:get, sync_id, key}, _from, state) do
+  @impl true
+  def handle_manager_call({:get, sync_id, key}, _from, state) do
     case get_sync_entry(state, sync_id, key) do
       {:ok, entry} -> {:reply, {:ok, entry.value}, state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
-  def handle_call({:get_all, sync_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_all, sync_id}, _from, state) do
     case Map.get(state.syncs, sync_id) do
       nil -> {:reply, {:error, :not_found}, state}
       sync_data -> {:reply, {:ok, sync_data}, state}
     end
   end
 
-  def handle_call({:delete, sync_id, key}, _from, state) do
+  @impl true
+  def handle_manager_call({:delete, sync_id, key}, _from, state) do
     new_state = delete_sync_entry(state, sync_id, key)
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:clear, sync_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:clear, sync_id}, _from, state) do
     new_state = clear_sync_entries(state, sync_id)
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:stats, sync_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:stats, sync_id}, _from, state) do
     case Map.get(state.stats, sync_id) do
       nil -> {:reply, {:error, :not_found}, state}
       stats -> {:reply, {:ok, stats}, state}

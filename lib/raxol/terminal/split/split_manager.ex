@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Split.SplitManager do
   Manages terminal split windows and panes.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
 
   @default_dimensions %{width: 80, height: 24}
   @default_position %{x: 0, y: 0}
@@ -26,13 +26,7 @@ defmodule Raxol.Terminal.Split.SplitManager do
 
   # Client API
 
-  @doc """
-  Starts the split manager process.
-  """
-  @spec start_link() :: {:ok, pid()} | {:error, term()}
-  def start_link do
-    GenServer.start_link(__MODULE__, %{splits: %{}, next_id: 1})
-  end
+  # BaseManager provides start_link
 
   @doc """
   Creates a new split with the given options.
@@ -70,12 +64,22 @@ defmodule Raxol.Terminal.Split.SplitManager do
   # Server callbacks
 
   @impl true
-  def init(state) do
-    {:ok, state}
+  def init_manager(state) when is_list(state) do
+    # Convert list to map for keyword list options
+    init_manager(Map.new(state))
+  end
+
+  def init_manager(state) when is_map(state) do
+    # Ensure state has required fields
+    initial_state = %{
+      splits: Map.get(state, :splits, %{}),
+      next_id: Map.get(state, :next_id, 1)
+    }
+    {:ok, initial_state}
   end
 
   @impl true
-  def handle_call({:create_split, opts}, _from, state) do
+  def handle_manager_call({:create_split, opts}, _from, state) do
     split_id = state.next_id
     dimensions = opts[:dimensions] || @default_dimensions
     position = opts[:position] || @default_position
@@ -98,7 +102,7 @@ defmodule Raxol.Terminal.Split.SplitManager do
   end
 
   @impl true
-  def handle_call({:resize_split, split_id, new_dimensions}, _from, state) do
+  def handle_manager_call({:resize_split, split_id, new_dimensions}, _from, state) do
     case Map.get(state.splits, split_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -116,7 +120,7 @@ defmodule Raxol.Terminal.Split.SplitManager do
   end
 
   @impl true
-  def handle_call({:navigate_to_split, split_id}, _from, state) do
+  def handle_manager_call({:navigate_to_split, split_id}, _from, state) do
     case Map.get(state.splits, split_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
@@ -127,7 +131,7 @@ defmodule Raxol.Terminal.Split.SplitManager do
   end
 
   @impl true
-  def handle_call(:list_splits, _from, state) do
+  def handle_manager_call(:list_splits, _from, state) do
     splits = Map.values(state.splits)
     {:reply, splits, state}
   end

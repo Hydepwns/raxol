@@ -13,7 +13,7 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
   - Event-driven theme changes
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   alias Raxol.Style.Colors.{Color, Utilities}
@@ -27,9 +27,9 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
   @doc """
   Starts the Color System server.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+#  def start_link(opts \\ []) do
+#    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+#  end
 
   @doc """
   Returns a child specification for this server.
@@ -150,7 +150,7 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
   # Server Callbacks
 
   @impl true
-  def init(opts) do
+  def init_manager(opts) do
     # Initialize with default theme
     initial_theme_id = Keyword.get(opts, :theme, @default_theme)
     initial_theme = Theme.get(initial_theme_id)
@@ -191,7 +191,7 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
 
   # Handle system initialization
   @impl true
-  def handle_call({:init_system, opts}, _from, state) do
+  def handle_manager_call({:init_system, opts}, _from, state) do
     initial_theme_id = Keyword.get(opts, :theme, state.current_theme_name)
     initial_theme = Theme.get(initial_theme_id)
 
@@ -232,7 +232,7 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
 
   # Handle color retrieval
   @impl true
-  def handle_call({:get_color, color_name, variant}, _from, state) do
+  def handle_manager_call({:get_color, color_name, variant}, _from, state) do
     # Check cache first
     cache_key = {color_name, variant, state.high_contrast}
 
@@ -272,29 +272,29 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
 
   # Handle theme retrieval
   @impl true
-  def handle_call(:get_current_theme, _from, state) do
+  def handle_manager_call(:get_current_theme, _from, state) do
     {:reply, state.current_theme, state}
   end
 
   @impl true
-  def handle_call(:get_current_theme_name, _from, state) do
+  def handle_manager_call(:get_current_theme_name, _from, state) do
     {:reply, state.current_theme_name, state}
   end
 
   @impl true
-  def handle_call({:set_current_theme, theme_name}, _from, state) do
+  def handle_manager_call({:set_current_theme, theme_name}, _from, state) do
     updated_state = %{state | current_theme_name: theme_name}
     {:reply, :ok, updated_state}
   end
 
   @impl true
-  def handle_call(:get_high_contrast, _from, state) do
+  def handle_manager_call(:get_high_contrast, _from, state) do
     {:reply, state.high_contrast, state}
   end
 
   # Handle theme application
   @impl true
-  def handle_call({:apply_theme, theme_name, opts}, _from, state) do
+  def handle_manager_call({:apply_theme, theme_name, opts}, _from, state) do
     high_contrast = Keyword.get(opts, :high_contrast, state.high_contrast)
     theme = Theme.get(theme_name)
 
@@ -321,7 +321,7 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
 
   # Handle theme registration
   @impl true
-  def handle_call({:register_theme, theme_attrs}, _from, state) do
+  def handle_manager_call({:register_theme, theme_attrs}, _from, state) do
     theme = Theme.new(theme_attrs)
     Theme.register(theme)
 
@@ -333,7 +333,7 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
 
   # Handle UI color retrieval
   @impl true
-  def handle_call({:get_ui_color, ui_role}, _from, state) do
+  def handle_manager_call({:get_ui_color, ui_role}, _from, state) do
     color =
       case Map.fetch(state.current_theme.ui_mappings || %{}, ui_role) do
         {:ok, color_name} when is_atom(color_name) ->
@@ -350,7 +350,7 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
   end
 
   @impl true
-  def handle_call(:get_all_ui_colors, _from, state) do
+  def handle_manager_call(:get_all_ui_colors, _from, state) do
     colors = get_ui_colors_for_theme(state)
 
     {:reply, colors, state}
@@ -358,12 +358,12 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
 
   # Handle accessibility options
   @impl true
-  def handle_call(:get_accessibility_options, _from, state) do
+  def handle_manager_call(:get_accessibility_options, _from, state) do
     {:reply, state.accessibility_options, state}
   end
 
   @impl true
-  def handle_call({:set_accessibility_options, options}, _from, state) do
+  def handle_manager_call({:set_accessibility_options, options}, _from, state) do
     updated_state = %{state | accessibility_options: options}
 
     # Update high contrast if it changed
@@ -379,7 +379,7 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
 
   # Handle high contrast events
   @impl true
-  def handle_cast(
+  def handle_manager_cast(
         {:handle_high_contrast, {:accessibility_high_contrast, enabled}},
         state
       ) do
@@ -407,7 +407,7 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
 
   # Handle accessibility preference events
   @impl true
-  def handle_cast(
+  def handle_manager_cast(
         {:handle_accessibility_preference_changed,
          {:accessibility_preference_changed, :high_contrast, enabled}},
         state
@@ -436,7 +436,7 @@ defmodule Raxol.Style.Colors.System.ColorSystemServer do
 
   # Ignore other accessibility preference changes
   @impl true
-  def handle_cast(
+  def handle_manager_cast(
         {:handle_accessibility_preference_changed, _event},
         state
       ) do

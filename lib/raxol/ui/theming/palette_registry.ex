@@ -7,6 +7,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   @type palette_name :: atom()
@@ -97,8 +98,8 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
 
   # Server Callbacks
 
-  @impl GenServer
-  def init(opts) do
+  @impl Raxol.Core.Behaviours.BaseManager
+  def init_manager(opts) do
     # Load palettes from persistent storage if available
     palettes = load_palettes_from_storage()
 

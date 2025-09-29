@@ -9,7 +9,13 @@ defmodule Raxol.UI.Rendering.Pipeline.State do
     :renderer,
     :options,
     :frame_count,
-    :last_render_time
+    :last_render_time,
+    :animation_frame_requests,
+    :render_timer_ref,
+    :previous_composed_tree,
+    :previous_painted_output,
+    :animation_ticker_ref,
+    :render_scheduled_for_next_frame
   ]
 
   @type t :: %__MODULE__{
@@ -18,7 +24,13 @@ defmodule Raxol.UI.Rendering.Pipeline.State do
           renderer: module() | nil,
           options: keyword(),
           frame_count: non_neg_integer(),
-          last_render_time: integer() | nil
+          last_render_time: integer() | nil,
+          animation_frame_requests: :queue.queue() | nil,
+          render_timer_ref: reference() | nil,
+          previous_composed_tree: term() | nil,
+          previous_painted_output: term() | nil,
+          animation_ticker_ref: reference() | nil,
+          render_scheduled_for_next_frame: boolean()
         }
 
   @doc """
@@ -32,7 +44,13 @@ defmodule Raxol.UI.Rendering.Pipeline.State do
       renderer: Keyword.get(opts, :renderer),
       options: opts,
       frame_count: 0,
-      last_render_time: nil
+      last_render_time: nil,
+      animation_frame_requests: :queue.new(),
+      render_timer_ref: nil,
+      previous_composed_tree: nil,
+      previous_painted_output: nil,
+      animation_ticker_ref: nil,
+      render_scheduled_for_next_frame: false
     }
   end
 

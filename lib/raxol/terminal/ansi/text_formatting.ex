@@ -328,10 +328,10 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     def set_encircled(style), do: %{style | encircled: true}
     def set_overlined(style), do: %{style | overlined: true}
 
-    def reset_bold(style), do: %{style | bold: false}
+    def reset_bold(style), do: %{style | bold: false, faint: false}
     def reset_faint(style), do: %{style | faint: false}
     def reset_italic(style), do: %{style | italic: false}
-    def reset_underline(style), do: %{style | underline: false}
+    def reset_underline(style), do: %{style | underline: false, double_underline: false}
     def reset_blink(style), do: %{style | blink: false}
     def reset_reverse(style), do: %{style | reverse: false}
     def reset_foreground(style), do: %{style | foreground: nil}
@@ -488,10 +488,12 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
           %{style | background: ansi_code_to_color_name(code - 10)}
 
         code >= 90 and code <= 97 ->
-          %{style | foreground: ansi_code_to_color_name(code)}
+          base_color = ansi_code_to_color_name(code - 60)  # Convert 90-97 to 30-37
+          %{style | foreground: base_color, bold: true}
 
         code >= 100 and code <= 107 ->
-          %{style | background: ansi_code_to_color_name(code - 10)}
+          base_color = ansi_code_to_color_name(code - 70)  # Convert 100-107 to 30-37
+          %{style | background: base_color}
 
         true ->
           style
@@ -560,6 +562,9 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
         2 ->
           %{style | faint: true}
 
+        6 ->
+          %{style | blink: true}
+
         3 ->
           %{style | italic: true}
 
@@ -578,15 +583,22 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
         9 ->
           %{style | strikethrough: true}
 
+        # Extended attributes
+        20 ->
+          %{style | fraktur: true}
+
+        21 ->
+          %{style | double_underline: true}
+
         # Reset attributes
         22 ->
           %{style | bold: false, faint: false}
 
         23 ->
-          %{style | italic: false}
+          %{style | italic: false, fraktur: false}
 
         24 ->
-          %{style | underline: false}
+          %{style | underline: false, double_underline: false}
 
         25 ->
           %{style | blink: false}
@@ -599,6 +611,22 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
         29 ->
           %{style | strikethrough: false}
+
+        # Framed, encircled, overlined
+        51 ->
+          %{style | framed: true}
+
+        52 ->
+          %{style | encircled: true}
+
+        53 ->
+          %{style | overlined: true}
+
+        54 ->
+          %{style | framed: false, encircled: false}
+
+        55 ->
+          %{style | overlined: false}
 
         # Standard foreground colors (30-37)
         30 ->
@@ -658,55 +686,55 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
         49 ->
           %{style | background: nil}
 
-        # Bright foreground colors (90-97)
+        # Bright foreground colors (90-97) - set base color + bold
         90 ->
-          %{style | foreground: :bright_black}
+          %{style | foreground: :black, bold: true}
 
         91 ->
-          %{style | foreground: :bright_red}
+          %{style | foreground: :red, bold: true}
 
         92 ->
-          %{style | foreground: :bright_green}
+          %{style | foreground: :green, bold: true}
 
         93 ->
-          %{style | foreground: :bright_yellow}
+          %{style | foreground: :yellow, bold: true}
 
         94 ->
-          %{style | foreground: :bright_blue}
+          %{style | foreground: :blue, bold: true}
 
         95 ->
-          %{style | foreground: :bright_magenta}
+          %{style | foreground: :magenta, bold: true}
 
         96 ->
-          %{style | foreground: :bright_cyan}
+          %{style | foreground: :cyan, bold: true}
 
         97 ->
-          %{style | foreground: :bright_white}
+          %{style | foreground: :white, bold: true}
 
-        # Bright background colors (100-107)
+        # Bright background colors (100-107) - just base color, no bold
         100 ->
-          %{style | background: :bright_black}
+          %{style | background: :black}
 
         101 ->
-          %{style | background: :bright_red}
+          %{style | background: :red}
 
         102 ->
-          %{style | background: :bright_green}
+          %{style | background: :green}
 
         103 ->
-          %{style | background: :bright_yellow}
+          %{style | background: :yellow}
 
         104 ->
-          %{style | background: :bright_blue}
+          %{style | background: :blue}
 
         105 ->
-          %{style | background: :bright_magenta}
+          %{style | background: :magenta}
 
         106 ->
-          %{style | background: :bright_cyan}
+          %{style | background: :cyan}
 
         107 ->
-          %{style | background: :bright_white}
+          %{style | background: :white}
 
         # 8-bit color codes
         {:fg_8bit, n} when is_integer(n) and n >= 0 and n <= 255 ->

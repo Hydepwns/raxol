@@ -47,6 +47,7 @@ defmodule Raxol.Minimal do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+
   require Logger
 
   alias Raxol.Terminal.ANSI.Utils.AnsiParser

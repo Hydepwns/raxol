@@ -6,6 +6,7 @@ defmodule Raxol.Benchmark.SuiteRegistry do
 
   use Raxol.Core.Behaviours.BaseManager
 
+
   # Client API
 
   @doc """

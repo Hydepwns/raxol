@@ -3,29 +3,13 @@ defmodule Raxol.Terminal.Input.Buffer do
   Manages input buffering for the terminal emulator.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
 
   alias Raxol.Terminal.Input.Event.{KeyEvent, MouseEvent}
 
   # Client API
 
-  @doc """
-  Starts the input buffer.
-  """
-  @spec start_link() :: GenServer.on_start()
-  def start_link do
-    start_link([])
-  end
-
-  @doc """
-  Starts the input buffer with options.
-  """
-  @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts,
-      name: Keyword.get(opts, :name, __MODULE__)
-    )
-  end
+  # BaseManager provides start_link
 
   @doc """
   Feeds input to the buffer for the given process.
@@ -51,7 +35,7 @@ defmodule Raxol.Terminal.Input.Buffer do
   # Server Callbacks
 
   @impl true
-  def init(opts) do
+  def init_manager(opts) do
     max_buffer_size = Keyword.get(opts, :max_buffer_size, 1024)
     callback_timeout = Keyword.get(opts, :callback_timeout, 50)
 
@@ -66,7 +50,7 @@ defmodule Raxol.Terminal.Input.Buffer do
   end
 
   @impl true
-  def handle_cast({:feed_input, input}, state) do
+  def handle_manager_cast({:feed_input, input}, state) do
     updated_buffer = state.buffer <> input
     truncated_buffer = truncate_buffer(updated_buffer, state.max_buffer_size)
 
@@ -89,12 +73,12 @@ defmodule Raxol.Terminal.Input.Buffer do
   end
 
   @impl true
-  def handle_cast({:register_callback, callback}, state) do
+  def handle_manager_cast({:register_callback, callback}, state) do
     {:noreply, %{state | callback: callback}}
   end
 
   @impl true
-  def handle_cast(:clear_buffer, state) do
+  def handle_manager_cast(:clear_buffer, state) do
     new_state = cancel_existing_timer(%{state | buffer: ""})
 
     # If there's a callback registered, terminate the process after clearing
@@ -105,7 +89,7 @@ defmodule Raxol.Terminal.Input.Buffer do
   end
 
   @impl true
-  def handle_info(:flush_callback, state) do
+  def handle_manager_info(:flush_callback, state) do
     case {state.callback, state.buffer} do
       {callback, buffer} when is_function(callback, 1) and buffer != "" ->
         # Parse input buffer into events, handling partial sequences properly

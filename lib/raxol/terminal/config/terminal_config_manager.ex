@@ -4,46 +4,29 @@ defmodule Raxol.Terminal.Config.Manager do
   This module is responsible for handling configuration operations and state.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   alias Raxol.Terminal.{Emulator, Config}
   require Raxol.Core.Runtime.Log
 
   # Client API
-
-  @doc """
-  Starts the config manager.
-  """
-  @spec start_link() :: GenServer.on_start()
-  def start_link do
-    start_link([])
-  end
-
-  @doc """
-  Starts the config manager with options.
-  """
-  @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts,
-      name: Keyword.get(opts, :name, __MODULE__)
-    )
-  end
+  # BaseManager provides start_link/1 automatically with name: __MODULE__ as default
 
   # Server Callbacks
 
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)
     {:ok, new(width, height)}
   end
 
-  @impl GenServer
-  def handle_call(:get_state, _from, state) do
+  @impl true
+  def handle_manager_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
-  @impl GenServer
-  def handle_call({:update_config, new_config}, _from, _state) do
+  @impl true
+  def handle_manager_call({:update_config, new_config}, _from, _state) do
     {:reply, :ok, new_config}
   end
 

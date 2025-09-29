@@ -6,7 +6,7 @@ defmodule Raxol.PreCommit.Progress do
   indicators and clear status updates.
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
 
   @spinner_frames ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
   # milliseconds
@@ -17,9 +17,9 @@ defmodule Raxol.PreCommit.Progress do
   @doc """
   Start the progress indicator server.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
+#   def start_link(opts \\ []) do
+#     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+#   end
 
   @doc """
   Initialize a new check with pending status.
@@ -74,8 +74,8 @@ defmodule Raxol.PreCommit.Progress do
 
   # Server callbacks
 
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     state = %{
       checks: %{},
       spinner_index: 0,
@@ -90,8 +90,8 @@ defmodule Raxol.PreCommit.Progress do
     {:ok, %{state | timer_ref: timer_ref}}
   end
 
-  @impl GenServer
-  def handle_cast({:init_check, name}, state) do
+  @impl true
+  def handle_manager_cast({:init_check, name}, state) do
     check_state = %{
       status: :pending,
       start_time: nil,
@@ -105,8 +105,8 @@ defmodule Raxol.PreCommit.Progress do
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_cast({:start_check, name}, state) do
+  @impl true
+  def handle_manager_cast({:start_check, name}, state) do
     check_state = %{
       status: :running,
       start_time: System.monotonic_time(:millisecond),
@@ -120,8 +120,8 @@ defmodule Raxol.PreCommit.Progress do
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_cast({:complete_check, name, elapsed_ms}, state) do
+  @impl true
+  def handle_manager_cast({:complete_check, name, elapsed_ms}, state) do
     check = Map.get(state.checks, name, %{})
 
     elapsed =
@@ -152,8 +152,8 @@ defmodule Raxol.PreCommit.Progress do
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_cast({:fail_check, name, reason}, state) do
+  @impl true
+  def handle_manager_cast({:fail_check, name, reason}, state) do
     check = Map.get(state.checks, name, %{})
 
     elapsed =
@@ -175,8 +175,8 @@ defmodule Raxol.PreCommit.Progress do
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_cast({:warn_check, name, reason}, state) do
+  @impl true
+  def handle_manager_cast({:warn_check, name, reason}, state) do
     check = Map.get(state.checks, name, %{})
 
     elapsed =
@@ -198,8 +198,8 @@ defmodule Raxol.PreCommit.Progress do
     {:noreply, new_state}
   end
 
-  @impl GenServer
-  def handle_info(:tick, state) do
+  @impl true
+  def handle_manager_info(:tick, state) do
     # Cancel old timer
     _ =
       case state.timer_ref do
@@ -220,7 +220,7 @@ defmodule Raxol.PreCommit.Progress do
     {:noreply, %{new_state | timer_ref: timer_ref}}
   end
 
-  @impl GenServer
+  @impl true
   def terminate(_reason, state) do
     # Cancel timer
     _ =

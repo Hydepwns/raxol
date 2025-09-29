@@ -11,7 +11,9 @@ defmodule Raxol.Plugins.HotReloadManager do
   - Production-safe reload strategies
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
+
+  @behaviour Raxol.Core.Behaviours.BaseManager
   require Logger
 
   # Aliases will be used when implementing full functionality
@@ -49,9 +51,6 @@ defmodule Raxol.Plugins.HotReloadManager do
   @doc """
   Starts the hot-reload manager with file watching enabled.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
 
   @doc """
   Enables hot-reload for a plugin with specified options.
@@ -135,8 +134,8 @@ defmodule Raxol.Plugins.HotReloadManager do
 
   # GenServer Implementation
 
-  @impl GenServer
-  def init(opts) do
+  @impl true
+  def init_manager(opts) do
     state = %__MODULE__{
       watched_paths: %{},
       plugin_states: %{},
@@ -152,8 +151,8 @@ defmodule Raxol.Plugins.HotReloadManager do
     {:ok, state}
   end
 
-  @impl GenServer
-  def handle_call(
+  @impl true
+  def handle_manager_call(
         {:enable_hot_reload, plugin_id, plugin_path, opts},
         _from,
         state
@@ -171,7 +170,8 @@ defmodule Raxol.Plugins.HotReloadManager do
     end
   end
 
-  def handle_call({:disable_hot_reload, plugin_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:disable_hot_reload, plugin_id}, _from, state) do
     case disable_hot_reload_impl(plugin_id, state) do
       {:ok, updated_state} ->
         Logger.info("[HotReloadManager] Disabled hot-reload for #{plugin_id}")
@@ -182,7 +182,8 @@ defmodule Raxol.Plugins.HotReloadManager do
     end
   end
 
-  def handle_call({:reload_plugin, plugin_id, opts}, _from, state) do
+  @impl true
+  def handle_manager_call({:reload_plugin, plugin_id, opts}, _from, state) do
     case reload_plugin_impl(plugin_id, opts, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
@@ -192,7 +193,8 @@ defmodule Raxol.Plugins.HotReloadManager do
     end
   end
 
-  def handle_call({:rollback_plugin, plugin_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:rollback_plugin, plugin_id}, _from, state) do
     case rollback_plugin_impl(plugin_id, state) do
       {:ok, updated_state} ->
         Logger.info("[HotReloadManager] Rolled back plugin #{plugin_id}")
@@ -203,23 +205,26 @@ defmodule Raxol.Plugins.HotReloadManager do
     end
   end
 
-  def handle_call({:get_reload_status, plugin_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_reload_status, plugin_id}, _from, state) do
     status = get_reload_status_impl(plugin_id, state)
     {:reply, {:ok, status}, state}
   end
 
-  def handle_call(:list_watched_plugins, _from, state) do
+  @impl true
+  def handle_manager_call(:list_watched_plugins, _from, state) do
     watched_plugins = Map.keys(state.watched_paths)
     {:reply, {:ok, watched_plugins}, state}
   end
 
-  def handle_call({:get_reload_history, plugin_id}, _from, state) do
+  @impl true
+  def handle_manager_call({:get_reload_history, plugin_id}, _from, state) do
     history = filter_reload_history(state.reload_history, plugin_id)
     {:reply, {:ok, history}, state}
   end
 
-  @impl GenServer
-  def handle_info({:file_changed, file_change}, state) do
+  @impl true
+  def handle_manager_info({:file_changed, file_change}, state) do
     case handle_file_change(file_change, state) do
       {:ok, updated_state} ->
         {:noreply, updated_state}
@@ -233,7 +238,8 @@ defmodule Raxol.Plugins.HotReloadManager do
     end
   end
 
-  def handle_info({:reload_timeout, plugin_id}, state) do
+  @impl true
+  def handle_manager_info({:reload_timeout, plugin_id}, state) do
     Logger.error("[HotReloadManager] Reload timeout for plugin #{plugin_id}")
     updated_active = Map.delete(state.active_reloads, plugin_id)
     {:noreply, %{state | active_reloads: updated_active}}

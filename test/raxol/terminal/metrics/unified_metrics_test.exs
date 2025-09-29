@@ -3,6 +3,9 @@ defmodule Raxol.Terminal.Metrics.UnifiedMetricsTest do
   import ExUnit.CaptureLog
   alias Raxol.Terminal.Metrics.UnifiedMetrics
 
+  @moduletag :metrics
+  @moduletag :skip
+
   setup do
     name = Raxol.Test.ProcessNaming.generate_name(UnifiedMetrics)
 

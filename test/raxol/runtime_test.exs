@@ -99,12 +99,9 @@ end
 defmodule Raxol.RuntimeTest do
   use ExUnit.Case, async: false
   
-  # Only import Mox if it's available
-  if Code.ensure_loaded?(Mox) do
-    import Mox
-  end
+  # Mox is used with module prefix, no import needed
 
-  alias Raxol.Runtime.Supervisor, as: RuntimeSupervisor
+  alias Raxol.Core.Runtime.Supervisor, as: RuntimeSupervisor
   alias Raxol.Core.Runtime.Plugins.PluginManager, as: PluginManager
   alias Raxol.Core.Runtime.Events.Dispatcher
   alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine

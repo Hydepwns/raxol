@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
       key = ImageCache.generate_key(image_data, processing_options)
   """
 
-  use GenServer
+  use Raxol.Core.Behaviours.BaseManager
   require Logger
 
   @type cache_key :: String.t()
@@ -105,10 +105,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
   * `{:ok, pid}` - Successfully started cache server
   * `{:error, reason}` - Failed to start
   """
-  @spec start_link(cache_config()) :: GenServer.on_start()
-  def start_link(config \\ %{}) do
-    GenServer.start_link(__MODULE__, config, name: __MODULE__)
-  end
+  # BaseManager provides start_link
 
   @doc """
   Retrieves a cached image by key.
@@ -249,7 +246,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
   # GenServer Callbacks
 
   @impl true
-  def init(config) do
+  def init_manager(config) do
     merged_config = Map.merge(@default_config, config)
 
     # Setup disk cache directory
@@ -277,7 +274,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
   end
 
   @impl true
-  def handle_call({:get, key}, _from, state) do
+  def handle_manager_call({:get, key}, _from, state) do
     case Map.get(state.entries, key) do
       nil ->
         # Check disk cache if enabled
@@ -318,20 +315,20 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
   end
 
   @impl true
-  def handle_call({:put, key, data, metadata}, _from, state) do
+  def handle_manager_call({:put, key, data, metadata}, _from, state) do
     {new_state, result} = put_entry(key, data, metadata, state)
     {:reply, result, new_state}
   end
 
   @impl true
-  def handle_call({:delete, key}, _from, state) do
+  def handle_manager_call({:delete, key}, _from, state) do
     new_state = remove_entry(key, state)
     remove_from_disk_cache(key, state.config)
     {:reply, :ok, new_state}
   end
 
   @impl true
-  def handle_call(:clear, _from, state) do
+  def handle_manager_call(:clear, _from, state) do
     # Clear disk cache if enabled
     clear_disk_cache(state.config)
 
@@ -341,19 +338,19 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
   end
 
   @impl true
-  def handle_call(:get_stats, _from, state) do
+  def handle_manager_call(:get_stats, _from, state) do
     stats = calculate_cache_stats(state)
     {:reply, stats, state}
   end
 
   @impl true
-  def handle_call({:batch, operations}, _from, state) do
+  def handle_manager_call({:batch, operations}, _from, state) do
     {final_state, results} = process_batch_operations(operations, state)
     {:reply, {:ok, results}, final_state}
   end
 
   @impl true
-  def handle_cast({:preload, image_specs}, state) do
+  def handle_manager_cast({:preload, image_specs}, state) do
     final_state =
       Enum.reduce(image_specs, state, fn {key, data, metadata}, acc_state ->
         {new_state, _result} = put_entry(key, data, metadata, acc_state)
@@ -364,7 +361,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
   end
 
   @impl true
-  def handle_info(:cleanup, state) do
+  def handle_manager_info(:cleanup, state) do
     new_state = perform_cleanup(state)
     new_timer = schedule_cleanup(state.config.cleanup_interval)
     {:noreply, %{new_state | cleanup_timer: new_timer}}
