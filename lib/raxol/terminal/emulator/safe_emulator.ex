@@ -43,12 +43,9 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   # Client API
 
-  @doc """
-  Starts the safe emulator with error handling capabilities.
-  """
-
   # BaseManager provides start_link/1 and start_link/2 automatically
 
+  @doc """
   Safely processes input with validation and error recovery.
   """
   def process_input(pid \\ __MODULE__, input) do
@@ -298,6 +295,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
     end
   end
 
+  @impl true
   def handle_manager_info(msg, state) do
     Logger.debug("Unhandled message: #{inspect(msg)}")
     {:noreply, state}
