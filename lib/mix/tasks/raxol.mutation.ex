@@ -75,10 +75,10 @@ defmodule Mix.Tasks.Raxol.Mutation do
     # Configure mutation testing
     config = configure_mutation_testing(options)
 
-    IO.puts("Starting mutation testing...")
-    IO.puts("   Target: #{config.target}")
-    IO.puts("   Mutations: #{config.mutations}")
-    IO.puts("   Operators: #{Enum.join(config.operators, ", ")}")
+    Log.info("Starting mutation testing...")
+    Log.info("   Target: #{config.target}")
+    Log.info("   Mutations: #{config.mutations}")
+    Log.info("   Operators: #{Enum.join(config.operators, ", ")}")
 
     # Run mutation analysis
     results = run_mutation_analysis(config)
@@ -90,7 +90,7 @@ defmodule Mix.Tasks.Raxol.Mutation do
   end
 
   defp print_help do
-    IO.puts(@moduledoc)
+    Log.info(@moduledoc)
   end
 
   defp configure_mutation_testing(options) do
@@ -112,21 +112,21 @@ defmodule Mix.Tasks.Raxol.Mutation do
   end
 
   defp run_mutation_analysis(config) do
-    IO.puts("\nAnalyzing target files...")
+    Log.info("\nAnalyzing target files...")
 
     # Find target files
     target_files = discover_target_files(config.target)
 
-    IO.puts("   Found #{length(target_files)} files to analyze")
+    Log.info("   Found #{length(target_files)} files to analyze")
 
     # Run baseline tests to ensure they pass
-    IO.puts("\nRunning baseline tests...")
+    Log.info("\nRunning baseline tests...")
     baseline_result = run_tests()
 
     handle_baseline_result(baseline_result)
 
     # Generate and test mutations
-    IO.puts("\nGenerating mutations...")
+    Log.info("\nGenerating mutations...")
 
     mutations_results =
       target_files
@@ -152,7 +152,7 @@ defmodule Mix.Tasks.Raxol.Mutation do
   # Using pattern matching instead of if/else
   defp handle_baseline_result(%{failures: failures} = result)
        when failures > 1 do
-    IO.puts(
+    Log.info(
       "ERROR: Too many baseline test failures (#{result.failures})! Fix tests before mutation testing."
     )
 
@@ -160,13 +160,13 @@ defmodule Mix.Tasks.Raxol.Mutation do
   end
 
   defp handle_baseline_result(%{failures: 1}) do
-    IO.puts(
+    Log.info(
       "WARNING: Found 1 baseline test failure - continuing with mutation testing..."
     )
   end
 
   defp handle_baseline_result(%{failures: 0, tests: tests} = _result) do
-    IO.puts("OK: Baseline tests pass (#{tests} tests)")
+    Log.info("OK: Baseline tests pass (#{tests} tests)")
   end
 
   defp discover_target_files(target_pattern) do
@@ -313,7 +313,7 @@ defmodule Mix.Tasks.Raxol.Mutation do
       # Determine if mutation was killed
       killed = test_result.failures > 0 or test_result.errors > 0
 
-      IO.puts(mutation_status_text(killed))
+      Log.info(mutation_status_text(killed))
 
       %{
         mutation: mutation,
@@ -323,7 +323,7 @@ defmodule Mix.Tasks.Raxol.Mutation do
       }
     rescue
       error ->
-        IO.puts("ERROR (#{inspect(error)})")
+        Log.info("ERROR (#{inspect(error)})")
 
         %{
           mutation: mutation,
@@ -418,7 +418,7 @@ defmodule Mix.Tasks.Raxol.Mutation do
       "mutation_test_report_#{DateTime.to_unix(DateTime.utc_now())}.md"
 
     File.write!(report_file, report_content)
-    IO.puts("\nDetailed report saved to: #{report_file}")
+    Log.info("\nDetailed report saved to: #{report_file}")
   end
 
   defp generate_report_content(results) do
@@ -495,17 +495,17 @@ defmodule Mix.Tasks.Raxol.Mutation do
   defp print_summary(results) do
     mutation_score = calculate_mutation_score(results)
 
-    IO.puts("\nMutation Testing Summary")
-    IO.puts("==========================")
-    IO.puts("   Total mutations: #{results.total_mutations}")
-    IO.puts("   Killed: #{results.killed_mutations}")
-    IO.puts("   Survived: #{results.survived_mutations}")
-    IO.puts("   Mutation score: #{mutation_score}%")
+    Log.info("\nMutation Testing Summary")
+    Log.info("==========================")
+    Log.info("   Total mutations: #{results.total_mutations}")
+    Log.info("   Killed: #{results.killed_mutations}")
+    Log.info("   Survived: #{results.survived_mutations}")
+    Log.info("   Mutation score: #{mutation_score}%")
 
     # Show survived mutations (potential test gaps)
     print_survived_mutations(results)
 
-    IO.puts("\nRecommendation: #{generate_recommendations(results)}")
+    Log.info("\nRecommendation: #{generate_recommendations(results)}")
   end
 
   defp print_survived_mutations(%{mutations: mutations}) do
@@ -516,17 +516,17 @@ defmodule Mix.Tasks.Raxol.Mutation do
         :ok
 
       mutations ->
-        IO.puts("\nWARNING: Survived mutations (potential test gaps):")
+        Log.info("\nWARNING: Survived mutations (potential test gaps):")
         Enum.each(mutations, &print_mutation_details/1)
     end
   end
 
   defp print_mutation_details(mutation) do
-    IO.puts(
+    Log.info(
       "   - #{mutation.mutation.type} in #{Path.basename(mutation.mutation.file)}"
     )
 
-    IO.puts(
+    Log.info(
       "     Changed: #{String.trim(mutation.mutation.original)} -> #{String.trim(mutation.mutation.mutated)}"
     )
   end

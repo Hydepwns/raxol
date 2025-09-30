@@ -202,14 +202,14 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
   defp draw_dashboard(state) do
     # Header
     elapsed = (System.monotonic_time(:millisecond) - state.start_time) / 1000
-    IO.puts("Raxol Memory Profiler - Live Dashboard")
-    IO.puts("#{String.duplicate("=", 80)}")
+    Log.info("Raxol Memory Profiler - Live Dashboard")
+    Log.info("#{String.duplicate("=", 80)}")
 
-    IO.puts(
+    Log.info(
       "Elapsed: #{Float.round(elapsed, 1)}s | View: #{state.view} | #{if state.paused, do: "PAUSED", else: "RUNNING"}"
     )
 
-    IO.puts("#{String.duplicate("-", 80)}")
+    Log.info("#{String.duplicate("-", 80)}")
 
     # Current memory info
     memory_info = get_current_memory_info()
@@ -223,38 +223,38 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
     end
 
     # Footer with controls
-    IO.puts("#{String.duplicate("-", 80)}")
+    Log.info("#{String.duplicate("-", 80)}")
 
-    IO.puts(
+    Log.info(
       "Controls: [q]uit | [r]eset | [s]napshot | [g]c | [p]ause | Tab:switch view"
     )
   end
 
   defp draw_memory_overview(memory_info) do
-    IO.puts("Memory Overview:")
-    IO.puts("  Total:     #{format_memory(memory_info.total)}")
+    Log.info("Memory Overview:")
+    Log.info("  Total:     #{format_memory(memory_info.total)}")
 
-    IO.puts(
+    Log.info(
       "  Processes: #{format_memory(memory_info.processes)} (#{percentage(memory_info.processes, memory_info.total)}%)"
     )
 
-    IO.puts(
+    Log.info(
       "  System:    #{format_memory(memory_info.system)} (#{percentage(memory_info.system, memory_info.total)}%)"
     )
 
-    IO.puts(
+    Log.info(
       "  Binary:    #{format_memory(memory_info.binary)} (#{percentage(memory_info.binary, memory_info.total)}%)"
     )
 
-    IO.puts(
+    Log.info(
       "  ETS:       #{format_memory(memory_info.ets)} (#{percentage(memory_info.ets, memory_info.total)}%)"
     )
 
-    IO.puts("")
+    Log.info("")
   end
 
   defp draw_memory_view(memory_info) do
-    IO.puts("Detailed Memory Breakdown:")
+    Log.info("Detailed Memory Breakdown:")
 
     # Memory by type
     memory_types = [
@@ -267,15 +267,15 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
     Enum.each(memory_types, fn {type, bytes} ->
       bar = create_progress_bar(bytes, memory_info.total, 40)
 
-      IO.puts(
+      Log.info(
         "  #{String.pad_trailing(type, 12)} #{format_memory(bytes)} #{bar}"
       )
     end)
 
-    IO.puts("")
+    Log.info("")
 
     # Recent allocations (simulated)
-    IO.puts("Recent Large Allocations:")
+    Log.info("Recent Large Allocations:")
 
     recent_allocations = [
       {"Buffer.create/2", 2_048_576, "2.0MB"},
@@ -284,14 +284,14 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
     ]
 
     Enum.each(recent_allocations, fn {operation, _bytes, size} ->
-      IO.puts("  #{String.pad_trailing(operation, 25)} #{size}")
+      Log.info("  #{String.pad_trailing(operation, 25)} #{size}")
     end)
   end
 
   defp draw_processes_view do
-    IO.puts("Top Memory-Consuming Processes:")
+    Log.info("Top Memory-Consuming Processes:")
 
-    IO.puts(
+    Log.info(
       String.pad_trailing("PID", 8) <>
         String.pad_trailing("Name", 25) <>
         String.pad_trailing("Memory", 12) <> "Heap"
@@ -317,28 +317,28 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
       pid_str = inspect(proc.pid) |> String.pad_trailing(8)
       name_str = format_process_name(proc.name) |> String.pad_trailing(25)
       memory_str = format_memory(proc.memory) |> String.pad_trailing(12)
-      IO.puts("  #{pid_str}#{name_str}#{memory_str}")
+      Log.info("  #{pid_str}#{name_str}#{memory_str}")
     end)
   end
 
   defp draw_gc_view do
-    IO.puts("Garbage Collection Statistics:")
+    Log.info("Garbage Collection Statistics:")
 
     # Get GC stats (simplified)
     gc_info = :erlang.statistics(:garbage_collection)
     {gc_count, words_reclaimed, _} = gc_info
 
-    IO.puts("  Collections: #{gc_count}")
-    IO.puts("  Words reclaimed: #{words_reclaimed}")
+    Log.info("  Collections: #{gc_count}")
+    Log.info("  Words reclaimed: #{words_reclaimed}")
 
-    IO.puts(
+    Log.info(
       "  Average per collection: #{div(words_reclaimed, max(gc_count, 1))} words"
     )
 
-    IO.puts("")
+    Log.info("")
 
     # Recent GC activity (simulated timeline)
-    IO.puts("Recent GC Activity:")
+    Log.info("Recent GC Activity:")
 
     timeline = [
       {"-5s", "Minor GC", "2ms", "128KB reclaimed"},
@@ -348,7 +348,7 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
     ]
 
     Enum.each(timeline, fn {time, type, duration, reclaimed} ->
-      IO.puts(
+      Log.info(
         "  #{String.pad_trailing(time, 6)} #{String.pad_trailing(type, 12)} #{String.pad_trailing(duration, 8)} #{reclaimed}"
       )
     end)
@@ -460,7 +460,7 @@ defmodule Mix.Tasks.Raxol.Memory.Profiler do
         }
 
         json_output = Jason.encode!(report, pretty: true)
-        IO.puts(json_output)
+        Log.info(json_output)
 
         Process.sleep(config.interval * 1000)
         loop_fn.(loop_fn, iteration + 1, [report | acc_reports])

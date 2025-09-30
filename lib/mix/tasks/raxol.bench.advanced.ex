@@ -404,7 +404,7 @@ defmodule Mix.Tasks.Raxol.Bench.Advanced do
       File.write!(opts[:output], output)
       Mix.shell().info("Results saved to: #{opts[:output]}")
     else
-      IO.puts(output)
+      Log.info(output)
     end
   end
 

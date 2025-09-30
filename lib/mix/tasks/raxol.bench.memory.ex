@@ -14,6 +14,7 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
   """
 
   use Mix.Task
+  alias Raxol.Core.Runtime.Log
 
   @shortdoc "Run enhanced memory performance benchmarks"
 
@@ -488,7 +489,7 @@ defmodule Mix.Tasks.Raxol.Bench.Memory do
         String.pad_trailing("  result = expensive_operation(param)", length)
 
       4 ->
-        String.pad_trailing("  Logger.info(\"Processing #{line_num}\")", length)
+        String.pad_trailing("  Log.module_info(\"Processing #{line_num}\")", length)
 
       5 ->
         String.pad_trailing("  {:ok, result}", length)

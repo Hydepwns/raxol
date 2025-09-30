@@ -1084,7 +1084,7 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
 
   defp output_json(data, config) do
     json = Jason.encode!(data, pretty: true)
-    IO.puts(json)
+    Log.info(json)
     save_output_if_requested(data, config)
   end
 
@@ -1107,7 +1107,7 @@ defmodule Mix.Tasks.Raxol.Memory.Debug do
     #{format_processes_table(analysis.process_analysis.top_consumers)}
     """
 
-    IO.puts(markdown)
+    Log.info(markdown)
     save_output_if_requested(markdown, config)
   end
 

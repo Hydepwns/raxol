@@ -15,6 +15,7 @@ defmodule Mix.Tasks.Raxol.Convert.BaseManager do
   """
 
   use Mix.Task
+  alias Raxol.Core.Runtime.Log
 
   @shortdoc "Convert GenServer modules to BaseManager"
 
@@ -69,13 +70,13 @@ defmodule Mix.Tasks.Raxol.Convert.BaseManager do
 
         case Keyword.get(opts, :dry_run) do
           true ->
-            IO.puts("Would convert: #{file_path}")
-            IO.puts("Changes:")
+            Log.info("Would convert: #{file_path}")
+            Log.info("Changes:")
             show_diff(content, converted)
 
           _ ->
             File.write!(file_path, converted)
-            IO.puts("Converted: #{file_path}")
+            Log.info("Converted: #{file_path}")
 
             case Keyword.get(opts, :validate) do
               true -> validate_conversion(file_path)
@@ -84,7 +85,7 @@ defmodule Mix.Tasks.Raxol.Convert.BaseManager do
         end
 
       {:error, reason} ->
-        IO.puts("Error reading #{file_path}: #{reason}")
+        Log.info("Error reading #{file_path}: #{reason}")
     end
   end
 
@@ -178,9 +179,9 @@ defmodule Mix.Tasks.Raxol.Convert.BaseManager do
     |> Enum.each(fn {{orig, conv}, line_num} ->
       case orig != conv do
         true ->
-          IO.puts("Line #{line_num}:")
-          IO.puts("  - #{orig}")
-          IO.puts("  + #{conv}")
+          Log.info("Line #{line_num}:")
+          Log.info("  - #{orig}")
+          Log.info("  + #{conv}")
 
         false ->
           :ok
@@ -192,12 +193,12 @@ defmodule Mix.Tasks.Raxol.Convert.BaseManager do
     System.cmd("mix", ["compile", "--force", file_path], stderr_to_stdout: true)
     |> case do
       {_, 0} ->
-        IO.puts("✓ Compilation successful")
+        Log.info("✓ Compilation successful")
         :ok
 
       {output, _} ->
-        IO.puts("✗ Compilation failed:")
-        IO.puts(output)
+        Log.info("✗ Compilation failed:")
+        Log.info(output)
         :error
     end
   end
