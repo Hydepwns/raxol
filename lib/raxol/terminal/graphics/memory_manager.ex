@@ -55,8 +55,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # bytes
   @type memory_budget :: non_neg_integer()
   @type allocation_id :: String.t()
@@ -387,7 +386,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
   @impl true
   def handle_manager_info({:monitoring, stats}, state) do
     # Update monitoring statistics
-    Logger.debug("Memory stats: #{inspect(stats)}")
+    Log.module_debug("Memory stats: #{inspect(stats)}")
     {:noreply, state}
   end
 
@@ -527,7 +526,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
 
     new_state = %{state | allocations: remaining_allocations, stats: new_stats}
 
-    Logger.info(
+    Log.module_info(
       "GC collected #{length(collected_allocations)} allocations, freed #{freed_memory} bytes"
     )
 
@@ -639,7 +638,7 @@ defmodule Raxol.Terminal.Graphics.MemoryManager do
 
     case usage_ratio > state.config.gc_threshold do
       true ->
-        Logger.info(
+        Log.module_info(
           "Memory pressure detected (#{Float.round(usage_ratio * 100, 1)}%), triggering GC"
         )
 

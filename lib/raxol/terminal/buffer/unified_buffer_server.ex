@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Buffer.UnifiedManager do
+defmodule Raxol.Terminal.Buffer.UnifiedBufferServer do
   @moduledoc """
   Unified buffer manager for terminal operations.
 

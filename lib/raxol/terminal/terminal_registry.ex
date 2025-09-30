@@ -8,10 +8,8 @@ defmodule Raxol.Terminal.TerminalRegistry do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.Events.{TerminalCreatedEvent, TerminalClosedEvent}
+  alias Raxol.Core.Runtime.Log
 
   defstruct [
     :terminals,
@@ -114,7 +112,7 @@ defmodule Raxol.Terminal.TerminalRegistry do
         Process.send_after(self(), :subscribe_to_events, 100)
       end
 
-    Logger.info("Terminal registry initialized")
+    Log.module_info("Terminal registry initialized")
     {:ok, state}
   end
 
@@ -160,14 +158,14 @@ defmodule Raxol.Terminal.TerminalRegistry do
             user_terminals: new_user_terminals
         }
 
-        Logger.info(
+        Log.module_info(
           "Registered terminal #{terminal_id} with process #{inspect(process)}"
         )
 
         {:reply, :ok, new_state}
 
       _existing_process ->
-        Logger.warning("Terminal #{terminal_id} already registered")
+        Log.module_warning("Terminal #{terminal_id} already registered")
         {:reply, {:error, :already_registered}, state}
     end
   end
@@ -180,7 +178,7 @@ defmodule Raxol.Terminal.TerminalRegistry do
 
       process ->
         new_state = do_unregister_terminal(terminal_id, process, state)
-        Logger.info("Unregistered terminal #{terminal_id}")
+        Log.module_info("Unregistered terminal #{terminal_id}")
         {:reply, :ok, new_state}
     end
   end
@@ -286,7 +284,7 @@ defmodule Raxol.Terminal.TerminalRegistry do
       event_types: [TerminalCreatedEvent, TerminalClosedEvent]
     )
 
-    Logger.debug("Terminal registry subscribed to event store")
+    Log.module_debug("Terminal registry subscribed to event store")
     {:noreply, state}
   end
 
@@ -297,7 +295,7 @@ defmodule Raxol.Terminal.TerminalRegistry do
         {:noreply, state}
 
       {terminal_id, _monitor_ref} ->
-        Logger.warning(
+        Log.module_warning(
           "Terminal process #{inspect(pid)} (#{terminal_id}) died: #{inspect(reason)}"
         )
 
@@ -365,14 +363,14 @@ defmodule Raxol.Terminal.TerminalRegistry do
   defp handle_terminal_created_event(event, state) do
     # This event is fired when a terminal is created through the command system
     # We might want to update registry metadata or perform additional bookkeeping
-    Logger.debug("Terminal created event received for #{event.terminal_id}")
+    Log.module_debug("Terminal created event received for #{event.terminal_id}")
     {:noreply, state}
   end
 
   defp handle_terminal_closed_event(event, state) do
     # This event is fired when a terminal is closed through the command system
     # The registry might still have the entry if the process hasn't died yet
-    Logger.debug("Terminal closed event received for #{event.terminal_id}")
+    Log.module_debug("Terminal closed event received for #{event.terminal_id}")
 
     case Map.get(state.terminals, event.terminal_id) do
       nil ->

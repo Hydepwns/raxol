@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.ScreenHandlers do
   Screen handling utilities for CSI commands.
   """
 
-  alias Raxol.Terminal.Commands.UnifiedCommandHandler
+  alias Raxol.Terminal.Commands.CommandServer
 
   @doc """
   Handles erase display operations.

@@ -3,10 +3,7 @@ defmodule Raxol.Terminal.Modes.Handlers.StandardHandler do
   Handles standard mode operations and their side effects.
   Manages standard terminal modes like insert mode and line feed mode.
   """
-
-  require Raxol.Core.Runtime.Log
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Modes.Types.ModeTypes
 
@@ -65,8 +62,7 @@ defmodule Raxol.Terminal.Modes.Handlers.StandardHandler do
   end
 
   defp handle_insert_mode(true, emulator) do
-    require Logger
-    Logger.debug("StandardHandler.handle_insert_mode/2 called with value: true")
+    Log.module_debug("StandardHandler.handle_insert_mode/2 called with value: true")
     # Insert Mode (IRM)
     # When enabled, new text is inserted at the cursor position
     {:ok,
@@ -74,9 +70,7 @@ defmodule Raxol.Terminal.Modes.Handlers.StandardHandler do
   end
 
   defp handle_insert_mode(false, emulator) do
-    require Logger
-
-    Logger.debug(
+    Log.module_debug(
       "StandardHandler.handle_insert_mode/2 called with value: false"
     )
 

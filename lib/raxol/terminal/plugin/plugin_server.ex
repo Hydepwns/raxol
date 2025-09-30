@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
+defmodule Raxol.Terminal.Plugin.PluginServer do
   @moduledoc """
   Unified plugin system for the Raxol terminal emulator.
   Handles themes, scripting, and extensions.
@@ -8,8 +8,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Types
   @type plugin_id :: String.t()
   @type plugin_type :: :theme | :script | :extension
@@ -353,7 +352,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
       :ok
     else
       {:error, reason} ->
-        Logger.debug("Skipping #{file}: #{inspect(reason)}")
+        Log.module_debug("Skipping #{file}: #{inspect(reason)}")
     end
   end
 
@@ -372,7 +371,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
   end
 
   defp log_plugin_directory_error(path, reason) do
-    Logger.error("Failed to read plugin directory #{path}: #{inspect(reason)}")
+    Log.module_error("Failed to read plugin directory #{path}: #{inspect(reason)}")
   end
 
   # Theme Plugin Functions
@@ -470,7 +469,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         result
 
       {:error, error} ->
-        Logger.error("Compilation failed: #{inspect(error)}")
+        Log.module_error("Compilation failed: #{inspect(error)}")
         {:error, :compilation_failed}
     end
   end
@@ -718,7 +717,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
             result
 
           {:error, error} ->
-            Logger.error("#{plugin_type} cleanup failed: #{inspect(error)}")
+            Log.module_error("#{plugin_type} cleanup failed: #{inspect(error)}")
             {:error, :cleanup_failed}
         end
 
@@ -733,7 +732,7 @@ defmodule Raxol.Terminal.Plugin.UnifiedPlugin do
         safe_apply(module, function, args)
 
       false ->
-        Logger.warning(
+        Log.module_warning(
           "Function #{function}/#{length(args)} not exported from #{plugin_type} module"
         )
 

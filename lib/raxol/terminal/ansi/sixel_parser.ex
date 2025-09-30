@@ -2,10 +2,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   @moduledoc """
   Handles the parsing logic for Sixel graphics data streams within a DCS sequence.
   """
-
-  require Raxol.Core.Runtime.Log
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ANSI.Utils.SixelPatternMap
   alias Raxol.Terminal.ANSI.SixelPalette
 
@@ -43,7 +40,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   @spec parse(binary(), ParserState.t()) ::
           {:ok, ParserState.t()} | {:error, atom()}
   def parse(data, state) when is_binary(data) do
-    Logger.debug(
+    Log.module_debug(
       "SixelParser: Incoming palette color 1 is #{inspect(Map.get(state.palette, 1, :not_found))}"
     )
 
@@ -253,17 +250,17 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   end
 
   defp handle_data_character(char_byte, remaining_data, state) do
-    Logger.debug(
+    Log.module_debug(
       "SixelParser: [handle_data_character] BEFORE pixel gen, palette color 1 is #{inspect(Map.get(state.palette, 1, :not_found))}"
     )
 
-    Logger.debug(
+    Log.module_debug(
       "SixelParser: Processing character byte: #{char_byte} ('#{<<char_byte>>}')"
     )
 
     case SixelPatternMap.get_pattern(char_byte) do
       pattern_int when is_integer(pattern_int) ->
-        Logger.debug(
+        Log.module_debug(
           "SixelParser: Got pattern #{pattern_int} for character #{char_byte}"
         )
 
@@ -278,13 +275,13 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
             state.max_x
           )
 
-        Logger.debug(
+        Log.module_debug(
           "SixelParser: Generated pixels, buffer size: #{map_size(final_buffer)}"
         )
 
-        Logger.debug("SixelParser: Final buffer: #{inspect(final_buffer)}")
+        Log.module_debug("SixelParser: Final buffer: #{inspect(final_buffer)}")
 
-        Logger.debug(
+        Log.module_debug(
           "SixelParser: [handle_data_character] AFTER pixel gen, palette color 1 is #{inspect(Map.get(state.palette, 1, :not_found))}"
         )
 
@@ -298,7 +295,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
         })
 
       nil ->
-        Logger.debug("SixelParser: No pattern found for character #{char_byte}")
+        Log.module_debug("SixelParser: No pattern found for character #{char_byte}")
 
         case remaining_data do
           <<"\e\\", _::binary>> ->

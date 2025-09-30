@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Tab.UnifiedTab do
+defmodule Raxol.Terminal.Tab.TabServer do
   @moduledoc """
   Provides unified tab management functionality for the terminal emulator.
   This module handles tab creation, switching, state management, and configuration.

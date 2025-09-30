@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.ScreenBuffer.EraseOperations do
           non_neg_integer()
         ) :: ScreenBuffer.t()
   def erase_from_cursor_to_end(buffer, x, y, _top, bottom) do
-    # Log.info("[DEBUG] erase_from_cursor_to_end called with x=#{x}, y=#{y}, bottom=#{bottom}")
+    # IO.puts("[DEBUG] erase_from_cursor_to_end called with x=#{x}, y=#{y}, bottom=#{bottom}")
 
     empty_cell = Cell.new()
 

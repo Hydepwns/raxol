@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Metrics.UnifiedMetrics do
+defmodule Raxol.Terminal.Metrics.MetricsServer do
   @moduledoc """
   Unified metrics collection and export module.
 

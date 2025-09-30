@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Graphics.ChartRenderers do
   Handles specific chart types: heatmaps, scatter plots, histograms.
   """
 
-  alias Raxol.Terminal.Graphics.UnifiedGraphics
+  alias Raxol.Terminal.Graphics.GraphicsServer
   alias Raxol.Terminal.Graphics.ChartDataUtils
 
   @doc """

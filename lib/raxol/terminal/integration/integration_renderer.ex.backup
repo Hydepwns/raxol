@@ -348,7 +348,7 @@ defmodule Raxol.Terminal.Integration.Renderer do
   ## Helper functions for refactored if statements
 
   defp init_terminal_by_mode(true) do
-    Log.info(
+    IO.puts(
       "[Renderer] Test mode detected, skipping actual terminal initialization"
     )
 
@@ -356,14 +356,14 @@ defmodule Raxol.Terminal.Integration.Renderer do
   end
 
   defp init_terminal_by_mode(false) do
-    Log.info("[Renderer] Attempting to call :termbox2_nif.tb_init()")
+    IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_init()")
 
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            raw_init_result = :termbox2_nif.tb_init()
 
            case raw_init_result do
              0 ->
-               Log.info(
+               IO.puts(
                  "[Renderer] :termbox2_nif.tb_init() returned 0 (success)"
                )
 
@@ -399,16 +399,16 @@ defmodule Raxol.Terminal.Integration.Renderer do
   end
 
   defp shutdown_terminal_by_mode(true) do
-    Log.info("[Renderer] Test mode detected, skipping actual terminal shutdown")
+    IO.puts("[Renderer] Test mode detected, skipping actual terminal shutdown")
     :ok
   end
 
   defp shutdown_terminal_by_mode(false) do
-    Log.info("[Renderer] Attempting to call :termbox2_nif.tb_shutdown()")
+    IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_shutdown()")
 
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            :termbox2_nif.tb_shutdown()
-           Log.info("[Renderer] :termbox2_nif.tb_shutdown() called.")
+           IO.puts("[Renderer] :termbox2_nif.tb_shutdown() called.")
            :ok
          end) do
       {:ok, result} ->

@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Commands.Executor do
   alias Raxol.Terminal.Commands.CSIHandler
   alias Raxol.Terminal.Commands.OSCHandler
   alias Raxol.Terminal.Commands.DCSHandler
-  require Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Log
 
   @basic_commands [?m, ?H, ?r, ?J, ?K]
   @cursor_commands [?A, ?B, ?C, ?D, ?E, ?F, ?G, ?d]
@@ -182,14 +182,12 @@ defmodule Raxol.Terminal.Commands.Executor do
   end
 
   defp log_and_return_result({:error, reason}) do
-    require Logger
-    Logger.error("Executor error: #{inspect(reason)}")
+    Log.module_error("Executor error: #{inspect(reason)}")
     {:error, reason}
   end
 
   defp log_and_return_result({:error, reason, emulator}) do
-    require Logger
-    Logger.error("Executor error: #{inspect(reason)}")
+    Log.module_error("Executor error: #{inspect(reason)}")
     emulator
   end
 

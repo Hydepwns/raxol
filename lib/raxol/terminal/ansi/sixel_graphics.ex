@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ANSI.SixelGraphics do
-  require Logger
+  alias Raxol.Core.Runtime.Log
   import Bitwise
 
   @behaviour Raxol.Terminal.ANSI.Behaviours.SixelGraphics
@@ -400,7 +400,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
           binary()
         ) :: Raxol.Terminal.ANSI.SixelGraphics.Behaviour.t()
   def process_sequence(state, data) when is_binary(data) do
-    Logger.debug(
+    Log.module_debug(
       "SixelGraphics: process_sequence called with data: #{inspect(data)}"
     )
 
@@ -417,15 +417,15 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
           state
       end
 
-    Logger.debug(
+    Log.module_debug(
       "SixelGraphics: Initial palette has #{map_size(state_with_palette.palette)} colors"
     )
 
-    Logger.debug(
+    Log.module_debug(
       "SixelGraphics: Color index 1 is #{inspect(Map.get(state_with_palette.palette, 1, :not_found))}"
     )
 
-    Logger.debug(
+    Log.module_debug(
       "SixelGraphics: Calling SixelParser.parse with data: #{inspect(data)}"
     )
 
@@ -444,11 +444,11 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
            }
          ) do
       {:ok, parser_state} ->
-        Logger.debug(
+        Log.module_debug(
           "SixelGraphics: Parser returned palette with #{map_size(parser_state.palette)} colors"
         )
 
-        Logger.debug(
+        Log.module_debug(
           "SixelGraphics: Parser color index 1 is #{inspect(Map.get(parser_state.palette, 1, :not_found))}"
         )
 
@@ -459,11 +459,11 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
             false -> parser_state.palette
           end
 
-        Logger.debug(
+        Log.module_debug(
           "SixelGraphics: Final palette has #{map_size(final_palette)} colors"
         )
 
-        Logger.debug(
+        Log.module_debug(
           "SixelGraphics: Final color index 1 is #{inspect(Map.get(final_palette, 1, :not_found))}"
         )
 
@@ -479,7 +479,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
         {updated_state, :ok}
 
       {:error, reason} ->
-        Logger.debug("SixelGraphics: Parser returned error: #{inspect(reason)}")
+        Log.module_debug("SixelGraphics: Parser returned error: #{inspect(reason)}")
         # Return unchanged state and error
         {state_with_palette, {:error, reason}}
     end

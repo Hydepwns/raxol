@@ -1,4 +1,5 @@
 defmodule Raxol.Terminal.Input.FileDropHandler do
+  alias Raxol.Core.Runtime.Log
   import Bitwise
 
   @moduledoc """
@@ -29,9 +30,6 @@ defmodule Raxol.Terminal.Input.FileDropHandler do
   - MIME type validation prevents execution of dangerous files
   - Symlink resolution with loop detection
   """
-
-  require Logger
-
   @type file_info :: %{
           path: String.t(),
           name: String.t(),
@@ -263,11 +261,11 @@ defmodule Raxol.Terminal.Input.FileDropHandler do
 
     case start_file_watcher(file_paths, callbacks) do
       {:ok, watcher_pid} ->
-        Logger.info("Started file watcher for #{length(files)} dropped files")
+        Log.module_info("Started file watcher for #{length(files)} dropped files")
         {:ok, watcher_pid}
 
       {:error, reason} ->
-        Logger.warning("Failed to start file watcher: #{inspect(reason)}")
+        Log.module_warning("Failed to start file watcher: #{inspect(reason)}")
         {:error, reason}
     end
   end
@@ -583,7 +581,7 @@ defmodule Raxol.Terminal.Input.FileDropHandler do
         callback.(path)
       rescue
         error ->
-          Logger.warning("File watcher callback error: #{inspect(error)}")
+          Log.module_warning("File watcher callback error: #{inspect(error)}")
       end
     end
   end

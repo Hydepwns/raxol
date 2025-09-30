@@ -1,12 +1,11 @@
-defmodule Raxol.Terminal.Theme.UnifiedTheme do
+defmodule Raxol.Terminal.Theme.ThemeServer do
   @moduledoc """
   Unified theme system for the Raxol terminal emulator.
   Handles theme management, preview, switching, and customization.
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Types
   @type theme_id :: String.t()
   @type theme_state :: %{
@@ -381,7 +380,7 @@ defmodule Raxol.Terminal.Theme.UnifiedTheme do
         Enum.each(files, &load_theme_from_path(path, &1))
 
       {:error, reason} ->
-        Logger.error("Failed to list theme directory #{path}: #{reason}")
+        Log.module_error("Failed to list theme directory #{path}: #{reason}")
     end
   end
 

@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Scroll.UnifiedScroll do
+defmodule Raxol.Terminal.Scroll.ScrollServer do
   @moduledoc """
   Unified scroll management system for the terminal.
 

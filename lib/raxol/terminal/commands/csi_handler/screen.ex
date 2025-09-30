@@ -46,7 +46,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.Screen do
   defp handle_insert_characters(emulator, params) do
     count = get_param(params, 0, 1)
     # Delegate to UnifiedCommandHandler for proper ICH implementation
-    alias Raxol.Terminal.Commands.UnifiedCommandHandler
+    alias Raxol.Terminal.Commands.CommandServer
 
     case UnifiedCommandHandler.handle_csi(emulator, "@", [count]) do
       {:ok, updated_emulator} -> {:ok, updated_emulator}
@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.Screen do
 
   defp handle_delete_characters(emulator, params) do
     count = get_param(params, 0, 1)
-    alias Raxol.Terminal.Commands.UnifiedCommandHandler
+    alias Raxol.Terminal.Commands.CommandServer
 
     case UnifiedCommandHandler.handle_csi(emulator, "P", [count]) do
       {:ok, updated_emulator} -> {:ok, updated_emulator}
@@ -68,7 +68,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.Screen do
 
   defp handle_insert_lines(emulator, params) do
     count = get_param(params, 0, 1)
-    alias Raxol.Terminal.Commands.UnifiedCommandHandler
+    alias Raxol.Terminal.Commands.CommandServer
 
     case UnifiedCommandHandler.handle_csi(emulator, "L", [count]) do
       {:ok, updated_emulator} -> {:ok, updated_emulator}
@@ -79,7 +79,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.Screen do
 
   defp handle_delete_lines(emulator, params) do
     count = get_param(params, 0, 1)
-    alias Raxol.Terminal.Commands.UnifiedCommandHandler
+    alias Raxol.Terminal.Commands.CommandServer
 
     case UnifiedCommandHandler.handle_csi(emulator, "M", [count]) do
       {:ok, updated_emulator} -> {:ok, updated_emulator}
@@ -90,7 +90,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler.Screen do
 
   defp handle_erase_characters(emulator, params) do
     count = get_param(params, 0, 1)
-    alias Raxol.Terminal.Commands.UnifiedCommandHandler
+    alias Raxol.Terminal.Commands.CommandServer
 
     case UnifiedCommandHandler.handle_csi(emulator, "X", [count]) do
       {:ok, updated_emulator} -> {:ok, updated_emulator}

@@ -29,11 +29,10 @@ defmodule Raxol.Terminal.Graphics.Animation do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
   alias Raxol.Animation.Framework
   alias Raxol.Animation.Interpolate
-  alias Raxol.Terminal.Graphics.UnifiedGraphics
+  alias Raxol.Terminal.Graphics.GraphicsServer
+  alias Raxol.Core.Runtime.Log
 
   @type animation_id :: String.t()
   @type graphics_id :: non_neg_integer()
@@ -353,7 +352,7 @@ defmodule Raxol.Terminal.Graphics.Animation do
         :ok
 
       {:error, reason} ->
-        Logger.warning(
+        Log.module_warning(
           "Failed to apply graphics properties: #{inspect(reason)}"
         )
     end

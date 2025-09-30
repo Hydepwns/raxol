@@ -35,8 +35,7 @@ if Code.ensure_loaded?(:ssh) do
     """
 
     use Raxol.Core.Behaviours.BaseManager
-    require Logger
-
+  alias Raxol.Core.Runtime.Log
     @type connection_options :: %{
             optional(:username) => String.t(),
             optional(:password) => String.t(),
@@ -271,7 +270,7 @@ if Code.ensure_loaded?(:ssh) do
           {:ok, new_state}
 
         {:error, reason} ->
-          Logger.error("SSH connection failed: #{inspect(reason)}")
+          Log.module_error("SSH connection failed: #{inspect(reason)}")
           {:stop, {:connection_failed, reason}}
       end
     end
@@ -399,23 +398,23 @@ if Code.ensure_loaded?(:ssh) do
     end
 
     def handle_manager_info({:ssh_connection_lost, _ref}, state) do
-      Logger.warning("SSH connection lost, attempting reconnect")
+      Log.module_warning("SSH connection lost, attempting reconnect")
       {:noreply, attempt_reconnect(state)}
     end
 
     def handle_manager_info({:EXIT, _pid, reason}, state) do
-      Logger.warning("SSH process exited: #{inspect(reason)}")
+      Log.module_warning("SSH process exited: #{inspect(reason)}")
       {:noreply, attempt_reconnect(state)}
     end
 
     def handle_manager_info(msg, state) do
-      Logger.debug("Unhandled SSH message: #{inspect(msg)}")
+      Log.module_debug("Unhandled SSH message: #{inspect(msg)}")
       {:noreply, state}
     end
 
     @impl true
     def terminate_manager(reason, state) do
-      Logger.info("SSH client terminating: #{inspect(reason)}")
+      Log.module_info("SSH client terminating: #{inspect(reason)}")
       perform_disconnect(state)
       :ok
     end
@@ -445,7 +444,7 @@ if Code.ensure_loaded?(:ssh) do
              state.options.connect_timeout
            ) do
         {:ok, connection_ref} ->
-          Logger.info("SSH connected to #{state.host}:#{state.port}")
+          Log.module_info("SSH connected to #{state.host}:#{state.port}")
 
           connection_info = %{
             host: state.host,
@@ -473,7 +472,7 @@ if Code.ensure_loaded?(:ssh) do
           {:ok, new_state}
 
         {:error, reason} ->
-          Logger.error("SSH connection failed: #{inspect(reason)}")
+          Log.module_error("SSH connection failed: #{inspect(reason)}")
           {:error, reason}
       end
     end
@@ -622,7 +621,7 @@ if Code.ensure_loaded?(:ssh) do
     defp start_shell_session(_state, options) do
       # This would typically create a new SSHSession process
       # For now, return a placeholder
-      Logger.info(
+      Log.module_info(
         "Starting SSH shell session with options: #{inspect(options)}"
       )
 
@@ -647,7 +646,7 @@ if Code.ensure_loaded?(:ssh) do
     defp perform_disconnect(state) do
       if state.connected && state.connection_ref do
         :ssh.close(state.connection_ref)
-        Logger.info("SSH disconnected from #{state.host}:#{state.port}")
+        Log.module_info("SSH disconnected from #{state.host}:#{state.port}")
       end
 
       if state.keepalive_timer do
@@ -676,7 +675,7 @@ if Code.ensure_loaded?(:ssh) do
             send_channel_keepalive(state)
 
           {:error, reason} ->
-            Logger.warning("Keepalive failed: #{inspect(reason)}")
+            Log.module_warning("Keepalive failed: #{inspect(reason)}")
             {:error, reason}
         end
       else
@@ -715,7 +714,7 @@ if Code.ensure_loaded?(:ssh) do
               :ok
 
             {:error, reason} ->
-              Logger.debug("Channel keepalive failed: #{inspect(reason)}")
+              Log.module_debug("Channel keepalive failed: #{inspect(reason)}")
               {:error, reason}
           end
 
@@ -742,11 +741,11 @@ if Code.ensure_loaded?(:ssh) do
       case :ssh_connection.session_channel(state.connection_ref, 1000) do
         {:ok, channel_id} ->
           # Store the channel for future use
-          Logger.debug("Created keepalive channel: #{channel_id}")
+          Log.module_debug("Created keepalive channel: #{channel_id}")
           {:ok, channel_id}
 
         {:error, reason} ->
-          Logger.debug("Failed to create keepalive channel: #{inspect(reason)}")
+          Log.module_debug("Failed to create keepalive channel: #{inspect(reason)}")
           {:error, reason}
       end
     end
@@ -761,7 +760,7 @@ if Code.ensure_loaded?(:ssh) do
 
     defp attempt_reconnect(state) do
       if state.reconnect_attempts < @max_reconnect_attempts do
-        Logger.info(
+        Log.module_info(
           "Attempting SSH reconnect (#{state.reconnect_attempts + 1}/#{@max_reconnect_attempts})"
         )
 
@@ -774,7 +773,7 @@ if Code.ensure_loaded?(:ssh) do
             reconnect_attempts: state.reconnect_attempts + 1
         }
       else
-        Logger.error("Max SSH reconnect attempts reached, giving up")
+        Log.module_error("Max SSH reconnect attempts reached, giving up")
         perform_disconnect(state)
       end
     end

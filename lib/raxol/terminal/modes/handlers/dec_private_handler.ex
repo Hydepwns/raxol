@@ -3,8 +3,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   Handles DEC Private mode operations and their side effects.
   Manages the implementation of DEC private mode changes and their effects on the terminal.
   """
-
-  require Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Modes.Types.ModeTypes
@@ -74,28 +73,26 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
   end
 
   defp apply_mode_effects(mode_def, value, emulator) do
-    require Logger
-
-    Logger.debug(
+    Log.module_debug(
       "DECPrivateHandler.apply_mode_effects called with mode_def.name=#{inspect(mode_def.name)}, value=#{inspect(value)}"
     )
 
     case get_mode_handler(mode_def.name) do
       {:ok, handler} ->
-        Logger.debug(
+        Log.module_debug(
           "DECPrivateHandler.apply_mode_effects: calling handler for #{inspect(mode_def.name)}"
         )
 
         result = handler.(value, emulator)
 
-        Logger.debug(
+        Log.module_debug(
           "DECPrivateHandler.apply_mode_effects: handler returned #{inspect(result)}"
         )
 
         result
 
       :error ->
-        Logger.debug(
+        Log.module_debug(
           "DECPrivateHandler.apply_mode_effects: no handler found for #{inspect(mode_def.name)}"
         )
 
@@ -241,9 +238,7 @@ defmodule Raxol.Terminal.Modes.Handlers.DECPrivateHandler do
 
   def handle_alt_screen(value, emulator) do
     # Mode 47 - Switch to/from alternate screen without save/restore
-    require Logger
-
-    Logger.debug(
+    Log.module_debug(
       "DECPrivateHandler.handle_alt_screen called with value=#{inspect(value)}"
     )
 

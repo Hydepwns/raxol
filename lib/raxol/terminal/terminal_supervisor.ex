@@ -4,8 +4,7 @@ defmodule Raxol.Terminal.Supervisor do
   """
 
   use Supervisor
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   def start_link(init_arg) do
     Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
@@ -47,14 +46,14 @@ defmodule Raxol.Terminal.Supervisor do
            {Raxol.Terminal.TerminalProcess, terminal_config}
          ) do
       {:ok, pid} ->
-        Logger.info(
+        Log.module_info(
           "Started terminal #{terminal_config.terminal_id} with pid #{inspect(pid)}"
         )
 
         {:ok, pid}
 
       {:error, reason} ->
-        Logger.error(
+        Log.module_error(
           "Failed to start terminal #{terminal_config.terminal_id}: #{inspect(reason)}"
         )
 
@@ -73,11 +72,11 @@ defmodule Raxol.Terminal.Supervisor do
                pid
              ) do
           :ok ->
-            Logger.info("Stopped terminal #{terminal_id}")
+            Log.module_info("Stopped terminal #{terminal_id}")
             :ok
 
           {:error, reason} ->
-            Logger.error(
+            Log.module_error(
               "Failed to stop terminal #{terminal_id}: #{inspect(reason)}"
             )
 

@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.UnifiedManager do
+defmodule Raxol.Terminal.TerminalServer do
   @moduledoc """
   Unified terminal management system that consolidates all terminal operations.
 
@@ -55,12 +55,11 @@ defmodule Raxol.Terminal.UnifiedManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+  alias Raxol.Core.Runtime.Log
 
-  require Raxol.Core.Runtime.Log
-
-  alias Raxol.Terminal.Commands.UnifiedCommandHandler
+  alias Raxol.Terminal.Commands.CommandServer
   alias Raxol.Terminal.ScreenBuffer.Manager, as: BufferManager
-  alias Raxol.Core.State.UnifiedStateManager
+  alias Raxol.Core.StateManager
   alias Raxol.Core.Events.EventManager
   alias Raxol.Core.Utils.TimerManager
   alias Raxol.Terminal.Emulator
@@ -208,7 +207,7 @@ defmodule Raxol.Terminal.UnifiedManager do
     # Schedule cleanup
     _ = schedule_cleanup(config.cleanup_interval)
 
-    Logger.info("Unified terminal manager initialized")
+    Log.module_info("Unified terminal manager initialized")
     {:ok, state}
   end
 
@@ -216,7 +215,7 @@ defmodule Raxol.Terminal.UnifiedManager do
   def handle_manager_call({:create_session, user_id, config}, _from, state) do
     case create_session_impl(state, user_id, config) do
       {:ok, session_id, updated_state} ->
-        Logger.info(
+        Log.module_info(
           "Created terminal session #{session_id} for user #{user_id}"
         )
 
@@ -230,7 +229,7 @@ defmodule Raxol.Terminal.UnifiedManager do
   def handle_manager_call({:terminate_session, session_id}, _from, state) do
     case terminate_session_impl(state, session_id) do
       {:ok, updated_state} ->
-        Logger.info("Terminated terminal session #{session_id}")
+        Log.module_info("Terminated terminal session #{session_id}")
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
@@ -535,7 +534,7 @@ defmodule Raxol.Terminal.UnifiedManager do
   end
 
   defp cleanup_impl(state) do
-    Logger.debug("Running unified manager cleanup")
+    Log.module_debug("Running unified manager cleanup")
 
     # Clean up inactive sessions
     # 1 hour
@@ -559,7 +558,7 @@ defmodule Raxol.Terminal.UnifiedManager do
 
     updated_state = %{state | sessions: active_sessions_map}
 
-    Logger.info("Cleaned up #{length(inactive_sessions)} inactive sessions")
+    Log.module_info("Cleaned up #{length(inactive_sessions)} inactive sessions")
     updated_state
   end
 

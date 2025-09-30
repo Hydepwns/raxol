@@ -12,7 +12,7 @@ defmodule Raxol.Terminal.Integration do
   """
 
   alias Raxol.Terminal.Integration.State
-  alias Raxol.Terminal.IO.UnifiedIO
+  alias Raxol.Terminal.IO.IOServer
   alias Raxol.Terminal.Integration.Buffer
   alias Raxol.Terminal.Integration.Renderer, as: IntegrationRenderer
   alias Raxol.Terminal.Integration.Config

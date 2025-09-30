@@ -7,9 +7,7 @@ defmodule Raxol.Terminal.Tooltip do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @doc """
   Shows a tooltip with the given text at the current cursor position.
 
@@ -53,12 +51,12 @@ defmodule Raxol.Terminal.Tooltip do
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_cast({:show, text}, state) do
     # In a real implementation, this would render the tooltip
-    Logger.debug("Showing tooltip: #{text}")
+    Log.module_debug("Showing tooltip: #{text}")
     {:noreply, %{state | visible: true, text: text}}
   end
 
   def handle_manager_cast(:hide, state) do
-    Logger.debug("Hiding tooltip")
+    Log.module_debug("Hiding tooltip")
     {:noreply, %{state | visible: false, text: ""}}
   end
 

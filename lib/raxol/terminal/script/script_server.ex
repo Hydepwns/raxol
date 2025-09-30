@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Script.UnifiedScript do
+defmodule Raxol.Terminal.Script.ScriptServer do
   @moduledoc """
   Unified scripting system for the Raxol terminal emulator.
   Handles script execution, management, and integration with the terminal.
@@ -7,9 +7,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @type script_id :: String.t()
   @type script_type :: :lua | :python | :javascript | :elixir
   @type script_state :: %{
@@ -350,11 +348,11 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         result
 
       nil ->
-        Logger.error("Script execution timeout")
+        Log.module_error("Script execution timeout")
         {:error, :execution_timeout}
 
       {:exit, reason} ->
-        Logger.error("Script execution failed: #{inspect(reason)}")
+        Log.module_error("Script execution failed: #{inspect(reason)}")
         {:error, :execution_failed}
     end
   end
@@ -381,11 +379,11 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         result
 
       nil ->
-        Logger.error("Elixir script compilation/execution timeout")
+        Log.module_error("Elixir script compilation/execution timeout")
         {:error, :execution_failed}
 
       {:exit, reason} ->
-        Logger.error("Script execution failed: #{inspect(reason)}")
+        Log.module_error("Script execution failed: #{inspect(reason)}")
         {:error, :execution_failed}
     end
   end
@@ -507,11 +505,11 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         :ok
 
       nil ->
-        Logger.error("Script export timeout")
+        Log.module_error("Script export timeout")
         {:error, :export_failed}
 
       {:exit, reason} ->
-        Logger.error("Script export failed: #{inspect(reason)}")
+        Log.module_error("Script export failed: #{inspect(reason)}")
         {:error, :export_failed}
     end
   end
@@ -548,11 +546,11 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         result
 
       nil ->
-        Logger.error("Script import timeout")
+        Log.module_error("Script import timeout")
         {:error, :import_failed}
 
       {:exit, reason} ->
-        Logger.error("Script import failed: #{inspect(reason)}")
+        Log.module_error("Script import failed: #{inspect(reason)}")
         {:error, :import_failed}
     end
   end
@@ -660,7 +658,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
           load_script_from_single_file(path)
 
         _ ->
-          Logger.warning("Invalid script path: #{path}")
+          Log.module_warning("Invalid script path: #{path}")
       end
     end)
   end
@@ -671,7 +669,7 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         Enum.each(entries, &process_directory_entry(path, &1))
 
       {:error, reason} ->
-        Logger.error("Failed to list directory #{path}: #{inspect(reason)}")
+        Log.module_error("Failed to list directory #{path}: #{inspect(reason)}")
     end
   end
 
@@ -786,16 +784,16 @@ defmodule Raxol.Terminal.Script.UnifiedScript do
         script_id = generate_script_id()
 
         # Store in process dictionary for now, could be enhanced to use GenServer state
-        Raxol.Core.State.UnifiedStateManager.set(
+        Raxol.Core.StateManager.set(
           :scripts,
           {:loaded_script, script_id},
           script
         )
 
-        Logger.info("Loaded script: #{script.name} from #{path}")
+        Log.module_info("Loaded script: #{script.name} from #{path}")
 
       {:error, reason} ->
-        Logger.error("Failed to load script from #{path}: #{inspect(reason)}")
+        Log.module_error("Failed to load script from #{path}: #{inspect(reason)}")
     end
   end
 end

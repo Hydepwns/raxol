@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
+defmodule Raxol.Terminal.Graphics.GraphicsServer do
   @moduledoc """
   Provides unified graphics capabilities for the terminal emulator with automatic
   protocol detection and fallback support.
@@ -32,13 +32,12 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
   alias Raxol.Terminal.Graphics.KittyProtocol
   alias Raxol.Terminal.Graphics.ImageProcessor
   alias Raxol.Terminal.Graphics.ImageCache
   alias Raxol.Terminal.ANSI.SixelGraphics
   alias Raxol.System.Platform
+  alias Raxol.Core.Runtime.Log
 
   # Types
   @type graphics_id :: non_neg_integer()
@@ -421,13 +420,14 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
   end
 
   # Server Callbacks
+  @impl true
   def init_manager(opts) do
     # Detect graphics capabilities on startup
     graphics_support = Platform.detect_graphics_support()
 
     # Start image cache if enabled
-    cache_config = Map.get(opts, :cache_config, %{})
-    cache_enabled = Map.get(opts, :cache_enabled, true)
+    cache_config = Keyword.get(opts, :cache_config, %{})
+    cache_enabled = Keyword.get(opts, :cache_enabled, true)
 
     cache_pid =
       case cache_enabled do
@@ -446,25 +446,30 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
       graphics: %{},
       active_graphics: nil,
       next_id: 1,
-      config: Map.merge(default_config(), opts),
+      config:
+        Map.merge(
+          default_config(),
+          if(is_list(opts), do: Enum.into(opts, %{}), else: opts)
+        ),
       graphics_support: graphics_support,
       preferred_protocol: determine_preferred_protocol(graphics_support),
-      fallback_enabled: Map.get(opts, :fallback_enabled, true),
+      fallback_enabled: Keyword.get(opts, :fallback_enabled, true),
       cache_enabled: cache_enabled,
       cache_pid: cache_pid
     }
 
-    Logger.info(
+    Log.module_info(
       "UnifiedGraphics initialized with support: #{inspect(graphics_support)}"
     )
 
-    Logger.info(
+    Log.module_info(
       "Image cache #{if cache_enabled, do: "enabled", else: "disabled"}"
     )
 
     {:ok, state}
   end
 
+  @impl true
   def handle_manager_call({:display_image, image_data, options}, _from, state) do
     with {:ok, protocol} <- select_protocol(options, state),
          {:ok, processed_options} <-
@@ -480,7 +485,7 @@ defmodule Raxol.Terminal.Graphics.UnifiedGraphics do
              processed_options
            ) do
       # Execute the display command (would normally write to terminal)
-      Logger.debug("Graphics command: #{inspect(command)}")
+      Log.module_debug("Graphics command: #{inspect(command)}")
 
       new_state =
         update_graphics_state_with_image_info(

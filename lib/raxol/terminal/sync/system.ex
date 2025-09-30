@@ -5,8 +5,7 @@ defmodule Raxol.Terminal.Sync.System do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Types
   @type sync_id :: String.t()
   @type sync_key :: String.t()
@@ -31,9 +30,7 @@ defmodule Raxol.Terminal.Sync.System do
 
   # Client API
   def sync(sync_id, key, value, opts \\ []) do
-    require Logger
-
-    Logger.debug(
+    Log.module_debug(
       "[System] sync called: sync_id=#{sync_id}, key=#{key}, value=#{inspect(value)}, opts=#{inspect(opts)}"
     )
 

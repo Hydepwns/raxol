@@ -96,7 +96,7 @@ defmodule Raxol.Terminal.Graphics.VisualizationHelpers do
   """
   def create_chart_visualization(chart_id, type, config) do
     # Create the underlying graphics visualization
-    case Raxol.Terminal.Graphics.UnifiedGraphics.create_graphics(config) do
+    case Raxol.Terminal.Graphics.GraphicsServer.create_graphics(config) do
       {:ok, graphics_id} ->
         # Initialize chart rendering
         :ok = render_initial_chart(graphics_id, type, config)

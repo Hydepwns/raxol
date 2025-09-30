@@ -5,11 +5,9 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.Core.ErrorRecovery
   alias Raxol.Terminal.Emulator.Telemetry
+  alias Raxol.Core.Runtime.Log
 
   # 1MB max input
   @max_input_size 1_048_576
@@ -57,7 +55,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
         {:error, :input_too_large}
 
       {:error, :timeout} ->
-        Logger.error("Input processing timeout")
+        Log.module_error("Input processing timeout")
         {:error, :timeout}
 
       {:error, reason} ->
@@ -137,7 +135,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
         {:ok, state}
 
       {_, _} ->
-        Logger.error("Failed to initialize safe emulator")
+        Log.module_error("Failed to initialize safe emulator")
         # Start with minimal fallback state
         {:ok, build_fallback_state()}
     end
@@ -284,12 +282,12 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   def handle_manager_info({:retry_processing, input}, state) do
     with {:ok, _result} <- process_with_retry(input, state) do
-      Logger.info("Retry successful for buffered input")
+      Log.module_info("Retry successful for buffered input")
       new_state = %{state | input_buffer: <<>>, recovery_state: :healthy}
       {:noreply, new_state}
     else
       {:error, reason} ->
-        Logger.error("Retry failed, discarding input: #{inspect(reason)}")
+        Log.module_error("Retry failed, discarding input: #{inspect(reason)}")
         new_state = %{state | input_buffer: <<>>, recovery_state: :degraded}
         {:noreply, new_state}
     end
@@ -297,7 +295,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
 
   @impl true
   def handle_manager_info(msg, state) do
-    Logger.debug("Unhandled message: #{inspect(msg)}")
+    Log.module_debug("Unhandled message: #{inspect(msg)}")
     {:noreply, state}
   end
 
@@ -411,7 +409,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
         result
 
       {:error, reason} ->
-        Logger.error("Exception in input chunking: #{inspect(reason)}")
+        Log.module_error("Exception in input chunking: #{inspect(reason)}")
         {:error, {:chunking_exception, reason}}
     end
   end
@@ -482,7 +480,7 @@ defmodule Raxol.Terminal.Emulator.SafeEmulator do
         result
 
       {:error, reason} ->
-        Logger.error("Exception applying sequence: #{inspect(reason)}")
+        Log.module_error("Exception applying sequence: #{inspect(reason)}")
         {:error, {:application_exception, reason}}
     end
   end

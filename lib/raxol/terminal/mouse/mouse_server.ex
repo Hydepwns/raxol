@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Mouse.UnifiedMouse do
+defmodule Raxol.Terminal.Mouse.MouseServer do
   @moduledoc """
   Provides unified mouse handling functionality for the terminal emulator.
   This module handles mouse events, tracking, and state management.

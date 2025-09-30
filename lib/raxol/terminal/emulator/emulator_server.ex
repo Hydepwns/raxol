@@ -6,10 +6,8 @@ defmodule Raxol.Terminal.Emulator.EmulatorServer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.Terminal.Emulator
+  alias Raxol.Core.Runtime.Log
 
   ## Client API
   # Use BaseManager's start_link - it accepts keyword list options
@@ -28,10 +26,10 @@ defmodule Raxol.Terminal.Emulator.EmulatorServer do
     # Log initialization if we have an emulator
     case initial_emulator do
       nil ->
-        Logger.debug("Terminal emulator server started without initial state")
+        Log.module_debug("Terminal emulator server started without initial state")
 
       emulator ->
-        Logger.debug(
+        Log.module_debug(
           "Terminal emulator server started with dimensions #{emulator.width}x#{emulator.height}"
         )
     end
@@ -135,7 +133,7 @@ defmodule Raxol.Terminal.Emulator.EmulatorServer do
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_info({:EXIT, _pid, reason}, state) do
-    Logger.info(
+    Log.module_info(
       "Terminal emulator server received EXIT signal: #{inspect(reason)}"
     )
 
@@ -146,7 +144,7 @@ defmodule Raxol.Terminal.Emulator.EmulatorServer do
 
   @impl GenServer
   def terminate(reason, %{session_id: session_id}) do
-    Logger.info(
+    Log.module_info(
       "Terminal emulator server #{session_id} terminating: #{inspect(reason)}"
     )
 

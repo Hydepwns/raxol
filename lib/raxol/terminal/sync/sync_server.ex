@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Sync.UnifiedSync do
+defmodule Raxol.Terminal.Sync.SyncServer do
   @moduledoc """
   Unified synchronization system for the Raxol terminal emulator.
   This module provides centralized synchronization mechanisms for:

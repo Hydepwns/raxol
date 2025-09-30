@@ -770,10 +770,9 @@ defmodule Raxol.Terminal.Emulator do
   @doc "Handles ESC = sequence (DECKPAM - Enable application keypad mode)."
   def handle_esc_equals(emulator) do
     # DECKPAM - Enable application keypad mode (ESC =)
-    require Logger
-    Logger.debug("Emulator.handle_esc_equals called - setting decckm mode")
+    Log.module_debug("Emulator.handle_esc_equals called - setting decckm mode")
 
-    Logger.debug(
+    Log.module_debug(
       "Initial cursor_keys_mode: #{inspect(emulator.mode_manager.cursor_keys_mode)}"
     )
 
@@ -781,16 +780,16 @@ defmodule Raxol.Terminal.Emulator do
 
     case result do
       {:ok, new_emulator} ->
-        Logger.debug("ModeOperations.set_mode succeeded")
+        Log.module_debug("ModeOperations.set_mode succeeded")
 
-        Logger.debug(
+        Log.module_debug(
           "Final cursor_keys_mode: #{inspect(new_emulator.mode_manager.cursor_keys_mode)}"
         )
 
         new_emulator
 
       {:error, reason} ->
-        Logger.debug("ModeOperations.set_mode failed: #{inspect(reason)}")
+        Log.module_debug("ModeOperations.set_mode failed: #{inspect(reason)}")
         emulator
     end
   end
@@ -798,10 +797,9 @@ defmodule Raxol.Terminal.Emulator do
   @doc "Handles ESC > sequence (DECKPNM - Disable application keypad mode)."
   def handle_esc_greater(emulator) do
     # DECKPNM - Disable application keypad mode (ESC >)
-    require Logger
-    Logger.debug("Emulator.handle_esc_greater called - resetting decckm mode")
+    Log.module_debug("Emulator.handle_esc_greater called - resetting decckm mode")
 
-    Logger.debug(
+    Log.module_debug(
       "Initial cursor_keys_mode: #{inspect(emulator.mode_manager.cursor_keys_mode)}"
     )
 
@@ -809,16 +807,16 @@ defmodule Raxol.Terminal.Emulator do
 
     case result do
       {:ok, new_emulator} ->
-        Logger.debug("ModeOperations.reset_mode succeeded")
+        Log.module_debug("ModeOperations.reset_mode succeeded")
 
-        Logger.debug(
+        Log.module_debug(
           "Final cursor_keys_mode: #{inspect(new_emulator.mode_manager.cursor_keys_mode)}"
         )
 
         new_emulator
 
       {:error, reason} ->
-        Logger.debug("ModeOperations.reset_mode failed: #{inspect(reason)}")
+        Log.module_debug("ModeOperations.reset_mode failed: #{inspect(reason)}")
         emulator
     end
   end
@@ -863,9 +861,7 @@ defmodule Raxol.Terminal.Emulator do
       Coordinator.new(width, height, opts)
     rescue
       error ->
-        require Logger
-
-        Logger.warning(
+        Log.module_warning(
           "Failed to create full emulator with GenServers: #{inspect(error)}"
         )
 
@@ -878,6 +874,7 @@ defmodule Raxol.Terminal.Emulator do
     alias Raxol.Terminal.ScreenBuffer
     alias Raxol.Terminal.ScreenBufferAdapter, as: ScreenBuffer
     alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  alias Raxol.Core.Runtime.Log
 
     # Extract options with defaults
     enable_history = Keyword.get(opts, :enable_history, true)

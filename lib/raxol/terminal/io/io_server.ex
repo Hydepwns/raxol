@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.IO.UnifiedIO do
+defmodule Raxol.Terminal.IO.IOServer do
   @moduledoc """
   Unified input/output system for the terminal emulator.
 
@@ -13,8 +13,6 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  @behaviour Raxol.Core.Behaviours.BaseManager
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{
@@ -397,7 +395,7 @@ defmodule Raxol.Terminal.IO.UnifiedIO do
 
   # Helper functions
   defp set_cursor_visibility_if_available(visible) do
-    case Process.whereis(Raxol.Terminal.Render.UnifiedRenderer) do
+    case Process.whereis(Raxol.Terminal.Render.RenderServer) do
       nil -> :ok
       _pid -> UnifiedRenderer.set_cursor_visibility(visible)
     end

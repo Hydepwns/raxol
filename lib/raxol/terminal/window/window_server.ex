@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Window.UnifiedWindow do
+defmodule Raxol.Terminal.Window.WindowServer do
   @moduledoc """
   A unified window manager for terminal applications.
 

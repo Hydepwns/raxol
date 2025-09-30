@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Commands.UnifiedCommandHandler do
+defmodule Raxol.Terminal.Commands.CommandServer do
   @moduledoc """
   Unified command handler that consolidates all terminal command processing.
 

@@ -8,9 +8,8 @@ defmodule Raxol.Terminal.TerminalProcess do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
   alias Raxol.Terminal.TerminalRegistry
+  alias Raxol.Core.Runtime.Log
   # Terminal process aliases will be added as needed
 
   defstruct [
@@ -78,7 +77,7 @@ defmodule Raxol.Terminal.TerminalProcess do
     # Start initialization in background
     send(self(), :initialize_terminal)
 
-    Logger.info("Terminal process started: #{terminal_config.terminal_id}")
+    Log.module_info("Terminal process started: #{terminal_config.terminal_id}")
     {:ok, state}
   end
 
@@ -170,11 +169,11 @@ defmodule Raxol.Terminal.TerminalProcess do
   def handle_manager_info(:initialize_terminal, state) do
     case initialize_terminal_components(state) do
       {:ok, new_state} ->
-        Logger.info("Terminal #{state.terminal_id} initialized successfully")
+        Log.module_info("Terminal #{state.terminal_id} initialized successfully")
         {:noreply, %{new_state | state: :active}}
 
       {:error, reason} ->
-        Logger.error(
+        Log.module_error(
           "Failed to initialize terminal #{state.terminal_id}: #{inspect(reason)}"
         )
 
@@ -191,7 +190,7 @@ defmodule Raxol.Terminal.TerminalProcess do
 
   @impl true
   def terminate(reason, state) do
-    Logger.info("Terminal #{state.terminal_id} terminating: #{inspect(reason)}")
+    Log.module_info("Terminal #{state.terminal_id} terminating: #{inspect(reason)}")
 
     # Clean up resources
     cleanup_terminal_resources(state)
@@ -356,13 +355,13 @@ defmodule Raxol.Terminal.TerminalProcess do
       saved_at: System.system_time(:millisecond)
     }
 
-    Logger.debug("Session saved for terminal #{state.terminal_id}")
+    Log.module_debug("Session saved for terminal #{state.terminal_id}")
     :ok
   end
 
   defp cleanup_terminal_resources(state) do
     # Clean up any resources like file handles, processes, etc.
-    Logger.debug("Cleaning up resources for terminal #{state.terminal_id}")
+    Log.module_debug("Cleaning up resources for terminal #{state.terminal_id}")
     :ok
   end
 

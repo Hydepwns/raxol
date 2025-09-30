@@ -1,4 +1,4 @@
-defmodule Raxol.Terminal.Extension.UnifiedExtension do
+defmodule Raxol.Terminal.Extension.ExtensionServer do
   @moduledoc """
   Unified extension management GenServer that provides a single interface for loading,
   unloading, and managing terminal extensions.

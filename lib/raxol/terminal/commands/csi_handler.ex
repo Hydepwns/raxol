@@ -7,10 +7,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
   alias Raxol.Terminal.Commands.WindowHandler
   alias Raxol.Terminal.Commands.CSIHandler.{CursorMovementHandler, Cursor}
   alias Raxol.Terminal.ModeManager
-
-  require Raxol.Core.Runtime.Log
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Cursor movement delegations
   defdelegate handle_cursor_up(emulator, amount), to: CursorMovementHandler
   defdelegate handle_cursor_down(emulator, amount), to: CursorMovementHandler
@@ -241,7 +238,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
   def handle_device_command(emulator, params, intermediates, final_byte) do
     # Delegate to UnifiedCommandHandler for device commands
-    alias Raxol.Terminal.Commands.UnifiedCommandHandler
+    alias Raxol.Terminal.Commands.CommandServer
 
     case final_byte do
       ?c ->
@@ -445,8 +442,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
 
     if gset do
       # Debug log for testing
-      require Logger
-      Logger.debug("handle_scs params_buffer: #{inspect(params_buffer)}")
+      Log.module_debug("handle_scs params_buffer: #{inspect(params_buffer)}")
 
       char_code =
         case params_buffer do
@@ -454,7 +450,7 @@ defmodule Raxol.Terminal.Commands.CSIHandler do
             ?0
 
           "1" ->
-            Logger.debug("Matched '1' string, returning ?A (#{?A})")
+            Log.module_debug("Matched '1' string, returning ?A (#{?A})")
             # Test compatibility - "1" maps to UK ASCII (character 'A')
             ?A
 

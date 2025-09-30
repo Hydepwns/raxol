@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.Events do
   ## Examples
       
       Raxol.Terminal.Events.register_global_click(fn {x, y} ->
-        Log.info("Clicked at \#{x}, \#{y}")
+        IO.puts("Clicked at \#{x}, \#{y}")
       end)
   """
   @spec register_global_click(function()) :: {:ok, reference()}

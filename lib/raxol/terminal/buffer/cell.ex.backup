@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Buffer.Cell do
   Creates a new cell with the specified character and style.
   """
   def new(char, style) when is_binary(char) and is_map(style) do
-    # Log.info("DEBUG: Cell.new/2 - creating cell with char: #{inspect(char)}, style: #{inspect(style)}")
+    # IO.puts("DEBUG: Cell.new/2 - creating cell with char: #{inspect(char)}, style: #{inspect(style)}")
     foreground = extract_foreground(style)
     background = extract_background(style)
 
@@ -68,7 +68,7 @@ defmodule Raxol.Terminal.Buffer.Cell do
       bg: background
     }
 
-    # Log.info("DEBUG: Cell.new/2 - created cell: #{inspect(cell)}")
+    # IO.puts("DEBUG: Cell.new/2 - created cell: #{inspect(cell)}")
     cell
   end
 

@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Emulator.CommandHandler do
 
   # Import/alias as needed for dependencies
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Commands.UnifiedCommandHandler
+  alias Raxol.Terminal.Commands.CommandServer
 
   # handle_cursor_position/2
   def handle_cursor_position(params, emulator) do

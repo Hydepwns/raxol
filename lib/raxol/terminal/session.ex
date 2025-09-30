@@ -166,7 +166,7 @@ defmodule Raxol.Terminal.Session do
   @spec count_active_sessions() :: non_neg_integer()
   def count_active_sessions do
     # Guard against potential nil return or other issues
-    case Raxol.Core.UnifiedRegistry.count(:sessions) do
+    case Raxol.Core.GlobalRegistry.count(:sessions) do
       count when is_integer(count) and count >= 0 -> count
       _ -> 0
     end
@@ -336,7 +336,7 @@ defmodule Raxol.Terminal.Session do
   defp safe_register_session(id, state) do
     task =
       Task.async(fn ->
-        Raxol.Core.UnifiedRegistry.register(:sessions, id, state)
+        Raxol.Core.GlobalRegistry.register(:sessions, id, state)
       end)
 
     case Task.yield(task, 100) || Task.shutdown(task, :brutal_kill) do

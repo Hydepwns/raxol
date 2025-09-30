@@ -51,8 +51,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   defstruct [
     :config,
     :current_fps,
@@ -226,7 +225,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
       stats: init_stats()
     }
 
-    Logger.info(
+    Log.module_info(
       "Adaptive frame rate initialized: target=#{config.target_fps}fps, strategy=#{config.strategy}"
     )
 
@@ -254,7 +253,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     # Recalculate optimal FPS with new power mode
     updated_state = calculate_optimal_fps(new_state)
 
-    Logger.info(
+    Log.module_info(
       "Power mode changed to #{power_mode}, new FPS: #{updated_state.current_fps}"
     )
 
@@ -269,7 +268,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     # Recalculate with new strategy
     updated_state = calculate_optimal_fps(new_state)
 
-    Logger.info(
+    Log.module_info(
       "Strategy changed to #{strategy}, new FPS: #{updated_state.current_fps}"
     )
 
@@ -286,7 +285,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
         config: Map.put(state.config, :forced_fps, clamped_fps)
     }
 
-    Logger.info("FPS forced to #{clamped_fps}")
+    Log.module_info("FPS forced to #{clamped_fps}")
     {:reply, :ok, new_state}
   end
 
@@ -298,7 +297,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     # Recalculate optimal FPS
     updated_state = calculate_optimal_fps(new_state)
 
-    Logger.info("Resumed adaptive FPS: #{updated_state.current_fps}")
+    Log.module_info("Resumed adaptive FPS: #{updated_state.current_fps}")
     {:reply, :ok, updated_state}
   end
 
@@ -307,7 +306,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     new_config = %{state.config | enable_vsync: enabled}
     new_state = %{state | config: new_config}
 
-    Logger.info("VSync #{get_vsync_status(enabled)}")
+    Log.module_info("VSync #{get_vsync_status(enabled)}")
     {:reply, :ok, new_state}
   end
 
@@ -346,7 +345,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     # Adjust FPS based on focus state
     updated_state = apply_focus_adjustment(new_state, focus_state)
 
-    Logger.debug(
+    Log.module_debug(
       "Focus state changed to #{focus_state}, FPS: #{updated_state.current_fps}"
     )
 
@@ -433,7 +432,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
   defp apply_throttling_if_needed(true, state, throttle_factor) do
     new_fps = round(state.current_fps * throttle_factor)
 
-    Logger.info(
+    Log.module_info(
       "Thermal throttling applied: #{state.current_fps} -> #{new_fps} fps"
     )
 
@@ -607,7 +606,7 @@ defmodule Raxol.Terminal.Rendering.AdaptiveFrameRate do
     # Periodic optimization based on performance metrics
     case should_optimize?(state) do
       true ->
-        Logger.debug("Running FPS optimization")
+        Log.module_debug("Running FPS optimization")
         calculate_optimal_fps(state)
 
       false ->

@@ -36,8 +36,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @type cache_key :: String.t()
   @type cache_entry :: %{
           data: binary(),
@@ -248,7 +247,8 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
 
   @impl true
   def init_manager(config) do
-    merged_config = Map.merge(@default_config, config)
+    config_map = if is_list(config), do: Enum.into(config, %{}), else: config
+    merged_config = Map.merge(@default_config, config_map)
 
     # Setup disk cache directory
     disk_cache_dir = setup_disk_cache_dir(merged_config)
@@ -270,7 +270,7 @@ defmodule Raxol.Terminal.Graphics.ImageCache do
       cleanup_timer: cleanup_timer
     }
 
-    Logger.info("ImageCache started with config: #{inspect(final_config)}")
+    Log.module_info("ImageCache started with config: #{inspect(final_config)}")
     {:ok, initial_state}
   end
 

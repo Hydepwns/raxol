@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.Input.Buffer do
   use Raxol.Core.Behaviours.BaseManager
 
   alias Raxol.Terminal.Input.Event.{KeyEvent, MouseEvent}
+  alias Raxol.Core.Runtime.Log
 
   # Client API
 
@@ -102,8 +103,7 @@ defmodule Raxol.Terminal.Input.Buffer do
         rescue
           error ->
             # Log error but continue
-            require Logger
-            Logger.error("Input buffer callback error: #{inspect(error)}")
+            Log.module_error("Input buffer callback error: #{inspect(error)}")
         end
 
         # If we have remaining partial sequences, we should discard them on timeout

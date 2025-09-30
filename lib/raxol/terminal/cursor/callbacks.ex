@@ -3,9 +3,7 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
   Handles GenServer callbacks for the cursor manager.
   Extracted from Raxol.Terminal.Cursor.Manager to reduce file size.
   """
-
-  require Logger
-  require Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Cursor.Movement
 
@@ -313,7 +311,7 @@ defmodule Raxol.Terminal.Cursor.Callbacks do
   Handles GenServer call for unknown requests.
   """
   def handle_unknown_request(request, state) do
-    Logger.warning("Unknown request: #{inspect(request)}")
+    Log.module_warning("Unknown request: #{inspect(request)}")
     {{:error, :unknown_request}, state}
   end
 

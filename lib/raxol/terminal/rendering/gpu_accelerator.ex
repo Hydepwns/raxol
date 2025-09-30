@@ -48,8 +48,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # @behaviour Raxol.Terminal.Rendering.Backend  # Commented out due to init/1 conflict with GenServer
 
   defstruct [
@@ -199,7 +198,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
     case initialize_backend(backend, config) do
       {:ok, state} ->
-        Logger.info("GPU acceleration initialized with #{backend} backend")
+        Log.module_info("GPU acceleration initialized with #{backend} backend")
 
         {:ok,
          %__MODULE__{
@@ -215,7 +214,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
          }}
 
       {:error, reason} ->
-        Logger.error(
+        Log.module_error(
           "Failed to initialize GPU acceleration: #{inspect(reason)}"
         )
 
@@ -369,7 +368,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
         {:ok, %{device: device, queue: queue, pipeline: pipeline}}
 
       {:error, reason} ->
-        Logger.warning(
+        Log.module_warning(
           "Metal initialization failed: #{inspect(reason)}, falling back to Vulkan"
         )
 
@@ -383,7 +382,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
         {:ok, %{device: device, queue: queue, pipeline: pipeline}}
 
       {:error, reason} ->
-        Logger.warning(
+        Log.module_warning(
           "Vulkan initialization failed: #{inspect(reason)}, falling back to software"
         )
 
@@ -392,7 +391,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   end
 
   defp initialize_backend(:software, _config) do
-    Logger.info("Using software rendering fallback")
+    Log.module_info("Using software rendering fallback")
     {:ok, %{device: :software, queue: :software, pipeline: :software}}
   end
 
@@ -485,7 +484,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   defp render_metal(_state, _surface, terminal_buffer, _opts) do
     # Placeholder for Metal rendering
     # Would encode render commands, submit to GPU, etc.
-    Logger.debug("Rendering #{length(terminal_buffer)} characters with Metal")
+    Log.module_debug("Rendering #{length(terminal_buffer)} characters with Metal")
 
     # Simulate render operations
     # Simulate GPU work
@@ -525,7 +524,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   defp render_vulkan(_state, _surface, terminal_buffer, _opts) do
     # Placeholder for Vulkan rendering
-    Logger.debug("Rendering #{length(terminal_buffer)} characters with Vulkan")
+    Log.module_debug("Rendering #{length(terminal_buffer)} characters with Vulkan")
 
     # Simulate render operations
     # Simulate GPU work
@@ -537,7 +536,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
   # Software fallback implementation
   defp render_software(_state, _surface, terminal_buffer, _opts) do
     # Software rasterization fallback
-    Logger.debug(
+    Log.module_debug(
       "Rendering #{length(terminal_buffer)} characters with software fallback"
     )
 
@@ -549,7 +548,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   defp apply_effect(state, effect_type, params) do
     # Placeholder for effect application
-    Logger.debug(
+    Log.module_debug(
       "Applying effect #{effect_type} with params #{inspect(params)}"
     )
 
@@ -558,7 +557,7 @@ defmodule Raxol.Terminal.Rendering.GPUAccelerator do
 
   defp remove_effect(state, effect_type) do
     # Placeholder for effect removal
-    Logger.debug("Removing effect #{effect_type}")
+    Log.module_debug("Removing effect #{effect_type}")
     {:ok, state}
   end
 

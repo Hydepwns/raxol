@@ -1,13 +1,11 @@
 defmodule Raxol.Terminal.Emulator.Telemetry do
+  alias Raxol.Core.Runtime.Log
   @moduledoc """
   Telemetry instrumentation for the terminal emulator.
 
   Provides comprehensive error tracking and performance monitoring
   for terminal emulation operations.
   """
-
-  require Logger
-
   @emulator_events [
     [:raxol, :emulator, :input, :start],
     [:raxol, :emulator, :input, :stop],
@@ -196,7 +194,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   # Private handler functions
 
   defp handle_input_exception(_event, measurements, metadata, _config) do
-    Logger.error("""
+    Log.module_error("""
     Emulator input processing exception:
       Duration: #{format_duration(measurements[:duration])}
       Exception: #{inspect(metadata[:exception])}
@@ -205,7 +203,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   end
 
   defp handle_sequence_exception(_event, measurements, metadata, _config) do
-    Logger.error("""
+    Log.module_error("""
     Emulator sequence handling exception:
       Duration: #{format_duration(measurements[:duration])}
       Exception: #{inspect(metadata[:exception])}
@@ -214,7 +212,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   end
 
   defp handle_resize_exception(_event, measurements, metadata, _config) do
-    Logger.error("""
+    Log.module_error("""
     Emulator resize exception:
       Duration: #{format_duration(measurements[:duration])}
       Exception: #{inspect(metadata[:exception])}
@@ -223,7 +221,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   end
 
   defp handle_error_recorded(_event, _measurements, metadata, _config) do
-    Logger.warning("""
+    Log.module_warning("""
     Emulator error recorded:
       Type: #{metadata[:error_type]}
       Reason: #{inspect(metadata[:reason])}
@@ -232,7 +230,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   end
 
   defp handle_recovery_failed(_event, _measurements, metadata, _config) do
-    Logger.error("""
+    Log.module_error("""
     Emulator recovery failed:
       Reason: #{inspect(metadata[:reason])}
       Timestamp: #{metadata[:timestamp]}
@@ -259,7 +257,7 @@ defmodule Raxol.Terminal.Emulator.Telemetry do
   defp log_health_check(:healthy, _measurements, _metadata), do: :ok
 
   defp log_health_check(status, measurements, _metadata) do
-    Logger.info("""
+    Log.module_info("""
     Emulator health check:
       Status: #{status}
       Value: #{measurements[:status]}

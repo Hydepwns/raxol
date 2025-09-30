@@ -3,9 +3,8 @@ defmodule Raxol.Terminal.Graphics.ChartOperations do
   Chart operations and management functions extracted from DataVisualization.
   Contains streaming updates, data processing, and chart maintenance functions.
   """
-
-  require Logger
   alias Raxol.Terminal.Graphics.ChartDataUtils
+  alias Raxol.Core.Runtime.Log
 
   @doc """
   Updates all streaming charts in the given state.
@@ -50,14 +49,14 @@ defmodule Raxol.Terminal.Graphics.ChartOperations do
   Handles chart click events.
   """
   def handle_chart_click(chart_id, _event) do
-    Logger.debug("Chart clicked: #{chart_id}")
+    Log.module_debug("Chart clicked: #{chart_id}")
   end
 
   @doc """
   Handles chart hover events.
   """
   def handle_chart_hover(chart_id, _event) do
-    Logger.debug("Chart hover: #{chart_id}")
+    Log.module_debug("Chart hover: #{chart_id}")
   end
 
   @doc """
@@ -119,7 +118,7 @@ defmodule Raxol.Terminal.Graphics.ChartOperations do
   """
   def setup_streaming_connection(chart_id, stream_config) do
     # Setup streaming data connection
-    Logger.info("Setting up streaming for chart #{chart_id}")
+    Log.module_info("Setting up streaming for chart #{chart_id}")
 
     {:ok,
      %{

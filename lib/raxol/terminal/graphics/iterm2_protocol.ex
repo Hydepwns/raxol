@@ -1,4 +1,5 @@
 defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
+  alias Raxol.Core.Runtime.Log
   @moduledoc """
   iTerm2 inline images protocol implementation.
 
@@ -41,9 +42,6 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
   - preserveAspectRatio: 0 or 1
   - inline: 0 or 1 for inline display
   """
-
-  require Logger
-
   @type image_format :: :png | :jpeg | :gif | :bmp | :tiff | :webp
   @type display_options :: %{
           optional(:width) => pos_integer(),
@@ -153,7 +151,7 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
       true ->
         case build_osc_sequence(data, options) do
           {:ok, sequence} ->
-            Logger.debug(
+            Log.module_debug(
               "Generated iTerm2 image sequence: #{String.length(sequence)} bytes"
             )
 
@@ -458,7 +456,7 @@ defmodule Raxol.Terminal.Graphics.ITerm2Protocol do
         {:error, {:image_too_large, byte_size(data)}}
 
       detect_image_format(data) == nil ->
-        Logger.warning("Could not detect image format from data")
+        Log.module_warning("Could not detect image format from data")
         # Continue anyway, might still work
         :ok
 

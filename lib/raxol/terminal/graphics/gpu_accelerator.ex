@@ -38,10 +38,9 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
   alias Raxol.Terminal.Rendering.GPUAccelerator, as: BaseGPUAccelerator
   alias Raxol.Terminal.Graphics.ImageProcessor
+  alias Raxol.Core.Runtime.Log
 
   @type gpu_context :: %{
           backend: :metal | :vulkan | :opengl | :software,
@@ -223,7 +222,7 @@ defmodule Raxol.Terminal.Graphics.GPUAccelerator do
         {:reply, {:ok, gpu_state.gpu_context}, gpu_state}
 
       {:error, reason} ->
-        Logger.warning("GPU acceleration unavailable: #{inspect(reason)}")
+        Log.module_warning("GPU acceleration unavailable: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
     end
   end

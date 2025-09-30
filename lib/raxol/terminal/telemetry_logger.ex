@@ -1,11 +1,10 @@
 defmodule Raxol.Terminal.TelemetryLogger do
+  alias Raxol.Core.Runtime.Log
   @moduledoc """
   Logs all Raxol.Terminal telemetry events for observability and debugging.
 
   Call `Raxol.Terminal.TelemetryLogger.attach_all/0` in your application start to enable logging.
   """
-  require Logger
-
   @events [
     [:raxol, :terminal, :focus_changed],
     [:raxol, :terminal, :resized],
@@ -34,7 +33,7 @@ defmodule Raxol.Terminal.TelemetryLogger do
 
   @doc false
   def handle_event(event_name, measurements, metadata, _config) do
-    Logger.info(
+    Log.module_info(
       "[TELEMETRY] #{inspect(event_name)}: #{inspect(measurements)} | #{inspect(metadata)}"
     )
   end

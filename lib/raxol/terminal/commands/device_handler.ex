@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Commands.DeviceHandler do
   This module delegates to UnifiedCommandHandler for actual implementation.
   """
 
-  alias Raxol.Terminal.Commands.UnifiedCommandHandler
+  alias Raxol.Terminal.Commands.CommandServer
 
   @doc """
   Handles Device Attributes (DA) request - CSI c command.

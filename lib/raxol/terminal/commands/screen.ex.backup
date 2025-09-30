@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   def clear_screen(emulator, mode) do
     buffer = Emulator.get_screen_buffer(emulator)
     {x, y} = Emulator.get_cursor_position(emulator)
-    # Log.info("[DEBUG clear_screen] mode=#{mode}, cursor=(#{x},#{y})")
+    # IO.puts("[DEBUG clear_screen] mode=#{mode}, cursor=(#{x},#{y})")
     scroll_region = ScreenBuffer.get_scroll_region(buffer)
 
     {top, bottom} =

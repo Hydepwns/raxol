@@ -34,8 +34,7 @@ if Code.ensure_loaded?(:ssh) do
     """
 
     use Raxol.Core.Behaviours.BaseManager
-    require Logger
-
+  alias Raxol.Core.Runtime.Log
     @type pty_options :: %{
             optional(:term) => String.t(),
             optional(:width) => pos_integer(),
@@ -322,16 +321,16 @@ if Code.ensure_loaded?(:ssh) do
                 exit_status: nil
               }
 
-              Logger.info("SSH session started on channel #{channel_id}")
+              Log.module_info("SSH session started on channel #{channel_id}")
               {:ok, state}
 
             {:error, reason} ->
-              Logger.error("Failed to start SSH session: #{inspect(reason)}")
+              Log.module_error("Failed to start SSH session: #{inspect(reason)}")
               {:stop, {:session_start_failed, reason}}
           end
 
         {:error, reason} ->
-          Logger.error("Failed to get SSH connection info: #{inspect(reason)}")
+          Log.module_error("Failed to get SSH connection info: #{inspect(reason)}")
           {:stop, {:connection_info_failed, reason}}
       end
     end
@@ -411,7 +410,7 @@ if Code.ensure_loaded?(:ssh) do
           {:noreply, update_activity(new_state)}
 
         {:error, reason} ->
-          Logger.warning("Failed to send input: #{inspect(reason)}")
+          Log.module_warning("Failed to send input: #{inspect(reason)}")
           {:noreply, state}
       end
     end
@@ -473,7 +472,7 @@ if Code.ensure_loaded?(:ssh) do
         )
         when connection_ref == state.connection_ref and
                channel_id == state.channel_id do
-      Logger.info("SSH session exit status: #{status}")
+      Log.module_info("SSH session exit status: #{status}")
       new_state = %{state | exit_status: status}
       {:noreply, new_state}
     end
@@ -484,7 +483,7 @@ if Code.ensure_loaded?(:ssh) do
         )
         when connection_ref == state.connection_ref and
                channel_id == state.channel_id do
-      Logger.info("SSH session channel closed")
+      Log.module_info("SSH session channel closed")
       {:stop, :normal, state}
     end
 
@@ -495,13 +494,13 @@ if Code.ensure_loaded?(:ssh) do
     end
 
     def handle_manager_info(msg, state) do
-      Logger.debug("Unhandled SSH session message: #{inspect(msg)}")
+      Log.module_debug("Unhandled SSH session message: #{inspect(msg)}")
       {:noreply, state}
     end
 
     @impl true
     def terminate(reason, state) do
-      Logger.info("SSH session terminating: #{inspect(reason)}")
+      Log.module_info("SSH session terminating: #{inspect(reason)}")
 
       # Stop recording if active
       stop_session_recording(state)
@@ -590,11 +589,11 @@ if Code.ensure_loaded?(:ssh) do
              String.to_charlist(signal_name)
            ) do
         :ok ->
-          Logger.debug("Sent signal #{signal_name} to SSH session")
+          Log.module_debug("Sent signal #{signal_name} to SSH session")
           :ok
 
         {:error, reason} ->
-          Logger.warning(
+          Log.module_warning(
             "Failed to send signal #{signal_name}: #{inspect(reason)}"
           )
 
@@ -684,11 +683,11 @@ if Code.ensure_loaded?(:ssh) do
                0
              ) do
           :ok ->
-            Logger.debug("Sent control character for #{signal_name}")
+            Log.module_debug("Sent control character for #{signal_name}")
             :ok
 
           {:error, reason} ->
-            Logger.debug("Workaround failed: #{inspect(reason)}")
+            Log.module_debug("Workaround failed: #{inspect(reason)}")
             {:error, :signal_not_supported}
         end
       else
@@ -724,7 +723,7 @@ if Code.ensure_loaded?(:ssh) do
           # Close immediately, we'll append later
           File.close(file)
           new_state = %{state | recording: true, recording_file: file_path}
-          Logger.info("Started recording SSH session to #{file_path}")
+          Log.module_info("Started recording SSH session to #{file_path}")
           {:ok, new_state}
 
         {:error, reason} ->
@@ -734,7 +733,7 @@ if Code.ensure_loaded?(:ssh) do
 
     defp stop_session_recording(state) do
       if state.recording && state.recording_file do
-        Logger.info("Stopped recording SSH session")
+        Log.module_info("Stopped recording SSH session")
       end
 
       %{state | recording: false, recording_file: nil}
@@ -768,8 +767,6 @@ else
     """
 
     use Raxol.Core.Behaviours.BaseManager
-
-    @behaviour Raxol.Core.Behaviours.BaseManager
 
     def start(client, pty_options \\ %{}) do
       {:error, :ssh_not_available}

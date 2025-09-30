@@ -147,8 +147,8 @@ defmodule Raxol.Terminal.AdvancedFeatures do
   ## Examples
 
       AdvancedFeatures.with_synchronized_output(fn ->
-        Log.info("Line 1")
-        Log.info("Line 2")
+        IO.puts("Line 1")
+        IO.puts("Line 2")
         # These will appear atomically
       end)
   """

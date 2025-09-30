@@ -45,11 +45,11 @@ defmodule Raxol.Terminal.Config.AnimationCache do
            }
          ) do
       :ok ->
-        Log.info("Animation data cached: #{animation_key}")
+        IO.puts("Animation data cached: #{animation_key}")
         :ok
 
       error ->
-        Log.info("Failed to cache animation data: #{inspect(error)}")
+        IO.puts("Failed to cache animation data: #{inspect(error)}")
         error
     end
   end
@@ -126,7 +126,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
           cache_animation(path, type)
         end)
 
-        Log.info("Preloaded #{length(animation_files)} animations")
+        IO.puts("Preloaded #{length(animation_files)} animations")
         :ok
 
       {:error, reason} ->
@@ -143,7 +143,7 @@ defmodule Raxol.Terminal.Config.AnimationCache do
   """
   def clear_animation_cache do
     Raxol.Terminal.Cache.System.clear(namespace: :animation)
-    Log.info("Animation cache cleared")
+    IO.puts("Animation cache cleared")
     :ok
   end
 
@@ -231,12 +231,12 @@ defmodule Raxol.Terminal.Config.AnimationCache do
       true ->
         compression_ratio = round((1 - compressed_size / original_size) * 100)
 
-        Log.info(
+        IO.puts(
           "Animation cached: #{animation_path} (#{compressed_size} bytes, #{compression_ratio}% compression)"
         )
 
       false ->
-        Log.info(
+        IO.puts(
           "Animation cached: #{animation_path} (#{compressed_size} bytes, empty original file)"
         )
     end
@@ -245,12 +245,12 @@ defmodule Raxol.Terminal.Config.AnimationCache do
   end
 
   defp handle_cache_error(error) do
-    Log.info("Failed to cache animation: #{inspect(error)}")
+    IO.puts("Failed to cache animation: #{inspect(error)}")
     error
   end
 
   defp handle_file_error(reason) do
-    Log.info("Failed to cache animation: #{inspect(reason)}")
+    IO.puts("Failed to cache animation: #{inspect(reason)}")
     {:error, reason}
   end
 
