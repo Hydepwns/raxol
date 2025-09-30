@@ -1,0 +1,625 @@
+defmodule Raxol.Playground do
+  @moduledoc """
+  Interactive component playground for Raxol.
+
+  This module provides a live environment for exploring and testing Raxol components,
+  with real-time preview, property editing, and code generation.
+
+  Features:
+  * Component catalog with categorized examples
+  * Live preview with hot-reloading
+  * Interactive property editors
+  * Code generation and export
+  * Theme switching
+  * Responsive layout testing
+  """
+
+  use Raxol.Core.Behaviours.BaseManager
+  alias Raxol.Core.Runtime.Log
+
+  alias Raxol.Playground.{
+    Catalog,
+    Preview,
+    PropertyEditor,
+    CodeGenerator,
+    Examples,
+    State
+  }
+
+  @default_port 4444
+
+  # Client API
+
+  # start_link is provided by BaseManager
+
+  @doc """
+  Launches the playground in the terminal.
+  """
+  def launch(opts \\ []) do
+    port = Keyword.get(opts, :port, @default_port)
+
+    case start_link(port: port) do
+      {:ok, _pid} ->
+        Log.module_info("Raxol Playground started on port #{port}")
+        run_playground()
+
+      {:error, {:already_started, _pid}} ->
+        Log.module_info("Playground already running")
+        run_playground()
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Gets the current component catalog.
+  """
+  def get_catalog do
+    GenServer.call(__MODULE__, :get_catalog)
+  end
+
+  @doc """
+  Selects a component for preview.
+  """
+  def select_component(component_id) do
+    GenServer.call(__MODULE__, {:select_component, component_id})
+  end
+
+  @doc """
+  Updates component properties.
+  """
+  def update_props(props) do
+    GenServer.call(__MODULE__, {:update_props, props})
+  end
+
+  @doc """
+  Updates component state.
+  """
+  def update_state(state) do
+    GenServer.call(__MODULE__, {:update_state, state})
+  end
+
+  @doc """
+  Switches the theme.
+  """
+  def switch_theme(theme) do
+    GenServer.call(__MODULE__, {:switch_theme, theme})
+  end
+
+  @doc """
+  Exports the current component code.
+  """
+  def export_code do
+    GenServer.call(__MODULE__, :export_code)
+  end
+
+  @doc """
+  Gets the current preview.
+  """
+  def get_preview do
+    GenServer.call(__MODULE__, :get_preview)
+  end
+
+  @doc """
+  Refreshes the preview.
+  """
+  def refresh_preview do
+    GenServer.call(__MODULE__, :refresh_preview)
+  end
+
+  # Server Callbacks
+
+  @impl true
+  def init_manager(opts) do
+    port = Keyword.get(opts, :port, @default_port)
+
+    state = %State{
+      port: port,
+      catalog: Catalog.load_components(),
+      selected_component: nil,
+      current_props: %{},
+      current_state: %{},
+      theme: :default,
+      preview_mode: :terminal,
+      layout: :split,
+      code_visible: true
+    }
+
+    # Start preview server if web mode
+    maybe_start_web_server(Keyword.get(opts, :web, false), port)
+
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_manager_call(:get_catalog, _from, state) do
+    {:reply, state.catalog, state}
+  end
+
+  @impl true
+  def handle_manager_call({:select_component, component_id}, _from, state) do
+    case Catalog.get_component(state.catalog, component_id) do
+      nil ->
+        {:reply, {:error, "Component not found"}, state}
+
+      component ->
+        new_state = %{
+          state
+          | selected_component: component,
+            current_props: component.default_props || %{},
+            current_state: Map.get(component, :default_state, %{})
+        }
+
+        preview =
+          Preview.generate(
+            component,
+            new_state.current_props,
+            new_state.current_state
+          )
+
+        {:reply, {:ok, preview}, new_state}
+    end
+  end
+
+  @impl true
+  def handle_manager_call({:update_props, props}, _from, state) do
+    new_state = %{state | current_props: Map.merge(state.current_props, props)}
+
+    handle_component_operation(
+      state.selected_component,
+      new_state,
+      &generate_preview_for_props/2
+    )
+  end
+
+  @impl true
+  def handle_manager_call({:update_state, new_component_state}, _from, state) do
+    new_state = %{
+      state
+      | current_state: Map.merge(state.current_state, new_component_state)
+    }
+
+    handle_component_operation(
+      state.selected_component,
+      new_state,
+      &generate_preview_for_state/2
+    )
+  end
+
+  @impl true
+  def handle_manager_call({:switch_theme, theme}, _from, state) do
+    new_state = %{state | theme: theme}
+
+    handle_theme_operation(
+      state.selected_component,
+      state,
+      new_state,
+      theme
+    )
+  end
+
+  @impl true
+  def handle_manager_call(:export_code, _from, state) do
+    handle_export_operation(
+      state.selected_component,
+      state
+    )
+  end
+
+  @impl true
+  def handle_manager_call(:get_preview, _from, state) do
+    handle_preview_request(state.selected_component, state)
+  end
+
+  @impl true
+  def handle_manager_call(:refresh_preview, _from, state) do
+    handle_refresh_request(state.selected_component, state)
+  end
+
+  @impl true
+  def handle_manager_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+
+  # Private Functions
+
+  defp run_playground do
+    IO.puts("""
+
+    #{IO.ANSI.cyan()}╔════════════════════════════════════════════════════╗
+    ║        Raxol Component Playground [STYLE]               ║
+    ╚════════════════════════════════════════════════════╝#{IO.ANSI.reset()}
+
+    Welcome to the interactive component showcase!
+
+    Commands:
+      #{IO.ANSI.green()}list [category]#{IO.ANSI.reset()}     - List components (optionally by category)
+      #{IO.ANSI.green()}select <id>#{IO.ANSI.reset()}         - Select a component to preview
+      #{IO.ANSI.green()}props#{IO.ANSI.reset()}               - Show current props editor
+      #{IO.ANSI.green()}set <prop> <value>#{IO.ANSI.reset()}  - Update a property
+      #{IO.ANSI.green()}theme <name>#{IO.ANSI.reset()}        - Switch theme (dark, light, default)
+      #{IO.ANSI.green()}export#{IO.ANSI.reset()}              - Export component code
+      #{IO.ANSI.green()}preview#{IO.ANSI.reset()}             - Show current preview
+      #{IO.ANSI.green()}refresh#{IO.ANSI.reset()}             - Refresh preview
+      #{IO.ANSI.green()}examples#{IO.ANSI.reset()}            - List interactive examples
+      #{IO.ANSI.green()}run <example_id>#{IO.ANSI.reset()}    - Run an interactive example
+      #{IO.ANSI.green()}help#{IO.ANSI.reset()}                - Show help
+      #{IO.ANSI.green()}exit#{IO.ANSI.reset()}                - Exit playground
+
+    Type 'list' to see available components.
+    """)
+
+    playground_loop()
+  end
+
+  defp playground_loop do
+    input =
+      IO.gets("\n#{IO.ANSI.green()}playground>#{IO.ANSI.reset()} ")
+      |> String.trim()
+
+    case parse_command(input) do
+      {:exit} ->
+        IO.puts("Goodbye! [STYLE]")
+        :ok
+
+      {:error, message} ->
+        IO.puts("#{IO.ANSI.red()}Error: #{message}#{IO.ANSI.reset()}")
+        playground_loop()
+
+      :ok ->
+        playground_loop()
+    end
+  end
+
+  defp parse_command("exit"), do: {:exit}
+  defp parse_command("quit"), do: {:exit}
+
+  defp parse_command("list") do
+    catalog = get_catalog()
+    display_catalog(catalog)
+    :ok
+  end
+
+  defp parse_command("list " <> category) do
+    catalog = get_catalog()
+    filtered = Catalog.filter_by_category(catalog, String.to_atom(category))
+    display_catalog(filtered)
+    :ok
+  end
+
+  defp parse_command("select " <> component_id) do
+    case select_component(component_id) do
+      {:ok, preview} ->
+        IO.puts(
+          "\n#{IO.ANSI.bright()}Selected: #{component_id}#{IO.ANSI.reset()}\n"
+        )
+
+        display_preview(preview)
+        :ok
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp parse_command("props") do
+    state = GenServer.call(__MODULE__, :get_state)
+    handle_props_command(state.selected_component, state)
+  end
+
+  defp parse_command("set " <> rest) do
+    state = GenServer.call(__MODULE__, :get_state)
+
+    case String.split(rest, " ", parts: 2) do
+      [prop, value] ->
+        handle_set_property_command(
+          state.selected_component,
+          prop,
+          value,
+          state
+        )
+
+      _ ->
+        {:error, "Usage: set <prop> <value>"}
+    end
+  end
+
+  defp parse_command("theme " <> theme_name) do
+    case switch_theme(String.to_atom(theme_name)) do
+      {:ok, preview} ->
+        IO.puts(
+          "#{IO.ANSI.green()}[OK] Theme switched to: #{theme_name}#{IO.ANSI.reset()}"
+        )
+
+        display_preview(preview)
+        :ok
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp parse_command("export") do
+    case export_code() do
+      {:ok, code} ->
+        display_code(code)
+        :ok
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp parse_command("preview") do
+    case get_preview() do
+      {:ok, preview} ->
+        display_preview(preview)
+        :ok
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp parse_command("refresh") do
+    case refresh_preview() do
+      {:ok, preview} ->
+        display_preview(preview)
+        :ok
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp parse_command("examples") do
+    examples = Examples.list_examples()
+    display_examples(examples)
+    :ok
+  end
+
+  defp parse_command("run " <> example_id) do
+    case Examples.run_example(example_id) do
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp parse_command("help") do
+    display_help()
+    :ok
+  end
+
+  defp parse_command(_) do
+    {:error, "Unknown command. Type 'help' for available commands."}
+  end
+
+  defp display_catalog(catalog) do
+    IO.puts("\n#{IO.ANSI.bright()}Component Catalog:#{IO.ANSI.reset()}\n")
+
+    catalog
+    |> Enum.group_by(& &1.category)
+    |> Enum.each(fn {category, components} ->
+      IO.puts("#{IO.ANSI.cyan()}#{category}:#{IO.ANSI.reset()}")
+
+      Enum.each(components, fn comp ->
+        IO.puts(
+          "  #{IO.ANSI.green()}#{comp.id}#{IO.ANSI.reset()} - #{comp.description}"
+        )
+      end)
+
+      IO.puts("")
+    end)
+  end
+
+  defp display_preview(preview) do
+    IO.puts("\n#{IO.ANSI.bright()}Preview:#{IO.ANSI.reset()}")
+    IO.puts("#{String.duplicate("─", 60)}")
+    IO.puts(preview)
+    IO.puts("#{String.duplicate("─", 60)}\n")
+  end
+
+  # Removed display_props - was unused
+
+  defp display_code(code) do
+    IO.puts("\n#{IO.ANSI.bright()}Generated Code:#{IO.ANSI.reset()}")
+    IO.puts("#{IO.ANSI.light_black()}```elixir#{IO.ANSI.reset()}")
+    IO.puts(code)
+    IO.puts("#{IO.ANSI.light_black()}```#{IO.ANSI.reset()}\n")
+  end
+
+  defp display_examples(examples) do
+    IO.puts("\n#{IO.ANSI.bright()}Interactive Examples:#{IO.ANSI.reset()}\n")
+
+    examples
+    |> Enum.each(fn {category, example_list} ->
+      category_name =
+        category
+        |> to_string()
+        |> String.capitalize()
+
+      IO.puts("#{IO.ANSI.cyan()}#{category_name}:#{IO.ANSI.reset()}")
+
+      Enum.each(example_list, fn example ->
+        IO.puts(
+          "  #{IO.ANSI.green()}#{example.id}#{IO.ANSI.reset()} - #{example.title}"
+        )
+
+        IO.puts("    #{example.description}")
+      end)
+
+      IO.puts("")
+    end)
+
+    IO.puts(
+      "#{IO.ANSI.light_black()}Use 'run <example_id>' to start an interactive example.#{IO.ANSI.reset()}"
+    )
+  end
+
+  defp display_help do
+    IO.puts("""
+
+    #{IO.ANSI.bright()}Available Commands:#{IO.ANSI.reset()}
+
+    #{IO.ANSI.green()}Component Selection:#{IO.ANSI.reset()}
+      list [category]    - List all components or by category
+      select <id>        - Select a component for preview
+
+    #{IO.ANSI.green()}Property Management:#{IO.ANSI.reset()}
+      props              - Show current properties editor
+      set <prop> <value> - Set a property value (with type validation)
+
+    #{IO.ANSI.green()}Theming:#{IO.ANSI.reset()}
+      theme <name>       - Switch theme (default, dark, light)
+
+    #{IO.ANSI.green()}Preview & Export:#{IO.ANSI.reset()}
+      preview            - Show current component preview
+      refresh            - Force refresh the preview
+      export             - Export component code
+
+    #{IO.ANSI.green()}Learning:#{IO.ANSI.reset()}
+      examples           - List interactive examples and tutorials
+      run <example_id>   - Start an interactive example
+
+    #{IO.ANSI.green()}Navigation:#{IO.ANSI.reset()}
+      help               - Show this help message
+      exit               - Exit the playground
+
+    #{IO.ANSI.yellow()}Tips:#{IO.ANSI.reset()}
+    • Start with 'examples' to see guided tutorials
+    • Use 'props' to see available properties and their types
+    • Export code generates ready-to-use Elixir components
+    • Try different themes to see how components adapt
+    """)
+  end
+
+  # Removed parse_value - was unused
+
+  defp start_web_server(_port) do
+    # Web server implementation would go here
+    :ok
+  end
+
+  # Missing helper functions for compilation
+  defp maybe_start_web_server(false, _port), do: :ok
+  defp maybe_start_web_server(true, port), do: start_web_server(port)
+
+  defp handle_component_operation(nil, state, _gen_fun) do
+    {:reply, {:error, "No component selected"}, state}
+  end
+
+  defp handle_component_operation(component, state, gen_fun) do
+    preview = gen_fun.(component, state)
+    {:reply, {:ok, preview}, state}
+  end
+
+  defp generate_preview_for_props(component, state) do
+    Preview.generate(component, state.current_props, state.current_state)
+  end
+
+  defp generate_preview_for_state(component, state) do
+    Preview.generate(component, state.current_props, state.current_state)
+  end
+
+  defp handle_theme_operation(nil, _old_state, new_state, _theme) do
+    {:reply, {:error, "No component selected"}, new_state}
+  end
+
+  defp handle_theme_operation(_component, _old_state, new_state, _theme) do
+    preview =
+      Preview.generate(
+        new_state.selected_component,
+        new_state.current_props,
+        new_state.current_state,
+        theme: new_state.theme
+      )
+
+    {:reply, {:ok, preview}, new_state}
+  end
+
+  defp handle_export_operation(nil, state) do
+    {:reply, {:error, "No component selected"}, state}
+  end
+
+  defp handle_export_operation(component, state) do
+    code = CodeGenerator.generate(component, state.current_props)
+    {:reply, {:ok, code}, state}
+  end
+
+  # Helper functions for if statement elimination
+
+  defp handle_preview_request(nil, state) do
+    {:reply, {:error, "No component selected"}, state}
+  end
+
+  defp handle_preview_request(component, state) do
+    preview =
+      Preview.generate(
+        component,
+        state.current_props,
+        state.current_state,
+        theme: state.theme
+      )
+
+    {:reply, {:ok, preview}, state}
+  end
+
+  defp handle_refresh_request(nil, state) do
+    {:reply, {:error, "No component selected"}, state}
+  end
+
+  defp handle_refresh_request(component, state) do
+    preview =
+      Preview.generate(
+        component,
+        state.current_props,
+        state.current_state,
+        theme: state.theme,
+        force_refresh: true
+      )
+
+    {:reply, {:ok, preview}, state}
+  end
+
+  defp handle_props_command(nil, _state) do
+    {:error, "No component selected"}
+  end
+
+  defp handle_props_command(component, state) do
+    editor_output =
+      PropertyEditor.render_terminal_editor(component, state.current_props)
+
+    IO.puts(editor_output)
+    :ok
+  end
+
+  defp handle_set_property_command(nil, _prop, _value, _state) do
+    {:error, "No component selected"}
+  end
+
+  defp handle_set_property_command(component, prop, value, _state) do
+    case PropertyEditor.parse_property_value(component, prop, value) do
+      {:ok, parsed_value} ->
+        case update_props(%{String.to_atom(prop) => parsed_value}) do
+          {:ok, preview} ->
+            IO.puts(
+              "#{IO.ANSI.green()}[OK] Updated #{prop} = #{inspect(parsed_value)}#{IO.ANSI.reset()}"
+            )
+
+            display_preview(preview)
+            :ok
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        help = PropertyEditor.get_property_help(component, prop)
+        {:error, "Invalid value for #{prop}: #{reason}\nExpected: #{help}"}
+    end
+  end
+end

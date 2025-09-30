@@ -37,8 +37,7 @@ defmodule Raxol.UI.State.Hooks do
   """
 
   alias Raxol.UI.State.Management.StateManagementServer, as: Server
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Result type for safe operations (from HooksRefactored)
   defmodule Result do
     @type t(ok, error) :: {:ok, ok} | {:error, error}
@@ -270,7 +269,7 @@ defmodule Raxol.UI.State.Hooks do
     # Get context from server or return nil
     case Server.get_context(context_key) do
       nil ->
-        Logger.debug(
+        Log.module_debug(
           "Context #{inspect(context_key)} not found for component #{component_id}"
         )
 
@@ -529,11 +528,11 @@ defmodule Raxol.UI.State.Hooks do
         :ok
 
       nil ->
-        Logger.warning("Effect cleanup timeout")
+        Log.module_warning("Effect cleanup timeout")
         :ok
 
       {:exit, reason} ->
-        Logger.warning("Effect cleanup failed: #{inspect(reason)}")
+        Log.module_warning("Effect cleanup failed: #{inspect(reason)}")
         :ok
     end
   end
@@ -546,11 +545,11 @@ defmodule Raxol.UI.State.Hooks do
         result
 
       nil ->
-        Logger.error("Effect timeout")
+        Log.module_error("Effect timeout")
         nil
 
       {:exit, reason} ->
-        Logger.error("Effect failed: #{inspect(reason)}")
+        Log.module_error("Effect failed: #{inspect(reason)}")
         nil
     end
   end
@@ -563,11 +562,11 @@ defmodule Raxol.UI.State.Hooks do
         result
 
       nil ->
-        Logger.error("Memo computation timeout")
+        Log.module_error("Memo computation timeout")
         nil
 
       {:exit, reason} ->
-        Logger.error("Memo computation failed: #{inspect(reason)}")
+        Log.module_error("Memo computation failed: #{inspect(reason)}")
         nil
     end
   end
@@ -580,11 +579,11 @@ defmodule Raxol.UI.State.Hooks do
         new_state
 
       nil ->
-        Logger.error("Reducer timeout")
+        Log.module_error("Reducer timeout")
         current_state
 
       {:exit, reason} ->
-        Logger.error("Reducer failed: #{inspect(reason)}")
+        Log.module_error("Reducer failed: #{inspect(reason)}")
         current_state
     end
   end
@@ -597,11 +596,11 @@ defmodule Raxol.UI.State.Hooks do
         {:ok, result}
 
       nil ->
-        Logger.error("Async fetch timeout")
+        Log.module_error("Async fetch timeout")
         {:error, :timeout}
 
       {:exit, reason} ->
-        Logger.error("Async fetch failed: #{inspect(reason)}")
+        Log.module_error("Async fetch failed: #{inspect(reason)}")
         {:error, reason}
     end
   end
@@ -696,7 +695,7 @@ defmodule Raxol.UI.State.Hooks do
     # Send update message to component process if available
     case Server.get_component_process() do
       nil ->
-        Logger.debug(
+        Log.module_debug(
           "Component update requested for #{component_id} but no process registered"
         )
 
@@ -736,11 +735,11 @@ defmodule Raxol.UI.State.Hooks do
         result
 
       nil ->
-        Logger.error("Context execution timeout")
+        Log.module_error("Context execution timeout")
         {:error, :timeout}
 
       {:exit, reason} ->
-        Logger.error("Context execution failed: #{inspect(reason)}")
+        Log.module_error("Context execution failed: #{inspect(reason)}")
         {:error, reason}
     end
   end

@@ -1,4 +1,5 @@
 defmodule Raxol.Plugins.DependencyResolverV2 do
+  alias Raxol.Core.Runtime.Log
   @moduledoc """
   Advanced dependency resolution system for Plugin System v2.0.
 
@@ -9,9 +10,6 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
   - Dependency graph optimization
   - Version compatibility checking
   """
-
-  require Logger
-
   @type plugin_id :: String.t()
   @type version :: String.t()
   @type version_requirement :: String.t()
@@ -111,7 +109,7 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
     plugin_id = manifest.name
     dependencies = manifest.dependencies || []
 
-    Logger.debug("[DependencyResolver] Resolving dependencies for #{plugin_id}")
+    Log.module_debug("Resolving dependencies for #{plugin_id}")
 
     case collect_all_dependencies(
            dependencies,
@@ -124,7 +122,7 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
             {:ok, all_deps}
 
           conflicts ->
-            Logger.info(
+            Log.module_info(
               "[DependencyResolver] Detected conflicts: #{inspect(conflicts)}"
             )
 
@@ -140,7 +138,7 @@ defmodule Raxol.Plugins.DependencyResolverV2 do
     Enum.reduce_while(dependencies, {:ok, []}, fn {dep_id, requirement},
                                                   {:ok, acc} ->
       if MapSet.member?(visited, dep_id) do
-        Logger.warning(
+        Log.module_warning(
           "[DependencyResolver] Circular dependency detected: #{dep_id}"
         )
 

@@ -105,9 +105,9 @@ defmodule Raxol.PreCommit.ErrorFormatter do
     formatted = format_error(check_name, error_info)
 
     # Print header
-    IO.puts("")
+    Log.info("")
 
-    IO.puts(
+    Log.info(
       color_text(
         "═══ #{String.upcase(to_string(check_name))} CHECK FAILED ═══",
         :red,
@@ -115,18 +115,18 @@ defmodule Raxol.PreCommit.ErrorFormatter do
       )
     )
 
-    IO.puts("")
+    Log.info("")
 
     # Print main message
-    IO.puts(color_text("  [FAIL] #{formatted.message}", :red, color))
-    IO.puts("")
+    Log.info(color_text("  [FAIL] #{formatted.message}", :red, color))
+    Log.info("")
 
     # Print details if verbose
     case verbose do
       true when formatted.details != nil ->
-        IO.puts(color_text("  Details:", :yellow, color))
-        IO.puts(formatted.details)
-        IO.puts("")
+        Log.info(color_text("  Details:", :yellow, color))
+        Log.info(formatted.details)
+        Log.info("")
 
       _ ->
         :ok
@@ -135,23 +135,23 @@ defmodule Raxol.PreCommit.ErrorFormatter do
     # Print fix suggestion
     case formatted.fix_command do
       nil ->
-        IO.puts(
+        Log.info(
           color_text("  [TIP] #{formatted.fix_description}", :cyan, color)
         )
 
       cmd ->
-        IO.puts(color_text("  [TIP] To fix:", :cyan, color))
-        IO.puts(color_text("     $ #{cmd}", :green, color))
-        IO.puts("")
-        IO.puts(color_text("  #{formatted.fix_description}", :white, color))
+        Log.info(color_text("  [TIP] To fix:", :cyan, color))
+        Log.info(color_text("     $ #{cmd}", :green, color))
+        Log.info("")
+        Log.info(color_text("  #{formatted.fix_description}", :white, color))
     end
 
     # Print auto-fix hint
     case formatted.auto_fixable do
       true ->
-        IO.puts("")
+        Log.info("")
 
-        IO.puts(
+        Log.info(
           color_text(
             "  [FIX] This can be auto-fixed with: mix raxol.pre_commit --fix",
             :blue,
@@ -169,12 +169,12 @@ defmodule Raxol.PreCommit.ErrorFormatter do
         :ok
 
       url ->
-        IO.puts("")
-        IO.puts(color_text("  [DOCS] Learn more: #{url}", :white, color))
+        Log.info("")
+        Log.info(color_text("  [DOCS] Learn more: #{url}", :white, color))
     end
 
-    IO.puts("")
-    IO.puts(color_text("═" |> String.duplicate(50), :red, color))
+    Log.info("")
+    Log.info(color_text("═" |> String.duplicate(50), :red, color))
   end
 
   @doc """
@@ -193,17 +193,17 @@ defmodule Raxol.PreCommit.ErrorFormatter do
       checks ->
         color = Keyword.get(opts, :color, true)
 
-        IO.puts("")
-        IO.puts(color_text("FAILED CHECKS SUMMARY", :red, color))
-        IO.puts(color_text("─" |> String.duplicate(50), :red, color))
+        Log.info("")
+        Log.info(color_text("FAILED CHECKS SUMMARY", :red, color))
+        Log.info(color_text("─" |> String.duplicate(50), :red, color))
 
         Enum.each(checks, fn {name, result} ->
           reason = Map.get(result, :reason, "Unknown error")
-          IO.puts("  • #{String.capitalize(to_string(name))}: #{reason}")
+          Log.info("  • #{String.capitalize(to_string(name))}: #{reason}")
         end)
 
-        IO.puts("")
-        IO.puts(color_text("Quick fixes:", :yellow, color))
+        Log.info("")
+        Log.info(color_text("Quick fixes:", :yellow, color))
 
         # Group by fix type
         auto_fixable =
@@ -213,14 +213,14 @@ defmodule Raxol.PreCommit.ErrorFormatter do
 
         case auto_fixable do
           [] ->
-            IO.puts("  • Review each error above and apply manual fixes")
+            Log.info("  • Review each error above and apply manual fixes")
 
           _ ->
-            IO.puts("  • Run: mix raxol.pre_commit --fix")
-            IO.puts("  • Then review any remaining issues")
+            Log.info("  • Run: mix raxol.pre_commit --fix")
+            Log.info("  • Then review any remaining issues")
         end
 
-        IO.puts("")
+        Log.info("")
     end
   end
 

@@ -105,31 +105,31 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
     case String.downcase(value) do
       "on" ->
         _ = Updater.set_auto_check(true)
-        IO.puts(success_msg("Automatic update checks are now enabled"))
+        Log.info("Automatic update checks are now enabled")
 
       "off" ->
         _ = Updater.set_auto_check(false)
-        IO.puts(success_msg("Automatic update checks are now disabled"))
+        Log.info("Automatic update checks are now disabled")
 
       _ ->
-        IO.puts(error_msg("Invalid value for --auto. Use 'on' or 'off'"))
+        Log.error("Invalid value for --auto. Use 'on' or 'off'")
     end
   end
 
   defp check_for_updates(opts) do
-    IO.puts("Checking for updates...")
+    Log.info("Checking for updates...")
 
     case Updater.check_for_updates(opts) do
       {:update_available, version} ->
-        IO.puts(success_msg("Update available: v#{version}"))
-        IO.puts("Current version: v#{Application.spec(:raxol, :vsn)}")
-        IO.puts("\nRun 'raxol update' to install the update")
+        Log.info("Update available: v#{version}")
+        Log.info("Current version: v#{Application.spec(:raxol, :vsn)}")
+        Log.info("\nRun 'raxol update' to install the update")
 
       {:no_update, version} ->
-        IO.puts(success_msg("Raxol is up to date (v#{version})"))
+        Log.info("Raxol is up to date (v#{version})")
 
       {:error, reason} ->
-        IO.puts(error_msg("Error checking for updates: #{reason}"))
+        Log.error("Error checking for updates: #{reason}")
     end
   end
 
@@ -144,29 +144,29 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
         do_update(update_version, use_delta)
 
       {:no_update, version} ->
-        IO.puts(success_msg("Raxol is already up to date (v#{version})"))
+        Log.info("Raxol is already up to date (v#{version})")
 
       {:error, reason} ->
-        IO.puts(error_msg("Error checking for updates: #{reason}"))
+        Log.error("Error checking for updates: #{reason}")
     end
   end
 
   defp do_update(version, use_delta) do
-    IO.puts("Updating to version v#{version} #{get_update_message(use_delta)}")
+    Log.info("Updating to version v#{version} #{get_update_message(use_delta)}")
 
     case Updater.self_update(version, use_delta: use_delta) do
       :ok ->
-        IO.puts(success_msg("Update successful!"))
-        IO.puts("Raxol has been updated to v#{version}")
-        IO.puts("Please restart Raxol to use the new version")
+        Log.info("Update successful!")
+        Log.info("Raxol has been updated to v#{version}")
+        Log.info("Please restart Raxol to use the new version")
 
       {:no_update, current_version} ->
-        IO.puts(success_msg("Already running version v#{current_version}"))
+        Log.info("Already running version v#{current_version}")
 
       {:error, reason} ->
-        IO.puts(error_msg("Update failed: #{reason}"))
-        IO.puts("\nYou can try downloading the latest version manually from:")
-        IO.puts("https://github.com/username/raxol/releases/latest")
+        Log.error("Update failed: #{reason}")
+        Log.info("\nYou can try downloading the latest version manually from:")
+        Log.info("https://github.com/username/raxol/releases/latest")
     end
   end
 
@@ -176,21 +176,21 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   end
 
   defp check_delta_for_version(version) do
-    IO.puts("Checking delta update availability for version v#{version}...")
+    Log.info("Checking delta update availability for version v#{version}...")
 
     alias Raxol.System.DeltaUpdater
 
     case DeltaUpdater.check_delta_availability(version) do
       {:ok, delta_info} ->
-        IO.puts(success_msg("Delta update available!"))
-        IO.puts("Full package size: #{format_bytes(delta_info.full_size)}")
-        IO.puts("Delta size: #{format_bytes(delta_info.delta_size)}")
-        IO.puts("Space savings: #{delta_info.savings_percent}%")
-        IO.puts("\nTo update using delta updates, run: raxol update")
+        Log.info("Delta update available!")
+        Log.info("Full package size: #{format_bytes(delta_info.full_size)}")
+        Log.info("Delta size: #{format_bytes(delta_info.delta_size)}")
+        Log.info("Space savings: #{delta_info.savings_percent}%")
+        Log.info("\nTo update using delta updates, run: raxol update")
 
       {:error, reason} ->
-        IO.puts(error_msg("Delta update not available: #{reason}"))
-        IO.puts("Full update will be used when updating to this version.")
+        Log.error("Delta update not available: #{reason}")
+        Log.info("Full update will be used when updating to this version.")
     end
   end
 
@@ -217,7 +217,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
     do: {:update_available, version}
 
   defp get_check_result(nil, opts) do
-    IO.puts("Checking for updates...")
+    Log.info("Checking for updates...")
     Updater.check_for_updates(opts)
   end
 
@@ -225,21 +225,21 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   defp get_update_message(false), do: "(using full update)..."
 
   defp handle_delta_info_check(nil, opts) do
-    IO.puts("Checking for updates...")
+    Log.info("Checking for updates...")
 
     case Updater.check_for_updates(opts) do
       {:update_available, latest_version} ->
         check_delta_for_version(latest_version)
 
       {:no_update, current_version} ->
-        IO.puts(
+        Log.info(
           success_msg("Raxol is already up to date (v#{current_version})")
         )
 
-        IO.puts("No delta update information available.")
+        Log.info("No delta update information available.")
 
       {:error, reason} ->
-        IO.puts(error_msg("Error checking for updates: #{reason}"))
+        Log.error("Error checking for updates: #{reason}")
     end
   end
 
@@ -272,6 +272,6 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
       raxol update --auto off          # Disable automatic update checks
     """
 
-    IO.puts(help_text)
+    Log.info(help_text)
   end
 end

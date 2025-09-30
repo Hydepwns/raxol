@@ -1,6 +1,4 @@
 defmodule Raxol.Architecture.CQRS.CommandHandler do
-  require Logger
-
   @moduledoc """
   Command handler behaviour for CQRS pattern implementation in Raxol.
 
@@ -53,6 +51,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
   """
 
   alias Raxol.Architecture.EventSourcing.EventStore
+  alias Raxol.Core.Runtime.Log
 
   @type command :: struct()
   @type context :: map()
@@ -65,8 +64,6 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
       @behaviour Raxol.Architecture.CQRS.CommandHandler
 
       import Raxol.Architecture.CQRS.CommandHandler
-      require Logger
-
       @doc """
       Publishes a domain event through the event store.
       """
@@ -76,7 +73,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
             :ok
 
           {:error, reason} ->
-            Logger.error(
+            Log.module_error(
               "Failed to publish event #{inspect(event.__struct__)}: #{inspect(reason)}"
             )
 
@@ -98,7 +95,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
             :ok
 
           {:error, reason} ->
-            Logger.error("Failed to publish events batch: #{inspect(reason)}")
+            Log.module_error("Failed to publish events batch: #{inspect(reason)}")
             {:error, :events_publication_failed}
         end
       end
@@ -120,7 +117,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
         start_time = System.monotonic_time(:microsecond)
         command_type = command.__struct__
 
-        Logger.info("Processing command: #{inspect(command_type)}")
+        Log.module_info("Processing command: #{inspect(command_type)}")
 
         case Raxol.Core.ErrorHandling.safe_call(fn ->
                handler_fn.(command, context)
@@ -130,14 +127,14 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
 
             case result do
               {:ok, data} ->
-                Logger.info(
+                Log.module_info(
                   "Command processed successfully: #{inspect(command_type)} in #{execution_time}μs"
                 )
 
                 {:ok, data}
 
               {:error, reason} ->
-                Logger.warning(
+                Log.module_warning(
                   "Command failed: #{inspect(command_type)} - #{inspect(reason)}"
                 )
 
@@ -147,7 +144,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
           {:error, error} ->
             execution_time = System.monotonic_time(:microsecond) - start_time
 
-            Logger.error(
+            Log.module_error(
               "Command handler crashed: #{inspect(command_type)} after #{execution_time}μs - #{inspect(error)}"
             )
 
@@ -280,7 +277,7 @@ defmodule Raxol.Architecture.CQRS.CommandHandler do
           {:cont, :ok}
 
         {:error, reason} ->
-          Logger.error("Compensation failed: #{inspect(reason)}")
+          Log.module_error("Compensation failed: #{inspect(reason)}")
           {:halt, {:error, reason}}
       end
     end)

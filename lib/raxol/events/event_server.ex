@@ -1,4 +1,4 @@
-defmodule Raxol.Events.UnifiedEventHandler do
+defmodule Raxol.Events.EventServer do
   @moduledoc """
   Unified event handler consolidating all event processing capabilities.
 
@@ -26,13 +26,11 @@ defmodule Raxol.Events.UnifiedEventHandler do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.Core.Runtime.Events.EventsHandler
   alias Raxol.Plugins.EventHandler, as: PluginsEventHandler
   alias Raxol.Terminal.EventHandler, as: TerminalEventHandler
   alias Raxol.Core.Accessibility.EventHandler, as: AccessibilityEventHandler
+  alias Raxol.Core.Runtime.Log
 
   @type event_type :: :terminal | :plugin | :ui | :accessibility | :system
   @type event_data :: map()
@@ -141,7 +139,7 @@ defmodule Raxol.Events.UnifiedEventHandler do
     result =
       case Map.get(state.handlers, event_type) do
         nil ->
-          Logger.warning("No handler for event type: #{event_type}")
+          Log.module_warning("No handler for event type: #{event_type}")
           {:error, :no_handler}
 
         handler_module ->
@@ -179,7 +177,7 @@ defmodule Raxol.Events.UnifiedEventHandler do
       end
     rescue
       error ->
-        Logger.error("Event handler error: #{inspect(error)}")
+        Log.module_error("Event handler error: #{inspect(error)}")
         {:error, {:handler_exception, error}}
     end
   end

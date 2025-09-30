@@ -12,9 +12,8 @@ defmodule Raxol.Audit.Analyzer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
   alias Raxol.Core.Utils.TimerManager
+  alias Raxol.Core.Runtime.Log
 
   defstruct [
     :config,
@@ -94,7 +93,7 @@ defmodule Raxol.Audit.Analyzer do
     {:ok, _} =
       TimerManager.start_interval(:update_profiles, intervals.five_minutes)
 
-    Logger.info("Audit analyzer initialized")
+    Log.module_info("Audit analyzer initialized")
     {:ok, state}
   end
 
@@ -407,7 +406,7 @@ defmodule Raxol.Audit.Analyzer do
 
   defp send_security_alert(analysis_result, _state) do
     Task.start(fn ->
-      Logger.warning("Security Alert: #{inspect(analysis_result)}")
+      Log.module_warning("Security Alert: #{inspect(analysis_result)}")
       # Here you would integrate with alerting systems (PagerDuty, Slack, etc.)
     end)
   end
@@ -792,7 +791,7 @@ defmodule Raxol.Audit.Analyzer do
   defp log_patterns_if_found([]), do: :ok
 
   defp log_patterns_if_found(patterns) do
-    Logger.warning("Patterns detected in recent events: #{inspect(patterns)}")
+    Log.module_warning("Patterns detected in recent events: #{inspect(patterns)}")
   end
 
   defp add_privilege_escalation_pattern(patterns, priv_events)

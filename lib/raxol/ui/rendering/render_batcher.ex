@@ -11,10 +11,7 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  @behaviour Raxol.Core.Behaviours.BaseManager
-  require Logger
-  require Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Log
 
   alias Raxol.UI.Rendering.DamageTracker
 
@@ -316,7 +313,7 @@ defmodule Raxol.UI.Rendering.RenderBatcher do
   defp send_to_pipeline(tree, _diff_result, damage_regions) do
     # This would call the main rendering pipeline
     # For now, just log the action
-    Logger.debug(
+    Log.module_debug(
       "RenderBatcher: Would send to pipeline - tree nodes: #{count_tree_nodes(tree)}, damage regions: #{map_size(damage_regions)}"
     )
 

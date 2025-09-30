@@ -52,21 +52,30 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   Append multiple events to a stream.
   """
   def append_events(events, stream_name, expected_version \\ :any) do
-    GenServer.call(__MODULE__, {:append_events, events, stream_name, expected_version})
+    GenServer.call(
+      __MODULE__,
+      {:append_events, events, stream_name, expected_version}
+    )
   end
 
   @doc """
   Append multiple events to a stream (with server name as first argument).
   """
   def append_events(server, events, stream_name, context) do
-    GenServer.call(server, {:append_events_with_context, events, stream_name, context})
+    GenServer.call(
+      server,
+      {:append_events_with_context, events, stream_name, context}
+    )
   end
 
   @doc """
   Read events from a stream.
   """
   def read_stream(stream_name, start_version \\ 0, count \\ :all) do
-    GenServer.call(__MODULE__, {:read_stream, stream_name, start_version, count})
+    GenServer.call(
+      __MODULE__,
+      {:read_stream, stream_name, start_version, count}
+    )
   end
 
   @doc """
@@ -80,7 +89,10 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   Subscribe to events from a stream or all events.
   """
   def subscribe(subscriber_pid, stream_name \\ :all, options \\ []) do
-    GenServer.call(__MODULE__, {:subscribe, subscriber_pid, stream_name, options})
+    GenServer.call(
+      __MODULE__,
+      {:subscribe, subscriber_pid, stream_name, options}
+    )
   end
 
   @doc """
@@ -134,7 +146,9 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   def handle_call({:append_event, event, stream_name, context}, _from, state) do
     case validate_event(event) do
       :ok ->
-        {event_with_metadata, new_state} = create_and_store_event(event, stream_name, context, state)
+        {event_with_metadata, new_state} =
+          create_and_store_event(event, stream_name, context, state)
+
         notify_subscribers(event_with_metadata, stream_name, new_state)
         {:reply, {:ok, event_with_metadata.id}, new_state}
 
@@ -144,13 +158,23 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   end
 
   @impl true
-  def handle_call({:append_events, events, stream_name, expected_version}, _from, state) do
+  def handle_call(
+        {:append_events, events, stream_name, expected_version},
+        _from,
+        state
+      ) do
     case validate_events(events) do
       :ok ->
         case check_expected_version(stream_name, expected_version, state) do
           :ok ->
-            {stored_events, new_state} = store_multiple_events(events, stream_name, state)
-            Enum.each(stored_events, &notify_subscribers(&1, stream_name, new_state))
+            {stored_events, new_state} =
+              store_multiple_events(events, stream_name, state)
+
+            Enum.each(
+              stored_events,
+              &notify_subscribers(&1, stream_name, new_state)
+            )
+
             event_ids = Enum.map(stored_events, & &1.id)
             {:reply, {:ok, event_ids}, new_state}
 
@@ -164,11 +188,26 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   end
 
   @impl true
-  def handle_call({:append_events_with_context, events, stream_name, context}, _from, state) do
+  def handle_call(
+        {:append_events_with_context, events, stream_name, context},
+        _from,
+        state
+      ) do
     case validate_events(events) do
       :ok ->
-        {stored_events, new_state} = store_multiple_events_with_context(events, stream_name, context, state)
-        Enum.each(stored_events, &notify_subscribers(&1, stream_name, new_state))
+        {stored_events, new_state} =
+          store_multiple_events_with_context(
+            events,
+            stream_name,
+            context,
+            state
+          )
+
+        Enum.each(
+          stored_events,
+          &notify_subscribers(&1, stream_name, new_state)
+        )
+
         event_ids = Enum.map(stored_events, & &1.id)
         {:reply, {:ok, event_ids}, new_state}
 
@@ -178,7 +217,11 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   end
 
   @impl true
-  def handle_call({:read_stream, stream_name, start_version, count}, _from, state) do
+  def handle_call(
+        {:read_stream, stream_name, start_version, count},
+        _from,
+        state
+      ) do
     events = get_stream_events(stream_name, start_version, count, state)
     {:reply, {:ok, events}, state}
   end
@@ -190,8 +233,14 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   end
 
   @impl true
-  def handle_call({:subscribe, subscriber_pid, stream_name, _options}, _from, state) do
-    new_subscribers = add_subscriber(state.subscribers, subscriber_pid, stream_name)
+  def handle_call(
+        {:subscribe, subscriber_pid, stream_name, _options},
+        _from,
+        state
+      ) do
+    new_subscribers =
+      add_subscriber(state.subscribers, subscriber_pid, stream_name)
+
     new_stats = Map.update!(state.statistics, :active_subscribers, &(&1 + 1))
     new_state = %{state | subscribers: new_subscribers, statistics: new_stats}
 
@@ -203,8 +252,12 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
 
   @impl true
   def handle_call({:unsubscribe, subscriber_pid, stream_name}, _from, state) do
-    new_subscribers = remove_subscriber(state.subscribers, subscriber_pid, stream_name)
-    new_stats = Map.update!(state.statistics, :active_subscribers, &max(0, &1 - 1))
+    new_subscribers =
+      remove_subscriber(state.subscribers, subscriber_pid, stream_name)
+
+    new_stats =
+      Map.update!(state.statistics, :active_subscribers, &max(0, &1 - 1))
+
     new_state = %{state | subscribers: new_subscribers, statistics: new_stats}
     {:reply, :ok, new_state}
   end
@@ -222,7 +275,12 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
 
   @impl true
   def handle_call({:delete_stream, stream_name}, _from, state) do
-    new_streams = Map.put(state.streams, stream_name, %{deleted: true, deleted_at: DateTime.utc_now()})
+    new_streams =
+      Map.put(state.streams, stream_name, %{
+        deleted: true,
+        deleted_at: DateTime.utc_now()
+      })
+
     new_state = %{state | streams: new_streams}
     {:reply, :ok, new_state}
   end
@@ -231,7 +289,10 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   def handle_info({:DOWN, _ref, :process, subscriber_pid, _reason}, state) do
     # Clean up dead subscriber
     new_subscribers = remove_dead_subscriber(state.subscribers, subscriber_pid)
-    new_stats = Map.update!(state.statistics, :active_subscribers, &max(0, &1 - 1))
+
+    new_stats =
+      Map.update!(state.statistics, :active_subscribers, &max(0, &1 - 1))
+
     new_state = %{state | subscribers: new_subscribers, statistics: new_stats}
     {:noreply, new_state}
   end
@@ -295,7 +356,9 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   defp store_multiple_events(events, stream_name, state) do
     {stored_events, final_state} =
       Enum.reduce(events, {[], state}, fn event, {acc_events, acc_state} ->
-        {stored_event, new_state} = create_and_store_event(event, stream_name, %{}, acc_state)
+        {stored_event, new_state} =
+          create_and_store_event(event, stream_name, %{}, acc_state)
+
         {[stored_event | acc_events], new_state}
       end)
 
@@ -305,7 +368,9 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   defp store_multiple_events_with_context(events, stream_name, context, state) do
     {stored_events, final_state} =
       Enum.reduce(events, {[], state}, fn event, {acc_events, acc_state} ->
-        {stored_event, new_state} = create_and_store_event(event, stream_name, context, acc_state)
+        {stored_event, new_state} =
+          create_and_store_event(event, stream_name, context, acc_state)
+
         {[stored_event | acc_events], new_state}
       end)
 
@@ -326,7 +391,9 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   defp get_stream_events(stream_name, start_version, count, state) do
     state.events
     |> Map.values()
-    |> Enum.filter(&(&1.stream_name == stream_name and &1.version >= start_version))
+    |> Enum.filter(
+      &(&1.stream_name == stream_name and &1.version >= start_version)
+    )
     |> Enum.sort_by(& &1.version)
     |> limit_events(count)
   end
@@ -340,7 +407,9 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
   end
 
   defp limit_events(events, :all), do: events
-  defp limit_events(events, count) when is_integer(count), do: Enum.take(events, count)
+
+  defp limit_events(events, count) when is_integer(count),
+    do: Enum.take(events, count)
 
   defp generate_event_id(state) do
     "event-#{state.next_event_id}"
@@ -414,7 +483,9 @@ defmodule Raxol.Architecture.EventSourcing.EventStore do
 
   defp notify_stream_subscribers(event, stream_name, state) do
     state.subscribers
-    |> Enum.filter(fn {_pid, streams} -> MapSet.member?(streams, stream_name) end)
+    |> Enum.filter(fn {_pid, streams} ->
+      MapSet.member?(streams, stream_name)
+    end)
     |> Enum.each(fn {pid, _streams} ->
       send(pid, {:event, event})
     end)

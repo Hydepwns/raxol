@@ -5,8 +5,7 @@ defmodule Raxol.WASM.Builder do
   Compiles Raxol to WASM for web deployment using Rust/wasm-bindgen
   or Zig as the compilation backend.
   """
-
-  require Logger
+  alias Raxol.Core.Runtime.Log
 
   @wasm_output_dir "priv/static/wasm"
   @js_output_dir "priv/static/js"
@@ -15,7 +14,7 @@ defmodule Raxol.WASM.Builder do
   Builds the WASM module with all configurations.
   """
   def build(opts \\ []) do
-    Logger.info("Starting WASM build for Raxol...")
+    Log.module_info("Starting WASM build for Raxol...")
 
     with :ok <- prepare_directories(),
          :ok <- generate_wasm_wrapper(),
@@ -23,11 +22,11 @@ defmodule Raxol.WASM.Builder do
          :ok <- generate_js_bindings(),
          :ok <- optimize_wasm(opts),
          :ok <- copy_assets() do
-      Logger.info("WASM build completed successfully!")
+      Log.module_info("WASM build completed successfully!")
       {:ok, wasm_info()}
     else
       {:error, reason} = error ->
-        Logger.error("WASM build failed: #{inspect(reason)}")
+        Log.module_error("WASM build failed: #{inspect(reason)}")
         error
     end
   end
@@ -36,7 +35,7 @@ defmodule Raxol.WASM.Builder do
   Cleans the WASM build artifacts.
   """
   def clean do
-    Logger.info("Cleaning WASM build artifacts...")
+    Log.module_info("Cleaning WASM build artifacts...")
 
     [@wasm_output_dir, @js_output_dir]
     |> Enum.each(&File.rm_rf!/1)
@@ -48,7 +47,7 @@ defmodule Raxol.WASM.Builder do
   Watches for changes and rebuilds WASM.
   """
   def watch(opts \\ []) do
-    Logger.info("Starting WASM watch mode...")
+    Log.module_info("Starting WASM watch mode...")
 
     # Initial build
     build(opts)
@@ -70,7 +69,7 @@ defmodule Raxol.WASM.Builder do
   end
 
   defp generate_wasm_wrapper do
-    Logger.info("Generating WASM wrapper...")
+    Log.module_info("Generating WASM wrapper...")
 
     wrapper_content = """
     // Auto-generated WASM wrapper for Raxol
@@ -307,7 +306,7 @@ defmodule Raxol.WASM.Builder do
   end
 
   defp compile_to_wasm(opts) do
-    Logger.info("Compiling to WASM...")
+    Log.module_info("Compiling to WASM...")
 
     optimization = Keyword.get(opts, :optimization, "-O2")
 
@@ -326,17 +325,17 @@ defmodule Raxol.WASM.Builder do
 
     case System.cmd("sh", ["-c", cmd], stderr_to_stdout: true) do
       {_, 0} ->
-        Logger.info("WASM compilation successful")
+        Log.module_info("WASM compilation successful")
         :ok
 
       {output, _} ->
-        Logger.error("WASM compilation failed: #{output}")
+        Log.module_error("WASM compilation failed: #{output}")
         {:error, :compilation_failed}
     end
   end
 
   defp generate_js_bindings do
-    Logger.info("Generating JavaScript bindings...")
+    Log.module_info("Generating JavaScript bindings...")
 
     js_content = """
     // Raxol WebAssembly JavaScript Bindings
@@ -525,7 +524,7 @@ defmodule Raxol.WASM.Builder do
 
   defp optimize_wasm(opts) do
     if Keyword.get(opts, :optimize, true) do
-      Logger.info("Optimizing WASM binary...")
+      Log.module_info("Optimizing WASM binary...")
 
       # Use wasm-opt if available
       cmd =
@@ -538,11 +537,11 @@ defmodule Raxol.WASM.Builder do
             "#{@wasm_output_dir}/raxol.wasm"
           )
 
-          Logger.info("WASM optimization successful")
+          Log.module_info("WASM optimization successful")
           :ok
 
         {output, _} ->
-          Logger.warning(
+          Log.module_warning(
             "wasm-opt not available, skipping optimization: #{output}"
           )
 
@@ -554,7 +553,7 @@ defmodule Raxol.WASM.Builder do
   end
 
   defp copy_assets do
-    Logger.info("Copying web assets...")
+    Log.module_info("Copying web assets...")
 
     # Copy HTML demo file
     html_content = """
@@ -778,7 +777,7 @@ defmodule Raxol.WASM.Builder do
     receive do
       {:file_event, _pid, {path, _events}} ->
         if String.ends_with?(path, ".ex") or String.ends_with?(path, ".exs") do
-          Logger.info("Detected change in #{path}, rebuilding...")
+          Log.module_info("Detected change in #{path}, rebuilding...")
           build(opts)
         end
 

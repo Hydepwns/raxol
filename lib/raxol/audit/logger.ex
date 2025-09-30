@@ -17,13 +17,10 @@ defmodule Raxol.Audit.Logger do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.Architecture.EventSourcing.EventStore
   alias Raxol.Audit.{Events, Storage, Analyzer, Exporter}
   alias Raxol.Core.Utils.TimerManager
-
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Audit.Events.{
     AuthorizationEvent,
     ConfigurationChangeEvent
@@ -217,7 +214,7 @@ defmodule Raxol.Audit.Logger do
   Logs a debug message.
   """
   def debug(message) do
-    Logger.debug("[AUDIT] #{message}")
+    Log.module_debug("#{message}")
   end
 
   @doc """
@@ -309,7 +306,7 @@ defmodule Raxol.Audit.Logger do
 
     state = Map.put(state, :timers, timers)
 
-    Logger.info("Audit logger initialized with config: #{inspect(config)}")
+    Log.module_info("Audit logger initialized with config: #{inspect(config)}")
     {:ok, state}
   end
 
@@ -322,7 +319,7 @@ defmodule Raxol.Audit.Logger do
             {:reply, :ok, new_state}
 
           {:error, reason} ->
-            Logger.error("Failed to log audit event: #{inspect(reason)}")
+            Log.module_error("Failed to log audit event: #{inspect(reason)}")
             {:reply, {:error, reason}, state}
         end
 
@@ -512,7 +509,7 @@ defmodule Raxol.Audit.Logger do
             {:ok, %{state | buffer: []}}
 
           {:error, reason} ->
-            Logger.error("Failed to flush audit buffer: #{inspect(reason)}")
+            Log.module_error("Failed to flush audit buffer: #{inspect(reason)}")
             {:error, reason}
         end
     end
@@ -686,10 +683,10 @@ defmodule Raxol.Audit.Logger do
 
     case verify_log_integrity(state, start_time, end_time) do
       :ok ->
-        Logger.info("Daily integrity check passed")
+        Log.module_info("Daily integrity check passed")
 
       {:error, reason} ->
-        Logger.error("Daily integrity check failed: #{inspect(reason)}")
+        Log.module_error("Daily integrity check failed: #{inspect(reason)}")
         # Send critical alert
         send_alerts(%{integrity_check_failed: reason}, :critical, state)
     end

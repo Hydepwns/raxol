@@ -141,7 +141,7 @@ defmodule Raxol.UI.State.Store do
 
       # Subscribe to counter changes
       unsubscribe = Store.subscribe([:counter], fn new_value ->
-        IO.puts("Counter: \#{new_value}")
+        Log.info("Counter: \#{new_value}")
       end)
       
       # Subscribe with options

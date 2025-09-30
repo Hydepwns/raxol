@@ -14,10 +14,8 @@ defmodule Raxol.Animation.Gestures.GestureServer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.Animation.Physics.{PhysicsEngine, Vector}
+  alias Raxol.Core.Runtime.Log
 
   # Gesture state structure
   defmodule State do
@@ -490,7 +488,7 @@ defmodule Raxol.Animation.Gestures.GestureServer do
                 :ok
 
               {:error, reason} ->
-                Logger.warning("Gesture handler failed: #{inspect(reason)}")
+                Log.module_warning("Gesture handler failed: #{inspect(reason)}")
             end
           end)
         end)

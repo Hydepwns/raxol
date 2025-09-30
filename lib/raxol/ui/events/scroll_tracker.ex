@@ -4,9 +4,7 @@ defmodule Raxol.UI.Events.ScrollTracker do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   defstruct [
     :config,
     :scroll_position,
@@ -40,7 +38,7 @@ defmodule Raxol.UI.Events.ScrollTracker do
       virtual_viewport: nil
     }
 
-    Logger.info("Scroll tracker initialized")
+    Log.module_info("Scroll tracker initialized")
     {:ok, state}
   end
 

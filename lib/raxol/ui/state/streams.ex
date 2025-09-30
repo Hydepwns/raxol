@@ -18,9 +18,7 @@ defmodule Raxol.UI.State.Streams do
   """
 
   alias Raxol.UI.State.Store
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Observable definition
   defmodule Observable do
     @enforce_keys [:subscribe_fn]
@@ -189,7 +187,7 @@ defmodule Raxol.UI.State.Streams do
         :ok
       else
         {:error, reason} ->
-          Logger.warning("Observer function failed: #{inspect(reason)}")
+          Log.module_warning("Observer function failed: #{inspect(reason)}")
           :ok
       end
     end
@@ -203,7 +201,7 @@ defmodule Raxol.UI.State.Streams do
   ## Examples
 
       numbers = Streams.from_list([1, 2, 3, 4, 5])
-      Streams.subscribe(numbers, fn x -> IO.puts(x) end)
+      Streams.subscribe(numbers, fn x -> Log.info(x) end)
   """
   def from_list(list) when is_list(list) do
     Observable.new(fn observer ->
@@ -344,7 +342,7 @@ defmodule Raxol.UI.State.Streams do
         result
 
       {:error, error} ->
-        Logger.error("Store subscription failed: #{inspect(error)}")
+        Log.module_error("Store subscription failed: #{inspect(error)}")
         fn -> :ok end
     end
   end

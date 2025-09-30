@@ -13,10 +13,7 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  @behaviour Raxol.Core.Behaviours.BaseManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Plugin Manifest
   def manifest do
     %{
@@ -74,7 +71,7 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
   # Initialization
   @impl true
   def init_manager(config) do
-    Logger.info("[FileBrowser] Initializing with config: #{inspect(config)}")
+    Log.module_info("Initializing with config: #{inspect(config)}")
 
     initial_path = Path.expand(config.initial_path || ".")
 
@@ -567,28 +564,28 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
 
   # File operations
   defp open_file(path) do
-    Logger.info("[FileBrowser] Opening file: #{path}")
+    Log.module_info("Opening file: #{path}")
     # Send event to open file in editor
     send(self(), {:open_file, path})
   end
 
   defp start_filter(state) do
-    Logger.info("[FileBrowser] Starting filter mode")
+    Log.module_info("Starting filter mode")
     {:ok, state}
   end
 
   defp create_file_prompt(state) do
-    Logger.info("[FileBrowser] Create file prompt")
+    Log.module_info("Create file prompt")
     {:ok, state}
   end
 
   defp delete_file_prompt(state) do
-    Logger.info("[FileBrowser] Delete file prompt")
+    Log.module_info("Delete file prompt")
     {:ok, state}
   end
 
   defp rename_file_prompt(state) do
-    Logger.info("[FileBrowser] Rename file prompt")
+    Log.module_info("Rename file prompt")
     {:ok, state}
   end
 
@@ -628,7 +625,7 @@ defmodule Raxol.Plugins.Examples.FileBrowserPlugin do
 
   @impl true
   def handle_manager_info(msg, state) do
-    Logger.debug("[FileBrowser] Received message: #{inspect(msg)}")
+    Log.module_debug("Received message: #{inspect(msg)}")
     {:noreply, state}
   end
 end

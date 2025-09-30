@@ -11,9 +11,7 @@ defmodule Raxol.Config do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @default_config_file "config/raxol.toml"
   @env_config_dir "config/environments"
 
@@ -125,7 +123,7 @@ defmodule Raxol.Config do
         {:ok, final_state}
 
       {:error, reason} ->
-        Logger.warning(
+        Log.module_warning(
           "Failed to load config: #{inspect(reason)}, using defaults"
         )
 

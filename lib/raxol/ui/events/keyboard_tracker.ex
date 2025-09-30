@@ -4,9 +4,7 @@ defmodule Raxol.UI.Events.KeyboardTracker do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   defstruct [
     :config,
     :key_bindings,
@@ -40,14 +38,14 @@ defmodule Raxol.UI.Events.KeyboardTracker do
       accessibility_mode: Keyword.get(opts, :accessibility_mode, false)
     }
 
-    Logger.info("Keyboard tracker initialized")
+    Log.module_info("Keyboard tracker initialized")
     {:ok, state}
   end
 
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_cast({:key_event, event}, state) do
     # Process keyboard event
-    Logger.debug("Processing key event: #{inspect(event)}")
+    Log.module_debug("Processing key event: #{inspect(event)}")
     {:noreply, state}
   end
 

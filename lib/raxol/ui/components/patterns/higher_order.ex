@@ -38,6 +38,7 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
   """
 
   alias Raxol.UI.State.{Context, Hooks}
+  alias Raxol.Core.Runtime.Log
 
   @doc """
   Creates a HOC that adds loading state management.
@@ -626,8 +627,7 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
   end
 
   defp default_analytics_provider(event_name, event_data) do
-    require Logger
-    Logger.info("Analytics: #{event_name} - #{inspect(event_data)}")
+    Log.module_info("Analytics: #{event_name} - #{inspect(event_data)}")
   end
 
   defp render_based_on_auth_state(
@@ -852,9 +852,7 @@ defmodule Raxol.UI.Components.Patterns.HigherOrder do
 
   defp log_slow_render_if_needed(render_time_ms, threshold, component_module)
        when render_time_ms > threshold do
-    require Logger
-
-    Logger.warning(
+    Log.module_warning(
       "Slow render detected: #{component_module} took #{Float.round(render_time_ms, 2)}ms"
     )
   end

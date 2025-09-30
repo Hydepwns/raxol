@@ -1,4 +1,5 @@
 defmodule Raxol.Security.Auditor do
+  alias Raxol.Core.Runtime.Log
   @moduledoc """
   Security auditing and validation module for Raxol.
 
@@ -11,9 +12,6 @@ defmodule Raxol.Security.Auditor do
   - Rate limiting
   - Security headers validation
   """
-
-  require Logger
-
   @type security_risk :: :low | :medium | :high | :critical
   @type audit_result :: {:ok, :passed} | {:error, security_risk, String.t()}
 
@@ -347,7 +345,7 @@ defmodule Raxol.Security.Auditor do
   end
 
   defp audit_access_attempt(user, resource, action) do
-    Logger.info(
+    Log.module_info(
       "Access attempt: user=#{inspect(user)}, resource=#{resource}, action=#{action}"
     )
 
@@ -355,7 +353,7 @@ defmodule Raxol.Security.Auditor do
   end
 
   defp audit_unauthorized_attempt(user, resource, action) do
-    Logger.warning(
+    Log.module_warning(
       "Unauthorized attempt: user=#{inspect(user)}, resource=#{resource}, action=#{action}"
     )
 

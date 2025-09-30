@@ -5,9 +5,6 @@ defmodule Raxol.Architecture.CQRS.Setup do
   This module handles the registration of command handlers and middleware,
   ensuring the CQRS system is properly configured when the application starts.
   """
-
-  require Logger
-
   alias Raxol.Architecture.CQRS.CommandDispatcher
 
   alias Raxol.Architecture.CQRS.Middleware.{
@@ -23,7 +20,7 @@ defmodule Raxol.Architecture.CQRS.Setup do
     CloseTerminalCommand,
     ApplyThemeCommand
   }
-
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Handlers.{
     CreateTerminalHandler,
     UpdateTerminalHandler,
@@ -36,7 +33,7 @@ defmodule Raxol.Architecture.CQRS.Setup do
   Sets up the CQRS system by registering handlers and middleware.
   """
   def setup do
-    Logger.info("Setting up CQRS system...")
+    Log.module_info("Setting up CQRS system...")
 
     # Add middleware in the correct order (executed in reverse)
     :ok = CommandDispatcher.add_middleware(LoggingMiddleware)
@@ -67,7 +64,7 @@ defmodule Raxol.Architecture.CQRS.Setup do
     :ok =
       CommandDispatcher.register_handler(ApplyThemeCommand, ApplyThemeHandler)
 
-    Logger.info("CQRS system setup completed")
+    Log.module_info("CQRS system setup completed")
     :ok
   end
 

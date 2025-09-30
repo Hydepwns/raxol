@@ -12,10 +12,7 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  @behaviour Raxol.Core.Behaviours.BaseManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Plugin Manifest
   def manifest do
     %{
@@ -56,7 +53,7 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
   # Initialization
   @impl true
   def init_manager(config) do
-    Logger.info("[CommandPalette] Initializing with config: #{inspect(config)}")
+    Log.module_info("Initializing with config: #{inspect(config)}")
 
     state = %__MODULE__{
       config: config,
@@ -283,7 +280,7 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
         {:ok, state}
 
       command ->
-        Logger.info("[CommandPalette] Executing command: #{command.id}")
+        Log.module_info("Executing command: #{command.id}")
 
         # Execute command action
         spawn(fn -> command.action.() end)
@@ -383,27 +380,27 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
 
   # Command actions
   defp clear_terminal do
-    Logger.info("[CommandPalette] Clearing terminal")
+    Log.module_info("Clearing terminal")
     # Implementation would clear the terminal
   end
 
   defp split_terminal(direction) do
-    Logger.info("[CommandPalette] Splitting terminal #{direction}")
+    Log.module_info("Splitting terminal #{direction}")
     # Implementation would split the terminal
   end
 
   defp open_file_dialog do
-    Logger.info("[CommandPalette] Opening file dialog")
+    Log.module_info("Opening file dialog")
     # Implementation would show file picker
   end
 
   defp change_theme_dialog do
-    Logger.info("[CommandPalette] Opening theme selector")
+    Log.module_info("Opening theme selector")
     # Implementation would show theme picker
   end
 
   defp reload_all_plugins do
-    Logger.info("[CommandPalette] Reloading all plugins")
+    Log.module_info("Reloading all plugins")
     # Trigger hot-reload for all plugins using available method
     case Raxol.Plugins.Manager.list_plugins() do
       {:ok, plugins} ->
@@ -412,12 +409,12 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
         end)
 
       _ ->
-        Logger.warning("[CommandPalette] Could not list plugins for reload")
+        Log.module_warning("Could not list plugins for reload")
     end
   end
 
   defp open_documentation do
-    Logger.info("[CommandPalette] Opening documentation")
+    Log.module_info("Opening documentation")
     # Open browser with docs
     System.cmd("open", ["https://docs.raxol.io"])
   end
@@ -455,7 +452,7 @@ defmodule Raxol.Plugins.Examples.CommandPalettePlugin do
 
   @impl true
   def handle_manager_info(msg, state) do
-    Logger.debug("[CommandPalette] Received message: #{inspect(msg)}")
+    Log.module_debug("Received message: #{inspect(msg)}")
     {:noreply, state}
   end
 end

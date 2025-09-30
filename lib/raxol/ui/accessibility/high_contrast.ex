@@ -62,11 +62,9 @@ defmodule Raxol.UI.Accessibility.HighContrast do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.Core.Platform
-  alias Raxol.UI.Theming.UnifiedThemingManager
+  alias Raxol.UI.Theming.ThemeManager
+  alias Raxol.Core.Runtime.Log
 
   defstruct [
     :config,
@@ -367,7 +365,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     # Apply initial theme
     {:ok, final_state} = apply_theme_internal(state, initial_theme)
 
-    Logger.info("High contrast system initialized with theme: #{initial_theme}")
+    Log.module_info("High contrast system initialized with theme: #{initial_theme}")
     {:ok, final_state}
   end
 
@@ -402,7 +400,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
 
             new_state = %{state | theme_registry: new_registry}
 
-            Logger.info(
+            Log.module_info(
               "Custom theme registered: #{validated_theme.name} (#{compliance_info.level})"
             )
 
@@ -418,7 +416,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
 
             new_state = %{state | theme_registry: new_registry}
 
-            Logger.warning(
+            Log.module_warning(
               "Theme registered with compliance issues: #{inspect(issues)}"
             )
 
@@ -473,7 +471,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     # Re-apply current theme to adjust for large text
     {:ok, updated_state} = reapply_current_theme(new_state)
 
-    Logger.info("Large text mode #{format_enabled_status(enabled)}")
+    Log.module_info("Large text mode #{format_enabled_status(enabled)}")
 
     {:reply, :ok, updated_state}
   end
@@ -487,7 +485,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     # Re-apply current theme with inversion
     {:ok, updated_state} = reapply_current_theme(new_state)
 
-    Logger.info("Color inversion #{format_enabled_status(new_invert)}")
+    Log.module_info("Color inversion #{format_enabled_status(new_invert)}")
 
     {:reply, :ok, updated_state}
   end
@@ -834,7 +832,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
   defp apply_theme_to_system(theme, _config) do
     # This would apply the theme to the actual terminal UI system
     # For now, we'll log the application
-    Logger.info("Applying high contrast theme: #{theme.name}")
+    Log.module_info("Applying high contrast theme: #{theme.name}")
 
     # Would integrate with ColorManager to update system colors
     UnifiedThemingManager.update_palette(%{
@@ -1106,7 +1104,7 @@ defmodule Raxol.UI.Accessibility.HighContrast do
     # Re-apply current theme with color blindness corrections
     {:ok, updated_state} = reapply_current_theme(new_state)
 
-    Logger.info("Color blindness support configured: #{type}")
+    Log.module_info("Color blindness support configured: #{type}")
     {:reply, :ok, updated_state}
   end
 

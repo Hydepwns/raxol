@@ -1,4 +1,4 @@
-defmodule Raxol.UI.Components.Input.MultiLineInput.UnifiedHelper do
+defmodule Raxol.UI.Components.Input.MultiLineInput.InputHelper do
   @moduledoc """
   Consolidated helper functions for MultiLineInput component.
   Combines functionality from TextHelper, NavigationHelper, RenderHelper, and ClipboardHelper.

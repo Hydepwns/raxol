@@ -7,8 +7,7 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
   """
 
   use GenServer
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   defstruct [
     :handlers,
     :middleware,
@@ -45,7 +44,8 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
   @doc """
   Register a command handler.
   """
-  def register_handler(command, handler) when is_atom(command) and is_atom(handler) do
+  def register_handler(command, handler)
+      when is_atom(command) and is_atom(handler) do
     GenServer.call(__MODULE__, {:register_handler, command, handler})
   end
 
@@ -121,7 +121,10 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
     case validate_handler(handler) do
       :ok ->
         new_handlers = Map.put(state.handlers, command, handler)
-        new_stats = Map.update!(state.statistics, :handlers_registered, &(&1 + 1))
+
+        new_stats =
+          Map.update!(state.statistics, :handlers_registered, &(&1 + 1))
+
         new_state = %{state | handlers: new_handlers, statistics: new_stats}
         {:reply, :ok, new_state}
 
@@ -143,12 +146,16 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
       handler ->
         case execute_command_pipeline(command, handler, state.middleware) do
           {:ok, result} ->
-            new_stats = Map.update!(state.statistics, :commands_processed, &(&1 + 1))
+            new_stats =
+              Map.update!(state.statistics, :commands_processed, &(&1 + 1))
+
             new_state = %{state | statistics: new_stats}
             {:reply, {:ok, result}, new_state}
 
           {:error, reason} ->
-            new_stats = Map.update!(state.statistics, :commands_failed, &(&1 + 1))
+            new_stats =
+              Map.update!(state.statistics, :commands_failed, &(&1 + 1))
+
             new_state = %{state | statistics: new_stats}
             {:reply, {:error, reason}, new_state}
         end
@@ -157,9 +164,10 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
 
   @impl true
   def handle_call(:list_handlers, _from, state) do
-    handlers_list = Enum.map(state.handlers, fn {command, handler} ->
-      %{command: command, handler: handler}
-    end)
+    handlers_list =
+      Enum.map(state.handlers, fn {command, handler} ->
+        %{command: command, handler: handler}
+      end)
 
     {:reply, handlers_list, state}
   end
@@ -172,7 +180,10 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
   @impl true
   def handle_call({:unregister_handler, command}, _from, state) do
     new_handlers = Map.delete(state.handlers, command)
-    new_stats = Map.update!(state.statistics, :handlers_registered, &max(0, &1 - 1))
+
+    new_stats =
+      Map.update!(state.statistics, :handlers_registered, &max(0, &1 - 1))
+
     new_state = %{state | handlers: new_handlers, statistics: new_stats}
     {:reply, :ok, new_state}
   end
@@ -180,7 +191,10 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
   @impl true
   def handle_call({:remove_middleware, middleware}, _from, state) do
     new_middleware = Enum.reject(state.middleware, &(&1 == middleware))
-    new_stats = Map.update!(state.statistics, :middleware_count, &max(0, &1 - 1))
+
+    new_stats =
+      Map.update!(state.statistics, :middleware_count, &max(0, &1 - 1))
+
     new_state = %{state | middleware: new_middleware, statistics: new_stats}
     {:reply, :ok, new_state}
   end
@@ -204,7 +218,7 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
     |> apply([])
   rescue
     error ->
-      Logger.error("Command execution failed: #{inspect(error)}")
+      Log.module_error("Command execution failed: #{inspect(error)}")
       {:error, {:execution_failed, error}}
   end
 
@@ -214,12 +228,15 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
         middleware.call(command, next_fn)
 
       false ->
-        Logger.warning("Middleware #{middleware} does not implement call/2, skipping")
+        Log.module_warning(
+          "Middleware #{middleware} does not implement call/2, skipping"
+        )
+
         next_fn.()
     end
   rescue
     error ->
-      Logger.error("Middleware #{middleware} failed: #{inspect(error)}")
+      Log.module_error("Middleware #{middleware} failed: #{inspect(error)}")
       {:error, {:middleware_failed, middleware, error}}
   end
 
@@ -234,13 +251,16 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
             handler.call(command)
 
           false ->
-            Logger.error("Handler #{handler} does not implement handle/1 or call/1")
+            Log.module_error(
+              "Handler #{handler} does not implement handle/1 or call/1"
+            )
+
             {:error, {:invalid_handler, handler}}
         end
     end
   rescue
     error ->
-      Logger.error("Handler #{handler} failed: #{inspect(error)}")
+      Log.module_error("Handler #{handler} failed: #{inspect(error)}")
       {:error, {:handler_failed, handler, error}}
   end
 
@@ -262,7 +282,8 @@ defmodule Raxol.Architecture.CQRS.CommandDispatcher do
       not is_atom(handler) ->
         {:error, :handler_must_be_atom}
 
-      not (function_exported?(handler, :handle, 1) or function_exported?(handler, :call, 1)) ->
+      not (function_exported?(handler, :handle, 1) or
+               function_exported?(handler, :call, 1)) ->
         {:error, :handler_must_implement_handle_1_or_call_1}
 
       true ->

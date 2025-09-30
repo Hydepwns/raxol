@@ -12,9 +12,7 @@ defmodule Raxol.Plugins.PluginSandbox do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @type plugin_id :: String.t()
   @type security_policy :: %{
           trust_level: :trusted | :sandboxed | :untrusted,
@@ -193,7 +191,7 @@ defmodule Raxol.Plugins.PluginSandbox do
       violation_handlers: initialize_violation_handlers(opts)
     }
 
-    Logger.info("[PluginSandbox] Initialized with security monitoring")
+    Log.module_info("Initialized with security monitoring")
     {:ok, state}
   end
 
@@ -205,11 +203,11 @@ defmodule Raxol.Plugins.PluginSandbox do
       ) do
     case create_sandbox_impl(plugin_id, security_policy, state) do
       {:ok, updated_state} ->
-        Logger.info("[PluginSandbox] Created sandbox for #{plugin_id}")
+        Log.module_info("Created sandbox for #{plugin_id}")
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
-        Logger.error(
+        Log.module_error(
           "[PluginSandbox] Failed to create sandbox for #{plugin_id}: #{inspect(reason)}"
         )
 
@@ -241,7 +239,7 @@ defmodule Raxol.Plugins.PluginSandbox do
   def handle_manager_call({:destroy_sandbox, plugin_id}, _from, state) do
     case destroy_sandbox_impl(plugin_id, state) do
       {:ok, updated_state} ->
-        Logger.info("[PluginSandbox] Destroyed sandbox for #{plugin_id}")
+        Log.module_info("Destroyed sandbox for #{plugin_id}")
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
@@ -457,14 +455,14 @@ defmodule Raxol.Plugins.PluginSandbox do
 
   defp start_plugin_resource_monitor(plugin_id, _security_policy) do
     # Mock implementation - would start actual resource monitoring
-    Logger.debug("[PluginSandbox] Started resource monitor for #{plugin_id}")
+    Log.module_debug("Started resource monitor for #{plugin_id}")
     :mock_monitor
   end
 
   defp start_plugin_audit_logger(plugin_id, security_policy) do
     # Mock implementation - would start actual audit logging
     if security_policy.audit_level != :none do
-      Logger.debug("[PluginSandbox] Started audit logger for #{plugin_id}")
+      Log.module_debug("Started audit logger for #{plugin_id}")
     end
 
     :mock_logger
@@ -478,7 +476,7 @@ defmodule Raxol.Plugins.PluginSandbox do
 
   defp apply_resource_limits(security_policy) do
     # Apply memory and CPU limits (would use system-specific mechanisms)
-    Logger.debug(
+    Log.module_debug(
       "[PluginSandbox] Applied resource limits: #{inspect(security_policy.resource_limits)}"
     )
   end
@@ -495,13 +493,13 @@ defmodule Raxol.Plugins.PluginSandbox do
 
   defp apply_policy_update(sandbox_context, _new_policy) do
     # Apply new security policy to running processes
-    Logger.info(
+    Log.module_info(
       "[PluginSandbox] Applied policy update for #{sandbox_context.plugin_id}"
     )
   end
 
   defp log_security_violation(plugin_id, violation, state) do
-    Logger.warning(
+    Log.module_warning(
       "[PluginSandbox] Security violation for #{plugin_id}: #{inspect(violation)}"
     )
 
@@ -515,7 +513,7 @@ defmodule Raxol.Plugins.PluginSandbox do
 
         # Check if violation threshold exceeded
         if length(updated_violations) >= 5 do
-          Logger.error(
+          Log.module_error(
             "[PluginSandbox] Too many violations for #{plugin_id}, considering shutdown"
           )
         end
@@ -543,12 +541,12 @@ defmodule Raxol.Plugins.PluginSandbox do
   defp initialize_violation_handlers(_opts) do
     %{
       execution_denied: fn plugin_id, details ->
-        Logger.warning(
+        Log.module_warning(
           "[PluginSandbox] Execution denied for #{plugin_id}: #{inspect(details)}"
         )
       end,
       resource_exceeded: fn plugin_id, resource, limit ->
-        Logger.warning(
+        Log.module_warning(
           "[PluginSandbox] Resource limit exceeded for #{plugin_id}: #{resource} > #{limit}"
         )
       end

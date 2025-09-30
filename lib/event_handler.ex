@@ -4,11 +4,11 @@ defmodule EventHandler do
   Provides backward compatibility for existing code.
   """
 
-  defdelegate handle_input(manager, input), to: Raxol.Events.UnifiedEventHandler
+  defdelegate handle_input(manager, input), to: Raxol.Events.EventServer
 
   defdelegate handle_output(manager, output),
-    to: Raxol.Events.UnifiedEventHandler
+    to: Raxol.Events.EventServer
 
   defdelegate handle_resize(manager, width, height),
-    to: Raxol.Events.UnifiedEventHandler
+    to: Raxol.Events.EventServer
 end

@@ -296,7 +296,7 @@ defmodule Raxol.PreCommit.Progress do
       end
 
     # Clear line and write new content
-    IO.puts("\r\e[K#{line}")
+    Log.info("\r\e[K#{line}")
   end
 
   defp render_check_final(name, check, state) do
@@ -305,15 +305,15 @@ defmodule Raxol.PreCommit.Progress do
     time_str = format_time(check)
 
     line = "  #{icon} #{name_str}#{time_str}"
-    IO.puts(line)
+    Log.info(line)
 
     # Show error reason if verbose and failed
     case {state.verbose, check.status, check.reason} do
       {true, :failed, reason} when reason != nil ->
-        IO.puts("     #{reason}")
+        Log.info("     #{reason}")
 
       {true, :warning, reason} when reason != nil ->
-        IO.puts("     #{reason}")
+        Log.info("     #{reason}")
 
       _ ->
         :ok

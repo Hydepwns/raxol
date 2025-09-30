@@ -15,9 +15,8 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Core.Runtime.Log
 
   # Plugin Manifest
   def manifest do
@@ -112,11 +111,11 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
 
     case state.repo_path do
       nil ->
-        Logger.info("Git Integration: No git repository found")
+        Log.module_info("Git Integration: No git repository found")
         {:ok, state}
 
       repo_path ->
-        Logger.info("Git Integration: Found repository at #{repo_path}")
+        Log.module_info("Git Integration: Found repository at #{repo_path}")
 
         # Start file watcher and timer based on auto-refresh setting
         {watcher_pid, timer} =
@@ -162,7 +161,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
         {:reply, :ok, updated_state}
 
       {error, _code} ->
-        Logger.error("Failed to stage file #{file}: #{error}")
+        Log.module_error("Failed to stage file #{file}: #{error}")
         {:reply, {:error, error}, state}
     end
   end
@@ -174,7 +173,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
         {:reply, :ok, updated_state}
 
       {error, _code} ->
-        Logger.error("Failed to unstage file #{file}: #{error}")
+        Log.module_error("Failed to unstage file #{file}: #{error}")
         {:reply, {:error, error}, state}
     end
   end
@@ -186,7 +185,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
         {:reply, {:ok, output}, updated_state}
 
       {error, _code} ->
-        Logger.error("Failed to commit: #{error}")
+        Log.module_error("Failed to commit: #{error}")
         {:reply, {:error, error}, state}
     end
   end
@@ -198,7 +197,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
         {:reply, :ok, updated_state}
 
       {error, _code} ->
-        Logger.error("Failed to checkout branch #{branch}: #{error}")
+        Log.module_error("Failed to checkout branch #{branch}: #{error}")
         {:reply, {:error, error}, state}
     end
   end
@@ -210,7 +209,7 @@ defmodule Raxol.Plugins.Examples.GitIntegrationPlugin do
         {:reply, :ok, updated_state}
 
       {error, _code} ->
-        Logger.error("Failed to create branch #{name}: #{error}")
+        Log.module_error("Failed to create branch #{name}: #{error}")
         {:reply, {:error, error}, state}
     end
   end

@@ -60,11 +60,9 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.Core.Platform
   alias Raxol.UI.Events.KeyboardTracker
+  alias Raxol.Core.Runtime.Log
 
   defstruct [
     :config,
@@ -302,7 +300,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     # Announce screen reader initialization
     _announcement = announce_initialization(state)
 
-    Logger.info("Screen reader support initialized: #{screen_reader_type}")
+    Log.module_info("Screen reader support initialized: #{screen_reader_type}")
     {:ok, state}
   end
 
@@ -343,7 +341,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
     # Announce component registration in verbose mode
     _announcement = announce_component_registration(new_state, validated_config)
 
-    Logger.debug("Component registered: #{component_id}")
+    Log.module_debug("Component registered: #{component_id}")
     {:reply, :ok, new_state}
   end
 
@@ -470,7 +468,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   def handle_manager_cast({:update_property, component_id, properties}, state) do
     case Map.get(state.component_registry, component_id) do
       nil ->
-        Logger.warning(
+        Log.module_warning(
           "Attempted to update non-existent component: #{component_id}"
         )
 
@@ -765,25 +763,25 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
   defp announce_to_nvda(text, priority) do
     # Use NVDA Controller Client API
     # This would be implemented as NIFs in practice
-    Logger.debug("NVDA Announcement (#{priority}): #{text}")
+    Log.module_debug("NVDA Announcement (#{priority}): #{text}")
     :ok
   end
 
   defp announce_to_jaws(text, priority) do
     # Use JAWS API
-    Logger.debug("JAWS Announcement (#{priority}): #{text}")
+    Log.module_debug("JAWS Announcement (#{priority}): #{text}")
     :ok
   end
 
   defp announce_to_voiceover(text, priority) do
     # Use macOS Accessibility API
-    Logger.debug("VoiceOver Announcement (#{priority}): #{text}")
+    Log.module_debug("VoiceOver Announcement (#{priority}): #{text}")
     :ok
   end
 
   defp announce_to_orca(text, priority) do
     # Use AT-SPI interface
-    Logger.debug("Orca Announcement (#{priority}): #{text}")
+    Log.module_debug("Orca Announcement (#{priority}): #{text}")
     :ok
   end
 
@@ -1213,7 +1211,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
 
   defp handle_speech_announcement(false, _type, text, priority) do
     # Fallback to system speech synthesis or logging
-    Logger.info("Screen Reader Announcement (#{priority}): #{text}")
+    Log.module_info("Screen Reader Announcement (#{priority}): #{text}")
     try_system_tts(text)
   end
 
@@ -1258,7 +1256,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         :ok
 
       cue ->
-        Logger.debug(
+        Log.module_debug(
           "Audio cue: #{cue_type} (#{cue.frequency}Hz, #{cue.duration}ms)"
         )
 
@@ -1327,7 +1325,7 @@ defmodule Raxol.UI.Accessibility.ScreenReader do
         validated
 
       false ->
-        Logger.warning(
+        Log.module_warning(
           "Invalid ARIA role: #{validated.role}, using :application"
         )
 

@@ -174,8 +174,6 @@ defmodule Raxol.Storage.EventStorage.Memory do
   @behaviour Raxol.Storage.EventStorage
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
   alias Raxol.Architecture.EventSourcing.{Event, EventStream}
 
   defstruct [
@@ -239,7 +237,7 @@ defmodule Raxol.Storage.EventStorage.Memory do
       config: %{}
     }
 
-    Logger.info("Memory event storage initialized")
+    Log.module_info("Memory event storage initialized")
     {:ok, state}
   end
 
@@ -393,9 +391,8 @@ defmodule Raxol.Storage.EventStorage.Disk do
   @behaviour Raxol.Storage.EventStorage
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
   alias Raxol.Architecture.EventSourcing.{Event, EventStream}
+  alias Raxol.Core.Runtime.Log
 
   defstruct [
     :config,
@@ -467,7 +464,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
     # Ensure data directory exists
     case File.mkdir_p(data_dir) do
       :ok ->
-        Logger.info("Disk event storage initialized at #{data_dir}")
+        Log.module_info("Disk event storage initialized at #{data_dir}")
 
         # Load existing streams index
         streams_index = load_streams_index(data_dir)
@@ -484,7 +481,7 @@ defmodule Raxol.Storage.EventStorage.Disk do
         {:ok, state}
 
       {:error, reason} ->
-        Logger.error(
+        Log.module_error(
           "Failed to create data directory #{data_dir}: #{inspect(reason)}"
         )
 

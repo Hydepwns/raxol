@@ -5,10 +5,7 @@ defmodule Raxol.UI.Rendering.Renderer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Raxol.Core.Runtime.Log
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Public API
 
   # BaseManager provides start_link/1 and start_link/2 automatically
@@ -109,7 +106,7 @@ defmodule Raxol.UI.Rendering.Renderer do
       Raxol.Terminal.Emulator.update_active_buffer(emulator, updated_buffer)
 
     new_state = put_emulator(state, updated_emulator)
-    require Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.info(
       "Partial render ops (line-based): #{inspect(ops)} (buffer updated)"
@@ -167,9 +164,7 @@ defmodule Raxol.UI.Rendering.Renderer do
 
   @impl true
   def handle_manager_cast({:render, data}, state) do
-    require Logger
-
-    Logger.debug(
+    Log.module_debug(
       "[Renderer] handle_cast {:render, data} called with data=#{inspect(data)}, test_pid=#{inspect(state.test_pid)}"
     )
 
@@ -180,8 +175,7 @@ defmodule Raxol.UI.Rendering.Renderer do
     {new_state, _} = do_partial_render([], data, data, state)
 
     notify_test_pid_for_render(state.test_pid != nil, state.test_pid, ops)
-
-    require Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.info(
       "Renderer received render: #{inspect(data)} (buffer updated)"
@@ -210,7 +204,7 @@ defmodule Raxol.UI.Rendering.Renderer do
     {new_state, _} = do_partial_render([], new_tree, new_tree, state)
 
     send_rendered_ops_to_test_pid(state.test_pid != nil, state.test_pid, ops)
-    require Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.info(
       "Renderer received full replacement diff: #{inspect(new_tree)}"
@@ -256,8 +250,7 @@ defmodule Raxol.UI.Rendering.Renderer do
       updated_subtree,
       updated_tree
     )
-
-    require Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Log
 
     Raxol.Core.Runtime.Log.info(
       "Renderer applied partial update at path #{inspect(path)}. Updated subtree: #{inspect(updated_subtree)}"
@@ -276,7 +269,7 @@ defmodule Raxol.UI.Rendering.Renderer do
   # Helper functions for pattern matching refactoring
 
   defp notify_test_pid_for_render(true, test_pid, ops) do
-    Logger.debug(
+    Log.module_debug(
       "[Renderer] Sending {:renderer_rendered, ops} to test_pid #{inspect(test_pid)} with ops=#{inspect(ops)}"
     )
 
@@ -284,7 +277,7 @@ defmodule Raxol.UI.Rendering.Renderer do
   end
 
   defp notify_test_pid_for_render(false, _test_pid, _ops) do
-    Logger.debug(
+    Log.module_debug(
       "[Renderer] No test_pid set, not sending {:renderer_rendered, ops} message"
     )
   end

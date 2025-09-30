@@ -8,9 +8,8 @@ defmodule Raxol.Audit.Storage do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
   alias Raxol.Core.Utils.TimerManager
+  alias Raxol.Core.Runtime.Log
 
   defstruct [
     :config,
@@ -130,7 +129,7 @@ defmodule Raxol.Audit.Storage do
         TimerManager.intervals().hour
       )
 
-    Logger.info("Audit storage initialized at #{storage_path}")
+    Log.module_info("Audit storage initialized at #{storage_path}")
     {:ok, Map.put(state, :timers, timers)}
   end
 
@@ -334,7 +333,7 @@ defmodule Raxol.Audit.Storage do
       {:ok, paginated}
     else
       {:error, reason} ->
-        Logger.error("Query execution failed: #{inspect(reason)}")
+        Log.module_error("Query execution failed: #{inspect(reason)}")
         {:error, :query_failed}
     end
   end
@@ -517,7 +516,7 @@ defmodule Raxol.Audit.Storage do
     compressed = :zlib.gzip(File.read!(file_path))
     File.write!(compressed_path, compressed)
     File.rm!(file_path)
-    Logger.info("Compressed audit log: #{compressed_path}")
+    Log.module_info("Compressed audit log: #{compressed_path}")
   end
 
   defp load_all_events(state) do

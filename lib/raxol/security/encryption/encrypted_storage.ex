@@ -18,10 +18,9 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
   alias Raxol.Security.Encryption.KeyManager
   alias Raxol.Audit.Logger, as: AuditLogger
+  alias Raxol.Core.Runtime.Log
 
   defstruct [
     :key_manager,
@@ -163,7 +162,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
     # Start async encryption worker
     _ = start_async_encryption_worker(config[:async_encryption])
 
-    Logger.info("Encrypted storage initialized with backend: #{config.backend}")
+    Log.module_info("Encrypted storage initialized with backend: #{config.backend}")
     {:ok, state}
   end
 
@@ -665,7 +664,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
   defp check_hmac_match(true, _key), do: :ok
 
   defp check_hmac_match(false, key) do
-    Logger.error("HMAC verification failed for key: #{key}")
+    Log.module_error("HMAC verification failed for key: #{key}")
     audit_security_event(:integrity_failure, key)
     {:error, :integrity_check_failed}
   end
@@ -735,7 +734,7 @@ defmodule Raxol.Security.Encryption.EncryptedStorage do
         end
       end)
 
-    Logger.info("Re-encrypted #{count} items with new key")
+    Log.module_info("Re-encrypted #{count} items with new key")
     {:ok, count, new_state}
   end
 

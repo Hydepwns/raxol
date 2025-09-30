@@ -7,6 +7,7 @@ defmodule Raxol.Audit.Integration do
   """
 
   alias Raxol.Audit.Logger
+  alias Raxol.Core.Runtime.Log
 
   @doc """
   Audits a terminal command execution.
@@ -512,7 +513,7 @@ defmodule Raxol.Audit.Integration do
   defp track_failed_attempt(username, opts) do
     # This integrates with the existing account lockout mechanism in Raxol.Auth
     ip = Keyword.get(opts, :ip_address)
-    Logger.debug("Tracking failed attempt for #{username} from #{ip}")
+    Log.module_debug("Tracking failed attempt for #{username} from #{ip}")
 
     # Log security event for audit trail
     Logger.log_security_event(

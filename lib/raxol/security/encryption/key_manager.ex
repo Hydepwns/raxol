@@ -17,10 +17,8 @@ defmodule Raxol.Security.Encryption.KeyManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.Audit.Logger, as: AuditLogger
+  alias Raxol.Core.Runtime.Log
 
   defstruct [
     :master_key,
@@ -185,7 +183,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
     # Every minute
     _ = :timer.send_interval(60_000, :cleanup_cache)
 
-    Logger.info("Key manager initialized")
+    Log.module_info("Key manager initialized")
     {:ok, state}
   end
 
@@ -329,7 +327,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
         # Generate new master key
         key = :crypto.strong_rand_bytes(32)
 
-        Logger.warning(
+        Log.module_warning(
           "Generated new master key - should be persisted securely!"
         )
 
@@ -355,7 +353,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
   defp init_hsm_client(hsm_config) do
     # Initialize HSM connection
     # This would connect to actual HSM in production
-    Logger.info("HSM client initialized (simulated)")
+    Log.module_info("HSM client initialized (simulated)")
     %{connected: true, config: hsm_config}
   end
 
@@ -650,7 +648,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
 
   defp generate_key_in_hsm(algorithm, _hsm_client) do
     # Simulate HSM key generation
-    Logger.debug("Generating #{algorithm} key in HSM")
+    Log.module_debug("Generating #{algorithm} key in HSM")
     :crypto.strong_rand_bytes(32)
   end
 
@@ -830,7 +828,7 @@ defmodule Raxol.Security.Encryption.KeyManager do
         user: get_current_user()
       )
     else
-      Logger.debug("Audit logging skipped - audit logger not available",
+      Log.module_debug("Audit logging skipped - audit logger not available",
         operation: operation,
         key_id: key_id
       )
@@ -877,11 +875,11 @@ defmodule Raxol.Security.Encryption.KeyManager do
   defp process_key_rotation(true, key_id, acc_state) do
     case rotate_encryption_key(key_id, acc_state) do
       {:ok, _new_version, new_state} ->
-        Logger.info("Automatically rotated key #{key_id}")
+        Log.module_info("Automatically rotated key #{key_id}")
         new_state
 
       {:error, reason} ->
-        Logger.error("Failed to rotate key #{key_id}: #{inspect(reason)}")
+        Log.module_error("Failed to rotate key #{key_id}: #{inspect(reason)}")
         acc_state
     end
   end

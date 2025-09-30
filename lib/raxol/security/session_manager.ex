@@ -11,10 +11,8 @@ defmodule Raxol.Security.SessionManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.Core.Utils.TimerManager
+  alias Raxol.Core.Runtime.Log
 
   # 30 minutes
   @session_timeout_ms 30 * 60 * 1000
@@ -243,7 +241,7 @@ defmodule Raxol.Security.SessionManager do
         }}, state}
     else
       false ->
-        Logger.warning("Invalid token for session #{session_id}")
+        Log.module_warning("Invalid token for session #{session_id}")
         {:reply, {:error, :invalid_token}, state}
 
       true ->
@@ -298,7 +296,7 @@ defmodule Raxol.Security.SessionManager do
         :ets.delete(:sessions, session_id)
         :ets.delete_object(:user_sessions, {session.user_id, session_id})
 
-        Logger.info("Session invalidated: #{session_id}")
+        Log.module_info("Session invalidated: #{session_id}")
     end
   end
 
@@ -374,7 +372,7 @@ defmodule Raxol.Security.SessionManager do
 
     case length(expired) > 0 do
       true ->
-        Logger.info("Cleaned up #{length(expired)} expired sessions")
+        Log.module_info("Cleaned up #{length(expired)} expired sessions")
 
       false ->
         :ok

@@ -148,7 +148,7 @@ defmodule Raxol.System.Updater.Network do
         # The new process will start with the updated executable
         case File.cp(new_exe, current_exe) do
           :ok ->
-            IO.puts(
+            Log.info(
               "Executable replaced successfully. Please restart the application."
             )
 

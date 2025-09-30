@@ -3,10 +3,8 @@ defmodule Raxol.System.Updater.Core do
   Core update logic and GenServer callbacks for the Raxol System Updater.
   """
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.System.Updater.{Network, Validation, State}
+  alias Raxol.Core.Runtime.Log
 
   @github_repo "username/raxol"
   @version Mix.Project.config()[:version]
@@ -400,7 +398,7 @@ defmodule Raxol.System.Updater.Core do
   end
 
   defp do_delta_update(version, delta_info) do
-    Logger.info(
+    Log.module_info(
       "Delta update available (#{delta_info.savings_percent}% smaller download)"
     )
 
@@ -412,8 +410,8 @@ defmodule Raxol.System.Updater.Core do
         :ok
 
       {:error, reason} ->
-        Logger.error("Delta update failed: #{reason}")
-        Logger.warning("Falling back to full update...")
+        Log.module_error("Delta update failed: #{reason}")
+        Log.module_warning("Falling back to full update...")
         do_self_update(version)
     end
   end

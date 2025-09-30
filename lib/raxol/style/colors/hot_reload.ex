@@ -10,6 +10,7 @@ defmodule Raxol.Style.Colors.HotReload do
   use Raxol.Core.Behaviours.BaseManager
 
   alias Raxol.Style.Colors.Persistence
+  alias Raxol.Core.Runtime.Log
 
   # Check for changes every 100ms (faster for tests)
   @check_interval 100
@@ -184,13 +185,13 @@ defmodule Raxol.Style.Colors.HotReload do
   end
 
   defp check_for_changes(state) do
-    IO.puts(
+    Log.info(
       "[HotReload DEBUG] check_for_changes called. Watched paths: #{inspect(state.watched_paths)}"
     )
 
     current_times = get_current_times(state.watched_paths)
     changed_files = find_changed_files(current_times, state.last_modified)
-    # IO.puts("[HotReload DEBUG] changed_files: #{inspect(changed_files)}")
+    # Log.info("[HotReload DEBUG] changed_files: #{inspect(changed_files)}")
 
     Enum.each(changed_files, &handle_theme_change(&1, state.subscribers))
 
@@ -204,11 +205,11 @@ defmodule Raxol.Style.Colors.HotReload do
   end
 
   defp find_changed_files(current_times, last_modified) do
-    # IO.puts(
+    # Log.info(
     #   "[HotReload DEBUG] Comparing times - current: #{inspect(current_times)}"
     # )
     # 
-    # IO.puts(
+    # Log.info(
     #   "[HotReload DEBUG] Comparing times - last: #{inspect(last_modified)}"
     # )
 
@@ -216,13 +217,13 @@ defmodule Raxol.Style.Colors.HotReload do
       Enum.filter(current_times, fn {path, mtime} ->
         case Map.get(last_modified, path) do
           nil ->
-            # IO.puts("[HotReload DEBUG] New file detected: #{path}")
+            # Log.info("[HotReload DEBUG] New file detected: #{path}")
             true
 
           old_time ->
             changed = old_time != mtime
 
-            # IO.puts(
+            # Log.info(
             #   "[HotReload DEBUG] File #{path}: old=#{inspect(old_time)}, new=#{inspect(mtime)}, changed=#{changed}"
             # )
 
@@ -230,12 +231,12 @@ defmodule Raxol.Style.Colors.HotReload do
         end
       end)
 
-    # IO.puts("[HotReload DEBUG] Found changed files: #{inspect(changed)}")
+    # Log.info("[HotReload DEBUG] Found changed files: #{inspect(changed)}")
     changed
   end
 
   defp handle_theme_change({path, _mtime}, subscribers) do
-    # IO.puts(
+    # Log.info(
     #   "[HotReload DEBUG] handle_theme_change: path=#{inspect(path)} subscribers=#{inspect(subscribers)}"
     # )
 
@@ -243,7 +244,7 @@ defmodule Raxol.Style.Colors.HotReload do
 
     case Persistence.load_theme(theme_name) do
       {:ok, theme} ->
-        # IO.puts(
+        # Log.info(
         #   "[HotReload DEBUG] Loaded theme: #{inspect(theme.name)}. Notifying subscribers..."
         # )
 
@@ -260,7 +261,7 @@ defmodule Raxol.Style.Colors.HotReload do
               {:ok, theme_map} ->
                 theme_struct = Persistence.map_to_theme_struct(theme_map)
 
-                # IO.puts(
+                # Log.info(
                 #   "[HotReload DEBUG] Loaded theme by path: #{inspect(theme_struct.name)}. Notifying subscribers..."
                 # )
 
@@ -270,16 +271,15 @@ defmodule Raxol.Style.Colors.HotReload do
                 end)
 
               _ ->
-                # IO.puts(
+                # Log.info(
                 #   "[HotReload DEBUG] Failed to decode theme JSON at #{path}"
                 # )
                 :ok
             end
 
           _ ->
-            # IO.puts("[HotReload DEBUG] Failed to load theme: #{theme_name}")
-            require Logger
-            Logger.debug("[HotReload] Failed to load theme: #{theme_name}")
+            # Log.info("[HotReload DEBUG] Failed to load theme: #{theme_name}")
+            Log.module_debug("Failed to load theme: #{theme_name}")
         end
     end
   end

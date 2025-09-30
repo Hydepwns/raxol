@@ -483,7 +483,7 @@ defmodule Raxol.Handlers.ApplyThemeHandler do
   alias Raxol.Commands.ApplyThemeCommand
   alias Raxol.Events.TerminalThemeAppliedEvent
   alias Raxol.Terminal.TerminalRegistry
-  alias Raxol.UI.Theming.UnifiedThemingManager
+  alias Raxol.UI.Theming.ThemeManager
 
   @impl true
   def handle(%ApplyThemeCommand{} = command, context) do

@@ -12,10 +12,7 @@ defmodule Raxol.Plugins.HotReloadManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  @behaviour Raxol.Core.Behaviours.BaseManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Aliases will be used when implementing full functionality
   # alias Raxol.Plugins.{PluginSystemV2, DependencyResolverV2, PluginSandbox}
 
@@ -145,7 +142,7 @@ defmodule Raxol.Plugins.HotReloadManager do
       active_reloads: %{}
     }
 
-    Logger.info("[HotReloadManager] Initialized with file watching")
+    Log.module_info("Initialized with file watching")
     {:ok, state}
   end
 
@@ -157,7 +154,7 @@ defmodule Raxol.Plugins.HotReloadManager do
       ) do
     case enable_hot_reload_impl(plugin_id, plugin_path, opts, state) do
       {:ok, updated_state} ->
-        Logger.info(
+        Log.module_info(
           "[HotReloadManager] Enabled hot-reload for #{plugin_id} at #{plugin_path}"
         )
 
@@ -172,7 +169,7 @@ defmodule Raxol.Plugins.HotReloadManager do
   def handle_manager_call({:disable_hot_reload, plugin_id}, _from, state) do
     case disable_hot_reload_impl(plugin_id, state) do
       {:ok, updated_state} ->
-        Logger.info("[HotReloadManager] Disabled hot-reload for #{plugin_id}")
+        Log.module_info("Disabled hot-reload for #{plugin_id}")
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
@@ -195,7 +192,7 @@ defmodule Raxol.Plugins.HotReloadManager do
   def handle_manager_call({:rollback_plugin, plugin_id}, _from, state) do
     case rollback_plugin_impl(plugin_id, state) do
       {:ok, updated_state} ->
-        Logger.info("[HotReloadManager] Rolled back plugin #{plugin_id}")
+        Log.module_info("Rolled back plugin #{plugin_id}")
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
@@ -228,7 +225,7 @@ defmodule Raxol.Plugins.HotReloadManager do
         {:noreply, updated_state}
 
       {:error, reason} ->
-        Logger.error(
+        Log.module_error(
           "[HotReloadManager] Failed to handle file change: #{inspect(reason)}"
         )
 
@@ -238,7 +235,7 @@ defmodule Raxol.Plugins.HotReloadManager do
 
   @impl true
   def handle_manager_info({:reload_timeout, plugin_id}, state) do
-    Logger.error("[HotReloadManager] Reload timeout for plugin #{plugin_id}")
+    Log.module_error("Reload timeout for plugin #{plugin_id}")
     updated_active = Map.delete(state.active_reloads, plugin_id)
     {:noreply, %{state | active_reloads: updated_active}}
   end
@@ -336,14 +333,14 @@ defmodule Raxol.Plugins.HotReloadManager do
               true ->
                 case rollback_plugin_impl(plugin_id, updated_history_state) do
                   {:ok, final_state} ->
-                    Logger.warning(
+                    Log.module_warning(
                       "[HotReloadManager] Reload failed, rolled back #{plugin_id}"
                     )
 
                     {:ok, final_state}
 
                   {:error, rollback_error} ->
-                    Logger.error(
+                    Log.module_error(
                       "[HotReloadManager] Reload and rollback both failed for #{plugin_id}"
                     )
 
@@ -359,7 +356,7 @@ defmodule Raxol.Plugins.HotReloadManager do
   end
 
   defp perform_reload(plugin_id, opts, state) do
-    Logger.info(
+    Log.module_info(
       "[HotReloadManager] Starting #{opts.strategy} reload for #{plugin_id}"
     )
 
@@ -536,7 +533,7 @@ defmodule Raxol.Plugins.HotReloadManager do
 
   defp start_file_watcher(_opts) do
     # Mock implementation - would start actual file watcher
-    Logger.debug("[HotReloadManager] Started file watcher")
+    Log.module_debug("Started file watcher")
     :mock_file_watcher
   end
 
@@ -545,12 +542,12 @@ defmodule Raxol.Plugins.HotReloadManager do
   end
 
   defp add_path_to_watcher(path, plugin_id, _watcher_pid) do
-    Logger.debug("[HotReloadManager] Watching #{path} for #{plugin_id}")
+    Log.module_debug("Watching #{path} for #{plugin_id}")
     :ok
   end
 
   defp remove_path_from_watcher(path, plugin_id, _watcher_pid) do
-    Logger.debug("[HotReloadManager] Stopped watching #{path} for #{plugin_id}")
+    Log.module_debug("Stopped watching #{path} for #{plugin_id}")
     :ok
   end
 
@@ -578,19 +575,19 @@ defmodule Raxol.Plugins.HotReloadManager do
 
   defp reload_plugin_module(_plugin_id) do
     # Mock implementation - would reload plugin module
-    Logger.info("[HotReloadManager] Reloading plugin module")
+    Log.module_info("Reloading plugin module")
     :ok
   end
 
   defp stop_plugin_gracefully(_plugin_id, _timeout) do
     # Mock implementation - would gracefully stop plugin
-    Logger.info("[HotReloadManager] Stopping plugin gracefully")
+    Log.module_info("Stopping plugin gracefully")
     :ok
   end
 
   defp start_plugin(_plugin_id) do
     # Mock implementation - would start plugin
-    Logger.info("[HotReloadManager] Starting plugin")
+    Log.module_info("Starting plugin")
     :ok
   end
 
@@ -601,7 +598,7 @@ defmodule Raxol.Plugins.HotReloadManager do
 
   defp restore_plugin_from_backup(_plugin_id, _backup_state) do
     # Mock implementation - would restore from backup
-    Logger.info("[HotReloadManager] Restoring plugin from backup")
+    Log.module_info("Restoring plugin from backup")
     :ok
   end
 

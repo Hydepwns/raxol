@@ -12,9 +12,7 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Plugin Manifest
   def manifest do
     %{
@@ -60,7 +58,7 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
   # Initialization
   @impl true
   def init_manager(config) do
-    Logger.info("[StatusLine] Initializing with config: #{inspect(config)}")
+    Log.module_info("Initializing with config: #{inspect(config)}")
 
     state = %__MODULE__{
       config: config,
@@ -142,7 +140,7 @@ defmodule Raxol.Plugins.Examples.StatusLinePlugin do
   end
 
   def handle_manager_info(msg, state) do
-    Logger.debug("[StatusLine] Received message: #{inspect(msg)}")
+    Log.module_debug("Received message: #{inspect(msg)}")
     {:noreply, state}
   end
 

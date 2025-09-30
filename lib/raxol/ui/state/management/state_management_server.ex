@@ -17,9 +17,7 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Client API
 
   @doc """
@@ -245,8 +243,7 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
       end
 
     # Debug logging
-    require Logger
-    Logger.debug("get_state path_list: #{inspect(path_list)}")
+    Log.module_debug("get_state path_list: #{inspect(path_list)}")
 
     store_keys =
       case state.store_data do
@@ -255,8 +252,8 @@ defmodule Raxol.UI.State.Management.StateManagementServer do
         other -> "Unknown type: #{inspect(other)}"
       end
 
-    Logger.debug("store_data type: #{inspect(state.store_data)}")
-    Logger.debug("store_data keys: #{inspect(store_keys)}")
+    Log.module_debug("store_data type: #{inspect(state.store_data)}")
+    Log.module_debug("store_data keys: #{inspect(store_keys)}")
 
     value = get_in(state.store_data, path_list)
     {:reply, value, state}

@@ -6,8 +6,7 @@ defmodule Raxol.Storage.EventStorage.Distributed do
   @behaviour Raxol.Storage.EventStorage
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # EventSourcing aliases will be added when needed
 
   defstruct [
@@ -86,7 +85,7 @@ defmodule Raxol.Storage.EventStorage.Distributed do
       consistency_level: config.consistency_level
     }
 
-    Logger.info(
+    Log.module_info(
       "Distributed event storage initialized with replication factor #{config.replication_factor}"
     )
 

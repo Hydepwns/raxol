@@ -15,9 +15,7 @@ defmodule Raxol.Playground do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  @behaviour Raxol.Core.Behaviours.BaseManager
-  require Logger
+  alias Raxol.Core.Runtime.Log
 
   alias Raxol.Playground.{
     Catalog,
@@ -42,11 +40,11 @@ defmodule Raxol.Playground do
 
     case start_link(port: port) do
       {:ok, _pid} ->
-        Logger.info("Raxol Playground started on port #{port}")
+        Log.module_info("Raxol Playground started on port #{port}")
         run_playground()
 
       {:error, {:already_started, _pid}} ->
-        Logger.info("Playground already running")
+        Log.module_info("Playground already running")
         run_playground()
 
       {:error, reason} ->
@@ -227,7 +225,7 @@ defmodule Raxol.Playground do
   # Private Functions
 
   defp run_playground do
-    IO.puts("""
+    Log.console("""
 
     #{IO.ANSI.cyan()}╔════════════════════════════════════════════════════╗
     ║        Raxol Component Playground [STYLE]               ║
@@ -262,11 +260,11 @@ defmodule Raxol.Playground do
 
     case parse_command(input) do
       {:exit} ->
-        IO.puts("Goodbye! [STYLE]")
+        Log.console("Goodbye! [STYLE]")
         :ok
 
       {:error, message} ->
-        IO.puts("#{IO.ANSI.red()}Error: #{message}#{IO.ANSI.reset()}")
+        Log.console("#{IO.ANSI.red()}Error: #{message}#{IO.ANSI.reset()}")
         playground_loop()
 
       :ok ->
@@ -293,7 +291,7 @@ defmodule Raxol.Playground do
   defp parse_command("select " <> component_id) do
     case select_component(component_id) do
       {:ok, preview} ->
-        IO.puts(
+        Log.console(
           "\n#{IO.ANSI.bright()}Selected: #{component_id}#{IO.ANSI.reset()}\n"
         )
 
@@ -330,7 +328,7 @@ defmodule Raxol.Playground do
   defp parse_command("theme " <> theme_name) do
     case switch_theme(String.to_atom(theme_name)) do
       {:ok, preview} ->
-        IO.puts(
+        Log.console(
           "#{IO.ANSI.green()}[OK] Theme switched to: #{theme_name}#{IO.ANSI.reset()}"
         )
 
@@ -401,41 +399,41 @@ defmodule Raxol.Playground do
   end
 
   defp display_catalog(catalog) do
-    IO.puts("\n#{IO.ANSI.bright()}Component Catalog:#{IO.ANSI.reset()}\n")
+    Log.console("\n#{IO.ANSI.bright()}Component Catalog:#{IO.ANSI.reset()}\n")
 
     catalog
     |> Enum.group_by(& &1.category)
     |> Enum.each(fn {category, components} ->
-      IO.puts("#{IO.ANSI.cyan()}#{category}:#{IO.ANSI.reset()}")
+      Log.console("#{IO.ANSI.cyan()}#{category}:#{IO.ANSI.reset()}")
 
       Enum.each(components, fn comp ->
-        IO.puts(
+        Log.console(
           "  #{IO.ANSI.green()}#{comp.id}#{IO.ANSI.reset()} - #{comp.description}"
         )
       end)
 
-      IO.puts("")
+      Log.console("")
     end)
   end
 
   defp display_preview(preview) do
-    IO.puts("\n#{IO.ANSI.bright()}Preview:#{IO.ANSI.reset()}")
-    IO.puts("#{String.duplicate("─", 60)}")
-    IO.puts(preview)
-    IO.puts("#{String.duplicate("─", 60)}\n")
+    Log.console("\n#{IO.ANSI.bright()}Preview:#{IO.ANSI.reset()}")
+    Log.console("#{String.duplicate("─", 60)}")
+    Log.console(preview)
+    Log.console("#{String.duplicate("─", 60)}\n")
   end
 
   # Removed display_props - was unused
 
   defp display_code(code) do
-    IO.puts("\n#{IO.ANSI.bright()}Generated Code:#{IO.ANSI.reset()}")
-    IO.puts("#{IO.ANSI.light_black()}```elixir#{IO.ANSI.reset()}")
-    IO.puts(code)
-    IO.puts("#{IO.ANSI.light_black()}```#{IO.ANSI.reset()}\n")
+    Log.console("\n#{IO.ANSI.bright()}Generated Code:#{IO.ANSI.reset()}")
+    Log.console("#{IO.ANSI.light_black()}```elixir#{IO.ANSI.reset()}")
+    Log.console(code)
+    Log.console("#{IO.ANSI.light_black()}```#{IO.ANSI.reset()}\n")
   end
 
   defp display_examples(examples) do
-    IO.puts("\n#{IO.ANSI.bright()}Interactive Examples:#{IO.ANSI.reset()}\n")
+    Log.console("\n#{IO.ANSI.bright()}Interactive Examples:#{IO.ANSI.reset()}\n")
 
     examples
     |> Enum.each(fn {category, example_list} ->
@@ -444,26 +442,26 @@ defmodule Raxol.Playground do
         |> to_string()
         |> String.capitalize()
 
-      IO.puts("#{IO.ANSI.cyan()}#{category_name}:#{IO.ANSI.reset()}")
+      Log.console("#{IO.ANSI.cyan()}#{category_name}:#{IO.ANSI.reset()}")
 
       Enum.each(example_list, fn example ->
-        IO.puts(
+        Log.console(
           "  #{IO.ANSI.green()}#{example.id}#{IO.ANSI.reset()} - #{example.title}"
         )
 
-        IO.puts("    #{example.description}")
+        Log.console("    #{example.description}")
       end)
 
-      IO.puts("")
+      Log.console("")
     end)
 
-    IO.puts(
+    Log.console(
       "#{IO.ANSI.light_black()}Use 'run <example_id>' to start an interactive example.#{IO.ANSI.reset()}"
     )
   end
 
   defp display_help do
-    IO.puts("""
+    Log.console("""
 
     #{IO.ANSI.bright()}Available Commands:#{IO.ANSI.reset()}
 
@@ -595,7 +593,7 @@ defmodule Raxol.Playground do
     editor_output =
       PropertyEditor.render_terminal_editor(component, state.current_props)
 
-    IO.puts(editor_output)
+    Log.console(editor_output)
     :ok
   end
 
@@ -608,7 +606,7 @@ defmodule Raxol.Playground do
       {:ok, parsed_value} ->
         case update_props(%{String.to_atom(prop) => parsed_value}) do
           {:ok, preview} ->
-            IO.puts(
+            Log.console(
               "#{IO.ANSI.green()}[OK] Updated #{prop} = #{inspect(parsed_value)}#{IO.ANSI.reset()}"
             )
 

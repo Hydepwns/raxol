@@ -1,4 +1,4 @@
-defmodule Raxol.UI.Theming.UnifiedThemingManager do
+defmodule Raxol.UI.Theming.ThemeManager do
   @moduledoc """
   Unified manager for themes and color palettes in the UI system.
   Consolidates ThemeManager and ColorManager functionality.

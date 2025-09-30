@@ -21,9 +21,8 @@ defmodule Raxol.Security.Encryption.Config do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
   alias Raxol.Audit.Logger, as: AuditLogger
+  alias Raxol.Core.Runtime.Log
 
   defstruct [
     :policies,
@@ -105,7 +104,7 @@ defmodule Raxol.Security.Encryption.Config do
       retention_policies: init_retention_policies()
     }
 
-    Logger.info("Encryption configuration initialized")
+    Log.module_info("Encryption configuration initialized")
     {:ok, state}
   end
 

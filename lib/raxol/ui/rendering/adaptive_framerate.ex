@@ -20,7 +20,7 @@ defmodule Raxol.UI.Rendering.AdaptiveFramerate do
   require Logger
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.UI.Rendering.UnifiedTimerManager
+  alias Raxol.UI.Rendering.TimerServer
 
   @fps_60 16
   @fps_45 22

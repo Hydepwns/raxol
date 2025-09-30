@@ -11,10 +11,6 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  @behaviour Raxol.Core.Behaviours.BaseManager
-  require Logger
-
   # Performance profiling macro
   defmacro profile(name, metadata \\ [], do: block) do
     quote do
@@ -24,7 +20,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
       duration = end_time - start_time
 
       _ =
-        Logger.debug(
+        Log.module_debug(
           "Profile: #{unquote(name)} took #{duration}μs",
           [duration: duration] ++ unquote(metadata)
         )
@@ -95,6 +91,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
 
   # import Raxol.Core.Performance.Optimizer  # Commented out to avoid macro conflict
   alias Raxol.UI.Rendering.{TreeDiffer, Pipeline}
+  alias Raxol.Core.Runtime.Log
 
   defmodule State do
     @moduledoc false
@@ -414,7 +411,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
   """
   def enable_gpu_acceleration do
     # This would interface with GPU rendering libraries
-    Logger.info("[Render] GPU acceleration enabled")
+    Log.module_info("GPU acceleration enabled")
     :ok
   end
 
@@ -465,7 +462,7 @@ defmodule Raxol.UI.Rendering.OptimizedPipeline do
 
   defp log_slow_frame(frame_time, budget_ms)
        when frame_time > budget_ms * 1.5 do
-    Logger.warning("[Render] Slow frame: #{frame_time}ms")
+    Log.module_warning("Slow frame: #{frame_time}ms")
   end
 
   defp log_slow_frame(_frame_time, _budget_ms), do: :ok

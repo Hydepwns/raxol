@@ -1,4 +1,4 @@
-defmodule Raxol.Protocols.UnifiedProtocols do
+defmodule Raxol.Protocols.CoreProtocols do
   @moduledoc """
   Unified protocol definitions for Raxol core functionality.
   Consolidates multiple protocol definitions to reduce duplication and improve consistency.
@@ -202,7 +202,7 @@ defmodule Raxol.Protocols do
   Convenience module for importing all unified protocols.
   """
 
-  alias Raxol.Protocols.UnifiedProtocols
+  alias Raxol.Protocols.CoreProtocols
 
   defdelegate render(component, opts), to: UnifiedProtocols.Component
 

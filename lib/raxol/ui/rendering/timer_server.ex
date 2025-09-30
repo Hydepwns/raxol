@@ -1,4 +1,4 @@
-defmodule Raxol.UI.Rendering.UnifiedTimerManager do
+defmodule Raxol.UI.Rendering.TimerServer do
   @moduledoc """
   Centralized timer management for the UI rendering pipeline.
 
@@ -14,10 +14,8 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.Core.Utils.TimerManager
+  alias Raxol.Core.Runtime.Log
 
   # Timer types for rendering pipeline
   @animation_frame_timer :animation_frame
@@ -169,7 +167,7 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
       }
     }
 
-    Logger.info("[UnifiedTimerManager] Started with options: #{inspect(opts)}")
+    Log.module_info("Started with options: #{inspect(opts)}")
     {:ok, state}
   end
 
@@ -213,7 +211,7 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
   end
 
   def handle_manager_info(msg, state) do
-    Logger.debug("[UnifiedTimerManager] Unhandled message: #{inspect(msg)}")
+    Log.module_debug("Unhandled message: #{inspect(msg)}")
     {:noreply, state}
   end
 
@@ -239,7 +237,7 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
 
         new_stats = %{state.stats | active_timers: map_size(new_timers)}
 
-        Logger.debug(
+        Log.module_debug(
           "[UnifiedTimerManager] Started #{timer_type} timer (#{interval_ms}ms) for #{inspect(target_pid)}"
         )
 
@@ -252,7 +250,7 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
         }
 
       {:error, reason} ->
-        Logger.error(
+        Log.module_error(
           "[UnifiedTimerManager] Failed to start #{timer_type} timer: #{inspect(reason)}"
         )
 
@@ -274,7 +272,7 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
 
         new_stats = %{state.stats | active_timers: map_size(new_timers)}
 
-        Logger.debug("[UnifiedTimerManager] Stopped #{timer_type} timer")
+        Log.module_debug("Stopped #{timer_type} timer")
 
         %{
           state
@@ -291,7 +289,7 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
 
     new_stats = %{state.stats | active_timers: 0}
 
-    Logger.info("[UnifiedTimerManager] Stopped all timers")
+    Log.module_info("Stopped all timers")
 
     %{state | timers: %{}, target_pids: %{}, intervals: %{}, stats: new_stats}
   end
@@ -299,7 +297,7 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
   defp update_interval_internal(state, timer_type, new_interval_ms) do
     case Map.get(state.target_pids, timer_type) do
       nil ->
-        Logger.warning(
+        Log.module_warning(
           "[UnifiedTimerManager] Cannot update interval for non-existent timer: #{timer_type}"
         )
 
@@ -314,7 +312,7 @@ defmodule Raxol.UI.Rendering.UnifiedTimerManager do
   defp handle_timer_tick(state, timer_type) do
     case Map.get(state.target_pids, timer_type) do
       nil ->
-        Logger.warning(
+        Log.module_warning(
           "[UnifiedTimerManager] Received tick for unknown timer: #{timer_type}"
         )
 

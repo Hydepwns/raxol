@@ -496,7 +496,7 @@ defmodule Raxol.Playground.Examples do
   end
 
   defp run_interactive_example(example) do
-    IO.puts("""
+    Log.console("""
 
     #{IO.ANSI.bright()}[TARGET] #{example.title}#{IO.ANSI.reset()}
     #{String.duplicate("─", String.length(example.title) + 5)}
@@ -532,22 +532,22 @@ defmodule Raxol.Playground.Examples do
 
     Enum.with_index(steps, 1)
     |> Enum.each(fn {step, index} ->
-      IO.puts(
+      Log.console(
         "\n#{IO.ANSI.bright()}Step #{index}:#{IO.ANSI.reset()} #{step.instruction}"
       )
 
       case step.action do
         :preview ->
           {:ok, preview} = Raxol.Playground.get_preview()
-          IO.puts("\n#{preview}")
+          Log.console("\n#{preview}")
 
         {:set_prop, prop, value} ->
           Raxol.Playground.update_props(%{prop => value})
           {:ok, preview} = Raxol.Playground.get_preview()
-          IO.puts("\n#{preview}")
+          Log.console("\n#{preview}")
 
         :complete ->
-          IO.puts("\n#{IO.ANSI.green()}[+] Example completed#{IO.ANSI.reset()}")
+          Log.console("\n#{IO.ANSI.green()}[+] Example completed#{IO.ANSI.reset()}")
 
         _ ->
           :ok
@@ -560,31 +560,31 @@ defmodule Raxol.Playground.Examples do
   defp run_sequence_example(_example, sequence) do
     Enum.with_index(sequence, 1)
     |> Enum.each(fn {step, index} ->
-      IO.puts(
+      Log.console(
         "\n#{IO.ANSI.bright()}Component #{index}: #{String.capitalize(to_string(step.component_id))}#{IO.ANSI.reset()}"
       )
 
-      IO.puts("#{step.instruction}")
+      Log.console("#{step.instruction}")
 
       Raxol.Playground.select_component(step.component_id)
       Raxol.Playground.update_props(step.props)
 
       {:ok, preview} = Raxol.Playground.get_preview()
-      IO.puts("\n#{preview}")
+      Log.console("\n#{preview}")
 
       handle_sequence_continuation(index < length(sequence))
     end)
 
-    IO.puts("\n#{IO.ANSI.green()}[+] Sequence completed#{IO.ANSI.reset()}")
+    Log.console("\n#{IO.ANSI.green()}[+] Sequence completed#{IO.ANSI.reset()}")
   end
 
   defp run_composition_example(example) do
-    IO.puts("\n#{IO.ANSI.bright()}Building interface...#{IO.ANSI.reset()}\n")
+    Log.console("\n#{IO.ANSI.bright()}Building interface...#{IO.ANSI.reset()}\n")
 
     example.components
     |> Enum.with_index(1)
     |> Enum.each(fn {component, index} ->
-      IO.puts(
+      Log.console(
         "#{IO.ANSI.cyan()}[#{index}] #{String.capitalize(to_string(component.component_id))}#{IO.ANSI.reset()}"
       )
 
@@ -592,16 +592,16 @@ defmodule Raxol.Playground.Examples do
       Raxol.Playground.update_props(component.props)
 
       {:ok, preview} = Raxol.Playground.get_preview()
-      IO.puts(preview)
-      IO.puts("")
+      Log.console(preview)
+      Log.console("")
     end)
 
-    IO.puts("#{IO.ANSI.green()}[+] Composition completed#{IO.ANSI.reset()}")
+    Log.console("#{IO.ANSI.green()}[+] Composition completed#{IO.ANSI.reset()}")
   end
 
   defp run_simple_example(example) do
     setup_simple_component(Map.has_key?(example, :component_id), example)
-    IO.puts("\n#{IO.ANSI.green()}[+] Example completed#{IO.ANSI.reset()}")
+    Log.console("\n#{IO.ANSI.green()}[+] Example completed#{IO.ANSI.reset()}")
   end
 
   # Helper functions for if statement elimination
@@ -615,14 +615,14 @@ defmodule Raxol.Playground.Examples do
   defp handle_step_continuation(false), do: :ok
 
   defp handle_step_continuation(true) do
-    IO.puts("\nPress Enter to continue...")
+    Log.console("\nPress Enter to continue...")
     IO.gets("")
   end
 
   defp handle_sequence_continuation(false), do: :ok
 
   defp handle_sequence_continuation(true) do
-    IO.puts("\nPress Enter for next component...")
+    Log.console("\nPress Enter for next component...")
     IO.gets("")
   end
 
@@ -631,6 +631,6 @@ defmodule Raxol.Playground.Examples do
   defp setup_simple_component(true, example) do
     Raxol.Playground.select_component(example.component_id)
     {:ok, preview} = Raxol.Playground.get_preview()
-    IO.puts("\n#{preview}")
+    Log.console("\n#{preview}")
   end
 end

@@ -34,7 +34,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   alias Raxol.UI.Rendering.Renderer
   alias Raxol.UI.Rendering.TreeDiffer
-  alias Raxol.UI.Rendering.UnifiedTimerManager
+  alias Raxol.UI.Rendering.TimerServer
 
   # New pipeline modules
   alias Raxol.UI.Rendering.Pipeline.{State, Stages}
@@ -44,10 +44,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
                                  :test -> 25
                                  _ -> 16
                                end)
-
-  require Raxol.Core.Runtime.Log
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @default_renderer Raxol.UI.Rendering.Renderer
 
   # Public API
@@ -186,9 +183,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
         diff_result \\ nil,
         new_tree \\ nil
       ) do
-    require Logger
-
-    Logger.debug(
+    Log.module_debug(
       "[Pipeline] commit called with painted_output=#{inspect(painted_output)}, diff_result=#{inspect(diff_result)}, new_tree=#{inspect(new_tree)}"
     )
 
@@ -598,9 +593,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
   ## Private Helpers
 
   defp schedule_or_execute_render(diff_result, new_tree_for_reference, state) do
-    require Logger
-
-    Logger.debug(
+    Log.module_debug(
       "[Pipeline] schedule_or_execute_render called with diff_result=#{inspect(diff_result)}, new_tree=#{inspect(new_tree_for_reference)}"
     )
 

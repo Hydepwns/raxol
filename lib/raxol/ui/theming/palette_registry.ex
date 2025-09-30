@@ -7,9 +7,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @type palette_name :: atom()
   @type color_index :: 0..255
   @type color_rgb :: {0..255, 0..255, 0..255}
@@ -108,7 +106,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
       storage_path: Keyword.get(opts, :storage_path, "priv/palettes.json")
     }
 
-    Logger.info("Palette registry started with #{map_size(palettes)} palettes")
+    Log.module_info("Palette registry started with #{map_size(palettes)} palettes")
     {:ok, state}
   end
 
@@ -119,11 +117,11 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
         new_palettes = Map.put(state.palettes, name, colors)
         new_state = %{state | palettes: new_palettes}
         save_palettes_to_storage(new_state.palettes, state.storage_path)
-        Logger.info("Registered palette: #{name}")
+        Log.module_info("Registered palette: #{name}")
         {:reply, :ok, new_state}
 
       {:error, reason} ->
-        Logger.warning("Failed to register palette #{name}: #{inspect(reason)}")
+        Log.module_warning("Failed to register palette #{name}: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
     end
   end
@@ -138,7 +136,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
         new_palettes = Map.delete(state.palettes, name)
         new_state = %{state | palettes: new_palettes}
         save_palettes_to_storage(new_state.palettes, state.storage_path)
-        Logger.info("Unregistered palette: #{name}")
+        Log.module_info("Unregistered palette: #{name}")
         {:reply, :ok, new_state}
     end
   end
@@ -178,11 +176,11 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
             new_palettes = Map.put(state.palettes, name, colors)
             new_state = %{state | palettes: new_palettes}
             save_palettes_to_storage(new_state.palettes, state.storage_path)
-            Logger.info("Updated palette: #{name}")
+            Log.module_info("Updated palette: #{name}")
             {:reply, :ok, new_state}
 
           {:error, reason} ->
-            Logger.warning(
+            Log.module_warning(
               "Failed to update palette #{name}: #{inspect(reason)}"
             )
 
@@ -219,7 +217,7 @@ defmodule Raxol.UI.Theming.PaletteRegistry do
   defp save_palettes_to_storage(palettes, storage_path) do
     # This would save to a JSON file or database
     # For now, just log - implement persistence as needed
-    Logger.debug("Would save #{map_size(palettes)} palettes to #{storage_path}")
+    Log.module_debug("Would save #{map_size(palettes)} palettes to #{storage_path}")
     :ok
   end
 end

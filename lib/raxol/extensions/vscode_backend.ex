@@ -8,10 +8,9 @@ defmodule Raxol.Extensions.VSCodeBackend do
   """
 
   use Raxol.Core.Behaviours.BaseManager
+  alias Raxol.Core.Runtime.Log
 
   # AI modules removed - AI features disabled
-  require Logger
-
   @json_start_marker "RAXOL-JSON-BEGIN"
   @json_end_marker "RAXOL-JSON-END"
 
@@ -49,7 +48,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
   end
 
   defp initialize_mode("vscode_ext", capabilities) do
-    Logger.info("[VSCodeBackend] Starting in VS Code extension mode")
+    Log.module_info("Starting in VS Code extension mode")
     # Start listening for stdin messages from the extension
     _ = Task.start_link(&listen_for_messages/0)
     _ = send_capabilities(capabilities)
@@ -146,11 +145,11 @@ defmodule Raxol.Extensions.VSCodeBackend do
   defp listen_for_messages do
     case IO.read(:stdio, :line) do
       :eof ->
-        Logger.info("[VSCodeBackend] EOF received, stopping message listener")
+        Log.module_info("EOF received, stopping message listener")
         :ok
 
       {:error, reason} ->
-        Logger.error(
+        Log.module_error(
           "[VSCodeBackend] Error reading from stdin: #{inspect(reason)}"
         )
 
@@ -162,7 +161,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
             GenServer.cast(__MODULE__, {:handle_message, message})
 
           {:error, _} ->
-            Logger.warning(
+            Log.module_warning(
               "[VSCodeBackend] Invalid JSON received: #{inspect(data)}"
             )
         end
@@ -190,13 +189,13 @@ defmodule Raxol.Extensions.VSCodeBackend do
   end
 
   defp handle_extension_message(%{"type" => "shutdown"}, state) do
-    Logger.info("[VSCodeBackend] Shutdown requested by extension")
+    Log.module_info("Shutdown requested by extension")
     System.stop()
     {:ok, state}
   end
 
   defp handle_extension_message(message, state) do
-    Logger.info("[VSCodeBackend] Received message: #{inspect(message)}")
+    Log.module_info("Received message: #{inspect(message)}")
     {:ok, state}
   end
 
@@ -257,7 +256,7 @@ defmodule Raxol.Extensions.VSCodeBackend do
 
   defp send_json_message(message) do
     json = Jason.encode!(message)
-    IO.puts("#{@json_start_marker}#{json}#{@json_end_marker}")
+    Log.info("#{@json_start_marker}#{json}#{@json_end_marker}")
   end
 
   defp component_file?(file_path) do

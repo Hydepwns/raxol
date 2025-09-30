@@ -8,6 +8,7 @@ defmodule Raxol.Protocols.EventSystemIntegration do
 
   alias Raxol.Protocols.EventHandler
   alias Raxol.Core.Events.EventManager
+  alias Raxol.Core.Runtime.Log
 
   # Event Bus struct
   defmodule EventBus do
@@ -260,8 +261,7 @@ defmodule Raxol.Protocols.EventSystemIntegration do
   end
 
   defp default_error_handler(event, error) do
-    require Logger
-    Logger.error("Event handling error for #{event.type}: #{inspect(error)}")
+    Log.module_error("Event handling error for #{event.type}: #{inspect(error)}")
   end
 
   @doc """
@@ -271,8 +271,6 @@ defmodule Raxol.Protocols.EventSystemIntegration do
     level = Keyword.get(opts, :level, :info)
 
     fn event, results ->
-      require Logger
-
       message = "Event #{event.type} processed with #{length(results)} results"
       Logger.log(level, message)
 
@@ -291,9 +289,7 @@ defmodule Raxol.Protocols.EventSystemIntegration do
       duration = System.monotonic_time(:millisecond) - event.timestamp
 
       if duration > threshold do
-        require Logger
-
-        Logger.warning(
+        Log.module_warning(
           "Slow event processing: #{event.type} took #{duration}ms"
         )
       end
