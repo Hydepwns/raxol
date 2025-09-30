@@ -1,5 +1,5 @@
-name: 'Setup Elixir Environment'
-description: 'Set up Elixir, OTP, and restore caches'
+name: 'Setup Development Environment'
+description: 'Set up Elixir, OTP, optionally Node.js, and restore caches'
 
 inputs:
   elixir-version:
@@ -22,6 +22,18 @@ inputs:
     description: 'Use Docker container for CI'
     required: false
     default: 'false'
+  node-version:
+    description: 'Node.js version to install (leave empty to skip Node.js setup)'
+    required: false
+    default: ''
+  node-cache:
+    description: 'Package manager to cache Node.js dependencies'
+    required: false
+    default: 'npm'
+  node-cache-dependency-path:
+    description: 'Path to package-lock.json or yarn.lock file'
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -35,13 +47,15 @@ runs:
     
     - name: Cache dependencies
       if: inputs.cache-key != ''
-      uses: actions/cache@v3
+      uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
       with:
         path: |
           deps
           _build
           .raxol_cache
           priv/plts
+          ~/.hex
+          ~/.mix
         key: ${{ inputs.cache-key }}
         restore-keys: |
           deps-${{ runner.os }}-${{ inputs.otp-version }}-${{ inputs.elixir-version }}-
@@ -54,6 +68,14 @@ runs:
         mix local.hex --force
         mix local.rebar --force
     
+    - name: Setup Node.js
+      if: inputs.node-version != ''
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: ${{ inputs.node-cache }}
+        cache-dependency-path: ${{ inputs.node-cache-dependency-path }}
+
     - name: Install dependencies
       if: inputs.install-deps == 'true'
       shell: bash

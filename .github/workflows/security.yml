@@ -113,11 +113,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Development Environment
+        uses: ./.github/actions/setup-elixir
         with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
+          install-deps: 'false'
           node-version: '20'
-          cache: 'npm'
+          node-cache: 'npm'
       
       - name: Run npm audit
         run: |
@@ -137,9 +140,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       
-      - name: Setup Node.js for Snyk CLI
-        uses: actions/setup-node@v4
+      - name: Setup Development Environment for Snyk CLI
+        uses: ./.github/actions/setup-elixir
         with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
+          install-deps: 'false'
           node-version: '20'
       
       - name: Install and run Snyk CLI

@@ -32,6 +32,8 @@ env:
   SKIP_TERMBOX2_TESTS: true
   TMPDIR: /tmp
   MIX_ENV: test
+  ELIXIR_VERSION: "1.17.3"
+  OTP_VERSION: "27.0"
 
 jobs:
   # Performance regression testing
@@ -47,8 +49,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        elixir: ['1.17.1']
-        otp: ['25.3.2.7']
+        elixir: [${{ env.ELIXIR_VERSION }}]
+        otp: [${{ env.OTP_VERSION }}]
 
     steps:
     - name: Checkout code
@@ -174,8 +176,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        elixir: ['1.17.1']
-        otp: ['25.3.2.7']
+        elixir: [${{ env.ELIXIR_VERSION }}]
+        otp: [${{ env.OTP_VERSION }}]
         scenario:
           - terminal_operations
           - plugin_system
@@ -530,8 +532,8 @@ jobs:
     - name: Set up Elixir
       uses: erlef/setup-beam@v1
       with:
-        elixir-version: '1.17.1'
-        otp-version: '25.3.2.7'
+        elixir-version: ${{ env.ELIXIR_VERSION }}
+        otp-version: ${{ env.OTP_VERSION }}
 
     - name: Install dependencies
       run: |

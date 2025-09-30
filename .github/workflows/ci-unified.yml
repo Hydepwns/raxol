@@ -74,7 +74,7 @@ jobs:
       
       - name: Cache dependencies
         id: deps-cache
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps
@@ -111,7 +111,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps
@@ -137,7 +137,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps
@@ -166,7 +166,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps
@@ -182,7 +182,7 @@ jobs:
           MIX_TEST_PARTITION: 1
       
       - name: Upload coverage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.4.3
         with:
           name: coverage-unit
           path: cover/unit.coverdata
@@ -218,7 +218,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps
@@ -238,7 +238,7 @@ jobs:
           MIX_TEST_PARTITION: 2
       
       - name: Upload coverage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.4.3
         with:
           name: coverage-integration
           path: cover/integration.coverdata
@@ -259,7 +259,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps
@@ -275,7 +275,7 @@ jobs:
           MIX_TEST_PARTITION: 3
       
       - name: Upload coverage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.4.3
         with:
           name: coverage-property
           path: cover/property.coverdata
@@ -299,7 +299,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps
@@ -327,7 +327,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps
@@ -336,7 +336,7 @@ jobs:
           key: ${{ needs.setup.outputs.cache-key }}
       
       - name: Restore PLT cache
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: priv/plts
           key: plt-${{ runner.os }}-${{ needs.setup.outputs.otp-version }}-${{ needs.setup.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
@@ -365,7 +365,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Restore cache
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps
@@ -431,7 +431,7 @@ jobs:
           otp-version: ${{ needs.setup.outputs.otp-version }}
       
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps

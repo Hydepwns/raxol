@@ -74,7 +74,7 @@ jobs:
           otp-version: ${{ matrix.otp }}
       
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps
@@ -102,7 +102,7 @@ jobs:
       
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.4.3
         with:
           name: test-results-${{ matrix.os }}-${{ matrix.elixir }}-${{ matrix.otp }}
           path: |
@@ -125,7 +125,7 @@ jobs:
           otp-version: "27.0"
 
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps
@@ -162,7 +162,7 @@ jobs:
           cat extended-report.md >> $GITHUB_STEP_SUMMARY
 
       - name: Upload extended test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.4.3
         with:
           name: extended-test-results-$(date +%Y%m%d)
           path: |
@@ -184,7 +184,7 @@ jobs:
           otp-version: "27.0"
       
       - name: Cache dependencies and PLTs
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps
@@ -248,7 +248,7 @@ jobs:
           otp-version: "27.0"
       
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             deps

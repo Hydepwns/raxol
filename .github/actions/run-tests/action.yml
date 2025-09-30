@@ -84,7 +84,7 @@ runs:
     
     - name: Upload test artifacts
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.4.3
       with:
         name: test-results-${{ inputs.test-type }}-${{ inputs.partition }}
         path: |
