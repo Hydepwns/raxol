@@ -1,0 +1,573 @@
+name: Unified Regression Testing
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly performance baseline (Monday 2 AM UTC)
+    - cron: '0 3 * * *'  # Daily memory analysis (3 AM UTC)
+  workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: 'Git reference to use as baseline (default: master)'
+        required: false
+        default: 'master'
+      test_type:
+        description: 'Type of regression test to run'
+        required: false
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - performance
+          - memory
+      memory_scenario:
+        description: 'Memory scenario to test (all, terminal_operations, plugin_system, load_testing)'
+        required: false
+        default: 'all'
+
+env:
+  SKIP_TERMBOX2_TESTS: true
+  TMPDIR: /tmp
+  MIX_ENV: test
+
+jobs:
+  # Performance regression testing
+  performance-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: |
+      github.event.inputs.test_type == 'performance' ||
+      github.event.inputs.test_type == 'both' ||
+      github.event.inputs.test_type == '' ||
+      github.event_name != 'workflow_dispatch'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        elixir: ['1.17.1']
+        otp: ['25.3.2.7']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+
+    - name: Set up Elixir
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: ${{ matrix.elixir }}
+        otp-version: ${{ matrix.otp }}
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          _build
+          deps
+          ~/.cache/rebar3
+          ~/.hex
+        key: deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+        restore-keys: |
+          deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+
+    - name: Cache PLT files
+      uses: actions/cache@v4
+      with:
+        path: priv/plts
+        key: plt-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+        restore-keys: |
+          plt-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential gcc make
+        echo "TMPDIR=/tmp" >> $GITHUB_ENV
+
+    - name: Install dependencies
+      run: |
+        mix local.hex --force
+        mix local.rebar --force
+        mix deps.get
+
+    - name: Compile
+      run: |
+        mix compile --warnings-as-errors
+
+    - name: Setup performance directories
+      run: |
+        mkdir -p regression/performance/baselines
+        mkdir -p regression/performance/current
+        mkdir -p regression/performance/reports
+
+    - name: Run current performance benchmarks
+      run: |
+        echo "[PERF] Running current performance benchmarks..."
+        mix run bench/suites/parser/parser_benchmark.exs --json > regression/performance/current/parser.json
+        mix run bench/suites/terminal/buffer_benchmark.exs --json > regression/performance/current/buffer.json
+        mix run bench/suites/terminal/cursor_benchmark.exs --json > regression/performance/current/cursor.json
+        echo "[OK] Current benchmarks complete"
+
+    - name: Checkout baseline and run benchmarks
+      if: github.event_name == 'pull_request'
+      run: |
+        BASELINE_REF="${{ github.event.inputs.baseline_ref || 'origin/master' }}"
+        echo "[INFO] Checking out baseline: $BASELINE_REF"
+        git fetch origin
+        git checkout $BASELINE_REF
+        mix deps.get && mix compile --warnings-as-errors
+
+        echo "[BENCH] Running baseline performance benchmarks..."
+        mix run bench/suites/parser/parser_benchmark.exs --json > regression/performance/baselines/parser.json
+        mix run bench/suites/terminal/buffer_benchmark.exs --json > regression/performance/baselines/buffer.json
+        mix run bench/suites/terminal/cursor_benchmark.exs --json > regression/performance/baselines/cursor.json
+        echo "[OK] Baseline benchmarks complete"
+
+        git checkout ${{ github.sha }}
+        mix deps.get && mix compile --warnings-as-errors
+
+    - name: Download cached baselines
+      if: github.event_name == 'push'
+      continue-on-error: true
+      uses: actions/cache@v4
+      with:
+        path: regression/performance/baselines
+        key: performance-baseline-${{ github.ref_name }}-${{ github.sha }}
+        restore-keys: |
+          performance-baseline-${{ github.ref_name }}-
+          performance-baseline-master-
+
+    - name: Generate performance report
+      run: |
+        mix archive.install hex jason 1.4.4 --force
+        elixir scripts/analyze_performance_regression.exs
+
+    - name: Upload performance artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-results-${{ matrix.elixir }}-${{ matrix.otp }}
+        path: regression/performance/
+        retention-days: 30
+
+    - name: Cache performance baselines
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      uses: actions/cache@v4
+      with:
+        path: regression/performance/baselines
+        key: performance-baseline-${{ github.ref_name }}-${{ github.sha }}
+
+  # Memory regression testing
+  memory-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: |
+      github.event.inputs.test_type == 'memory' ||
+      github.event.inputs.test_type == 'both' ||
+      github.event.inputs.test_type == '' ||
+      github.event_name != 'workflow_dispatch'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        elixir: ['1.17.1']
+        otp: ['25.3.2.7']
+        scenario:
+          - terminal_operations
+          - plugin_system
+          - load_testing
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+
+    - name: Set up Elixir
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: ${{ matrix.elixir }}
+        otp-version: ${{ matrix.otp }}
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          _build
+          deps
+          ~/.cache/rebar3
+          ~/.hex
+        key: deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+        restore-keys: |
+          deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential gcc make valgrind
+        echo "TMPDIR=/tmp" >> $GITHUB_ENV
+
+    - name: Install dependencies
+      run: |
+        mix local.hex --force
+        mix local.rebar --force
+        mix deps.get
+
+    - name: Compile
+      run: |
+        mix compile --warnings-as-errors
+
+    - name: Setup memory directories
+      run: |
+        mkdir -p regression/memory/baselines
+        mkdir -p regression/memory/current
+        mkdir -p regression/memory/reports
+        mkdir -p regression/memory/dashboards
+
+    - name: Run current memory benchmarks
+      run: |
+        echo "Running current memory benchmarks for scenario: ${{ matrix.scenario }}"
+
+        # Run memory analysis with JSON output
+        if command -v mix raxol.bench.memory_analysis >/dev/null 2>&1; then
+          mix raxol.bench.memory_analysis \
+            --scenario ${{ matrix.scenario }} \
+            --time 3 \
+            --memory_time 2 \
+            --output regression/memory/current/${{ matrix.scenario }}_analysis.json
+        fi
+
+        # Run specific memory benchmarks
+        case "${{ matrix.scenario }}" in
+          "terminal_operations")
+            if [ -f "bench/memory/terminal_memory_benchmark.exs" ]; then
+              mix run bench/memory/terminal_memory_benchmark.exs --json > regression/memory/current/terminal_memory.json
+            fi
+            ;;
+          "plugin_system")
+            if [ -f "bench/memory/plugin_memory_benchmark.exs" ]; then
+              mix run bench/memory/plugin_memory_benchmark.exs --json > regression/memory/current/plugin_memory.json
+            fi
+            ;;
+          "load_testing")
+            if [ -f "bench/memory/load_memory_benchmark.exs" ]; then
+              mix run bench/memory/load_memory_benchmark.exs --json > regression/memory/current/load_memory.json
+            fi
+            ;;
+        esac
+
+        echo "Current memory benchmarks complete for ${{ matrix.scenario }}"
+
+    - name: Checkout baseline and run memory benchmarks
+      if: github.event_name == 'pull_request'
+      run: |
+        BASELINE_REF="${{ github.event.inputs.baseline_ref || 'origin/master' }}"
+        echo "Checking out baseline: $BASELINE_REF"
+        git fetch origin
+        git checkout $BASELINE_REF
+        mix deps.get && mix compile --warnings-as-errors
+
+        echo "Running baseline memory benchmarks for scenario: ${{ matrix.scenario }}"
+
+        # Run baseline memory analysis
+        if command -v mix raxol.bench.memory_analysis >/dev/null 2>&1; then
+          mix raxol.bench.memory_analysis \
+            --scenario ${{ matrix.scenario }} \
+            --time 3 \
+            --memory_time 2 \
+            --output regression/memory/baselines/${{ matrix.scenario }}_analysis.json
+        fi
+
+        # Run baseline specific memory benchmarks
+        case "${{ matrix.scenario }}" in
+          "terminal_operations")
+            if [ -f "bench/memory/terminal_memory_benchmark.exs" ]; then
+              mix run bench/memory/terminal_memory_benchmark.exs --json > regression/memory/baselines/terminal_memory.json
+            fi
+            ;;
+          "plugin_system")
+            if [ -f "bench/memory/plugin_memory_benchmark.exs" ]; then
+              mix run bench/memory/plugin_memory_benchmark.exs --json > regression/memory/baselines/plugin_memory.json
+            fi
+            ;;
+          "load_testing")
+            if [ -f "bench/memory/load_memory_benchmark.exs" ]; then
+              mix run bench/memory/load_memory_benchmark.exs --json > regression/memory/baselines/load_memory.json
+            fi
+            ;;
+        esac
+
+        echo "Baseline memory benchmarks complete for ${{ matrix.scenario }}"
+
+        git checkout ${{ github.sha }}
+        mix deps.get && mix compile --warnings-as-errors
+
+    - name: Download cached memory baselines
+      if: github.event_name == 'push'
+      continue-on-error: true
+      uses: actions/cache@v4
+      with:
+        path: regression/memory/baselines
+        key: memory-baseline-${{ github.ref_name }}-${{ matrix.scenario }}-${{ github.sha }}
+        restore-keys: |
+          memory-baseline-${{ github.ref_name }}-${{ matrix.scenario }}-
+          memory-baseline-master-${{ matrix.scenario }}-
+
+    - name: Generate memory report
+      run: |
+        mix archive.install hex jason 1.4.4 --force
+        elixir scripts/analyze_memory_regression.exs ${{ matrix.scenario }}
+
+    - name: Upload memory artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: memory-results-${{ matrix.scenario }}-${{ matrix.elixir }}-${{ matrix.otp }}
+        path: regression/memory/
+        retention-days: 30
+
+    - name: Cache memory baselines
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      uses: actions/cache@v4
+      with:
+        path: regression/memory/baselines
+        key: memory-baseline-${{ github.ref_name }}-${{ matrix.scenario }}-${{ github.sha }}
+
+  # Consolidate and report results
+  consolidate-results:
+    needs: [performance-regression, memory-regression]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: regression-results
+
+    - name: Consolidate regression reports
+      run: |
+        echo "Consolidating regression test results..."
+        mkdir -p consolidated-reports
+
+        # Create consolidated summary
+        cat > consolidated-reports/regression_summary.md << 'EOF'
+        # Unified Regression Test Summary
+
+        Generated: $(date -u)
+        Workflow: ${{ github.workflow }}
+        Event: ${{ github.event_name }}
+        Ref: ${{ github.ref }}
+        SHA: ${{ github.sha }}
+
+        ## Performance Results
+        EOF
+
+        # Process performance results
+        if [ -d "regression-results" ]; then
+          for perf_dir in regression-results/performance-results-*; do
+            if [ -d "$perf_dir" ] && [ -f "$perf_dir/regression/performance/reports/regression_report.json" ]; then
+              echo "- Performance report found" >> consolidated-reports/regression_summary.md
+            fi
+          done
+        fi
+
+        echo "" >> consolidated-reports/regression_summary.md
+        echo "## Memory Results" >> consolidated-reports/regression_summary.md
+
+        # Process memory results
+        for memory_dir in regression-results/memory-results-*; do
+          if [ -d "$memory_dir" ]; then
+            scenario=$(echo "$memory_dir" | grep -o 'memory-results-[^-]*' | cut -d'-' -f3)
+            echo "- Memory scenario: $scenario" >> consolidated-reports/regression_summary.md
+          fi
+        done
+
+        echo "" >> consolidated-reports/regression_summary.md
+        echo "## Archive" >> consolidated-reports/regression_summary.md
+        echo "All detailed reports and artifacts are available in the workflow artifacts." >> consolidated-reports/regression_summary.md
+
+    - name: Upload consolidated report
+      uses: actions/upload-artifact@v4
+      with:
+        name: consolidated-regression-report
+        path: consolidated-reports/
+        retention-days: 90
+
+    - name: Comment unified results on PR
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v8
+      with:
+        script: |
+          const fs = require('fs');
+
+          let reportContent = "## Unified Regression Test Results\n\n";
+          reportContent += `**Workflow:** ${{ github.workflow }}\n`;
+          reportContent += `**Event:** ${{ github.event_name }}\n`;
+          reportContent += `**SHA:** ${{ github.sha }}\n\n`;
+
+          // Performance summary
+          reportContent += "### Performance Results\n";
+
+          try {
+            const perfDirs = fs.readdirSync('regression-results').filter(d => d.startsWith('performance-results-'));
+            if (perfDirs.length > 0) {
+              reportContent += `Found ${perfDirs.length} performance result(s)\n`;
+
+              // Check for actual performance reports
+              for (const dir of perfDirs) {
+                const reportPath = `regression-results/${dir}/regression/performance/reports/regression_report.json`;
+                if (fs.existsSync(reportPath)) {
+                  const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+
+                  const totalRegressions = Object.values(report.modules || {})
+                    .reduce((sum, module) => sum + (module.regressions?.length || 0), 0);
+                  const totalImprovements = Object.values(report.modules || {})
+                    .reduce((sum, module) => sum + (module.improvements?.length || 0), 0);
+
+                  reportContent += `- 🔴 Regressions: ${totalRegressions}\n`;
+                  reportContent += `- 🟢 Improvements: ${totalImprovements}\n`;
+
+                  if (totalRegressions > 0) {
+                    reportContent += `[WARN] Performance regressions detected. Review required.\n`;
+                  }
+                }
+              }
+            } else {
+              reportContent += "No performance results found\n";
+            }
+          } catch (error) {
+            reportContent += `Error processing performance results: ${error.message}\n`;
+          }
+
+          // Memory summary
+          reportContent += "\n### Memory Results\n";
+
+          try {
+            const memoryDirs = fs.readdirSync('regression-results').filter(d => d.startsWith('memory-results-'));
+            if (memoryDirs.length > 0) {
+              reportContent += `Found ${memoryDirs.length} memory result(s)\n`;
+
+              let totalMemoryRegressions = 0;
+              let totalFailedGates = 0;
+
+              for (const dir of memoryDirs) {
+                const scenario = dir.split('-')[2];
+                const reportPath = `regression-results/${dir}/regression/memory/reports/${scenario}_regression_report.json`;
+
+                if (fs.existsSync(reportPath)) {
+                  const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+
+                  const analysisRegressions = report.analysis_comparison?.regressions?.length || 0;
+                  const benchmarkRegressions = report.benchmark_comparison?.regressions?.length || 0;
+                  const failedGates = (report.memory_gates || []).filter(g => g.status === 'failed').length;
+
+                  totalMemoryRegressions += analysisRegressions + benchmarkRegressions;
+                  totalFailedGates += failedGates;
+
+                  reportContent += `- **${scenario}**: ${analysisRegressions + benchmarkRegressions} regressions, ${failedGates} failed gates\n`;
+                }
+              }
+
+              if (totalMemoryRegressions > 0 || totalFailedGates > 0) {
+                reportContent += `\n[WARN] Memory issues detected: ${totalMemoryRegressions} regressions, ${totalFailedGates} failed gates\n`;
+              }
+            } else {
+              reportContent += "No memory results found\n";
+            }
+          } catch (error) {
+            reportContent += `Error processing memory results: ${error.message}\n`;
+          }
+
+          reportContent += "\n### Targets\n";
+          reportContent += "- Parser: <3μs average\n";
+          reportContent += "- Render: <1ms average\n";
+          reportContent += "- Memory: <3MB per session\n";
+
+          // Find existing comment
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number
+          });
+
+          const existingComment = comments.find(comment =>
+            comment.body.includes('Unified Regression Test Results')
+          );
+
+          if (existingComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existingComment.id,
+              body: reportContent
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: reportContent
+            });
+          }
+
+  # Nightly comprehensive analysis
+  nightly-analysis:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Set up Elixir
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: '1.17.1'
+        otp-version: '25.3.2.7'
+
+    - name: Install dependencies
+      run: |
+        mix local.hex --force
+        mix local.rebar --force
+        mix deps.get
+        mix compile
+
+    - name: Run comprehensive analysis
+      run: |
+        mkdir -p regression/nightly/$(date +%Y-%m-%d)
+
+        echo "Running comprehensive nightly analysis..."
+
+        # Performance benchmarks
+        if [ -f "bench/suites/core/performance_summary.exs" ]; then
+          mix run bench/suites/core/performance_summary.exs --json > regression/nightly/$(date +%Y-%m-%d)/performance_comprehensive.json
+        fi
+
+        # Memory analysis for all scenarios
+        for scenario in terminal_operations plugin_system load_testing; do
+          if command -v mix raxol.bench.memory_analysis >/dev/null 2>&1; then
+            mix raxol.bench.memory_analysis \
+              --scenario $scenario \
+              --time 10 \
+              --memory_time 5 \
+              --with-dashboard \
+              --output regression/nightly/$(date +%Y-%m-%d)/${scenario}_comprehensive.json
+          fi
+        done
+
+        echo "Comprehensive analysis completed"
+
+    - name: Upload nightly analysis
+      uses: actions/upload-artifact@v4
+      with:
+        name: nightly-comprehensive-analysis-$(date +%Y-%m-%d)
+        path: regression/nightly/
+        retention-days: 365

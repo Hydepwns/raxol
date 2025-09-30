@@ -104,7 +104,7 @@ defmodule Raxol.Core.I18n.I18nServer do
   # Server callbacks
 
   @impl true
-  def init(config) do
+  def init(config) when is_map(config) do
     state = %__MODULE__{
       locale: Map.get(config, :default_locale, @default_locale),
       fallback_locale: Map.get(config, :fallback_locale, @default_locale),
@@ -115,6 +115,11 @@ defmodule Raxol.Core.I18n.I18nServer do
     }
 
     {:ok, state}
+  end
+
+  @impl true
+  def init(_config) do
+    init(%{})
   end
 
   @impl true
