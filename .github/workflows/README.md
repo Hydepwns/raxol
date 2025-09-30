@@ -24,10 +24,18 @@ This directory contains GitHub Actions workflows for CI, testing, and releases.
 - **`dummy-test.yml`**: Quick workflow for verifying `act` setup
 - **`macos-ci-fix.yml`**: macOS-specific CI fixes
 
-### Removed Workflows
-The following workflows have been consolidated into `regression-testing.yml`:
+### Removed/Consolidated Components
+**Workflows consolidated into `regression-testing.yml`:**
 - **`performance-regression.yml`**: *(Removed)* - Performance regression testing
 - **`memory-regression.yml`**: *(Removed)* - Memory regression testing
+
+**Actions removed due to duplication:**
+- **`setup-beam/`**: *(Removed)* - Mock setup action, replaced by standardized `setup-elixir/`
+
+**Workflow role clarifications:**
+- **`nightly.yml`**: Now focuses on comprehensive test matrix and extended scenarios
+- **`performance-tracking.yml`**: Handles historical performance tracking and dashboards (runs at 4 AM UTC)
+- **`regression-testing.yml`**: Handles performance/memory regression detection for PRs and baseline updates
 
 ## Local Testing with `act`
 

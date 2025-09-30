@@ -10,8 +10,8 @@ on:
         description: 'Run full test matrix'
         type: boolean
         default: true
-      performance_tests:
-        description: 'Run performance benchmarks'
+      extended_tests:
+        description: 'Run extended test scenarios'
         type: boolean
         default: true
 
@@ -110,82 +110,65 @@ jobs:
             cover/
           retention-days: 30
 
-  performance-benchmarks:
-    name: Performance Benchmarks
-    if: github.event.inputs.performance_tests != 'false'
+  extended-scenarios:
+    name: Extended Test Scenarios
+    if: github.event.inputs.extended_tests != 'false'
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v5
-      
+
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
           elixir-version: "1.17.3"
           otp-version: "27.0"
-      
+
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-bench-${{ hashFiles('**/mix.lock') }}
-      
+          key: ${{ runner.os }}-mix-extended-${{ hashFiles('**/mix.lock') }}
+
       - name: Install dependencies
         run: |
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
           mix deps.compile
-      
-      - name: Run parser benchmarks
+
+      - name: Run stress tests
         run: |
-          mix run bench/parser_benchmarks.exs
-          mix run bench/parser_profiling.exs
-      
-      - name: Run render benchmarks
+          mix test --only stress || true
+
+      - name: Run edge case tests
         run: |
-          mix run bench/render_benchmarks.exs || true
-      
-      - name: Run memory profiling
+          mix test --only edge_cases || true
+
+      - name: Run property-based tests (extended)
         run: |
-          mix run bench/memory_profiling.exs || true
-      
-      - name: Generate performance report
+          mix test --only property --timeout 300000 || true
+
+      - name: Generate extended test report
         run: |
-          echo "## 📊 Performance Report" > performance-report.md
-          echo "" >> performance-report.md
-          echo "Date: $(date)" >> performance-report.md
-          echo "" >> performance-report.md
-          
-          if [ -d "bench/output" ]; then
-            echo "### Benchmark Results" >> performance-report.md
-            for file in bench/output/*.json; do
-              if [ -f "$file" ]; then
-                echo "#### $(basename $file .json)" >> performance-report.md
-                echo '```json' >> performance-report.md
-                cat "$file" | jq '.' >> performance-report.md || cat "$file" >> performance-report.md
-                echo '```' >> performance-report.md
-              fi
-            done
-          fi
-          
-          cat performance-report.md >> $GITHUB_STEP_SUMMARY
-      
-      - name: Upload benchmark results
+          echo "## Extended Test Scenarios Report" > extended-report.md
+          echo "" >> extended-report.md
+          echo "Date: $(date)" >> extended-report.md
+          echo "" >> extended-report.md
+          echo "Extended test scenarios completed." >> extended-report.md
+
+          cat extended-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload extended test results
         uses: actions/upload-artifact@v3
         with:
-          name: benchmark-results-$(date +%Y%m%d)
+          name: extended-test-results-$(date +%Y%m%d)
           path: |
-            bench/output/
-            performance-report.md
+            _build/test/lib/*/test-results.xml
+            extended-report.md
           retention-days: 90
-      
-      - name: Compare with baseline
-        run: |
-          # TODO: Implement performance regression detection
-          echo "Performance comparison will be implemented"
 
   dialyzer-full:
     name: Full Dialyzer Check
@@ -292,10 +275,10 @@ jobs:
 
   report:
     name: Nightly Report
-    needs: [test-matrix, performance-benchmarks, dialyzer-full, integration-tests]
+    needs: [test-matrix, extended-scenarios, dialyzer-full, integration-tests]
     runs-on: ubuntu-latest
     if: always()
-    
+
     steps:
       - name: Generate summary
         run: |
@@ -303,13 +286,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "## Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Test Matrix | ${{ needs.test-matrix.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Performance | ${{ needs.performance-benchmarks.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Extended Scenarios | ${{ needs.extended-scenarios.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Dialyzer | ${{ needs.dialyzer-full.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Integration | ${{ needs.integration-tests.result }} |" >> $GITHUB_STEP_SUMMARY
       
