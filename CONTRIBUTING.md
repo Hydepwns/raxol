@@ -21,9 +21,10 @@ Contributions welcome. Guidelines below.
 ## Development Setup
 
 ### Prerequisites
-- Elixir 1.14 or later
-- Erlang/OTP 25 or later
-- Node.js 16+ (for VSCode extension development)
+- Elixir 1.17.3
+- Erlang/OTP 27.0
+- Node.js 20+ (for VSCode extension development)
+- PostgreSQL 15+
 - Git
 
 ### Initial Setup

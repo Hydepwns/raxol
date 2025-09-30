@@ -18,9 +18,10 @@ Terminal framework for Elixir supporting multiple UI patterns.
 ### Prerequisites
 
 Raxol requires:
-- **Elixir** 1.15.7 or later  
-- **Erlang/OTP** 26.0 or later
+- **Elixir** 1.17.3
+- **Erlang/OTP** 27.0
 - **Node.js** 20+ (for web interface)
+- **PostgreSQL** 15+ (for data storage)
 
 ### Using Nix (Development)
 

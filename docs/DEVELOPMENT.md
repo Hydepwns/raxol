@@ -15,7 +15,7 @@ mix setup
 
 ### Manual Setup
 ```bash
-# Requirements: Elixir 1.15.7+, Erlang/OTP 26+, Node 20+
+# Requirements: Elixir 1.17.3, Erlang/OTP 27.0, Node.js 20+, PostgreSQL 15+
 mix deps.get
 git submodule update --init --recursive
 mix compile
