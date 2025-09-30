@@ -12,7 +12,7 @@ defmodule Raxol.Benchmark.DSL do
 
       # Default implementation - override in your module
       def run_benchmarks(opts \\ []) do
-        Log.console(
+        IO.puts(
           "No benchmarks defined. Use the DSL macros to define benchmarks."
         )
 

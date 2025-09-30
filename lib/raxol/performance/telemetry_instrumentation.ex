@@ -1,4 +1,5 @@
 defmodule Raxol.Performance.TelemetryInstrumentation do
+  alias Raxol.Core.Runtime.Log
   @moduledoc """
   Telemetry instrumentation for Raxol hot paths.
 
@@ -259,9 +260,7 @@ defmodule Raxol.Performance.TelemetryInstrumentation do
        do: :ok
 
   defp log_performance_if_slow(_duration, event, measurements, metadata) do
-    require Logger
-
-    Logger.debug("""
+    Log.module_debug("""
     Performance event: #{inspect(event)}
     Duration: #{measurements.duration}μs
     Metadata: #{inspect(metadata)}
@@ -278,8 +277,7 @@ defmodule Raxol.Performance.TelemetryInstrumentation do
     cache_name = metadata.cache_name
 
     # This could be sent to a monitoring system
-    require Logger
-    Logger.debug("Cache #{type} for #{cache_name}: #{inspect(measurements)}")
+    Log.module_debug("Cache #{type} for #{cache_name}: #{inspect(measurements)}")
   end
 
   defp handle_slow_operation(event, measurements, metadata, %{
@@ -324,9 +322,7 @@ defmodule Raxol.Performance.TelemetryInstrumentation do
          measurements,
          metadata
        ) do
-    require Logger
-
-    Logger.warning("""
+    Log.module_warning("""
     Slow operation detected: #{inspect(event)}
     Duration: #{measurements.duration}μs (threshold: #{threshold}μs)
     Metadata: #{inspect(metadata)}

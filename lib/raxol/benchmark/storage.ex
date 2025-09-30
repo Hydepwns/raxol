@@ -1,13 +1,11 @@
 defmodule Raxol.Benchmark.Storage do
+  alias Raxol.Core.Runtime.Log
   @moduledoc """
   Handles storage and retrieval of benchmark results for historical analysis.
 
   Provides functionality for saving benchmarks, creating baselines, and
   tracking performance over time.
   """
-
-  require Logger
-
   @storage_path "bench/results"
   @baseline_path "bench/baselines"
   @snapshot_path "bench/snapshots"
@@ -60,7 +58,7 @@ defmodule Raxol.Benchmark.Storage do
     data = serialize_baseline(results)
 
     File.write!(path, data)
-    Logger.info("Baseline saved for #{suite_name}")
+    Log.module_info("Baseline saved for #{suite_name}")
 
     :ok
   end
@@ -93,7 +91,7 @@ defmodule Raxol.Benchmark.Storage do
     path = snapshot_path(version)
     File.write!(path, :erlang.term_to_binary(snapshot))
 
-    Logger.info("Snapshot created for version #{version}")
+    Log.module_info("Snapshot created for version #{version}")
 
     :ok
   end
@@ -133,7 +131,7 @@ defmodule Raxol.Benchmark.Storage do
     csv_content = generate_csv(results)
     File.write!(output_file, csv_content)
 
-    Logger.info("Results exported to #{output_file}")
+    Log.module_info("Results exported to #{output_file}")
 
     :ok
   end
@@ -151,7 +149,7 @@ defmodule Raxol.Benchmark.Storage do
       |> Enum.map(&File.rm/1)
       |> Enum.count(&(&1 == :ok))
 
-    Logger.info("Cleaned up #{deleted_count} old benchmark files")
+    Log.module_info("Cleaned up #{deleted_count} old benchmark files")
 
     {:ok, deleted_count}
   end

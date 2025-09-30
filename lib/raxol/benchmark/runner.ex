@@ -5,9 +5,8 @@ defmodule Raxol.Benchmark.Runner do
   Provides infrastructure for running, analyzing, and reporting performance benchmarks
   across all major components of the system.
   """
-
-  require Logger
   alias Raxol.Benchmark.{Reporter, Analyzer, Storage}
+  alias Raxol.Core.Runtime.Log
 
   @default_options %{
     warmup: 2,
@@ -32,7 +31,7 @@ defmodule Raxol.Benchmark.Runner do
   Runs a complete benchmark suite with all configured benchmarks.
   """
   def run_all(opts \\ []) do
-    Logger.info("Starting comprehensive benchmark suite...")
+    Log.module_info("Starting comprehensive benchmark suite...")
 
     suites = [
       terminal_benchmarks(),
@@ -45,7 +44,7 @@ defmodule Raxol.Benchmark.Runner do
 
     results =
       Enum.map(suites, fn suite ->
-        Logger.info("Running #{suite.name} benchmarks...")
+        Log.module_info("Running #{suite.name} benchmarks...")
         run_suite(suite, opts)
       end)
 
@@ -57,7 +56,7 @@ defmodule Raxol.Benchmark.Runner do
 
     case Enum.any?(regressions) do
       true ->
-        Logger.warning("Performance regressions detected!")
+        Log.module_warning("Performance regressions detected!")
         Analyzer.report_regressions(regressions)
 
       false ->
@@ -117,7 +116,7 @@ defmodule Raxol.Benchmark.Runner do
   Profiles a specific operation with detailed analysis.
   """
   def profile(name, operation, opts \\ []) do
-    Logger.info("Profiling #{name}...")
+    Log.module_info("Profiling #{name}...")
 
     # Run with profiling enabled
     profile_opts =

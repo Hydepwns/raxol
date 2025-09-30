@@ -439,7 +439,7 @@ defmodule Raxol.Benchmark.ScenarioGenerator do
     \e[33m2\e[0m
     \e[1;32miex(2)>\e[0m Enum.map([1, 2, 3], &(&1 * 2))
     \e[33m[2, 4, 6]\e[0m
-    \e[1;32miex(3)>\e[0m Log.console("\e[31mHello\e[0m \e[32mWorld\e[0m")
+    \e[1;32miex(3)>\e[0m IO.puts("\e[31mHello\e[0m \e[32mWorld\e[0m")
     \e[31mHello\e[0m \e[32mWorld\e[0m
     \e[33m:ok\e[0m
     \e[1;32miex(4)>\e[0m _

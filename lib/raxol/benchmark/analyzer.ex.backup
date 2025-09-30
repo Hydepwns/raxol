@@ -6,7 +6,6 @@ defmodule Raxol.Benchmark.Analyzer do
 
   alias Raxol.Benchmark.StatisticalAnalyzer
   alias Raxol.Benchmark.RegressionDetector
-  alias Raxol.Core.Runtime.Log
 
   @doc """
   Analyze benchmark results.
@@ -198,7 +197,7 @@ defmodule Raxol.Benchmark.Analyzer do
   """
   def analyze_profile(name, _results) do
     # Simple profile analysis for now
-    Log.console("Profile analysis for #{name}:")
+    IO.puts("Profile analysis for #{name}:")
     # Results are available for further processing if needed
     :ok
   end
@@ -208,12 +207,12 @@ defmodule Raxol.Benchmark.Analyzer do
   """
   def report_regressions(regressions) when is_list(regressions) do
     if Enum.empty?(regressions) do
-      Log.console("No performance regressions detected.")
+      IO.puts("No performance regressions detected.")
     else
-      Log.console("Performance regressions detected:")
+      IO.puts("Performance regressions detected:")
 
       Enum.each(regressions, fn regression ->
-        Log.console("  - #{inspect(regression)}")
+        IO.puts("  - #{inspect(regression)}")
       end)
     end
 

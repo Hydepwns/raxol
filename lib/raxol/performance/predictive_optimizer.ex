@@ -16,10 +16,8 @@ defmodule Raxol.Performance.PredictiveOptimizer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.Performance.ETSCacheManager
+  alias Raxol.Core.Runtime.Log
 
   # milliseconds (used for prediction calculations)
   # @prediction_window 1000
@@ -348,7 +346,7 @@ defmodule Raxol.Performance.PredictiveOptimizer do
   end
 
   defp perform_optimization(state) do
-    Logger.info("Performing predictive optimization based on telemetry data")
+    Log.module_info("Performing predictive optimization based on telemetry data")
 
     optimizations = []
 

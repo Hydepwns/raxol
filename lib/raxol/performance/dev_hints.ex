@@ -32,8 +32,7 @@ defmodule Raxol.Performance.DevHints do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @default_config %{
     enabled: Mix.env() == :dev,
     thresholds: %{
@@ -118,7 +117,7 @@ defmodule Raxol.Performance.DevHints do
     config = get_config(opts)
 
     if config.enabled do
-      Logger.info("[DevHints] Attaching telemetry handlers")
+      Log.module_info("Attaching telemetry handlers")
 
       # Schedule periodic cleanup
       _ = :timer.send_interval(60_000, self(), {:cleanup_history})
@@ -159,7 +158,7 @@ defmodule Raxol.Performance.DevHints do
         start_time: System.monotonic_time(:millisecond)
       }
 
-      Logger.info("[SEARCH] Performance hints enabled for development")
+      Log.module_info("Performance hints enabled for development")
 
       {:ok, state}
     else
@@ -327,7 +326,7 @@ defmodule Raxol.Performance.DevHints do
         _ -> "[TIP]"
       end
 
-    Logger.warning([
+    Log.module_warning([
       IO.ANSI.yellow(),
       category_emoji,
       " Performance Hint [#{category}]: ",
@@ -337,7 +336,7 @@ defmodule Raxol.Performance.DevHints do
     ])
 
     if map_size(metadata) > 0 do
-      Logger.debug("Hint metadata: #{inspect(metadata)}")
+      Log.module_debug("Hint metadata: #{inspect(metadata)}")
     end
   end
 

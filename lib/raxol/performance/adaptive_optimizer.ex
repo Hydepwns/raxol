@@ -11,9 +11,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Configuration constants
   # 15 seconds
   @optimization_interval 15_000
@@ -75,7 +73,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
     # Setup telemetry event handlers
     setup_telemetry_handlers()
 
-    Logger.info("Adaptive optimizer started with production configuration")
+    Log.module_info("Adaptive optimizer started with production configuration")
     {:ok, state}
   end
 
@@ -436,7 +434,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
 
   defp perform_adaptive_optimization(state) do
     Raxol.Core.ErrorHandling.safe_call_with_info(fn ->
-      Logger.info(
+      Log.module_info(
         "Starting adaptive optimization cycle #{state.optimization_state.optimization_cycles + 1}"
       )
 
@@ -477,7 +475,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
         next_optimization_in: @optimization_interval
       }
 
-      Logger.info(
+      Log.module_info(
         "Adaptive optimization completed: #{length(application_results)} optimizations applied"
       )
 
@@ -488,7 +486,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
         {:ok, new_state, results}
 
       {:error, {kind, error, _stacktrace}} ->
-        Logger.error(
+        Log.module_error(
           "Adaptive optimization failed: #{kind} - #{inspect(error)}"
         )
 
@@ -650,7 +648,7 @@ defmodule Raxol.Performance.AdaptiveOptimizer do
           {elem(optimization, 0), result}
 
         {:error, reason} ->
-          Logger.warning(
+          Log.module_warning(
             "Optimization #{elem(optimization, 0)} failed: #{inspect(reason)}"
           )
 

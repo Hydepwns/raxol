@@ -244,7 +244,7 @@ defmodule Raxol.Benchmark.Reporter do
   end
 
   defp console_report(report_data) do
-    Log.console("""
+    IO.puts("""
 
     ╔══════════════════════════════════════════════════════════════════╗
     ║                 Raxol Performance Benchmark Report                ║
@@ -257,13 +257,13 @@ defmodule Raxol.Benchmark.Reporter do
     """)
 
     # Summary Section
-    Log.console("[STATS] SUMMARY")
-    Log.console("=" |> String.duplicate(70))
+    IO.puts("[STATS] SUMMARY")
+    IO.puts("=" |> String.duplicate(70))
     print_summary(report_data.summary)
 
     # Performance Highlights
-    Log.console("\n[FAST] PERFORMANCE HIGHLIGHTS")
-    Log.console("=" |> String.duplicate(70))
+    IO.puts("\n[FAST] PERFORMANCE HIGHLIGHTS")
+    IO.puts("=" |> String.duplicate(70))
     print_performance_highlights(report_data.performance_metrics)
 
     # Regressions
@@ -276,8 +276,8 @@ defmodule Raxol.Benchmark.Reporter do
     print_recommendations_section(report_data.recommendations)
 
     # Detailed Results
-    Log.console("\n[TREND] DETAILED RESULTS")
-    Log.console("=" |> String.duplicate(70))
+    IO.puts("\n[TREND] DETAILED RESULTS")
+    IO.puts("=" |> String.duplicate(70))
     print_detailed_results(report_data.detailed_results)
 
     :ok
@@ -529,33 +529,33 @@ defmodule Raxol.Benchmark.Reporter do
   defp print_recommendations_section([]), do: :ok
 
   defp print_summary(summary) do
-    Log.console("Total Benchmarks: #{summary.total_benchmarks}")
-    Log.console("Fastest Operations:")
+    IO.puts("Total Benchmarks: #{summary.total_benchmarks}")
+    IO.puts("Fastest Operations:")
 
     Enum.each(summary.fastest_operations, fn op ->
-      Log.console("  • #{op.operation}: #{format_time(op.time)}")
+      IO.puts("  • #{op.operation}: #{format_time(op.time)}")
     end)
   end
 
   defp print_performance_highlights(metrics) do
-    Log.console("Average Operation Time: #{format_time(metrics.average_time)}")
+    IO.puts("Average Operation Time: #{format_time(metrics.average_time)}")
 
-    Log.console(
+    IO.puts(
       "Fastest: #{metrics.fastest_operation.name} (#{format_time(metrics.fastest_operation.time)})"
     )
 
-    Log.console(
+    IO.puts(
       "Slowest: #{metrics.slowest_operation.name} (#{format_time(metrics.slowest_operation.time)})"
     )
   end
 
   defp print_detailed_results(results) do
     Enum.each(results, fn suite ->
-      Log.console("\n#{suite.suite_name}")
-      Log.console("-" |> String.duplicate(String.length(suite.suite_name)))
+      IO.puts("\n#{suite.suite_name}")
+      IO.puts("-" |> String.duplicate(String.length(suite.suite_name)))
 
       Enum.each(suite.scenarios, fn scenario ->
-        Log.console(
+        IO.puts(
           "  #{scenario.name}: #{format_time(scenario.average)} (±#{format_time(scenario.std_dev)})"
         )
       end)

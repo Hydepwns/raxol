@@ -38,13 +38,13 @@ defmodule Raxol.Benchmark do
   end
 
   defp print_results(results) do
-    IO.puts("\nBenchmark Results:")
-    IO.puts("=================")
+    Log.console("\nBenchmark Results:")
+    Log.console("=================")
 
     Enum.each(results, fn %{sequence: sequence, duration: duration} ->
-      IO.puts("Sequence: #{sequence.name}")
-      IO.puts("Duration: #{duration}ms")
-      IO.puts("---")
+      Log.console("Sequence: #{sequence.name}")
+      Log.console("Duration: #{duration}ms")
+      Log.console("---")
     end)
 
     :ok

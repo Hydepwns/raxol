@@ -43,7 +43,7 @@ defmodule Raxol.Benchmark.CompetitorSuite do
   Run competitor comparison benchmarks.
   """
   def run_benchmarks(opts \\ []) do
-    Log.console("Running competitor comparison benchmarks...")
+    IO.puts("Running competitor comparison benchmarks...")
 
     # Run parser benchmarks
     parser_results = run_parser_benchmarks(opts)
