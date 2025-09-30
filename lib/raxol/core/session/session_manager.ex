@@ -58,9 +58,7 @@ defmodule Raxol.Core.Session.SessionManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Core.Session.{
     SecuritySession,
     WebSession,
@@ -329,7 +327,7 @@ defmodule Raxol.Core.Session.SessionManager do
     cleanup_timer = schedule_cleanup(config.cleanup_interval)
     final_state = %{state | cleanup_timer: cleanup_timer}
 
-    Logger.info("Unified session manager initialized")
+    Log.module_info("Unified session manager initialized")
     {:ok, final_state}
   end
 
@@ -603,7 +601,7 @@ defmodule Raxol.Core.Session.SessionManager do
 
   @impl true
   def handle_manager_call(:cleanup_all_sessions, _from, state) do
-    Logger.info("Running unified session cleanup")
+    Log.module_info("Running unified session cleanup")
 
     # Cleanup security sessions
     updated_security =

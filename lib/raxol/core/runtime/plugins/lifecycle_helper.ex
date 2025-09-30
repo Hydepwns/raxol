@@ -172,7 +172,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
 
   @spec _register_plugin(String.t() | integer(), any()) :: any()
   defp _register_plugin(plugin_id, plugin_metadata) do
-    Raxol.Core.UnifiedRegistry.register(:plugins, plugin_id, plugin_metadata)
+    Raxol.Core.GlobalRegistry.register(:plugins, plugin_id, plugin_metadata)
   end
 
   def initialize_plugins(

@@ -1,4 +1,5 @@
 defmodule Raxol.Core.Session.SecuritySession do
+  alias Raxol.Core.Runtime.Log
   @moduledoc """
   Security session implementation for the unified session manager.
 
@@ -9,9 +10,6 @@ defmodule Raxol.Core.Session.SecuritySession do
   - Session fixation protection
   - CSRF token generation
   """
-
-  require Logger
-
   defstruct [
     :id,
     :user_id,
@@ -219,7 +217,7 @@ defmodule Raxol.Core.Session.SecuritySession do
       {:ok, session_info, sessions_state}
     else
       false ->
-        Logger.warning("Invalid token for session #{session_id}")
+        Log.module_warning("Invalid token for session #{session_id}")
         {:error, :invalid_token}
 
       true ->
@@ -242,7 +240,7 @@ defmodule Raxol.Core.Session.SecuritySession do
           {session.user_id, session_id}
         )
 
-        Logger.info("Security session invalidated: #{session_id}")
+        Log.module_info("Security session invalidated: #{session_id}")
         sessions_state
     end
   end
@@ -307,7 +305,7 @@ defmodule Raxol.Core.Session.SecuritySession do
         end)
 
         if length(expired) > 0 do
-          Logger.info("Cleaned up #{length(expired)} expired security sessions")
+          Log.module_info("Cleaned up #{length(expired)} expired security sessions")
         end
 
       {:error, :table_not_found} ->

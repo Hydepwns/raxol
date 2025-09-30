@@ -48,8 +48,6 @@ defmodule Raxol.Core.Standards.CodeStyle do
       alias Raxol.Terminal.{Buffer, Cursor}
 
       # Require statements
-      require Logger
-
       # Public API functions
 
       @doc \"\"\"
@@ -122,11 +120,11 @@ defmodule Raxol.Core.Standards.CodeStyle do
           {:ok, result}
         else
           {:error, :validation_failed} = error ->
-            Logger.error("Validation failed: \#{inspect(input)}")
+            Log.module_error("Validation failed: \#{inspect(input)}")
             error
 
           {:error, reason} = error ->
-            Logger.error("Operation failed: \#{inspect(reason)}")
+            Log.module_error("Operation failed: \#{inspect(reason)}")
             error
         end
       end
@@ -240,6 +238,7 @@ defmodule Raxol.Core.Standards.CodeStyle do
         use ExUnit.Case, async: true
 
         alias ModuleName
+  alias Raxol.Core.Runtime.Log
 
         describe "function_name/arity" do
           setup do

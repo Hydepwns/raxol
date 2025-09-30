@@ -9,8 +9,6 @@ defmodule Raxol.Themes do
 
   use Raxol.Core.Behaviours.BaseManager
 
-  @behaviour Raxol.Core.Behaviours.BaseManager
-
   @doc """
   Applies a theme to the terminal.
 

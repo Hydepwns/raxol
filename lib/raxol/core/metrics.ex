@@ -34,7 +34,7 @@ defmodule Raxol.Core.Metrics do
     # Use Task to safely start the collector with timeout
     task =
       Task.async(fn ->
-        Raxol.Core.Metrics.UnifiedCollector.start_link(options)
+        Raxol.Core.Metrics.MetricsCollector.start_link(options)
       end)
 
     case Task.yield(task, 5000) || Task.shutdown(task) do
@@ -124,7 +124,7 @@ defmodule Raxol.Core.Metrics do
   defp safe_record_to_collector(name, value, tags) do
     task =
       Task.async(fn ->
-        Raxol.Core.Metrics.UnifiedCollector.record_metric(name, :custom, value,
+        Raxol.Core.Metrics.MetricsCollector.record_metric(name, :custom, value,
           tags: tags
         )
       end)
@@ -178,7 +178,7 @@ defmodule Raxol.Core.Metrics do
   defp safe_get_all_metrics do
     task =
       Task.async(fn ->
-        Raxol.Core.Metrics.UnifiedCollector.get_all_metrics()
+        Raxol.Core.Metrics.MetricsCollector.get_all_metrics()
       end)
 
     case Task.yield(task, 2000) || Task.shutdown(task) do
@@ -231,7 +231,7 @@ defmodule Raxol.Core.Metrics do
   defp safe_clear_collector_metrics do
     task =
       Task.async(fn ->
-        Raxol.Core.Metrics.UnifiedCollector.clear_metrics()
+        Raxol.Core.Metrics.MetricsCollector.clear_metrics()
       end)
 
     case Task.yield(task, 2000) || Task.shutdown(task) do

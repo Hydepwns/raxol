@@ -25,8 +25,6 @@ defmodule Raxol.Core.Standards.CodeGenerator do
       \"\"\"
 
       use Raxol.Core.Behaviours.BaseManager
-      require Logger
-
       # Type definitions
       @type state :: %{
         #{format_state_types(state_fields)}
@@ -63,7 +61,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
           #{_format_initial_state(state_fields, opts)}
         }
 
-        Logger.info("#{module_name} started with options: \#{inspect(opts)}")
+        Log.module_info("#{module_name} started with options: \#{inspect(opts)}")
         {:ok, state}
       end
 
@@ -191,6 +189,7 @@ defmodule Raxol.Core.Standards.CodeGenerator do
       use RaxolWeb, :live_view
 
       alias Phoenix.LiveView.Socket
+  alias Raxol.Core.Runtime.Log
 
       @impl true
       def mount(params, session, socket) do

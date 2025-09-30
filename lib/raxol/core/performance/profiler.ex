@@ -27,9 +27,7 @@ defmodule Raxol.Core.Performance.Profiler do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @type metric_type :: :execution_time | :memory_usage | :call_count | :gc_runs
   @type profile_data :: %{
           operation: atom(),
@@ -355,7 +353,7 @@ defmodule Raxol.Core.Performance.Profiler do
   @spec log_new_suggestions(any(), any()) :: any()
   defp log_new_suggestions(new_suggestions, old_suggestions)
        when new_suggestions != old_suggestions do
-    Logger.info("New performance optimization suggestions available")
+    Log.module_info("New performance optimization suggestions available")
   end
 
   @spec log_new_suggestions(any(), any()) :: any()
@@ -375,7 +373,7 @@ defmodule Raxol.Core.Performance.Profiler do
   defp log_slow_operation_if_needed(operation, metrics) do
     case metrics.duration_us > 1_000_000 do
       true ->
-        Logger.warning(
+        Log.module_warning(
           "[Performance] Slow operation #{operation}: #{metrics.duration_us / 1_000_000}s"
         )
 

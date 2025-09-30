@@ -662,7 +662,7 @@ defmodule Raxol.Core.Session.DistributedSessionStorage do
 
   defp delete_mnesia_session(session_id, state) do
     transaction_fn = fn ->
-      :mnesia.delete({:distributed_sessions, session_id}),
+      :mnesia.delete({:distributed_sessions, session_id})
       :mnesia.delete({:session_metadata, session_id})
     end
 

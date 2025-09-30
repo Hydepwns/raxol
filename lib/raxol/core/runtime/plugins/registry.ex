@@ -2,7 +2,7 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
   @moduledoc """
   Plugin registry using GenServer for state management.
 
-  @deprecated "Use Raxol.Core.UnifiedRegistry with :plugins type instead"
+  @deprecated "Use Raxol.Core.GlobalRegistry with :plugins type instead"
 
   This module has been consolidated into the unified registry system.
   For new code, use:
@@ -18,7 +18,7 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Core.UnifiedRegistry
+  alias Raxol.Core.GlobalRegistry
 
   # Public API
 

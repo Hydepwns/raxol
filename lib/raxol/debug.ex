@@ -9,11 +9,10 @@ defmodule Raxol.Debug do
   - ANSI sequence debugging
   - Event flow tracing
   """
-
-  require Logger
   use Raxol.Core.Behaviours.BaseManager
 
   alias Raxol.Core.Utils.TimerManager
+  alias Raxol.Core.Runtime.Log
 
   @debug_levels [:off, :basic, :detailed, :verbose]
   # Sample every 100ms in debug mode
@@ -85,7 +84,7 @@ defmodule Raxol.Debug do
          context <- Keyword.get(opts, :context, %{}),
          metadata <- Keyword.get(opts, :metadata, []),
          formatted_message <- format_debug_message(component, message, context) do
-      Logger.debug(formatted_message, metadata)
+      Log.module_debug(formatted_message, metadata)
     end
 
     :ok
@@ -205,10 +204,10 @@ defmodule Raxol.Debug do
   def debug_breakpoint(component, reason \\ "Debug breakpoint") do
     with true <- debug_enabled?(component),
          true <- interactive_mode?() do
-      IO.puts("Debug breakpoint hit: #{reason}")
-      IO.puts("Component: #{component}")
-      IO.puts("Process: #{inspect(self())}")
-      IO.puts("Press Enter to continue...")
+      Log.console("Debug breakpoint hit: #{reason}")
+      Log.console("Component: #{component}")
+      Log.console("Process: #{inspect(self())}")
+      Log.console("Press Enter to continue...")
       IO.read(:line)
     end
 
@@ -265,7 +264,7 @@ defmodule Raxol.Debug do
         Application.put_env(:raxol, :debug_mode, true)
     end
 
-    Logger.info("Debug mode enabled for #{component}")
+    Log.module_info("Debug mode enabled for #{component}")
     :ok
   end
 
@@ -297,7 +296,7 @@ defmodule Raxol.Debug do
         Application.put_env(:raxol, :debug_mode, false)
     end
 
-    Logger.info("Debug mode disabled for #{component}")
+    Log.module_info("Debug mode disabled for #{component}")
     :ok
   end
 
@@ -471,7 +470,7 @@ defmodule Raxol.Debug do
         memory = :erlang.memory()
         stats = :erlang.statistics(:run_queue)
 
-        Logger.debug(
+        Log.module_debug(
           "Performance: memory=#{inspect(memory)}, run_queue=#{inspect(stats)}"
         )
 

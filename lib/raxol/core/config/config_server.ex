@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Config.UnifiedConfigManager do
+defmodule Raxol.Core.Config.ConfigServer do
   @moduledoc """
   Unified configuration management system for Raxol.
   Consolidates configuration from multiple specialized config modules:
@@ -10,9 +10,7 @@ defmodule Raxol.Core.Config.UnifiedConfigManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @config_dir ".config/raxol"
   @main_config_file "raxol.toml"
 
@@ -218,8 +216,8 @@ defmodule Raxol.Core.Config.UnifiedConfigManager do
   @impl Raxol.Core.Behaviours.BaseManager
   def handle_manager_info(:auto_save, state) do
     case save_config_to_file(state) do
-      :ok -> Logger.debug("Auto-saved configuration successfully")
-      {:error, reason} -> Logger.warning("Auto-save failed: #{inspect(reason)}")
+      :ok -> Log.module_debug("Auto-saved configuration successfully")
+      {:error, reason} -> Log.module_warning("Auto-save failed: #{inspect(reason)}")
     end
 
     schedule_auto_save(state.persistence.save_interval)

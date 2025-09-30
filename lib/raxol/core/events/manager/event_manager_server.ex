@@ -35,9 +35,7 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-  require Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Log
 
   @default_config %{
     history_limit: 100,
@@ -500,14 +498,14 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
   defp do_dispatch(state, event) do
     event_type = extract_event_type(event)
 
-    Logger.debug(
+    Log.module_debug(
       "EventManager.Server dispatching event: #{inspect(event)}, type: #{inspect(event_type)}"
     )
 
     # Execute handlers in priority order
     handlers = Map.get(state.handlers, event_type, [])
 
-    Logger.debug(
+    Log.module_debug(
       "Found #{length(handlers)} handlers for event type #{inspect(event_type)}: #{inspect(handlers)}"
     )
 
@@ -515,7 +513,7 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
       case handler do
         # Traditional module/function handler
         {module, function, _priority} when is_atom(module) and is_atom(function) ->
-          Logger.debug(
+          Log.module_debug(
             "EventManager calling #{module}.#{function} with event: #{inspect(event)}"
           )
 
@@ -526,7 +524,7 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
               )
 
             {:error, reason} ->
-              Logger.error(
+              Log.module_error(
                 "Event handler #{module}.#{function} failed: #{inspect(reason)}"
               )
           end
@@ -546,7 +544,7 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
                   )
 
                 {:error, reason} ->
-                  Logger.error(
+                  Log.module_error(
                     "Event handler #{handler_id} failed: #{inspect(reason)}"
                   )
               end
@@ -556,7 +554,7 @@ defmodule Raxol.Core.Events.EventManager.EventManagerServer do
           end
 
         _ ->
-          Logger.warning("Unknown handler format: #{inspect(handler)}")
+          Log.module_warning("Unknown handler format: #{inspect(handler)}")
       end
     end)
 

@@ -2,10 +2,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   @moduledoc "Manages the application lifecycle, including startup, shutdown, and terminal interaction."
 
   use GenServer
-
-  require Raxol.Core.Runtime.Log
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Core.Runtime.Events.Dispatcher
   alias Raxol.Core.Runtime.Plugins.PluginManager, as: Manager
   alias Raxol.Core.CompilerState
@@ -538,17 +535,17 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
     case env_type do
       :terminal ->
-        Logger.info("[Lifecycle] Initializing terminal environment")
-        Logger.info("[Lifecycle] Terminal environment initialized successfully")
+        Log.module_info("Initializing terminal environment")
+        Log.module_info("Terminal environment initialized successfully")
         options
 
       :web ->
-        Logger.info("[Lifecycle] Initializing web environment")
-        Logger.info("[Lifecycle] Terminal initialization failed")
+        Log.module_info("Initializing web environment")
+        Log.module_info("Terminal initialization failed")
         options
 
       unknown ->
-        Logger.info("[Lifecycle] Unknown environment type: #{inspect(unknown)}")
+        Log.module_info("Unknown environment type: #{inspect(unknown)}")
         options
     end
   end
@@ -580,26 +577,26 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   def handle_error(error, _context) do
     # Log the error with context
-    Logger.error("Application error occurred: #{inspect(error)}")
+    Log.module_error("Application error occurred: #{inspect(error)}")
 
     # Handle different error types based on test expectations
     case error do
       {:application_error, reason} ->
         # For application errors, stop the process
-        Logger.info("[Lifecycle] Application error: #{inspect(reason)}")
-        Logger.info("[Lifecycle] Stopping application")
+        Log.module_info("Application error: #{inspect(reason)}")
+        Log.module_info("Stopping application")
         {:stop, :normal, %{}}
 
       {:termbox_error, reason} ->
         # For termbox errors, log and attempt retry
-        Logger.info("[Lifecycle] Termbox error: #{inspect(reason)}")
-        Logger.info("[Lifecycle] Attempting to restore terminal")
+        Log.module_info("Termbox error: #{inspect(reason)}")
+        Log.module_info("Attempting to restore terminal")
         {:stop, :normal, %{}}
 
       {:unknown_error, _reason} ->
         # For unknown errors, log and continue
-        Logger.info("[Lifecycle] Unknown error: #{inspect(error)}")
-        Logger.info("[Lifecycle] Continuing execution")
+        Log.module_info("Unknown error: #{inspect(error)}")
+        Log.module_info("Continuing execution")
         {:stop, :normal, %{}}
 
       %{type: :runtime_error} ->
@@ -619,8 +616,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   def handle_cleanup(context) do
     case Raxol.Core.ErrorHandling.safe_call(fn ->
            # Log cleanup operation
-           Logger.info("[Lifecycle] Cleaning up for app: #{context.app_name}")
-           Logger.info("[Lifecycle] Cleanup completed")
+           Log.module_info("Cleaning up for app: #{context.app_name}")
+           Log.module_info("Cleanup completed")
 
            # Cleanup is handled by individual components
            :ok
@@ -629,7 +626,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
         result
 
       {:error, error} ->
-        Logger.error("Cleanup failed: #{inspect(error)}")
+        Log.module_error("Cleanup failed: #{inspect(error)}")
         {:error, :cleanup_failed}
     end
   end

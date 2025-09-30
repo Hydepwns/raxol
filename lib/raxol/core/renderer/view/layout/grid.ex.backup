@@ -525,7 +525,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
           child
 
         cell_bounds ->
-          Log.info(
+          IO.puts(
             "Positioning child #{index} at #{inspect(cell_key)} with bounds #{inspect(cell_bounds)}"
           )
 

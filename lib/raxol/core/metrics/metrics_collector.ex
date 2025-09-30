@@ -1,4 +1,4 @@
-defmodule Raxol.Core.Metrics.UnifiedCollector do
+defmodule Raxol.Core.Metrics.MetricsCollector do
   @moduledoc """
   Manages unified metrics collection across the application.
   """
@@ -24,7 +24,7 @@ defmodule Raxol.Core.Metrics.UnifiedCollector do
   # --- Public API ---
 
   # BaseManager provides start_link/1 which handles GenServer initialization
-  # Usage: Raxol.Core.Metrics.UnifiedCollector.start_link(name: __MODULE__, opts...)
+  # Usage: Raxol.Core.Metrics.MetricsCollector.start_link(name: __MODULE__, opts...)
 
   @doc """
   Records a metric value.

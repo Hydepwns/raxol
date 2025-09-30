@@ -7,9 +7,7 @@ defmodule Raxol.Core.FocusManager.FocusServer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   defstruct [
     :focusable_components,
     :current_focus,
@@ -496,7 +494,7 @@ defmodule Raxol.Core.FocusManager.FocusServer do
         handler.(old_focus, new_focus)
       rescue
         error ->
-          Logger.warning("Focus change handler error: #{inspect(error)}")
+          Log.module_warning("Focus change handler error: #{inspect(error)}")
       end
     end)
   end

@@ -144,7 +144,7 @@ defmodule Raxol.Core.Runtime.Log do
     case Application.get_env(:raxol, :environment, :prod) do
       env when env in [:dev, :test] ->
         formatted = format_console_message(msg, context)
-        Log.info(formatted)
+        IO.puts(formatted)
 
       _ ->
         debug(msg, context)

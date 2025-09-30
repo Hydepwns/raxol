@@ -47,14 +47,12 @@ defmodule Raxol.Minimal do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   alias Raxol.Terminal.ANSI.Utils.AnsiParser
   alias Raxol.Terminal.Buffer
   alias Raxol.Terminal.Buffer.Cell
   alias Raxol.Terminal.ScreenBuffer.Operations
   alias Raxol.Core.Utils.GenServerHelpers
+  alias Raxol.Core.Runtime.Log
 
   @type terminal_mode :: :raw | :cooked | :cbreak
   @type color_mode :: :none | :ansi16 | :ansi256 | :rgb
@@ -225,7 +223,7 @@ defmodule Raxol.Minimal do
       )
     end
 
-    Logger.info("Minimal terminal started in #{startup_time}μs")
+    Log.module_info("Minimal terminal started in #{startup_time}μs")
 
     {:ok, state}
   end

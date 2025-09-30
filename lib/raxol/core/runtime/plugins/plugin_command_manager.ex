@@ -5,10 +5,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  @behaviour Raxol.Core.Behaviours.BaseManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   # Client API
 
   @doc """
@@ -73,7 +70,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
         _from,
         state
       ) do
-    Logger.debug(
+    Log.module_debug(
       "Registering #{length(commands)} commands for plugin #{plugin_id}"
     )
 
@@ -101,7 +98,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
 
   @impl true
   def handle_manager_call({:unregister_commands, plugin_id}, _from, state) do
-    Logger.debug("Unregistering commands for plugin #{plugin_id}")
+    Log.module_debug("Unregistering commands for plugin #{plugin_id}")
 
     # Get commands for this plugin
     plugin_cmds = Map.get(state.plugin_commands, plugin_id, [])
@@ -169,7 +166,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandManager do
       end
     rescue
       e ->
-        Logger.error("Error executing command #{command.name}: #{inspect(e)}")
+        Log.module_error("Error executing command #{command.name}: #{inspect(e)}")
         {:error, e}
     end
   end

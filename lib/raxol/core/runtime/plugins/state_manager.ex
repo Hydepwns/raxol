@@ -8,8 +8,7 @@ defmodule StateManager do
   """
 
   alias Raxol.Core.StateManager, as: UnifiedStateManager
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @type plugin_id :: String.t()
   @type plugin_module :: module()
   @type plugin_config :: map()
@@ -60,14 +59,14 @@ defmodule StateManager do
 
       UnifiedStateManager.set_state(metadata_key, metadata)
 
-      Logger.info(
+      Log.module_info(
         "Initialized state for plugin #{plugin_id} (#{plugin_module})"
       )
 
       {:ok, initial_state}
     rescue
       error ->
-        Logger.error(
+        Log.module_error(
           "Failed to initialize plugin state for #{plugin_module}: #{inspect(error)}"
         )
 
@@ -121,11 +120,11 @@ defmodule StateManager do
         end
       end)
 
-      Logger.debug("Updated legacy state for plugin #{plugin_id}")
+      Log.module_debug("Updated legacy state for plugin #{plugin_id}")
       {:ok, updated_state}
     rescue
       error ->
-        Logger.error(
+        Log.module_error(
           "Failed to update legacy plugin state for #{plugin_id}: #{inspect(error)}"
         )
 
@@ -185,7 +184,7 @@ defmodule StateManager do
       {:ok, UnifiedStateManager.get_state(state_key)}
     rescue
       error ->
-        Logger.error(
+        Log.module_error(
           "Failed to update plugin state for #{plugin_id}: #{inspect(error)}"
         )
 
@@ -225,7 +224,7 @@ defmodule StateManager do
   def remove_plugin(plugin_id) do
     UnifiedStateManager.delete_state([:plugins, :states, plugin_id])
     UnifiedStateManager.delete_state([:plugins, :metadata, plugin_id])
-    Logger.info("Removed state for plugin #{plugin_id}")
+    Log.module_info("Removed state for plugin #{plugin_id}")
     :ok
   end
 
@@ -241,7 +240,7 @@ defmodule StateManager do
       initialized_at: :os.system_time(:millisecond)
     })
 
-    Logger.info("Plugin state manager initialized")
+    Log.module_info("Plugin state manager initialized")
     {:ok, state}
   end
 
@@ -251,7 +250,7 @@ defmodule StateManager do
   @spec cleanup() :: :ok
   def cleanup do
     UnifiedStateManager.delete_state([:plugins])
-    Logger.info("Plugin state manager cleaned up")
+    Log.module_info("Plugin state manager cleaned up")
     :ok
   end
 

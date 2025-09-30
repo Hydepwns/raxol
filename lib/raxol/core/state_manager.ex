@@ -25,7 +25,7 @@ defmodule Raxol.Core.StateManager do
   ## Migration from Previous Modules
 
   Replace:
-      Raxol.Core.UnifiedStateManager.get_state(:key)
+      Raxol.Core.StateManager.get_state(:key)
       Raxol.Core.StateManager.Unified.update_managed(:id, fun)
       Raxol.Core.StateManager.Default.put(state, :key, value)
 
@@ -50,10 +50,8 @@ defmodule Raxol.Core.StateManager do
   """
 
   use Agent
+  alias Raxol.Core.Runtime.Log
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
   # Types
   @type state_key :: atom() | String.t() | [atom() | String.t()]
   @type state_value :: term()
@@ -569,7 +567,7 @@ defmodule Raxol.Core.StateManager do
         _ -> {nil, %{}}
       end
 
-    Logger.info("Starting managed state: #{state_id}")
+    Log.module_info("Starting managed state: #{state_id}")
     {:ok, %{id: state_id, state: initial_state}}
   end
 

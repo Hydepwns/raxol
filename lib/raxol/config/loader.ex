@@ -5,9 +5,8 @@ defmodule Raxol.Config.Loader do
   Handles loading configuration from files, environment variables,
   and other sources with proper error handling and validation.
   """
-
-  require Logger
   alias Raxol.Config.Schema
+  alias Raxol.Core.Runtime.Log
 
   @supported_formats ~w(.toml .json .yaml .yml)
 
@@ -65,14 +64,14 @@ defmodule Raxol.Config.Loader do
 
       case load_files(config_files) do
         {:ok, config} ->
-          Logger.info(
+          Log.module_info(
             "Loaded configuration from #{length(config_files)} files in #{directory}"
           )
 
           {:ok, config}
 
         {:error, reason} ->
-          Logger.warning(
+          Log.module_warning(
             "Failed to load configuration from #{directory}: #{inspect(reason)}"
           )
 
@@ -170,7 +169,7 @@ defmodule Raxol.Config.Loader do
 
     case File.copy(path, backup_path) do
       {:ok, _} ->
-        Logger.info("Configuration backed up to #{backup_path}")
+        Log.module_info("Configuration backed up to #{backup_path}")
         {:ok, backup_path}
 
       {:error, reason} ->
@@ -225,7 +224,7 @@ defmodule Raxol.Config.Loader do
   defp handle_file_change(false, _file_path, _callback), do: :ok
 
   defp handle_file_change(true, file_path, callback) do
-    Logger.debug("Configuration file changed: #{file_path}")
+    Log.module_debug("Configuration file changed: #{file_path}")
 
     case load_file(file_path) do
       {:ok, config} ->

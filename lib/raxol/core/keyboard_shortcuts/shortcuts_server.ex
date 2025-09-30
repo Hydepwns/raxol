@@ -7,9 +7,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   defstruct [
     :shortcuts,
     :active_context,
@@ -295,7 +293,7 @@ defmodule Raxol.Core.KeyboardShortcuts.ShortcutsServer do
       :handled
     rescue
       error ->
-        Logger.warning("Shortcut callback error: #{inspect(error)}")
+        Log.module_warning("Shortcut callback error: #{inspect(error)}")
         :callback_error
     end
   end

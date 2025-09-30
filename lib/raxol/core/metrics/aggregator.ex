@@ -12,7 +12,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
 
   use Raxol.Core.Behaviours.BaseManager
 
-  alias Raxol.Core.Metrics.UnifiedCollector
+  alias Raxol.Core.Metrics.MetricsCollector
 
   @type aggregation_type :: :sum | :mean | :median | :min | :max | :percentile
   @type time_window :: :minute | :hour | :day | :week | :month
@@ -71,7 +71,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
   def record(name, value, tags \\ []) do
     # This is a simple pass-through to the unified collector
     # The actual aggregation happens based on rules
-    Raxol.Core.Metrics.UnifiedCollector.record_metric(name, :custom, value,
+    Raxol.Core.Metrics.MetricsCollector.record_metric(name, :custom, value,
       tags: tags
     )
   end
@@ -182,7 +182,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
         {:reply, {:error, :rule_not_found}, state}
 
       rule ->
-        metrics = UnifiedCollector.get_metrics(rule.metric_name, rule.tags)
+        metrics = MetricsCollector.get_metrics(rule.metric_name, rule.tags)
         aggregated = aggregate_metrics(metrics, rule)
 
         new_state = %{
@@ -267,7 +267,7 @@ defmodule Raxol.Core.Metrics.Aggregator do
   @spec update_all_aggregations(map()) :: any()
   defp update_all_aggregations(state) do
     Enum.reduce(state.rules, state, fn {rule_id, rule}, acc_state ->
-      metrics = UnifiedCollector.get_metrics(rule.metric_name, rule.tags)
+      metrics = MetricsCollector.get_metrics(rule.metric_name, rule.tags)
       aggregated = aggregate_metrics(metrics, rule)
 
       %{

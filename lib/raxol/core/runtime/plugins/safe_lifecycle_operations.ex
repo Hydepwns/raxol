@@ -9,8 +9,7 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
   import Raxol.Core.ErrorHandler
   alias Raxol.Core.ErrorHandler
   alias Raxol.Core.ErrorRecovery
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @doc """
   Safely loads a plugin with default config.
   """
@@ -91,7 +90,7 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
       end,
       fn ->
         # Fallback - restore from backup
-        Logger.warning(
+        Log.module_warning(
           "Plugin reload failed, restoring from backup: #{plugin_id}"
         )
 
@@ -283,7 +282,7 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
 
   @spec cleanup_plugin_resources(String.t() | integer()) :: any()
   defp cleanup_plugin_resources(plugin_id) do
-    Logger.info("Cleaning up resources for plugin: #{plugin_id}")
+    Log.module_info("Cleaning up resources for plugin: #{plugin_id}")
     # Clean up any resources (files, connections, etc.)
     :ok
   end
@@ -385,7 +384,7 @@ defmodule Raxol.Core.Runtime.Plugins.SafeLifecycleOperations do
 
           {:error, reason} ->
             # Rollback executed operations
-            Logger.error("Operation failed, rolling back: #{inspect(reason)}")
+            Log.module_error("Operation failed, rolling back: #{inspect(reason)}")
             rollback_state = rollback_operations(done, initial_state)
             {:halt, {:error, reason, rollback_state}}
         end

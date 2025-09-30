@@ -12,7 +12,7 @@ defmodule Raxol.Core.Metrics.AlertManager do
 
   use Raxol.Core.Behaviours.BaseManager
 
-  alias Raxol.Core.Metrics.{UnifiedCollector, Aggregator}
+  alias Raxol.Core.Metrics.{MetricsCollector, Aggregator}
 
   @type alert_condition :: :above | :below | :equals | :not_equals
   @type alert_severity :: :info | :warning | :error | :critical
@@ -204,11 +204,11 @@ defmodule Raxol.Core.Metrics.AlertManager do
       case rule.group_by do
         [] ->
           # Single alert - use exact tag matching
-          UnifiedCollector.get_metrics(rule.metric_name, rule.tags)
+          MetricsCollector.get_metrics(rule.metric_name, rule.tags)
 
         _ ->
           # Grouped metrics - get all metrics with this name
-          UnifiedCollector.get_metrics(rule.metric_name, %{})
+          MetricsCollector.get_metrics(rule.metric_name, %{})
       end
 
     metrics =

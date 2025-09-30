@@ -33,8 +33,7 @@ defmodule Raxol.Application do
   """
 
   use Application
-  require Logger
-  require Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Core.Utils.TimerManager
 
   @type feature_flag :: atom()
@@ -76,7 +75,7 @@ defmodule Raxol.Application do
 
   @impl Application
   def stop(_state) do
-    Logger.info("[Raxol.Application] Shutting down...")
+    Log.module_info("Shutting down...")
     :ok
   end
 
@@ -116,7 +115,7 @@ defmodule Raxol.Application do
       )
     end
 
-    Logger.info("[Raxol.Application] Starting in #{mode} mode")
+    Log.module_info("Starting in #{mode} mode")
   end
 
   # Children Configuration
@@ -213,7 +212,7 @@ defmodule Raxol.Application do
       Raxol.Repo
     else
       if feature_enabled?(:database) do
-        Logger.debug(
+        Log.module_debug(
           "[Raxol.Application] Database feature enabled but Raxol.Repo module not available - continuing without database"
         )
       end
@@ -240,7 +239,7 @@ defmodule Raxol.Application do
       endpoints
     else
       if feature_enabled?(:web_interface) do
-        Logger.debug(
+        Log.module_debug(
           "[Raxol.Application] Web interface feature enabled but RaxolWeb.Endpoint module not available - continuing without web interface"
         )
       end
@@ -277,7 +276,7 @@ defmodule Raxol.Application do
       {Raxol.Core.Telemetry.Supervisor, [mode: mode]}
     else
       if feature_enabled?(:telemetry) do
-        Logger.debug(
+        Log.module_debug(
           "[Raxol.Application] Telemetry feature enabled but Raxol.Core.Telemetry.Supervisor module not available - continuing without telemetry"
         )
       end
@@ -302,7 +301,7 @@ defmodule Raxol.Application do
           System.get_env("RAXOL_FORCE_TERMINAL")} do
       # Skip terminal driver in minimal mode
       {_, _, "minimal", _} ->
-        Logger.info(
+        Log.module_info(
           "[Raxol.Application] Minimal mode - terminal driver disabled"
         )
 
@@ -310,7 +309,7 @@ defmodule Raxol.Application do
 
       # Skip terminal driver on Fly.io
       {_, fly_app, _, _} when is_binary(fly_app) ->
-        Logger.info(
+        Log.module_info(
           "[Raxol.Application] Running on Fly.io (#{fly_app}) - terminal driver disabled"
         )
 
@@ -322,7 +321,7 @@ defmodule Raxol.Application do
 
       # Force terminal driver if explicitly requested
       {false, _, _, "true"} ->
-        Logger.warning(
+        Log.module_warning(
           "[Raxol.Application] Forcing terminal driver despite no TTY"
         )
 
@@ -376,7 +375,7 @@ defmodule Raxol.Application do
     try do
       case Supervisor.start_link(children, opts) do
         {:ok, pid} = success ->
-          Logger.info(
+          Log.module_info(
             "[Raxol.Application] Supervisor started successfully: #{inspect(pid)}"
           )
 
@@ -387,7 +386,7 @@ defmodule Raxol.Application do
           error
 
         {:error, reason} = error ->
-          Logger.error(
+          Log.module_error(
             "[Raxol.Application] Failed to start supervisor: #{inspect(reason)}"
           )
 
@@ -395,7 +394,7 @@ defmodule Raxol.Application do
       end
     rescue
       exception ->
-        Logger.error("""
+        Log.module_error("""
         [Raxol.Application] Exception during startup:
         #{Exception.format(:error, exception, __STACKTRACE__)}
         """)
@@ -405,14 +404,14 @@ defmodule Raxol.Application do
   end
 
   defp handle_child_start_failure(child, reason) do
-    Logger.error("""
+    Log.module_error("""
     [Raxol.Application] Failed to start child: #{inspect(child)}
     Reason: #{inspect(reason)}
     """)
 
     # Attempt graceful degradation for non-critical services
     if optional_child?(child) do
-      Logger.warning(
+      Log.module_warning(
         "[Raxol.Application] Continuing without optional service: #{inspect(child)}"
       )
     end
@@ -486,7 +485,7 @@ defmodule Raxol.Application do
     max_memory = Application.get_env(:raxol, :max_memory_mb, 500) * 1_048_576
 
     if memory_bytes > max_memory do
-      Logger.warning("""
+      Log.module_warning("""
       [Raxol.Application] Memory usage exceeds threshold:
       Current: #{div(memory_bytes, 1_048_576)}MB
       Max: #{div(max_memory, 1_048_576)}MB
@@ -501,7 +500,7 @@ defmodule Raxol.Application do
     max_processes = Application.get_env(:raxol, :max_processes, 10_000)
 
     if process_count > max_processes do
-      Logger.warning("""
+      Log.module_warning("""
       [Raxol.Application] Process count exceeds threshold:
       Current: #{process_count}
       Max: #{max_processes}
@@ -522,7 +521,7 @@ defmodule Raxol.Application do
     )
 
     if success do
-      Logger.info("[Raxol.Application] Started in #{duration}μs (#{mode} mode)")
+      Log.module_info("Started in #{duration}μs (#{mode} mode)")
     end
   end
 

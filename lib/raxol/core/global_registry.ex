@@ -1,4 +1,4 @@
-defmodule Raxol.Core.UnifiedRegistry do
+defmodule Raxol.Core.GlobalRegistry do
   @moduledoc """
   Unified registry interface consolidating different registry patterns across Raxol.
 
@@ -25,9 +25,7 @@ defmodule Raxol.Core.UnifiedRegistry do
   """
 
   use Raxol.Core.Behaviours.BaseManager
-
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @type registry_type ::
           :sessions | :plugins | :commands | :themes | :components
   @type entry_id :: String.t() | atom()
@@ -217,7 +215,7 @@ defmodule Raxol.Core.UnifiedRegistry do
       config: config
     }
 
-    Logger.info("Unified Registry started")
+    Log.module_info("Unified Registry started")
     {:ok, state}
   end
 

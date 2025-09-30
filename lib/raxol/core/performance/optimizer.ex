@@ -12,8 +12,7 @@ defmodule Raxol.Core.Performance.Optimizer do
   """
 
   import Raxol.Core.Performance.Profiler
-  require Logger
-
+  alias Raxol.Core.Runtime.Log
   @doc """
   Optimizes database queries to prevent N+1 problems.
 
@@ -91,6 +90,7 @@ defmodule Raxol.Core.Performance.Optimizer do
 
       defmodule Calculator do
         use Raxol.Core.Performance.Optimizer
+  alias Raxol.Core.Runtime.Log
 
         memoize expensive_calculation(n) do
           # Complex calculation
@@ -283,7 +283,7 @@ defmodule Raxol.Core.Performance.Optimizer do
               end
 
             {:error, reason} ->
-              Logger.warning(
+              Log.module_warning(
                 "Failed to get connection from pool #{pool_name}: #{inspect(reason)}"
               )
 
@@ -469,7 +469,7 @@ defmodule Raxol.Core.Performance.Optimizer do
 
     case Registry.start_link(keys: :unique, name: registry_name) do
       {:ok, _pid} ->
-        Logger.info("Initialized simple connection pool: #{pool_name}")
+        Log.module_info("Initialized simple connection pool: #{pool_name}")
         {:ok, pool_name}
 
       {:error, {:already_started, _pid}} ->
